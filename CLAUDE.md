@@ -240,6 +240,17 @@ F:\Meine_Apps_Ava\
 - [x] Build: Shared + Desktop + Android 0 Fehler
 - [x] Deep Code Review: Navigation-Bugs gefixt, InvalidateCanvas verdrahtet, GC-Optimierung, HelpView erstellt
 
+### Phase 6c: AdMob Integration ✓
+- [x] AdMobHelper.cs: Native Android Banner-Ad als FrameLayout-Overlay (linked file pattern)
+- [x] UMP GDPR Consent: `Xamarin.Google.UserMesssagingPlatform` (Namespace-Typo: dreifaches 's')
+- [x] AdConfig.cs: Echte Ad-Unit-IDs fuer alle 6 Apps (2 Publisher-Accounts)
+- [x] 6 AndroidManifest.xml: APPLICATION_ID Meta-Data
+- [x] 6 Android .csproj: AdMob + UMP PackageReferences + Linked AdMobHelper
+- [x] 6 MainActivity.cs: AdMob Init + Consent + Banner mit tabBarHeightDp
+- [x] D8 Duplicate Class Fix: Compose.Runtime.Annotation.Jvm ExcludeAssets
+- [x] Ad-Platzierung direkt UEBER Tab-Bar (FrameLayout Overlay mit BottomMargin)
+- [x] Build: 0 Fehler
+
 ### Phase 7: Polish + Testing
 - [ ] Android APKs auf Geraet testen
 - [ ] Desktop Apps manuell testen
@@ -517,4 +528,36 @@ F:\Meine_Apps_Ava\
   - PipePuzzle + PaintingGame: WrapPanel Width constraint via PuzzleGridWidth/PaintGridWidth → korrekte Grid-Darstellung
   - PaintingGame: PaintCell.DisplayColor + IsPaintedCorrectly feuerten kein PropertyChanged bei IsPainted-Aenderung → bemalte Zellen zeigten weder Farbe noch Checkmark
   - WiringGame: Wire.BackgroundColor/ContentOpacity/BorderWidth als computed properties + PropertyChanged-Notifications fuer IsSelected/IsConnected/HasError → visuelles Feedback (Highlight, gruener Tint, Checkmark, gedimmte Opacity)
+  - Full Solution Build: 0 Fehler
+- **BomberBlast Grid-Erweiterung + Visuelles Redesign (06.02.2026):**
+  - Grid: 11x9 → 15x10 (nutzt 16:9 Bildschirm besser aus, nur ~14% ungenutzt statt 47%)
+  - HUD: Von oben nach rechts verschoben (120px Panel, vertikales Layout: TIME, SCORE, LIVES als Herz-Icons, BOMBS/FIRE, aktive PowerUps)
+  - GameRenderer komplett umgebaut: Paletten-System (Classic HD + Neon/Cyberpunk), IGameStyleService per DI
+  - Classic HD: Helle Bodenfliesen, 3D-Stein-Waende, Ziegel-Bloecke mit Moertel, gruene Tuer-Exit
+  - Neon: Dunkle Flaechen mit Cyan-Gridlinien, leuchtende Kanten an Waenden, orange Glow-Risse in Bloecken, Neon-Glow Exit
+  - Player: Abgerundeter Koerper mit Helm/Muetze, Augen mit Blickrichtung, Neon-Aura
+  - Enemies: Ovaler Koerper, boese Augenbrauen, verschiedene Muender je Typ, Neon-Glow in Typ-Farbe
+  - Bombs: Glanz-Highlight, gewellte Lunte mit Funken, Neon-Glow-Puls
+  - Explosionen: 3-Schicht (Outer/Inner/Core), Neon: Cyan-Core + Blur
+  - PowerUps: Runde Icons mit Symbol-Formen (statt Buchstaben), Neon-Glow-Aura
+  - IGameStyleService + GameStyleService: Persistenz via IPreferencesService, StyleChanged Event
+  - SettingsView: Visual Style Sektion mit Preview-Farbverlauf + RadioButtons
+  - Slider-Texte Fix: Width="80" entfernt, Auto-Breite mit FontSize=11
+  - 5 neue resx-Keys in 6 Sprachen (VisualStyle, StyleClassic/Desc, StyleNeon/Desc)
+  - Build: Shared + Desktop + Android 0 Fehler
+
+### 07.02.2026
+- **AdMob Integration (Phase 6c):**
+  - AdMobHelper.cs erstellt: Native Android Banner-Ad als FrameLayout-Overlay mit GDPR-Consent (UMP)
+  - Linked-File-Pattern: AdMobHelper lebt in Premium-Library, wird per `<Compile Include>` in jedes Android-Projekt eingebunden
+  - AdConfig.cs: Echte Ad-Unit-IDs fuer alle 6 werbe-unterstuetzten Apps (2 Publisher-Accounts)
+  - 6 AndroidManifest.xml: `com.google.android.gms.ads.APPLICATION_ID` Meta-Data
+  - 6 Android .csproj: `Xamarin.GooglePlayServices.Ads.Lite` + `Xamarin.Google.UserMessagingPlatform` Packages
+  - 6 MainActivity.cs: AdMob Init + UMP Consent + Banner-Overlay mit app-spezifischem tabBarHeightDp
+  - Ad-Platzierung: FrameLayout-Overlay mit `GravityFlags.Bottom` + `BottomMargin = tabBarHeightDp * density`, positioniert Banner direkt UEBER der Avalonia Tab-Bar
+  - AdInsetListener: Passt BottomMargin fuer Navigation-Bar-Insets an (Edge-to-Edge Support)
+  - D8 Duplicate Class Fix: `Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm` mit `ExcludeAssets="all"` in Directory.Build.targets
+  - UMP Namespace-Typo: C# Namespace ist `Xamarin.Google.UserMesssagingPlatform` (dreifaches 's')
+  - `AdView.AdSize` ist Property-Setter (nicht `SetAdSize()` Methode) in neueren Ads.Lite Bindings
+  - BomberBlast SettingsView: Broken `BoolConverters.TrueIsVisible` fuer `BorderThickness` entfernt (AVLN2000)
   - Full Solution Build: 0 Fehler

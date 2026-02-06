@@ -9,6 +9,10 @@
     <ApplicationDisplayVersion>2.0.0</ApplicationDisplayVersion>
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+
+    <!-- Trimming+AOT deaktivieren - System.Text.Json Serialisierung braucht Reflection-Metadaten -->
+    <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
   </PropertyGroup>
 
   <ItemGroup>

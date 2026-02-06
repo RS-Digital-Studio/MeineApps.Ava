@@ -22,6 +22,7 @@ public class MainActivity : AvaloniaMainActivity<App>
         App.ConfigurePlatformServices = services =>
         {
             services.AddSingleton<INotificationService, AndroidNotificationService>();
+            services.AddSingleton<IAudioService, AndroidAudioService>();
         };
 
         return base.CustomizeAppBuilder(builder)

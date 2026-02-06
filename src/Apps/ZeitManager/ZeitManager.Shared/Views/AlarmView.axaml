@@ -136,8 +136,7 @@
     <Border Grid.Row="0" Grid.RowSpan="3"
             IsVisible="{Binding IsEditMode}"
             Background="#80000000">
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <Border Classes="Card" Margin="16,32"
+        <Border Classes="Card" Margin="16,16"
                 VerticalAlignment="Center" HorizontalAlignment="Stretch"
                 MaxWidth="450">
           <StackPanel Spacing="16">
@@ -232,7 +231,6 @@
 
           </StackPanel>
         </Border>
-      </ScrollViewer>
     </Border>
 
     <!-- Delete Confirmation Overlay -->

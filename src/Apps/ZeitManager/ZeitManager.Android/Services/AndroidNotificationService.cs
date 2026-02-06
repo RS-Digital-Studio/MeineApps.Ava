@@ -1,5 +1,6 @@
 using Android.App;
 using Android.Content;
+using Android.Media;
 using Android.OS;
 using AndroidX.Core.App;
 using ZeitManager.Services;
@@ -9,7 +10,8 @@ namespace ZeitManager.Android.Services;
 public class AndroidNotificationService : INotificationService
 {
     private const string ChannelId = "zeitmanager_timer";
-    private const string AlarmChannelId = "zeitmanager_alarm";
+    // Neuer Channel mit Sound (alter "zeitmanager_alarm" hatte SetSound(null, null))
+    public const string AlarmChannelIdV2 = "zeitmanager_alarm_v2";
 
     public AndroidNotificationService()
     {
@@ -24,17 +26,31 @@ public class AndroidNotificationService : INotificationService
         var manager = (NotificationManager?)context.GetSystemService(Context.NotificationService);
         if (manager == null) return;
 
+        // Alten lautlosen Channel entfernen
+        manager.DeleteNotificationChannel("zeitmanager_alarm");
+
+        // Timer-Channel (leise, Fortschritts-Notification)
         var timerChannel = new NotificationChannel(ChannelId, "Timer", NotificationImportance.Low)
         {
             Description = "Timer notifications"
         };
         manager.CreateNotificationChannel(timerChannel);
 
-        var alarmChannel = new NotificationChannel(AlarmChannelId, "Alarm", NotificationImportance.High)
+        // Alarm-Channel mit System-Alarm-Sound + Vibration
+        var alarmChannel = new NotificationChannel(AlarmChannelIdV2, "Alarm", NotificationImportance.High)
         {
             Description = "Alarm notifications"
         };
-        alarmChannel.SetSound(null, null); // App handles audio via AudioService
+
+        var alarmSound = RingtoneManager.GetDefaultUri(RingtoneType.Alarm);
+        var audioAttributes = new AudioAttributes.Builder()
+            .SetUsage(AudioUsageKind.Alarm)!
+            .SetContentType(AudioContentType.Sonification)!
+            .Build();
+        alarmChannel.SetSound(alarmSound, audioAttributes);
+        alarmChannel.EnableVibration(true);
+        alarmChannel.SetVibrationPattern([0, 500, 200, 500, 200, 500]);
+
         manager.CreateNotificationChannel(alarmChannel);
     }
 
@@ -45,7 +61,7 @@ public class AndroidNotificationService : INotificationService
         if (!NotificationManagerCompat.From(context).AreNotificationsEnabled())
             return Task.CompletedTask;
 
-        var builder = new NotificationCompat.Builder(context, AlarmChannelId)
+        var builder = new NotificationCompat.Builder(context, AlarmChannelIdV2)
             .SetSmallIcon(global::Android.Resource.Drawable.IcDialogInfo)
             .SetContentTitle(title)
             .SetContentText(body)

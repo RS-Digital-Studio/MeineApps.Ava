@@ -162,12 +162,20 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private int _selectedThemeIndex;
 
-    public string[] ThemeNames { get; } = new[] { "Midnight (Standard)", "Aurora", "Daylight", "Forest" };
-
     public bool IsMidnightSelected => SelectedThemeIndex == 0;
     public bool IsAuroraSelected => SelectedThemeIndex == 1;
     public bool IsDaylightSelected => SelectedThemeIndex == 2;
     public bool IsForestSelected => SelectedThemeIndex == 3;
+
+    // Localized theme names and descriptions
+    public string ThemeMidnightName => _localization.GetString("ThemeMidnight");
+    public string ThemeMidnightDescText => _localization.GetString("ThemeMidnightDesc");
+    public string ThemeAuroraName => _localization.GetString("ThemeAurora");
+    public string ThemeAuroraDescText => _localization.GetString("ThemeAuroraDesc");
+    public string ThemeDaylightName => _localization.GetString("ThemeDaylight");
+    public string ThemeDaylightDescText => _localization.GetString("ThemeDaylightDesc");
+    public string ThemeForestName => _localization.GetString("ThemeForest");
+    public string ThemeForestDescText => _localization.GetString("ThemeForestDesc");
 
     partial void OnSelectedThemeIndexChanged(int value)
     {
@@ -178,12 +186,16 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void SelectTheme(string themeIndex)
+    private void SelectTheme(string themeName)
     {
-        if (int.TryParse(themeIndex, out var index))
+        SelectedThemeIndex = themeName switch
         {
-            SelectedThemeIndex = index;
-        }
+            "Midnight" => 0,
+            "Aurora" => 1,
+            "Daylight" => 2,
+            "Forest" => 3,
+            _ => 0
+        };
     }
 
     // === Language ===

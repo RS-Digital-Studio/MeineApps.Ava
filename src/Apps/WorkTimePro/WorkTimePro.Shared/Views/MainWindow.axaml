@@ -6,7 +6,8 @@
         Title="WorkTimePro"
         Icon="avares://WorkTimePro.Shared/Assets/icon.png"
         Width="420" Height="800"
-        MinWidth="360" MinHeight="600">
+        MinWidth="360" MinHeight="600"
+        Background="{DynamicResource BackgroundBrush}">
 
   <Panel>
     <views:MainView />

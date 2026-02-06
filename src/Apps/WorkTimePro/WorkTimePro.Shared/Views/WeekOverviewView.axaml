@@ -159,7 +159,7 @@
                         HorizontalAlignment="Stretch"
                         HorizontalContentAlignment="Stretch"
                         Margin="0,2" Padding="0">
-                  <Border Classes="Card" Padding="12" Margin="0">
+                  <Border Classes="Card" Padding="16" Margin="0" MinHeight="64">
                     <Grid ColumnDefinitions="Auto,*,Auto,60">
 
                       <!-- Status Icon -->

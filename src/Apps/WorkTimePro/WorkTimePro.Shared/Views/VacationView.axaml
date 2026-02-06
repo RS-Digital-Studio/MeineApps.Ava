@@ -5,7 +5,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="WorkTimePro.Views.VacationView"
-             x:DataType="vm:VacationViewModel">
+             x:DataType="vm:VacationViewModel"
+             Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*">
 

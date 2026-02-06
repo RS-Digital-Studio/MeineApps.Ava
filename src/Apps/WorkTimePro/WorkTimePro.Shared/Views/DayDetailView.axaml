@@ -5,7 +5,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="WorkTimePro.Views.DayDetailView"
-             x:DataType="vm:DayDetailViewModel">
+             x:DataType="vm:DayDetailViewModel"
+             Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*">
 
@@ -175,7 +176,7 @@
             <ItemsControl ItemsSource="{Binding TimeEntries}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:TimeEntry">
-                  <Border Classes="Card" Padding="12" Margin="0,2">
+                  <Border Classes="Card" Padding="16" Margin="0,2" MinHeight="56">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                       <mi:MaterialIcon Grid.Column="0"
                                        Kind="{Binding TypeIconKind}"
@@ -240,7 +241,7 @@
             <ItemsControl ItemsSource="{Binding PauseEntries}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:PauseEntry">
-                  <Border Classes="Card" Padding="12" Margin="0,2">
+                  <Border Classes="Card" Padding="16" Margin="0,2" MinHeight="56">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                       <mi:MaterialIcon Grid.Column="0"
                                        Kind="Coffee"

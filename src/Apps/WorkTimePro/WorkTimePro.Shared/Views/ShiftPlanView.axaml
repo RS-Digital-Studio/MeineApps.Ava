@@ -5,7 +5,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="WorkTimePro.Views.ShiftPlanView"
-             x:DataType="vm:ShiftPlanViewModel">
+             x:DataType="vm:ShiftPlanViewModel"
+             Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*">
 

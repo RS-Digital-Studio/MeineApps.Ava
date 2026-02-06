@@ -5,7 +5,8 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
              x:Class="WorkTimePro.Views.YearOverviewView"
-             x:DataType="vm:YearOverviewViewModel">
+             x:DataType="vm:YearOverviewViewModel"
+             Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*">
 

@@ -5,7 +5,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="WorkTimePro.Views.MonthOverviewView"
-             x:DataType="vm:MonthOverviewViewModel">
+             x:DataType="vm:MonthOverviewViewModel"
+             Background="{DynamicResource BackgroundBrush}">
 
   <Grid RowDefinitions="Auto,*">
 

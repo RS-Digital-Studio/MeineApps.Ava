@@ -352,5 +352,14 @@
   <data name="CalendarAutoBreak" xml:space="preserve">
     <value>dos quais auto: {0} min</value>
   </data>
+  <!-- Theme -->
+  <data name="ThemeMidnight" xml:space="preserve"><value>Meia-noite</value></data>
+  <data name="ThemeMidnightDesc" xml:space="preserve"><value>Moderno escuro</value></data>
+  <data name="ThemeAurora" xml:space="preserve"><value>Aurora</value></data>
+  <data name="ThemeAuroraDesc" xml:space="preserve"><value>Colorido escuro</value></data>
+  <data name="ThemeDaylight" xml:space="preserve"><value>Luz do dia</value></data>
+  <data name="ThemeDaylightDesc" xml:space="preserve"><value>Limpo e claro</value></data>
+  <data name="ThemeForest" xml:space="preserve"><value>Floresta</value></data>
+  <data name="ThemeForestDesc" xml:space="preserve"><value>Natural escuro</value></data>
 
 </root>

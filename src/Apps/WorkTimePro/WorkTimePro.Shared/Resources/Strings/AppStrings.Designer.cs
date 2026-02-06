@@ -2087,5 +2087,53 @@ namespace WorkTimePro.Resources.Strings {
                 return ResourceManager.GetString("RemainingDays", resourceCulture);
             }
         }
+
+        internal static string ThemeMidnight {
+            get {
+                return ResourceManager.GetString("ThemeMidnight", resourceCulture);
+            }
+        }
+
+        internal static string ThemeMidnightDesc {
+            get {
+                return ResourceManager.GetString("ThemeMidnightDesc", resourceCulture);
+            }
+        }
+
+        internal static string ThemeAurora {
+            get {
+                return ResourceManager.GetString("ThemeAurora", resourceCulture);
+            }
+        }
+
+        internal static string ThemeAuroraDesc {
+            get {
+                return ResourceManager.GetString("ThemeAuroraDesc", resourceCulture);
+            }
+        }
+
+        internal static string ThemeDaylight {
+            get {
+                return ResourceManager.GetString("ThemeDaylight", resourceCulture);
+            }
+        }
+
+        internal static string ThemeDaylightDesc {
+            get {
+                return ResourceManager.GetString("ThemeDaylightDesc", resourceCulture);
+            }
+        }
+
+        internal static string ThemeForest {
+            get {
+                return ResourceManager.GetString("ThemeForest", resourceCulture);
+            }
+        }
+
+        internal static string ThemeForestDesc {
+            get {
+                return ResourceManager.GetString("ThemeForestDesc", resourceCulture);
+            }
+        }
     }
 }

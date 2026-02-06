@@ -406,15 +406,26 @@
                       Command="{Binding SelectThemeCommand}"
                       CommandParameter="Midnight"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      Padding="0" CornerRadius="10" Background="Transparent" BorderThickness="0">
+                      Height="NaN" Padding="0" CornerRadius="10"
+                      Background="Transparent" BorderThickness="0">
                 <Border CornerRadius="10" Padding="12" Background="#1E293B"
-                        BorderThickness="2" BorderBrush="{DynamicResource PrimaryBrush}">
+                        BorderThickness="2" BorderBrush="#6366F1">
                   <Grid>
                     <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
-                                     Foreground="{DynamicResource PrimaryBrush}"
-                                     HorizontalAlignment="Right" VerticalAlignment="Top" />
-                    <TextBlock Text="Midnight" HorizontalAlignment="Center"
-                               FontWeight="Medium" FontSize="13" Foreground="#E2E8F0" />
+                                     Foreground="#6366F1"
+                                     HorizontalAlignment="Right" VerticalAlignment="Top"
+                                     Margin="0,-2,-2,0" />
+                    <StackPanel Spacing="6">
+                      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                        <Ellipse Width="20" Height="20" Fill="#6366F1" />
+                        <Ellipse Width="20" Height="20" Fill="#0F172A" StrokeThickness="1" Stroke="#334155" />
+                        <Ellipse Width="20" Height="20" Fill="#22D3EE" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding ThemeMidnightName}" HorizontalAlignment="Center"
+                                 FontWeight="Medium" FontSize="13" Foreground="#E2E8F0" />
+                      <TextBlock Text="{Binding ThemeMidnightDescText}" HorizontalAlignment="Center"
+                                 FontSize="11" Foreground="#94A3B8" />
+                    </StackPanel>
                   </Grid>
                 </Border>
               </Button>
@@ -422,11 +433,21 @@
                       Command="{Binding SelectThemeCommand}"
                       CommandParameter="Midnight"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      Padding="0" CornerRadius="10" Background="Transparent" BorderThickness="0">
+                      Height="NaN" Padding="0" CornerRadius="10"
+                      Background="Transparent" BorderThickness="0">
                 <Border CornerRadius="10" Padding="12" Background="#1E293B"
                         BorderThickness="2" BorderBrush="#334155">
-                  <TextBlock Text="Midnight" HorizontalAlignment="Center"
-                             FontWeight="Medium" FontSize="13" Foreground="#E2E8F0" />
+                  <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <Ellipse Width="20" Height="20" Fill="#6366F1" />
+                      <Ellipse Width="20" Height="20" Fill="#0F172A" StrokeThickness="1" Stroke="#334155" />
+                      <Ellipse Width="20" Height="20" Fill="#22D3EE" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding ThemeMidnightName}" HorizontalAlignment="Center"
+                               FontWeight="Medium" FontSize="13" Foreground="#E2E8F0" />
+                    <TextBlock Text="{Binding ThemeMidnightDescText}" HorizontalAlignment="Center"
+                               FontSize="11" Foreground="#94A3B8" />
+                  </StackPanel>
                 </Border>
               </Button>
             </Panel>
@@ -437,15 +458,26 @@
                       Command="{Binding SelectThemeCommand}"
                       CommandParameter="Aurora"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      Padding="0" CornerRadius="10" Background="Transparent" BorderThickness="0">
+                      Height="NaN" Padding="0" CornerRadius="10"
+                      Background="Transparent" BorderThickness="0">
                 <Border CornerRadius="10" Padding="12" Background="#18181B"
                         BorderThickness="2" BorderBrush="#EC4899">
                   <Grid>
                     <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
                                      Foreground="#EC4899"
-                                     HorizontalAlignment="Right" VerticalAlignment="Top" />
-                    <TextBlock Text="Aurora" HorizontalAlignment="Center"
-                               FontWeight="Medium" FontSize="13" Foreground="#E4E4E7" />
+                                     HorizontalAlignment="Right" VerticalAlignment="Top"
+                                     Margin="0,-2,-2,0" />
+                    <StackPanel Spacing="6">
+                      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                        <Ellipse Width="20" Height="20" Fill="#EC4899" />
+                        <Ellipse Width="20" Height="20" Fill="#18181B" StrokeThickness="1" Stroke="#3F3F46" />
+                        <Ellipse Width="20" Height="20" Fill="#06B6D4" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding ThemeAuroraName}" HorizontalAlignment="Center"
+                                 FontWeight="Medium" FontSize="13" Foreground="#E4E4E7" />
+                      <TextBlock Text="{Binding ThemeAuroraDescText}" HorizontalAlignment="Center"
+                                 FontSize="11" Foreground="#A1A1AA" />
+                    </StackPanel>
                   </Grid>
                 </Border>
               </Button>
@@ -453,11 +485,21 @@
                       Command="{Binding SelectThemeCommand}"
                       CommandParameter="Aurora"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      Padding="0" CornerRadius="10" Background="Transparent" BorderThickness="0">
+                      Height="NaN" Padding="0" CornerRadius="10"
+                      Background="Transparent" BorderThickness="0">
                 <Border CornerRadius="10" Padding="12" Background="#18181B"
                         BorderThickness="2" BorderBrush="#3F3F46">
-                  <TextBlock Text="Aurora" HorizontalAlignment="Center"
-                             FontWeight="Medium" FontSize="13" Foreground="#E4E4E7" />
+                  <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <Ellipse Width="20" Height="20" Fill="#EC4899" />
+                      <Ellipse Width="20" Height="20" Fill="#18181B" StrokeThickness="1" Stroke="#3F3F46" />
+                      <Ellipse Width="20" Height="20" Fill="#06B6D4" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding ThemeAuroraName}" HorizontalAlignment="Center"
+                               FontWeight="Medium" FontSize="13" Foreground="#E4E4E7" />
+                    <TextBlock Text="{Binding ThemeAuroraDescText}" HorizontalAlignment="Center"
+                               FontSize="11" Foreground="#A1A1AA" />
+                  </StackPanel>
                 </Border>
               </Button>
             </Panel>
@@ -468,15 +510,26 @@
                       Command="{Binding SelectThemeCommand}"
                       CommandParameter="Daylight"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      Padding="0" CornerRadius="10" Background="Transparent" BorderThickness="0">
+                      Height="NaN" Padding="0" CornerRadius="10"
+                      Background="Transparent" BorderThickness="0">
                 <Border CornerRadius="10" Padding="12" Background="#E2E8F0"
                         BorderThickness="2" BorderBrush="#2563EB">
                   <Grid>
                     <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
                                      Foreground="#2563EB"
-                                     HorizontalAlignment="Right" VerticalAlignment="Top" />
-                    <TextBlock Text="Daylight" HorizontalAlignment="Center"
-                               FontWeight="Medium" FontSize="13" Foreground="#1E293B" />
+                                     HorizontalAlignment="Right" VerticalAlignment="Top"
+                                     Margin="0,-2,-2,0" />
+                    <StackPanel Spacing="6">
+                      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                        <Ellipse Width="20" Height="20" Fill="#2563EB" />
+                        <Ellipse Width="20" Height="20" Fill="#F8FAFC" StrokeThickness="1" Stroke="#CBD5E1" />
+                        <Ellipse Width="20" Height="20" Fill="#0EA5E9" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding ThemeDaylightName}" HorizontalAlignment="Center"
+                                 FontWeight="Medium" FontSize="13" Foreground="#1E293B" />
+                      <TextBlock Text="{Binding ThemeDaylightDescText}" HorizontalAlignment="Center"
+                                 FontSize="11" Foreground="#64748B" />
+                    </StackPanel>
                   </Grid>
                 </Border>
               </Button>
@@ -484,11 +537,21 @@
                       Command="{Binding SelectThemeCommand}"
                       CommandParameter="Daylight"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      Padding="0" CornerRadius="10" Background="Transparent" BorderThickness="0">
+                      Height="NaN" Padding="0" CornerRadius="10"
+                      Background="Transparent" BorderThickness="0">
                 <Border CornerRadius="10" Padding="12" Background="#E2E8F0"
                         BorderThickness="2" BorderBrush="#CBD5E1">
-                  <TextBlock Text="Daylight" HorizontalAlignment="Center"
-                             FontWeight="Medium" FontSize="13" Foreground="#1E293B" />
+                  <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <Ellipse Width="20" Height="20" Fill="#2563EB" />
+                      <Ellipse Width="20" Height="20" Fill="#F8FAFC" StrokeThickness="1" Stroke="#CBD5E1" />
+                      <Ellipse Width="20" Height="20" Fill="#0EA5E9" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding ThemeDaylightName}" HorizontalAlignment="Center"
+                               FontWeight="Medium" FontSize="13" Foreground="#1E293B" />
+                    <TextBlock Text="{Binding ThemeDaylightDescText}" HorizontalAlignment="Center"
+                               FontSize="11" Foreground="#64748B" />
+                  </StackPanel>
                 </Border>
               </Button>
             </Panel>
@@ -499,15 +562,26 @@
                       Command="{Binding SelectThemeCommand}"
                       CommandParameter="Forest"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      Padding="0" CornerRadius="10" Background="Transparent" BorderThickness="0">
+                      Height="NaN" Padding="0" CornerRadius="10"
+                      Background="Transparent" BorderThickness="0">
                 <Border CornerRadius="10" Padding="12" Background="#022C22"
                         BorderThickness="2" BorderBrush="#10B981">
                   <Grid>
                     <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
                                      Foreground="#10B981"
-                                     HorizontalAlignment="Right" VerticalAlignment="Top" />
-                    <TextBlock Text="Forest" HorizontalAlignment="Center"
-                               FontWeight="Medium" FontSize="13" Foreground="#D1FAE5" />
+                                     HorizontalAlignment="Right" VerticalAlignment="Top"
+                                     Margin="0,-2,-2,0" />
+                    <StackPanel Spacing="6">
+                      <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                        <Ellipse Width="20" Height="20" Fill="#10B981" />
+                        <Ellipse Width="20" Height="20" Fill="#022C22" StrokeThickness="1" Stroke="#065F46" />
+                        <Ellipse Width="20" Height="20" Fill="#34D399" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding ThemeForestName}" HorizontalAlignment="Center"
+                                 FontWeight="Medium" FontSize="13" Foreground="#D1FAE5" />
+                      <TextBlock Text="{Binding ThemeForestDescText}" HorizontalAlignment="Center"
+                                 FontSize="11" Foreground="#6EE7B7" />
+                    </StackPanel>
                   </Grid>
                 </Border>
               </Button>
@@ -515,11 +589,21 @@
                       Command="{Binding SelectThemeCommand}"
                       CommandParameter="Forest"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                      Padding="0" CornerRadius="10" Background="Transparent" BorderThickness="0">
+                      Height="NaN" Padding="0" CornerRadius="10"
+                      Background="Transparent" BorderThickness="0">
                 <Border CornerRadius="10" Padding="12" Background="#022C22"
                         BorderThickness="2" BorderBrush="#065F46">
-                  <TextBlock Text="Forest" HorizontalAlignment="Center"
-                             FontWeight="Medium" FontSize="13" Foreground="#D1FAE5" />
+                  <StackPanel Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <Ellipse Width="20" Height="20" Fill="#10B981" />
+                      <Ellipse Width="20" Height="20" Fill="#022C22" StrokeThickness="1" Stroke="#065F46" />
+                      <Ellipse Width="20" Height="20" Fill="#34D399" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding ThemeForestName}" HorizontalAlignment="Center"
+                               FontWeight="Medium" FontSize="13" Foreground="#D1FAE5" />
+                    <TextBlock Text="{Binding ThemeForestDescText}" HorizontalAlignment="Center"
+                               FontSize="11" Foreground="#6EE7B7" />
+                  </StackPanel>
                 </Border>
               </Button>
             </Panel>

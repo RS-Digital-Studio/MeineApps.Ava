@@ -7,7 +7,7 @@
       android:allowBackup="true"
       android:icon="@mipmap/appicon"
       android:roundIcon="@mipmap/appicon_round"
-      android:label="FitnessRechner"
+      android:label="FinanzRechner"
       android:supportsRtl="true"
       android:theme="@style/MyTheme.NoActionBar">
   </application>

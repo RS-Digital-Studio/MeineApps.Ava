@@ -98,7 +98,16 @@ public class AndroidNotificationService : INotificationService
 
         if (pendingIntent != null)
         {
-            alarmManager.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, triggerMs, pendingIntent);
+            // SetAlarmClock statt SetExactAndAllowWhileIdle:
+            // - Wird von Android als "echter Wecker" behandelt
+            // - Ueberlebt Doze Mode und App-Kill zuverlaessig
+            // - Zeigt Wecker-Icon in der Statusleiste
+            // ShowIntent oeffnet die App wenn Nutzer auf das Statusbar-Icon tippt
+            var showIntent = PendingIntent.GetActivity(
+                context, 0, new Intent(context, typeof(MainActivity)),
+                PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+            var alarmClock = new AlarmManager.AlarmClockInfo(triggerMs, showIntent);
+            alarmManager.SetAlarmClock(alarmClock, pendingIntent);
         }
 
         return Task.CompletedTask;

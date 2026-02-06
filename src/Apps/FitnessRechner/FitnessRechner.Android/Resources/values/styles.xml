@@ -2,8 +2,10 @@
 <resources>
   <style name="MyTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
     <item name="android:windowBackground">#0F172A</item>
-    <item name="android:statusBarColor">#0F172A</item>
-    <item name="android:navigationBarColor">#1E293B</item>
+    <!-- Edge-to-Edge: Transparente System-Bars (Android 15 erzwingt dies) -->
+    <item name="android:statusBarColor">@android:color/transparent</item>
+    <item name="android:navigationBarColor">@android:color/transparent</item>
+    <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     <item name="android:windowLightStatusBar">false</item>
   </style>
 </resources>

@@ -783,6 +783,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_gameStateService.TryUpgradeWorkshop(workshop.Type))
         {
             await _audioService.PlaySoundAsync(GameSound.Upgrade);
+            // Explizit aktualisieren (Event-Handler macht das auch, aber sicherheitshalber)
+            RefreshWorkshops();
         }
     }
 

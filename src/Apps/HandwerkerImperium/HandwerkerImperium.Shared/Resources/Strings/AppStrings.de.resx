@@ -1044,6 +1044,12 @@
   <data name="NoFreeSlotDesc" xml:space="preserve">
     <value>Alle Werkst&#228;tten sind voll. R&#252;ste Werkst&#228;tten auf f&#252;r mehr Pl&#228;tze!</value>
   </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="WatchAdToRefresh" xml:space="preserve">
+    <value>Sieh dir ein Video an um den Arbeitermarkt sofort zu aktualisieren!</value>
+  </data>
 
   <!-- Worker Profile -->
   <data name="NoSpecialization" xml:space="preserve">

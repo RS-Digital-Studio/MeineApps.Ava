@@ -907,5 +907,9 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string ToolMaxLevel => ResourceManager.GetString("ToolMaxLevel", resourceCulture) ?? "";
 
         public static string NextRotation => ResourceManager.GetString("NextRotation", resourceCulture) ?? "";
+
+        public static string Info => ResourceManager.GetString("Info", resourceCulture) ?? "";
+
+        public static string WatchAdToRefresh => ResourceManager.GetString("WatchAdToRefresh", resourceCulture) ?? "";
     }
 }

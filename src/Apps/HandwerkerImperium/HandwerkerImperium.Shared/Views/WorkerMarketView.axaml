@@ -65,22 +65,39 @@
                          Foreground="{DynamicResource PrimaryBrush}" />
             </StackPanel>
 
-            <!-- Refresh Button -->
+            <!-- Refresh via Video-Ad Button -->
             <Button Grid.Column="1"
                     Classes="Secondary"
-                    Command="{Binding RefreshMarketCommand}"
+                    Command="{Binding RefreshWithAdCommand}"
                     VerticalAlignment="Center"
                     Padding="12,8">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="Refresh" Width="18" Height="18" />
+                <mi:MaterialIcon Kind="Video" Width="18" Height="18" />
                 <TextBlock Text="{Binding RefreshButtonText}" FontSize="13" />
               </StackPanel>
             </Button>
           </Grid>
         </Border>
 
-        <!-- WORKER CARDS -->
-        <ItemsControl ItemsSource="{Binding AvailableWorkers}">
+        <!-- KEINE FREIEN PLAETZE INFO -->
+        <Border Classes="CardElevated" Padding="16"
+                IsVisible="{Binding !HasAvailableSlots}">
+          <StackPanel HorizontalAlignment="Center" Spacing="8">
+            <mi:MaterialIcon Kind="AccountOff" Width="48" Height="48"
+                             Foreground="{DynamicResource WarningBrush}"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding NoSlotsMessage}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       TextAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- WORKER CARDS (nur sichtbar wenn Plätze frei) -->
+        <ItemsControl ItemsSource="{Binding AvailableWorkers}"
+                      IsVisible="{Binding HasAvailableSlots}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:Worker">
               <Border Classes="Card" Margin="0,0,0,12" Padding="16">
@@ -167,7 +184,7 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <!-- EMPTY STATE -->
+        <!-- EMPTY STATE (Pool leer aber Plätze frei) -->
         <StackPanel IsVisible="{Binding !AvailableWorkers.Count}"
                     HorizontalAlignment="Center"
                     Spacing="8"

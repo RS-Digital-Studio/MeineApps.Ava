@@ -9,12 +9,51 @@
              x:DataType="vm:MainViewModel">
 
   <Grid RowDefinitions="*,Auto,Auto">
-    <Grid.Background>
-      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="{DynamicResource BackgroundColor}" Offset="0" />
-        <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
-      </LinearGradientBrush>
-    </Grid.Background>
+
+    <!-- ============================================ -->
+    <!-- Hintergrund: Mehrschichtiger Gradient         -->
+    <!-- Basis + Primary-Schein oben + warmer Schein   -->
+    <!-- unten → tiefes, lebendiges Farbspiel          -->
+    <!-- ============================================ -->
+    <Panel Grid.RowSpan="3" IsHitTestVisible="False">
+      <!-- Basis-Gradient (vertikal, dunkel → Surface → dunkel) -->
+      <Border>
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Color="{DynamicResource BackgroundColor}" Offset="0" />
+            <GradientStop Color="{DynamicResource SurfaceColor}" Offset="0.45" />
+            <GradientStop Color="{DynamicResource BackgroundColor}" Offset="1" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
+      <!-- Oberer Akzent-Schein (Primary/Indigo, links oben) -->
+      <Border Opacity="0.12">
+        <Border.Background>
+          <RadialGradientBrush Center="0.15,0.05" RadiusX="0.7" RadiusY="0.35">
+            <GradientStop Color="#6366F1" Offset="0" />
+            <GradientStop Color="Transparent" Offset="1" />
+          </RadialGradientBrush>
+        </Border.Background>
+      </Border>
+      <!-- Unterer warmer Schein (Amber/Gold, rechts unten → Handwerker-Atmosphaere) -->
+      <Border Opacity="0.07">
+        <Border.Background>
+          <RadialGradientBrush Center="0.85,0.9" RadiusX="0.6" RadiusY="0.35">
+            <GradientStop Color="#F59E0B" Offset="0" />
+            <GradientStop Color="Transparent" Offset="1" />
+          </RadialGradientBrush>
+        </Border.Background>
+      </Border>
+      <!-- Mittig-rechts: Subtiler Sekundaer-Schein -->
+      <Border Opacity="0.05">
+        <Border.Background>
+          <RadialGradientBrush Center="0.9,0.4" RadiusX="0.4" RadiusY="0.3">
+            <GradientStop Color="#8B5CF6" Offset="0" />
+            <GradientStop Color="Transparent" Offset="1" />
+          </RadialGradientBrush>
+        </Border.Background>
+      </Border>
+    </Panel>
 
     <!-- ============================================ -->
     <!-- Row 0: Content Area (switches based on tab)  -->

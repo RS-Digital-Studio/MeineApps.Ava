@@ -669,6 +669,16 @@ F:\Meine_Apps_Ava\
   - 3 neue Models (QuickJob, DailyChallenge, Tool), 2 neue Services (QuickJobService, DailyChallengeService)
   - 28 neue Lokalisierungs-Keys in 6 Sprachen
   - Build: Shared + Desktop + Android 0 Fehler, 0 Warnungen
+- **HandwerkerImperium Post-Release Bugfixes (07.02.2026):**
+  - DailyChallengeService: Englische Fallback-Strings entfernt (direkte GetString-Aufrufe)
+  - MainView.axaml: 4-Layer Hintergrund (Base-Gradient + Primary/Amber/Secondary RadialGradientBrush Overlays)
+  - MainViewModel: Explizites RefreshWorkshops() nach UpgradeWorkshop, Research-Timer in OnGameTick
+  - WorkerMarketViewModel: Slot-Filter (HasAvailableSlots), Video-Ad-Refresh (IRewardedAdService), EUR-Bug Fix
+  - WorkerMarketView.axaml: "Keine freien Plaetze" Info-Banner, Video-Icon beim Refresh-Button
+  - AchievementsView: Bottom-Margin fuer vollstaendiges Scrollen
+  - DashboardView: UnlockDisplay fuer Architect/GU Workshop-Karten (zeigt Prestige-Anforderung)
+  - 2 neue resx-Keys in 6 Sprachen (Info, WatchAdToRefresh)
+  - Build: Shared + Desktop + Android 0 Fehler
 - **FinanzRechner Recurring Transactions Fixes (07.02.2026):**
   - RecurringTransactionsView.axaml: Edit (Pencil) + Delete (Trash) Buttons mit Ancestor-Bindings
   - RecurringTransactionsView.axaml: Pattern/Category Converter-Bindings statt rohe Enum-Namen

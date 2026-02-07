@@ -1036,6 +1036,12 @@
   <data name="NoFreeSlotDesc" xml:space="preserve">
     <value>Tutte le officine sono piene. Potenzia le officine per pi&#249; posti lavoratore!</value>
   </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="WatchAdToRefresh" xml:space="preserve">
+    <value>Guarda un video per aggiornare il mercato dei lavoratori!</value>
+  </data>
 
   <!-- Worker Profile -->
   <data name="NoSpecialization" xml:space="preserve">

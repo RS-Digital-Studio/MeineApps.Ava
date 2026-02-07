@@ -1036,6 +1036,12 @@
   <data name="NoFreeSlotDesc" xml:space="preserve">
     <value>&#161;Todos los talleres est&#225;n llenos. Mejora los talleres para m&#225;s plazas!</value>
   </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="WatchAdToRefresh" xml:space="preserve">
+    <value>&#161;Mira un v&#237;deo para actualizar el mercado de trabajadores!</value>
+  </data>
 
   <!-- Worker Profile -->
   <data name="NoSpecialization" xml:space="preserve">

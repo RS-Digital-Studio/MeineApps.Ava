@@ -241,6 +241,9 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsRecurringPageActive));
     }
 
+    [RelayCommand]
+    private void ShowBudgets() => CurrentSubPage = "BudgetsPage";
+
     private void OnExpenseTrackerNavigation(string route)
     {
         if (route is "BudgetsPage" or "RecurringTransactionsPage")
@@ -270,6 +273,7 @@ public partial class MainViewModel : ObservableObject
     public string CalcLoanText => _localizationService.GetString("CalcLoan") ?? "Loan";
     public string CalcAmortizationText => _localizationService.GetString("CalcAmortization") ?? "Amortization";
     public string CalcYieldText => _localizationService.GetString("CalcYield") ?? "Yield";
+    public string BudgetsTitleText => _localizationService.GetString("BudgetsTitle") ?? "Budgets";
     public string IncomeLabelText => _localizationService.GetString("IncomeTotalLabel") ?? "Income:";
     public string ExpensesLabelText => _localizationService.GetString("ExpensesTotalLabel") ?? "Expenses:";
     public string BalanceLabelText => _localizationService.GetString("BalanceTotalLabel") ?? "Balance:";
@@ -293,6 +297,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CalcLoanText));
         OnPropertyChanged(nameof(CalcAmortizationText));
         OnPropertyChanged(nameof(CalcYieldText));
+        OnPropertyChanged(nameof(BudgetsTitleText));
         OnPropertyChanged(nameof(IncomeLabelText));
         OnPropertyChanged(nameof(ExpensesLabelText));
         OnPropertyChanged(nameof(BalanceLabelText));

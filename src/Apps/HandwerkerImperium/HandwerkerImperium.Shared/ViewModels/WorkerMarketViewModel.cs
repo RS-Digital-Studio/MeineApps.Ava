@@ -4,6 +4,7 @@ using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
+using HandwerkerImperium.Services;
 using MeineApps.Core.Ava.Localization;
 
 namespace HandwerkerImperium.ViewModels;
@@ -18,6 +19,7 @@ public partial class WorkerMarketViewModel : ObservableObject
     private readonly IWorkerService _workerService;
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
+    private readonly IRewardedAdService _rewardedAdService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -44,7 +46,7 @@ public partial class WorkerMarketViewModel : ObservableObject
     private Worker? _selectedWorker;
 
     [ObservableProperty]
-    private string _currentBalance = "0 \u20AC";
+    private string _currentBalance = "0 €";
 
     [ObservableProperty]
     private string _title = string.Empty;
@@ -61,6 +63,12 @@ public partial class WorkerMarketViewModel : ObservableObject
     [ObservableProperty]
     private bool _canHire;
 
+    [ObservableProperty]
+    private bool _hasAvailableSlots;
+
+    [ObservableProperty]
+    private string _noSlotsMessage = string.Empty;
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -68,11 +76,13 @@ public partial class WorkerMarketViewModel : ObservableObject
     public WorkerMarketViewModel(
         IWorkerService workerService,
         IGameStateService gameStateService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IRewardedAdService rewardedAdService)
     {
         _workerService = workerService;
         _gameStateService = gameStateService;
         _localizationService = localizationService;
+        _rewardedAdService = rewardedAdService;
 
         UpdateLocalizedTexts();
     }
@@ -83,12 +93,31 @@ public partial class WorkerMarketViewModel : ObservableObject
 
     /// <summary>
     /// Loads the current worker market pool and updates all display properties.
+    /// Zeigt nur Arbeiter an wenn es Workshops mit freien Plaetzen gibt.
     /// </summary>
     public void LoadMarket()
     {
         var market = _workerService.GetWorkerMarket();
-        AvailableWorkers = market.AvailableWorkers.ToList();
         CurrentBalance = MoneyFormatter.Format(_gameStateService.State.Money, 2);
+
+        // Pruefen ob Workshops mit freien Plaetzen existieren
+        var workshopsWithSlots = _gameStateService.State.Workshops
+            .Where(w => _gameStateService.State.IsWorkshopUnlocked(w.Type) &&
+                        w.Workers.Count < w.MaxWorkers)
+            .ToList();
+
+        HasAvailableSlots = workshopsWithSlots.Count > 0;
+
+        if (HasAvailableSlots)
+        {
+            AvailableWorkers = market.AvailableWorkers.ToList();
+        }
+        else
+        {
+            AvailableWorkers = [];
+            NoSlotsMessage = _localizationService.GetString("NoFreeSlotDesc");
+        }
+
         UpdateTimer();
         UpdateCanHire();
     }
@@ -127,13 +156,25 @@ public partial class WorkerMarketViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     [RelayCommand]
-    private void RefreshMarket()
+    private async Task RefreshWithAdAsync()
     {
-        var market = _workerService.RefreshMarket();
-        AvailableWorkers = market.AvailableWorkers.ToList();
-        UpdateTimer();
-        SelectedWorker = null;
-        UpdateCanHire();
+        // Video-Werbung anzeigen (simuliert auf Desktop)
+        var adWatched = await _rewardedAdService.ShowAdAsync();
+        if (adWatched)
+        {
+            var market = _workerService.RefreshMarket();
+            AvailableWorkers = market.AvailableWorkers.ToList();
+            UpdateTimer();
+            SelectedWorker = null;
+            UpdateCanHire();
+        }
+        else
+        {
+            AlertRequested?.Invoke(
+                _localizationService.GetString("Info"),
+                _localizationService.GetString("WatchAdToRefresh"),
+                "OK");
+        }
     }
 
     [RelayCommand]

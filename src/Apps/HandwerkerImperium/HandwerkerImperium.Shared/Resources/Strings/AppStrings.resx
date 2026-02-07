@@ -1044,6 +1044,12 @@
   <data name="NoFreeSlotDesc" xml:space="preserve">
     <value>All workshops are full. Upgrade workshops for more worker slots!</value>
   </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="WatchAdToRefresh" xml:space="preserve">
+    <value>Watch a video ad to refresh the worker market immediately!</value>
+  </data>
 
   <!-- Worker Profile -->
   <data name="NoSpecialization" xml:space="preserve">

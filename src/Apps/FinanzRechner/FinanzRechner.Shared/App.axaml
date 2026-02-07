@@ -4,6 +4,14 @@
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              x:Class="FinanzRechner.App">
 
+  <Application.Resources>
+    <!-- FinanzRechner-spezifische Farben -->
+    <Color x:Key="IncomeColor">#22C55E</Color>
+    <Color x:Key="ExpenseColor">#EF4444</Color>
+    <SolidColorBrush x:Key="IncomeBrush" Color="{StaticResource IncomeColor}" />
+    <SolidColorBrush x:Key="ExpenseBrush" Color="{StaticResource ExpenseColor}" />
+  </Application.Resources>
+
   <Application.Styles>
     <!-- Avalonia Fluent Theme as base -->
     <FluentTheme />

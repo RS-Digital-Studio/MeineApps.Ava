@@ -308,6 +308,36 @@ dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
 ### Lokalisierung
 - 28 neue Keys in 6 Sprachen (QuickJobs, DailyChallenges, Tools, etc.)
 
+## Bugfixes (07.02.2026 - Post-Release)
+
+### Lokalisierung
+- **DailyChallengeService**: Englische Fallback-Strings entfernt (`?? "English"` → direkte GetString-Aufrufe)
+- **MainViewModel**: LanguageChanged-Handler aktualisiert QuickJobs, Challenges, Workshops und alle Child-VMs
+- **Clean Build**: Satellite-Assembly-Regenerierung fuer korrekte Sprachaufloesung
+
+### UI/Design
+- **MainView.axaml**: Mehrschichtiger Hintergrund (4 Layer: vertikaler Base-Gradient + Primary-Schein oben + Amber/Gold-Schein unten + Secondary-Akzent rechts) statt langweiligem 2-Punkt-Gradient
+- **AchievementsView.axaml**: Bottom-Margin (0,0,0,60) auf ItemsControl → kann bis zum Ende scrollen
+- **DashboardView.axaml**: UnlockDisplay statt "Lvl X" fuer Workshop-Karten → zeigt "Prestige X" fuer Architect/GU
+
+### Workshop Progress
+- **MainViewModel**: Explizites RefreshWorkshops() nach UpgradeWorkshop (zusaetzlich zum Event-Handler) → Progress-Bar aktualisiert zuverlässig
+- **WorkshopDisplayModel**: RequiredPrestige + UnlockDisplay computed Property
+
+### Forschungs-Timer
+- **MainViewModel.OnGameTick**: ResearchViewModel.UpdateTimer() wird bei aktivem Research aufgerufen → Timer laeuft in Echtzeit statt nur bei Seitenwechsel
+
+### Arbeitermarkt
+- **WorkerMarketViewModel**: Slot-Filter → zeigt nur Arbeiter wenn Workshops mit freien Plaetzen existieren
+- **WorkerMarketViewModel**: Video-Ad-Refresh (IRewardedAdService.ShowAdAsync()) statt freiem Refresh
+- **WorkerMarketViewModel**: HasAvailableSlots + NoSlotsMessage Properties
+- **WorkerMarketView.axaml**: "Keine freien Plaetze" Info-Banner wenn alle Workshops voll
+- **WorkerMarketView.axaml**: Video-Icon statt Refresh-Icon beim Markt-Aktualisieren Button
+- **EUR-Bug**: `\u20AC` → echtes `€` Zeichen in CurrentBalance Default
+
+### Lokalisierung (neu)
+- 2 neue resx-Keys in 6 Sprachen: Info, WatchAdToRefresh
+
 ## Version
 - v2.0.2 (vc7) - Release mit Store Assets
 - v2.0.1 (vc6) - Bugfixes, Deep Reviews

@@ -188,22 +188,24 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
 
     private void PopulateDisplayFields(DailyChallenge challenge)
     {
+        // Lokalisierte Beschreibung ohne englische Fallback-Strings
+        // GetString gibt den Key zurueck wenn kein Eintrag gefunden wird
         challenge.DisplayDescription = challenge.Type switch
         {
             DailyChallengeType.CompleteOrders =>
-                string.Format(_localizationService.GetString("ChallengeCompleteOrders") ?? "Complete {0} orders", challenge.TargetValue),
+                string.Format(_localizationService.GetString("ChallengeCompleteOrders"), challenge.TargetValue),
             DailyChallengeType.EarnMoney =>
-                string.Format(_localizationService.GetString("ChallengeEarnMoney") ?? "Earn {0} €", challenge.TargetValue),
+                string.Format(_localizationService.GetString("ChallengeEarnMoney"), challenge.TargetValue),
             DailyChallengeType.UpgradeWorkshop =>
-                _localizationService.GetString("ChallengeUpgradeWorkshop") ?? "Upgrade a workshop",
+                _localizationService.GetString("ChallengeUpgradeWorkshop"),
             DailyChallengeType.HireWorker =>
-                _localizationService.GetString("ChallengeHireWorker") ?? "Hire a worker",
+                _localizationService.GetString("ChallengeHireWorker"),
             DailyChallengeType.CompleteQuickJob =>
-                string.Format(_localizationService.GetString("ChallengeCompleteQuickJob") ?? "Complete {0} quick job", challenge.TargetValue),
+                string.Format(_localizationService.GetString("ChallengeCompleteQuickJob"), challenge.TargetValue),
             DailyChallengeType.PlayMiniGames =>
-                string.Format(_localizationService.GetString("ChallengePlayMiniGames") ?? "Play {0} mini-games", challenge.TargetValue),
+                string.Format(_localizationService.GetString("ChallengePlayMiniGames"), challenge.TargetValue),
             DailyChallengeType.AchieveMinigameScore =>
-                string.Format(_localizationService.GetString("ChallengeAchieveScore") ?? "Achieve {0}% in a mini-game", challenge.TargetValue),
+                string.Format(_localizationService.GetString("ChallengeAchieveScore"), challenge.TargetValue),
             _ => ""
         };
 

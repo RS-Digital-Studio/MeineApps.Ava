@@ -113,6 +113,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         // Event handler
         _timeTracking.StatusChanged += OnStatusChanged;
+        _localization.LanguageChanged += OnLanguageChanged;
 
         // Timer for live updates (1 second) - only started when tracking is active
         _updateTimer = new System.Timers.Timer(1000);
@@ -445,6 +446,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     // === Helper methods ===
 
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            UpdateStatusDisplay();
+            OnPropertyChanged(nameof(PauseButtonText));
+            OnPropertyChanged(nameof(ShowDayDetailsText));
+            TodayDateDisplay = DateTime.Today.ToString("dddd, dd. MMMM");
+        });
+    }
+
     private void OnStatusChanged(object? sender, TrackingStatus status)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -544,6 +556,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _updateTimer?.Stop();
         _updateTimer?.Dispose();
         _timeTracking.StatusChanged -= OnStatusChanged;
+        _localization.LanguageChanged -= OnLanguageChanged;
 
         GC.SuppressFinalize(this);
     }

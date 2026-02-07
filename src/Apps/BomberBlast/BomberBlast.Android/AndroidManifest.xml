@@ -3,6 +3,7 @@
   <application
     android:allowBackup="true"
     android:icon="@mipmap/appicon"
+    android:roundIcon="@mipmap/appicon_round"
     android:supportsRtl="true"
     android:label="BomberBlast">
     <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"

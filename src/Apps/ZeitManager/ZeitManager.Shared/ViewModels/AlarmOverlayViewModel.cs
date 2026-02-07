@@ -6,8 +6,9 @@ using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class AlarmOverlayViewModel : ObservableObject
+public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly ITimerService _timerService;
     private readonly IAlarmSchedulerService _alarmScheduler;
     private readonly IAudioService _audioService;
@@ -131,5 +132,16 @@ public partial class AlarmOverlayViewModel : ObservableObject
         _clockTimer?.Stop();
         _clockTimer?.Dispose();
         _clockTimer = null;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        StopClock();
+        _audioService.Stop();
+
+        _disposed = true;
+        GC.SuppressFinalize(this);
     }
 }

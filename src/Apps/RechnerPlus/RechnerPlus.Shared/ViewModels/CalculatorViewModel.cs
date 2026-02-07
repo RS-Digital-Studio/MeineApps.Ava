@@ -7,8 +7,9 @@ using MeineApps.Core.Ava.Localization;
 
 namespace RechnerPlus.ViewModels;
 
-public partial class CalculatorViewModel : ObservableObject
+public partial class CalculatorViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly CalculatorEngine _engine;
     private readonly ExpressionParser _parser;
     private readonly ILocalizationService _localization;
@@ -425,6 +426,17 @@ public partial class CalculatorViewModel : ObservableObject
         if (double.IsNaN(value) || double.IsInfinity(value))
             return _localization.GetString("Error");
         return value.ToString("G15", CultureInfo.InvariantCulture);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        _localization.LanguageChanged -= OnLanguageChanged;
+        _historyService.HistoryChanged -= OnHistoryChanged;
+
+        _disposed = true;
+        GC.SuppressFinalize(this);
     }
 }
 

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <!-- AD_ID explizit entfernen - App ist werbefrei, keine Werbe-ID noetig -->
@@ -13,7 +14,9 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
-    <application>
+    <application
+        android:icon="@mipmap/appicon"
+        android:roundIcon="@mipmap/appicon_round">
         <service android:name=".TimerForegroundService"
                  android:foregroundServiceType="mediaPlayback"
                  android:exported="false" />

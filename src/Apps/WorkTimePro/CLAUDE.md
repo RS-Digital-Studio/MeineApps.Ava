@@ -191,3 +191,7 @@ dotnet build src/Apps/WorkTimePro/WorkTimePro.Shared/WorkTimePro.Shared.csproj
 dotnet build src/Apps/WorkTimePro/WorkTimePro.Desktop/WorkTimePro.Desktop.csproj
 dotnet build src/Apps/WorkTimePro/WorkTimePro.Android/WorkTimePro.Android.csproj
 ```
+
+## AppChecker Fixes (07.02.2026)
+- **MainViewModel**: `_localization.LanguageChanged += OnLanguageChanged` abonniert (StatusDisplay, PauseButtonText, ShowDayDetailsText, TodayDateDisplay aktualisieren)
+- **MainViewModel.Dispose()**: `_localization.LanguageChanged -= OnLanguageChanged` Unsubscribe ergaenzt

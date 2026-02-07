@@ -52,15 +52,13 @@ public static class VersionedDataService
             var legacyData = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
             if (legacyData != null)
             {
-                System.Diagnostics.Debug.WriteLine($"VersionedDataService: Migrated legacy data from {filePath}");
                 return new VersionedData<List<T>>(legacyData, currentVersion);
             }
 
             return new VersionedData<List<T>>([], currentVersion);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            System.Diagnostics.Debug.WriteLine($"VersionedDataService: Error loading {filePath} - {ex.Message}");
             return new VersionedData<List<T>>([], currentVersion);
         }
     }

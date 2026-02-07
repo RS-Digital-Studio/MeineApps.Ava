@@ -158,10 +158,8 @@ public class TrackingService : ITrackingService
             var json = await File.ReadAllTextAsync(_filePath);
             _entries = JsonSerializer.Deserialize<List<TrackingEntry>>(json) ?? [];
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            System.Diagnostics.Debug.WriteLine($"TrackingService: Error loading - {ex.Message}");
-
             // Try to restore from backup
             var backupPath = _filePath + ".backup";
             if (File.Exists(backupPath))
@@ -170,7 +168,6 @@ public class TrackingService : ITrackingService
                 {
                     var backupJson = await File.ReadAllTextAsync(backupPath);
                     _entries = JsonSerializer.Deserialize<List<TrackingEntry>>(backupJson) ?? [];
-                    System.Diagnostics.Debug.WriteLine("TrackingService: Backup successfully restored");
                 }
                 catch
                 {
@@ -207,10 +204,8 @@ public class TrackingService : ITrackingService
             // 3. Atomic move: temp -> final
             File.Move(tempFilePath, _filePath, overwrite: true);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"TrackingService: CRITICAL - Save failed - {ex.Message}");
-
             // Cleanup on error
             if (File.Exists(tempFilePath))
             {

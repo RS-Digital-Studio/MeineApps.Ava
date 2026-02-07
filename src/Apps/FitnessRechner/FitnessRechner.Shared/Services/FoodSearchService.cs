@@ -301,10 +301,8 @@ public class FoodSearchService : IFoodSearchService
             var json = await File.ReadAllTextAsync(_filePath);
             _foodLog = JsonSerializer.Deserialize<List<FoodLogEntry>>(json) ?? [];
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            System.Diagnostics.Debug.WriteLine($"FoodSearchService: Error loading - {ex.Message}");
-
             // Try to restore from backup
             var backupPath = _filePath + ".backup";
             if (File.Exists(backupPath))
@@ -313,7 +311,6 @@ public class FoodSearchService : IFoodSearchService
                 {
                     var backupJson = await File.ReadAllTextAsync(backupPath);
                     _foodLog = JsonSerializer.Deserialize<List<FoodLogEntry>>(backupJson) ?? [];
-                    System.Diagnostics.Debug.WriteLine("FoodSearchService: Backup successfully restored");
                 }
                 catch
                 {
@@ -363,9 +360,8 @@ public class FoodSearchService : IFoodSearchService
             var json = JsonSerializer.Serialize(_foodLog, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(_filePath, json);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"FoodSearchService: CRITICAL - Save failed - {ex.Message}");
             throw;
         }
     }
@@ -443,9 +439,8 @@ public class FoodSearchService : IFoodSearchService
             var json = await File.ReadAllTextAsync(_favoritesPath);
             _favorites = JsonSerializer.Deserialize<List<FavoriteFoodEntry>>(json) ?? [];
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            System.Diagnostics.Debug.WriteLine($"FoodSearchService: Error loading favorites - {ex.Message}");
             _favorites = [];
         }
     }
@@ -479,9 +474,8 @@ public class FoodSearchService : IFoodSearchService
             var json = JsonSerializer.Serialize(_favorites, new JsonSerializerOptions { WriteIndented = true });
             await File.WriteAllTextAsync(_favoritesPath, json);
         }
-        catch (Exception ex)
+        catch
         {
-            System.Diagnostics.Debug.WriteLine($"FoodSearchService: Error saving favorites - {ex.Message}");
             throw;
         }
     }
@@ -559,9 +553,9 @@ public class FoodSearchService : IFoodSearchService
                 return JsonSerializer.Deserialize<List<FoodLogEntry>>(json) ?? [];
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            System.Diagnostics.Debug.WriteLine($"FoodSearchService: Error loading archive - {ex.Message}");
+            // Ignore corrupted archive
         }
 
         return [];
@@ -646,9 +640,8 @@ public class FoodSearchService : IFoodSearchService
             var json = await File.ReadAllTextAsync(_recipesPath);
             _recipes = JsonSerializer.Deserialize<List<Recipe>>(json) ?? [];
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            System.Diagnostics.Debug.WriteLine($"FoodSearchService: Error loading recipes - {ex.Message}");
             _recipes = [];
         }
     }

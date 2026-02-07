@@ -31,17 +31,14 @@ public class MainActivity : AvaloniaMainActivity<App>
         // Global exception handlers for crash diagnostics
         AndroidEnvironment.UnhandledExceptionRaiser += (sender, args) =>
         {
-            global::System.Diagnostics.Debug.WriteLine($"UNHANDLED ANDROID: {args.Exception}");
             global::Android.Util.Log.Error("FitnessRechner", $"UNHANDLED: {args.Exception}");
         };
         AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
         {
-            global::System.Diagnostics.Debug.WriteLine($"UNHANDLED DOTNET: {args.ExceptionObject}");
             global::Android.Util.Log.Error("FitnessRechner", $"UNHANDLED: {args.ExceptionObject}");
         };
         TaskScheduler.UnobservedTaskException += (sender, args) =>
         {
-            global::System.Diagnostics.Debug.WriteLine($"UNOBSERVED TASK: {args.Exception}");
             global::Android.Util.Log.Error("FitnessRechner", $"UNOBSERVED: {args.Exception}");
         };
 

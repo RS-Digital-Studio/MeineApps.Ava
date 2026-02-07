@@ -97,3 +97,15 @@ dotnet build src/Apps/FitnessRechner/FitnessRechner.Android/FitnessRechner.Andro
 - **BarcodeLookupService Thread-Safety**: SemaphoreSlim fuer _barcodeCache, Lock Release waehrend HTTP-Calls, 8x Debug.WriteLine entfernt, "Unbekanntes Produkt"→AppStrings.UnknownProduct
 - **Unused variable warnings**: catch (Exception ex)→catch (Exception) in 8 Stellen (MainVM, HistoryVM, FoodSearchVM 3x, ProgressVM, TrackingVM, BarcodeScannerVM)
 - **2 neue resx-Keys in 6 Sprachen**: WaterRemaining ("{0} ml remaining"), UnknownProduct ("Unknown Product")
+
+### Debug.WriteLine Cleanup (07.02.2026)
+- **App.axaml.cs**: 9x Debug.WriteLine entfernt, catch (Exception ex)→catch (Exception)
+- **FoodSearchService.cs**: 7x Debug.WriteLine entfernt, 4x catch (Exception ex)→catch (Exception), 2x catch→vereinfacht (nur throw)
+- **TrackingService.cs**: 3x Debug.WriteLine entfernt, 2x catch (Exception ex)→catch (Exception)/catch
+- **VersionedDataService.cs**: 2x Debug.WriteLine entfernt, 1x catch (Exception ex)→catch (Exception)
+- **MainActivity.cs**: 3x Debug.WriteLine entfernt (Android.Util.Log.Error bleibt bestehen)
+- Build: Shared + Desktop + Android jeweils 0 Fehler, 0 Warnungen
+
+### LanguageChanged Fix (07.02.2026)
+- **MainViewModel**: `settingsViewModel.LanguageChanged += OnLanguageChanged` abonniert
+- OnLanguageChanged aktualisiert 12 Properties (NavHomeText, NavProgressText, NavFoodText, NavSettingsText, AppDescription, CalcBmiLabel, CalcCaloriesLabel, CalcWaterLabel, CalcIdealWeightLabel, CalcBodyFatLabel, CalculatorsLabel, MyProgressLabel)

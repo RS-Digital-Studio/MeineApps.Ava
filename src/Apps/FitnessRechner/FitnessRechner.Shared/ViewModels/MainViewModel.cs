@@ -58,6 +58,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
         FoodSearchViewModel = foodSearchViewModel;
 
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
+        settingsViewModel.LanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged()
+    {
+        OnPropertyChanged(nameof(NavHomeText));
+        OnPropertyChanged(nameof(NavProgressText));
+        OnPropertyChanged(nameof(NavFoodText));
+        OnPropertyChanged(nameof(NavSettingsText));
+        OnPropertyChanged(nameof(AppDescription));
+        OnPropertyChanged(nameof(CalcBmiLabel));
+        OnPropertyChanged(nameof(CalcCaloriesLabel));
+        OnPropertyChanged(nameof(CalcWaterLabel));
+        OnPropertyChanged(nameof(CalcIdealWeightLabel));
+        OnPropertyChanged(nameof(CalcBodyFatLabel));
+        OnPropertyChanged(nameof(CalculatorsLabel));
+        OnPropertyChanged(nameof(MyProgressLabel));
     }
 
     #region Tab Navigation

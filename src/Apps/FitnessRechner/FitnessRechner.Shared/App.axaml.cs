@@ -29,21 +29,17 @@ public partial class App : Application
         try
         {
             // Setup DI
-            System.Diagnostics.Debug.WriteLine("FitnessRechner: Setting up DI...");
             var services = new ServiceCollection();
             ConfigureServices(services);
             Services = services.BuildServiceProvider();
-            System.Diagnostics.Debug.WriteLine("FitnessRechner: DI built successfully");
 
             // Initialize localization
             var locService = Services.GetRequiredService<ILocalizationService>();
             locService.Initialize();
             LocalizationManager.Initialize(locService);
-            System.Diagnostics.Debug.WriteLine("FitnessRechner: Localization initialized");
 
             // Initialize theme (must be resolved to apply saved theme at startup)
             _ = Services.GetRequiredService<IThemeService>();
-            System.Diagnostics.Debug.WriteLine("FitnessRechner: Theme initialized");
 
             if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             {
@@ -54,22 +50,18 @@ public partial class App : Application
             }
             else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
             {
-                System.Diagnostics.Debug.WriteLine("FitnessRechner: Resolving MainViewModel...");
                 var vm = Services.GetRequiredService<MainViewModel>();
-                System.Diagnostics.Debug.WriteLine("FitnessRechner: MainViewModel resolved, creating MainView...");
                 singleViewPlatform.MainView = new MainView
                 {
                     DataContext = vm
                 };
-                System.Diagnostics.Debug.WriteLine("FitnessRechner: MainView created successfully");
             }
 
             base.OnFrameworkInitializationCompleted();
-            System.Diagnostics.Debug.WriteLine("FitnessRechner: Framework initialization completed");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            System.Diagnostics.Debug.WriteLine($"FitnessRechner FATAL: {ex}");
+            // Fatal error during initialization
             throw;
         }
     }

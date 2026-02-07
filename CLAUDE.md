@@ -26,6 +26,12 @@ dotnet publish src/Apps/RechnerPlus/RechnerPlus.Desktop -c Release -r linux-x64
 
 # Android Release (AAB)
 dotnet publish src/Apps/RechnerPlus/RechnerPlus.Android -c Release
+
+# AppChecker - Alle 8 Apps pruefen
+dotnet run --project tools/AppChecker
+
+# AppChecker - Einzelne App pruefen
+dotnet run --project tools/AppChecker RechnerPlus
 ```
 
 ---
@@ -80,6 +86,10 @@ F:\Meine_Apps_Ava\
 │           ├── BomberBlast.Android/ # Landscape-only
 │           └── BomberBlast.Desktop/
 │
+├── tools/
+│   ├── AppChecker/              # Automatisches Pruef-Tool (6 Check-Kategorien)
+│   └── StoreAssetGenerator/     # Store-Assets generieren (SkiaSharp)
+│
 └── tests/
 ```
 
@@ -95,7 +105,7 @@ F:\Meine_Apps_Ava\
 | FinanzRechner | v2.0.0 | In Entwicklung |
 | FitnessRechner | v2.0.0 | In Entwicklung |
 | WorkTimePro | v2.0.0 | In Entwicklung |
-| HandwerkerImperium | v2.0.0 | In Entwicklung |
+| HandwerkerImperium | v2.0.2 | Release bereit (AAB+APK+Store Assets) |
 | BomberBlast | v2.0.0 | In Entwicklung |
 
 ---
@@ -568,3 +578,81 @@ F:\Meine_Apps_Ava\
   - StatusIcon: mi:MaterialIcon (12x12) statt FontSize=8 TextBlock-Emoji
   - 2 neue resx-Keys (SetStatus, DateRange) in 6 Sprachen + WorkDaysFormat in Designer.cs
   - Full Solution Build: 0 Fehler
+- **HandwerkerImperium Release v2.0.2 (07.02.2026):**
+  - Version bump: ApplicationVersion 6→7, ApplicationDisplayVersion 2.0.1→2.0.2
+  - StoreAssetGenerator: Console-Tool unter tools/StoreAssetGenerator/ (SkiaSharp, NICHT in Solution)
+  - Hi-Res Icon 512x512: Lila Gradient, weisse Burg, Flagge, abgerundete Ecken
+  - Feature Graphic 1024x500: App-Icon + Titel + Workshop-Icons
+  - 6 Phone Screenshots 1080x2340: Dashboard, Saegen, Rohr-Puzzle, Shop, Achievements, Statistiken
+  - 4 Tablet Screenshots 1200x1920: Dashboard, Saegen, Shop, Achievements
+  - Alle Assets in Releases/HandwerkerImperium/
+  - AAB + APK in Releases/HandwerkerImperium-v2.0.2.{aab,apk}
+  - Full Solution Build: 0 Fehler
+- **AppChecker Tool (07.02.2026):**
+  - Console-Tool unter tools/AppChecker/ (keine externen Dependencies, nur BCL)
+  - 10 Check-Kategorien: Projekt/Build, Android, Avalonia/UI, Lokalisierung, Code Quality, Assets, DI-Registrierung, VM-Verdrahtung, View-Bindings, Navigation
+  - Interaktiver Modus (ohne CLI-Argument): Auswahl-Dialog mit 0=Alle, 1-8=einzeln, Komma-getrennt
+  - CLI-Modus weiterhin: `dotnet run --project tools/AppChecker RechnerPlus`
+  - Farbige Ausgabe (PASS=Gruen, INFO=Cyan, WARN=Gelb, FAIL=Rot)
+  - Exit Codes: 0=ok, 1=Warnings, 2=Failures
+  - Checks 1-6: fehlende MaterialIconStyles, Debug.WriteLine Reste, ungenutztes ex, InvalidateVisual statt InvalidateSurface, DateTime.Parse ohne RoundtripKind, fehlende Lokalisierungs-Keys, AdMob-Konfiguration
+  - Check 7 (DI): ConfigureServices, PreferencesService AppName, IThemeService, ILocalizationService, AddMeineAppsPremium, MainVM + Cross-Check Constructor-VMs vs DI
+  - Check 8 (VM-Verdrahtung): IsXxxActive/IsXxxTab Properties, SelectedTab, NavigateTo Commands, LanguageChanged, UpdateLocalizedTexts Cross-Check, MessageRequested, Overlay-Schliessung, GoBackAction/NavigationRequested
+  - Check 9 (View-Bindings): x:DataType, xmlns:vm, View↔ViewModel Paar-Check, StaticResource vs DynamicResource fuer Brushes
+  - Check 10 (Navigation): Tab-Buttons mit Commands, Tab-Count Cross-Check (VM vs View), ZIndex Overlays, Ad-Spacer, Calculator-Overlay Verdrahtung, Screen-basierte Navigation Erkennung
+  - Erster Lauf: 376 PASS, 28 INFO, 49 WARN, 1 FAIL (7 Apps ohne HandwerkerImperium)
+- **AppChecker Fixes (07.02.2026):**
+  - ZeitManager: INTERNET Permission + android:icon + android:roundIcon in AndroidManifest.xml
+  - BomberBlast: 2x Debug.WriteLine entfernt (HighScoreService, ProgressService) + android:roundIcon
+  - FitnessRechner: 24x Debug.WriteLine entfernt (App.axaml.cs 9, FoodSearchService 7, TrackingService 3, VersionedDataService 2, MainActivity 3)
+  - FinanzRechner: 10x catch (Exception ex) → catch (Exception) (ExpenseService 4, BudgetsVM 2, ExpenseTrackerVM 1, RecurringTransactionsVM 3)
+  - FitnessRechner MainVM: LanguageChanged abonniert (12 Properties aktualisieren)
+  - WorkTimePro MainVM: LanguageChanged abonniert + Unsubscribe in Dispose
+  - BomberBlast MainVM: ILocalizationService injiziert, LanguageChanged → MenuVm.OnAppearing()
+  - HandwerkerRechner MainVM: UpdateLocalizedTexts() Aufruf in OnLanguageChanged ergaenzt
+  - HandwerkerRechner: ~440 fehlende Uebersetzungs-Keys in FR/IT/PT ergaenzt (140 FR + 140 IT + 159 PT)
+  - AppChecker nach Fixes: 390 PASS, 28 INFO, 4 WARN, 0 FAIL (4 WARNs sind false-positives: HomeView/TodayView ohne eigenem VM, BomberBlast Ad-Spacer)
+- **HandwerkerImperium 2.0 Redesign - Alle 12 Phasen abgeschlossen (07.02.2026):**
+  - Phase 1-10: Enums, Worker-System, Wirtschaft, Auftraege, Gebaeude, Forschung, Prestige, Events, Offline, Visuals
+  - Phase 11 Achievements: 30 neue Achievements (58 total) in 7 Kategorien (Workers, Buildings, Research, Reputation, Prestige, Money, Workshops)
+  - Phase 11 Lokalisierung: 160+ neue resx-Keys in 6 Sprachen (Worker-System, Tiers, Personalities, Buildings, Research, Events, Prestige, Achievements)
+  - Phase 12 DI: 4 neue Services (IWorkerService, IBuildingService, IResearchService, IEventService) + 4 neue VMs in App.axaml.cs registriert
+  - Phase 12 MainViewModel: 14 child VMs (4 neue), 7 Tabs (Home, Workers, Research, Stats, Achievements, Shop, Settings), 4 neue Overlay-States
+  - Phase 12 MainView: 4 neue Views eingebunden, Tab-Bar von 5 auf 7 erweitert
+  - Phase 12 AVLN2000 Fixes: BoolConverters.FalseIsVisible→DisplayOpacity, Extension Method Bindings→computed Properties
+  - Lokalisierungs-Key-Mismatch Fix: 4 Enum-Extensions angepasst (BuildingType, WorkerTier, WorkerPersonality, ResearchBranch)
+  - 10 zusaetzliche resx-Keys (7 BuildingEffect + 3 BranchDesc) in 6 Sprachen
+  - Full Solution Build: 0 Fehler, 112 Warnungen (nur bekannte NuGet-Warnungen)
+- **Performance-Fixes (07.02.2026):**
+  - PreferencesService: Debounced Save (500ms Timer statt synchronem Save bei jedem Set), IDisposable fuer Timer-Cleanup, statisch gecachte JsonSerializerOptions
+  - ExpenseService: O(n^2) Import-Fix mit HashSet fuer existierende IDs (Expenses + RecurringTransactions)
+  - ExpenseService: GetAllBudgetStatusAsync N+1 Fix (Monatsausgaben einmal laden statt pro Budget)
+  - ExpenseService: ProcessDueRecurringTransactions Race-Condition Fix (Batch-Add statt einzelne AddExpenseAsync)
+  - ExpenseService: Statisch gecachte JsonSerializerOptions (4 Save-Methoden + Export)
+  - Build: Core.Ava + FinanzRechner.Shared 0 Fehler
+- **Performance-Fixes Round 2 (07.02.2026):**
+  - HandwerkerImperium MainViewModel: RefreshWorkshops() In-Place-Update statt Clear/Add (weniger UI-Churn), statisches WorkshopType-Array (vermeidet Enum.GetValues Allokation)
+  - HandwerkerImperium MainViewModel: OnGameTick IncomeDisplay nur bei Wertaenderung updaten
+  - HandwerkerImperium WorkshopDisplayModel: NotifyAllChanged() Methode fuer Property-Notifications nach In-Place-Update
+  - RechnerPlus CalculatorViewModel: IDisposable implementiert (LanguageChanged + HistoryChanged Event-Unsubscription)
+  - ZeitManager AlarmOverlayViewModel: IDisposable implementiert (StopClock + AudioService.Stop im Dispose)
+  - Build: HandwerkerImperium.Shared + RechnerPlus.Shared + ZeitManager.Shared 0 Fehler, 0 Warnungen
+- **BomberBlast Performance-Fixes (07.02.2026):**
+  - AStar.cs: PriorityQueue/HashSet/Dictionary als Klassenfelder mit .Clear() (statt neue Instanzen pro Aufruf), BFS-Collections gepoollt, Directions als static readonly Array, Node Klasse durch value tuple ersetzt, GetNeighbors fuellt gepoolte Liste statt yield return
+  - EnemyAI.cs: _dangerZone HashSet + _validDirections Liste als Klassenfelder, LINQ .Where().ToList() durch manuelle Loops ersetzt
+  - GameEngine.cs: 5 gecachte Overlay-Objekte (_overlayBgPaint, _overlayTextPaint, _overlayFont, 2x _overlayGlowFilter), alle 4 Overlay-Methoden nutzen gecachte Objekte, Dispose() raeumt auf, _powerUps.ToList() durch Rueckwaerts-Iteration ersetzt
+  - GameRenderer.cs: _activePowers Liste gepoollt mit .Clear() pro Frame, INV-Timer-String gecacht (nur bei Wertaenderung neu)
+  - GameViewModel.cs: System.Diagnostics.Stopwatch statt DateTime.Now fuer Frame-Timing
+  - Build: Shared + Desktop + Android 0 Fehler
+- **BomberBlast Neon Visual Fixes (07.02.2026):**
+  - Neon-Palette aufgehellt: FloorBase/Alt, WallBase/Edge, BlockBase/Mortar/Highlight/Shadow (alle Farbwerte ~40-60% erhoeht)
+  - Neon-Bloecke: 3D-Kanten (Highlight oben/links, Shadow unten/rechts), dickere Glow-Risse (1→1.5), diagonaler Riss
+  - HUD-Text-Glow Fix: Neuer _hudTextGlow mit SKBlurStyle.Outer (Glow nur aussen, Text bleibt scharf) statt _smallGlow mit SKBlurStyle.Normal (hat Text selbst verwischt → TIME/SCORE unlesbar)
+  - B/F Labels durch Mini-Icons ersetzt: RenderMiniBomb() (Kreis+Lunte+Funken), RenderMiniFlame() (2-Schicht QuadTo-Flamme)
+  - Build: 0 Fehler
+- **HandwerkerImperium Research Tree Lokalisierung (07.02.2026):**
+  - 92 neue resx-Keys in 6 Sprachen (EN, DE, ES, FR, IT, PT)
+  - 2 UI Keys (StartResearch, CurrentResearch)
+  - 45 Research Name Keys (3 Branches x 15 Levels: ResearchBetterSaws...ResearchMarketDomination)
+  - 45 Research Description Keys (Effekt-Beschreibungen: "+5% Worker Efficiency", "-10% Costs", etc.)
+  - Designer.cs: 92 neue Properties

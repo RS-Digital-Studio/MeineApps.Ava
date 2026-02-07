@@ -5,31 +5,19 @@ namespace HandwerkerImperium.Models;
 
 /// <summary>
 /// The complete game state, persisted between sessions.
-/// This is the single source of truth for all game data.
+/// Version 2: New worker system, buildings, research, events, prestige, reputation.
 /// </summary>
 public class GameState
 {
-    /// <summary>
-    /// Version of the save format (for migration support).
-    /// </summary>
     [JsonPropertyName("version")]
-    public int Version { get; set; } = 1;
+    public int Version { get; set; } = 2;
 
-    /// <summary>
-    /// When the game was first started.
-    /// </summary>
     [JsonPropertyName("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>
-    /// When the game was last saved.
-    /// </summary>
     [JsonPropertyName("lastSavedAt")]
     public DateTime LastSavedAt { get; set; } = DateTime.UtcNow;
 
-    /// <summary>
-    /// When the player last played (for offline progress).
-    /// </summary>
     [JsonPropertyName("lastPlayedAt")]
     public DateTime LastPlayedAt { get; set; } = DateTime.UtcNow;
 
@@ -37,39 +25,21 @@ public class GameState
     // PLAYER PROGRESS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Current player level (determines workshop unlocks).
-    /// </summary>
     [JsonPropertyName("playerLevel")]
     public int PlayerLevel { get; set; } = 1;
 
-    /// <summary>
-    /// Current XP towards next level.
-    /// </summary>
     [JsonPropertyName("currentXp")]
     public int CurrentXp { get; set; }
 
-    /// <summary>
-    /// Total XP earned (lifetime).
-    /// </summary>
     [JsonPropertyName("totalXp")]
     public int TotalXp { get; set; }
 
-    /// <summary>
-    /// Current money balance.
-    /// </summary>
     [JsonPropertyName("money")]
-    public decimal Money { get; set; } = 100m; // Start with 100€
+    public decimal Money { get; set; } = 100m;
 
-    /// <summary>
-    /// Total money earned (lifetime).
-    /// </summary>
     [JsonPropertyName("totalMoneyEarned")]
     public decimal TotalMoneyEarned { get; set; }
 
-    /// <summary>
-    /// Total money spent on upgrades and workers.
-    /// </summary>
     [JsonPropertyName("totalMoneySpent")]
     public decimal TotalMoneySpent { get; set; }
 
@@ -77,81 +47,141 @@ public class GameState
     // WORKSHOPS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// All workshops in the game.
-    /// </summary>
     [JsonPropertyName("workshops")]
     public List<Workshop> Workshops { get; set; } = [];
+
+    /// <summary>
+    /// Workshop types that have been unlocked/purchased.
+    /// </summary>
+    [JsonPropertyName("unlockedWorkshopTypes")]
+    public List<WorkshopType> UnlockedWorkshopTypes { get; set; } = [WorkshopType.Carpenter];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WORKERS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("workerMarket")]
+    public WorkerMarketPool? WorkerMarket { get; set; }
+
+    [JsonPropertyName("totalWorkersHired")]
+    public int TotalWorkersHired { get; set; }
+
+    [JsonPropertyName("totalWorkersFired")]
+    public int TotalWorkersFired { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // ORDERS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Currently available orders.
-    /// </summary>
     [JsonPropertyName("availableOrders")]
     public List<Order> AvailableOrders { get; set; } = [];
 
-    /// <summary>
-    /// Order currently in progress (if any).
-    /// </summary>
     [JsonPropertyName("activeOrder")]
     public Order? ActiveOrder { get; set; }
 
-    /// <summary>
-    /// Total orders completed (lifetime).
-    /// </summary>
     [JsonPropertyName("totalOrdersCompleted")]
     public int TotalOrdersCompleted { get; set; }
+
+    /// <summary>
+    /// Orders completed today (resets daily).
+    /// </summary>
+    [JsonPropertyName("ordersCompletedToday")]
+    public int OrdersCompletedToday { get; set; }
+
+    /// <summary>
+    /// Orders completed this week (resets weekly).
+    /// </summary>
+    [JsonPropertyName("ordersCompletedThisWeek")]
+    public int OrdersCompletedThisWeek { get; set; }
+
+    [JsonPropertyName("lastOrderCooldownStart")]
+    public DateTime LastOrderCooldownStart { get; set; } = DateTime.MinValue;
+
+    [JsonPropertyName("weeklyOrderReset")]
+    public DateTime WeeklyOrderReset { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Daily order threshold before cooldown kicks in.
+    /// </summary>
+    [JsonIgnore]
+    public int OrderCooldownThreshold => 10;
+
+    /// <summary>
+    /// Weekly order limit.
+    /// </summary>
+    [JsonIgnore]
+    public int WeeklyOrderLimit => 100;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // REPUTATION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("reputation")]
+    public CustomerReputation Reputation { get; set; } = new();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BUILDINGS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("buildings")]
+    public List<Building> Buildings { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // RESEARCH
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("researches")]
+    public List<Research> Researches { get; set; } = [];
+
+    [JsonPropertyName("activeResearchId")]
+    public string? ActiveResearchId { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EVENTS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("activeEvent")]
+    public GameEvent? ActiveEvent { get; set; }
+
+    [JsonPropertyName("lastEventCheck")]
+    public DateTime LastEventCheck { get; set; } = DateTime.UtcNow;
+
+    [JsonPropertyName("eventHistory")]
+    public List<string> EventHistory { get; set; } = [];
 
     // ═══════════════════════════════════════════════════════════════════════
     // STATISTICS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Total mini-games played.
-    /// </summary>
     [JsonPropertyName("totalMiniGamesPlayed")]
     public int TotalMiniGamesPlayed { get; set; }
 
-    /// <summary>
-    /// Total perfect ratings achieved.
-    /// </summary>
     [JsonPropertyName("perfectRatings")]
     public int PerfectRatings { get; set; }
 
-    /// <summary>
-    /// Current streak of perfect ratings.
-    /// </summary>
     [JsonPropertyName("perfectStreak")]
     public int PerfectStreak { get; set; }
 
-    /// <summary>
-    /// Best streak of perfect ratings.
-    /// </summary>
     [JsonPropertyName("bestPerfectStreak")]
     public int BestPerfectStreak { get; set; }
 
-    /// <summary>
-    /// Total time played in seconds.
-    /// </summary>
     [JsonPropertyName("totalPlayTimeSeconds")]
     public long TotalPlayTimeSeconds { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // PRESTIGE (Endgame)
+    // PRESTIGE (3-Tier System)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Number of times prestiged.
+    /// New prestige data (3-tier system with shop).
     /// </summary>
+    [JsonPropertyName("prestige")]
+    public PrestigeData Prestige { get; set; } = new();
+
+    // Legacy fields for v1 save compatibility
     [JsonPropertyName("prestigeLevel")]
     public int PrestigeLevel { get; set; }
 
-    /// <summary>
-    /// Permanent income multiplier from prestige.
-    /// </summary>
     [JsonPropertyName("prestigeMultiplier")]
     public decimal PrestigeMultiplier { get; set; } = 1.0m;
 
@@ -159,27 +189,15 @@ public class GameState
     // SETTINGS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Whether sound effects are enabled.
-    /// </summary>
     [JsonPropertyName("soundEnabled")]
     public bool SoundEnabled { get; set; } = true;
 
-    /// <summary>
-    /// Whether music is enabled.
-    /// </summary>
     [JsonPropertyName("musicEnabled")]
     public bool MusicEnabled { get; set; } = true;
 
-    /// <summary>
-    /// Whether haptic feedback is enabled.
-    /// </summary>
     [JsonPropertyName("hapticsEnabled")]
     public bool HapticsEnabled { get; set; } = true;
 
-    /// <summary>
-    /// Selected language code (en, de, es, fr, it, pt).
-    /// </summary>
     [JsonPropertyName("language")]
     public string Language { get; set; } = "en";
 
@@ -187,9 +205,6 @@ public class GameState
     // PREMIUM STATUS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Whether premium (ad-free) was purchased.
-    /// </summary>
     [JsonPropertyName("isPremium")]
     public bool IsPremium { get; set; }
 
@@ -197,15 +212,9 @@ public class GameState
     // DAILY REWARDS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// When the daily reward was last claimed.
-    /// </summary>
     [JsonPropertyName("lastDailyRewardClaim")]
     public DateTime LastDailyRewardClaim { get; set; } = DateTime.MinValue;
 
-    /// <summary>
-    /// Current daily reward streak (consecutive days).
-    /// </summary>
     [JsonPropertyName("dailyRewardStreak")]
     public int DailyRewardStreak { get; set; }
 
@@ -213,27 +222,15 @@ public class GameState
     // BOOSTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// When the 2x speed boost expires.
-    /// </summary>
     [JsonPropertyName("speedBoostEndTime")]
     public DateTime SpeedBoostEndTime { get; set; } = DateTime.MinValue;
 
-    /// <summary>
-    /// When the 50% XP boost expires.
-    /// </summary>
     [JsonPropertyName("xpBoostEndTime")]
     public DateTime XpBoostEndTime { get; set; } = DateTime.MinValue;
 
-    /// <summary>
-    /// Whether speed boost is currently active.
-    /// </summary>
     [JsonIgnore]
     public bool IsSpeedBoostActive => SpeedBoostEndTime > DateTime.UtcNow;
 
-    /// <summary>
-    /// Whether XP boost is currently active.
-    /// </summary>
     [JsonIgnore]
     public bool IsXpBoostActive => XpBoostEndTime > DateTime.UtcNow;
 
@@ -241,9 +238,6 @@ public class GameState
     // ACHIEVEMENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// List of unlocked achievement IDs.
-    /// </summary>
     [JsonPropertyName("unlockedAchievements")]
     public List<string> UnlockedAchievements { get; set; } = [];
 
@@ -251,37 +245,44 @@ public class GameState
     // TUTORIAL
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Whether the tutorial has been completed.
-    /// </summary>
     [JsonPropertyName("tutorialCompleted")]
     public bool TutorialCompleted { get; set; }
 
-    /// <summary>
-    /// Current tutorial step (0-based).
-    /// </summary>
     [JsonPropertyName("tutorialStep")]
     public int TutorialStep { get; set; }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // OFFLINE
+    // ═══════════════════════════════════════════════════════════════════════
+
     /// <summary>
-    /// Maximum offline hours for non-premium users.
+    /// Base offline hours (always 4).
     /// </summary>
     [JsonIgnore]
-    public int MaxOfflineHours => IsPremium ? 8 : 2;
+    public int BaseOfflineHours => 4;
+
+    [JsonIgnore]
+    public int MaxOfflineHours => IsPremium ? 12 : 4;
+
+    /// <summary>
+    /// Session flag: video extended offline duration.
+    /// </summary>
+    [JsonIgnore]
+    public bool OfflineVideoExtended { get; set; }
+
+    /// <summary>
+    /// Session flag: video doubled offline earnings.
+    /// </summary>
+    [JsonIgnore]
+    public bool OfflineVideoDoubled { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // CALCULATED PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// XP required for next level.
-    /// </summary>
     [JsonIgnore]
     public int XpForNextLevel => CalculateXpForLevel(PlayerLevel + 1);
 
-    /// <summary>
-    /// Progress towards next level (0.0 - 1.0).
-    /// </summary>
     [JsonIgnore]
     public double LevelProgress
     {
@@ -294,36 +295,41 @@ public class GameState
     }
 
     /// <summary>
-    /// Total income per second from all workshops.
+    /// Total gross income per second from all workshops.
     /// </summary>
     [JsonIgnore]
     public decimal TotalIncomePerSecond
     {
         get
         {
-            decimal total = Workshops.Sum(w => w.IncomePerSecond);
-            return total * PrestigeMultiplier;
+            decimal total = Workshops.Sum(w => w.GrossIncomePerSecond);
+            return total * Prestige.PermanentMultiplier;
         }
     }
+
+    /// <summary>
+    /// Total running costs per second from all workshops.
+    /// </summary>
+    [JsonIgnore]
+    public decimal TotalCostsPerSecond => Workshops.Sum(w => w.TotalCostsPerHour) / 3600m;
+
+    /// <summary>
+    /// Net income per second (gross - costs).
+    /// Can be negative if costs exceed income!
+    /// </summary>
+    [JsonIgnore]
+    public decimal NetIncomePerSecond => TotalIncomePerSecond - TotalCostsPerSecond;
 
     // ═══════════════════════════════════════════════════════════════════════
     // METHODS
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Calculates total XP needed to reach a level.
-    /// </summary>
     public static int CalculateXpForLevel(int level)
     {
-        // XP curve: Level 2 = 100, Level 10 = ~2500, Level 50 = ~40000 (was 1.5, now 1.2 for smoother progression)
         if (level <= 1) return 0;
         return (int)(100 * Math.Pow(level - 1, 1.2));
     }
 
-    /// <summary>
-    /// Adds XP and handles level-ups.
-    /// Returns the number of level-ups that occurred.
-    /// </summary>
     public int AddXp(int amount)
     {
         CurrentXp += amount;
@@ -339,9 +345,6 @@ public class GameState
         return levelUps;
     }
 
-    /// <summary>
-    /// Gets a workshop by type, creating it if it doesn't exist.
-    /// </summary>
     public Workshop GetOrCreateWorkshop(WorkshopType type)
     {
         var workshop = Workshops.FirstOrDefault(w => w.Type == type);
@@ -353,12 +356,22 @@ public class GameState
         return workshop;
     }
 
-    /// <summary>
-    /// Checks if a workshop type is unlocked at the current player level.
-    /// </summary>
     public bool IsWorkshopUnlocked(WorkshopType type)
     {
-        return PlayerLevel >= type.GetUnlockLevel();
+        // Must meet level requirement
+        if (PlayerLevel < type.GetUnlockLevel()) return false;
+        // Must meet prestige requirement
+        if (type.GetRequiredPrestige() > Prestige.TotalPrestigeCount) return false;
+        // Must be in unlocked list (purchased)
+        return UnlockedWorkshopTypes.Contains(type);
+    }
+
+    /// <summary>
+    /// Gets a building by type, returns null if not built.
+    /// </summary>
+    public Building? GetBuilding(BuildingType type)
+    {
+        return Buildings.FirstOrDefault(b => b.Type == type && b.IsBuilt);
     }
 
     /// <summary>
@@ -370,9 +383,64 @@ public class GameState
 
         // Create the starting workshop (Carpenter) with 1 worker
         var carpenter = Workshop.Create(WorkshopType.Carpenter);
+        carpenter.IsUnlocked = true;
         carpenter.Workers.Add(Worker.CreateRandom());
         state.Workshops.Add(carpenter);
 
+        // Initialize research tree
+        state.Researches = ResearchTree.CreateAll();
+
         return state;
+    }
+
+    /// <summary>
+    /// Migrates a v1 save to v2 format.
+    /// </summary>
+    public static GameState MigrateFromV1(GameState old)
+    {
+        if (old.Version >= 2) return old;
+
+        old.Version = 2;
+
+        // Migrate workers: old workers had flat 1.0 efficiency
+        foreach (var ws in old.Workshops)
+        {
+            ws.IsUnlocked = true;
+            foreach (var worker in ws.Workers)
+            {
+                worker.Tier = WorkerTier.E;
+                worker.Talent = 3;
+                worker.Personality = WorkerPersonality.Steady;
+                worker.Mood = 80m;
+                worker.Fatigue = 0m;
+                worker.ExperienceLevel = Math.Min(10, worker.SkillLevel);
+                worker.WagePerHour = WorkerTier.E.GetWagePerHour();
+                worker.AssignedWorkshop = ws.Type;
+            }
+
+            if (!old.UnlockedWorkshopTypes.Contains(ws.Type))
+                old.UnlockedWorkshopTypes.Add(ws.Type);
+        }
+
+        // Migrate prestige
+        old.Prestige = new PrestigeData
+        {
+            BronzeCount = old.PrestigeLevel,
+            PermanentMultiplier = old.PrestigeMultiplier,
+            CurrentTier = old.PrestigeLevel > 0 ? Enums.PrestigeTier.Bronze : Enums.PrestigeTier.None
+        };
+
+        // Initialize reputation
+        old.Reputation ??= new CustomerReputation();
+
+        // Initialize empty collections
+        old.Buildings ??= [];
+        old.EventHistory ??= [];
+
+        // Initialize research tree
+        if (old.Researches == null || old.Researches.Count == 0)
+            old.Researches = ResearchTree.CreateAll();
+
+        return old;
     }
 }

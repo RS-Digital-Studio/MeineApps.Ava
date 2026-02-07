@@ -22,6 +22,9 @@
     <!-- MVVM -->
     <PackageReference Include="CommunityToolkit.Mvvm" />
 
+    <!-- Graphics -->
+    <PackageReference Include="SkiaSharp" />
+
     <!-- DI -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>

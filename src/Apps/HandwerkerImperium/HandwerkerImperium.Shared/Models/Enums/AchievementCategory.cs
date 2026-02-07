@@ -21,5 +21,20 @@ public enum AchievementCategory
     Time,
 
     /// <summary>Special or miscellaneous achievements.</summary>
-    Special
+    Special,
+
+    /// <summary>Achievements related to worker management.</summary>
+    Workers,
+
+    /// <summary>Achievements related to buildings.</summary>
+    Buildings,
+
+    /// <summary>Achievements related to research.</summary>
+    Research,
+
+    /// <summary>Achievements related to reputation.</summary>
+    Reputation,
+
+    /// <summary>Achievements related to prestige.</summary>
+    Prestige
 }

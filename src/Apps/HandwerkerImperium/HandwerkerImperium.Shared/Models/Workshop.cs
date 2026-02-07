@@ -5,146 +5,164 @@ namespace HandwerkerImperium.Models;
 
 /// <summary>
 /// Represents a workshop/trade in the game.
-/// Each workshop can be upgraded and staffed with workers.
+/// Each workshop can be upgraded (1-50), staffed with workers, and has running costs.
 /// </summary>
 public class Workshop
 {
-    /// <summary>
-    /// The type of this workshop.
-    /// </summary>
     [JsonPropertyName("type")]
     public WorkshopType Type { get; set; }
 
     /// <summary>
-    /// Current level of the workshop (1-10).
-    /// Higher levels = higher base income and more worker slots.
+    /// Current level (1-50). Higher = more income, more worker slots, higher costs.
     /// </summary>
     [JsonPropertyName("level")]
     public int Level { get; set; } = 1;
 
-    /// <summary>
-    /// Workers assigned to this workshop.
-    /// </summary>
     [JsonPropertyName("workers")]
     public List<Worker> Workers { get; set; } = [];
 
-    /// <summary>
-    /// Total money earned by this workshop (lifetime).
-    /// </summary>
     [JsonPropertyName("totalEarned")]
     public decimal TotalEarned { get; set; }
 
-    /// <summary>
-    /// Total orders completed by this workshop.
-    /// </summary>
     [JsonPropertyName("ordersCompleted")]
     public int OrdersCompleted { get; set; }
 
     /// <summary>
-    /// Maximum workers allowed at current level.
+    /// Whether this workshop has been purchased/unlocked.
     /// </summary>
-    [JsonIgnore]
-    public int MaxWorkers => Level switch
-    {
-        1 => 1,
-        2 => 1,
-        3 => 2,
-        4 => 2,
-        5 => 3,
-        6 => 3,
-        7 => 4,
-        8 => 4,
-        9 => 5,
-        10 => 5,
-        _ => 1
-    };
+    [JsonPropertyName("isUnlocked")]
+    public bool IsUnlocked { get; set; }
 
     /// <summary>
-    /// Base income per second per worker at current level.
+    /// Max Level
+    /// </summary>
+    public const int MaxLevel = 50;
+
+    /// <summary>
+    /// Maximum workers allowed at current level.
+    /// +1 every 5 levels (max 10 at level 50).
+    /// Note: BuildingType.WorkshopExtension adds extra slots.
+    /// </summary>
+    [JsonIgnore]
+    public int BaseMaxWorkers => Math.Min(10, 1 + (Level - 1) / 5);
+
+    /// <summary>
+    /// Total max workers including building bonus.
+    /// Set by external systems that know about buildings.
+    /// </summary>
+    [JsonIgnore]
+    public int MaxWorkers => BaseMaxWorkers + ExtraWorkerSlots;
+
+    /// <summary>
+    /// Extra worker slots from buildings/research (set externally).
+    /// </summary>
+    [JsonIgnore]
+    public int ExtraWorkerSlots { get; set; }
+
+    /// <summary>
+    /// Base income per worker per second at current level.
+    /// Formula: 1 * 2^((Level-1)/3) * TypeMultiplier
+    /// Slower scaling than before (was /2, now /3).
     /// </summary>
     [JsonIgnore]
     public decimal BaseIncomePerWorker
     {
         get
         {
-            // Base: 5€/s, doubles every 2 levels
-            decimal baseIncome = 5m * (decimal)Math.Pow(2, (Level - 1) / 2.0);
-            // Apply workshop type multiplier
+            decimal baseIncome = 1m * (decimal)Math.Pow(2, (Level - 1) / 3.0);
             return baseIncome * Type.GetBaseIncomeMultiplier();
         }
     }
 
     /// <summary>
-    /// Total income per second from all workers.
+    /// Total gross income per second from all workers.
     /// </summary>
     [JsonIgnore]
-    public decimal IncomePerSecond
+    public decimal GrossIncomePerSecond
     {
         get
         {
             if (Workers.Count == 0) return 0;
-
-            decimal total = 0;
-            foreach (var worker in Workers)
-            {
-                total += BaseIncomePerWorker * worker.Efficiency;
-            }
-            return total;
+            return Workers.Sum(w => BaseIncomePerWorker * w.EffectiveEfficiency);
         }
     }
 
     /// <summary>
+    /// Rent cost per hour (scales with level).
+    /// </summary>
+    [JsonIgnore]
+    public decimal RentPerHour => 10m * Level;
+
+    /// <summary>
+    /// Material cost per hour (20% of gross income).
+    /// </summary>
+    [JsonIgnore]
+    public decimal MaterialCostPerHour => GrossIncomePerSecond * 3600m * 0.20m;
+
+    /// <summary>
+    /// Total worker wages per hour.
+    /// </summary>
+    [JsonIgnore]
+    public decimal TotalWagesPerHour => Workers.Where(w => !w.IsResting).Sum(w => w.WagePerHour);
+
+    /// <summary>
+    /// Total running costs per hour (rent + material + wages).
+    /// </summary>
+    [JsonIgnore]
+    public decimal TotalCostsPerHour => RentPerHour + MaterialCostPerHour + TotalWagesPerHour;
+
+    /// <summary>
+    /// Net income per second (gross - costs/3600).
+    /// Can be negative!
+    /// </summary>
+    [JsonIgnore]
+    public decimal NetIncomePerSecond => GrossIncomePerSecond - TotalCostsPerHour / 3600m;
+
+    /// <summary>
+    /// Legacy IncomePerSecond (now uses EffectiveEfficiency instead of raw Efficiency).
+    /// </summary>
+    [JsonIgnore]
+    public decimal IncomePerSecond => GrossIncomePerSecond;
+
+    /// <summary>
     /// Cost to upgrade to next level.
+    /// Formula: 200 * 2.2^(Level-1)
     /// </summary>
     [JsonIgnore]
     public decimal UpgradeCost
     {
         get
         {
-            if (Level >= 10) return 0; // Max level
-
-            // Exponential cost curve (reduced from 2.5 to 1.8 for better balance)
-            // Level 1→2: 100€, Level 9→10: ~1,100€
-            return 100m * (decimal)Math.Pow(1.8, Level - 1);
+            if (Level >= MaxLevel) return 0;
+            return 200m * (decimal)Math.Pow(2.2, Level - 1);
         }
     }
 
     /// <summary>
-    /// Cost to hire a new worker.
+    /// Cost to unlock this workshop (one-time).
     /// </summary>
     [JsonIgnore]
-    public decimal HireWorkerCost
-    {
-        get
-        {
-            // Base 50€, increases with number of workers
-            return 50m * (decimal)Math.Pow(2, Workers.Count);
-        }
-    }
+    public decimal UnlockCost => Type.GetUnlockCost();
 
-    /// <summary>
-    /// Whether this workshop can be upgraded.
-    /// </summary>
     [JsonIgnore]
-    public bool CanUpgrade => Level < 10;
+    public bool CanUpgrade => Level < MaxLevel;
 
-    /// <summary>
-    /// Whether a new worker can be hired.
-    /// </summary>
     [JsonIgnore]
     public bool CanHireWorker => Workers.Count < MaxWorkers;
 
-    /// <summary>
-    /// Icon for this workshop type.
-    /// </summary>
     [JsonIgnore]
     public string Icon => Type.GetIcon();
 
-    /// <summary>
-    /// Creates a new workshop of the specified type.
-    /// </summary>
+    // Legacy property for backward compatibility
+    [JsonIgnore]
+    public decimal HireWorkerCost => 50m * (decimal)Math.Pow(2, Workers.Count);
+
     public static Workshop Create(WorkshopType type)
     {
-        return new Workshop { Type = type };
+        return new Workshop
+        {
+            Type = type,
+            IsUnlocked = type == WorkshopType.Carpenter // Carpenter is always unlocked
+        };
     }
 }

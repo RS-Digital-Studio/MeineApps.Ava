@@ -16,8 +16,8 @@ HandwerkerImperium/
 │   │   ├── DailyReward.cs         # Daily reward config
 │   │   ├── Achievement.cs         # Achievement definitions
 │   │   └── TutorialStep.cs        # Tutorial step definitions
-│   ├── Services/                  # 22 files (11 interfaces + 11 implementations)
-│   │   ├── Interfaces/            # All service interfaces
+│   ├── Services/                  # 30 files (15 interfaces + 15 implementations)
+│   │   ├── Interfaces/            # All service interfaces (incl. IWorkerService, IBuildingService, IResearchService, IEventService)
 │   │   ├── GameStateService.cs    # Central game state management
 │   │   ├── SaveGameService.cs     # JSON save/load
 │   │   ├── GameLoopService.cs     # Main game tick loop
@@ -29,8 +29,8 @@ HandwerkerImperium/
 │   │   ├── PrestigeService.cs     # Prestige/rebirth system
 │   │   ├── RewardedAdService.cs   # Ad rewards (simulated on desktop)
 │   │   └── TutorialService.cs     # Tutorial system
-│   ├── ViewModels/                # 11 ViewModels
-│   │   ├── MainViewModel.cs       # Tab navigation, game init
+│   ├── ViewModels/                # 15 ViewModels
+│   │   ├── MainViewModel.cs       # Tab navigation, game init (7 tabs + overlays)
 │   │   ├── AchievementsViewModel.cs
 │   │   ├── OrderViewModel.cs
 │   │   ├── SettingsViewModel.cs
@@ -40,8 +40,12 @@ HandwerkerImperium/
 │   │   ├── SawingGameViewModel.cs
 │   │   ├── PipePuzzleViewModel.cs
 │   │   ├── WiringGameViewModel.cs
-│   │   └── PaintingGameViewModel.cs
-│   ├── Views/                     # 13 Views (axaml + cs)
+│   │   ├── PaintingGameViewModel.cs
+│   │   ├── WorkerMarketViewModel.cs  # Worker hiring market
+│   │   ├── WorkerProfileViewModel.cs # Worker detail/management
+│   │   ├── BuildingsViewModel.cs     # Building management
+│   │   └── ResearchViewModel.cs      # Research skill tree
+│   ├── Views/                     # 17 Views (axaml + cs)
 │   │   ├── MainWindow.axaml/.cs
 │   │   ├── MainView.axaml/.cs     # Tab container
 │   │   ├── DashboardView.axaml/.cs
@@ -64,10 +68,14 @@ HandwerkerImperium/
 ```
 
 ## Features
-- Idle Tycoon game with 6 workshop types
+- Idle Tycoon game with 8 workshop types (incl. Architect, GeneralContractor)
 - 4 mini-games (Sawing, Pipe Puzzle, Wiring, Painting)
+- Worker Market (tier-based hiring, personality, talent, specialization, wage)
+- Worker Management (profile, training, rest, mood, fatigue, transfer)
+- Building System (7 building types, level 0-5)
+- Research Tree (3 branches: Tools, Management, Marketing, 15 levels each)
 - Order/contract system with difficulty scaling
-- Prestige system with permanent income multipliers
+- 3-tier prestige system (Bronze/Silver/Gold) with permanent multipliers + prestige shop
 - Achievement system
 - Daily rewards
 - Offline earnings
@@ -100,7 +108,7 @@ dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
 - Audio service is a stub (needs platform-specific implementation)
 
 ## DataContext Architecture
-- **MainViewModel** holds 10 child VMs as properties (injected via constructor)
+- **MainViewModel** holds 14 child VMs as properties (injected via constructor)
 - **MainView.axaml** sets `DataContext="{Binding ShopViewModel}"` etc. on each sub-view
 - **IsVisible bindings** use `#ContentPanel.((vm:MainViewModel)DataContext).IsXxxActive` to resolve against MainViewModel
 - **NavigationRequested** events from child VMs are handled by `OnChildNavigation(route)` in MainViewModel
@@ -136,6 +144,18 @@ dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
 
 ### Localization (all 6 languages)
 - 20+ new keys: PlaneNow, LayNow, MeasureNow, StopInGreenZone, StopForSmoothSurface, StopAtPerfectMoment, StopAtRightLength, LevelUpTitle, plus previous batch (ResetGameTitle, etc.)
+- 160+ new keys for v2.0 Redesign: Workshop Types (Architect, GeneralContractor), Worker System (12 keys), Worker Profile (22 keys), Worker Tiers (7 keys), Worker Personalities (6 keys), Buildings (8 keys), Building Descriptions (7 keys), Building Effect Formats (11 keys), Research (13 keys), Events (8 keys), Prestige 3-Tier (5 keys), DifficultyExpert, 30 new Achievement keys (60 title+desc entries)
+
+### Localization Key Mismatch Fix (07.02.2026)
+- **BuildingType.cs**: `GetLocalizationKey` `Building{type}` -> `type.ToString()` (Canteen statt BuildingCanteen)
+- **BuildingType.cs**: `GetDescriptionKey` `Building{type}Desc` -> `{type}Desc` (CanteenDesc statt BuildingCanteenDesc)
+- **BuildingType.cs**: `GetEffectKey` `Building{type}Effect` -> `{type}Effect` (CanteenEffect statt BuildingCanteenEffect)
+- **WorkerTier.cs**: `GetLocalizationKey` `WorkerTier{tier}` -> `Tier{tier}` (TierF statt WorkerTierF)
+- **WorkerPersonality.cs**: `GetLocalizationKey` `Personality{p}` -> `Person{p}` (PersonSteady statt PersonalitySteady)
+- **ResearchBranch.cs**: `GetLocalizationKey` `Research{b}` -> `Branch{b}` (BranchTools statt ResearchTools)
+- **ResearchBranch.cs**: `GetDescriptionKey` `Research{b}Desc` -> `Branch{b}Desc` (BranchToolsDesc statt ResearchToolsDesc)
+- 7 neue BuildingEffect Keys in 6 Sprachen (CanteenEffect, StorageEffect, OfficeEffect, ShowroomEffect, TrainingCenterEffect, VehicleFleetEffect, WorkshopExtensionEffect) - Fallback fuer ungebaute Gebaeude
+- 3 neue BranchDesc Keys in 6 Sprachen (BranchToolsDesc, BranchManagementDesc, BranchMarketingDesc)
 
 ## Game Loop & Income Fix (06.02.2026)
 - **CRITICAL: Game Loop never started** - `_gameLoopService.Start()` was never called in `MainViewModel.Initialize()` → 0€/s passive income
@@ -173,5 +193,31 @@ dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
 - **Fix: View updated** - Left/Right wire templates show background color, opacity, border width changes + checkmark icon overlay when connected
 - **Fix: PropertyChanged notifications** - `OnIsSelectedChanged`, `OnIsConnectedChanged`, `OnHasErrorChanged` notify visual computed properties
 
+## Prestige System Rewrite (07.02.2026)
+- **IPrestigeService**: New 3-tier API: `CanPrestige(PrestigeTier)`, `GetPrestigePoints(decimal)`, `DoPrestige(PrestigeTier)`, `GetShopItems()`, `BuyShopItem(string)`, `GetPermanentMultiplier()`
+- **PrestigeService**: Full rewrite for Bronze/Silver/Gold tiers, prestige point calculation with tier multiplier, shop item purchase, reset logic per tier
+- **Reset preserves**: Achievements, Premium, Settings, PrestigeData, Tutorial, TotalMoneyEarned, TotalPlayTimeSeconds. Silver keeps Research. Gold keeps Shop items.
+- **Reset creates**: Carpenter Level 1 with 1 worker (tier from shop bonus), starting money 100 + shop bonus
+- **SaveGameService**: v1→v2 migration in LoadFromFileAsync (calls GameState.MigrateFromV1 if Version < 2)
+- **StatisticsViewModel**: Updated to use new IPrestigeService API (3-tier system, prestige points display)
+
+## v2.0 Redesign Integration (07.02.2026)
+- **App.axaml.cs**: 4 neue Services (IWorkerService, IBuildingService, IResearchService, IEventService) + 4 neue VMs registriert
+- **MainViewModel**: 14 child VMs (4 neue: WorkerMarketVM, WorkerProfileVM, BuildingsVM, ResearchVM)
+- **MainViewModel**: 4 neue Tab/Overlay States (IsWorkerMarketActive, IsWorkerProfileActive, IsBuildingsActive, IsResearchActive)
+- **MainViewModel**: IsTabBarVisible prueft alle neuen Overlays, DeactivateAllTabs setzt alle zurueck
+- **MainViewModel**: 3 neue Tab-Commands (SelectWorkerMarketTab, SelectBuildingsTab, SelectResearchTab)
+- **MainViewModel**: "worker?id=X" Navigation-Route fuer Worker-Profil
+- **MainViewModel**: GetWorkshopIconKind erweitert (Architect=Compass, GeneralContractor=HardHat)
+- **MainViewModel**: IncomePerSecond/IncomeDisplay nutzt NetIncomePerSecond statt TotalIncomePerSecond
+- **MainViewModel**: WorkshopDisplayModel.LevelProgress max 50 statt 10
+- **MainViewModel**: EventHandler<string> wrapper fuer neue VM NavigationRequested Events (vs Action<string> der alten VMs)
+- **MainView.axaml**: 4 neue Views eingebunden (WorkerMarket, WorkerProfile, Buildings, Research)
+- **MainView.axaml**: Tab-Bar von 5 auf 7 Tabs (Home, Workers, Research, Stats, Achievements, Shop, Settings)
+- **AVLN2000 Fixes**: BoolConverters.FalseIsVisible -> DisplayOpacity Property (Buildings+Research), Extension Method Bindings -> computed Properties (Worker.PersonalityIcon, Worker.HiringCost)
+- Build: 0 Fehler
+
 ## Version
+- v2.0.2 (vc7) - Release mit Store Assets
+- v2.0.1 (vc6) - Bugfixes, Deep Reviews
 - v2.0.0 (vc5) - Avalonia port

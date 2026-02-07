@@ -5,16 +5,14 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Manages the prestige system.
-/// Players can reset progress at level 30+ to gain permanent income multipliers.
+/// Implements the 3-tier prestige system (Bronze / Silver / Gold).
+/// Each tier resets progress but grants permanent multipliers and prestige points.
+/// Bronze: Basic reset. Silver: Preserves research. Gold: Preserves shop items.
 /// </summary>
 public class PrestigeService : IPrestigeService
 {
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
-
-    public const int MINIMUM_PRESTIGE_LEVEL = 20;
-    public const decimal MONEY_DIVISOR = 1_000_000m; // 1 million
 
     public event EventHandler? PrestigeCompleted;
 
@@ -24,116 +22,250 @@ public class PrestigeService : IPrestigeService
         _saveGameService = saveGameService;
     }
 
-    public int CurrentPrestigeLevel => _gameStateService.State.PrestigeLevel;
-
-    public decimal CurrentMultiplier => _gameStateService.State.PrestigeMultiplier;
-
-    public bool CanPrestige => _gameStateService.State.PlayerLevel >= MINIMUM_PRESTIGE_LEVEL;
-
-    public int MinimumLevel => MINIMUM_PRESTIGE_LEVEL;
-
-    public decimal PotentialMultiplier => CalculatePotentialMultiplier();
-
-    public decimal PotentialBonusPercent
+    public bool CanPrestige(PrestigeTier tier)
     {
-        get
-        {
-            var potentialMultiplier = CalculatePotentialMultiplier();
-            // Convert multiplier to percentage increase
-            // e.g., 1.316 -> 31.6%
-            return (potentialMultiplier - 1m) * 100m;
-        }
-    }
-
-    /// <summary>
-    /// Calculates the potential multiplier based on total money earned.
-    /// Formula: 1 + sqrt(TotalMoneyEarned / 1,000,000) * 0.10
-    /// Example: 10M earned -> 1 + sqrt(10) * 0.10 = 1.316 (31.6% bonus)
-    /// </summary>
-    public decimal CalculatePotentialMultiplier()
-    {
-        var totalMoney = _gameStateService.State.TotalMoneyEarned;
-        if (totalMoney <= 0) return 1m;
-
-        // sqrt(TotalMoneyEarned / 1,000,000) * 10% bonus
-        var ratio = (double)(totalMoney / MONEY_DIVISOR);
-        var sqrtRatio = Math.Sqrt(ratio);
-        var bonus = (decimal)sqrtRatio * 0.10m;
-
-        // New multiplier = current multiplier + bonus (stacks with previous prestiges)
-        var newMultiplier = CurrentMultiplier + bonus;
-
-        // Round to 3 decimal places
-        return Math.Round(newMultiplier, 3);
-    }
-
-    public async Task<bool> PerformPrestigeAsync()
-    {
-        if (!CanPrestige) return false;
+        if (tier == PrestigeTier.None) return false;
 
         var state = _gameStateService.State;
+        return state.Prestige.CanPrestige(tier, state.PlayerLevel);
+    }
 
-        // Calculate new multiplier
-        var newMultiplier = CalculatePotentialMultiplier();
+    public int GetPrestigePoints(decimal totalMoneyEarned)
+    {
+        // Basis-Punkte aus PrestigeData (floor(sqrt(totalMoney / 100_000)))
+        return PrestigeData.CalculatePrestigePoints(totalMoneyEarned);
+    }
 
-        // Increment prestige level
-        state.PrestigeLevel++;
+    public async Task<bool> DoPrestige(PrestigeTier tier)
+    {
+        if (!CanPrestige(tier)) return false;
 
-        // Apply new multiplier
-        state.PrestigeMultiplier = newMultiplier;
+        var state = _gameStateService.State;
+        var prestige = state.Prestige;
 
-        // Reset progress (keep: PrestigeLevel, PrestigeMultiplier, Achievements, Premium, Settings)
-        ResetProgress(state);
+        // Prestige-Punkte berechnen (Tier-Multiplikator anwenden)
+        int basePoints = GetPrestigePoints(state.TotalMoneyEarned);
+        int tierPoints = (int)(basePoints * tier.GetPointMultiplier());
 
-        // Save game
+        prestige.PrestigePoints += tierPoints;
+        prestige.TotalPrestigePoints += tierPoints;
+
+        // Tier-Zaehler erhoehen
+        switch (tier)
+        {
+            case PrestigeTier.Bronze:
+                prestige.BronzeCount++;
+                break;
+            case PrestigeTier.Silver:
+                prestige.SilverCount++;
+                break;
+            case PrestigeTier.Gold:
+                prestige.GoldCount++;
+                break;
+        }
+
+        // Hoechsten Tier tracken
+        if (tier > prestige.CurrentTier)
+            prestige.CurrentTier = tier;
+
+        // Permanenten Multiplier erhoehen (Tier-Bonus)
+        prestige.PermanentMultiplier += tier.GetPermanentMultiplierBonus();
+        prestige.PermanentMultiplier = Math.Round(prestige.PermanentMultiplier, 3);
+
+        // Legacy-Felder synchron halten
+        state.PrestigeLevel = prestige.TotalPrestigeCount;
+        state.PrestigeMultiplier = prestige.PermanentMultiplier;
+
+        // Reset durchfuehren
+        ResetProgress(state, tier);
+
         await _saveGameService.SaveAsync();
 
-        // Fire event
         PrestigeCompleted?.Invoke(this, EventArgs.Empty);
 
         return true;
     }
 
-    private static void ResetProgress(GameState state)
+    public List<PrestigeShopItem> GetShopItems()
     {
-        // Reset player progress
+        var allItems = PrestigeShop.GetAllItems();
+        var purchased = _gameStateService.State.Prestige.PurchasedShopItems;
+
+        // Kaufstatus aus PrestigeData uebernehmen
+        foreach (var item in allItems)
+        {
+            item.IsPurchased = purchased.Contains(item.Id);
+        }
+
+        return allItems;
+    }
+
+    public bool BuyShopItem(string itemId)
+    {
+        var prestige = _gameStateService.State.Prestige;
+        var allItems = PrestigeShop.GetAllItems();
+
+        var item = allItems.FirstOrDefault(i => i.Id == itemId);
+        if (item == null) return false;
+
+        // Bereits gekauft?
+        if (prestige.PurchasedShopItems.Contains(itemId)) return false;
+
+        // Genug Punkte?
+        if (prestige.PrestigePoints < item.Cost) return false;
+
+        prestige.PrestigePoints -= item.Cost;
+        prestige.PurchasedShopItems.Add(itemId);
+
+        // Multiplier neu berechnen (Shop-Income-Bonus wirkt auf PermanentMultiplier)
+        RecalculatePermanentMultiplier();
+
+        return true;
+    }
+
+    public decimal GetPermanentMultiplier()
+    {
+        var prestige = _gameStateService.State.Prestige;
+
+        // Basis: gespeicherter PermanentMultiplier (enthaelt Tier-Boni)
+        decimal multiplier = prestige.PermanentMultiplier;
+
+        // Shop-Income-Boni addieren
+        var purchased = prestige.PurchasedShopItems;
+        var allItems = PrestigeShop.GetAllItems();
+
+        foreach (var item in allItems)
+        {
+            if (purchased.Contains(item.Id) && item.Effect.IncomeMultiplier > 0)
+            {
+                multiplier += item.Effect.IncomeMultiplier;
+            }
+        }
+
+        return multiplier;
+    }
+
+    /// <summary>
+    /// Recalculates PermanentMultiplier in PrestigeData based on tier counts + shop bonuses.
+    /// Called after buying shop items to keep the stored multiplier correct.
+    /// Note: Shop income bonuses are NOT baked into PermanentMultiplier - they are added dynamically in GetPermanentMultiplier().
+    /// </summary>
+    private void RecalculatePermanentMultiplier()
+    {
+        // PermanentMultiplier bleibt wie es ist (Tier-Boni sind bereits eingerechnet).
+        // Shop-Boni werden dynamisch in GetPermanentMultiplier() addiert.
+        // Hier nichts zu tun - Methode existiert fuer zukuenftige Erweiterungen.
+    }
+
+    /// <summary>
+    /// Resets game progress based on prestige tier.
+    /// Bronze: Full reset (keep achievements, premium, settings, prestige, tutorial, TotalMoneyEarned, TotalPlayTimeSeconds).
+    /// Silver: Additionally preserves research.
+    /// Gold: Additionally preserves prestige shop items (already in PrestigeData, so no extra handling needed).
+    /// </summary>
+    private static void ResetProgress(GameState state, PrestigeTier tier)
+    {
+        // Startgeld berechnen (100 Basis + Shop-Boni)
+        decimal startMoney = 100m;
+        var purchased = state.Prestige.PurchasedShopItems;
+        var allItems = PrestigeShop.GetAllItems();
+        foreach (var item in allItems)
+        {
+            if (purchased.Contains(item.Id) && item.Effect.ExtraStartMoney > 0)
+            {
+                startMoney += item.Effect.ExtraStartMoney;
+            }
+        }
+
+        // Start-Worker-Tier aus Shop bestimmen
+        var startWorkerTier = WorkerTier.E;
+        foreach (var item in allItems)
+        {
+            if (purchased.Contains(item.Id) && item.Effect.StartingWorkerTier != null)
+            {
+                if (Enum.TryParse<WorkerTier>(item.Effect.StartingWorkerTier, out var shopTier) && shopTier > startWorkerTier)
+                {
+                    startWorkerTier = shopTier;
+                }
+            }
+        }
+
+        // === RESET: Player Progress ===
         state.PlayerLevel = 1;
         state.CurrentXp = 0;
         state.TotalXp = 0;
 
-        // Reset money (keep TotalMoneyEarned for next prestige calculation!)
-        state.Money = 100m; // Starting money
-        // Note: TotalMoneyEarned is NOT reset - it's used for prestige bonus calculation
+        // === RESET: Money (TotalMoneyEarned bleibt!) ===
+        state.Money = startMoney;
         state.TotalMoneySpent = 0m;
 
-        // Reset workshops to level 1
-        foreach (var workshop in state.Workshops)
-        {
-            workshop.Level = workshop.Type == WorkshopType.Carpenter ? 1 : 0;
-            workshop.Workers.Clear();
-            workshop.TotalEarned = 0m;
-            workshop.OrdersCompleted = 0;
-        }
+        // === RESET: Workshops -> nur Carpenter Level 1 mit 1 Worker ===
+        state.Workshops.Clear();
+        state.UnlockedWorkshopTypes.Clear();
+        state.UnlockedWorkshopTypes.Add(WorkshopType.Carpenter);
 
-        // Clear orders
+        var carpenter = Workshop.Create(WorkshopType.Carpenter);
+        carpenter.IsUnlocked = true;
+        carpenter.Workers.Add(Worker.CreateForTier(startWorkerTier));
+        state.Workshops.Add(carpenter);
+
+        // === RESET: Workers ===
+        state.WorkerMarket = null;
+        state.TotalWorkersHired = 0;
+        state.TotalWorkersFired = 0;
+
+        // === RESET: Orders ===
         state.AvailableOrders.Clear();
         state.ActiveOrder = null;
-
-        // Reset statistics
         state.TotalOrdersCompleted = 0;
+        state.OrdersCompletedToday = 0;
+        state.OrdersCompletedThisWeek = 0;
+        state.LastOrderCooldownStart = DateTime.MinValue;
+        state.WeeklyOrderReset = DateTime.UtcNow;
+
+        // === RESET: Reputation ===
+        state.Reputation = new CustomerReputation();
+
+        // === RESET: Buildings ===
+        state.Buildings.Clear();
+
+        // === RESET: Research (Silver + Gold behalten Research!) ===
+        if (!tier.KeepsResearch())
+        {
+            state.Researches = ResearchTree.CreateAll();
+            state.ActiveResearchId = null;
+        }
+
+        // === RESET: Events ===
+        state.ActiveEvent = null;
+        state.LastEventCheck = DateTime.UtcNow;
+        state.EventHistory.Clear();
+
+        // === RESET: Statistics (TotalPlayTimeSeconds bleibt!) ===
         state.TotalMiniGamesPlayed = 0;
         state.PerfectRatings = 0;
         state.PerfectStreak = 0;
         state.BestPerfectStreak = 0;
 
-        // Reset boosts
+        // === RESET: Boosts ===
         state.SpeedBoostEndTime = DateTime.MinValue;
         state.XpBoostEndTime = DateTime.MinValue;
 
-        // Reset daily rewards (optional - could keep streak)
+        // === RESET: Daily Rewards ===
         state.DailyRewardStreak = 0;
         state.LastDailyRewardClaim = DateTime.MinValue;
 
-        // Keep: UnlockedAchievements, IsPremium, TutorialCompleted, Settings
+        // === PRESERVED (nicht angefasst): ===
+        // - state.Prestige (PrestigeData mit Punkten, Shop-Items, Tier-Counts)
+        // - state.UnlockedAchievements
+        // - state.IsPremium
+        // - state.TutorialCompleted, state.TutorialStep
+        // - state.TotalMoneyEarned
+        // - state.TotalPlayTimeSeconds
+        // - state.SoundEnabled, state.MusicEnabled, state.HapticsEnabled, state.Language
+        // - state.CreatedAt
+
+        // Gold prestige preserves shop items (already in PrestigeData.PurchasedShopItems,
+        // which is not touched by reset). Nothing extra needed here.
     }
 }

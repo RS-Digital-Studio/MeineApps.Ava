@@ -12,7 +12,10 @@ public enum OrderDifficulty
     Medium = 2,
 
     /// <summary>Hard - 3 stars, precise timing required</summary>
-    Hard = 3
+    Hard = 3,
+
+    /// <summary>Expert - 4 stars, requires Reputation 80+, very precise</summary>
+    Expert = 4
 }
 
 /// <summary>
@@ -28,6 +31,7 @@ public static class OrderDifficultyExtensions
         OrderDifficulty.Easy => "\u2b50",
         OrderDifficulty.Medium => "\u2b50\u2b50",
         OrderDifficulty.Hard => "\u2b50\u2b50\u2b50",
+        OrderDifficulty.Expert => "\u2b50\u2b50\u2b50\u2b50",
         _ => "\u2b50"
     };
 
@@ -38,7 +42,8 @@ public static class OrderDifficultyExtensions
     {
         OrderDifficulty.Easy => 1.0m,
         OrderDifficulty.Medium => 1.5m,
-        OrderDifficulty.Hard => 3.5m,  // Increased from 2.5 to make Hard more rewarding
+        OrderDifficulty.Hard => 3.5m,
+        OrderDifficulty.Expert => 5.0m,
         _ => 1.0m
     };
 
@@ -50,6 +55,7 @@ public static class OrderDifficultyExtensions
         OrderDifficulty.Easy => 1.0m,
         OrderDifficulty.Medium => 1.75m,
         OrderDifficulty.Hard => 3.0m,
+        OrderDifficulty.Expert => 4.5m,
         _ => 1.0m
     };
 
@@ -59,9 +65,10 @@ public static class OrderDifficultyExtensions
     /// </summary>
     public static double GetPerfectZoneSize(this OrderDifficulty difficulty) => difficulty switch
     {
-        OrderDifficulty.Easy => 0.25,    // 25% of bar
-        OrderDifficulty.Medium => 0.15,  // 15% of bar
-        OrderDifficulty.Hard => 0.12,    // 12% of bar (was 8% - too hard)
+        OrderDifficulty.Easy => 0.25,
+        OrderDifficulty.Medium => 0.15,
+        OrderDifficulty.Hard => 0.12,
+        OrderDifficulty.Expert => 0.08,
         _ => 0.15
     };
 
@@ -74,6 +81,16 @@ public static class OrderDifficultyExtensions
         OrderDifficulty.Easy => 0.8,
         OrderDifficulty.Medium => 1.0,
         OrderDifficulty.Hard => 1.4,
+        OrderDifficulty.Expert => 1.8,
         _ => 1.0
+    };
+
+    /// <summary>
+    /// Minimum reputation required for this difficulty.
+    /// </summary>
+    public static int GetRequiredReputation(this OrderDifficulty difficulty) => difficulty switch
+    {
+        OrderDifficulty.Expert => 80,
+        _ => 0
     };
 }

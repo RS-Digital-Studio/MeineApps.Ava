@@ -176,12 +176,14 @@ public partial class StatisticsViewModel : ObservableObject
             ? (double)state.PerfectRatings / state.TotalMiniGamesPlayed * 100
             : 0;
 
-        // Prestige
-        PrestigeLevel = state.PrestigeLevel;
-        PrestigeMultiplier = $"{state.PrestigeMultiplier:F1}x";
-        CanPrestige = _prestigeService.CanPrestige;
-        MinimumPrestigeLevel = _prestigeService.MinimumLevel;
-        PotentialBonus = $"+{_prestigeService.PotentialBonusPercent:F1}%";
+        // Prestige (3-Tier System)
+        PrestigeLevel = state.Prestige.TotalPrestigeCount;
+        PrestigeMultiplier = $"{_prestigeService.GetPermanentMultiplier():F1}x";
+        var highestTier = state.Prestige.GetHighestAvailableTier(state.PlayerLevel);
+        CanPrestige = highestTier != PrestigeTier.None;
+        MinimumPrestigeLevel = PrestigeTier.Bronze.GetRequiredLevel();
+        var potentialPoints = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
+        PotentialBonus = $"+{potentialPoints} PP";
 
         // Workshops
         TotalWorkshops = state.Workshops.Count;
@@ -221,13 +223,16 @@ public partial class StatisticsViewModel : ObservableObject
     [RelayCommand]
     private async Task PrestigeAsync()
     {
-        if (!_prestigeService.CanPrestige)
+        var state = _gameStateService.State;
+        var highestTier = state.Prestige.GetHighestAvailableTier(state.PlayerLevel);
+
+        if (highestTier == PrestigeTier.None)
         {
             var title = _localizationService.GetString("PrestigeNotAvailable");
             var message = string.Format(
                 _localizationService.GetString("PrestigeNotAvailableDesc"),
-                _prestigeService.MinimumLevel,
-                _gameStateService.State.PlayerLevel);
+                PrestigeTier.Bronze.GetRequiredLevel(),
+                state.PlayerLevel);
 
             AlertRequested?.Invoke(title, message, "OK");
             return;

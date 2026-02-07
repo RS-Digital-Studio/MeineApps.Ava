@@ -41,6 +41,22 @@
       <views:OrderView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsOrderDetailActive}"
                        DataContext="{Binding OrderViewModel}" />
 
+      <!-- Worker Market (overlay when selected) -->
+      <views:WorkerMarketView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkerMarketActive}"
+                              DataContext="{Binding WorkerMarketViewModel}" />
+
+      <!-- Worker Profile (overlay when selected) -->
+      <views:WorkerProfileView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkerProfileActive}"
+                               DataContext="{Binding WorkerProfileViewModel}" />
+
+      <!-- Buildings (overlay when selected) -->
+      <views:BuildingsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBuildingsActive}"
+                           DataContext="{Binding BuildingsViewModel}" />
+
+      <!-- Research (overlay when selected) -->
+      <views:ResearchView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsResearchActive}"
+                          DataContext="{Binding ResearchViewModel}" />
+
       <!-- MiniGame Views (overlay when active) -->
       <miniGames:SawingGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSawingGameActive}"
                                 DataContext="{Binding SawingGameViewModel}" />
@@ -65,7 +81,7 @@
             BorderBrush="{DynamicResource CardBorderBrush}"
             Padding="0,8"
             IsVisible="{Binding IsTabBarVisible}">
-      <Grid ColumnDefinitions="*,*,*,*,*">
+      <Grid ColumnDefinitions="*,*,*,*,*,*,*">
 
         <!-- Dashboard -->
         <Button Grid.Column="0" Classes="Text"
@@ -80,8 +96,34 @@
           </StackPanel>
         </Button>
 
-        <!-- Statistics -->
+        <!-- Workers -->
         <Button Grid.Column="1" Classes="Text"
+                Command="{Binding SelectWorkerMarketTabCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                MinHeight="48">
+          <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="AccountGroup" Width="24" Height="24" />
+            <TextBlock Text="{loc:Translate Workers}"
+                       FontSize="10" HorizontalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <!-- Research -->
+        <Button Grid.Column="2" Classes="Text"
+                Command="{Binding SelectResearchTabCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                MinHeight="48">
+          <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="FlaskOutline" Width="24" Height="24" />
+            <TextBlock Text="{loc:Translate Research}"
+                       FontSize="10" HorizontalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <!-- Statistics -->
+        <Button Grid.Column="3" Classes="Text"
                 Command="{Binding SelectStatisticsTabCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
@@ -94,7 +136,7 @@
         </Button>
 
         <!-- Achievements -->
-        <Button Grid.Column="2" Classes="Text"
+        <Button Grid.Column="4" Classes="Text"
                 Command="{Binding SelectAchievementsTabCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
@@ -107,7 +149,7 @@
         </Button>
 
         <!-- Shop -->
-        <Button Grid.Column="3" Classes="Text"
+        <Button Grid.Column="5" Classes="Text"
                 Command="{Binding SelectShopTabCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
@@ -120,7 +162,7 @@
         </Button>
 
         <!-- Settings -->
-        <Button Grid.Column="4" Classes="Text"
+        <Button Grid.Column="6" Classes="Text"
                 Command="{Binding SelectSettingsTabCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"

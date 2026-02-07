@@ -87,6 +87,12 @@ public partial class App : Application
         services.AddSingleton<IRewardedAdService, RewardedAdService>();
         services.AddSingleton<ITutorialService, TutorialService>();
 
+        // New Game Services (v2.0)
+        services.AddSingleton<IWorkerService, WorkerService>();
+        services.AddSingleton<IBuildingService, BuildingService>();
+        services.AddSingleton<IResearchService, ResearchService>();
+        services.AddSingleton<IEventService, EventService>();
+
         // ViewModels (Singleton because MainViewModel holds references to child VMs)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<AchievementsViewModel>();
@@ -99,5 +105,9 @@ public partial class App : Application
         services.AddSingleton<PipePuzzleViewModel>();
         services.AddSingleton<WiringGameViewModel>();
         services.AddSingleton<PaintingGameViewModel>();
+        services.AddSingleton<WorkerMarketViewModel>();
+        services.AddSingleton<WorkerProfileViewModel>();
+        services.AddSingleton<BuildingsViewModel>();
+        services.AddSingleton<ResearchViewModel>();
     }
 }

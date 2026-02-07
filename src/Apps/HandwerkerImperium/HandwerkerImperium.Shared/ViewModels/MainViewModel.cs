@@ -49,6 +49,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private decimal _pendingOfflineEarnings;
 
+    // Statisches Array vermeidet Allokation bei jedem RefreshWorkshops()-Aufruf
+    private static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
+
+    // EventHandler wrappers for new VMs (EventHandler<string> vs Action<string>)
+    private readonly EventHandler<string> _workerMarketNavHandler;
+    private readonly EventHandler<string> _workerProfileNavHandler;
+    private readonly EventHandler<string> _buildingsNavHandler;
+    private readonly EventHandler<string> _researchNavHandler;
+
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS FOR NAVIGATION AND DIALOGS
     // ═══════════════════════════════════════════════════════════════════════
@@ -198,12 +207,26 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isPaintingGameActive;
 
+    [ObservableProperty]
+    private bool _isWorkerMarketActive;
+
+    [ObservableProperty]
+    private bool _isWorkerProfileActive;
+
+    [ObservableProperty]
+    private bool _isBuildingsActive;
+
+    [ObservableProperty]
+    private bool _isResearchActive;
+
     /// <summary>
     /// Whether the bottom tab bar should be visible (hidden during mini-games and detail views).
     /// </summary>
     public bool IsTabBarVisible => !IsWorkshopDetailActive && !IsOrderDetailActive &&
                                     !IsSawingGameActive && !IsPipePuzzleActive &&
-                                    !IsWiringGameActive && !IsPaintingGameActive;
+                                    !IsWiringGameActive && !IsPaintingGameActive &&
+                                    !IsWorkerMarketActive && !IsWorkerProfileActive &&
+                                    !IsBuildingsActive && !IsResearchActive;
 
     private void DeactivateAllTabs()
     {
@@ -218,6 +241,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsPipePuzzleActive = false;
         IsWiringGameActive = false;
         IsPaintingGameActive = false;
+        IsWorkerMarketActive = false;
+        IsWorkerProfileActive = false;
+        IsBuildingsActive = false;
+        IsResearchActive = false;
     }
 
     private void NotifyTabBarVisibility()
@@ -243,6 +270,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public PipePuzzleViewModel PipePuzzleViewModel { get; }
     public WiringGameViewModel WiringGameViewModel { get; }
     public PaintingGameViewModel PaintingGameViewModel { get; }
+    public WorkerMarketViewModel WorkerMarketViewModel { get; }
+    public WorkerProfileViewModel WorkerProfileViewModel { get; }
+    public BuildingsViewModel BuildingsViewModel { get; }
+    public ResearchViewModel ResearchViewModel { get; }
 
     public MainViewModel(
         IGameStateService gameStateService,
@@ -265,7 +296,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         SawingGameViewModel sawingGameViewModel,
         PipePuzzleViewModel pipePuzzleViewModel,
         WiringGameViewModel wiringGameViewModel,
-        PaintingGameViewModel paintingGameViewModel)
+        PaintingGameViewModel paintingGameViewModel,
+        WorkerMarketViewModel workerMarketViewModel,
+        WorkerProfileViewModel workerProfileViewModel,
+        BuildingsViewModel buildingsViewModel,
+        ResearchViewModel researchViewModel)
     {
         _gameStateService = gameStateService;
         _gameLoopService = gameLoopService;
@@ -293,6 +328,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PipePuzzleViewModel = pipePuzzleViewModel;
         WiringGameViewModel = wiringGameViewModel;
         PaintingGameViewModel = paintingGameViewModel;
+        WorkerMarketViewModel = workerMarketViewModel;
+        WorkerProfileViewModel = workerProfileViewModel;
+        BuildingsViewModel = buildingsViewModel;
+        ResearchViewModel = researchViewModel;
 
         // Wire up child VM navigation events
         ShopViewModel.NavigationRequested += OnChildNavigation;
@@ -305,6 +344,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PipePuzzleViewModel.NavigationRequested += OnChildNavigation;
         WiringGameViewModel.NavigationRequested += OnChildNavigation;
         PaintingGameViewModel.NavigationRequested += OnChildNavigation;
+
+        _workerMarketNavHandler = (_, route) => OnChildNavigation(route);
+        _workerProfileNavHandler = (_, route) => OnChildNavigation(route);
+        _buildingsNavHandler = (_, route) => OnChildNavigation(route);
+        _researchNavHandler = (_, route) => OnChildNavigation(route);
+        WorkerMarketViewModel.NavigationRequested += _workerMarketNavHandler;
+        WorkerProfileViewModel.NavigationRequested += _workerProfileNavHandler;
+        BuildingsViewModel.NavigationRequested += _buildingsNavHandler;
+        ResearchViewModel.NavigationRequested += _researchNavHandler;
 
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
@@ -483,8 +531,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Update properties
         Money = state.Money;
         MoneyDisplay = FormatMoney(state.Money);
-        IncomePerSecond = state.TotalIncomePerSecond;
-        IncomeDisplay = $"{FormatMoney(state.TotalIncomePerSecond)}/s";
+        IncomePerSecond = state.NetIncomePerSecond;
+        IncomeDisplay = $"{FormatMoney(state.NetIncomePerSecond)}/s";
         PlayerLevel = state.PlayerLevel;
         CurrentXp = state.CurrentXp;
         XpForNextLevel = state.XpForNextLevel;
@@ -689,6 +737,32 @@ public partial class MainViewModel : ObservableObject, IDisposable
         NotifyTabBarVisibility();
     }
 
+    [RelayCommand]
+    private void SelectWorkerMarketTab()
+    {
+        DeactivateAllTabs();
+        IsWorkerMarketActive = true;
+        WorkerMarketViewModel.LoadMarket();
+        NotifyTabBarVisibility();
+    }
+
+    [RelayCommand]
+    private void SelectBuildingsTab()
+    {
+        DeactivateAllTabs();
+        IsBuildingsActive = true;
+        BuildingsViewModel.LoadBuildings();
+        NotifyTabBarVisibility();
+    }
+
+    [RelayCommand]
+    private void SelectResearchTab()
+    {
+        DeactivateAllTabs();
+        IsResearchActive = true;
+        ResearchViewModel.LoadResearchTree();
+        NotifyTabBarVisibility();
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // CHILD NAVIGATION HANDLER
@@ -743,6 +817,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             DeactivateAllTabs();
             NavigateToMiniGame(routePart, orderId);
+            NotifyTabBarVisibility();
+            return;
+        }
+
+        // "worker?id=X" = navigate to worker profile
+        if (route.StartsWith("worker?id="))
+        {
+            var workerId = route.Replace("worker?id=", "");
+            WorkerProfileViewModel.SetWorker(workerId);
+            DeactivateAllTabs();
+            IsWorkerProfileActive = true;
             NotifyTabBarVisibility();
             return;
         }
@@ -883,7 +968,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnGameTick(object? sender, GameTickEventArgs e)
     {
         // Update money display (already handled by MoneyChanged event)
-        IncomePerSecond = _gameStateService.State.TotalIncomePerSecond;
+        IncomePerSecond = _gameStateService.State.NetIncomePerSecond;
         IncomeDisplay = $"{FormatMoney(IncomePerSecond)}/s";
     }
 
@@ -901,6 +986,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         WorkshopType.Painter => Material.Icons.MaterialIconKind.Palette,
         WorkshopType.Roofer => Material.Icons.MaterialIconKind.HomeCity,
         WorkshopType.Contractor => Material.Icons.MaterialIconKind.OfficeBuildingOutline,
+        WorkshopType.Architect => Material.Icons.MaterialIconKind.Compass,
+        WorkshopType.GeneralContractor => Material.Icons.MaterialIconKind.HardHat,
         _ => Material.Icons.MaterialIconKind.Wrench
     };
 
@@ -944,6 +1031,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PipePuzzleViewModel.NavigationRequested -= OnChildNavigation;
         WiringGameViewModel.NavigationRequested -= OnChildNavigation;
         PaintingGameViewModel.NavigationRequested -= OnChildNavigation;
+        WorkerMarketViewModel.NavigationRequested -= _workerMarketNavHandler;
+        WorkerProfileViewModel.NavigationRequested -= _workerProfileNavHandler;
+        BuildingsViewModel.NavigationRequested -= _buildingsNavHandler;
+        ResearchViewModel.NavigationRequested -= _researchNavHandler;
 
         _gameStateService.MoneyChanged -= OnMoneyChanged;
         _gameStateService.LevelUp -= OnLevelUp;
@@ -991,5 +1082,5 @@ public partial class WorkshopDisplayModel : ObservableObject
     public string IncomeDisplay => IncomePerSecond > 0 ? $"{IncomePerSecond:N0}€/s" : "-";
     public string UpgradeCostDisplay => $"{UpgradeCost:N0}€";
     public string HireCostDisplay => $"{HireWorkerCost:N0}€";
-    public double LevelProgress => Level / 10.0;
+    public double LevelProgress => Level / 50.0;
 }

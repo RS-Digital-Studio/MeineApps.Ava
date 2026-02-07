@@ -116,6 +116,12 @@ public class SaveGameService : ISaveGameService
 
             if (state != null)
             {
+                // v1 -> v2 Migration
+                if (state.Version < 2)
+                {
+                    state = GameState.MigrateFromV1(state);
+                }
+
                 _gameStateService.Initialize(state);
             }
 

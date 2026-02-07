@@ -1,0 +1,317 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.WorkerProfileView"
+             x:DataType="vm:WorkerProfileViewModel">
+
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0"
+            Classes="CardElevated"
+            Padding="16,12"
+            CornerRadius="0,0,12,12">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Back Button -->
+        <Button Classes="Text"
+                Command="{Binding GoBackCommand}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+        </Button>
+
+        <!-- Title (Worker Name) -->
+        <TextBlock Grid.Column="1"
+                   Text="{Binding WorkerName}"
+                   FontSize="20" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center" />
+
+        <!-- Status Badge -->
+        <Border Grid.Column="2"
+                Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="8"
+                Padding="12,6">
+          <TextBlock Text="{Binding StatusDisplay}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- CONTENT                                                           -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1" Padding="16">
+      <StackPanel Spacing="16">
+
+        <!-- ============================================================= -->
+        <!-- WORKER INFO CARD                                              -->
+        <!-- ============================================================= -->
+        <Border Classes="CardElevated" Padding="16">
+          <StackPanel Spacing="12">
+
+            <!-- Tier + Personality -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Translate Tier}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding TierDisplay}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource PrimaryBrush}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Translate Personality}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding PersonalityDisplay}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+            </Grid>
+
+            <!-- Specialization + Assigned Workshop -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Translate Specialization}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding SpecializationDisplay}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Translate AssignedWorkshop}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding AssignedWorkshopDisplay}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+            </Grid>
+
+            <!-- Efficiency + Wage -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Translate Efficiency}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding EfficiencyDisplay}"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="{DynamicResource SuccessBrush}" />
+              </StackPanel>
+              <StackPanel Spacing="4">
+                <TextBlock Text="{loc:Translate Wage}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding WageDisplay}"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="{DynamicResource WarningBrush}" />
+              </StackPanel>
+            </Grid>
+
+          </StackPanel>
+        </Border>
+
+        <!-- ============================================================= -->
+        <!-- MOOD BAR                                                      -->
+        <!-- ============================================================= -->
+        <Border Classes="CardElevated" Padding="16">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="EmoticonHappy" Width="20" Height="20"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate Mood}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+              <TextBlock Grid.Column="1"
+                         Text="{Binding MoodDisplay}"
+                         FontSize="14" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+            <ProgressBar Value="{Binding MoodPercent}"
+                         Maximum="100"
+                         Foreground="{DynamicResource SuccessBrush}"
+                         Height="8" />
+          </StackPanel>
+        </Border>
+
+        <!-- ============================================================= -->
+        <!-- FATIGUE BAR                                                   -->
+        <!-- ============================================================= -->
+        <Border Classes="CardElevated" Padding="16">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="Sleep" Width="20" Height="20"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate Fatigue}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+              <TextBlock Grid.Column="1"
+                         Text="{Binding FatigueDisplay}"
+                         FontSize="14" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+            <ProgressBar Value="{Binding FatiguePercent}"
+                         Maximum="100"
+                         Foreground="{DynamicResource ErrorBrush}"
+                         Height="8" />
+          </StackPanel>
+        </Border>
+
+        <!-- ============================================================= -->
+        <!-- XP BAR                                                        -->
+        <!-- ============================================================= -->
+        <Border Classes="CardElevated" Padding="16">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="TrendingUp" Width="20" Height="20"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate Experience}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+              <TextBlock Grid.Column="1"
+                         Text="{Binding XpProgress}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </Grid>
+            <ProgressBar Value="{Binding XpPercent}"
+                         Maximum="100"
+                         Foreground="{DynamicResource PrimaryBrush}"
+                         Height="8" />
+          </StackPanel>
+        </Border>
+
+        <!-- ============================================================= -->
+        <!-- ACTION BUTTONS                                                -->
+        <!-- ============================================================= -->
+        <Border Classes="CardElevated" Padding="16">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate Actions}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <!-- Train / Stop Training -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+              <Button Classes="Primary"
+                      Command="{Binding StartTrainingCommand}"
+                      IsVisible="{Binding !IsTraining}"
+                      IsEnabled="{Binding CanStartTraining}"
+                      HorizontalAlignment="Stretch"
+                      Padding="12,10">
+                <StackPanel Orientation="Horizontal" Spacing="6"
+                            HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="SchoolOutline" Width="18" Height="18" />
+                  <TextBlock Text="{loc:Translate Train}" FontSize="13" />
+                </StackPanel>
+              </Button>
+              <Button Classes="Secondary"
+                      Command="{Binding StopTrainingCommand}"
+                      IsVisible="{Binding IsTraining}"
+                      HorizontalAlignment="Stretch"
+                      Padding="12,10">
+                <StackPanel Orientation="Horizontal" Spacing="6"
+                            HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
+                  <TextBlock Text="{loc:Translate StopTraining}" FontSize="13" />
+                </StackPanel>
+              </Button>
+
+              <!-- Rest / Stop Resting -->
+              <Button Grid.Column="1"
+                      Classes="Primary"
+                      Command="{Binding StartRestingCommand}"
+                      IsVisible="{Binding !IsResting}"
+                      IsEnabled="{Binding CanStartResting}"
+                      HorizontalAlignment="Stretch"
+                      Padding="12,10">
+                <StackPanel Orientation="Horizontal" Spacing="6"
+                            HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="BedOutline" Width="18" Height="18" />
+                  <TextBlock Text="{loc:Translate Rest}" FontSize="13" />
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="1"
+                      Classes="Secondary"
+                      Command="{Binding StopRestingCommand}"
+                      IsVisible="{Binding IsResting}"
+                      HorizontalAlignment="Stretch"
+                      Padding="12,10">
+                <StackPanel Orientation="Horizontal" Spacing="6"
+                            HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
+                  <TextBlock Text="{loc:Translate StopResting}" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- Bonus Button -->
+            <Button Classes="Primary"
+                    Command="{Binding GiveBonusCommand}"
+                    IsEnabled="{Binding CanGiveBonus}"
+                    HorizontalAlignment="Stretch"
+                    Padding="12,10">
+              <StackPanel Orientation="Horizontal" Spacing="6"
+                          HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="GiftOutline" Width="18" Height="18" />
+                <TextBlock Text="{loc:Translate GiveBonus}" FontSize="13" />
+              </StackPanel>
+            </Button>
+
+            <!-- Transfer -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
+                  IsVisible="{Binding AvailableWorkshops.Count}">
+              <ComboBox ItemsSource="{Binding AvailableWorkshops}"
+                        DisplayMemberBinding="{Binding Name}"
+                        x:Name="TransferComboBox"
+                        HorizontalAlignment="Stretch"
+                        MinHeight="40" />
+              <Button Grid.Column="1"
+                      Classes="Secondary"
+                      Command="{Binding TransferWorkerCommand}"
+                      CommandParameter="{Binding #TransferComboBox.((vm:WorkshopTransferItem)SelectedItem).Type}"
+                      Padding="12,10">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="SwapHorizontal" Width="18" Height="18" />
+                  <TextBlock Text="{loc:Translate Transfer}" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </Grid>
+
+            <!-- Fire Button -->
+            <Button Classes="Text"
+                    Command="{Binding FireWorkerCommand}"
+                    HorizontalAlignment="Center"
+                    Margin="0,8,0,0"
+                    Padding="16,8">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="AccountRemove" Width="18" Height="18"
+                                 Foreground="{DynamicResource ErrorBrush}" />
+                <TextBlock Text="{loc:Translate FireWorker}"
+                           FontSize="13"
+                           Foreground="{DynamicResource ErrorBrush}" />
+              </StackPanel>
+            </Button>
+
+          </StackPanel>
+        </Border>
+
+        <!-- Bottom Spacer -->
+        <Border Height="20" />
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

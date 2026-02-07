@@ -1,0 +1,178 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.BuildingsView"
+             x:DataType="vm:BuildingsViewModel">
+
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0"
+            Classes="CardElevated"
+            Padding="16,12"
+            CornerRadius="0,0,12,12">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Back Button -->
+        <Button Classes="Text"
+                Command="{Binding GoBackCommand}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+        </Button>
+
+        <!-- Title (centered) -->
+        <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+          <mi:MaterialIcon Kind="OfficeBuildingOutline" Width="28" Height="28"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+          <TextBlock Text="{Binding Title}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+        </StackPanel>
+
+        <!-- Balance -->
+        <Border Grid.Column="2"
+                Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="16"
+                Padding="12,6">
+          <TextBlock Text="{Binding CurrentBalance}"
+                     FontSize="14" FontWeight="Bold"
+                     Foreground="{DynamicResource SuccessBrush}" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- CONTENT                                                           -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1" Padding="16">
+      <ItemsControl ItemsSource="{Binding Buildings}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:BuildingDisplayItem">
+            <Border Classes="Card"
+                    Width="170"
+                    Margin="4"
+                    Padding="12"
+                    Opacity="{Binding DisplayOpacity}">
+              <!-- Opacity trick: locked = 0.4, unlocked = 1.0 handled below -->
+              <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                    RowSpacing="6">
+
+                <!-- Row 0: Icon -->
+                <Border Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="12"
+                        Width="52" Height="52"
+                        HorizontalAlignment="Center">
+                  <TextBlock Text="{Binding Icon}"
+                             FontSize="24"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center" />
+                </Border>
+
+                <!-- Row 1: Name -->
+                <TextBlock Grid.Row="1"
+                           Text="{Binding Name}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxLines="2" />
+
+                <!-- Row 2: Level Display -->
+                <TextBlock Grid.Row="2"
+                           Text="{Binding LevelDisplay}"
+                           FontSize="12"
+                           Foreground="{DynamicResource PrimaryBrush}"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center"
+                           IsVisible="{Binding IsBuilt}" />
+
+                <!-- Row 3: Effect -->
+                <TextBlock Grid.Row="3"
+                           Text="{Binding EffectDescription}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           TextAlignment="Center"
+                           MaxLines="3" />
+
+                <!-- Row 4: Lock info (if locked) -->
+                <StackPanel Grid.Row="4"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            HorizontalAlignment="Center"
+                            IsVisible="{Binding IsLocked}">
+                  <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Text="{Binding UnlockLevel, StringFormat='Lv.{0}'}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+
+                <!-- Row 4: Max Level badge (if maxed) -->
+                <StackPanel Grid.Row="4"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            HorizontalAlignment="Center"
+                            IsVisible="{Binding IsMaxLevel}">
+                  <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                                   Foreground="{DynamicResource SuccessBrush}" />
+                  <TextBlock Text="{Binding CostDisplay}"
+                             FontSize="11"
+                             Foreground="{DynamicResource SuccessBrush}" />
+                </StackPanel>
+
+                <!-- Row 5: Build Button (not built, not locked) -->
+                <Button Grid.Row="5"
+                        Classes="Primary"
+                        HorizontalAlignment="Stretch"
+                        Padding="8,6"
+                        IsVisible="{Binding !IsBuilt}"
+                        IsEnabled="{Binding CanAfford}"
+                        Command="{Binding $parent[ItemsControl].((vm:BuildingsViewModel)DataContext).BuildCommand}"
+                        CommandParameter="{Binding Type}">
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="4"
+                              HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="HammerWrench" Width="14" Height="14" />
+                    <TextBlock Text="{Binding CostDisplay}" FontSize="11" />
+                  </StackPanel>
+                </Button>
+
+                <!-- Row 5: Upgrade Button (built, not max) -->
+                <Button Grid.Row="5"
+                        Classes="Secondary"
+                        HorizontalAlignment="Stretch"
+                        Padding="8,6"
+                        IsVisible="{Binding IsBuilt}"
+                        IsEnabled="{Binding CanAfford}"
+                        Command="{Binding $parent[ItemsControl].((vm:BuildingsViewModel)DataContext).UpgradeCommand}"
+                        CommandParameter="{Binding Type}">
+                  <StackPanel Orientation="Horizontal"
+                              Spacing="4"
+                              HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14" />
+                    <TextBlock Text="{Binding CostDisplay}" FontSize="11" />
+                  </StackPanel>
+                </Button>
+
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

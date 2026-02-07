@@ -1,54 +1,54 @@
+using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Enums;
+
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// Service for managing the prestige system.
-/// Players can prestige at level 30+ to reset progress but gain permanent multipliers.
+/// Service for the 3-tier prestige system (Bronze / Silver / Gold).
+/// Players reset progress to gain permanent multipliers and prestige points.
 /// </summary>
 public interface IPrestigeService
 {
     /// <summary>
-    /// Current prestige level.
+    /// Whether the player can prestige at the given tier.
+    /// Checks player level and previous-tier completion requirements.
     /// </summary>
-    int CurrentPrestigeLevel { get; }
+    bool CanPrestige(PrestigeTier tier);
 
     /// <summary>
-    /// Current prestige multiplier (1.0 = no bonus).
+    /// Calculates how many prestige points the player would earn.
+    /// Formula: floor(sqrt(totalMoneyEarned / 100_000)) * tier multiplier
     /// </summary>
-    decimal CurrentMultiplier { get; }
+    int GetPrestigePoints(decimal totalMoneyEarned);
 
     /// <summary>
-    /// Whether the player can currently prestige (level 30+).
+    /// Performs the prestige reset for the given tier.
+    /// Resets: PlayerLevel, CurrentXp, Money (100 + shop bonus), Workshops (only Carpenter with 1 E worker),
+    ///         AvailableOrders, ActiveOrder, Statistics, Boosts, DailyRewards.
+    /// Preserves: Achievements, Premium, Settings, PrestigeData, Tutorial, TotalMoneyEarned, TotalPlayTimeSeconds.
+    /// Silver preserves Research. Gold preserves Shop items.
     /// </summary>
-    bool CanPrestige { get; }
+    Task<bool> DoPrestige(PrestigeTier tier);
 
     /// <summary>
-    /// The multiplier the player would get if they prestige now.
+    /// Returns all prestige shop items with their purchase state.
     /// </summary>
-    decimal PotentialMultiplier { get; }
+    List<PrestigeShopItem> GetShopItems();
 
     /// <summary>
-    /// The bonus percentage increase if prestige now.
+    /// Buys a prestige shop item by ID. Deducts prestige points.
+    /// Returns true if successful.
     /// </summary>
-    decimal PotentialBonusPercent { get; }
+    bool BuyShopItem(string itemId);
 
     /// <summary>
-    /// Minimum level required to prestige.
+    /// Gets the current permanent income multiplier (base 1.0 + all bonuses).
+    /// Includes tier-based multiplier bonus + shop item income multipliers.
     /// </summary>
-    int MinimumLevel { get; }
+    decimal GetPermanentMultiplier();
 
     /// <summary>
     /// Event fired when prestige is completed.
     /// </summary>
     event EventHandler? PrestigeCompleted;
-
-    /// <summary>
-    /// Calculates the potential multiplier for the current state.
-    /// </summary>
-    decimal CalculatePotentialMultiplier();
-
-    /// <summary>
-    /// Performs the prestige reset and applies the multiplier.
-    /// Returns true if successful.
-    /// </summary>
-    Task<bool> PerformPrestigeAsync();
 }

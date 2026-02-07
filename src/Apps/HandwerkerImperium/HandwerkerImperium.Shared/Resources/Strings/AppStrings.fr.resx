@@ -994,4 +994,549 @@
     <value>Sortie</value>
   </data>
 
+  <!-- Workshop Types (new) -->
+  <data name="Architect" xml:space="preserve">
+    <value>Architecte</value>
+  </data>
+  <data name="GeneralContractor" xml:space="preserve">
+    <value>Entrepreneur G&#233;n&#233;ral</value>
+  </data>
+
+  <!-- Worker System -->
+  <data name="WorkerMarket" xml:space="preserve">
+    <value>March&#233; du Travail</value>
+  </data>
+  <data name="RefreshMarket" xml:space="preserve">
+    <value>Rafra&#238;chir le March&#233;</value>
+  </data>
+  <data name="NextRotation" xml:space="preserve">
+    <value>Prochaine Rotation</value>
+  </data>
+  <data name="NotEnoughMoney" xml:space="preserve">
+    <value>Pas Assez d'Argent</value>
+  </data>
+  <data name="HiringCostFormat" xml:space="preserve">
+    <value>L'embauche co&#251;te {0}</value>
+  </data>
+  <data name="NoWorkshop" xml:space="preserve">
+    <value>Pas d'Atelier</value>
+  </data>
+  <data name="NoWorkshopDesc" xml:space="preserve">
+    <value>Construisez d'abord un atelier avant d'embaucher!</value>
+  </data>
+  <data name="WorkerHired" xml:space="preserve">
+    <value>Ouvrier Embauch&#233;!</value>
+  </data>
+  <data name="WorkerHiredFormat" xml:space="preserve">
+    <value>{0} a rejoint votre &#233;quipe!</value>
+  </data>
+  <data name="NoFreeSlot" xml:space="preserve">
+    <value>Pas de Place Libre</value>
+  </data>
+  <data name="NoFreeSlotDesc" xml:space="preserve">
+    <value>Tous les ateliers sont pleins. Am&#233;liorez-les pour plus de places!</value>
+  </data>
+
+  <!-- Worker Profile -->
+  <data name="NoSpecialization" xml:space="preserve">
+    <value>Pas de Sp&#233;cialisation</value>
+  </data>
+  <data name="Unassigned" xml:space="preserve">
+    <value>Non Assign&#233;</value>
+  </data>
+  <data name="StatusTraining" xml:space="preserve">
+    <value>En Formation</value>
+  </data>
+  <data name="StatusResting" xml:space="preserve">
+    <value>Au Repos</value>
+  </data>
+  <data name="StatusExhausted" xml:space="preserve">
+    <value>&#201;puis&#233;!</value>
+  </data>
+  <data name="StatusWorking" xml:space="preserve">
+    <value>Au Travail</value>
+  </data>
+  <data name="StatusIdle" xml:space="preserve">
+    <value>Inactif</value>
+  </data>
+  <data name="TrainingFailed" xml:space="preserve">
+    <value>&#201;chec de la Formation</value>
+  </data>
+  <data name="TrainingFailedDesc" xml:space="preserve">
+    <value>L'ouvrier est d&#233;j&#224; en formation ou au repos.</value>
+  </data>
+  <data name="RestFailed" xml:space="preserve">
+    <value>&#201;chec du Repos</value>
+  </data>
+  <data name="RestFailedDesc" xml:space="preserve">
+    <value>L'ouvrier est d&#233;j&#224; au repos ou en formation.</value>
+  </data>
+  <data name="GiveBonus" xml:space="preserve">
+    <value>Donner un Bonus</value>
+  </data>
+  <data name="GiveBonusConfirmFormat" xml:space="preserve">
+    <value>Donner un bonus de salaire journalier ({0}) pour am&#233;liorer l'humeur de 30%?</value>
+  </data>
+  <data name="BonusGiven" xml:space="preserve">
+    <value>Bonus Donn&#233;!</value>
+  </data>
+  <data name="BonusGivenFormat" xml:space="preserve">
+    <value>{0} est content du bonus!</value>
+  </data>
+  <data name="NotEnoughMoneyDesc" xml:space="preserve">
+    <value>Vous n'avez pas assez d'argent.</value>
+  </data>
+  <data name="FireWorker" xml:space="preserve">
+    <value>Licencier l'Ouvrier</value>
+  </data>
+  <data name="FireWorkerConfirmFormat" xml:space="preserve">
+    <value>&#202;tes-vous s&#251;r de vouloir licencier {0}? Cette action est irr&#233;versible.</value>
+  </data>
+  <data name="Fire" xml:space="preserve">
+    <value>Licencier</value>
+  </data>
+  <data name="Confirm" xml:space="preserve">
+    <value>Confirmer</value>
+  </data>
+  <data name="TransferFailed" xml:space="preserve">
+    <value>Transfert &#201;chou&#233;</value>
+  </data>
+  <data name="TransferFailedDesc" xml:space="preserve">
+    <value>L'atelier cible n'a pas de places libres.</value>
+  </data>
+
+  <!-- Worker Tiers -->
+  <data name="TierF" xml:space="preserve">
+    <value>Apprenti</value>
+  </data>
+  <data name="TierE" xml:space="preserve">
+    <value>Compagnon</value>
+  </data>
+  <data name="TierD" xml:space="preserve">
+    <value>Ouvrier</value>
+  </data>
+  <data name="TierC" xml:space="preserve">
+    <value>Qualifi&#233;</value>
+  </data>
+  <data name="TierB" xml:space="preserve">
+    <value>Expert</value>
+  </data>
+  <data name="TierA" xml:space="preserve">
+    <value>Ma&#238;tre</value>
+  </data>
+  <data name="TierS" xml:space="preserve">
+    <value>L&#233;gende</value>
+  </data>
+
+  <!-- Worker Personalities -->
+  <data name="PersonSteady" xml:space="preserve">
+    <value>R&#233;gulier</value>
+  </data>
+  <data name="PersonPerfectionist" xml:space="preserve">
+    <value>Perfectionniste</value>
+  </data>
+  <data name="PersonCheerful" xml:space="preserve">
+    <value>Joyeux</value>
+  </data>
+  <data name="PersonAmbitious" xml:space="preserve">
+    <value>Ambitieux</value>
+  </data>
+  <data name="PersonRelaxed" xml:space="preserve">
+    <value>D&#233;tendu</value>
+  </data>
+  <data name="PersonSpecialist" xml:space="preserve">
+    <value>Sp&#233;cialiste</value>
+  </data>
+
+  <!-- Buildings -->
+  <data name="Buildings" xml:space="preserve">
+    <value>B&#226;timents</value>
+  </data>
+  <data name="Canteen" xml:space="preserve">
+    <value>Cantine</value>
+  </data>
+  <data name="Storage" xml:space="preserve">
+    <value>Entrep&#244;t</value>
+  </data>
+  <data name="Office" xml:space="preserve">
+    <value>Bureau</value>
+  </data>
+  <data name="Showroom" xml:space="preserve">
+    <value>Salle d'Exposition</value>
+  </data>
+  <data name="TrainingCenter" xml:space="preserve">
+    <value>Centre de Formation</value>
+  </data>
+  <data name="VehicleFleet" xml:space="preserve">
+    <value>Parc Automobile</value>
+  </data>
+  <data name="WorkshopExtension" xml:space="preserve">
+    <value>Extension d'Atelier</value>
+  </data>
+
+  <!-- Building Descriptions -->
+  <data name="CanteenDesc" xml:space="preserve">
+    <value>Am&#233;liore l'humeur des ouvriers et r&#233;duit le temps de repos.</value>
+  </data>
+  <data name="StorageDesc" xml:space="preserve">
+    <value>R&#233;duit les co&#251;ts mat&#233;riaux.</value>
+  </data>
+  <data name="OfficeDesc" xml:space="preserve">
+    <value>Fournit des emplacements de commande suppl&#233;mentaires.</value>
+  </data>
+  <data name="ShowroomDesc" xml:space="preserve">
+    <value>Augmente la r&#233;putation au fil du temps.</value>
+  </data>
+  <data name="TrainingCenterDesc" xml:space="preserve">
+    <value>Acc&#233;l&#232;re la formation des ouvriers.</value>
+  </data>
+  <data name="VehicleFleetDesc" xml:space="preserve">
+    <value>Augmente les r&#233;compenses de commandes.</value>
+  </data>
+  <data name="WorkshopExtensionDesc" xml:space="preserve">
+    <value>Ajoute des places d'ouvrier suppl&#233;mentaires par atelier.</value>
+  </data>
+
+  <!-- Building Effect Formats -->
+  <data name="CanteenEffectFormat" xml:space="preserve">
+    <value>+{0}% humeur/h, -{1:F0}% temps de repos</value>
+  </data>
+  <data name="StorageEffectFormat" xml:space="preserve">
+    <value>-{0:F0}% co&#251;ts mat&#233;riaux</value>
+  </data>
+  <data name="OfficeEffectFormat" xml:space="preserve">
+    <value>+{0} emplacements de commande</value>
+  </data>
+  <data name="ShowroomEffectFormat" xml:space="preserve">
+    <value>+{0:F1} r&#233;putation/jour</value>
+  </data>
+  <data name="TrainingCenterEffectFormat" xml:space="preserve">
+    <value>{0:F0}x vitesse de formation</value>
+  </data>
+  <data name="VehicleFleetEffectFormat" xml:space="preserve">
+    <value>+{0:F0}% r&#233;compenses de commandes</value>
+  </data>
+  <data name="WorkshopExtensionEffectFormat" xml:space="preserve">
+    <value>+{0} places/atelier</value>
+  </data>
+  <data name="CanteenEffect" xml:space="preserve">
+    <value>Am&#233;liore l'humeur et le temps de repos</value>
+  </data>
+  <data name="StorageEffect" xml:space="preserve">
+    <value>R&#233;duit les co&#251;ts des mat&#233;riaux</value>
+  </data>
+  <data name="OfficeEffect" xml:space="preserve">
+    <value>Augmente les places de commandes disponibles</value>
+  </data>
+  <data name="ShowroomEffect" xml:space="preserve">
+    <value>Augmente passivement la r&#233;putation</value>
+  </data>
+  <data name="TrainingCenterEffect" xml:space="preserve">
+    <value>Acc&#233;l&#232;re la formation des ouvriers</value>
+  </data>
+  <data name="VehicleFleetEffect" xml:space="preserve">
+    <value>Augmente les r&#233;compenses de commandes</value>
+  </data>
+  <data name="WorkshopExtensionEffect" xml:space="preserve">
+    <value>Ajoute des places d'ouvrier par atelier</value>
+  </data>
+  <data name="BuildingBuilt" xml:space="preserve">
+    <value>B&#226;timent Construit!</value>
+  </data>
+  <data name="BuildingBuiltFormat" xml:space="preserve">
+    <value>{0} a &#233;t&#233; construit!</value>
+  </data>
+  <data name="BuildingUpgraded" xml:space="preserve">
+    <value>B&#226;timent Am&#233;lior&#233;!</value>
+  </data>
+  <data name="BuildingUpgradedFormat" xml:space="preserve">
+    <value>{0} am&#233;lior&#233; au niveau {1}!</value>
+  </data>
+  <data name="MaxLevel" xml:space="preserve">
+    <value>Niveau Max</value>
+  </data>
+
+  <!-- Research -->
+  <data name="Research" xml:space="preserve">
+    <value>Recherche</value>
+  </data>
+  <data name="BranchTools" xml:space="preserve">
+    <value>Outils</value>
+  </data>
+  <data name="BranchManagement" xml:space="preserve">
+    <value>Gestion</value>
+  </data>
+  <data name="BranchMarketing" xml:space="preserve">
+    <value>Marketing</value>
+  </data>
+  <data name="BranchToolsDesc" xml:space="preserve">
+    <value>Am&#233;liore les outils, l'efficacit&#233; et les bonus de mini-jeux</value>
+  </data>
+  <data name="BranchManagementDesc" xml:space="preserve">
+    <value>Am&#233;liore la gestion, l'embauche et la formation des ouvriers</value>
+  </data>
+  <data name="BranchMarketingDesc" xml:space="preserve">
+    <value>Am&#233;liore le marketing, la r&#233;putation et les r&#233;compenses</value>
+  </data>
+  <data name="ResearchInProgress" xml:space="preserve">
+    <value>Recherche en Cours</value>
+  </data>
+  <data name="ResearchInProgressDesc" xml:space="preserve">
+    <value>Annulez d'abord la recherche en cours.</value>
+  </data>
+  <data name="ResearchCostFormat" xml:space="preserve">
+    <value>Cette recherche co&#251;te {0}.</value>
+  </data>
+  <data name="ResearchFailed" xml:space="preserve">
+    <value>&#201;chec de la Recherche</value>
+  </data>
+  <data name="ResearchFailedDesc" xml:space="preserve">
+    <value>Conditions non remplies ou pas assez d'argent.</value>
+  </data>
+  <data name="CancelResearch" xml:space="preserve">
+    <value>Annuler la Recherche</value>
+  </data>
+  <data name="CancelResearchDesc" xml:space="preserve">
+    <value>Annuler la recherche en cours? 50% du co&#251;t sera rembours&#233;.</value>
+  </data>
+  <data name="ResearchComplete" xml:space="preserve">
+    <value>Recherche Termin&#233;e!</value>
+  </data>
+  <data name="ResearchCompleteFormat" xml:space="preserve">
+    <value>{0} a &#233;t&#233; recherch&#233;!</value>
+  </data>
+  <data name="Completing" xml:space="preserve">
+    <value>En cours...</value>
+  </data>
+
+  <!-- Events -->
+  <data name="EventMaterialSale" xml:space="preserve">
+    <value>Soldes de Mat&#233;riaux</value>
+  </data>
+  <data name="EventMaterialShortage" xml:space="preserve">
+    <value>P&#233;nurie de Mat&#233;riaux</value>
+  </data>
+  <data name="EventHighDemand" xml:space="preserve">
+    <value>Forte Demande</value>
+  </data>
+  <data name="EventEconomicDownturn" xml:space="preserve">
+    <value>Ralentissement &#201;conomique</value>
+  </data>
+  <data name="EventTaxAudit" xml:space="preserve">
+    <value>Contr&#244;le Fiscal</value>
+  </data>
+  <data name="EventWorkerStrike" xml:space="preserve">
+    <value>Gr&#232;ve des Ouvriers</value>
+  </data>
+  <data name="EventInnovationFair" xml:space="preserve">
+    <value>Salon de l'Innovation</value>
+  </data>
+  <data name="EventCelebrityEndorsement" xml:space="preserve">
+    <value>Parrainage de C&#233;l&#233;brit&#233;</value>
+  </data>
+
+  <!-- Prestige 3-Tier -->
+  <data name="PrestigeBronze" xml:space="preserve">
+    <value>Bronze</value>
+  </data>
+  <data name="PrestigeSilver" xml:space="preserve">
+    <value>Argent</value>
+  </data>
+  <data name="PrestigeGold" xml:space="preserve">
+    <value>Or</value>
+  </data>
+  <data name="PrestigePoints" xml:space="preserve">
+    <value>Points de Prestige</value>
+  </data>
+  <data name="PrestigeShop" xml:space="preserve">
+    <value>Boutique Prestige</value>
+  </data>
+
+  <!-- Difficulty (new Expert) -->
+  <data name="DifficultyExpert" xml:space="preserve">
+    <value>Expert</value>
+  </data>
+
+  <!-- New Achievement Keys -->
+  <data name="AchWorkerATier" xml:space="preserve">
+    <value>Recrutement d'&#201;lite</value>
+  </data>
+  <data name="AchWorkerATierDesc" xml:space="preserve">
+    <value>Embauchez votre premier ouvrier de Niveau A</value>
+  </data>
+  <data name="AchWorkerMaxLevel" xml:space="preserve">
+    <value>Ouvriers Ma&#238;tres</value>
+  </data>
+  <data name="AchWorkerMaxLevelDesc" xml:space="preserve">
+    <value>Formez 10 ouvriers au niveau 10</value>
+  </data>
+  <data name="AchWorkerLoyal" xml:space="preserve">
+    <value>Employ&#233; Fid&#232;le</value>
+  </data>
+  <data name="AchWorkerLoyalDesc" xml:space="preserve">
+    <value>Gardez un ouvrier pendant 100 jours</value>
+  </data>
+  <data name="AchWorkerSpecialist" xml:space="preserve">
+    <value>Match Parfait</value>
+  </data>
+  <data name="AchWorkerSpecialistDesc" xml:space="preserve">
+    <value>Assignez un ouvrier &#224; sa sp&#233;cialisation</value>
+  </data>
+  <data name="AchWorkersTotal50" xml:space="preserve">
+    <value>Directeur RH</value>
+  </data>
+  <data name="AchWorkersTotal50Desc" xml:space="preserve">
+    <value>Embauchez 50 ouvriers au total</value>
+  </data>
+  <data name="AchWorkerSTier" xml:space="preserve">
+    <value>L&#233;gende Trouv&#233;e</value>
+  </data>
+  <data name="AchWorkerSTierDesc" xml:space="preserve">
+    <value>Embauchez un ouvrier de Niveau S</value>
+  </data>
+  <data name="AchBuildingFirst" xml:space="preserve">
+    <value>B&#226;tisseur</value>
+  </data>
+  <data name="AchBuildingFirstDesc" xml:space="preserve">
+    <value>Construisez votre premier b&#226;timent</value>
+  </data>
+  <data name="AchBuildingAll" xml:space="preserve">
+    <value>Magnat Immobilier</value>
+  </data>
+  <data name="AchBuildingAllDesc" xml:space="preserve">
+    <value>Construisez les 7 b&#226;timents</value>
+  </data>
+  <data name="AchBuildingMax" xml:space="preserve">
+    <value>Enti&#232;rement Am&#233;lior&#233;</value>
+  </data>
+  <data name="AchBuildingMaxDesc" xml:space="preserve">
+    <value>Am&#233;liorez un b&#226;timent au niveau 5</value>
+  </data>
+  <data name="AchCanteen" xml:space="preserve">
+    <value>Ouvriers Heureux</value>
+  </data>
+  <data name="AchCanteenDesc" xml:space="preserve">
+    <value>Construisez la Cantine</value>
+  </data>
+  <data name="AchTrainingCenter" xml:space="preserve">
+    <value>Acad&#233;mie</value>
+  </data>
+  <data name="AchTrainingCenterDesc" xml:space="preserve">
+    <value>Construisez le Centre de Formation</value>
+  </data>
+  <data name="AchResearchFirst" xml:space="preserve">
+    <value>Scientifique</value>
+  </data>
+  <data name="AchResearchFirstDesc" xml:space="preserve">
+    <value>Terminez votre premi&#232;re recherche</value>
+  </data>
+  <data name="AchResearchBranch" xml:space="preserve">
+    <value>Expert</value>
+  </data>
+  <data name="AchResearchBranchDesc" xml:space="preserve">
+    <value>Terminez une branche de recherche compl&#232;te</value>
+  </data>
+  <data name="AchResearchAll" xml:space="preserve">
+    <value>G&#233;nie</value>
+  </data>
+  <data name="AchResearchAllDesc" xml:space="preserve">
+    <value>Terminez les 45 recherches</value>
+  </data>
+  <data name="AchResearchTools5" xml:space="preserve">
+    <value>Ma&#238;tre Outil</value>
+  </data>
+  <data name="AchResearchTools5Desc" xml:space="preserve">
+    <value>Terminez 5 recherches d'Outils</value>
+  </data>
+  <data name="AchResearchMgmt5" xml:space="preserve">
+    <value>Gestionnaire</value>
+  </data>
+  <data name="AchResearchMgmt5Desc" xml:space="preserve">
+    <value>Terminez 5 recherches de Gestion</value>
+  </data>
+  <data name="AchReputation70" xml:space="preserve">
+    <value>Bien Connu</value>
+  </data>
+  <data name="AchReputation70Desc" xml:space="preserve">
+    <value>Atteignez 70 de r&#233;putation</value>
+  </data>
+  <data name="AchReputation90" xml:space="preserve">
+    <value>C&#233;l&#232;bre</value>
+  </data>
+  <data name="AchReputation90Desc" xml:space="preserve">
+    <value>Atteignez 90 de r&#233;putation</value>
+  </data>
+  <data name="AchReputation100" xml:space="preserve">
+    <value>L&#233;gendaire</value>
+  </data>
+  <data name="AchReputation100Desc" xml:space="preserve">
+    <value>Atteignez 100 de r&#233;putation</value>
+  </data>
+  <data name="AchRegular10" xml:space="preserve">
+    <value>Choix Populaire</value>
+  </data>
+  <data name="AchRegular10Desc" xml:space="preserve">
+    <value>Ayez 10 clients r&#233;guliers</value>
+  </data>
+  <data name="AchPrestigeBronze" xml:space="preserve">
+    <value>Nouveau D&#233;part</value>
+  </data>
+  <data name="AchPrestigeBronzeDesc" xml:space="preserve">
+    <value>Terminez votre premier prestige Bronze</value>
+  </data>
+  <data name="AchPrestigeSilver" xml:space="preserve">
+    <value>Ma&#238;tre Exp&#233;riment&#233;</value>
+  </data>
+  <data name="AchPrestigeSilverDesc" xml:space="preserve">
+    <value>Terminez votre premier prestige Argent</value>
+  </data>
+  <data name="AchPrestigeGold" xml:space="preserve">
+    <value>L&#233;gende Dor&#233;e</value>
+  </data>
+  <data name="AchPrestigeGoldDesc" xml:space="preserve">
+    <value>Terminez votre premier prestige Or</value>
+  </data>
+  <data name="AchPrestigePoints100" xml:space="preserve">
+    <value>Collectionneur de Points</value>
+  </data>
+  <data name="AchPrestigePoints100Desc" xml:space="preserve">
+    <value>D&#233;pensez 100 points de prestige</value>
+  </data>
+  <data name="AchMoney10m" xml:space="preserve">
+    <value>Multimillionnaire</value>
+  </data>
+  <data name="AchMoney10mDesc" xml:space="preserve">
+    <value>Gagnez 10 000 000&#8364; au total</value>
+  </data>
+  <data name="AchMoney100m" xml:space="preserve">
+    <value>M&#233;ga Riche</value>
+  </data>
+  <data name="AchMoney100mDesc" xml:space="preserve">
+    <value>Gagnez 100 000 000&#8364; au total</value>
+  </data>
+  <data name="AchMoney1b" xml:space="preserve">
+    <value>Milliardaire</value>
+  </data>
+  <data name="AchMoney1bDesc" xml:space="preserve">
+    <value>Gagnez 1 000 000 000&#8364; au total</value>
+  </data>
+  <data name="AchWorkshop50" xml:space="preserve">
+    <value>Puissance Maximale</value>
+  </data>
+  <data name="AchWorkshop50Desc" xml:space="preserve">
+    <value>Am&#233;liorez un atelier au niveau 50</value>
+  </data>
+  <data name="AchAllWorkshops8" xml:space="preserve">
+    <value>Empire Complet</value>
+  </data>
+  <data name="AchAllWorkshops8Desc" xml:space="preserve">
+    <value>D&#233;bloquez les 8 ateliers</value>
+  </data>
+  <data name="AchEventsSurvived10" xml:space="preserve">
+    <value>Aguerri</value>
+  </data>
+  <data name="AchEventsSurvived10Desc" xml:space="preserve">
+    <value>Survivez &#224; 10 &#233;v&#233;nements al&#233;atoires</value>
+  </data>
+
 </root>

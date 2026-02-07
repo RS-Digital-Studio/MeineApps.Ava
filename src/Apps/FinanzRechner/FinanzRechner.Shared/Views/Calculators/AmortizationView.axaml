@@ -197,15 +197,15 @@
                                         <TextBlock Text="{Binding Month}" FontSize="11"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <TextBlock Grid.Column="1"
-                                                   Text="{Binding Principal, StringFormat='{}{0:N0}'}"
+                                                   Text="{Binding Principal, StringFormat='{}{0:N0} €'}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextPrimaryBrush}"/>
                                         <TextBlock Grid.Column="2"
-                                                   Text="{Binding Interest, StringFormat='{}{0:N0}'}"
+                                                   Text="{Binding Interest, StringFormat='{}{0:N0} €'}"
                                                    FontSize="11"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"/>
                                         <TextBlock Grid.Column="3"
-                                                   Text="{Binding RemainingBalance, StringFormat='{}{0:N0}'}"
+                                                   Text="{Binding RemainingBalance, StringFormat='{}{0:N0} €'}"
                                                    FontSize="11" FontWeight="Medium"
                                                    Foreground="{DynamicResource TextPrimaryBrush}"/>
                                       </Grid>

@@ -7,8 +7,8 @@
     <!-- App Identity -->
     <ApplicationId>com.meineapps.zeitmanager</ApplicationId>
     <ApplicationTitle>ZeitManager</ApplicationTitle>
-    <ApplicationVersion>12</ApplicationVersion>
-    <ApplicationDisplayVersion>2.0.1</ApplicationDisplayVersion>
+    <ApplicationVersion>13</ApplicationVersion>
+    <ApplicationDisplayVersion>2.0.2</ApplicationDisplayVersion>
 
     <!-- Android Settings -->
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>

@@ -7,8 +7,8 @@
     <!-- App Identity -->
     <ApplicationId>com.meineapps.fitnessrechner</ApplicationId>
     <ApplicationTitle>FitnessRechner</ApplicationTitle>
-    <ApplicationVersion>9</ApplicationVersion>
-    <ApplicationDisplayVersion>2.0.1</ApplicationDisplayVersion>
+    <ApplicationVersion>10</ApplicationVersion>
+    <ApplicationDisplayVersion>2.0.2</ApplicationDisplayVersion>
 
     <!-- Android Settings -->
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>

@@ -30,6 +30,23 @@ public class Tool
     [JsonIgnore] public bool IsUnlocked => Level > 0;
     [JsonIgnore] public bool CanUpgrade => Level < MaxLevel;
 
+    /// <summary>
+    /// Kosten in Goldschrauben fuer das naechste Upgrade.
+    /// </summary>
+    [JsonIgnore]
+    public int UpgradeCostScrews => Level switch
+    {
+        0 => 3,
+        1 => 8,
+        2 => 20,
+        3 => 45,
+        4 => 80,
+        _ => 0
+    };
+
+    /// <summary>
+    /// Alte Euro-Kosten (Legacy, nicht mehr verwendet).
+    /// </summary>
     [JsonIgnore]
     public decimal UpgradeCost => Level switch
     {

@@ -8,6 +8,8 @@ using FinanzRechner.Models;
 using FinanzRechner.Services;
 using FinanzRechner.ViewModels.Calculators;
 
+// CategoryDisplayItem aus ExpenseTrackerViewModel wiederverwenden
+
 namespace FinanzRechner.ViewModels;
 
 public partial class MainViewModel : ObservableObject
@@ -155,6 +157,14 @@ public partial class MainViewModel : ObservableObject
             CloseCalculator();
         if (IsSubPageOpen)
             CurrentSubPage = null;
+
+        // Daten laden beim Tab-Wechsel
+        if (value == 0)
+            _ = LoadMonthlyDataAsync();
+        else if (value == 1)
+            _ = ExpenseTrackerViewModel.OnAppearingAsync();
+        else if (value == 2)
+            _ = StatisticsViewModel.OnAppearingAsync();
     }
 
     #endregion
@@ -187,6 +197,9 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 0;
         IsCalculatorOpen = true;
+        // Automatisch mit Standardwerten berechnen
+        if (!CompoundInterestViewModel.HasResult)
+            CompoundInterestViewModel.CalculateCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -194,6 +207,8 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 1;
         IsCalculatorOpen = true;
+        if (!SavingsPlanViewModel.HasResult)
+            SavingsPlanViewModel.CalculateCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -201,6 +216,8 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 2;
         IsCalculatorOpen = true;
+        if (!LoanViewModel.HasResult)
+            LoanViewModel.CalculateCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -208,6 +225,8 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 3;
         IsCalculatorOpen = true;
+        if (!AmortizationViewModel.HasResult)
+            AmortizationViewModel.CalculateCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -215,6 +234,8 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 4;
         IsCalculatorOpen = true;
+        if (!YieldViewModel.HasResult)
+            YieldViewModel.CalculateCommand.Execute(null);
     }
 
     private void CloseCalculator()
@@ -375,7 +396,13 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private ExpenseCategory _quickAddCategory = ExpenseCategory.Other;
 
-    public List<ExpenseCategory> QuickAddCategories =>
+    [ObservableProperty]
+    private TransactionType _quickAddType = TransactionType.Expense;
+
+    public bool IsQuickExpenseSelected => QuickAddType == TransactionType.Expense;
+    public bool IsQuickIncomeSelected => QuickAddType == TransactionType.Income;
+
+    private static readonly List<ExpenseCategory> QuickExpenseCategories =
     [
         ExpenseCategory.Food,
         ExpenseCategory.Transport,
@@ -386,16 +413,66 @@ public partial class MainViewModel : ObservableObject
         ExpenseCategory.Other
     ];
 
+    private static readonly List<ExpenseCategory> QuickIncomeCategories =
+    [
+        ExpenseCategory.Salary,
+        ExpenseCategory.Freelance,
+        ExpenseCategory.Investment,
+        ExpenseCategory.Gift,
+        ExpenseCategory.OtherIncome
+    ];
+
+    [ObservableProperty]
+    private ObservableCollection<CategoryDisplayItem> _quickCategoryItems = [];
+
+    private void UpdateQuickCategoryItems()
+    {
+        var categories = QuickAddType == TransactionType.Expense
+            ? QuickExpenseCategories
+            : QuickIncomeCategories;
+
+        var items = new ObservableCollection<CategoryDisplayItem>();
+        foreach (var cat in categories)
+        {
+            items.Add(new CategoryDisplayItem
+            {
+                Category = cat,
+                CategoryName = CategoryLocalizationHelper.GetLocalizedName(cat, _localizationService),
+                IsSelected = cat == QuickAddCategory
+            });
+        }
+        QuickCategoryItems = items;
+    }
+
+    partial void OnQuickAddTypeChanged(TransactionType value)
+    {
+        OnPropertyChanged(nameof(IsQuickExpenseSelected));
+        OnPropertyChanged(nameof(IsQuickIncomeSelected));
+        QuickAddCategory = value == TransactionType.Expense ? ExpenseCategory.Other : ExpenseCategory.Salary;
+        UpdateQuickCategoryItems();
+    }
+
     public string QuickAddTitleText => _localizationService.GetString("QuickAddTitle") ?? "Quick Add";
     public string QuickAddAmountPlaceholder => _localizationService.GetString("Amount") ?? "Amount";
     public string QuickAddDescriptionPlaceholder => _localizationService.GetString("Description") ?? "Description";
+    public string QuickExpenseText => _localizationService.GetString("Expense") ?? "Expense";
+    public string QuickIncomeText => _localizationService.GetString("Income") ?? "Income";
     public string CancelText => _localizationService.GetString("Cancel") ?? "Cancel";
     public string SaveText => _localizationService.GetString("Save") ?? "Save";
 
     [RelayCommand]
-    private void SelectQuickCategory(ExpenseCategory category)
+    private void SetQuickTypeExpense() => QuickAddType = TransactionType.Expense;
+
+    [RelayCommand]
+    private void SetQuickTypeIncome() => QuickAddType = TransactionType.Income;
+
+    [RelayCommand]
+    private void SelectQuickCategory(CategoryDisplayItem item)
     {
-        QuickAddCategory = category;
+        foreach (var cat in QuickCategoryItems)
+            cat.IsSelected = false;
+        item.IsSelected = true;
+        QuickAddCategory = item.Category;
     }
 
     #endregion
@@ -517,7 +594,9 @@ public partial class MainViewModel : ObservableObject
         {
             QuickAddAmount = string.Empty;
             QuickAddDescription = string.Empty;
+            QuickAddType = TransactionType.Expense;
             QuickAddCategory = ExpenseCategory.Other;
+            UpdateQuickCategoryItems();
         }
     }
 
@@ -552,7 +631,7 @@ public partial class MainViewModel : ObservableObject
                 Description = description,
                 Amount = amount,
                 Category = QuickAddCategory,
-                Type = TransactionType.Expense
+                Type = QuickAddType
             };
 
             await _expenseService.AddExpenseAsync(expense);

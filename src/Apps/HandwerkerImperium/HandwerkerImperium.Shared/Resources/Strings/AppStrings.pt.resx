@@ -1908,8 +1908,50 @@
   <data name="ToolMaxLevel" xml:space="preserve">
     <value>N&#237;vel m&#225;ximo</value>
   </data>
-  <data name="NextRotation" xml:space="preserve">
-    <value>Pr&#243;xima rota&#231;&#227;o</value>
+  <data name="GoldenScrews" xml:space="preserve">
+    <value>Parafusos dourados</value>
+  </data>
+  <data name="ShopGoldenScrewsAdName" xml:space="preserve">
+    <value>Parafusos dourados (V&#237;deo)</value>
+  </data>
+  <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
+    <value>8 parafusos dourados por um v&#237;deo</value>
+  </data>
+  <data name="ShopGoldenScrews75Name" xml:space="preserve">
+    <value>Bolsa de parafusos dourados</value>
+  </data>
+  <data name="ShopGoldenScrews75Desc" xml:space="preserve">
+    <value>75 parafusos dourados</value>
+  </data>
+  <data name="ShopGoldenScrews200Name" xml:space="preserve">
+    <value>Caixa de parafusos dourados</value>
+  </data>
+  <data name="ShopGoldenScrews200Desc" xml:space="preserve">
+    <value>200 parafusos dourados</value>
+  </data>
+  <data name="ShopGoldenScrews600Name" xml:space="preserve">
+    <value>Ba&#250; de parafusos dourados</value>
+  </data>
+  <data name="ShopGoldenScrews600Desc" xml:space="preserve">
+    <value>600 parafusos dourados</value>
+  </data>
+  <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
+    <value>{0} parafusos dourados recebidos!</value>
+  </data>
+  <data name="NotEnoughScrews" xml:space="preserve">
+    <value>Parafusos dourados insuficientes</value>
+  </data>
+  <data name="NotEnoughScrewsDesc" xml:space="preserve">
+    <value>Voc&#234; precisa de {0} parafusos dourados.</value>
+  </data>
+  <data name="InstantFinish" xml:space="preserve">
+    <value>Concluir instantaneamente</value>
+  </data>
+  <data name="InstantFinishDesc" xml:space="preserve">
+    <value>Concluir pesquisa instantaneamente por {0} parafusos dourados?</value>
+  </data>
+  <data name="HiringScrewCost" xml:space="preserve">
+    <value>+ {0} parafusos dourados</value>
   </data>
 
 </root>

@@ -707,3 +707,16 @@ F:\Meine_Apps_Ava\
   - WorkTimePro: ExportService komplett umgeschrieben (echtes PdfSharpCore PDF + ClosedXML Excel), IFileShareService injiziert
   - WorkTimePro Android: FileProvider Konfiguration, file_paths.xml, Linked AndroidFileShareService
   - Build: Core.Ava + FinanzRechner (Desktop+Android) + WorkTimePro (Shared+Android) 0 Fehler
+- **HandwerkerImperium Goldschrauben - Premium-Waehrung (07.02.2026):**
+  - Neue Premium-Waehrung "Goldschrauben" (Icon: ScrewFlatTop, Farbe: #FFD700)
+  - GameState: GoldenScrews, TotalGoldenScrewsEarned, TotalGoldenScrewsSpent Properties
+  - GameStateService: AddGoldenScrews, TrySpendGoldenScrews, CanAffordGoldenScrews (lock-Pattern)
+  - GoldenScrewsChangedEventArgs fuer Event-Benachrichtigung
+  - Tool-Upgrades kosten Goldschrauben statt Euro (3/8/20/45/80 pro Level)
+  - Verdienen: Daily Rewards (Tag 2/4/6/7: 2/3/5/10), Daily Challenges (1-3 + 15 Bonus), Achievements, Video-Ads (8), IAP (75/200/600)
+  - Research Instant-Finish: Level 8+ Forschung sofort abschliessen (10-120 Goldschrauben)
+  - Worker Hiring: Tier A (10) + Tier S (25) Goldschrauben zusaetzlich zum Euro-Preis
+  - UI: Goldschrauben-Badge in Dashboard, Shop, Research, WorkerMarket Headers
+  - DashboardView: Level-Fortschrittsbalken kompakter (Width 60, Height 4, "Lv.{0}")
+  - ~18 neue/umbenannte resx-Keys in 6 Sprachen + NextRotation Duplikate entfernt
+  - Build: 0 Fehler, 113 Warnungen (nur bekannte NuGet)

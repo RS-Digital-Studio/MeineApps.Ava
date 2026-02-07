@@ -25,6 +25,7 @@ public class GameStateService : IGameStateService
     public event EventHandler<WorkerHiredEventArgs>? WorkerHired;
     public event EventHandler<OrderCompletedEventArgs>? OrderCompleted;
     public event EventHandler? StateLoaded;
+    public event EventHandler<GoldenScrewsChangedEventArgs>? GoldenScrewsChanged;
 
     // ===================================================================
     // INITIALIZATION
@@ -106,6 +107,56 @@ public class GameStateService : IGameStateService
         lock (_stateLock)
         {
             return _state.Money >= amount;
+        }
+    }
+
+    // ===================================================================
+    // GOLDEN SCREWS OPERATIONS (Thread-safe)
+    // ===================================================================
+
+    public void AddGoldenScrews(int amount)
+    {
+        if (amount <= 0) return;
+
+        int oldAmount;
+        int newAmount;
+
+        lock (_stateLock)
+        {
+            oldAmount = _state.GoldenScrews;
+            _state.GoldenScrews += amount;
+            _state.TotalGoldenScrewsEarned += amount;
+            newAmount = _state.GoldenScrews;
+        }
+
+        GoldenScrewsChanged?.Invoke(this, new GoldenScrewsChangedEventArgs(oldAmount, newAmount));
+    }
+
+    public bool TrySpendGoldenScrews(int amount)
+    {
+        int oldAmount;
+        int newAmount;
+
+        lock (_stateLock)
+        {
+            if (amount <= 0 || _state.GoldenScrews < amount)
+                return false;
+
+            oldAmount = _state.GoldenScrews;
+            _state.GoldenScrews -= amount;
+            _state.TotalGoldenScrewsSpent += amount;
+            newAmount = _state.GoldenScrews;
+        }
+
+        GoldenScrewsChanged?.Invoke(this, new GoldenScrewsChangedEventArgs(oldAmount, newAmount));
+        return true;
+    }
+
+    public bool CanAffordGoldenScrews(int amount)
+    {
+        lock (_stateLock)
+        {
+            return _state.GoldenScrews >= amount;
         }
     }
 

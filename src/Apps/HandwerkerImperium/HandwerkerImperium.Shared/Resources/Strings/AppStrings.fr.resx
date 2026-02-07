@@ -1908,8 +1908,50 @@
   <data name="ToolMaxLevel" xml:space="preserve">
     <value>Niveau max</value>
   </data>
-  <data name="NextRotation" xml:space="preserve">
-    <value>Prochaine rotation</value>
+  <data name="GoldenScrews" xml:space="preserve">
+    <value>Vis dor&#233;es</value>
+  </data>
+  <data name="ShopGoldenScrewsAdName" xml:space="preserve">
+    <value>Vis dor&#233;es (Vid&#233;o)</value>
+  </data>
+  <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
+    <value>8 vis dor&#233;es pour une vid&#233;o</value>
+  </data>
+  <data name="ShopGoldenScrews75Name" xml:space="preserve">
+    <value>Sachet de vis dor&#233;es</value>
+  </data>
+  <data name="ShopGoldenScrews75Desc" xml:space="preserve">
+    <value>75 vis dor&#233;es</value>
+  </data>
+  <data name="ShopGoldenScrews200Name" xml:space="preserve">
+    <value>Caisse de vis dor&#233;es</value>
+  </data>
+  <data name="ShopGoldenScrews200Desc" xml:space="preserve">
+    <value>200 vis dor&#233;es</value>
+  </data>
+  <data name="ShopGoldenScrews600Name" xml:space="preserve">
+    <value>Coffre de vis dor&#233;es</value>
+  </data>
+  <data name="ShopGoldenScrews600Desc" xml:space="preserve">
+    <value>600 vis dor&#233;es</value>
+  </data>
+  <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
+    <value>{0} vis dor&#233;es re&#231;ues !</value>
+  </data>
+  <data name="NotEnoughScrews" xml:space="preserve">
+    <value>Pas assez de vis dor&#233;es</value>
+  </data>
+  <data name="NotEnoughScrewsDesc" xml:space="preserve">
+    <value>Vous avez besoin de {0} vis dor&#233;es.</value>
+  </data>
+  <data name="InstantFinish" xml:space="preserve">
+    <value>Terminer instantan&#233;ment</value>
+  </data>
+  <data name="InstantFinishDesc" xml:space="preserve">
+    <value>Terminer la recherche instantan&#233;ment pour {0} vis dor&#233;es ?</value>
+  </data>
+  <data name="HiringScrewCost" xml:space="preserve">
+    <value>+ {0} vis dor&#233;es</value>
   </data>
 
 </root>

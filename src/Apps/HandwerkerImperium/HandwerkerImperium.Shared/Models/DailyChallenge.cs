@@ -39,6 +39,9 @@ public class DailyChallenge
     [JsonPropertyName("xpReward")]
     public int XpReward { get; set; }
 
+    [JsonPropertyName("goldenScrewReward")]
+    public int GoldenScrewReward { get; set; }
+
     [JsonPropertyName("isCompleted")]
     public bool IsCompleted { get; set; }
 

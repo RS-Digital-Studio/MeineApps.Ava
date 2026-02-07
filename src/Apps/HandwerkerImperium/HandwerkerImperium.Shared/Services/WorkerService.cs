@@ -31,11 +31,15 @@ public class WorkerService : IWorkerService
             // Check if workshop can accept more workers
             if (ws.Workers.Count >= ws.MaxWorkers) return false;
 
-            // Check if player can afford the hiring cost
+            // Check if player can afford the hiring cost (Euro + ggf. Goldschrauben)
             var hiringCost = worker.Tier.GetHiringCost();
+            var hiringScrewCost = worker.Tier.GetHiringScrewCost();
             if (!_gameState.CanAfford(hiringCost)) return false;
+            if (hiringScrewCost > 0 && !_gameState.CanAffordGoldenScrews(hiringScrewCost)) return false;
 
             _gameState.TrySpendMoney(hiringCost);
+            if (hiringScrewCost > 0)
+                _gameState.TrySpendGoldenScrews(hiringScrewCost);
 
             worker.AssignedWorkshop = workshop;
             worker.HiredAt = DateTime.UtcNow;

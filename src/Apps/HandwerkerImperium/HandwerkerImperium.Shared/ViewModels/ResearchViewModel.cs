@@ -68,6 +68,15 @@ public partial class ResearchViewModel : ObservableObject
     private string _currentBalance = "0 \u20AC";
 
     [ObservableProperty]
+    private string _goldenScrewsDisplay = "0";
+
+    [ObservableProperty]
+    private bool _canInstantFinish;
+
+    [ObservableProperty]
+    private int _instantFinishCost;
+
+    [ObservableProperty]
     private string _title = string.Empty;
 
     [ObservableProperty]
@@ -132,6 +141,7 @@ public partial class ResearchViewModel : ObservableObject
     public void LoadResearchTree()
     {
         CurrentBalance = MoneyFormatter.Format(_gameStateService.State.Money, 2);
+        GoldenScrewsDisplay = _gameStateService.State.GoldenScrews.ToString("N0");
 
         ToolsBranch = BuildBranchDisplayItems(ResearchBranch.Tools);
         ManagementBranch = BuildBranchDisplayItems(ResearchBranch.Management);
@@ -145,6 +155,8 @@ public partial class ResearchViewModel : ObservableObject
         if (active != null)
         {
             ActiveResearchName = _localizationService.GetString(active.NameKey);
+            CanInstantFinish = active.CanInstantFinish && _gameStateService.CanAffordGoldenScrews(active.InstantFinishScrewCost);
+            InstantFinishCost = active.InstantFinishScrewCost;
             UpdateTimer();
         }
         else
@@ -152,6 +164,8 @@ public partial class ResearchViewModel : ObservableObject
             ActiveResearchProgress = 0;
             ActiveResearchTimeRemaining = string.Empty;
             ActiveResearchName = string.Empty;
+            CanInstantFinish = false;
+            InstantFinishCost = 0;
         }
     }
 
@@ -272,6 +286,40 @@ public partial class ResearchViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task InstantFinishResearchAsync()
+    {
+        if (!HasActiveResearch || ActiveResearch == null || !ActiveResearch.CanInstantFinish) return;
+
+        var cost = ActiveResearch.InstantFinishScrewCost;
+
+        if (!_gameStateService.CanAffordGoldenScrews(cost))
+        {
+            AlertRequested?.Invoke(
+                _localizationService.GetString("NotEnoughScrews"),
+                string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), cost),
+                "OK");
+            return;
+        }
+
+        bool confirm = true;
+        if (ConfirmationRequested != null)
+        {
+            confirm = await ConfirmationRequested.Invoke(
+                _localizationService.GetString("InstantFinish"),
+                string.Format(_localizationService.GetString("InstantFinishDesc"), cost),
+                _localizationService.GetString("Confirm"),
+                _localizationService.GetString("Cancel"));
+        }
+
+        if (!confirm) return;
+
+        if (_researchService.InstantFinishResearch())
+        {
+            LoadResearchTree();
+        }
+    }
+
+    [RelayCommand]
     private async Task CancelResearchAsync()
     {
         if (!HasActiveResearch || ActiveResearch == null) return;
@@ -344,7 +392,8 @@ public partial class ResearchViewModel : ObservableObject
                 IsLocked = !prerequisitesMet,
                 CanStart = canStart,
                 Progress = r.Progress,
-                Effect = r.Effect
+                Effect = r.Effect,
+                InstantFinishScrewCost = r.InstantFinishScrewCost
             };
         }).ToList();
     }
@@ -399,6 +448,16 @@ public class ResearchDisplayItem
     /// Display label for the level (e.g. "Lv.3").
     /// </summary>
     public string LevelDisplay => $"Lv.{Level}";
+
+    /// <summary>
+    /// Goldschrauben-Kosten fuer Sofortfertigstellung (0 = nicht verfuegbar).
+    /// </summary>
+    public int InstantFinishScrewCost { get; set; }
+
+    /// <summary>
+    /// Ob Sofortfertigstellung verfuegbar waere (ab Level 8).
+    /// </summary>
+    public bool HasInstantFinishOption => InstantFinishScrewCost > 0;
 
     /// <summary>
     /// Opacity: locked = 0.4, unlocked = 1.0.

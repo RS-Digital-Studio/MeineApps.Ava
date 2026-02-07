@@ -26,6 +26,12 @@ public class DailyReward
     public int Xp { get; set; }
 
     /// <summary>
+    /// Goldschrauben-Belohnung (0 fuer Tage ohne Schrauben).
+    /// </summary>
+    [JsonPropertyName("goldenScrews")]
+    public int GoldenScrews { get; set; }
+
+    /// <summary>
     /// Optional bonus type for special rewards.
     /// </summary>
     [JsonPropertyName("bonusType")]
@@ -56,13 +62,13 @@ public class DailyReward
     {
         return
         [
-            new() { Day = 1, Money = 500m, Xp = 0, BonusType = DailyBonusType.None },
-            new() { Day = 2, Money = 750m, Xp = 0, BonusType = DailyBonusType.None },
-            new() { Day = 3, Money = 1000m, Xp = 0, BonusType = DailyBonusType.None },
-            new() { Day = 4, Money = 1500m, Xp = 50, BonusType = DailyBonusType.None },
-            new() { Day = 5, Money = 2000m, Xp = 100, BonusType = DailyBonusType.None },
-            new() { Day = 6, Money = 3000m, Xp = 150, BonusType = DailyBonusType.None },
-            new() { Day = 7, Money = 5000m, Xp = 300, BonusType = DailyBonusType.SpeedBoost }
+            new() { Day = 1, Money = 500m, Xp = 0, GoldenScrews = 0, BonusType = DailyBonusType.None },
+            new() { Day = 2, Money = 750m, Xp = 0, GoldenScrews = 2, BonusType = DailyBonusType.None },
+            new() { Day = 3, Money = 1000m, Xp = 0, GoldenScrews = 0, BonusType = DailyBonusType.None },
+            new() { Day = 4, Money = 1500m, Xp = 50, GoldenScrews = 3, BonusType = DailyBonusType.None },
+            new() { Day = 5, Money = 2000m, Xp = 100, GoldenScrews = 0, BonusType = DailyBonusType.None },
+            new() { Day = 6, Money = 3000m, Xp = 150, GoldenScrews = 5, BonusType = DailyBonusType.None },
+            new() { Day = 7, Money = 5000m, Xp = 300, GoldenScrews = 10, BonusType = DailyBonusType.SpeedBoost }
         ];
     }
 }

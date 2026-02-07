@@ -1916,8 +1916,50 @@
   <data name="ToolMaxLevel" xml:space="preserve">
     <value>Max. Stufe</value>
   </data>
-  <data name="NextRotation" xml:space="preserve">
-    <value>N&#228;chste Rotation</value>
+  <data name="GoldenScrews" xml:space="preserve">
+    <value>Goldschrauben</value>
+  </data>
+  <data name="ShopGoldenScrewsAdName" xml:space="preserve">
+    <value>Goldschrauben (Video)</value>
+  </data>
+  <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
+    <value>8 Goldschrauben f&#252;r ein Video</value>
+  </data>
+  <data name="ShopGoldenScrews75Name" xml:space="preserve">
+    <value>Goldschrauben-Beutel</value>
+  </data>
+  <data name="ShopGoldenScrews75Desc" xml:space="preserve">
+    <value>75 Goldschrauben</value>
+  </data>
+  <data name="ShopGoldenScrews200Name" xml:space="preserve">
+    <value>Goldschrauben-Kiste</value>
+  </data>
+  <data name="ShopGoldenScrews200Desc" xml:space="preserve">
+    <value>200 Goldschrauben</value>
+  </data>
+  <data name="ShopGoldenScrews600Name" xml:space="preserve">
+    <value>Goldschrauben-Truhe</value>
+  </data>
+  <data name="ShopGoldenScrews600Desc" xml:space="preserve">
+    <value>600 Goldschrauben</value>
+  </data>
+  <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
+    <value>{0} Goldschrauben erhalten!</value>
+  </data>
+  <data name="NotEnoughScrews" xml:space="preserve">
+    <value>Nicht genug Goldschrauben</value>
+  </data>
+  <data name="NotEnoughScrewsDesc" xml:space="preserve">
+    <value>Du brauchst {0} Goldschrauben.</value>
+  </data>
+  <data name="InstantFinish" xml:space="preserve">
+    <value>Sofort fertigstellen</value>
+  </data>
+  <data name="InstantFinishDesc" xml:space="preserve">
+    <value>Forschung sofort abschlie&#223;en f&#252;r {0} Goldschrauben?</value>
+  </data>
+  <data name="HiringScrewCost" xml:space="preserve">
+    <value>+ {0} Goldschrauben</value>
   </data>
 
 </root>

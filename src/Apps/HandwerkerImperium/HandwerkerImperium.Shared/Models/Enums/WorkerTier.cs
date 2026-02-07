@@ -111,4 +111,14 @@ public static class WorkerTierExtensions
     /// Localization key for tier name.
     /// </summary>
     public static string GetLocalizationKey(this WorkerTier tier) => $"Tier{tier}";
+
+    /// <summary>
+    /// Zusaetzliche Goldschrauben-Kosten beim Einstellen (nur fuer hohe Tiers).
+    /// </summary>
+    public static int GetHiringScrewCost(this WorkerTier tier) => tier switch
+    {
+        WorkerTier.A => 10,
+        WorkerTier.S => 25,
+        _ => 0
+    };
 }

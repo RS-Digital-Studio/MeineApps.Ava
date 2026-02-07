@@ -83,6 +83,25 @@ public class ResearchService : IResearchService
         return total;
     }
 
+    public bool InstantFinishResearch()
+    {
+        var active = GetActiveResearch();
+        if (active == null || !active.CanInstantFinish) return false;
+
+        var cost = active.InstantFinishScrewCost;
+        if (!_gameState.CanAffordGoldenScrews(cost)) return false;
+
+        _gameState.TrySpendGoldenScrews(cost);
+
+        active.IsResearched = true;
+        active.IsActive = false;
+        active.CompletedAt = DateTime.UtcNow;
+        _gameState.State.ActiveResearchId = null;
+
+        ResearchCompleted?.Invoke(this, active);
+        return true;
+    }
+
     public void UpdateTimer(double deltaSeconds)
     {
         var active = GetActiveResearch();

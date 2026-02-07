@@ -9,7 +9,7 @@ HandwerkerImperium/
 │   ├── Models/                    # 16 model files
 │   │   ├── Enums/                 # WorkshopType, MiniGameType, MiniGameResult, OrderDifficulty, AchievementCategory
 │   │   ├── Events/                # GameEvents (all event args)
-│   │   ├── GameState.cs           # Main game state (QuickJobs, DailyChallengeState, Tools)
+│   │   ├── GameState.cs           # Main game state (QuickJobs, DailyChallengeState, Tools, GoldenScrews)
 │   │   ├── Workshop.cs            # Workshop model
 │   │   ├── Worker.cs              # Worker model
 │   │   ├── Order.cs               # Order/contract model
@@ -78,14 +78,15 @@ HandwerkerImperium/
 - Worker Market (tier-based hiring, personality, talent, specialization, wage)
 - Worker Management (profile, training, rest, mood, fatigue, transfer)
 - Building System (7 building types, level 0-5)
-- Research Tree (3 branches: Tools, Management, Marketing, 15 levels each)
+- Research Tree (3 branches: Tools, Management, Marketing, 15 levels each) + Instant-Finish (Goldschrauben, Lv.8+)
 - Order/contract system with difficulty scaling
 - Quick Jobs (5 Schnell-Auftraege mit 15min Rotation, direkt zu MiniGame)
 - Daily Challenges (3 taegliche Aufgaben aus 7 Typen, Bonus bei Komplett-Abschluss)
-- Tool System (4 Werkzeuge: Saege/Rohrzange/Schraubendreher/Pinsel, Level 0-5, MiniGame-Boni)
+- Tool System (4 Werkzeuge: Saege/Rohrzange/Schraubendreher/Pinsel, Level 0-5, Upgrade mit Goldschrauben)
+- **Goldschrauben** (Premium-Waehrung): Verdient durch Daily Rewards/Challenges/Achievements/Video-Ads, kaufbar per IAP, fuer Tool-Upgrades, Research Instant-Finish, Tier A+S Worker
 - 3-tier prestige system (Bronze/Silver/Gold) with permanent multipliers + prestige shop
 - Achievement system (58 achievements, Reset bei Spielstand-Reset)
-- Daily rewards
+- Daily rewards (inkl. Goldschrauben an Tag 2/4/6/7)
 - Offline earnings
 - Tutorial system
 - JSON save/load to LocalApplicationData
@@ -337,6 +338,51 @@ dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
 
 ### Lokalisierung (neu)
 - 2 neue resx-Keys in 6 Sprachen: Info, WatchAdToRefresh
+
+## Goldschrauben - Premium-Waehrung (07.02.2026)
+
+### GameState + GameStateService (Phase 1)
+- **GameState.cs**: 3 neue Properties (`GoldenScrews`, `TotalGoldenScrewsEarned`, `TotalGoldenScrewsSpent`)
+- **GameEvents.cs**: `GoldenScrewsChangedEventArgs` (OldAmount, NewAmount)
+- **IGameStateService.cs**: `GoldenScrewsChanged` Event, `AddGoldenScrews(int)`, `TrySpendGoldenScrews(int)`, `CanAffordGoldenScrews(int)`
+- **GameStateService.cs**: Implementierung mit lock-Pattern (analog Money)
+
+### Werkzeuge auf Goldschrauben (Phase 2)
+- **Tool.cs**: `UpgradeCostScrews` Property (Level 0→3, 1→8, 2→20, 3→45, 4→80)
+- **ShopViewModel.cs**: Tool-Upgrades kosten Goldschrauben statt Euro, `GoldenScrewsBalance` Property
+- **ShopView.axaml**: ScrewFlatTop-Icon + Zahl statt Euro bei Tool-Upgrades, Goldschrauben-Badge im Header
+
+### Goldschrauben verdienen (Phase 3)
+- **DailyReward.cs**: Tag 2/4/6/7 geben 2/3/5/10 Goldschrauben
+- **DailyChallengeService.cs**: GoldenScrewReward (1-3 pro Challenge, Level-abhaengig), AllCompletedBonusScrews=15
+- **Achievement.cs**: GoldenScrewReward fuer schwierige Achievements (Prestige: 20/50/100, 1M/100M: 15/30, Orders: 10/25, etc.)
+- **ShopViewModel.cs**: Video-Ad "golden_screws_ad" gibt 8 Goldschrauben
+- **ShopViewModel.cs**: 3 IAP-Pakete (golden_screws_75/200/600 fuer 0.99/2.49/4.99 EUR)
+
+### UI - Dashboard + WorkerMarket (Phase 4)
+- **DashboardView.axaml**: Goldschrauben-Badge im Header (ScrewFlatTop #FFD700)
+- **DashboardView.axaml**: Level-Fortschrittsbalken kompakter (Width 60, Height 4, "Lv.{0}")
+- **MainViewModel.cs**: `GoldenScrewsDisplay` Property + `GoldenScrewsChanged` Event-Handler
+- **WorkerMarketView.axaml**: Goldschrauben-Badge im Header
+
+### Research Instant-Finish (Phase 5+)
+- **Research.cs**: `InstantFinishScrewCost` (Level 8=10, 9=15, 10=25, 11=40, 12=60, 13=80, 14=100, 15=120), `CanInstantFinish`
+- **IResearchService.cs**: `InstantFinishResearch()` Methode
+- **ResearchService.cs**: Implementierung (CanInstantFinish + CanAffordGoldenScrews → sofortiger Abschluss)
+- **ResearchViewModel.cs**: `GoldenScrewsDisplay`, `CanInstantFinish`, `InstantFinishCost` Properties + `InstantFinishResearchCommand`
+- **ResearchDisplayItem**: `InstantFinishScrewCost`, `HasInstantFinishOption`
+- **ResearchView.axaml**: Goldschrauben-Badge im Header, Sofort-Fertigstellen-Button bei aktiver Forschung, Kostenanzeige auf Cards (Lv.8+)
+
+### Worker Goldschrauben (Phase 5+)
+- **WorkerTier.cs**: `GetHiringScrewCost()` Extension (Tier A=10, Tier S=25, Rest=0)
+- **Worker.cs**: `HiringScrewCost` computed Property
+- **WorkerService.cs**: `HireWorker` prueft+verbraucht Goldschrauben fuer Tier A+S
+- **WorkerMarketViewModel.cs**: Goldschrauben-Check vor Einstellung (NotEnoughScrews Alert)
+- **WorkerMarketView.axaml**: Goldschrauben-Kosten bei Tier A+S Arbeitern angezeigt
+
+### Lokalisierung
+- ~18 neue/umbenannte resx-Keys in 6 Sprachen (GoldenScrews, ShopGoldenScrews75/200/600, InstantFinish, HiringScrewCost, etc.)
+- NextRotation Duplikate in 5 resx-Dateien entfernt (MSB3568 Fix)
 
 ## Version
 - v2.0.2 (vc7) - Release mit Store Assets

@@ -49,6 +49,9 @@ public partial class WorkerMarketViewModel : ObservableObject
     private string _currentBalance = "0 €";
 
     [ObservableProperty]
+    private string _goldenScrewsDisplay = "0";
+
+    [ObservableProperty]
     private string _title = string.Empty;
 
     [ObservableProperty]
@@ -99,6 +102,7 @@ public partial class WorkerMarketViewModel : ObservableObject
     {
         var market = _workerService.GetWorkerMarket();
         CurrentBalance = MoneyFormatter.Format(_gameStateService.State.Money, 2);
+        GoldenScrewsDisplay = _gameStateService.State.GoldenScrews.ToString("N0");
 
         // Pruefen ob Workshops mit freien Plaetzen existieren
         var workshopsWithSlots = _gameStateService.State.Workshops
@@ -189,6 +193,17 @@ public partial class WorkerMarketViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NotEnoughMoney"),
                 string.Format(_localizationService.GetString("HiringCostFormat"), MoneyFormatter.Format(hiringCost, 0)),
+                "OK");
+            return;
+        }
+
+        // Goldschrauben-Kosten pruefen (Tier A + S)
+        var hiringScrewCost = worker.Tier.GetHiringScrewCost();
+        if (hiringScrewCost > 0 && !_gameStateService.CanAffordGoldenScrews(hiringScrewCost))
+        {
+            AlertRequested?.Invoke(
+                _localizationService.GetString("NotEnoughScrews"),
+                string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), hiringScrewCost),
                 "OK");
             return;
         }

@@ -100,6 +100,11 @@ public class DailyRewardService : IDailyRewardService
             _gameStateService.AddXp(reward.Xp);
         }
 
+        if (reward.GoldenScrews > 0)
+        {
+            _gameStateService.AddGoldenScrews(reward.GoldenScrews);
+        }
+
         // Apply bonus if any
         if (reward.BonusType == DailyBonusType.SpeedBoost)
         {

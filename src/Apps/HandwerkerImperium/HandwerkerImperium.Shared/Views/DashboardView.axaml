@@ -14,64 +14,70 @@
     <!-- ================================================================= -->
     <Border Grid.Row="0"
             Classes="CardElevated"
-            Padding="16,12"
+            Padding="16,10"
             CornerRadius="0,0,12,12">
-      <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="6">
 
-        <!-- Money & Income -->
-        <StackPanel Spacing="4">
-          <TextBlock Text="{Binding MoneyDisplay}"
-                     FontSize="32" FontWeight="Bold"
-                     Foreground="{DynamicResource SuccessBrush}" />
-          <TextBlock Text="{Binding IncomeDisplay}"
-                     FontSize="12"
-                     Foreground="{DynamicResource TextSecondaryBrush}" />
-        </StackPanel>
+        <!-- Zeile 1: Geld + Goldschrauben + Daily Reward -->
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Spacing="2">
+            <TextBlock Text="{Binding MoneyDisplay}"
+                       FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource SuccessBrush}" />
+            <TextBlock Text="{Binding IncomeDisplay}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </StackPanel>
 
-        <!-- Header-Icons + Level & XP -->
-        <StackPanel Grid.Column="1"
-                    Orientation="Horizontal"
-                    Spacing="8"
-                    VerticalAlignment="Center">
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                      VerticalAlignment="Center">
+            <!-- Goldschrauben-Badge -->
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="8,4">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700" />
+                <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="14" FontWeight="Bold"
+                           Foreground="#FFD700" />
+              </StackPanel>
+            </Border>
 
-          <!-- Stats Button -->
-          <Button Classes="Text" Padding="6"
-                  Command="{Binding SelectStatisticsTabCommand}">
-            <mi:MaterialIcon Kind="ChartBar" Width="22" Height="22"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-          </Button>
+            <!-- Daily Reward Badge -->
+            <Button Classes="Primary"
+                    Padding="8,4"
+                    IsVisible="{Binding HasDailyReward}"
+                    Command="{Binding ClaimDailyRewardCommand}">
+              <mi:MaterialIcon Kind="Gift" Width="20" Height="20" />
+            </Button>
+          </StackPanel>
+        </Grid>
 
-          <!-- Achievements Button -->
-          <Button Classes="Text" Padding="6"
-                  Command="{Binding SelectAchievementsTabCommand}">
-            <mi:MaterialIcon Kind="Trophy" Width="22" Height="22"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-          </Button>
-
-          <!-- Daily Reward Badge -->
-          <Button Classes="Primary"
-                  Padding="8,4"
-                  IsVisible="{Binding HasDailyReward}"
-                  Command="{Binding ClaimDailyRewardCommand}">
-            <mi:MaterialIcon Kind="Gift" Width="20" Height="20" />
-          </Button>
-
-          <StackPanel Spacing="4">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Star" Width="20" Height="20"
-                               Foreground="Gold" />
-              <TextBlock Text="{Binding PlayerLevel, StringFormat='Level {0}'}"
-                         FontSize="14" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </StackPanel>
+        <!-- Zeile 2: Level + XP + Stats + Achievements -->
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="Gold" />
+            <TextBlock Text="{Binding PlayerLevel, StringFormat='Lv.{0}'}"
+                       FontSize="12" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
             <ProgressBar Value="{Binding LevelProgress}"
                          Maximum="1"
                          Foreground="{DynamicResource PrimaryBrush}"
-                         Height="6" Width="100" />
+                         Height="4" Width="80" VerticalAlignment="Center" />
           </StackPanel>
-        </StackPanel>
 
-      </Grid>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+            <Button Classes="Text" Padding="4"
+                    Command="{Binding SelectStatisticsTabCommand}">
+              <mi:MaterialIcon Kind="ChartBar" Width="18" Height="18"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+            </Button>
+            <Button Classes="Text" Padding="4"
+                    Command="{Binding SelectAchievementsTabCommand}">
+              <mi:MaterialIcon Kind="Trophy" Width="18" Height="18"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+            </Button>
+          </StackPanel>
+        </Grid>
+
+      </StackPanel>
     </Border>
 
     <!-- ================================================================= -->

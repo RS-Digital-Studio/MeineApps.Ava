@@ -75,6 +75,29 @@ public class Research
     }
 
     /// <summary>
+    /// Goldschrauben-Kosten fuer Sofortfertigstellung (ab Level 8).
+    /// </summary>
+    [JsonIgnore]
+    public int InstantFinishScrewCost => Level switch
+    {
+        >= 15 => 120,
+        >= 14 => 100,
+        >= 13 => 80,
+        >= 12 => 60,
+        >= 11 => 40,
+        >= 10 => 25,
+        >= 9 => 15,
+        >= 8 => 10,
+        _ => 0
+    };
+
+    /// <summary>
+    /// Kann mit Goldschrauben sofort abgeschlossen werden (nur ab Level 8).
+    /// </summary>
+    [JsonIgnore]
+    public bool CanInstantFinish => IsActive && InstantFinishScrewCost > 0;
+
+    /// <summary>
     /// Progress percentage (0-100).
     /// </summary>
     [JsonIgnore]

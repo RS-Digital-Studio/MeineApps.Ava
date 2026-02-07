@@ -911,5 +911,95 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string Info => ResourceManager.GetString("Info", resourceCulture) ?? "";
 
         public static string WatchAdToRefresh => ResourceManager.GetString("WatchAdToRefresh", resourceCulture) ?? "";
+
+        internal static string GoldenScrews {
+            get {
+                return ResourceManager.GetString("GoldenScrews", resourceCulture);
+            }
+        }
+
+        internal static string ShopGoldenScrewsAdName {
+            get {
+                return ResourceManager.GetString("ShopGoldenScrewsAdName", resourceCulture);
+            }
+        }
+
+        internal static string ShopGoldenScrewsAdDesc {
+            get {
+                return ResourceManager.GetString("ShopGoldenScrewsAdDesc", resourceCulture);
+            }
+        }
+
+        internal static string ShopGoldenScrews75Name {
+            get {
+                return ResourceManager.GetString("ShopGoldenScrews75Name", resourceCulture);
+            }
+        }
+
+        internal static string ShopGoldenScrews75Desc {
+            get {
+                return ResourceManager.GetString("ShopGoldenScrews75Desc", resourceCulture);
+            }
+        }
+
+        internal static string ShopGoldenScrews200Name {
+            get {
+                return ResourceManager.GetString("ShopGoldenScrews200Name", resourceCulture);
+            }
+        }
+
+        internal static string ShopGoldenScrews200Desc {
+            get {
+                return ResourceManager.GetString("ShopGoldenScrews200Desc", resourceCulture);
+            }
+        }
+
+        internal static string ShopGoldenScrews600Name {
+            get {
+                return ResourceManager.GetString("ShopGoldenScrews600Name", resourceCulture);
+            }
+        }
+
+        internal static string ShopGoldenScrews600Desc {
+            get {
+                return ResourceManager.GetString("ShopGoldenScrews600Desc", resourceCulture);
+            }
+        }
+
+        internal static string InstantFinish {
+            get {
+                return ResourceManager.GetString("InstantFinish", resourceCulture);
+            }
+        }
+
+        internal static string InstantFinishDesc {
+            get {
+                return ResourceManager.GetString("InstantFinishDesc", resourceCulture);
+            }
+        }
+
+        internal static string HiringScrewCost {
+            get {
+                return ResourceManager.GetString("HiringScrewCost", resourceCulture);
+            }
+        }
+
+        internal static string GoldenScrewsReceivedFormat {
+            get {
+                return ResourceManager.GetString("GoldenScrewsReceivedFormat", resourceCulture);
+            }
+        }
+
+        internal static string NotEnoughScrews {
+            get {
+                return ResourceManager.GetString("NotEnoughScrews", resourceCulture);
+            }
+        }
+
+        internal static string NotEnoughScrewsDesc {
+            get {
+                return ResourceManager.GetString("NotEnoughScrewsDesc", resourceCulture);
+            }
+        }
     }
 }

@@ -34,15 +34,25 @@
                      Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
 
-        <!-- Balance -->
-        <Border Grid.Column="2"
-                Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="16"
-                Padding="12,6">
-          <TextBlock Text="{Binding CurrentBalance}"
-                     FontSize="14" FontWeight="Bold"
-                     Foreground="{DynamicResource SuccessBrush}" />
-        </Border>
+        <!-- Balance Badges -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+          <!-- Goldschrauben-Badge -->
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12" Padding="8,4">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700" />
+              <TextBlock Text="{Binding GoldenScrewsBalance}" FontSize="14" FontWeight="Bold"
+                         Foreground="#FFD700" />
+            </StackPanel>
+          </Border>
+          <!-- Euro-Badge -->
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12" Padding="8,4">
+            <TextBlock Text="{Binding CurrentBalance}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SuccessBrush}" />
+          </Border>
+        </StackPanel>
       </Grid>
     </Border>
 
@@ -181,13 +191,16 @@
                     <TextBlock Text="{Binding EffectDescription}" FontSize="11"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                   </StackPanel>
-                  <!-- Upgrade Button -->
+                  <!-- Upgrade Button (Goldschrauben) -->
                   <Button Grid.Column="2" Classes="Primary" Padding="12,8"
                           IsVisible="{Binding CanUpgrade}"
                           IsEnabled="{Binding CanAfford}"
                           Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).UpgradeToolCommand}"
                           CommandParameter="{Binding .}">
-                    <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold" />
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700" />
+                      <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold" />
+                    </StackPanel>
                   </Button>
                   <!-- Max Level Badge -->
                   <mi:MaterialIcon Grid.Column="2" Kind="CheckCircle" Width="24" Height="24"

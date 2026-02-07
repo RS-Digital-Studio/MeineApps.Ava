@@ -210,6 +210,12 @@ public class Worker
     [JsonIgnore]
     public decimal HiringCost => Tier.GetHiringCost();
 
+    /// <summary>
+    /// Zusaetzliche Goldschrauben-Kosten (nur Tier A und S).
+    /// </summary>
+    [JsonIgnore]
+    public int HiringScrewCost => Tier.GetHiringScrewCost();
+
     [JsonIgnore]
     public string MoodEmoji => Mood switch
     {

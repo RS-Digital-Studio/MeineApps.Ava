@@ -146,6 +146,15 @@ public class OfflineEarningsEventArgs : EventArgs
 }
 
 /// <summary>
+/// Event fired when golden screws change.
+/// </summary>
+public class GoldenScrewsChangedEventArgs(int oldAmount, int newAmount) : EventArgs
+{
+    public int OldAmount { get; } = oldAmount;
+    public int NewAmount { get; } = newAmount;
+}
+
+/// <summary>
 /// Event fired on each game tick (once per second).
 /// </summary>
 public class GameTickEventArgs : EventArgs

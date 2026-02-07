@@ -172,6 +172,11 @@ public class AchievementService : IAchievementService, IDisposable
             _gameStateService.AddXp(achievement.XpReward);
         }
 
+        if (achievement.GoldenScrewReward > 0)
+        {
+            _gameStateService.AddGoldenScrews(achievement.GoldenScrewReward);
+        }
+
         // Notify listeners
         AchievementUnlocked?.Invoke(this, achievement);
     }

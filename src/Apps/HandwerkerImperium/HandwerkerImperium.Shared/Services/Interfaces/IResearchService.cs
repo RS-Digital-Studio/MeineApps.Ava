@@ -22,5 +22,10 @@ public interface IResearchService
     /// </summary>
     void UpdateTimer(double deltaSeconds);
 
+    /// <summary>
+    /// Sofortfertigstellung der aktiven Forschung gegen Goldschrauben (ab Level 8).
+    /// </summary>
+    bool InstantFinishResearch();
+
     event EventHandler<Research>? ResearchCompleted;
 }

@@ -45,6 +45,9 @@ public interface IGameStateService
     /// <summary>Fired when game state is loaded.</summary>
     event EventHandler? StateLoaded;
 
+    /// <summary>Fired when golden screws change.</summary>
+    event EventHandler<GoldenScrewsChangedEventArgs>? GoldenScrewsChanged;
+
     // ===================================================================
     // MONEY OPERATIONS
     // ===================================================================
@@ -63,6 +66,25 @@ public interface IGameStateService
     /// Checks if the player can afford an amount.
     /// </summary>
     bool CanAfford(decimal amount);
+
+    // ===================================================================
+    // GOLDEN SCREWS OPERATIONS
+    // ===================================================================
+
+    /// <summary>
+    /// Adds golden screws to the player's balance.
+    /// </summary>
+    void AddGoldenScrews(int amount);
+
+    /// <summary>
+    /// Attempts to spend golden screws. Returns true if successful.
+    /// </summary>
+    bool TrySpendGoldenScrews(int amount);
+
+    /// <summary>
+    /// Checks if the player has enough golden screws.
+    /// </summary>
+    bool CanAffordGoldenScrews(int amount);
 
     // ===================================================================
     // XP/LEVEL OPERATIONS

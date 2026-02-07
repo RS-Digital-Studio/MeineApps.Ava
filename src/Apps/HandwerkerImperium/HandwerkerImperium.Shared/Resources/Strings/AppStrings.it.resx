@@ -1908,8 +1908,50 @@
   <data name="ToolMaxLevel" xml:space="preserve">
     <value>Livello max</value>
   </data>
-  <data name="NextRotation" xml:space="preserve">
-    <value>Prossima rotazione</value>
+  <data name="GoldenScrews" xml:space="preserve">
+    <value>Viti dorate</value>
+  </data>
+  <data name="ShopGoldenScrewsAdName" xml:space="preserve">
+    <value>Viti dorate (Video)</value>
+  </data>
+  <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
+    <value>8 viti dorate per un video</value>
+  </data>
+  <data name="ShopGoldenScrews75Name" xml:space="preserve">
+    <value>Sacchetto di viti dorate</value>
+  </data>
+  <data name="ShopGoldenScrews75Desc" xml:space="preserve">
+    <value>75 viti dorate</value>
+  </data>
+  <data name="ShopGoldenScrews200Name" xml:space="preserve">
+    <value>Cassa di viti dorate</value>
+  </data>
+  <data name="ShopGoldenScrews200Desc" xml:space="preserve">
+    <value>200 viti dorate</value>
+  </data>
+  <data name="ShopGoldenScrews600Name" xml:space="preserve">
+    <value>Forziere di viti dorate</value>
+  </data>
+  <data name="ShopGoldenScrews600Desc" xml:space="preserve">
+    <value>600 viti dorate</value>
+  </data>
+  <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
+    <value>{0} viti dorate ricevute!</value>
+  </data>
+  <data name="NotEnoughScrews" xml:space="preserve">
+    <value>Non abbastanza viti dorate</value>
+  </data>
+  <data name="NotEnoughScrewsDesc" xml:space="preserve">
+    <value>Hai bisogno di {0} viti dorate.</value>
+  </data>
+  <data name="InstantFinish" xml:space="preserve">
+    <value>Completa subito</value>
+  </data>
+  <data name="InstantFinishDesc" xml:space="preserve">
+    <value>Completare la ricerca istantaneamente per {0} viti dorate?</value>
+  </data>
+  <data name="HiringScrewCost" xml:space="preserve">
+    <value>+ {0} viti dorate</value>
   </data>
 
 </root>

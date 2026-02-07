@@ -120,6 +120,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasDailyReward;
 
+    [ObservableProperty]
+    private string _goldenScrewsDisplay = "0";
+
     // Quick Jobs + Daily Challenges
     [ObservableProperty]
     private List<QuickJob> _quickJobs = [];
@@ -449,6 +452,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         // Subscribe to events
         _gameStateService.MoneyChanged += OnMoneyChanged;
+        _gameStateService.GoldenScrewsChanged += OnGoldenScrewsChanged;
         _gameStateService.LevelUp += OnLevelUp;
         _gameStateService.XpGained += OnXpGained;
         _gameStateService.WorkshopUpgraded += OnWorkshopUpgraded;
@@ -673,6 +677,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         CurrentXp = state.CurrentXp;
         XpForNextLevel = state.XpForNextLevel;
         LevelProgress = state.LevelProgress;
+        GoldenScrewsDisplay = state.GoldenScrews.ToString("N0");
 
         // Refresh workshops
         RefreshWorkshops();
@@ -1122,6 +1127,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void OnGoldenScrewsChanged(object? sender, GoldenScrewsChangedEventArgs e)
+    {
+        GoldenScrewsDisplay = e.NewAmount.ToString("N0");
+    }
+
     private void OnLevelUp(object? sender, LevelUpEventArgs e)
     {
         PlayerLevel = e.NewLevel;
@@ -1302,6 +1312,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ResearchViewModel.NavigationRequested -= _researchNavHandler;
 
         _gameStateService.MoneyChanged -= OnMoneyChanged;
+        _gameStateService.GoldenScrewsChanged -= OnGoldenScrewsChanged;
         _gameStateService.LevelUp -= OnLevelUp;
         _gameStateService.XpGained -= OnXpGained;
         _gameStateService.WorkshopUpgraded -= OnWorkshopUpgraded;

@@ -44,6 +44,19 @@ public class GameState
     public decimal TotalMoneySpent { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // GOLDSCHRAUBEN (Premium-Waehrung)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("goldenScrews")]
+    public int GoldenScrews { get; set; }
+
+    [JsonPropertyName("totalGoldenScrewsEarned")]
+    public int TotalGoldenScrewsEarned { get; set; }
+
+    [JsonPropertyName("totalGoldenScrewsSpent")]
+    public int TotalGoldenScrewsSpent { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOPS
     // ═══════════════════════════════════════════════════════════════════════
 

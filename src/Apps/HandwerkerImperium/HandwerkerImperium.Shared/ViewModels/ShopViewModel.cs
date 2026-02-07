@@ -54,6 +54,9 @@ public partial class ShopViewModel : ObservableObject
     [ObservableProperty]
     private List<ToolDisplayItem> _tools = [];
 
+    [ObservableProperty]
+    private string _goldenScrewsBalance = "0";
+
     /// <summary>
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
@@ -168,6 +171,44 @@ public partial class ShopViewModel : ObservableObject
                 Icon = "⏱️",
                 Price = _localizationService.GetString("WatchVideo"),
                 IsAdReward = true
+            },
+            // Goldschrauben: Video-Ad
+            new ShopItem
+            {
+                Id = "golden_screws_ad",
+                Name = _localizationService.GetString("ShopGoldenScrewsAdName"),
+                Description = _localizationService.GetString("ShopGoldenScrewsAdDesc"),
+                Icon = "🔩",
+                Price = _localizationService.GetString("WatchVideo"),
+                IsAdReward = true
+            },
+            // Goldschrauben: IAP-Pakete
+            new ShopItem
+            {
+                Id = "golden_screws_75",
+                Name = _localizationService.GetString("ShopGoldenScrews75Name"),
+                Description = _localizationService.GetString("ShopGoldenScrews75Desc"),
+                Icon = "🔩",
+                Price = "0,99 €",
+                IsPremiumItem = true
+            },
+            new ShopItem
+            {
+                Id = "golden_screws_200",
+                Name = _localizationService.GetString("ShopGoldenScrews200Name"),
+                Description = _localizationService.GetString("ShopGoldenScrews200Desc"),
+                Icon = "🔩",
+                Price = "2,49 €",
+                IsPremiumItem = true
+            },
+            new ShopItem
+            {
+                Id = "golden_screws_600",
+                Name = _localizationService.GetString("ShopGoldenScrews600Name"),
+                Description = _localizationService.GetString("ShopGoldenScrews600Desc"),
+                Icon = "🔩",
+                Price = "4,99 €",
+                IsPremiumItem = true
             }
         ];
     }
@@ -179,6 +220,8 @@ public partial class ShopViewModel : ObservableObject
         // Tools initialisieren falls leer (alte Spielstaende)
         if (state.Tools.Count == 0)
             state.Tools = Tool.CreateDefaults();
+
+        GoldenScrewsBalance = state.GoldenScrews.ToString("N0");
 
         var toolItems = new List<ToolDisplayItem>();
         foreach (var tool in state.Tools)
@@ -205,10 +248,10 @@ public partial class ShopViewModel : ObservableObject
                 Name = name,
                 Level = tool.Level,
                 LevelDisplay = $"Lv.{tool.Level}",
-                UpgradeCost = tool.UpgradeCost,
-                UpgradeCostDisplay = $"{tool.UpgradeCost:N0} €",
+                UpgradeCostScrews = tool.UpgradeCostScrews,
+                UpgradeCostDisplay = $"{tool.UpgradeCostScrews}",
                 CanUpgrade = tool.CanUpgrade,
-                CanAfford = state.Money >= tool.UpgradeCost && tool.CanUpgrade,
+                CanAfford = _gameStateService.CanAffordGoldenScrews(tool.UpgradeCostScrews) && tool.CanUpgrade,
                 EffectDescription = effect,
                 IconKind = iconKind,
                 IsMaxLevel = !tool.CanUpgrade
@@ -226,11 +269,17 @@ public partial class ShopViewModel : ObservableObject
         var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == item.Type);
         if (tool == null) return;
 
-        if (!_gameStateService.TrySpendMoney(tool.UpgradeCost)) return;
+        if (!_gameStateService.TrySpendGoldenScrews(tool.UpgradeCostScrews))
+        {
+            ShowAlert(
+                _localizationService.GetString("NotEnoughScrews"),
+                string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), tool.UpgradeCostScrews),
+                "OK");
+            return;
+        }
 
         tool.Level++;
         _gameStateService.MarkDirty();
-        CurrentBalance = FormatMoney(_gameStateService.State.Money);
         LoadTools();
 
         var name = _localizationService.GetString(tool.NameKey) ?? tool.NameKey;
@@ -331,6 +380,30 @@ public partial class ShopViewModel : ObservableObject
                         "OK");
                     return;
                 }
+                else if (item.Id.StartsWith("golden_screws_"))
+                {
+                    // Goldschrauben IAP-Pakete (Placeholder fuer echten Kauf)
+                    int screwAmount = item.Id switch
+                    {
+                        "golden_screws_75" => 75,
+                        "golden_screws_200" => 200,
+                        "golden_screws_600" => 600,
+                        _ => 0
+                    };
+                    if (screwAmount > 0)
+                    {
+                        // TODO: Echten IAP-Kauf via PurchaseService implementieren
+                        _gameStateService.AddGoldenScrews(screwAmount);
+                        GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
+                        await _audioService.PlaySoundAsync(GameSound.LevelUp);
+                        ShowAlert(
+                            _localizationService.GetString("GoldenScrews"),
+                            string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), screwAmount),
+                            _localizationService.GetString("Great"));
+                        LoadTools();
+                    }
+                    return;
+                }
 
                 if (success)
                 {
@@ -415,6 +488,16 @@ public partial class ShopViewModel : ObservableObject
                     string.Format(_localizationService.GetString("MoneyReceivedFormat"), FormatMoney(hourlyEarnings)),
                     _localizationService.GetString("Great"));
                 break;
+
+            case "golden_screws_ad":
+                _gameStateService.AddGoldenScrews(8);
+                GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
+                await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
+                ShowAlert(
+                    _localizationService.GetString("GoldenScrews"),
+                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 8),
+                    _localizationService.GetString("Great"));
+                break;
         }
 
         await _saveGameService.SaveAsync();
@@ -451,7 +534,7 @@ public class ToolDisplayItem
     public string Name { get; set; } = string.Empty;
     public int Level { get; set; }
     public string LevelDisplay { get; set; } = string.Empty;
-    public decimal UpgradeCost { get; set; }
+    public int UpgradeCostScrews { get; set; }
     public string UpgradeCostDisplay { get; set; } = string.Empty;
     public bool CanUpgrade { get; set; }
     public bool CanAfford { get; set; }

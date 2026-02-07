@@ -19,6 +19,7 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
     private static readonly DailyChallengeType[] AllChallengeTypes = Enum.GetValues<DailyChallengeType>();
 
     public decimal AllCompletedBonusAmount => 500m;
+    public int AllCompletedBonusScrews => 15;
 
     public DailyChallengeService(IGameStateService gameStateService, ILocalizationService localizationService)
     {
@@ -83,6 +84,8 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
         challenge.IsClaimed = true;
         _gameStateService.AddMoney(challenge.MoneyReward);
         _gameStateService.AddXp(challenge.XpReward);
+        if (challenge.GoldenScrewReward > 0)
+            _gameStateService.AddGoldenScrews(challenge.GoldenScrewReward);
         _gameStateService.MarkDirty();
         return true;
     }
@@ -99,11 +102,14 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
             challenge.IsClaimed = true;
             _gameStateService.AddMoney(challenge.MoneyReward);
             _gameStateService.AddXp(challenge.XpReward);
+            if (challenge.GoldenScrewReward > 0)
+                _gameStateService.AddGoldenScrews(challenge.GoldenScrewReward);
         }
 
         // Bonus
         state.AllCompletedBonusClaimed = true;
         _gameStateService.AddMoney(AllCompletedBonusAmount);
+        _gameStateService.AddGoldenScrews(AllCompletedBonusScrews);
         _gameStateService.MarkDirty();
         return true;
     }
@@ -183,6 +189,9 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
                 break;
         }
 
+        // Goldschrauben-Belohnung: 1-3 je nach Level-Stufe
+        challenge.GoldenScrewReward = 1 + tier;
+
         return challenge;
     }
 
@@ -209,7 +218,9 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
             _ => ""
         };
 
-        challenge.RewardDisplay = $"{challenge.MoneyReward:N0} € + {challenge.XpReward} XP";
+        challenge.RewardDisplay = challenge.GoldenScrewReward > 0
+            ? $"{challenge.MoneyReward:N0} € + {challenge.XpReward} XP + {challenge.GoldenScrewReward} 🔩"
+            : $"{challenge.MoneyReward:N0} € + {challenge.XpReward} XP";
     }
 
     /// <summary>

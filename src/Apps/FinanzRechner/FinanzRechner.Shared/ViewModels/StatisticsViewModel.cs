@@ -35,6 +35,14 @@ public partial class StatisticsViewModel : ObservableObject
         _selectedPeriod = TimePeriod.Month;
     }
 
+    /// <summary>
+    /// Wird beim Tab-Wechsel zur Statistik aufgerufen.
+    /// </summary>
+    public async Task OnAppearingAsync()
+    {
+        await LoadStatisticsAsync();
+    }
+
     #region Localized Text Properties
 
     public string StatisticsTitleText => _localizationService.GetString("StatisticsTitle") ?? "Statistics";

@@ -124,6 +124,64 @@
                      FontSize="18" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
 
+          <!-- Typ: Ausgabe / Einnahme -->
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+            <Panel Grid.Column="0">
+              <Button Command="{Binding SetQuickTypeExpenseCommand}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Padding="12,18"
+                      Background="#33EF4444" BorderBrush="#EF4444" BorderThickness="2"
+                      CornerRadius="12"
+                      IsVisible="{Binding IsQuickExpenseSelected}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="ArrowDownBold" Width="20" Height="20" Foreground="#EF4444" />
+                  <TextBlock Text="{Binding QuickExpenseText}" FontSize="15" FontWeight="Bold" Foreground="#EF4444" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding SetQuickTypeExpenseCommand}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Padding="12,18"
+                      Background="{DynamicResource SurfaceBrush}" BorderThickness="1"
+                      BorderBrush="{DynamicResource BorderSubtleBrush}"
+                      CornerRadius="12"
+                      IsVisible="{Binding !IsQuickExpenseSelected}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="ArrowDownBold" Width="20" Height="20"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Text="{Binding QuickExpenseText}" FontSize="15"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+              </Button>
+            </Panel>
+            <Panel Grid.Column="1">
+              <Button Command="{Binding SetQuickTypeIncomeCommand}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Padding="12,18"
+                      Background="#3322C55E" BorderBrush="#22C55E" BorderThickness="2"
+                      CornerRadius="12"
+                      IsVisible="{Binding IsQuickIncomeSelected}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="ArrowUpBold" Width="20" Height="20" Foreground="#22C55E" />
+                  <TextBlock Text="{Binding QuickIncomeText}" FontSize="15" FontWeight="Bold" Foreground="#22C55E" />
+                </StackPanel>
+              </Button>
+              <Button Command="{Binding SetQuickTypeIncomeCommand}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      Padding="12,18"
+                      Background="{DynamicResource SurfaceBrush}" BorderThickness="1"
+                      BorderBrush="{DynamicResource BorderSubtleBrush}"
+                      CornerRadius="12"
+                      IsVisible="{Binding !IsQuickIncomeSelected}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="ArrowUpBold" Width="20" Height="20"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Text="{Binding QuickIncomeText}" FontSize="15"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+              </Button>
+            </Panel>
+          </Grid>
+
           <!-- Betrag -->
           <TextBox Text="{Binding QuickAddAmount}"
                    Watermark="{Binding QuickAddAmountPlaceholder}"
@@ -133,28 +191,43 @@
           <TextBox Text="{Binding QuickAddDescription}"
                    Watermark="{Binding QuickAddDescriptionPlaceholder}" />
 
-          <!-- Kategorie-Chips (Top-7) -->
-          <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
-            <ItemsControl ItemsSource="{Binding QuickAddCategories}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <WrapPanel Orientation="Horizontal" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                  <Button Classes="Outlined"
-                          Margin="4"
-                          Padding="8,4"
+          <!-- Kategorie-Chips mit Selected-State -->
+          <ItemsControl ItemsSource="{Binding QuickCategoryItems}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Panel Margin="0,0,6,6">
+                  <!-- Selected -->
+                  <Button CornerRadius="16" Padding="10,6" MinHeight="40" Cursor="Hand"
+                          Background="{DynamicResource PrimaryBrush}" BorderThickness="0"
+                          IsVisible="{Binding IsSelected}"
                           Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectQuickCategoryCommand}"
                           CommandParameter="{Binding}">
-                    <mi:MaterialIcon Kind="{Binding Converter={x:Static conv:CategoryToIconConverter.Instance}}"
-                                     Width="16" Height="16" />
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{Binding CategoryDisplay}" FontSize="16" VerticalAlignment="Center" Foreground="White" />
+                      <TextBlock Text="{Binding CategoryName}" FontSize="13" VerticalAlignment="Center" Foreground="White" />
+                    </StackPanel>
                   </Button>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
-          </WrapPanel>
+                  <!-- Unselected -->
+                  <Button CornerRadius="16" Padding="10,6" MinHeight="40" Cursor="Hand"
+                          Background="{DynamicResource SurfaceBrush}" BorderThickness="0"
+                          IsVisible="{Binding !IsSelected}"
+                          Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectQuickCategoryCommand}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{Binding CategoryDisplay}" FontSize="16" VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding CategoryName}" FontSize="13" VerticalAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+                </Panel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
 
           <!-- Buttons -->
           <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">

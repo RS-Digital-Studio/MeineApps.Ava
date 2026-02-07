@@ -190,6 +190,9 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private TransactionType _newTransactionType = TransactionType.Expense;
 
+    public bool IsExpenseSelected => NewTransactionType == TransactionType.Expense;
+    public bool IsIncomeSelected => NewTransactionType == TransactionType.Income;
+
     public List<ExpenseCategory> Categories => NewTransactionType == TransactionType.Expense
         ? ExpenseCategories
         : IncomeCategories;
@@ -259,6 +262,8 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             ? ExpenseCategory.Other
             : ExpenseCategory.Salary;
 
+        OnPropertyChanged(nameof(IsExpenseSelected));
+        OnPropertyChanged(nameof(IsIncomeSelected));
         OnPropertyChanged(nameof(Categories));
         OnPropertyChanged(nameof(DescriptionSuggestions));
         UpdateCategoryItems();
@@ -316,6 +321,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             items.Add(new CategoryDisplayItem
             {
                 Category = cat,
+                CategoryName = CategoryLocalizationHelper.GetLocalizedName(cat, _localizationService),
                 IsSelected = cat == NewExpenseCategory
             });
         }
@@ -481,6 +487,14 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     #endregion
 
     #region Commands
+
+    /// <summary>
+    /// Wird beim Tab-Wechsel zum Tracker aufgerufen.
+    /// </summary>
+    public async Task OnAppearingAsync()
+    {
+        await LoadExpensesAsync();
+    }
 
     [RelayCommand]
     public async Task LoadExpensesAsync()
@@ -715,20 +729,22 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
                 }
             }
 
+            // Datum VOR ResetForm sichern (ResetForm setzt NewExpenseDate auf Today)
+            var savedDate = NewExpenseDate;
+
             IsAddingExpense = false;
             IsEditing = false;
             ResetForm();
 
-            // If the new transaction is in the current month, reload
-            if (NewExpenseDate.Year == SelectedYear && NewExpenseDate.Month == SelectedMonth)
+            // Zum Monat der gespeicherten Transaktion wechseln oder neu laden
+            if (savedDate.Year == SelectedYear && savedDate.Month == SelectedMonth)
             {
                 await LoadExpensesAsync();
             }
             else
             {
-                // Switch to the month of the new transaction
-                SelectedYear = NewExpenseDate.Year;
-                SelectedMonth = NewExpenseDate.Month;
+                SelectedYear = savedDate.Year;
+                SelectedMonth = savedDate.Month;
             }
         }
         catch (Exception)
@@ -1040,10 +1056,15 @@ public partial class CategoryDisplayItem : ObservableObject
 {
     public ExpenseCategory Category { get; init; }
 
+    /// <summary>
+    /// Lokalisierter Kategorie-Name (wird beim Erstellen gesetzt).
+    /// </summary>
+    [ObservableProperty]
+    private string _categoryName = string.Empty;
+
     [ObservableProperty]
     private bool _isSelected;
 
-    public string CategoryName => Category.ToString();
     public string CategoryDisplay => Category switch
     {
         ExpenseCategory.Food => "\U0001F354",

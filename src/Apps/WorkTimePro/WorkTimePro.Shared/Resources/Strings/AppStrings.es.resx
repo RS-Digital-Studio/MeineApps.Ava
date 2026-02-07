@@ -361,5 +361,11 @@
   <data name="ThemeDaylightDesc" xml:space="preserve"><value>Limpio y claro</value></data>
   <data name="ThemeForest" xml:space="preserve"><value>Bosque</value></data>
   <data name="ThemeForestDesc" xml:space="preserve"><value>Natural oscuro</value></data>
+  <data name="SetStatus" xml:space="preserve">
+    <value>Establecer estado</value>
+  </data>
+  <data name="DateRange" xml:space="preserve">
+    <value>Periodo</value>
+  </data>
 
 </root>

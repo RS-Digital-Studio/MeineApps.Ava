@@ -982,5 +982,11 @@
   <data name="ThemeForestDesc" xml:space="preserve">
     <value>Natural dark</value>
   </data>
+  <data name="SetStatus" xml:space="preserve">
+    <value>Set status</value>
+  </data>
+  <data name="DateRange" xml:space="preserve">
+    <value>Date range</value>
+  </data>
 
 </root>

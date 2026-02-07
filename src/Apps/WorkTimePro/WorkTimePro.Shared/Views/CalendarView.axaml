@@ -6,215 +6,389 @@
              x:Class="WorkTimePro.Views.CalendarView"
              x:DataType="vm:CalendarViewModel">
 
-  <ScrollViewer>
-    <StackPanel Spacing="16" Margin="16">
+  <Grid>
+    <!-- Main Calendar Content -->
+    <ScrollViewer IsVisible="{Binding !IsOverlayVisible}">
+      <StackPanel Spacing="16" Margin="16">
 
-      <!-- ==================== Month Navigation ==================== -->
-      <Border Classes="CardElevated">
-        <Grid ColumnDefinitions="Auto,*,Auto">
-          <Button Grid.Column="0" Classes="Text"
-                  Command="{Binding PreviousMonthCommand}">
-            <mi:MaterialIcon Kind="ChevronLeft" Width="24" Height="24"
-                             Foreground="{DynamicResource PrimaryBrush}" />
-          </Button>
+        <!-- ==================== Month Navigation ==================== -->
+        <Border Classes="CardElevated">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Button Grid.Column="0" Classes="Text"
+                    Command="{Binding PreviousMonthCommand}">
+              <mi:MaterialIcon Kind="ChevronLeft" Width="24" Height="24"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+            </Button>
 
-          <TextBlock Grid.Column="1"
-                     Text="{Binding MonthDisplay}"
-                     FontSize="20" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     HorizontalAlignment="Center"
-                     VerticalAlignment="Center" />
-
-          <Button Grid.Column="2" Classes="Text"
-                  Command="{Binding NextMonthCommand}">
-            <mi:MaterialIcon Kind="ChevronRight" Width="24" Height="24"
-                             Foreground="{DynamicResource PrimaryBrush}" />
-          </Button>
-        </Grid>
-      </Border>
-
-      <!-- Today Button -->
-      <Button Content="{Binding TodayButtonText}"
-              Classes="Secondary"
-              Command="{Binding GoToTodayCommand}"
-              HorizontalAlignment="Center" />
-
-      <!-- ==================== Month Summary ==================== -->
-      <Border Classes="Card">
-        <Grid ColumnDefinitions="*,*">
-          <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-            <TextBlock Text="{loc:Translate WorkTime}"
-                       FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding TotalWorkDisplay}"
-                       FontSize="24" FontWeight="Bold"
+            <TextBlock Grid.Column="1"
+                       Text="{Binding MonthDisplay}"
+                       FontSize="20" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       HorizontalAlignment="Center" />
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+
+            <Button Grid.Column="2" Classes="Text"
+                    Command="{Binding NextMonthCommand}">
+              <mi:MaterialIcon Kind="ChevronRight" Width="24" Height="24"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- Today Button -->
+        <Button Content="{Binding TodayButtonText}"
+                Classes="Secondary"
+                Command="{Binding GoToTodayCommand}"
+                HorizontalAlignment="Center" />
+
+        <!-- ==================== Month Summary ==================== -->
+        <Border Classes="Card">
+          <Grid ColumnDefinitions="*,*">
+            <StackPanel Grid.Column="0" HorizontalAlignment="Center">
+              <TextBlock Text="{loc:Translate WorkTime}"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding TotalWorkDisplay}"
+                         FontSize="24" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+              <TextBlock Text="{loc:Translate Balance}"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding BalanceDisplay}"
+                         FontSize="24" FontWeight="Bold"
+                         Foreground="{Binding BalanceColor}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- ==================== Calendar Grid ==================== -->
+        <Border Classes="Card" Padding="8">
+          <StackPanel Spacing="4">
+
+            <!-- Weekday Header -->
+            <Grid ColumnDefinitions="*,*,*,*,*,*,*" Height="30">
+              <TextBlock Grid.Column="0" Text="{loc:Translate Mon}"
+                         FontSize="12" FontWeight="Bold"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1" Text="{loc:Translate Tue}"
+                         FontSize="12" FontWeight="Bold"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="2" Text="{loc:Translate Wed}"
+                         FontSize="12" FontWeight="Bold"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="3" Text="{loc:Translate Thu}"
+                         FontSize="12" FontWeight="Bold"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="4" Text="{loc:Translate Fri}"
+                         FontSize="12" FontWeight="Bold"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="5" Text="{loc:Translate Sat}"
+                         FontSize="12" FontWeight="Bold"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="6" Text="{loc:Translate Sun}"
+                         FontSize="12" FontWeight="Bold"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- Calendar Days -->
+            <ItemsControl ItemsSource="{Binding CalendarWeeks}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <ItemsControl ItemsSource="{Binding}">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <UniformGrid Columns="7" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:CalendarDay">
+                        <Button Classes="Text"
+                                Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).SelectDayCommand}"
+                                CommandParameter="{Binding .}"
+                                Width="48" Height="48"
+                                Padding="0" Margin="1"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center">
+                          <Border Background="{Binding BackgroundColor}"
+                                  CornerRadius="6"
+                                  Width="46" Height="46">
+                            <Grid>
+                              <!-- Day number -->
+                              <TextBlock Text="{Binding DayNumber}"
+                                         FontSize="14"
+                                         Foreground="{Binding TextColor}"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
+                              <!-- Status icon -->
+                              <mi:MaterialIcon Kind="{Binding StatusIconKind}"
+                                               IsVisible="{Binding HasStatusIcon}"
+                                               Width="12" Height="12"
+                                               Foreground="{DynamicResource PrimaryBrush}"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Bottom"
+                                               Margin="0,0,2,2" />
+                            </Grid>
+                          </Border>
+                        </Button>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
           </StackPanel>
+        </Border>
 
-          <StackPanel Grid.Column="1" HorizontalAlignment="Center">
-            <TextBlock Text="{loc:Translate Balance}"
-                       FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding BalanceDisplay}"
-                       FontSize="24" FontWeight="Bold"
-                       Foreground="{Binding BalanceColor}"
-                       HorizontalAlignment="Center" />
+        <!-- ==================== Heatmap Legend ==================== -->
+        <Border Classes="Card" Padding="12">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{loc:Translate Legend}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+
+            <WrapPanel Orientation="Horizontal"
+                       HorizontalAlignment="Center">
+              <!-- 0h -->
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+                <Border Width="16" Height="16" CornerRadius="2"
+                        Background="{DynamicResource CardBrush}" />
+                <TextBlock Text="0h" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- <4h -->
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+                <Border Width="16" Height="16" CornerRadius="2"
+                        Background="#C8E6C9" />
+                <TextBlock Text="&lt;4h" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- 4-6h -->
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+                <Border Width="16" Height="16" CornerRadius="2"
+                        Background="#81C784" />
+                <TextBlock Text="4-6h" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- 6-8h -->
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+                <Border Width="16" Height="16" CornerRadius="2"
+                        Background="#4CAF50" />
+                <TextBlock Text="6-8h" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- 8-10h -->
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+                <Border Width="16" Height="16" CornerRadius="2"
+                        Background="#388E3C" />
+                <TextBlock Text="8-10h" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- >10h -->
+              <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
+                <Border Width="16" Height="16" CornerRadius="2"
+                        Background="{DynamicResource ErrorBrush}" />
+                <TextBlock Text="&gt;10h" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </WrapPanel>
           </StackPanel>
-        </Grid>
-      </Border>
+        </Border>
 
-      <!-- ==================== Calendar Grid ==================== -->
-      <Border Classes="Card" Padding="8">
-        <StackPanel Spacing="4">
+      </StackPanel>
+    </ScrollViewer>
 
-          <!-- Weekday Header -->
-          <Grid ColumnDefinitions="*,*,*,*,*,*,*" Height="30">
-            <TextBlock Grid.Column="0" Text="{loc:Translate Mon}"
-                       FontSize="12" FontWeight="Bold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="1" Text="{loc:Translate Tue}"
-                       FontSize="12" FontWeight="Bold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="2" Text="{loc:Translate Wed}"
-                       FontSize="12" FontWeight="Bold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="3" Text="{loc:Translate Thu}"
-                       FontSize="12" FontWeight="Bold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="4" Text="{loc:Translate Fri}"
-                       FontSize="12" FontWeight="Bold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="5" Text="{loc:Translate Sat}"
-                       FontSize="12" FontWeight="Bold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="6" Text="{loc:Translate Sun}"
-                       FontSize="12" FontWeight="Bold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+    <!-- ==================== Status Overlay ==================== -->
+    <Border IsVisible="{Binding IsOverlayVisible}"
+            Background="{DynamicResource BackgroundBrush}"
+            ZIndex="10">
+      <ScrollViewer>
+        <StackPanel Spacing="16" Margin="16">
+
+          <!-- Header with close button -->
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <Button Grid.Column="0" Classes="Text"
+                    Command="{Binding CancelOverlayCommand}">
+              <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+            </Button>
+
+            <TextBlock Grid.Column="1"
+                       Text="{loc:Translate SetStatus}"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center" />
+
+            <Button Grid.Column="2" Classes="Text"
+                    Command="{Binding CancelOverlayCommand}">
+              <mi:MaterialIcon Kind="Close" Width="24" Height="24"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+            </Button>
           </Grid>
 
-          <!-- Calendar Days -->
-          <ItemsControl ItemsSource="{Binding CalendarWeeks}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate>
-                <ItemsControl ItemsSource="{Binding}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <UniformGrid Columns="7" />
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                  <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:CalendarDay">
-                      <Button Classes="Text"
-                              Command="{Binding $parent[UserControl].((vm:CalendarViewModel)DataContext).SelectDayCommand}"
-                              CommandParameter="{Binding .}"
-                              Width="48" Height="48"
-                              Padding="0" Margin="1"
-                              HorizontalContentAlignment="Center"
-                              VerticalContentAlignment="Center">
-                        <Border Background="{Binding BackgroundColor}"
-                                CornerRadius="6"
-                                Width="46" Height="46">
-                          <Grid>
-                            <TextBlock Text="{Binding DayNumber}"
-                                       FontSize="14"
-                                       Foreground="{Binding TextColor}"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                            <TextBlock Text="{Binding StatusIcon}"
-                                       FontSize="8"
-                                       HorizontalAlignment="Right"
-                                       VerticalAlignment="Bottom"
-                                       Margin="0,0,2,2" />
-                          </Grid>
-                        </Border>
-                      </Button>
-                    </DataTemplate>
-                  </ItemsControl.ItemTemplate>
-                </ItemsControl>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+          <!-- Selected date display -->
+          <Border Classes="CardElevated" Padding="16">
+            <StackPanel HorizontalAlignment="Center" Spacing="4">
+              <mi:MaterialIcon Kind="CalendarToday" Width="32" Height="32"
+                               Foreground="{DynamicResource PrimaryBrush}"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding OverlayDateDisplay}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Existing status info -->
+          <Border Classes="Card" Padding="12"
+                  IsVisible="{Binding OverlayHasExistingStatus}">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+              <TextBlock Text="{Binding OverlayExistingStatusText}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Status type selection -->
+          <Border Classes="Card" Padding="16">
+            <StackPanel Spacing="12">
+              <TextBlock Text="{loc:Translate Type}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <ComboBox ItemsSource="{Binding AvailableStatusTypes}"
+                        SelectedItem="{Binding OverlaySelectedType}"
+                        HorizontalAlignment="Stretch">
+                <ComboBox.ItemTemplate>
+                  <DataTemplate x:DataType="vm:VacationTypeItem">
+                    <TextBlock Text="{Binding Name}" />
+                  </DataTemplate>
+                </ComboBox.ItemTemplate>
+              </ComboBox>
+            </StackPanel>
+          </Border>
+
+          <!-- Date range -->
+          <Border Classes="Card" Padding="16">
+            <StackPanel Spacing="12">
+              <TextBlock Text="{loc:Translate DateRange}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+
+              <Grid ColumnDefinitions="*,16,*" RowDefinitions="Auto,8,Auto">
+                <!-- From -->
+                <TextBlock Grid.Row="0" Grid.Column="0"
+                           Text="{loc:Translate From}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <CalendarDatePicker Grid.Row="2" Grid.Column="0"
+                                    SelectedDate="{Binding OverlayStartDate}"
+                                    HorizontalAlignment="Stretch" />
+
+                <!-- To -->
+                <TextBlock Grid.Row="0" Grid.Column="2"
+                           Text="{loc:Translate To}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <CalendarDatePicker Grid.Row="2" Grid.Column="2"
+                                    SelectedDate="{Binding OverlayEndDate}"
+                                    HorizontalAlignment="Stretch" />
+              </Grid>
+
+              <!-- Calculated work days -->
+              <TextBlock Text="{Binding OverlayCalculatedDaysDisplay}"
+                         FontSize="13"
+                         Foreground="{DynamicResource PrimaryBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Note -->
+          <Border Classes="Card" Padding="16">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{loc:Translate NoteOptional}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <TextBox Text="{Binding OverlayNote}"
+                       Watermark="{loc:Translate NotePlaceholder}"
+                       MinHeight="60"
+                       AcceptsReturn="True"
+                       TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <!-- Action buttons -->
+          <StackPanel Spacing="8">
+            <!-- Save -->
+            <Button Classes="Primary"
+                    Command="{Binding SaveStatusCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Padding="12">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="ContentSave" Width="20" Height="20" />
+                <TextBlock Text="{loc:Translate Save}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <!-- Remove existing status -->
+            <Button Classes="Outlined"
+                    Command="{Binding RemoveStatusCommand}"
+                    IsVisible="{Binding OverlayHasExistingStatus}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Padding="12">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="DeleteOutline" Width="20" Height="20"
+                                 Foreground="{DynamicResource ErrorBrush}" />
+                <TextBlock Text="{loc:Translate ResetStatus}"
+                           Foreground="{DynamicResource ErrorBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <!-- Cancel -->
+            <Button Classes="Text"
+                    Command="{Binding CancelOverlayCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Padding="12">
+              <TextBlock Text="{loc:Translate Cancel}" />
+            </Button>
+          </StackPanel>
 
         </StackPanel>
-      </Border>
-
-      <!-- ==================== Heatmap Legend ==================== -->
-      <Border Classes="Card" Padding="12">
-        <StackPanel Spacing="8">
-          <TextBlock Text="{loc:Translate Legend}"
-                     FontSize="16" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
-
-          <WrapPanel Orientation="Horizontal"
-                     HorizontalAlignment="Center">
-            <!-- 0h -->
-            <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
-              <Border Width="16" Height="16" CornerRadius="2"
-                      Background="{DynamicResource CardBrush}" />
-              <TextBlock Text="0h" FontSize="12"
-                         Foreground="{DynamicResource TextSecondaryBrush}"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-
-            <!-- <4h -->
-            <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
-              <Border Width="16" Height="16" CornerRadius="2"
-                      Background="#C8E6C9" />
-              <TextBlock Text="&lt;4h" FontSize="12"
-                         Foreground="{DynamicResource TextSecondaryBrush}"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-
-            <!-- 4-6h -->
-            <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
-              <Border Width="16" Height="16" CornerRadius="2"
-                      Background="#81C784" />
-              <TextBlock Text="4-6h" FontSize="12"
-                         Foreground="{DynamicResource TextSecondaryBrush}"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-
-            <!-- 6-8h -->
-            <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
-              <Border Width="16" Height="16" CornerRadius="2"
-                      Background="#4CAF50" />
-              <TextBlock Text="6-8h" FontSize="12"
-                         Foreground="{DynamicResource TextSecondaryBrush}"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-
-            <!-- 8-10h -->
-            <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
-              <Border Width="16" Height="16" CornerRadius="2"
-                      Background="#388E3C" />
-              <TextBlock Text="8-10h" FontSize="12"
-                         Foreground="{DynamicResource TextSecondaryBrush}"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-
-            <!-- >10h -->
-            <StackPanel Orientation="Horizontal" Spacing="4" Margin="4">
-              <Border Width="16" Height="16" CornerRadius="2"
-                      Background="{DynamicResource ErrorBrush}" />
-              <TextBlock Text="&gt;10h" FontSize="12"
-                         Foreground="{DynamicResource TextSecondaryBrush}"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-          </WrapPanel>
-        </StackPanel>
-      </Border>
-
-    </StackPanel>
-  </ScrollViewer>
+      </ScrollViewer>
+    </Border>
+  </Grid>
 
 </UserControl>

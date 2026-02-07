@@ -2135,5 +2135,23 @@ namespace WorkTimePro.Resources.Strings {
                 return ResourceManager.GetString("ThemeForestDesc", resourceCulture);
             }
         }
+
+        internal static string SetStatus {
+            get {
+                return ResourceManager.GetString("SetStatus", resourceCulture);
+            }
+        }
+
+        internal static string DateRange {
+            get {
+                return ResourceManager.GetString("DateRange", resourceCulture);
+            }
+        }
+
+        internal static string WorkDaysFormat {
+            get {
+                return ResourceManager.GetString("WorkDaysFormat", resourceCulture);
+            }
+        }
     }
 }

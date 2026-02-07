@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Material.Icons;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Models;
 using WorkTimePro.Helpers;
@@ -10,7 +11,7 @@ using WorkTimePro.Services;
 namespace WorkTimePro.ViewModels;
 
 /// <summary>
-/// ViewModel for calendar view with heatmap
+/// ViewModel for calendar view with heatmap and status overlay
 /// </summary>
 public partial class CalendarViewModel : ObservableObject
 {
@@ -18,6 +19,7 @@ public partial class CalendarViewModel : ObservableObject
     private readonly ICalculationService _calculation;
     private readonly IPurchaseService _purchaseService;
     private readonly ITrialService _trialService;
+    private readonly IVacationService _vacationService;
 
     public event Action<string>? NavigationRequested;
     public event Action<string>? MessageRequested;
@@ -26,12 +28,14 @@ public partial class CalendarViewModel : ObservableObject
         IDatabaseService database,
         ICalculationService calculation,
         IPurchaseService purchaseService,
-        ITrialService trialService)
+        ITrialService trialService,
+        IVacationService vacationService)
     {
         _database = database;
         _calculation = calculation;
         _purchaseService = purchaseService;
         _trialService = trialService;
+        _vacationService = vacationService;
     }
 
     // === Properties ===
@@ -68,6 +72,78 @@ public partial class CalendarViewModel : ObservableObject
 
     // Localized texts
     public string TodayButtonText => $"{Icons.CalendarToday} {AppStrings.Today}";
+
+    // === Status Overlay ===
+
+    [ObservableProperty]
+    private bool _isOverlayVisible;
+
+    [ObservableProperty]
+    private DateTime _overlayStartDate = DateTime.Today;
+
+    [ObservableProperty]
+    private DateTime _overlayEndDate = DateTime.Today;
+
+    [ObservableProperty]
+    private VacationTypeItem? _overlaySelectedType;
+
+    [ObservableProperty]
+    private string _overlayNote = "";
+
+    [ObservableProperty]
+    private int _overlayCalculatedDays;
+
+    [ObservableProperty]
+    private string _overlayDateDisplay = "";
+
+    [ObservableProperty]
+    private bool _overlayHasExistingStatus;
+
+    [ObservableProperty]
+    private string _overlayExistingStatusText = "";
+
+    public string OverlayCalculatedDaysDisplay => string.Format(AppStrings.WorkDaysFormat, OverlayCalculatedDays);
+
+    partial void OnOverlayCalculatedDaysChanged(int value) => OnPropertyChanged(nameof(OverlayCalculatedDaysDisplay));
+
+    partial void OnOverlayStartDateChanged(DateTime value)
+    {
+        if (value > OverlayEndDate)
+            OverlayEndDate = value;
+        _ = RecalculateOverlayDaysAsync();
+    }
+
+    partial void OnOverlayEndDateChanged(DateTime value)
+    {
+        if (value < OverlayStartDate)
+            OverlayStartDate = value;
+        _ = RecalculateOverlayDaysAsync();
+    }
+
+    private async Task RecalculateOverlayDaysAsync()
+    {
+        try
+        {
+            OverlayCalculatedDays = await _vacationService.CalculateWorkDaysAsync(OverlayStartDate, OverlayEndDate);
+        }
+        catch (Exception)
+        {
+            OverlayCalculatedDays = 0;
+        }
+    }
+
+    public List<VacationTypeItem> AvailableStatusTypes => new()
+    {
+        new() { Status = DayStatus.Vacation, Name = AppStrings.Vacation },
+        new() { Status = DayStatus.Sick, Name = AppStrings.Illness },
+        new() { Status = DayStatus.HomeOffice, Name = AppStrings.DayStatus_HomeOffice },
+        new() { Status = DayStatus.BusinessTrip, Name = AppStrings.DayStatus_BusinessTrip },
+        new() { Status = DayStatus.SpecialLeave, Name = AppStrings.SpecialLeave },
+        new() { Status = DayStatus.UnpaidLeave, Name = AppStrings.UnpaidLeave },
+        new() { Status = DayStatus.OvertimeCompensation, Name = AppStrings.OvertimeCompensation },
+        new() { Status = DayStatus.Training, Name = AppStrings.DayStatus_Training },
+        new() { Status = DayStatus.CompensatoryTime, Name = AppStrings.DayStatus_CompensatoryTime }
+    };
 
     // === Commands ===
 
@@ -129,16 +205,107 @@ public partial class CalendarViewModel : ObservableObject
     {
         if (day == null || !day.IsCurrentMonth) return;
 
-        // In Avalonia, show day detail directly
-        NavigationRequested?.Invoke($"DayDetailPage?date={day.Date:yyyy-MM-dd}");
+        // Open status overlay
+        OverlayStartDate = day.Date;
+        OverlayEndDate = day.Date;
+        OverlaySelectedType = AvailableStatusTypes[0];
+        OverlayNote = "";
+        OverlayDateDisplay = day.Date.ToString("dddd, dd. MMMM yyyy");
+
+        // Check existing status
+        var hasSpecialStatus = day.Status != DayStatus.WorkDay &&
+                               day.Status != DayStatus.Work &&
+                               day.Status != DayStatus.Weekend;
+        OverlayHasExistingStatus = hasSpecialStatus;
+        if (hasSpecialStatus)
+        {
+            OverlayExistingStatusText = GetStatusName(day.Status);
+            // Pre-select existing type
+            var existing = AvailableStatusTypes.FirstOrDefault(t => t.Status == day.Status);
+            if (existing != null)
+                OverlaySelectedType = existing;
+        }
+
+        await RecalculateOverlayDaysAsync();
+        IsOverlayVisible = true;
     }
 
     [RelayCommand]
-    private async Task QuickStatusAsync(CalendarDay? day)
+    private void CancelOverlay()
     {
-        // Same function as SelectDay for long-press
-        await SelectDayAsync(day);
+        IsOverlayVisible = false;
     }
+
+    [RelayCommand]
+    private async Task SaveStatusAsync()
+    {
+        if (OverlaySelectedType == null) return;
+
+        try
+        {
+            var entry = new VacationEntry
+            {
+                Year = OverlayStartDate.Year,
+                StartDate = OverlayStartDate,
+                EndDate = OverlayEndDate,
+                Days = OverlayCalculatedDays,
+                Type = OverlaySelectedType.Status,
+                Note = string.IsNullOrWhiteSpace(OverlayNote) ? null : OverlayNote
+            };
+
+            await _vacationService.SaveVacationEntryAsync(entry);
+
+            IsOverlayVisible = false;
+            MessageRequested?.Invoke(AppStrings.Saved);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(string.Format(AppStrings.ErrorSaving, ex.Message));
+        }
+    }
+
+    [RelayCommand]
+    private async Task RemoveStatusAsync()
+    {
+        try
+        {
+            // Check if there is a vacation entry for the selected date
+            var existing = await _vacationService.GetVacationForDateAsync(OverlayStartDate);
+            if (existing != null)
+            {
+                await _vacationService.DeleteVacationEntryAsync(existing.Id);
+            }
+            else
+            {
+                // Directly reset WorkDay status
+                await SetDayStatusAsync(OverlayStartDate, DayStatus.WorkDay);
+            }
+
+            IsOverlayVisible = false;
+            MessageRequested?.Invoke(AppStrings.ResetStatus);
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(string.Format(AppStrings.ErrorSaving, ex.Message));
+        }
+    }
+
+    private static string GetStatusName(DayStatus status) => status switch
+    {
+        DayStatus.Vacation => AppStrings.Vacation,
+        DayStatus.Sick => AppStrings.Illness,
+        DayStatus.HomeOffice => AppStrings.DayStatus_HomeOffice,
+        DayStatus.BusinessTrip => AppStrings.DayStatus_BusinessTrip,
+        DayStatus.SpecialLeave => AppStrings.SpecialLeave,
+        DayStatus.UnpaidLeave => AppStrings.UnpaidLeave,
+        DayStatus.OvertimeCompensation => AppStrings.OvertimeCompensation,
+        DayStatus.Holiday => AppStrings.Holiday,
+        DayStatus.Training => AppStrings.DayStatus_Training,
+        DayStatus.CompensatoryTime => AppStrings.DayStatus_CompensatoryTime,
+        _ => AppStrings.DayStatus_WorkDay
+    };
 
     /// <summary>
     /// Set status for a specific day
@@ -302,12 +469,25 @@ public class CalendarDay
         }
     }
 
-    public string StatusIcon => Status switch
+    /// <summary>
+    /// MaterialIconKind for status display
+    /// </summary>
+    public MaterialIconKind StatusIconKind => Status switch
     {
-        DayStatus.Vacation => Icons.Beach,
-        DayStatus.Holiday => Icons.PartyPopper,
-        DayStatus.Sick => Icons.Thermometer,
-        DayStatus.HomeOffice => Icons.HomeAccount,
-        _ => ""
+        DayStatus.Vacation => MaterialIconKind.Beach,
+        DayStatus.Holiday => MaterialIconKind.PartyPopper,
+        DayStatus.Sick => MaterialIconKind.Thermometer,
+        DayStatus.HomeOffice => MaterialIconKind.HomeAccount,
+        DayStatus.BusinessTrip => MaterialIconKind.Airplane,
+        DayStatus.SpecialLeave => MaterialIconKind.Gift,
+        DayStatus.UnpaidLeave => MaterialIconKind.PowerSleep,
+        DayStatus.OvertimeCompensation => MaterialIconKind.ClockAlert,
+        DayStatus.Training => MaterialIconKind.BookOpenPageVariant,
+        DayStatus.CompensatoryTime => MaterialIconKind.SwapHorizontal,
+        _ => MaterialIconKind.Circle
     };
+
+    public bool HasStatusIcon => Status != DayStatus.WorkDay &&
+                                  Status != DayStatus.Work &&
+                                  Status != DayStatus.Weekend;
 }

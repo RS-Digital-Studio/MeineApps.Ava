@@ -561,3 +561,10 @@ F:\Meine_Apps_Ava\
   - `AdView.AdSize` ist Property-Setter (nicht `SetAdSize()` Methode) in neueren Ads.Lite Bindings
   - BomberBlast SettingsView: Broken `BoolConverters.TrueIsVisible` fuer `BorderThickness` entfernt (AVLN2000)
   - Full Solution Build: 0 Fehler
+- **WorkTimePro: Kalender-Tag-Auswahl mit Status-Eintrag:**
+  - CalendarViewModel: Overlay-System statt NavigationRequested (IVacationService injiziert)
+  - CalendarDay: StatusIconKind (MaterialIconKind) + HasStatusIcon fuer 10 DayStatus-Werte
+  - CalendarView.axaml: Status-Overlay (Typ-ComboBox, DatePicker Von/Bis, Notiz, Save/Remove/Cancel)
+  - StatusIcon: mi:MaterialIcon (12x12) statt FontSize=8 TextBlock-Emoji
+  - 2 neue resx-Keys (SetStatus, DateRange) in 6 Sprachen + WorkDaysFormat in Designer.cs
+  - Full Solution Build: 0 Fehler

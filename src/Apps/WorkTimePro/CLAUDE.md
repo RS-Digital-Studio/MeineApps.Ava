@@ -167,6 +167,24 @@ Tiefgehender Review aller Services + ViewModels, alle verbliebenen Probleme beho
 ### Lokalisierungs-Key Fix
 - **AppStrings.resx** (EN base): Fehlender `RemainingDays` Key ergaenzt (existierte in DE/ES/FR/IT/PT aber nicht in EN)
 
+## Kalender-Tag-Auswahl mit Status-Eintrag (07.02.2026)
+- **CalendarViewModel**: Overlay-System statt NavigationRequested fuer Tag-Auswahl
+  - IsOverlayVisible, OverlayStartDate/EndDate, OverlaySelectedType, OverlayNote, OverlayCalculatedDays
+  - SelectDayAsync oeffnet Overlay statt NavigationRequested zu feuern
+  - SaveStatusCommand: Erstellt VacationEntry via VacationService
+  - RemoveStatusCommand: Loescht VacationEntry oder resettet WorkDay-Status
+  - CancelOverlayCommand: Schliesst Overlay
+  - AvailableStatusTypes: 9 Status-Typen (Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCompensation, Training, CompensatoryTime)
+  - IVacationService als neue Constructor-Dependency
+- **CalendarDay**: StatusIconKind (MaterialIconKind) + HasStatusIcon Properties
+  - Icons fuer alle 10 speziellen DayStatus-Werte (Beach, Thermometer, HomeAccount, Airplane, etc.)
+- **CalendarView.axaml**: Status-Overlay + MaterialIcon statt Text-Emoji
+  - StatusIcon von FontSize=8 TextBlock auf mi:MaterialIcon (12x12, PrimaryBrush)
+  - Overlay mit Datum-Anzeige, Status-ComboBox, Von/Bis-DatePicker, Notiz, Speichern/Abbrechen/Entfernen
+  - Vorhandener Status wird erkannt und vorausgewaehlt
+- **Lokalisierung**: 2 neue Keys (SetStatus, DateRange) + WorkDaysFormat in Designer.cs
+- Build: 0 Fehler
+
 ## Build
 ```bash
 dotnet build src/Apps/WorkTimePro/WorkTimePro.Shared/WorkTimePro.Shared.csproj

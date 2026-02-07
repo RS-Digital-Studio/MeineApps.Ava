@@ -3,13 +3,17 @@ using System.Text.Json;
 namespace MeineApps.Core.Ava.Services;
 
 /// <summary>
-/// JSON file-based preferences service for cross-platform support
+/// JSON file-based preferences service for cross-platform support.
+/// Speichert debounced (500ms nach letztem Set) fuer bessere Performance.
 /// </summary>
-public class PreferencesService : IPreferencesService
+public class PreferencesService : IPreferencesService, IDisposable
 {
+    private static readonly JsonSerializerOptions _jsonWriteOptions = new() { WriteIndented = true };
+
     private readonly string _filePath;
     private Dictionary<string, JsonElement> _preferences = new();
     private readonly object _lock = new();
+    private Timer? _saveTimer;
 
     public PreferencesService(string? appName = null)
     {
@@ -44,8 +48,8 @@ public class PreferencesService : IPreferencesService
         {
             var json = JsonSerializer.SerializeToElement(value);
             _preferences[key] = json;
-            Save();
         }
+        ScheduleSave();
     }
 
     public bool ContainsKey(string key)
@@ -61,7 +65,7 @@ public class PreferencesService : IPreferencesService
         lock (_lock)
         {
             if (_preferences.Remove(key))
-                Save();
+                ScheduleSave();
         }
     }
 
@@ -70,8 +74,8 @@ public class PreferencesService : IPreferencesService
         lock (_lock)
         {
             _preferences.Clear();
-            Save();
         }
+        ScheduleSave();
     }
 
     private void Load()
@@ -90,16 +94,37 @@ public class PreferencesService : IPreferencesService
         }
     }
 
-    private void Save()
+    /// <summary>
+    /// Debounced Save: Setzt/resettet Timer auf 500ms nach letztem Aufruf
+    /// </summary>
+    private void ScheduleSave()
     {
-        try
+        _saveTimer?.Dispose();
+        _saveTimer = new Timer(_ => SaveNow(), null, 500, Timeout.Infinite);
+    }
+
+    /// <summary>
+    /// Schreibt Preferences synchron auf Disk (wird vom Timer-Callback aufgerufen)
+    /// </summary>
+    private void SaveNow()
+    {
+        lock (_lock)
         {
-            var json = JsonSerializer.Serialize(_preferences, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(_filePath, json);
+            try
+            {
+                var json = JsonSerializer.Serialize(_preferences, _jsonWriteOptions);
+                File.WriteAllText(_filePath, json);
+            }
+            catch
+            {
+                // Fehler beim Speichern ignorieren
+            }
         }
-        catch
-        {
-            // Ignore save errors
-        }
+    }
+
+    public void Dispose()
+    {
+        _saveTimer?.Dispose();
+        SaveNow(); // Sicherstellen dass letzte Aenderungen gespeichert werden
     }
 }

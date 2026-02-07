@@ -1768,4 +1768,22 @@ O rendimento diminui em superfícies rugosas!</value>
   <data name="PurchaseAllCategoriesSemantic" xml:space="preserve">
     <value>Comprar todas as categorias por 3,99 euros</value>
   </data>
+  <data name="SectionFloorWall" xml:space="preserve">
+    <value>Piso e parede</value>
+  </data>
+  <data name="SectionPremiumTools" xml:space="preserve">
+    <value>Ferramentas profissionais</value>
+  </data>
+  <data name="CalculatorCount" xml:space="preserve">
+    <value>9 calculadoras profissionais</value>
+  </data>
+  <data name="GetPremium" xml:space="preserve">
+    <value>Sem publicidade</value>
+  </data>
+  <data name="PremiumPrice" xml:space="preserve">
+    <value>A partir de 3,99 € – pagamento único</value>
+  </data>
+  <data name="MoreCategories" xml:space="preserve">
+    <value>Mais categorias</value>
+  </data>
 </root>

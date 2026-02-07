@@ -1682,4 +1682,22 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="HistoryPaintCoats" xml:space="preserve">
     <value>{0} m², {1}x Anstrich</value>
   </data>
+  <data name="SectionFloorWall" xml:space="preserve">
+    <value>Boden &amp; Wand</value>
+  </data>
+  <data name="SectionPremiumTools" xml:space="preserve">
+    <value>Profi-Werkzeuge</value>
+  </data>
+  <data name="CalculatorCount" xml:space="preserve">
+    <value>9 Profi-Rechner</value>
+  </data>
+  <data name="GetPremium" xml:space="preserve">
+    <value>Werbefrei</value>
+  </data>
+  <data name="PremiumPrice" xml:space="preserve">
+    <value>Ab 3,99 € – einmalig</value>
+  </data>
+  <data name="MoreCategories" xml:space="preserve">
+    <value>Weitere Kategorien</value>
+  </data>
 </root>

@@ -737,5 +737,41 @@ namespace HandwerkerRechner.Resources.Strings {
                 return ResourceManager.GetString("HistoryPaintCoats", resourceCulture);
             }
         }
+
+        internal static string SectionFloorWall {
+            get {
+                return ResourceManager.GetString("SectionFloorWall", resourceCulture);
+            }
+        }
+
+        internal static string SectionPremiumTools {
+            get {
+                return ResourceManager.GetString("SectionPremiumTools", resourceCulture);
+            }
+        }
+
+        internal static string CalculatorCount {
+            get {
+                return ResourceManager.GetString("CalculatorCount", resourceCulture);
+            }
+        }
+
+        internal static string GetPremium {
+            get {
+                return ResourceManager.GetString("GetPremium", resourceCulture);
+            }
+        }
+
+        internal static string PremiumPrice {
+            get {
+                return ResourceManager.GetString("PremiumPrice", resourceCulture);
+            }
+        }
+
+        internal static string MoreCategories {
+            get {
+                return ResourceManager.GetString("MoreCategories", resourceCulture);
+            }
+        }
     }
 }

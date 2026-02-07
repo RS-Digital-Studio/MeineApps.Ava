@@ -1661,4 +1661,22 @@ Su superfici ruvide la resa diminuisce!</value>
   <data name="PurchaseAllCategoriesSemantic" xml:space="preserve">
     <value>Acquista tutte le categorie per 3,99 euro</value>
   </data>
+  <data name="SectionFloorWall" xml:space="preserve">
+    <value>Pavimento e parete</value>
+  </data>
+  <data name="SectionPremiumTools" xml:space="preserve">
+    <value>Strumenti professionali</value>
+  </data>
+  <data name="CalculatorCount" xml:space="preserve">
+    <value>9 calcolatori professionali</value>
+  </data>
+  <data name="GetPremium" xml:space="preserve">
+    <value>Senza pubblicità</value>
+  </data>
+  <data name="PremiumPrice" xml:space="preserve">
+    <value>Da 3,99 € – una tantum</value>
+  </data>
+  <data name="MoreCategories" xml:space="preserve">
+    <value>Altre categorie</value>
+  </data>
 </root>

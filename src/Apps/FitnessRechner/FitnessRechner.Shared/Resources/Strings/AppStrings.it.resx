@@ -322,4 +322,8 @@
   <data name="BodyFatTrend" xml:space="preserve"><value>Tendenza grasso corporeo</value></data>
   <data name="BmiNormalRange" xml:space="preserve"><value>Intervallo normale: 18.5 - 24.9</value></data>
   <data name="BodyFatHealthyRange" xml:space="preserve"><value>Intervallo sano: 10-20% (uomini) / 18-28% (donne)</value></data>
+  <data name="RemoveAds" xml:space="preserve"><value>Senza pubblicità</value></data>
+  <data name="PremiumPrice" xml:space="preserve"><value>Da 3,99 € – una tantum</value></data>
+  <data name="GetPremium" xml:space="preserve"><value>Passa a Premium</value></data>
+  <data name="SectionCalculators" xml:space="preserve"><value>Calcolatori</value></data>
 </root>

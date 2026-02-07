@@ -109,3 +109,15 @@ dotnet build src/Apps/FitnessRechner/FitnessRechner.Android/FitnessRechner.Andro
 ### LanguageChanged Fix (07.02.2026)
 - **MainViewModel**: `settingsViewModel.LanguageChanged += OnLanguageChanged` abonniert
 - OnLanguageChanged aktualisiert 12 Properties (NavHomeText, NavProgressText, NavFoodText, NavSettingsText, AppDescription, CalcBmiLabel, CalcCaloriesLabel, CalcWaterLabel, CalcIdealWeightLabel, CalcBodyFatLabel, CalculatorsLabel, MyProgressLabel)
+
+### Design-Redesign (07.02.2026)
+- **HomeView.axaml** komplett redesigned:
+  - Hero-Header: Green-Gradient (#22C55E→SecondaryColor→AccentColor), HeartPulse-Icon-Badge
+  - Dashboard-Card mit BoxShadow + Gradient-Icon-Badges (Purple/Blue/Green/Amber)
+  - 5 Calculator-Karten: Gradient-Backgrounds (CardColor→CardHoverColor) + Gradient-Icon-Badges (Blue/Amber/Green/Purple/Red)
+  - Section-Header mit PrimaryBrush-Badge
+  - Premium-Card: Gradient (AccentColor→SecondaryColor), Star-Icon, dekorative Ellipse, Chevron
+  - Disclaimer mit BoxShadow
+- **MainViewModel**: 3 neue Properties (RemoveAdsText, PremiumPriceText, SectionCalculatorsText) + OnLanguageChanged()
+- 4 neue resx-Keys in 6 Sprachen (RemoveAds, PremiumPrice, GetPremium, SectionCalculators)
+- Build: 0 Fehler

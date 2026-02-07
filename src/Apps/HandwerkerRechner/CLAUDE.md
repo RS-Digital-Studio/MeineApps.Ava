@@ -131,3 +131,15 @@ dotnet build src/Apps/HandwerkerRechner/HandwerkerRechner.Android/HandwerkerRech
 - **AppStrings.pt.resx**: ~152 fehlende Keys ergaenzt (FR/IT-Kategorien + 12 PT-spezifische Label/Result-Keys)
 - Verifiziert: FR 500/500, IT 500/500, PT 535/500 unique Keys (0 fehlend vs. Base)
 - Base-Datei hat 7 Duplikat-Keys (ExportPdf, Date, MaterialList, GeneratedBy, ShareMaterialList, PdfExportSuccess, PdfExportFailed)
+
+### Design-Redesign (07.02.2026)
+- **MainView.axaml** komplett redesigned:
+  - Fade-Transitions (CSS .TabContent/.Active, 150ms Opacity)
+  - Hero-Header: Amber-Gradient, RulerSquareCompass-Icon-Badge, App-Name + Rechner-Anzahl
+  - 9 Rechner in 2-Spalten-Grid (Height=120, CardColor→CardHoverColor Gradient)
+  - Gradient-Icon-Badges (48x48): Amber/Purple/Green/Blue/Red/Orange/Gray/Emerald/Cyan
+  - Section-Headers mit farbigen Badges ("Boden & Wand", "Profi-Werkzeuge")
+  - Premium-Card mit AccentColor→SecondaryColor Gradient, Star-Icon, dekorative Ellipse
+- **MainViewModel**: 5 neue Properties (SectionFloorWallText, SectionPremiumToolsText, CalculatorCountText, GetPremiumText, PremiumPriceText) + UpdateHomeTexts()
+- 6 neue resx-Keys in 6 Sprachen (SectionFloorWall, SectionPremiumTools, CalculatorCount, GetPremium, PremiumPrice, MoreCategories)
+- Build: 0 Fehler

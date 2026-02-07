@@ -6,27 +6,42 @@
              x:Class="FitnessRechner.Views.HomeView"
              x:DataType="vm:MainViewModel">
 
-  <Grid RowDefinitions="Auto,*">
+  <ScrollViewer Padding="0,0,0,16">
+    <StackPanel Spacing="0">
 
-    <!-- Header -->
-    <Border Grid.Row="0"
-            Background="{DynamicResource DisplayBackgroundBrush}"
-            Padding="20,24,20,20">
-      <StackPanel Spacing="4">
-        <TextBlock Text="{loc:Translate AppName}"
-                   Classes="PageTitle" />
-        <TextBlock Text="{loc:Translate AppDescription}"
-                   Classes="Caption"
-                   TextWrapping="Wrap" />
-      </StackPanel>
-    </Border>
+      <!-- ========== Hero-Header (Green/Teal Gradient) ========== -->
+      <Border CornerRadius="0,0,16,16" Padding="20,20,20,16">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="#22C55E" Offset="0" />
+            <GradientStop Color="{DynamicResource SecondaryColor}" Offset="0.5" />
+            <GradientStop Color="{DynamicResource AccentColor}" Offset="1" />
+          </LinearGradientBrush>
+        </Border.Background>
+        <StackPanel Spacing="8" HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+            <Border Width="36" Height="36" CornerRadius="18" Background="#33FFFFFF">
+              <mi:MaterialIcon Kind="HeartPulse" Width="20" Height="20"
+                               Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Text="{loc:Translate AppName}"
+                       FontSize="20" FontWeight="Bold" Foreground="White"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{loc:Translate AppDescription}"
+                     FontSize="13" Foreground="#BBFFFFFF"
+                     HorizontalAlignment="Center" TextAlignment="Center"
+                     TextWrapping="Wrap" MaxWidth="300" />
+        </StackPanel>
+      </Border>
 
-    <!-- Content -->
-    <ScrollViewer Grid.Row="1" Padding="16">
-      <StackPanel Spacing="16">
+      <!-- ========== Content ========== -->
+      <StackPanel Spacing="16" Margin="16,16,16,0">
 
-        <!-- ==================== Today Dashboard Card ==================== -->
+        <!-- ========== Today Dashboard Card ========== -->
         <Border Classes="Card" Padding="16"
+                BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasDashboardData}">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -40,15 +55,18 @@
 
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
 
-              <!-- Weight -->
+              <!-- Gewicht -->
               <Border Grid.Row="0" Grid.Column="0"
                       Background="{DynamicResource SurfaceBrush}"
                       CornerRadius="10" Padding="12">
                 <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <Border Background="{DynamicResource AccentBrush}"
-                          CornerRadius="10"
-                          Width="40" Height="40"
-                          HorizontalAlignment="Center">
+                  <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center">
+                    <Border.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="#8B5CF6" Offset="0" />
+                        <GradientStop Color="#7C3AED" Offset="1" />
+                      </LinearGradientBrush>
+                    </Border.Background>
                     <mi:MaterialIcon Kind="ScaleBathroom" Width="20" Height="20"
                                      Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -69,10 +87,13 @@
                       Background="{DynamicResource SurfaceBrush}"
                       CornerRadius="10" Padding="12">
                 <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <Border Background="{DynamicResource InfoBrush}"
-                          CornerRadius="10"
-                          Width="40" Height="40"
-                          HorizontalAlignment="Center">
+                  <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center">
+                    <Border.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="#3B82F6" Offset="0" />
+                        <GradientStop Color="#2563EB" Offset="1" />
+                      </LinearGradientBrush>
+                    </Border.Background>
                     <mi:MaterialIcon Kind="ScaleBalance" Width="20" Height="20"
                                      Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -88,15 +109,18 @@
                 </StackPanel>
               </Border>
 
-              <!-- Water -->
+              <!-- Wasser -->
               <Border Grid.Row="1" Grid.Column="0"
                       Background="{DynamicResource SurfaceBrush}"
                       CornerRadius="10" Padding="12">
                 <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <Border Background="{DynamicResource SuccessBrush}"
-                          CornerRadius="10"
-                          Width="40" Height="40"
-                          HorizontalAlignment="Center">
+                  <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center">
+                    <Border.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="#22C55E" Offset="0" />
+                        <GradientStop Color="#16A34A" Offset="1" />
+                      </LinearGradientBrush>
+                    </Border.Background>
                     <mi:MaterialIcon Kind="Water" Width="20" Height="20"
                                      Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -112,15 +136,18 @@
                 </StackPanel>
               </Border>
 
-              <!-- Calories -->
+              <!-- Kalorien -->
               <Border Grid.Row="1" Grid.Column="1"
                       Background="{DynamicResource SurfaceBrush}"
                       CornerRadius="10" Padding="12">
                 <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <Border Background="{DynamicResource WarningBrush}"
-                          CornerRadius="10"
-                          Width="40" Height="40"
-                          HorizontalAlignment="Center">
+                  <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center">
+                    <Border.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="#F59E0B" Offset="0" />
+                        <GradientStop Color="#D97706" Offset="1" />
+                      </LinearGradientBrush>
+                    </Border.Background>
                     <mi:MaterialIcon Kind="Fire" Width="20" Height="20"
                                      Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -140,224 +167,214 @@
           </StackPanel>
         </Border>
 
-        <!-- ==================== Calculators Section ==================== -->
-        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
-          <Border Background="{DynamicResource AccentBrush}"
-                  CornerRadius="6"
-                  Padding="8,4">
-            <TextBlock Text="{loc:Translate Calculators}" FontSize="11" FontWeight="Bold" Foreground="White" />
-          </Border>
-          <TextBlock Text="{loc:Translate MyCalculators}"
-                     FontSize="18"
-                     FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     VerticalAlignment="Center" />
-        </StackPanel>
+        <!-- ========== Calculators Section ========== -->
+        <StackPanel Spacing="12">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Background="{DynamicResource PrimaryBrush}"
+                    CornerRadius="6" Padding="8,4">
+              <TextBlock Text="{Binding SectionCalculatorsText}" FontSize="11" FontWeight="Bold" Foreground="White" />
+            </Border>
+            <TextBlock Text="{loc:Translate MyCalculators}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
 
-        <!-- Calculator Grid (2 columns, 3 rows) -->
-        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+          <!-- Calculator Grid (2 Spalten) -->
+          <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="12">
 
-          <!-- BMI Calculator -->
-          <Button Grid.Row="0" Grid.Column="0"
-                  Command="{Binding OpenBmiCommand}"
-                  Background="Transparent" BorderThickness="0"
-                  Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  CornerRadius="12" Cursor="Hand">
-            <Border Classes="Card" MinHeight="150" Padding="12">
-              <StackPanel VerticalAlignment="Center" Spacing="6">
-                <Border Background="{DynamicResource InfoBrush}"
-                        CornerRadius="12"
-                        Width="48" Height="48"
-                        HorizontalAlignment="Center">
+            <!-- BMI -->
+            <Button Grid.Row="0" Grid.Column="0"
+                    CornerRadius="12" Height="120" Padding="8"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding OpenBmiCommand}">
+              <Button.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                </LinearGradientBrush>
+              </Button.Background>
+              <StackPanel VerticalAlignment="Center" Spacing="8">
+                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#3B82F6" Offset="0" />
+                      <GradientStop Color="#2563EB" Offset="1" />
+                    </LinearGradientBrush>
+                  </Border.Background>
                   <mi:MaterialIcon Kind="ScaleBalance" Width="24" Height="24"
                                    Foreground="White"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <TextBlock Text="{loc:Translate CalcBmi}"
-                           FontSize="13"
-                           FontWeight="Bold"
-                           TextAlignment="Center"
+                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate CalcBmiDesc}"
-                           FontSize="10"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           TextAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
-            </Border>
-          </Button>
+            </Button>
 
-          <!-- Calorie Calculator -->
-          <Button Grid.Row="0" Grid.Column="1"
-                  Command="{Binding OpenCaloriesCommand}"
-                  Background="Transparent" BorderThickness="0"
-                  Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  CornerRadius="12" Cursor="Hand">
-            <Border Classes="Card" MinHeight="150" Padding="12">
-              <StackPanel VerticalAlignment="Center" Spacing="6">
-                <Border Background="{DynamicResource WarningBrush}"
-                        CornerRadius="12"
-                        Width="48" Height="48"
-                        HorizontalAlignment="Center">
+            <!-- Kalorien -->
+            <Button Grid.Row="0" Grid.Column="1"
+                    CornerRadius="12" Height="120" Padding="8"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding OpenCaloriesCommand}">
+              <Button.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                </LinearGradientBrush>
+              </Button.Background>
+              <StackPanel VerticalAlignment="Center" Spacing="8">
+                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#F59E0B" Offset="0" />
+                      <GradientStop Color="#D97706" Offset="1" />
+                    </LinearGradientBrush>
+                  </Border.Background>
                   <mi:MaterialIcon Kind="Fire" Width="24" Height="24"
                                    Foreground="White"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <TextBlock Text="{loc:Translate CalcCalories}"
-                           FontSize="13"
-                           FontWeight="Bold"
-                           TextAlignment="Center"
+                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate CalcCaloriesDesc}"
-                           FontSize="10"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           TextAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
-            </Border>
-          </Button>
+            </Button>
 
-          <!-- Water Calculator -->
-          <Button Grid.Row="1" Grid.Column="0"
-                  Command="{Binding OpenWaterCommand}"
-                  Background="Transparent" BorderThickness="0"
-                  Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  CornerRadius="12" Cursor="Hand">
-            <Border Classes="Card" MinHeight="150" Padding="12">
-              <StackPanel VerticalAlignment="Center" Spacing="6">
-                <Border Background="{DynamicResource SuccessBrush}"
-                        CornerRadius="12"
-                        Width="48" Height="48"
-                        HorizontalAlignment="Center">
+            <!-- Wasser -->
+            <Button Grid.Row="1" Grid.Column="0"
+                    CornerRadius="12" Height="120" Padding="8"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding OpenWaterCommand}">
+              <Button.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                </LinearGradientBrush>
+              </Button.Background>
+              <StackPanel VerticalAlignment="Center" Spacing="8">
+                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#22C55E" Offset="0" />
+                      <GradientStop Color="#16A34A" Offset="1" />
+                    </LinearGradientBrush>
+                  </Border.Background>
                   <mi:MaterialIcon Kind="Water" Width="24" Height="24"
                                    Foreground="White"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <TextBlock Text="{loc:Translate CalcWater}"
-                           FontSize="13"
-                           FontWeight="Bold"
-                           TextAlignment="Center"
+                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate CalcWaterDesc}"
-                           FontSize="10"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           TextAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
-            </Border>
-          </Button>
+            </Button>
 
-          <!-- Ideal Weight Calculator -->
-          <Button Grid.Row="1" Grid.Column="1"
-                  Command="{Binding OpenIdealWeightCommand}"
-                  Background="Transparent" BorderThickness="0"
-                  Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  CornerRadius="12" Cursor="Hand">
-            <Border Classes="Card" MinHeight="150" Padding="12">
-              <StackPanel VerticalAlignment="Center" Spacing="6">
-                <Border Background="{DynamicResource SecondaryBrush}"
-                        CornerRadius="12"
-                        Width="48" Height="48"
-                        HorizontalAlignment="Center">
+            <!-- Idealgewicht -->
+            <Button Grid.Row="1" Grid.Column="1"
+                    CornerRadius="12" Height="120" Padding="8"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding OpenIdealWeightCommand}">
+              <Button.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                </LinearGradientBrush>
+              </Button.Background>
+              <StackPanel VerticalAlignment="Center" Spacing="8">
+                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#8B5CF6" Offset="0" />
+                      <GradientStop Color="#7C3AED" Offset="1" />
+                    </LinearGradientBrush>
+                  </Border.Background>
                   <mi:MaterialIcon Kind="HumanMaleHeight" Width="24" Height="24"
                                    Foreground="White"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <TextBlock Text="{loc:Translate CalcIdealWeight}"
-                           FontSize="13"
-                           FontWeight="Bold"
-                           TextAlignment="Center"
+                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate CalcIdealWeightDesc}"
-                           FontSize="10"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           TextAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
-            </Border>
-          </Button>
+            </Button>
 
-          <!-- Body Fat Calculator -->
-          <Button Grid.Row="2" Grid.Column="0"
-                  Command="{Binding OpenBodyFatCommand}"
-                  Background="Transparent" BorderThickness="0"
-                  Padding="0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                  CornerRadius="12" Cursor="Hand">
-            <Border Classes="Card" MinHeight="150" Padding="12">
-              <StackPanel VerticalAlignment="Center" Spacing="6">
-                <Border Background="{DynamicResource AccentBrush}"
-                        CornerRadius="12"
-                        Width="48" Height="48"
-                        HorizontalAlignment="Center">
+            <!-- Koerperfett -->
+            <Button Grid.Row="2" Grid.Column="0"
+                    CornerRadius="12" Height="120" Padding="8"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                    Command="{Binding OpenBodyFatCommand}">
+              <Button.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                </LinearGradientBrush>
+              </Button.Background>
+              <StackPanel VerticalAlignment="Center" Spacing="8">
+                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#EF4444" Offset="0" />
+                      <GradientStop Color="#DC2626" Offset="1" />
+                    </LinearGradientBrush>
+                  </Border.Background>
                   <mi:MaterialIcon Kind="PercentCircle" Width="24" Height="24"
                                    Foreground="White"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <TextBlock Text="{loc:Translate CalcBodyFat}"
-                           FontSize="13"
-                           FontWeight="Bold"
-                           TextAlignment="Center"
+                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate CalcBodyFatDesc}"
-                           FontSize="10"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           TextAlignment="Center" TextWrapping="Wrap" />
               </StackPanel>
-            </Border>
-          </Button>
+            </Button>
 
-        </Grid>
+          </Grid>
+        </StackPanel>
 
-        <!-- ==================== Premium Benefits Card ==================== -->
-        <Border Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="12"
-                Padding="16"
-                Margin="0,8,0,0"
+        <!-- ========== Premium-Card ========== -->
+        <Button Background="Transparent" Padding="0"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                 IsVisible="{Binding !IsPremium}"
-                Cursor="Hand">
-          <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="12">
-              <Border Background="{DynamicResource AccentBrush}"
-                      CornerRadius="8"
-                      Width="40" Height="40">
-                <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
-                                 Foreground="White"
-                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
-              </Border>
-              <StackPanel VerticalAlignment="Center" Spacing="2">
-                <TextBlock Text="{loc:Translate PremiumBenefitsTitle}"
-                           FontSize="14" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate RemoveAdsDesc}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-              </StackPanel>
-            </StackPanel>
+                Command="{Binding OpenSettingsCommand}">
+          <Border CornerRadius="16" Padding="16" ClipToBounds="True">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="{DynamicResource AccentColor}" Offset="0" />
+                <GradientStop Color="{DynamicResource SecondaryColor}" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <Panel>
+              <Ellipse Width="100" Height="100"
+                       Opacity="0.1" Fill="White"
+                       HorizontalAlignment="Right" VerticalAlignment="Center"
+                       Margin="0,0,-20,0" />
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Grid.Column="0" Width="44" Height="44"
+                        CornerRadius="22" Background="#33FFFFFF"
+                        Margin="0,0,14,0">
+                  <mi:MaterialIcon Kind="Star" Width="24" Height="24"
+                                   Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                  <TextBlock Text="{Binding RemoveAdsText}"
+                             FontSize="15" FontWeight="Bold" Foreground="White" />
+                  <TextBlock Text="{Binding PremiumPriceText}"
+                             FontSize="12" Foreground="#CCFFFFFF" />
+                </StackPanel>
+                <mi:MaterialIcon Grid.Column="2"
+                                 Kind="ChevronRight" Width="20" Height="20"
+                                 Foreground="#AAFFFFFF" VerticalAlignment="Center" />
+              </Grid>
+            </Panel>
+          </Border>
+        </Button>
 
-            <StackPanel Spacing="4" Margin="52,0,0,0">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="Check" Width="16" Height="16"
-                                 Foreground="{DynamicResource SuccessBrush}" />
-                <TextBlock Text="{loc:Translate BenefitTracking}" FontSize="13"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="Check" Width="16" Height="16"
-                                 Foreground="{DynamicResource SuccessBrush}" />
-                <TextBlock Text="{loc:Translate BenefitHistory}" FontSize="13"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-              </StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="Check" Width="16" Height="16"
-                                 Foreground="{DynamicResource SuccessBrush}" />
-                <TextBlock Text="{loc:Translate BenefitNoAds}" FontSize="13"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-              </StackPanel>
-            </StackPanel>
-          </StackPanel>
-        </Border>
-
-        <!-- ==================== Disclaimer ==================== -->
+        <!-- ========== Disclaimer ========== -->
         <Border Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="8"
-                Padding="12"
-                Margin="0,4,0,16">
+                CornerRadius="8" Padding="12"
+                BoxShadow="{DynamicResource CardShadow}"
+                Margin="0,4,0,0">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="InformationOutline" Width="16" Height="16"
                              Foreground="{DynamicResource TextMutedBrush}"
@@ -370,8 +387,7 @@
         </Border>
 
       </StackPanel>
-    </ScrollViewer>
-
-  </Grid>
+    </StackPanel>
+  </ScrollViewer>
 
 </UserControl>

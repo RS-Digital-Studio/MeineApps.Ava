@@ -11,6 +11,26 @@
              x:DataType="vm:MainViewModel"
              Background="{DynamicResource BackgroundBrush}">
 
+  <UserControl.Styles>
+    <Style Selector="Border.TabContent">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.TabContent:not(.Active)">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.TabContent.Active">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </UserControl.Styles>
+
   <UserControl.DataTemplates>
     <!-- Floor Calculator VMs → Views -->
     <DataTemplate DataType="floorVm:TileCalculatorViewModel">
@@ -49,224 +69,392 @@
     <Panel Grid.Row="0">
 
       <!-- Tab 0: Home -->
-      <Border IsVisible="{Binding IsHomeTab}"
-              Classes="TabContent">
+      <Border Classes="TabContent"
+              Classes.Active="{Binding IsHomeTab}">
         <ScrollViewer>
-          <StackPanel Spacing="16" Margin="16">
-            <!-- App Header -->
-            <StackPanel Spacing="4" Margin="0,8,0,16">
-              <TextBlock Text="{Binding AppTitle}"
-                         FontSize="28" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-              <TextBlock Text="{Binding AppDescription}"
-                         FontSize="13"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
+          <StackPanel Spacing="0">
+
+            <!-- ========== Hero-Header (Amber/Orange Gradient) ========== -->
+            <Border CornerRadius="0,0,16,16" Padding="20,20,20,16">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#F59E0B" Offset="0" />
+                  <GradientStop Color="{DynamicResource SecondaryColor}" Offset="0.5" />
+                  <GradientStop Color="{DynamicResource AccentColor}" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <StackPanel Spacing="8" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
+                  <Border Width="36" Height="36" CornerRadius="18" Background="#33FFFFFF">
+                    <mi:MaterialIcon Kind="RulerSquareCompass" Width="20" Height="20"
+                                     Foreground="White"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <TextBlock Text="{Binding AppTitle}"
+                             FontSize="20" FontWeight="Bold" Foreground="White"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Text="{Binding AppDescription}"
+                           FontSize="13" Foreground="#BBFFFFFF"
+                           HorizontalAlignment="Center" TextAlignment="Center"
+                           TextWrapping="Wrap" MaxWidth="300" />
+                <TextBlock Text="{Binding CalculatorCountText}"
+                           FontSize="12" Foreground="#99FFFFFF"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- ========== Content ========== -->
+            <StackPanel Spacing="16" Margin="16,16,16,0">
+
+              <!-- ========== Section: Boden & Wand ========== -->
+              <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Border Background="#F59E0B" CornerRadius="6" Padding="8,4">
+                    <TextBlock Text="{Binding SectionFloorWallText}" FontSize="11" FontWeight="Bold" Foreground="White" />
+                  </Border>
+                  <TextBlock Text="{Binding CategoryFloorWallLabel}"
+                             FontSize="18" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                  <!-- Fliesen -->
+                  <Button Grid.Row="0" Grid.Column="0"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToTilesCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#F59E0B" Offset="0" />
+                            <GradientStop Color="#D97706" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="ViewGrid" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CalcTilesLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+
+                  <!-- Tapete -->
+                  <Button Grid.Row="0" Grid.Column="1"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToWallpaperCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#8B5CF6" Offset="0" />
+                            <GradientStop Color="#7C3AED" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="Wallpaper" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CalcWallpaperLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+
+                  <!-- Farbe -->
+                  <Button Grid.Row="1" Grid.Column="0"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToPaintCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#22C55E" Offset="0" />
+                            <GradientStop Color="#16A34A" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="FormatPaint" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CalcPaintLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+
+                  <!-- Boden -->
+                  <Button Grid.Row="1" Grid.Column="1"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToFlooringCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#3B82F6" Offset="0" />
+                            <GradientStop Color="#2563EB" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="Layers" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CalcFlooringLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+                </Grid>
+              </StackPanel>
+
+              <!-- ========== Section: Profi-Werkzeuge ========== -->
+              <StackPanel Spacing="12">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <Border Background="{DynamicResource AccentBrush}" CornerRadius="6" Padding="8,4">
+                    <TextBlock Text="{Binding SectionPremiumToolsText}" FontSize="11" FontWeight="Bold" Foreground="White" />
+                  </Border>
+                  <TextBlock Text="{Binding MoreCategoriesLabel}"
+                             FontSize="18" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                  <!-- Trockenbau -->
+                  <Button Grid.Row="0" Grid.Column="0"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToDrywallCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#EF4444" Offset="0" />
+                            <GradientStop Color="#DC2626" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="Wall" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CategoryDrywallLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+
+                  <!-- Elektro -->
+                  <Button Grid.Row="0" Grid.Column="1"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToElectricalCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#F97316" Offset="0" />
+                            <GradientStop Color="#EA580C" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="Flash" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CategoryElectricalLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+
+                  <!-- Metall -->
+                  <Button Grid.Row="1" Grid.Column="0"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToMetalCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#6B7280" Offset="0" />
+                            <GradientStop Color="#4B5563" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="Wrench" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CategoryMetalLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+
+                  <!-- Garten -->
+                  <Button Grid.Row="1" Grid.Column="1"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToGardenCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#10B981" Offset="0" />
+                            <GradientStop Color="#059669" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="Flower" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CategoryGardenLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+
+                  <!-- Dach/Solar -->
+                  <Button Grid.Row="2" Grid.Column="0"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToRoofSolarCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#06B6D4" Offset="0" />
+                            <GradientStop Color="#0891B2" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="SolarPanel" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CategoryRoofSolarLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+                </Grid>
+              </StackPanel>
+
+              <!-- ========== Premium-Card ========== -->
+              <Button Background="Transparent" Padding="0"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                      IsVisible="{Binding !IsPremium}"
+                      Command="{Binding PurchaseRemoveAdsCommand}">
+                <Border CornerRadius="16" Padding="16" ClipToBounds="True">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="{DynamicResource AccentColor}" Offset="0" />
+                      <GradientStop Color="{DynamicResource SecondaryColor}" Offset="1" />
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <Panel>
+                    <Ellipse Width="100" Height="100"
+                             Opacity="0.1" Fill="White"
+                             HorizontalAlignment="Right" VerticalAlignment="Center"
+                             Margin="0,0,-20,0" />
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Grid.Column="0" Width="44" Height="44"
+                              CornerRadius="22" Background="#33FFFFFF"
+                              Margin="0,0,14,0">
+                        <mi:MaterialIcon Kind="Star" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding GetPremiumText}"
+                                   FontSize="15" FontWeight="Bold" Foreground="White" />
+                        <TextBlock Text="{Binding PremiumPriceText}"
+                                   FontSize="12" Foreground="#CCFFFFFF" />
+                      </StackPanel>
+                      <mi:MaterialIcon Grid.Column="2"
+                                       Kind="ChevronRight" Width="20" Height="20"
+                                       Foreground="#AAFFFFFF" VerticalAlignment="Center" />
+                    </Grid>
+                  </Panel>
+                </Border>
+              </Button>
+
             </StackPanel>
 
-            <!-- Floor & Wall Section (FREE) -->
-            <TextBlock Text="{Binding CategoryFloorWallLabel}"
-                       FontSize="16" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       Margin="0,0,0,8" />
-
-            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
-              <!-- Tiles -->
-              <Button Grid.Row="0" Grid.Column="0"
-                      Command="{Binding NavigateToTilesCommand}"
-                      Background="{DynamicResource CardBrush}"
-                      Padding="16" CornerRadius="12" HorizontalContentAlignment="Center">
-                <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="ViewGrid" Width="32" Height="32"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
-                  <TextBlock Text="{Binding CalcTilesLabel}"
-                             FontSize="13" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             HorizontalAlignment="Center" />
-                  <TextBlock Text="{Binding CalcTilesDescLabel}"
-                             FontSize="11"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" TextAlignment="Center"
-                             TextWrapping="Wrap" />
-                </StackPanel>
-              </Button>
-
-              <!-- Wallpaper -->
-              <Button Grid.Row="0" Grid.Column="1"
-                      Command="{Binding NavigateToWallpaperCommand}"
-                      Background="{DynamicResource CardBrush}"
-                      Padding="16" CornerRadius="12" HorizontalContentAlignment="Center">
-                <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Wallpaper" Width="32" Height="32"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
-                  <TextBlock Text="{Binding CalcWallpaperLabel}"
-                             FontSize="13" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             HorizontalAlignment="Center" />
-                  <TextBlock Text="{Binding CalcWallpaperDescLabel}"
-                             FontSize="11"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" TextAlignment="Center"
-                             TextWrapping="Wrap" />
-                </StackPanel>
-              </Button>
-
-              <!-- Paint -->
-              <Button Grid.Row="1" Grid.Column="0"
-                      Command="{Binding NavigateToPaintCommand}"
-                      Background="{DynamicResource CardBrush}"
-                      Padding="16" CornerRadius="12" HorizontalContentAlignment="Center">
-                <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="FormatPaint" Width="32" Height="32"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
-                  <TextBlock Text="{Binding CalcPaintLabel}"
-                             FontSize="13" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             HorizontalAlignment="Center" />
-                  <TextBlock Text="{Binding CalcPaintDescLabel}"
-                             FontSize="11"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" TextAlignment="Center"
-                             TextWrapping="Wrap" />
-                </StackPanel>
-              </Button>
-
-              <!-- Flooring -->
-              <Button Grid.Row="1" Grid.Column="1"
-                      Command="{Binding NavigateToFlooringCommand}"
-                      Background="{DynamicResource CardBrush}"
-                      Padding="16" CornerRadius="12" HorizontalContentAlignment="Center">
-                <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Layers" Width="32" Height="32"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
-                  <TextBlock Text="{Binding CalcFlooringLabel}"
-                             FontSize="13" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             HorizontalAlignment="Center" />
-                  <TextBlock Text="{Binding CalcFlooringDescLabel}"
-                             FontSize="11"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" TextAlignment="Center"
-                             TextWrapping="Wrap" />
-                </StackPanel>
-              </Button>
-            </Grid>
-
-            <!-- Premium Categories -->
-            <TextBlock Text="{Binding MoreCategoriesLabel}"
-                       FontSize="16" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       Margin="0,16,0,8" />
-
-            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
-              <!-- Drywall -->
-              <Button Grid.Row="0" Grid.Column="0"
-                      Command="{Binding NavigateToDrywallCommand}"
-                      Background="{DynamicResource CardBrush}"
-                      Padding="12" CornerRadius="12" HorizontalContentAlignment="Center">
-                <StackPanel Spacing="4" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Wall" Width="28" Height="28"
-                                   Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{Binding CategoryDrywallLabel}"
-                             FontSize="11" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding CategoryDrywallDescLabel}"
-                             FontSize="10"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                </StackPanel>
-              </Button>
-
-              <!-- Electrical -->
-              <Button Grid.Row="0" Grid.Column="1"
-                      Command="{Binding NavigateToElectricalCommand}"
-                      Background="{DynamicResource CardBrush}"
-                      Padding="12" CornerRadius="12" HorizontalContentAlignment="Center">
-                <StackPanel Spacing="4" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Flash" Width="28" Height="28"
-                                   Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{Binding CategoryElectricalLabel}"
-                             FontSize="11" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding CategoryElectricalDescLabel}"
-                             FontSize="10"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                </StackPanel>
-              </Button>
-
-              <!-- Metal -->
-              <Button Grid.Row="0" Grid.Column="2"
-                      Command="{Binding NavigateToMetalCommand}"
-                      Background="{DynamicResource CardBrush}"
-                      Padding="12" CornerRadius="12" HorizontalContentAlignment="Center">
-                <StackPanel Spacing="4" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Wrench" Width="28" Height="28"
-                                   Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{Binding CategoryMetalLabel}"
-                             FontSize="11" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding CategoryMetalDescLabel}"
-                             FontSize="10"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                </StackPanel>
-              </Button>
-
-              <!-- Garden -->
-              <Button Grid.Row="1" Grid.Column="0"
-                      Command="{Binding NavigateToGardenCommand}"
-                      Background="{DynamicResource CardBrush}"
-                      Padding="12" CornerRadius="12" HorizontalContentAlignment="Center">
-                <StackPanel Spacing="4" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Flower" Width="28" Height="28"
-                                   Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{Binding CategoryGardenLabel}"
-                             FontSize="11" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding CategoryGardenDescLabel}"
-                             FontSize="10"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                </StackPanel>
-              </Button>
-
-              <!-- Roof & Solar -->
-              <Button Grid.Row="1" Grid.Column="1"
-                      Command="{Binding NavigateToRoofSolarCommand}"
-                      Background="{DynamicResource CardBrush}"
-                      Padding="12" CornerRadius="12" HorizontalContentAlignment="Center">
-                <StackPanel Spacing="4" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="SolarPanel" Width="28" Height="28"
-                                   Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{Binding CategoryRoofSolarLabel}"
-                             FontSize="11" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                  <TextBlock Text="{Binding CategoryRoofSolarDescLabel}"
-                             FontSize="10"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             TextAlignment="Center" TextWrapping="Wrap" />
-                </StackPanel>
-              </Button>
-            </Grid>
+            <!-- Abstand unten -->
+            <Border Height="16" />
 
           </StackPanel>
         </ScrollViewer>
       </Border>
 
       <!-- Tab 1: Projects -->
-      <Border IsVisible="{Binding IsProjectsTab}"
-              Classes="TabContent">
+      <Border Classes="TabContent"
+              Classes.Active="{Binding IsProjectsTab}">
         <views:ProjectsView DataContext="{Binding ProjectsViewModel}" />
       </Border>
 
       <!-- Tab 2: Settings -->
-      <Border IsVisible="{Binding IsSettingsTab}"
-              Classes="TabContent">
+      <Border Classes="TabContent"
+              Classes.Active="{Binding IsSettingsTab}">
         <views:SettingsView DataContext="{Binding SettingsViewModel}" />
       </Border>
 

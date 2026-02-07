@@ -1684,4 +1684,24 @@ Coverage decreases on rough surfaces!</value>
   <data name="HistoryPaintCoats" xml:space="preserve">
     <value>{0} m², {1}x coat</value>
   </data>
+
+  <!-- Design Redesign Keys -->
+  <data name="SectionFloorWall" xml:space="preserve">
+    <value>Floor &amp; Wall</value>
+  </data>
+  <data name="SectionPremiumTools" xml:space="preserve">
+    <value>Pro Tools</value>
+  </data>
+  <data name="CalculatorCount" xml:space="preserve">
+    <value>9 Pro Calculators</value>
+  </data>
+  <data name="GetPremium" xml:space="preserve">
+    <value>Go Ad-Free</value>
+  </data>
+  <data name="PremiumPrice" xml:space="preserve">
+    <value>From 3.99 € - one-time</value>
+  </data>
+  <data name="MoreCategories" xml:space="preserve">
+    <value>More Categories</value>
+  </data>
 </root>

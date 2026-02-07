@@ -322,4 +322,8 @@
   <data name="BodyFatTrend" xml:space="preserve"><value>Tendencia de grasa corporal</value></data>
   <data name="BmiNormalRange" xml:space="preserve"><value>Rango normal: 18.5 - 24.9</value></data>
   <data name="BodyFatHealthyRange" xml:space="preserve"><value>Rango saludable: 10-20% (hombres) / 18-28% (mujeres)</value></data>
+  <data name="RemoveAds" xml:space="preserve"><value>Sin publicidad</value></data>
+  <data name="PremiumPrice" xml:space="preserve"><value>Desde 3,99 € – pago único</value></data>
+  <data name="GetPremium" xml:space="preserve"><value>Obtener Premium</value></data>
+  <data name="SectionCalculators" xml:space="preserve"><value>Calculadoras</value></data>
 </root>

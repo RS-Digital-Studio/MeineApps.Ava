@@ -1526,5 +1526,29 @@ namespace FitnessRechner.Resources.Strings {
                 return ResourceManager.GetString("UnknownProduct", resourceCulture);
             }
         }
+
+        public static string RemoveAds {
+            get {
+                return ResourceManager.GetString("RemoveAds", resourceCulture);
+            }
+        }
+
+        public static string PremiumPrice {
+            get {
+                return ResourceManager.GetString("PremiumPrice", resourceCulture);
+            }
+        }
+
+        public static string GetPremium {
+            get {
+                return ResourceManager.GetString("GetPremium", resourceCulture);
+            }
+        }
+
+        public static string SectionCalculators {
+            get {
+                return ResourceManager.GetString("SectionCalculators", resourceCulture);
+            }
+        }
     }
 }

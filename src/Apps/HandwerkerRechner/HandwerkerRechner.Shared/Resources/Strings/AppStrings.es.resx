@@ -1661,4 +1661,22 @@ Valores típicos:
   <data name="HistoryPaintCoats" xml:space="preserve">
     <value>{0} m², {1}x capa</value>
   </data>
+  <data name="SectionFloorWall" xml:space="preserve">
+    <value>Suelo y pared</value>
+  </data>
+  <data name="SectionPremiumTools" xml:space="preserve">
+    <value>Herram. profesionales</value>
+  </data>
+  <data name="CalculatorCount" xml:space="preserve">
+    <value>9 calculadoras profesionales</value>
+  </data>
+  <data name="GetPremium" xml:space="preserve">
+    <value>Sin publicidad</value>
+  </data>
+  <data name="PremiumPrice" xml:space="preserve">
+    <value>Desde 3,99 € – único pago</value>
+  </data>
+  <data name="MoreCategories" xml:space="preserve">
+    <value>Más categorías</value>
+  </data>
 </root>

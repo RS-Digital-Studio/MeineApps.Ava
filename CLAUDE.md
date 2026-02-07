@@ -720,3 +720,24 @@ F:\Meine_Apps_Ava\
   - DashboardView: Level-Fortschrittsbalken kompakter (Width 60, Height 4, "Lv.{0}")
   - ~18 neue/umbenannte resx-Keys in 6 Sprachen + NextRotation Duplikate entfernt
   - Build: 0 Fehler, 113 Warnungen (nur bekannte NuGet)
+- **Design-Redesign: HandwerkerRechner & FitnessRechner (07.02.2026):**
+  - HandwerkerRechner MainView.axaml komplett redesigned:
+    - Fade-Transitions (CSS .TabContent/.Active, 150ms Opacity)
+    - Hero-Header mit Amber-Gradient (#F59E0B→SecondaryColor→AccentColor), Lineal-Icon-Badge, App-Name, Rechner-Anzahl
+    - Alle 9 Rechner in einheitlichem 2-Spalten-Grid (Height=120, CardColor→CardHoverColor Gradient)
+    - Gradient-Icon-Badges (48x48) mit individuellen Farben pro Rechner (Amber/Purple/Green/Blue/Red/Orange/Gray/Emerald/Cyan)
+    - Section-Headers mit farbigen Accent-Badges ("Boden & Wand", "Profi-Werkzeuge")
+    - Premium-Card mit Gradient (AccentColor→SecondaryColor), Star-Icon, dekorative Ellipse, Chevron
+  - FitnessRechner HomeView.axaml komplett redesigned:
+    - Hero-Header mit Green-Gradient (#22C55E→SecondaryColor→AccentColor), HeartPulse-Icon-Badge
+    - Dashboard-Card mit BoxShadow + Gradient-Icon-Badges fuer Gewicht/BMI/Wasser/Kalorien
+    - 5 Calculator-Karten mit Gradient-Backgrounds + individuellen Gradient-Icon-Badges (Blue/Amber/Green/Purple/Red)
+    - Section-Header mit PrimaryBrush-Badge ("Rechner")
+    - Premium-Card im FinanzRechner-Stil (Gradient, Star, Ellipse, Chevron)
+    - Disclaimer mit BoxShadow
+  - HandwerkerRechner MainViewModel: 5 neue Properties (SectionFloorWallText, SectionPremiumToolsText, CalculatorCountText, GetPremiumText, PremiumPriceText) + UpdateHomeTexts()
+  - FitnessRechner MainViewModel: 3 neue Properties (RemoveAdsText, PremiumPriceText, SectionCalculatorsText) + OnLanguageChanged()
+  - 6 neue resx-Keys in HandwerkerRechner (6 Sprachen): SectionFloorWall, SectionPremiumTools, CalculatorCount, GetPremium, PremiumPrice, MoreCategories
+  - 4 neue resx-Keys in FitnessRechner (6 Sprachen): RemoveAds, PremiumPrice, GetPremium, SectionCalculators
+  - Designer.cs beider Apps aktualisiert
+  - Build: 0 Fehler, 114 Warnungen (nur bekannte NuGet/SkiaSharp)

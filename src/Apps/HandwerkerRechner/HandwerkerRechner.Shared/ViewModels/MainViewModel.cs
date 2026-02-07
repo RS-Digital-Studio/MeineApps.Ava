@@ -132,6 +132,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CategoryMetalDescLabel));
         OnPropertyChanged(nameof(CategoryGardenDescLabel));
         OnPropertyChanged(nameof(CategoryRoofSolarDescLabel));
+        OnPropertyChanged(nameof(SectionFloorWallText));
+        OnPropertyChanged(nameof(SectionPremiumToolsText));
+        OnPropertyChanged(nameof(CalculatorCountText));
+        OnPropertyChanged(nameof(GetPremiumText));
+        OnPropertyChanged(nameof(PremiumPriceText));
+        OnPropertyChanged(nameof(MoreCategoriesLabel));
     }
 
     private void OnLanguageChanged()
@@ -281,7 +287,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string CategoryGardenLabel => _localization.GetString("CategoryGarden");
     public string CategoryRoofSolarLabel => _localization.GetString("CategoryRoofSolar");
 
-    // Category descriptions
+    // Kategorie-Beschreibungen
     public string CalcTilesDescLabel => _localization.GetString("CalcTilesDesc") ?? "";
     public string CalcWallpaperDescLabel => _localization.GetString("CalcWallpaperDesc") ?? "";
     public string CalcPaintDescLabel => _localization.GetString("CalcPaintDesc") ?? "";
@@ -291,6 +297,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string CategoryMetalDescLabel => _localization.GetString("CategoryMetalDesc") ?? "";
     public string CategoryGardenDescLabel => _localization.GetString("CategoryGardenDesc") ?? "";
     public string CategoryRoofSolarDescLabel => _localization.GetString("CategoryRoofSolarDesc") ?? "";
+
+    // Design-Redesign Properties
+    public string SectionFloorWallText => _localization.GetString("SectionFloorWall") ?? "Floor & Wall";
+    public string SectionPremiumToolsText => _localization.GetString("SectionPremiumTools") ?? "Pro Tools";
+    public string CalculatorCountText => _localization.GetString("CalculatorCount") ?? "9 Pro Calculators";
+    public string GetPremiumText => _localization.GetString("GetPremium") ?? "Go Ad-Free";
+    public string PremiumPriceText => _localization.GetString("PremiumPrice") ?? "From 3.99 €";
 
     #endregion
 

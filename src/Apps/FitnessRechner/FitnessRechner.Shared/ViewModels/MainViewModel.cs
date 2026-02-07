@@ -75,6 +75,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CalcBodyFatLabel));
         OnPropertyChanged(nameof(CalculatorsLabel));
         OnPropertyChanged(nameof(MyProgressLabel));
+        OnPropertyChanged(nameof(RemoveAdsText));
+        OnPropertyChanged(nameof(PremiumPriceText));
+        OnPropertyChanged(nameof(SectionCalculatorsText));
     }
 
     #region Tab Navigation
@@ -163,6 +166,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string CalcBodyFatLabel => _localization.GetString("CalcBodyFat");
     public string CalculatorsLabel => _localization.GetString("Calculators");
     public string MyProgressLabel => _localization.GetString("MyProgress");
+
+    // Design-Redesign Properties
+    public string RemoveAdsText => _localization.GetString("RemoveAds") ?? "Go Ad-Free";
+    public string PremiumPriceText => _localization.GetString("PremiumPrice") ?? "From 3.99 €";
+    public string SectionCalculatorsText => _localization.GetString("SectionCalculators") ?? "Calculators";
 
     #endregion
 

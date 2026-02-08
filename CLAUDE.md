@@ -261,6 +261,27 @@ F:\Meine_Apps_Ava\
 - [x] Ad-Platzierung direkt UEBER Tab-Bar (FrameLayout Overlay mit BottomMargin)
 - [x] Build: 0 Fehler
 
+### Phase 6d: Rewarded Ads Integration ✓
+- [x] Zentrale IRewardedAdService + RewardedAdService in Premium Library (Desktop-Simulator)
+- [x] RewardedAdHelper.cs + AndroidRewardedAdService.cs (Linked Files fuer Android)
+- [x] AdConfig.cs: Rewarded Ad-Unit-IDs (6 Apps, Test-ID als Fallback)
+- [x] BomberBlast: Power-Up Boost (Level >= 20) + Level-Skip (3x Game Over)
+- [x] FinanzRechner: PDF-Export hinter Rewarded Ad fuer Free User
+- [x] HandwerkerRechner: 5 Premium-Rechner mit 30-Min Ad-Zugang (IPremiumAccessService)
+- [x] FitnessRechner: Barcode-Scan-Limit (3/Tag, +5 per Ad via IScanLimitService)
+- [x] WorkTimePro: "Video ODER Premium" Soft Paywall (Vacation, Export, Statistics)
+- [x] HandwerkerImperium + BomberBlast: Lokale IRewardedAdService geloescht → zentrale Library
+- [x] 6 Android-Projekte: Linked Files + RewardedAdHelper Lifecycle + DI Override
+- [x] ~22 neue Lokalisierungs-Keys x 6 Sprachen (132 Uebersetzungen)
+- [x] Full Solution Build: 0 Fehler, 112 Warnungen (nur NuGet)
+- [x] Multi-Placement Architektur: AdConfig.cs mit ALLEN 17 Rewarded Ad-Unit-IDs, ShowAdAsync(placement) Overload
+- [x] BomberBlast: Score-Verdopplung nach Level-Complete (Placement "score_double")
+- [x] FinanzRechner: CSV-Export (Placement "export_csv"), Budget-Analyse (Placement "budget_analysis"), Extended Stats 24h (Placement "extended_stats")
+- [x] HandwerkerRechner: Material-PDF (Placement "material_pdf"), Projekt-Export (Placement "project_export"), Extended History 24h (Placement "extended_history")
+- [x] FitnessRechner: Wochenanalyse (Placement "detail_analysis"), Tracking-Export CSV (Placement "tracking_export"), Extended Food-DB 24h (Placement "extended_food_db")
+- [x] WorkTimePro: Placement-Strings ("vacation_entry", "export", "monthly_stats") + Extended Stats Gate (24h)
+- [x] Full Solution Build nach Multi-Placement: 0 Fehler, 171 Warnungen (nur NuGet)
+
 ### Phase 7: Polish + Testing
 - [ ] Android APKs auf Geraet testen
 - [ ] Desktop Apps manuell testen
@@ -741,3 +762,76 @@ F:\Meine_Apps_Ava\
   - 4 neue resx-Keys in FitnessRechner (6 Sprachen): RemoveAds, PremiumPrice, GetPremium, SectionCalculators
   - Designer.cs beider Apps aktualisiert
   - Build: 0 Fehler, 114 Warnungen (nur bekannte NuGet/SkiaSharp)
+- **BomberBlast Coins-Economy + Shop (07.02.2026):**
+  - Coin-Waehrung: Score→Coins (1:1 Level-Complete, 0.5x Game Over), persistent via IPreferencesService
+  - Shop: 6 Upgrades (StartBombs/Fire/Speed, ExtraLives, ScoreMultiplier, TimeBonus) mit Level-Preisen
+  - Rewarded Ads: Coins verdoppeln + Weitermachen (Story, 1x) - Desktop Simulator, Android spaeter
+  - World-Gating: 5 Welten a 10 Level, Stern-Anforderungen (0/10/25/45/70)
+  - 11 neue Dateien (Models, Services, VM, View), 10 geaenderte Dateien
+  - GameEngine: IShopService injiziert, ApplyUpgrades, ContinueAfterGameOver, OnCoinsEarned Event
+  - GameOverView: Coins-Sektion, Verdoppeln-Button, Weitermachen-Button
+  - LevelSelectView: Welt-Header mit Lock/Earth-Icon, Coin-Badge im Header
+  - MainMenuView: Coin-Badge unter Logo, Shop-Button (Store-Icon) im Button-Grid
+  - 24 neue Lokalisierungs-Keys in 6 Sprachen
+  - Build: Shared + Desktop + Android 0 Fehler
+- **Rewarded Ads Lokalisierung Phase 7 (07.02.2026):**
+  - BomberBlast: 6 neue Keys (PowerUpBoost, WatchVideo, WithoutBoost, SkipLevel, SkipLevelInfo, WatchVideoBoost) in 6 Sprachen + Designer.cs
+  - FinanzRechner: 4 neue Keys (ExportLocked, ExportLockedDesc, WatchVideoExport, ExportAdFailed) in 6 Sprachen + Designer.cs
+  - HandwerkerRechner: 6 neue Keys (PremiumCalculatorsLocked, WatchVideoFor30Min, AccessGranted, AccessExpiresIn, TemporaryAccessActive, VideoFor30Min) in 6 Sprachen + Designer.cs
+  - WorkTimePro: 6 neue Keys (PremiumFeatureTitle, PremiumFeatureDesc, WatchVideoOnce, BuyPremiumUnlimited, VideoRewardSuccess, VideoAdFailed) in 6 Sprachen + Designer.cs
+  - Insgesamt 22 Keys x 6 Sprachen = 132 neue Uebersetzungen + 22 Designer.cs Properties
+  - Build: Alle 4 Shared-Projekte 0 Fehler
+- **Rewarded Ads Android-Integration Phase 8 (07.02.2026):**
+  - RewardedAdHelper.cs + AndroidRewardedAdService.cs als Linked Files in alle 6 Android .csproj eingebunden
+  - 6 App.axaml.cs: `RewardedAdServiceFactory` Property (Func<IServiceProvider, IRewardedAdService>) + DI-Override nach AddMeineAppsPremium()
+  - 6 MainActivity.cs: RewardedAdHelper erstellt vor base.OnCreate(), Factory gesetzt, Load() nach DI-Build, Dispose() in OnDestroy()
+  - 3 AndroidManifest.xml App-ID Fixes: HandwerkerRechner/FinanzRechner/FitnessRechner auf korrekten Publisher-Account (ca-app-pub-2588160251469436)
+  - RewardedAdHelper.cs: Inner-Klassen umbenannt (RewardedAdLoadCallback→LoadCallback, RewardedAdShowCallback→ShowCallback)
+  - RewardedAdHelper.cs: Java Generics Erasure Fix - `[Register("onAdLoaded", "(Lcom/google/android/gms/ads/rewarded/RewardedAd;)V", "")]` Attribut auf LoadCallback.OnAdLoaded()
+  - Apps: HandwerkerRechner, FinanzRechner, FitnessRechner, WorkTimePro, BomberBlast, HandwerkerImperium
+  - Full Solution Build: 0 Fehler, 112 Warnungen (nur bekannte NuGet/SkiaSharp)
+- **FinanzRechner 3 Rewarded Ad Features (07.02.2026):**
+  - Feature 1 (CSV-Export Ad-Gate): StatisticsVM ShowAdAsync("export_pdf"/"export_csv") Placements, CSV-Export in StatisticsVM + ExpenseTrackerVM mit Ad-Gate (IPurchaseService/IRewardedAdService injiziert)
+  - Feature 2 (Budget-Analyse-Report): BudgetAnalysisReport Model (NEU), MainVM IRewardedAdService + RequestBudgetAnalysis/ConfirmBudgetAd/CloseBudgetAnalysis, HomeView Monatsreport-Button + 2 Overlays (Ad + Report), Placement "budget_analysis"
+  - Feature 3 (Extended Stats 24h): StatisticsVM IPreferencesService, OnSelectedPeriodChanged blockiert Q/H/Y ohne Premium/24h-Zugang, ExtendedStatsAdOverlay + ConfirmExtendedStatsAd, 24h via DateTime.UtcNow+DateTimeStyles.RoundtripKind, Placement "extended_stats"
+  - StatisticsView.axaml: Extended-Stats-Ad-Overlay (ChartTimelineVariant-Icon, 24h-Badge)
+  - 8 neue resx-Keys in 6 Sprachen (BudgetAnalysisTitle/Desc, MonthlyReport, SavingTip, ComparedToLastMonth, ExtendedStatsTitle/Desc, AccessFor24h)
+  - Build: 0 Fehler
+- **FitnessRechner 3 Rewarded Ad Features (07.02.2026):**
+  - Feature 1: ShowAdAsync Placement-Strings (FoodSearchVM: `ShowAdAsync()` → `ShowAdAsync("barcode_scan")`)
+  - Feature 2: Wochenanalyse (ProgressVM: 7-Tage-Durchschnitte Gewicht/Kalorien/Wasser/Trend/Zielerreichung, Ad-Gate "detail_analysis")
+  - Feature 3: Tracking Export CSV (ProgressVM: 90-Tage-Daten, IFileShareService, Ad-Gate "tracking_export")
+  - Feature 4: Erweiterte Nahrungsmittel-DB (FoodSearchVM: 24h Zugang via Ad "extended_food_db", Hint bei <=5 Ergebnissen)
+  - ProgressView: 4-Spalten-Header (Analyse+Export+Add), 3 Overlays (Analysis Ad, Analysis Report 2x3 Grid, Export Ad)
+  - FoodSearchView: Extended DB Hint Card, Scan Limit Ad Overlay, Extended DB Ad Overlay
+  - App.axaml.cs: FileShareServiceFactory + IFileShareService DI (Desktop: DesktopFileShareService, Android: AndroidFileShareService)
+  - Android: FileProvider (AndroidManifest, file_paths.xml, Linked AndroidFileShareService.cs), FileShareServiceFactory in MainActivity
+  - 11 neue resx-Keys in 6 Sprachen + Designer.cs (WeeklyAnalysis, WeeklyAnalysisDesc, AvgWeight, AvgCalories, AvgWater, WeightTrend, CalorieTarget, ExportTracking, ExportTrackingDesc, ExtendedFoodDb, ExtendedFoodDbDesc)
+  - Build: FitnessRechner.Shared 0 Fehler
+- **Multi-Placement Rewarded Ads Architektur (07.02.2026):**
+  - AdConfig.cs komplett umgeschrieben: ALLE 17 Rewarded Ad-Unit-IDs aus AdMob.docx (statt 1 pro App)
+  - IRewardedAdService: `ShowAdAsync(string placement)` Overload (abwaertskompatibel)
+  - RewardedAdHelper: `LoadAndShowAsync(string adUnitId)` fuer On-Demand-Loading (nicht-default Placements)
+  - AndroidRewardedAdService: `appName` Parameter fuer AdConfig-Lookup, `ShowAdAsync(placement)` -> `AdConfig.GetRewardedAdUnitId(appName, placement)`
+  - 6 MainActivity.cs: `appName` Parameter an AndroidRewardedAdService uebergeben
+  - Full Solution Build: 0 Fehler
+- **BomberBlast Score-Verdopplung (07.02.2026):**
+  - GameViewModel: IRewardedAdService + IPurchaseService injiziert, Score-Double-Overlay nach Level-Complete
+  - GameEngine: DoubleScore() Methode (verdoppelt Score, feuert OnScoreChanged + OnCoinsEarned)
+  - GameView.axaml: Score-Double-Overlay (ZIndex=50, Video-Button, Weiter-Button)
+  - Placement-Strings: continue, level_skip, power_up, score_double (alle ShowAdAsync-Aufrufe)
+  - 4 neue resx-Keys in 6 Sprachen (ScoreDoubleTitle/Desc, WatchVideoDouble, ContinueWithout)
+  - Build: 0 Fehler
+- **HandwerkerRechner 3 Rewarded Ad Features (07.02.2026):**
+  - Feature 1: Placement "premium_access" fuer bestehenden Premium-Zugang
+  - Feature 2: Extended History (24h, 30 statt 5 Eintraege, Placement "extended_history")
+  - Feature 3: Material-Liste PDF Export (PdfSharpCore, IMaterialExportService, Placement "material_pdf")
+  - Feature 4: Projekt-Export PDF (ProjectsVM, Placement "project_export")
+  - Bugfixes: RoofSolarVM/GardenVM/MetalVM Property-Namen korrigiert
+  - 8 neue resx-Keys in 6 Sprachen + Designer.cs
+  - Build: 0 Fehler
+- **WorkTimePro Placement-Strings + Extended Stats (07.02.2026):**
+  - VacationVM: ShowAdAsync("vacation_entry")
+  - YearOverviewVM: ShowAdAsync("export")
+  - StatisticsVM: ShowAdAsync("monthly_stats") + IPreferencesService, Extended Stats Gate (Quartal/Jahr → 24h Zugang via Rewarded Ad)
+  - Build: 0 Fehler

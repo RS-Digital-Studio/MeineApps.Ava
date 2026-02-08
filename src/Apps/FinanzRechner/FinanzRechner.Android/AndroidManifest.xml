@@ -8,7 +8,7 @@
       android:supportsRtl="true"
       android:theme="@style/MyTheme.NoActionBar">
     <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"
-               android:value="ca-app-pub-2667921454778639~7519993133" />
+               android:value="ca-app-pub-2588160251469436~8528331789" />
     <provider
         android:name="androidx.core.content.FileProvider"
         android:authorities="com.meineapps.finanzrechner.fileprovider"

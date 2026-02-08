@@ -43,5 +43,80 @@ namespace FinanzRechner.Resources.Strings {
                 resourceCulture = value;
             }
         }
+
+        // Rewarded Ads
+        internal static string ExportLocked {
+            get {
+                return ResourceManager.GetString("ExportLocked", resourceCulture);
+            }
+        }
+
+        internal static string ExportLockedDesc {
+            get {
+                return ResourceManager.GetString("ExportLockedDesc", resourceCulture);
+            }
+        }
+
+        internal static string WatchVideoExport {
+            get {
+                return ResourceManager.GetString("WatchVideoExport", resourceCulture);
+            }
+        }
+
+        internal static string ExportAdFailed {
+            get {
+                return ResourceManager.GetString("ExportAdFailed", resourceCulture);
+            }
+        }
+
+        // Budget Analysis Report
+        internal static string BudgetAnalysisTitle {
+            get {
+                return ResourceManager.GetString("BudgetAnalysisTitle", resourceCulture);
+            }
+        }
+
+        internal static string BudgetAnalysisDesc {
+            get {
+                return ResourceManager.GetString("BudgetAnalysisDesc", resourceCulture);
+            }
+        }
+
+        internal static string MonthlyReport {
+            get {
+                return ResourceManager.GetString("MonthlyReport", resourceCulture);
+            }
+        }
+
+        internal static string SavingTip {
+            get {
+                return ResourceManager.GetString("SavingTip", resourceCulture);
+            }
+        }
+
+        internal static string ComparedToLastMonth {
+            get {
+                return ResourceManager.GetString("ComparedToLastMonth", resourceCulture);
+            }
+        }
+
+        // Extended Stats
+        internal static string ExtendedStatsTitle {
+            get {
+                return ResourceManager.GetString("ExtendedStatsTitle", resourceCulture);
+            }
+        }
+
+        internal static string ExtendedStatsDesc {
+            get {
+                return ResourceManager.GetString("ExtendedStatsDesc", resourceCulture);
+            }
+        }
+
+        internal static string AccessFor24h {
+            get {
+                return ResourceManager.GetString("AccessFor24h", resourceCulture);
+            }
+        }
     }
 }

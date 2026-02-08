@@ -18,6 +18,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IAdService _adService;
     private readonly ILocalizationService _localizationService;
     private readonly IExpenseService _expenseService;
+    private readonly IRewardedAdService _rewardedAdService;
 
     [ObservableProperty]
     private bool _isAdBannerVisible;
@@ -40,6 +41,7 @@ public partial class MainViewModel : ObservableObject
         IAdService adService,
         ILocalizationService localizationService,
         IExpenseService expenseService,
+        IRewardedAdService rewardedAdService,
         ExpenseTrackerViewModel expenseTrackerViewModel,
         StatisticsViewModel statisticsViewModel,
         SettingsViewModel settingsViewModel,
@@ -55,6 +57,7 @@ public partial class MainViewModel : ObservableObject
         _adService = adService;
         _localizationService = localizationService;
         _expenseService = expenseService;
+        _rewardedAdService = rewardedAdService;
 
         IsAdBannerVisible = _adService.BannerVisible;
         _adService.AdsStateChanged += (_, _) => IsAdBannerVisible = _adService.BannerVisible;
@@ -157,6 +160,10 @@ public partial class MainViewModel : ObservableObject
             CloseCalculator();
         if (IsSubPageOpen)
             CurrentSubPage = null;
+        if (ShowBudgetAdOverlay)
+            ShowBudgetAdOverlay = false;
+        if (ShowBudgetAnalysisOverlay)
+            CloseBudgetAnalysis();
 
         // Daten laden beim Tab-Wechsel
         if (value == 0)
@@ -325,6 +332,13 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ViewAllText));
         OnPropertyChanged(nameof(PremiumPriceText));
         OnPropertyChanged(nameof(SectionCalculatorsShortText));
+        OnPropertyChanged(nameof(MonthlyReportText));
+        OnPropertyChanged(nameof(BudgetAnalysisTitleText));
+        OnPropertyChanged(nameof(BudgetAnalysisDescText));
+        OnPropertyChanged(nameof(SavingTipText));
+        OnPropertyChanged(nameof(ComparedToLastMonthText));
+        OnPropertyChanged(nameof(WatchVideoReportText));
+        OnPropertyChanged(nameof(CloseText));
         // Budget-Kategorie-Namen koennen sich bei Sprachwechsel aendern
         UpdateBudgetDisplayNames();
     }
@@ -585,6 +599,166 @@ public partial class MainViewModel : ObservableObject
             HasRecentTransactions = false;
         }
     }
+
+    #region Budget Analysis Report
+
+    [ObservableProperty]
+    private bool _showBudgetAdOverlay;
+
+    [ObservableProperty]
+    private bool _showBudgetAnalysisOverlay;
+
+    [ObservableProperty]
+    private BudgetAnalysisReport? _budgetAnalysisReport;
+
+    public string MonthlyReportText => _localizationService.GetString("MonthlyReport") ?? "Monthly Report";
+    public string BudgetAnalysisTitleText => _localizationService.GetString("BudgetAnalysisTitle") ?? "Budget Analysis";
+    public string BudgetAnalysisDescText => _localizationService.GetString("BudgetAnalysisDesc") ?? "Watch a video to see your detailed monthly report.";
+    public string SavingTipText => _localizationService.GetString("SavingTip") ?? "Saving Tip";
+    public string ComparedToLastMonthText => _localizationService.GetString("ComparedToLastMonth") ?? "Compared to last month";
+    public string WatchVideoReportText => _localizationService.GetString("WatchVideoExport") ?? "Watch Video → Report";
+    public string CloseText => _localizationService.GetString("Cancel") ?? "Close";
+
+    [RelayCommand]
+    private async Task RequestBudgetAnalysisAsync()
+    {
+        // Premium: Report direkt generieren und anzeigen
+        if (_purchaseService.IsPremium)
+        {
+            await GenerateAndShowBudgetAnalysis();
+            return;
+        }
+
+        // Free: Ad-Overlay anzeigen
+        ShowBudgetAdOverlay = true;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmBudgetAdAsync()
+    {
+        ShowBudgetAdOverlay = false;
+
+        var success = await _rewardedAdService.ShowAdAsync("budget_analysis");
+        if (success)
+        {
+            await GenerateAndShowBudgetAnalysis();
+        }
+        else
+        {
+            var msg = _localizationService.GetString("ExportAdFailed") ?? "Could not load video";
+            MessageRequested?.Invoke(
+                _localizationService.GetString("Error") ?? "Error",
+                msg);
+        }
+    }
+
+    [RelayCommand]
+    private void CancelBudgetAd()
+    {
+        ShowBudgetAdOverlay = false;
+    }
+
+    [RelayCommand]
+    private void CloseBudgetAnalysis()
+    {
+        ShowBudgetAnalysisOverlay = false;
+        BudgetAnalysisReport = null;
+    }
+
+    private async Task GenerateAndShowBudgetAnalysis()
+    {
+        try
+        {
+            var today = DateTime.Today;
+            var startDate = new DateTime(today.Year, today.Month, 1);
+            var endDate = startDate.AddMonths(1).AddDays(-1);
+
+            // Aktuellen Monat laden
+            var filter = new ExpenseFilter { StartDate = startDate, EndDate = endDate };
+            var transactions = await _expenseService.GetExpensesAsync(filter);
+
+            double totalExpenses = 0, totalIncome = 0;
+            var categoryExpenses = new Dictionary<ExpenseCategory, double>();
+
+            foreach (var t in transactions)
+            {
+                if (t.Type == TransactionType.Expense)
+                {
+                    totalExpenses += t.Amount;
+                    if (!categoryExpenses.ContainsKey(t.Category))
+                        categoryExpenses[t.Category] = 0;
+                    categoryExpenses[t.Category] += t.Amount;
+                }
+                else
+                {
+                    totalIncome += t.Amount;
+                }
+            }
+
+            // Vormonat laden
+            var prevStart = startDate.AddMonths(-1);
+            var prevEnd = startDate.AddDays(-1);
+            var prevFilter = new ExpenseFilter { StartDate = prevStart, EndDate = prevEnd };
+            var prevTransactions = await _expenseService.GetExpensesAsync(prevFilter);
+            double prevExpenses = 0;
+            foreach (var t in prevTransactions)
+            {
+                if (t.Type == TransactionType.Expense)
+                    prevExpenses += t.Amount;
+            }
+
+            // Kategorie-Aufschluesselung
+            var breakdown = categoryExpenses
+                .Select(kvp => new CategoryBreakdownItem
+                {
+                    Category = kvp.Key,
+                    CategoryName = Helpers.CategoryLocalizationHelper.GetLocalizedName(kvp.Key, _localizationService),
+                    Amount = kvp.Value,
+                    Percentage = totalExpenses > 0 ? kvp.Value / totalExpenses * 100 : 0
+                })
+                .OrderByDescending(c => c.Amount)
+                .ToList();
+
+            // Spartipps: Top-3 Kategorien mit Hinweis
+            var savingTips = breakdown.Take(3).Select(c =>
+            {
+                var tipFormat = _localizationService.GetString("SavingTip") ?? "You spend the most on {0}";
+                return new SavingTipItem
+                {
+                    CategoryName = c.CategoryName,
+                    Tip = string.Format(tipFormat, c.CategoryName),
+                    Amount = c.Amount
+                };
+            }).ToList();
+
+            // Monatsvergleich
+            double changePercent = 0;
+            if (prevExpenses > 0)
+                changePercent = ((totalExpenses - prevExpenses) / prevExpenses) * 100;
+
+            var report = new BudgetAnalysisReport
+            {
+                PeriodDisplay = today.ToString("MMMM yyyy"),
+                TotalExpenses = totalExpenses,
+                TotalIncome = totalIncome,
+                CategoryBreakdown = breakdown,
+                SavingTips = savingTips,
+                PreviousMonthExpenses = prevExpenses,
+                MonthChangePercent = changePercent
+            };
+
+            BudgetAnalysisReport = report;
+            ShowBudgetAnalysisOverlay = true;
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(
+                _localizationService.GetString("Error") ?? "Error",
+                ex.Message);
+        }
+    }
+
+    #endregion
 
     [RelayCommand]
     private void ToggleQuickAdd()

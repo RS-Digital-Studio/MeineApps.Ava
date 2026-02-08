@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
@@ -9,6 +10,7 @@ using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Premium.Ava.Services;
 using SkiaSharp;
 
 namespace FinanzRechner.ViewModels;
@@ -21,10 +23,19 @@ public partial class StatisticsViewModel : ObservableObject
     private readonly IThemeService _themeService;
     private readonly IFileDialogService _fileDialogService;
     private readonly IFileShareService _fileShareService;
+    private readonly IPurchaseService _purchaseService;
+    private readonly IRewardedAdService _rewardedAdService;
+    private readonly IPreferencesService _preferencesService;
+
+    private const string ExtendedStatsExpiryKey = "ExtendedStatsExpiry";
 
     public event Action<string, string>? MessageRequested;
 
-    public StatisticsViewModel(IExpenseService expenseService, IExportService exportService, ILocalizationService localizationService, IThemeService themeService, IFileDialogService fileDialogService, IFileShareService fileShareService)
+    public StatisticsViewModel(IExpenseService expenseService, IExportService exportService,
+        ILocalizationService localizationService, IThemeService themeService,
+        IFileDialogService fileDialogService, IFileShareService fileShareService,
+        IPurchaseService purchaseService, IRewardedAdService rewardedAdService,
+        IPreferencesService preferencesService)
     {
         _expenseService = expenseService;
         _exportService = exportService;
@@ -32,6 +43,9 @@ public partial class StatisticsViewModel : ObservableObject
         _themeService = themeService;
         _fileDialogService = fileDialogService;
         _fileShareService = fileShareService;
+        _purchaseService = purchaseService;
+        _rewardedAdService = rewardedAdService;
+        _preferencesService = preferencesService;
         _selectedPeriod = TimePeriod.Month;
     }
 
@@ -65,6 +79,12 @@ public partial class StatisticsViewModel : ObservableObject
     public string IncomeText => _localizationService.GetString("Income") ?? "Income";
     public string ExpensesText => _localizationService.GetString("Expenses") ?? "Expenses";
     public string ExportingPdfText => _localizationService.GetString("ExportStatistics") ?? "Exporting PDF...";
+    public string ExportLockedText => _localizationService.GetString("ExportLocked") ?? "Unlock Export";
+    public string ExportLockedDescText => _localizationService.GetString("ExportLockedDesc") ?? "Watch a short video to start your export.";
+    public string WatchVideoExportText => _localizationService.GetString("WatchVideoExport") ?? "Watch Video → Export";
+    public string ExtendedStatsTitleText => _localizationService.GetString("ExtendedStatsTitle") ?? "Extended Statistics";
+    public string ExtendedStatsDescText => _localizationService.GetString("ExtendedStatsDesc") ?? "Watch a video for 24h access to quarterly and yearly statistics";
+    public string AccessFor24hText => _localizationService.GetString("AccessFor24h") ?? "Access for 24 hours";
 
     public void UpdateLocalizedTexts()
     {
@@ -88,6 +108,12 @@ public partial class StatisticsViewModel : ObservableObject
         OnPropertyChanged(nameof(IncomeText));
         OnPropertyChanged(nameof(ExpensesText));
         OnPropertyChanged(nameof(ExportingPdfText));
+        OnPropertyChanged(nameof(ExportLockedText));
+        OnPropertyChanged(nameof(ExportLockedDescText));
+        OnPropertyChanged(nameof(WatchVideoExportText));
+        OnPropertyChanged(nameof(ExtendedStatsTitleText));
+        OnPropertyChanged(nameof(ExtendedStatsDescText));
+        OnPropertyChanged(nameof(AccessFor24hText));
     }
 
     #endregion
@@ -116,6 +142,23 @@ public partial class StatisticsViewModel : ObservableObject
         OnPropertyChanged(nameof(IsQuarterSelected));
         OnPropertyChanged(nameof(IsHalfYearSelected));
         OnPropertyChanged(nameof(IsYearSelected));
+
+        // Quartal/Halbjahr/Jahr brauchen Extended Stats (Premium oder 24h-Zugang)
+        if (value is TimePeriod.Quarter or TimePeriod.HalfYear or TimePeriod.Year
+            && !_purchaseService.IsPremium && !IsExtendedStatsValid())
+        {
+            _pendingExtendedStatsPeriod = value;
+            ShowExtendedStatsAdOverlay = true;
+            // Zurueck auf Monat setzen ohne erneuten Trigger
+            _selectedPeriod = TimePeriod.Month;
+            OnPropertyChanged(nameof(SelectedPeriod));
+            OnPropertyChanged(nameof(IsWeekSelected));
+            OnPropertyChanged(nameof(IsMonthSelected));
+            OnPropertyChanged(nameof(IsQuarterSelected));
+            OnPropertyChanged(nameof(IsHalfYearSelected));
+            OnPropertyChanged(nameof(IsYearSelected));
+            return;
+        }
 
         LoadStatisticsAsync().ContinueWith(t =>
         {
@@ -589,6 +632,160 @@ public partial class StatisticsViewModel : ObservableObject
 
     #endregion
 
+    #region Export Ad Gate
+
+    [ObservableProperty]
+    private bool _showExportAdOverlay;
+
+    /// <summary>
+    /// Merkt sich welcher Export-Typ angefragt wurde ("pdf" oder "csv")
+    /// </summary>
+    private string _pendingExportType = "";
+
+    [RelayCommand]
+    private async Task ConfirmExportAdAsync()
+    {
+        ShowExportAdOverlay = false;
+
+        // Placement je nach Export-Typ
+        var placement = _pendingExportType == "csv" ? "export_csv" : "export_pdf";
+        var success = await _rewardedAdService.ShowAdAsync(placement);
+        if (success)
+        {
+            // Nach erfolgreicher Ad den gemerkten Export ausfuehren
+            if (_pendingExportType == "pdf")
+                await DoExportToPdfAsync();
+            else if (_pendingExportType == "csv")
+                await DoExportToCsvAsync();
+        }
+        else
+        {
+            var msg = _localizationService.GetString("ExportAdFailed") ?? "Could not load video";
+            _ = ShowExportStatusAsync(msg);
+        }
+        _pendingExportType = "";
+    }
+
+    [RelayCommand]
+    private void CancelExportAd()
+    {
+        ShowExportAdOverlay = false;
+        _pendingExportType = "";
+    }
+
+    #endregion
+
+    #region Extended Stats Ad Gate
+
+    [ObservableProperty]
+    private bool _showExtendedStatsAdOverlay;
+
+    private TimePeriod _pendingExtendedStatsPeriod;
+
+    /// <summary>
+    /// Prueft ob der 24h-Zugang fuer erweiterte Statistiken noch gueltig ist.
+    /// </summary>
+    private bool IsExtendedStatsValid()
+    {
+        var expiryStr = _preferencesService.Get<string>(ExtendedStatsExpiryKey, "");
+        if (string.IsNullOrEmpty(expiryStr)) return false;
+
+        if (DateTime.TryParse(expiryStr, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.RoundtripKind, out var expiry))
+        {
+            return DateTime.UtcNow < expiry;
+        }
+        return false;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmExtendedStatsAdAsync()
+    {
+        ShowExtendedStatsAdOverlay = false;
+
+        var success = await _rewardedAdService.ShowAdAsync("extended_stats");
+        if (success)
+        {
+            // 24h Zugang speichern
+            var expiry = DateTime.UtcNow.AddHours(24).ToString("O");
+            _preferencesService.Set(ExtendedStatsExpiryKey, expiry);
+
+            // Gewaehlten Zeitraum anwenden
+            SelectedPeriod = _pendingExtendedStatsPeriod;
+        }
+        else
+        {
+            var msg = _localizationService.GetString("ExportAdFailed") ?? "Could not load video";
+            _ = ShowExportStatusAsync(msg);
+        }
+    }
+
+    [RelayCommand]
+    private void CancelExtendedStatsAd()
+    {
+        ShowExtendedStatsAdOverlay = false;
+    }
+
+    #endregion
+
+    #region CSV Export
+
+    [RelayCommand]
+    private async Task ExportToCsvAsync()
+    {
+        if (IsExportingPdf) return;
+
+        // Premium: Direkt exportieren. Free: Ad-Overlay anzeigen.
+        if (_purchaseService.IsPremium)
+        {
+            await DoExportToCsvAsync();
+            return;
+        }
+
+        _pendingExportType = "csv";
+        ShowExportAdOverlay = true;
+    }
+
+    private async Task DoExportToCsvAsync()
+    {
+        if (IsExportingPdf) return;
+
+        try
+        {
+            IsExportingPdf = true;
+
+            var (startDate, endDate) = GetDateRange();
+            var suggestedName = $"statistics_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            var title = _localizationService.GetString("ExportStatistics") ?? "Export Statistics";
+
+            var targetPath = await _fileDialogService.SaveFileAsync(suggestedName, title, "CSV", "csv");
+            if (targetPath == null)
+            {
+                var exportDir = _fileShareService.GetExportDirectory("FinanzRechner");
+                targetPath = Path.Combine(exportDir, suggestedName);
+            }
+
+            var filePath = await _exportService.ExportToCsvAsync(
+                startDate.Year, startDate.Month, targetPath);
+
+            await _fileShareService.ShareFileAsync(filePath, title, "text/csv");
+
+            var successMsg = _localizationService.GetString("ExportSuccess") ?? "Export successful";
+            _ = ShowExportStatusAsync($"{successMsg}: {Path.GetFileName(filePath)}");
+        }
+        catch (Exception ex)
+        {
+            var errorMsg = $"{_localizationService.GetString("ExportError") ?? "Export failed"}: {ex.Message}";
+            _ = ShowExportStatusAsync(errorMsg);
+        }
+        finally
+        {
+            IsExportingPdf = false;
+        }
+    }
+
+    #endregion
+
     #region PDF Export
 
     [ObservableProperty]
@@ -618,6 +815,25 @@ public partial class StatisticsViewModel : ObservableObject
 
     [RelayCommand]
     private async Task ExportToPdfAsync()
+    {
+        if (IsExportingPdf) return;
+
+        // Premium: Direkt exportieren. Free: Ad-Overlay anzeigen.
+        if (_purchaseService.IsPremium)
+        {
+            await DoExportToPdfAsync();
+            return;
+        }
+
+        // Free User: Overlay anzeigen
+        _pendingExportType = "pdf";
+        ShowExportAdOverlay = true;
+    }
+
+    /// <summary>
+    /// Fuehrt den eigentlichen PDF-Export durch (nach Premium-Check oder Ad)
+    /// </summary>
+    private async Task DoExportToPdfAsync()
     {
         if (IsExportingPdf) return;
 

@@ -25,6 +25,12 @@ public partial class App : Application
     /// </summary>
     public static Func<IFileShareService>? FileShareServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen IRewardedAdService (Android setzt RewardedAdHelper).
+    /// Nimmt IServiceProvider entgegen fuer Lazy-Resolution von Abhaengigkeiten.
+    /// </summary>
+    public static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -75,6 +81,10 @@ public partial class App : Application
 
         // Premium Services (Ads, Purchases)
         services.AddMeineAppsPremium();
+
+        // Android-Override: Echte Rewarded Ads statt Desktop-Simulator
+        if (RewardedAdServiceFactory != null)
+            services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
 
         // Localization
         services.AddSingleton<ILocalizationService>(sp =>

@@ -966,4 +966,46 @@
     <value>Categorías</value>
   </data>
 
+  <!-- Rewarded Ads -->
+  <data name="ExportLocked" xml:space="preserve">
+    <value>Desbloquear Exportación</value>
+  </data>
+  <data name="ExportLockedDesc" xml:space="preserve">
+    <value>Mira un breve video para iniciar tu exportación.</value>
+  </data>
+  <data name="WatchVideoExport" xml:space="preserve">
+    <value>Ver Video → Exportar</value>
+  </data>
+  <data name="ExportAdFailed" xml:space="preserve">
+    <value>No se pudo cargar el video</value>
+  </data>
+
+  <!-- Informe de analisis de presupuesto -->
+  <data name="BudgetAnalysisTitle" xml:space="preserve">
+    <value>Analisis de Presupuesto</value>
+  </data>
+  <data name="BudgetAnalysisDesc" xml:space="preserve">
+    <value>Mira un video para ver tu informe mensual detallado.</value>
+  </data>
+  <data name="MonthlyReport" xml:space="preserve">
+    <value>Informe Mensual</value>
+  </data>
+  <data name="SavingTip" xml:space="preserve">
+    <value>Mayor gasto: {0}</value>
+  </data>
+  <data name="ComparedToLastMonth" xml:space="preserve">
+    <value>Comparado con el mes anterior</value>
+  </data>
+
+  <!-- Estadisticas extendidas -->
+  <data name="ExtendedStatsTitle" xml:space="preserve">
+    <value>Estadisticas Extendidas</value>
+  </data>
+  <data name="ExtendedStatsDesc" xml:space="preserve">
+    <value>Mira un video para 24h de acceso a estadisticas trimestrales y anuales.</value>
+  </data>
+  <data name="AccessFor24h" xml:space="preserve">
+    <value>Acceso por 24 horas</value>
+  </data>
+
 </root>

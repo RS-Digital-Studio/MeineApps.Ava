@@ -237,3 +237,55 @@ Komplettes Redesign der HomeView mit modernem Dashboard-Layout:
 - **FinanzRechner.Android.csproj**: Linked AndroidFileShareService.cs
 - **MainActivity.cs**: FileShareServiceFactory vor base.OnCreate gesetzt
 - Build: Desktop + Android 0 Fehler
+
+### Rewarded Ads - Export Ad-Gate (07.02.2026)
+
+#### Funktionsweise
+- Export (PDF/CSV) ist fuer Nicht-Premium-Nutzer hinter Rewarded Ad gesperrt
+- Premium-Nutzer koennen direkt exportieren (kein Ad-Gate)
+
+#### Aenderungen
+- **StatisticsViewModel**: `IPurchaseService` + `IRewardedAdService` injiziert, `ShowExportAdOverlay` / `IsExportAdOverlayVisible`, `ConfirmExportAdAsync` Command
+- **StatisticsView.axaml**: Export-Ad-Overlay UI (Beschreibung + Video-Button + Abbrechen)
+- **App.axaml.cs**: `RewardedAdServiceFactory` Property fuer Android-Override
+
+#### Android Integration
+- **FinanzRechner.Android.csproj**: Linked `RewardedAdHelper.cs` + `AndroidRewardedAdService.cs`
+- **MainActivity.cs**: RewardedAdHelper Lifecycle (init, load, dispose)
+
+#### Lokalisierung
+- 4 neue resx-Keys in 6 Sprachen: ExportLocked, ExportLockedDesc, WatchVideoExport, ExportAdFailed
+
+### 3 Rewarded Ad Features (07.02.2026)
+
+#### Feature 1: CSV Export mit eigener Ad-Unit-ID
+- **StatisticsViewModel**: `ShowAdAsync()` -> `ShowAdAsync("export_pdf")` bzw. `ShowAdAsync("export_csv")` je nach `_pendingExportType`
+- **StatisticsViewModel**: CSV-Export hinzugefuegt (ExportToCsvAsync, DoExportToCsvAsync) mit Ad-Gate
+- **ExpenseTrackerViewModel**: `IPurchaseService` + `IRewardedAdService` injiziert
+- **ExpenseTrackerViewModel**: ShowCsvExportAdOverlay, ConfirmCsvExportAdAsync, CancelCsvExportAd Commands
+- **ExpenseTrackerViewModel**: DoExportToCsvAsync + DoExportAllToCsvAsync (separate Methoden hinter Ad-Gate)
+- Placements: "export_pdf" (PDF), "export_csv" (CSV)
+
+#### Feature 2: Budget-Analyse-Report
+- **BudgetAnalysisReport.cs** (NEU): Model mit CategoryBreakdown, SavingTips, Vormonatsvergleich
+- **MainViewModel**: `IRewardedAdService` injiziert, ShowBudgetAdOverlay, ShowBudgetAnalysisOverlay
+- **MainViewModel**: RequestBudgetAnalysisAsync (Premium direkt, Free Ad-Gate), ConfirmBudgetAdAsync, CloseBudgetAnalysis
+- **MainViewModel**: GenerateAndShowBudgetAnalysis (Kategorie-Aufschluesselung, Spartipps Top-3, Vormonatsvergleich)
+- **HomeView.axaml**: Monatsreport-Button (ChartBox-Icon, Violet-Gradient-Badge) + Budget-Ad-Overlay + Budget-Report-Overlay
+- **HomeView.axaml**: Panel-Root-Wrapper fuer Overlay-Support
+- Placement: "budget_analysis"
+
+#### Feature 3: Erweiterte Statistiken (24h-Zugang)
+- **StatisticsViewModel**: `IPreferencesService` injiziert, `ExtendedStatsExpiryKey` Konstante
+- **StatisticsViewModel**: OnSelectedPeriodChanged blockiert Quartal/Halbjahr/Jahr fuer Nicht-Premium ohne gueltigen 24h-Zugang
+- **StatisticsViewModel**: ShowExtendedStatsAdOverlay, ConfirmExtendedStatsAdAsync, CancelExtendedStatsAd, IsExtendedStatsValid()
+- **StatisticsViewModel**: 24h-Zugang via `DateTime.UtcNow.AddHours(24).ToString("O")` + `DateTimeStyles.RoundtripKind` beim Parsen
+- **StatisticsView.axaml**: Extended-Stats-Ad-Overlay (ChartTimelineVariant-Icon, 24h-Badge, Video-Button)
+- Placement: "extended_stats"
+
+#### Lokalisierung (8 neue Keys in 6 Sprachen)
+- BudgetAnalysisTitle, BudgetAnalysisDesc, MonthlyReport, SavingTip, ComparedToLastMonth
+- ExtendedStatsTitle, ExtendedStatsDesc, AccessFor24h
+- Designer.cs: 8 neue Properties
+
+#### Build: 0 Fehler (nur bekannte SixLabors.ImageSharp Warnungen)

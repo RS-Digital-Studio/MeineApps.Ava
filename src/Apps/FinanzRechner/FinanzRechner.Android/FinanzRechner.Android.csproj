@@ -27,6 +27,8 @@
 
   <ItemGroup>
     <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AdMobHelper.cs" Link="Services\AdMobHelper.cs" />
+    <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\RewardedAdHelper.cs" Link="Services\RewardedAdHelper.cs" />
+    <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidRewardedAdService.cs" Link="Services\AndroidRewardedAdService.cs" />
     <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidFileShareService.cs" Link="Services\AndroidFileShareService.cs" />
   </ItemGroup>
 

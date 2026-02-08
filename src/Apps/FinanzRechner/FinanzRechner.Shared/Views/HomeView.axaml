@@ -7,6 +7,7 @@
              x:Class="FinanzRechner.Views.HomeView"
              x:DataType="vm:MainViewModel">
 
+  <Panel>
   <ScrollViewer Padding="0,0,0,16">
     <StackPanel Spacing="0">
 
@@ -69,6 +70,39 @@
 
         </StackPanel>
       </Border>
+
+      <!-- ========== Monatsreport Button ========== -->
+      <Button HorizontalAlignment="Stretch" Margin="16,12,16,0"
+              CornerRadius="12" Padding="14,10"
+              Command="{Binding RequestBudgetAnalysisCommand}">
+        <Button.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+            <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+          </LinearGradientBrush>
+        </Button.Background>
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Border Grid.Column="0" Width="36" Height="36" CornerRadius="10"
+                  Margin="0,0,12,0">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="#8B5CF6" Offset="0" />
+                <GradientStop Color="#7C3AED" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <mi:MaterialIcon Kind="ChartBox" Width="20" Height="20"
+                             Foreground="White"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Grid.Column="1" Text="{Binding MonthlyReportText}"
+                     FontSize="14" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     VerticalAlignment="Center" />
+          <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+        </Grid>
+      </Button>
 
       <!-- ========== Content ========== -->
       <StackPanel Spacing="16" Margin="16,16,16,0">
@@ -389,4 +423,202 @@
     </StackPanel>
   </ScrollViewer>
 
+  <!-- ========== Budget Ad Overlay (innerhalb Panel) ========== -->
+  <Border IsVisible="{Binding ShowBudgetAdOverlay}"
+          Background="#CC000000"
+          ZIndex="200">
+    <Border Background="{DynamicResource CardBrush}"
+            CornerRadius="16"
+            Padding="24"
+            MaxWidth="340"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+      <StackPanel Spacing="16" HorizontalAlignment="Center">
+        <TextBlock Text="{Binding BudgetAnalysisTitleText}"
+                   FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center" />
+
+        <Border Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="30"
+                Width="60" Height="60"
+                HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="ChartBox" Width="32" Height="32"
+                           Foreground="{DynamicResource AccentBrush}" />
+        </Border>
+
+        <TextBlock Text="{Binding BudgetAnalysisDescText}"
+                   FontSize="14"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   HorizontalAlignment="Center"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center" />
+
+        <StackPanel Spacing="8">
+          <Button Classes="Filled"
+                  Command="{Binding ConfirmBudgetAdCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="16,12">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Video" Width="20" Height="20" />
+              <TextBlock Text="{Binding WatchVideoReportText}"
+                         FontSize="15" FontWeight="SemiBold" />
+            </StackPanel>
+          </Button>
+
+          <Button Classes="Text"
+                  Command="{Binding CancelBudgetAdCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="12,10">
+            <TextBlock Text="{Binding CloseText}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </Button>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Border>
+
+  <!-- ========== Budget Analysis Report Overlay ========== -->
+  <Border IsVisible="{Binding ShowBudgetAnalysisOverlay}"
+          Background="#CC000000"
+          ZIndex="210">
+    <Border Background="{DynamicResource CardBrush}"
+            CornerRadius="16"
+            Padding="20"
+            MaxWidth="400" MaxHeight="600"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+      <ScrollViewer>
+        <StackPanel Spacing="14"
+                    DataContext="{Binding BudgetAnalysisReport}"
+                    x:DataType="models:BudgetAnalysisReport">
+
+          <!-- Header -->
+          <StackPanel HorizontalAlignment="Center" Spacing="4">
+            <TextBlock Text="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).BudgetAnalysisTitleText}"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding PeriodDisplay}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Bilanz-Box -->
+          <Border CornerRadius="12" Padding="16">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="{DynamicResource PrimaryColor}" Offset="0" />
+                <GradientStop Color="{DynamicResource SecondaryColor}" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <StackPanel Spacing="8" HorizontalAlignment="Center">
+              <TextBlock Text="{Binding BalanceDisplay}"
+                         FontSize="26" FontWeight="Bold" Foreground="White"
+                         HorizontalAlignment="Center" />
+              <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <TextBlock Text="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).ExpensesLabelText}"
+                             FontSize="11" Foreground="#AAFFFFFF" HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding TotalExpensesDisplay}"
+                             FontSize="14" FontWeight="SemiBold" Foreground="#FFCCCC"
+                             HorizontalAlignment="Center" />
+                </StackPanel>
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <TextBlock Text="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).IncomeLabelText}"
+                             FontSize="11" Foreground="#AAFFFFFF" HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding TotalIncomeDisplay}"
+                             FontSize="14" FontWeight="SemiBold" Foreground="#CCFFCC"
+                             HorizontalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Vormonatsvergleich -->
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="10" Padding="12">
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).ComparedToLastMonthText}"
+                         FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding PreviousMonthDisplay}"
+                           FontSize="14" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{Binding MonthChangeDisplay}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Kategorie-Aufschluesselung -->
+          <ItemsControl ItemsSource="{Binding CategoryBreakdown}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="models:CategoryBreakdownItem">
+                <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,3">
+                  <TextBlock Grid.Column="0" Text="{Binding CategoryName}"
+                             FontSize="13" Foreground="{DynamicResource TextPrimaryBrush}"
+                             VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding AmountDisplay}"
+                             FontSize="13" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             VerticalAlignment="Center" Margin="0,0,8,0" />
+                  <TextBlock Grid.Column="2" Text="{Binding PercentageDisplay}"
+                             FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             VerticalAlignment="Center" />
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Spartipps -->
+          <StackPanel Spacing="6"
+                      IsVisible="{Binding SavingTips.Count}">
+            <TextBlock Text="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SavingTipText}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBrush}" />
+            <ItemsControl ItemsSource="{Binding SavingTips}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:SavingTipItem">
+                  <Border Background="{DynamicResource SurfaceBrush}"
+                          CornerRadius="8" Padding="10,8" Margin="0,2">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <mi:MaterialIcon Grid.Column="0" Kind="Lightbulb" Width="16" Height="16"
+                                       Foreground="{DynamicResource AccentBrush}"
+                                       Margin="0,0,8,0" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Tip}"
+                                 FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"
+                                 VerticalAlignment="Center" TextWrapping="Wrap" />
+                      <TextBlock Grid.Column="2" Text="{Binding AmountDisplay}"
+                                 FontSize="12" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 VerticalAlignment="Center" Margin="8,0,0,0" />
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+
+          <!-- Schliessen-Button -->
+          <Button Classes="Filled"
+                  Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CloseBudgetAnalysisCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="14,10" Margin="0,4,0,0">
+            <TextBlock Text="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CloseText}"
+                       FontSize="15" FontWeight="SemiBold" />
+          </Button>
+        </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Border>
+
+  </Panel>
 </UserControl>

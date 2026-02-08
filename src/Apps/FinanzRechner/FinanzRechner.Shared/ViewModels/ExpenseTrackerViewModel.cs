@@ -9,6 +9,7 @@ using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Premium.Ava.Services;
 using SkiaSharp;
 
 namespace FinanzRechner.ViewModels;
@@ -21,10 +22,15 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     private readonly IFileDialogService _fileDialogService;
     private readonly IFileShareService _fileShareService;
     private readonly IThemeService _themeService;
+    private readonly IPurchaseService _purchaseService;
+    private readonly IRewardedAdService _rewardedAdService;
 
     public event Action<string, string>? MessageRequested;
 
-    public ExpenseTrackerViewModel(IExpenseService expenseService, ILocalizationService localizationService, IExportService exportService, IFileDialogService fileDialogService, IFileShareService fileShareService, IThemeService themeService)
+    public ExpenseTrackerViewModel(IExpenseService expenseService, ILocalizationService localizationService,
+        IExportService exportService, IFileDialogService fileDialogService,
+        IFileShareService fileShareService, IThemeService themeService,
+        IPurchaseService purchaseService, IRewardedAdService rewardedAdService)
     {
         _expenseService = expenseService;
         _localizationService = localizationService;
@@ -32,6 +38,8 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         _fileDialogService = fileDialogService;
         _fileShareService = fileShareService;
         _themeService = themeService;
+        _purchaseService = purchaseService;
+        _rewardedAdService = rewardedAdService;
 
         // Initialize to current month
         _selectedYear = DateTime.Today.Year;
@@ -70,6 +78,9 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     public string NoTransactionsHintText => _localizationService.GetString("EmptyTransactionsDesc") ?? "Start tracking your income and expenses by tapping the + button";
     public string UndoText => _localizationService.GetString("Undo") ?? "Undo";
     public string CategoryBreakdownText => _localizationService.GetString("CategoryBreakdown") ?? "Categories";
+    public string ExportLockedText => _localizationService.GetString("ExportLocked") ?? "Unlock Export";
+    public string ExportLockedDescText => _localizationService.GetString("ExportLockedDesc") ?? "Watch a short video to start your export.";
+    public string WatchVideoExportText => _localizationService.GetString("WatchVideoExport") ?? "Watch Video → Export";
 
     public void UpdateLocalizedTexts()
     {
@@ -103,6 +114,9 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(NoTransactionsHintText));
         OnPropertyChanged(nameof(UndoText));
         OnPropertyChanged(nameof(CategoryBreakdownText));
+        OnPropertyChanged(nameof(ExportLockedText));
+        OnPropertyChanged(nameof(ExportLockedDescText));
+        OnPropertyChanged(nameof(WatchVideoExportText));
     }
 
     #endregion
@@ -938,8 +952,75 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         catch (TaskCanceledException) { }
     }
 
+    #region CSV Export Ad Gate
+
+    [ObservableProperty]
+    private bool _showCsvExportAdOverlay;
+
+    /// <summary>
+    /// Merkt sich welcher CSV-Export angefragt wurde ("month" oder "all")
+    /// </summary>
+    private string _pendingCsvExportType = "";
+
     [RelayCommand]
     private async Task ExportToCsvAsync()
+    {
+        if (IsLoading) return;
+
+        if (_purchaseService.IsPremium)
+        {
+            await DoExportToCsvAsync();
+            return;
+        }
+
+        _pendingCsvExportType = "month";
+        ShowCsvExportAdOverlay = true;
+    }
+
+    [RelayCommand]
+    private async Task ExportAllToCsvAsync()
+    {
+        if (IsLoading) return;
+
+        if (_purchaseService.IsPremium)
+        {
+            await DoExportAllToCsvAsync();
+            return;
+        }
+
+        _pendingCsvExportType = "all";
+        ShowCsvExportAdOverlay = true;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmCsvExportAdAsync()
+    {
+        ShowCsvExportAdOverlay = false;
+
+        var success = await _rewardedAdService.ShowAdAsync("export_csv");
+        if (success)
+        {
+            if (_pendingCsvExportType == "month")
+                await DoExportToCsvAsync();
+            else if (_pendingCsvExportType == "all")
+                await DoExportAllToCsvAsync();
+        }
+        else
+        {
+            var msg = _localizationService.GetString("ExportAdFailed") ?? "Could not load video";
+            _ = ShowExportStatusAsync(msg);
+        }
+        _pendingCsvExportType = "";
+    }
+
+    [RelayCommand]
+    private void CancelCsvExportAd()
+    {
+        ShowCsvExportAdOverlay = false;
+        _pendingCsvExportType = "";
+    }
+
+    private async Task DoExportToCsvAsync()
     {
         if (IsLoading) return;
 
@@ -949,7 +1030,6 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             var suggestedName = $"transactions_{SelectedYear}_{SelectedMonth:D2}.csv";
             var title = $"{_localizationService.GetString("ExportTitle") ?? "Export"} - {monthName}";
 
-            // Desktop: FileDialog, Android: direkt in Export-Verzeichnis
             var targetPath = await _fileDialogService.SaveFileAsync(suggestedName, title, "CSV", "csv");
             if (targetPath == null)
             {
@@ -960,7 +1040,6 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             IsLoading = true;
             var filePath = await _exportService.ExportToCsvAsync(SelectedYear, SelectedMonth, targetPath);
 
-            // Datei teilen/oeffnen
             await _fileShareService.ShareFileAsync(filePath, title, "text/csv");
 
             var successMsg = _localizationService.GetString("ExportSuccess") ?? "Export successful";
@@ -977,8 +1056,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         }
     }
 
-    [RelayCommand]
-    private async Task ExportAllToCsvAsync()
+    private async Task DoExportAllToCsvAsync()
     {
         if (IsLoading) return;
 
@@ -996,7 +1074,6 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             IsLoading = true;
             var filePath = await _exportService.ExportAllToCsvAsync(targetPath);
 
-            // Datei teilen/oeffnen
             await _fileShareService.ShareFileAsync(filePath, title, "text/csv");
 
             var successMsg = _localizationService.GetString("ExportSuccess") ?? "Export successful";
@@ -1012,6 +1089,8 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             IsLoading = false;
         }
     }
+
+    #endregion
 
     #endregion
 

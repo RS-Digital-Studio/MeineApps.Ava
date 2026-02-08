@@ -19,6 +19,7 @@ namespace FinanzRechner.Android;
 public class MainActivity : AvaloniaMainActivity<App>
 {
     private AdMobHelper? _adMobHelper;
+    private RewardedAdHelper? _rewardedAdHelper;
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
@@ -28,8 +29,13 @@ public class MainActivity : AvaloniaMainActivity<App>
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
-        // FileShareService MUSS vor base.OnCreate (DI) registriert werden
+        // Factories MUESSEN vor base.OnCreate (DI) registriert werden
         App.FileShareServiceFactory = () => new AndroidFileShareService(this);
+
+        _rewardedAdHelper = new RewardedAdHelper();
+        App.RewardedAdServiceFactory = sp =>
+            new MeineApps.Core.Premium.Ava.Droid.AndroidRewardedAdService(
+                _rewardedAdHelper!, sp.GetRequiredService<IPurchaseService>(), "FinanzRechner");
 
         base.OnCreate(savedInstanceState);
 
@@ -42,6 +48,9 @@ public class MainActivity : AvaloniaMainActivity<App>
         var adService = App.Services.GetRequiredService<IAdService>();
         var purchaseService = App.Services.GetRequiredService<IPurchaseService>();
         _adMobHelper.AttachToActivity(this, AdConfig.GetBannerAdUnitId("FinanzRechner"), adService, purchaseService, 56);
+
+        // Rewarded Ad laden (nach DI-Build)
+        _rewardedAdHelper.Load(this, AdConfig.GetRewardedAdUnitId("FinanzRechner"));
     }
 
     protected override void OnResume()
@@ -58,6 +67,7 @@ public class MainActivity : AvaloniaMainActivity<App>
 
     protected override void OnDestroy()
     {
+        _rewardedAdHelper?.Dispose();
         _adMobHelper?.Dispose();
         base.OnDestroy();
     }

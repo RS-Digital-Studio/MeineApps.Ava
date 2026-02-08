@@ -323,8 +323,9 @@ public partial class TrackingViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task QuickAddWater(int amount)
+    private async Task QuickAddWater(string amountStr)
     {
+        if (!int.TryParse(amountStr, out var amount)) return;
         try
         {
             var today = await _trackingService.GetLatestEntryAsync(TrackingType.Water);

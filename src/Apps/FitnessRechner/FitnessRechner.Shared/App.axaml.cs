@@ -1,8 +1,6 @@
 using Avalonia;
-using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
@@ -40,166 +38,36 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        try
+        // Setup DI
+        var services = new ServiceCollection();
+        ConfigureServices(services);
+        Services = services.BuildServiceProvider();
+
+        // Initialize localization
+        var locService = Services.GetRequiredService<ILocalizationService>();
+        locService.Initialize();
+        LocalizationManager.Initialize(locService);
+
+        // Initialize theme (must be resolved to apply saved theme at startup)
+        _ = Services.GetRequiredService<IThemeService>();
+
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Setup DI
-            var services = new ServiceCollection();
-            ConfigureServices(services);
-            Services = services.BuildServiceProvider();
-
-            // Initialize localization
-            var locService = Services.GetRequiredService<ILocalizationService>();
-            locService.Initialize();
-            LocalizationManager.Initialize(locService);
-
-            // Initialize theme (must be resolved to apply saved theme at startup)
-            _ = Services.GetRequiredService<IThemeService>();
-
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            desktop.MainWindow = new MainWindow
             {
-                desktop.MainWindow = new MainWindow
-                {
-                    DataContext = Services.GetRequiredService<MainViewModel>()
-                };
-            }
-            else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
-            {
-                try
-                {
-                    // Debug: Views einzeln testen um Crash-Verursacher zu finden
-                    var errors = new System.Text.StringBuilder();
-                    errors.AppendLine("=== VIEW CONSTRUCTION TEST ===\n");
-
-                    // Test 1: Leeres MainView (ohne DataContext)
-                    try
-                    {
-                        var mv = new MainView();
-                        errors.AppendLine("PASS: new MainView()");
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.AppendLine($"FAIL: new MainView()\n{ex.GetType().Name}: {ex.Message}\n");
-                    }
-
-                    // Test 2: HomeView
-                    try
-                    {
-                        var hv = new Views.HomeView();
-                        errors.AppendLine("PASS: new HomeView()");
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.AppendLine($"FAIL: new HomeView()\n{ex.GetType().Name}: {ex.Message}\n");
-                    }
-
-                    // Test 3: ProgressView
-                    try
-                    {
-                        var pv = new Views.ProgressView();
-                        errors.AppendLine("PASS: new ProgressView()");
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.AppendLine($"FAIL: new ProgressView()\n{ex.GetType().Name}: {ex.Message}\n");
-                    }
-
-                    // Test 4: FoodSearchView
-                    try
-                    {
-                        var fv = new Views.FoodSearchView();
-                        errors.AppendLine("PASS: new FoodSearchView()");
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.AppendLine($"FAIL: new FoodSearchView()\n{ex.GetType().Name}: {ex.Message}\n");
-                    }
-
-                    // Test 5: SettingsView
-                    try
-                    {
-                        var sv = new Views.SettingsView();
-                        errors.AppendLine("PASS: new SettingsView()");
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.AppendLine($"FAIL: new SettingsView()\n{ex.GetType().Name}: {ex.Message}\n");
-                    }
-
-                    // Test 6: MainView + DataContext + Attach
-                    var mainViewSuccess = false;
-                    try
-                    {
-                        var vm = Services.GetRequiredService<MainViewModel>();
-                        errors.AppendLine("PASS: MainViewModel resolved");
-
-                        var mainView = new MainView();
-                        mainView.DataContext = vm;
-                        errors.AppendLine("PASS: MainView.DataContext set");
-
-                        singleViewPlatform.MainView = mainView;
-                        errors.AppendLine("PASS: singleViewPlatform.MainView set");
-                        mainViewSuccess = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        errors.AppendLine($"FAIL: MainView attach\n{ex}\n");
-                    }
-
-                    // Falls Fehler: Ergebnis anzeigen
-                    if (!mainViewSuccess)
-                    {
-                        singleViewPlatform.MainView = new ScrollViewer
-                        {
-                            Content = new TextBlock
-                            {
-                                Text = errors.ToString(),
-                                Foreground = Brushes.Red,
-                                FontSize = 11,
-                                TextWrapping = TextWrapping.Wrap,
-                                Margin = new Avalonia.Thickness(12, 40, 12, 16)
-                            }
-                        };
-                    }
-                }
-                catch (Exception ex)
-                {
-                    singleViewPlatform.MainView = new ScrollViewer
-                    {
-                        Content = new TextBlock
-                        {
-                            Text = $"STARTUP ERROR:\n\n{ex}",
-                            Foreground = Brushes.Red,
-                            FontSize = 12,
-                            TextWrapping = TextWrapping.Wrap,
-                            Margin = new Avalonia.Thickness(16, 40, 16, 16)
-                        }
-                    };
-                }
-            }
-
-            base.OnFrameworkInitializationCompleted();
+                DataContext = Services.GetRequiredService<MainViewModel>()
+            };
         }
-        catch (Exception ex)
+        else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            // Auf Android: Fehler im UI anzeigen wenn moeglich
-            if (ApplicationLifetime is ISingleViewApplicationLifetime svp)
+            var vm = Services.GetRequiredService<MainViewModel>();
+            singleViewPlatform.MainView = new MainView
             {
-                svp.MainView = new ScrollViewer
-                {
-                    Content = new TextBlock
-                    {
-                        Text = $"FATAL INIT ERROR:\n\n{ex}",
-                        Foreground = Brushes.Red,
-                        FontSize = 12,
-                        TextWrapping = TextWrapping.Wrap,
-                        Margin = new Avalonia.Thickness(16, 40, 16, 16)
-                    }
-                };
-                base.OnFrameworkInitializationCompleted();
-                return;
-            }
-            throw;
+                DataContext = vm
+            };
         }
+
+        base.OnFrameworkInitializationCompleted();
     }
 
     private static void ConfigureServices(IServiceCollection services)

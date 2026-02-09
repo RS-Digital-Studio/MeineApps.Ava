@@ -26,6 +26,7 @@ public class GameStateService : IGameStateService
     public event EventHandler<OrderCompletedEventArgs>? OrderCompleted;
     public event EventHandler? StateLoaded;
     public event EventHandler<GoldenScrewsChangedEventArgs>? GoldenScrewsChanged;
+    public event EventHandler<MiniGameResultRecordedEventArgs>? MiniGameResultRecorded;
 
     // ===================================================================
     // INITIALIZATION
@@ -316,6 +317,9 @@ public class GameStateService : IGameStateService
                 _state.PerfectStreak = 0;
             }
         }
+
+        // Event feuern damit DailyChallengeService MiniGame-Challenges tracken kann
+        MiniGameResultRecorded?.Invoke(this, new MiniGameResultRecordedEventArgs(rating));
     }
 
     public void CompleteActiveOrder()

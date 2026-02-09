@@ -1518,7 +1518,7 @@ public partial class WorkshopDisplayModel : ObservableObject
 
     // Phase 10.3: Max Level Gold-Glow
     public bool IsMaxLevel => Level >= 50;
-    public string MaxLevelGlow => IsMaxLevel ? "0 0 12 0 #60FFD700" : "0 0 0 0 #00000000";
+    public string MaxLevelGlow => IsMaxLevel ? "0 0 12 0 #60FFD700" : "none";
 
     // Phase 12.2: "Fast geschafft" Puls wenn >= 80% des Upgrade-Preises vorhanden
     public bool IsAlmostAffordable => !CanAffordUpgrade && IsUnlocked && UpgradeCost > 0;

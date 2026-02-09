@@ -20,35 +20,35 @@
 
     <!-- Workshop-Farben -->
     <Color x:Key="CarpenterColor">#A0522D</Color>
-    <Color x:Key="PlumberColor">#2563EB</Color>
-    <Color x:Key="ElectricianColor">#EAB308</Color>
+    <Color x:Key="PlumberColor">#0E7490</Color>
+    <Color x:Key="ElectricianColor">#F97316</Color>
     <Color x:Key="PainterColor">#EC4899</Color>
     <Color x:Key="RooferColor">#DC2626</Color>
     <Color x:Key="ContractorColor">#EA580C</Color>
-    <Color x:Key="ArchitectColor">#6366F1</Color>
+    <Color x:Key="ArchitectColor">#78716C</Color>
     <Color x:Key="GeneralContractorColor">#FFD700</Color>
     <SolidColorBrush x:Key="CarpenterBrush" Color="#A0522D" />
-    <SolidColorBrush x:Key="PlumberBrush" Color="#2563EB" />
-    <SolidColorBrush x:Key="ElectricianBrush" Color="#EAB308" />
+    <SolidColorBrush x:Key="PlumberBrush" Color="#0E7490" />
+    <SolidColorBrush x:Key="ElectricianBrush" Color="#F97316" />
     <SolidColorBrush x:Key="PainterBrush" Color="#EC4899" />
     <SolidColorBrush x:Key="RooferBrush" Color="#DC2626" />
     <SolidColorBrush x:Key="ContractorBrush" Color="#EA580C" />
-    <SolidColorBrush x:Key="ArchitectBrush" Color="#6366F1" />
+    <SolidColorBrush x:Key="ArchitectBrush" Color="#78716C" />
     <SolidColorBrush x:Key="GeneralContractorBrush" Color="#FFD700" />
 
     <!-- Worker-Tier-Farben -->
     <SolidColorBrush x:Key="TierFBrush" Color="#94A3B8" />
     <SolidColorBrush x:Key="TierEBrush" Color="#22C55E" />
-    <SolidColorBrush x:Key="TierDBrush" Color="#3B82F6" />
-    <SolidColorBrush x:Key="TierCBrush" Color="#8B5CF6" />
+    <SolidColorBrush x:Key="TierDBrush" Color="#0E7490" />
+    <SolidColorBrush x:Key="TierCBrush" Color="#B45309" />
     <SolidColorBrush x:Key="TierBBrush" Color="#F59E0B" />
     <SolidColorBrush x:Key="TierABrush" Color="#EF4444" />
     <SolidColorBrush x:Key="TierSBrush" Color="#FFD700" />
 
     <!-- Research-Branch-Farben -->
     <SolidColorBrush x:Key="BranchToolsBrush" Color="#EA580C" />
-    <SolidColorBrush x:Key="BranchManagementBrush" Color="#6366F1" />
-    <SolidColorBrush x:Key="BranchMarketingBrush" Color="#22C55E" />
+    <SolidColorBrush x:Key="BranchManagementBrush" Color="#92400E" />
+    <SolidColorBrush x:Key="BranchMarketingBrush" Color="#65A30D" />
   </Application.Resources>
 
   <Application.Styles>
@@ -67,6 +67,33 @@
     <StyleInclude Source="avares://MeineApps.UI/Styles/InputStyles.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Controls/Card.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Controls/FloatingActionButton.axaml" />
+
+    <!-- HandwerkerImperium: Button-Farben auf Craft-Palette ueberschreiben -->
+    <Style Selector="Button.Primary">
+      <Setter Property="Background" Value="{StaticResource CraftPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.Primary:pointerover">
+      <Setter Property="Background" Value="{StaticResource CraftPrimaryLightBrush}" />
+    </Style>
+    <Style Selector="Button.Primary:pressed">
+      <Setter Property="Background" Value="{StaticResource CraftPrimaryDarkBrush}" />
+    </Style>
+    <Style Selector="Button.Secondary">
+      <Setter Property="Background" Value="{StaticResource CraftSecondaryBrush}" />
+    </Style>
+    <Style Selector="Button.Secondary:pointerover">
+      <Setter Property="Background" Value="{StaticResource CraftPrimaryDarkBrush}" />
+    </Style>
+    <Style Selector="Button.Secondary:pressed">
+      <Setter Property="Background" Value="{StaticResource CraftSecondaryBrush}" />
+    </Style>
+    <Style Selector="Button.Outlined">
+      <Setter Property="Foreground" Value="{StaticResource CraftPrimaryBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource CraftPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.Text">
+      <Setter Property="Foreground" Value="{StaticResource CraftPrimaryLightBrush}" />
+    </Style>
   </Application.Styles>
 
 </Application>

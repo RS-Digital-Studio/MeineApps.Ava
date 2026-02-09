@@ -141,7 +141,7 @@
                         VerticalAlignment="Center"
                         HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="ChevronRight" Width="32" Height="32"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
             <!-- Right Wires -->

@@ -155,6 +155,14 @@ public class GoldenScrewsChangedEventArgs(int oldAmount, int newAmount) : EventA
 }
 
 /// <summary>
+/// Event fired when a mini-game result is recorded.
+/// </summary>
+public class MiniGameResultRecordedEventArgs(MiniGameRating rating) : EventArgs
+{
+    public MiniGameRating Rating { get; } = rating;
+}
+
+/// <summary>
 /// Event fired on each game tick (once per second).
 /// </summary>
 public class GameTickEventArgs : EventArgs

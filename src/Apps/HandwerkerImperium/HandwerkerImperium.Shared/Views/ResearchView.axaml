@@ -32,6 +32,7 @@
         <StackPanel Grid.Column="1"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="FlaskOutline" Width="28" Height="28"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
@@ -41,7 +42,8 @@
         </StackPanel>
 
         <!-- Balance Badges -->
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                    VerticalAlignment="Center">
           <!-- Goldschrauben-Badge -->
           <Border Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="8,4">
@@ -153,7 +155,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="8,8"
                   CornerRadius="8"
-                  Background="#6366F1"
+                  Background="{StaticResource BranchManagementBrush}"
                   Command="{Binding SelectManagementBranchCommand}"
                   Opacity="{Binding ManagementTabOpacity}">
             <StackPanel Orientation="Horizontal" Spacing="4"
@@ -172,7 +174,7 @@
                   HorizontalContentAlignment="Center"
                   Padding="8,8"
                   CornerRadius="8"
-                  Background="#22C55E"
+                  Background="{StaticResource BranchMarketingBrush}"
                   Command="{Binding SelectMarketingBranchCommand}"
                   Opacity="{Binding MarketingTabOpacity}">
             <StackPanel Orientation="Horizontal" Spacing="4"
@@ -270,9 +272,7 @@
                       <!-- Goldschrauben fuer Sofort-Finish (ab Level 8) -->
                       <StackPanel Orientation="Horizontal" Spacing="4"
                                   IsVisible="{Binding HasInstantFinishOption}">
-                        <mi:MaterialIcon Kind="LightningBolt" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <mi:MaterialIcon Kind="ScrewFlatTop" Width="12" Height="12"
+                        <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
                                          Foreground="#FFD700" />
                         <TextBlock Text="{Binding InstantFinishScrewCost}"
                                    FontSize="12" FontWeight="SemiBold"

@@ -79,7 +79,7 @@
           <ProgressBar Grid.Column="1"
                        Value="{Binding PaintProgress}"
                        Maximum="1"
-                       Foreground="{DynamicResource PrimaryBrush}"
+                       Foreground="{StaticResource CraftPrimaryLightBrush}"
                        Height="12"
                        Margin="12,0" />
           <TextBlock Grid.Column="2" FontSize="12"

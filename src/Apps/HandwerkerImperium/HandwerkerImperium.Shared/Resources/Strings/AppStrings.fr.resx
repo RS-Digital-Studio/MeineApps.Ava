@@ -1957,4 +1957,62 @@
     <value>Choisir l'atelier</value>
   </data>
 
+  <!-- Worker Profile / Actions -->
+  <data name="Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="AssignedWorkshop" xml:space="preserve">
+    <value>Atelier assign&#233;</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Couleur</value>
+  </data>
+  <data name="Experience" xml:space="preserve">
+    <value>Exp&#233;rience</value>
+  </data>
+  <data name="Fatigue" xml:space="preserve">
+    <value>Fatigue</value>
+  </data>
+  <data name="Mood" xml:space="preserve">
+    <value>Humeur</value>
+  </data>
+  <data name="Personality" xml:space="preserve">
+    <value>Personnalit&#233;</value>
+  </data>
+  <data name="Rest" xml:space="preserve">
+    <value>Se reposer</value>
+  </data>
+  <data name="Specialization" xml:space="preserve">
+    <value>Sp&#233;cialisation</value>
+  </data>
+  <data name="StopResting" xml:space="preserve">
+    <value>Arr&#234;ter le repos</value>
+  </data>
+  <data name="StopTraining" xml:space="preserve">
+    <value>Arr&#234;ter l'entra&#238;nement</value>
+  </data>
+  <data name="Tier" xml:space="preserve">
+    <value>Rang</value>
+  </data>
+  <data name="Train" xml:space="preserve">
+    <value>Entra&#238;ner</value>
+  </data>
+  <data name="Transfer" xml:space="preserve">
+    <value>Transf&#233;rer</value>
+  </data>
+  <data name="Wage" xml:space="preserve">
+    <value>Salaire</value>
+  </data>
+
+  <!-- Painting MiniGame -->
+  <data name="PaintAllMarkedCells" xml:space="preserve">
+    <value>Peignez toutes les cases marqu&#233;es !</value>
+  </data>
+  <data name="StartPainting" xml:space="preserve">
+    <value>Commencer &#224; peindre</value>
+  </data>
+  <data name="TapToPaint" xml:space="preserve">
+    <value>Appuyez pour peindre</value>
+  </data>
+
 </root>

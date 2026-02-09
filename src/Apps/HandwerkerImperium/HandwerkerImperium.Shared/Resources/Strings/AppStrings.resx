@@ -1965,4 +1965,62 @@
     <value>Select Workshop</value>
   </data>
 
+  <!-- Worker Profile / Actions -->
+  <data name="Actions" xml:space="preserve">
+    <value>Actions</value>
+  </data>
+  <data name="AssignedWorkshop" xml:space="preserve">
+    <value>Assigned Workshop</value>
+  </data>
+  <data name="Color" xml:space="preserve">
+    <value>Color</value>
+  </data>
+  <data name="Experience" xml:space="preserve">
+    <value>Experience</value>
+  </data>
+  <data name="Fatigue" xml:space="preserve">
+    <value>Fatigue</value>
+  </data>
+  <data name="Mood" xml:space="preserve">
+    <value>Mood</value>
+  </data>
+  <data name="Personality" xml:space="preserve">
+    <value>Personality</value>
+  </data>
+  <data name="Rest" xml:space="preserve">
+    <value>Rest</value>
+  </data>
+  <data name="Specialization" xml:space="preserve">
+    <value>Specialization</value>
+  </data>
+  <data name="StopResting" xml:space="preserve">
+    <value>Stop Resting</value>
+  </data>
+  <data name="StopTraining" xml:space="preserve">
+    <value>Stop Training</value>
+  </data>
+  <data name="Tier" xml:space="preserve">
+    <value>Tier</value>
+  </data>
+  <data name="Train" xml:space="preserve">
+    <value>Train</value>
+  </data>
+  <data name="Transfer" xml:space="preserve">
+    <value>Transfer</value>
+  </data>
+  <data name="Wage" xml:space="preserve">
+    <value>Wage</value>
+  </data>
+
+  <!-- Painting MiniGame -->
+  <data name="PaintAllMarkedCells" xml:space="preserve">
+    <value>Paint all marked cells!</value>
+  </data>
+  <data name="StartPainting" xml:space="preserve">
+    <value>Start Painting</value>
+  </data>
+  <data name="TapToPaint" xml:space="preserve">
+    <value>Tap to paint</value>
+  </data>
+
 </root>

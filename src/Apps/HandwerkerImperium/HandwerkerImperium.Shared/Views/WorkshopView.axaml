@@ -28,7 +28,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="12">
-          <Border Background="{DynamicResource PrimaryBrush}"
+          <Border Background="{StaticResource CraftPrimaryBrush}"
                   Opacity="0.15"
                   CornerRadius="24"
                   Width="48" Height="48">
@@ -72,7 +72,7 @@
             <Grid ColumnDefinitions="*,Auto">
               <ProgressBar Value="{Binding LevelProgress}"
                            Maximum="1"
-                           Foreground="{DynamicResource PrimaryBrush}"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
                            Height="12" />
               <TextBlock Grid.Column="1"
                          Text="{Binding Level, StringFormat='{}{0}/10'}"
@@ -124,7 +124,7 @@
             <StackPanel Grid.Column="1">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="ChartBar" Width="16" Height="16"
-                                 Foreground="{DynamicResource PrimaryBrush}" />
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}" />
                 <TextBlock Text="{loc:Translate TotalEarned}"
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -137,7 +137,7 @@
             <StackPanel Grid.Row="1">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="ClipboardList" Width="16" Height="16"
-                                 Foreground="{DynamicResource PrimaryBrush}" />
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}" />
                 <TextBlock Text="{loc:Translate Orders}"
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -157,7 +157,7 @@
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="AccountHardHat" Width="20" Height="20"
-                                 Foreground="{DynamicResource PrimaryBrush}" />
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}" />
                 <TextBlock Text="{loc:Translate Workers}"
                            FontSize="18" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -179,7 +179,7 @@
                           Margin="0,4">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                       <mi:MaterialIcon Kind="AccountHardHat" Width="24" Height="24"
-                                       Foreground="{DynamicResource PrimaryBrush}"
+                                       Foreground="{StaticResource CraftPrimaryLightBrush}"
                                        VerticalAlignment="Center" />
                       <StackPanel Grid.Column="1" Margin="12,0">
                         <TextBlock Text="{Binding Name}"

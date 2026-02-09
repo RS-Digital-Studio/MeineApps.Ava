@@ -55,7 +55,7 @@
             <!-- Sound Toggle -->
             <Grid ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Kind="VolumeHigh" Width="24" Height="24"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1"
                          Text="{loc:Translate Sound}"
                          FontSize="14"
@@ -69,7 +69,7 @@
             <!-- Vibration Toggle -->
             <Grid ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Kind="Vibrate" Width="24" Height="24"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1"
                          Text="{loc:Translate Vibration}"
                          FontSize="14"
@@ -87,7 +87,7 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Translate" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Language}"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -189,7 +189,7 @@
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate About}"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />

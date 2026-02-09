@@ -62,7 +62,7 @@
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TierDisplay}"
                            FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource PrimaryBrush}" />
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </StackPanel>
               <StackPanel Spacing="4">
                 <TextBlock Text="{loc:Translate Personality}"
@@ -187,7 +187,7 @@
             </Grid>
             <ProgressBar Value="{Binding XpPercent}"
                          Maximum="100"
-                         Foreground="{DynamicResource PrimaryBrush}"
+                         Foreground="{StaticResource CraftPrimaryLightBrush}"
                          Height="8" />
           </StackPanel>
         </Border>

@@ -33,6 +33,7 @@
         <StackPanel Grid.Column="1"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="AccountGroup" Width="28" Height="28"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
@@ -42,7 +43,8 @@
         </StackPanel>
 
         <!-- Balance Badges -->
-        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                    VerticalAlignment="Center">
           <!-- Goldschrauben-Badge -->
           <Border Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="8,4">
@@ -125,7 +127,7 @@
                                FontSize="16" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center" />
-                    <Border Background="{DynamicResource PrimaryBrush}"
+                    <Border Background="{StaticResource CraftPrimaryBrush}"
                             CornerRadius="4"
                             Padding="8,2">
                       <TextBlock Text="{Binding Tier}"
@@ -234,7 +236,7 @@
           <!-- Overlay-Titel -->
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
             <mi:MaterialIcon Kind="Factory" Width="24" Height="24"
-                             Foreground="{DynamicResource PrimaryBrush}" />
+                             Foreground="{StaticResource CraftPrimaryLightBrush}" />
             <TextBlock Text="{Binding SelectWorkshopTitle}"
                        FontSize="18" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -245,11 +247,11 @@
                   CornerRadius="8" Padding="12,8">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="AccountPlus" Width="18" Height="18"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{Binding PendingWorker.Name}"
                          FontSize="14" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
-              <Border Background="{DynamicResource PrimaryBrush}"
+              <Border Background="{StaticResource CraftPrimaryBrush}"
                       CornerRadius="4" Padding="6,2">
                 <TextBlock Text="{Binding PendingWorker.Tier}"
                            FontSize="11" FontWeight="Bold" Foreground="White" />

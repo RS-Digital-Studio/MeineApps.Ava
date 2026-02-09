@@ -162,7 +162,7 @@
               <ProgressBar Grid.Row="1" Grid.ColumnSpan="2"
                            Value="{Binding Progress}"
                            Maximum="1"
-                           Foreground="{DynamicResource PrimaryBrush}"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
                            Height="8" />
             </Grid>
           </StackPanel>

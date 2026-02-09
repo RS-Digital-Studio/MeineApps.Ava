@@ -18,12 +18,12 @@ public class WorkshopColorConverter : IValueConverter
     private static readonly Dictionary<WorkshopType, Color> Colors = new()
     {
         [WorkshopType.Carpenter] = Color.Parse("#A0522D"),
-        [WorkshopType.Plumber] = Color.Parse("#2563EB"),
-        [WorkshopType.Electrician] = Color.Parse("#EAB308"),
+        [WorkshopType.Plumber] = Color.Parse("#0E7490"),
+        [WorkshopType.Electrician] = Color.Parse("#F97316"),
         [WorkshopType.Painter] = Color.Parse("#EC4899"),
         [WorkshopType.Roofer] = Color.Parse("#DC2626"),
         [WorkshopType.Contractor] = Color.Parse("#EA580C"),
-        [WorkshopType.Architect] = Color.Parse("#6366F1"),
+        [WorkshopType.Architect] = Color.Parse("#78716C"),
         [WorkshopType.GeneralContractor] = Color.Parse("#FFD700")
     };
 

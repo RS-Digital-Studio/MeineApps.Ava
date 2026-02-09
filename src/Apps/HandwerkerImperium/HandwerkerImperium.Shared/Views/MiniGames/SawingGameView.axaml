@@ -102,7 +102,7 @@
                       Margin="{Binding OkZoneMargin}" />
 
               <!-- Good Zone -->
-              <Border Background="{DynamicResource PrimaryBrush}"
+              <Border Background="{StaticResource CraftPrimaryBrush}"
                       Opacity="0.6"
                       CornerRadius="4"
                       HorizontalAlignment="Left"

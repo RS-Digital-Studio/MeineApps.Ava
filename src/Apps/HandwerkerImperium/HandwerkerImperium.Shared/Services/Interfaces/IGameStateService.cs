@@ -48,6 +48,9 @@ public interface IGameStateService
     /// <summary>Fired when golden screws change.</summary>
     event EventHandler<GoldenScrewsChangedEventArgs>? GoldenScrewsChanged;
 
+    /// <summary>Fired when a mini-game result is recorded.</summary>
+    event EventHandler<MiniGameResultRecordedEventArgs>? MiniGameResultRecorded;
+
     // ===================================================================
     // MONEY OPERATIONS
     // ===================================================================

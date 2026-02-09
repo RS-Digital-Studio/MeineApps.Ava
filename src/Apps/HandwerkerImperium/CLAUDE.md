@@ -1,441 +1,107 @@
-# HandwerkerImperium - Avalonia Port
+# HandwerkerImperium (Avalonia)
 
-## Architektur
+> Fuer Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
-```
-HandwerkerImperium/
-├── HandwerkerImperium.Shared/     # net10.0 (Shared code)
-│   ├── App.axaml/.cs              # DI configuration
-│   ├── Models/                    # 16 model files
-│   │   ├── Enums/                 # WorkshopType, MiniGameType, MiniGameResult, OrderDifficulty, AchievementCategory
-│   │   ├── Events/                # GameEvents (all event args)
-│   │   ├── GameState.cs           # Main game state (QuickJobs, DailyChallengeState, Tools, GoldenScrews)
-│   │   ├── Workshop.cs            # Workshop model
-│   │   ├── Worker.cs              # Worker model
-│   │   ├── Order.cs               # Order/contract model
-│   │   ├── QuickJob.cs            # Schnell-Auftraege (15min Rotation)
-│   │   ├── DailyChallenge.cs      # Taegliche Aufgaben (7 Typen + DailyChallengeState)
-│   │   ├── Tool.cs                # Werkzeuge (Saw/PipeWrench/Screwdriver/Paintbrush, 5 Level)
-│   │   ├── DailyReward.cs         # Daily reward config
-│   │   ├── Achievement.cs         # Achievement definitions
-│   │   └── TutorialStep.cs        # Tutorial step definitions
-│   ├── Services/                  # 34 files (17 interfaces + 17 implementations)
-│   │   ├── Interfaces/            # All service interfaces (incl. IWorkerService, IBuildingService, IResearchService, IEventService, IQuickJobService, IDailyChallengeService)
-│   │   ├── GameStateService.cs    # Central game state management
-│   │   ├── SaveGameService.cs     # JSON save/load
-│   │   ├── GameLoopService.cs     # Main game tick loop
-│   │   ├── AchievementService.cs  # Achievement tracking
-│   │   ├── AudioService.cs        # Sound effects (stub)
-│   │   ├── DailyRewardService.cs  # Daily login rewards
-│   │   ├── OfflineProgressService.cs # Offline earnings
-│   │   ├── OrderGeneratorService.cs  # Order generation
-│   │   ├── PrestigeService.cs     # Prestige/rebirth system
-│   │   ├── RewardedAdService.cs   # Ad rewards (simulated on desktop)
-│   │   ├── TutorialService.cs     # Tutorial system
-│   │   ├── QuickJobService.cs     # Schnell-Auftraege (15min Rotation, 5 Jobs)
-│   │   └── DailyChallengeService.cs # Taegliche Aufgaben (3 pro Tag, 7 Typen)
-│   ├── ViewModels/                # 15 ViewModels
-│   │   ├── MainViewModel.cs       # Tab navigation, game init (7 tabs + overlays)
-│   │   ├── AchievementsViewModel.cs
-│   │   ├── OrderViewModel.cs
-│   │   ├── SettingsViewModel.cs
-│   │   ├── ShopViewModel.cs
-│   │   ├── StatisticsViewModel.cs
-│   │   ├── WorkshopViewModel.cs
-│   │   ├── SawingGameViewModel.cs
-│   │   ├── PipePuzzleViewModel.cs
-│   │   ├── WiringGameViewModel.cs
-│   │   ├── PaintingGameViewModel.cs
-│   │   ├── WorkerMarketViewModel.cs  # Worker hiring market
-│   │   ├── WorkerProfileViewModel.cs # Worker detail/management
-│   │   ├── BuildingsViewModel.cs     # Building management
-│   │   └── ResearchViewModel.cs      # Research skill tree
-│   ├── Views/                     # 17 Views (axaml + cs)
-│   │   ├── MainWindow.axaml/.cs
-│   │   ├── MainView.axaml/.cs     # Tab container
-│   │   ├── DashboardView.axaml/.cs
-│   │   ├── WorkshopView.axaml/.cs
-│   │   ├── OrderView.axaml/.cs
-│   │   ├── ShopView.axaml/.cs
-│   │   ├── SettingsView.axaml/.cs
-│   │   ├── StatisticsView.axaml/.cs
-│   │   ├── AchievementsView.axaml/.cs
-│   │   └── MiniGames/
-│   │       ├── SawingGameView.axaml/.cs
-│   │       ├── PipePuzzleView.axaml/.cs
-│   │       ├── WiringGameView.axaml/.cs
-│   │       └── PaintingGameView.axaml/.cs
-│   ├── Converters/                # 7 converters
-│   ├── Controls/                  # (verschoben nach MeineApps.UI.Controls)
-│   ├── Helpers/                   # Icons, MoneyFormatter, AnimationHelper, AsyncExtensions
-│   └── Resources/Strings/        # 6 languages + Designer.cs
-├── HandwerkerImperium.Desktop/    # net10.0 (Windows/Linux)
-└── HandwerkerImperium.Android/    # net10.0-android
-```
+## App-Beschreibung
 
-## Features
-- Idle Tycoon game with 8 workshop types (incl. Architect, GeneralContractor)
-- 4 mini-games (Sawing, Pipe Puzzle, Wiring, Painting)
-- Worker Market (tier-based hiring, personality, talent, specialization, wage)
-- Worker Management (profile, training, rest, mood, fatigue, transfer)
-- Building System (7 building types, level 0-5)
-- Research Tree (3 branches: Tools, Management, Marketing, 15 levels each) + Instant-Finish (Goldschrauben, Lv.8+)
-- Order/contract system with difficulty scaling
-- Quick Jobs (5 Schnell-Auftraege mit 15min Rotation, direkt zu MiniGame)
-- Daily Challenges (3 taegliche Aufgaben aus 7 Typen, Bonus bei Komplett-Abschluss)
-- Tool System (4 Werkzeuge: Saege/Rohrzange/Schraubendreher/Pinsel, Level 0-5, Upgrade mit Goldschrauben)
-- **Goldschrauben** (Premium-Waehrung): Verdient durch Daily Rewards/Challenges/Achievements/Video-Ads, kaufbar per IAP, fuer Tool-Upgrades, Research Instant-Finish, Tier A+S Worker
-- 3-tier prestige system (Bronze/Silver/Gold) with permanent multipliers + prestige shop
-- Achievement system (58 achievements, Reset bei Spielstand-Reset)
-- Daily rewards (inkl. Goldschrauben an Tag 2/4/6/7)
-- Offline earnings
-- Tutorial system
-- JSON save/load to LocalApplicationData
-- Premium (remove ads + extended offline)
-- 6 languages (DE, EN, ES, FR, IT, PT)
-- 5-Tab Navigation (Home, Workers, Research, Shop, Settings) + Stats/Achievements als Dashboard-Icons
+Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Auftraege oder spiele Mini-Games.
 
-## Dependencies
-- MeineApps.Core.Ava (themes, localization, preferences)
-- MeineApps.Core.Premium.Ava (ads, purchases)
-- MeineApps.UI (shared styles/controls)
-- CommunityToolkit.Mvvm
-- Avalonia 11.3.x
+**Version:** 2.0.2 | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Geschlossener Test
 
-## Build
-```bash
-dotnet build HandwerkerImperium.Shared/HandwerkerImperium.Shared.csproj
-dotnet build HandwerkerImperium.Desktop/HandwerkerImperium.Desktop.csproj
-dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
-```
+## Haupt-Features
 
-## Migration Notes
-- MAUI Shell navigation replaced with tab-based state management in MainViewModel
-- All MAUI-specific APIs replaced with Avalonia equivalents
-- DispatcherTimer from Avalonia.Threading (not System.Timers)
-- IDisposable pattern for ViewModels with timers (prevents SIGSEGV)
-- MiniGames Views in separate namespace `HandwerkerImperium.Views.MiniGames`
-- Save game uses `Environment.GetFolderPath(LocalApplicationData)` instead of MAUI FileSystem
-- Audio service is a stub (needs platform-specific implementation)
+- **6 Workshop-Typen** (Tischlerei, Malerei, Sanitaer, Elektrik, Landschaftsbau, Renovierung)
+- **3 Mini-Games** (Pipe Puzzle, Wire Match, Tile Swap)
+- **Worker-System** mit 3 Tiers (Auszubildender, Geselle, Meister)
+- **Goldschrauben-Economy** (Premium-Waehrung fuer Boosts/Unlock)
+- **Research Tree** (16 Upgrades in 4 Kategorien)
+- **Daily Challenges** (3 pro Tag)
+- **Achievements** (24 Erfolge)
+- **Statistiken** (Gesamt-Verdienst, Workshop-Verteilung)
 
-## DataContext Architecture
-- **MainViewModel** holds 14 child VMs as properties (injected via constructor)
-- **MainView.axaml** sets `DataContext="{Binding ShopViewModel}"` etc. on each sub-view
-- **IsVisible bindings** use `#ContentPanel.((vm:MainViewModel)DataContext).IsXxxActive` to resolve against MainViewModel
-- **NavigationRequested** events from child VMs are handled by `OnChildNavigation(route)` in MainViewModel
-- All VMs are registered as **Singleton** in DI (MainViewModel holds references)
-- DashboardView is the only sub-view that directly uses MainViewModel as DataContext
+## Premium & Ads
 
-## Deep Code Review Fixes (06.02.2026)
+### Premium-Modell
+- **Preis**: 4,99 EUR (Lifetime)
+- **Vorteile**: +50% Einkommen, +100% Goldschrauben aus Mini-Games, keine Werbung
 
-### Models
-- **Workshop.cs**: Integer division fix `(Level-1)/2` → `(Level-1)/2.0` in BaseIncomePerWorker
-- **Worker.cs**: GUID no longer regenerated on deserialization (empty default, set only in CreateRandom()), HiredAt no longer initialized to UtcNow on deserialize, international names added
+### Rewarded (7 Placements)
+1. `workshop_speedup` → Workshop 2h ueberbruecken
+2. `workshop_unlock` → Workshop ohne Level freischalten
+3. `worker_hire_bonus` → Extra Worker-Slot
+4. `research_speedup` → Forschung abschliessen
+5. `daily_challenge_retry` → Challenge wiederholen nach Fail
+6. `golden_screw_reward` → 50 Goldschrauben
+7. `achievement_boost` → Achievement Progress +20%
 
-### Services
-- **SaveGameService**: Atomic write (temp file + rename), backup file (.bak), SemaphoreSlim for thread-safe I/O, corruption recovery from backup, all Debug.WriteLine removed
-- **GameStateService**: Full thread safety (locks on AddXp, TryUpgradeWorkshop, TryHireWorker, StartOrder, RecordMiniGameResult, CompleteActiveOrder, CancelActiveOrder, Reset), removed unused _isDirty field
-- **DailyRewardService**: Switched from UTC to local time for daily boundary (IsRewardAvailable, WasStreakBroken, TimeUntilNextReward)
-- **AchievementService**: Added IDisposable with proper event unsubscription
+## Architektur-Besonderheiten
 
-### ViewModels
-- **MainViewModel**: Dialog overlay state properties + commands (LevelUp, OfflineEarnings, DailyReward, AchievementUnlocked), removed Debug.WriteLine/System.Diagnostics
-- **SawingGameViewModel**: ILocalizationService injected, all hardcoded German strings localized (UpdateGameTypeVisuals), _isEnding race condition guard
-- **PipePuzzleViewModel**: _isEnding race condition guard in EndGameAsync + OnTimerTick
-- **WiringGameViewModel**: _isEnding race condition guard in EndGameAsync + OnTimerTick
-- **PaintingGameViewModel**: _isEnding race condition guard in EndGameAsync + OnTimerTick
+### Game Loop
+- **GameLoopService** (60 FPS Timer) → Workshop-Produktion, Worker-Animationen, Mini-Game-State
+- **AutoSaveService** (alle 5 Min) → GameState → SQLite
 
-### Views
-- **MainView.axaml**: 4 dialog overlays (OfflineEarnings, LevelUp, DailyReward, AchievementUnlocked) with Material Design styling
+### Workshop-Typen
+Enum: `Carpentry`, `Painting`, `Plumbing`, `Electrical`, `Landscaping`, `Renovation`
+Jeder Typ hat: `BaseIncome`, `BaseUpgradeCost`, `UnlockLevel`, `UnlockCost`
 
-### Helpers
-- **Icons.cs**: Fixed Roofer duplicate (was same as Home), fixed CurrencyEur duplicate (was same as ChartBar)
-- **AsyncExtensions**: Switched from Debug.WriteLine to Trace.WriteLine (works in Release builds), added StackTrace to log
-- **MoneyFormatter**: Fixed inconsistent threshold in FormatCompact (10_000 → 1_000)
+### Worker-System
+3 Tiers via Enum: `Apprentice` (1x), `Journeyman` (1.5x), `Master` (2.5x)
+`HireWorker()` → kostet Geld, erhoeht Workshop-Effizienz
 
-### Localization (all 6 languages)
-- 20+ new keys: PlaneNow, LayNow, MeasureNow, StopInGreenZone, StopForSmoothSurface, StopAtPerfectMoment, StopAtRightLength, LevelUpTitle, plus previous batch (ResetGameTitle, etc.)
-- 160+ new keys for v2.0 Redesign: Workshop Types (Architect, GeneralContractor), Worker System (12 keys), Worker Profile (22 keys), Worker Tiers (7 keys), Worker Personalities (6 keys), Buildings (8 keys), Building Descriptions (7 keys), Building Effect Formats (11 keys), Research (13 keys), Events (8 keys), Prestige 3-Tier (5 keys), DifficultyExpert, 30 new Achievement keys (60 title+desc entries)
+### Goldschrauben-Quellen
+1. Mini-Games (3-10 Schrauben pro Win)
+2. Daily Challenges (20 Schrauben)
+3. Achievements (5-50 Schrauben)
+4. Rewarded Ad (50 Schrauben)
+5. IAP-Paket (100/500/2000 Schrauben)
 
-### Localization Key Mismatch Fix (07.02.2026)
-- **BuildingType.cs**: `GetLocalizationKey` `Building{type}` -> `type.ToString()` (Canteen statt BuildingCanteen)
-- **BuildingType.cs**: `GetDescriptionKey` `Building{type}Desc` -> `{type}Desc` (CanteenDesc statt BuildingCanteenDesc)
-- **BuildingType.cs**: `GetEffectKey` `Building{type}Effect` -> `{type}Effect` (CanteenEffect statt BuildingCanteenEffect)
-- **WorkerTier.cs**: `GetLocalizationKey` `WorkerTier{tier}` -> `Tier{tier}` (TierF statt WorkerTierF)
-- **WorkerPersonality.cs**: `GetLocalizationKey` `Personality{p}` -> `Person{p}` (PersonSteady statt PersonalitySteady)
-- **ResearchBranch.cs**: `GetLocalizationKey` `Research{b}` -> `Branch{b}` (BranchTools statt ResearchTools)
-- **ResearchBranch.cs**: `GetDescriptionKey` `Research{b}Desc` -> `Branch{b}Desc` (BranchToolsDesc statt ResearchToolsDesc)
-- 7 neue BuildingEffect Keys in 6 Sprachen (CanteenEffect, StorageEffect, OfficeEffect, ShowroomEffect, TrainingCenterEffect, VehicleFleetEffect, WorkshopExtensionEffect) - Fallback fuer ungebaute Gebaeude
-- 3 neue BranchDesc Keys in 6 Sprachen (BranchToolsDesc, BranchManagementDesc, BranchMarketingDesc)
+### Research Tree
+16 Upgrades in 4 Kategorien (Efficiency, Automation, Workers, Special)
+Jedes Research braucht: `GoldScrews` + `ResearchPoints` (verdient via Workshop-Produktion)
 
-### Research Tree Localization (07.02.2026)
-- 92 neue Keys in 6 Sprachen (EN, DE, ES, FR, IT, PT) fuer Research Tree
-- 2 UI Keys: StartResearch, CurrentResearch
-- 45 Research Name Keys: ResearchBetterSaws, ResearchPrecisionTools, ..., ResearchMarketDomination (3 Branches x 15 Levels)
-- 45 Research Description Keys: ResearchBetterSawsDesc, ..., ResearchMarketDominationDesc (Effekt-Beschreibungen)
-- Designer.cs: 92 neue Properties eingefuegt
+### Mini-Games
+- **Pipe Puzzle**: Rohre drehen um Durchfluss zu schaffen (3 Schwierigkeiten)
+- **Wire Match**: Kabel-Farben verbinden (Simon Says mit Timing)
+- **Tile Swap**: 3x3 Tile-Puzzle (Sliding Puzzle)
 
-## Game Loop & Income Fix (06.02.2026)
-- **CRITICAL: Game Loop never started** - `_gameLoopService.Start()` was never called in `MainViewModel.Initialize()` → 0€/s passive income
-- **CRITICAL: No starting worker** - `GameState.CreateNew()` created Carpenter with 0 workers → income was 0 even if loop ran
-- **CRITICAL: No auto-save** - `SaveAsync()` was only called on prestige/import → progress lost on app close
-- **Fix: Game Loop started** in `MainViewModel.Initialize()` after state load
-- **Fix: Starting worker** added to Carpenter in `GameState.CreateNew()`
-- **Fix: Auto-save** every 30 seconds in `GameLoopService.OnTimerTick()`
-- **Fix: Save on pause/stop** in `GameLoopService.Pause()` and `Stop()`
-- **Fix: Window lifecycle** in `MainWindow.axaml.cs` - Activated→Resume, Deactivated→Pause, Closing→Dispose
-- **Fix: Dispose stops game loop** in `MainViewModel.Dispose()`
-- **Fix: Workshop card icons** - Removed broken Opacity binding (made unlocked workshops invisible), Panel→Grid for icon overlay
+## App-spezifische Services
 
-## Order System Fix (06.02.2026)
-- **CRITICAL: Multi-task orders broken** - `OnChildNavigation` used `route.StartsWith("..")` which caught ALL routes starting with "..", including relative routes like `"../minigame/sawing?orderId=X"` for next task navigation → navigated to dashboard instead of next mini-game, order stuck as active, all buttons greyed out
-- **Fix: OnChildNavigation refactored** - Relative routes `"../minigame/..."` are now stripped of `"../"` prefix and re-routed correctly; pure back-navigation only matches exact `".."` or `"../.."`
-- **Fix: Minigame route handling consolidated** - Eliminated duplicated switch statements for minigame navigation into `NavigateToMiniGame()` helper; both `orderId` and `difficulty` query params handled in single code path
-- **Fix: OrderCompleted event subscribed** - MainViewModel now listens to `_gameStateService.OrderCompleted` to reset `HasActiveOrder` and replenish orders when running low
-- **Fix: Double StartOrder removed** - `OrderViewModel.StartOrderAsync()` no longer calls `_gameStateService.StartOrder()` (already called by `MainViewModel.StartOrderAsync`)
+| Service | Zweck |
+|---------|-------|
+| `GameLoopService` | 60 FPS Update-Loop |
+| `AutoSaveService` | Alle 5 Min GameState → SQLite |
+| `DailyChallengeService` | 3 Challenges/Tag generieren (00:00 Reset) |
+| `AchievementService` | 24 Erfolge tracken + Goldschrauben-Rewards |
+| `WorkshopColorConverter` | Enum → Brush Mapping (warme Palette, keine kalten Farben) |
 
-## MiniGame Visual Fixes (06.02.2026)
+## Game Juice
 
-### PipePuzzle
-- **CRITICAL: Puzzle was UNSOLVABLE** - `CheckIfSolved()` passed `Direction.Right` but should be `Direction.Left` → water enters source tile from Left, not Right → TracePath always failed → puzzle could never be solved, always "time up"
-- **Fix: Tile rendering replaced** - Unicode box-drawing characters (┃, ┏, ┣, ╋) replaced with colored Border segments (HasTopOpening, HasBottomOpening, HasLeftOpening, HasRightOpening) → works reliably on all platforms, no RotateTransform binding issues
-- **Fix: OnRotationChanged notifies opening properties** - When tile is rotated, computed opening properties fire PropertyChanged so border segments update
-- **Fix: WrapPanel width constraint** - Added `PuzzleGridWidth` computed property (GridSize * 64) bound to ItemsControl Width → tiles wrap correctly into grid
+| Feature | Implementierung |
+|---------|-----------------|
+| Workshop Cards | Farbiges BorderBrush nach Typ |
+| Worker Avatars | 3 Tier-Icons (Apprentice=Hat, Journeyman=Hammer, Master=Crown) |
+| Golden Screw Icon | Gold-Shimmer Animation (CSS scale+rotate Loop) |
+| Level-Up | CelebrationOverlay mit Confetti (100 Partikel, 2s) |
+| Income | FloatingTextOverlay (gruen, +100px, 1.5s) |
+| Button Hover | Pulse Effect (scale 1.05) |
 
-### PaintingGame
-- **Fix: PaintCell visual updates** - `DisplayColor` and `IsPaintedCorrectly` are computed properties that didn't fire PropertyChanged when `IsPainted` changed → painted cells never showed background color or checkmark. Added `OnIsPaintedChanged` and `OnPaintColorChanged` partial methods
-- **Fix: WrapPanel width constraint** - Added `PaintGridWidth` computed property (GridSize * 54) bound to ItemsControl Width
+## Farbkonsistenz (Craft-Palette)
 
-### WiringGame
-- **Fix: Visual feedback for wire states** - Added `BackgroundColor` (green tint=connected, white highlight=selected, red tint=error), `ContentOpacity` (dimmed when connected), `BorderWidth` (thicker when selected) properties to Wire model
-- **Fix: View updated** - Left/Right wire templates show background color, opacity, border width changes + checkmark icon overlay when connected
-- **Fix: PropertyChanged notifications** - `OnIsSelectedChanged`, `OnIsConnectedChanged`, `OnHasErrorChanged` notify visual computed properties
+- **Alle Buttons** (Primary/Secondary/Outlined) ueberschrieben via App.axaml Style-Overrides → immer Craft-Orange/Braun
+- **Keine `{DynamicResource PrimaryBrush}`** in Views → alles durch `{StaticResource CraftPrimaryBrush/LightBrush}` ersetzt
+- **Workshop-Farben**: Carpenter=#A0522D, Plumber=#0E7490(Teal), Electrician=#F97316(Orange), Painter=#EC4899, Roofer=#DC2626, Contractor=#EA580C, Architect=#78716C(Stone), GeneralContractor=#FFD700
+- **Tier-Farben**: F=Grau, E=Gruen, D=#0E7490(Teal), C=#B45309(DarkOrange), B=Amber, A=Rot, S=Gold
+- **Branch-Farben**: Tools=#EA580C, Management=#92400E(Braun), Marketing=#65A30D(Lime)
 
-## Prestige System Rewrite (07.02.2026)
-- **IPrestigeService**: New 3-tier API: `CanPrestige(PrestigeTier)`, `GetPrestigePoints(decimal)`, `DoPrestige(PrestigeTier)`, `GetShopItems()`, `BuyShopItem(string)`, `GetPermanentMultiplier()`
-- **PrestigeService**: Full rewrite for Bronze/Silver/Gold tiers, prestige point calculation with tier multiplier, shop item purchase, reset logic per tier
-- **Reset preserves**: Achievements, Premium, Settings, PrestigeData, Tutorial, TotalMoneyEarned, TotalPlayTimeSeconds. Silver keeps Research. Gold keeps Shop items.
-- **Reset creates**: Carpenter Level 1 with 1 worker (tier from shop bonus), starting money 100 + shop bonus
-- **SaveGameService**: v1→v2 migration in LoadFromFileAsync (calls GameState.MigrateFromV1 if Version < 2)
-- **StatisticsViewModel**: Updated to use new IPrestigeService API (3-tier system, prestige points display)
+## Daily Challenge Tracking
 
-## v2.0 Redesign Integration (07.02.2026)
-- **App.axaml.cs**: 4 neue Services (IWorkerService, IBuildingService, IResearchService, IEventService) + 4 neue VMs registriert
-- **MainViewModel**: 14 child VMs (4 neue: WorkerMarketVM, WorkerProfileVM, BuildingsVM, ResearchVM)
-- **MainViewModel**: 4 neue Tab/Overlay States (IsWorkerMarketActive, IsWorkerProfileActive, IsBuildingsActive, IsResearchActive)
-- **MainViewModel**: IsTabBarVisible prueft alle neuen Overlays, DeactivateAllTabs setzt alle zurueck
-- **MainViewModel**: 3 neue Tab-Commands (SelectWorkerMarketTab, SelectBuildingsTab, SelectResearchTab)
-- **MainViewModel**: "worker?id=X" Navigation-Route fuer Worker-Profil
-- **MainViewModel**: GetWorkshopIconKind erweitert (Architect=Compass, GeneralContractor=HardHat)
-- **MainViewModel**: IncomePerSecond/IncomeDisplay nutzt NetIncomePerSecond statt TotalIncomePerSecond
-- **MainViewModel**: WorkshopDisplayModel.LevelProgress max 50 statt 10
-- **MainViewModel**: EventHandler<string> wrapper fuer neue VM NavigationRequested Events (vs Action<string> der alten VMs)
-- **MainView.axaml**: 4 neue Views eingebunden (WorkerMarket, WorkerProfile, Buildings, Research)
-- **MainView.axaml**: Tab-Bar von 5 auf 7 Tabs (Home, Workers, Research, Stats, Achievements, Shop, Settings)
-- **AVLN2000 Fixes**: BoolConverters.FalseIsVisible -> DisplayOpacity Property (Buildings+Research), Extension Method Bindings -> computed Properties (Worker.PersonalityIcon, Worker.HiringCost)
-- Build: 0 Fehler
+- `MiniGameResultRecorded` Event auf `IGameStateService` → `DailyChallengeService` subscribt automatisch
+- Jedes MiniGame-Ergebnis trackt `PlayMiniGames` + `AchieveMinigameScore` Challenges
+- Score-Mapping: Perfect=100%, Good=75%, Ok=50%, Miss=0%
 
-## MiniGame Difficulty Tuning (07.02.2026)
+## Changelog Highlights
 
-### PipePuzzle
-- **CRITICAL: Corner Rotation Mapping komplett falsch** - Alle 4 Corner-Rotationen waren falsch zugeordnet
-  - Basis-Corner (Rotation 0) hat Oeffnungen: Right + Down
-  - Fix: (Right,Down)→0, (Left,Down)→90, (Left,Up)→180, (Right,Up)→270
-- **Tile-Groesse**: 60→52px (matching GridCols * 56 Berechnung mit 2px Margin)
-- **Pipe-Segmente**: 14→12px breit, 30→26px hoch
-- **Lock-Indicator**: Kleines Schloss-Icon (10x10) oben rechts bei Source/Drain Tiles
-- **Zeiten reduziert**: Easy 50→40s, Medium 70→55s, Hard 100→75s, Expert 120→95s
-
-### SawingGame
-- **MARKER_SPEED**: 0.015→0.022 (~47% schneller)
-
-### OrderDifficulty (alle Minispiele)
-- **Perfect Zones kleiner**: Easy 0.25→0.20, Medium 0.15→0.12, Hard 0.12→0.09, Expert 0.08→0.06
-- **Speed Multiplier hoeher**: Easy 0.8→0.9, Medium 1.0→1.2, Hard 1.4→1.6, Expert 1.8→2.2
-
-### WiringGame
-- **Zeiten reduziert**: Easy 15→12s, Medium 18→15s, Hard 22→18s
-- **Expert-Schwierigkeit**: 6 Kabel, 22s (neu hinzugefuegt)
-
-### PaintingGame
-- **Zeiten reduziert**: Easy 25→20s, Medium 35→28s, Hard 40→32s
-- **Expert-Schwierigkeit**: 6x6 Grid, 38s (neu hinzugefuegt)
-
-## Research View Redesign (07.02.2026)
-- **Layout**: 3-Spalten → Tabbed Single-Column (zu schmal auf Handys)
-- **Tab-Selector**: 3 Buttons (Tools/Management/Marketing) mit Opacity-basiertem Active-State (1.0 vs 0.5)
-- **Branch Description**: Text unter Tabs erklaert den ausgewaehlten Zweig
-- **Research Cards**: Level-Badge (Lv.X), Name (14px), Description, Kosten+Icon, Dauer+Icon, Progress Bar, Start-Button
-- **ResearchViewModel**: SelectedBranch, SelectedBranchDescription, SelectedTab Properties + 3 Tab-Commands + Tab-Opacity Computed Properties
-- **ResearchDisplayItem**: LevelDisplay Property ($"Lv.{Level}")
-- **MainViewModel Fix**: OrderViewModel.AlertRequested Subscription entfernt (existiert nicht, nur ConfirmationRequested)
-
-## Game Reset Fix (07.02.2026)
-- **Generisches Alert/Confirm Dialog System**: MainViewModel nutzt ShowGenericAlert/ShowGenericConfirm fuer Child-VM Events
-- **Spielstand loeschen**: SettingsViewModel → ConfirmationRequested → MainViewModel zeigt Dialog → GameStateService.Reset() + Neu-Initialisierung
-
-## UI Redesign + Neue Features (07.02.2026)
-
-### Tab-Bar Redesign
-- **7→5 Tabs**: Home, Workers, Research, Shop, Settings
-- **Stats + Achievements**: Als Icon-Buttons im Dashboard-Header (ChartBar + Trophy Icons)
-- **Design**: LinearGradientBrush Hintergrund (BackgroundColor→SurfaceColor), Workshop-Cards mit BoxShadow + RadialGradientBrush, kompaktere Research-Cards
-
-### Quick Jobs
-- **QuickJob Model**: WorkshopType, MiniGameType, Reward, XP, 15min Rotation
-- **QuickJobService**: 5 Jobs generiert, Level-skalierte Rewards (20+Level*5 max 100€, 5+Level*2 max 25 XP)
-- **8 TitleKeys**: QuickRepair, QuickFix, ExpressService, SmallOrder, QuickMeasure, QuickInstall, QuickPaint, QuickCheck
-- **Dashboard**: Quick Jobs Sektion mit Timer-Display + Start-Buttons + Completed-Indicator
-- **MiniGame-Rueckkehr**: QuickJob als completed markiert, Reward+XP vergeben, DailyChallenge benachrichtigt
-
-### Daily Challenges
-- **DailyChallenge Model**: 7 Typen (CompleteOrders, EarnMoney, UpgradeWorkshop, HireWorker, CompleteQuickJob, PlayMiniGames, AchieveMinigameScore)
-- **DailyChallengeService**: 3 taegliche Challenges, Level-basierte Targets, Auto-Tracking via GameState Events, IDisposable
-- **500€ Bonus** bei Komplett-Abschluss aller 3 Challenges
-- **Dashboard**: Collapsible Challenge-Banner mit ProgressBars + Claim-Buttons
-
-### Tool System
-- **Tool Model**: 4 Typen (Saw/PipeWrench/Screwdriver/Paintbrush), Level 0-5
-- **ZoneBonus** (Saw): +5% bis +25% Zielzone in SawingGame
-- **TimeBonus** (PipeWrench/Screwdriver/Paintbrush): +5s bis +15s in PipePuzzle/WiringGame/PaintingGame
-- **UpgradeCost**: 50→150→400→1000→2500€
-- **ShopView**: Werkzeuge-Sektion mit Icon, Level, EffectDescription, Upgrade-Button
-- **ShopViewModel**: LoadTools() + UpgradeToolCommand
-
-### Balancing
-- **Startgeld**: 100€→250€
-- **Workshop Lv.1→2 Upgrade**: 200€→100€ (erstes Upgrade guenstiger)
-- **Achievement Reset**: Achievements werden beim Spielstand-Zuruecksetzen zurueckgesetzt
-
-### Lokalisierung
-- 28 neue Keys in 6 Sprachen (QuickJobs, DailyChallenges, Tools, etc.)
-
-## Bugfixes (07.02.2026 - Post-Release)
-
-### Lokalisierung
-- **DailyChallengeService**: Englische Fallback-Strings entfernt (`?? "English"` → direkte GetString-Aufrufe)
-- **MainViewModel**: LanguageChanged-Handler aktualisiert QuickJobs, Challenges, Workshops und alle Child-VMs
-- **Clean Build**: Satellite-Assembly-Regenerierung fuer korrekte Sprachaufloesung
-
-### UI/Design
-- **MainView.axaml**: Mehrschichtiger Hintergrund (4 Layer: vertikaler Base-Gradient + Primary-Schein oben + Amber/Gold-Schein unten + Secondary-Akzent rechts) statt langweiligem 2-Punkt-Gradient
-- **AchievementsView.axaml**: Bottom-Margin (0,0,0,60) auf ItemsControl → kann bis zum Ende scrollen
-- **DashboardView.axaml**: UnlockDisplay statt "Lvl X" fuer Workshop-Karten → zeigt "Prestige X" fuer Architect/GU
-
-### Workshop Progress
-- **MainViewModel**: Explizites RefreshWorkshops() nach UpgradeWorkshop (zusaetzlich zum Event-Handler) → Progress-Bar aktualisiert zuverlässig
-- **WorkshopDisplayModel**: RequiredPrestige + UnlockDisplay computed Property
-
-### Forschungs-Timer
-- **MainViewModel.OnGameTick**: ResearchViewModel.UpdateTimer() wird bei aktivem Research aufgerufen → Timer laeuft in Echtzeit statt nur bei Seitenwechsel
-
-### Arbeitermarkt
-- **WorkerMarketViewModel**: Slot-Filter → zeigt nur Arbeiter wenn Workshops mit freien Plaetzen existieren
-- **WorkerMarketViewModel**: Video-Ad-Refresh (IRewardedAdService.ShowAdAsync()) statt freiem Refresh
-- **WorkerMarketViewModel**: HasAvailableSlots + NoSlotsMessage Properties
-- **WorkerMarketView.axaml**: "Keine freien Plaetze" Info-Banner wenn alle Workshops voll
-- **WorkerMarketView.axaml**: Video-Icon statt Refresh-Icon beim Markt-Aktualisieren Button
-- **EUR-Bug**: `\u20AC` → echtes `€` Zeichen in CurrentBalance Default
-
-### Lokalisierung (neu)
-- 2 neue resx-Keys in 6 Sprachen: Info, WatchAdToRefresh
-
-## Goldschrauben - Premium-Waehrung (07.02.2026)
-
-### GameState + GameStateService (Phase 1)
-- **GameState.cs**: 3 neue Properties (`GoldenScrews`, `TotalGoldenScrewsEarned`, `TotalGoldenScrewsSpent`)
-- **GameEvents.cs**: `GoldenScrewsChangedEventArgs` (OldAmount, NewAmount)
-- **IGameStateService.cs**: `GoldenScrewsChanged` Event, `AddGoldenScrews(int)`, `TrySpendGoldenScrews(int)`, `CanAffordGoldenScrews(int)`
-- **GameStateService.cs**: Implementierung mit lock-Pattern (analog Money)
-
-### Werkzeuge auf Goldschrauben (Phase 2)
-- **Tool.cs**: `UpgradeCostScrews` Property (Level 0→5, 1→15, 2→35, 3→70, 4→120)
-- **ShopViewModel.cs**: Tool-Upgrades kosten Goldschrauben statt Euro, `GoldenScrewsBalance` Property
-- **ShopView.axaml**: ScrewFlatTop-Icon + Zahl statt Euro bei Tool-Upgrades, Goldschrauben-Badge im Header
-
-### Goldschrauben verdienen (Phase 3)
-- **DailyReward.cs**: Tag 2/4/6/7 geben 2/3/5/10 Goldschrauben
-- **DailyChallengeService.cs**: GoldenScrewReward (1-2 pro Challenge, Level-abhaengig, gedeckelt auf 2), AllCompletedBonusScrews=10
-- **Achievement.cs**: GoldenScrewReward fuer schwierige Achievements (Prestige: 20/50/100, 1M/100M: 15/30, Orders: 10/25, etc.)
-- **ShopViewModel.cs**: Video-Ad "golden_screws_ad" gibt 8 Goldschrauben
-- **ShopViewModel.cs**: 3 IAP-Pakete (golden_screws_75/200/600 fuer 0.99/2.49/4.99 EUR)
-
-### UI - Dashboard + WorkerMarket (Phase 4)
-- **DashboardView.axaml**: Goldschrauben-Badge im Header (ScrewFlatTop #FFD700)
-- **DashboardView.axaml**: Level-Fortschrittsbalken kompakter (Width 60, Height 4, "Lv.{0}")
-- **MainViewModel.cs**: `GoldenScrewsDisplay` Property + `GoldenScrewsChanged` Event-Handler
-- **WorkerMarketView.axaml**: Goldschrauben-Badge im Header
-
-### Research Instant-Finish (Phase 5+)
-- **Research.cs**: `InstantFinishScrewCost` (Level 8=15, 9=25, 10=40, 11=60, 12=90, 13=120, 14=150, 15=180), `CanInstantFinish`
-- **IResearchService.cs**: `InstantFinishResearch()` Methode
-- **ResearchService.cs**: Implementierung (CanInstantFinish + CanAffordGoldenScrews → sofortiger Abschluss)
-- **ResearchViewModel.cs**: `GoldenScrewsDisplay`, `CanInstantFinish`, `InstantFinishCost` Properties + `InstantFinishResearchCommand`
-- **ResearchDisplayItem**: `InstantFinishScrewCost`, `HasInstantFinishOption`
-- **ResearchView.axaml**: Goldschrauben-Badge im Header, Sofort-Fertigstellen-Button bei aktiver Forschung, Kostenanzeige auf Cards (Lv.8+)
-
-### Worker Goldschrauben (Phase 5+)
-- **WorkerTier.cs**: `GetHiringScrewCost()` Extension (Tier A=15, Tier S=40, Rest=0)
-- **Worker.cs**: `HiringScrewCost` computed Property
-- **WorkerService.cs**: `HireWorker` prueft+verbraucht Goldschrauben fuer Tier A+S
-- **WorkerMarketViewModel.cs**: Goldschrauben-Check vor Einstellung (NotEnoughScrews Alert)
-- **WorkerMarketView.axaml**: Goldschrauben-Kosten bei Tier A+S Arbeitern angezeigt
-
-### Lokalisierung
-- ~18 neue/umbenannte resx-Keys in 6 Sprachen (GoldenScrews, ShopGoldenScrews75/200/600, InstantFinish, HiringScrewCost, etc.)
-- NextRotation Duplikate in 5 resx-Dateien entfernt (MSB3568 Fix)
-
-## MainViewModel Event-Fixes (07.02.2026)
-- **Fehlende StatisticsViewModel.AlertRequested Subscription**: Event existierte aber wurde nie abonniert → Alerts aus StatisticsVM kamen nie an
-- **OnLanguageChanged erweitert**: `BuildingsViewModel.UpdateLocalizedTexts()` + `WorkerProfileViewModel.UpdateLocalizedTexts()` fehlten
-- **Memory Leak behoben**: Alle AlertRequested/ConfirmationRequested Subscriptions (12 Events) nutzten anonyme Lambdas die in Dispose() nicht unsubscribed werden konnten → gespeicherte `_alertHandler`/`_confirmHandler` Delegates + vollstaendiges Unsubscribe in Dispose()
-
-## FloatingTextOverlay - Game Juice (08.02.2026)
-- **FloatingTextOverlay.cs + CelebrationOverlay.cs**: Urspruenglich in Controls/ erstellt, dann nach MeineApps.UI.Controls verschoben (xmlns geaendert auf `using:MeineApps.UI.Controls`)
-- **Funktionsweise**: DispatcherTimer (~60fps), CubicEaseOut Bewegung (80px nach oben), Opacity-Fadeout (100% bis 30% Fortschritt, dann linear auf 0%)
-- **DashboardView.axaml**: FloatingTextCanvas ueber dem ScrollViewer (Grid.Row=1, ZIndex=10)
-- **DashboardView.axaml.cs**: FloatingTextRequested Event von MainViewModel abonniert, Farbe je Kategorie (money=#22C55E, xp/golden_screws=#FFD700, level=#D97706)
-- **MainViewModel.OnGameTick**: FloatingText alle 3 Ticks bei Income > 0 und Dashboard aktiv ($"+{income:N0}€")
-- **MainViewModel.UpgradeWorkshop**: FloatingText "+1 Level!" bei erfolgreichem Workshop-Upgrade
-
-## View-Redesign Craft-Farben (08.02.2026)
-- **5 Views redesigned** mit CraftPrimary/CraftPrimaryLight/CraftGold statt generischem PrimaryBrush
-- **ResearchView**: Header Gradient (#92400E→#451A03), Branch-Tabs farbig (Tools=#EA580C Orange, Management=#6366F1 Indigo, Marketing=#22C55E Gruen) mit Icons, Level-Badge CraftPrimary, ProgressBars CraftPrimaryLight
-- **StatisticsView**: Header Gradient, 4 Section-Headers (Player, MiniGames, Workshops, WorkshopDetails) mit CraftPrimaryLightBrush, PerfectRatings/PerfectRate CraftPrimaryLight, Refresh-Icon CraftPrimaryLight
-- **AchievementsView**: Header Gradient mit TrophyVariant-Icon (CraftGold), Progress-Badge mit Gold-Farbe, Overall Progress + Achievement-ProgressBars CraftPrimaryLight
-- **WorkerMarketView**: Header Gradient, Title+Icon CraftPrimaryLight, Rotation Timer CraftPrimaryLight
-- **ShopView**: Hero-Banner Header (CraftPrimary→CraftSecondary Gradient, ScrewFlatTop Gold-Icon), Balance-Badges mit halbtransparentem schwarzen Hintergrund, Premium-Status Gradient, Shop-Item-Icons Craft-Gradient, Tool-Icons Craft-Gradient, Tool-Level CraftPrimaryLight, Upgrade-Buttons CraftPrimary Gradient, Tools-Section-Header mit CraftPrimary Badge, Info-Header CraftPrimaryLight, Ad-Badge CraftPrimaryLight
-- Build: 0 Fehler, 0 Warnungen
-
-## Worker-System Bugfixes (08.02.2026)
-
-### Bug 1: Arbeitermarkt leer wenn alle Workshops voll
-- **WorkerMarketViewModel.LoadMarket()**: Markt zeigt IMMER Arbeiter an (AvailableWorkers wird immer gesetzt), nicht nur wenn HasAvailableSlots=true
-- **WorkerMarketView.axaml**: `IsVisible="{Binding HasAvailableSlots}"` vom ItemsControl entfernt
-- **WorkerMarketView.axaml**: Info-Banner "Keine freien Plaetze" bleibt als gelbe Warnung (AlertCircleOutline-Icon), blockiert nicht mehr den Markt
-- **Hire-Button**: `IsEnabled="{Binding HasAvailableSlots}"` per Ancestor-Binding → Button ist disabled wenn keine Plaetze frei
-- **UpdateCanHire()**: Beruecksichtigt jetzt HasAvailableSlots (CanHire=false wenn keine Plaetze)
-
-### Bug 2: Workshop "Arbeiter einstellen" gibt zufaelligen Arbeiter
-- **WorkshopViewModel**: `HireWorkerAsync()` entfernt (erstellte zufaelligen Worker via TryHireWorker)
-- **WorkshopViewModel**: Neues `HireWorkerFromMarketCommand` → navigiert zum Arbeitermarkt via `NavigationRequested("workers")`
-- **WorkshopView.axaml**: Hire-Button nutzt HireWorkerFromMarketCommand, zeigt AccountPlus-Icon + lokalisierter Text
-- **MainViewModel.OnChildNavigation**: Route "workers" → `SelectWorkerMarketTab()` (oeffnet den Arbeitermarkt)
-
-### Bug 3: Worker wird auto-assigned ohne Workshop-Wahl
-- **WorkerMarketViewModel**: Neues Workshop-Auswahl-System mit ShowWorkshopSelection, PendingWorker, WorkshopSelections
-- **HireWorker()**: Zeigt Workshop-Auswahl-Overlay statt automatischer Zuweisung an ersten freien Workshop
-- **ConfirmWorkshopSelection(WorkshopSelectionItem)**: Weist Worker dem gewaehlten Workshop zu, aktualisiert HasAvailableSlots
-- **CancelWorkshopSelection()**: Schliesst das Overlay
-- **WorkshopSelectionItem**: Neue Klasse mit Type, Name, WorkerInfo ("3/5 Arbeiter"), HasFreeSlots
-- **WorkerMarketView.axaml**: Workshop-Auswahl-Overlay (ZIndex=50) mit Worker-Info, Workshop-Liste (Outlined-Buttons), Abbrechen
-
-### Lokalisierung
-- 1 neuer Key `SelectWorkshop` in 6 Sprachen (EN: Select Workshop, DE: Werkstatt waehlen, ES: Seleccionar taller, FR: Choisir l'atelier, IT: Seleziona officina, PT: Selecionar oficina)
-- Designer.cs: SelectWorkshop Property
-- Build: Shared + Desktop + Android 0 Fehler
-
-## Version
-- v2.0.2 (vc7) - Release mit Store Assets
-- v2.0.1 (vc6) - Bugfixes, Deep Reviews
-- v2.0.0 (vc5) - Avalonia port
+- **v2.0.2 (09.02.2026)**: Daily-Challenge-Bug: MiniGame-Ergebnisse werden jetzt via Event an DailyChallengeService gemeldet; 18 fehlende Lokalisierungs-Keys in 6 Sprachen ergaenzt; Farbkonsistenz-Fix: Alle Views auf warme Craft-Palette, Button-Style-Overrides, Workshop/Tier/Branch-Farben waermer
+- **v2.0.2 (08.02.2026)**: Banner-Ad Overlap-Fix, WorkshopColorConverter, CelebrationOverlay + FloatingTextOverlay, Golden Screw Shimmer
+- **v2.0.1 (07.02.2026)**: Rewarded Ads 7 Placements, Premium-Modell Sync (4,99)
+- **v2.0.0 (05.02.2026)**: Initial Avalonia Migration, Research Tree + Mini-Games, Worker-System mit 3 Tiers

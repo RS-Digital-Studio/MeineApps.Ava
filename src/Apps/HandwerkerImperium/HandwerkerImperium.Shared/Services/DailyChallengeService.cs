@@ -1,4 +1,5 @@
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Models.Events;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
@@ -31,6 +32,7 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
         _gameStateService.MoneyChanged += OnMoneyChanged;
         _gameStateService.WorkshopUpgraded += OnWorkshopUpgraded;
         _gameStateService.WorkerHired += OnWorkerHired;
+        _gameStateService.MiniGameResultRecorded += OnMiniGameResultRecorded;
     }
 
     public bool AreAllCompleted
@@ -285,6 +287,19 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
         IncrementChallenge(DailyChallengeType.HireWorker);
     }
 
+    private void OnMiniGameResultRecorded(object? sender, MiniGameResultRecordedEventArgs e)
+    {
+        // Score-Prozent basierend auf Rating berechnen
+        int scorePercent = e.Rating switch
+        {
+            MiniGameRating.Perfect => 100,
+            MiniGameRating.Good => 75,
+            MiniGameRating.Ok => 50,
+            _ => 0
+        };
+        OnMiniGamePlayed(scorePercent);
+    }
+
     /// <summary>
     /// Wird extern aufgerufen wenn ein QuickJob abgeschlossen wird.
     /// </summary>
@@ -313,6 +328,7 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
         _gameStateService.MoneyChanged -= OnMoneyChanged;
         _gameStateService.WorkshopUpgraded -= OnWorkshopUpgraded;
         _gameStateService.WorkerHired -= OnWorkerHired;
+        _gameStateService.MiniGameResultRecorded -= OnMiniGameResultRecorded;
 
         _disposed = true;
         GC.SuppressFinalize(this);

@@ -39,8 +39,9 @@ public sealed class AdMobHelper : IDisposable
     /// Request GDPR consent via UMP (User Messaging Platform).
     /// Shows consent form if required for EU users.
     /// Call after MobileAds.Initialize.
+    /// onComplete wird aufgerufen wenn Consent-Flow abgeschlossen (oder bei Fehler).
     /// </summary>
-    public static void RequestConsent(Activity activity)
+    public static void RequestConsent(Activity activity, Action? onComplete = null)
     {
         try
         {
@@ -58,14 +59,30 @@ public sealed class AdMobHelper : IDisposable
                     {
                         UserMessagingPlatform.LoadAndShowConsentFormIfRequired(
                             activity,
-                            new ConsentFormDismissedListener(_ => { }));
+                            new ConsentFormDismissedListener(error =>
+                            {
+                                if (error != null)
+                                    Android.Util.Log.Warn("AdMobHelper", $"Consent form dismissed with error: {error.Message}");
+                                onComplete?.Invoke();
+                            }));
+                    }
+                    else
+                    {
+                        // Kein Formular noetig (z.B. ausserhalb EU)
+                        onComplete?.Invoke();
                     }
                 }),
-                new ConsentFailureListener(_ => { }));
+                new ConsentFailureListener(error =>
+                {
+                    Android.Util.Log.Error("AdMobHelper", $"Consent info update failed: {error?.Message}");
+                    // Auch bei Fehler Ads versuchen zu laden
+                    onComplete?.Invoke();
+                }));
         }
         catch (Exception ex)
         {
             Android.Util.Log.Error("AdMobHelper", $"RequestConsent failed: {ex.Message}");
+            onComplete?.Invoke();
         }
     }
 
@@ -120,15 +137,28 @@ public sealed class AdMobHelper : IDisposable
                 Android.Util.Log.Warn("AdMobHelper", $"Inset listener failed: {ex.Message}");
             }
 
-            // Load the first ad
-            _adView.LoadAd(new AdRequest.Builder().Build());
-
-            // Notify ad service that banner is visible
+            // Banner wird NICHT sofort geladen - erst nach Consent via LoadBannerAd()
+            // Notify ad service that banner is visible (Layout ist bereit)
             _adService.ShowBanner();
         }
         catch (Exception ex)
         {
             Android.Util.Log.Error("AdMobHelper", $"AttachToActivity failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Laedt den Banner-Ad. Erst aufrufen wenn Consent abgeschlossen ist.
+    /// </summary>
+    public void LoadBannerAd()
+    {
+        try
+        {
+            _adView?.LoadAd(new AdRequest.Builder().Build());
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error("AdMobHelper", $"LoadBannerAd failed: {ex.Message}");
         }
     }
 

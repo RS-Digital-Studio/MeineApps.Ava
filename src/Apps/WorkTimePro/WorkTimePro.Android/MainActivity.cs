@@ -39,18 +39,24 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         base.OnCreate(savedInstanceState);
 
-        // Google Mobile Ads + GDPR consent
+        // Google Mobile Ads initialisieren
         AdMobHelper.Initialize(this);
-        AdMobHelper.RequestConsent(this);
 
-        // Banner ad above the tab bar (56dp tab bar height)
+        // Banner-Ad Layout vorbereiten (laedt noch nicht)
         _adMobHelper = new AdMobHelper();
         var adService = App.Services.GetRequiredService<IAdService>();
         var purchaseService = App.Services.GetRequiredService<IPurchaseService>();
         _adMobHelper.AttachToActivity(this, AdConfig.GetBannerAdUnitId("WorkTimePro"), adService, purchaseService, 56);
 
-        // Rewarded Ad laden (nach DI-Build)
-        _rewardedAdHelper.Load(this, AdConfig.GetRewardedAdUnitId("WorkTimePro"));
+        // GDPR Consent → erst danach Ads laden
+        var activity = this;
+        var rewardedHelper = _rewardedAdHelper;
+        var adHelper = _adMobHelper;
+        AdMobHelper.RequestConsent(this, onComplete: () =>
+        {
+            adHelper.LoadBannerAd();
+            rewardedHelper.Load(activity, AdConfig.GetRewardedAdUnitId("WorkTimePro"));
+        });
     }
 
     protected override void OnResume()

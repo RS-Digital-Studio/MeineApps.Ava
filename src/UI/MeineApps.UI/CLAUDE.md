@@ -7,6 +7,8 @@ Wiederverwendbare UI-Komponenten für alle Avalonia Apps:
 - FloatingActionButton (FAB)
 - WheelPicker (Drum-Style Swipe-Zahlen-Picker)
 - SplashOverlay (App-Start Animation)
+- FloatingTextOverlay (Game Juice: Floating Text Animation)
+- CelebrationOverlay (Game Juice: Confetti Partikel-Effekt)
 - Button Styles
 - Text Styles
 - Input Styles
@@ -23,7 +25,9 @@ MeineApps.UI/
 │   ├── WheelPicker.axaml           # Drum-style swipe number picker
 │   ├── WheelPicker.axaml.cs
 │   ├── SplashOverlay.axaml         # App startup splash with icon + loading bar
-│   └── SplashOverlay.axaml.cs
+│   ├── SplashOverlay.axaml.cs
+│   ├── FloatingTextOverlay.cs      # Floating text animation (Game Juice)
+│   └── CelebrationOverlay.cs       # Confetti particle effect (Game Juice)
 └── Styles/
     ├── ButtonStyles.axaml
     ├── TextStyles.axaml
@@ -181,3 +185,46 @@ xmlns:splash="using:MeineApps.UI.Controls"
 
 <!-- ComboBox, NumericUpDown etc. inherit styles automatically -->
 ```
+
+## FloatingTextOverlay (Game Juice)
+
+Canvas-basiertes Control fuer animierten Floating-Text (schwebt nach oben, fadet aus).
+
+```axaml
+xmlns:controls="using:MeineApps.UI.Controls"
+
+<controls:FloatingTextOverlay x:Name="FloatingTextCanvas"
+                              Grid.RowSpan="99" ZIndex="15"
+                              IsHitTestVisible="False" />
+```
+
+```csharp
+// Im Code-Behind:
+FloatingTextCanvas.ShowFloatingText("Gespeichert!", x, y, Color.Parse("#22C55E"), fontSize: 16);
+```
+
+- 1.5s Animation, 80px Aufwaertsbewegung, CubicEaseOut
+- Fade-Out: 100% bis 30%, dann linear auf 0%
+- IsHitTestVisible=false, ClipToBounds=true
+- Kann mehrfach gleichzeitig aufgerufen werden (jeder Aufruf erstellt neuen TextBlock)
+
+## CelebrationOverlay (Game Juice)
+
+Canvas-basiertes Confetti-Partikel-System mit Border-Controls (kein SkiaSharp noetig).
+
+```axaml
+<controls:CelebrationOverlay x:Name="CelebrationCanvas"
+                              Grid.RowSpan="99" ZIndex="16"
+                              IsHitTestVisible="False" />
+```
+
+```csharp
+// Im Code-Behind:
+CelebrationCanvas.ShowConfetti();
+```
+
+- 50 Border-Partikel-Pool (keine GC-Allokationen pro Animation)
+- 5 Farben: Gold, Amber, Rot, Gruen, Blau
+- 2.5s Animation mit Schwerkraft, sin-Schwankung und Rotation
+- Fade-Out in letzten 30% der Animation
+- ~60fps via DispatcherTimer

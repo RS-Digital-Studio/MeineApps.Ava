@@ -9,36 +9,44 @@
   <Grid RowDefinitions="Auto,*">
 
     <!-- ================================================================= -->
-    <!-- HEADER                                                            -->
+    <!-- HEADER - Hero Banner                                              -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
-            Classes="CardElevated"
-            Padding="16,12"
+            Padding="16,16"
             CornerRadius="0,0,12,12">
-      <Grid ColumnDefinitions="Auto,*,Auto">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#D97706" Offset="0" />
+          <GradientStop Color="#92400E" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" RowSpacing="8">
         <!-- Back Button -->
         <Button Classes="Text"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           Foreground="White" />
         </Button>
 
-        <!-- Title (centered) -->
+        <!-- Title + Schrauben-Icon -->
         <StackPanel Grid.Column="1"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
-          <mi:MaterialIcon Kind="Cart" Width="28" Height="28"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+          <mi:MaterialIcon Kind="ScrewFlatTop" Width="32" Height="32"
+                           Foreground="{StaticResource CraftGoldBrush}" />
           <TextBlock Text="{loc:Translate Shop}"
-                     FontSize="20" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     FontSize="22" FontWeight="Bold"
+                     Foreground="White" />
         </StackPanel>
 
         <!-- Balance Badges -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
           <!-- Goldschrauben-Badge -->
-          <Border Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="8,4">
+          <Border CornerRadius="12" Padding="8,4">
+            <Border.Background>
+              <SolidColorBrush Color="Black" Opacity="0.25" />
+            </Border.Background>
             <StackPanel Orientation="Horizontal" Spacing="4">
               <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700" />
               <TextBlock Text="{Binding GoldenScrewsBalance}" FontSize="14" FontWeight="Bold"
@@ -46,8 +54,10 @@
             </StackPanel>
           </Border>
           <!-- Euro-Badge -->
-          <Border Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="8,4">
+          <Border CornerRadius="12" Padding="8,4">
+            <Border.Background>
+              <SolidColorBrush Color="Black" Opacity="0.25" />
+            </Border.Background>
             <TextBlock Text="{Binding CurrentBalance}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}" />
@@ -64,20 +74,26 @@
 
         <!-- PREMIUM STATUS (if premium) -->
         <Border Classes="CardElevated"
-                Background="{DynamicResource SecondaryBrush}"
-                IsVisible="{Binding IsPremium}">
+                IsVisible="{Binding IsPremium}"
+                Padding="16">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#92400E" Offset="0" />
+              <GradientStop Color="#D97706" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
           <StackPanel Orientation="Horizontal"
                       Spacing="12"
                       HorizontalAlignment="Center">
             <mi:MaterialIcon Kind="Crown" Width="32" Height="32"
-                             Foreground="Gold" />
+                             Foreground="{StaticResource CraftGoldBrush}" />
             <StackPanel>
               <TextBlock Text="{loc:Translate YouArePremium}"
                          FontSize="18" FontWeight="Bold"
-                         Foreground="Gold" />
+                         Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate PremiumBenefits}"
                          FontSize="12"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
+                         Foreground="#FFE0B2" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -88,11 +104,16 @@
             <DataTemplate x:DataType="vm:ShopItem">
               <Border Classes="Card" Margin="0,4" Padding="16">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
-                  <!-- Icon -->
-                  <Border Background="{DynamicResource SurfaceBrush}"
-                          CornerRadius="12"
+                  <!-- Icon mit Craft-Gradient Hintergrund -->
+                  <Border CornerRadius="12"
                           Width="60" Height="60"
                           VerticalAlignment="Center">
+                    <Border.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="#D97706" Offset="0" />
+                        <GradientStop Color="#92400E" Offset="1" />
+                      </LinearGradientBrush>
+                    </Border.Background>
                     <TextBlock Text="{Binding Icon}"
                                FontSize="28"
                                HorizontalAlignment="Center"
@@ -113,18 +134,19 @@
                                MaxLines="2" />
 
                     <!-- Ad Reward Badge -->
-                    <Border Background="{DynamicResource PrimaryBrush}"
-                            Opacity="0.15"
-                            CornerRadius="8"
+                    <Border CornerRadius="8"
                             Padding="8,4"
                             HorizontalAlignment="Left"
                             IsVisible="{Binding IsAdReward}">
+                      <Border.Background>
+                        <SolidColorBrush Color="#D97706" Opacity="0.2" />
+                      </Border.Background>
                       <StackPanel Orientation="Horizontal" Spacing="4">
                         <mi:MaterialIcon Kind="Television" Width="10" Height="10"
-                                         Foreground="{DynamicResource PrimaryBrush}" />
+                                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
                         <TextBlock Text="{loc:Translate WatchAdFree}"
                                    FontSize="10"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
                       </StackPanel>
                     </Border>
                   </StackPanel>
@@ -162,22 +184,33 @@
         </ItemsControl>
 
         <!-- TOOLS SECTION -->
-        <TextBlock Text="{loc:Translate Tools}"
-                   FontSize="18" FontWeight="Bold"
-                   Foreground="{DynamicResource TextPrimaryBrush}"
-                   Margin="0,16,0,8" />
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,8">
+          <Border CornerRadius="4" Padding="6,3"
+                  Background="{StaticResource CraftPrimaryBrush}">
+            <mi:MaterialIcon Kind="Hammer" Width="14" Height="14" Foreground="White" />
+          </Border>
+          <TextBlock Text="{loc:Translate Tools}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
 
         <ItemsControl ItemsSource="{Binding Tools}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:ToolDisplayItem">
               <Border Classes="Card" Margin="0,4" Padding="12">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                  <!-- Icon -->
-                  <Border Background="{DynamicResource SurfaceBrush}"
-                          CornerRadius="8" Width="48" Height="48"
+                  <!-- Icon mit Craft-Gradient -->
+                  <Border CornerRadius="8" Width="48" Height="48"
                           VerticalAlignment="Center">
+                    <Border.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="#D97706" Offset="0" />
+                        <GradientStop Color="#B45309" Offset="1" />
+                      </LinearGradientBrush>
+                    </Border.Background>
                     <mi:MaterialIcon Kind="{Binding IconKind}" Width="24" Height="24"
-                                     Foreground="{DynamicResource PrimaryBrush}"
+                                     Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                   <!-- Info -->
@@ -186,20 +219,28 @@
                       <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
                       <TextBlock Text="{Binding LevelDisplay}" FontSize="12"
-                                 Foreground="{DynamicResource PrimaryBrush}" />
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}" />
                     </StackPanel>
                     <TextBlock Text="{Binding EffectDescription}" FontSize="11"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                   </StackPanel>
                   <!-- Upgrade Button (Goldschrauben) -->
-                  <Button Grid.Column="2" Classes="Primary" Padding="12,8"
+                  <Button Grid.Column="2" Padding="12,8"
+                          CornerRadius="8"
                           IsVisible="{Binding CanUpgrade}"
                           IsEnabled="{Binding CanAfford}"
                           Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).UpgradeToolCommand}"
                           CommandParameter="{Binding .}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Color="#D97706" Offset="0" />
+                        <GradientStop Color="#B45309" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700" />
-                      <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold" />
+                      <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold"
+                                 Foreground="White" />
                     </StackPanel>
                   </Button>
                   <!-- Max Level Badge -->
@@ -225,10 +266,10 @@
           <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="InformationOutline" Width="14" Height="14"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Notice}"
                          FontSize="14" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
             <TextBlock Text="{loc:Translate FairPlayInfo}"
                        FontSize="12"

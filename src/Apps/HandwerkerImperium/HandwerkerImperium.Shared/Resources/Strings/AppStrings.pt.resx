@@ -1917,23 +1917,23 @@
   <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
     <value>8 parafusos dourados por um v&#237;deo</value>
   </data>
-  <data name="ShopGoldenScrews75Name" xml:space="preserve">
+  <data name="ShopGoldenScrews50Name" xml:space="preserve">
     <value>Bolsa de parafusos dourados</value>
   </data>
-  <data name="ShopGoldenScrews75Desc" xml:space="preserve">
-    <value>75 parafusos dourados</value>
+  <data name="ShopGoldenScrews50Desc" xml:space="preserve">
+    <value>50 parafusos dourados</value>
   </data>
-  <data name="ShopGoldenScrews200Name" xml:space="preserve">
+  <data name="ShopGoldenScrews150Name" xml:space="preserve">
     <value>Caixa de parafusos dourados</value>
   </data>
-  <data name="ShopGoldenScrews200Desc" xml:space="preserve">
-    <value>200 parafusos dourados</value>
+  <data name="ShopGoldenScrews150Desc" xml:space="preserve">
+    <value>150 parafusos dourados</value>
   </data>
-  <data name="ShopGoldenScrews600Name" xml:space="preserve">
+  <data name="ShopGoldenScrews450Name" xml:space="preserve">
     <value>Ba&#250; de parafusos dourados</value>
   </data>
-  <data name="ShopGoldenScrews600Desc" xml:space="preserve">
-    <value>600 parafusos dourados</value>
+  <data name="ShopGoldenScrews450Desc" xml:space="preserve">
+    <value>450 parafusos dourados</value>
   </data>
   <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
     <value>{0} parafusos dourados recebidos!</value>
@@ -1952,6 +1952,9 @@
   </data>
   <data name="HiringScrewCost" xml:space="preserve">
     <value>+ {0} parafusos dourados</value>
+  </data>
+  <data name="SelectWorkshop" xml:space="preserve">
+    <value>Selecionar oficina</value>
   </data>
 
 </root>

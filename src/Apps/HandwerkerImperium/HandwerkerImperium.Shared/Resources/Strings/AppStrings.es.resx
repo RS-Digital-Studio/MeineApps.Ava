@@ -1917,23 +1917,23 @@
   <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
     <value>8 tornillos dorados por un v&#237;deo</value>
   </data>
-  <data name="ShopGoldenScrews75Name" xml:space="preserve">
+  <data name="ShopGoldenScrews50Name" xml:space="preserve">
     <value>Bolsa de tornillos dorados</value>
   </data>
-  <data name="ShopGoldenScrews75Desc" xml:space="preserve">
-    <value>75 tornillos dorados</value>
+  <data name="ShopGoldenScrews50Desc" xml:space="preserve">
+    <value>50 tornillos dorados</value>
   </data>
-  <data name="ShopGoldenScrews200Name" xml:space="preserve">
+  <data name="ShopGoldenScrews150Name" xml:space="preserve">
     <value>Caja de tornillos dorados</value>
   </data>
-  <data name="ShopGoldenScrews200Desc" xml:space="preserve">
-    <value>200 tornillos dorados</value>
+  <data name="ShopGoldenScrews150Desc" xml:space="preserve">
+    <value>150 tornillos dorados</value>
   </data>
-  <data name="ShopGoldenScrews600Name" xml:space="preserve">
+  <data name="ShopGoldenScrews450Name" xml:space="preserve">
     <value>Cofre de tornillos dorados</value>
   </data>
-  <data name="ShopGoldenScrews600Desc" xml:space="preserve">
-    <value>600 tornillos dorados</value>
+  <data name="ShopGoldenScrews450Desc" xml:space="preserve">
+    <value>450 tornillos dorados</value>
   </data>
   <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
     <value>&#161;{0} tornillos dorados recibidos!</value>
@@ -1952,6 +1952,9 @@
   </data>
   <data name="HiringScrewCost" xml:space="preserve">
     <value>+ {0} tornillos dorados</value>
+  </data>
+  <data name="SelectWorkshop" xml:space="preserve">
+    <value>Seleccionar taller</value>
   </data>
 
 </root>

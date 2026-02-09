@@ -1925,23 +1925,23 @@
   <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
     <value>8 golden screws for a video</value>
   </data>
-  <data name="ShopGoldenScrews75Name" xml:space="preserve">
+  <data name="ShopGoldenScrews50Name" xml:space="preserve">
     <value>Golden Screws Pouch</value>
   </data>
-  <data name="ShopGoldenScrews75Desc" xml:space="preserve">
-    <value>75 golden screws</value>
+  <data name="ShopGoldenScrews50Desc" xml:space="preserve">
+    <value>50 golden screws</value>
   </data>
-  <data name="ShopGoldenScrews200Name" xml:space="preserve">
+  <data name="ShopGoldenScrews150Name" xml:space="preserve">
     <value>Golden Screws Crate</value>
   </data>
-  <data name="ShopGoldenScrews200Desc" xml:space="preserve">
-    <value>200 golden screws</value>
+  <data name="ShopGoldenScrews150Desc" xml:space="preserve">
+    <value>150 golden screws</value>
   </data>
-  <data name="ShopGoldenScrews600Name" xml:space="preserve">
+  <data name="ShopGoldenScrews450Name" xml:space="preserve">
     <value>Golden Screws Chest</value>
   </data>
-  <data name="ShopGoldenScrews600Desc" xml:space="preserve">
-    <value>600 golden screws</value>
+  <data name="ShopGoldenScrews450Desc" xml:space="preserve">
+    <value>450 golden screws</value>
   </data>
   <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
     <value>{0} golden screws received!</value>
@@ -1960,6 +1960,9 @@
   </data>
   <data name="HiringScrewCost" xml:space="preserve">
     <value>+ {0} golden screws</value>
+  </data>
+  <data name="SelectWorkshop" xml:space="preserve">
+    <value>Select Workshop</value>
   </data>
 
 </root>

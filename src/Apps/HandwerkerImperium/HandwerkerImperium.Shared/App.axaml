@@ -4,6 +4,53 @@
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              x:Class="HandwerkerImperium.App">
 
+  <!-- App-lokale Handwerker-Farbpalette -->
+  <Application.Resources>
+    <!-- Basis-Palette (warm, einladend) -->
+    <Color x:Key="CraftPrimaryColor">#D97706</Color>
+    <Color x:Key="CraftPrimaryLightColor">#F59E0B</Color>
+    <Color x:Key="CraftPrimaryDarkColor">#B45309</Color>
+    <Color x:Key="CraftSecondaryColor">#92400E</Color>
+    <Color x:Key="CraftGoldColor">#FFD700</Color>
+    <SolidColorBrush x:Key="CraftPrimaryBrush" Color="#D97706" />
+    <SolidColorBrush x:Key="CraftPrimaryLightBrush" Color="#F59E0B" />
+    <SolidColorBrush x:Key="CraftPrimaryDarkBrush" Color="#B45309" />
+    <SolidColorBrush x:Key="CraftSecondaryBrush" Color="#92400E" />
+    <SolidColorBrush x:Key="CraftGoldBrush" Color="#FFD700" />
+
+    <!-- Workshop-Farben -->
+    <Color x:Key="CarpenterColor">#A0522D</Color>
+    <Color x:Key="PlumberColor">#2563EB</Color>
+    <Color x:Key="ElectricianColor">#EAB308</Color>
+    <Color x:Key="PainterColor">#EC4899</Color>
+    <Color x:Key="RooferColor">#DC2626</Color>
+    <Color x:Key="ContractorColor">#EA580C</Color>
+    <Color x:Key="ArchitectColor">#6366F1</Color>
+    <Color x:Key="GeneralContractorColor">#FFD700</Color>
+    <SolidColorBrush x:Key="CarpenterBrush" Color="#A0522D" />
+    <SolidColorBrush x:Key="PlumberBrush" Color="#2563EB" />
+    <SolidColorBrush x:Key="ElectricianBrush" Color="#EAB308" />
+    <SolidColorBrush x:Key="PainterBrush" Color="#EC4899" />
+    <SolidColorBrush x:Key="RooferBrush" Color="#DC2626" />
+    <SolidColorBrush x:Key="ContractorBrush" Color="#EA580C" />
+    <SolidColorBrush x:Key="ArchitectBrush" Color="#6366F1" />
+    <SolidColorBrush x:Key="GeneralContractorBrush" Color="#FFD700" />
+
+    <!-- Worker-Tier-Farben -->
+    <SolidColorBrush x:Key="TierFBrush" Color="#94A3B8" />
+    <SolidColorBrush x:Key="TierEBrush" Color="#22C55E" />
+    <SolidColorBrush x:Key="TierDBrush" Color="#3B82F6" />
+    <SolidColorBrush x:Key="TierCBrush" Color="#8B5CF6" />
+    <SolidColorBrush x:Key="TierBBrush" Color="#F59E0B" />
+    <SolidColorBrush x:Key="TierABrush" Color="#EF4444" />
+    <SolidColorBrush x:Key="TierSBrush" Color="#FFD700" />
+
+    <!-- Research-Branch-Farben -->
+    <SolidColorBrush x:Key="BranchToolsBrush" Color="#EA580C" />
+    <SolidColorBrush x:Key="BranchManagementBrush" Color="#6366F1" />
+    <SolidColorBrush x:Key="BranchMarketingBrush" Color="#22C55E" />
+  </Application.Resources>
+
   <Application.Styles>
     <!-- Avalonia Fluent Theme as base -->
     <FluentTheme />

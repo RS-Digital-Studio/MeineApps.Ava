@@ -5,6 +5,7 @@
              xmlns:views="using:HandwerkerImperium.Views"
              xmlns:miniGames="using:HandwerkerImperium.Views.MiniGames"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:MeineApps.UI.Controls"
              x:Class="HandwerkerImperium.Views.MainView"
              x:DataType="vm:MainViewModel">
 
@@ -26,17 +27,17 @@
           </LinearGradientBrush>
         </Border.Background>
       </Border>
-      <!-- Oberer Akzent-Schein (Primary/Indigo, links oben) -->
-      <Border Opacity="0.12">
+      <!-- Oberer Akzent-Schein (Craft-Amber, links oben) -->
+      <Border Opacity="0.15">
         <Border.Background>
           <RadialGradientBrush Center="0.15,0.05" RadiusX="0.7" RadiusY="0.35">
-            <GradientStop Color="#6366F1" Offset="0" />
+            <GradientStop Color="#D97706" Offset="0" />
             <GradientStop Color="Transparent" Offset="1" />
           </RadialGradientBrush>
         </Border.Background>
       </Border>
       <!-- Unterer warmer Schein (Amber/Gold, rechts unten → Handwerker-Atmosphaere) -->
-      <Border Opacity="0.07">
+      <Border Opacity="0.12">
         <Border.Background>
           <RadialGradientBrush Center="0.85,0.9" RadiusX="0.6" RadiusY="0.35">
             <GradientStop Color="#F59E0B" Offset="0" />
@@ -44,11 +45,11 @@
           </RadialGradientBrush>
         </Border.Background>
       </Border>
-      <!-- Mittig-rechts: Subtiler Sekundaer-Schein -->
-      <Border Opacity="0.05">
+      <!-- Mittig-rechts: Subtiler Holz/Sienna-Schein -->
+      <Border Opacity="0.08">
         <Border.Background>
           <RadialGradientBrush Center="0.9,0.4" RadiusX="0.4" RadiusY="0.3">
-            <GradientStop Color="#8B5CF6" Offset="0" />
+            <GradientStop Color="#A0522D" Offset="0" />
             <GradientStop Color="Transparent" Offset="1" />
           </RadialGradientBrush>
         </Border.Background>
@@ -129,7 +130,7 @@
             Background="{DynamicResource SurfaceBrush}"
             BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource CardBorderBrush}"
-            Padding="0,8"
+            Padding="0,4,0,8"
             IsVisible="{Binding IsTabBarVisible}">
       <Grid ColumnDefinitions="*,*,*,*,*">
 
@@ -140,7 +141,11 @@
                 HorizontalContentAlignment="Center"
                 MinHeight="48">
           <StackPanel Spacing="2" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="Home" Width="24" Height="24" />
+            <Border Height="3" Width="32" CornerRadius="1.5" Margin="0,0,0,2"
+                    Background="{StaticResource CraftPrimaryLightBrush}"
+                    IsVisible="{Binding IsDashboardActive}" />
+            <mi:MaterialIcon Kind="Home" Width="24" Height="24"
+                             Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Text="{loc:Translate Home}"
                        FontSize="10" HorizontalAlignment="Center" />
           </StackPanel>
@@ -153,6 +158,9 @@
                 HorizontalContentAlignment="Center"
                 MinHeight="48">
           <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <Border Height="3" Width="32" CornerRadius="1.5" Margin="0,0,0,2"
+                    Background="{StaticResource CraftPrimaryLightBrush}"
+                    IsVisible="{Binding IsWorkerMarketActive}" />
             <mi:MaterialIcon Kind="AccountGroup" Width="24" Height="24" />
             <TextBlock Text="{loc:Translate Workers}"
                        FontSize="10" HorizontalAlignment="Center" />
@@ -166,6 +174,9 @@
                 HorizontalContentAlignment="Center"
                 MinHeight="48">
           <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <Border Height="3" Width="32" CornerRadius="1.5" Margin="0,0,0,2"
+                    Background="{StaticResource CraftPrimaryLightBrush}"
+                    IsVisible="{Binding IsResearchActive}" />
             <mi:MaterialIcon Kind="FlaskOutline" Width="24" Height="24" />
             <TextBlock Text="{loc:Translate Research}"
                        FontSize="10" HorizontalAlignment="Center" />
@@ -179,6 +190,9 @@
                 HorizontalContentAlignment="Center"
                 MinHeight="48">
           <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <Border Height="3" Width="32" CornerRadius="1.5" Margin="0,0,0,2"
+                    Background="{StaticResource CraftPrimaryLightBrush}"
+                    IsVisible="{Binding IsShopActive}" />
             <mi:MaterialIcon Kind="Cart" Width="24" Height="24" />
             <TextBlock Text="{loc:Translate Shop}"
                        FontSize="10" HorizontalAlignment="Center" />
@@ -192,6 +206,9 @@
                 HorizontalContentAlignment="Center"
                 MinHeight="48">
           <StackPanel Spacing="2" HorizontalAlignment="Center">
+            <Border Height="3" Width="32" CornerRadius="1.5" Margin="0,0,0,2"
+                    Background="{StaticResource CraftPrimaryLightBrush}"
+                    IsVisible="{Binding IsSettingsActive}" />
             <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24" />
             <TextBlock Text="{loc:Translate Settings}"
                        FontSize="10" HorizontalAlignment="Center" />
@@ -210,10 +227,24 @@
             IsVisible="{Binding IsOfflineEarningsDialogVisible}">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
-              MaxWidth="340" MaxHeight="300"
+              MaxWidth="360"
               HorizontalAlignment="Center" VerticalAlignment="Center"
               BoxShadow="0 8 24 0 #40000000">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <!-- Gruener Glow-Halo -->
+          <Border Width="72" Height="72" CornerRadius="36"
+                  HorizontalAlignment="Center"
+                  BoxShadow="0 0 20 0 #4022C55E">
+            <Border.Background>
+              <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                <GradientStop Color="#2022C55E" Offset="0" />
+                <GradientStop Color="Transparent" Offset="1" />
+              </RadialGradientBrush>
+            </Border.Background>
+            <mi:MaterialIcon Kind="CashMultiple" Width="40" Height="40"
+                             Foreground="#22C55E"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
           <TextBlock Text="{loc:Translate WelcomeBack}"
                      FontSize="22" FontWeight="Bold"
                      HorizontalAlignment="Center"
@@ -223,9 +254,9 @@
                      HorizontalAlignment="Center"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
           <TextBlock Text="{Binding OfflineEarningsAmountText}"
-                     FontSize="28" FontWeight="Bold"
+                     FontSize="36" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource PrimaryBrush}" />
+                     Foreground="#22C55E" />
           <TextBlock Text="{Binding OfflineEarningsDurationText}"
                      FontSize="12"
                      HorizontalAlignment="Center"
@@ -233,8 +264,14 @@
           <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
             <Button Classes="Outlined" Content="{loc:Translate Collect}"
                     Command="{Binding CollectOfflineEarningsNormalCommand}" MinWidth="100" />
-            <Button Classes="Primary" Content="{loc:Translate DoubleWithAd}"
-                    Command="{Binding CollectOfflineEarningsWithAdCommand}" MinWidth="120" />
+            <Button Classes="Primary" MinWidth="140"
+                    Background="{StaticResource CraftGoldBrush}"
+                    Command="{Binding CollectOfflineEarningsWithAdCommand}">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="PlayCircle" Width="18" Height="18" />
+                <TextBlock Text="{loc:Translate DoubleWithAd}" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
           </StackPanel>
         </StackPanel>
       </Border>
@@ -245,16 +282,30 @@
             IsVisible="{Binding IsLevelUpDialogVisible}">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
-              MaxWidth="340" MaxHeight="300"
+              MaxWidth="360"
               HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 8 24 0 #40000000">
+              BoxShadow="0 0 40 0 #40FFD700">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <!-- Star-Icon mit Gold-Glow-Halo -->
+          <Border Width="80" Height="80" CornerRadius="40"
+                  HorizontalAlignment="Center"
+                  BoxShadow="0 0 24 0 #60FFD700">
+            <Border.Background>
+              <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                <GradientStop Color="#40FFD700" Offset="0" />
+                <GradientStop Color="Transparent" Offset="1" />
+              </RadialGradientBrush>
+            </Border.Background>
+            <mi:MaterialIcon Kind="Star" Width="48" Height="48"
+                             Foreground="#FFD700"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
           <TextBlock Text="{loc:Translate LevelUpTitle}"
-                     FontSize="22" FontWeight="Bold"
+                     FontSize="20" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource PrimaryBrush}" />
-          <TextBlock FontSize="36" HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextPrimaryBrush}">
+                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          <TextBlock FontSize="48" FontWeight="Bold" HorizontalAlignment="Center"
+                     Foreground="#FFD700">
             <TextBlock.Text>
               <MultiBinding StringFormat="Level {0}">
                 <Binding Path="LevelUpNewLevel" />
@@ -267,8 +318,9 @@
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      IsVisible="{Binding LevelUpUnlockedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
           <Button Classes="Primary" Content="OK"
+                  Background="{StaticResource CraftPrimaryBrush}"
                   Command="{Binding DismissLevelUpDialogCommand}"
-                  HorizontalAlignment="Center" MinWidth="120" />
+                  HorizontalAlignment="Center" MinWidth="140" />
         </StackPanel>
       </Border>
     </Border>
@@ -278,14 +330,46 @@
             IsVisible="{Binding IsDailyRewardDialogVisible}">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
-              MaxWidth="340" MaxHeight="350"
+              MaxWidth="360"
               HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 8 24 0 #40000000">
+              BoxShadow="0 0 30 0 #40D97706">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <!-- Gift-Icon mit CraftPrimary-Glow -->
+          <Border Width="72" Height="72" CornerRadius="36"
+                  HorizontalAlignment="Center"
+                  BoxShadow="0 0 20 0 #40D97706">
+            <Border.Background>
+              <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                <GradientStop Color="#40D97706" Offset="0" />
+                <GradientStop Color="Transparent" Offset="1" />
+              </RadialGradientBrush>
+            </Border.Background>
+            <mi:MaterialIcon Kind="Gift" Width="40" Height="40"
+                             Foreground="#D97706"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
           <TextBlock Text="{loc:Translate DailyReward}"
                      FontSize="22" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource PrimaryBrush}" />
+                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          <!-- 7-Tage Streak Dots -->
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <Border Width="12" Height="12" CornerRadius="6"
+                    Background="{StaticResource CraftPrimaryBrush}"
+                    BorderBrush="{StaticResource CraftPrimaryBrush}" BorderThickness="2" />
+            <Border Width="12" Height="12" CornerRadius="6"
+                    BorderBrush="{StaticResource CraftPrimaryBrush}" BorderThickness="2" />
+            <Border Width="12" Height="12" CornerRadius="6"
+                    BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="2" />
+            <Border Width="12" Height="12" CornerRadius="6"
+                    BorderBrush="{StaticResource CraftPrimaryBrush}" BorderThickness="2" />
+            <Border Width="12" Height="12" CornerRadius="6"
+                    BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="2" />
+            <Border Width="12" Height="12" CornerRadius="6"
+                    BorderBrush="{StaticResource CraftPrimaryBrush}" BorderThickness="2" />
+            <Border Width="12" Height="12" CornerRadius="6"
+                    BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="2" />
+          </StackPanel>
           <TextBlock Text="{Binding DailyRewardDayText}"
                      FontSize="16"
                      HorizontalAlignment="Center"
@@ -293,12 +377,13 @@
           <TextBlock Text="{Binding DailyRewardAmountText}"
                      FontSize="28" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource PrimaryBrush}" />
+                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{Binding DailyRewardStreakText}"
                      FontSize="12"
                      HorizontalAlignment="Center"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
           <Button Classes="Primary" Content="{loc:Translate ClaimReward}"
+                  Background="{StaticResource CraftPrimaryBrush}"
                   Command="{Binding ClaimDailyRewardCommand}"
                   HorizontalAlignment="Center" MinWidth="160" />
         </StackPanel>
@@ -310,17 +395,28 @@
             IsVisible="{Binding IsAchievementDialogVisible}">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
-              MaxWidth="340" MaxHeight="280"
+              MaxWidth="360"
               HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 8 24 0 #40000000">
+              BoxShadow="0 0 40 0 #40FFD700">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <!-- Trophy mit Gold-Glow -->
+          <Border Width="72" Height="72" CornerRadius="36"
+                  HorizontalAlignment="Center"
+                  BoxShadow="0 0 24 0 #60FFD700">
+            <Border.Background>
+              <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                <GradientStop Color="#40FFD700" Offset="0" />
+                <GradientStop Color="Transparent" Offset="1" />
+              </RadialGradientBrush>
+            </Border.Background>
+            <mi:MaterialIcon Kind="Trophy" Width="40" Height="40"
+                             Foreground="#FFD700"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
           <TextBlock Text="{loc:Translate AchievementUnlocked}"
                      FontSize="22" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource PrimaryBrush}" />
-          <mi:MaterialIcon Kind="Trophy" Width="48" Height="48"
-                           Foreground="{DynamicResource PrimaryBrush}"
-                           HorizontalAlignment="Center" />
+                     Foreground="#FFD700" />
           <TextBlock Text="{Binding AchievementName}"
                      FontSize="18" FontWeight="SemiBold"
                      HorizontalAlignment="Center"
@@ -330,6 +426,7 @@
                      HorizontalAlignment="Center"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
           <Button Classes="Primary" Content="OK"
+                  Background="{StaticResource CraftPrimaryBrush}"
                   Command="{Binding DismissAchievementDialogCommand}"
                   HorizontalAlignment="Center" MinWidth="120" />
         </StackPanel>
@@ -388,6 +485,12 @@
         </StackPanel>
       </Border>
     </Border>
+
+    <!-- Confetti-Overlay (Level-Up, Achievement-Unlock) -->
+    <controls:CelebrationOverlay x:Name="CelebrationCanvas"
+                                 Grid.RowSpan="3"
+                                 ZIndex="100"
+                                 IsHitTestVisible="False" />
 
     <!-- Loading Overlay -->
     <Border Grid.RowSpan="3"

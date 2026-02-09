@@ -930,39 +930,39 @@ namespace HandwerkerImperium.Resources.Strings {
             }
         }
 
-        internal static string ShopGoldenScrews75Name {
+        internal static string ShopGoldenScrews50Name {
             get {
-                return ResourceManager.GetString("ShopGoldenScrews75Name", resourceCulture);
+                return ResourceManager.GetString("ShopGoldenScrews50Name", resourceCulture);
             }
         }
 
-        internal static string ShopGoldenScrews75Desc {
+        internal static string ShopGoldenScrews50Desc {
             get {
-                return ResourceManager.GetString("ShopGoldenScrews75Desc", resourceCulture);
+                return ResourceManager.GetString("ShopGoldenScrews50Desc", resourceCulture);
             }
         }
 
-        internal static string ShopGoldenScrews200Name {
+        internal static string ShopGoldenScrews150Name {
             get {
-                return ResourceManager.GetString("ShopGoldenScrews200Name", resourceCulture);
+                return ResourceManager.GetString("ShopGoldenScrews150Name", resourceCulture);
             }
         }
 
-        internal static string ShopGoldenScrews200Desc {
+        internal static string ShopGoldenScrews150Desc {
             get {
-                return ResourceManager.GetString("ShopGoldenScrews200Desc", resourceCulture);
+                return ResourceManager.GetString("ShopGoldenScrews150Desc", resourceCulture);
             }
         }
 
-        internal static string ShopGoldenScrews600Name {
+        internal static string ShopGoldenScrews450Name {
             get {
-                return ResourceManager.GetString("ShopGoldenScrews600Name", resourceCulture);
+                return ResourceManager.GetString("ShopGoldenScrews450Name", resourceCulture);
             }
         }
 
-        internal static string ShopGoldenScrews600Desc {
+        internal static string ShopGoldenScrews450Desc {
             get {
-                return ResourceManager.GetString("ShopGoldenScrews600Desc", resourceCulture);
+                return ResourceManager.GetString("ShopGoldenScrews450Desc", resourceCulture);
             }
         }
 
@@ -999,6 +999,12 @@ namespace HandwerkerImperium.Resources.Strings {
         internal static string NotEnoughScrewsDesc {
             get {
                 return ResourceManager.GetString("NotEnoughScrewsDesc", resourceCulture);
+            }
+        }
+
+        internal static string SelectWorkshop {
+            get {
+                return ResourceManager.GetString("SelectWorkshop", resourceCulture);
             }
         }
     }

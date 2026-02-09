@@ -56,6 +56,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // Statisches Array vermeidet Allokation bei jedem RefreshWorkshops()-Aufruf
     private static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
 
+    // Zaehler fuer FloatingText-Anzeige (nur alle 3 Ticks, nicht jeden)
+    private int _floatingTextCounter;
+
+    // Phase 9: Smooth Money-Counter Animation
+    private decimal _displayedMoney;
+    private decimal _targetMoney;
+    private DispatcherTimer? _moneyAnimTimer;
+    private const int MoneyAnimIntervalMs = 33; // ~30fps fuer Counter
+    private const decimal MoneyAnimSpeed = 0.15m; // Interpolations-Faktor pro Frame
+
     // EventHandler wrappers for new VMs (EventHandler<string> vs Action<string>)
     private readonly EventHandler<string> _workerMarketNavHandler;
     private readonly EventHandler<string> _workerProfileNavHandler;
@@ -232,6 +242,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
     public bool ShowAds => !_purchaseService.IsPremium;
+
+    // Login-Streak (Daily Reward Streak)
+    public int LoginStreak => _gameStateService.State.DailyRewardStreak;
+    public bool HasLoginStreak => LoginStreak >= 2;
+
+    // FloatingText Event fuer Dashboard-Animationen
+    public event Action<string, string>? FloatingTextRequested;
+
+    // Celebration Event fuer Confetti-Overlay (Level-Up, Achievement, Prestige)
+    public event Action? CelebrationRequested;
 
     // Navigation button texts
     public string NavHomeText => $"🏠\n{_localizationService.GetString("Home")}";
@@ -683,6 +703,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         // Update properties
         Money = state.Money;
+        // Beim Start: sofort setzen, kein Ticken
+        _displayedMoney = state.Money;
+        _targetMoney = state.Money;
         MoneyDisplay = FormatMoney(state.Money);
         IncomePerSecond = state.NetIncomePerSecond;
         IncomeDisplay = $"{FormatMoney(state.NetIncomePerSecond)}/s";
@@ -691,6 +714,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         XpForNextLevel = state.XpForNextLevel;
         LevelProgress = state.LevelProgress;
         GoldenScrewsDisplay = state.GoldenScrews.ToString("N0");
+
+        // Login-Streak aktualisieren
+        OnPropertyChanged(nameof(LoginStreak));
+        OnPropertyChanged(nameof(HasLoginStreak));
 
         // Refresh workshops
         RefreshWorkshops();
@@ -732,7 +759,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             Type = type,
             Icon = type.GetIcon(),
-            IconKind = GetWorkshopIconKind(type),
+            IconKind = GetWorkshopIconKind(type, workshop?.Level ?? 1),
             Name = _localizationService.GetString(type.GetLocalizationKey()),
             Level = workshop?.Level ?? 1,
             WorkerCount = workshop?.Workers.Count ?? 0,
@@ -756,6 +783,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         bool isUnlocked = state.IsWorkshopUnlocked(type);
 
         model.Level = workshop?.Level ?? 1;
+        model.IconKind = GetWorkshopIconKind(type, model.Level);
         model.WorkerCount = workshop?.Workers.Count ?? 0;
         model.MaxWorkers = workshop?.MaxWorkers ?? 1;
         model.IncomePerSecond = workshop?.IncomePerSecond ?? 0;
@@ -817,6 +845,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             await _audioService.PlaySoundAsync(GameSound.Upgrade);
             // Explizit aktualisieren (Event-Handler macht das auch, aber sicherheitshalber)
             RefreshWorkshops();
+            // FloatingText fuer Level-Up Feedback
+            FloatingTextRequested?.Invoke("+1 Level!", "level");
         }
     }
 
@@ -1081,6 +1111,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // "workers" = navigiere zum Arbeitermarkt (Bug 2: von WorkshopView aus)
+        if (route == "workers")
+        {
+            SelectWorkerMarketTab();
+            return;
+        }
+
         // "worker?id=X" = navigate to worker profile
         if (route.StartsWith("worker?id="))
         {
@@ -1137,7 +1174,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnMoneyChanged(object? sender, MoneyChangedEventArgs e)
     {
         Money = e.NewAmount;
-        MoneyDisplay = FormatMoney(e.NewAmount);
+        // Phase 9: Smooth animierter Geld-Counter
+        AnimateMoneyTo(e.NewAmount);
 
         // Update affordability for all workshops
         foreach (var workshop in Workshops)
@@ -1172,6 +1210,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             LevelUpUnlockedText = "";
         }
         IsLevelUpDialogVisible = true;
+        CelebrationRequested?.Invoke();
 
         ShowLevelUp?.Invoke(this, e);
     }
@@ -1222,6 +1261,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var desc = _localizationService.GetString(achievement.DescriptionKey);
         AchievementDescription = string.IsNullOrEmpty(desc) ? achievement.DescriptionFallback : desc;
         IsAchievementDialogVisible = true;
+        CelebrationRequested?.Invoke();
 
         ShowAchievementUnlocked?.Invoke(this, achievement);
     }
@@ -1256,6 +1296,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
             IncomeDisplay = $"{FormatMoney(IncomePerSecond)}/s";
         }
 
+        // FloatingText: Nur alle 3 Ticks anzeigen, nur wenn Income > 0 und Dashboard aktiv
+        _floatingTextCounter++;
+        if (_floatingTextCounter % 3 == 0 && newIncome > 0 && IsDashboardActive)
+        {
+            FloatingTextRequested?.Invoke($"+{newIncome:N0}\u20AC", "money");
+        }
+
         // QuickJob-Timer aktualisieren
         var remaining = _quickJobService.TimeUntilNextRotation;
         QuickJobTimerDisplay = remaining.TotalMinutes >= 1
@@ -1275,13 +1322,70 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private static string FormatMoney(decimal amount) => MoneyFormatter.FormatCompact(amount);
 
-    private static Material.Icons.MaterialIconKind GetWorkshopIconKind(WorkshopType type) => type switch
+    /// <summary>
+    /// Animierter Geld-Counter: Setzt neuen Zielwert und startet Interpolation.
+    /// Die angezeigte Zahl "tickt" smooth von alt auf neu (Phase 9).
+    /// </summary>
+    private void AnimateMoneyTo(decimal target)
     {
+        _targetMoney = target;
+
+        // Kleiner Unterschied → direkt setzen (kein sichtbarer Tick)
+        if (Math.Abs(_targetMoney - _displayedMoney) < 1m)
+        {
+            _displayedMoney = _targetMoney;
+            MoneyDisplay = FormatMoney(_displayedMoney);
+            return;
+        }
+
+        // Timer starten falls noch nicht laeuft
+        if (_moneyAnimTimer == null)
+        {
+            _moneyAnimTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(MoneyAnimIntervalMs) };
+            _moneyAnimTimer.Tick += OnMoneyAnimTick;
+        }
+
+        if (!_moneyAnimTimer.IsEnabled)
+            _moneyAnimTimer.Start();
+    }
+
+    private void OnMoneyAnimTick(object? sender, EventArgs e)
+    {
+        var diff = _targetMoney - _displayedMoney;
+
+        if (Math.Abs(diff) < 1m)
+        {
+            // Ziel erreicht → stoppen
+            _displayedMoney = _targetMoney;
+            MoneyDisplay = FormatMoney(_displayedMoney);
+            _moneyAnimTimer?.Stop();
+            return;
+        }
+
+        // Exponentielles Easing: schnell am Anfang, langsamer am Ende
+        _displayedMoney += diff * MoneyAnimSpeed;
+        MoneyDisplay = FormatMoney(_displayedMoney);
+    }
+
+    private static Material.Icons.MaterialIconKind GetWorkshopIconKind(WorkshopType type, int level = 1) => type switch
+    {
+        WorkshopType.Carpenter when level >= 26 => Material.Icons.MaterialIconKind.Factory,
+        WorkshopType.Carpenter when level >= 11 => Material.Icons.MaterialIconKind.TableFurniture,
         WorkshopType.Carpenter => Material.Icons.MaterialIconKind.HandSaw,
-        WorkshopType.Plumber => Material.Icons.MaterialIconKind.Wrench,
+        WorkshopType.Plumber when level >= 26 => Material.Icons.MaterialIconKind.WaterPump,
+        WorkshopType.Plumber when level >= 11 => Material.Icons.MaterialIconKind.Pipe,
+        WorkshopType.Plumber => Material.Icons.MaterialIconKind.Pipe,
+        WorkshopType.Electrician when level >= 26 => Material.Icons.MaterialIconKind.TransmissionTower,
+        WorkshopType.Electrician when level >= 11 => Material.Icons.MaterialIconKind.LightningBolt,
         WorkshopType.Electrician => Material.Icons.MaterialIconKind.Flash,
+        WorkshopType.Painter when level >= 26 => Material.Icons.MaterialIconKind.Draw,
+        WorkshopType.Painter when level >= 11 => Material.Icons.MaterialIconKind.SprayBottle,
         WorkshopType.Painter => Material.Icons.MaterialIconKind.Palette,
-        WorkshopType.Roofer => Material.Icons.MaterialIconKind.HomeCity,
+        WorkshopType.Roofer when level >= 26 => Material.Icons.MaterialIconKind.HomeGroup,
+        WorkshopType.Roofer when level >= 11 => Material.Icons.MaterialIconKind.HomeRoof,
+        WorkshopType.Roofer => Material.Icons.MaterialIconKind.HomeRoof,
+        WorkshopType.Contractor when level >= 26 => Material.Icons.MaterialIconKind.DomainPlus,
+        WorkshopType.Contractor when level >= 11 => Material.Icons.MaterialIconKind.OfficeBuilding,
         WorkshopType.Contractor => Material.Icons.MaterialIconKind.OfficeBuildingOutline,
         WorkshopType.Architect => Material.Icons.MaterialIconKind.Compass,
         WorkshopType.GeneralContractor => Material.Icons.MaterialIconKind.HardHat,
@@ -1313,6 +1417,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         if (_disposed) return;
+
+        // Phase 9: Money-Animation Timer stoppen
+        _moneyAnimTimer?.Stop();
 
         // Stop the game loop and save
         _gameLoopService.Stop();
@@ -1399,12 +1506,30 @@ public partial class WorkshopDisplayModel : ObservableObject
     public string HireCostDisplay => $"{HireWorkerCost:N0}€";
     public double LevelProgress => Level / 50.0;
 
+    // Phase 10.2: Level-basierte Farb-Intensitaet fuer Workshop-Streifen
+    // Wird als ConverterParameter im AXAML verwendet
+    public double ColorIntensity => Level switch
+    {
+        >= 50 => 0.80, // Max Level → stark leuchtend
+        >= 26 => 0.60, // Premium-Icons
+        >= 11 => 0.40, // Erweiterte Icons
+        _ => 0.20      // Basis
+    };
+
+    // Phase 10.3: Max Level Gold-Glow
+    public bool IsMaxLevel => Level >= 50;
+    public string MaxLevelGlow => IsMaxLevel ? "0 0 12 0 #60FFD700" : "0 0 0 0 #00000000";
+
+    // Phase 12.2: "Fast geschafft" Puls wenn >= 80% des Upgrade-Preises vorhanden
+    public bool IsAlmostAffordable => !CanAffordUpgrade && IsUnlocked && UpgradeCost > 0;
+
     /// <summary>
     /// Benachrichtigt die UI ueber alle Property-Aenderungen nach einem In-Place-Update.
     /// </summary>
     public void NotifyAllChanged()
     {
         OnPropertyChanged(nameof(Level));
+        OnPropertyChanged(nameof(IconKind));
         OnPropertyChanged(nameof(WorkerCount));
         OnPropertyChanged(nameof(MaxWorkers));
         OnPropertyChanged(nameof(IncomePerSecond));
@@ -1418,5 +1543,9 @@ public partial class WorkshopDisplayModel : ObservableObject
         OnPropertyChanged(nameof(UpgradeCostDisplay));
         OnPropertyChanged(nameof(HireCostDisplay));
         OnPropertyChanged(nameof(LevelProgress));
+        OnPropertyChanged(nameof(ColorIntensity));
+        OnPropertyChanged(nameof(IsMaxLevel));
+        OnPropertyChanged(nameof(MaxLevelGlow));
+        OnPropertyChanged(nameof(IsAlmostAffordable));
     }
 }

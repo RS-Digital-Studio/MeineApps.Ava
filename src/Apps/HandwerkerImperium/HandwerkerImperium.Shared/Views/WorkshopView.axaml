@@ -213,14 +213,17 @@
                        HorizontalAlignment="Center"
                        IsVisible="{Binding HasNoWorkers}" />
 
-            <!-- Hire Button -->
-            <Button Content="{Binding HireCostDisplay, StringFormat='Hire Worker ({0})'}"
-                    Classes="Primary"
-                    Command="{Binding HireWorkerCommand}"
-                    IsEnabled="{Binding CanAffordHire}"
+            <!-- Arbeiter einstellen Button → navigiert zum Arbeitermarkt -->
+            <Button Classes="Primary"
+                    Command="{Binding HireWorkerFromMarketCommand}"
                     IsVisible="{Binding CanHireWorker}"
                     HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center" />
+                    HorizontalContentAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="AccountPlus" Width="18" Height="18" />
+                <TextBlock Text="{loc:Translate HireWorker}" FontSize="14" />
+              </StackPanel>
+            </Button>
 
             <TextBlock Text="{loc:Translate MaxWorkersReached}"
                        FontSize="12"

@@ -1925,23 +1925,23 @@
   <data name="ShopGoldenScrewsAdDesc" xml:space="preserve">
     <value>8 Goldschrauben f&#252;r ein Video</value>
   </data>
-  <data name="ShopGoldenScrews75Name" xml:space="preserve">
+  <data name="ShopGoldenScrews50Name" xml:space="preserve">
     <value>Goldschrauben-Beutel</value>
   </data>
-  <data name="ShopGoldenScrews75Desc" xml:space="preserve">
-    <value>75 Goldschrauben</value>
+  <data name="ShopGoldenScrews50Desc" xml:space="preserve">
+    <value>50 Goldschrauben</value>
   </data>
-  <data name="ShopGoldenScrews200Name" xml:space="preserve">
+  <data name="ShopGoldenScrews150Name" xml:space="preserve">
     <value>Goldschrauben-Kiste</value>
   </data>
-  <data name="ShopGoldenScrews200Desc" xml:space="preserve">
-    <value>200 Goldschrauben</value>
+  <data name="ShopGoldenScrews150Desc" xml:space="preserve">
+    <value>150 Goldschrauben</value>
   </data>
-  <data name="ShopGoldenScrews600Name" xml:space="preserve">
+  <data name="ShopGoldenScrews450Name" xml:space="preserve">
     <value>Goldschrauben-Truhe</value>
   </data>
-  <data name="ShopGoldenScrews600Desc" xml:space="preserve">
-    <value>600 Goldschrauben</value>
+  <data name="ShopGoldenScrews450Desc" xml:space="preserve">
+    <value>450 Goldschrauben</value>
   </data>
   <data name="GoldenScrewsReceivedFormat" xml:space="preserve">
     <value>{0} Goldschrauben erhalten!</value>
@@ -1960,6 +1960,9 @@
   </data>
   <data name="HiringScrewCost" xml:space="preserve">
     <value>+ {0} Goldschrauben</value>
+  </data>
+  <data name="SelectWorkshop" xml:space="preserve">
+    <value>Werkstatt w&#228;hlen</value>
   </data>
 
 </root>

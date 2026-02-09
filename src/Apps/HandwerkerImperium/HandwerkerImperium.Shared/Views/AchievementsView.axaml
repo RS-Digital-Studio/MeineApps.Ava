@@ -12,33 +12,46 @@
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
-            Classes="CardElevated"
             Padding="16,12"
             CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#92400E" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
       <Grid ColumnDefinitions="Auto,*,Auto">
 
         <!-- Back Button -->
         <Button Classes="Text"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
 
         <!-- Title -->
-        <TextBlock Grid.Column="1"
-                   Text="{loc:Translate Achievements}"
-                   FontSize="20" FontWeight="Bold"
-                   Foreground="{DynamicResource TextPrimaryBrush}"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center" />
+        <StackPanel Grid.Column="1"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+          <mi:MaterialIcon Kind="TrophyVariant" Width="28" Height="28"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+          <TextBlock Text="{loc:Translate Achievements}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
 
         <!-- Progress Badge -->
         <Border Grid.Column="2"
-                Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="8"
                 Padding="12,6">
+          <Border.Background>
+            <SolidColorBrush Color="#D97706" Opacity="0.3" />
+          </Border.Background>
           <TextBlock Text="{Binding ProgressText}"
                      FontSize="14" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="{StaticResource CraftGoldBrush}" />
         </Border>
 
       </Grid>
@@ -55,10 +68,10 @@
           <StackPanel Spacing="8">
             <TextBlock Text="{loc:Translate AchievementProgress}"
                        FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                       Foreground="{StaticResource CraftPrimaryLightBrush}" />
             <ProgressBar Value="{Binding OverallProgress}"
                          Maximum="1"
-                         Foreground="{DynamicResource PrimaryBrush}"
+                         Foreground="{StaticResource CraftPrimaryLightBrush}"
                          Height="8" />
             <TextBlock Text="{Binding ProgressText, StringFormat='{}{0} completed'}"
                        FontSize="12"
@@ -124,7 +137,7 @@
                         IsVisible="{Binding !IsUnlocked}">
                     <ProgressBar Value="{Binding ProgressFraction}"
                                  Maximum="1"
-                                 Foreground="{DynamicResource PrimaryBrush}"
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}"
                                  Height="4"
                                  VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1"

@@ -12,14 +12,20 @@
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
-            Classes="CardElevated"
             Padding="16,12"
             CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#92400E" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Back Button -->
         <Button Classes="Text"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
 
         <!-- Title (centered) -->
@@ -28,10 +34,10 @@
                     HorizontalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="FlaskOutline" Width="28" Height="28"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{Binding Title}"
                      FontSize="20" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </StackPanel>
 
         <!-- Balance Badges -->
@@ -72,7 +78,7 @@
                        Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{Binding ActiveResearchName}"
                        FontSize="16" FontWeight="Bold"
-                       Foreground="{DynamicResource PrimaryBrush}" />
+                       Foreground="{StaticResource CraftPrimaryLightBrush}" />
           </StackPanel>
           <Button Grid.Column="1"
                   Classes="Text"
@@ -85,7 +91,7 @@
         </Grid>
         <ProgressBar Value="{Binding ActiveResearchProgress}"
                      Maximum="1"
-                     Foreground="{DynamicResource PrimaryBrush}"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
                      Height="6" />
         <Grid ColumnDefinitions="*,Auto">
           <TextBlock Text="{Binding ActiveResearchTimeRemaining}"
@@ -123,37 +129,61 @@
               Padding="4"
               CornerRadius="12">
         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-          <Button Classes="Primary"
-                  HorizontalAlignment="Stretch"
+          <!-- Tools Tab - Orange -->
+          <Button HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="8,6"
+                  Padding="8,8"
+                  CornerRadius="8"
+                  Background="#EA580C"
                   Command="{Binding SelectToolsBranchCommand}"
                   Opacity="{Binding ToolsTabOpacity}">
-            <TextBlock Text="{Binding ToolsBranchLabel}"
-                       FontSize="12" FontWeight="SemiBold"
-                       TextTrimming="CharacterEllipsis" />
+            <StackPanel Orientation="Horizontal" Spacing="4"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Hammer" Width="14" Height="14"
+                               Foreground="White" />
+              <TextBlock Text="{Binding ToolsBranchLabel}"
+                         FontSize="12" FontWeight="SemiBold"
+                         Foreground="White"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
           </Button>
+          <!-- Management Tab - Indigo -->
           <Button Grid.Column="1"
-                  Classes="Primary"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="8,6"
+                  Padding="8,8"
+                  CornerRadius="8"
+                  Background="#6366F1"
                   Command="{Binding SelectManagementBranchCommand}"
                   Opacity="{Binding ManagementTabOpacity}">
-            <TextBlock Text="{Binding ManagementBranchLabel}"
-                       FontSize="12" FontWeight="SemiBold"
-                       TextTrimming="CharacterEllipsis" />
+            <StackPanel Orientation="Horizontal" Spacing="4"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="BriefcaseOutline" Width="14" Height="14"
+                               Foreground="White" />
+              <TextBlock Text="{Binding ManagementBranchLabel}"
+                         FontSize="12" FontWeight="SemiBold"
+                         Foreground="White"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
           </Button>
+          <!-- Marketing Tab - Gruen -->
           <Button Grid.Column="2"
-                  Classes="Primary"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="8,6"
+                  Padding="8,8"
+                  CornerRadius="8"
+                  Background="#22C55E"
                   Command="{Binding SelectMarketingBranchCommand}"
                   Opacity="{Binding MarketingTabOpacity}">
-            <TextBlock Text="{Binding MarketingBranchLabel}"
-                       FontSize="12" FontWeight="SemiBold"
-                       TextTrimming="CharacterEllipsis" />
+            <StackPanel Orientation="Horizontal" Spacing="4"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Bullhorn" Width="14" Height="14"
+                               Foreground="White" />
+              <TextBlock Text="{Binding MarketingBranchLabel}"
+                         FontSize="12" FontWeight="SemiBold"
+                         Foreground="White"
+                         TextTrimming="CharacterEllipsis" />
+            </StackPanel>
           </Button>
         </Grid>
       </Border>
@@ -182,7 +212,7 @@
                         RowSpacing="4" ColumnSpacing="10">
 
                     <!-- Row 0: Level Badge + Name + Status Icon -->
-                    <Border Background="{DynamicResource PrimaryBrush}"
+                    <Border Background="{StaticResource CraftPrimaryBrush}"
                             CornerRadius="4"
                             Padding="6,2"
                             VerticalAlignment="Center">
@@ -256,7 +286,7 @@
                                 IsVisible="{Binding IsActive}" Spacing="4">
                       <ProgressBar Value="{Binding Progress}"
                                    Maximum="1"
-                                   Foreground="{DynamicResource PrimaryBrush}"
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
                                    Height="6" />
                     </StackPanel>
 

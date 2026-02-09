@@ -13,14 +13,20 @@
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
-            Classes="CardElevated"
             Padding="16,12"
             CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#92400E" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Back Button -->
         <Button Classes="Text"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
 
         <!-- Title (centered) -->
@@ -29,10 +35,10 @@
                     HorizontalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="AccountGroup" Width="28" Height="28"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{Binding Title}"
                      FontSize="20" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </StackPanel>
 
         <!-- Balance Badges -->
@@ -72,7 +78,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Text="{Binding TimeUntilRotation}"
                          FontSize="24" FontWeight="Bold"
-                         Foreground="{DynamicResource PrimaryBrush}" />
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
             <!-- Refresh via Video-Ad Button -->
@@ -89,26 +95,23 @@
           </Grid>
         </Border>
 
-        <!-- KEINE FREIEN PLAETZE INFO -->
-        <Border Classes="CardElevated" Padding="16,24"
+        <!-- KEINE FREIEN PLAETZE INFO (Warnung, blockiert nicht den Markt) -->
+        <Border Classes="CardElevated" Padding="16,12"
                 IsVisible="{Binding !HasAvailableSlots}">
-          <StackPanel HorizontalAlignment="Center" Spacing="8"
-                      Margin="16,0">
-            <mi:MaterialIcon Kind="AccountOff" Width="48" Height="48"
-                             Foreground="{DynamicResource WarningBrush}"
-                             HorizontalAlignment="Center" />
+          <StackPanel Orientation="Horizontal" Spacing="12"
+                      HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="AlertCircleOutline" Width="24" Height="24"
+                             Foreground="{DynamicResource WarningBrush}" />
             <TextBlock Text="{Binding NoSlotsMessage}"
-                       FontSize="14"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center"
+                       FontSize="13"
+                       Foreground="{DynamicResource WarningBrush}"
                        TextWrapping="Wrap"
-                       TextAlignment="Center" />
+                       VerticalAlignment="Center" />
           </StackPanel>
         </Border>
 
-        <!-- WORKER CARDS (nur sichtbar wenn Plätze frei) -->
-        <ItemsControl ItemsSource="{Binding AvailableWorkers}"
-                      IsVisible="{Binding HasAvailableSlots}">
+        <!-- WORKER CARDS (immer sichtbar, Hire-Button disabled wenn keine Plaetze) -->
+        <ItemsControl ItemsSource="{Binding AvailableWorkers}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:Worker">
               <Border Classes="Card" Margin="0,0,0,12" Padding="16">
@@ -173,11 +176,12 @@
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                   </StackPanel>
 
-                  <!-- Row 3: Hire Button -->
+                  <!-- Row 3: Hire Button (disabled wenn keine Plaetze frei) -->
                   <Button Grid.Row="3" Grid.ColumnSpan="2"
                           Classes="Primary"
                           HorizontalAlignment="Stretch"
                           Padding="12,8"
+                          IsEnabled="{Binding $parent[ItemsControl].((vm:WorkerMarketViewModel)DataContext).HasAvailableSlots}"
                           Command="{Binding $parent[ItemsControl].((vm:WorkerMarketViewModel)DataContext).HireWorkerCommand}"
                           CommandParameter="{Binding .}">
                     <StackPanel Orientation="Horizontal"
@@ -205,14 +209,96 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <!-- EMPTY STATE (Pool leer aber Plaetze frei → nur wenn HasAvailableSlots) -->
-        <!-- Wird NICHT angezeigt wenn "Keine freien Plaetze" Banner sichtbar ist -->
-
         <!-- Bottom Spacer -->
         <Border Height="60" />
 
       </StackPanel>
     </ScrollViewer>
+
+    <!-- ================================================================= -->
+    <!-- WORKSHOP-AUSWAHL OVERLAY (Bug 3: Spieler waehlt Workshop)        -->
+    <!-- ================================================================= -->
+    <Border Grid.RowSpan="2"
+            ZIndex="50"
+            IsVisible="{Binding ShowWorkshopSelection}"
+            Background="#80000000">
+      <Border Classes="CardElevated"
+              MaxWidth="400"
+              Margin="24"
+              Padding="20"
+              CornerRadius="16"
+              VerticalAlignment="Center"
+              HorizontalAlignment="Center">
+        <StackPanel Spacing="16">
+
+          <!-- Overlay-Titel -->
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="Factory" Width="24" Height="24"
+                             Foreground="{DynamicResource PrimaryBrush}" />
+            <TextBlock Text="{Binding SelectWorkshopTitle}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </StackPanel>
+
+          <!-- Pendender Worker Info -->
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="8" Padding="12,8">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="AccountPlus" Width="18" Height="18"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+              <TextBlock Text="{Binding PendingWorker.Name}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <Border Background="{DynamicResource PrimaryBrush}"
+                      CornerRadius="4" Padding="6,2">
+                <TextBlock Text="{Binding PendingWorker.Tier}"
+                           FontSize="11" FontWeight="Bold" Foreground="White" />
+              </Border>
+            </StackPanel>
+          </Border>
+
+          <!-- Workshop-Liste -->
+          <ItemsControl ItemsSource="{Binding WorkshopSelections}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:WorkshopSelectionItem">
+                <Button Classes="Outlined"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Stretch"
+                        Margin="0,0,0,8"
+                        Padding="12,10"
+                        Command="{Binding $parent[ItemsControl].((vm:WorkerMarketViewModel)DataContext).ConfirmWorkshopSelectionCommand}"
+                        CommandParameter="{Binding .}">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Spacing="2">
+                      <TextBlock Text="{Binding Name}"
+                                 FontSize="14" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Text="{Binding WorkerInfo}"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+                    <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight"
+                                     Width="20" Height="20"
+                                     Foreground="{DynamicResource TextSecondaryBrush}"
+                                     VerticalAlignment="Center" />
+                  </Grid>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Abbrechen Button -->
+          <Button Classes="Text"
+                  HorizontalAlignment="Center"
+                  Command="{Binding CancelWorkshopSelectionCommand}">
+            <TextBlock Text="{Binding CancelText}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </Button>
+
+        </StackPanel>
+      </Border>
+    </Border>
 
   </Grid>
 

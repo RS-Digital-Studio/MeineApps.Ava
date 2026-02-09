@@ -12,14 +12,20 @@
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
-            Classes="CardElevated"
             Padding="16,12"
             CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#92400E" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Back Button -->
         <Button Classes="Text"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
 
         <!-- Title (centered) -->
@@ -28,16 +34,17 @@
                     HorizontalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="ChartBar" Width="28" Height="28"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{loc:Translate Stats}"
                      FontSize="20" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </StackPanel>
 
         <!-- Refresh Button -->
         <Button Grid.Column="2" Classes="Text"
                 Command="{Binding RefreshStatisticsCommand}">
-          <mi:MaterialIcon Kind="Refresh" Width="24" Height="24" />
+          <mi:MaterialIcon Kind="Refresh" Width="24" Height="24"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
       </Grid>
     </Border>
@@ -53,10 +60,10 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="AccountHardHat" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Player}"
                          FontSize="18" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto"
@@ -123,10 +130,10 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="GamepadVariant" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate MiniGames}"
                          FontSize="18" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto"
@@ -155,7 +162,7 @@
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding PerfectRatings, StringFormat='{}{0:N0}'}"
                            FontSize="20" FontWeight="Bold"
-                           Foreground="{DynamicResource PrimaryBrush}" />
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </StackPanel>
 
               <!-- Perfect Rate -->
@@ -164,7 +171,7 @@
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding PerfectRate, StringFormat='{}{0:F1}%'}"
                            FontSize="20" FontWeight="Bold"
-                           Foreground="{DynamicResource PrimaryBrush}" />
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </StackPanel>
 
               <!-- Current Streak -->
@@ -268,10 +275,10 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Factory" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Workshops}"
                          FontSize="18" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
@@ -311,10 +318,10 @@
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="ClipboardList" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate WorkshopDetails}"
                          FontSize="18" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
             <ItemsControl ItemsSource="{Binding WorkshopStats}">

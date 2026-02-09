@@ -66,6 +66,7 @@ HandwerkerImperium/
 │   │       ├── WiringGameView.axaml/.cs
 │   │       └── PaintingGameView.axaml/.cs
 │   ├── Converters/                # 7 converters
+│   ├── Controls/                  # (verschoben nach MeineApps.UI.Controls)
 │   ├── Helpers/                   # Icons, MoneyFormatter, AnimationHelper, AsyncExtensions
 │   └── Resources/Strings/        # 6 languages + Designer.cs
 ├── HandwerkerImperium.Desktop/    # net10.0 (Windows/Linux)
@@ -348,13 +349,13 @@ dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
 - **GameStateService.cs**: Implementierung mit lock-Pattern (analog Money)
 
 ### Werkzeuge auf Goldschrauben (Phase 2)
-- **Tool.cs**: `UpgradeCostScrews` Property (Level 0→3, 1→8, 2→20, 3→45, 4→80)
+- **Tool.cs**: `UpgradeCostScrews` Property (Level 0→5, 1→15, 2→35, 3→70, 4→120)
 - **ShopViewModel.cs**: Tool-Upgrades kosten Goldschrauben statt Euro, `GoldenScrewsBalance` Property
 - **ShopView.axaml**: ScrewFlatTop-Icon + Zahl statt Euro bei Tool-Upgrades, Goldschrauben-Badge im Header
 
 ### Goldschrauben verdienen (Phase 3)
 - **DailyReward.cs**: Tag 2/4/6/7 geben 2/3/5/10 Goldschrauben
-- **DailyChallengeService.cs**: GoldenScrewReward (1-3 pro Challenge, Level-abhaengig), AllCompletedBonusScrews=15
+- **DailyChallengeService.cs**: GoldenScrewReward (1-2 pro Challenge, Level-abhaengig, gedeckelt auf 2), AllCompletedBonusScrews=10
 - **Achievement.cs**: GoldenScrewReward fuer schwierige Achievements (Prestige: 20/50/100, 1M/100M: 15/30, Orders: 10/25, etc.)
 - **ShopViewModel.cs**: Video-Ad "golden_screws_ad" gibt 8 Goldschrauben
 - **ShopViewModel.cs**: 3 IAP-Pakete (golden_screws_75/200/600 fuer 0.99/2.49/4.99 EUR)
@@ -366,7 +367,7 @@ dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
 - **WorkerMarketView.axaml**: Goldschrauben-Badge im Header
 
 ### Research Instant-Finish (Phase 5+)
-- **Research.cs**: `InstantFinishScrewCost` (Level 8=10, 9=15, 10=25, 11=40, 12=60, 13=80, 14=100, 15=120), `CanInstantFinish`
+- **Research.cs**: `InstantFinishScrewCost` (Level 8=15, 9=25, 10=40, 11=60, 12=90, 13=120, 14=150, 15=180), `CanInstantFinish`
 - **IResearchService.cs**: `InstantFinishResearch()` Methode
 - **ResearchService.cs**: Implementierung (CanInstantFinish + CanAffordGoldenScrews → sofortiger Abschluss)
 - **ResearchViewModel.cs**: `GoldenScrewsDisplay`, `CanInstantFinish`, `InstantFinishCost` Properties + `InstantFinishResearchCommand`
@@ -374,7 +375,7 @@ dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
 - **ResearchView.axaml**: Goldschrauben-Badge im Header, Sofort-Fertigstellen-Button bei aktiver Forschung, Kostenanzeige auf Cards (Lv.8+)
 
 ### Worker Goldschrauben (Phase 5+)
-- **WorkerTier.cs**: `GetHiringScrewCost()` Extension (Tier A=10, Tier S=25, Rest=0)
+- **WorkerTier.cs**: `GetHiringScrewCost()` Extension (Tier A=15, Tier S=40, Rest=0)
 - **Worker.cs**: `HiringScrewCost` computed Property
 - **WorkerService.cs**: `HireWorker` prueft+verbraucht Goldschrauben fuer Tier A+S
 - **WorkerMarketViewModel.cs**: Goldschrauben-Check vor Einstellung (NotEnoughScrews Alert)
@@ -388,6 +389,51 @@ dotnet build HandwerkerImperium.Android/HandwerkerImperium.Android.csproj
 - **Fehlende StatisticsViewModel.AlertRequested Subscription**: Event existierte aber wurde nie abonniert → Alerts aus StatisticsVM kamen nie an
 - **OnLanguageChanged erweitert**: `BuildingsViewModel.UpdateLocalizedTexts()` + `WorkerProfileViewModel.UpdateLocalizedTexts()` fehlten
 - **Memory Leak behoben**: Alle AlertRequested/ConfirmationRequested Subscriptions (12 Events) nutzten anonyme Lambdas die in Dispose() nicht unsubscribed werden konnten → gespeicherte `_alertHandler`/`_confirmHandler` Delegates + vollstaendiges Unsubscribe in Dispose()
+
+## FloatingTextOverlay - Game Juice (08.02.2026)
+- **FloatingTextOverlay.cs + CelebrationOverlay.cs**: Urspruenglich in Controls/ erstellt, dann nach MeineApps.UI.Controls verschoben (xmlns geaendert auf `using:MeineApps.UI.Controls`)
+- **Funktionsweise**: DispatcherTimer (~60fps), CubicEaseOut Bewegung (80px nach oben), Opacity-Fadeout (100% bis 30% Fortschritt, dann linear auf 0%)
+- **DashboardView.axaml**: FloatingTextCanvas ueber dem ScrollViewer (Grid.Row=1, ZIndex=10)
+- **DashboardView.axaml.cs**: FloatingTextRequested Event von MainViewModel abonniert, Farbe je Kategorie (money=#22C55E, xp/golden_screws=#FFD700, level=#D97706)
+- **MainViewModel.OnGameTick**: FloatingText alle 3 Ticks bei Income > 0 und Dashboard aktiv ($"+{income:N0}€")
+- **MainViewModel.UpgradeWorkshop**: FloatingText "+1 Level!" bei erfolgreichem Workshop-Upgrade
+
+## View-Redesign Craft-Farben (08.02.2026)
+- **5 Views redesigned** mit CraftPrimary/CraftPrimaryLight/CraftGold statt generischem PrimaryBrush
+- **ResearchView**: Header Gradient (#92400E→#451A03), Branch-Tabs farbig (Tools=#EA580C Orange, Management=#6366F1 Indigo, Marketing=#22C55E Gruen) mit Icons, Level-Badge CraftPrimary, ProgressBars CraftPrimaryLight
+- **StatisticsView**: Header Gradient, 4 Section-Headers (Player, MiniGames, Workshops, WorkshopDetails) mit CraftPrimaryLightBrush, PerfectRatings/PerfectRate CraftPrimaryLight, Refresh-Icon CraftPrimaryLight
+- **AchievementsView**: Header Gradient mit TrophyVariant-Icon (CraftGold), Progress-Badge mit Gold-Farbe, Overall Progress + Achievement-ProgressBars CraftPrimaryLight
+- **WorkerMarketView**: Header Gradient, Title+Icon CraftPrimaryLight, Rotation Timer CraftPrimaryLight
+- **ShopView**: Hero-Banner Header (CraftPrimary→CraftSecondary Gradient, ScrewFlatTop Gold-Icon), Balance-Badges mit halbtransparentem schwarzen Hintergrund, Premium-Status Gradient, Shop-Item-Icons Craft-Gradient, Tool-Icons Craft-Gradient, Tool-Level CraftPrimaryLight, Upgrade-Buttons CraftPrimary Gradient, Tools-Section-Header mit CraftPrimary Badge, Info-Header CraftPrimaryLight, Ad-Badge CraftPrimaryLight
+- Build: 0 Fehler, 0 Warnungen
+
+## Worker-System Bugfixes (08.02.2026)
+
+### Bug 1: Arbeitermarkt leer wenn alle Workshops voll
+- **WorkerMarketViewModel.LoadMarket()**: Markt zeigt IMMER Arbeiter an (AvailableWorkers wird immer gesetzt), nicht nur wenn HasAvailableSlots=true
+- **WorkerMarketView.axaml**: `IsVisible="{Binding HasAvailableSlots}"` vom ItemsControl entfernt
+- **WorkerMarketView.axaml**: Info-Banner "Keine freien Plaetze" bleibt als gelbe Warnung (AlertCircleOutline-Icon), blockiert nicht mehr den Markt
+- **Hire-Button**: `IsEnabled="{Binding HasAvailableSlots}"` per Ancestor-Binding → Button ist disabled wenn keine Plaetze frei
+- **UpdateCanHire()**: Beruecksichtigt jetzt HasAvailableSlots (CanHire=false wenn keine Plaetze)
+
+### Bug 2: Workshop "Arbeiter einstellen" gibt zufaelligen Arbeiter
+- **WorkshopViewModel**: `HireWorkerAsync()` entfernt (erstellte zufaelligen Worker via TryHireWorker)
+- **WorkshopViewModel**: Neues `HireWorkerFromMarketCommand` → navigiert zum Arbeitermarkt via `NavigationRequested("workers")`
+- **WorkshopView.axaml**: Hire-Button nutzt HireWorkerFromMarketCommand, zeigt AccountPlus-Icon + lokalisierter Text
+- **MainViewModel.OnChildNavigation**: Route "workers" → `SelectWorkerMarketTab()` (oeffnet den Arbeitermarkt)
+
+### Bug 3: Worker wird auto-assigned ohne Workshop-Wahl
+- **WorkerMarketViewModel**: Neues Workshop-Auswahl-System mit ShowWorkshopSelection, PendingWorker, WorkshopSelections
+- **HireWorker()**: Zeigt Workshop-Auswahl-Overlay statt automatischer Zuweisung an ersten freien Workshop
+- **ConfirmWorkshopSelection(WorkshopSelectionItem)**: Weist Worker dem gewaehlten Workshop zu, aktualisiert HasAvailableSlots
+- **CancelWorkshopSelection()**: Schliesst das Overlay
+- **WorkshopSelectionItem**: Neue Klasse mit Type, Name, WorkerInfo ("3/5 Arbeiter"), HasFreeSlots
+- **WorkerMarketView.axaml**: Workshop-Auswahl-Overlay (ZIndex=50) mit Worker-Info, Workshop-Liste (Outlined-Buttons), Abbrechen
+
+### Lokalisierung
+- 1 neuer Key `SelectWorkshop` in 6 Sprachen (EN: Select Workshop, DE: Werkstatt waehlen, ES: Seleccionar taller, FR: Choisir l'atelier, IT: Seleziona officina, PT: Selecionar oficina)
+- Designer.cs: SelectWorkshop Property
+- Build: Shared + Desktop + Android 0 Fehler
 
 ## Version
 - v2.0.2 (vc7) - Release mit Store Assets

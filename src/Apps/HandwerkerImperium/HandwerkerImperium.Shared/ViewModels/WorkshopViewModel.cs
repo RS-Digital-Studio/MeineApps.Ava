@@ -191,16 +191,10 @@ public partial class WorkshopViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task HireWorkerAsync()
+    private void HireWorkerFromMarket()
     {
-        if (!CanHireWorker || !CanAffordHire)
-            return;
-
-        if (_gameStateService.TryHireWorker(WorkshopType))
-        {
-            await _audioService.PlaySoundAsync(GameSound.WorkerHired);
-            LoadWorkshop();
-        }
+        // Bug 2 Fix: Zum Arbeitermarkt navigieren statt zufaelligen Worker erstellen
+        NavigationRequested?.Invoke("workers");
     }
 
     [RelayCommand]

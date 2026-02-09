@@ -19,7 +19,7 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
     private static readonly DailyChallengeType[] AllChallengeTypes = Enum.GetValues<DailyChallengeType>();
 
     public decimal AllCompletedBonusAmount => 500m;
-    public int AllCompletedBonusScrews => 15;
+    public int AllCompletedBonusScrews => 10;
 
     public DailyChallengeService(IGameStateService gameStateService, ILocalizationService localizationService)
     {
@@ -189,8 +189,8 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
                 break;
         }
 
-        // Goldschrauben-Belohnung: 1-3 je nach Level-Stufe
-        challenge.GoldenScrewReward = 1 + tier;
+        // Goldschrauben-Belohnung: 1-2 je nach Level-Stufe (gedeckelt auf 2)
+        challenge.GoldenScrewReward = Math.Min(1 + tier, 2);
 
         return challenge;
     }

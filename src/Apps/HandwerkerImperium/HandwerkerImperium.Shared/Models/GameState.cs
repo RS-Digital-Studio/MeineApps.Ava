@@ -302,7 +302,7 @@ public class GameState
     public int BaseOfflineHours => 4;
 
     [JsonIgnore]
-    public int MaxOfflineHours => IsPremium ? 12 : 4;
+    public int MaxOfflineHours => IsPremium ? 16 : 4;
 
     /// <summary>
     /// Session flag: video extended offline duration.

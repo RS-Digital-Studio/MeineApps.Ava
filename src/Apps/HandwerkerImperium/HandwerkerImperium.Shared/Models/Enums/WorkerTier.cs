@@ -117,8 +117,8 @@ public static class WorkerTierExtensions
     /// </summary>
     public static int GetHiringScrewCost(this WorkerTier tier) => tier switch
     {
-        WorkerTier.A => 10,
-        WorkerTier.S => 25,
+        WorkerTier.A => 15,
+        WorkerTier.S => 40,
         _ => 0
     };
 }

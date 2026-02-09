@@ -4,18 +4,63 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:models="using:HandwerkerImperium.Models"
+             xmlns:conv="using:HandwerkerImperium.Converters"
+             xmlns:controls="using:MeineApps.UI.Controls"
              x:Class="HandwerkerImperium.Views.DashboardView"
              x:DataType="vm:MainViewModel">
+
+  <UserControl.Resources>
+    <conv:WorkshopColorConverter x:Key="WorkshopColor" />
+  </UserControl.Resources>
+
+  <!-- Animationen -->
+  <UserControl.Styles>
+    <!-- Income-Puls -->
+    <Style Selector="TextBlock.IncomePulse">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.6"/></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1.0"/></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.6"/></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <!-- Goldschrauben-Badge Glow -->
+    <Style Selector="Border.GoldenBadge">
+      <Style.Animations>
+        <Animation Duration="0:0:3" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="BoxShadow" Value="0 0 4 0 #20FFD700"/></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="BoxShadow" Value="0 0 14 0 #60FFD700"/></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="BoxShadow" Value="0 0 4 0 #20FFD700"/></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <!-- Phase 12.2: "Fast geschafft" Puls auf Upgrade-Button -->
+    <Style Selector="Button.UpgradePulse">
+      <Style.Animations>
+        <Animation Duration="0:0:1.5" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.7"/></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1.0"/></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.7"/></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*">
 
     <!-- ================================================================= -->
-    <!-- HEADER                                                            -->
+    <!-- HEADER: Handwerker-Gradient                                       -->
     <!-- ================================================================= -->
-    <Border Grid.Row="0"
-            Classes="CardElevated"
-            Padding="16,10"
-            CornerRadius="0,0,12,12">
+    <Border Grid.Row="0" Padding="16,12" CornerRadius="0,0,12,12"
+            BoxShadow="0 4 16 0 #40D97706">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#D97706" Offset="0" />
+          <GradientStop Color="#92400E" Offset="0.7" />
+          <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
       <StackPanel Spacing="6">
 
         <!-- Zeile 1: Geld + Goldschrauben + Daily Reward -->
@@ -23,16 +68,17 @@
           <StackPanel Spacing="2">
             <TextBlock Text="{Binding MoneyDisplay}"
                        FontSize="32" FontWeight="Bold"
-                       Foreground="{DynamicResource SuccessBrush}" />
+                       Foreground="White" />
             <TextBlock Text="{Binding IncomeDisplay}"
-                       FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                       FontSize="13" Classes="IncomePulse"
+                       Foreground="#FFFFFFCC" />
           </StackPanel>
 
           <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                       VerticalAlignment="Center">
-            <!-- Goldschrauben-Badge -->
-            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="8,4">
+            <!-- Goldschrauben-Badge mit Glow -->
+            <Border Classes="GoldenBadge"
+                    Background="#30000000" CornerRadius="12" Padding="8,4">
               <StackPanel Orientation="Horizontal" Spacing="4">
                 <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700" />
                 <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="14" FontWeight="Bold"
@@ -43,36 +89,46 @@
             <!-- Daily Reward Badge -->
             <Button Classes="Primary"
                     Padding="8,4"
+                    Background="#FFFFFF30"
                     IsVisible="{Binding HasDailyReward}"
                     Command="{Binding ClaimDailyRewardCommand}">
-              <mi:MaterialIcon Kind="Gift" Width="20" Height="20" />
+              <mi:MaterialIcon Kind="Gift" Width="20" Height="20" Foreground="White" />
             </Button>
           </StackPanel>
         </Grid>
 
-        <!-- Zeile 2: Level + XP + Stats + Achievements -->
+        <!-- Zeile 2: Level + XP (volle Breite) + Stats + Achievements -->
         <Grid ColumnDefinitions="Auto,*,Auto">
           <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="Gold" />
+            <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="#FFD700" />
             <TextBlock Text="{Binding PlayerLevel, StringFormat='Lv.{0}'}"
                        FontSize="12" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
-            <ProgressBar Value="{Binding LevelProgress}"
-                         Maximum="1"
-                         Foreground="{DynamicResource PrimaryBrush}"
-                         Height="4" Width="80" VerticalAlignment="Center" />
+                       Foreground="White" />
           </StackPanel>
 
+          <!-- XP-Leiste: volle Breite, prominent -->
+          <ProgressBar Grid.Column="1" Value="{Binding LevelProgress}"
+                       Maximum="1" Height="8" CornerRadius="4"
+                       Foreground="#F59E0B" Background="#FFFFFF20"
+                       VerticalAlignment="Center" Margin="8,0" />
+
           <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+            <!-- Streak-Feuer (sichtbar ab Streak >= 2) -->
+            <StackPanel Orientation="Horizontal" Spacing="2"
+                        IsVisible="{Binding HasLoginStreak}">
+              <mi:MaterialIcon Kind="Fire" Width="14" Height="14" Foreground="#FF6B35" />
+              <TextBlock Text="{Binding LoginStreak}" FontSize="11" FontWeight="Bold"
+                         Foreground="#FF6B35" VerticalAlignment="Center" />
+            </StackPanel>
             <Button Classes="Text" Padding="4"
                     Command="{Binding SelectStatisticsTabCommand}">
               <mi:MaterialIcon Kind="ChartBar" Width="18" Height="18"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                               Foreground="#FFFFFFAA" />
             </Button>
             <Button Classes="Text" Padding="4"
                     Command="{Binding SelectAchievementsTabCommand}">
               <mi:MaterialIcon Kind="Trophy" Width="18" Height="18"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                               Foreground="#FFFFFFAA" />
             </Button>
           </StackPanel>
         </Grid>
@@ -86,13 +142,14 @@
     <ScrollViewer Grid.Row="1" Padding="16">
       <StackPanel Spacing="20">
 
-        <!-- DAILY CHALLENGES -->
+        <!-- ============================================================= -->
+        <!-- DAILY CHALLENGES                                              -->
+        <!-- ============================================================= -->
         <Border Classes="CardElevated" Padding="12" IsVisible="{Binding HasDailyChallenges}">
           <StackPanel Spacing="8">
-            <!-- Header -->
             <Grid ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Kind="CalendarCheck" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{loc:Translate DailyChallenges}"
                          FontSize="16" FontWeight="Bold" Margin="8,0,0,0"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -101,7 +158,6 @@
                 <mi:MaterialIcon Kind="{Binding ChallengesExpandIconKind}" Width="20" Height="20" />
               </Button>
             </Grid>
-            <!-- Challenge List -->
             <ItemsControl ItemsSource="{Binding DailyChallenges}"
                           IsVisible="{Binding IsChallengesExpanded}">
               <ItemsControl.ItemTemplate>
@@ -115,7 +171,7 @@
                                  Foreground="{DynamicResource SuccessBrush}" />
                       <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <ProgressBar Value="{Binding Progress}" Maximum="1" Height="6"
-                                     Foreground="{DynamicResource PrimaryBrush}" />
+                                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
                         <TextBlock Grid.Column="1" Text="{Binding ProgressText}" FontSize="10"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" />
@@ -125,7 +181,6 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
-            <!-- All-Complete Bonus -->
             <Button Classes="Secondary" HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     IsVisible="{Binding CanClaimAllBonus}"
@@ -138,13 +193,14 @@
           </StackPanel>
         </Border>
 
-        <!-- QUICK JOBS (minimierbar) -->
+        <!-- ============================================================= -->
+        <!-- QUICK JOBS                                                    -->
+        <!-- ============================================================= -->
         <Border Classes="CardElevated" Padding="12">
           <StackPanel Spacing="8">
-            <!-- Header -->
             <Grid ColumnDefinitions="Auto,*,Auto,Auto">
               <mi:MaterialIcon Kind="FlashOutline" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1" Text="{loc:Translate QuickJobs}"
                          FontSize="16" FontWeight="Bold" Margin="8,0,0,0"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -161,7 +217,6 @@
                 <mi:MaterialIcon Kind="{Binding QuickJobsExpandIconKind}" Width="20" Height="20" />
               </Button>
             </Grid>
-            <!-- Job List -->
             <ItemsControl ItemsSource="{Binding QuickJobs}"
                           IsVisible="{Binding IsQuickJobsExpanded}">
               <ItemsControl.ItemTemplate>
@@ -180,6 +235,7 @@
                         </StackPanel>
                       </StackPanel>
                       <Button Grid.Column="1" Classes="Primary" Padding="10,4"
+                              Background="{StaticResource CraftPrimaryBrush}"
                               Content="{loc:Translate Start}"
                               IsVisible="{Binding !IsCompleted}"
                               Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).StartQuickJobCommand}"
@@ -196,33 +252,34 @@
           </StackPanel>
         </Border>
 
-        <!-- WORKSHOPS SECTION -->
-        <TextBlock Text="{loc:Translate Home}"
+        <!-- ============================================================= -->
+        <!-- WORKSHOPS SECTION: Farbige Karten mit Workshop-Identitaet     -->
+        <!-- ============================================================= -->
+        <TextBlock Text="{loc:Translate Workshops}"
                    FontSize="18" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}" />
 
-        <!-- Workshop-Liste (kompakt, horizontal) -->
         <ItemsControl ItemsSource="{Binding Workshops}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:WorkshopDisplayModel">
-              <Button Classes="Text" Margin="0,2" Padding="0" Height="NaN"
+              <Button Classes="Text" Margin="0,3" Padding="0" Height="NaN"
                       Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).SelectWorkshopCommand}"
                       CommandParameter="{Binding .}">
-                <Border Classes="Card" Padding="10,8" BoxShadow="0 1 4 0 #20000000">
-                  <Grid ColumnDefinitions="40,*,Auto">
+                <Border Classes="Card" Padding="0" ClipToBounds="True"
+                        BoxShadow="{Binding MaxLevelGlow}">
+                  <Grid ColumnDefinitions="4,44,*,Auto">
 
-                    <!-- Icon -->
-                    <Grid Width="40" Height="40">
-                      <Border CornerRadius="20">
-                        <Border.Background>
-                          <RadialGradientBrush>
-                            <GradientStop Color="#33686CF0" Offset="0" />
-                            <GradientStop Color="#11686CF0" Offset="1" />
-                          </RadialGradientBrush>
-                        </Border.Background>
-                      </Border>
+                    <!-- 4px Farbstreifen links in Workshop-Farbe (Intensitaet je nach Level) -->
+                    <Border Grid.Column="0" CornerRadius="12,0,0,12"
+                            Background="{Binding Type, Converter={StaticResource WorkshopColor}}"
+                            Opacity="{Binding ColorIntensity}" />
+
+                    <!-- Icon mit farbigem Hintergrund -->
+                    <Grid Grid.Column="1" Width="40" Height="40" Margin="4,6">
+                      <Border CornerRadius="20"
+                              Background="{Binding Type, Converter={StaticResource WorkshopColor}, ConverterParameter=bg}" />
                       <mi:MaterialIcon Kind="{Binding IconKind}" Width="20" Height="20"
-                                       Foreground="{DynamicResource PrimaryBrush}"
+                                       Foreground="{Binding Type, Converter={StaticResource WorkshopColor}}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        IsVisible="{Binding IsUnlocked}" />
                       <mi:MaterialIcon Kind="Lock" Width="18" Height="18"
@@ -231,8 +288,8 @@
                                        IsVisible="{Binding IsUnlocked, Converter={x:Static BoolConverters.Not}}" />
                     </Grid>
 
-                    <!-- Name + Infos -->
-                    <StackPanel Grid.Column="1" Spacing="2" Margin="10,0,0,0" VerticalAlignment="Center">
+                    <!-- Name + Worker/Income -->
+                    <StackPanel Grid.Column="2" Spacing="2" Margin="8,6,0,6" VerticalAlignment="Center">
                       <Grid ColumnDefinitions="*,Auto">
                         <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
@@ -242,21 +299,26 @@
                                    VerticalAlignment="Center" Margin="6,0,0,0"
                                    IsVisible="{Binding IsUnlocked}" />
                       </Grid>
-                      <!-- Unlocked: Worker + Income einzeilig -->
+                      <!-- Unlocked: Worker-Zaehler + Income -->
                       <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsUnlocked}">
-                        <TextBlock Text="{Binding WorkerDisplay}" FontSize="11"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}">
+                          <Run Text="{Binding WorkerCount}" />/<Run Text="{Binding MaxWorkers}" />
+                          <Run Text="&#x1F477;" />
+                        </TextBlock>
                         <TextBlock Text="{Binding IncomeDisplay}" FontSize="11"
                                    Foreground="{DynamicResource SuccessBrush}" />
                       </StackPanel>
-                      <!-- Locked: Unlock-Info -->
+                      <!-- Locked -->
                       <TextBlock Text="{Binding UnlockDisplay}" FontSize="11"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  IsVisible="{Binding !IsUnlocked}" />
                     </StackPanel>
 
-                    <!-- Upgrade-Button -->
-                    <Button Grid.Column="2" Classes="Primary" Padding="8,4" MinHeight="32"
+                    <!-- Upgrade-Button in Workshop-Farbe -->
+                    <Button Grid.Column="3" Classes="Primary" Padding="8,4" MinHeight="32"
+                            Margin="4,0,8,0"
+                            Background="{Binding Type, Converter={StaticResource WorkshopColor}}"
                             IsVisible="{Binding IsUnlocked}"
                             IsEnabled="{Binding CanAffordUpgrade}"
                             Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).UpgradeWorkshopCommand}"
@@ -271,7 +333,9 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <!-- ORDERS SECTION -->
+        <!-- ============================================================= -->
+        <!-- ORDERS SECTION                                                -->
+        <!-- ============================================================= -->
         <Grid ColumnDefinitions="*,Auto" Margin="0,16,0,0">
           <TextBlock Text="{loc:Translate Orders}"
                      FontSize="20" FontWeight="Bold"
@@ -282,36 +346,27 @@
           </Button>
         </Grid>
 
-        <!-- Order Cards -->
         <ItemsControl ItemsSource="{Binding AvailableOrders}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <Border Classes="Card" Margin="0,0,0,12" Padding="16">
                 <Grid ColumnDefinitions="*,Auto"
                       RowDefinitions="Auto,Auto,Auto">
-
-                  <!-- Title & Difficulty -->
                   <StackPanel Orientation="Horizontal" Spacing="8">
                     <TextBlock Text="{Binding DisplayTitle}"
                                FontSize="14" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
-
-                  <!-- Workshop Type Name (localized) -->
                   <TextBlock Grid.Column="1"
                              Text="{Binding DisplayWorkshopName}"
                              FontSize="12"
-                             Foreground="{DynamicResource PrimaryBrush}"
+                             Foreground="{StaticResource CraftPrimaryLightBrush}"
                              VerticalAlignment="Center" />
-
-                  <!-- Tasks Preview -->
                   <TextBlock Grid.Row="1" Grid.ColumnSpan="2"
                              Text="{Binding Tasks.Count, StringFormat='{}{0} Mini-Games'}"
                              FontSize="12"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              Margin="0,4,0,8" />
-
-                  <!-- Reward & Start Button -->
                   <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4">
                     <mi:MaterialIcon Kind="CashMultiple" Width="18" Height="18"
                                      Foreground="{DynamicResource SuccessBrush}" />
@@ -320,22 +375,20 @@
                                Foreground="{DynamicResource SuccessBrush}"
                                VerticalAlignment="Center" />
                     <mi:MaterialIcon Kind="Star" Width="14" Height="14"
-                                     Foreground="Gold"
+                                     Foreground="#FFD700"
                                      Margin="8,0,0,0" />
                     <TextBlock Text="{Binding BaseXp, StringFormat='{}{0} XP'}"
                                FontSize="12"
-                               Foreground="Gold"
+                               Foreground="#FFD700"
                                VerticalAlignment="Center" />
                   </StackPanel>
-
                   <Button Grid.Row="2" Grid.Column="1"
                           Content="{loc:Translate Start}"
-                          Classes="Primary"
-                          Padding="16,8"
+                          Classes="Primary" Padding="16,8"
+                          Background="{StaticResource CraftPrimaryBrush}"
                           Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).StartOrderCommand}"
                           CommandParameter="{Binding .}"
                           IsEnabled="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).HasActiveOrder, Converter={x:Static BoolConverters.Not}}" />
-
                 </Grid>
               </Border>
             </DataTemplate>
@@ -347,6 +400,11 @@
 
       </StackPanel>
     </ScrollViewer>
+
+    <!-- FloatingText Overlay: Animierte "+100€" Texte die nach oben fliegen -->
+    <controls:FloatingTextOverlay x:Name="FloatingTextCanvas"
+                                   Grid.Row="1" ZIndex="10"
+                                   IsHitTestVisible="False" />
 
   </Grid>
 

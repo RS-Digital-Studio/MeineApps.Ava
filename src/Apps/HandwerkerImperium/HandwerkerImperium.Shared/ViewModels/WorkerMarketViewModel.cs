@@ -73,6 +73,22 @@ public partial class WorkerMarketViewModel : ObservableObject
     [ObservableProperty]
     private string _noSlotsMessage = string.Empty;
 
+    // Workshop-Auswahl Properties (Bug 3: Spieler waehlt Workshop beim Einstellen)
+    [ObservableProperty]
+    private bool _showWorkshopSelection;
+
+    [ObservableProperty]
+    private Worker? _pendingWorker;
+
+    [ObservableProperty]
+    private List<WorkshopSelectionItem> _workshopSelections = [];
+
+    [ObservableProperty]
+    private string _selectWorkshopTitle = string.Empty;
+
+    [ObservableProperty]
+    private string _cancelText = string.Empty;
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -96,8 +112,9 @@ public partial class WorkerMarketViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Loads the current worker market pool and updates all display properties.
-    /// Zeigt nur Arbeiter an wenn es Workshops mit freien Plaetzen gibt.
+    /// Laedt den aktuellen Arbeitermarkt-Pool und aktualisiert alle Anzeige-Properties.
+    /// Zeigt IMMER Arbeiter an, auch wenn keine Workshops mit freien Plaetzen existieren.
+    /// Der Hire-Button wird dann disabled (Bug 1 Fix).
     /// </summary>
     public void LoadMarket()
     {
@@ -113,13 +130,11 @@ public partial class WorkerMarketViewModel : ObservableObject
 
         HasAvailableSlots = workshopsWithSlots.Count > 0;
 
-        if (HasAvailableSlots)
+        // Markt IMMER anzeigen, unabhaengig von freien Plaetzen
+        AvailableWorkers = market.AvailableWorkers.ToList();
+
+        if (!HasAvailableSlots)
         {
-            AvailableWorkers = market.AvailableWorkers.ToList();
-        }
-        else
-        {
-            AvailableWorkers = [];
             NoSlotsMessage = _localizationService.GetString("NoFreeSlotDesc");
         }
 
@@ -154,6 +169,8 @@ public partial class WorkerMarketViewModel : ObservableObject
         HireButtonText = _localizationService.GetString("HireWorker");
         RefreshButtonText = _localizationService.GetString("RefreshMarket");
         NextRotationLabel = _localizationService.GetString("NextRotation");
+        SelectWorkshopTitle = _localizationService.GetString("SelectWorkshop");
+        CancelText = _localizationService.GetString("Cancel");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -209,52 +226,84 @@ public partial class WorkerMarketViewModel : ObservableObject
             return;
         }
 
-        // Erster freier Workshop mit Platz
-        var workshops = _gameStateService.State.Workshops
-            .Where(w => w.IsUnlocked)
+        // Workshops mit freien Plaetzen ermitteln
+        var workshopsWithSlots = _gameStateService.State.Workshops
+            .Where(w => w.IsUnlocked && w.Workers.Count < w.MaxWorkers)
             .ToList();
 
-        if (workshops.Count == 0)
+        if (workshopsWithSlots.Count == 0)
         {
             AlertRequested?.Invoke(
-                _localizationService.GetString("NoWorkshop"),
-                _localizationService.GetString("NoWorkshopDesc"),
+                _localizationService.GetString("NoFreeSlot"),
+                _localizationService.GetString("NoFreeSlotDesc"),
                 "OK");
             return;
         }
 
-        // Versuche Worker zu einem Workshop zuzuordnen (erster mit freien Plaetzen)
-        bool hired = false;
-        foreach (var ws in workshops)
+        // Bug 3 Fix: Workshop-Auswahl-Overlay anzeigen statt automatisch zuzuweisen
+        PendingWorker = worker;
+        WorkshopSelections = workshopsWithSlots.Select(ws => new WorkshopSelectionItem
         {
-            if (_workerService.HireWorker(worker, ws.Type))
-            {
-                hired = true;
-                break;
-            }
-        }
+            Type = ws.Type,
+            Name = _localizationService.GetString(ws.Type.GetLocalizationKey()),
+            WorkerInfo = $"{ws.Workers.Count}/{ws.MaxWorkers} {_localizationService.GetString("Workers")}",
+            HasFreeSlots = true
+        }).ToList();
 
-        if (hired)
+        ShowWorkshopSelection = true;
+    }
+
+    [RelayCommand]
+    private void ConfirmWorkshopSelection(WorkshopSelectionItem? item)
+    {
+        if (item == null || PendingWorker == null) return;
+
+        var worker = PendingWorker;
+
+        if (_workerService.HireWorker(worker, item.Type))
         {
             // Worker aus Markt-Liste entfernen
             var updated = AvailableWorkers.Where(w => w.Id != worker.Id).ToList();
             AvailableWorkers = updated;
             SelectedWorker = null;
             CurrentBalance = MoneyFormatter.Format(_gameStateService.State.Money, 2);
+            GoldenScrewsDisplay = _gameStateService.State.GoldenScrews.ToString("N0");
             UpdateCanHire();
+
+            // Workshop-Auswahl schliessen
+            ShowWorkshopSelection = false;
+            PendingWorker = null;
 
             AlertRequested?.Invoke(
                 _localizationService.GetString("WorkerHired"),
                 string.Format(_localizationService.GetString("WorkerHiredFormat"), worker.Name),
                 _localizationService.GetString("Great"));
+
+            // HasAvailableSlots neu berechnen
+            HasAvailableSlots = _gameStateService.State.Workshops
+                .Any(w => _gameStateService.State.IsWorkshopUnlocked(w.Type) &&
+                          w.Workers.Count < w.MaxWorkers);
+            if (!HasAvailableSlots)
+            {
+                NoSlotsMessage = _localizationService.GetString("NoFreeSlotDesc");
+            }
         }
         else
         {
+            ShowWorkshopSelection = false;
+            PendingWorker = null;
             AlertRequested?.Invoke(
                 _localizationService.GetString("NoFreeSlot"),
                 _localizationService.GetString("NoFreeSlotDesc"),
                 "OK");
         }
+    }
+
+    [RelayCommand]
+    private void CancelWorkshopSelection()
+    {
+        ShowWorkshopSelection = false;
+        PendingWorker = null;
     }
 
     [RelayCommand]
@@ -283,6 +332,17 @@ public partial class WorkerMarketViewModel : ObservableObject
         }
 
         var cost = SelectedWorker.Tier.GetHiringCost();
-        CanHire = _gameStateService.CanAfford(cost);
+        CanHire = _gameStateService.CanAfford(cost) && HasAvailableSlots;
     }
+}
+
+/// <summary>
+/// Auswahl-Element fuer die Workshop-Zuweisung beim Einstellen eines Arbeiters.
+/// </summary>
+public class WorkshopSelectionItem
+{
+    public WorkshopType Type { get; set; }
+    public string Name { get; set; } = "";
+    public string WorkerInfo { get; set; } = "";
+    public bool HasFreeSlots { get; set; }
 }

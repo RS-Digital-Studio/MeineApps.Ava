@@ -184,27 +184,27 @@ public partial class ShopViewModel : ObservableObject
             // Goldschrauben: IAP-Pakete
             new ShopItem
             {
-                Id = "golden_screws_75",
-                Name = _localizationService.GetString("ShopGoldenScrews75Name"),
-                Description = _localizationService.GetString("ShopGoldenScrews75Desc"),
+                Id = "golden_screws_50",
+                Name = _localizationService.GetString("ShopGoldenScrews50Name"),
+                Description = _localizationService.GetString("ShopGoldenScrews50Desc"),
                 Icon = "🔩",
                 Price = "0,99 €",
                 IsPremiumItem = true
             },
             new ShopItem
             {
-                Id = "golden_screws_200",
-                Name = _localizationService.GetString("ShopGoldenScrews200Name"),
-                Description = _localizationService.GetString("ShopGoldenScrews200Desc"),
+                Id = "golden_screws_150",
+                Name = _localizationService.GetString("ShopGoldenScrews150Name"),
+                Description = _localizationService.GetString("ShopGoldenScrews150Desc"),
                 Icon = "🔩",
                 Price = "2,49 €",
                 IsPremiumItem = true
             },
             new ShopItem
             {
-                Id = "golden_screws_600",
-                Name = _localizationService.GetString("ShopGoldenScrews600Name"),
-                Description = _localizationService.GetString("ShopGoldenScrews600Desc"),
+                Id = "golden_screws_450",
+                Name = _localizationService.GetString("ShopGoldenScrews450Name"),
+                Description = _localizationService.GetString("ShopGoldenScrews450Desc"),
                 Icon = "🔩",
                 Price = "4,99 €",
                 IsPremiumItem = true
@@ -384,9 +384,9 @@ public partial class ShopViewModel : ObservableObject
                     // Goldschrauben IAP-Pakete (Placeholder fuer echten Kauf)
                     int screwAmount = item.Id switch
                     {
-                        "golden_screws_75" => 75,
-                        "golden_screws_200" => 200,
-                        "golden_screws_600" => 600,
+                        "golden_screws_50" => 50,
+                        "golden_screws_150" => 150,
+                        "golden_screws_450" => 450,
                         _ => 0
                     };
                     if (screwAmount > 0)
@@ -489,12 +489,12 @@ public partial class ShopViewModel : ObservableObject
                 break;
 
             case "golden_screws_ad":
-                _gameStateService.AddGoldenScrews(8);
+                _gameStateService.AddGoldenScrews(5);
                 GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
                 await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
                 ShowAlert(
                     _localizationService.GetString("GoldenScrews"),
-                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 8),
+                    string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), 5),
                     _localizationService.GetString("Great"));
                 break;
         }

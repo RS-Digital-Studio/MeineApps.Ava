@@ -36,11 +36,11 @@ public class Tool
     [JsonIgnore]
     public int UpgradeCostScrews => Level switch
     {
-        0 => 3,
-        1 => 8,
-        2 => 20,
-        3 => 45,
-        4 => 80,
+        0 => 5,
+        1 => 15,
+        2 => 35,
+        3 => 70,
+        4 => 120,
         _ => 0
     };
 

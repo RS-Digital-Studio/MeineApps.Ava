@@ -20,7 +20,7 @@ public partial class WeekOverviewViewModel : ObservableObject
     private readonly ITrialService _trialService;
 
     public event Action<string>? NavigationRequested;
-    public event Action<string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
 
     public WeekOverviewViewModel(
         ICalculationService calculation,
@@ -132,7 +132,7 @@ public partial class WeekOverviewViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally
         {

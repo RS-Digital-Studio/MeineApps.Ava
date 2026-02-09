@@ -11,7 +11,7 @@ public class HighScoreService : IHighScoreService
     private const string SCORES_KEY = "HighScores";
     private const int MAX_SCORES = 10;
     private readonly IPreferencesService _preferences;
-    private List<HighScoreEntry> _scores;
+    private List<HighScoreEntry> _scores = [];
 
     public HighScoreService(IPreferencesService preferences)
     {

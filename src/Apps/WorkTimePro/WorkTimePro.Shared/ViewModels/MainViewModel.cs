@@ -62,7 +62,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isAdBannerVisible;
 
-    public event Action<string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
 
@@ -305,7 +305,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
         finally
         {
@@ -335,7 +335,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
         finally
         {
@@ -392,7 +392,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally
         {
@@ -554,7 +554,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
     }
 

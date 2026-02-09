@@ -1,227 +1,76 @@
-# HandwerkerRechner (Avalonia) - v2.0.0
+# HandwerkerRechner (Avalonia)
 
-## Uebersicht
-Handwerker-App mit 9 Rechnern (4 Free + 5 Premium), Projektverwaltung und Einheiten-Umrechnung.
+> Fuer Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
-## Projektstruktur
-```
-HandwerkerRechner/
-├── HandwerkerRechner.Shared/     # Shared Code (net10.0)
-│   ├── Views/
-│   │   ├── Floor/                # 4 Floor Calculator Views
-│   │   ├── Premium/              # 5 Premium Calculator Views
-│   │   ├── MainView.axaml        # Tab Navigation (Home/Projects/Settings) + Calculator Overlay
-│   │   ├── ProjectsView.axaml
-│   │   └── SettingsView.axaml
-│   ├── ViewModels/
-│   │   ├── Floor/                # TileCalculator, Wallpaper, Paint, Flooring VMs
-│   │   ├── Premium/              # Drywall, Electrical, Metal, Garden, RoofSolar VMs
-│   │   ├── Base/                 # CalculatorViewModelBase (abstract, nicht von Floor VMs genutzt)
-│   │   ├── MainViewModel.cs      # Tab + Calculator Navigation + Premium
-│   │   ├── ProjectsViewModel.cs  # CRUD + Navigation zu Calculator
-│   │   └── SettingsViewModel.cs
-│   ├── Models/
-│   │   ├── CraftEngine.cs        # 16 Berechnungsmethoden
-│   │   ├── Project.cs
-│   │   └── CalculatorCategory.cs # 6 Kategorien, 17 CalculatorTypes
-│   ├── Services/
-│   │   ├── ProjectService.cs     # JSON, SemaphoreSlim
-│   │   ├── CalculationHistoryService.cs
-│   │   └── UnitConverterService.cs
-│   ├── Converters/
-│   ├── Resources/Strings/        # 6 Sprachen
-│   └── App.axaml(.cs)            # DI Configuration
-├── HandwerkerRechner.Android/    # Android (net10.0-android)
-└── HandwerkerRechner.Desktop/    # Desktop (net10.0)
-```
+## App-Beschreibung
 
-## Architektur-Entscheidungen
-- **Calculator Overlay via DataTemplates**: MainViewModel hat CurrentPage/CurrentCalculatorVm, MainView nutzt DataTemplates fuer automatische View-Zuordnung per VM-Typ (9 VMs)
-- **Tab-Wechsel schliesst Calculator**: SelectHomeTab/SelectProjectsTab/SelectSettingsTab setzen CurrentPage=null
-- **Projekt-Navigation**: ProjectsVM.NavigationRequested wird in MainVM abonniert -> CurrentPage = route (inkl. projectId Query-Parameter)
-- **Floor VMs erben von ObservableObject**: Nicht von CalculatorViewModelBase (Premium VMs ebenfalls direkt ObservableObject)
-- **WireCalculatorEvents per switch/case**: Da kein gemeinsames Interface, werden NavigationRequested/MessageRequested/LoadFromProjectIdAsync per Typ-Match verdrahtet
-- **MessageRequested Event**: Alle VMs verwenden `event Action<string, string>? MessageRequested` fuer Benutzer-Benachrichtigungen
-- **SaveProject Dialog-Pattern**: ShowSaveDialog, ConfirmSaveProject, CancelSaveProject
+Handwerker-App mit 9 Rechnern (4 Free Floor + 5 Premium), Projektverwaltung und Einheiten-Umrechnung.
 
-## Build-Befehle
-```bash
-dotnet build src/Apps/HandwerkerRechner/HandwerkerRechner.Desktop/HandwerkerRechner.Desktop.csproj
-dotnet build src/Apps/HandwerkerRechner/HandwerkerRechner.Android/HandwerkerRechner.Android.csproj
-```
+**Version:** 2.0.0 | **Package-ID:** com.meineapps.handwerkerrechner | **Status:** Geschlossener Test
 
-## Abhaengigkeiten
-- MeineApps.Core.Ava (Themes, Localization, Preferences)
-- MeineApps.Core.Premium.Ava (AdMob, IAP)
-- MeineApps.UI (Shared UI Components)
+## Features
 
-## Status: KOMPLETT (06.02.2026)
-- 9 Calculator Views + VMs (4 Floor + 5 Premium)
-- Projektverwaltung mit CRUD
-- Calculator-Navigation implementiert (CurrentPage + DataTemplate Overlay)
-- Projekt-Navigation verdrahtet (ProjectsVM -> Calculator mit projectId)
-- Tab-Wechsel schliesst offenen Calculator
-- Debug.WriteLine durch MessageRequested Events ersetzt
-- Lokalisierte Metall-/Profil-/Orientierungslisten
-- Desktop Build: 0 Fehler, 0 Warnungen
-- Android Build: 0 Fehler, 0 Warnungen
+### 9 Rechner in 2 Kategorien
 
-## Bugfixes (06.02.2026 - Abend)
+**Free Floor Calculators (4):**
+1. TileCalculator - Fliesenbedarf (Raum, Verschnitt, Fugenmasse)
+2. WallpaperCalculator - Tapetenrollen (Wandhoehe, Muster-Rapport)
+3. PaintCalculator - Farbbedarf (Anstriche, Deckfaehigkeit)
+4. FlooringCalculator - Laminat/Parkett (Raumform, Verschnitt)
 
-### Vollstaendige Lokalisierung
-- **SettingsView.axaml**: Alle ~25 hardcoded English Strings durch Bindings ersetzt
-  - Theme-Namen + Beschreibungen (Midnight/Aurora/Daylight/Forest) lokalisiert
-  - Abschnittstitel (Choose Design, Language, Unit System, Premium, About) lokalisiert
-  - Buttons (Remove Ads, Restore Purchases, Send Feedback) lokalisiert
-  - Ad-Free Confirmation lokalisiert
-- **SettingsViewModel.cs**: 22 lokalisierte Text-Properties + UpdateLocalizedTexts()
-- **MainViewModel.cs**: Tab-Text Properties (TabHomeText, TabProjectsText, TabSettingsText) + LanguageChanged Subscription + UpdateHomeTexts()
-- **MainView.axaml**: Tab-Bar-Texte via Bindings statt hardcoded English
-- **.resx Dateien**: 16 neue Keys in allen 6 Sprachen (Theme-Namen, Settings-Titel, Unit-System etc.)
+**Premium Calculators (5):**
+5. DrywallCalculator - Trockenbau (Platten, Profile, Schrauben)
+6. ElectricalCalculator - Elektrik (Kabel, Kosten, Ohm'sches Gesetz)
+7. MetalCalculator - Metall (Gewicht, Gewindegroesse, Bohrung)
+8. GardenCalculator - Garten (Erde, Mulch, Pflaster, Rasen)
+9. RoofSolarCalculator - Dach+Solar (Dachflaeche, Solarpanel, Amortisation)
 
-### Tab-Bar Verbesserungen
-- Aktiver Tab-Indicator (farbiger Border am oberen Rand)
-- Aktiver Tab-Text in Primary-Farbe mit FontWeight Medium
-- Inaktiver Tab-Text in Muted-Farbe
-- Tab-Bar versteckt sich wenn Calculator-Overlay offen (IsVisible=!IsCalculatorOpen)
-- Theme-Buttons Height="NaN" (Auto-Sizing)
+### Weitere Features
+- **Projektverwaltung**: CRUD mit JSON-Persistenz + SemaphoreSlim
+- **Einheiten-Umrechnung**: Laenge, Flaeche, Volumen, Gewicht (Metrisch/Imperial)
+- **Material-Liste PDF Export**: PdfSharpCore-basiert (A4, Header, Inputs, Results, Footer)
 
-### Calculator-Overlay Fix
-- ContentControl.Background existiert nicht in Avalonia -> Panel-Wrapper mit Background
-- Calculator-Views werden jetzt korrekt ueber dem Tab-Content angezeigt
+## App-spezifische Services
 
-### Deep Code Review (06.02.2026)
+- **ProjectService**: JSON-Persistenz (Project Model), DateTime.UtcNow
+- **CalculationHistoryService**: MaxItemsPerCalculator 30 (10 free / 30 extended)
+- **UnitConverterService**: Laenge, Flaeche, Volumen, Gewicht
+- **IMaterialExportService / MaterialExportService**: PdfSharpCore A4 Export
+- **IPremiumAccessService / PremiumAccessService**: 30-Min temporaerer Zugang zu Premium-Rechnern, 24h Extended History
 
-#### Services
-- **ProjectService**: DateTime.Now → DateTime.UtcNow (Konsistenz mit Project.cs Model), 2x Debug.WriteLine entfernt, catch (Exception ex) → catch (Exception)
+## Premium & Ads
 
-#### Floor ViewModels (4 VMs: Tile, Wallpaper, Paint, Flooring)
-- **Alle 4 Floor VMs**: 16x Debug.WriteLine entfernt, `using System.Diagnostics` entfernt, 16x catch (Exception ex) → catch (Exception)
-- **WallpaperVM**: History-Titel lokalisiert (HistoryWallHeight Key)
-- **PaintVM**: History-Titel lokalisiert (HistoryPaintCoats Key)
+### Ad-Placements (Rewarded)
+1. **premium_access**: 30 Minuten Zugang zu 5 Premium-Rechnern (HomeView)
+2. **extended_history**: 24h-Zugang zu 30 statt 10 History-Eintraegen (HomeView)
+3. **material_pdf**: Material-Liste PDF Export (alle 9 Calculator Views)
+4. **project_export**: Projekt-Export als PDF (ProjectsView)
 
-#### Premium ViewModels (5 VMs: Metal, Electrical, Garden, RoofSolar, Drywall)
-- **Alle 5 Premium VMs**: 15x Debug.WriteLine entfernt (3 pro VM), 15x catch (Exception ex) → catch (Exception)
-- **MetalVM**: History-Titel lokalisiert (HistoryThreadSize Key)
-- **ElectricalVM**: Kabelkosten-Label lokalisiert (CableCostLabel), h/Tag lokalisiert (HistoryHoursPerDay), Ohm'sches Gesetz lokalisiert (OhmsLaw Key)
-- **GardenVM**: 3x "Gesamtkosten" lokalisiert (TotalCost Key), "cm tief" lokalisiert (HistorySoilDepth Format-String)
-- **RoofSolarVM**: "Gesamtkosten" lokalisiert (TotalCost), "Anlagenkosten" lokalisiert (ResultSystemCost), "Amortisation/Jahre" lokalisiert (ResultPaybackTime/HistoryYears), "Spannweite/Hoehe" lokalisiert (HistoryRoofPitch Format-String), "Dachflaeche" lokalisiert (HistoryRoofArea)
-- **DrywallVM**: "(doppelt)" lokalisiert (HistoryDoubleLayered)
+### Premium-Modell
+- **Preis**: 3,99 EUR (`remove_ads`)
+- **Vorteile**: Keine Ads, permanenter Premium-Rechner-Zugang, unbegrenzte History, direkter PDF-Export
 
-#### Other ViewModels
-- **ProjectsVM**: 3x Debug.WriteLine entfernt, `using System.Diagnostics` entfernt, 3x catch fix
-- **SettingsVM**: `using System.Diagnostics` entfernt
+## Besondere Architektur
 
-#### Lokalisierung
-- **10 neue resx-Keys** in 6 Sprachen: HistoryThreadSize, CableCostLabel, HistoryHoursPerDay, HistorySoilDepth, HistoryYears, HistoryRoofPitch, HistoryRoofArea, HistoryDoubleLayered, HistoryWallHeight, HistoryPaintCoats
-- **AppStrings.Designer.cs**: 10 neue Properties hinzugefuegt
+### Calculator Overlay via DataTemplates
+- `MainViewModel`: `CurrentPage` + `CurrentCalculatorVm` Properties
+- `MainView`: DataTemplates fuer automatische View-Zuordnung per VM-Typ (9 VMs)
+- Tab-Wechsel: `SelectHomeTab/SelectProjectsTab/SelectSettingsTab` setzen `CurrentPage=null`
 
-#### Zusammenfassung
-- 36x Debug.WriteLine entfernt (16 Floor + 15 Premium + 2 ProjectService + 3 ProjectsVM)
-- 34x catch (Exception ex) → catch (Exception)
-- 4x `using System.Diagnostics` entfernt
-- 3x DateTime.Now → DateTime.UtcNow (ProjectService)
-- 10 hardcodierte deutsche/englische Strings lokalisiert
-- Full Solution Build: 0 Fehler
+### Projekt-Navigation
+- ProjectsVM.NavigationRequested → MainVM → `CurrentPage = route` (inkl. projectId Query-Parameter)
+- WireCalculatorEvents: Per switch/case (kein gemeinsames Interface)
 
-### AppChecker Fixes (07.02.2026)
-- **MainViewModel.OnLanguageChanged()**: `SettingsViewModel.UpdateLocalizedTexts()` Aufruf ergaenzt
-- **AppStrings.fr.resx**: ~140 fehlende Keys ergaenzt (PDF Export, Units, Info Texts, History, Electrical, Drywall, Semantic Properties)
-- **AppStrings.it.resx**: ~140 fehlende Keys ergaenzt (identische Kategorien wie FR, italienische Uebersetzungen)
-- **AppStrings.pt.resx**: ~152 fehlende Keys ergaenzt (FR/IT-Kategorien + 12 PT-spezifische Label/Result-Keys)
-- Verifiziert: FR 500/500, IT 500/500, PT 535/500 unique Keys (0 fehlend vs. Base)
-- Base-Datei hat 7 Duplikat-Keys (ExportPdf, Date, MaterialList, GeneratedBy, ShareMaterialList, PdfExportSuccess, PdfExportFailed)
+### Floor vs Premium VMs
+- Beide erben direkt von `ObservableObject` (nicht von CalculatorViewModelBase)
+- CalculatorViewModelBase existiert als Abstract Base Class, wird aber NICHT verwendet
 
-### Design-Redesign (07.02.2026)
-- **MainView.axaml** komplett redesigned:
-  - Fade-Transitions (CSS .TabContent/.Active, 150ms Opacity)
-  - Hero-Header: Amber-Gradient, RulerSquareCompass-Icon-Badge, App-Name + Rechner-Anzahl
-  - 9 Rechner in 2-Spalten-Grid (Height=120, CardColor→CardHoverColor Gradient)
-  - Gradient-Icon-Badges (48x48): Amber/Purple/Green/Blue/Red/Orange/Gray/Emerald/Cyan
-  - Section-Headers mit farbigen Badges ("Boden & Wand", "Profi-Werkzeuge")
-  - Premium-Card mit AccentColor→SecondaryColor Gradient, Star-Icon, dekorative Ellipse
-- **MainViewModel**: 5 neue Properties (SectionFloorWallText, SectionPremiumToolsText, CalculatorCountText, GetPremiumText, PremiumPriceText) + UpdateHomeTexts()
-- 6 neue resx-Keys in 6 Sprachen (SectionFloorWall, SectionPremiumTools, CalculatorCount, GetPremium, PremiumPrice, MoreCategories)
-- Build: 0 Fehler
+### Game Juice
+- **FloatingText**: "Projekt wurde gespeichert!" nach ConfirmSaveProject
+- **Celebration**: Confetti bei erfolgreichem Save
 
-### Rewarded Ads - Premium-Rechner Ad-Gate (07.02.2026)
+## Changelog (Highlights)
 
-#### Funktionsweise
-- 5 Premium-Rechner (Drywall, Electrical, Metal, Garden, RoofSolar) sind fuer Nicht-Premium-Nutzer gesperrt
-- Per Rewarded Ad erhaelt der Nutzer 30 Minuten Zugang zu allen Premium-Rechnern
-- Premium-Nutzer haben dauerhaft Zugang (kein Ad-Gate)
-
-#### Neue Dateien
-- **IPremiumAccessService.cs** + **PremiumAccessService.cs**: Temporaerer 30-Min Premium-Zugang, `HasAccess`, `RemainingTime`, `GrantAccess()`, Timer-basiert
-
-#### Aenderungen
-- **MainViewModel**: `NavigatePremium()` prueft PremiumAccess vor Navigation, `ShowPremiumAccessOverlay` / `IsPremiumAccessOverlayVisible`, `ConfirmPremiumAdAsync` Command
-- **MainView.axaml**: Premium-Access-Overlay UI (Beschreibung + Video-Button + Abbrechen, Countdown-Anzeige bei aktivem Zugang)
-- **App.axaml.cs**: `IPremiumAccessService` DI + `RewardedAdServiceFactory` Property fuer Android-Override
-
-#### Android Integration
-- **HandwerkerRechner.Android.csproj**: Linked `RewardedAdHelper.cs` + `AndroidRewardedAdService.cs`
-- **MainActivity.cs**: RewardedAdHelper Lifecycle (init, load, dispose)
-
-#### Lokalisierung
-- 6 neue resx-Keys in 6 Sprachen: PremiumCalculatorsLocked, WatchVideoFor30Min, AccessGranted, AccessExpiresIn, TemporaryAccessActive, VideoFor30Min
-
-### 3 Neue Rewarded Ad Features (07.02.2026)
-
-#### Feature 1: Placement-Strings
-- `ShowAdAsync()` → `ShowAdAsync("premium_access")` in MainViewModel
-
-#### Feature 2: Erweiterte Berechnungs-History
-- **IPremiumAccessService**: `HasExtendedHistory`, `GrantExtendedHistory()`, `GetHistoryLimit()` (5 free / 30 extended)
-- **PremiumAccessService**: 24h persistent Extended History via IPreferencesService (ExtendedHistoryPrefKey)
-- **MainViewModel**: `ShowExtendedHistoryAd`, `ConfirmExtendedHistoryAdAsync`, `CancelExtendedHistoryAd` Commands + Overlay
-- **CalculationHistoryService**: MaxItemsPerCalculator 10 → 30 (Core Library)
-
-#### Feature 3: Material-Liste PDF Export
-- **IMaterialExportService.cs** (NEU): Interface fuer PDF-Export (ExportToPdfAsync, ExportProjectToPdfAsync)
-- **MaterialExportService.cs** (NEU): PdfSharpCore-basiert (A4, Header, Inputs, Results, Footer)
-- **Alle 9 Calculator VMs**: `ExportMaterialList` RelayCommand mit Ad-Gate (placement "material_pdf")
-- **App.axaml.cs**: IFileShareService + IMaterialExportService DI-Registrierung
-- **HandwerkerRechner.Shared.csproj**: PdfSharpCore PackageReference
-
-#### Feature 4: Projekt-Export als PDF
-- **ProjectsViewModel**: `ExportProject(Project?)` RelayCommand mit Ad-Gate (placement "project_export")
-- Parst Projekt-DataJson via JsonElement in Inputs/Results Dictionaries
-
-#### Lokalisierung
-- 8 neue resx-Keys in 6 Sprachen: ExtendedHistoryTitle, ExtendedHistoryDesc, ExportMaterialList, ExportMaterialDesc, ExportProject, ExportProjectDesc, MaterialListPdf, ProjectReport
-- AppStrings.Designer.cs: 8 neue Properties
-
-#### Bugfixes waehrend Implementierung
-- RoofSolarVM: `SolarResult.PeakPower` → `SolarResult.KwPeak`, `AnnualYield` → `AnnualYieldKwh`, PaybackYears berechnet statt Property
-- GardenVM: `SoilResult.VolumeNeeded` → `SoilResult.VolumeLiters`
-- MetalVM: `MetalWeightResult` → `WeightResult`, `ThreadDrillResult` → `ThreadResult`, `DrillDiameter` → `DrillSize`
-- Build: 0 Fehler
-
-### Fehlende UI-Elemente nachgeruestet (08.02.2026)
-- **9 Calculator Views**: Export-Button (FilePdfBox Icon + ExportMaterialList Command) hinzugefuegt
-  - Floor Views (4): Button am Ende der Results-Card (IsVisible durch HasResult der Card)
-  - Premium Views (5): Button als 2. Zeile in der Action-Bar (Grid.Row=1, IsVisible=HasResult)
-- **ProjectsView**: Export-Button (FilePdfBox) pro Projekt-Karte neben Delete-Button (Ancestor-Binding auf ExportProjectCommand)
-- **MainView.axaml**:
-  - Extended-History-Ad-Overlay (ZIndex=100, ShowExtendedHistoryOverlay, Confirm/Cancel Bindings, History-Icon)
-  - Extended-History-Karte auf Home-Tab (Blue-Gradient Icon, Titel + Beschreibung, Chevron, ShowExtendedHistoryAdCommand)
-- Build: Shared + Desktop + Android 0 Fehler
-
-### Game Juice - FloatingTextOverlay + CelebrationOverlay (08.02.2026)
-
-#### Funktionsweise
-- Beim Speichern eines Projekts (ConfirmSaveProject) erscheint ein Floating-Text "Projekt wurde gespeichert!" + Confetti-Effekt
-- Alle 9 Calculator VMs (4 Floor + 5 Premium) feuern FloatingTextRequested Event
-
-#### Aenderungen
-- **9 Calculator VMs** (Tile, Wallpaper, Paint, Flooring, Drywall, Electrical, Metal, Garden, RoofSolar):
-  - `FloatingTextRequested` Event hinzugefuegt
-  - Nach erfolgreichem Save: `FloatingTextRequested?.Invoke(ProjectSaved, "success")`
-- **MainViewModel**:
-  - `FloatingTextRequested` + `CelebrationRequested` Events
-  - `OnChildFloatingText()`: Leitet Text weiter + feuert Confetti bei "success" Kategorie
-  - `WireCalculatorEvents()`: Alle 9 VMs FloatingTextRequested → OnChildFloatingText
-- **MainView.axaml**: `FloatingTextOverlay` (ZIndex=15) + `CelebrationOverlay` (ZIndex=16), xmlns:controls
-- **MainView.axaml.cs**: Event-Handler (success=#22C55E gruen) + Confetti
-- Build: 0 Fehler
+- **08.02.2026**: FloatingTextOverlay + CelebrationOverlay, Export-Buttons (9 Calculator + Projects), Extended-History
+- **07.02.2026**: 4 Rewarded Ad Features, Design-Redesign, AppChecker Fixes
+- **06.02.2026**: Vollstaendige Lokalisierung, Deep Code Review (36x Debug.WriteLine entfernt)

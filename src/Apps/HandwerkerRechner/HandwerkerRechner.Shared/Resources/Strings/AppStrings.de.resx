@@ -1697,9 +1697,6 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="PremiumPrice" xml:space="preserve">
     <value>Ab 3,99 € – einmalig</value>
   </data>
-  <data name="MoreCategories" xml:space="preserve">
-    <value>Weitere Kategorien</value>
-  </data>
 
   <!-- Rewarded Ads -->
   <data name="PremiumCalculatorsLocked" xml:space="preserve">

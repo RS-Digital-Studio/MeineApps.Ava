@@ -56,8 +56,6 @@ public partial class TimerViewModel : ObservableObject
 
     public bool HasTimers => Timers.Count > 0;
 
-    public event EventHandler<string>? MessageRequested;
-
     public TimerViewModel(ITimerService timerService, ILocalizationService localization)
     {
         _timerService = timerService;

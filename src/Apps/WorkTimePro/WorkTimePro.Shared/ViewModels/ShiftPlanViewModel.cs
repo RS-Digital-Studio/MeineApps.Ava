@@ -21,7 +21,7 @@ public partial class ShiftPlanViewModel : ObservableObject
     private readonly ITrialService _trialService;
 
     public event Action<string>? NavigationRequested;
-    public event Action<string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
 
     public ShiftPlanViewModel(
         IShiftService shiftService,
@@ -122,7 +122,7 @@ public partial class ShiftPlanViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally
         {
@@ -187,7 +187,7 @@ public partial class ShiftPlanViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
     }
 
@@ -209,7 +209,7 @@ public partial class ShiftPlanViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
     }
 
@@ -238,7 +238,7 @@ public partial class ShiftPlanViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
     }
 
@@ -302,7 +302,7 @@ public partial class ShiftPlanViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorSaving, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorSaving, ex.Message));
         }
     }
 
@@ -319,7 +319,7 @@ public partial class ShiftPlanViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
     }
 

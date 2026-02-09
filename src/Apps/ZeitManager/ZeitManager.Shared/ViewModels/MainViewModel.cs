@@ -96,10 +96,7 @@ public partial class MainViewModel : ObservableObject
         _stopwatchViewModel.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
 
         // Wire up MessageRequested from child ViewModels
-        _timerViewModel.MessageRequested += OnChildMessageRequested;
-        _alarmViewModel.MessageRequested += OnChildMessageRequested;
         _settingsViewModel.MessageRequested += OnChildMessageRequested;
-        _alarmViewModel.ShiftScheduleViewModel.MessageRequested += OnChildMessageRequested;
     }
 
     private void OnTimerFinished(object? sender, TimerItem timer)

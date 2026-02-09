@@ -162,12 +162,13 @@ public partial class MainViewModel : ObservableObject
         // Wire up dialog events from SettingsVM + ShopVM
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
         settingsVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
-        shopVm.MessageRequested += (t, m, b) => ShowAlertDialog(t, m, b);
+        shopVm.MessageRequested += (t, m) => ShowAlertDialog(t, m, "OK");
 
         localization.LanguageChanged += (_, _) =>
         {
             // Child VMs re-read their localized texts on next OnAppearing
             MenuVm.OnAppearing();
+            ShopVm.UpdateLocalizedTexts();
         };
 
         // Initialize menu

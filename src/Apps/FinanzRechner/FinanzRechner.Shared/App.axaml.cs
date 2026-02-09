@@ -122,6 +122,6 @@ public partial class App : Application
         services.AddTransient<SavingsPlanViewModel>();
         services.AddTransient<AmortizationViewModel>();
         services.AddTransient<YieldViewModel>();
-        services.AddTransient<MainViewModel>();
+        services.AddSingleton<MainViewModel>();
     }
 }

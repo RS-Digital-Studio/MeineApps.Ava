@@ -109,6 +109,7 @@
   <data name="OK" xml:space="preserve"><value>OK</value></data>
   <data name="Close" xml:space="preserve"><value>Fermer</value></data>
   <data name="Error" xml:space="preserve"><value>Erreur</value></data>
+  <data name="Info" xml:space="preserve"><value>Info</value></data>
   <data name="PurchaseFailed" xml:space="preserve"><value>Achat echoue</value></data>
   <data name="RestoreFailed" xml:space="preserve"><value>Restauration echouee</value></data>
   <data name="TimeEntries" xml:space="preserve"><value>Enregistrements</value></data>

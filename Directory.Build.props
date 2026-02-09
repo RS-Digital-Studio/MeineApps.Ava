@@ -9,6 +9,9 @@
     <!-- Code Quality -->
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <WarningLevel>5</WarningLevel>
+    <!-- SixLabors.ImageSharp 1.0.4 CVEs: Transitive Abhaengigkeit von PdfSharpCore,
+         nur fuer PDF-Generierung genutzt, keine Verarbeitung von User-Bildern -->
+    <NoWarn>$(NoWarn);NU1902;NU1903</NoWarn>
 
     <!-- Assembly Info -->
     <Company>RS Digital</Company>

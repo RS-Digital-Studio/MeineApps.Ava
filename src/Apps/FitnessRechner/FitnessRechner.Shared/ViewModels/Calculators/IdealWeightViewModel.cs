@@ -13,11 +13,6 @@ public partial class IdealWeightViewModel : ObservableObject
     /// </summary>
     public event Action<string>? NavigationRequested;
 
-    /// <summary>
-    /// Event for showing messages to the user (title, message).
-    /// </summary>
-    public event Action<string, string>? MessageRequested;
-
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
     public IdealWeightViewModel(FitnessEngine fitnessEngine)

@@ -15,7 +15,7 @@ public class VersionedData<T> where T : class, new()
     /// <summary>
     /// When this data was last modified
     /// </summary>
-    public DateTime LastModified { get; set; } = DateTime.Now;
+    public DateTime LastModified { get; set; } = DateTime.UtcNow;
 
     /// <summary>
     /// The actual data being stored
@@ -34,7 +34,7 @@ public class VersionedData<T> where T : class, new()
     {
         Data = data;
         Version = version;
-        LastModified = DateTime.Now;
+        LastModified = DateTime.UtcNow;
     }
 }
 

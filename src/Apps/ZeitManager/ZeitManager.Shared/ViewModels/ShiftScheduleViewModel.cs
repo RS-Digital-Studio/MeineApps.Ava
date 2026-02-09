@@ -96,8 +96,6 @@ public partial class ShiftScheduleViewModel : ObservableObject
     public string NightShiftShortText => _localization.GetString("ShiftNightShort");
     public string DayOffShortText => _localization.GetString("DayOff");
 
-    public event EventHandler<string>? MessageRequested;
-
     public ShiftScheduleViewModel(IShiftScheduleService shiftService, ILocalizationService localization)
     {
         _shiftService = shiftService;

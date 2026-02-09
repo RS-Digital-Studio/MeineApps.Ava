@@ -1676,9 +1676,6 @@ Su superfici ruvide la resa diminuisce!</value>
   <data name="PremiumPrice" xml:space="preserve">
     <value>Da 3,99 € – una tantum</value>
   </data>
-  <data name="MoreCategories" xml:space="preserve">
-    <value>Altre categorie</value>
-  </data>
 
   <!-- Rewarded Ads -->
   <data name="PremiumCalculatorsLocked" xml:space="preserve">

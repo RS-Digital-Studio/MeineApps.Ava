@@ -47,7 +47,7 @@ public partial class StatisticsViewModel : ObservableObject
         "#00838F", "#4527A0", "#AD1457", "#00695C", "#EF6C00"
     };
 
-    public event Action<string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
 
     public StatisticsViewModel(
         IDatabaseService database,
@@ -250,7 +250,7 @@ public partial class StatisticsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally
         {
@@ -334,7 +334,7 @@ public partial class StatisticsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ExportFailedMessage, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ExportFailedMessage, ex.Message));
         }
         finally
         {
@@ -618,7 +618,7 @@ public partial class StatisticsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
             ProjectChart = Array.Empty<ISeries>();
         }
     }
@@ -667,7 +667,7 @@ public partial class StatisticsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
             EmployerChart = Array.Empty<ISeries>();
         }
     }

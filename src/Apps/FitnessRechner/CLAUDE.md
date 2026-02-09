@@ -1,193 +1,63 @@
-# FitnessRechner (Avalonia) - v2.0.0
+# FitnessRechner (Avalonia)
 
-## Uebersicht
-Fitness-App mit BMI, Kalorien, Wasser, Idealgewicht, Koerperfett-Rechnern plus Tracking mit Charts und Nahrungsmittel-Suche.
+> Fuer Build-Befehle, Conventions und Troubleshooting siehe [Haupt-CLAUDE.md](../../../CLAUDE.md)
 
-## Projektstruktur
-```
-FitnessRechner/
-├── FitnessRechner.Shared/     # Shared Code (net10.0)
-│   ├── Views/                  # Avalonia UserControls
-│   │   ├── Calculators/        # 5 Calculator Views
-│   │   ├── MainView.axaml      # Tab Navigation (Home/Progress/Food/Settings)
-│   │   ├── HomeView.axaml      # Dashboard
-│   │   ├── ProgressView.axaml  # Tracking mit 4 Sub-Tabs + Charts
-│   │   ├── FoodSearchView.axaml
-│   │   └── SettingsView.axaml
-│   ├── ViewModels/
-│   │   ├── Calculators/        # 5 Calculator VMs
-│   │   ├── MainViewModel.cs    # Tab + Dashboard + Navigation
-│   │   ├── ProgressViewModel.cs # Tracking + LiveCharts
-│   │   ├── FoodSearchViewModel.cs
-│   │   └── SettingsViewModel.cs
-│   ├── Models/
-│   │   ├── FitnessEngine.cs    # All calculation logic
-│   │   ├── FoodItem.cs
-│   │   ├── TrackingEntry.cs
-│   │   └── ...
-│   ├── Services/
-│   │   ├── TrackingService.cs   # JSON-based persistence
-│   │   ├── FoodSearchService.cs # Fuzzy matching, favorites, recipes
-│   │   ├── FoodDatabase.cs      # 114 foods with aliases
-│   │   ├── BarcodeLookupService.cs # Open Food Facts API
-│   │   └── UndoService.cs       # Generic undo with timeout
-│   ├── Converters/
-│   ├── Resources/Strings/       # 6 Sprachen
-│   └── App.axaml(.cs)           # DI Configuration
-├── FitnessRechner.Android/      # Android (net10.0-android)
-└── FitnessRechner.Desktop/      # Desktop (net10.0, Win/Linux)
-```
+## App-Beschreibung
 
-## Architektur-Entscheidungen
-- **IDisposable statt Finalizer**: Verhindert SIGSEGV bei LiveCharts (MAUI-Bug geloest)
-- **TrackingViewModel: IDisposable**: CancellationTokenSource Cleanup (Dispose-Pattern mit _disposed Flag)
-- **ProgressView mit 4 Sub-Tabs**: Ersetzt separate History/Tracking-Pages (modernere UX)
-- **Generischer UndoService<T>**: Nicht per DI registriert, da generisch - ViewModels erstellen eigene Instanzen
-- **MainView Tab-Switching**: Statt Shell-Navigation, Content-Wechsel im MainViewModel
-- **Child-VMs per Constructor Injection**: SettingsVM, ProgressVM, FoodSearchVM werden in MainVM injiziert (nicht manuell erstellt)
-- **MessageRequested Event**: Alle VMs verwenden `event Action<string, string>? MessageRequested` statt Debug.WriteLine fuer Benutzer-Benachrichtigungen
-- **ThemeService Init in App.axaml.cs**: Muss beim Start aufgeloest werden damit gespeichertes Theme angewendet wird
-- **Calculator Overlay via DataTemplates**: MainViewModel hat CurrentPage/CurrentCalculatorVm, MainView nutzt DataTemplates fuer automatische View-Zuordnung per VM-Typ
-- **Tab-Wechsel schliesst Calculator**: SelectHomeTab/SelectProgressTab etc. setzen CurrentPage=null bevor Tab gewechselt wird
-- **Preferences Keys**: `daily_water_goal` (WaterVM) und `daily_calorie_goal` (CaloriesVM) - konsistent mit TrackingVM/ProgressVM
-- **DateTime.Today fuer Tracking**: BmiVM/BodyFatVM nutzen DateTime.Today (nicht .Now) fuer datumsbasierte Gruppierung
-- **BarcodeLookupService Thread-Safety**: SemaphoreSlim fuer _barcodeCache Dictionary, Lock wird waehrend HTTP-Calls released
+Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), Tracking mit Charts und Nahrungsmittel-Suche (114 Foods + Barcode-Scanner).
 
-## Build-Befehle
-```bash
-dotnet build src/Apps/FitnessRechner/FitnessRechner.Shared/FitnessRechner.Shared.csproj
-dotnet build src/Apps/FitnessRechner/FitnessRechner.Desktop/FitnessRechner.Desktop.csproj
-dotnet build src/Apps/FitnessRechner/FitnessRechner.Android/FitnessRechner.Android.csproj
-```
+**Version:** 2.0.0 | **Package-ID:** com.meineapps.fitnessrechner | **Status:** Geschlossener Test
 
-## Premium-Features
-- Werbefrei (AdMob Banner entfernt)
-- Preis: 3,99 EUR
+## Features
 
-## Abhaengigkeiten
-- MeineApps.Core.Ava (Themes, Localization, Preferences)
-- MeineApps.Core.Premium.Ava (AdMob, IAP)
-- MeineApps.UI (Shared UI Components)
-- LiveChartsCore.SkiaSharpView.Avalonia (Charts)
+- **4 Tabs**: Home (Dashboard), Progress (Tracking + 4 Sub-Tabs), Food Search, Settings
+- **5 Rechner**: BMI, Calories, Water, IdealWeight, BodyFat
+- **Tracking**: Gewicht, BMI, Koerperfett, Wasser, Kalorien (JSON-basiert, TrackingService)
+- **Charts**: LiveCharts (LineSeries fuer Gewicht/BMI/BodyFat/Water/Calories)
+- **Food Search**: Fuzzy Matching, Favorites, Recipes (FoodDatabase mit 114 Items + Aliase)
+- **Barcode Scanner**: Open Food Facts API (BarcodeLookupService mit SemaphoreSlim)
 
-## Status: KOMPLETT (06.02.2026)
-- Alle 5 Rechner migriert
-- Tracking + Charts funktionsfaehig
-- Food Search mit Fuzzy Matching
-- Alle 3 Projekte bauen fehlerfrei (0 Fehler, 0 Warnungen)
-- Solution-Struktur korrigiert (unter Apps > _FitnessRechner)
-- ThemeService wird beim Start initialisiert
-- Child-VMs per Constructor Injection in MainViewModel
-- BMI/BodyFat Kategorien lokalisiert (8+5 neue resx-Keys)
-- Debug.WriteLine durch MessageRequested Events ersetzt (alle VMs + BarcodeLookupService)
-- 10 neue Alert-Message Keys in 6 Sprachen
-- Dynamische App-Version (statt hardcoded v1.4.0)
-- Calculator-Navigation implementiert (CurrentPage + DataTemplate Overlay)
-- Tab-Wechsel schliesst offenen Calculator automatisch
-- ProgressViewModel.OnAppearingAsync() wird beim Tab-Wechsel aufgerufen (Charts laden)
-- AppStrings.Designer.cs: WaterRemaining + UnknownProduct Properties hinzugefuegt
+## App-spezifische Services
 
-### Deep Code Review Fixes (06.02.2026)
-- **Preferences Key-Mismatch gefixt**: WaterVM "WaterGoal"→"daily_water_goal", CaloriesVM "CalorieGoal"→"daily_calorie_goal" (2 Stellen)
-- **DateTime.Today statt .Now**: BmiVM (2 Stellen) + BodyFatVM (1 Stelle) fuer korrekte datumsbasierte Gruppierung
-- **TrackingViewModel IDisposable**: CancellationTokenSource Cleanup implementiert (Dispose-Pattern)
-- **HistoryViewModel lokalisiert**: "Avg"/"Min"/"Max" hardcoded Strings → AppStrings.Average/Min/Max (6 Stellen)
-- **ProgressVM Water-Status**: CaloriesRemaining.Replace("kcal","ml") Hack → eigener AppStrings.WaterRemaining Key
-- **IdealWeightViewModel**: MessageRequested Event hinzugefuegt (Konsistenz mit allen anderen Calculator VMs)
-- **BarcodeLookupService Thread-Safety**: SemaphoreSlim fuer _barcodeCache, Lock Release waehrend HTTP-Calls, 8x Debug.WriteLine entfernt, "Unbekanntes Produkt"→AppStrings.UnknownProduct
-- **Unused variable warnings**: catch (Exception ex)→catch (Exception) in 8 Stellen (MainVM, HistoryVM, FoodSearchVM 3x, ProgressVM, TrackingVM, BarcodeScannerVM)
-- **2 neue resx-Keys in 6 Sprachen**: WaterRemaining ("{0} ml remaining"), UnknownProduct ("Unknown Product")
+- **TrackingService**: JSON-Persistenz (TrackingEntry Model), IDisposable mit CancellationTokenSource Cleanup
+- **FoodSearchService**: Fuzzy Matching, Favorites, Recipes (generisch fuer FoodItem/Recipe)
+- **FoodDatabase**: 114 Nahrungsmittel mit lokalisierten Namen + Aliase (statische Liste)
+- **BarcodeLookupService**: Open Food Facts API, _barcodeCache Dictionary mit SemaphoreSlim
+- **UndoService<T>**: Generischer Undo mit Timeout (VMs erstellen eigene Instanzen, nicht per DI)
+- **IScanLimitService / ScanLimitService**: Tages-Limit (3 Scans/Tag), Bonus-Scans via Rewarded Ad
 
-### Debug.WriteLine Cleanup (07.02.2026)
-- **App.axaml.cs**: 9x Debug.WriteLine entfernt, catch (Exception ex)→catch (Exception)
-- **FoodSearchService.cs**: 7x Debug.WriteLine entfernt, 4x catch (Exception ex)→catch (Exception), 2x catch→vereinfacht (nur throw)
-- **TrackingService.cs**: 3x Debug.WriteLine entfernt, 2x catch (Exception ex)→catch (Exception)/catch
-- **VersionedDataService.cs**: 2x Debug.WriteLine entfernt, 1x catch (Exception ex)→catch (Exception)
-- **MainActivity.cs**: 3x Debug.WriteLine entfernt (Android.Util.Log.Error bleibt bestehen)
-- Build: Shared + Desktop + Android jeweils 0 Fehler, 0 Warnungen
+## Premium & Ads
 
-### LanguageChanged Fix (07.02.2026)
-- **MainViewModel**: `settingsViewModel.LanguageChanged += OnLanguageChanged` abonniert
-- OnLanguageChanged aktualisiert 12 Properties (NavHomeText, NavProgressText, NavFoodText, NavSettingsText, AppDescription, CalcBmiLabel, CalcCaloriesLabel, CalcWaterLabel, CalcIdealWeightLabel, CalcBodyFatLabel, CalculatorsLabel, MyProgressLabel)
+### Ad-Placements (Rewarded)
+1. **barcode_scan**: +5 Bonus-Scans (FoodSearchView)
+2. **detail_analysis**: 7-Tage-Analyse (ProgressView)
+3. **tracking_export**: CSV-Export (ProgressView)
+4. **extended_food_db**: 24h-Zugang zu erweiterten Suchergebnissen (maxResults=200)
 
-### Design-Redesign (07.02.2026)
-- **HomeView.axaml** komplett redesigned:
-  - Hero-Header: Green-Gradient (#22C55E→SecondaryColor→AccentColor), HeartPulse-Icon-Badge
-  - Dashboard-Card mit BoxShadow + Gradient-Icon-Badges (Purple/Blue/Green/Amber)
-  - 5 Calculator-Karten: Gradient-Backgrounds (CardColor→CardHoverColor) + Gradient-Icon-Badges (Blue/Amber/Green/Purple/Red)
-  - Section-Header mit PrimaryBrush-Badge
-  - Premium-Card: Gradient (AccentColor→SecondaryColor), Star-Icon, dekorative Ellipse, Chevron
-  - Disclaimer mit BoxShadow
-- **MainViewModel**: 3 neue Properties (RemoveAdsText, PremiumPriceText, SectionCalculatorsText) + OnLanguageChanged()
-- 4 neue resx-Keys in 6 Sprachen (RemoveAds, PremiumPrice, GetPremium, SectionCalculators)
-- Build: 0 Fehler
+### Premium-Modell
+- **Preis**: 3,99 EUR (`remove_ads`)
+- **Vorteile**: Keine Ads, unbegrenzte Barcode-Scans, permanente erweiterte Food-DB, direkter Export/Analyse
 
-### Rewarded Ads - Barcode Scan-Limit (07.02.2026)
+## Besondere Architektur
 
-#### Funktionsweise
-- Nicht-Premium-Nutzer haben 3 Barcode-Scans pro Tag
-- Per Rewarded Ad erhaelt der Nutzer 5 zusaetzliche Scans
-- Premium-Nutzer haben unbegrenzte Scans (kein Limit)
+### IDisposable Pattern
+- **TrackingViewModel**: IDisposable fuer CancellationTokenSource Cleanup (Dispose-Pattern mit `_disposed` Flag)
+- **LiveCharts Fix**: IDisposable statt Finalizer verhindert SIGSEGV (MAUI-Bug geloest)
 
-#### Neue Dateien
-- **IScanLimitService.cs** + **ScanLimitService.cs**: Tages-Limit (3 Scans/Tag), `CanScan`, `RemainingScans`, `UseOneScan()`, `AddBonusScans(5)`, Reset bei Datumswechsel
+### ProgressView Sub-Tabs
+- 4 Sub-Tabs: Weight, BMI, BodyFat, Water/Calories
+- `ProgressViewModel.OnAppearingAsync()` wird beim Tab-Wechsel aufgerufen
 
-#### Aenderungen
-- **FoodSearchViewModel**: Scan-Gate vor Barcode-Scan, `WatchAdForScansAsync` Command, `ShowScanLimitOverlay` / `IsScanLimitOverlayVisible`
-- **App.axaml.cs**: `IScanLimitService` DI + `RewardedAdServiceFactory` Property fuer Android-Override
+### Extended Food DB (24h Zugang)
+- **Ablauf-Key**: `extended_food_db_expiry` mit ISO 8601 UTC + `DateTimeStyles.RoundtripKind`
+- **Hint-Card**: Zeigt "Mehr laden" bei <=5 lokalen Ergebnissen fuer Non-Premium
 
-#### Android Integration
-- **FitnessRechner.Android.csproj**: Linked `RewardedAdHelper.cs` + `AndroidRewardedAdService.cs`
-- **MainActivity.cs**: RewardedAdHelper Lifecycle (init, load, dispose)
+### Game Juice
+- **FloatingText**: "+{amount} ml" (Wasser), "+{calories} kcal" (Food), "+{value} kg/BMI/%" (Tracking)
+- **Celebration**: Confetti bei Wasser-Zielerreichung (einmal pro Session via `_wasWaterGoalReached`)
 
-#### Lokalisierung
-- 4 neue resx-Keys in 6 Sprachen: RemainingScans, ScanLimitTitle, ScanLimitMessage, WatchAdForScans
+## Changelog (Highlights)
 
-### Rewarded Ads - 3 neue Features (07.02.2026)
-
-#### Feature 1: ShowAdAsync Placement-Strings
-- **FoodSearchViewModel**: `ShowAdAsync()` → `ShowAdAsync("barcode_scan")` (Placement-Tracking)
-
-#### Feature 2: Wochenanalyse (Weekly Analysis)
-- **ProgressViewModel**: Analyse-Button im Header, Ad-Gate fuer Non-Premium
-  - `RequestAnalysisAsync()`: Premium-Check, zeigt Ad-Overlay wenn noetig
-  - `ConfirmAnalysisAdAsync()`: Zeigt Rewarded Ad ("detail_analysis" Placement)
-  - `GenerateAnalysisReportAsync()`: 7-Tage-Durchschnitte (Gewicht, Kalorien, Wasser, Trend, Zielerreichung)
-  - Properties: ShowAnalysisOverlay, ShowAnalysisAdOverlay, AvgWeightDisplay, AvgCaloriesDisplay, AvgWaterDisplay, TrendDisplay, CalorieTargetDisplay
-- **ProgressView.axaml**: 4-Spalten-Header (Analyse+Export+Add Buttons), Analysis Ad Overlay (ZIndex=80), Analysis Report Overlay (2x3 Grid)
-
-#### Feature 3: Tracking Export (CSV)
-- **ProgressViewModel**: Export-Button im Header, Ad-Gate fuer Non-Premium
-  - `ExportTrackingAsync()`: Premium-Check, zeigt Ad-Overlay wenn noetig
-  - `ConfirmExportAdAsync()`: Zeigt Rewarded Ad ("tracking_export" Placement)
-  - `PerformExportAsync()`: CSV mit 90-Tage-Daten (Date, Weight, BMI, Water, Calories), IFileShareService.ShareFileAsync
-  - Properties: ShowExportAdOverlay
-- **ProgressView.axaml**: Export Ad Overlay (ZIndex=80)
-- **App.axaml.cs**: FileShareServiceFactory + IFileShareService DI-Registrierung (Desktop: DesktopFileShareService, Android: AndroidFileShareService)
-- **Android**: FileProvider Konfiguration (AndroidManifest.xml, file_paths.xml, Linked AndroidFileShareService.cs)
-
-#### Feature 4: Erweiterte Nahrungsmittel-Datenbank (24h Zugang)
-- **FoodSearchViewModel**: "Mehr laden" Hint bei <=5 lokalen Ergebnissen fuer Non-Premium
-  - `CheckExtendedFoodAccess()`: Premium oder gueltige 24h-Freischaltung pruefen
-  - `RequestExtendedDb()` / `ConfirmExtendedDbAdAsync()`: Ad-Gate ("extended_food_db" Placement)
-  - `PerformExtendedSearch()`: maxResults=200 nach Freischaltung
-  - Ablauf-Key: "extended_food_db_expiry" mit ISO 8601 UTC + DateTimeStyles.RoundtripKind
-  - Properties: HasExtendedFoodAccess, ShowExtendedDbOverlay, ShowExtendedDbHint
-- **FoodSearchView.axaml**: Extended DB Hint Card, Scan Limit Ad Overlay, Extended DB Ad Overlay (alle ZIndex=80)
-
-#### Lokalisierung
-- 11 neue resx-Keys in 6 Sprachen: WeeklyAnalysis, WeeklyAnalysisDesc, AvgWeight, AvgCalories, AvgWater, WeightTrend, CalorieTarget, ExportTracking, ExportTrackingDesc, ExtendedFoodDb, ExtendedFoodDbDesc
-- AppStrings.Designer.cs: 11 neue Properties
-
-### Game Juice - FloatingText + Celebration (08.02.2026)
-
-#### Aenderungen
-- **ProgressViewModel**: `FloatingTextRequested` + `CelebrationRequested` Events
-  - `AddEntry()`: Zeigt Floating Text mit Typ-spezifischem Format (kg/BMI/%/ml)
-  - `QuickAddWater()`: Zeigt "+{amount} ml" Floating Text
-  - `AddFoodToLog()`: Zeigt "+{calories} kcal" Floating Text
-  - `UpdateWaterStatus()`: Confetti + "Ziel erreicht" bei Wasser-Zielerreichung (einmal pro Session via `_wasWaterGoalReached`)
-- **MainViewModel**: `FloatingTextRequested` + `CelebrationRequested` Events, Weiterleitung von ProgressViewModel
-- **MainView.axaml**: `FloatingTextOverlay` (ZIndex=15) + `CelebrationOverlay` (ZIndex=16) Controls, xmlns:controls
-- **MainView.axaml.cs**: Event-Handler fuer FloatingText (Farbe: success=#22C55E, info=#3B82F6) + Confetti
-- Build: 0 Fehler
+- **08.02.2026**: FloatingTextOverlay + CelebrationOverlay (Game Juice)
+- **07.02.2026**: 4 Rewarded Ad Features, HomeView Redesign, LanguageChanged Fix
+- **06.02.2026**: Deep Code Review (Preferences Key-Mismatch, DateTime.Today, IDisposable, BarcodeLookupService Thread-Safety)

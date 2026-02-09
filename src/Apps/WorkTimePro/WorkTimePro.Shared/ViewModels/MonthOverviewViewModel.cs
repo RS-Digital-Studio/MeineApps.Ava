@@ -20,7 +20,7 @@ public partial class MonthOverviewViewModel : ObservableObject
     private readonly ITrialService _trialService;
 
     public event Action<string>? NavigationRequested;
-    public event Action<string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
 
     public MonthOverviewViewModel(
         ICalculationService calculation,
@@ -141,7 +141,7 @@ public partial class MonthOverviewViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally
         {

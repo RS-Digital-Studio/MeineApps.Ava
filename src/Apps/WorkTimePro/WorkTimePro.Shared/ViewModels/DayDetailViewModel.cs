@@ -20,7 +20,7 @@ public partial class DayDetailViewModel : ObservableObject
     private readonly ITrialService _trialService;
 
     public event Action<string>? NavigationRequested;
-    public event Action<string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
 
     public DayDetailViewModel(
         IDatabaseService database,
@@ -120,7 +120,7 @@ public partial class DayDetailViewModel : ObservableObject
         _ = LoadDataAsync().ContinueWith(t =>
         {
             if (t.Exception != null)
-                MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
+                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
         }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
@@ -169,7 +169,7 @@ public partial class DayDetailViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally
         {
@@ -246,7 +246,7 @@ public partial class DayDetailViewModel : ObservableObject
 
         if (pause.IsAutoPause)
         {
-            MessageRequested?.Invoke(AppStrings.AutoBreakInfo);
+            MessageRequested?.Invoke(AppStrings.Info, AppStrings.AutoBreakInfo);
             return;
         }
 
@@ -260,7 +260,7 @@ public partial class DayDetailViewModel : ObservableObject
 
         if (pause.IsAutoPause)
         {
-            MessageRequested?.Invoke(AppStrings.AutoPauseCannotDelete);
+            MessageRequested?.Invoke(AppStrings.Info, AppStrings.AutoPauseCannotDelete);
             return;
         }
 

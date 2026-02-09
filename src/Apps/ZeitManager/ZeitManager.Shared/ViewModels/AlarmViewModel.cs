@@ -100,8 +100,6 @@ public partial class AlarmViewModel : ObservableObject
 
     public IReadOnlyList<SoundItem> AvailableSounds => _audioService.AvailableSounds;
 
-    public event EventHandler<string>? MessageRequested;
-
     public AlarmViewModel(IDatabaseService database, ILocalizationService localization, IAudioService audioService, ShiftScheduleViewModel shiftScheduleViewModel)
     {
         _database = database;

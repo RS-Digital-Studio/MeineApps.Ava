@@ -25,7 +25,6 @@ public partial class MainViewModel : ObservableObject
 
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
-    public event Action? CelebrationRequested;
 
     public ExpenseTrackerViewModel ExpenseTrackerViewModel { get; }
     public StatisticsViewModel StatisticsViewModel { get; }

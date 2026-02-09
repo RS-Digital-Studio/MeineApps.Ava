@@ -16,7 +16,7 @@ namespace WorkTimePro.ViewModels;
 /// </summary>
 public partial class SettingsViewModel : ObservableObject, IDisposable
 {
-    public event Action<string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
 
     private readonly IDatabaseService _database;
     private readonly IThemeService _themeService;
@@ -388,7 +388,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally
         {
@@ -464,11 +464,11 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             // Theme
             _themeService.SetTheme((AppTheme)SelectedThemeIndex);
 
-            MessageRequested?.Invoke(AppStrings.SettingsSaved);
+            MessageRequested?.Invoke(AppStrings.Info, AppStrings.SettingsSaved);
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorSaving, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorSaving, ex.Message));
         }
     }
 
@@ -484,7 +484,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 // Start trial by default in Avalonia (no action sheet available)
                 _trialService.MarkTrialOfferAsSeen();
                 _trialService.StartTrial();
-                MessageRequested?.Invoke(string.Format(AppStrings.TrialStartedMessage, _trialService.DaysRemaining));
+                MessageRequested?.Invoke(AppStrings.Info, string.Format(AppStrings.TrialStartedMessage, _trialService.DaysRemaining));
                 UpdatePremiumStatus();
                 return;
             }
@@ -494,14 +494,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
             if (success)
             {
-                MessageRequested?.Invoke(AppStrings.PurchaseSuccess);
+                MessageRequested?.Invoke(AppStrings.Info, AppStrings.PurchaseSuccess);
             }
 
             UpdatePremiumStatus();
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
         finally
         {
@@ -520,7 +520,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorGeneric, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
         finally
         {
@@ -546,7 +546,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorOpenUrl, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorOpenUrl, ex.Message));
         }
     }
 
@@ -564,7 +564,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorOpenUrl, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorOpenUrl, ex.Message));
         }
     }
 

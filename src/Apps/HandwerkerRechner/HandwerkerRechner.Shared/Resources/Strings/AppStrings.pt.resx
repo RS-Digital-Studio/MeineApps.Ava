@@ -1783,9 +1783,6 @@ O rendimento diminui em superfícies rugosas!</value>
   <data name="PremiumPrice" xml:space="preserve">
     <value>A partir de 3,99 € – pagamento único</value>
   </data>
-  <data name="MoreCategories" xml:space="preserve">
-    <value>Mais categorias</value>
-  </data>
 
   <!-- Rewarded Ads -->
   <data name="PremiumCalculatorsLocked" xml:space="preserve">

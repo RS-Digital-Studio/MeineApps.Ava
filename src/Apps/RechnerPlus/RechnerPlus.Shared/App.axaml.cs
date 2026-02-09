@@ -68,7 +68,7 @@ public partial class App : Application
         services.AddSingleton<MeineApps.CalcLib.IHistoryService, MeineApps.CalcLib.HistoryService>();
 
         // ViewModels
-        services.AddTransient<MainViewModel>();
+        services.AddSingleton<MainViewModel>();
         services.AddTransient<CalculatorViewModel>(sp =>
             new CalculatorViewModel(
                 sp.GetRequiredService<MeineApps.CalcLib.CalculatorEngine>(),

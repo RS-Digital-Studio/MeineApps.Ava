@@ -10,7 +10,7 @@ public class ProgressService : IProgressService
 {
     private const string PROGRESS_KEY = "GameProgress";
     private readonly IPreferencesService _preferences;
-    private ProgressData _data;
+    private ProgressData _data = new();
 
     public int TotalLevels => 50;
     public int HighestCompletedLevel => _data.HighestCompleted;

@@ -20,7 +20,6 @@ public partial class MainView : UserControl
         if (_vm != null)
         {
             _vm.FloatingTextRequested -= OnFloatingText;
-            _vm.CelebrationRequested -= OnCelebration;
         }
 
         _vm = DataContext as MainViewModel;
@@ -28,7 +27,6 @@ public partial class MainView : UserControl
         if (_vm != null)
         {
             _vm.FloatingTextRequested += OnFloatingText;
-            _vm.CelebrationRequested += OnCelebration;
         }
     }
 
@@ -48,8 +46,4 @@ public partial class MainView : UserControl
         FloatingTextCanvas.ShowFloatingText(text, w * (0.2 + _rng.NextDouble() * 0.6), h * 0.4, color, 16);
     }
 
-    private void OnCelebration()
-    {
-        CelebrationCanvas.ShowConfetti();
-    }
 }

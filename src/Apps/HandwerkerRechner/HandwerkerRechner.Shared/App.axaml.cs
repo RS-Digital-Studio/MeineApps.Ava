@@ -95,7 +95,7 @@ public partial class App : Application
         services.AddSingleton<CraftEngine>();
 
         // ViewModels
-        services.AddTransient<MainViewModel>();
+        services.AddSingleton<MainViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<ProjectsViewModel>();
 

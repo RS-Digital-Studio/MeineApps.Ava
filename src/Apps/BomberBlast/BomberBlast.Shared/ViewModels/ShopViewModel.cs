@@ -21,7 +21,7 @@ public partial class ShopViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
-    public event Action<string, string, string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -69,7 +69,7 @@ public partial class ShopViewModel : ObservableObject
         UpdateCoinDisplay();
     }
 
-    private void UpdateLocalizedTexts()
+    public void UpdateLocalizedTexts()
     {
         ShopTitleText = _localizationService.GetString("ShopTitle");
         SectionStartUpgradesText = _localizationService.GetString("SectionStartUpgrades");
@@ -122,8 +122,7 @@ public partial class ShopViewModel : ObservableObject
         {
             MessageRequested?.Invoke(
                 _localizationService.GetString("ShopTitle"),
-                _localizationService.GetString("ShopNotEnoughCoins"),
-                _localizationService.GetString("OK"));
+                _localizationService.GetString("ShopNotEnoughCoins"));
             return;
         }
 

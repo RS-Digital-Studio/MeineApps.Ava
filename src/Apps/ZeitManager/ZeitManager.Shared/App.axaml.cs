@@ -94,7 +94,7 @@ public partial class App : Application
             services.AddSingleton<INotificationService, DesktopNotificationService>();
 
         // ViewModels
-        services.AddTransient<MainViewModel>();
+        services.AddSingleton<MainViewModel>();
         services.AddTransient<TimerViewModel>();
         services.AddTransient<StopwatchViewModel>();
         services.AddTransient<AlarmViewModel>();

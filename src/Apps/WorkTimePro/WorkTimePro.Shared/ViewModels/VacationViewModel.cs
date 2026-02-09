@@ -94,7 +94,7 @@ public partial class VacationViewModel : ObservableObject
     partial void OnCalculatedDaysChanged(int value) => OnPropertyChanged(nameof(CalculatedDaysDisplay));
 
     public event Action<string>? NavigationRequested;
-    public event Action<string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
 
     public VacationViewModel(
         IVacationService vacationService,
@@ -119,7 +119,7 @@ public partial class VacationViewModel : ObservableObject
         _ = LoadDataAsync().ContinueWith(t =>
         {
             if (t.Exception != null)
-                MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
+                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
         }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
@@ -130,7 +130,7 @@ public partial class VacationViewModel : ObservableObject
         _ = CalculateWorkDaysAsync().ContinueWith(t =>
         {
             if (t.Exception != null)
-                MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
+                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
         }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
@@ -141,7 +141,7 @@ public partial class VacationViewModel : ObservableObject
         _ = CalculateWorkDaysAsync().ContinueWith(t =>
         {
             if (t.Exception != null)
-                MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
+                MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, t.Exception?.Message));
         }, TaskContinuationOptions.OnlyOnFaulted);
     }
 
@@ -178,7 +178,7 @@ public partial class VacationViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally
         {
@@ -205,7 +205,7 @@ public partial class VacationViewModel : ObservableObject
 
         if (CalculatedDays <= 0)
         {
-            MessageRequested?.Invoke(AppStrings.NoWorkDaysInPeriod);
+            MessageRequested?.Invoke(AppStrings.Info, AppStrings.NoWorkDaysInPeriod);
             return;
         }
 
@@ -266,12 +266,12 @@ public partial class VacationViewModel : ObservableObject
 
         if (transferred > 0)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.DaysCarriedOver, transferred, previousYear));
+            MessageRequested?.Invoke(AppStrings.Info, string.Format(AppStrings.DaysCarriedOver, transferred, previousYear));
             await LoadDataAsync();
         }
         else
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.NoDaysToCarryOver, previousYear));
+            MessageRequested?.Invoke(AppStrings.Info, string.Format(AppStrings.NoDaysToCarryOver, previousYear));
         }
     }
 

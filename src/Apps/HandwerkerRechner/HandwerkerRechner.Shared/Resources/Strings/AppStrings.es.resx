@@ -1676,9 +1676,6 @@ Valores típicos:
   <data name="PremiumPrice" xml:space="preserve">
     <value>Desde 3,99 € – único pago</value>
   </data>
-  <data name="MoreCategories" xml:space="preserve">
-    <value>Más categorías</value>
-  </data>
 
   <!-- Rewarded Ads -->
   <data name="PremiumCalculatorsLocked" xml:space="preserve">

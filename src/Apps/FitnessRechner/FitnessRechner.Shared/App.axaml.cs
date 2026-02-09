@@ -101,7 +101,7 @@ public partial class App : Application
         services.AddSingleton<IFoodSearchService, FoodSearchService>();
         services.AddSingleton<IBarcodeLookupService, BarcodeLookupService>();
         // ViewModels
-        services.AddTransient<MainViewModel>();
+        services.AddSingleton<MainViewModel>();
         services.AddTransient<ProgressViewModel>();
         services.AddTransient<FoodSearchViewModel>();
         services.AddTransient<SettingsViewModel>();

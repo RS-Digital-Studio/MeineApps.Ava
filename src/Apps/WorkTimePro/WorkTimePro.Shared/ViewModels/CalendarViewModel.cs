@@ -22,7 +22,7 @@ public partial class CalendarViewModel : ObservableObject
     private readonly IVacationService _vacationService;
 
     public event Action<string>? NavigationRequested;
-    public event Action<string>? MessageRequested;
+    public event Action<string, string>? MessageRequested;
 
     public CalendarViewModel(
         IDatabaseService database,
@@ -171,7 +171,7 @@ public partial class CalendarViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorLoading, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally
         {
@@ -256,12 +256,12 @@ public partial class CalendarViewModel : ObservableObject
             await _vacationService.SaveVacationEntryAsync(entry);
 
             IsOverlayVisible = false;
-            MessageRequested?.Invoke(AppStrings.Saved);
+            MessageRequested?.Invoke(AppStrings.Info, AppStrings.Saved);
             await LoadDataAsync();
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorSaving, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorSaving, ex.Message));
         }
     }
 
@@ -283,12 +283,12 @@ public partial class CalendarViewModel : ObservableObject
             }
 
             IsOverlayVisible = false;
-            MessageRequested?.Invoke(AppStrings.ResetStatus);
+            MessageRequested?.Invoke(AppStrings.Info, AppStrings.ResetStatus);
             await LoadDataAsync();
         }
         catch (Exception ex)
         {
-            MessageRequested?.Invoke(string.Format(AppStrings.ErrorSaving, ex.Message));
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorSaving, ex.Message));
         }
     }
 
@@ -341,7 +341,7 @@ public partial class CalendarViewModel : ObservableObject
             await _database.SaveWorkDayAsync(workDay);
         }
 
-        MessageRequested?.Invoke(string.Format(AppStrings.VacationDaysEnteredFormat, days, startDate.ToString("dd.MM.yyyy")));
+        MessageRequested?.Invoke(AppStrings.Info, string.Format(AppStrings.VacationDaysEnteredFormat, days, startDate.ToString("dd.MM.yyyy")));
         await LoadDataAsync();
     }
 

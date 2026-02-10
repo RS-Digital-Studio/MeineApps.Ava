@@ -283,6 +283,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | ${applicationId} geht nicht | .NET Android kennt keine Gradle-Placeholder | Hardcodierte Package-Namen verwenden |
 | Icons in Tab-Leiste fehlen | Material.Icons xmlns fehlt | `xmlns:materialIcons="using:Material.Icons.Avalonia"` |
 | VersionCode Ablehnung | Code bereits im Play Store | VOR Release aktuelle Codes im Play Store pruefen |
+| Ads Error Code 0 + "Failed to instantiate ClientApi" | Ads vor SDK-Init geladen | `Initialize(activity, callback)` nutzen, Ads erst im Callback laden |
 
 ---
 

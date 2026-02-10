@@ -93,10 +93,10 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 - **C# Namespace hat Typo:** `Xamarin.Google.UserMesssagingPlatform` (DREIFACHES 's')
 - `ConsentRequestParameters` + `UserMessagingPlatform.LoadAndShowConsentFormIfRequired()`
 - Zeigt GDPR-Consent-Dialog fuer EU-Nutzer
-- **Consent-Callback-Flow (09.02.2026):** `RequestConsent(activity, onComplete)` - Ads werden erst nach Consent geladen
-- `AttachToActivity` erstellt nur Layout (kein `LoadAd()`), `LoadBannerAd()` wird im Callback aufgerufen
+- **SDK-Init-Callback (10.02.2026):** `Initialize(activity, onComplete)` nutzt `IOnInitializationCompleteListener` - Ads duerfen erst nach Callback geladen werden
+- `AttachToActivity` erstellt Layout + laedt Banner sofort (innerhalb Init-Callback)
+- `RequestConsent()` zeigt nur GDPR-Form, keine Ad-Logik mehr im Consent-Callback
 - Fehler werden geloggt (ConsentFailureListener + ConsentFormDismissedListener), nicht verschluckt
-- Bei Fehler oder "kein Formular noetig" wird Callback trotzdem aufgerufen → Ads laden immer
 
 ### NuGet Packages (in Directory.Packages.props)
 - `Xamarin.GooglePlayServices.Ads.Lite` 124.0.0.4

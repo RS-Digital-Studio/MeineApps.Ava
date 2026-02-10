@@ -37,23 +37,20 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         base.OnCreate(savedInstanceState);
 
-        // Google Mobile Ads initialisieren
-        AdMobHelper.Initialize(this);
-
-        // Banner-Ad Layout vorbereiten (laedt noch nicht)
-        _adMobHelper = new AdMobHelper();
-        var adService = App.Services.GetRequiredService<IAdService>();
-        var purchaseService = App.Services.GetRequiredService<IPurchaseService>();
-        _adMobHelper.AttachToActivity(this, AdConfig.GetBannerAdUnitId("BomberBlast"), adService, purchaseService);
-
-        // GDPR Consent → erst danach Ads laden
-        var activity = this;
-        var rewardedHelper = _rewardedAdHelper;
-        var adHelper = _adMobHelper;
-        AdMobHelper.RequestConsent(this, onComplete: () =>
+        // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
+        AdMobHelper.Initialize(this, () =>
         {
-            adHelper.LoadBannerAd();
-            rewardedHelper.Load(activity, AdConfig.GetRewardedAdUnitId("BomberBlast"));
+            // Banner-Ad Layout vorbereiten und laden
+            _adMobHelper = new AdMobHelper();
+            var adService = App.Services.GetRequiredService<IAdService>();
+            var purchaseService = App.Services.GetRequiredService<IPurchaseService>();
+            _adMobHelper.AttachToActivity(this, AdConfig.GetBannerAdUnitId("BomberBlast"), adService, purchaseService);
+
+            // Rewarded Ad vorladen
+            _rewardedAdHelper!.Load(this, AdConfig.GetRewardedAdUnitId("BomberBlast"));
+
+            // GDPR Consent-Form anzeigen falls noetig (EU)
+            AdMobHelper.RequestConsent(this);
         });
     }
 

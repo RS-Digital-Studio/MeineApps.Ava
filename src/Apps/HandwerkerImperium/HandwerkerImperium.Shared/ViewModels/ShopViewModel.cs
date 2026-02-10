@@ -339,7 +339,7 @@ public partial class ShopViewModel : ObservableObject
 
             if (watchAd)
             {
-                bool success = await _rewardedAdService.ShowAdAsync();
+                bool success = await _rewardedAdService.ShowAdAsync("golden_screws");
                 if (success)
                 {
                     await ApplyReward(item);

@@ -181,7 +181,7 @@ public partial class WorkerMarketViewModel : ObservableObject
     private async Task RefreshWithAdAsync()
     {
         // Video-Werbung anzeigen (simuliert auf Desktop)
-        var adWatched = await _rewardedAdService.ShowAdAsync();
+        var adWatched = await _rewardedAdService.ShowAdAsync("market_refresh");
         if (adWatched)
         {
             var market = _workerService.RefreshMarket();

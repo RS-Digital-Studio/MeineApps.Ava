@@ -316,10 +316,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
                                     !IsWiringGameActive && !IsPaintingGameActive &&
                                     !IsWorkerProfileActive && !IsBuildingsActive;
 
-    // Zaehler fuer Seitenwechsel → Banner bei jedem 10. Aufruf
-    private int _pageViewCount;
-    private const int AdShowInterval = 10;
-
     private void DeactivateAllTabs()
     {
         IsDashboardActive = false;
@@ -337,16 +333,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsWorkerProfileActive = false;
         IsBuildingsActive = false;
         IsResearchActive = false;
-
-        // Seitenaufruf zaehlen → Banner bei jedem 10. Wechsel
-        _pageViewCount++;
-        if (_adService.AdsEnabled)
-        {
-            if (_pageViewCount % AdShowInterval == 0)
-                _adService.ShowBanner();
-            else
-                _adService.HideBanner();
-        }
     }
 
     private void NotifyTabBarVisibility()
@@ -422,6 +408,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         IsAdBannerVisible = _adService.BannerVisible;
         _adService.AdsStateChanged += (_, _) => IsAdBannerVisible = _adService.BannerVisible;
+
+        // Banner beim Start anzeigen (fuer Desktop + Fallback falls AdMobHelper fehlschlaegt)
+        if (_adService.AdsEnabled && !_purchaseService.IsPremium)
+            _adService.ShowBanner();
 
         // Store child ViewModels
         ShopViewModel = shopViewModel;

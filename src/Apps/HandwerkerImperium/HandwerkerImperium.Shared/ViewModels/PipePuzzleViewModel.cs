@@ -603,7 +603,7 @@ public partial class PipePuzzleViewModel : ObservableObject, IDisposable
     {
         if (!CanWatchAd || AdWatched) return;
 
-        var success = await _rewardedAdService.ShowAdAsync();
+        var success = await _rewardedAdService.ShowAdAsync("score_double");
         if (success)
         {
             RewardAmount *= 2;

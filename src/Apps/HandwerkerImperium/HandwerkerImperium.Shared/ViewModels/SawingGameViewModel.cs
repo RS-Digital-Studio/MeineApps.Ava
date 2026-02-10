@@ -370,7 +370,7 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
     {
         if (!CanWatchAd || AdWatched) return;
 
-        var success = await _rewardedAdService.ShowAdAsync();
+        var success = await _rewardedAdService.ShowAdAsync("score_double");
         if (success)
         {
             // Double the rewards

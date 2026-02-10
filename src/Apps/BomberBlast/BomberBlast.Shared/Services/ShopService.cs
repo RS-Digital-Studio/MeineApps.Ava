@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Avalonia.Media;
 using BomberBlast.Models;
 using Material.Icons;
 using MeineApps.Core.Ava.Services;
@@ -31,22 +32,22 @@ public class ShopService : IShopService
         return
         [
             CreateItem(UpgradeType.StartBombs, "UpgradeStartBombs", "UpgradeStartBombsDesc",
-                MaterialIconKind.Bomb, "#FF6B35"),
+                MaterialIconKind.Bomb, Color.Parse("#FF6B35")),
             CreateItem(UpgradeType.StartFire, "UpgradeStartFire", "UpgradeStartFireDesc",
-                MaterialIconKind.Fire, "#FF4444"),
+                MaterialIconKind.Fire, Color.Parse("#FF4444")),
             CreateItem(UpgradeType.StartSpeed, "UpgradeStartSpeed", "UpgradeStartSpeedDesc",
-                MaterialIconKind.FlashOutline, "#FFD700"),
+                MaterialIconKind.FlashOutline, Color.Parse("#FFD700")),
             CreateItem(UpgradeType.ExtraLives, "UpgradeExtraLives", "UpgradeExtraLivesDesc",
-                MaterialIconKind.Heart, "#E91E63"),
+                MaterialIconKind.Heart, Color.Parse("#E91E63")),
             CreateItem(UpgradeType.ScoreMultiplier, "UpgradeScoreMultiplier", "UpgradeScoreMultiplierDesc",
-                MaterialIconKind.Star, "#9C27B0"),
+                MaterialIconKind.Star, Color.Parse("#9C27B0")),
             CreateItem(UpgradeType.TimeBonus, "UpgradeTimeBonus", "UpgradeTimeBonusDesc",
-                MaterialIconKind.ClockFast, "#00BCD4")
+                MaterialIconKind.ClockFast, Color.Parse("#00BCD4"))
         ];
     }
 
     private ShopDisplayItem CreateItem(UpgradeType type, string nameKey, string descKey,
-        MaterialIconKind icon, string iconColor)
+        MaterialIconKind icon, Color iconColor)
     {
         int level = _upgrades.GetLevel(type);
         int maxLevel = PlayerUpgrades.GetMaxLevel(type);

@@ -1,3 +1,4 @@
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Material.Icons;
 
@@ -27,8 +28,8 @@ public partial class ShopDisplayItem : ObservableObject
     /// <summary>Material-Icon</summary>
     public MaterialIconKind IconKind { get; init; }
 
-    /// <summary>Icon-Farbe als Hex-String</summary>
-    public string IconColor { get; init; } = "#FFFFFF";
+    /// <summary>Icon-Farbe</summary>
+    public Color IconColor { get; init; } = Colors.White;
 
     /// <summary>Maximales Level</summary>
     public int MaxLevel { get; init; }

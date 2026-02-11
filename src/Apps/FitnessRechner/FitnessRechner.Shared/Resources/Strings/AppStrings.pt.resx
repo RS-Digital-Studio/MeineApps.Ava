@@ -213,6 +213,11 @@
   <data name="UnknownProduct" xml:space="preserve"><value>Produto desconhecido</value></data>
   <data name="Per100g" xml:space="preserve"><value>por 100g</value></data>
   <data name="Kcal" xml:space="preserve"><value>kcal</value></data>
+  <data name="EnterBarcodeManually" xml:space="preserve"><value>Inserir código de barras...</value></data>
+  <data name="SearchBarcodeButton" xml:space="preserve"><value>Pesquisar</value></data>
+  <data name="CameraNotAvailable" xml:space="preserve"><value>Insira um código de barras para pesquisar informações nutricionais</value></data>
+  <data name="UseProduct" xml:space="preserve"><value>Usar</value></data>
+  <data name="ScanAgain" xml:space="preserve"><value>Escanear novamente</value></data>
 
   <!-- Main Page -->
   <data name="TrialInfo" xml:space="preserve"><value>Teste: {0} dias restantes</value></data>
@@ -349,4 +354,12 @@
   <!-- Extended Food Database -->
   <data name="ExtendedFoodDb" xml:space="preserve"><value>Banco de dados estendido</value></data>
   <data name="ExtendedFoodDbDesc" xml:space="preserve"><value>Assista um video para 24h de acesso a mais alimentos</value></data>
+
+  <!-- Ad Unavailable -->
+  <data name="AdVideoNotAvailableTitle" xml:space="preserve">
+    <value>Sem vídeo disponível</value>
+  </data>
+  <data name="AdVideoNotAvailableMessage" xml:space="preserve">
+    <value>Nenhum vídeo publicitário está disponível no momento. Tente novamente mais tarde.</value>
+  </data>
 </root>

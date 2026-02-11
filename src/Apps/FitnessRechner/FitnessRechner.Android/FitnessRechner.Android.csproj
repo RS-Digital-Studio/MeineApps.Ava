@@ -19,6 +19,10 @@
     <PackageReference Include="Avalonia.Android" />
     <PackageReference Include="Xamarin.GooglePlayServices.Ads.Lite" />
     <PackageReference Include="Xamarin.Google.UserMessagingPlatform" />
+    <PackageReference Include="Xamarin.AndroidX.Camera.Camera2" />
+    <PackageReference Include="Xamarin.AndroidX.Camera.Lifecycle" />
+    <PackageReference Include="Xamarin.AndroidX.Camera.View" />
+    <PackageReference Include="Xamarin.Google.MLKit.BarcodeScanning" />
   </ItemGroup>
 
   <ItemGroup>

@@ -31,6 +31,12 @@ public partial class App : Application
     /// </summary>
     public static Func<IFileShareService>? FileShareServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen IBarcodeService.
+    /// Android setzt dies auf AndroidBarcodeService (CameraX + ML Kit).
+    /// </summary>
+    public static Func<IBarcodeService>? BarcodeServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -90,6 +96,12 @@ public partial class App : Application
             services.AddSingleton<IFileShareService>(_ => FileShareServiceFactory!());
         else
             services.AddSingleton<IFileShareService, DesktopFileShareService>();
+
+        // Barcode Service (Desktop: Fallback ohne Kamera, Android: CameraX + ML Kit)
+        if (BarcodeServiceFactory != null)
+            services.AddSingleton<IBarcodeService>(_ => BarcodeServiceFactory!());
+        else
+            services.AddSingleton<IBarcodeService, DesktopBarcodeService>();
 
         // Localization
         services.AddSingleton<ILocalizationService>(sp =>

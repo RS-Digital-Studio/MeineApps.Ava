@@ -519,6 +519,12 @@ namespace FitnessRechner.Resources.Strings {
             }
         }
 
+        public static string CameraNotAvailable {
+            get {
+                return ResourceManager.GetString("CameraNotAvailable", resourceCulture);
+            }
+        }
+
         public static string CaloriesRemaining {
             get {
                 return ResourceManager.GetString("CaloriesRemaining", resourceCulture);
@@ -654,6 +660,12 @@ namespace FitnessRechner.Resources.Strings {
         public static string EntryDeletedOn {
             get {
                 return ResourceManager.GetString("EntryDeletedOn", resourceCulture);
+            }
+        }
+
+        public static string EnterBarcodeManually {
+            get {
+                return ResourceManager.GetString("EnterBarcodeManually", resourceCulture);
             }
         }
 
@@ -1086,6 +1098,18 @@ namespace FitnessRechner.Resources.Strings {
         public static string ScanBarcode {
             get {
                 return ResourceManager.GetString("ScanBarcode", resourceCulture);
+            }
+        }
+
+        public static string ScanAgain {
+            get {
+                return ResourceManager.GetString("ScanAgain", resourceCulture);
+            }
+        }
+
+        public static string SearchBarcodeButton {
+            get {
+                return ResourceManager.GetString("SearchBarcodeButton", resourceCulture);
             }
         }
 
@@ -1527,6 +1551,12 @@ namespace FitnessRechner.Resources.Strings {
             }
         }
 
+        public static string UseProduct {
+            get {
+                return ResourceManager.GetString("UseProduct", resourceCulture);
+            }
+        }
+
         public static string RemoveAds {
             get {
                 return ResourceManager.GetString("RemoveAds", resourceCulture);
@@ -1638,6 +1668,18 @@ namespace FitnessRechner.Resources.Strings {
         public static string ExtendedFoodDbDesc {
             get {
                 return ResourceManager.GetString("ExtendedFoodDbDesc", resourceCulture);
+            }
+        }
+
+        public static string AdVideoNotAvailableTitle {
+            get {
+                return ResourceManager.GetString("AdVideoNotAvailableTitle", resourceCulture);
+            }
+        }
+
+        public static string AdVideoNotAvailableMessage {
+            get {
+                return ResourceManager.GetString("AdVideoNotAvailableMessage", resourceCulture);
             }
         }
     }

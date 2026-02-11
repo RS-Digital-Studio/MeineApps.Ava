@@ -45,6 +45,9 @@
     <DataTemplate DataType="calcVm:BodyFatViewModel">
       <calcViews:BodyFatView />
     </DataTemplate>
+    <DataTemplate DataType="vm:BarcodeScannerViewModel">
+      <views:BarcodeScannerView />
+    </DataTemplate>
   </UserControl.DataTemplates>
 
   <Grid RowDefinitions="*,Auto,Auto">

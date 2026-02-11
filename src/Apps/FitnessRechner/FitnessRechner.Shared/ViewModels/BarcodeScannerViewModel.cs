@@ -35,6 +35,7 @@ public partial class BarcodeScannerViewModel : ObservableObject
     [ObservableProperty] private bool _showResult;
     [ObservableProperty] private bool _hasIncompleteData;
     [ObservableProperty] private string _dataWarningMessage = "";
+    [ObservableProperty] private string _manualBarcodeInput = "";
 
     partial void OnIsScanningChanged(bool value)
     {
@@ -148,6 +149,15 @@ public partial class BarcodeScannerViewModel : ObservableObject
         HasIncompleteData = false;
         DataWarningMessage = "";
         StatusMessage = AppStrings.ScanBarcode;
+    }
+
+    [RelayCommand]
+    private async Task ScanManually()
+    {
+        var barcode = ManualBarcodeInput?.Trim();
+        if (string.IsNullOrEmpty(barcode)) return;
+
+        await OnBarcodeDetected(barcode);
     }
 
     [RelayCommand]

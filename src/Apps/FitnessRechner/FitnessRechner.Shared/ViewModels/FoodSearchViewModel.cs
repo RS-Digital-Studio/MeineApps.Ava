@@ -17,6 +17,7 @@ public partial class FoodSearchViewModel : ObservableObject, IDisposable
     private readonly IPreferencesService _preferences;
     private readonly IScanLimitService _scanLimitService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IBarcodeService _barcodeService;
     private CancellationTokenSource? _searchCancellationTokenSource;
 
     private const string CALORIE_GOAL_KEY = "daily_calorie_goal";
@@ -39,13 +40,15 @@ public partial class FoodSearchViewModel : ObservableObject, IDisposable
         IPurchaseService purchaseService,
         IPreferencesService preferences,
         IScanLimitService scanLimitService,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService,
+        IBarcodeService barcodeService)
     {
         _foodSearchService = foodSearchService;
         _purchaseService = purchaseService;
         _preferences = preferences;
         _scanLimitService = scanLimitService;
         _rewardedAdService = rewardedAdService;
+        _barcodeService = barcodeService;
         LoadCalorieGoal();
         LoadMacroGoals();
         UpdateShowAds();
@@ -485,7 +488,7 @@ public partial class FoodSearchViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void OpenBarcodeScanner()
+    private async Task OpenBarcodeScanner()
     {
         // Scan-Limit pruefen (Premium-Nutzer sind unbegrenzt)
         if (!_scanLimitService.CanScan)
@@ -494,9 +497,22 @@ public partial class FoodSearchViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // Nativen Barcode-Scanner starten (Android: CameraX, Desktop: null)
+        var barcode = await _barcodeService.ScanBarcodeAsync();
+
         _scanLimitService.UseOneScan();
         UpdateRemainingScans();
-        NavigationRequested?.Invoke("BarcodeScannerPage");
+
+        if (!string.IsNullOrEmpty(barcode))
+        {
+            // Barcode erkannt → direkt zur Scanner-Ergebnis-Seite mit Barcode
+            NavigationRequested?.Invoke($"BarcodeScannerPage?barcode={barcode}");
+        }
+        else
+        {
+            // Kein Barcode (abgebrochen oder Desktop) → manuelle Eingabe
+            NavigationRequested?.Invoke("BarcodeScannerPage");
+        }
     }
 
     /// <summary>
@@ -514,9 +530,19 @@ public partial class FoodSearchViewModel : ObservableObject, IDisposable
             UpdateRemainingScans();
 
             // Blockierten Scan jetzt ausfuehren
+            var barcode = await _barcodeService.ScanBarcodeAsync();
+
             _scanLimitService.UseOneScan();
             UpdateRemainingScans();
-            NavigationRequested?.Invoke("BarcodeScannerPage");
+
+            if (!string.IsNullOrEmpty(barcode))
+            {
+                NavigationRequested?.Invoke($"BarcodeScannerPage?barcode={barcode}");
+            }
+            else
+            {
+                NavigationRequested?.Invoke("BarcodeScannerPage");
+            }
         }
     }
 

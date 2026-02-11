@@ -15,7 +15,7 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 - **Tracking**: Gewicht, BMI, Koerperfett, Wasser, Kalorien (JSON-basiert, TrackingService)
 - **Charts**: LiveCharts (LineSeries fuer Gewicht/BMI/BodyFat/Water/Calories)
 - **Food Search**: Fuzzy Matching, Favorites, Recipes (FoodDatabase mit 114 Items + Aliase)
-- **Barcode Scanner**: Open Food Facts API (BarcodeLookupService mit SemaphoreSlim)
+- **Barcode Scanner**: Nativer CameraX + ML Kit Scanner (Android), manuelle Eingabe (Desktop), Open Food Facts API (BarcodeLookupService)
 
 ## App-spezifische Services
 
@@ -25,6 +25,7 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 - **BarcodeLookupService**: Open Food Facts API, _barcodeCache Dictionary mit SemaphoreSlim
 - **UndoService<T>**: Generischer Undo mit Timeout (VMs erstellen eigene Instanzen, nicht per DI)
 - **IScanLimitService / ScanLimitService**: Tages-Limit (3 Scans/Tag), Bonus-Scans via Rewarded Ad
+- **IBarcodeService**: Plattform-Interface fuer nativen Barcode-Scan (Android: CameraX + ML Kit, Desktop: null → manuelle Eingabe)
 
 ## Premium & Ads
 
@@ -56,8 +57,20 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 - **FloatingText**: "+{amount} ml" (Wasser), "+{calories} kcal" (Food), "+{value} kg/BMI/%" (Tracking)
 - **Celebration**: Confetti bei Wasser-Zielerreichung (einmal pro Session via `_wasWaterGoalReached`)
 
+### Barcode-Scanner Architektur (11.02.2026)
+- **Android**: `BarcodeScannerActivity` (AppCompatActivity) mit CameraX Preview + ML Kit ImageAnalysis
+  - Erkennt EAN-13, EAN-8, UPC-A, UPC-E
+  - Semi-transparentes Overlay mit Scan-Bereich + Ecken-Akzente
+  - `AndroidBarcodeService` → `StartActivityForResult` + `TaskCompletionSource`
+  - `MainActivity.OnActivityResult` + `OnRequestPermissionsResult` leiten an Service weiter
+- **Desktop**: `DesktopBarcodeService` gibt null zurueck → `BarcodeScannerView` zeigt manuelle Texteingabe
+- **Flow**: FoodSearchVM.OpenBarcodeScanner → IBarcodeService.ScanBarcodeAsync → NavigationRequested("BarcodeScannerPage?barcode=...") → MainVM.CreateCalculatorVm → BarcodeScannerVM.OnBarcodeDetected → API-Lookup → UseFood → FoodSelected Event → zurueck zu FoodSearch
+- **DI**: `App.BarcodeServiceFactory` (analog zu RewardedAdServiceFactory)
+- **Packages**: CameraX Camera2/Lifecycle/View 1.5.2.1 + ML Kit BarcodeScanning 117.3.0.5
+
 ## Changelog (Highlights)
 
+- **11.02.2026**: Nativer Barcode-Scanner (CameraX + ML Kit) mit BarcodeScannerView, manuelle Eingabe auf Desktop, FoodSearchVM → MainVM Navigation verdrahtet
 - **08.02.2026**: FloatingTextOverlay + CelebrationOverlay (Game Juice)
 - **07.02.2026**: 4 Rewarded Ad Features, HomeView Redesign, LanguageChanged Fix
 - **06.02.2026**: Deep Code Review (Preferences Key-Mismatch, DateTime.Today, IDisposable, BarcodeLookupService Thread-Safety)

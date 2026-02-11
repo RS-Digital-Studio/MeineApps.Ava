@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FitnessRechner.Models;
+using FitnessRechner.Resources.Strings;
 using FitnessRechner.Services;
 using FitnessRechner.ViewModels.Calculators;
 using MeineApps.Core.Ava.Localization;
@@ -19,6 +20,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IFoodSearchService _foodSearchService;
     private readonly IPreferencesService _preferences;
     private readonly ILocalizationService _localization;
+    private readonly IRewardedAdService _rewardedAdService;
 
     private const string CALORIE_GOAL_KEY = "daily_calorie_goal";
     private const string WATER_GOAL_KEY = "daily_water_goal";
@@ -44,6 +46,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public MainViewModel(
         IPurchaseService purchaseService,
         IAdService adService,
+        IRewardedAdService rewardedAdService,
         ITrackingService trackingService,
         IFoodSearchService foodSearchService,
         IPreferencesService preferences,
@@ -55,10 +58,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         _purchaseService = purchaseService;
         _adService = adService;
+        _rewardedAdService = rewardedAdService;
         _trackingService = trackingService;
         _foodSearchService = foodSearchService;
         _preferences = preferences;
         _localization = localization;
+
+        _rewardedAdService.AdUnavailable += () => MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
 
         IsAdBannerVisible = _adService.BannerVisible;
         _adService.AdsStateChanged += (_, _) => IsAdBannerVisible = _adService.BannerVisible;
@@ -74,6 +80,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Game Juice Events vom ProgressViewModel weiterleiten
         progressViewModel.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         progressViewModel.CelebrationRequested += () => CelebrationRequested?.Invoke();
+
+        // FoodSearchViewModel Navigation verdrahten (Barcode-Scanner)
+        foodSearchViewModel.NavigationRequested += OnFoodSearchNavigation;
 
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
         settingsViewModel.LanguageChanged += OnLanguageChanged;
@@ -285,13 +294,30 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private ObservableObject? CreateCalculatorVm(string page)
     {
-        ObservableObject? vm = page switch
+        // Route-Parameter parsen (z.B. "BarcodeScannerPage?barcode=1234567890")
+        string? barcodeParam = null;
+        var basePage = page;
+        var queryIndex = page.IndexOf('?');
+        if (queryIndex >= 0)
+        {
+            basePage = page[..queryIndex];
+            var query = page[(queryIndex + 1)..];
+            foreach (var param in query.Split('&'))
+            {
+                var parts = param.Split('=', 2);
+                if (parts.Length == 2 && parts[0] == "barcode")
+                    barcodeParam = Uri.UnescapeDataString(parts[1]);
+            }
+        }
+
+        ObservableObject? vm = basePage switch
         {
             "BmiPage" => App.Services.GetRequiredService<BmiViewModel>(),
             "CaloriesPage" => App.Services.GetRequiredService<CaloriesViewModel>(),
             "WaterPage" => App.Services.GetRequiredService<WaterViewModel>(),
             "IdealWeightPage" => App.Services.GetRequiredService<IdealWeightViewModel>(),
             "BodyFatPage" => App.Services.GetRequiredService<BodyFatViewModel>(),
+            "BarcodeScannerPage" => App.Services.GetRequiredService<BarcodeScannerViewModel>(),
             _ => null
         };
 
@@ -317,6 +343,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 bf.NavigationRequested += OnCalculatorGoBack;
                 bf.MessageRequested += OnCalculatorMessage;
                 break;
+            case BarcodeScannerViewModel scanner:
+                scanner.NavigationRequested += OnCalculatorGoBack;
+                scanner.FoodSelected += OnFoodSelectedFromScanner;
+                // Barcode-Parameter vorhanden → direkt API-Lookup starten
+                if (!string.IsNullOrEmpty(barcodeParam))
+                    _ = scanner.OnBarcodeDetected(barcodeParam);
+                break;
         }
 
         return vm;
@@ -338,6 +371,39 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnCalculatorMessage(string title, string message)
     {
         MessageRequested?.Invoke(title, message);
+    }
+
+    private void OnFoodSearchNavigation(string route)
+    {
+        // Barcode-Scanner und andere FoodSearch-Navigationen behandeln
+        if (route.StartsWith("BarcodeScannerPage"))
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                CurrentPage = route;
+            });
+        }
+        else if (route == "..")
+        {
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                CurrentPage = null;
+            });
+        }
+    }
+
+    private void OnFoodSelectedFromScanner(FoodItem food)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            // Zurueck zum Food-Tab und gescanntes Lebensmittel anwenden
+            CurrentPage = null;
+            SelectedTab = 2;
+            FoodSearchViewModel.ApplyParameters(new Dictionary<string, object>
+            {
+                { "SelectedFood", food }
+            });
+        });
     }
 
     #endregion

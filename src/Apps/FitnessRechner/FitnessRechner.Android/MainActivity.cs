@@ -1,4 +1,5 @@
 using Android.App;
+using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
@@ -21,6 +22,7 @@ public class MainActivity : AvaloniaMainActivity<App>
 {
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
+    private AndroidBarcodeService? _barcodeService;
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
@@ -54,6 +56,10 @@ public class MainActivity : AvaloniaMainActivity<App>
         App.FileShareServiceFactory = () =>
             new MeineApps.Core.Premium.Ava.Droid.AndroidFileShareService(this);
 
+        // BarcodeService Factory fuer Android (CameraX + ML Kit)
+        _barcodeService = new AndroidBarcodeService(this);
+        App.BarcodeServiceFactory = () => _barcodeService;
+
         try
         {
             base.OnCreate(savedInstanceState);
@@ -86,6 +92,18 @@ public class MainActivity : AvaloniaMainActivity<App>
         {
             global::Android.Util.Log.Error("FitnessRechner", $"ADMOB CRASH: {ex}");
         }
+    }
+
+    protected override void OnActivityResult(int requestCode, Result resultCode, Intent? data)
+    {
+        base.OnActivityResult(requestCode, resultCode, data);
+        _barcodeService?.HandleActivityResult(requestCode, resultCode, data);
+    }
+
+    public override void OnRequestPermissionsResult(int requestCode, string[] permissions, Permission[] grantResults)
+    {
+        base.OnRequestPermissionsResult(requestCode, permissions, grantResults);
+        _barcodeService?.HandlePermissionResult(requestCode, grantResults);
     }
 
     protected override void OnResume()

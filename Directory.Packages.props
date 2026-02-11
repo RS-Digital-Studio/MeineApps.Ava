@@ -53,6 +53,14 @@
     <PackageVersion Include="Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm" Version="1.10.0.1" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- CAMERA & BARCODE (CameraX + ML Kit)                              -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="Xamarin.AndroidX.Camera.Camera2" Version="1.5.2.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.Lifecycle" Version="1.5.2.1" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.View" Version="1.5.2.1" />
+    <PackageVersion Include="Xamarin.Google.MLKit.BarcodeScanning" Version="117.3.0.5" />
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- EXPORT (PDF/Excel)                                               -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="PdfSharpCore" Version="1.3.67" />

@@ -94,11 +94,19 @@ public partial class TimerViewModel : ObservableObject
     [RelayCommand]
     private void HideCreateTimer() { IsCreatingTimer = false; NewTimerName = ""; NewTimerHours = 0; NewTimerMinutes = 5; NewTimerSeconds = 0; }
 
+    public event Action<string, string>? MessageRequested;
+
     [RelayCommand]
     private async Task CreateTimer()
     {
         var duration = new TimeSpan(NewTimerHours, NewTimerMinutes, NewTimerSeconds);
-        if (duration <= TimeSpan.Zero) return;
+        if (duration <= TimeSpan.Zero)
+        {
+            MessageRequested?.Invoke(
+                _localization.GetString("Error"),
+                _localization.GetString("TimerDurationInvalid"));
+            return;
+        }
 
         await _timerService.CreateTimerAsync(NewTimerName, duration);
         HideCreateTimer();

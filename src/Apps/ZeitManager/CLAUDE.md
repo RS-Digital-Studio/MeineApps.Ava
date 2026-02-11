@@ -23,7 +23,7 @@ Multi-Timer, Stoppuhr mit Rundenzeiten, Wecker mit Challenges, Schichtplan-Rechn
 
 - `ITimerService` → TimerService (In-Memory Timer Management + Snooze + System-Notifications)
 - `IAudioService` → AudioService (6 Toene, Console.Beep / BEL Fallback)
-- `IAlarmSchedulerService` → AlarmSchedulerService (30s Check-Timer, Weekday-Matching, Double-Trigger-Schutz + System-Notifications via INotificationService)
+- `IAlarmSchedulerService` → AlarmSchedulerService (10s Check-Timer, Weekday-Matching, Double-Trigger-Schutz + System-Notifications via INotificationService)
 - `IShiftScheduleService` → ShiftScheduleService (15/21-Schicht Berechnung)
 - `INotificationService` → Plattform-spezifisch via `ConfigurePlatformServices` (Android: AndroidNotificationService, Desktop: DesktopNotificationService)
 
@@ -57,6 +57,7 @@ ZeitManager.Android/Services/
 
 ## Changelog (Highlights)
 
+- **11.02.2026 (2)**: Optimierungen: TimerService Recovery nach App-Kill (Running-Timer Ablauf prüfen, Paused-Timer validieren, Finished melden), TimerViewModel Validierung (Duration <= 0 → MessageRequested mit TimerDurationInvalid), AlarmSchedulerService Intervall 30s→10s (verhindert verpasste Alarme), AlarmViewModel SnoozeDuration-Validierung (min. 1 Min.) + ToggleAlarm Double-Tap-Guard, AlarmOverlayViewModel "min"-Text lokalisiert, 1 neuer RESX-Key (TimerDurationInvalid) in allen 6 Sprachen
 - **11.02.2026**: Bugfix-Review: AlarmSchedulerService Thread-Safety (lock um _activeAlarms), TimerService Notification-Text lokalisiert, AlarmActivity Buttons lokalisiert (Dismiss/Snooze), AlarmOverlayViewModel von Transient zu Singleton
 - **v2.0.0-notifications**: AlarmSchedulerService + TimerService mit INotificationService verbunden → Alarme/Timer funktionieren jetzt auch bei minimierter App (Android AlarmManager + AlarmReceiver + AlarmActivity). AlarmViewModel nutzt AlarmSchedulerService statt direkt DB.
 - **v2.0.0-review**: DatabaseService SemaphoreSlim, StopwatchVM Dispatcher, AlarmScheduler Double-Trigger-Schutz, Delete-Bestaetigungen, Android Runtime Permissions

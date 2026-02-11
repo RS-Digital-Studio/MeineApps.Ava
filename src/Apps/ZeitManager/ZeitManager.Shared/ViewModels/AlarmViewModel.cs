@@ -61,6 +61,9 @@ public partial class AlarmViewModel : ObservableObject
     [ObservableProperty]
     private ChallengeDifficulty _selectedDifficulty = ChallengeDifficulty.Easy;
 
+    // Guards gegen Double-Tap
+    private bool _isToggling;
+
     // Delete confirmation state
     private AlarmItem? _alarmToDelete;
 
@@ -162,7 +165,7 @@ public partial class AlarmViewModel : ObservableObject
         alarm.Time = new TimeOnly(AlarmHour, AlarmMinute);
         alarm.RepeatDaysEnum = RepeatDays;
         alarm.Vibrate = Vibrate;
-        alarm.SnoozeDurationMinutes = SnoozeDuration;
+        alarm.SnoozeDurationMinutes = Math.Max(1, SnoozeDuration); // Mindestens 1 Minute
         alarm.AlarmTone = SelectedAlarmTone;
         alarm.ChallengeEnabled = ChallengeEnabled;
         alarm.ChallengeType = SelectedChallengeType;
@@ -213,12 +216,21 @@ public partial class AlarmViewModel : ObservableObject
     [RelayCommand]
     private async Task ToggleAlarm(AlarmItem alarm)
     {
-        alarm.IsEnabled = !alarm.IsEnabled;
-        // ScheduleAlarmAsync/CancelAlarmAsync speichert in DB + plant/cancelt System-Notification
-        if (alarm.IsEnabled)
-            await _alarmScheduler.ScheduleAlarmAsync(alarm);
-        else
-            await _alarmScheduler.CancelAlarmAsync(alarm);
+        if (_isToggling) return;
+        _isToggling = true;
+        try
+        {
+            alarm.IsEnabled = !alarm.IsEnabled;
+            // ScheduleAlarmAsync/CancelAlarmAsync speichert in DB + plant/cancelt System-Notification
+            if (alarm.IsEnabled)
+                await _alarmScheduler.ScheduleAlarmAsync(alarm);
+            else
+                await _alarmScheduler.CancelAlarmAsync(alarm);
+        }
+        finally
+        {
+            _isToggling = false;
+        }
     }
 
     [RelayCommand]

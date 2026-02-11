@@ -206,7 +206,32 @@ public class DatabaseService : IDatabaseService
     public async Task DeleteTimeEntryAsync(int id)
     {
         var db = await GetDatabaseAsync();
+        var entry = await db.Table<TimeEntry>().Where(t => t.Id == id).FirstOrDefaultAsync();
         await db.DeleteAsync<TimeEntry>(id);
+
+        // WorkDay neu berechnen um verwaiste PauseEntries zu bereinigen
+        if (entry != null)
+        {
+            var workDay = await db.Table<WorkDay>().Where(w => w.Id == entry.WorkDayId).FirstOrDefaultAsync();
+            if (workDay != null)
+            {
+                // Entries für Recalculation neu laden (ohne den gelöschten)
+                var remainingEntries = await db.Table<TimeEntry>()
+                    .Where(t => t.WorkDayId == workDay.Id)
+                    .OrderBy(t => t.Timestamp)
+                    .ToListAsync();
+
+                if (remainingEntries.Count == 0)
+                {
+                    // Keine Entries mehr → Auto-Pause entfernen
+                    var autoPauses = await db.Table<PauseEntry>()
+                        .Where(p => p.WorkDayId == workDay.Id && p.IsAutoPause)
+                        .ToListAsync();
+                    foreach (var ap in autoPauses)
+                        await db.DeleteAsync<PauseEntry>(ap.Id);
+                }
+            }
+        }
     }
 
     // ==================== PauseEntry ====================

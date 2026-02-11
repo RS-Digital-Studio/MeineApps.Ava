@@ -44,5 +44,10 @@ namespace ZeitManager.Resources.Strings {
                 resourceCulture = value;
             }
         }
+        internal static string TimerDurationInvalid {
+            get {
+                return ResourceManager.GetString("TimerDurationInvalid", resourceCulture);
+            }
+        }
     }
 }

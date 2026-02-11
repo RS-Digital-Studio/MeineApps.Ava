@@ -87,6 +87,8 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 
 ## Changelog Highlights
 
+- **11.02.2026 (3)**: Optimierungen: ExportService vollständig lokalisiert (PDF/Excel/CSV - alle Titel, Header, Zusammenfassungen via AppStrings statt hardcoded Deutsch, Excel-Datum CultureInfo.CurrentCulture), Project.cs BudgetHours/HourlyRate Negativwert-Validierung (Math.Max(0)), 3 neue RESX-Keys (ExportWorkTimeReport, ExportTotal, ExportYearOverviewTitle) in allen 6 Sprachen
+- **11.02.2026 (2)**: Härtung: TimeTrackingService Midnight-Crossing-Fix (CheckOut nach Mitternacht berechnet korrekt über Tagesgrenze), Validierung (negative Pausen, CheckOut vor CheckIn), Double-Tap-Guard (_isToggling), Thread-Safety (SemaphoreSlim). DatabaseService GetTimeEntriesForDate UTC→Local korrekt. CalculationService Warning-Strings lokalisiert (CalculationLongPause, CalculationNightShift, CalculationOvertime RESX-Keys)
 - **11.02.2026**: Bugfix-Review: DateTime.UtcNow für alle Audit-Timestamps (Models + DatabaseService + BackupService + CalendarSyncService), TimeEntry.TypeText lokalisiert (AppStrings), redundante DayStatus.Work Checks in CalendarViewModel entfernt
 - **09.02.2026**: MessageRequested Event-Signatur von `Action<string>` zu `Action<string, string>` (Titel, Nachricht) in allen 10 ViewModels korrigiert (Convention-konform). Localization-Key "Info" in 6 .resx + Designer ergaenzt.
 - **08.02.2026**: Game Juice (Floating-Text "Feierabend!" + Confetti + Ueberstunden)

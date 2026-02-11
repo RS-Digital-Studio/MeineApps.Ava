@@ -246,5 +246,8 @@ Exemplos:
   <data name="TimerDone" xml:space="preserve">
     <value>Pronto!</value>
   </data>
+  <data name="TimerDurationInvalid" xml:space="preserve">
+    <value>A duração do temporizador deve ser maior que zero.</value>
+  </data>
 
 </root>

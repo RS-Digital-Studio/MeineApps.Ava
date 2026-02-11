@@ -325,8 +325,7 @@ public class CalculationService : ICalculationService
 
     public async Task<int> GetCumulativeBalanceAsync(DateTime upToDate)
     {
-        var allWorkDays = await _database.GetWorkDaysAsync(DateTime.MinValue, upToDate);
-        return allWorkDays.Sum(w => w.BalanceMinutes);
+        return await _database.GetTotalOvertimeMinutesAsync(new DateTime(2020, 1, 1), upToDate);
     }
 
     public async Task<double> GetWeekProgressAsync()
@@ -347,31 +346,31 @@ public class CalculationService : ICalculationService
         if (!settings.LegalComplianceEnabled)
             return warnings;
 
-        // Maximum work time (10h per ArbZG)
+        // Maximale Arbeitszeit (10h nach ArbZG)
         if (workDay.ActualWorkMinutes > settings.MaxDailyHours * 60)
         {
-            warnings.Add($"Daily work time exceeds {settings.MaxDailyHours}h (ArbZG)");
+            warnings.Add(string.Format(AppStrings.WarningDailyWorkTimeExceeds, settings.MaxDailyHours));
         }
 
-        // Pause regulation
+        // Pausenregelung
         if (workDay.ActualWorkMinutes > 6 * 60 && workDay.ManualPauseMinutes + workDay.AutoPauseMinutes < 30)
         {
-            warnings.Add("Minimum 30min pause required for over 6h work time");
+            warnings.Add(AppStrings.WarningMinPause30);
         }
 
         if (workDay.ActualWorkMinutes > 9 * 60 && workDay.ManualPauseMinutes + workDay.AutoPauseMinutes < 45)
         {
-            warnings.Add("Minimum 45min pause required for over 9h work time");
+            warnings.Add(AppStrings.WarningMinPause45);
         }
 
-        // Rest time (11h between shifts)
+        // Ruhezeit (11h zwischen Schichten)
         var yesterday = await _database.GetWorkDayAsync(workDay.Date.AddDays(-1));
         if (yesterday?.LastCheckOut != null && workDay.FirstCheckIn != null)
         {
             var restTime = workDay.FirstCheckIn.Value - yesterday.LastCheckOut.Value;
             if (restTime.TotalHours < settings.MinRestHours)
             {
-                warnings.Add($"Rest time below {settings.MinRestHours}h between shifts");
+                warnings.Add(string.Format(AppStrings.WarningRestTimeBelowMin, settings.MinRestHours));
             }
         }
 

@@ -617,5 +617,8 @@ Examples:
   <data name="TimerDone" xml:space="preserve">
     <value>Done!</value>
   </data>
+  <data name="TimerDurationInvalid" xml:space="preserve">
+    <value>Timer duration must be greater than zero.</value>
+  </data>
 
 </root>

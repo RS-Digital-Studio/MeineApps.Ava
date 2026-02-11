@@ -39,11 +39,66 @@ public class TimerService : ITimerService, IDisposable
     public async Task LoadTimersAsync()
     {
         var timers = await _database.GetTimersAsync();
+        var needsSave = false;
+
+        // Timer-Recovery: Laufende Timer prüfen, ob sie in der Zwischenzeit abgelaufen sind
+        foreach (var timer in timers.Where(t => t.State == TimerState.Running))
+        {
+            if (timer.StartedAtDateTime == null)
+            {
+                timer.State = TimerState.Stopped;
+                needsSave = true;
+                continue;
+            }
+
+            var elapsed = DateTime.UtcNow - timer.StartedAtDateTime.Value;
+            var remaining = TimeSpan.FromTicks(timer.RemainingAtStartTicks) - elapsed;
+
+            if (remaining <= TimeSpan.Zero)
+            {
+                // Timer ist abgelaufen während die App geschlossen war
+                timer.State = TimerState.Finished;
+                timer.RemainingTimeTicks = 0;
+                needsSave = true;
+            }
+            else
+            {
+                // Timer läuft noch → UI-Timer starten
+                timer.RemainingTimeTicks = remaining.Ticks;
+            }
+        }
+
+        // Pausierte Timer: PausedAt prüfen
+        foreach (var timer in timers.Where(t => t.State == TimerState.Paused && t.PausedAtDateTime == null))
+        {
+            timer.State = TimerState.Stopped;
+            needsSave = true;
+        }
+
         lock (_lock)
         {
             _timers.Clear();
-            _timers.AddRange(timers);
+            // Abgelaufene Timer nicht in die Liste aufnehmen (werden als Finished gemeldet)
+            _timers.AddRange(timers.Where(t => t.State != TimerState.Finished));
         }
+
+        // Abgelaufene Timer als "fertig" melden
+        foreach (var timer in timers.Where(t => t.State == TimerState.Finished))
+        {
+            TimerFinished?.Invoke(this, timer);
+            await _notificationService.CancelNotificationAsync($"timer_{timer.Id}");
+        }
+
+        if (needsSave)
+        {
+            foreach (var timer in timers.Where(t => t.State is TimerState.Stopped or TimerState.Finished))
+                await _database.SaveTimerAsync(timer);
+        }
+
+        // UI-Timer starten falls laufende Timer vorhanden
+        if (timers.Any(t => t.State == TimerState.Running))
+            EnsureUiTimer();
+
         TimersChanged?.Invoke(this, EventArgs.Empty);
     }
 

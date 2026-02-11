@@ -43,7 +43,7 @@ public class ExportService : IExportService
         var filePath = Path.Combine(ExportDirectory, fileName);
 
         var document = new PdfDocument();
-        document.Info.Title = $"Arbeitszeitnachweis - {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}";
+        document.Info.Title = $"{AppStrings.ExportWorkTimeReport} - {start:dd.MM.yyyy} bis {end:dd.MM.yyyy}";
         document.Info.Author = "WorkTimePro";
 
         var page = document.AddPage();
@@ -59,7 +59,7 @@ public class ExportService : IExportService
         double pageWidth = page.Width - 80;
 
         // Titel
-        gfx.DrawString($"Arbeitszeitnachweis", titleFont, XBrushes.DarkBlue,
+        gfx.DrawString(AppStrings.ExportWorkTimeReport, titleFont, XBrushes.DarkBlue,
             new XRect(leftMargin, yPos, pageWidth, 25), XStringFormats.TopLeft);
         yPos += 22;
         gfx.DrawString($"{start:dd.MM.yyyy} - {end:dd.MM.yyyy}", normalFont, XBrushes.Gray,
@@ -71,7 +71,7 @@ public class ExportService : IExportService
 
         // Tabellen-Header
         double[] colWidths = [90, 80, 50, 50, 55, 55, 50, 55];
-        string[] headers = ["Datum", "Status", "Kommt", "Geht", "Arbeit", "Pause", "Soll", "Saldo"];
+        string[] headers = [AppStrings.TableDate, AppStrings.TableStatus, AppStrings.CheckIn, AppStrings.CheckOut, AppStrings.TableWork, AppStrings.TablePause, AppStrings.Target, AppStrings.Balance];
 
         // Header-Hintergrund
         gfx.DrawRectangle(new XSolidBrush(XColor.FromArgb(21, 101, 192)), leftMargin, yPos - 2, pageWidth, 16);
@@ -142,7 +142,7 @@ public class ExportService : IExportService
 
         gfx.DrawRectangle(new XSolidBrush(XColor.FromArgb(227, 236, 247)), leftMargin, yPos - 2, pageWidth, 16);
         xPos = leftMargin + 4;
-        gfx.DrawString("GESAMT", headerFont, XBrushes.DarkBlue, xPos, yPos + 10, XStringFormats.BottomLeft);
+        gfx.DrawString(AppStrings.ExportTotal, headerFont, XBrushes.DarkBlue, xPos, yPos + 10, XStringFormats.BottomLeft);
         xPos += colWidths[0] + colWidths[1] + colWidths[2] + colWidths[3];
         gfx.DrawString(FormatMinutes(totalWork), headerFont, XBrushes.DarkBlue, xPos, yPos + 10, XStringFormats.BottomLeft);
         xPos += colWidths[4];
@@ -168,7 +168,7 @@ public class ExportService : IExportService
         var filePath = Path.Combine(ExportDirectory, fileName);
 
         var document = new PdfDocument();
-        document.Info.Title = $"Jahresuebersicht {year}";
+        document.Info.Title = $"{AppStrings.ExportYearOverviewTitle} {year}";
         document.Info.Author = "WorkTimePro";
 
         var page = document.AddPage();
@@ -184,7 +184,7 @@ public class ExportService : IExportService
         double pageWidth = page.Width - 80;
 
         // Titel
-        gfx.DrawString($"Jahresuebersicht {year}", titleFont, XBrushes.DarkBlue,
+        gfx.DrawString($"{AppStrings.ExportYearOverviewTitle} {year}", titleFont, XBrushes.DarkBlue,
             new XRect(leftMargin, yPos, pageWidth, 25), XStringFormats.TopLeft);
         yPos += 35;
 
@@ -193,7 +193,7 @@ public class ExportService : IExportService
 
         // Tabellen-Header
         double[] colWidths = [110, 80, 80, 80, 80];
-        string[] headers = ["Monat", "Arbeitstage", "Ist", "Soll", "Saldo"];
+        string[] headers = [AppStrings.Month, AppStrings.WorkDays, AppStrings.Actual, AppStrings.Target, AppStrings.Balance];
 
         gfx.DrawRectangle(new XSolidBrush(XColor.FromArgb(21, 101, 192)), leftMargin, yPos - 2, pageWidth, 18);
         double xPos = leftMargin + 4;
@@ -240,7 +240,7 @@ public class ExportService : IExportService
 
         gfx.DrawRectangle(new XSolidBrush(XColor.FromArgb(227, 236, 247)), leftMargin, yPos - 2, pageWidth, 18);
         xPos = leftMargin + 4;
-        gfx.DrawString("GESAMT", headerFont, XBrushes.DarkBlue, xPos, yPos + 12, XStringFormats.BottomLeft);
+        gfx.DrawString(AppStrings.ExportTotal, headerFont, XBrushes.DarkBlue, xPos, yPos + 12, XStringFormats.BottomLeft);
         xPos += colWidths[0];
         gfx.DrawString(yearWorkDays.ToString(), headerFont, XBrushes.DarkBlue, xPos, yPos + 12, XStringFormats.BottomLeft);
         xPos += colWidths[1];
@@ -278,18 +278,18 @@ public class ExportService : IExportService
         var filePath = Path.Combine(ExportDirectory, fileName);
 
         using var workbook = new ClosedXML.Excel.XLWorkbook();
-        var worksheet = workbook.Worksheets.Add("Arbeitszeiten");
+        var worksheet = workbook.Worksheets.Add(AppStrings.TimeEntries);
 
         // Header
-        worksheet.Cell(1, 1).Value = "Datum";
-        worksheet.Cell(1, 2).Value = "Status";
-        worksheet.Cell(1, 3).Value = "Check-In";
-        worksheet.Cell(1, 4).Value = "Check-Out";
-        worksheet.Cell(1, 5).Value = "Arbeitszeit";
-        worksheet.Cell(1, 6).Value = "Manuelle Pause";
-        worksheet.Cell(1, 7).Value = "Auto-Pause";
-        worksheet.Cell(1, 8).Value = "Soll";
-        worksheet.Cell(1, 9).Value = "Saldo";
+        worksheet.Cell(1, 1).Value = AppStrings.TableDate;
+        worksheet.Cell(1, 2).Value = AppStrings.TableStatus;
+        worksheet.Cell(1, 3).Value = AppStrings.CheckIn;
+        worksheet.Cell(1, 4).Value = AppStrings.CheckOut;
+        worksheet.Cell(1, 5).Value = AppStrings.WorkTime;
+        worksheet.Cell(1, 6).Value = AppStrings.ManualPause;
+        worksheet.Cell(1, 7).Value = AppStrings.AutoPause;
+        worksheet.Cell(1, 8).Value = AppStrings.Target;
+        worksheet.Cell(1, 9).Value = AppStrings.Balance;
 
         var headerRange = worksheet.Range(1, 1, 1, 9);
         headerRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromHtml("#1565C0");
@@ -305,13 +305,13 @@ public class ExportService : IExportService
             var firstCheckIn = timeEntries.Where(e => e.Type == EntryType.CheckIn).OrderBy(e => e.Timestamp).FirstOrDefault();
             var lastCheckOut = timeEntries.Where(e => e.Type == EntryType.CheckOut).OrderByDescending(e => e.Timestamp).FirstOrDefault();
 
-            worksheet.Cell(row, 1).Value = day.Date.ToString("ddd dd.MM.yyyy", CultureInfo.GetCultureInfo("de-DE"));
+            worksheet.Cell(row, 1).Value = day.Date.ToString("ddd dd.MM.yyyy", CultureInfo.CurrentCulture);
             worksheet.Cell(row, 2).Value = GetStatusText(day.Status);
             worksheet.Cell(row, 3).Value = firstCheckIn?.Timestamp.ToString("HH:mm") ?? "-";
             worksheet.Cell(row, 4).Value = lastCheckOut?.Timestamp.ToString("HH:mm") ?? "-";
             worksheet.Cell(row, 5).Value = FormatMinutes(day.ActualWorkMinutes);
             worksheet.Cell(row, 6).Value = FormatMinutes(day.ManualPauseMinutes);
-            worksheet.Cell(row, 7).Value = day.AutoPauseMinutes > 0 ? $"{FormatMinutes(day.AutoPauseMinutes)} (auto)" : "-";
+            worksheet.Cell(row, 7).Value = day.AutoPauseMinutes > 0 ? $"{FormatMinutes(day.AutoPauseMinutes)} ({AppStrings.Auto.ToLower()})" : "-";
             worksheet.Cell(row, 8).Value = FormatMinutes(day.TargetWorkMinutes);
             worksheet.Cell(row, 9).Value = FormatBalance(day.BalanceMinutes);
 
@@ -328,7 +328,7 @@ public class ExportService : IExportService
         }
 
         row++;
-        worksheet.Cell(row, 1).Value = "GESAMT";
+        worksheet.Cell(row, 1).Value = AppStrings.ExportTotal;
         worksheet.Cell(row, 5).Value = FormatMinutes(totalWork);
         worksheet.Cell(row, 6).Value = FormatMinutes(totalPause);
         worksheet.Cell(row, 8).Value = FormatMinutes(totalTarget);
@@ -362,7 +362,7 @@ public class ExportService : IExportService
         var filePath = Path.Combine(ExportDirectory, fileName);
 
         var sb = new StringBuilder();
-        sb.AppendLine("Datum;Status;Check-In;Check-Out;Arbeitszeit (min);Pause (min);Auto-Pause (min);Soll (min);Saldo (min)");
+        sb.AppendLine($"{AppStrings.TableDate};{AppStrings.TableStatus};{AppStrings.CheckIn};{AppStrings.CheckOut};{AppStrings.WorkTime} (min);{AppStrings.Break} (min);{AppStrings.AutoPause} (min);{AppStrings.Target} (min);{AppStrings.Balance} (min)");
 
         foreach (var day in workDays.OrderBy(d => d.Date))
         {

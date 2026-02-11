@@ -60,7 +60,7 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
         Title = timer.Name;
         Subtitle = _localization.GetString("TimerFinishedNotification");
         CanSnooze = true;
-        SnoozeText = "1 min";
+        SnoozeText = $"1 {_localization.GetString("MinutesShort")}";
         StartClock();
         _ = _audioService.PlayAsync(timer.AlarmTone, loop: true);
     }
@@ -73,7 +73,7 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
         Title = string.IsNullOrEmpty(alarm.Name) ? _localization.GetString("Alarm") : alarm.Name;
         Subtitle = alarm.TimeFormatted;
         CanSnooze = alarm.CurrentSnoozeCount < alarm.MaxSnoozeCount;
-        SnoozeText = $"{alarm.SnoozeDurationMinutes} min ({alarm.MaxSnoozeCount - alarm.CurrentSnoozeCount}x)";
+        SnoozeText = $"{alarm.SnoozeDurationMinutes} {_localization.GetString("MinutesShort")} ({alarm.MaxSnoozeCount - alarm.CurrentSnoozeCount}x)";
         StartClock();
         _ = _audioService.PlayAsync(alarm.AlarmTone, loop: true);
     }

@@ -398,4 +398,28 @@
     <value>Derzeit ist kein Werbevideo verfügbar. Bitte versuche es später erneut.</value>
   </data>
 
+  <data name="WarningDailyWorkTimeExceeds" xml:space="preserve">
+    <value>Tägliche Arbeitszeit überschreitet {0}h (ArbZG)</value>
+  </data>
+  <data name="WarningMinPause30" xml:space="preserve">
+    <value>Mindestens 30 Min. Pause bei über 6h Arbeitszeit erforderlich</value>
+  </data>
+  <data name="WarningMinPause45" xml:space="preserve">
+    <value>Mindestens 45 Min. Pause bei über 9h Arbeitszeit erforderlich</value>
+  </data>
+  <data name="WarningRestTimeBelowMin" xml:space="preserve">
+    <value>Ruhezeit unter {0}h zwischen Schichten</value>
+  </data>
+
+  <!-- Export -->
+  <data name="ExportWorkTimeReport" xml:space="preserve">
+    <value>Arbeitszeitnachweis</value>
+  </data>
+  <data name="ExportTotal" xml:space="preserve">
+    <value>GESAMT</value>
+  </data>
+  <data name="ExportYearOverviewTitle" xml:space="preserve">
+    <value>Jahresübersicht</value>
+  </data>
+
 </root>

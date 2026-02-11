@@ -398,4 +398,28 @@
     <value>Actualmente no hay ningún vídeo publicitario disponible. Inténtalo de nuevo más tarde.</value>
   </data>
 
+  <data name="WarningDailyWorkTimeExceeds" xml:space="preserve">
+    <value>El tiempo de trabajo diario supera {0}h (ArbZG)</value>
+  </data>
+  <data name="WarningMinPause30" xml:space="preserve">
+    <value>Se requiere un mínimo de 30 min de pausa para más de 6h de trabajo</value>
+  </data>
+  <data name="WarningMinPause45" xml:space="preserve">
+    <value>Se requiere un mínimo de 45 min de pausa para más de 9h de trabajo</value>
+  </data>
+  <data name="WarningRestTimeBelowMin" xml:space="preserve">
+    <value>Tiempo de descanso inferior a {0}h entre turnos</value>
+  </data>
+
+  <!-- Export -->
+  <data name="ExportWorkTimeReport" xml:space="preserve">
+    <value>Informe de horas de trabajo</value>
+  </data>
+  <data name="ExportTotal" xml:space="preserve">
+    <value>TOTAL</value>
+  </data>
+  <data name="ExportYearOverviewTitle" xml:space="preserve">
+    <value>Resumen anual</value>
+  </data>
+
 </root>

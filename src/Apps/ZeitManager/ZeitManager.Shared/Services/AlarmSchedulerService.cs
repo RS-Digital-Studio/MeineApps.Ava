@@ -180,7 +180,7 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
     private void EnsureCheckTimer()
     {
         if (_checkTimer != null) return;
-        _checkTimer = new Timer(30_000); // Check every 30 seconds
+        _checkTimer = new Timer(10_000); // Check every 10 seconds (30s konnte Alarme verpassen)
         _checkTimer.Elapsed += OnCheckTimerTick;
         _checkTimer.Start();
     }

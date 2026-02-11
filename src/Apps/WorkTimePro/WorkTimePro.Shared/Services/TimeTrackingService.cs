@@ -9,6 +9,7 @@ public class TimeTrackingService : ITimeTrackingService
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;
+    private readonly SemaphoreSlim _statusLock = new(1, 1);
 
     // Cache for non-blocking GetCurrentSessionDuration()
     private TimeSpan _cachedWorkTime = TimeSpan.Zero;
@@ -29,6 +30,21 @@ public class TimeTrackingService : ITimeTrackingService
         var lastEntry = await _database.GetLastTimeEntryAsync(today.Id);
         var activePause = await _database.GetActivePauseAsync(today.Id);
 
+        // Auch gestern prüfen (Mitternachts-Übergang bei Nachtarbeit)
+        if (lastEntry == null || lastEntry.Type != EntryType.CheckIn)
+        {
+            var yesterday = await _database.GetWorkDayAsync(DateTime.Today.AddDays(-1));
+            if (yesterday != null)
+            {
+                var yesterdayLast = await _database.GetLastTimeEntryAsync(yesterday.Id);
+                if (yesterdayLast?.Type == EntryType.CheckIn)
+                {
+                    lastEntry = yesterdayLast;
+                    activePause = await _database.GetActivePauseAsync(yesterday.Id);
+                }
+            }
+        }
+
         if (activePause != null)
         {
             CurrentStatus = TrackingStatus.OnBreak;
@@ -47,112 +63,190 @@ public class TimeTrackingService : ITimeTrackingService
 
     public async Task<TimeEntry> CheckInAsync(int? employerId = null, int? projectId = null, string? note = null)
     {
-        var today = await _database.GetOrCreateWorkDayAsync(DateTime.Today);
-        var now = DateTime.Now;
-
-        var entry = new TimeEntry
+        await _statusLock.WaitAsync();
+        try
         {
-            WorkDayId = today.Id,
-            EmployerId = employerId,
-            ProjectId = projectId,
-            Timestamp = now,
-            Type = EntryType.CheckIn,
-            Note = note
-        };
+            // Validierung: Nicht einchecken wenn bereits aktiv
+            if (CurrentStatus != TrackingStatus.Idle)
+                throw new InvalidOperationException("Already checked in");
 
-        await _database.SaveTimeEntryAsync(entry);
+            var today = await _database.GetOrCreateWorkDayAsync(DateTime.Today);
+            var now = DateTime.Now;
 
-        // First check-in of the day?
-        if (today.FirstCheckIn == null)
-        {
-            today.FirstCheckIn = now;
-            await _database.SaveWorkDayAsync(today);
+            // Duplikat-Erkennung: Gleicher CheckIn < 10s → ignorieren
+            var lastEntry = await _database.GetLastTimeEntryAsync(today.Id);
+            if (lastEntry?.Type == EntryType.CheckIn &&
+                (now - lastEntry.Timestamp).TotalSeconds < 10)
+                return lastEntry;
+
+            var entry = new TimeEntry
+            {
+                WorkDayId = today.Id,
+                EmployerId = employerId,
+                ProjectId = projectId,
+                Timestamp = now,
+                Type = EntryType.CheckIn,
+                Note = note
+            };
+
+            await _database.SaveTimeEntryAsync(entry);
+
+            // First check-in of the day?
+            if (today.FirstCheckIn == null)
+            {
+                today.FirstCheckIn = now;
+                await _database.SaveWorkDayAsync(today);
+            }
+
+            CurrentStatus = TrackingStatus.Working;
+            StatusChanged?.Invoke(this, CurrentStatus);
+
+            return entry;
         }
-
-        CurrentStatus = TrackingStatus.Working;
-        StatusChanged?.Invoke(this, CurrentStatus);
-
-        return entry;
+        finally
+        {
+            _statusLock.Release();
+        }
     }
 
     public async Task<TimeEntry> CheckOutAsync(string? note = null)
     {
-        var today = await GetTodayAsync();
-        var now = DateTime.Now;
-
-        // End active pause if any
-        var activePause = await _database.GetActivePauseAsync(today.Id);
-        if (activePause != null)
+        await _statusLock.WaitAsync();
+        try
         {
-            activePause.EndTime = now;
-            await _database.SavePauseEntryAsync(activePause);
+            // Validierung
+            if (CurrentStatus == TrackingStatus.Idle)
+                throw new InvalidOperationException("Cannot check out when not checked in");
+
+            // Aktiven WorkDay finden (berücksichtigt Mitternachts-Übergang)
+            var targetDay = await GetActiveWorkDayAsync();
+            var now = DateTime.Now;
+
+            // Aktive Pause beenden falls vorhanden
+            var activePause = await _database.GetActivePauseAsync(targetDay.Id);
+            if (activePause != null)
+            {
+                activePause.EndTime = now;
+                await _database.SavePauseEntryAsync(activePause);
+            }
+
+            var entry = new TimeEntry
+            {
+                WorkDayId = targetDay.Id,
+                Timestamp = now,
+                Type = EntryType.CheckOut,
+                Note = note
+            };
+
+            await _database.SaveTimeEntryAsync(entry);
+
+            // WorkDay aktualisieren
+            targetDay.LastCheckOut = now;
+            await _calculation.RecalculateWorkDayAsync(targetDay);
+
+            CurrentStatus = TrackingStatus.Idle;
+            StatusChanged?.Invoke(this, CurrentStatus);
+
+            return entry;
         }
-
-        var entry = new TimeEntry
+        finally
         {
-            WorkDayId = today.Id,
-            Timestamp = now,
-            Type = EntryType.CheckOut,
-            Note = note
-        };
-
-        await _database.SaveTimeEntryAsync(entry);
-
-        // Update work day
-        today.LastCheckOut = now;
-        await _calculation.RecalculateWorkDayAsync(today);
-
-        CurrentStatus = TrackingStatus.Idle;
-        StatusChanged?.Invoke(this, CurrentStatus);
-
-        return entry;
+            _statusLock.Release();
+        }
     }
 
     public async Task<PauseEntry> StartPauseAsync(string? note = null)
     {
-        var today = await GetTodayAsync();
-        var now = DateTime.Now;
-
-        var pause = new PauseEntry
+        await _statusLock.WaitAsync();
+        try
         {
-            WorkDayId = today.Id,
-            StartTime = now,
-            Type = PauseType.Manual,
-            IsAutoPause = false,
-            Note = note
-        };
+            // Validierung: Nur in Pause gehen wenn aktiv arbeitend
+            if (CurrentStatus != TrackingStatus.Working)
+                throw new InvalidOperationException("Can only pause while working");
 
-        await _database.SavePauseEntryAsync(pause);
+            var targetDay = await GetActiveWorkDayAsync();
 
-        CurrentStatus = TrackingStatus.OnBreak;
-        StatusChanged?.Invoke(this, CurrentStatus);
+            // Bereits in Pause? → bestehende zurückgeben
+            var existingPause = await _database.GetActivePauseAsync(targetDay.Id);
+            if (existingPause != null)
+                return existingPause;
 
-        return pause;
+            var pause = new PauseEntry
+            {
+                WorkDayId = targetDay.Id,
+                StartTime = DateTime.Now,
+                Type = PauseType.Manual,
+                IsAutoPause = false,
+                Note = note
+            };
+
+            await _database.SavePauseEntryAsync(pause);
+
+            CurrentStatus = TrackingStatus.OnBreak;
+            StatusChanged?.Invoke(this, CurrentStatus);
+
+            return pause;
+        }
+        finally
+        {
+            _statusLock.Release();
+        }
     }
 
     public async Task<PauseEntry> EndPauseAsync()
     {
-        var today = await GetTodayAsync();
-        var activePause = await _database.GetActivePauseAsync(today.Id);
+        await _statusLock.WaitAsync();
+        try
+        {
+            var targetDay = await GetActiveWorkDayAsync();
+            var activePause = await _database.GetActivePauseAsync(targetDay.Id);
 
-        if (activePause == null)
-            throw new InvalidOperationException("No active pause");
+            if (activePause == null)
+                throw new InvalidOperationException("No active pause");
 
-        activePause.EndTime = DateTime.Now;
-        await _database.SavePauseEntryAsync(activePause);
+            activePause.EndTime = DateTime.Now;
+            await _database.SavePauseEntryAsync(activePause);
 
-        // Update pause time
-        await _calculation.RecalculatePauseTimeAsync(today);
+            // Pausenzeit aktualisieren
+            await _calculation.RecalculatePauseTimeAsync(targetDay);
 
-        CurrentStatus = TrackingStatus.Working;
-        StatusChanged?.Invoke(this, CurrentStatus);
+            CurrentStatus = TrackingStatus.Working;
+            StatusChanged?.Invoke(this, CurrentStatus);
 
-        return activePause;
+            return activePause;
+        }
+        finally
+        {
+            _statusLock.Release();
+        }
     }
 
     public async Task<WorkDay> GetTodayAsync()
     {
         return await _database.GetOrCreateWorkDayAsync(DateTime.Today);
+    }
+
+    /// <summary>
+    /// Findet den WorkDay mit dem aktiven CheckIn.
+    /// Berücksichtigt Mitternachts-Übergang bei Nachtarbeit.
+    /// </summary>
+    private async Task<WorkDay> GetActiveWorkDayAsync()
+    {
+        var today = await _database.GetOrCreateWorkDayAsync(DateTime.Today);
+        var lastEntry = await _database.GetLastTimeEntryAsync(today.Id);
+        if (lastEntry?.Type == EntryType.CheckIn)
+            return today;
+
+        // Gestern prüfen (Mitternachts-Übergang)
+        var yesterday = await _database.GetWorkDayAsync(DateTime.Today.AddDays(-1));
+        if (yesterday != null)
+        {
+            var yesterdayLast = await _database.GetLastTimeEntryAsync(yesterday.Id);
+            if (yesterdayLast?.Type == EntryType.CheckIn)
+                return yesterday;
+        }
+
+        return today;
     }
 
     public async Task<TimeSpan> GetCurrentWorkTimeAsync()

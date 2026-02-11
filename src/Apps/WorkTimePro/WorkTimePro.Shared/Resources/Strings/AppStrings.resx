@@ -1020,5 +1020,28 @@
   <data name="AdVideoNotAvailableMessage" xml:space="preserve">
     <value>No ad video is currently available. Please try again later.</value>
   </data>
+  <data name="WarningDailyWorkTimeExceeds" xml:space="preserve">
+    <value>Daily work time exceeds {0}h (ArbZG)</value>
+  </data>
+  <data name="WarningMinPause30" xml:space="preserve">
+    <value>Minimum 30min pause required for over 6h work time</value>
+  </data>
+  <data name="WarningMinPause45" xml:space="preserve">
+    <value>Minimum 45min pause required for over 9h work time</value>
+  </data>
+  <data name="WarningRestTimeBelowMin" xml:space="preserve">
+    <value>Rest time below {0}h between shifts</value>
+  </data>
+
+  <!-- Export -->
+  <data name="ExportWorkTimeReport" xml:space="preserve">
+    <value>Work time report</value>
+  </data>
+  <data name="ExportTotal" xml:space="preserve">
+    <value>TOTAL</value>
+  </data>
+  <data name="ExportYearOverviewTitle" xml:space="preserve">
+    <value>Year overview</value>
+  </data>
 
 </root>

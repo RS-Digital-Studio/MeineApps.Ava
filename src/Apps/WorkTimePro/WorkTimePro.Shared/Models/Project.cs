@@ -40,14 +40,24 @@ public class Project
     public bool IsActive { get; set; } = true;
 
     /// <summary>
-    /// Budget in Stunden (optional)
+    /// Budget in Stunden (optional, >= 0)
     /// </summary>
-    public double? BudgetHours { get; set; }
+    private double? _budgetHours;
+    public double? BudgetHours
+    {
+        get => _budgetHours;
+        set => _budgetHours = value.HasValue ? Math.Max(0, value.Value) : null;
+    }
 
     /// <summary>
-    /// Stundensatz (optional, für Freelancer)
+    /// Stundensatz (optional, >= 0)
     /// </summary>
-    public decimal? HourlyRate { get; set; }
+    private decimal? _hourlyRate;
+    public decimal? HourlyRate
+    {
+        get => _hourlyRate;
+        set => _hourlyRate = value.HasValue ? Math.Max(0, value.Value) : null;
+    }
 
     /// <summary>
     /// Erstellt am

@@ -2220,5 +2220,53 @@ namespace WorkTimePro.Resources.Strings {
                 return ResourceManager.GetString("AdVideoNotAvailableMessage", resourceCulture);
             }
         }
+
+        internal static string WarningDailyWorkTimeExceeds {
+            get {
+                return ResourceManager.GetString("WarningDailyWorkTimeExceeds", resourceCulture);
+            }
+        }
+
+        internal static string WarningMinPause30 {
+            get {
+                return ResourceManager.GetString("WarningMinPause30", resourceCulture);
+            }
+        }
+
+        internal static string WarningMinPause45 {
+            get {
+                return ResourceManager.GetString("WarningMinPause45", resourceCulture);
+            }
+        }
+
+        internal static string WarningRestTimeBelowMin {
+            get {
+                return ResourceManager.GetString("WarningRestTimeBelowMin", resourceCulture);
+            }
+        }
+
+        internal static string Actual {
+            get {
+                return ResourceManager.GetString("Actual", resourceCulture);
+            }
+        }
+
+        internal static string ExportWorkTimeReport {
+            get {
+                return ResourceManager.GetString("ExportWorkTimeReport", resourceCulture);
+            }
+        }
+
+        internal static string ExportTotal {
+            get {
+                return ResourceManager.GetString("ExportTotal", resourceCulture);
+            }
+        }
+
+        internal static string ExportYearOverviewTitle {
+            get {
+                return ResourceManager.GetString("ExportYearOverviewTitle", resourceCulture);
+            }
+        }
     }
 }

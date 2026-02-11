@@ -42,11 +42,13 @@ baseValue = value * ToBase + Offset
 // Kelvin: ToBase=1, Offset=-273.15
 ```
 
-### History-Integration
+### History-Integration (persistent)
 - `IHistoryService` (aus MeineApps.CalcLib) als Singleton
+- **Persistenz**: Verlauf wird per IPreferencesService als JSON gespeichert und beim Start geladen
 - CalculatorViewModel: `IsHistoryVisible`, `HistoryEntries`, Show/Hide/Clear/SelectHistoryEntry Commands
 - MainView: Bottom-Sheet Overlay mit Backdrop, Slide-Animation (TransformOperationsTransition)
 - Swipe-Gesten in MainView.axaml.cs: Up=ShowHistory, Down=HideHistory (nur im Calculator-Tab)
+- "Verlauf löschen"-Button im History-Panel (Grid.Row="3")
 
 ### Floating Text (Game Juice)
 - CalculatorViewModel feuert `FloatingTextRequested` Event nach Calculate()
@@ -63,6 +65,11 @@ baseValue = value * ToBase + Offset
 
 ## Wichtige Fixes
 
+- **Konsekutive Operatoren (11.02.2026)**: "5 + × 3" ersetzte Operator korrekt statt "0" einzufügen
+- **Operator nach Klammer (11.02.2026)**: "(5+3) × 2" fügt keinen "0" mehr zwischen ")" und "×" ein
+- **= nach Klammer (11.02.2026)**: "(5+3) =" evaluiert korrekt ohne "0" anzuhängen
+- **= nach Operator (11.02.2026)**: "5 + =" entfernt trailing Operator statt "0" als Operand zu nutzen
+- **Verlauf-Persistenz (11.02.2026)**: History wird per JSON in IPreferencesService gespeichert
 - **FormatResult lokalisiert**: "Error" durch `_localization.GetString("Error")` ersetzt
 - **SelectHistoryEntry**: ClearError() hinzugefuegt - HasError-Flag wird beim History-Eintrag zurueckgesetzt
 - **Tan() Validation**: Math.Tan()-Ergebnis > 1e15 wird als undefiniert erkannt

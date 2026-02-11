@@ -16,6 +16,12 @@ public interface IHistoryService
     void AddEntry(string expression, string result, double value);
 
     /// <summary>
+    /// Lädt Einträge aus einer externen Quelle (z.B. Persistenz).
+    /// Ersetzt den aktuellen Verlauf.
+    /// </summary>
+    void LoadEntries(IEnumerable<CalculationHistoryEntry> entries);
+
+    /// <summary>
     /// Löscht den gesamten Verlauf.
     /// </summary>
     void Clear();

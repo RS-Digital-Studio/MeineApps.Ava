@@ -1,19 +1,24 @@
-using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Text.Json;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.CalcLib;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 
 namespace RechnerPlus.ViewModels;
 
 public partial class CalculatorViewModel : ObservableObject, IDisposable
 {
     private bool _disposed;
+    private bool _isLoading;
     private readonly CalculatorEngine _engine;
     private readonly ExpressionParser _parser;
     private readonly ILocalizationService _localization;
     private readonly IHistoryService _historyService;
+    private readonly IPreferencesService _preferences;
+
+    private const string HistoryKey = "calculator_history";
 
     [ObservableProperty]
     private string _display = "0";
@@ -67,14 +72,18 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     public event Action<string, string>? FloatingTextRequested;
 
     public CalculatorViewModel(CalculatorEngine engine, ExpressionParser parser,
-                                ILocalizationService localization, IHistoryService historyService)
+                                ILocalizationService localization, IHistoryService historyService,
+                                IPreferencesService preferences)
     {
         _engine = engine;
         _parser = parser;
         _localization = localization;
         _historyService = historyService;
+        _preferences = preferences;
         _localization.LanguageChanged += OnLanguageChanged;
         _historyService.HistoryChanged += OnHistoryChanged;
+
+        LoadHistory();
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
@@ -90,7 +99,53 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(HistoryEntries));
         OnPropertyChanged(nameof(HasHistory));
+        if (!_isLoading)
+            SaveHistory();
     }
+
+    #region Verlauf-Persistenz
+
+    private void LoadHistory()
+    {
+        _isLoading = true;
+        try
+        {
+            var json = _preferences.Get<string>(HistoryKey, "");
+            if (!string.IsNullOrEmpty(json))
+            {
+                var entries = JsonSerializer.Deserialize<List<CalculationHistoryEntry>>(json);
+                if (entries is { Count: > 0 })
+                {
+                    _historyService.LoadEntries(entries);
+                }
+            }
+        }
+        catch
+        {
+            // Beschädigten Verlauf ignorieren
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void SaveHistory()
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(_historyService.History);
+            _preferences.Set(HistoryKey, json);
+        }
+        catch
+        {
+            // Speicherfehler ignorieren
+        }
+    }
+
+    #endregion
+
+    #region History Commands
 
     [RelayCommand]
     private void ShowHistory() => IsHistoryVisible = true;
@@ -114,6 +169,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         ClearError();
     }
 
+    #endregion
+
+    #region Eingabe
+
     [RelayCommand]
     private void InputDigit(string digit)
     {
@@ -133,6 +192,31 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     private void InputOperator(string op)
     {
         if (HasError) return;
+
+        // Wenn noch keine neue Zahl eingegeben wurde (z.B. direkt nach anderem Operator oder ")")
+        if (_isNewCalculation && Expression.Length > 0)
+        {
+            var trimmed = Expression.TrimEnd();
+            if (trimmed.Length > 0)
+            {
+                var lastChar = trimmed[^1];
+
+                // Expression endet mit Operator → ersetzen (z.B. "5 + " → "5 × ")
+                if (IsOperatorChar(lastChar))
+                {
+                    Expression = trimmed[..^1] + op + " ";
+                    return;
+                }
+
+                // Expression endet mit ")" → Operator direkt anfügen ohne "0"
+                if (lastChar == ')')
+                {
+                    Expression = trimmed + " " + op + " ";
+                    return;
+                }
+            }
+        }
+
         Expression += Display + " " + op + " ";
         Display = "0";
         _isNewCalculation = true;
@@ -172,6 +256,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         _isNewCalculation = true;
     }
 
+    #endregion
+
+    #region Berechnung
+
     [RelayCommand]
     private void Calculate()
     {
@@ -179,7 +267,36 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
 
         try
         {
-            var fullExpression = Expression + Display;
+            string fullExpression;
+
+            // Keine neue Eingabe seit letztem Operator/Klammer
+            if (_isNewCalculation && Expression.Length > 0)
+            {
+                var trimmed = Expression.TrimEnd();
+
+                if (trimmed.EndsWith(')'))
+                {
+                    // "(5+3)" ist bereits vollständig → kein "0" anhängen
+                    fullExpression = trimmed;
+                }
+                else if (trimmed.Length > 0 && IsOperatorChar(trimmed[^1]))
+                {
+                    // Trailing-Operator entfernen: "5 + " → nur "5" berechnen
+                    fullExpression = trimmed[..^1].TrimEnd();
+                }
+                else
+                {
+                    fullExpression = Expression + Display;
+                }
+            }
+            else
+            {
+                fullExpression = Expression + Display;
+            }
+
+            if (string.IsNullOrWhiteSpace(fullExpression))
+                return;
+
             var result = _parser.Evaluate(fullExpression);
 
             if (!result.IsError)
@@ -201,6 +318,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
             ShowError(_localization.GetString("Error"));
         }
     }
+
+    #endregion
+
+    #region Bearbeitung
 
     [RelayCommand]
     private void Clear()
@@ -302,7 +423,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         }
     }
 
-    // Scientific functions
+    #endregion
+
+    #region Wissenschaftliche Funktionen
+
     [RelayCommand]
     private void Sin()
     {
@@ -388,7 +512,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         }
     }
 
-    // Memory functions
+    #endregion
+
+    #region Memory
+
     [RelayCommand]
     private void MemoryClear() { Memory = 0; HasMemory = false; }
 
@@ -416,6 +543,8 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         if (double.TryParse(Display, NumberStyles.Any, CultureInfo.InvariantCulture, out var value)) { Memory = value; HasMemory = true; }
     }
 
+    #endregion
+
     [RelayCommand]
     private void ToggleAngleMode() => IsRadians = !IsRadians;
 
@@ -424,6 +553,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
 
     private void ShowError(string message) { HasError = true; ErrorMessage = message; }
     private void ClearError() { HasError = false; ErrorMessage = ""; }
+
+    /// <summary>Prüft ob ein Zeichen ein Rechenoperator ist.</summary>
+    private static bool IsOperatorChar(char c) =>
+        c is '+' or '-' or '\u2212' or '*' or '\u00D7' or '/' or '\u00F7' or '^';
 
     private string FormatResult(double value)
     {

@@ -74,7 +74,8 @@ public partial class App : Application
                 sp.GetRequiredService<MeineApps.CalcLib.CalculatorEngine>(),
                 sp.GetRequiredService<MeineApps.CalcLib.ExpressionParser>(),
                 sp.GetRequiredService<ILocalizationService>(),
-                sp.GetRequiredService<MeineApps.CalcLib.IHistoryService>()));
+                sp.GetRequiredService<MeineApps.CalcLib.IHistoryService>(),
+                sp.GetRequiredService<IPreferencesService>()));
         services.AddTransient<ConverterViewModel>(sp =>
             new ConverterViewModel(sp.GetRequiredService<ILocalizationService>()));
         services.AddTransient<SettingsViewModel>();

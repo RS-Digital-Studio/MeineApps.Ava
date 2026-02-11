@@ -313,6 +313,14 @@
           </Panel>
         </ScrollViewer>
 
+        <!-- Verlauf löschen Button -->
+        <Border Grid.Row="3" Padding="16,8,16,16"
+                IsVisible="{Binding CalculatorViewModel.HasHistory}">
+          <Button Classes="Outlined Small"
+                  Content="{Binding CalculatorViewModel.ClearHistoryText}"
+                  Command="{Binding CalculatorViewModel.ClearHistoryCommand}"
+                  HorizontalAlignment="Center" />
+        </Border>
 
       </Grid>
     </Border>

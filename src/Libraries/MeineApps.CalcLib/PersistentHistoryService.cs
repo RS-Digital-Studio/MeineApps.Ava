@@ -50,6 +50,18 @@ public class PersistentHistoryService : IHistoryService
         HistoryChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    public void LoadEntries(IEnumerable<CalculationHistoryEntry> entries)
+    {
+        _history.Clear();
+        foreach (var entry in entries)
+        {
+            _history.Add(entry);
+            if (_history.Count >= MAX_ENTRIES) break;
+        }
+        SaveHistory();
+        HistoryChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public void Clear()
     {
         _history.Clear();

@@ -138,7 +138,7 @@ public partial class RoofSolarViewModel : ObservableObject
     private bool _showTileCost = false;
 
     public string RoofTileCostDisplay => (ShowTileCost && PricePerTile > 0 && TilesResult != null && TilesResult.TilesNeeded > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(TilesResult.TilesNeeded * PricePerTile):F2} \u20ac"
+        ? $"{_localization.GetString("TotalCost")}: {(TilesResult.TilesNeeded * PricePerTile):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
     partial void OnPricePerTileChanged(double value)
@@ -152,7 +152,10 @@ public partial class RoofSolarViewModel : ObservableObject
         OnPropertyChanged(nameof(RoofTileCostDisplay));
     }
 
-    // Solar-Ertrag: Anlagenkosten
+    // Solar-Ertrag: Strompreis + Anlagenkosten
+    [ObservableProperty]
+    private double _pricePerKwh = 0.30;
+
     [ObservableProperty]
     private double _solarSystemCost = 0;
 
@@ -160,12 +163,17 @@ public partial class RoofSolarViewModel : ObservableObject
     private bool _showSolarCost = false;
 
     public string SolarCostDisplay => ShowSolarCost && SolarSystemCost > 0
-        ? $"{_localization.GetString("ResultSystemCost")}: {SolarSystemCost:F2} \u20ac"
+        ? $"{_localization.GetString("ResultSystemCost")}: {SolarSystemCost:F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
-    public string PaybackTimeDisplay => (ShowSolarCost && SolarSystemCost > 0 && SolarResult != null && SolarResult.AnnualYieldKwh > 0)
-        ? $"{_localization.GetString("ResultPaybackTime")}: {(SolarSystemCost / (SolarResult.AnnualYieldKwh * 0.30)):F1} {_localization.GetString("HistoryYears")}" // Annahme: 0,30 €/kWh
+    public string PaybackTimeDisplay => (ShowSolarCost && SolarSystemCost > 0 && SolarResult != null && SolarResult.AnnualYieldKwh > 0 && PricePerKwh > 0)
+        ? $"{_localization.GetString("ResultPaybackTime")}: {(SolarSystemCost / (SolarResult.AnnualYieldKwh * PricePerKwh)):F1} {_localization.GetString("HistoryYears")}"
         : "";
+
+    partial void OnPricePerKwhChanged(double value)
+    {
+        OnPropertyChanged(nameof(PaybackTimeDisplay));
+    }
 
     partial void OnSolarSystemCostChanged(double value)
     {
@@ -324,6 +332,7 @@ public partial class RoofSolarViewModel : ObservableObject
         SelectedOrientation = 4;
         TiltDegrees = 30;
         PricePerTile = 0;
+        PricePerKwh = 0.30;
         SolarSystemCost = 0;
         PitchResult = null;
         TilesResult = null;
@@ -390,6 +399,7 @@ public partial class RoofSolarViewModel : ObservableObject
                 ["PanelEfficiency"] = PanelEfficiency,
                 ["SelectedOrientation"] = SelectedOrientation,
                 ["TiltDegrees"] = TiltDegrees,
+                ["PricePerKwh"] = PricePerKwh,
                 ["SolarSystemCost"] = SolarSystemCost
             };
 
@@ -441,6 +451,7 @@ public partial class RoofSolarViewModel : ObservableObject
             PanelEfficiency = project.GetValue("PanelEfficiency", 20.0);
             SelectedOrientation = project.GetValue("SelectedOrientation", 4);
             TiltDegrees = project.GetValue("TiltDegrees", 30.0);
+            PricePerKwh = project.GetValue("PricePerKwh", 0.30);
             SolarSystemCost = project.GetValue("SolarSystemCost", 0.0);
 
             await Calculate();
@@ -481,7 +492,7 @@ public partial class RoofSolarViewModel : ObservableObject
                     inputs[_localization.GetString("LabelTilesPerSqm") ?? "Tiles/m\u00b2"] = $"{TilesPerSqm}";
                     results[_localization.GetString("ResultTilesNeeded") ?? "Tiles"] = $"{TilesResult.TilesNeeded}";
                     if (PricePerTile > 0)
-                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{TilesResult.TilesNeeded * PricePerTile:F2} \u20ac";
+                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{TilesResult.TilesNeeded * PricePerTile:F2} {_localization.GetString("CurrencySymbol")}";
                     break;
                 case 2 when SolarResult != null:
                     inputs[_localization.GetString("LabelRoofAreaSqm") ?? "Roof area"] = $"{SolarRoofArea:F1} m\u00b2";
@@ -489,9 +500,9 @@ public partial class RoofSolarViewModel : ObservableObject
                     inputs[_localization.GetString("LabelOrientation") ?? "Orientation"] = Orientations[SelectedOrientation];
                     results[_localization.GetString("ResultPeakPower") ?? "Peak power"] = $"{SolarResult.KwPeak:F1} kWp";
                     results[_localization.GetString("ResultAnnualYield") ?? "Annual yield"] = $"{SolarResult.AnnualYieldKwh:F0} kWh";
-                    if (SolarSystemCost > 0 && SolarResult.AnnualYieldKwh > 0)
+                    if (SolarSystemCost > 0 && SolarResult.AnnualYieldKwh > 0 && PricePerKwh > 0)
                     {
-                        var paybackYears = SolarSystemCost / (SolarResult.AnnualYieldKwh * 0.30);
+                        var paybackYears = SolarSystemCost / (SolarResult.AnnualYieldKwh * PricePerKwh);
                         results[_localization.GetString("ResultPaybackTime") ?? "Payback"] = $"{paybackYears:F1} {_localization.GetString("HistoryYears") ?? "years"}";
                     }
                     break;

@@ -138,7 +138,7 @@ public partial class ElectricalViewModel : ObservableObject
     private bool _showCableCost = false;
 
     public string CableCostDisplay => (ShowCableCost && CablePrice > 0 && CableLength > 0)
-        ? $"{_localization.GetString("CableCostLabel")}: {(CableLength * CablePrice):F2} \u20ac"
+        ? $"{_localization.GetString("CableCostLabel")}: {(CableLength * CablePrice):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
     partial void OnCablePriceChanged(double value)
@@ -331,7 +331,7 @@ public partial class ElectricalViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveProject()
+    private void SaveProject()
     {
         if (!HasResult) return;
         SaveProjectName = string.Empty;
@@ -480,9 +480,9 @@ public partial class ElectricalViewModel : ObservableObject
                     inputs[_localization.GetString("Power") ?? "Power"] = $"{Watts} W";
                     inputs[_localization.GetString("HoursPerDay") ?? "hrs/day"] = $"{HoursPerDay}";
                     inputs[_localization.GetString("PricePerKwh") ?? "EUR/kWh"] = $"{PricePerKwh:F2}";
-                    results[_localization.GetString("CostPerDay") ?? "Cost/day"] = $"{PowerCostResult.CostPerDay:F2} \u20ac";
-                    results[_localization.GetString("CostPerMonth") ?? "Cost/month"] = $"{PowerCostResult.CostPerMonth:F2} \u20ac";
-                    results[_localization.GetString("CostPerYear") ?? "Cost/year"] = $"{PowerCostResult.CostPerYear:F2} \u20ac";
+                    results[_localization.GetString("CostPerDay") ?? "Cost/day"] = $"{PowerCostResult.CostPerDay:F2} {_localization.GetString("CurrencySymbol")}";
+                    results[_localization.GetString("CostPerMonth") ?? "Cost/month"] = $"{PowerCostResult.CostPerMonth:F2} {_localization.GetString("CurrencySymbol")}";
+                    results[_localization.GetString("CostPerYear") ?? "Cost/year"] = $"{PowerCostResult.CostPerYear:F2} {_localization.GetString("CurrencySymbol")}";
                     break;
                 case 2 when OhmsLawResult != null:
                     inputs[_localization.GetString("VoltageULabel") ?? "Voltage U"] = OhmsVoltage;

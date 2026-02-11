@@ -167,13 +167,13 @@
     <value>RechnerPlus</value>
   </data>
   <data name="AppDescription" xml:space="preserve">
-    <value>La calcolatrice moderna per Android, Windows e Linux con modalita Scientifica e Convertitore di unita.</value>
+    <value>La calcolatrice moderna per Android, Windows e Linux con modalità Scientifica e Convertitore di unità.</value>
   </data>
   <data name="VersionFormat" xml:space="preserve">
     <value>Versione {0}</value>
   </data>
   <data name="ConverterTitle" xml:space="preserve">
-    <value>Convertitore di Unita</value>
+    <value>Convertitore di Unità</value>
   </data>
   <data name="ConverterCategory" xml:space="preserve">
     <value>Categoria</value>
@@ -200,7 +200,7 @@
     <value>Volume</value>
   </data>
   <data name="CategorySpeed" xml:space="preserve">
-    <value>Velocita</value>
+    <value>Velocità</value>
   </data>
   <data name="CategoryTime" xml:space="preserve">
     <value>Tempo</value>
@@ -212,7 +212,7 @@
     <value>Inserire valore</value>
   </data>
   <data name="ConverterSwapUnits" xml:space="preserve">
-    <value>Scambia unita</value>
+    <value>Scambia unità</value>
   </data>
   <data name="ConverterInvalidInput" xml:space="preserve">
     <value>Input non valido</value>
@@ -288,6 +288,12 @@
   </data>
   <data name="UnitCup" xml:space="preserve">
     <value>Tazza</value>
+  </data>
+  <data name="UnitQuartUS" xml:space="preserve">
+    <value>Quarto (US)</value>
+  </data>
+  <data name="UnitFluidOunceUS" xml:space="preserve">
+    <value>Oncia liquida (US)</value>
   </data>
   <data name="UnitMetersPerSecond" xml:space="preserve">
     <value>Metri al secondo</value>

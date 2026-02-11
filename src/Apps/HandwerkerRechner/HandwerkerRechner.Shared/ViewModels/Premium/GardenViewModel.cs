@@ -121,7 +121,7 @@ public partial class GardenViewModel : ObservableObject
     private bool _showPavingCost = false;
 
     public string PavingCostDisplay => (ShowPavingCost && PricePerStone > 0 && PavingResult != null && PavingResult.StonesNeeded > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(PavingResult.StonesNeeded * PricePerStone):F2} \u20ac"
+        ? $"{_localization.GetString("TotalCost")}: {(PavingResult.StonesNeeded * PricePerStone):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
     partial void OnPricePerStoneChanged(double value)
@@ -138,7 +138,7 @@ public partial class GardenViewModel : ObservableObject
     private bool _showSoilCost = false;
 
     public string SoilCostDisplay => (ShowSoilCost && PricePerBag > 0 && SoilResult != null && SoilResult.BagsNeeded > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(SoilResult.BagsNeeded * PricePerBag):F2} \u20ac"
+        ? $"{_localization.GetString("TotalCost")}: {(SoilResult.BagsNeeded * PricePerBag):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
     partial void OnPricePerBagChanged(double value)
@@ -155,7 +155,7 @@ public partial class GardenViewModel : ObservableObject
     private bool _showLinerCost = false;
 
     public string LinerCostDisplay => (ShowLinerCost && PricePerSqmLiner > 0 && PondResult != null && PondResult.LinerArea > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(PondResult.LinerArea * PricePerSqmLiner):F2} \u20ac"
+        ? $"{_localization.GetString("TotalCost")}: {(PondResult.LinerArea * PricePerSqmLiner):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
     partial void OnPricePerSqmLinerChanged(double value)
@@ -353,7 +353,7 @@ public partial class GardenViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveProject()
+    private void SaveProject()
     {
         if (!HasResult) return;
         SaveProjectName = string.Empty;
@@ -500,7 +500,7 @@ public partial class GardenViewModel : ObservableObject
                     results[_localization.GetString("ResultStonesNeeded") ?? "Stones"] = $"{PavingResult.StonesNeeded}";
                     results[_localization.GetString("ResultWithReserveFivePercent") ?? "+5%"] = $"{PavingResult.StonesWithReserve}";
                     if (PricePerStone > 0)
-                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{PavingResult.StonesWithReserve * PricePerStone:F2} \u20ac";
+                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{PavingResult.StonesWithReserve * PricePerStone:F2} {_localization.GetString("CurrencySymbol")}";
                     break;
                 case 1 when SoilResult != null:
                     inputs[_localization.GetString("LabelAreaSqm") ?? "Area"] = $"{SoilArea:F1} m\u00b2";
@@ -508,7 +508,7 @@ public partial class GardenViewModel : ObservableObject
                     results[_localization.GetString("ResultVolumeNeeded") ?? "Volume"] = $"{SoilResult.VolumeLiters:F1} L";
                     results[_localization.GetString("ResultBagsNeeded") ?? "Bags"] = $"{SoilResult.BagsNeeded}";
                     if (PricePerBag > 0)
-                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{SoilResult.BagsNeeded * PricePerBag:F2} \u20ac";
+                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{SoilResult.BagsNeeded * PricePerBag:F2} {_localization.GetString("CurrencySymbol")}";
                     break;
                 case 2 when PondResult != null:
                     inputs[_localization.GetString("LabelLengthM") ?? "Length"] = $"{PondLength:F1} m";
@@ -518,7 +518,7 @@ public partial class GardenViewModel : ObservableObject
                     results[_localization.GetString("ResultLinerWidth") ?? "Liner width"] = $"{PondResult.LinerWidth:F2} m";
                     results[_localization.GetString("ResultLinerArea") ?? "Liner area"] = $"{PondResult.LinerArea:F2} m\u00b2";
                     if (PricePerSqmLiner > 0)
-                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{PondResult.LinerArea * PricePerSqmLiner:F2} \u20ac";
+                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{PondResult.LinerArea * PricePerSqmLiner:F2} {_localization.GetString("CurrencySymbol")}";
                     break;
                 default:
                     return;

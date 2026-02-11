@@ -1731,4 +1731,10 @@ Su superfici ruvide la resa diminuisce!</value>
   <data name="OhmsLawMinValues" xml:space="preserve">
     <value>Inserire almeno 2 valori</value>
   </data>
+  <data name="CurrencySymbol" xml:space="preserve">
+    <value>€</value>
+  </data>
+  <data name="LabelPricePerKwh" xml:space="preserve">
+    <value>Prezzo elettricità (€/kWh)</value>
+  </data>
 </root>

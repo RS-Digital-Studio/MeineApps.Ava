@@ -128,10 +128,10 @@ public partial class PaintCalculatorViewModel : ObservableObject
     private bool _showCost = false;
 
     public string TotalCostDisplay => (Result != null && ShowCost && PricePerLiter > 0)
-        ? $"{(Result.LitersNeeded * PricePerLiter):F2} \u20ac"
+        ? $"{(Result.LitersNeeded * PricePerLiter):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
-    public string PricePerDisplay => ShowCost ? $"{_localization.GetString("PricePerLiter")}: {PricePerLiter:F2} \u20ac" : "";
+    public string PricePerDisplay => ShowCost ? $"{_localization.GetString("PricePerLiter")}: {PricePerLiter:F2} {_localization.GetString("CurrencySymbol")}" : "";
 
     partial void OnPricePerLiterChanged(double value)
     {
@@ -240,7 +240,7 @@ public partial class PaintCalculatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveProject()
+    private void SaveProject()
     {
         if (!HasResult) return;
 

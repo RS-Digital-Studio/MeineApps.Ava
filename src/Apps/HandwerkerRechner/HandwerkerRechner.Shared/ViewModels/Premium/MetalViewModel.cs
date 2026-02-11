@@ -129,7 +129,7 @@ public partial class MetalViewModel : ObservableObject
     private bool _showMetalCost = false;
 
     public string MetalCostDisplay => (ShowMetalCost && PricePerKg > 0 && WeightResult != null && WeightResult.Weight > 0)
-        ? $"{_localization.GetString("ResultMaterialCost")}: {(WeightResult.Weight * PricePerKg):F2} \u20ac"
+        ? $"{_localization.GetString("ResultMaterialCost")}: {(WeightResult.Weight * PricePerKg):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
     partial void OnPricePerKgChanged(double value)
@@ -265,7 +265,7 @@ public partial class MetalViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveProject()
+    private void SaveProject()
     {
         if (!HasResult) return;
         SaveProjectName = string.Empty;
@@ -397,7 +397,7 @@ public partial class MetalViewModel : ObservableObject
                     results[_localization.GetString("ResultWeight") ?? "Weight"] = $"{WeightResult.Weight:F2} kg";
                     results[_localization.GetString("ResultVolume") ?? "Volume"] = $"{WeightResult.Volume:F4} cm\u00b3";
                     if (PricePerKg > 0)
-                        results[_localization.GetString("ResultMaterialCost") ?? "Cost"] = $"{WeightResult.Weight * PricePerKg:F2} \u20ac";
+                        results[_localization.GetString("ResultMaterialCost") ?? "Cost"] = $"{WeightResult.Weight * PricePerKg:F2} {_localization.GetString("CurrencySymbol")}";
                     break;
                 case 1 when ThreadResult != null:
                     inputs[_localization.GetString("LabelThreadSize") ?? "Thread"] = ThreadSizes[SelectedThread];

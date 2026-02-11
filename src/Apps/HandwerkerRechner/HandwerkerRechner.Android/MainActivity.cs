@@ -1,4 +1,5 @@
 using Android.App;
+using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Avalonia;
@@ -30,6 +31,21 @@ public class MainActivity : AvaloniaMainActivity<App>
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
+        // URI-Launcher für Android registrieren (mailto:, https:, etc.)
+        UriLauncher.PlatformOpenUri = uri =>
+        {
+            try
+            {
+                var intent = new Intent(Intent.ActionView, global::Android.Net.Uri.Parse(uri));
+                intent.AddFlags(ActivityFlags.NewTask);
+                StartActivity(intent);
+            }
+            catch
+            {
+                // Kein Handler für URI verfügbar
+            }
+        };
+
         // Factories MUESSEN vor base.OnCreate (DI) registriert werden
         App.FileShareServiceFactory = () => new AndroidFileShareService(this);
 

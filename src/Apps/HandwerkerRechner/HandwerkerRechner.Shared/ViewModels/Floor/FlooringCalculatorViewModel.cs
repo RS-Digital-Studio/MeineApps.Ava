@@ -137,10 +137,10 @@ public partial class FlooringCalculatorViewModel : ObservableObject
     private bool _showCost = false;
 
     public string TotalCostDisplay => (Result != null && ShowCost && PricePerBoard > 0)
-        ? $"{(Result.BoardsWithWaste * PricePerBoard):F2} \u20ac"
+        ? $"{(Result.BoardsWithWaste * PricePerBoard):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
-    public string PricePerDisplay => ShowCost ? $"{_localization.GetString("PricePerBoard")}: {PricePerBoard:F2} \u20ac" : "";
+    public string PricePerDisplay => ShowCost ? $"{_localization.GetString("PricePerBoard")}: {PricePerBoard:F2} {_localization.GetString("CurrencySymbol")}" : "";
 
     partial void OnPricePerBoardChanged(double value)
     {
@@ -259,7 +259,7 @@ public partial class FlooringCalculatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveProject()
+    private void SaveProject()
     {
         if (!HasResult) return;
 

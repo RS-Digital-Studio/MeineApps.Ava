@@ -570,15 +570,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void OnFeedbackRequested(string appName)
     {
-        try
-        {
-            var uri = $"mailto:info@rs-digital.org?subject={Uri.EscapeDataString(appName + " Feedback")}";
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri) { UseShellExecute = true });
-        }
-        catch
-        {
-            // Ignore if no email client available
-        }
+        var uri = $"mailto:info@rs-digital.org?subject={Uri.EscapeDataString(appName + " Feedback")}";
+        MeineApps.Core.Ava.Services.UriLauncher.OpenUri(uri);
     }
 
     public void Dispose()

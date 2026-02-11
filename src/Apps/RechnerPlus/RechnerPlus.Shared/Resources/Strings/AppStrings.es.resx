@@ -68,10 +68,10 @@
     <value>Ajustes</value>
   </data>
   <data name="ModeBasic" xml:space="preserve">
-    <value>Basico</value>
+    <value>Básico</value>
   </data>
   <data name="ModeScientific" xml:space="preserve">
-    <value>Cientifico</value>
+    <value>Científico</value>
   </data>
   <data name="Error" xml:space="preserve">
     <value>Error</value>
@@ -83,7 +83,7 @@
     <value>Borrar historial</value>
   </data>
   <data name="NoCalculationsYet" xml:space="preserve">
-    <value>Aun no hay calculos</value>
+    <value>Aún no hay cálculos</value>
   </data>
   <data name="Copy" xml:space="preserve">
     <value>Copiar</value>
@@ -104,13 +104,13 @@
     <value>Error al pegar</value>
   </data>
   <data name="PasteInvalidNumber" xml:space="preserve">
-    <value>Numero invalido</value>
+    <value>Número inválido</value>
   </data>
   <data name="ClipboardEmpty" xml:space="preserve">
-    <value>Portapapeles vacio</value>
+    <value>Portapapeles vacío</value>
   </data>
   <data name="ExpressionTooLong" xml:space="preserve">
-    <value>Expresion demasiado larga</value>
+    <value>Expresión demasiado larga</value>
   </data>
   <data name="FactorialRangeError" xml:space="preserve">
     <value>Factorial: El valor debe estar entre 0 y 170</value>
@@ -119,7 +119,7 @@
     <value>Ajustes</value>
   </data>
   <data name="SettingsChooseDesign" xml:space="preserve">
-    <value>Elegir diseno</value>
+    <value>Elegir diseño</value>
   </data>
   <data name="SettingsLanguage" xml:space="preserve">
     <value>Idioma</value>
@@ -131,13 +131,13 @@
     <value>Enviar comentarios</value>
   </data>
   <data name="PrivacyPolicy" xml:space="preserve">
-    <value>Politica de privacidad</value>
+    <value>Política de privacidad</value>
   </data>
   <data name="PrivacyPolicyUrl" xml:space="preserve">
     <value>https://sites.google.com/rs-digital.org/rechnerplus/startseite</value>
   </data>
   <data name="BrowserError" xml:space="preserve">
-    <value>No se pudo abrir el navegador. Por favor, compruebe su conexion a Internet.</value>
+    <value>No se pudo abrir el navegador. Por favor, compruebe su conexión a Internet.</value>
   </data>
   <data name="ThemeMidnight" xml:space="preserve">
     <value>Medianoche</value>
@@ -152,7 +152,7 @@
     <value>Colorido oscuro</value>
   </data>
   <data name="ThemeDaylight" xml:space="preserve">
-    <value>Luz del dia</value>
+    <value>Luz del día</value>
   </data>
   <data name="ThemeDaylightDesc" xml:space="preserve">
     <value>Limpio y claro</value>
@@ -167,16 +167,16 @@
     <value>RechnerPlus</value>
   </data>
   <data name="AppDescription" xml:space="preserve">
-    <value>La calculadora moderna para Android, Windows y Linux con modo Cientifico y Conversor de unidades.</value>
+    <value>La calculadora moderna para Android, Windows y Linux con modo Científico y Conversor de unidades.</value>
   </data>
   <data name="VersionFormat" xml:space="preserve">
-    <value>Version {0}</value>
+    <value>Versión {0}</value>
   </data>
   <data name="ConverterTitle" xml:space="preserve">
     <value>Conversor de Unidades</value>
   </data>
   <data name="ConverterCategory" xml:space="preserve">
-    <value>Categoria</value>
+    <value>Categoría</value>
   </data>
   <data name="ConverterFrom" xml:space="preserve">
     <value>De</value>
@@ -194,7 +194,7 @@
     <value>Temperatura</value>
   </data>
   <data name="CategoryArea" xml:space="preserve">
-    <value>Area</value>
+    <value>Área</value>
   </data>
   <data name="CategoryVolume" xml:space="preserve">
     <value>Volumen</value>
@@ -215,22 +215,22 @@
     <value>Intercambiar unidades</value>
   </data>
   <data name="ConverterInvalidInput" xml:space="preserve">
-    <value>Entrada no valida</value>
+    <value>Entrada no válida</value>
   </data>
   <data name="QuartUS" xml:space="preserve">
     <value>Cuarto (US)</value>
   </data>
   <data name="UnitMillimeter" xml:space="preserve">
-    <value>Milimetro</value>
+    <value>Milímetro</value>
   </data>
   <data name="UnitCentimeter" xml:space="preserve">
-    <value>Centimetro</value>
+    <value>Centímetro</value>
   </data>
   <data name="UnitMeter" xml:space="preserve">
     <value>Metro</value>
   </data>
   <data name="UnitKilometer" xml:space="preserve">
-    <value>Kilometro</value>
+    <value>Kilómetro</value>
   </data>
   <data name="UnitInch" xml:space="preserve">
     <value>Pulgada</value>
@@ -278,10 +278,10 @@
     <value>Litro</value>
   </data>
   <data name="UnitCubicMeter" xml:space="preserve">
-    <value>Metro cubico</value>
+    <value>Metro cúbico</value>
   </data>
   <data name="UnitGallonUS" xml:space="preserve">
-    <value>Galon (US)</value>
+    <value>Galón (US)</value>
   </data>
   <data name="UnitPintUS" xml:space="preserve">
     <value>Pinta (US)</value>
@@ -289,11 +289,17 @@
   <data name="UnitCup" xml:space="preserve">
     <value>Taza</value>
   </data>
+  <data name="UnitQuartUS" xml:space="preserve">
+    <value>Cuarto (US)</value>
+  </data>
+  <data name="UnitFluidOunceUS" xml:space="preserve">
+    <value>Onza líquida (US)</value>
+  </data>
   <data name="UnitMetersPerSecond" xml:space="preserve">
     <value>Metros por segundo</value>
   </data>
   <data name="UnitKilometersPerHour" xml:space="preserve">
-    <value>Kilometros por hora</value>
+    <value>Kilómetros por hora</value>
   </data>
   <data name="UnitMilesPerHour" xml:space="preserve">
     <value>Millas por hora</value>
@@ -314,7 +320,7 @@
     <value>Horas</value>
   </data>
   <data name="UnitDays" xml:space="preserve">
-    <value>Dias</value>
+    <value>Días</value>
   </data>
   <data name="UnitWeeks" xml:space="preserve">
     <value>Semanas</value>
@@ -323,10 +329,10 @@
     <value>Metro cuadrado</value>
   </data>
   <data name="UnitSquareKilometer" xml:space="preserve">
-    <value>Kilometro cuadrado</value>
+    <value>Kilómetro cuadrado</value>
   </data>
   <data name="UnitHectare" xml:space="preserve">
-    <value>Hectarea</value>
+    <value>Hectárea</value>
   </data>
   <data name="UnitSquareFoot" xml:space="preserve">
     <value>Pie cuadrado</value>

@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
@@ -93,23 +92,14 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void SendFeedback()
     {
-        try
-        {
-            var uri = "mailto:info@rs-digital.org?subject=RechnerPlus%20Feedback";
-            Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true });
-        }
-        catch { /* ignore */ }
+        UriLauncher.OpenUri("mailto:info@rs-digital.org?subject=RechnerPlus%20Feedback");
     }
 
     [RelayCommand]
     private void OpenPrivacyPolicy()
     {
-        try
-        {
-            var url = _localization.GetString("PrivacyPolicyUrl");
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-        }
-        catch { /* ignore */ }
+        var url = _localization.GetString("PrivacyPolicyUrl");
+        UriLauncher.OpenUri(url);
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)

@@ -1731,4 +1731,10 @@ Valores típicos:
   <data name="OhmsLawMinValues" xml:space="preserve">
     <value>Ingrese al menos 2 valores</value>
   </data>
+  <data name="CurrencySymbol" xml:space="preserve">
+    <value>€</value>
+  </data>
+  <data name="LabelPricePerKwh" xml:space="preserve">
+    <value>Precio electricidad (€/kWh)</value>
+  </data>
 </root>

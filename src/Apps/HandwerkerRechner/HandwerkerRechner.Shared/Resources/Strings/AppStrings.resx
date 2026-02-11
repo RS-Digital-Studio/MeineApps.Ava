@@ -1740,4 +1740,10 @@ Coverage decreases on rough surfaces!</value>
   <data name="OhmsLawMinValues" xml:space="preserve">
     <value>Enter at least 2 values</value>
   </data>
+  <data name="CurrencySymbol" xml:space="preserve">
+    <value>€</value>
+  </data>
+  <data name="LabelPricePerKwh" xml:space="preserve">
+    <value>Electricity price (€/kWh)</value>
+  </data>
 </root>

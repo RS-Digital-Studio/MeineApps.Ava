@@ -210,6 +210,13 @@ try { /* ... */ } finally { _semaphore.Release(); }
 Dispatcher.UIThread.Post(() => { SomeProperty = newValue; });
 ```
 
+### UriLauncher (Plattformuebergreifend)
+
+- `UriLauncher.OpenUri(uri)` statt `Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true })`
+- Desktop: Fallback auf Process.Start
+- Android: `PlatformOpenUri` wird in MainActivity auf `Intent.ActionView` gesetzt
+- Datei: `MeineApps.Core.Ava/Services/UriLauncher.cs`
+
 ### Tab-Navigation (UI)
 
 - MainView: `Border.TabContent` + `.Active` CSS-Klassen
@@ -284,6 +291,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | VersionCode Ablehnung | Code bereits im Play Store | VOR Release aktuelle Codes im Play Store pruefen |
 | Ads Error Code 0 + "Failed to instantiate ClientApi" | Ads vor SDK-Init geladen | `Initialize(activity, callback)` nutzen, Ads erst im Callback laden |
 | Release-App schließt sich beim 1. Start (VS) | VS kann in Release keinen Debugger anhängen | App manuell starten - funktioniert. Kein App-Bug, VS-Verhalten |
+| Process.Start PlatformNotSupportedException | Android unterstuetzt UseShellExecute nicht | `UriLauncher.OpenUri(uri)` verwenden (MeineApps.Core.Ava) |
 
 ---
 

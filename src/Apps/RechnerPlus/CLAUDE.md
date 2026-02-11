@@ -55,9 +55,23 @@ baseValue = value * ToBase + Offset
 - MainView.axaml.cs: `OnFloatingText` ruft `FloatingTextOverlay.ShowFloatingText` auf
 - Farbe: Indigo (#6366F1), FontSize 14, Position 30%/30% des Canvas
 
+### Clipboard (CalculatorView.axaml.cs)
+- Event-basiert: `ClipboardCopyRequested` / `ClipboardPasteRequested` vom VM
+- View nutzt `TopLevel.GetTopLevel(this)?.Clipboard` (Avalonia-API)
+- Ctrl+C / Ctrl+V via KeyDown-Handler
+
 ### Keyboard (CalculatorView.axaml.cs)
 - KeyDown-Handler auf UserControl (Focusable=true)
-- Mappings: Shift+8 = Multiplikation, OemPlus ohne Shift = Equals, OemComma/OemPeriod = Dezimalpunkt
+- Mappings: Shift+8 = Multiplikation, Shift+9 = (, Shift+0 = ), OemPlus ohne Shift = Equals, OemComma/OemPeriod = Dezimalpunkt
+- Ctrl+C = Kopieren, Ctrl+V = Einfuegen
+
+### Expression-Schutz
+- MaxExpressionLength = 200 Zeichen (verhindert Memory-Probleme)
+- ClearHistory mit Bestaetigungsdialog (ShowClearHistoryConfirm)
+
+### ConverterVM Dispose
+- IDisposable: Unsubscribe von LanguageChanged im Dispose()
+- Erweiterte Volumen-Einheiten: QuartUS, FluidOunceUS
 
 ## App-spezifische Abhaengigkeiten
 
@@ -74,3 +88,7 @@ baseValue = value * ToBase + Offset
 - **SelectHistoryEntry**: ClearError() hinzugefuegt - HasError-Flag wird beim History-Eintrag zurueckgesetzt
 - **Tan() Validation**: Math.Tan()-Ergebnis > 1e15 wird als undefiniert erkannt
 - **km/h Precision**: Speed-Faktor von 0.277778 auf `1.0 / 3.6` (exakter)
+- **Lokalisierung (11.02.2026)**: 84 fehlende Akzente/Umlaute in ES/FR/IT/PT/DE resx korrigiert
+- **Process.Start Android-Fix (11.02.2026)**: UriLauncher statt Process.Start (PlatformNotSupportedException auf Android)
+- **Clipboard (11.02.2026)**: Copy/Paste via Event-Pattern + TopLevel.Clipboard API
+- **ConverterVM Dispose (11.02.2026)**: IDisposable fuer LanguageChanged Unsubscribe

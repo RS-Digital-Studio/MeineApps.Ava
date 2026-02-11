@@ -19,6 +19,7 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     private readonly IPreferencesService _preferences;
 
     private const string HistoryKey = "calculator_history";
+    private const int MaxExpressionLength = 200;
 
     [ObservableProperty]
     private string _display = "0";
@@ -70,6 +71,15 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
 
     /// <summary>Event fuer Floating-Text-Anzeige (Text, Kategorie).</summary>
     public event Action<string, string>? FloatingTextRequested;
+
+    /// <summary>Event zum Kopieren in die Zwischenablage (Text). View handhabt die Clipboard-API.</summary>
+    public event Func<string, Task>? ClipboardCopyRequested;
+
+    /// <summary>Event zum Lesen der Zwischenablage. View handhabt die Clipboard-API und ruft PasteValue() auf.</summary>
+    public event Func<Task>? ClipboardPasteRequested;
+
+    [ObservableProperty]
+    private bool _showClearHistoryConfirm;
 
     public CalculatorViewModel(CalculatorEngine engine, ExpressionParser parser,
                                 ILocalizationService localization, IHistoryService historyService,
@@ -156,7 +166,58 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ClearHistory()
     {
+        ShowClearHistoryConfirm = true;
+    }
+
+    [RelayCommand]
+    private void ConfirmClearHistory()
+    {
+        ShowClearHistoryConfirm = false;
         _historyService.Clear();
+    }
+
+    [RelayCommand]
+    private void CancelClearHistory()
+    {
+        ShowClearHistoryConfirm = false;
+    }
+
+    [RelayCommand]
+    private async Task CopyDisplay()
+    {
+        if (HasError) return;
+        if (ClipboardCopyRequested != null)
+            await ClipboardCopyRequested.Invoke(Display);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopySuccess") ?? "Copied!", "info");
+    }
+
+    [RelayCommand]
+    private async Task PasteFromClipboard()
+    {
+        if (ClipboardPasteRequested != null)
+            await ClipboardPasteRequested.Invoke();
+    }
+
+    /// <summary>Wird von der View nach Clipboard-Lesen aufgerufen.</summary>
+    public void PasteValue(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            FloatingTextRequested?.Invoke(_localization.GetString("ClipboardEmpty") ?? "Clipboard empty", "warning");
+            return;
+        }
+        text = text.Trim();
+        if (double.TryParse(text, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out _))
+        {
+            Display = text;
+            _isNewCalculation = false;
+            ClearError();
+            FloatingTextRequested?.Invoke(_localization.GetString("PasteSuccess") ?? "Pasted", "info");
+        }
+        else
+        {
+            FloatingTextRequested?.Invoke(_localization.GetString("PasteInvalidNumber") ?? "Invalid number", "warning");
+        }
     }
 
     [RelayCommand]
@@ -176,6 +237,12 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void InputDigit(string digit)
     {
+        if (Expression.Length + Display.Length >= MaxExpressionLength)
+        {
+            ShowError(_localization.GetString("ExpressionTooLong") ?? "Expression too long");
+            return;
+        }
+
         if (_isNewCalculation || Display == "0")
         {
             Display = digit;

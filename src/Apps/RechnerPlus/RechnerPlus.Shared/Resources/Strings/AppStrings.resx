@@ -365,6 +365,12 @@
   <data name="UnitCup" xml:space="preserve">
     <value>Cup</value>
   </data>
+  <data name="UnitQuartUS" xml:space="preserve">
+    <value>Quart (US)</value>
+  </data>
+  <data name="UnitFluidOunceUS" xml:space="preserve">
+    <value>Fluid Ounce (US)</value>
+  </data>
 
   <!-- Unit Names - Speed -->
   <data name="UnitMetersPerSecond" xml:space="preserve">

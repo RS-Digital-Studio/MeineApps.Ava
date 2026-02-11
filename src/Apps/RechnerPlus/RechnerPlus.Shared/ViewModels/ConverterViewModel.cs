@@ -4,8 +4,9 @@ using MeineApps.Core.Ava.Localization;
 
 namespace RechnerPlus.ViewModels;
 
-public partial class ConverterViewModel : ObservableObject
+public partial class ConverterViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly ILocalizationService _localization;
 
     [ObservableProperty]
@@ -187,7 +188,9 @@ public partial class ConverterViewModel : ObservableObject
                 new("UnitMilliliter", "mL", 0.001, _localization),
                 new("UnitCubicMeter", "m\u00b3", 1000, _localization),
                 new("UnitGallonUS", "gal", 3.78541, _localization),
+                new("UnitQuartUS", "qt", 0.946353, _localization),
                 new("UnitPintUS", "pt", 0.473176, _localization),
+                new("UnitFluidOunceUS", "fl oz", 0.0295735, _localization),
                 new("UnitCup", "cup", 0.236588, _localization)
             ],
             UnitCategory.Area =>
@@ -216,6 +219,14 @@ public partial class ConverterViewModel : ObservableObject
             ],
             _ => []
         };
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _localization.LanguageChanged -= OnLanguageChanged;
+        _disposed = true;
+        GC.SuppressFinalize(this);
     }
 }
 

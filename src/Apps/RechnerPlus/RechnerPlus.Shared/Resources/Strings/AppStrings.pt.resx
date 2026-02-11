@@ -65,25 +65,25 @@
     <value>Conversor</value>
   </data>
   <data name="NavSettings" xml:space="preserve">
-    <value>Configuracoes</value>
+    <value>Configurações</value>
   </data>
   <data name="ModeBasic" xml:space="preserve">
-    <value>Basico</value>
+    <value>Básico</value>
   </data>
   <data name="ModeScientific" xml:space="preserve">
-    <value>Cientifico</value>
+    <value>Científico</value>
   </data>
   <data name="Error" xml:space="preserve">
     <value>Erro</value>
   </data>
   <data name="HistoryTitle" xml:space="preserve">
-    <value>Historico</value>
+    <value>Histórico</value>
   </data>
   <data name="ClearHistory" xml:space="preserve">
-    <value>Limpar historico</value>
+    <value>Limpar histórico</value>
   </data>
   <data name="NoCalculationsYet" xml:space="preserve">
-    <value>Ainda sem calculos</value>
+    <value>Ainda sem cálculos</value>
   </data>
   <data name="Copy" xml:space="preserve">
     <value>Copiar</value>
@@ -92,7 +92,7 @@
     <value>Colar</value>
   </data>
   <data name="CopySuccess" xml:space="preserve">
-    <value>Copiado para a area de transferencia</value>
+    <value>Copiado para a área de transferência</value>
   </data>
   <data name="CopyFailed" xml:space="preserve">
     <value>Falha ao copiar</value>
@@ -104,19 +104,19 @@
     <value>Falha ao colar</value>
   </data>
   <data name="PasteInvalidNumber" xml:space="preserve">
-    <value>Numero invalido</value>
+    <value>Número inválido</value>
   </data>
   <data name="ClipboardEmpty" xml:space="preserve">
-    <value>Area de transferencia vazia</value>
+    <value>Área de transferência vazia</value>
   </data>
   <data name="ExpressionTooLong" xml:space="preserve">
-    <value>Expressao muito longa</value>
+    <value>Expressão muito longa</value>
   </data>
   <data name="FactorialRangeError" xml:space="preserve">
     <value>Fatorial: O valor deve estar entre 0 e 170</value>
   </data>
   <data name="SettingsTitle" xml:space="preserve">
-    <value>Configuracoes</value>
+    <value>Configurações</value>
   </data>
   <data name="SettingsChooseDesign" xml:space="preserve">
     <value>Escolher design</value>
@@ -131,13 +131,13 @@
     <value>Enviar feedback</value>
   </data>
   <data name="PrivacyPolicy" xml:space="preserve">
-    <value>Politica de Privacidade</value>
+    <value>Política de Privacidade</value>
   </data>
   <data name="PrivacyPolicyUrl" xml:space="preserve">
     <value>https://sites.google.com/rs-digital.org/rechnerplus/startseite</value>
   </data>
   <data name="BrowserError" xml:space="preserve">
-    <value>Nao foi possivel abrir o navegador. Verifique sua conexao com a Internet.</value>
+    <value>Não foi possível abrir o navegador. Verifique sua conexão com a Internet.</value>
   </data>
   <data name="ThemeMidnight" xml:space="preserve">
     <value>Meia-noite</value>
@@ -167,10 +167,10 @@
     <value>RechnerPlus</value>
   </data>
   <data name="AppDescription" xml:space="preserve">
-    <value>A calculadora moderna para Android, Windows e Linux com modo Cientifico e Conversor de unidades.</value>
+    <value>A calculadora moderna para Android, Windows e Linux com modo Científico e Conversor de unidades.</value>
   </data>
   <data name="VersionFormat" xml:space="preserve">
-    <value>Versao {0}</value>
+    <value>Versão {0}</value>
   </data>
   <data name="ConverterTitle" xml:space="preserve">
     <value>Conversor de Unidades</value>
@@ -194,7 +194,7 @@
     <value>Temperatura</value>
   </data>
   <data name="CategoryArea" xml:space="preserve">
-    <value>Area</value>
+    <value>Área</value>
   </data>
   <data name="CategoryVolume" xml:space="preserve">
     <value>Volume</value>
@@ -215,28 +215,28 @@
     <value>Trocar unidades</value>
   </data>
   <data name="ConverterInvalidInput" xml:space="preserve">
-    <value>Entrada invalida</value>
+    <value>Entrada inválida</value>
   </data>
   <data name="QuartUS" xml:space="preserve">
     <value>Quarto (US)</value>
   </data>
   <data name="UnitMillimeter" xml:space="preserve">
-    <value>Milimetro</value>
+    <value>Milímetro</value>
   </data>
   <data name="UnitCentimeter" xml:space="preserve">
-    <value>Centimetro</value>
+    <value>Centímetro</value>
   </data>
   <data name="UnitMeter" xml:space="preserve">
     <value>Metro</value>
   </data>
   <data name="UnitKilometer" xml:space="preserve">
-    <value>Quilometro</value>
+    <value>Quilómetro</value>
   </data>
   <data name="UnitInch" xml:space="preserve">
     <value>Polegada</value>
   </data>
   <data name="UnitFoot" xml:space="preserve">
-    <value>Pe</value>
+    <value>Pé</value>
   </data>
   <data name="UnitYard" xml:space="preserve">
     <value>Jarda</value>
@@ -257,7 +257,7 @@
     <value>Tonelada</value>
   </data>
   <data name="UnitOunce" xml:space="preserve">
-    <value>Onca</value>
+    <value>Onça</value>
   </data>
   <data name="UnitPound" xml:space="preserve">
     <value>Libra</value>
@@ -278,28 +278,34 @@
     <value>Litro</value>
   </data>
   <data name="UnitCubicMeter" xml:space="preserve">
-    <value>Metro cubico</value>
+    <value>Metro cúbico</value>
   </data>
   <data name="UnitGallonUS" xml:space="preserve">
-    <value>Galao (US)</value>
+    <value>Galão (US)</value>
   </data>
   <data name="UnitPintUS" xml:space="preserve">
     <value>Pint (US)</value>
   </data>
   <data name="UnitCup" xml:space="preserve">
-    <value>Xicara</value>
+    <value>Xícara</value>
+  </data>
+  <data name="UnitQuartUS" xml:space="preserve">
+    <value>Quarto (US)</value>
+  </data>
+  <data name="UnitFluidOunceUS" xml:space="preserve">
+    <value>Onça líquida (US)</value>
   </data>
   <data name="UnitMetersPerSecond" xml:space="preserve">
     <value>Metros por segundo</value>
   </data>
   <data name="UnitKilometersPerHour" xml:space="preserve">
-    <value>Quilometros por hora</value>
+    <value>Quilómetros por hora</value>
   </data>
   <data name="UnitMilesPerHour" xml:space="preserve">
     <value>Milhas por hora</value>
   </data>
   <data name="UnitKnots" xml:space="preserve">
-    <value>Nos</value>
+    <value>Nós</value>
   </data>
   <data name="UnitMilliseconds" xml:space="preserve">
     <value>Milissegundos</value>
@@ -323,13 +329,13 @@
     <value>Metro quadrado</value>
   </data>
   <data name="UnitSquareKilometer" xml:space="preserve">
-    <value>Quilometro quadrado</value>
+    <value>Quilómetro quadrado</value>
   </data>
   <data name="UnitHectare" xml:space="preserve">
     <value>Hectare</value>
   </data>
   <data name="UnitSquareFoot" xml:space="preserve">
-    <value>Pe quadrado</value>
+    <value>Pé quadrado</value>
   </data>
   <data name="UnitAcre" xml:space="preserve">
     <value>Acre</value>

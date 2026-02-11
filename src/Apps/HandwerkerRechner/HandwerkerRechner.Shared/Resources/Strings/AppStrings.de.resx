@@ -1758,4 +1758,10 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="OhmsLawMinValues" xml:space="preserve">
     <value>Mindestens 2 Werte eingeben</value>
   </data>
+  <data name="CurrencySymbol" xml:space="preserve">
+    <value>€</value>
+  </data>
+  <data name="LabelPricePerKwh" xml:space="preserve">
+    <value>Strompreis (€/kWh)</value>
+  </data>
 </root>

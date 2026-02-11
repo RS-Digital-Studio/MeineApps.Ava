@@ -247,6 +247,12 @@ public class CraftEngine
             v = i != 0 ? p / i : 0;
             r = i != 0 ? v / i : 0;
         }
+        else if (power.HasValue && resistance.HasValue)
+        {
+            // P = I² * R → I = sqrt(P/R)
+            i = r != 0 ? Math.Sqrt(p / r) : 0;
+            v = i * r;
+        }
 
         return new OhmsLawResult
         {

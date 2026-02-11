@@ -139,10 +139,10 @@ public partial class TileCalculatorViewModel : ObservableObject
     private bool _showCost = false;
 
     public string TotalCostDisplay => (Result != null && ShowCost && PricePerTile > 0)
-        ? $"{(Result.TilesWithWaste * PricePerTile):F2} \u20ac"
+        ? $"{(Result.TilesWithWaste * PricePerTile):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
-    public string PricePerDisplay => ShowCost ? $"{_localization.GetString("PricePerTile")}: {PricePerTile:F2} \u20ac" : "";
+    public string PricePerDisplay => ShowCost ? $"{_localization.GetString("PricePerTile")}: {PricePerTile:F2} {_localization.GetString("CurrencySymbol")}" : "";
 
     partial void OnPricePerTileChanged(double value)
     {
@@ -262,7 +262,7 @@ public partial class TileCalculatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveProject()
+    private void SaveProject()
     {
         if (!HasResult) return;
 

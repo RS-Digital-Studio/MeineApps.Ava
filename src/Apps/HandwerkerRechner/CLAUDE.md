@@ -71,6 +71,13 @@ Handwerker-App mit 9 Rechnern (4 Free Floor + 5 Premium), Projektverwaltung und 
 
 ## Changelog (Highlights)
 
+- **11.02.2026**: Optimierungen & Fixes:
+  - CraftEngine: Fehlende P+R Kombination im Ohm'schen Gesetz ergaenzt
+  - RoofSolarVM: Konfigurierbarer Strompreis (PricePerKwh) statt hardcoded 0.30
+  - Project.GetValue(): JSON-Deserialisierungs-Caching (vermeidet wiederholtes Parsen)
+  - SaveProject: async→void (9 VMs) - kein await, kein CS1998-Warning
+  - Waehrungssymbol lokalisierbar: CurrencySymbol resx-Key statt hardcoded EUR in allen 9 VMs
+  - UriLauncher: Process.Start ersetzt (Android PlatformNotSupportedException)
 - **10.02.2026**: FileProvider-Infrastruktur hinzugefuegt (AndroidManifest, file_paths.xml, AndroidFileShareService.cs Link, FileShareServiceFactory), ACCESS_NETWORK_STATE Permission
 - **08.02.2026**: FloatingTextOverlay + CelebrationOverlay, Export-Buttons (9 Calculator + Projects), Extended-History
 - **07.02.2026**: 4 Rewarded Ad Features, Design-Redesign, AppChecker Fixes

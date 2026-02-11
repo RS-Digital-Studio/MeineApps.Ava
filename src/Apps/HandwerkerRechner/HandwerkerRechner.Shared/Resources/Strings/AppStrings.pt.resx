@@ -1838,4 +1838,10 @@ O rendimento diminui em superfícies rugosas!</value>
   <data name="OhmsLawMinValues" xml:space="preserve">
     <value>Insira pelo menos 2 valores</value>
   </data>
+  <data name="CurrencySymbol" xml:space="preserve">
+    <value>€</value>
+  </data>
+  <data name="LabelPricePerKwh" xml:space="preserve">
+    <value>Preço eletricidade (€/kWh)</value>
+  </data>
 </root>

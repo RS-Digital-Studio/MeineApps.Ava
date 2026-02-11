@@ -65,7 +65,7 @@
     <value>Convertisseur</value>
   </data>
   <data name="NavSettings" xml:space="preserve">
-    <value>Parametres</value>
+    <value>Paramètres</value>
   </data>
   <data name="ModeBasic" xml:space="preserve">
     <value>Base</value>
@@ -92,16 +92,16 @@
     <value>Coller</value>
   </data>
   <data name="CopySuccess" xml:space="preserve">
-    <value>Copie dans le presse-papiers</value>
+    <value>Copié dans le presse-papiers</value>
   </data>
   <data name="CopyFailed" xml:space="preserve">
-    <value>Echec de la copie</value>
+    <value>Échec de la copie</value>
   </data>
   <data name="PasteSuccess" xml:space="preserve">
-    <value>Colle</value>
+    <value>Collé</value>
   </data>
   <data name="PasteFailed" xml:space="preserve">
-    <value>Echec du collage</value>
+    <value>Échec du collage</value>
   </data>
   <data name="PasteInvalidNumber" xml:space="preserve">
     <value>Nombre invalide</value>
@@ -113,10 +113,10 @@
     <value>Expression trop longue</value>
   </data>
   <data name="FactorialRangeError" xml:space="preserve">
-    <value>Factorielle : La valeur doit etre entre 0 et 170</value>
+    <value>Factorielle : La valeur doit être entre 0 et 170</value>
   </data>
   <data name="SettingsTitle" xml:space="preserve">
-    <value>Parametres</value>
+    <value>Paramètres</value>
   </data>
   <data name="SettingsChooseDesign" xml:space="preserve">
     <value>Choisir le design</value>
@@ -125,19 +125,19 @@
     <value>Langue</value>
   </data>
   <data name="SettingsAboutApp" xml:space="preserve">
-    <value>A propos</value>
+    <value>À propos</value>
   </data>
   <data name="FeedbackButton" xml:space="preserve">
     <value>Envoyer des commentaires</value>
   </data>
   <data name="PrivacyPolicy" xml:space="preserve">
-    <value>Politique de confidentialite</value>
+    <value>Politique de confidentialité</value>
   </data>
   <data name="PrivacyPolicyUrl" xml:space="preserve">
     <value>https://sites.google.com/rs-digital.org/rechnerplus/startseite</value>
   </data>
   <data name="BrowserError" xml:space="preserve">
-    <value>Impossible d'ouvrir le navigateur. Veuillez verifier votre connexion Internet.</value>
+    <value>Impossible d'ouvrir le navigateur. Veuillez vérifier votre connexion Internet.</value>
   </data>
   <data name="ThemeMidnight" xml:space="preserve">
     <value>Minuit</value>
@@ -149,16 +149,16 @@
     <value>Aurore</value>
   </data>
   <data name="ThemeAuroraDesc" xml:space="preserve">
-    <value>Colore sombre</value>
+    <value>Coloré sombre</value>
   </data>
   <data name="ThemeDaylight" xml:space="preserve">
-    <value>Lumiere du jour</value>
+    <value>Lumière du jour</value>
   </data>
   <data name="ThemeDaylightDesc" xml:space="preserve">
     <value>Clair et propre</value>
   </data>
   <data name="ThemeForest" xml:space="preserve">
-    <value>Foret</value>
+    <value>Forêt</value>
   </data>
   <data name="ThemeForestDesc" xml:space="preserve">
     <value>Naturel sombre</value>
@@ -167,16 +167,16 @@
     <value>RechnerPlus</value>
   </data>
   <data name="AppDescription" xml:space="preserve">
-    <value>La calculatrice moderne pour Android, Windows et Linux avec mode Scientifique et Convertisseur d'unites.</value>
+    <value>La calculatrice moderne pour Android, Windows et Linux avec mode Scientifique et Convertisseur d'unités.</value>
   </data>
   <data name="VersionFormat" xml:space="preserve">
     <value>Version {0}</value>
   </data>
   <data name="ConverterTitle" xml:space="preserve">
-    <value>Convertisseur d'Unites</value>
+    <value>Convertisseur d'Unités</value>
   </data>
   <data name="ConverterCategory" xml:space="preserve">
-    <value>Categorie</value>
+    <value>Catégorie</value>
   </data>
   <data name="ConverterFrom" xml:space="preserve">
     <value>De</value>
@@ -191,7 +191,7 @@
     <value>Poids</value>
   </data>
   <data name="CategoryTemperature" xml:space="preserve">
-    <value>Temperature</value>
+    <value>Température</value>
   </data>
   <data name="CategoryArea" xml:space="preserve">
     <value>Surface</value>
@@ -206,31 +206,31 @@
     <value>Temps</value>
   </data>
   <data name="CategoryData" xml:space="preserve">
-    <value>Donnees</value>
+    <value>Données</value>
   </data>
   <data name="ConverterEnterValue" xml:space="preserve">
     <value>Entrer la valeur</value>
   </data>
   <data name="ConverterSwapUnits" xml:space="preserve">
-    <value>Echanger les unites</value>
+    <value>Échanger les unités</value>
   </data>
   <data name="ConverterInvalidInput" xml:space="preserve">
-    <value>Entree invalide</value>
+    <value>Entrée invalide</value>
   </data>
   <data name="QuartUS" xml:space="preserve">
     <value>Quart (US)</value>
   </data>
   <data name="UnitMillimeter" xml:space="preserve">
-    <value>Millimetre</value>
+    <value>Millimètre</value>
   </data>
   <data name="UnitCentimeter" xml:space="preserve">
-    <value>Centimetre</value>
+    <value>Centimètre</value>
   </data>
   <data name="UnitMeter" xml:space="preserve">
-    <value>Metre</value>
+    <value>Mètre</value>
   </data>
   <data name="UnitKilometer" xml:space="preserve">
-    <value>Kilometre</value>
+    <value>Kilomètre</value>
   </data>
   <data name="UnitInch" xml:space="preserve">
     <value>Pouce</value>
@@ -278,7 +278,7 @@
     <value>Litre</value>
   </data>
   <data name="UnitCubicMeter" xml:space="preserve">
-    <value>Metre cube</value>
+    <value>Mètre cube</value>
   </data>
   <data name="UnitGallonUS" xml:space="preserve">
     <value>Gallon (US)</value>
@@ -289,11 +289,17 @@
   <data name="UnitCup" xml:space="preserve">
     <value>Tasse</value>
   </data>
+  <data name="UnitQuartUS" xml:space="preserve">
+    <value>Quart (US)</value>
+  </data>
+  <data name="UnitFluidOunceUS" xml:space="preserve">
+    <value>Once liquide (US)</value>
+  </data>
   <data name="UnitMetersPerSecond" xml:space="preserve">
-    <value>Metres par seconde</value>
+    <value>Mètres par seconde</value>
   </data>
   <data name="UnitKilometersPerHour" xml:space="preserve">
-    <value>Kilometres par heure</value>
+    <value>Kilomètres par heure</value>
   </data>
   <data name="UnitMilesPerHour" xml:space="preserve">
     <value>Miles par heure</value>
@@ -320,16 +326,16 @@
     <value>Semaines</value>
   </data>
   <data name="UnitSquareMeter" xml:space="preserve">
-    <value>Metre carre</value>
+    <value>Mètre carré</value>
   </data>
   <data name="UnitSquareKilometer" xml:space="preserve">
-    <value>Kilometre carre</value>
+    <value>Kilomètre carré</value>
   </data>
   <data name="UnitHectare" xml:space="preserve">
     <value>Hectare</value>
   </data>
   <data name="UnitSquareFoot" xml:space="preserve">
-    <value>Pied carre</value>
+    <value>Pied carré</value>
   </data>
   <data name="UnitAcre" xml:space="preserve">
     <value>Acre</value>
@@ -341,13 +347,13 @@
     <value>Kilooctet</value>
   </data>
   <data name="UnitMegabyte" xml:space="preserve">
-    <value>Megaoctet</value>
+    <value>Mégaoctet</value>
   </data>
   <data name="UnitGigabyte" xml:space="preserve">
     <value>Gigaoctet</value>
   </data>
   <data name="UnitTerabyte" xml:space="preserve">
-    <value>Teraoctet</value>
+    <value>Téraoctet</value>
   </data>
   <data name="UnitBit" xml:space="preserve">
     <value>Bit</value>

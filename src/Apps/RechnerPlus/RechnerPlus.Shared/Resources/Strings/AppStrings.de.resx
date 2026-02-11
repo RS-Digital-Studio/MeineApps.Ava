@@ -283,7 +283,7 @@
     <value>Einheiten tauschen</value>
   </data>
   <data name="ConverterInvalidInput" xml:space="preserve">
-    <value>Ungueltige Eingabe</value>
+    <value>Ungültige Eingabe</value>
   </data>
   <data name="QuartUS" xml:space="preserve">
     <value>Quart (US)</value>
@@ -364,6 +364,12 @@
   </data>
   <data name="UnitCup" xml:space="preserve">
     <value>Tasse</value>
+  </data>
+  <data name="UnitQuartUS" xml:space="preserve">
+    <value>Quart (US)</value>
+  </data>
+  <data name="UnitFluidOunceUS" xml:space="preserve">
+    <value>Flüssigunze (US)</value>
   </data>
 
   <!-- Unit Names - Speed -->

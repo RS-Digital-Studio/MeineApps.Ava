@@ -73,7 +73,7 @@ public partial class DrywallViewModel : ObservableObject
     [ObservableProperty] private bool _showCost = false;
 
     public string TotalCostDisplay => (Result != null && ShowCost && PricePerSqm > 0)
-        ? $"{(Result.WallArea * PricePerSqm):F2} \u20ac"
+        ? $"{(Result.WallArea * PricePerSqm):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
     partial void OnPricePerSqmChanged(double value)

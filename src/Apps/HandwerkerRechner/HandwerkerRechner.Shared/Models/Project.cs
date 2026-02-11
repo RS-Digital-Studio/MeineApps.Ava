@@ -29,23 +29,31 @@ public class Project
     /// <summary>Letzte Änderung</summary>
     public DateTime LastModified { get; set; } = DateTime.UtcNow;
 
+    // Cache für deserialisierte Daten (vermeidet wiederholte Deserialisierung)
+    [System.Text.Json.Serialization.JsonIgnore]
+    private Dictionary<string, object>? _cachedData;
+
     /// <summary>
     /// Setzt die Projekt-Daten aus einem Dictionary
     /// </summary>
     public void SetData(Dictionary<string, object> data)
     {
         DataJson = JsonSerializer.Serialize(data);
+        _cachedData = null; // Cache invalidieren
         LastModified = DateTime.UtcNow;
     }
 
     /// <summary>
-    /// Liest die Projekt-Daten als Dictionary
+    /// Liest die Projekt-Daten als Dictionary (gecacht)
     /// </summary>
     public Dictionary<string, object>? GetData()
     {
+        if (_cachedData != null) return _cachedData;
+
         try
         {
-            return JsonSerializer.Deserialize<Dictionary<string, object>>(DataJson);
+            _cachedData = JsonSerializer.Deserialize<Dictionary<string, object>>(DataJson);
+            return _cachedData;
         }
         catch
         {

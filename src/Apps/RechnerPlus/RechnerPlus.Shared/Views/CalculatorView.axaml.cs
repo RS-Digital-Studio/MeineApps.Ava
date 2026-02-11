@@ -11,6 +11,7 @@ public partial class CalculatorView : UserControl
         InitializeComponent();
         Focusable = true;
         KeyDown += OnKeyDown;
+        DataContextChanged += OnDataContextChanged;
     }
 
     protected override void OnAttachedToVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
@@ -19,13 +20,45 @@ public partial class CalculatorView : UserControl
         Focus();
     }
 
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (DataContext is CalculatorViewModel vm)
+        {
+            vm.ClipboardCopyRequested += OnClipboardCopy;
+            vm.ClipboardPasteRequested += OnClipboardPaste;
+        }
+    }
+
+    private async Task OnClipboardCopy(string text)
+    {
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.Clipboard != null)
+            await topLevel.Clipboard.SetTextAsync(text);
+    }
+
+    private async Task OnClipboardPaste()
+    {
+        if (DataContext is not CalculatorViewModel vm) return;
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel?.Clipboard == null) return;
+#pragma warning disable CS0618 // GetTextAsync ist veraltet, TryGetTextAsync braucht IAsyncDataTransfer
+        var text = await topLevel.Clipboard.GetTextAsync();
+#pragma warning restore CS0618
+        vm.PasteValue(text);
+    }
+
     private void OnKeyDown(object? sender, KeyEventArgs e)
     {
         if (DataContext is not CalculatorViewModel vm) return;
 
         switch (e.Key)
         {
-            case Key.D0 or Key.NumPad0: vm.InputDigitCommand.Execute("0"); break;
+            case Key.D0 or Key.NumPad0:
+                if (!e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+                    vm.InputDigitCommand.Execute("0");
+                else
+                    vm.InputParenthesisCommand.Execute(")"); // Shift+0 = )
+                break;
             case Key.D1 or Key.NumPad1: vm.InputDigitCommand.Execute("1"); break;
             case Key.D2 or Key.NumPad2: vm.InputDigitCommand.Execute("2"); break;
             case Key.D3 or Key.NumPad3: vm.InputDigitCommand.Execute("3"); break;
@@ -39,7 +72,22 @@ public partial class CalculatorView : UserControl
                 else
                     vm.InputDigitCommand.Execute("8");
                 break;
-            case Key.D9 or Key.NumPad9: vm.InputDigitCommand.Execute("9"); break;
+            case Key.D9 or Key.NumPad9:
+                if (e.KeyModifiers.HasFlag(KeyModifiers.Shift))
+                    vm.InputParenthesisCommand.Execute("("); // Shift+9 = (
+                else
+                    vm.InputDigitCommand.Execute("9");
+                break;
+            case Key.C:
+                if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
+                    vm.CopyDisplayCommand.Execute(null);
+                else return;
+                break;
+            case Key.V:
+                if (e.KeyModifiers.HasFlag(KeyModifiers.Control))
+                    vm.PasteFromClipboardCommand.Execute(null);
+                else return;
+                break;
             case Key.Add: vm.InputOperatorCommand.Execute("+"); break;
             case Key.Subtract: vm.InputOperatorCommand.Execute("\u2212"); break;
             case Key.Multiply: vm.InputOperatorCommand.Execute("\u00d7"); break;

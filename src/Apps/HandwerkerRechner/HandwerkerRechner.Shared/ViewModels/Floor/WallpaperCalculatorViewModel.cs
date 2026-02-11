@@ -137,10 +137,10 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
     private bool _showCost = false;
 
     public string TotalCostDisplay => (Result != null && ShowCost && PricePerRoll > 0)
-        ? $"{(Result.RollsNeeded * PricePerRoll):F2} \u20ac"
+        ? $"{(Result.RollsNeeded * PricePerRoll):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
-    public string PricePerDisplay => ShowCost ? $"{_localization.GetString("PricePerRoll")}: {PricePerRoll:F2} \u20ac" : "";
+    public string PricePerDisplay => ShowCost ? $"{_localization.GetString("PricePerRoll")}: {PricePerRoll:F2} {_localization.GetString("CurrencySymbol")}" : "";
 
     partial void OnPricePerRollChanged(double value)
     {
@@ -261,7 +261,7 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveProject()
+    private void SaveProject()
     {
         if (!HasResult) return;
 

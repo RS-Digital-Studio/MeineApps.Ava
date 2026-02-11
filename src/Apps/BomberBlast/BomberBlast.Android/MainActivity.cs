@@ -14,6 +14,7 @@ namespace BomberBlast;
     Theme = "@style/MyTheme.NoActionBar",
     Icon = "@mipmap/appicon",
     MainLauncher = true,
+    Exported = true,
     ScreenOrientation = ScreenOrientation.Landscape,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity<App>

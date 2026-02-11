@@ -237,7 +237,7 @@ Dispatcher.UIThread.Post(() => { SomeProperty = newValue; });
 - **Java Generics Erasure**: RewardedAdHelper.LoadCallback braucht `[Register]`-Attribut
 
 ### Rewarded Ads Multi-Placement
-- `AdConfig.cs`: 22 Rewarded Ad-Unit-IDs (6 Apps)
+- `AdConfig.cs`: 28 Rewarded Ad-Unit-IDs (6 Apps)
 - `ShowAdAsync(string placement)` → placement-spezifische Ad-Unit-ID via AdConfig
 - Jede App hat `RewardedAdServiceFactory` Property in App.axaml.cs
 

@@ -10,6 +10,7 @@ namespace RechnerPlus.Android;
     Theme = "@style/MyTheme.NoActionBar",
     Icon = "@mipmap/appicon",
     MainLauncher = true,
+    Exported = true,
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity<App>
 {

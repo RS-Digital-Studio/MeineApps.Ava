@@ -88,6 +88,12 @@ public static class AdConfig
         public const string RewardedGoldenScrews = "ca-app-pub-2588160251469436/6824989999";
         public const string RewardedScoreDouble = "ca-app-pub-2588160251469436/5743852354";
         public const string RewardedMarketRefresh = "ca-app-pub-2588160251469436/4873623815";
+        public const string RewardedWorkshopSpeedup = "ca-app-pub-2588160251469436/4199864062";
+        public const string RewardedWorkshopUnlock = "ca-app-pub-2588160251469436/5009646761";
+        public const string RewardedWorkerHireBonus = "ca-app-pub-2588160251469436/8641779750";
+        public const string RewardedResearchSpeedup = "ca-app-pub-2588160251469436/3237400093";
+        public const string RewardedDailyChallengeRetry = "ca-app-pub-2588160251469436/7787863083";
+        public const string RewardedAchievementBoost = "ca-app-pub-2588160251469436/9763289738";
     }
 
     /// <summary>Banner Ad-Unit-ID je nach Build-Konfiguration</summary>
@@ -160,6 +166,12 @@ public static class AdConfig
             ("HandwerkerImperium", "golden_screws") => HandwerkerImperium.RewardedGoldenScrews,
             ("HandwerkerImperium", "score_double") => HandwerkerImperium.RewardedScoreDouble,
             ("HandwerkerImperium", "market_refresh") => HandwerkerImperium.RewardedMarketRefresh,
+            ("HandwerkerImperium", "workshop_speedup") => HandwerkerImperium.RewardedWorkshopSpeedup,
+            ("HandwerkerImperium", "workshop_unlock") => HandwerkerImperium.RewardedWorkshopUnlock,
+            ("HandwerkerImperium", "worker_hire_bonus") => HandwerkerImperium.RewardedWorkerHireBonus,
+            ("HandwerkerImperium", "research_speedup") => HandwerkerImperium.RewardedResearchSpeedup,
+            ("HandwerkerImperium", "daily_challenge_retry") => HandwerkerImperium.RewardedDailyChallengeRetry,
+            ("HandwerkerImperium", "achievement_boost") => HandwerkerImperium.RewardedAchievementBoost,
             ("HandwerkerImperium", _) => HandwerkerImperium.RewardedGoldenScrews,
 
             _ => ""

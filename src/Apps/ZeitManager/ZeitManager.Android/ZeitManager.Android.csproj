@@ -14,9 +14,13 @@
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
 
-    <!-- Release-Crash-Fix: AOT-Compiler produziert korrupte Binaries -->
+    <!-- Release-Crash-Fix: Alle Release-spezifischen Optimierungen deaktivieren -->
     <RunAOTCompilation>false</RunAOTCompilation>
     <PublishTrimmed>false</PublishTrimmed>
+    <AndroidLinkMode>None</AndroidLinkMode>
+    <AndroidUseAssemblyStore>false</AndroidUseAssemblyStore>
+    <AndroidStripILAfterAOT>false</AndroidStripILAfterAOT>
+    <AndroidEnableProguard>false</AndroidEnableProguard>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -82,7 +82,15 @@ public class DatabaseService : IDatabaseService
             return workDay;
 
         var settings = await GetSettingsAsync();
-        var targetMinutes = settings.IsWorkDay(date.DayOfWeek) ? settings.DailyMinutes : 0;
+
+        // Individuelle Stunden pro Tag berücksichtigen
+        int targetMinutes = 0;
+        if (settings.IsWorkDay(date.DayOfWeek))
+        {
+            var ourDay = date.DayOfWeek == DayOfWeek.Sunday ? 7 : (int)date.DayOfWeek;
+            var hoursForDay = settings.GetHoursForDay(ourDay);
+            targetMinutes = (int)(hoursForDay * 60);
+        }
         workDay = new WorkDay
         {
             Date = date.Date,

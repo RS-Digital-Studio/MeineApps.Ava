@@ -405,7 +405,7 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       IsVisible="{Binding !IsPremium}"
                       Command="{Binding PurchaseRemoveAdsCommand}">
-                <Border CornerRadius="16" Padding="16" ClipToBounds="True">
+                <Border CornerRadius="16" Padding="18" ClipToBounds="True">
                   <Border.Background>
                     <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                       <GradientStop Color="{DynamicResource AccentColor}" Offset="0" />
@@ -444,7 +444,7 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       IsVisible="{Binding !IsPremium}"
                       Command="{Binding ShowExtendedHistoryAdCommand}">
-                <Border Classes="Card" CornerRadius="12" Padding="14">
+                <Border Classes="Card" CornerRadius="12" Padding="16">
                   <Grid ColumnDefinitions="Auto,*,Auto">
                     <Border Grid.Column="0" Width="40" Height="40"
                             CornerRadius="20" Margin="0,0,12,0">
@@ -465,8 +465,7 @@
                       <TextBlock Text="{Binding ExtendedHistoryDescText}"
                                  FontSize="12"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
-                                 TextTrimming="CharacterEllipsis"
-                                 MaxLines="2" />
+                                 TextWrapping="Wrap" />
                     </StackPanel>
                     <mi:MaterialIcon Grid.Column="2"
                                      Kind="ChevronRight" Width="18" Height="18"

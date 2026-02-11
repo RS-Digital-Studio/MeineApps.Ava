@@ -150,7 +150,7 @@
 
           <!-- Individual Hours per Day -->
           <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-            <ToggleSwitch IsChecked="{Binding UseIndividualHours}" />
+            <ToggleSwitch IsChecked="{Binding UseIndividualHours}" OnContent="" OffContent="" />
             <TextBlock Text="{loc:Translate IndividualHoursPerDay}"
                        FontSize="14"
                        Foreground="{DynamicResource TextPrimaryBrush}"
@@ -205,7 +205,8 @@
                        VerticalAlignment="Center"
                        Margin="8,0,0,0" />
             <ToggleSwitch Grid.Column="2"
-                          IsChecked="{Binding AutoPauseEnabled}" />
+                          IsChecked="{Binding AutoPauseEnabled}"
+                          OnContent="" OffContent="" />
           </Grid>
 
           <TextBlock Text="{loc:Translate AutoPauseDescription}"
@@ -248,7 +249,7 @@
 
           <!-- Morning -->
           <Grid ColumnDefinitions="Auto,*,Auto">
-            <ToggleSwitch IsChecked="{Binding MorningReminderEnabled}" />
+            <ToggleSwitch IsChecked="{Binding MorningReminderEnabled}" OnContent="" OffContent="" />
             <TextBlock Grid.Column="1"
                        Text="{loc:Translate MorningReminder}"
                        FontSize="14"
@@ -262,7 +263,7 @@
 
           <!-- Evening -->
           <Grid ColumnDefinitions="Auto,*,Auto">
-            <ToggleSwitch IsChecked="{Binding EveningReminderEnabled}" />
+            <ToggleSwitch IsChecked="{Binding EveningReminderEnabled}" OnContent="" OffContent="" />
             <TextBlock Grid.Column="1"
                        Text="{loc:Translate EveningReminder}"
                        FontSize="14"
@@ -276,7 +277,7 @@
 
           <!-- Break -->
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <ToggleSwitch IsChecked="{Binding PauseReminderEnabled}" />
+            <ToggleSwitch IsChecked="{Binding PauseReminderEnabled}" OnContent="" OffContent="" />
             <TextBlock Text="{loc:Translate BreakReminder}"
                        FontSize="14"
                        Foreground="{DynamicResource TextPrimaryBrush}"
@@ -348,7 +349,8 @@
                        VerticalAlignment="Center"
                        Margin="8,0,0,0" />
             <ToggleSwitch Grid.Column="2"
-                          IsChecked="{Binding LegalComplianceEnabled}" />
+                          IsChecked="{Binding LegalComplianceEnabled}"
+                          OnContent="" OffContent="" />
           </Grid>
 
           <TextBlock Text="{loc:Translate LegalComplianceDescription}"
@@ -370,7 +372,8 @@
                        VerticalAlignment="Center"
                        Margin="8,0,0,0" />
             <ToggleSwitch Grid.Column="2"
-                          IsChecked="{Binding OvertimeWarningEnabled}" />
+                          IsChecked="{Binding OvertimeWarningEnabled}"
+                          OnContent="" OffContent="" />
           </Grid>
 
           <Grid ColumnDefinitions="*,100" IsVisible="{Binding OvertimeWarningEnabled}">

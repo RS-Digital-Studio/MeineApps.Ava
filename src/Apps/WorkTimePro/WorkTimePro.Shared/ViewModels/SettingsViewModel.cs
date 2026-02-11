@@ -26,6 +26,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private WorkSettings? _settings;
     private bool _disposed;
+    private bool _isInitializing;
 
     public SettingsViewModel(
         IDatabaseService database,
@@ -97,6 +98,43 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private double _sundayHours = 0.0;
+
+    // === Automatische Wochenstunden-Berechnung ===
+
+    partial void OnUseIndividualHoursChanged(bool value) => RecalculateWeeklyHours();
+    partial void OnMondayHoursChanged(double value) => RecalculateWeeklyHours();
+    partial void OnTuesdayHoursChanged(double value) => RecalculateWeeklyHours();
+    partial void OnWednesdayHoursChanged(double value) => RecalculateWeeklyHours();
+    partial void OnThursdayHoursChanged(double value) => RecalculateWeeklyHours();
+    partial void OnFridayHoursChanged(double value) => RecalculateWeeklyHours();
+    partial void OnSaturdayHoursChanged(double value) => RecalculateWeeklyHours();
+    partial void OnSundayHoursChanged(double value) => RecalculateWeeklyHours();
+    partial void OnMondayEnabledChanged(bool value) => RecalculateWeeklyHours();
+    partial void OnTuesdayEnabledChanged(bool value) => RecalculateWeeklyHours();
+    partial void OnWednesdayEnabledChanged(bool value) => RecalculateWeeklyHours();
+    partial void OnThursdayEnabledChanged(bool value) => RecalculateWeeklyHours();
+    partial void OnFridayEnabledChanged(bool value) => RecalculateWeeklyHours();
+    partial void OnSaturdayEnabledChanged(bool value) => RecalculateWeeklyHours();
+    partial void OnSundayEnabledChanged(bool value) => RecalculateWeeklyHours();
+
+    /// <summary>
+    /// Berechnet WeeklyHours automatisch aus den individuellen Tagesstunden
+    /// </summary>
+    private void RecalculateWeeklyHours()
+    {
+        if (_isInitializing || !UseIndividualHours) return;
+
+        double total = 0;
+        if (MondayEnabled) total += MondayHours;
+        if (TuesdayEnabled) total += TuesdayHours;
+        if (WednesdayEnabled) total += WednesdayHours;
+        if (ThursdayEnabled) total += ThursdayHours;
+        if (FridayEnabled) total += FridayHours;
+        if (SaturdayEnabled) total += SaturdayHours;
+        if (SundayEnabled) total += SundayHours;
+
+        WeeklyHours = Math.Round(total, 1);
+    }
 
     // === Auto-Pause ===
 
@@ -327,6 +365,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         try
         {
             IsLoading = true;
+            _isInitializing = true;
 
             _settings = await _database.GetSettingsAsync();
 
@@ -385,9 +424,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
             // Premium
             UpdatePremiumStatus();
+
+            _isInitializing = false;
         }
         catch (Exception ex)
         {
+            _isInitializing = false;
             MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
         }
         finally

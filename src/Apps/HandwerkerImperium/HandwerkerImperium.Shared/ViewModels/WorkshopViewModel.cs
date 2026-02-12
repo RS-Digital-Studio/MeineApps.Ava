@@ -58,6 +58,48 @@ public partial class WorkshopViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _incomeDisplay = "0 €/s";
 
+    /// <summary>
+    /// Kosten pro Sekunde (formatiert für Anzeige, z.B. "3,20 €/s").
+    /// </summary>
+    [ObservableProperty]
+    private string _costsDisplay = "";
+
+    /// <summary>
+    /// Nettoeinkommen pro Sekunde (Brutto - Kosten).
+    /// </summary>
+    [ObservableProperty]
+    private string _netIncomeDisplay = "";
+
+    /// <summary>
+    /// Miete pro Stunde (formatiert).
+    /// </summary>
+    [ObservableProperty]
+    private string _rentDisplay = "";
+
+    /// <summary>
+    /// Materialkosten pro Stunde (formatiert).
+    /// </summary>
+    [ObservableProperty]
+    private string _materialCostDisplay = "";
+
+    /// <summary>
+    /// Löhne pro Stunde (formatiert).
+    /// </summary>
+    [ObservableProperty]
+    private string _wagesDisplay = "";
+
+    /// <summary>
+    /// True wenn Nettoeinkommen negativ (für rote Farbe in UI).
+    /// </summary>
+    [ObservableProperty]
+    private bool _isNetNegative;
+
+    /// <summary>
+    /// True wenn Kosten > 0 (für Sichtbarkeit der Kosten-Sektion).
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasCosts;
+
     [ObservableProperty]
     private decimal _totalEarned;
 
@@ -99,6 +141,12 @@ public partial class WorkshopViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _canAffordHire;
+
+    /// <summary>
+    /// Ob ein Extra-Worker-Slot per Ad verfügbar ist (Workshop voll + Werbung aktiv).
+    /// </summary>
+    [ObservableProperty]
+    private bool _canWatchSlotAd;
 
     /// <summary>
     /// Whether there are no workers in this workshop.
@@ -176,10 +224,25 @@ public partial class WorkshopViewModel : ObservableObject, IDisposable
         Workers.Clear();
         foreach (var worker in workshop.Workers)
         {
+            // Einkommensbeitrag berechnen: BaseIncomePerWorker * EffectiveEfficiency
+            worker.IncomeContribution = workshop.BaseIncomePerWorker * worker.EffectiveEfficiency;
             Workers.Add(worker);
         }
         WorkerCount = workshop.Workers.Count;
         MaxWorkers = workshop.MaxWorkers;
+
+        // Kosten-Anzeige: Brutto, Kosten-Aufschlüsselung, Netto
+        var totalCostsPerHour = workshop.TotalCostsPerHour;
+        var costsPerSecond = totalCostsPerHour / 3600m;
+        var netIncome = workshop.NetIncomePerSecond;
+
+        CostsDisplay = MoneyFormatter.FormatPerSecond(costsPerSecond, 2);
+        NetIncomeDisplay = MoneyFormatter.FormatPerSecond(Math.Abs(netIncome), 2);
+        RentDisplay = MoneyFormatter.FormatPerHour(workshop.RentPerHour);
+        MaterialCostDisplay = MoneyFormatter.FormatPerHour(workshop.MaterialCostPerHour);
+        WagesDisplay = MoneyFormatter.FormatPerHour(workshop.TotalWagesPerHour);
+        IsNetNegative = netIncome < 0;
+        HasCosts = totalCostsPerHour > 0;
 
         UpgradeCost = workshop.UpgradeCost;
         UpgradeCostDisplay = MoneyFormatter.FormatCompact(UpgradeCost);
@@ -190,6 +253,8 @@ public partial class WorkshopViewModel : ObservableObject, IDisposable
         CanHireWorker = workshop.CanHireWorker;
         CanAffordUpgrade = _gameStateService.CanAfford(UpgradeCost);
         CanAffordHire = _gameStateService.CanAfford(HireWorkerCost);
+        // Extra-Slot per Ad: nur wenn Workshop voll und Werbung aktiv
+        CanWatchSlotAd = !CanHireWorker && ShowAds && workshop.Workers.Count > 0;
     }
 
     [RelayCommand]
@@ -217,6 +282,21 @@ public partial class WorkshopViewModel : ObservableObject, IDisposable
         if (success)
         {
             _gameStateService.AddMoney(earnings);
+            LoadWorkshop();
+        }
+    }
+
+    [RelayCommand]
+    private async Task WatchAdForExtraSlotAsync()
+    {
+        if (!CanWatchSlotAd) return;
+
+        var success = await _rewardedAdService.ShowAdAsync("worker_hire_bonus");
+        if (success)
+        {
+            var workshop = _gameStateService.State.GetOrCreateWorkshop(WorkshopType);
+            workshop.AdBonusWorkerSlots += 1;
+            _gameStateService.MarkDirty();
             LoadWorkshop();
         }
     }

@@ -56,6 +56,29 @@ public static class MoneyFormatter
     }
 
     /// <summary>
+    /// Formatiert Geldbetrag mit /h-Suffix (pro Stunde).
+    /// </summary>
+    public static string FormatPerHour(decimal amount, int decimals = 0)
+    {
+        var format = decimals switch
+        {
+            0 => "F0",
+            1 => "F1",
+            2 => "F2",
+            _ => $"F{decimals}"
+        };
+
+        return amount switch
+        {
+            >= 1_000_000_000_000 => $"{(amount / 1_000_000_000_000).ToString(format)}T \u20AC/h",
+            >= 1_000_000_000 => $"{(amount / 1_000_000_000).ToString(format)}B \u20AC/h",
+            >= 1_000_000 => $"{(amount / 1_000_000).ToString(format)}M \u20AC/h",
+            >= 1_000 => $"{(amount / 1_000).ToString(format)}K \u20AC/h",
+            _ => $"{amount.ToString(format)} \u20AC/h"
+        };
+    }
+
+    /// <summary>
     /// Formats money for UI display (no decimals for small amounts).
     /// </summary>
     public static string FormatCompact(decimal amount)

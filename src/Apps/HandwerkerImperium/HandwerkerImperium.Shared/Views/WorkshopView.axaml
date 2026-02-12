@@ -104,50 +104,127 @@
 
         <!-- Income Stats Card -->
         <Border Classes="Card">
-          <Grid ColumnDefinitions="*,*"
-                RowDefinitions="Auto,Auto"
-                RowSpacing="16" ColumnSpacing="16">
+          <StackPanel Spacing="14">
 
-            <StackPanel>
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="CashMultiple" Width="16" Height="16"
-                                 Foreground="{DynamicResource SuccessBrush}" />
-                <TextBlock Text="{loc:Translate Income}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            <!-- Brutto + Netto nebeneinander -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+
+              <!-- Bruttoeinkommen -->
+              <StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="CashMultiple" Width="16" Height="16"
+                                   Foreground="{DynamicResource SuccessBrush}" />
+                  <TextBlock Text="{loc:Translate GrossIncome}"
+                             FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <TextBlock Text="{Binding IncomeDisplay}"
+                           FontSize="22" FontWeight="Bold"
+                           Foreground="{DynamicResource SuccessBrush}" />
               </StackPanel>
-              <TextBlock Text="{Binding IncomeDisplay}"
-                         FontSize="24" FontWeight="Bold"
-                         Foreground="{DynamicResource SuccessBrush}" />
-            </StackPanel>
 
-            <StackPanel Grid.Column="1">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="ChartBar" Width="16" Height="16"
-                                 Foreground="{StaticResource CraftPrimaryLightBrush}" />
-                <TextBlock Text="{loc:Translate TotalEarned}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              <!-- Nettoeinkommen -->
+              <StackPanel Grid.Column="1">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Finance" Width="16" Height="16"
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                  <TextBlock Text="{loc:Translate NetIncome}"
+                             FontSize="12"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <!-- Grün wenn positiv, Rot wenn negativ -->
+                <Panel>
+                  <TextBlock Text="{Binding NetIncomeDisplay}"
+                             FontSize="22" FontWeight="Bold"
+                             Foreground="{DynamicResource SuccessBrush}"
+                             IsVisible="{Binding !IsNetNegative}" />
+                  <StackPanel Orientation="Horizontal"
+                              IsVisible="{Binding IsNetNegative}">
+                    <TextBlock Text="-"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="{DynamicResource ErrorBrush}" />
+                    <TextBlock Text="{Binding NetIncomeDisplay}"
+                               FontSize="22" FontWeight="Bold"
+                               Foreground="{DynamicResource ErrorBrush}" />
+                  </StackPanel>
+                </Panel>
               </StackPanel>
-              <TextBlock Text="{Binding TotalEarned, StringFormat='{}{0:N0} EUR'}"
-                         FontSize="14" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </StackPanel>
 
-            <StackPanel Grid.Row="1">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="ClipboardList" Width="16" Height="16"
-                                 Foreground="{StaticResource CraftPrimaryLightBrush}" />
-                <TextBlock Text="{loc:Translate Orders}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+            </Grid>
+
+            <!-- Laufende Kosten (aufgeschlüsselt) -->
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="8" Padding="12,8"
+                    IsVisible="{Binding HasCosts}">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="TrendingDown" Width="14" Height="14"
+                                   Foreground="{DynamicResource WarningBrush}" />
+                  <TextBlock Text="{loc:Translate RunningCosts}"
+                             FontSize="12" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                  <!-- Miete -->
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate Rent}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="{Binding RentDisplay}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource WarningBrush}" />
+                  </StackPanel>
+                  <!-- Material -->
+                  <StackPanel Grid.Column="1">
+                    <TextBlock Text="{loc:Translate MaterialCosts}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="{Binding MaterialCostDisplay}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource WarningBrush}" />
+                  </StackPanel>
+                  <!-- Löhne -->
+                  <StackPanel Grid.Column="2">
+                    <TextBlock Text="{loc:Translate Wages}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="{Binding WagesDisplay}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource WarningBrush}" />
+                  </StackPanel>
+                </Grid>
               </StackPanel>
-              <TextBlock Text="{Binding OrdersCompleted}"
-                         FontSize="14" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </StackPanel>
+            </Border>
 
-          </Grid>
+            <!-- Gesamt verdient + Aufträge -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+              <StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="ChartBar" Width="14" Height="14"
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                  <TextBlock Text="{loc:Translate TotalEarned}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <TextBlock Text="{Binding TotalEarned, StringFormat='{}{0:N0} EUR'}"
+                           FontSize="13" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+              <StackPanel Grid.Column="1">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="ClipboardCheck" Width="14" Height="14"
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                  <TextBlock Text="{loc:Translate OrdersCompleted}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </StackPanel>
+                <TextBlock Text="{Binding OrdersCompleted}"
+                           FontSize="13" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+            </Grid>
+
+          </StackPanel>
         </Border>
 
         <!-- Workers Section Card -->
@@ -188,9 +265,14 @@
                           <TextBlock Text="{Binding Name}"
                                      FontSize="14"
                                      Foreground="{DynamicResource TextPrimaryBrush}" />
-                          <TextBlock Text="{Binding Efficiency, StringFormat='Efficiency: {0:P0}'}"
-                                     FontSize="12"
-                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                          <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{Binding EffectiveEfficiency, StringFormat='Eff: {0:P0}'}"
+                                       FontSize="12"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding IncomeContributionDisplay}"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource SuccessBrush}" />
+                          </StackPanel>
                         </StackPanel>
                         <StackPanel Grid.Column="2"
                                     Orientation="Horizontal"
@@ -233,11 +315,26 @@
               </StackPanel>
             </Button>
 
-            <TextBlock Text="{loc:Translate MaxWorkersReached}"
-                       FontSize="12"
-                       Foreground="{DynamicResource WarningBrush}"
-                       HorizontalAlignment="Center"
-                       IsVisible="{Binding !CanHireWorker}" />
+            <!-- Max Workers erreicht + Ad fuer Extra-Slot -->
+            <StackPanel IsVisible="{Binding !CanHireWorker}" Spacing="8">
+              <TextBlock Text="{loc:Translate MaxWorkersReached}"
+                         FontSize="12"
+                         Foreground="{DynamicResource WarningBrush}"
+                         HorizontalAlignment="Center" />
+              <!-- Extra-Slot per Video-Ad -->
+              <Button Classes="Secondary"
+                      Command="{Binding WatchAdForExtraSlotCommand}"
+                      IsVisible="{Binding CanWatchSlotAd}"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      Padding="12,8">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Video" Width="18" Height="18"
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                  <TextBlock Text="{loc:Translate WatchAdForWorkerSlot}" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
 
           </StackPanel>
         </Border>

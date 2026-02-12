@@ -174,14 +174,15 @@
     <!-- ================================================================= -->
     <StackPanel Grid.Row="2" Spacing="16">
 
-      <!-- Start Button (before game starts) -->
-      <Button Content="{loc:Translate Start}"
-              Classes="Primary"
-              Command="{Binding StartGameCommand}"
-              IsVisible="{Binding !IsPlaying}"
-              IsEnabled="{Binding !IsResultShown}"
-              HorizontalAlignment="Center"
-              MinWidth="200" />
+      <!-- Start Button (versteckt während Spiel und nach Ergebnis) -->
+      <Panel IsVisible="{Binding !IsResultShown}">
+        <Button Content="{loc:Translate Start}"
+                Classes="Primary"
+                Command="{Binding StartGameCommand}"
+                IsVisible="{Binding !IsPlaying}"
+                HorizontalAlignment="Center"
+                MinWidth="200" />
+      </Panel>
 
       <!-- Action Button (during game) -->
       <Button Content="{Binding ActionButtonText}"

@@ -237,6 +237,10 @@ public class GameStateService : IGameStateService
         MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(_state.Money + cost, _state.Money));
         WorkshopUpgraded?.Invoke(this, new WorkshopUpgradedEventArgs(type, oldLevel, newLevel, cost));
 
+        // XP für Workshop-Upgrade vergeben (5 + Level/10, skaliert mit Fortschritt)
+        int xpReward = 5 + newLevel / 10;
+        AddXp(xpReward);
+
         return true;
     }
 
@@ -275,20 +279,40 @@ public class GameStateService : IGameStateService
         return _state.IsWorkshopUnlocked(type);
     }
 
-    public bool ForceUnlockWorkshop(WorkshopType type)
+    public bool CanPurchaseWorkshop(WorkshopType type)
     {
         lock (_stateLock)
         {
-            // Bereits freigeschaltet
-            if (_state.UnlockedWorkshopTypes.Contains(type))
-                return false;
+            if (_state.UnlockedWorkshopTypes.Contains(type)) return false;
+            if (_state.PlayerLevel < type.GetUnlockLevel()) return false;
+            if (type.GetRequiredPrestige() > _state.Prestige.TotalPrestigeCount) return false;
+            return true;
+        }
+    }
 
+    public bool TryPurchaseWorkshop(WorkshopType type, decimal costOverride = -1)
+    {
+        decimal cost;
+        lock (_stateLock)
+        {
+            if (!CanPurchaseWorkshop(type)) return false;
+
+            cost = costOverride >= 0 ? costOverride : type.GetUnlockCost();
+            if (_state.Money < cost) return false;
+
+            _state.Money -= cost;
+            _state.TotalMoneySpent += cost;
             _state.UnlockedWorkshopTypes.Add(type);
 
-            // Workshop erstellen falls noch nicht vorhanden
             var workshop = _state.GetOrCreateWorkshop(type);
             workshop.IsUnlocked = true;
         }
+
+        if (cost > 0)
+            MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(_state.Money + cost, _state.Money));
+
+        // XP-Bonus für Workshop-Freischaltung
+        AddXp(50);
 
         return true;
     }

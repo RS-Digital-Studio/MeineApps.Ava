@@ -70,13 +70,13 @@ public static class WorkshopTypeExtensions
     public static decimal GetUnlockCost(this WorkshopType type) => type switch
     {
         WorkshopType.Carpenter => 0m,
-        WorkshopType.Plumber => 5_000m,
-        WorkshopType.Electrician => 50_000m,
-        WorkshopType.Painter => 500_000m,
-        WorkshopType.Roofer => 5_000_000m,
-        WorkshopType.Contractor => 50_000_000m,
-        WorkshopType.Architect => 500_000_000m,
-        WorkshopType.GeneralContractor => 5_000_000_000m,
+        WorkshopType.Plumber => 25_000m,
+        WorkshopType.Electrician => 250_000m,
+        WorkshopType.Painter => 2_500_000m,
+        WorkshopType.Roofer => 25_000_000m,
+        WorkshopType.Contractor => 250_000_000m,
+        WorkshopType.Architect => 2_500_000_000m,
+        WorkshopType.GeneralContractor => 25_000_000_000m,
         _ => 0m
     };
 

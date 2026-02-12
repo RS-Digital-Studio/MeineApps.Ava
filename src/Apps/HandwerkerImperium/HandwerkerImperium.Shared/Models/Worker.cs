@@ -225,6 +225,21 @@ public class Worker
         _ => "\ud83d\ude21"         // Angry
     };
 
+    /// <summary>
+    /// Einkommensbeitrag pro Sekunde (wird vom ViewModel gesetzt, nicht persistiert).
+    /// Zeigt dem Spieler den konkreten Mehrwert dieses Arbeiters.
+    /// </summary>
+    [JsonIgnore]
+    public decimal IncomeContribution { get; set; }
+
+    /// <summary>
+    /// Formatierte Anzeige des Einkommensbeitrags.
+    /// </summary>
+    [JsonIgnore]
+    public string IncomeContributionDisplay => IncomeContribution > 0
+        ? $"+{IncomeContribution:N2} €/s"
+        : "-";
+
     [JsonIgnore]
     public string StatusEmoji
     {

@@ -123,9 +123,14 @@ public interface IGameStateService
     bool IsWorkshopUnlocked(WorkshopType type);
 
     /// <summary>
-    /// Schaltet eine Werkstatt frei ohne Level-Anforderung (per Rewarded Ad).
+    /// Kauft eine Werkstatt frei (Level-Anforderung muss erfüllt sein, Kosten werden abgezogen).
     /// </summary>
-    bool ForceUnlockWorkshop(WorkshopType type);
+    bool TryPurchaseWorkshop(WorkshopType type, decimal costOverride = -1);
+
+    /// <summary>
+    /// Prüft ob eine Werkstatt kaufbar ist (Level erreicht, nicht bereits freigeschaltet).
+    /// </summary>
+    bool CanPurchaseWorkshop(WorkshopType type);
 
     // ===================================================================
     // ORDER OPERATIONS

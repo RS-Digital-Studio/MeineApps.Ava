@@ -349,15 +349,25 @@
                                    Height="5"
                                    IsVisible="{Binding IsUnlocked}" />
 
-                      <!-- Gesperrt: Unlock-Info -->
+                      <!-- Gesperrt: Unlock-Info mit Level + Kosten -->
                       <StackPanel IsVisible="{Binding !IsUnlocked}" Spacing="4">
                         <TextBlock Text="{Binding UnlockDisplay}"
                                    FontSize="12"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="{Binding UnlockCostDisplay}"
+                                   FontSize="11"
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                   IsVisible="{Binding CanBuyUnlock}" />
+                        <mi:MaterialIcon Kind="LockOpen" Width="24" Height="24"
+                                         Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                         Opacity="0.5"
+                                         HorizontalAlignment="Center"
+                                         IsVisible="{Binding CanBuyUnlock}" />
                         <mi:MaterialIcon Kind="LockOutline" Width="24" Height="24"
                                          Foreground="{DynamicResource TextSecondaryBrush}"
                                          Opacity="0.3"
-                                         HorizontalAlignment="Center" />
+                                         HorizontalAlignment="Center"
+                                         IsVisible="{Binding !CanBuyUnlock}" />
                       </StackPanel>
 
                     </StackPanel>
@@ -389,11 +399,20 @@
         <!-- ============================================================= -->
         <!-- ORDERS SECTION                                                -->
         <!-- ============================================================= -->
-        <Grid ColumnDefinitions="*,Auto" Margin="0,16,0,0">
-          <TextBlock Text="{loc:Translate Orders}"
-                     FontSize="20" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
-          <Button Grid.Column="1" Classes="Text"
+        <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,16,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Text="{loc:Translate Orders}"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <Border Background="{StaticResource CraftPrimaryBrush}"
+                    CornerRadius="10" Padding="8,2"
+                    VerticalAlignment="Center">
+              <TextBlock Text="{Binding AvailableOrders.Count}"
+                         FontSize="12" FontWeight="Bold"
+                         Foreground="White" />
+            </Border>
+          </StackPanel>
+          <Button Grid.Column="2" Classes="Text"
                   Command="{Binding RefreshOrdersCommand}">
             <mi:MaterialIcon Kind="Refresh" Width="24" Height="24" />
           </Button>

@@ -142,8 +142,22 @@ public partial class WorkerMarketViewModel : ObservableObject
 
         HasAvailableSlots = workshopsWithSlots.Count > 0;
 
+        // Durchschnittliche BaseIncomePerWorker berechnen fuer Mehrwert-Anzeige
+        var unlockedWorkshops = _gameStateService.State.Workshops
+            .Where(w => _gameStateService.State.IsWorkshopUnlocked(w.Type))
+            .ToList();
+        var avgBaseIncome = unlockedWorkshops.Count > 0
+            ? unlockedWorkshops.Average(w => w.BaseIncomePerWorker)
+            : 1m;
+
         // Markt IMMER anzeigen, unabhaengig von freien Plaetzen
-        AvailableWorkers = market.AvailableWorkers.ToList();
+        var workers = market.AvailableWorkers.ToList();
+        foreach (var worker in workers)
+        {
+            // Geschaetzter Ertrag basierend auf Durchschnitt aller Workshops
+            worker.IncomeContribution = avgBaseIncome * worker.Efficiency;
+        }
+        AvailableWorkers = workers;
 
         if (!HasAvailableSlots)
         {

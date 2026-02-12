@@ -57,7 +57,7 @@ F:\Meine_Apps_Ava\
 │   └── Apps/                       # 8 Apps, jeweils Shared/Android/Desktop
 │       ├── RechnerPlus/            # Taschenrechner (werbefrei)
 │       ├── ZeitManager/            # Timer/Stoppuhr/Alarm (werbefrei)
-│       ├── FinanzRechner/          # 5 Finanzrechner + Budget-Tracker
+│       ├── FinanzRechner/          # 6 Finanzrechner + Budget-Tracker
 │       ├── FitnessRechner/         # BMI/Kalorien/Barcode-Scanner
 │       ├── HandwerkerRechner/      # 9 Bau-Rechner (4 Free + 5 Premium)
 │       ├── WorkTimePro/            # Arbeitszeiterfassung + Export

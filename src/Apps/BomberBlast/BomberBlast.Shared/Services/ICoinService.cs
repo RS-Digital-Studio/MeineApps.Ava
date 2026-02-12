@@ -22,4 +22,13 @@ public interface ICoinService
 
     /// <summary>Coin-Stand hat sich geaendert</summary>
     event EventHandler? BalanceChanged;
+
+    /// <summary>Ob der tägliche Bonus verfügbar ist</summary>
+    bool IsDailyBonusAvailable { get; }
+
+    /// <summary>Täglichen Bonus beanspruchen (500 Coins). Gibt true zurück wenn erfolgreich.</summary>
+    bool TryClaimDailyBonus();
+
+    /// <summary>Betrag des täglichen Bonus</summary>
+    int DailyBonusAmount { get; }
 }

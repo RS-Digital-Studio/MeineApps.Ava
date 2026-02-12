@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BomberBlast.Services;
+using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace BomberBlast.ViewModels;
@@ -14,6 +15,9 @@ public partial class MainMenuViewModel : ObservableObject
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;
     private readonly ICoinService _coinService;
+    private readonly ILocalizationService _localizationService;
+    private readonly IDailyRewardService _dailyRewardService;
+    private readonly IReviewService _reviewService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -23,6 +27,12 @@ public partial class MainMenuViewModel : ObservableObject
     /// Event to request navigation. Parameter is the route string.
     /// </summary>
     public event Action<string>? NavigationRequested;
+
+    /// <summary>Floating-Text anzeigen (z.B. Daily Bonus)</summary>
+    public event Action<string, string>? FloatingTextRequested;
+
+    /// <summary>In-App Review anfordern (Android: ReviewManagerFactory)</summary>
+    public event Action? ReviewRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -49,11 +59,15 @@ public partial class MainMenuViewModel : ObservableObject
     /// </summary>
     public bool HasProgress => ShowContinueButton;
 
-    public MainMenuViewModel(IProgressService progressService, IPurchaseService purchaseService, ICoinService coinService)
+    public MainMenuViewModel(IProgressService progressService, IPurchaseService purchaseService, ICoinService coinService,
+        ILocalizationService localizationService, IDailyRewardService dailyRewardService, IReviewService reviewService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
         _coinService = coinService;
+        _localizationService = localizationService;
+        _dailyRewardService = dailyRewardService;
+        _reviewService = reviewService;
 
         // Set version from assembly
         var assembly = System.Reflection.Assembly.GetEntryAssembly();
@@ -69,10 +83,43 @@ public partial class MainMenuViewModel : ObservableObject
 
     /// <summary>
     /// Called when the view appears. Refreshes continue button visibility.
+    /// Prüft und vergibt täglichen Bonus.
     /// </summary>
     public void OnAppearing()
     {
         ShowContinueButton = _progressService.HighestCompletedLevel > 0;
+
+        // 7-Tage Daily Reward prüfen und automatisch vergeben
+        if (_dailyRewardService.IsRewardAvailable)
+        {
+            var reward = _dailyRewardService.ClaimReward();
+            if (reward != null)
+            {
+                _coinService.AddCoins(reward.Coins);
+
+                var dayText = string.Format(
+                    _localizationService.GetString("DailyRewardDay") ?? "Day {0}",
+                    reward.Day);
+                var bonusText = $"{dayText}: +{reward.Coins:N0} Coins!";
+
+                if (reward.ExtraLives > 0)
+                {
+                    bonusText += $" +{reward.ExtraLives} " +
+                        (_localizationService.GetString("DailyRewardExtraLife") ?? "Extra Life");
+                }
+
+                FloatingTextRequested?.Invoke(bonusText, "gold");
+            }
+        }
+
+        // In-App Review prüfen
+        if (_reviewService.ShouldPromptReview())
+        {
+            _reviewService.MarkReviewPrompted();
+            // ReviewRequested Event wird in MainViewModel behandelt (Android: ReviewManagerFactory)
+            ReviewRequested?.Invoke();
+        }
+
         CoinBalance = _coinService.Balance;
         CoinsText = _coinService.Balance.ToString("N0");
         OnPropertyChanged(nameof(HasProgress));
@@ -131,5 +178,11 @@ public partial class MainMenuViewModel : ObservableObject
     private void Shop()
     {
         NavigationRequested?.Invoke("Shop");
+    }
+
+    [RelayCommand]
+    private void Achievements()
+    {
+        NavigationRequested?.Invoke("Achievements");
     }
 }

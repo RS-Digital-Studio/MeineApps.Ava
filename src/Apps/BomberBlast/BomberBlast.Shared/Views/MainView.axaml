@@ -40,6 +40,10 @@
     <views:ShopView DataContext="{Binding ShopVm}"
                      IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsShopActive}" />
 
+    <!-- Achievements -->
+    <views:AchievementsView DataContext="{Binding AchievementsVm}"
+                            IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsAchievementsActive}" />
+
     <!-- Alert Dialog Overlay -->
     <Border IsVisible="{Binding IsAlertDialogVisible}"
             Background="#80000000" ZIndex="100"

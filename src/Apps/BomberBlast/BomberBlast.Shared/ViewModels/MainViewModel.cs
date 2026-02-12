@@ -33,6 +33,7 @@ public partial class MainViewModel : ObservableObject
     public PauseViewModel PauseVm { get; }
     public HelpViewModel HelpVm { get; }
     public ShopViewModel ShopVm { get; }
+    public AchievementsViewModel AchievementsVm { get; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -61,6 +62,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isShopActive;
+
+    [ObservableProperty]
+    private bool _isAchievementsActive;
 
     // ═══════════════════════════════════════════════════════════════════════
     // DIALOG PROPERTIES
@@ -122,6 +126,7 @@ public partial class MainViewModel : ObservableObject
         PauseViewModel pauseVm,
         HelpViewModel helpVm,
         ShopViewModel shopVm,
+        AchievementsViewModel achievementsVm,
         ILocalizationService localization,
         IAdService adService,
         IPurchaseService purchaseService,
@@ -136,11 +141,13 @@ public partial class MainViewModel : ObservableObject
         PauseVm = pauseVm;
         HelpVm = helpVm;
         ShopVm = shopVm;
+        AchievementsVm = achievementsVm;
         _localizationService = localization;
         _rewardedAdService = rewardedAdService;
 
         // Game Juice Events weiterleiten
         GameOverVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        MenuVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         LevelSelectVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
 
         // Ad-Banner starten
@@ -164,6 +171,7 @@ public partial class MainViewModel : ObservableObject
         WireNavigation(pauseVm);
         WireNavigation(helpVm);
         WireNavigation(shopVm);
+        WireNavigation(achievementsVm);
 
         // Wire up dialog events from SettingsVM + ShopVM
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
@@ -288,6 +296,10 @@ public partial class MainViewModel : ObservableObject
                     var coins = 0;
                     var levelComplete = false;
                     var canContinue = false;
+                    var enemyPts = 0;
+                    var timeBonus = 0;
+                    var effBonus = 0;
+                    var multiplier = 1f;
                     foreach (var param in query.Split('&'))
                     {
                         var parts = param.Split('=');
@@ -302,6 +314,10 @@ public partial class MainViewModel : ObservableObject
                                 case "coins": int.TryParse(parts[1], out coins); break;
                                 case "levelcomplete": bool.TryParse(parts[1], out levelComplete); break;
                                 case "cancontinue": bool.TryParse(parts[1], out canContinue); break;
+                                case "enemypts": int.TryParse(parts[1], out enemyPts); break;
+                                case "timebonus": int.TryParse(parts[1], out timeBonus); break;
+                                case "effbonus": int.TryParse(parts[1], out effBonus); break;
+                                case "multiplier": float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out multiplier); break;
                             }
                         }
                     }
@@ -318,7 +334,8 @@ public partial class MainViewModel : ObservableObject
                         _levelFailCounts.Remove(level);
                     }
 
-                    GameOverVm.SetParameters(score, level, isHighScore, mode, coins, levelComplete, canContinue, fails);
+                    GameOverVm.SetParameters(score, level, isHighScore, mode, coins, levelComplete, canContinue, fails,
+                        enemyPts, timeBonus, effBonus, multiplier);
 
                     // Level Complete → Confetti + Floating Text
                     if (levelComplete)
@@ -338,6 +355,11 @@ public partial class MainViewModel : ObservableObject
 
             case "Help":
                 IsHelpActive = true;
+                break;
+
+            case "Achievements":
+                IsAchievementsActive = true;
+                AchievementsVm.OnAppearing();
                 break;
 
             case "..":
@@ -372,6 +394,7 @@ public partial class MainViewModel : ObservableObject
         IsGameOverActive = false;
         IsHelpActive = false;
         IsShopActive = false;
+        IsAchievementsActive = false;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

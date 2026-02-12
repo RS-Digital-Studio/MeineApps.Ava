@@ -65,6 +65,79 @@
             </StackPanel>
           </Border>
 
+          <!-- Score-Aufschlüsselung (nur bei Level-Complete) -->
+          <Border Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="10"
+                  Padding="14,8"
+                  HorizontalAlignment="Center"
+                  BoxShadow="0 2 8 0 #30000000"
+                  IsVisible="{Binding HasSummary}">
+            <StackPanel Spacing="4">
+              <!-- Gegner-Punkte -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Translate EnemyPoints}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding EnemyKillPointsText}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </Grid>
+              <!-- Zeitbonus -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Translate SummaryTimeBonus}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding TimeBonusText}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="#4CAF50" />
+              </Grid>
+              <!-- Effizienzbonus -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Translate SummaryEfficiencyBonus}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding EfficiencyBonusText}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="#FF9800" />
+              </Grid>
+              <!-- Score-Multiplikator -->
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="{loc:Translate SummaryScoreMultiplier}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1"
+                           Text="{Binding ScoreMultiplierText}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="#7B1FA2" />
+              </Grid>
+              <!-- Sterne -->
+              <StackPanel Orientation="Horizontal" Spacing="4"
+                          HorizontalAlignment="Center" Margin="0,4,0,0">
+                <Panel Width="22" Height="22">
+                  <mi:MaterialIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star1Earned}" />
+                  <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="#FFD700" IsVisible="{Binding Star1Earned}" />
+                </Panel>
+                <Panel Width="22" Height="22">
+                  <mi:MaterialIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star2Earned}" />
+                  <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="#FFD700" IsVisible="{Binding Star2Earned}" />
+                </Panel>
+                <Panel Width="22" Height="22">
+                  <mi:MaterialIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star3Earned}" />
+                  <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="#FFD700" IsVisible="{Binding Star3Earned}" />
+                </Panel>
+              </StackPanel>
+              <!-- Premium Badge -->
+              <TextBlock IsVisible="{Binding IsPremium}"
+                         Text="★ Premium x2 Coins"
+                         FontSize="11" FontWeight="SemiBold"
+                         Foreground="#FFD700"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
           <!-- Coins verdient -->
           <Border Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="10"

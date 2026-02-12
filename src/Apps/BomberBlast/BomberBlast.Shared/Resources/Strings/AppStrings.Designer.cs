@@ -1210,5 +1210,42 @@ namespace BomberBlast.Resources.Strings {
                 return ResourceManager.GetString("AdVideoNotAvailableMessage", resourceCulture);
             }
         }
+
+        // Tutorial
+        internal static string TutorialMove {
+            get {
+                return ResourceManager.GetString("TutorialMove", resourceCulture);
+            }
+        }
+
+        internal static string TutorialBomb {
+            get {
+                return ResourceManager.GetString("TutorialBomb", resourceCulture);
+            }
+        }
+
+        internal static string TutorialHide {
+            get {
+                return ResourceManager.GetString("TutorialHide", resourceCulture);
+            }
+        }
+
+        internal static string TutorialPowerUp {
+            get {
+                return ResourceManager.GetString("TutorialPowerUp", resourceCulture);
+            }
+        }
+
+        internal static string TutorialExit {
+            get {
+                return ResourceManager.GetString("TutorialExit", resourceCulture);
+            }
+        }
+
+        internal static string TutorialSkip {
+            get {
+                return ResourceManager.GetString("TutorialSkip", resourceCulture);
+            }
+        }
     }
 }

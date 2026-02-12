@@ -641,5 +641,200 @@
   <data name="AdVideoNotAvailableMessage" xml:space="preserve">
     <value>Nenhum vídeo publicitário está disponível no momento. Tente novamente mais tarde.</value>
   </data>
+  <!-- Victory / Daily / Wave / Summary -->
+  <data name="VictoryTitle" xml:space="preserve">
+    <value>VITÓRIA!</value>
+  </data>
+  <data name="AllLevelsComplete" xml:space="preserve">
+    <value>Todos os 50 níveis completos!</value>
+  </data>
+  <data name="DailyBonus" xml:space="preserve">
+    <value>Bônus diário</value>
+  </data>
+  <data name="DailyBonusClaimed" xml:space="preserve">
+    <value>+{0} Moedas!</value>
+  </data>
+  <data name="WaveMilestone" xml:space="preserve">
+    <value>Onda {0} Bônus: +{1} Moedas!</value>
+  </data>
+  <data name="DetonateButton" xml:space="preserve">
+    <value>Detonar</value>
+  </data>
+  <data name="EnemyPoints" xml:space="preserve">
+    <value>Inimigos</value>
+  </data>
+  <data name="SummaryTimeBonus" xml:space="preserve">
+    <value>Bônus de tempo</value>
+  </data>
+  <data name="SummaryEfficiencyBonus" xml:space="preserve">
+    <value>Eficiência</value>
+  </data>
+  <data name="SummaryScoreMultiplier" xml:space="preserve">
+    <value>Multiplicador</value>
+  </data>
+
+  <!-- Achievements -->
+  <data name="AchievementsTitle" xml:space="preserve">
+    <value>Conquistas</value>
+  </data>
+  <data name="AchWorld1" xml:space="preserve">
+    <value>Mundo 1 Completo</value>
+  </data>
+  <data name="AchWorld1Desc" xml:space="preserve">
+    <value>Complete todos os níveis do Mundo 1</value>
+  </data>
+  <data name="AchWorld2" xml:space="preserve">
+    <value>Mundo 2 Completo</value>
+  </data>
+  <data name="AchWorld2Desc" xml:space="preserve">
+    <value>Complete todos os níveis do Mundo 2</value>
+  </data>
+  <data name="AchWorld3" xml:space="preserve">
+    <value>Mundo 3 Completo</value>
+  </data>
+  <data name="AchWorld3Desc" xml:space="preserve">
+    <value>Complete todos os níveis do Mundo 3</value>
+  </data>
+  <data name="AchWorld4" xml:space="preserve">
+    <value>Mundo 4 Completo</value>
+  </data>
+  <data name="AchWorld4Desc" xml:space="preserve">
+    <value>Complete todos os níveis do Mundo 4</value>
+  </data>
+  <data name="AchWorld5" xml:space="preserve">
+    <value>Campeão</value>
+  </data>
+  <data name="AchWorld5Desc" xml:space="preserve">
+    <value>Complete todos os 50 níveis</value>
+  </data>
+  <data name="AchStars50" xml:space="preserve">
+    <value>Colecionador</value>
+  </data>
+  <data name="AchStars50Desc" xml:space="preserve">
+    <value>Ganhe 50 estrelas</value>
+  </data>
+  <data name="AchStars100" xml:space="preserve">
+    <value>Mestre Estelar</value>
+  </data>
+  <data name="AchStars100Desc" xml:space="preserve">
+    <value>Ganhe 100 estrelas</value>
+  </data>
+  <data name="AchStars150" xml:space="preserve">
+    <value>Estrelas Perfeitas</value>
+  </data>
+  <data name="AchStars150Desc" xml:space="preserve">
+    <value>Ganhe todas as 150 estrelas</value>
+  </data>
+  <data name="AchKills100" xml:space="preserve">
+    <value>Caçador</value>
+  </data>
+  <data name="AchKills100Desc" xml:space="preserve">
+    <value>Derrote 100 inimigos</value>
+  </data>
+  <data name="AchKills500" xml:space="preserve">
+    <value>Caçador de Monstros</value>
+  </data>
+  <data name="AchKills500Desc" xml:space="preserve">
+    <value>Derrote 500 inimigos</value>
+  </data>
+  <data name="AchKills1000" xml:space="preserve">
+    <value>Aniquilador</value>
+  </data>
+  <data name="AchKills1000Desc" xml:space="preserve">
+    <value>Derrote 1000 inimigos</value>
+  </data>
+  <data name="AchNoDamage" xml:space="preserve">
+    <value>Intocável</value>
+  </data>
+  <data name="AchNoDamageDesc" xml:space="preserve">
+    <value>Complete um nível sem receber dano</value>
+  </data>
+  <data name="AchEfficient" xml:space="preserve">
+    <value>Especialista em Bombas</value>
+  </data>
+  <data name="AchEfficientDesc" xml:space="preserve">
+    <value>Complete um nível com 3 bombas ou menos</value>
+  </data>
+  <data name="AchSpeedrun" xml:space="preserve">
+    <value>Demônio da Velocidade</value>
+  </data>
+  <data name="AchSpeedrunDesc" xml:space="preserve">
+    <value>Complete um nível com 60+ segundos restantes</value>
+  </data>
+  <data name="AchArcade10" xml:space="preserve">
+    <value>Veterano Arcade</value>
+  </data>
+  <data name="AchArcade10Desc" xml:space="preserve">
+    <value>Alcance a onda 10 no modo Arcade</value>
+  </data>
+  <data name="AchArcade25" xml:space="preserve">
+    <value>Lenda Arcade</value>
+  </data>
+  <data name="AchArcade25Desc" xml:space="preserve">
+    <value>Alcance a onda 25 no modo Arcade</value>
+  </data>
+
+  <!-- Daily Reward -->
+  <data name="DailyRewardDay" xml:space="preserve">
+    <value>Dia {0}</value>
+  </data>
+  <data name="DailyRewardExtraLife" xml:space="preserve">
+    <value>Vida extra</value>
+  </data>
+  <data name="DailyRewardTitle" xml:space="preserve">
+    <value>Recompensa diária</value>
+  </data>
+  <data name="DailyRewardCollect" xml:space="preserve">
+    <value>Coletar</value>
+  </data>
+  <data name="DailyRewardStreak" xml:space="preserve">
+    <value>Sequência: {0} dias</value>
+  </data>
+
+  <!-- Skins -->
+  <data name="SkinDefault" xml:space="preserve">
+    <value>Clássico</value>
+  </data>
+  <data name="SkinGold" xml:space="preserve">
+    <value>Ouro</value>
+  </data>
+  <data name="SkinNeon" xml:space="preserve">
+    <value>Neon</value>
+  </data>
+  <data name="SkinCyber" xml:space="preserve">
+    <value>Cyber</value>
+  </data>
+  <data name="SkinRetro" xml:space="preserve">
+    <value>Retrô</value>
+  </data>
+  <data name="SkinsTitle" xml:space="preserve">
+    <value>Skins</value>
+  </data>
+  <data name="SkinPremiumOnly" xml:space="preserve">
+    <value>Apenas Premium</value>
+  </data>
+  <data name="SkinEquipped" xml:space="preserve">
+    <value>Equipado</value>
+  </data>
+
+  <!-- Tutorial -->
+  <data name="TutorialMove" xml:space="preserve">
+    <value>Mova seu personagem com os controles</value>
+  </data>
+  <data name="TutorialBomb" xml:space="preserve">
+    <value>Toque no botão de bomba para colocar uma bomba</value>
+  </data>
+  <data name="TutorialHide" xml:space="preserve">
+    <value>Cuidado! A bomba vai explodir!</value>
+  </data>
+  <data name="TutorialPowerUp" xml:space="preserve">
+    <value>Colete power-ups para ficar mais forte</value>
+  </data>
+  <data name="TutorialExit" xml:space="preserve">
+    <value>Encontre a saída para completar o nível</value>
+  </data>
+  <data name="TutorialSkip" xml:space="preserve">
+    <value>Pular</value>
+  </data>
 
 </root>

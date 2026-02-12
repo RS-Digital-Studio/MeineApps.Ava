@@ -27,4 +27,9 @@
     <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidRewardedAdService.cs" Link="Services\AndroidRewardedAdService.cs" />
   </ItemGroup>
 
+  <!-- Sound-Assets (CC0 Lizenz, Juhani Junkala) -->
+  <ItemGroup>
+    <AndroidAsset Include="Assets\Sounds\**" />
+  </ItemGroup>
+
 </Project>

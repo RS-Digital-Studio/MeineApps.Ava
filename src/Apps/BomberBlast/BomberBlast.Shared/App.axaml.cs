@@ -26,6 +26,11 @@ public partial class App : Application
     /// </summary>
     public static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen ISoundService (Android setzt AndroidSoundService).
+    /// </summary>
+    public static Func<IServiceProvider, ISoundService>? SoundServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -84,10 +89,19 @@ public partial class App : Application
         // Game Services
         services.AddSingleton<IProgressService, ProgressService>();
         services.AddSingleton<IHighScoreService, HighScoreService>();
-        services.AddSingleton<ISoundService, NullSoundService>();
+        // Android-Override: Echte Sounds statt NullSoundService
+        if (SoundServiceFactory != null)
+            services.AddSingleton<ISoundService>(sp => SoundServiceFactory!(sp));
+        else
+            services.AddSingleton<ISoundService, NullSoundService>();
         services.AddSingleton<IGameStyleService, GameStyleService>();
         services.AddSingleton<ICoinService, CoinService>();
         services.AddSingleton<IShopService, ShopService>();
+        services.AddSingleton<ITutorialService, TutorialService>();
+        services.AddSingleton<IDailyRewardService, DailyRewardService>();
+        services.AddSingleton<ICustomizationService, CustomizationService>();
+        services.AddSingleton<IReviewService, ReviewService>();
+        services.AddSingleton<IAchievementService, AchievementService>();
         services.AddSingleton<SoundManager>();
         services.AddSingleton<SpriteSheet>();
         services.AddSingleton<InputManager>();
@@ -105,5 +119,6 @@ public partial class App : Application
         services.AddTransient<PauseViewModel>();
         services.AddTransient<HelpViewModel>();
         services.AddTransient<ShopViewModel>();
+        services.AddTransient<AchievementsViewModel>();
     }
 }

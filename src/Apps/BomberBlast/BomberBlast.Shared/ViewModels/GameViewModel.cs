@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BomberBlast.Core;
+using BomberBlast.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using SkiaSharp;
 
@@ -25,6 +26,8 @@ public partial class GameViewModel : ObservableObject, IDisposable
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
     private readonly IAdService _adService;
+    private readonly IProgressService _progressService;
+    private readonly IReviewService _reviewService;
     private readonly Stopwatch _frameStopwatch = new();
     private bool _isInitialized;
     private bool _disposed;
@@ -96,12 +99,16 @@ public partial class GameViewModel : ObservableObject, IDisposable
         GameEngine gameEngine,
         IRewardedAdService rewardedAdService,
         IPurchaseService purchaseService,
-        IAdService adService)
+        IAdService adService,
+        IProgressService progressService,
+        IReviewService reviewService)
     {
         _gameEngine = gameEngine;
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
         _adService = adService;
+        _progressService = progressService;
+        _reviewService = reviewService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -199,7 +206,8 @@ public partial class GameViewModel : ObservableObject, IDisposable
 
             case "quick":
                 var random = new Random();
-                int randomLevel = random.Next(1, 11);
+                int maxLevel = Math.Max(_progressService.HighestCompletedLevel, 10);
+                int randomLevel = random.Next(1, maxLevel + 1);
                 await _gameEngine.StartStoryModeAsync(randomLevel);
                 break;
 
@@ -469,12 +477,19 @@ public partial class GameViewModel : ObservableObject, IDisposable
         var mode = _gameEngine.IsArcadeMode ? "arcade" : "story";
         var coins = _lastCoinsEarned;
 
+        // Score-Aufschlüsselung aus GameEngine
+        var enemyPts = _gameEngine.LastEnemyKillPoints;
+        var timeBonus = _gameEngine.LastTimeBonus;
+        var effBonus = _gameEngine.LastEfficiencyBonus;
+        var multiplier = _gameEngine.LastScoreMultiplier;
+
         if (_gameEngine.CurrentLevel >= 50 && !_gameEngine.IsArcadeMode)
         {
             // Sieg! -> Game Over Screen mit Level-Complete-Flag
             NavigationRequested?.Invoke(
                 $"GameOver?score={score}&level={level}&highscore={isHighScore}&mode={mode}" +
-                $"&coins={coins}&levelcomplete=true&cancontinue=false");
+                $"&coins={coins}&levelcomplete=true&cancontinue=false" +
+                $"&enemypts={enemyPts}&timebonus={timeBonus}&effbonus={effBonus}&multiplier={multiplier:F2}");
         }
         else
         {
@@ -499,48 +514,65 @@ public partial class GameViewModel : ObservableObject, IDisposable
 
     private async void HandleGameOver()
     {
-        await Dispatcher.UIThread.InvokeAsync(async () =>
+        try
         {
-            await Task.Delay(2000);
+            await Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                await Task.Delay(2000);
 
-            var score = _gameEngine.Score;
-            var level = _gameEngine.IsArcadeMode ? _gameEngine.ArcadeWave : _gameEngine.CurrentLevel;
-            var isHighScore = _gameEngine.IsCurrentScoreHighScore;
-            var mode = _gameEngine.IsArcadeMode ? "arcade" : "story";
-            var coins = _lastCoinsEarned;
-            var canContinue = _gameEngine.CanContinue;
+                var score = _gameEngine.Score;
+                var level = _gameEngine.IsArcadeMode ? _gameEngine.ArcadeWave : _gameEngine.CurrentLevel;
+                var isHighScore = _gameEngine.IsCurrentScoreHighScore;
+                var mode = _gameEngine.IsArcadeMode ? "arcade" : "story";
+                var coins = _lastCoinsEarned;
+                var canContinue = _gameEngine.CanContinue;
 
-            NavigationRequested?.Invoke(
-                $"GameOver?score={score}&level={level}&highscore={isHighScore}&mode={mode}" +
-                $"&coins={coins}&levelcomplete=false&cancontinue={canContinue}");
-        });
+                NavigationRequested?.Invoke(
+                    $"GameOver?score={score}&level={level}&highscore={isHighScore}&mode={mode}" +
+                    $"&coins={coins}&levelcomplete=false&cancontinue={canContinue}");
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"HandleGameOver Fehler: {ex.Message}");
+        }
     }
 
     private async void HandleLevelComplete()
     {
-        await Dispatcher.UIThread.InvokeAsync(async () =>
+        try
         {
-            await Task.Delay(3000);
+            // Review-Service informieren
+            _reviewService.OnLevelCompleted(_gameEngine.CurrentLevel);
 
-            // Score-Verdopplung anbieten (nur fuer Free User mit verfuegbarer Ad)
-            bool canDouble = !_purchaseService.IsPremium && _rewardedAdService.IsAvailable;
+            await Dispatcher.UIThread.InvokeAsync(async () =>
+            {
+                await Task.Delay(3000);
 
-            if (canDouble)
-            {
-                // Game-Loop stoppen waehrend Overlay sichtbar
-                StopGameLoop();
-                LevelCompleteScore = _gameEngine.Score;
-                LevelCompleteScoreText = LevelCompleteScore.ToString("N0");
-                CanDoubleScore = true;
-                ShowScoreDoubleOverlay = true;
-                // Overlay-Buttons uebernehmen die weitere Navigation
-            }
-            else
-            {
-                // Kein Overlay -> direkt weiter
-                await ProceedToNextLevel();
-            }
-        });
+                // Score-Verdopplung anbieten (nur fuer Free User mit verfuegbarer Ad)
+                bool canDouble = !_purchaseService.IsPremium && _rewardedAdService.IsAvailable;
+
+                if (canDouble)
+                {
+                    // Game-Loop stoppen waehrend Overlay sichtbar
+                    StopGameLoop();
+                    LevelCompleteScore = _gameEngine.Score;
+                    LevelCompleteScoreText = LevelCompleteScore.ToString("N0");
+                    CanDoubleScore = true;
+                    ShowScoreDoubleOverlay = true;
+                    // Overlay-Buttons uebernehmen die weitere Navigation
+                }
+                else
+                {
+                    // Kein Overlay -> direkt weiter
+                    await ProceedToNextLevel();
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"HandleLevelComplete Fehler: {ex.Message}");
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

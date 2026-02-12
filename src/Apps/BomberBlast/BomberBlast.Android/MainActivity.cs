@@ -3,6 +3,7 @@ using Android.Content.PM;
 using Android.OS;
 using Avalonia;
 using Avalonia.Android;
+using BomberBlast.Droid;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
@@ -35,6 +36,9 @@ public class MainActivity : AvaloniaMainActivity<App>
         App.RewardedAdServiceFactory = sp =>
             new MeineApps.Core.Premium.Ava.Droid.AndroidRewardedAdService(
                 _rewardedAdHelper!, sp.GetRequiredService<IPurchaseService>(), "BomberBlast");
+
+        // Sound Service Factory: Android-SoundPool/MediaPlayer statt NullSoundService
+        App.SoundServiceFactory = _ => new AndroidSoundService(this);
 
         base.OnCreate(savedInstanceState);
 

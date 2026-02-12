@@ -9,6 +9,7 @@ namespace BomberBlast.ViewModels;
 /// <summary>
 /// ViewModel fuer den Game Over / Level Complete Screen.
 /// Zeigt Score, Coins, Verdopplungs- und Continue-Option.
+/// Bei Level-Complete: Score-Aufschlüsselung und Sterne.
 /// </summary>
 public partial class GameOverViewModel : ObservableObject
 {
@@ -17,6 +18,7 @@ public partial class GameOverViewModel : ObservableObject
     private readonly ICoinService _coinService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IProgressService _progressService;
+    private bool _coinsClaimed;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -89,6 +91,49 @@ public partial class GameOverViewModel : ObservableObject
     [ObservableProperty]
     private string _skipLevelInfoText = "";
 
+    // Score-Aufschlüsselung (Level-Complete Summary)
+    [ObservableProperty]
+    private int _enemyKillPoints;
+
+    [ObservableProperty]
+    private string _enemyKillPointsText = "";
+
+    [ObservableProperty]
+    private int _timeBonus;
+
+    [ObservableProperty]
+    private string _timeBonusText = "";
+
+    [ObservableProperty]
+    private int _efficiencyBonus;
+
+    [ObservableProperty]
+    private string _efficiencyBonusText = "";
+
+    [ObservableProperty]
+    private float _scoreMultiplier;
+
+    [ObservableProperty]
+    private string _scoreMultiplierText = "";
+
+    [ObservableProperty]
+    private int _starsEarned;
+
+    [ObservableProperty]
+    private bool _star1Earned;
+
+    [ObservableProperty]
+    private bool _star2Earned;
+
+    [ObservableProperty]
+    private bool _star3Earned;
+
+    [ObservableProperty]
+    private bool _isPremium;
+
+    [ObservableProperty]
+    private bool _hasSummary;
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -115,7 +160,8 @@ public partial class GameOverViewModel : ObservableObject
     /// Parameter vom Navigation-Query setzen
     /// </summary>
     public void SetParameters(int score, int level, bool isHighScore, string mode,
-        int coins, bool isLevelComplete, bool canContinue, int fails = 0)
+        int coins, bool isLevelComplete, bool canContinue, int fails = 0,
+        int enemyKillPoints = 0, int timeBonus = 0, int efficiencyBonus = 0, float scoreMultiplier = 1f)
     {
         Score = score;
         Level = level;
@@ -123,6 +169,7 @@ public partial class GameOverViewModel : ObservableObject
         Mode = mode;
         IsArcadeMode = mode == "arcade";
         IsLevelComplete = isLevelComplete;
+        IsPremium = _purchaseService.IsPremium;
 
         ScoreText = score.ToString("N0");
         LevelText = IsArcadeMode
@@ -134,6 +181,7 @@ public partial class GameOverViewModel : ObservableObject
         CoinsEarnedText = $"+{coins:N0}";
         HasDoubled = false;
         HasContinued = false;
+        _coinsClaimed = false;
         CanDoubleCoins = coins > 0 && _rewardedAdService.IsAvailable;
         CanContinue = canContinue && _rewardedAdService.IsAvailable;
 
@@ -145,6 +193,24 @@ public partial class GameOverViewModel : ObservableObject
         // Lokalisierte Button-Texte
         DoubleCoinsButtonText = _localizationService.GetString("DoubleCoins");
         ContinueButtonText = _localizationService.GetString("ContinueGame");
+
+        // Score-Aufschlüsselung (nur bei Level-Complete)
+        HasSummary = isLevelComplete && !IsArcadeMode;
+        if (HasSummary)
+        {
+            EnemyKillPoints = enemyKillPoints;
+            EnemyKillPointsText = $"+{enemyKillPoints:N0}";
+            TimeBonus = timeBonus;
+            TimeBonusText = $"+{timeBonus:N0}";
+            EfficiencyBonus = efficiencyBonus;
+            EfficiencyBonusText = efficiencyBonus > 0 ? $"+{efficiencyBonus:N0}" : "-";
+            ScoreMultiplier = scoreMultiplier;
+            ScoreMultiplierText = scoreMultiplier > 1f ? $"x{scoreMultiplier:F2}" : "-";
+            StarsEarned = _progressService.GetLevelStars(level);
+            Star1Earned = StarsEarned >= 1;
+            Star2Earned = StarsEarned >= 2;
+            Star3Earned = StarsEarned >= 3;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -232,14 +298,17 @@ public partial class GameOverViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Verdiente Coins dem CoinService gutschreiben (nur einmal)
+    /// Verdiente Coins dem CoinService gutschreiben (nur einmal pro Session)
     /// </summary>
     private void ClaimCoins()
     {
-        if (CoinsEarned > 0 && !HasContinued)
+        if (_coinsClaimed || HasContinued)
+            return;
+
+        if (CoinsEarned > 0)
         {
             _coinService.AddCoins(CoinsEarned);
-            CoinsEarned = 0;
+            _coinsClaimed = true;
         }
     }
 }

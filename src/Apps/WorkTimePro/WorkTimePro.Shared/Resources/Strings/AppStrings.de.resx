@@ -422,4 +422,36 @@
     <value>Jahresübersicht</value>
   </data>
 
+  <!-- Edit Overlays -->
+  <data name="HoursShort" xml:space="preserve">
+    <value>Std</value>
+  </data>
+  <data name="MinutesShort" xml:space="preserve">
+    <value>Min</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>Startzeit</value>
+  </data>
+  <data name="EndTime" xml:space="preserve">
+    <value>Endzeit</value>
+  </data>
+  <data name="AddBreak" xml:space="preserve">
+    <value>Pause hinzufügen</value>
+  </data>
+  <data name="EntryType" xml:space="preserve">
+    <value>Eintragstyp</value>
+  </data>
+  <data name="EditEntry" xml:space="preserve">
+    <value>Eintrag bearbeiten</value>
+  </data>
+  <data name="ValidationCheckInOutOrder" xml:space="preserve">
+    <value>Check-in muss vor Check-out liegen</value>
+  </data>
+  <data name="ValidationPauseOverlap" xml:space="preserve">
+    <value>Pause überschneidet sich mit bestehender Pause</value>
+  </data>
+  <data name="ValidationEndBeforeStart" xml:space="preserve">
+    <value>Endzeit muss nach Startzeit liegen</value>
+  </data>
+
 </root>

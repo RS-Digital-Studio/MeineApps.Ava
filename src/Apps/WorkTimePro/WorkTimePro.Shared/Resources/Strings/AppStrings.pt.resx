@@ -422,4 +422,36 @@
     <value>Resumo anual</value>
   </data>
 
+  <!-- Edit Overlays -->
+  <data name="HoursShort" xml:space="preserve">
+    <value>h</value>
+  </data>
+  <data name="MinutesShort" xml:space="preserve">
+    <value>min</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>Hora de início</value>
+  </data>
+  <data name="EndTime" xml:space="preserve">
+    <value>Hora de fim</value>
+  </data>
+  <data name="AddBreak" xml:space="preserve">
+    <value>Adicionar pausa</value>
+  </data>
+  <data name="EntryType" xml:space="preserve">
+    <value>Tipo de entrada</value>
+  </data>
+  <data name="EditEntry" xml:space="preserve">
+    <value>Editar entrada</value>
+  </data>
+  <data name="ValidationCheckInOutOrder" xml:space="preserve">
+    <value>O check-in deve ser antes do check-out</value>
+  </data>
+  <data name="ValidationPauseOverlap" xml:space="preserve">
+    <value>A pausa sobrepõe-se a uma pausa existente</value>
+  </data>
+  <data name="ValidationEndBeforeStart" xml:space="preserve">
+    <value>A hora de fim deve ser após a hora de início</value>
+  </data>
+
 </root>

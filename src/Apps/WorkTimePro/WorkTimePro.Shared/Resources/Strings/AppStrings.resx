@@ -1044,4 +1044,36 @@
     <value>Year overview</value>
   </data>
 
+  <!-- Edit Overlays -->
+  <data name="HoursShort" xml:space="preserve">
+    <value>h</value>
+  </data>
+  <data name="MinutesShort" xml:space="preserve">
+    <value>min</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>Start time</value>
+  </data>
+  <data name="EndTime" xml:space="preserve">
+    <value>End time</value>
+  </data>
+  <data name="AddBreak" xml:space="preserve">
+    <value>Add break</value>
+  </data>
+  <data name="EntryType" xml:space="preserve">
+    <value>Entry type</value>
+  </data>
+  <data name="EditEntry" xml:space="preserve">
+    <value>Edit entry</value>
+  </data>
+  <data name="ValidationCheckInOutOrder" xml:space="preserve">
+    <value>Check-in must be before check-out</value>
+  </data>
+  <data name="ValidationPauseOverlap" xml:space="preserve">
+    <value>Break overlaps with existing break</value>
+  </data>
+  <data name="ValidationEndBeforeStart" xml:space="preserve">
+    <value>End time must be after start time</value>
+  </data>
+
 </root>

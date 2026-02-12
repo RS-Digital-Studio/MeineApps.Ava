@@ -4,6 +4,7 @@
              xmlns:models="using:WorkTimePro.Models"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:MeineApps.UI.Controls"
              x:Class="WorkTimePro.Views.DayDetailView"
              x:DataType="vm:DayDetailViewModel"
              Background="{DynamicResource BackgroundBrush}">
@@ -229,20 +230,27 @@
         <!-- ==================== Breaks ==================== -->
         <Border Classes="Card">
           <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Coffee" Width="20" Height="20"
-                               Foreground="{DynamicResource WarningBrush}" />
-              <TextBlock Text="{loc:Translate Pauses}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}"
-                         VerticalAlignment="Center" />
-            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="Coffee" Width="20" Height="20"
+                                 Foreground="{DynamicResource WarningBrush}" />
+                <TextBlock Text="{loc:Translate Pauses}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+              <Button Grid.Column="1"
+                      Content="{loc:Translate AddBreak}"
+                      Classes="Primary Small"
+                      Command="{Binding AddPauseCommand}"
+                      IsEnabled="{Binding !IsLocked}" />
+            </Grid>
 
             <ItemsControl ItemsSource="{Binding PauseEntries}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:PauseEntry">
                   <Border Classes="Card" Padding="16" Margin="0,2" MinHeight="56">
-                    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
                       <mi:MaterialIcon Grid.Column="0"
                                        Kind="Coffee"
                                        Width="20" Height="20"
@@ -272,7 +280,15 @@
                                        IsVisible="{Binding IsAutoPause}"
                                        VerticalAlignment="Center"
                                        Margin="4,0" />
+                      <!-- Edit-Button (nur manuelle Pausen) -->
                       <Button Grid.Column="3" Classes="Text"
+                              Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).EditPauseCommand}"
+                              CommandParameter="{Binding .}"
+                              IsVisible="{Binding !IsAutoPause}">
+                        <mi:MaterialIcon Kind="Pencil" Width="16" Height="16"
+                                         Foreground="{DynamicResource PrimaryBrush}" />
+                      </Button>
+                      <Button Grid.Column="4" Classes="Text"
                               Command="{Binding $parent[UserControl].((vm:DayDetailViewModel)DataContext).DeletePauseCommand}"
                               CommandParameter="{Binding .}"
                               IsVisible="{Binding !IsAutoPause}">
@@ -305,6 +321,161 @@
 
       </StackPanel>
     </ScrollViewer>
+
+    <!-- ==================== TimeEntry Edit Overlay ==================== -->
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            IsVisible="{Binding IsTimeEntryOverlayVisible}"
+            Background="#80000000"
+            ZIndex="10">
+      <Border Classes="Card" Margin="16"
+              VerticalAlignment="Center" HorizontalAlignment="Stretch"
+              MaxWidth="450">
+        <StackPanel Spacing="16">
+
+          <!-- Titel -->
+          <TextBlock Text="{Binding TimeEntryOverlayTitle}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+
+          <!-- Typ-Toggle (CheckIn / CheckOut) -->
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Translate EntryType}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <Grid ColumnDefinitions="*,*" Height="40">
+              <!-- CheckIn aktiv -->
+              <Button Grid.Column="0" Classes="Primary"
+                      Content="{loc:Translate CheckIn}"
+                      IsVisible="{Binding EditIsCheckIn}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      CornerRadius="8,0,0,8" Padding="8,4"
+                      Command="{Binding ToggleEntryTypeCommand}" />
+              <Button Grid.Column="0" Classes="Outlined"
+                      Content="{loc:Translate CheckIn}"
+                      IsVisible="{Binding !EditIsCheckIn}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      CornerRadius="8,0,0,8" Padding="8,4"
+                      Command="{Binding ToggleEntryTypeCommand}" />
+              <!-- CheckOut aktiv -->
+              <Button Grid.Column="1" Classes="Primary"
+                      Content="{loc:Translate CheckOut}"
+                      IsVisible="{Binding !EditIsCheckIn}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      CornerRadius="0,8,8,0" Padding="8,4"
+                      Command="{Binding ToggleEntryTypeCommand}" />
+              <Button Grid.Column="1" Classes="Outlined"
+                      Content="{loc:Translate CheckOut}"
+                      IsVisible="{Binding EditIsCheckIn}"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                      CornerRadius="0,8,8,0" Padding="8,4"
+                      Command="{Binding ToggleEntryTypeCommand}" />
+            </Grid>
+          </StackPanel>
+
+          <!-- Zeit-Picker (Drum Wheel) -->
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+            <StackPanel Spacing="2">
+              <controls:WheelPicker Value="{Binding EditHour}" Minimum="0" Maximum="23" FormatString="D2" />
+              <TextBlock Text="{loc:Translate HoursShort}" Classes="Caption" HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+            <TextBlock Text=":" FontSize="28" FontWeight="Medium" VerticalAlignment="Center"
+                       Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" />
+            <StackPanel Spacing="2">
+              <controls:WheelPicker Value="{Binding EditMinute}" Minimum="0" Maximum="59" FormatString="D2" />
+              <TextBlock Text="{loc:Translate MinutesShort}" Classes="Caption" HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Notiz -->
+          <TextBox Text="{Binding EditNote, Mode=TwoWay}"
+                   Watermark="{loc:Translate NotePlaceholder}" />
+
+          <!-- Buttons -->
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="Text" Content="{loc:Translate Cancel}"
+                    Command="{Binding CancelTimeEntryOverlayCommand}" />
+            <Button Classes="Primary" Content="{loc:Translate Save}"
+                    Command="{Binding SaveTimeEntryCommand}" />
+          </StackPanel>
+
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- ==================== PauseEntry Edit Overlay ==================== -->
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            IsVisible="{Binding IsPauseOverlayVisible}"
+            Background="#80000000"
+            ZIndex="10">
+      <Border Classes="Card" Margin="16"
+              VerticalAlignment="Center" HorizontalAlignment="Stretch"
+              MaxWidth="450">
+        <StackPanel Spacing="16">
+
+          <!-- Titel -->
+          <TextBlock Text="{Binding PauseOverlayTitle}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+
+          <!-- Startzeit -->
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Translate StartTime}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+              <StackPanel Spacing="2">
+                <controls:WheelPicker Value="{Binding PauseStartHour}" Minimum="0" Maximum="23" FormatString="D2" />
+                <TextBlock Text="{loc:Translate HoursShort}" Classes="Caption" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+              <TextBlock Text=":" FontSize="28" FontWeight="Medium" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" />
+              <StackPanel Spacing="2">
+                <controls:WheelPicker Value="{Binding PauseStartMinute}" Minimum="0" Maximum="59" FormatString="D2" />
+                <TextBlock Text="{loc:Translate MinutesShort}" Classes="Caption" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Endzeit -->
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Translate EndTime}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+              <StackPanel Spacing="2">
+                <controls:WheelPicker Value="{Binding PauseEndHour}" Minimum="0" Maximum="23" FormatString="D2" />
+                <TextBlock Text="{loc:Translate HoursShort}" Classes="Caption" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+              <TextBlock Text=":" FontSize="28" FontWeight="Medium" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" />
+              <StackPanel Spacing="2">
+                <controls:WheelPicker Value="{Binding PauseEndMinute}" Minimum="0" Maximum="59" FormatString="D2" />
+                <TextBlock Text="{loc:Translate MinutesShort}" Classes="Caption" HorizontalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
+
+          <!-- Notiz -->
+          <TextBox Text="{Binding PauseNote, Mode=TwoWay}"
+                   Watermark="{loc:Translate NotePlaceholder}" />
+
+          <!-- Buttons -->
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="Text" Content="{loc:Translate Cancel}"
+                    Command="{Binding CancelPauseOverlayCommand}" />
+            <Button Classes="Primary" Content="{loc:Translate Save}"
+                    Command="{Binding SavePauseCommand}" />
+          </StackPanel>
+
+        </StackPanel>
+      </Border>
+    </Border>
 
   </Grid>
 

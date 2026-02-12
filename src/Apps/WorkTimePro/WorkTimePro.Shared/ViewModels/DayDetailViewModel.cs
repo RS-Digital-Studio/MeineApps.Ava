@@ -10,7 +10,7 @@ using WorkTimePro.Services;
 namespace WorkTimePro.ViewModels;
 
 /// <summary>
-/// ViewModel for day details
+/// ViewModel für Tagesdetails mit Bearbeitung von Zeiteinträgen und Pausen
 /// </summary>
 public partial class DayDetailViewModel : ObservableObject
 {
@@ -21,6 +21,10 @@ public partial class DayDetailViewModel : ObservableObject
 
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
+
+    // Tracking welcher Eintrag bearbeitet wird (null = neuer Eintrag)
+    private TimeEntry? _editingTimeEntry;
+    private PauseEntry? _editingPauseEntry;
 
     public DayDetailViewModel(
         IDatabaseService database,
@@ -90,6 +94,49 @@ public partial class DayDetailViewModel : ObservableObject
     [ObservableProperty]
     private bool _showAds = true;
 
+    // === TimeEntry Overlay Properties ===
+
+    [ObservableProperty]
+    private bool _isTimeEntryOverlayVisible;
+
+    [ObservableProperty]
+    private string _timeEntryOverlayTitle = "";
+
+    [ObservableProperty]
+    private int _editHour;
+
+    [ObservableProperty]
+    private int _editMinute;
+
+    [ObservableProperty]
+    private bool _editIsCheckIn = true;
+
+    [ObservableProperty]
+    private string _editNote = "";
+
+    // === PauseEntry Overlay Properties ===
+
+    [ObservableProperty]
+    private bool _isPauseOverlayVisible;
+
+    [ObservableProperty]
+    private string _pauseOverlayTitle = "";
+
+    [ObservableProperty]
+    private int _pauseStartHour;
+
+    [ObservableProperty]
+    private int _pauseStartMinute;
+
+    [ObservableProperty]
+    private int _pauseEndHour;
+
+    [ObservableProperty]
+    private int _pauseEndMinute;
+
+    [ObservableProperty]
+    private string _pauseNote = "";
+
     // Derived properties
     public bool HasWarnings => Warnings.Count > 0;
     public bool HasNoTimeEntries => TimeEntries.Count == 0;
@@ -140,14 +187,14 @@ public partial class DayDetailViewModel : ObservableObject
             StatusIcon = WorkDay.StatusIcon;
             IsLocked = WorkDay.IsLocked;
 
-            // Load entries
+            // Einträge laden
             var entries = await _database.GetTimeEntriesAsync(WorkDay.Id);
             TimeEntries = new ObservableCollection<TimeEntry>(entries);
 
             var pauses = await _database.GetPauseEntriesAsync(WorkDay.Id);
             PauseEntries = new ObservableCollection<PauseEntry>(pauses);
 
-            // Times
+            // Zeiten
             WorkTimeDisplay = WorkDay.ActualWorkDisplay;
             PauseTimeDisplay = FormatMinutes(WorkDay.ManualPauseMinutes);
             AutoPauseDisplay = FormatMinutes(WorkDay.AutoPauseMinutes);
@@ -155,7 +202,7 @@ public partial class DayDetailViewModel : ObservableObject
             BalanceColor = WorkDay.BalanceColor;
             HasAutoPause = WorkDay.HasAutoPause;
 
-            // Warnings
+            // Warnungen
             var warningList = await _calculation.CheckLegalComplianceAsync(WorkDay);
             Warnings = new ObservableCollection<string>(warningList);
 
@@ -164,7 +211,7 @@ public partial class DayDetailViewModel : ObservableObject
             OnPropertyChanged(nameof(HasNoPauseEntries));
             OnPropertyChanged(nameof(StatusIconKind));
 
-            // Premium status
+            // Premium Status
             ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
         }
         catch (Exception ex)
@@ -182,8 +229,6 @@ public partial class DayDetailViewModel : ObservableObject
     {
         if (WorkDay == null || IsLocked) return;
 
-        // TODO: implement platform-specific status picker dialog
-        // Default: cycle through common statuses
         WorkDay.Status = WorkDay.Status switch
         {
             DayStatus.WorkDay => DayStatus.HomeOffice,
@@ -198,49 +243,121 @@ public partial class DayDetailViewModel : ObservableObject
         await LoadDataAsync();
     }
 
+    // === TimeEntry Overlay Commands ===
+
     [RelayCommand]
-    private async Task AddEntryAsync()
+    private void AddEntry()
     {
         if (WorkDay == null || IsLocked) return;
 
-        // TODO: implement platform-specific time picker dialog
-        var defaultTime = SelectedDate == DateTime.Today
+        _editingTimeEntry = null;
+        TimeEntryOverlayTitle = AppStrings.AddEntry;
+
+        // Standardzeit: heute = jetzt, sonst 08:00
+        var defaultTime = SelectedDate.Date == DateTime.Today
             ? DateTime.Now
             : SelectedDate.Date.Add(new TimeSpan(8, 0, 0));
 
-        var entry = new TimeEntry
+        EditHour = defaultTime.Hour;
+        EditMinute = defaultTime.Minute;
+        EditIsCheckIn = true;
+        EditNote = "";
+        IsTimeEntryOverlayVisible = true;
+    }
+
+    [RelayCommand]
+    private void EditEntry(TimeEntry? entry)
+    {
+        if (entry == null || WorkDay == null || IsLocked) return;
+
+        _editingTimeEntry = entry;
+        TimeEntryOverlayTitle = AppStrings.EditEntry;
+
+        EditHour = entry.Timestamp.Hour;
+        EditMinute = entry.Timestamp.Minute;
+        EditIsCheckIn = entry.Type == EntryType.CheckIn;
+        EditNote = entry.Note ?? "";
+        IsTimeEntryOverlayVisible = true;
+    }
+
+    [RelayCommand]
+    private async Task SaveTimeEntryAsync()
+    {
+        if (WorkDay == null) return;
+
+        var newTimestamp = SelectedDate.Date.Add(new TimeSpan(EditHour, EditMinute, 0));
+        var newType = EditIsCheckIn ? EntryType.CheckIn : EntryType.CheckOut;
+
+        // Validierung: CheckIn/CheckOut-Reihenfolge prüfen
+        if (!ValidateTimeEntry(newTimestamp, newType, _editingTimeEntry?.Id))
+            return;
+
+        if (_editingTimeEntry != null)
         {
-            WorkDayId = WorkDay.Id,
-            Timestamp = defaultTime,
-            Type = EntryType.CheckIn,
-            IsManuallyEdited = true
-        };
+            // Bestehenden Eintrag bearbeiten
+            if (_editingTimeEntry.OriginalTimestamp == null)
+                _editingTimeEntry.OriginalTimestamp = _editingTimeEntry.Timestamp;
 
-        await _database.SaveTimeEntryAsync(entry);
+            _editingTimeEntry.Timestamp = newTimestamp;
+            _editingTimeEntry.Type = newType;
+            _editingTimeEntry.Note = string.IsNullOrWhiteSpace(EditNote) ? null : EditNote;
+            _editingTimeEntry.IsManuallyEdited = true;
+
+            await _database.SaveTimeEntryAsync(_editingTimeEntry);
+        }
+        else
+        {
+            // Neuen Eintrag erstellen
+            var entry = new TimeEntry
+            {
+                WorkDayId = WorkDay.Id,
+                Timestamp = newTimestamp,
+                Type = newType,
+                Note = string.IsNullOrWhiteSpace(EditNote) ? null : EditNote,
+                IsManuallyEdited = true
+            };
+
+            await _database.SaveTimeEntryAsync(entry);
+        }
+
+        IsTimeEntryOverlayVisible = false;
         await _calculation.RecalculateWorkDayAsync(WorkDay);
         await LoadDataAsync();
     }
 
     [RelayCommand]
-    private async Task EditEntryAsync(TimeEntry? entry)
+    private void CancelTimeEntryOverlay()
     {
-        if (entry == null || WorkDay == null || IsLocked) return;
-
-        // TODO: implement platform-specific time edit dialog
+        IsTimeEntryOverlayVisible = false;
     }
 
     [RelayCommand]
-    private async Task DeleteEntryAsync(TimeEntry? entry)
+    private void ToggleEntryType()
     {
-        if (entry == null || WorkDay == null || IsLocked) return;
+        EditIsCheckIn = !EditIsCheckIn;
+    }
 
-        await _database.DeleteTimeEntryAsync(entry.Id);
-        await _calculation.RecalculateWorkDayAsync(WorkDay);
-        await LoadDataAsync();
+    // === PauseEntry Overlay Commands ===
+
+    [RelayCommand]
+    private void AddPause()
+    {
+        if (WorkDay == null || IsLocked) return;
+
+        _editingPauseEntry = null;
+        PauseOverlayTitle = AppStrings.AddBreak;
+
+        // Standard: 12:00-12:30
+        PauseStartHour = 12;
+        PauseStartMinute = 0;
+        PauseEndHour = 12;
+        PauseEndMinute = 30;
+        PauseNote = "";
+        IsPauseOverlayVisible = true;
     }
 
     [RelayCommand]
-    private async Task EditPauseAsync(PauseEntry? pause)
+    private void EditPause(PauseEntry? pause)
     {
         if (pause == null || WorkDay == null || IsLocked) return;
 
@@ -250,7 +367,83 @@ public partial class DayDetailViewModel : ObservableObject
             return;
         }
 
-        // TODO: implement platform-specific pause edit dialog
+        _editingPauseEntry = pause;
+        PauseOverlayTitle = AppStrings.EditBreak;
+
+        PauseStartHour = pause.StartTime.Hour;
+        PauseStartMinute = pause.StartTime.Minute;
+        PauseEndHour = pause.EndTime?.Hour ?? pause.StartTime.Hour;
+        PauseEndMinute = pause.EndTime?.Minute ?? (pause.StartTime.Minute + 30) % 60;
+        PauseNote = pause.Note ?? "";
+        IsPauseOverlayVisible = true;
+    }
+
+    [RelayCommand]
+    private async Task SavePauseAsync()
+    {
+        if (WorkDay == null) return;
+
+        var startTime = SelectedDate.Date.Add(new TimeSpan(PauseStartHour, PauseStartMinute, 0));
+        var endTime = SelectedDate.Date.Add(new TimeSpan(PauseEndHour, PauseEndMinute, 0));
+
+        // Validierung: Endzeit nach Startzeit
+        if (endTime <= startTime)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, AppStrings.ValidationEndBeforeStart);
+            return;
+        }
+
+        // Validierung: Keine Überlappung mit bestehenden manuellen Pausen
+        if (!ValidatePauseEntry(startTime, endTime, _editingPauseEntry?.Id))
+            return;
+
+        if (_editingPauseEntry != null)
+        {
+            // Bestehende Pause bearbeiten
+            _editingPauseEntry.StartTime = startTime;
+            _editingPauseEntry.EndTime = endTime;
+            _editingPauseEntry.Note = string.IsNullOrWhiteSpace(PauseNote) ? null : PauseNote;
+
+            await _database.SavePauseEntryAsync(_editingPauseEntry);
+        }
+        else
+        {
+            // Neue Pause erstellen
+            var pause = new PauseEntry
+            {
+                WorkDayId = WorkDay.Id,
+                StartTime = startTime,
+                EndTime = endTime,
+                Type = PauseType.Manual,
+                IsAutoPause = false,
+                Note = string.IsNullOrWhiteSpace(PauseNote) ? null : PauseNote
+            };
+
+            await _database.SavePauseEntryAsync(pause);
+        }
+
+        IsPauseOverlayVisible = false;
+        await _calculation.RecalculatePauseTimeAsync(WorkDay);
+        await _calculation.RecalculateWorkDayAsync(WorkDay);
+        await LoadDataAsync();
+    }
+
+    [RelayCommand]
+    private void CancelPauseOverlay()
+    {
+        IsPauseOverlayVisible = false;
+    }
+
+    // === Bestehende Commands ===
+
+    [RelayCommand]
+    private async Task DeleteEntryAsync(TimeEntry? entry)
+    {
+        if (entry == null || WorkDay == null || IsLocked) return;
+
+        await _database.DeleteTimeEntryAsync(entry.Id);
+        await _calculation.RecalculateWorkDayAsync(WorkDay);
+        await LoadDataAsync();
     }
 
     [RelayCommand]
@@ -274,6 +467,63 @@ public partial class DayDetailViewModel : ObservableObject
     private void GoBack()
     {
         NavigationRequested?.Invoke("..");
+    }
+
+    // === Validierung ===
+
+    /// <summary>
+    /// Prüft ob ein TimeEntry konsistent ist (CheckIn/CheckOut-Reihenfolge)
+    /// </summary>
+    private bool ValidateTimeEntry(DateTime timestamp, EntryType type, int? excludeId)
+    {
+        // Alle Einträge sammeln, den bearbeiteten ausschließen
+        var allEntries = TimeEntries
+            .Where(e => e.Id != (excludeId ?? -1))
+            .Select(e => (Time: e.Timestamp, e.Type))
+            .Append((Time: timestamp, Type: type))
+            .OrderBy(e => e.Time)
+            .ToList();
+
+        // Prüfen: Einträge sollten alternierend sein (CheckIn, CheckOut, CheckIn, ...)
+        for (int i = 1; i < allEntries.Count; i++)
+        {
+            var prev = allEntries[i - 1];
+            var curr = allEntries[i];
+
+            // Gleiche Typen hintereinander → CheckIn vor CheckOut Reihenfolge verletzt
+            if (prev.Type == curr.Type)
+            {
+                MessageRequested?.Invoke(AppStrings.Error, AppStrings.ValidationCheckInOutOrder);
+                return false;
+            }
+        }
+
+        // Erster Eintrag sollte CheckIn sein
+        if (allEntries.Count > 0 && allEntries[0].Type == EntryType.CheckOut)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, AppStrings.ValidationCheckInOutOrder);
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Prüft ob eine Pause sich nicht mit bestehenden manuellen Pausen überschneidet
+    /// </summary>
+    private bool ValidatePauseEntry(DateTime startTime, DateTime endTime, int? excludeId)
+    {
+        var overlapping = PauseEntries
+            .Where(p => !p.IsAutoPause && p.Id != (excludeId ?? -1) && p.EndTime != null)
+            .Any(p => startTime < p.EndTime!.Value && endTime > p.StartTime);
+
+        if (overlapping)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, AppStrings.ValidationPauseOverlap);
+            return false;
+        }
+
+        return true;
     }
 
     // === Helper methods ===

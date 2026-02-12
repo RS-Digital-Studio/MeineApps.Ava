@@ -108,8 +108,9 @@ public partial class TimerViewModel : ObservableObject
             return;
         }
 
-        await _timerService.CreateTimerAsync(NewTimerName, duration);
+        var timer = await _timerService.CreateTimerAsync(NewTimerName, duration);
         HideCreateTimer();
+        await _timerService.StartTimerAsync(timer);
     }
 
     [RelayCommand]

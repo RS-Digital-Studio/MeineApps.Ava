@@ -2268,5 +2268,65 @@ namespace WorkTimePro.Resources.Strings {
                 return ResourceManager.GetString("ExportYearOverviewTitle", resourceCulture);
             }
         }
+
+        internal static string HoursShort {
+            get {
+                return ResourceManager.GetString("HoursShort", resourceCulture);
+            }
+        }
+
+        internal static string MinutesShort {
+            get {
+                return ResourceManager.GetString("MinutesShort", resourceCulture);
+            }
+        }
+
+        internal static string StartTime {
+            get {
+                return ResourceManager.GetString("StartTime", resourceCulture);
+            }
+        }
+
+        internal static string EndTime {
+            get {
+                return ResourceManager.GetString("EndTime", resourceCulture);
+            }
+        }
+
+        internal static string AddBreak {
+            get {
+                return ResourceManager.GetString("AddBreak", resourceCulture);
+            }
+        }
+
+        internal static string EntryType {
+            get {
+                return ResourceManager.GetString("EntryType", resourceCulture);
+            }
+        }
+
+        internal static string EditEntry {
+            get {
+                return ResourceManager.GetString("EditEntry", resourceCulture);
+            }
+        }
+
+        internal static string ValidationCheckInOutOrder {
+            get {
+                return ResourceManager.GetString("ValidationCheckInOutOrder", resourceCulture);
+            }
+        }
+
+        internal static string ValidationPauseOverlap {
+            get {
+                return ResourceManager.GetString("ValidationPauseOverlap", resourceCulture);
+            }
+        }
+
+        internal static string ValidationEndBeforeStart {
+            get {
+                return ResourceManager.GetString("ValidationEndBeforeStart", resourceCulture);
+            }
+        }
     }
 }

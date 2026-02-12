@@ -62,6 +62,11 @@
       <Color x:Key="OverlayColor">#80000000</Color>
       <Color x:Key="RippleColor">#2010B981</Color>
 
+      <!-- Gradient (für spezielle Hintergründe) -->
+      <Color x:Key="GradientStartColor">#064E3B</Color>
+      <Color x:Key="GradientMidColor">#022C22</Color>
+      <Color x:Key="GradientEndColor">#134E4A</Color>
+
       <!-- ═══════════════════════════════════════════════════════════════ -->
       <!-- BRUSHES                                                         -->
       <!-- ═══════════════════════════════════════════════════════════════ -->

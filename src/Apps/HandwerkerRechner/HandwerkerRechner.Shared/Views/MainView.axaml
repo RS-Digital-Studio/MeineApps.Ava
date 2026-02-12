@@ -440,14 +440,15 @@
               </Button>
 
               <!-- ========== Extended History Card ========== -->
-              <Button Background="Transparent" Padding="0"
+              <Button Background="Transparent" Padding="0" Height="NaN"
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                      VerticalContentAlignment="Stretch"
                       IsVisible="{Binding !IsPremium}"
                       Command="{Binding ShowExtendedHistoryAdCommand}">
-                <Border Classes="Card" CornerRadius="12" Padding="16">
+                <Border Classes="Card" CornerRadius="12" Padding="16,14">
                   <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Border Grid.Column="0" Width="40" Height="40"
-                            CornerRadius="20" Margin="0,0,12,0">
+                    <Border Grid.Column="0" Width="44" Height="44"
+                            CornerRadius="22" Margin="0,0,12,0">
                       <Border.Background>
                         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                           <GradientStop Color="#3B82F6" Offset="0" />
@@ -477,8 +478,8 @@
 
             </StackPanel>
 
-            <!-- Abstand unten (60dp fuer Ad-Banner Overlay) -->
-            <Border Height="60" />
+            <!-- Abstand unten (200dp fuer Ad-Banner Overlay + Scroll-Komfort) -->
+            <Border Height="200" />
 
           </StackPanel>
         </ScrollViewer>

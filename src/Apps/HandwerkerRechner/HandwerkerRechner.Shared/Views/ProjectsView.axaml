@@ -46,7 +46,7 @@
 
       <!-- Project List -->
       <ScrollViewer IsVisible="{Binding HasProjects}"
-                    Padding="0,0,0,60">
+                    Padding="0,0,0,200">
         <ItemsControl ItemsSource="{Binding Projects}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:Project">

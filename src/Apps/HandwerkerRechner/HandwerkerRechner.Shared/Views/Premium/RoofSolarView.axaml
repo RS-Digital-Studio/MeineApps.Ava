@@ -286,7 +286,7 @@
         </Panel>
 
         <!-- Bottom spacing -->
-        <Panel Height="16" />
+        <Panel Height="120" />
 
       </StackPanel>
     </ScrollViewer>

@@ -480,8 +480,8 @@
           </StackPanel>
         </Border>
 
-        <!-- Bottom Spacer (60dp fuer Ad-Banner Overlay) -->
-        <Border Height="60" />
+        <!-- Bottom Spacer -->
+        <Border Height="200" />
 
       </StackPanel>
     </ScrollViewer>

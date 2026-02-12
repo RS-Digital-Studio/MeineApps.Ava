@@ -1,13 +1,13 @@
 using Avalonia.Input;
 using BomberBlast.Models.Entities;
+using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using SkiaSharp;
 
 namespace BomberBlast.Input;
 
 /// <summary>
-/// Manages input handlers and switches between input methods.
-/// Uses IPreferencesService instead of MAUI Preferences.
+/// Verwaltet Input-Handler und wechselt zwischen Input-Methoden.
 /// </summary>
 public class InputManager
 {
@@ -30,6 +30,20 @@ public class InputManager
     public Direction MovementDirection => _activeHandler.MovementDirection;
     public bool BombPressed => _activeHandler.BombPressed;
     public bool DetonatePressed => _activeHandler.DetonatePressed;
+
+    /// <summary>
+    /// Detonator-Button auf Touch-Handlern anzeigen
+    /// </summary>
+    public bool HasDetonator
+    {
+        set
+        {
+            if (_handlers.TryGetValue(InputType.FloatingJoystick, out var fj))
+                ((FloatingJoystick)fj).HasDetonator = value;
+            if (_handlers.TryGetValue(InputType.ClassicDPad, out var dp))
+                ((DPadHandler)dp).HasDetonator = value;
+        }
+    }
 
     public float JoystickSize
     {
@@ -57,21 +71,21 @@ public class InputManager
         set => _hapticEnabled = value;
     }
 
-    public InputManager(IPreferencesService preferences)
+    public InputManager(IPreferencesService preferences, ILocalizationService? localizationService = null)
     {
         _preferences = preferences;
 
         _handlers = new Dictionary<InputType, IInputHandler>
         {
             { InputType.FloatingJoystick, new FloatingJoystick() },
-            { InputType.SwipeGesture, new SwipeGestureHandler() },
+            { InputType.SwipeGesture, new SwipeGestureHandler(localizationService) },
             { InputType.ClassicDPad, new DPadHandler() },
             { InputType.Keyboard, new KeyboardHandler() }
         };
 
         LoadSettings();
 
-        // Auto-detect desktop: default to keyboard if not on Android
+        // Auto-detect Desktop: Standard Keyboard wenn nicht Android
         if (!OperatingSystem.IsAndroid() && _currentType != InputType.Keyboard)
         {
             _currentType = InputType.Keyboard;

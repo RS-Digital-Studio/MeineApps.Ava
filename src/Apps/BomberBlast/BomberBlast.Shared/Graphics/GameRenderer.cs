@@ -1,3 +1,4 @@
+using BomberBlast.Models;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
 using BomberBlast.Services;
@@ -13,6 +14,7 @@ public class GameRenderer : IDisposable
     private bool _disposed;
     private readonly SpriteSheet _spriteSheet;
     private readonly IGameStyleService _styleService;
+    private readonly ICustomizationService _customizationService;
 
     // Rendering settings
     private float _scale = 1f;
@@ -204,18 +206,27 @@ public class GameRenderer : IDisposable
     // Gepoolte Liste fuer aktive PowerUps im HUD (vermeidet Allokation pro Frame)
     private readonly List<(string label, SKColor color)> _activePowers = new(6);
 
-    // Gecachter INV-String (wird nur bei Aenderung des Timer-Werts neu erstellt)
+    // Gecachte HUD-Strings (werden nur bei Aenderung neu erstellt)
     private int _lastInvTimerValue = -1;
     private string _lastInvString = "";
+    private int _lastTimeValue = -1;
+    private string _lastTimeString = "";
+    private int _lastScoreValue = -1;
+    private string _lastScoreString = "";
+    private int _lastBombsValue = -1;
+    private string _lastBombsString = "";
+    private int _lastFireValue = -1;
+    private string _lastFireString = "";
 
     public float Scale => _scale;
     public float OffsetX => _offsetX;
     public float OffsetY => _offsetY;
 
-    public GameRenderer(SpriteSheet spriteSheet, IGameStyleService styleService)
+    public GameRenderer(SpriteSheet spriteSheet, IGameStyleService styleService, ICustomizationService customizationService)
     {
         _spriteSheet = spriteSheet;
         _styleService = styleService;
+        _customizationService = customizationService;
         _palette = _styleService.CurrentStyle == GameVisualStyle.Neon ? NeonPalette : ClassicPalette;
 
         _styleService.StyleChanged += OnStyleChanged;
@@ -679,11 +690,31 @@ public class GameRenderer : IDisposable
 
         float bodyW = cs * 0.55f;
         float bodyH = cs * 0.65f;
-        float bx = player.X - bodyW / 2f;
-        float by = player.Y - bodyH / 2f;
 
-        // Neon aura
-        if (isNeon && _palette.PlayerAura.Alpha > 0)
+        // Prozedurale Walk-Animation: Wippen wenn in Bewegung
+        float walkBob = 0f;
+        if (player.IsMoving)
+        {
+            walkBob = MathF.Sin(_globalTimer * 14f) * 1.5f;
+        }
+
+        float bx = player.X - bodyW / 2f;
+        float by = player.Y - bodyH / 2f + walkBob;
+
+        // Skin-Farben bestimmen
+        var skin = _customizationService.PlayerSkin;
+        var skinBody = skin.Id != "default" ? skin.PrimaryColor : _palette.PlayerBody;
+        var skinHelm = skin.Id != "default" ? skin.SecondaryColor : _palette.PlayerHelm;
+
+        // Skin-Glow oder Neon-Aura
+        if (skin.GlowColor.HasValue)
+        {
+            _glowPaint.Color = skin.GlowColor.Value;
+            _glowPaint.MaskFilter = _mediumGlow;
+            canvas.DrawRoundRect(bx - 3, by - 3, bodyW + 6, bodyH + 6, 8, 8, _glowPaint);
+            _glowPaint.MaskFilter = null;
+        }
+        else if (isNeon && _palette.PlayerAura.Alpha > 0)
         {
             _glowPaint.Color = _palette.PlayerAura;
             _glowPaint.MaskFilter = _mediumGlow;
@@ -692,16 +723,16 @@ public class GameRenderer : IDisposable
         }
 
         // Body (rounded rect)
-        _fillPaint.Color = _palette.PlayerBody;
+        _fillPaint.Color = skinBody;
         _fillPaint.MaskFilter = null;
         canvas.DrawRoundRect(bx, by, bodyW, bodyH, 6, 6, _fillPaint);
 
         // Helm/cap (semicircle on top)
-        _fillPaint.Color = _palette.PlayerHelm;
+        _fillPaint.Color = skinHelm;
         float helmR = bodyW * 0.45f;
         canvas.DrawCircle(player.X, by + 2, helmR, _fillPaint);
         // Cut off bottom half of helm circle by drawing body color rect over it
-        _fillPaint.Color = _palette.PlayerBody;
+        _fillPaint.Color = skinBody;
         canvas.DrawRect(bx, by + 2, bodyW, helmR, _fillPaint);
 
         // Eyes (white circles with pupils that follow facing direction)
@@ -754,8 +785,18 @@ public class GameRenderer : IDisposable
         var bodyColor = new SKColor(r, g, b);
         float bodyW = cs * 0.6f;
         float bodyH = cs * 0.65f;
-        float bx = enemy.X - bodyW / 2f;
-        float by = enemy.Y - bodyH / 2f;
+
+        // Wobble-Effekt: Leichtes Pulsieren wenn in Bewegung
+        float wobbleScale = 1f;
+        float wobbleY = 0f;
+        if (enemy.IsMoving)
+        {
+            wobbleScale = 1f + MathF.Sin(_globalTimer * 12f + enemy.X * 0.1f) * 0.04f;
+            wobbleY = MathF.Sin(_globalTimer * 10f + enemy.Y * 0.1f) * 1.2f;
+        }
+
+        float bx = enemy.X - bodyW * wobbleScale / 2f;
+        float by = enemy.Y - bodyH / 2f + wobbleY;
 
         // Neon aura (in enemy's color)
         if (isNeon)
@@ -766,10 +807,10 @@ public class GameRenderer : IDisposable
             _glowPaint.MaskFilter = null;
         }
 
-        // Oval body
+        // Oval body (mit Wobble-Skalierung)
         _fillPaint.Color = bodyColor;
         _fillPaint.MaskFilter = null;
-        canvas.DrawOval(enemy.X, enemy.Y, bodyW * 0.45f, bodyH * 0.45f, _fillPaint);
+        canvas.DrawOval(enemy.X, enemy.Y + wobbleY, bodyW * 0.45f * wobbleScale, bodyH * 0.45f, _fillPaint);
 
         // Angry eyes (slightly angled/slanted)
         float eyeY = enemy.Y - bodyH * 0.08f;
@@ -1017,7 +1058,13 @@ public class GameRenderer : IDisposable
         bool timeWarning = remainingTime <= 30;
         _textPaint.Color = timeWarning ? _palette.HudTimeWarning : _palette.HudText;
         _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-        canvas.DrawText($"{(int)remainingTime:D3}", cx, cy, SKTextAlign.Center, _hudFontLarge, _textPaint);
+        int timeInt = (int)remainingTime;
+        if (timeInt != _lastTimeValue)
+        {
+            _lastTimeValue = timeInt;
+            _lastTimeString = $"{timeInt:D3}";
+        }
+        canvas.DrawText(_lastTimeString, cx, cy, SKTextAlign.Center, _hudFontLarge, _textPaint);
         _textPaint.MaskFilter = null;
         cy += 32;
 
@@ -1035,7 +1082,12 @@ public class GameRenderer : IDisposable
 
         _textPaint.Color = _palette.HudAccent;
         _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-        canvas.DrawText($"{score:D6}", cx, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
+        if (score != _lastScoreValue)
+        {
+            _lastScoreValue = score;
+            _lastScoreString = $"{score:D6}";
+        }
+        canvas.DrawText(_lastScoreString, cx, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
         _textPaint.MaskFilter = null;
         cy += 28;
 
@@ -1072,10 +1124,20 @@ public class GameRenderer : IDisposable
 
             _textPaint.Color = _palette.HudText;
             _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-            canvas.DrawText($"{player.MaxBombs}", cx - 20, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
+            if (player.MaxBombs != _lastBombsValue)
+            {
+                _lastBombsValue = player.MaxBombs;
+                _lastBombsString = $"{player.MaxBombs}";
+            }
+            canvas.DrawText(_lastBombsString, cx - 20, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
 
             _textPaint.Color = new SKColor(255, 120, 40);
-            canvas.DrawText($"{player.FireRange}", cx + 20, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
+            if (player.FireRange != _lastFireValue)
+            {
+                _lastFireValue = player.FireRange;
+                _lastFireString = $"{player.FireRange}";
+            }
+            canvas.DrawText(_lastFireString, cx + 20, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
             _textPaint.MaskFilter = null;
 
             // Mini-Bomben-Icon unter der Zahl

@@ -1,4 +1,5 @@
 using BomberBlast.Models.Entities;
+using MeineApps.Core.Ava.Localization;
 using SkiaSharp;
 
 namespace BomberBlast.Input;
@@ -26,14 +27,47 @@ public class SwipeGestureHandler : IInputHandler, IDisposable
     private bool _bombPressed;
     private bool _bombConsumed;
 
-    // Gecachte SKFont/SKPaint (einmalig erstellt, vermeidet per-Frame Allokationen)
+    // Gecachte SKFont/SKPaint/SKPath (einmalig erstellt, vermeidet per-Frame Allokationen)
     private readonly SKFont _hintFont = new() { Size = 16 };
     private readonly SKPaint _hintTextPaint = new() { IsAntialias = true };
+    private readonly SKPaint _linePaint = new()
+    {
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 4,
+        IsAntialias = true,
+        StrokeCap = SKStrokeCap.Round
+    };
+    private readonly SKPath _arrowPath = new();
+
+    // Lokalisierter Hinweis-Text
+    private readonly ILocalizationService? _localizationService;
+    private string? _cachedHintText;
 
     public Direction MovementDirection => _currentDirection;
     public bool BombPressed => _bombPressed && !_bombConsumed;
     public bool DetonatePressed => false;
     public bool IsActive => _isTouching;
+
+    public SwipeGestureHandler(ILocalizationService? localizationService = null)
+    {
+        _localizationService = localizationService;
+    }
+
+    /// <summary>Hinweis-Text aktualisieren bei Sprachwechsel</summary>
+    public void UpdateLocalizedTexts()
+    {
+        _cachedHintText = null;
+    }
+
+    private string GetHintText()
+    {
+        if (_cachedHintText == null)
+        {
+            _cachedHintText = _localizationService?.GetString("SwipeHint")
+                ?? "Swipe to move, Tap to bomb";
+        }
+        return _cachedHintText;
+    }
 
     public void OnTouchStart(float x, float y, float screenWidth, float screenHeight)
     {
@@ -53,32 +87,22 @@ public class SwipeGestureHandler : IInputHandler, IDisposable
         _currentX = x;
         _currentY = y;
 
-        // Calculate swipe direction
         float dx = _currentX - _startX;
         float dy = _currentY - _startY;
         float distance = MathF.Sqrt(dx * dx + dy * dy);
 
         if (distance >= MIN_SWIPE_DISTANCE)
         {
-            // Determine direction from angle
             float angle = MathF.Atan2(dy, dx);
 
             if (angle >= -MathF.PI / 4 && angle < MathF.PI / 4)
-            {
                 _currentDirection = Direction.Right;
-            }
             else if (angle >= MathF.PI / 4 && angle < 3 * MathF.PI / 4)
-            {
                 _currentDirection = Direction.Down;
-            }
             else if (angle >= -3 * MathF.PI / 4 && angle < -MathF.PI / 4)
-            {
                 _currentDirection = Direction.Up;
-            }
             else
-            {
                 _currentDirection = Direction.Left;
-            }
         }
     }
 
@@ -91,7 +115,7 @@ public class SwipeGestureHandler : IInputHandler, IDisposable
         float dy = _currentY - _startY;
         float distance = MathF.Sqrt(dx * dx + dy * dy);
 
-        // Check for tap (quick touch, small movement = bomb)
+        // Tap erkennen (kurz + wenig Bewegung = Bombe)
         if (_touchTime <= TAP_MAX_TIME && distance <= TAP_MAX_DISTANCE)
         {
             _bombPressed = true;
@@ -99,25 +123,17 @@ public class SwipeGestureHandler : IInputHandler, IDisposable
         }
 
         _isTouching = false;
-        // Keep current direction until next touch
     }
 
     public void Update(float deltaTime)
     {
         if (_isTouching)
-        {
             _touchTime += deltaTime;
-        }
 
-        // Consume bomb press
         if (_bombConsumed)
-        {
             _bombPressed = false;
-        }
         if (_bombPressed)
-        {
             _bombConsumed = true;
-        }
     }
 
     public void Reset()
@@ -130,7 +146,7 @@ public class SwipeGestureHandler : IInputHandler, IDisposable
 
     public void Render(SKCanvas canvas, float screenWidth, float screenHeight)
     {
-        // Show swipe indicator if touching
+        // Wisch-Indikator zeichnen
         if (_isTouching)
         {
             float dx = _currentX - _startX;
@@ -139,39 +155,31 @@ public class SwipeGestureHandler : IInputHandler, IDisposable
 
             if (distance > 10)
             {
-                using var linePaint = new SKPaint
-                {
-                    Color = new SKColor(255, 255, 255, 128),
-                    Style = SKPaintStyle.Stroke,
-                    StrokeWidth = 4,
-                    IsAntialias = true,
-                    StrokeCap = SKStrokeCap.Round
-                };
+                _linePaint.Color = new SKColor(255, 255, 255, 128);
+                canvas.DrawLine(_startX, _startY, _currentX, _currentY, _linePaint);
 
-                canvas.DrawLine(_startX, _startY, _currentX, _currentY, linePaint);
-
-                // Arrow head
+                // Pfeilspitze
                 float angle = MathF.Atan2(dy, dx);
                 float arrowSize = 15;
                 float arrowAngle = MathF.PI / 6;
 
-                var arrowPath = new SKPath();
-                arrowPath.MoveTo(_currentX, _currentY);
-                arrowPath.LineTo(
+                _arrowPath.Reset();
+                _arrowPath.MoveTo(_currentX, _currentY);
+                _arrowPath.LineTo(
                     _currentX - arrowSize * MathF.Cos(angle - arrowAngle),
                     _currentY - arrowSize * MathF.Sin(angle - arrowAngle));
-                arrowPath.MoveTo(_currentX, _currentY);
-                arrowPath.LineTo(
+                _arrowPath.MoveTo(_currentX, _currentY);
+                _arrowPath.LineTo(
                     _currentX - arrowSize * MathF.Cos(angle + arrowAngle),
                     _currentY - arrowSize * MathF.Sin(angle + arrowAngle));
 
-                canvas.DrawPath(arrowPath, linePaint);
+                canvas.DrawPath(_arrowPath, _linePaint);
             }
         }
 
-        // Hinweis-Text (gecachte Font/Paint, englisch = Gaming-Konvention)
+        // Hinweis-Text (lokalisiert, gecachte Font/Paint)
         _hintTextPaint.Color = new SKColor(255, 255, 255, 100);
-        canvas.DrawText("Swipe to move, Tap to bomb",
+        canvas.DrawText(GetHintText(),
             screenWidth / 2, screenHeight - 14, SKTextAlign.Center, _hintFont, _hintTextPaint);
     }
 
@@ -179,5 +187,7 @@ public class SwipeGestureHandler : IInputHandler, IDisposable
     {
         _hintFont.Dispose();
         _hintTextPaint.Dispose();
+        _linePaint.Dispose();
+        _arrowPath.Dispose();
     }
 }

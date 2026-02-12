@@ -106,8 +106,17 @@ public class ProgressService : IProgressService
         if (score == 0)
             return 0;
 
-        // Stern-Schwellwerte (skaliert nach Level-Schwierigkeit)
-        int baseScore = 1000 + level * 500;
+        // Stern-Schwellwerte: Level-abhaengige baseScore-Skalierung (fairer)
+        // Fruehere Level haben niedrigere Schwellwerte, spaetere hoehere
+        int world = GetWorldForLevel(level);
+        int baseScore = world switch
+        {
+            1 => 800 + level * 200,   // Welt 1: 1000-2800
+            2 => 1500 + level * 300,  // Welt 2: 4800-7500
+            3 => 2500 + level * 400,  // Welt 3: 10500-14500
+            4 => 4000 + level * 500,  // Welt 4: 19500-24500
+            _ => 6000 + level * 600   // Welt 5: 30600-36000
+        };
 
         if (score >= baseScore * 3)
             return 3;
@@ -119,6 +128,9 @@ public class ProgressService : IProgressService
         // Abgeschlossene Level bekommen mindestens 1 Stern
         return 1;
     }
+
+    /// <summary>Hoechstes abgeschlossenes Level zurueckgeben</summary>
+    public int GetHighestCompletedLevel() => _data.HighestCompleted;
 
     public void ResetProgress()
     {

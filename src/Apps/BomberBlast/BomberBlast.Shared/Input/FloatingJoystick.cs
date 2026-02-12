@@ -4,35 +4,55 @@ using SkiaSharp;
 namespace BomberBlast.Input;
 
 /// <summary>
-/// Floating joystick that appears where the player touches
+/// Floating Joystick der erscheint wo der Spieler tippt
 /// </summary>
-public class FloatingJoystick : IInputHandler
+public class FloatingJoystick : IInputHandler, IDisposable
 {
     public string Name => "Floating Joystick";
 
-    // Joystick state
+    // Joystick-Zustand
     private bool _isPressed;
-    private float _baseX, _baseY;      // Center of joystick
-    private float _stickX, _stickY;    // Current stick position
-    // Bomb button state
+    private float _baseX, _baseY;      // Mittelpunkt des Joysticks
+    private float _stickX, _stickY;    // Aktuelle Stick-Position
+    // Bomb-Button Zustand
     private bool _bombPressed;
     private bool _bombConsumed;
     private float _bombButtonX, _bombButtonY;
     private bool _bombButtonPressed;
+    // Detonator-Button Zustand
+    private float _detonatorButtonX, _detonatorButtonY;
+    private bool _detonatorButtonPressed;
+    private bool _detonatePressed;
+    private bool _detonateConsumed;
 
-    // Configuration
+    // Konfiguration
     private float _joystickRadius = 60f;
-    private float _deadZone = 0.08f;  // Reduced from 0.2 for more responsive controls
+    private float _deadZone = 0.08f;
     private float _bombButtonRadius = 50f;
+    private float _detonatorButtonRadius = 40f;
     private float _opacity = 0.7f;
 
-    // Movement
+    // Bewegung
     private Direction _currentDirection = Direction.None;
+
+    // Gecachte SKPaint/SKPath (einmalig erstellt, vermeidet per-Frame Allokationen)
+    private readonly SKPaint _basePaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
+    private readonly SKPaint _borderPaint = new() { Style = SKPaintStyle.Stroke, StrokeWidth = 3, IsAntialias = true };
+    private readonly SKPaint _stickPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
+    private readonly SKPaint _bombBgPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
+    private readonly SKPaint _bombPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
+    private readonly SKPaint _fusePaint = new() { Style = SKPaintStyle.Stroke, StrokeWidth = 3, IsAntialias = true };
+    private readonly SKPath _fusePath = new();
+    private readonly SKPaint _detonatorBgPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
+    private readonly SKPaint _detonatorIconPaint = new() { Style = SKPaintStyle.Stroke, StrokeWidth = 2.5f, IsAntialias = true };
 
     public Direction MovementDirection => _currentDirection;
     public bool BombPressed => _bombPressed && !_bombConsumed;
-    public bool DetonatePressed => false;
+    public bool DetonatePressed => _detonatePressed && !_detonateConsumed;
     public bool IsActive => _isPressed;
+
+    /// <summary>Ob der Detonator-Button angezeigt wird</summary>
+    public bool HasDetonator { get; set; }
 
     public float JoystickSize
     {
@@ -48,9 +68,23 @@ public class FloatingJoystick : IInputHandler
 
     public void OnTouchStart(float x, float y, float screenWidth, float screenHeight)
     {
-        // Check if touching bomb button (right side of screen)
         UpdateBombButtonPosition(screenWidth, screenHeight);
 
+        // Detonator-Button pruefen (ueber dem Bomb-Button)
+        if (HasDetonator)
+        {
+            float ddx = x - _detonatorButtonX;
+            float ddy = y - _detonatorButtonY;
+            if (ddx * ddx + ddy * ddy <= _detonatorButtonRadius * _detonatorButtonRadius * 1.5f)
+            {
+                _detonatorButtonPressed = true;
+                _detonatePressed = true;
+                _detonateConsumed = false;
+                return;
+            }
+        }
+
+        // Bomb-Button pruefen (rechte Seite)
         float dx = x - _bombButtonX;
         float dy = y - _bombButtonY;
         if (dx * dx + dy * dy <= _bombButtonRadius * _bombButtonRadius * 1.5f)
@@ -61,7 +95,7 @@ public class FloatingJoystick : IInputHandler
             return;
         }
 
-        // Left half of screen - joystick
+        // Linke Haelfte - Joystick
         if (x < screenWidth * 0.6f)
         {
             _isPressed = true;
@@ -81,7 +115,7 @@ public class FloatingJoystick : IInputHandler
         _stickX = x;
         _stickY = y;
 
-        // Clamp stick to joystick radius
+        // Stick auf Joystick-Radius begrenzen
         float dx = _stickX - _baseX;
         float dy = _stickY - _baseY;
         float distance = MathF.Sqrt(dx * dx + dy * dy);
@@ -103,19 +137,22 @@ public class FloatingJoystick : IInputHandler
         _stickY = _baseY;
         _currentDirection = Direction.None;
         _bombButtonPressed = false;
+        _detonatorButtonPressed = false;
     }
 
     public void Update(float deltaTime)
     {
-        // Consume bomb press after frame
+        // Bomb-Press nach Frame konsumieren
         if (_bombConsumed)
-        {
             _bombPressed = false;
-        }
         if (_bombPressed)
-        {
             _bombConsumed = true;
-        }
+
+        // Detonate-Press nach Frame konsumieren
+        if (_detonateConsumed)
+            _detonatePressed = false;
+        if (_detonatePressed)
+            _detonateConsumed = true;
     }
 
     public void Reset()
@@ -125,6 +162,9 @@ public class FloatingJoystick : IInputHandler
         _bombPressed = false;
         _bombConsumed = false;
         _bombButtonPressed = false;
+        _detonatePressed = false;
+        _detonateConsumed = false;
+        _detonatorButtonPressed = false;
     }
 
     private void UpdateDirection()
@@ -133,39 +173,31 @@ public class FloatingJoystick : IInputHandler
         float dy = _stickY - _baseY;
         float distance = MathF.Sqrt(dx * dx + dy * dy);
 
-        // Apply dead zone
         if (distance < _joystickRadius * _deadZone)
         {
             _currentDirection = Direction.None;
             return;
         }
 
-        // Determine primary direction (4-way, not 8-way)
         float angle = MathF.Atan2(dy, dx);
 
-        // Convert angle to direction (-PI to PI)
         if (angle >= -MathF.PI / 4 && angle < MathF.PI / 4)
-        {
             _currentDirection = Direction.Right;
-        }
         else if (angle >= MathF.PI / 4 && angle < 3 * MathF.PI / 4)
-        {
             _currentDirection = Direction.Down;
-        }
         else if (angle >= -3 * MathF.PI / 4 && angle < -MathF.PI / 4)
-        {
             _currentDirection = Direction.Up;
-        }
         else
-        {
             _currentDirection = Direction.Left;
-        }
     }
 
     private void UpdateBombButtonPosition(float screenWidth, float screenHeight)
     {
         _bombButtonX = screenWidth - _bombButtonRadius - 30;
         _bombButtonY = screenHeight - _bombButtonRadius - 20;
+        // Detonator-Button ueber dem Bomb-Button
+        _detonatorButtonX = _bombButtonX;
+        _detonatorButtonY = _bombButtonY - _bombButtonRadius - _detonatorButtonRadius - 15;
     }
 
     public void Render(SKCanvas canvas, float screenWidth, float screenHeight)
@@ -173,75 +205,42 @@ public class FloatingJoystick : IInputHandler
         UpdateBombButtonPosition(screenWidth, screenHeight);
         byte alpha = (byte)(_opacity * 255);
 
-        // Draw joystick if pressed
+        // Joystick zeichnen wenn gedrueckt
         if (_isPressed)
         {
-            // Base circle
-            using var basePaint = new SKPaint
-            {
-                Color = new SKColor(100, 100, 100, (byte)(alpha * 0.5f)),
-                Style = SKPaintStyle.Fill,
-                IsAntialias = true
-            };
-            canvas.DrawCircle(_baseX, _baseY, _joystickRadius, basePaint);
+            _basePaint.Color = new SKColor(100, 100, 100, (byte)(alpha * 0.5f));
+            canvas.DrawCircle(_baseX, _baseY, _joystickRadius, _basePaint);
 
-            // Base border
-            using var borderPaint = new SKPaint
-            {
-                Color = new SKColor(255, 255, 255, alpha),
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 3,
-                IsAntialias = true
-            };
-            canvas.DrawCircle(_baseX, _baseY, _joystickRadius, borderPaint);
+            _borderPaint.Color = new SKColor(255, 255, 255, alpha);
+            canvas.DrawCircle(_baseX, _baseY, _joystickRadius, _borderPaint);
 
-            // Stick
-            using var stickPaint = new SKPaint
-            {
-                Color = new SKColor(255, 255, 255, alpha),
-                Style = SKPaintStyle.Fill,
-                IsAntialias = true
-            };
-            canvas.DrawCircle(_stickX, _stickY, _joystickRadius * 0.4f, stickPaint);
+            _stickPaint.Color = new SKColor(255, 255, 255, alpha);
+            canvas.DrawCircle(_stickX, _stickY, _joystickRadius * 0.4f, _stickPaint);
         }
 
-        // Draw bomb button
-        using var bombBgPaint = new SKPaint
-        {
-            Color = _bombButtonPressed
-                ? new SKColor(255, 100, 100, alpha)
-                : new SKColor(255, 50, 50, alpha),
-            Style = SKPaintStyle.Fill,
-            IsAntialias = true
-        };
-        canvas.DrawCircle(_bombButtonX, _bombButtonY, _bombButtonRadius, bombBgPaint);
+        // Bomb-Button zeichnen
+        BombButtonRenderer.RenderBombButton(canvas, _bombButtonX, _bombButtonY, _bombButtonRadius,
+            _bombButtonPressed, alpha, _bombBgPaint, _bombPaint, _fusePaint, _fusePath);
 
-        // Bomb icon (simple bomb shape)
-        using var bombPaint = new SKPaint
+        // Detonator-Button zeichnen (nur wenn Detonator aktiv)
+        if (HasDetonator)
         {
-            Color = new SKColor(0, 0, 0, alpha),
-            Style = SKPaintStyle.Fill,
-            IsAntialias = true
-        };
-        float bombSize = _bombButtonRadius * 0.5f;
-        canvas.DrawCircle(_bombButtonX, _bombButtonY + bombSize * 0.1f, bombSize, bombPaint);
+            BombButtonRenderer.RenderDetonatorButton(canvas, _detonatorButtonX, _detonatorButtonY,
+                _detonatorButtonRadius, _detonatorButtonPressed, alpha,
+                _detonatorBgPaint, _detonatorIconPaint);
+        }
+    }
 
-        // Fuse
-        using var fusePaint = new SKPaint
-        {
-            Color = new SKColor(255, 200, 0, alpha),
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 3,
-            IsAntialias = true
-        };
-        using var fusePath = new SKPath();
-        fusePath.MoveTo(_bombButtonX, _bombButtonY - bombSize);
-        fusePath.QuadTo(
-            _bombButtonX + bombSize * 0.3f, _bombButtonY - bombSize - 10,
-            _bombButtonX + bombSize * 0.5f, _bombButtonY - bombSize - 5);
-        canvas.DrawPath(fusePath, fusePaint);
-
-        // Spark
-        canvas.DrawCircle(_bombButtonX + bombSize * 0.5f, _bombButtonY - bombSize - 5, 4, bombPaint);
+    public void Dispose()
+    {
+        _basePaint.Dispose();
+        _borderPaint.Dispose();
+        _stickPaint.Dispose();
+        _bombBgPaint.Dispose();
+        _bombPaint.Dispose();
+        _fusePaint.Dispose();
+        _fusePath.Dispose();
+        _detonatorBgPaint.Dispose();
+        _detonatorIconPaint.Dispose();
     }
 }

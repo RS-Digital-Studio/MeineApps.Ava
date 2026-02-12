@@ -292,6 +292,13 @@ public class WorkerService : IWorkerService
         // Fatigue increases while working
         worker.Fatigue = Math.Min(100m, worker.Fatigue + worker.FatiguePerHour * deltaHours);
 
+        // Auto-Rest bei 100% Erschöpfung
+        if (worker.Fatigue >= 100m)
+        {
+            worker.IsResting = true;
+            worker.RestStartedAt = DateTime.UtcNow;
+        }
+
         // Small XP gain from working (10% of training rate)
         decimal xpGain = worker.TrainingXpPerHour * 0.1m * deltaHours * worker.Personality.GetXpMultiplier();
         worker.ExperienceXp += Math.Max(1, (int)xpGain);

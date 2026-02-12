@@ -93,6 +93,8 @@ namespace HandwerkerImperium.Resources.Strings {
 
         public static string Orders => ResourceManager.GetString("Orders", resourceCulture) ?? "";
 
+        public static string OrdersCompleted => ResourceManager.GetString("OrdersCompleted", resourceCulture) ?? "";
+
         public static string NewOrder => ResourceManager.GetString("NewOrder", resourceCulture) ?? "";
 
         public static string Start => ResourceManager.GetString("Start", resourceCulture) ?? "";
@@ -1050,5 +1052,30 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string ShopCashHugeDesc => ResourceManager.GetString("ShopCashHugeDesc", resourceCulture) ?? "";
         public static string ShopCashMegaName => ResourceManager.GetString("ShopCashMegaName", resourceCulture) ?? "";
         public static string ShopCashMegaDesc => ResourceManager.GetString("ShopCashMegaDesc", resourceCulture) ?? "";
+
+        // Workshop-Unlock
+        public static string WorkshopLocked => ResourceManager.GetString("WorkshopLocked", resourceCulture) ?? "Workshop Locked";
+        public static string RequiresLevel => ResourceManager.GetString("RequiresLevel", resourceCulture) ?? "Requires";
+        public static string UnlockWorkshop => ResourceManager.GetString("UnlockWorkshop", resourceCulture) ?? "Unlock Workshop";
+        public static string UnlockWorkshopCost => ResourceManager.GetString("UnlockWorkshopCost", resourceCulture) ?? "Unlock cost";
+        public static string WatchAdForHalfPrice => ResourceManager.GetString("WatchAdForHalfPrice", resourceCulture) ?? "With video ad (50% off)";
+        public static string WatchAdForDiscount => ResourceManager.GetString("WatchAdForDiscount", resourceCulture) ?? "Watch Ad (-50%)";
+        public static string BuyFull => ResourceManager.GetString("BuyFull", resourceCulture) ?? "Buy";
+        public static string WorkshopUnlocked => ResourceManager.GetString("WorkshopUnlocked", resourceCulture) ?? "Workshop Unlocked!";
+        public static string Required => ResourceManager.GetString("Required", resourceCulture) ?? "Required";
+        public static string TotalIncome => ResourceManager.GetString("TotalIncome", resourceCulture) ?? "Total Income";
+
+        // Kosten-Anzeige in WorkshopView
+        public static string GrossIncome => ResourceManager.GetString("GrossIncome", resourceCulture) ?? "Gross Income";
+        public static string NetIncome => ResourceManager.GetString("NetIncome", resourceCulture) ?? "Net Income";
+        public static string RunningCosts => ResourceManager.GetString("RunningCosts", resourceCulture) ?? "Running Costs";
+        public static string Rent => ResourceManager.GetString("Rent", resourceCulture) ?? "Rent";
+        public static string MaterialCosts => ResourceManager.GetString("MaterialCosts", resourceCulture) ?? "Material Costs";
+        public static string Wages => ResourceManager.GetString("Wages", resourceCulture) ?? "Wages";
+
+        // Worker Training/Rest Info
+        public static string TrainingDuration => ResourceManager.GetString("TrainingDuration", resourceCulture) ?? "~{0} until Lvl {1}";
+        public static string TrainingCost => ResourceManager.GetString("TrainingCost", resourceCulture) ?? "Cost: {0}/h";
+        public static string RestDuration => ResourceManager.GetString("RestDuration", resourceCulture) ?? "~{0} until rested";
     }
 }

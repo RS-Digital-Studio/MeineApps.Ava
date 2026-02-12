@@ -61,6 +61,9 @@ public partial class WorkerProfileViewModel : ObservableObject
     private string _efficiencyDisplay = string.Empty;
 
     [ObservableProperty]
+    private string _incomeContributionDisplay = string.Empty;
+
+    [ObservableProperty]
     private string _xpProgress = string.Empty;
 
     [ObservableProperty]
@@ -108,6 +111,21 @@ public partial class WorkerProfileViewModel : ObservableObject
     [ObservableProperty]
     private List<WorkshopTransferItem> _availableWorkshops = [];
 
+    [ObservableProperty]
+    private string _trainingTimeDisplay = string.Empty;
+
+    [ObservableProperty]
+    private string _trainingCostDisplay = string.Empty;
+
+    [ObservableProperty]
+    private string _restTimeDisplay = string.Empty;
+
+    [ObservableProperty]
+    private bool _showTrainingInfo;
+
+    [ObservableProperty]
+    private bool _showRestInfo;
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -153,6 +171,26 @@ public partial class WorkerProfileViewModel : ObservableObject
         MoodDisplay = $"{Worker.Mood:F0}%";
         FatigueDisplay = $"{Worker.Fatigue:F0}%";
         EfficiencyDisplay = $"{Worker.EffectiveEfficiency:P0}";
+
+        // Einkommensbeitrag berechnen wenn einem Workshop zugewiesen
+        if (Worker.AssignedWorkshop != null)
+        {
+            var workshop = _gameStateService.State.Workshops
+                .FirstOrDefault(w => w.Type == Worker.AssignedWorkshop);
+            if (workshop != null)
+            {
+                var contribution = workshop.BaseIncomePerWorker * Worker.EffectiveEfficiency;
+                IncomeContributionDisplay = $"+{contribution:N2} €/s";
+            }
+            else
+            {
+                IncomeContributionDisplay = "-";
+            }
+        }
+        else
+        {
+            IncomeContributionDisplay = "-";
+        }
         XpProgress = $"{Worker.ExperienceXp}/{Worker.XpForNextLevel} XP (Lv.{Worker.ExperienceLevel})";
         PersonalityDisplay = $"{Worker.Personality.GetIcon()} {_localizationService.GetString(Worker.Personality.GetLocalizationKey())}";
         WageDisplay = $"{MoneyFormatter.Format(Worker.WagePerHour, 0)}/h";
@@ -204,6 +242,56 @@ public partial class WorkerProfileViewModel : ObservableObject
         CanStartTraining = !Worker.IsTraining && !Worker.IsResting;
         CanStartResting = !Worker.IsResting && !Worker.IsTraining;
         CanGiveBonus = _gameStateService.CanAfford(Worker.WagePerHour * 24m);
+
+        // Training-Info: Dauer bis zum nächsten Level + Kosten pro Stunde
+        ShowTrainingInfo = !Worker.IsTraining && CanStartTraining;
+        if (ShowTrainingInfo && Worker.ExperienceLevel < 10)
+        {
+            int xpRemaining = Worker.XpForNextLevel - Worker.ExperienceXp;
+            decimal xpPerHour = Worker.TrainingXpPerHour * Worker.Personality.GetXpMultiplier();
+            decimal hoursNeeded = xpPerHour > 0 ? xpRemaining / xpPerHour : 0;
+            TrainingTimeDisplay = string.Format(
+                _localizationService.GetString("TrainingDuration"),
+                FormatDuration(hoursNeeded),
+                Worker.ExperienceLevel + 1);
+            TrainingCostDisplay = string.Format(
+                _localizationService.GetString("TrainingCost"),
+                MoneyFormatter.Format(Worker.TrainingCostPerHour, 0));
+        }
+        else
+        {
+            TrainingTimeDisplay = string.Empty;
+            TrainingCostDisplay = string.Empty;
+            ShowTrainingInfo = false;
+        }
+
+        // Rest-Info: Dauer bis vollständig erholt
+        ShowRestInfo = !Worker.IsResting && Worker.Fatigue > 0;
+        if (ShowRestInfo)
+        {
+            decimal recoveryPerHour = Worker.RestHoursNeeded > 0 ? 100m / Worker.RestHoursNeeded : 100m;
+            decimal hoursNeeded = recoveryPerHour > 0 ? Worker.Fatigue / recoveryPerHour : 0;
+            RestTimeDisplay = string.Format(
+                _localizationService.GetString("RestDuration"),
+                FormatDuration(hoursNeeded));
+        }
+        else
+        {
+            RestTimeDisplay = string.Empty;
+        }
+    }
+
+    /// <summary>
+    /// Formatiert Dezimal-Stunden in lesbaren Text (z.B. "2h 30min").
+    /// </summary>
+    private static string FormatDuration(decimal hours)
+    {
+        int totalMinutes = (int)Math.Ceiling(hours * 60m);
+        int h = totalMinutes / 60;
+        int m = totalMinutes % 60;
+        if (h > 0 && m > 0) return $"{h}h {m}min";
+        if (h > 0) return $"{h}h";
+        return $"{m}min";
     }
 
     /// <summary>

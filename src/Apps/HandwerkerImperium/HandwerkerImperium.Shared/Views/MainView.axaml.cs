@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Styling;
 using HandwerkerImperium.ViewModels;
 
@@ -104,5 +105,24 @@ public partial class MainView : UserControl
     private void OnCelebrationRequested()
     {
         CelebrationCanvas.ShowConfetti();
+    }
+
+    // Dialog-Overlay: Klick auf dunklen Hintergrund schließt den Dialog
+    private void OnAlertOverlayPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm)
+            vm.DismissAlertDialogCommand.Execute(null);
+    }
+
+    private void OnConfirmOverlayPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (DataContext is MainViewModel vm)
+            vm.ConfirmDialogCancelCommand.Execute(null);
+    }
+
+    // Klick auf Dialog-Inhalt: Event nicht zum Overlay durchbubblen lassen
+    private void OnDialogContentPressed(object? sender, PointerPressedEventArgs e)
+    {
+        e.Handled = true;
     }
 }

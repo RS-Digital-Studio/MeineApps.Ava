@@ -64,7 +64,7 @@
                            FontSize="16" FontWeight="Bold"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </StackPanel>
-              <StackPanel Spacing="4">
+              <StackPanel Grid.Column="1" Spacing="4">
                 <TextBlock Text="{loc:Translate Personality}"
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -84,7 +84,7 @@
                            FontSize="14"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
-              <StackPanel Spacing="4">
+              <StackPanel Grid.Column="1" Spacing="4">
                 <TextBlock Text="{loc:Translate AssignedWorkshop}"
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -94,7 +94,7 @@
               </StackPanel>
             </Grid>
 
-            <!-- Efficiency + Wage -->
+            <!-- Efficiency + Income Contribution -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
               <StackPanel Spacing="4">
                 <TextBlock Text="{loc:Translate Efficiency}"
@@ -104,15 +104,25 @@
                            FontSize="18" FontWeight="Bold"
                            Foreground="{DynamicResource SuccessBrush}" />
               </StackPanel>
-              <StackPanel Spacing="4">
-                <TextBlock Text="{loc:Translate Wage}"
+              <StackPanel Grid.Column="1" Spacing="4">
+                <TextBlock Text="{loc:Translate Income}"
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Text="{Binding WageDisplay}"
+                <TextBlock Text="{Binding IncomeContributionDisplay}"
                            FontSize="18" FontWeight="Bold"
-                           Foreground="{DynamicResource WarningBrush}" />
+                           Foreground="{DynamicResource SuccessBrush}" />
               </StackPanel>
             </Grid>
+
+            <!-- Wage -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate Wage}"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Text="{Binding WageDisplay}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource WarningBrush}" />
+            </StackPanel>
 
           </StackPanel>
         </Border>
@@ -203,56 +213,75 @@
 
             <!-- Train / Stop Training -->
             <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
-              <Button Classes="Primary"
-                      Command="{Binding StartTrainingCommand}"
-                      IsVisible="{Binding !IsTraining}"
-                      IsEnabled="{Binding CanStartTraining}"
-                      HorizontalAlignment="Stretch"
-                      Padding="12,10">
-                <StackPanel Orientation="Horizontal" Spacing="6"
-                            HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="SchoolOutline" Width="18" Height="18" />
-                  <TextBlock Text="{loc:Translate Train}" FontSize="13" />
+              <StackPanel>
+                <Button Classes="Primary"
+                        Command="{Binding StartTrainingCommand}"
+                        IsVisible="{Binding !IsTraining}"
+                        IsEnabled="{Binding CanStartTraining}"
+                        HorizontalAlignment="Stretch"
+                        Padding="12,10">
+                  <StackPanel Orientation="Horizontal" Spacing="6"
+                              HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="SchoolOutline" Width="18" Height="18" />
+                    <TextBlock Text="{loc:Translate Train}" FontSize="13" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="Secondary"
+                        Command="{Binding StopTrainingCommand}"
+                        IsVisible="{Binding IsTraining}"
+                        HorizontalAlignment="Stretch"
+                        Padding="12,10">
+                  <StackPanel Orientation="Horizontal" Spacing="6"
+                              HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
+                    <TextBlock Text="{loc:Translate StopTraining}" FontSize="13" />
+                  </StackPanel>
+                </Button>
+                <!-- Training-Info -->
+                <StackPanel IsVisible="{Binding ShowTrainingInfo}" Margin="0,4,0,0" Spacing="2">
+                  <TextBlock Text="{Binding TrainingTimeDisplay}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" />
+                  <TextBlock Text="{Binding TrainingCostDisplay}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" />
                 </StackPanel>
-              </Button>
-              <Button Classes="Secondary"
-                      Command="{Binding StopTrainingCommand}"
-                      IsVisible="{Binding IsTraining}"
-                      HorizontalAlignment="Stretch"
-                      Padding="12,10">
-                <StackPanel Orientation="Horizontal" Spacing="6"
-                            HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
-                  <TextBlock Text="{loc:Translate StopTraining}" FontSize="13" />
-                </StackPanel>
-              </Button>
+              </StackPanel>
 
               <!-- Rest / Stop Resting -->
-              <Button Grid.Column="1"
-                      Classes="Primary"
-                      Command="{Binding StartRestingCommand}"
-                      IsVisible="{Binding !IsResting}"
-                      IsEnabled="{Binding CanStartResting}"
-                      HorizontalAlignment="Stretch"
-                      Padding="12,10">
-                <StackPanel Orientation="Horizontal" Spacing="6"
-                            HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="BedOutline" Width="18" Height="18" />
-                  <TextBlock Text="{loc:Translate Rest}" FontSize="13" />
-                </StackPanel>
-              </Button>
-              <Button Grid.Column="1"
-                      Classes="Secondary"
-                      Command="{Binding StopRestingCommand}"
-                      IsVisible="{Binding IsResting}"
-                      HorizontalAlignment="Stretch"
-                      Padding="12,10">
-                <StackPanel Orientation="Horizontal" Spacing="6"
-                            HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
-                  <TextBlock Text="{loc:Translate StopResting}" FontSize="13" />
-                </StackPanel>
-              </Button>
+              <StackPanel Grid.Column="1">
+                <Button Classes="Primary"
+                        Command="{Binding StartRestingCommand}"
+                        IsVisible="{Binding !IsResting}"
+                        IsEnabled="{Binding CanStartResting}"
+                        HorizontalAlignment="Stretch"
+                        Padding="12,10">
+                  <StackPanel Orientation="Horizontal" Spacing="6"
+                              HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="BedOutline" Width="18" Height="18" />
+                    <TextBlock Text="{loc:Translate Rest}" FontSize="13" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="Secondary"
+                        Command="{Binding StopRestingCommand}"
+                        IsVisible="{Binding IsResting}"
+                        HorizontalAlignment="Stretch"
+                        Padding="12,10">
+                  <StackPanel Orientation="Horizontal" Spacing="6"
+                              HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
+                    <TextBlock Text="{loc:Translate StopResting}" FontSize="13" />
+                  </StackPanel>
+                </Button>
+                <!-- Rest-Info -->
+                <TextBlock Text="{Binding RestTimeDisplay}"
+                           IsVisible="{Binding ShowRestInfo}"
+                           FontSize="11" Margin="0,4,0,0"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
             </Grid>
 
             <!-- Bonus Button -->

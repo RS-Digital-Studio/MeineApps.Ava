@@ -205,6 +205,10 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
     {
         OrderId = orderId;
 
+        // Zustand zurücksetzen (sonst bleibt Ergebnis-Screen stehen)
+        IsPlaying = false;
+        IsResultShown = false;
+
         // Get difficulty and game type from active order
         var activeOrder = _gameStateService.GetActiveOrder();
         if (activeOrder != null)

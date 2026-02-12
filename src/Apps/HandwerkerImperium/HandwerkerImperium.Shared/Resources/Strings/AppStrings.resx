@@ -96,6 +96,9 @@
   <data name="Orders" xml:space="preserve">
     <value>Orders</value>
   </data>
+  <data name="OrdersCompleted" xml:space="preserve">
+    <value>Completed</value>
+  </data>
   <data name="NewOrder" xml:space="preserve">
     <value>New Order</value>
   </data>
@@ -2173,6 +2176,65 @@
   </data>
   <data name="ShopCashMegaDesc" xml:space="preserve">
     <value>Get {0} instantly</value>
+  </data>
+  <data name="WorkshopLocked" xml:space="preserve">
+    <value>Workshop Locked</value>
+  </data>
+  <data name="RequiresLevel" xml:space="preserve">
+    <value>Requires</value>
+  </data>
+  <data name="UnlockWorkshop" xml:space="preserve">
+    <value>Unlock Workshop</value>
+  </data>
+  <data name="UnlockWorkshopCost" xml:space="preserve">
+    <value>Unlock cost</value>
+  </data>
+  <data name="WatchAdForHalfPrice" xml:space="preserve">
+    <value>With video ad (50% off)</value>
+  </data>
+  <data name="WatchAdForDiscount" xml:space="preserve">
+    <value>Watch Ad (-50%)</value>
+  </data>
+  <data name="BuyFull" xml:space="preserve">
+    <value>Buy</value>
+  </data>
+  <data name="WorkshopUnlocked" xml:space="preserve">
+    <value>Workshop Unlocked!</value>
+  </data>
+  <data name="Required" xml:space="preserve">
+    <value>Required</value>
+  </data>
+  <data name="TotalIncome" xml:space="preserve">
+    <value>Total Income</value>
+  </data>
+  <data name="GrossIncome" xml:space="preserve">
+    <value>Gross Income</value>
+  </data>
+  <data name="NetIncome" xml:space="preserve">
+    <value>Net Income</value>
+  </data>
+  <data name="RunningCosts" xml:space="preserve">
+    <value>Running Costs</value>
+  </data>
+  <data name="Rent" xml:space="preserve">
+    <value>Rent</value>
+  </data>
+  <data name="MaterialCosts" xml:space="preserve">
+    <value>Material Costs</value>
+  </data>
+  <data name="Wages" xml:space="preserve">
+    <value>Wages</value>
+  </data>
+
+  <!-- Worker Training/Rest Info -->
+  <data name="TrainingDuration" xml:space="preserve">
+    <value>~{0} until Lvl {1}</value>
+  </data>
+  <data name="TrainingCost" xml:space="preserve">
+    <value>Cost: {0}/h</value>
+  </data>
+  <data name="RestDuration" xml:space="preserve">
+    <value>~{0} until rested</value>
   </data>
 
 </root>

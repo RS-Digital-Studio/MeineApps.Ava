@@ -444,12 +444,14 @@
 
     <!-- Generic Alert Dialog -->
     <Border Grid.RowSpan="3" Background="#AA000000"
-            IsVisible="{Binding IsAlertDialogVisible}">
+            IsVisible="{Binding IsAlertDialogVisible}"
+            PointerPressed="OnAlertOverlayPressed">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
               MaxWidth="340" MaxHeight="300"
               HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 8 24 0 #40000000">
+              BoxShadow="0 8 24 0 #40000000"
+              PointerPressed="OnDialogContentPressed">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
           <TextBlock Text="{Binding AlertDialogTitle}"
                      FontSize="20" FontWeight="Bold"
@@ -468,13 +470,15 @@
 
     <!-- Generic Confirm Dialog -->
     <Border Grid.RowSpan="3" Background="#AA000000"
-            IsVisible="{Binding IsConfirmDialogVisible}">
+            IsVisible="{Binding IsConfirmDialogVisible}"
+            PointerPressed="OnConfirmOverlayPressed">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
               MaxWidth="340" MaxHeight="300"
               HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 8 24 0 #40000000">
-        <StackPanel Spacing="16" HorizontalAlignment="Center">
+              BoxShadow="0 8 24 0 #40000000"
+              PointerPressed="OnDialogContentPressed">
+        <StackPanel Spacing="16" HorizontalAlignment="Stretch">
           <TextBlock Text="{Binding ConfirmDialogTitle}"
                      FontSize="20" FontWeight="Bold"
                      HorizontalAlignment="Center"
@@ -483,13 +487,15 @@
                      FontSize="14" TextWrapping="Wrap"
                      HorizontalAlignment="Center"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
-          <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
-            <Button Classes="Secondary" Content="{Binding ConfirmDialogCancelText}"
-                    Command="{Binding ConfirmDialogCancelCommand}"
-                    MinWidth="100" />
+          <StackPanel Spacing="8" HorizontalAlignment="Stretch">
             <Button Classes="Primary" Content="{Binding ConfirmDialogAcceptText}"
                     Command="{Binding ConfirmDialogAcceptCommand}"
-                    MinWidth="100" />
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" />
+            <Button Classes="Secondary" Content="{Binding ConfirmDialogCancelText}"
+                    Command="{Binding ConfirmDialogCancelCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" />
           </StackPanel>
         </StackPanel>
       </Border>

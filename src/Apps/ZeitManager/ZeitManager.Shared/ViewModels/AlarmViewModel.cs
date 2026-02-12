@@ -220,8 +220,8 @@ public partial class AlarmViewModel : ObservableObject
         _isToggling = true;
         try
         {
-            alarm.IsEnabled = !alarm.IsEnabled;
-            // ScheduleAlarmAsync/CancelAlarmAsync speichert in DB + plant/cancelt System-Notification
+            // IsEnabled wird bereits vom ToggleSwitch-Binding gesetzt,
+            // hier nur noch Scheduler aktualisieren
             if (alarm.IsEnabled)
                 await _alarmScheduler.ScheduleAlarmAsync(alarm);
             else

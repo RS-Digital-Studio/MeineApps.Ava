@@ -36,6 +36,7 @@ public partial class CalendarViewModel : ObservableObject
         _purchaseService = purchaseService;
         _trialService = trialService;
         _vacationService = vacationService;
+        _ = LoadDataAsync();
     }
 
     // === Properties ===

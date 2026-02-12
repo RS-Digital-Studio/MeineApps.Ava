@@ -7,40 +7,88 @@
              x:Class="ZeitManager.Views.TimerView"
              x:DataType="vm:TimerViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*">
+  <UserControl.Styles>
+    <!-- Pulsier-Animation für laufende Timer -->
+    <Style Selector="Border.TimerRunningPulse">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.6" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
 
-    <!-- Header -->
-    <StackPanel Grid.Row="0" Margin="16,16,16,8">
-      <TextBlock Text="{Binding TitleText}" Classes="HeadlineMedium" />
-    </StackPanel>
+  <Grid RowDefinitions="Auto,*">
 
     <!-- Quick Timer Chips -->
-    <Border Grid.Row="1" Classes="Card" Margin="16,0,16,8">
-      <StackPanel Spacing="8">
-        <TextBlock Text="{Binding QuickTimerText}" Classes="TitleSmall"
-                   Foreground="{DynamicResource TextMutedBrush}" />
+    <Border Grid.Row="0" Margin="16,16,16,8" Padding="12"
+            Background="{DynamicResource SurfaceBrush}" CornerRadius="12">
+      <StackPanel Spacing="10">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <mi:MaterialIcon Kind="TimerSand" Width="16" Height="16"
+                           Foreground="{DynamicResource TimerAccentBrush}" />
+          <TextBlock Text="{Binding QuickTimerText}" Classes="TitleSmall"
+                     Foreground="{DynamicResource TimerAccentBrush}" />
+        </StackPanel>
         <WrapPanel Orientation="Horizontal">
-          <Button Classes="Outlined Small" Content="1 min"
-                  Command="{Binding AddQuickTimerCommand}" CommandParameter="1"
-                  Margin="0,0,8,8" />
-          <Button Classes="Outlined Small" Content="5 min"
-                  Command="{Binding AddQuickTimerCommand}" CommandParameter="5"
-                  Margin="0,0,8,8" />
-          <Button Classes="Outlined Small" Content="10 min"
-                  Command="{Binding AddQuickTimerCommand}" CommandParameter="10"
-                  Margin="0,0,8,8" />
-          <Button Classes="Outlined Small" Content="15 min"
-                  Command="{Binding AddQuickTimerCommand}" CommandParameter="15"
-                  Margin="0,0,8,8" />
-          <Button Classes="Outlined Small" Content="30 min"
-                  Command="{Binding AddQuickTimerCommand}" CommandParameter="30"
-                  Margin="0,0,8,8" />
+          <!-- 1 min - Blitz -->
+          <Button Margin="0,0,8,8" Padding="10,6" CornerRadius="16"
+                  Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
+                  BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
+                  Command="{Binding AddQuickTimerCommand}" CommandParameter="1">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="FlashOutline" Width="16" Height="16" />
+              <TextBlock Text="1 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <!-- 5 min - Kaffee -->
+          <Button Margin="0,0,8,8" Padding="10,6" CornerRadius="16"
+                  Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
+                  BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
+                  Command="{Binding AddQuickTimerCommand}" CommandParameter="5">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="CoffeeOutline" Width="16" Height="16" />
+              <TextBlock Text="5 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <!-- 10 min - Sanduhr -->
+          <Button Margin="0,0,8,8" Padding="10,6" CornerRadius="16"
+                  Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
+                  BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
+                  Command="{Binding AddQuickTimerCommand}" CommandParameter="10">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="TimerSand" Width="16" Height="16" />
+              <TextBlock Text="10 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <!-- 15 min - Pause -->
+          <Button Margin="0,0,8,8" Padding="10,6" CornerRadius="16"
+                  Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
+                  BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
+                  Command="{Binding AddQuickTimerCommand}" CommandParameter="15">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="FoodAppleOutline" Width="16" Height="16" />
+              <TextBlock Text="15 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <!-- 30 min - Workout -->
+          <Button Margin="0,0,8,8" Padding="10,6" CornerRadius="16"
+                  Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
+                  BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
+                  Command="{Binding AddQuickTimerCommand}" CommandParameter="30">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="WeightLifter" Width="16" Height="16" />
+              <TextBlock Text="30 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
         </WrapPanel>
       </StackPanel>
     </Border>
 
     <!-- Timer List / Empty State -->
-    <Panel Grid.Row="2">
+    <Panel Grid.Row="1">
 
       <!-- Empty State -->
       <StackPanel IsVisible="{Binding !HasTimers}"
@@ -62,58 +110,78 @@
         <ItemsControl ItemsSource="{Binding Timers}" Margin="16,0">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:TimerItem">
-              <Border Classes="Card" Margin="0,0,0,8">
-                <Grid RowDefinitions="Auto,Auto,Auto">
-                  <!-- Timer Name + State -->
-                  <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
-                    <mi:MaterialIcon Kind="TimerSand" Width="20" Height="20"
-                                     Foreground="{DynamicResource PrimaryBrush}" />
-                    <TextBlock Text="{Binding Name}" Classes="TitleMedium"
-                               VerticalAlignment="Center" />
+              <Border Classes="Card" Margin="0,0,0,8" Padding="12">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+
+                  <!-- Fortschrittsring -->
+                  <Panel Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center">
+                    <controls:CircularProgress Width="64" Height="64"
+                        Value="{Binding ProgressFraction}"
+                        StrokeWidth="5"
+                        TrackBrush="{DynamicResource BorderSubtleBrush}"
+                        StrokeBrush="{DynamicResource TimerAccentBrush}" />
+                    <!-- Pulsierender Amber-Punkt bei laufendem Timer -->
+                    <Border Classes="TimerRunningPulse"
+                            IsVisible="{Binding IsRunning}"
+                            Width="10" Height="10" CornerRadius="5"
+                            Background="{DynamicResource TimerAccentBrush}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <!-- Fertiges Häkchen -->
+                    <mi:MaterialIcon Kind="Check" Width="24" Height="24"
+                                     IsVisible="{Binding IsFinished}"
+                                     Foreground="{DynamicResource SuccessBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <!-- Pause-Icon -->
+                    <mi:MaterialIcon Kind="Pause" Width="20" Height="20"
+                                     IsVisible="{Binding IsPaused}"
+                                     Foreground="{DynamicResource TextMutedBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Panel>
+
+                  <!-- Timer Info -->
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Name}" Classes="TitleSmall"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                    <TextBlock Text="{Binding RemainingTimeFormatted}"
+                               FontSize="28" FontWeight="Light"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
 
-                  <!-- Time Display -->
-                  <TextBlock Grid.Row="1" Text="{Binding RemainingTimeFormatted}"
-                             FontSize="40" FontWeight="Light"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             HorizontalAlignment="Center"
-                             Margin="0,4,0,12" />
-
-                  <!-- Controls -->
-                  <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8"
-                              HorizontalAlignment="Center">
-                    <Button Classes="Primary"
+                  <!-- Steuerungs-Buttons -->
+                  <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4"
+                              VerticalAlignment="Center">
+                    <!-- Start -->
+                    <Button Classes="Icon" MinWidth="44" MinHeight="44"
                             IsVisible="{Binding IsNotRunning}"
                             Command="{Binding $parent[ItemsControl].((vm:TimerViewModel)DataContext).StartTimerCommand}"
                             CommandParameter="{Binding}">
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="Play" Width="18" Height="18" />
-                        <TextBlock Text="{Binding $parent[ItemsControl].((vm:TimerViewModel)DataContext).StartText}"
-                                   VerticalAlignment="Center" />
-                      </StackPanel>
+                      <mi:MaterialIcon Kind="Play" Width="22" Height="22"
+                                       Foreground="{DynamicResource TimerAccentBrush}" />
                     </Button>
-                    <Button Classes="Outlined"
+                    <!-- Pause -->
+                    <Button Classes="Icon" MinWidth="44" MinHeight="44"
                             IsVisible="{Binding IsRunning}"
                             Command="{Binding $parent[ItemsControl].((vm:TimerViewModel)DataContext).PauseTimerCommand}"
                             CommandParameter="{Binding}">
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="Pause" Width="18" Height="18" />
-                        <TextBlock Text="{Binding $parent[ItemsControl].((vm:TimerViewModel)DataContext).PauseText}"
-                                   VerticalAlignment="Center" />
-                      </StackPanel>
+                      <mi:MaterialIcon Kind="Pause" Width="22" Height="22"
+                                       Foreground="{DynamicResource TimerAccentBrush}" />
                     </Button>
-                    <Button Classes="Outlined"
+                    <!-- Stop -->
+                    <Button Classes="Icon" MinWidth="44" MinHeight="44"
                             Command="{Binding $parent[ItemsControl].((vm:TimerViewModel)DataContext).StopTimerCommand}"
                             CommandParameter="{Binding}">
-                      <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
+                      <mi:MaterialIcon Kind="Stop" Width="20" Height="20"
+                                       Foreground="{DynamicResource TextMutedBrush}" />
                     </Button>
-                    <Button Classes="Text" MinWidth="48" MinHeight="48"
+                    <!-- Delete -->
+                    <Button Classes="Icon" MinWidth="44" MinHeight="44"
                             Command="{Binding $parent[ItemsControl].((vm:TimerViewModel)DataContext).DeleteTimerCommand}"
                             CommandParameter="{Binding}">
                       <mi:MaterialIcon Kind="Delete" Width="18" Height="18"
                                        Foreground="{DynamicResource ErrorBrush}" />
                     </Button>
                   </StackPanel>
+
                 </Grid>
               </Border>
             </DataTemplate>
@@ -122,18 +190,19 @@
       </ScrollViewer>
 
       <!-- FAB: Create Timer -->
-      <Button Classes="Primary"
-              Command="{Binding ShowCreateTimerCommand}"
+      <Button Command="{Binding ShowCreateTimerCommand}"
               HorizontalAlignment="Right" VerticalAlignment="Bottom"
               Margin="0,0,24,24" Width="56" Height="56"
-              CornerRadius="28" Padding="0">
+              CornerRadius="28" Padding="0"
+              Background="{DynamicResource TimerAccentBrush}"
+              Foreground="White">
         <mi:MaterialIcon Kind="Plus" Width="28" Height="28" />
       </Button>
 
     </Panel>
 
     <!-- Create Timer Dialog Overlay -->
-    <Border Grid.Row="0" Grid.RowSpan="3"
+    <Border Grid.Row="0" Grid.RowSpan="2"
             IsVisible="{Binding IsCreatingTimer}"
             Background="#80000000">
       <Border Classes="Card" Margin="32"
@@ -181,7 +250,7 @@
     </Border>
 
     <!-- Delete Confirmation Overlay -->
-    <Border Grid.Row="0" Grid.RowSpan="3"
+    <Border Grid.Row="0" Grid.RowSpan="2"
             IsVisible="{Binding IsDeleteConfirmVisible}"
             Background="#80000000">
       <Border Classes="Card" Margin="32"

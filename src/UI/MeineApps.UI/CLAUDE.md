@@ -6,6 +6,7 @@ Wiederverwendbare UI-Komponenten für alle Avalonia Apps:
 - EmptyStateView
 - FloatingActionButton (FAB)
 - WheelPicker (Drum-Style Swipe-Zahlen-Picker)
+- CircularProgress (Kreisförmiger Fortschrittsring)
 - SplashOverlay (App-Start Animation)
 - FloatingTextOverlay (Game Juice: Floating Text Animation)
 - CelebrationOverlay (Game Juice: Confetti Partikel-Effekt)
@@ -26,6 +27,7 @@ MeineApps.UI/
 │   ├── WheelPicker.axaml.cs
 │   ├── SplashOverlay.axaml         # App startup splash with icon + loading bar
 │   ├── SplashOverlay.axaml.cs
+│   ├── CircularProgress.cs          # Kreisförmiger Fortschrittsring
 │   ├── FloatingTextOverlay.cs      # Floating text animation (Game Juice)
 │   └── CelebrationOverlay.cs       # Confetti particle effect (Game Juice)
 └── Styles/
@@ -138,6 +140,27 @@ xmlns:controls="using:MeineApps.UI.Controls"
     ActionText="Add Item"
     ActionCommand="{Binding AddCommand}" />
 ```
+
+## CircularProgress
+
+Kreisförmiger Fortschrittsanzeiger (Ring). Zeichnet von 12-Uhr-Position im Uhrzeigersinn.
+
+```axaml
+xmlns:controls="using:MeineApps.UI.Controls"
+
+<controls:CircularProgress Width="64" Height="64"
+    Value="{Binding ProgressFraction}"
+    StrokeWidth="5"
+    StrokeBrush="{DynamicResource TimerAccentBrush}"
+    TrackBrush="{DynamicResource BorderSubtleBrush}" />
+```
+
+- Value: 0.0 (leer) bis 1.0 (voll)
+- StrokeWidth: Ringbreite in Pixel (Default: 8)
+- StrokeBrush: Farbe des Fortschritts-Rings
+- TrackBrush: Farbe des Hintergrund-Rings
+- PenLineCap.Round für abgerundete Enden
+- Rein code-basiert (Custom Control mit Render Override)
 
 ## SplashOverlay
 

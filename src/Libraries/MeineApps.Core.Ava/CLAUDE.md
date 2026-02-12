@@ -49,6 +49,11 @@ MeineApps.Core.Ava/
 - Background: #F8FAFC (Light)
 - Inspiration: Apple, Google
 
+### Feature Accent Colors (alle Themes)
+- TimerAccentColor/Brush: Amber-Töne (Timer-Feature)
+- StopwatchAccentColor/Brush: Cyan-Töne (Stoppuhr-Feature)
+- AlarmAccentColor/Brush: Violet-Töne (Wecker-Feature)
+
 ### Forest
 - Primary: #10B981 (Emerald)
 - Background: #022C22 (Dark Green)

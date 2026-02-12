@@ -23,6 +23,11 @@
       <Color x:Key="AccentColor">#0891B2</Color>
       <Color x:Key="AccentHoverColor">#06B6D4</Color>
 
+      <!-- Feature Accent Colors (ZeitManager) -->
+      <Color x:Key="TimerAccentColor">#D97706</Color>
+      <Color x:Key="StopwatchAccentColor">#0891B2</Color>
+      <Color x:Key="AlarmAccentColor">#7C3AED</Color>
+
       <!-- Background Colors -->
       <Color x:Key="BackgroundColor">#F8FAFC</Color>
       <Color x:Key="SurfaceColor">#FFFFFF</Color>
@@ -68,6 +73,10 @@
 
       <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />
       <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
+
+      <SolidColorBrush x:Key="TimerAccentBrush" Color="{DynamicResource TimerAccentColor}" />
+      <SolidColorBrush x:Key="StopwatchAccentBrush" Color="{DynamicResource StopwatchAccentColor}" />
+      <SolidColorBrush x:Key="AlarmAccentBrush" Color="{DynamicResource AlarmAccentColor}" />
 
       <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}" />
       <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />

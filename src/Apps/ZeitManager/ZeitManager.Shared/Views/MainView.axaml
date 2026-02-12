@@ -9,7 +9,7 @@
              Background="{DynamicResource BackgroundBrush}">
 
   <UserControl.Styles>
-    <!-- Fade transition for tab content switching -->
+    <!-- Fade-Transition für Tab-Wechsel -->
     <Style Selector="Border.TabContent">
       <Setter Property="Transitions">
         <Transitions>
@@ -56,7 +56,7 @@
             BorderThickness="0,1,0,0">
       <Grid ColumnDefinitions="*,*,*,*" Margin="0,2">
 
-        <!-- Timer Tab -->
+        <!-- Timer Tab (Amber) -->
         <Button Grid.Column="0"
                 Classes="Text"
                 Command="{Binding NavigateToTimerCommand}"
@@ -69,13 +69,13 @@
             <Border Height="3" CornerRadius="2" Margin="12,0"
                     IsVisible="{Binding IsTimerActive}">
               <Border.Background>
-                <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
+                <SolidColorBrush Color="{DynamicResource TimerAccentColor}" />
               </Border.Background>
             </Border>
             <Border Height="3" IsVisible="{Binding !IsTimerActive}" />
             <Panel>
               <mi:MaterialIcon Kind="TimerSand" Width="24" Height="24"
-                               Foreground="{DynamicResource PrimaryBrush}"
+                               Foreground="{DynamicResource TimerAccentBrush}"
                                IsVisible="{Binding IsTimerActive}" />
               <mi:MaterialIcon Kind="TimerSandEmpty" Width="24" Height="24"
                                Foreground="{DynamicResource TextMutedBrush}"
@@ -84,7 +84,7 @@
             <Panel>
               <TextBlock Text="{Binding NavTimerText}" FontSize="11"
                          HorizontalAlignment="Center"
-                         Foreground="{DynamicResource PrimaryBrush}"
+                         Foreground="{DynamicResource TimerAccentBrush}"
                          FontWeight="Medium"
                          IsVisible="{Binding IsTimerActive}" />
               <TextBlock Text="{Binding NavTimerText}" FontSize="11"
@@ -95,7 +95,7 @@
           </StackPanel>
         </Button>
 
-        <!-- Stopwatch Tab -->
+        <!-- Stopwatch Tab (Cyan) -->
         <Button Grid.Column="1"
                 Classes="Text"
                 Command="{Binding NavigateToStopwatchCommand}"
@@ -108,13 +108,13 @@
             <Border Height="3" CornerRadius="2" Margin="12,0"
                     IsVisible="{Binding IsStopwatchActive}">
               <Border.Background>
-                <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
+                <SolidColorBrush Color="{DynamicResource StopwatchAccentColor}" />
               </Border.Background>
             </Border>
             <Border Height="3" IsVisible="{Binding !IsStopwatchActive}" />
             <Panel>
               <mi:MaterialIcon Kind="Timer" Width="24" Height="24"
-                               Foreground="{DynamicResource PrimaryBrush}"
+                               Foreground="{DynamicResource StopwatchAccentBrush}"
                                IsVisible="{Binding IsStopwatchActive}" />
               <mi:MaterialIcon Kind="TimerOutline" Width="24" Height="24"
                                Foreground="{DynamicResource TextMutedBrush}"
@@ -123,7 +123,7 @@
             <Panel>
               <TextBlock Text="{Binding NavStopwatchText}" FontSize="11"
                          HorizontalAlignment="Center"
-                         Foreground="{DynamicResource PrimaryBrush}"
+                         Foreground="{DynamicResource StopwatchAccentBrush}"
                          FontWeight="Medium"
                          IsVisible="{Binding IsStopwatchActive}" />
               <TextBlock Text="{Binding NavStopwatchText}" FontSize="11"
@@ -134,7 +134,7 @@
           </StackPanel>
         </Button>
 
-        <!-- Alarm Tab -->
+        <!-- Alarm Tab (Violet) -->
         <Button Grid.Column="2"
                 Classes="Text"
                 Command="{Binding NavigateToAlarmCommand}"
@@ -147,13 +147,13 @@
             <Border Height="3" CornerRadius="2" Margin="12,0"
                     IsVisible="{Binding IsAlarmActive}">
               <Border.Background>
-                <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
+                <SolidColorBrush Color="{DynamicResource AlarmAccentColor}" />
               </Border.Background>
             </Border>
             <Border Height="3" IsVisible="{Binding !IsAlarmActive}" />
             <Panel>
               <mi:MaterialIcon Kind="Alarm" Width="24" Height="24"
-                               Foreground="{DynamicResource PrimaryBrush}"
+                               Foreground="{DynamicResource AlarmAccentBrush}"
                                IsVisible="{Binding IsAlarmActive}" />
               <mi:MaterialIcon Kind="AlarmOff" Width="24" Height="24"
                                Foreground="{DynamicResource TextMutedBrush}"
@@ -162,7 +162,7 @@
             <Panel>
               <TextBlock Text="{Binding NavAlarmText}" FontSize="11"
                          HorizontalAlignment="Center"
-                         Foreground="{DynamicResource PrimaryBrush}"
+                         Foreground="{DynamicResource AlarmAccentBrush}"
                          FontWeight="Medium"
                          IsVisible="{Binding IsAlarmActive}" />
               <TextBlock Text="{Binding NavAlarmText}" FontSize="11"
@@ -173,7 +173,7 @@
           </StackPanel>
         </Button>
 
-        <!-- Settings Tab -->
+        <!-- Settings Tab (Primary) -->
         <Button Grid.Column="3"
                 Classes="Text"
                 Command="{Binding NavigateToSettingsCommand}"
@@ -241,7 +241,7 @@
       </Border>
     </Border>
 
-    <!-- Alarm Overlay (topmost layer) -->
+    <!-- Alarm Overlay (oberste Ebene) -->
     <Border Grid.Row="0" Grid.RowSpan="2"
             IsVisible="{Binding IsAlarmOverlayVisible}"
             IsHitTestVisible="{Binding IsAlarmOverlayVisible}">

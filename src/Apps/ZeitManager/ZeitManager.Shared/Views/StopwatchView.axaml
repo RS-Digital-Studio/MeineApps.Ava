@@ -6,74 +6,89 @@
              x:Class="ZeitManager.Views.StopwatchView"
              x:DataType="vm:StopwatchViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,Auto,*">
+  <UserControl.Styles>
+    <!-- Glow-Effekt für aktiven Stoppuhr-Ring -->
+    <Style Selector="Border.StopwatchGlow">
+      <Style.Animations>
+        <Animation Duration="0:0:1.5" IterationCount="INFINITE">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.4" /></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.8" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.4" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
 
-    <!-- Header -->
-    <TextBlock Grid.Row="0" Text="{Binding TitleText}" Classes="HeadlineMedium"
-               Margin="16,16,16,8" />
+  <Grid RowDefinitions="Auto,Auto,*">
 
-    <!-- Time Display with Circular Ring -->
-    <Border Grid.Row="1" Margin="16,8" HorizontalAlignment="Center">
+    <!-- Time Display mit Ring -->
+    <Border Grid.Row="0" Margin="16,16,16,8" HorizontalAlignment="Center">
       <Grid Width="280" Height="280">
-        <!-- Outer Ring -->
+        <!-- Äußerer Ring (Track) -->
         <Border CornerRadius="140" BorderThickness="4" Width="280" Height="280"
-                BorderBrush="{DynamicResource BorderSubtleBrush}">
-          <Border.Styles>
-            <Style Selector="Border">
-              <Setter Property="Transitions">
-                <Transitions>
-                  <BrushTransition Property="BorderBrush" Duration="0:0:0.3" />
-                </Transitions>
-              </Setter>
-            </Style>
-          </Border.Styles>
-        </Border>
-        <!-- Active Ring (visible when running) -->
+                BorderBrush="{DynamicResource BorderSubtleBrush}" />
+
+        <!-- Aktiver Ring (Cyan, sichtbar wenn laufend) -->
         <Border CornerRadius="140" BorderThickness="4" Width="280" Height="280"
-                BorderBrush="{DynamicResource PrimaryBrush}"
+                BorderBrush="{DynamicResource StopwatchAccentBrush}"
                 IsVisible="{Binding IsRunning}" />
 
-        <!-- Time Text -->
-        <TextBlock Text="{Binding ElapsedTimeFormatted}"
-                   FontSize="48" FontWeight="Light"
-                   Foreground="{DynamicResource TextPrimaryBrush}"
-                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <!-- Glow-Ring (animierter äußerer Schein) -->
+        <Border Classes="StopwatchGlow"
+                CornerRadius="148" BorderThickness="3" Width="296" Height="296"
+                BorderBrush="{DynamicResource StopwatchAccentBrush}"
+                IsVisible="{Binding IsRunning}"
+                HorizontalAlignment="Center" VerticalAlignment="Center" />
+
+        <!-- Zeitanzeige -->
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="0">
+          <!-- Hauptzeit (min:sec) -->
+          <TextBlock Text="{Binding ElapsedTimeFormatted}"
+                     FontSize="48" FontWeight="Light"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
       </Grid>
     </Border>
 
-    <!-- Control Buttons -->
-    <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="16"
+    <!-- Steuerungs-Buttons -->
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="16"
                 HorizontalAlignment="Center" Margin="16,8">
 
-      <!-- Lap Button (when running) -->
+      <!-- Runde (bei laufend) -->
       <Button Classes="Outlined" Width="56" Height="56" CornerRadius="28" Padding="0"
               IsVisible="{Binding IsRunning}"
               Command="{Binding LapCommand}">
-        <mi:MaterialIcon Kind="FlagCheckered" Width="24" Height="24" />
+        <mi:MaterialIcon Kind="FlagCheckered" Width="24" Height="24"
+                         Foreground="{DynamicResource StopwatchAccentBrush}" />
       </Button>
 
-      <!-- Reset Button (when stopped) -->
+      <!-- Reset (bei gestoppt) -->
       <Button Classes="Outlined" Width="56" Height="56" CornerRadius="28" Padding="0"
               IsVisible="{Binding !IsRunning}"
               Command="{Binding ResetCommand}">
         <mi:MaterialIcon Kind="Refresh" Width="24" Height="24" />
       </Button>
 
-      <!-- Start/Stop Button (larger) -->
+      <!-- Start/Stop Button -->
       <Panel>
-        <Button Classes="Primary" Width="72" Height="72" CornerRadius="36" Padding="0"
+        <Button Width="72" Height="72" CornerRadius="36" Padding="0"
                 IsVisible="{Binding !IsRunning}"
-                Command="{Binding StartStopCommand}">
+                Command="{Binding StartStopCommand}"
+                Background="{DynamicResource StopwatchAccentBrush}"
+                Foreground="White">
           <mi:MaterialIcon Kind="Play" Width="32" Height="32" />
         </Button>
-        <Button Classes="Primary" Width="72" Height="72" CornerRadius="36" Padding="0"
+        <Button Width="72" Height="72" CornerRadius="36" Padding="0"
                 IsVisible="{Binding IsRunning}"
-                Command="{Binding StartStopCommand}">
+                Command="{Binding StartStopCommand}"
+                Background="{DynamicResource StopwatchAccentBrush}"
+                Foreground="White">
           <mi:MaterialIcon Kind="Stop" Width="32" Height="32" />
         </Button>
       </Panel>
 
-      <!-- Undo Button -->
+      <!-- Undo -->
       <Button Classes="Outlined" Width="56" Height="56" CornerRadius="28" Padding="0"
               IsVisible="{Binding CanUndo}"
               Command="{Binding UndoCommand}">
@@ -83,8 +98,8 @@
 
     </StackPanel>
 
-    <!-- Lap Times -->
-    <Panel Grid.Row="3" Margin="16,8,16,0">
+    <!-- Rundenzeiten -->
+    <Panel Grid.Row="2" Margin="16,8,16,0">
 
       <!-- Empty State -->
       <StackPanel IsVisible="{Binding !HasLaps}"
@@ -97,10 +112,14 @@
                    HorizontalAlignment="Center" />
       </StackPanel>
 
-      <!-- Lap List -->
+      <!-- Rundenliste -->
       <DockPanel IsVisible="{Binding HasLaps}">
-        <TextBlock DockPanel.Dock="Top" Text="{Binding LapTimesText}" Classes="TitleSmall"
-                   Foreground="{DynamicResource TextMutedBrush}" Margin="0,0,0,8" />
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+          <mi:MaterialIcon Kind="FlagCheckered" Width="16" Height="16"
+                           Foreground="{DynamicResource StopwatchAccentBrush}" />
+          <TextBlock Text="{Binding LapTimesText}" Classes="TitleSmall"
+                     Foreground="{DynamicResource StopwatchAccentBrush}" />
+        </StackPanel>
 
         <ScrollViewer>
           <ItemsControl ItemsSource="{Binding Laps}">
@@ -108,7 +127,9 @@
               <DataTemplate x:DataType="models:StopwatchLap">
                 <Border Classes="Card" Margin="0,0,0,4" Padding="12,8">
                   <Grid ColumnDefinitions="Auto,*,Auto">
-                    <Border Grid.Column="0" Background="{DynamicResource PrimaryBrush}"
+                    <!-- Runden-Badge mit Cyan-Akzent -->
+                    <Border Grid.Column="0"
+                            Background="{DynamicResource StopwatchAccentBrush}"
                             CornerRadius="12" Padding="8,4" VerticalAlignment="Center"
                             Margin="0,0,12,0">
                       <TextBlock Text="{Binding LapNumber, StringFormat='#{0}'}"

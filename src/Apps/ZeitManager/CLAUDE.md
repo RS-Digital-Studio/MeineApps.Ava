@@ -57,6 +57,7 @@ ZeitManager.Android/Services/
 
 ## Changelog (Highlights)
 
+- **12.02.2026**: Visual Redesign: Feature-Akzentfarben (Timer=Amber, Stoppuhr=Cyan, Alarm=Violet) in allen 4 Themes. TimerView mit CircularProgress-Ring + Pulsier-Animation + Status-Icons (Running/Paused/Finished). StopwatchView mit Glow-Ring-Animation bei laufender Messung. AlarmView Icons in Violet. MainView Tab-Bar mit feature-spezifischen Farben. FABs in Feature-Farben. TimerItem: ProgressFraction/IsPaused/IsFinished Properties.
 - **11.02.2026 (3)**: Timer startet automatisch nach Erstellung (wie Quick-Timer)
 - **11.02.2026 (2)**: Optimierungen: TimerService Recovery nach App-Kill (Running-Timer Ablauf prüfen, Paused-Timer validieren, Finished melden), TimerViewModel Validierung (Duration <= 0 → MessageRequested mit TimerDurationInvalid), AlarmSchedulerService Intervall 30s→10s (verhindert verpasste Alarme), AlarmViewModel SnoozeDuration-Validierung (min. 1 Min.) + ToggleAlarm Double-Tap-Guard, AlarmOverlayViewModel "min"-Text lokalisiert, 1 neuer RESX-Key (TimerDurationInvalid) in allen 6 Sprachen
 - **11.02.2026**: Bugfix-Review: AlarmSchedulerService Thread-Safety (lock um _activeAlarms), TimerService Notification-Text lokalisiert, AlarmActivity Buttons lokalisiert (Dismiss/Snooze), AlarmOverlayViewModel von Transient zu Singleton

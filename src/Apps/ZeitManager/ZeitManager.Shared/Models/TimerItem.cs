@@ -48,6 +48,7 @@ public partial class TimerItem : ObservableObject
                 OnPropertyChanged(nameof(RemainingTime));
                 OnPropertyChanged(nameof(RemainingTimeFormatted));
                 OnPropertyChanged(nameof(ProgressPercent));
+                OnPropertyChanged(nameof(ProgressFraction));
             }
         }
     }
@@ -61,6 +62,8 @@ public partial class TimerItem : ObservableObject
             {
                 OnPropertyChanged(nameof(IsRunning));
                 OnPropertyChanged(nameof(IsNotRunning));
+                OnPropertyChanged(nameof(IsPaused));
+                OnPropertyChanged(nameof(IsFinished));
             }
         }
     }
@@ -142,11 +145,22 @@ public partial class TimerItem : ObservableObject
     public double ProgressPercent =>
         DurationTicks > 0 ? Math.Clamp((double)RemainingTimeTicks / DurationTicks * 100, 0, 100) : 0;
 
+    /// <summary>Fortschritt als Fraktion (0.0-1.0) für CircularProgress-Bindung.</summary>
+    [Ignore]
+    public double ProgressFraction =>
+        DurationTicks > 0 ? Math.Clamp((double)RemainingTimeTicks / DurationTicks, 0, 1) : 0;
+
     [Ignore]
     public bool IsRunning => State == TimerState.Running;
 
     [Ignore]
     public bool IsNotRunning => State != TimerState.Running;
+
+    [Ignore]
+    public bool IsPaused => State == TimerState.Paused;
+
+    [Ignore]
+    public bool IsFinished => State == TimerState.Finished;
 
     [Ignore]
     public string RemainingTimeFormatted

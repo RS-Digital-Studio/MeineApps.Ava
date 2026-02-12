@@ -8,14 +8,10 @@
              x:Class="ZeitManager.Views.AlarmView"
              x:DataType="vm:AlarmViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*">
-
-    <!-- Header -->
-    <TextBlock Grid.Row="0" Text="{Binding TitleText}" Classes="HeadlineMedium"
-               Margin="16,16,16,8" />
+  <Grid RowDefinitions="Auto,*">
 
     <!-- Toggle Bar: Alarm | Shift Schedule -->
-    <Border Grid.Row="1" Margin="16,0,16,8">
+    <Border Grid.Row="0" Margin="16,16,16,8">
       <Grid ColumnDefinitions="*,*" Height="44">
         <Button Grid.Column="0" Classes="Primary" Content="{Binding TitleText}"
                 IsVisible="{Binding !IsShiftScheduleMode}"
@@ -41,7 +37,7 @@
     </Border>
 
     <!-- Alarm Content -->
-    <Panel Grid.Row="2" IsVisible="{Binding !IsShiftScheduleMode}">
+    <Panel Grid.Row="1" IsVisible="{Binding !IsShiftScheduleMode}">
 
       <!-- Empty State -->
       <StackPanel IsVisible="{Binding !HasAlarms}"
@@ -68,7 +64,7 @@
                   <!-- Alarm Icon -->
                   <Panel Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
                     <mi:MaterialIcon Kind="Alarm" Width="28" Height="28"
-                                     Foreground="{DynamicResource PrimaryBrush}"
+                                     Foreground="{DynamicResource AlarmAccentBrush}"
                                      IsVisible="{Binding IsEnabled}" />
                     <mi:MaterialIcon Kind="AlarmOff" Width="28" Height="28"
                                      Foreground="{DynamicResource TextMutedBrush}"
@@ -83,7 +79,7 @@
                                Foreground="{DynamicResource TextMutedBrush}"
                                IsVisible="{Binding Name, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                     <TextBlock Text="{Binding RepeatDaysFormatted}" FontSize="12"
-                               Foreground="{DynamicResource PrimaryBrush}"
+                               Foreground="{DynamicResource AlarmAccentBrush}"
                                IsVisible="{Binding RepeatDaysFormatted, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
                   </StackPanel>
 
@@ -116,24 +112,25 @@
       </ScrollViewer>
 
       <!-- FAB: New Alarm -->
-      <Button Classes="Primary"
-              Command="{Binding NewAlarmCommand}"
+      <Button Command="{Binding NewAlarmCommand}"
               IsVisible="{Binding !IsEditMode}"
               HorizontalAlignment="Right" VerticalAlignment="Bottom"
               Margin="0,0,24,24" Width="56" Height="56"
-              CornerRadius="28" Padding="0">
+              CornerRadius="28" Padding="0"
+              Background="{DynamicResource AlarmAccentBrush}"
+              Foreground="White">
         <mi:MaterialIcon Kind="Plus" Width="28" Height="28" />
       </Button>
 
     </Panel>
 
     <!-- Shift Schedule View -->
-    <Panel Grid.Row="2" IsVisible="{Binding IsShiftScheduleMode}">
+    <Panel Grid.Row="1" IsVisible="{Binding IsShiftScheduleMode}">
       <views:ShiftScheduleView DataContext="{Binding ShiftScheduleViewModel}" />
     </Panel>
 
     <!-- Alarm Editor Overlay -->
-    <Border Grid.Row="0" Grid.RowSpan="3"
+    <Border Grid.Row="0" Grid.RowSpan="2"
             IsVisible="{Binding IsEditMode}"
             Background="#80000000">
         <Border Classes="Card" Margin="16,16"
@@ -214,7 +211,7 @@
             <!-- Vibrate Toggle -->
             <Grid ColumnDefinitions="Auto,*,Auto">
               <mi:MaterialIcon Grid.Column="0" Kind="Vibrate" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}"
+                               Foreground="{DynamicResource AlarmAccentBrush}"
                                VerticalAlignment="Center" Margin="0,0,8,0" />
               <TextBlock Grid.Column="1" Text="{Binding VibrateText}" Classes="BodyMedium"
                          VerticalAlignment="Center" />
@@ -234,7 +231,7 @@
     </Border>
 
     <!-- Delete Confirmation Overlay -->
-    <Border Grid.Row="0" Grid.RowSpan="3"
+    <Border Grid.Row="0" Grid.RowSpan="2"
             IsVisible="{Binding IsDeleteConfirmVisible}"
             Background="#80000000">
       <Border Classes="Card" Margin="32"

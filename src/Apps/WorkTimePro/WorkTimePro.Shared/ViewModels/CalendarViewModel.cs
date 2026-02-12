@@ -256,7 +256,6 @@ public partial class CalendarViewModel : ObservableObject
             await _vacationService.SaveVacationEntryAsync(entry);
 
             IsOverlayVisible = false;
-            MessageRequested?.Invoke(AppStrings.Info, AppStrings.Saved);
             await LoadDataAsync();
         }
         catch (Exception ex)
@@ -283,7 +282,6 @@ public partial class CalendarViewModel : ObservableObject
             }
 
             IsOverlayVisible = false;
-            MessageRequested?.Invoke(AppStrings.Info, AppStrings.ResetStatus);
             await LoadDataAsync();
         }
         catch (Exception ex)

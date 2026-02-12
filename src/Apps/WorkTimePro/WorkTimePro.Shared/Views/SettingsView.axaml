@@ -692,14 +692,6 @@
         </StackPanel>
       </Border>
 
-      <!-- ==================== Save Button ==================== -->
-      <Button Content="{loc:Translate SaveSettings}"
-              Classes="Primary"
-              Command="{Binding SaveSettingsCommand}"
-              HorizontalAlignment="Stretch"
-              HorizontalContentAlignment="Center"
-              Margin="0,8" />
-
       <!-- ==================== Legal Sources ==================== -->
       <Border Classes="Card">
         <StackPanel Spacing="12">

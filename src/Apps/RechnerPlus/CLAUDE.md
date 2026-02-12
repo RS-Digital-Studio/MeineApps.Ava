@@ -92,3 +92,4 @@ baseValue = value * ToBase + Offset
 - **Process.Start Android-Fix (11.02.2026)**: UriLauncher statt Process.Start (PlatformNotSupportedException auf Android)
 - **Clipboard (11.02.2026)**: Copy/Paste via Event-Pattern + TopLevel.Clipboard API
 - **ConverterVM Dispose (11.02.2026)**: IDisposable fuer LanguageChanged Unsubscribe
+- **Expression-Altlast nach Fehler (12.02.2026)**: ShowError() leert jetzt Expression und setzt _isNewCalculation=true. Vorher blieben Altlasten (z.B. offene Klammern, Division-Reste) in Expression und kontaminierten alle folgenden Berechnungen

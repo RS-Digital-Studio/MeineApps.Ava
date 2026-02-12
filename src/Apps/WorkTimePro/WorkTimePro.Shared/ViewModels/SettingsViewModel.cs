@@ -27,6 +27,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private WorkSettings? _settings;
     private bool _disposed;
     private bool _isInitializing;
+    private CancellationTokenSource? _autoSaveCts;
 
     public SettingsViewModel(
         IDatabaseService database,
@@ -99,23 +100,44 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private double _sundayHours = 0.0;
 
+    // === Auto-Save mit Debounce (800ms) ===
+
+    private void ScheduleAutoSave()
+    {
+        if (_isInitializing) return;
+
+        _autoSaveCts?.Cancel();
+        _autoSaveCts = new CancellationTokenSource();
+        var token = _autoSaveCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(800, token);
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => SaveSettingsAsync());
+            }
+            catch (TaskCanceledException) { }
+        });
+    }
+
     // === Automatische Wochenstunden-Berechnung ===
 
-    partial void OnUseIndividualHoursChanged(bool value) => RecalculateWeeklyHours();
-    partial void OnMondayHoursChanged(double value) => RecalculateWeeklyHours();
-    partial void OnTuesdayHoursChanged(double value) => RecalculateWeeklyHours();
-    partial void OnWednesdayHoursChanged(double value) => RecalculateWeeklyHours();
-    partial void OnThursdayHoursChanged(double value) => RecalculateWeeklyHours();
-    partial void OnFridayHoursChanged(double value) => RecalculateWeeklyHours();
-    partial void OnSaturdayHoursChanged(double value) => RecalculateWeeklyHours();
-    partial void OnSundayHoursChanged(double value) => RecalculateWeeklyHours();
-    partial void OnMondayEnabledChanged(bool value) => RecalculateWeeklyHours();
-    partial void OnTuesdayEnabledChanged(bool value) => RecalculateWeeklyHours();
-    partial void OnWednesdayEnabledChanged(bool value) => RecalculateWeeklyHours();
-    partial void OnThursdayEnabledChanged(bool value) => RecalculateWeeklyHours();
-    partial void OnFridayEnabledChanged(bool value) => RecalculateWeeklyHours();
-    partial void OnSaturdayEnabledChanged(bool value) => RecalculateWeeklyHours();
-    partial void OnSundayEnabledChanged(bool value) => RecalculateWeeklyHours();
+    partial void OnUseIndividualHoursChanged(bool value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnMondayHoursChanged(double value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnTuesdayHoursChanged(double value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnWednesdayHoursChanged(double value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnThursdayHoursChanged(double value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnFridayHoursChanged(double value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnSaturdayHoursChanged(double value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnSundayHoursChanged(double value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnMondayEnabledChanged(bool value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnTuesdayEnabledChanged(bool value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnWednesdayEnabledChanged(bool value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnThursdayEnabledChanged(bool value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnFridayEnabledChanged(bool value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnSaturdayEnabledChanged(bool value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
+    partial void OnSundayEnabledChanged(bool value) { RecalculateWeeklyHours(); ScheduleAutoSave(); }
 
     /// <summary>
     /// Berechnet WeeklyHours automatisch aus den individuellen Tagesstunden
@@ -221,6 +243,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsAuroraSelected));
         OnPropertyChanged(nameof(IsDaylightSelected));
         OnPropertyChanged(nameof(IsForestSelected));
+
+        // Theme sofort anwenden
+        if (!_isInitializing)
+            _themeService.SetTheme((AppTheme)value);
+
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
@@ -256,15 +284,22 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsFrenchSelected));
         OnPropertyChanged(nameof(IsItalianSelected));
         OnPropertyChanged(nameof(IsPortugueseSelected));
+        ScheduleAutoSave();
     }
 
     [RelayCommand]
-    private void SelectLanguage(string langIndex)
+    private void SelectLanguage(string langCode)
     {
-        if (int.TryParse(langIndex, out var index))
+        SelectedLanguageIndex = langCode switch
         {
-            SelectedLanguageIndex = index;
-        }
+            "de" => 0,
+            "en" => 1,
+            "es" => 2,
+            "fr" => 3,
+            "it" => 4,
+            "pt" => 5,
+            _ => 0
+        };
     }
 
     // === Premium ===
@@ -309,14 +344,24 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public string MorningReminderTimeDisplay => MorningReminderTime.ToString(@"hh\:mm");
     public string EveningReminderTimeDisplay => EveningReminderTime.ToString(@"hh\:mm");
 
+    partial void OnAutoPauseEnabledChanged(bool value) => ScheduleAutoSave();
+    partial void OnMorningReminderEnabledChanged(bool value) => ScheduleAutoSave();
+    partial void OnEveningReminderEnabledChanged(bool value) => ScheduleAutoSave();
+    partial void OnPauseReminderEnabledChanged(bool value) => ScheduleAutoSave();
+    partial void OnOvertimeWarningEnabledChanged(bool value) => ScheduleAutoSave();
+    partial void OnLegalComplianceEnabledChanged(bool value) => ScheduleAutoSave();
+    partial void OnSelectedRegionIndexChanged(int value) => ScheduleAutoSave();
+
     partial void OnMorningReminderTimeChanged(TimeSpan value)
     {
         OnPropertyChanged(nameof(MorningReminderTimeDisplay));
+        ScheduleAutoSave();
     }
 
     partial void OnEveningReminderTimeChanged(TimeSpan value)
     {
         OnPropertyChanged(nameof(EveningReminderTimeDisplay));
+        ScheduleAutoSave();
     }
 
     // === Input Validation ===
@@ -324,37 +369,43 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     partial void OnDailyHoursChanged(double value)
     {
         if (value < 0) DailyHours = 0;
-        if (value > 24) DailyHours = 24;
+        else if (value > 24) DailyHours = 24;
+        else ScheduleAutoSave();
     }
 
     partial void OnWeeklyHoursChanged(double value)
     {
         if (value < 0) WeeklyHours = 0;
-        if (value > 168) WeeklyHours = 168; // 24*7
+        else if (value > 168) WeeklyHours = 168;
+        else ScheduleAutoSave();
     }
 
     partial void OnAutoPauseMinutesChanged(int value)
     {
         if (value < 0) AutoPauseMinutes = 0;
-        if (value > 120) AutoPauseMinutes = 120;
+        else if (value > 120) AutoPauseMinutes = 120;
+        else ScheduleAutoSave();
     }
 
     partial void OnAutoPauseAfterHoursChanged(double value)
     {
         if (value < 0) AutoPauseAfterHours = 0;
-        if (value > 24) AutoPauseAfterHours = 24;
+        else if (value > 24) AutoPauseAfterHours = 24;
+        else ScheduleAutoSave();
     }
 
     partial void OnVacationDaysPerYearChanged(int value)
     {
         if (value < 0) VacationDaysPerYear = 0;
-        if (value > 365) VacationDaysPerYear = 365;
+        else if (value > 365) VacationDaysPerYear = 365;
+        else ScheduleAutoSave();
     }
 
     partial void OnOvertimeWarningHoursChanged(double value)
     {
         if (value < 0) OvertimeWarningHours = 0;
-        if (value > 100) OvertimeWarningHours = 100;
+        else if (value > 100) OvertimeWarningHours = 100;
+        else ScheduleAutoSave();
     }
 
     // === Commands ===
@@ -502,11 +553,6 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _settings.LegalComplianceEnabled = LegalComplianceEnabled;
 
             await _database.SaveSettingsAsync(_settings);
-
-            // Theme
-            _themeService.SetTheme((AppTheme)SelectedThemeIndex);
-
-            MessageRequested?.Invoke(AppStrings.Info, AppStrings.SettingsSaved);
         }
         catch (Exception ex)
         {
@@ -677,6 +723,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
 
+        _autoSaveCts?.Cancel();
+        _autoSaveCts?.Dispose();
         _purchaseService.PremiumStatusChanged -= OnPurchaseStatusChanged;
         GC.SuppressFinalize(this);
     }

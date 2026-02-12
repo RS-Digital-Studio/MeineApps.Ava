@@ -85,8 +85,16 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 - **DateTime-Konvention**: Arbeitszeiten (Check-in/out, Pausen) nutzen `DateTime.Now` (Ortszeit). Audit-Timestamps (CreatedAt/ModifiedAt) nutzen `DateTime.UtcNow`. Export-Footer und Backup-Dateinamen bleiben Ortszeit (menschenlesbar).
 - **TimeEntry.TypeText**: Lokalisiert via `AppStrings.CheckIn`/`AppStrings.CheckOut` (nicht hardcoded)
 
+## Architektur-Details
+
+- **Settings Auto-Save**: SettingsViewModel speichert automatisch per Debounce-Timer (800ms). Kein Speichern-Button. `ScheduleAutoSave()` wird von allen `OnXxxChanged` partial-Methods aufgerufen. `_isInitializing` Flag verhindert Speichern während `LoadDataAsync`.
+- **Tab-Reload**: MainViewModel.OnCurrentTabChanged lädt Daten für den jeweiligen Tab automatisch neu (LoadTabDataAsync). Stellt sicher, dass z.B. die Wochenansicht aktuelle Settings berücksichtigt.
+- **Kalender-Overlay**: Schließt automatisch nach Speichern/Entfernen ohne Bestätigungsmeldung.
+- **SelectLanguage Bug-Fix**: CommandParameter ist Sprachcode ("de"/"en"/...), kein Integer-Index.
+
 ## Changelog Highlights
 
+- **12.02.2026**: Settings Auto-Save (Debounce 800ms, kein Speichern-Button), Tab-Wechsel lädt Daten neu (WeekOverview/Calendar/Statistics/Settings), Kalender-Overlay schließt automatisch, SelectLanguage Bug-Fix (langCode statt int)
 - **11.02.2026 (4)**: Zeiteinträge & Pausen bearbeiten/hinzufügen: DayDetailView Overlay-Pattern (WheelPicker) für TimeEntry-Edit (Stunde/Minute/Typ-Toggle/Notiz) und PauseEntry-Edit (Start+Ende/Notiz). "Pause hinzufügen"-Button, Edit-Button bei manuellen Pausen. Validierung (CheckIn/CheckOut-Reihenfolge, Pausen-Überlappung, Endzeit>Startzeit). OriginalTimestamp bei Bearbeitung. 10 neue RESX-Keys (HoursShort, MinutesShort, StartTime, EndTime, AddBreak, EntryType, EditEntry, 3x Validation) in 6 Sprachen + Designer.
 - **11.02.2026 (3)**: Optimierungen: ExportService vollständig lokalisiert (PDF/Excel/CSV - alle Titel, Header, Zusammenfassungen via AppStrings statt hardcoded Deutsch, Excel-Datum CultureInfo.CurrentCulture), Project.cs BudgetHours/HourlyRate Negativwert-Validierung (Math.Max(0)), 3 neue RESX-Keys (ExportWorkTimeReport, ExportTotal, ExportYearOverviewTitle) in allen 6 Sprachen
 - **11.02.2026 (2)**: Härtung: TimeTrackingService Midnight-Crossing-Fix (CheckOut nach Mitternacht berechnet korrekt über Tagesgrenze), Validierung (negative Pausen, CheckOut vor CheckIn), Double-Tap-Guard (_isToggling), Thread-Safety (SemaphoreSlim). DatabaseService GetTimeEntriesForDate UTC→Local korrekt. CalculationService Warning-Strings lokalisiert (CalculationLongPause, CalculationNightShift, CalculationOvertime RESX-Keys)

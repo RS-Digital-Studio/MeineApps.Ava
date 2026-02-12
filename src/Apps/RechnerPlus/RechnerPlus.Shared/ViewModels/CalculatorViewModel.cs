@@ -620,7 +620,14 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void SetMode(CalculatorMode mode) => CurrentMode = mode;
 
-    private void ShowError(string message) { HasError = true; ErrorMessage = message; }
+    private void ShowError(string message)
+    {
+        HasError = true;
+        ErrorMessage = message;
+        // Expression leeren damit Altlasten nicht die nächste Berechnung kontaminieren
+        Expression = "";
+        _isNewCalculation = true;
+    }
     private void ClearError() { HasError = false; ErrorMessage = ""; }
 
     /// <summary>Prüft ob ein Zeichen ein Rechenoperator ist.</summary>

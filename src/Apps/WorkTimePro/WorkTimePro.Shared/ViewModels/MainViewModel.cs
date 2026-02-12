@@ -163,6 +163,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsCalendarActive));
         OnPropertyChanged(nameof(IsStatisticsActive));
         OnPropertyChanged(nameof(IsSettingsActive));
+
+        // Daten für den jeweiligen Tab neu laden
+        _ = LoadTabDataAsync(value);
+    }
+
+    private async Task LoadTabDataAsync(int tab)
+    {
+        switch (tab)
+        {
+            case 0: await LoadDataAsync(); break;
+            case 1: await WeekVm.LoadDataAsync(); break;
+            case 2: await CalendarVm.LoadDataAsync(); break;
+            case 3: await StatisticsVm.LoadDataAsync(); break;
+            case 4: await SettingsVm.LoadDataAsync(); break;
+        }
     }
 
     [RelayCommand]

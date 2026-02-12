@@ -198,6 +198,18 @@ public class FitnessEngine
         double hipCm,
         bool isMale)
     {
+        // Navy-Methode: Differenz muss positiv sein für Log10
+        var diff = isMale ? waistCm - neckCm : waistCm + hipCm - neckCm;
+        if (diff <= 0)
+        {
+            return new BodyFatResult
+            {
+                Height = heightCm, Neck = neckCm, Waist = waistCm,
+                Hip = hipCm, IsMale = isMale,
+                BodyFatPercent = 0, Category = BodyFatCategory.Essential
+            };
+        }
+
         double bodyFat;
 
         if (isMale)

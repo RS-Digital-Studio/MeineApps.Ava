@@ -362,4 +362,9 @@
   <data name="AdVideoNotAvailableMessage" xml:space="preserve">
     <value>Actualmente no hay ningún vídeo publicitario disponible. Inténtalo de nuevo más tarde.</value>
   </data>
+
+  <!-- Input Validation -->
+  <data name="AlertInvalidInput" xml:space="preserve"><value>Por favor, verifica los valores ingresados. Algunos valores están fuera del rango válido.</value></data>
+  <data name="AlertBodyFatMeasurement" xml:space="preserve"><value>La circunferencia de la cintura debe ser mayor que la del cuello.</value></data>
+  <data name="BarcodeScanHint" xml:space="preserve"><value>Mantén el código de barras en el marco</value></data>
 </root>

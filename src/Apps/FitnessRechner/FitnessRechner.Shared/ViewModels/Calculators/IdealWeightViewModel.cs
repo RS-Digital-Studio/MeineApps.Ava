@@ -1,23 +1,31 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FitnessRechner.Models;
+using MeineApps.Core.Ava.Localization;
 
 namespace FitnessRechner.ViewModels.Calculators;
 
 public partial class IdealWeightViewModel : ObservableObject
 {
     private readonly FitnessEngine _fitnessEngine;
+    private readonly ILocalizationService _localization;
 
     /// <summary>
     /// Event for navigation requests (replaces Shell.Current.GoToAsync)
     /// </summary>
     public event Action<string>? NavigationRequested;
 
+    /// <summary>
+    /// Event for showing messages to the user (title, message).
+    /// </summary>
+    public event Action<string, string>? MessageRequested;
+
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
-    public IdealWeightViewModel(FitnessEngine fitnessEngine)
+    public IdealWeightViewModel(FitnessEngine fitnessEngine, ILocalizationService localization)
     {
         _fitnessEngine = fitnessEngine;
+        _localization = localization;
     }
 
     [ObservableProperty]
@@ -52,9 +60,12 @@ public partial class IdealWeightViewModel : ObservableObject
     [RelayCommand]
     private void Calculate()
     {
-        if (Height <= 0 || Age <= 0)
+        if (Height < 80 || Height > 250 || Age < 8 || Age > 120)
         {
             HasResult = false;
+            MessageRequested?.Invoke(
+                _localization.GetString("AlertError"),
+                _localization.GetString("AlertInvalidInput"));
             return;
         }
 

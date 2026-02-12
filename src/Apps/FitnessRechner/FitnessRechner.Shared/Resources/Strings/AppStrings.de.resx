@@ -362,4 +362,9 @@
   <data name="AdVideoNotAvailableMessage" xml:space="preserve">
     <value>Derzeit ist kein Werbevideo verfügbar. Bitte versuche es später erneut.</value>
   </data>
+
+  <!-- Input Validation -->
+  <data name="AlertInvalidInput" xml:space="preserve"><value>Bitte überprüfe deine Eingabewerte. Einige Werte liegen außerhalb des gültigen Bereichs.</value></data>
+  <data name="AlertBodyFatMeasurement" xml:space="preserve"><value>Der Taillenumfang muss größer als der Halsumfang sein.</value></data>
+  <data name="BarcodeScanHint" xml:space="preserve"><value>Barcode in den Rahmen halten</value></data>
 </root>

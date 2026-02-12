@@ -84,9 +84,26 @@ public partial class BodyFatViewModel : ObservableObject
     [RelayCommand]
     private void Calculate()
     {
-        if (Height <= 0 || Neck <= 0 || Waist <= 0 || (!IsMale && Hip <= 0))
+        if (Height < 80 || Height > 250 ||
+            Neck < 25 || Neck > 65 ||
+            Waist < 50 || Waist > 200 ||
+            (!IsMale && (Hip < 60 || Hip > 200)))
         {
             HasResult = false;
+            MessageRequested?.Invoke(
+                _localization.GetString("AlertError"),
+                _localization.GetString("AlertInvalidInput"));
+            return;
+        }
+
+        // Navy-Methode: Taillenumfang muss größer als Halsumfang sein
+        var diff = IsMale ? Waist - Neck : Waist + Hip - Neck;
+        if (diff <= 0)
+        {
+            HasResult = false;
+            MessageRequested?.Invoke(
+                _localization.GetString("AlertError"),
+                _localization.GetString("AlertBodyFatMeasurement"));
             return;
         }
 

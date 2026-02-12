@@ -364,4 +364,9 @@
   <data name="AdVideoNotAvailableMessage" xml:space="preserve">
     <value>No ad video is currently available. Please try again later.</value>
   </data>
+
+  <!-- Input Validation -->
+  <data name="AlertInvalidInput" xml:space="preserve"><value>Please check your input values. Some values are outside the valid range.</value></data>
+  <data name="AlertBodyFatMeasurement" xml:space="preserve"><value>Waist circumference must be greater than neck circumference.</value></data>
+  <data name="BarcodeScanHint" xml:space="preserve"><value>Hold barcode in frame</value></data>
 </root>

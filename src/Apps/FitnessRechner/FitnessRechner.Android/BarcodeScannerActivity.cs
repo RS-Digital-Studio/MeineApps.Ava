@@ -10,6 +10,8 @@ using AndroidX.Camera.Lifecycle;
 using AndroidX.Camera.View;
 using AndroidX.Core.Content;
 using Java.Util.Concurrent;
+using MeineApps.Core.Ava.Localization;
+using Microsoft.Extensions.DependencyInjection;
 using Xamarin.Google.MLKit.Vision.Barcode.Common;
 using Xamarin.Google.MLKit.Vision.BarCode;
 
@@ -78,10 +80,11 @@ public class BarcodeScannerActivity : AndroidX.AppCompat.App.AppCompatActivity
         };
         rootLayout.AddView(backButton);
 
-        // Hinweis-Text (unten)
+        // Hinweis-Text (unten) - lokalisiert via ILocalizationService
+        var localization = FitnessRechner.App.Services?.GetService<ILocalizationService>();
         var hintText = new TextView(this)
         {
-            Text = "Barcode in den Rahmen halten",
+            Text = localization?.GetString("BarcodeScanHint") ?? "Hold barcode in frame",
             TextSize = 16,
             Gravity = GravityFlags.Center
         };

@@ -64,9 +64,12 @@ public partial class WaterViewModel : ObservableObject
     [RelayCommand]
     private void Calculate()
     {
-        if (Weight <= 0)
+        if (Weight < 20 || Weight > 300 || ActivityMinutes < 0 || ActivityMinutes > 480)
         {
             HasResult = false;
+            MessageRequested?.Invoke(
+                _localization.GetString("AlertError"),
+                _localization.GetString("AlertInvalidInput"));
             return;
         }
 

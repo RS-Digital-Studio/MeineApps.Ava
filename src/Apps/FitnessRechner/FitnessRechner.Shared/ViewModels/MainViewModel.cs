@@ -211,6 +211,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         try
         {
+            // Zurücksetzen damit veraltete Daten nicht fälschlich "true" halten
+            HasDashboardData = false;
+
             // Weight
             var weightEntry = await _trackingService.GetLatestEntryAsync(TrackingType.Weight);
             if (weightEntry != null && weightEntry.Date.Date >= DateTime.Today.AddDays(-7))
@@ -338,6 +341,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 break;
             case IdealWeightViewModel iw:
                 iw.NavigationRequested += OnCalculatorGoBack;
+                iw.MessageRequested += OnCalculatorMessage;
                 break;
             case BodyFatViewModel bf:
                 bf.NavigationRequested += OnCalculatorGoBack;

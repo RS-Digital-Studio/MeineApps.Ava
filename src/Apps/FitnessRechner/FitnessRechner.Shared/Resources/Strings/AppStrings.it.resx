@@ -362,4 +362,9 @@
   <data name="AdVideoNotAvailableMessage" xml:space="preserve">
     <value>Nessun video pubblicitario è attualmente disponibile. Riprova più tardi.</value>
   </data>
+
+  <!-- Input Validation -->
+  <data name="AlertInvalidInput" xml:space="preserve"><value>Controlla i valori inseriti. Alcuni valori sono fuori dall'intervallo valido.</value></data>
+  <data name="AlertBodyFatMeasurement" xml:space="preserve"><value>La circonferenza della vita deve essere maggiore di quella del collo.</value></data>
+  <data name="BarcodeScanHint" xml:space="preserve"><value>Tieni il codice a barre nella cornice</value></data>
 </root>

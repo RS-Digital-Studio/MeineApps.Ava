@@ -91,9 +91,12 @@ public partial class CaloriesViewModel : ObservableObject
     [RelayCommand]
     private void Calculate()
     {
-        if (Weight <= 0 || Height <= 0 || Age <= 0)
+        if (Weight < 20 || Weight > 300 || Height < 80 || Height > 250 || Age < 8 || Age > 120)
         {
             HasResult = false;
+            MessageRequested?.Invoke(
+                _localization.GetString("AlertError"),
+                _localization.GetString("AlertInvalidInput"));
             return;
         }
 

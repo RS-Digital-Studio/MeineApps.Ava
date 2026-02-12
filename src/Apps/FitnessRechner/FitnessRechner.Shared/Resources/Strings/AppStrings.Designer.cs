@@ -1682,5 +1682,23 @@ namespace FitnessRechner.Resources.Strings {
                 return ResourceManager.GetString("AdVideoNotAvailableMessage", resourceCulture);
             }
         }
+
+        public static string AlertInvalidInput {
+            get {
+                return ResourceManager.GetString("AlertInvalidInput", resourceCulture);
+            }
+        }
+
+        public static string AlertBodyFatMeasurement {
+            get {
+                return ResourceManager.GetString("AlertBodyFatMeasurement", resourceCulture);
+            }
+        }
+
+        public static string BarcodeScanHint {
+            get {
+                return ResourceManager.GetString("BarcodeScanHint", resourceCulture);
+            }
+        }
     }
 }

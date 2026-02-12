@@ -804,13 +804,15 @@ public partial class ProgressViewModel : ObservableObject, IDisposable
             TrendDisplay = "-";
         }
 
-        // Kalorien-Daten (letzte 7 Tage)
+        // Kalorien-Daten (letzte 7 Tage) - parallel laden
+        var summaryTasks = Enumerable.Range(0, 7)
+            .Select(i => _foodSearchService.GetDailySummaryAsync(startDate.AddDays(i)))
+            .ToArray();
+        var summaries = await Task.WhenAll(summaryTasks);
         double totalCals = 0;
         int daysWithCals = 0;
-        for (int i = 0; i < 7; i++)
+        foreach (var summary in summaries)
         {
-            var date = startDate.AddDays(i);
-            var summary = await _foodSearchService.GetDailySummaryAsync(date);
             if (summary.TotalCalories > 0)
             {
                 totalCals += summary.TotalCalories;

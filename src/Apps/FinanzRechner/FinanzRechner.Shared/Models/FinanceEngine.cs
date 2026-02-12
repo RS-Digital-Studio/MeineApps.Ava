@@ -154,7 +154,32 @@ public class FinanceEngine
 
     #endregion
 
-    // Inflation-Rechner entfernt (nicht verwendet, kein ViewModel/View vorhanden)
+    #region Inflation
+
+    /// <summary>
+    /// Berechnet die Auswirkung der Inflation auf einen Geldbetrag über einen bestimmten Zeitraum.
+    /// </summary>
+    public InflationResult CalculateInflation(double currentAmount, double annualInflationRate, int years)
+    {
+        var rate = annualInflationRate / 100;
+        var futureValue = currentAmount * Math.Pow(1 + rate, years);
+        var purchasingPower = currentAmount / Math.Pow(1 + rate, years);
+        var purchasingPowerLoss = currentAmount - purchasingPower;
+        var lossPercent = (purchasingPowerLoss / currentAmount) * 100;
+
+        return new InflationResult
+        {
+            CurrentAmount = currentAmount,
+            AnnualInflationRate = annualInflationRate,
+            Years = years,
+            FutureValue = futureValue,
+            PurchasingPower = purchasingPower,
+            PurchasingPowerLoss = purchasingPowerLoss,
+            LossPercent = lossPercent
+        };
+    }
+
+    #endregion
 }
 
 #region Result Types
@@ -217,6 +242,17 @@ public record YieldResult
     public double TotalReturn { get; init; }
     public double TotalReturnPercent { get; init; }
     public double EffectiveAnnualRate { get; init; }
+}
+
+public record InflationResult
+{
+    public double CurrentAmount { get; init; }
+    public double AnnualInflationRate { get; init; }
+    public int Years { get; init; }
+    public double FutureValue { get; init; }
+    public double PurchasingPower { get; init; }
+    public double PurchasingPowerLoss { get; init; }
+    public double LossPercent { get; init; }
 }
 
 #endregion

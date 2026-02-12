@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
@@ -12,10 +15,13 @@ using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
-public partial class AmortizationViewModel : ObservableObject
+public partial class AmortizationViewModel : ObservableObject, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;
+
+    // Debounce-Timer für Live-Berechnung (300ms Verzögerung)
+    private Timer? _debounceTimer;
 
     public AmortizationViewModel(FinanceEngine financeEngine, ILocalizationService localizationService)
     {
@@ -56,6 +62,22 @@ public partial class AmortizationViewModel : ObservableObject
     [ObservableProperty]
     private int _years = 5;
 
+    // Live-Berechnung mit Debouncing auslösen
+    partial void OnLoanAmountChanged(double value) => ScheduleAutoCalculate();
+    partial void OnAnnualRateChanged(double value) => ScheduleAutoCalculate();
+    partial void OnYearsChanged(int value) => ScheduleAutoCalculate();
+
+    /// <summary>
+    /// Startet den Debounce-Timer neu. Nach 300ms wird Calculate() auf dem UI-Thread aufgerufen.
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = new Timer(_ =>
+            Dispatcher.UIThread.Post(() => Calculate()),
+            null, 300, Timeout.Infinite);
+    }
+
     #endregion
 
     #region Result Properties
@@ -66,8 +88,8 @@ public partial class AmortizationViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasResult;
 
-    public string MonthlyPaymentDisplay => Result != null ? $"{Result.MonthlyPayment:N2} \u20ac" : "";
-    public string TotalInterestDisplay => Result != null ? $"{Result.TotalInterest:N2} \u20ac" : "";
+    public string MonthlyPaymentDisplay => Result != null ? CurrencyHelper.Format(Result.MonthlyPayment) : "";
+    public string TotalInterestDisplay => Result != null ? CurrencyHelper.Format(Result.TotalInterest) : "";
 
     partial void OnResultChanged(AmortizationResult? value)
     {
@@ -156,6 +178,16 @@ public partial class AmortizationViewModel : ObservableObject
 
     #endregion
 
+    #region Schedule Toggle
+
+    [ObservableProperty]
+    private bool _isScheduleExpanded;
+
+    [RelayCommand]
+    private void ToggleSchedule() => IsScheduleExpanded = !IsScheduleExpanded;
+
+    #endregion
+
     [RelayCommand]
     private void Calculate()
     {
@@ -172,6 +204,10 @@ public partial class AmortizationViewModel : ObservableObject
     [RelayCommand]
     private void Reset()
     {
+        // Timer stoppen um keine verzögerte Berechnung nach Reset auszulösen
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         LoanAmount = 50000;
         AnnualRate = 5;
         Years = 5;
@@ -182,4 +218,10 @@ public partial class AmortizationViewModel : ObservableObject
 
     [RelayCommand]
     private void GoBack() => GoBackAction?.Invoke();
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 }

@@ -6,8 +6,8 @@ using Avalonia.Media;
 namespace FinanzRechner.Converters;
 
 /// <summary>
-/// Converts balance value to color brush (positive: IncomeColor, negative: ExpenseColor, zero: gray)
-/// Uses TryFindResource for theme support
+/// Konvertiert Bilanzwert zu Farb-Brush (positiv: IncomeColor, negativ: ExpenseColor, null: Grau).
+/// Nutzt TryGetResource für Theme-Unterstützung.
 /// </summary>
 public class BalanceToColorConverter : IValueConverter
 {

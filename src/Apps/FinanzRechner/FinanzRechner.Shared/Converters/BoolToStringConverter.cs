@@ -4,9 +4,9 @@ using Avalonia.Data.Converters;
 namespace FinanzRechner.Converters;
 
 /// <summary>
-/// Converts bool to string with TrueValue/FalseValue properties.
-/// Note: Because this converter has settable properties, it cannot use the singleton Instance pattern.
-/// Create instances in XAML resources instead.
+/// Konvertiert bool zu String mit TrueValue/FalseValue Properties.
+/// Hinweis: Da dieser Converter setzbare Properties hat, kann kein Singleton-Instance-Pattern verwendet werden.
+/// Stattdessen Instanzen in XAML-Ressourcen erstellen.
 /// </summary>
 public class BoolToStringConverter : IValueConverter
 {

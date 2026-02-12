@@ -1,7 +1,9 @@
+using FinanzRechner.Helpers;
+
 namespace FinanzRechner.Models;
 
 /// <summary>
-/// Budget limit for a category
+/// Budget-Limit für eine Kategorie
 /// </summary>
 public class Budget
 {
@@ -11,13 +13,13 @@ public class Budget
     public bool IsEnabled { get; set; } = true;
 
     /// <summary>
-    /// Warning threshold in percent (e.g. 80 = warning at 80% of limit)
+    /// Warnschwelle in Prozent (z.B. 80 = Warnung bei 80% des Limits)
     /// </summary>
     public double WarningThreshold { get; set; } = 80;
 }
 
 /// <summary>
-/// Budget status for a category
+/// Budget-Status für eine Kategorie
 /// </summary>
 public record BudgetStatus(
     ExpenseCategory Category,
@@ -46,13 +48,13 @@ public record BudgetStatus(
         ExpenseCategory.Bills => "\U0001F4C4",
         _ => "\U0001F4E6"
     };
-    public string SpentDisplay => $"{Spent:N2} \u20ac";
-    public string LimitDisplay => $"{Limit:N2} \u20ac";
+    public string SpentDisplay => CurrencyHelper.Format(Spent);
+    public string LimitDisplay => CurrencyHelper.Format(Limit);
     public string PercentageDisplay => $"{PercentageUsed:F0}%";
 };
 
 /// <summary>
-/// Budget alert level
+/// Budget-Warnstufe
 /// </summary>
 public enum BudgetAlertLevel
 {

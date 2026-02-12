@@ -15,7 +15,7 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     private readonly ILocalizationService _localizationService;
     private readonly INotificationService _notificationService;
 
-    // Thread-safe collection for tracking notified budgets
+    // Thread-safe Collection zum Tracken benachrichtigter Budgets
     private static readonly ConcurrentDictionary<string, DateTime> _notifiedBudgets = new();
     private static readonly object _cleanupLock = new();
 
@@ -46,6 +46,9 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     public string CancelText => _localizationService.GetString("Cancel") ?? "Cancel";
     public string SaveText => _localizationService.GetString("Save") ?? "Save";
     public string UndoText => _localizationService.GetString("Undo") ?? "Undo";
+    public string TotalBudgetText => _localizationService.GetString("TotalBudget") ?? "Total Budget";
+    public string TotalBudgetSpentDisplay => CurrencyHelper.Format(TotalBudgetSpent);
+    public string TotalBudgetLimitDisplay => CurrencyHelper.Format(TotalBudgetLimit);
 
     public void UpdateLocalizedTexts()
     {
@@ -65,6 +68,9 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CancelText));
         OnPropertyChanged(nameof(SaveText));
         OnPropertyChanged(nameof(UndoText));
+        OnPropertyChanged(nameof(TotalBudgetText));
+        OnPropertyChanged(nameof(TotalBudgetSpentDisplay));
+        OnPropertyChanged(nameof(TotalBudgetLimitDisplay));
     }
 
     #endregion
@@ -80,17 +86,30 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _isLoading;
     [ObservableProperty] private bool _hasBudgets;
 
-    // Undo Delete
+    // Undo-Löschen
     [ObservableProperty] private bool _showUndoDelete;
     [ObservableProperty] private string _undoMessage = string.Empty;
     private Budget? _deletedBudget;
     private CancellationTokenSource? _undoCancellation;
 
-    // For new budget
+    // Für neues/editiertes Budget
     [ObservableProperty] private bool _showAddBudget;
+    [ObservableProperty] private bool _isEditing;
     [ObservableProperty] private ExpenseCategory _selectedCategory;
     [ObservableProperty] private double _monthlyLimit = 500;
     [ObservableProperty] private double _warningThreshold = 80;
+
+    // Gesamt-Monatsbudget
+    [ObservableProperty] private double _totalBudgetLimit;
+    [ObservableProperty] private double _totalBudgetSpent;
+    [ObservableProperty] private double _totalBudgetPercentage;
+    [ObservableProperty] private bool _hasTotalBudget;
+
+    partial void OnTotalBudgetSpentChanged(double value)
+        => OnPropertyChanged(nameof(TotalBudgetSpentDisplay));
+
+    partial void OnTotalBudgetLimitChanged(double value)
+        => OnPropertyChanged(nameof(TotalBudgetLimitDisplay));
 
     public List<ExpenseCategory> AvailableCategories { get; } = new()
     {
@@ -110,7 +129,7 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     {
         IsLoading = true;
 
-        // Ensure ExpenseService is initialized
+        // ExpenseService sicherstellen dass initialisiert
         await _expenseService.InitializeAsync();
 
         var statuses = await _expenseService.GetAllBudgetStatusAsync();
@@ -121,40 +140,60 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
         }
 
         HasBudgets = BudgetStatuses.Count > 0;
+
+        // Gesamt-Monatsbudget berechnen
+        if (HasBudgets)
+        {
+            TotalBudgetLimit = statuses.Sum(s => s.Limit);
+            TotalBudgetSpent = statuses.Sum(s => s.Spent);
+            TotalBudgetPercentage = TotalBudgetLimit > 0
+                ? Math.Min(100, TotalBudgetSpent / TotalBudgetLimit * 100)
+                : 0;
+            HasTotalBudget = true;
+        }
+        else
+        {
+            TotalBudgetLimit = 0;
+            TotalBudgetSpent = 0;
+            TotalBudgetPercentage = 0;
+            HasTotalBudget = false;
+        }
+
         IsLoading = false;
 
-        // Check for budget alerts (80% or 100%)
+        // Budget-Warnungen prüfen (80% oder 100%)
         await CheckBudgetAlertsAsync(statuses);
     }
 
     /// <summary>
-    /// Checks budgets and sends notifications for 80% or 100% thresholds
+    /// Prüft Budgets und sendet Benachrichtigungen bei 80%- oder 100%-Schwellwerten
     /// </summary>
     private async Task CheckBudgetAlertsAsync(IEnumerable<BudgetStatus> statuses)
     {
-        // Check if notifications are allowed
+        // Prüfen ob Benachrichtigungen erlaubt sind
         if (!await _notificationService.AreNotificationsAllowedAsync())
             return;
 
-        // Clean up old notifications (once per session)
+        // Alte Benachrichtigungen bereinigen (einmal pro Sitzung)
         CleanupOldNotifications();
 
-        var currentMonthKey = $"{DateTime.Now.Year}-{DateTime.Now.Month}";
+        var today = DateTime.Today;
+        var currentMonthKey = $"{today.Year}-{today.Month}";
 
         foreach (var status in statuses)
         {
             var percentage = status.PercentageUsed;
             if (percentage < 80) continue;
 
-            // Create unique key for this budget alert (category + month + threshold)
+            // Eindeutiger Schlüssel für diesen Budget-Alert (Kategorie + Monat + Schwellwert)
             var threshold = percentage >= 100 ? "100" : "80";
             var alertKey = $"{status.Category}_{currentMonthKey}_{threshold}";
 
-            // Skip if already notified this month (thread-safe check)
+            // Überspringen wenn bereits in diesem Monat benachrichtigt (thread-safe)
             if (_notifiedBudgets.ContainsKey(alertKey))
                 continue;
 
-            // Send notification
+            // Benachrichtigung senden
             var categoryName = GetLocalizedCategoryName(status.Category);
             await _notificationService.SendBudgetAlertAsync(
                 categoryName,
@@ -162,19 +201,20 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
                 status.Spent,
                 status.Limit);
 
-            // Mark as notified (thread-safe add)
-            _notifiedBudgets.TryAdd(alertKey, DateTime.Now);
+            // Als benachrichtigt markieren (thread-safe)
+            _notifiedBudgets.TryAdd(alertKey, DateTime.UtcNow);
         }
     }
 
     /// <summary>
-    /// Removes old notification entries (older than current month)
+    /// Entfernt alte Benachrichtigungs-Einträge (älter als aktueller Monat)
     /// </summary>
     private static void CleanupOldNotifications()
     {
         lock (_cleanupLock)
         {
-            var currentMonthKey = $"{DateTime.Now.Year}-{DateTime.Now.Month}";
+            var today = DateTime.Today;
+            var currentMonthKey = $"{today.Year}-{today.Month}";
             var keysToRemove = _notifiedBudgets.Keys
                 .Where(k => !k.Contains(currentMonthKey))
                 .ToList();
@@ -189,6 +229,7 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ShowAddBudgetDialog()
     {
+        IsEditing = false;
         SelectedCategory = ExpenseCategory.Food;
         MonthlyLimit = 500;
         WarningThreshold = 80;
@@ -240,6 +281,7 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
         var budget = await _expenseService.GetBudgetAsync(status.Category);
         if (budget == null) return;
 
+        IsEditing = true;
         SelectedCategory = budget.Category;
         MonthlyLimit = budget.MonthlyLimit;
         WarningThreshold = budget.WarningThreshold;
@@ -252,11 +294,11 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
         CancellationTokenSource? cts = null;
         try
         {
-            // Get the budget for undo
+            // Budget für Undo sichern
             _deletedBudget = await _expenseService.GetBudgetAsync(status.Category);
             if (_deletedBudget == null) return;
 
-            // Remove from UI
+            // Aus UI entfernen
             var itemToRemove = BudgetStatuses.FirstOrDefault(b => b.Category == status.Category);
             if (itemToRemove != null)
             {
@@ -264,19 +306,19 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
                 HasBudgets = BudgetStatuses.Count > 0;
             }
 
-            // Show undo notification
+            // Undo-Benachrichtigung anzeigen
             var categoryName = GetLocalizedCategoryName(status.Category);
             UndoMessage = $"{_localizationService.GetString("BudgetDeleted") ?? "Budget deleted"} - {categoryName}";
             ShowUndoDelete = true;
 
-            // Start timer for permanent deletion (5 seconds)
+            // Timer für permanente Löschung starten (5 Sekunden)
             _undoCancellation?.Cancel();
             _undoCancellation?.Dispose();
             cts = _undoCancellation = new CancellationTokenSource();
 
             await Task.Delay(5000, cts.Token);
 
-            // Permanent deletion after 5 seconds
+            // Permanente Löschung nach 5 Sekunden
             if (_deletedBudget != null)
             {
                 await _expenseService.DeleteBudgetAsync(_deletedBudget.Category);
@@ -286,11 +328,11 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
         }
         catch (TaskCanceledException)
         {
-            // Undo was triggered - do nothing
+            // Undo wurde ausgelöst - nichts tun
         }
         catch (OperationCanceledException)
         {
-            // Undo was triggered - do nothing
+            // Undo wurde ausgelöst - nichts tun
         }
         catch (Exception)
         {
@@ -303,11 +345,11 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task UndoDeleteAsync()
     {
-        // Stop timer
+        // Timer stoppen
         _undoCancellation?.Cancel();
         _undoCancellation?.Dispose();
 
-        // Restore deleted budget
+        // Gelöschtes Budget wiederherstellen
         if (_deletedBudget != null)
         {
             await _expenseService.SetBudgetAsync(_deletedBudget);

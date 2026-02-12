@@ -243,31 +243,14 @@ public partial class StatisticsViewModel : ObservableObject
     [ObservableProperty]
     private string _incomeTrend = string.Empty;
 
-    public string LastMonthExpensesDisplay => $"{LastMonthExpenses:N2} \u20ac";
-    public string LastMonthIncomeDisplay => $"{LastMonthIncome:N2} \u20ac";
+    public string LastMonthExpensesDisplay => CurrencyHelper.Format(LastMonthExpenses);
+    public string LastMonthIncomeDisplay => CurrencyHelper.Format(LastMonthIncome);
 
-    public string TotalIncomeDisplay => $"{TotalIncome:N2} \u20ac";
-    public string TotalExpensesDisplay => $"{TotalExpenses:N2} \u20ac";
-    public string BalanceDisplay => $"{Balance:N2} \u20ac";
+    public string TotalIncomeDisplay => CurrencyHelper.Format(TotalIncome);
+    public string TotalExpensesDisplay => CurrencyHelper.Format(TotalExpenses);
+    public string BalanceDisplay => CurrencyHelper.Format(Balance);
 
-    // Colors for expense categories
-    private static readonly Dictionary<ExpenseCategory, SKColor> ExpenseCategoryColors = new()
-    {
-        { ExpenseCategory.Food, new SKColor(0xFF, 0x98, 0x00) },           // Orange
-        { ExpenseCategory.Transport, new SKColor(0x21, 0x96, 0xF3) },      // Blue
-        { ExpenseCategory.Housing, new SKColor(0x9C, 0x27, 0xB0) },        // Purple
-        { ExpenseCategory.Entertainment, new SKColor(0xE9, 0x1E, 0x63) },  // Pink
-        { ExpenseCategory.Shopping, new SKColor(0x00, 0xBC, 0xD4) },       // Cyan
-        { ExpenseCategory.Health, new SKColor(0xF4, 0x43, 0x36) },         // Red
-        { ExpenseCategory.Education, new SKColor(0x3F, 0x51, 0xB5) },      // Indigo
-        { ExpenseCategory.Bills, new SKColor(0x60, 0x7D, 0x8B) },          // Blue-grey
-        { ExpenseCategory.Other, new SKColor(0x79, 0x55, 0x48) },          // Brown
-        { ExpenseCategory.Salary, new SKColor(0x4C, 0xAF, 0x50) },         // Green
-        { ExpenseCategory.Freelance, new SKColor(0x00, 0x96, 0x88) },      // Teal
-        { ExpenseCategory.Investment, new SKColor(0x8B, 0xC3, 0x4A) },     // Light green
-        { ExpenseCategory.Gift, new SKColor(0xFF, 0xC1, 0x07) },           // Amber
-        { ExpenseCategory.OtherIncome, new SKColor(0xCD, 0xDC, 0x39) }     // Lime
-    };
+    // Farben via CategoryLocalizationHelper.GetCategoryColor() (5.1 zentralisiert)
 
     #endregion
 
@@ -419,26 +402,31 @@ public partial class StatisticsViewModel : ObservableObject
 
         var currentDate = DateTime.Today;
 
-        for (int i = trendMonths - 1; i >= 0; i--)
+        // 1 Query statt 6: Gesamten 6-Monats-Zeitraum laden und lokal gruppieren
+        var firstMonth = currentDate.AddMonths(-(trendMonths - 1));
+        var (rangeStart, _) = GetMonthRange(firstMonth);
+        var (_, rangeEnd) = GetMonthRange(currentDate);
+
+        var allFilter = new ExpenseFilter { StartDate = rangeStart, EndDate = rangeEnd };
+        var allTransactions = await _expenseService.GetExpensesAsync(allFilter);
+
+        // Lokale Gruppierung nach Monat (Single-Pass)
+        for (int i = 0; i < trendMonths; i++)
         {
             var monthDate = currentDate.AddMonths(-(trendMonths - 1 - i));
-            var (startDate, endDate) = GetMonthRange(monthDate);
-
-            var filter = new ExpenseFilter { StartDate = startDate, EndDate = endDate };
-            var transactions = await _expenseService.GetExpensesAsync(filter);
-
-            // Single-pass calculation for both expenses and income
-            double expenses = 0, income = 0;
-            foreach (var t in transactions)
-            {
-                if (t.Type == TransactionType.Expense)
-                    expenses += t.Amount;
-                else
-                    income += t.Amount;
-            }
-            monthlyExpenses[i] = expenses;
-            monthlyIncomes[i] = income;
             monthLabels[i] = monthDate.ToString("MMM");
+        }
+
+        foreach (var t in allTransactions)
+        {
+            // Monats-Index bestimmen (0 = ältester, 5 = aktueller)
+            int monthDiff = (t.Date.Year - rangeStart.Year) * 12 + (t.Date.Month - rangeStart.Month);
+            if (monthDiff < 0 || monthDiff >= trendMonths) continue;
+
+            if (t.Type == TransactionType.Expense)
+                monthlyExpenses[monthDiff] += t.Amount;
+            else
+                monthlyIncomes[monthDiff] += t.Amount;
         }
 
         // Last month comparison
@@ -555,11 +543,7 @@ public partial class StatisticsViewModel : ObservableObject
     }
 
     private static SKColor GetCategoryColor(ExpenseCategory category)
-    {
-        return ExpenseCategoryColors.TryGetValue(category, out var color)
-            ? color
-            : new SKColor(0x9E, 0x9E, 0x9E); // Grey as fallback
-    }
+        => CategoryLocalizationHelper.GetCategoryColor(category);
 
     private string GetCategoryName(ExpenseCategory category)
         => CategoryLocalizationHelper.GetLocalizedName(category, _localizationService);
@@ -906,24 +890,8 @@ public record CategoryStatistic(
     double Percentage,
     string CategoryName)
 {
-    public string AmountDisplay => $"{Amount:N2} \u20ac";
+    public string AmountDisplay => CurrencyHelper.Format(Amount);
     public string PercentageDisplay => $"{Percentage * 100:F1}%";
     public double BarHeight => Percentage * 200; // Max 200 pixel
-    public string CategoryIcon => Category switch
-    {
-        ExpenseCategory.Food => "\U0001F354",
-        ExpenseCategory.Transport => "\U0001F697",
-        ExpenseCategory.Housing => "\U0001F3E0",
-        ExpenseCategory.Entertainment => "\U0001F3AC",
-        ExpenseCategory.Shopping => "\U0001F6D2",
-        ExpenseCategory.Health => "\U0001F48A",
-        ExpenseCategory.Education => "\U0001F4DA",
-        ExpenseCategory.Bills => "\U0001F4C4",
-        ExpenseCategory.Salary => "\U0001F4B0",
-        ExpenseCategory.Freelance => "\U0001F4BC",
-        ExpenseCategory.Investment => "\U0001F4C8",
-        ExpenseCategory.Gift => "\U0001F381",
-        ExpenseCategory.OtherIncome => "\U0001F4B5",
-        _ => "\U0001F4E6"
-    };
+    public string CategoryIcon => CategoryLocalizationHelper.GetCategoryIcon(Category);
 }

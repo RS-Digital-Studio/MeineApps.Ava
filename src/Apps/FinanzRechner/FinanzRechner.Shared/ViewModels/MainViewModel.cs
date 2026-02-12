@@ -38,6 +38,7 @@ public partial class MainViewModel : ObservableObject
     public LoanViewModel LoanViewModel { get; }
     public AmortizationViewModel AmortizationViewModel { get; }
     public YieldViewModel YieldViewModel { get; }
+    public InflationViewModel InflationViewModel { get; }
 
     public MainViewModel(
         IPurchaseService purchaseService,
@@ -54,7 +55,8 @@ public partial class MainViewModel : ObservableObject
         SavingsPlanViewModel savingsPlanViewModel,
         LoanViewModel loanViewModel,
         AmortizationViewModel amortizationViewModel,
-        YieldViewModel yieldViewModel)
+        YieldViewModel yieldViewModel,
+        InflationViewModel inflationViewModel)
     {
         _purchaseService = purchaseService;
         _adService = adService;
@@ -65,6 +67,12 @@ public partial class MainViewModel : ObservableObject
 
         IsAdBannerVisible = _adService.BannerVisible;
         _adService.AdsStateChanged += (_, _) => IsAdBannerVisible = _adService.BannerVisible;
+
+        // Lade-Fehler an den User melden (4.7)
+        _expenseService.OnDataLoadError += msg =>
+            MessageRequested?.Invoke(
+                _localizationService.GetString("Error") ?? "Error",
+                $"{_localizationService.GetString("LoadError") ?? "Fehler beim Laden"}: {msg}");
 
         // Banner beim Start anzeigen (fuer Desktop + Fallback falls AdMobHelper fehlschlaegt)
         if (_adService.AdsEnabled && !_purchaseService.IsPremium)
@@ -84,6 +92,7 @@ public partial class MainViewModel : ObservableObject
         LoanViewModel = loanViewModel;
         AmortizationViewModel = amortizationViewModel;
         YieldViewModel = yieldViewModel;
+        InflationViewModel = inflationViewModel;
 
         // Wire up GoBack actions
         CompoundInterestViewModel.GoBackAction = CloseCalculator;
@@ -91,6 +100,7 @@ public partial class MainViewModel : ObservableObject
         LoanViewModel.GoBackAction = CloseCalculator;
         AmortizationViewModel.GoBackAction = CloseCalculator;
         YieldViewModel.GoBackAction = CloseCalculator;
+        InflationViewModel.GoBackAction = CloseCalculator;
 
         // Wire up sub-page navigation from ExpenseTracker
         ExpenseTrackerViewModel.NavigationRequested += OnExpenseTrackerNavigation;
@@ -201,6 +211,7 @@ public partial class MainViewModel : ObservableObject
     public bool IsLoanActive => ActiveCalculatorIndex == 2;
     public bool IsAmortizationActive => ActiveCalculatorIndex == 3;
     public bool IsYieldActive => ActiveCalculatorIndex == 4;
+    public bool IsInflationActive => ActiveCalculatorIndex == 5;
 
     partial void OnActiveCalculatorIndexChanged(int value)
     {
@@ -209,6 +220,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsLoanActive));
         OnPropertyChanged(nameof(IsAmortizationActive));
         OnPropertyChanged(nameof(IsYieldActive));
+        OnPropertyChanged(nameof(IsInflationActive));
     }
 
     [RelayCommand]
@@ -255,6 +267,15 @@ public partial class MainViewModel : ObservableObject
         IsCalculatorOpen = true;
         if (!YieldViewModel.HasResult)
             YieldViewModel.CalculateCommand.Execute(null);
+    }
+
+    [RelayCommand]
+    private void OpenInflation()
+    {
+        ActiveCalculatorIndex = 5;
+        IsCalculatorOpen = true;
+        if (!InflationViewModel.HasResult)
+            InflationViewModel.CalculateCommand.Execute(null);
     }
 
     private void CloseCalculator()
@@ -310,6 +331,7 @@ public partial class MainViewModel : ObservableObject
     public string CalcLoanText => _localizationService.GetString("CalcLoan") ?? "Loan";
     public string CalcAmortizationText => _localizationService.GetString("CalcAmortization") ?? "Amortization";
     public string CalcYieldText => _localizationService.GetString("CalcYield") ?? "Yield";
+    public string CalcInflationText => _localizationService.GetString("CalcInflation") ?? "Inflation";
     public string IncomeLabelText => _localizationService.GetString("IncomeTotalLabel") ?? "Income:";
     public string ExpensesLabelText => _localizationService.GetString("ExpensesTotalLabel") ?? "Expenses:";
     public string BalanceLabelText => _localizationService.GetString("BalanceTotalLabel") ?? "Balance:";
@@ -333,6 +355,7 @@ public partial class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CalcLoanText));
         OnPropertyChanged(nameof(CalcAmortizationText));
         OnPropertyChanged(nameof(CalcYieldText));
+        OnPropertyChanged(nameof(CalcInflationText));
         OnPropertyChanged(nameof(IncomeLabelText));
         OnPropertyChanged(nameof(ExpensesLabelText));
         OnPropertyChanged(nameof(BalanceLabelText));
@@ -371,9 +394,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasTransactions;
 
-    public string MonthlyIncomeDisplay => $"+{MonthlyIncome:N2} \u20ac";
-    public string MonthlyExpensesDisplay => $"-{MonthlyExpenses:N2} \u20ac";
-    public string MonthlyBalanceDisplay => MonthlyBalance >= 0 ? $"+{MonthlyBalance:N2} \u20ac" : $"{MonthlyBalance:N2} \u20ac";
+    public string MonthlyIncomeDisplay => CurrencyHelper.FormatSigned(MonthlyIncome);
+    public string MonthlyExpensesDisplay => $"-{CurrencyHelper.Format(MonthlyExpenses)}";
+    public string MonthlyBalanceDisplay => CurrencyHelper.FormatSigned(MonthlyBalance);
     public string CurrentMonthDisplay => DateTime.Today.ToString("MMMM yyyy");
     public bool IsBalancePositive => MonthlyBalance >= 0;
 

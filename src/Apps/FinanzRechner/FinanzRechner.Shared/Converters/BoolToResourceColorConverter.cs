@@ -6,10 +6,10 @@ using Avalonia.Media;
 namespace FinanzRechner.Converters;
 
 /// <summary>
-/// Converts a bool to a Brush from application resources.
-/// TrueColorKey = resource key when true, FalseColorKey = resource key when false.
-/// Note: Because this converter has settable properties, it cannot use the singleton Instance pattern.
-/// Create instances in XAML resources instead.
+/// Konvertiert bool zu Brush aus Anwendungsressourcen.
+/// TrueColorKey = Ressourcen-Schlüssel bei true, FalseColorKey = Ressourcen-Schlüssel bei false.
+/// Hinweis: Da dieser Converter setzbare Properties hat, kann kein Singleton-Instance-Pattern verwendet werden.
+/// Stattdessen Instanzen in XAML-Ressourcen erstellen.
 /// </summary>
 public class BoolToResourceColorConverter : IValueConverter
 {

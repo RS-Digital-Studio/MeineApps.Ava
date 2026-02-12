@@ -1,3 +1,5 @@
+using FinanzRechner.Helpers;
+
 namespace FinanzRechner.Models;
 
 /// <summary>
@@ -93,5 +95,5 @@ public class ExpenseGroup : List<Expense>
         DayTotal = DayIncome - DayExpenses;
     }
 
-    public string DayTotalDisplay => DayTotal >= 0 ? $"+{DayTotal:N2} \u20ac" : $"{DayTotal:N2} \u20ac";
+    public string DayTotalDisplay => CurrencyHelper.FormatSigned(DayTotal);
 }

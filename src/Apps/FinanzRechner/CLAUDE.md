@@ -4,7 +4,7 @@
 
 ## App-Beschreibung
 
-Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 5 Finanz-Rechnern.
+Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 6 Finanz-Rechnern.
 
 **Version:** 2.0.2 | **Package-ID:** com.meineapps.finanzrechner | **Status:** Geschlossener Test
 
@@ -14,7 +14,7 @@ Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 5 Finan
 - **Expense Tracking**: CRUD mit Filter/Sort, Undo-Delete, Kategorie-Icons
 - **Budget Management**: Budget-Limits pro Kategorie, Fortschrittsanzeige, Alert-Levels
 - **Recurring Transactions**: Dauerauftraege mit Auto-Processing bei App-Start (verpasste Zeitraeume werden nachgeholt)
-- **5 Finanz-Rechner**: CompoundInterest, SavingsPlan, Loan, Amortization, Yield
+- **6 Finanz-Rechner**: CompoundInterest, SavingsPlan, Loan, Amortization, Yield, Inflation
 - **Charts**: LiveCharts (ProgressBar, PieChart, LineSeries)
 - **Export**: CSV + PDF (PdfSharpCore), plattformspezifisches File-Sharing
 
@@ -54,13 +54,21 @@ Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 5 Finan
 - Budget-Status (Gesamt-ProgressBar + Top-3 Kategorien)
 - Quick-Add FAB (Overlay mit Betrag, Beschreibung, Kategorie-Chips)
 - Recent Transactions (3 neueste mit Kategorie-Icon)
-- Calculator-ScrollView (5 kompakte Karten, farbiger Accent-Balken)
+- Calculator-Grid (6 kompakte Karten im 2x3 Grid, farbiger Accent-Balken)
 
 ### SettingsView Events
 - **BackupCreated**: Datei teilen via IFileShareService
-- **RestoreFileRequested**: StorageProvider.OpenFilePickerAsync fuer JSON-Restore
+- **RestoreFileRequested**: StorageProvider.OpenFilePickerAsync fuer JSON-Restore → zeigt Merge/Replace-Dialog (ShowRestoreConfirmation Overlay)
 - **OpenUrlRequested**: URL im Standardbrowser oeffnen (Process.Start)
 - **FeedbackRequested**: mailto-Link fuer Feedback-E-Mail
+
+### Restore Merge/Replace Dialog
+- Nach File-Picker wird `OnRestoreFileSelected(filePath)` aufgerufen → setzt ShowRestoreConfirmation=true
+- Dialog-Overlay in SettingsView.axaml mit Merge-Button (Primary) und Replace-Button (Secondary)
+- RestoreMergeCommand → ProcessRestoreFileAsync(path, merge:true)
+- RestoreReplaceCommand → ProcessRestoreFileAsync(path, merge:false)
+- CancelRestoreCommand → Dialog schliessen, IsBackupInProgress zuruecksetzen
+- RESX-Keys: RestoreQuestion, RestoreMerge, RestoreReplace, RestoreMergeDesc, RestoreReplaceDesc, TotalBudget
 
 ### Game Juice
 - **FloatingText**: Quick-Add (+/- Betrag, income=gruen, expense=rot)
@@ -68,6 +76,9 @@ Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 5 Finan
 
 ## Changelog (Highlights)
 
+- **11.02.2026 (4)**: Optimierungs-Durchlauf Batch 4-6: Atomares Schreiben (temp+rename), Auto-Backup (5 Versionen), DateTime.Today/UtcNow konsistent, Budget-Notification-Persistenz, Trend-Abfragen optimiert (6→1), Recurring nur 1x/Tag, stille Fehler loggen, Fire-and-forget try-catch. CurrencyHelper zentral (alle EUR-Formatierungen), CategoryLocalizationHelper erweitert (Icons+Farben), CSV InvariantCulture, Biweekly-Intervall, englische Kommentare→deutsch. Budget-Kategorie im Edit deaktiviert, Gesamt-Monatsbudget-ProgressBar, Amortization-Tabelle ausklappbar, Live-Berechnung Debouncing (300ms) in allen 6 Rechnern, Inflationsrechner (6. Rechner), Restore Merge/Replace Dialog
+- **11.02.2026 (3)**: Inflationsrechner als 6. Finanzrechner: FinanceEngine.CalculateInflation + InflationResult, InflationViewModel mit Chart (Kaufkraft-Verlauf als rote LineSeries), InflationView (orange Gradient #F97316/#EA580C, CurrencyUsd Icon), MainViewModel-Integration (ActiveCalculatorIndex=5), HomeView 2x3 Grid-Karte, DI-Registrierung, 8 neue RESX-Keys in allen 6 Sprachen (CalcInflation, CurrentAmount, AnnualInflationRate, FutureValue, PurchasingPower, PurchasingPowerLoss, ChartPurchasingPower, LossPercent)
+- **11.02.2026 (2)**: Restore Merge vs Replace Dialog: Nach File-Picker zeigt SettingsView einen Overlay-Dialog mit Merge/Replace/Cancel Buttons. 6 neue RESX-Keys in allen 6 Sprachen. ProcessRestoreFileAsync von public auf private geaendert.
 - **11.02.2026**: Bugfix-Review: Dauerauftraege nachholen bei laengerem Nicht-Benutzen, PremiumPrice 3.99 in allen 6 RESX, SettingsView Events verdrahtet (Backup/Restore/URL/Feedback), CSV/PDF-Export mit Datum-Range statt nur einem Monat, Undo-Delete Queue statt Einzelvariable, ClearAllExpensesAsync mit Semaphore, CelebrationRequested implementiert, KW lokalisiert, CategoryStatistic/BudgetStatus lokalisiert, InflationResult entfernt (toter Code), DateTime.UtcNow in Backup-Metadaten, hardcodierte Error-Strings lokalisiert, doppeltes Laden bei PreviousMonth/NextMonth behoben
 - **08.02.2026**: FloatingTextOverlay + CelebrationOverlay (Game Juice)
 - **07.02.2026**: 4 Rewarded Ad Features, Android FileProvider Export, HomeView Redesign

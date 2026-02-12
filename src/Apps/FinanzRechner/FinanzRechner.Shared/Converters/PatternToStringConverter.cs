@@ -26,6 +26,7 @@ public class PatternToStringConverter : IValueConverter
         {
             RecurrencePattern.Daily => "PatternDaily",
             RecurrencePattern.Weekly => "PatternWeekly",
+            RecurrencePattern.Biweekly => "PatternBiweekly",
             RecurrencePattern.Monthly => "PatternMonthly",
             RecurrencePattern.Yearly => "PatternYearly",
             _ => null

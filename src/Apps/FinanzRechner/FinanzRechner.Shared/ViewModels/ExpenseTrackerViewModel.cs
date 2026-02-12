@@ -42,7 +42,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         _purchaseService = purchaseService;
         _rewardedAdService = rewardedAdService;
 
-        // Initialize to current month
+        // Auf aktuellen Monat initialisieren
         _selectedYear = DateTime.Today.Year;
         _selectedMonth = DateTime.Today.Month;
     }
@@ -137,7 +137,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private ObservableCollection<ExpenseGroup> _groupedExpenses = [];
 
-    private List<Expense> _allExpenses = []; // Unfiltered list
+    private List<Expense> _allExpenses = []; // Ungefilterte Liste
 
     /// <summary>
     /// Unterdrueckt doppeltes Laden bei PreviousMonth/NextMonth (Year+Month aendern sich gleichzeitig).
@@ -164,12 +164,12 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
 
     public string MonthYearDisplay => new DateTime(SelectedYear, SelectedMonth, 1).ToString("MMMM yyyy");
 
-    public string TotalExpensesDisplay => Summary != null ? $"{Summary.TotalExpenses:N2} \u20ac" : "0,00 \u20ac";
-    public string TotalIncomeDisplay => Summary != null ? $"{Summary.TotalIncome:N2} \u20ac" : "0,00 \u20ac";
-    public string BalanceDisplay => Summary != null ? $"{Summary.Balance:N2} \u20ac" : "0,00 \u20ac";
+    public string TotalExpensesDisplay => Summary != null ? CurrencyHelper.Format(Summary.TotalExpenses) : CurrencyHelper.Format(0);
+    public string TotalIncomeDisplay => Summary != null ? CurrencyHelper.Format(Summary.TotalIncome) : CurrencyHelper.Format(0);
+    public string BalanceDisplay => Summary != null ? CurrencyHelper.Format(Summary.Balance) : CurrencyHelper.Format(0);
 
-    // Legacy compatibility
-    public string TotalDisplay => Summary != null ? $"{Summary.TotalAmount:N2} \u20ac" : "0,00 \u20ac";
+    // Legacy-Kompatibilität
+    public string TotalDisplay => Summary != null ? CurrencyHelper.Format(Summary.TotalAmount) : CurrencyHelper.Format(0);
 
     partial void OnSelectedYearChanged(int value)
     {
@@ -230,7 +230,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         ? ExpenseCategories
         : IncomeCategories;
 
-    // Expense categories
+    // Ausgabe-Kategorien
     private static readonly List<ExpenseCategory> ExpenseCategories =
     [
         ExpenseCategory.Food,
@@ -244,7 +244,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         ExpenseCategory.Other
     ];
 
-    // Income categories
+    // Einnahme-Kategorien
     private static readonly List<ExpenseCategory> IncomeCategories =
     [
         ExpenseCategory.Salary,
@@ -254,7 +254,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         ExpenseCategory.OtherIncome
     ];
 
-    // Localized description suggestion keys for expenses
+    // Lokalisierte Beschreibungsvorschlag-Schlüssel für Ausgaben
     private static readonly string[] ExpenseSuggestionKeys =
     [
         "SuggestionGroceries",
@@ -267,7 +267,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         "SuggestionInsurance"
     ];
 
-    // Localized description suggestion keys for income
+    // Lokalisierte Beschreibungsvorschlag-Schlüssel für Einnahmen
     private static readonly string[] IncomeSuggestionKeys =
     [
         "SuggestionSalary",
@@ -290,7 +290,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
 
     partial void OnNewTransactionTypeChanged(TransactionType value)
     {
-        // Set default category
+        // Standardkategorie setzen
         NewExpenseCategory = value == TransactionType.Expense
             ? ExpenseCategory.Other
             : ExpenseCategory.Salary;
@@ -371,23 +371,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasCategoryChartData;
 
-    private static readonly Dictionary<ExpenseCategory, SKColor> CategoryColors = new()
-    {
-        { ExpenseCategory.Food, new SKColor(0xFF, 0x98, 0x00) },
-        { ExpenseCategory.Transport, new SKColor(0x21, 0x96, 0xF3) },
-        { ExpenseCategory.Housing, new SKColor(0x9C, 0x27, 0xB0) },
-        { ExpenseCategory.Entertainment, new SKColor(0xE9, 0x1E, 0x63) },
-        { ExpenseCategory.Shopping, new SKColor(0x00, 0xBC, 0xD4) },
-        { ExpenseCategory.Health, new SKColor(0xF4, 0x43, 0x36) },
-        { ExpenseCategory.Education, new SKColor(0x3F, 0x51, 0xB5) },
-        { ExpenseCategory.Bills, new SKColor(0x60, 0x7D, 0x8B) },
-        { ExpenseCategory.Other, new SKColor(0x79, 0x55, 0x48) },
-        { ExpenseCategory.Salary, new SKColor(0x4C, 0xAF, 0x50) },
-        { ExpenseCategory.Freelance, new SKColor(0x00, 0x96, 0x88) },
-        { ExpenseCategory.Investment, new SKColor(0x8B, 0xC3, 0x4A) },
-        { ExpenseCategory.Gift, new SKColor(0xFF, 0xC1, 0x07) },
-        { ExpenseCategory.OtherIncome, new SKColor(0xCD, 0xDC, 0x39) }
-    };
+    // Farben via CategoryLocalizationHelper.GetCategoryColor() (5.1 zentralisiert)
 
     private void UpdateCategoryChart()
     {
@@ -423,7 +407,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         {
             Values = [c.Amount],
             Name = CategoryLocalizationHelper.GetLocalizedName(c.Category, _localizationService),
-            Fill = new SolidColorPaint(CategoryColors.TryGetValue(c.Category, out var color) ? color : new SKColor(0x9E, 0x9E, 0x9E)),
+            Fill = new SolidColorPaint(CategoryLocalizationHelper.GetCategoryColor(c.Category)),
             DataLabelsPosition = LiveChartsCore.Measure.PolarLabelsPosition.Outer,
             DataLabelsPaint = new SolidColorPaint(labelColor),
             DataLabelsFormatter = _ => total > 0 ? $"{c.Amount / total * 100:F0}%" : "",
@@ -455,18 +439,18 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
 
     public enum SortOption
     {
-        DateDescending,   // Newest first (Default)
-        DateAscending,    // Oldest first
-        AmountDescending, // Highest amount first
-        AmountAscending,  // Lowest amount first
+        DateDescending,   // Neueste zuerst (Standard)
+        DateAscending,    // Älteste zuerst
+        AmountDescending, // Höchster Betrag zuerst
+        AmountAscending,  // Niedrigster Betrag zuerst
         Description       // A-Z
     }
 
     public enum FilterTypeOption
     {
-        All,      // All transactions
-        Expenses, // Only expenses
-        Income    // Only income
+        All,      // Alle Transaktionen
+        Expenses, // Nur Ausgaben
+        Income    // Nur Einnahmen
     }
 
     [ObservableProperty]
@@ -541,10 +525,10 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         {
             IsLoading = true;
 
-            // Ensure ExpenseService is initialized
+            // ExpenseService sicherstellen dass initialisiert
             await _expenseService.InitializeAsync();
 
-            // Check and create due recurring transactions
+            // Fällige Daueraufträge prüfen und erstellen
             await _expenseService.ProcessDueRecurringTransactionsAsync();
 
             var expenses = await _expenseService.GetExpensesByMonthAsync(SelectedYear, SelectedMonth);
@@ -553,7 +537,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             // Kategorie-Chart aktualisieren
             UpdateCategoryChart();
 
-            // Apply filter and sort
+            // Filter und Sortierung anwenden
             ApplyFilterAndSort();
 
             Summary = await _expenseService.GetMonthSummaryAsync(SelectedYear, SelectedMonth);
@@ -570,58 +554,58 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
 
     private async Task OnSearchTermChangedDebounced(string value)
     {
-        // Cancel previous timer
+        // Vorherigen Timer abbrechen
         _searchCancellation?.Cancel();
         _searchCancellation?.Dispose();
         _searchCancellation = new CancellationTokenSource();
 
         try
         {
-            // 300ms debouncing
+            // 300ms Entprellung
             await Task.Delay(300, _searchCancellation.Token);
             ApplyFilterAndSort();
         }
         catch (TaskCanceledException)
         {
-            // New search term entered - do nothing
+            // Neuer Suchbegriff eingegeben - nichts tun
         }
     }
 
     private void ApplyFilterAndSort()
     {
-        // Optimized filtering: single-pass with List instead of IEnumerable
+        // Optimierte Filterung: Ein Durchlauf mit List statt IEnumerable
         var filtered = new List<Expense>(_allExpenses.Count);
         var searchLower = string.IsNullOrWhiteSpace(SearchTerm) ? null : SearchTerm.ToLowerInvariant();
 
         foreach (var expense in _allExpenses)
         {
-            // Filter by search term
+            // Nach Suchbegriff filtern
             if (searchLower != null &&
                 !expense.Description.ToLowerInvariant().Contains(searchLower) &&
                 (expense.Note == null || !expense.Note.ToLowerInvariant().Contains(searchLower)))
                 continue;
 
-            // Filter by transaction type
+            // Nach Transaktionstyp filtern
             if (SelectedFilter == FilterTypeOption.Expenses && expense.Type != TransactionType.Expense)
                 continue;
             if (SelectedFilter == FilterTypeOption.Income && expense.Type != TransactionType.Income)
                 continue;
 
-            // Filter by category
+            // Nach Kategorie filtern
             if (SelectedCategoryFilter.HasValue && expense.Category != SelectedCategoryFilter.Value)
                 continue;
 
-            // Filter by amount
+            // Nach Betrag filtern
             if (MinAmountFilter > 0 && expense.Amount < MinAmountFilter)
                 continue;
             if (MaxAmountFilter > 0 && expense.Amount > MaxAmountFilter)
                 continue;
 
-            // All filters passed - add
+            // Alle Filter bestanden - hinzufügen
             filtered.Add(expense);
         }
 
-        // Apply sort (in-place)
+        // Sortierung anwenden (in-place)
         filtered.Sort(SelectedSort switch
         {
             SortOption.DateAscending => (a, b) => a.Date.CompareTo(b.Date),
@@ -635,17 +619,17 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         Expenses = new ObservableCollection<Expense>(filtered);
         HasExpenses = Expenses.Count > 0;
 
-        // Group by date
+        // Nach Datum gruppieren
         UpdateGroupedExpenses(filtered);
 
-        // Update filter status
+        // Filterstatus aktualisieren
         IsFilterActive = !string.IsNullOrWhiteSpace(SearchTerm) ||
                         SelectedFilter != FilterTypeOption.All ||
                         SelectedCategoryFilter.HasValue ||
                         MinAmountFilter > 0 ||
                         MaxAmountFilter > 0;
 
-        // Update display
+        // Anzeige aktualisieren
         FilteredCountDisplay = _allExpenses.Count > 0
             ? string.Format(_localizationService.GetString("FilteredCountFormat") ?? "{0} / {1}", Expenses.Count, _allExpenses.Count)
             : string.Empty;
@@ -720,7 +704,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         {
             if (IsEditing && SelectedExpense != null)
             {
-                // Update existing
+                // Bestehende aktualisieren
                 SelectedExpense.Date = NewExpenseDate;
                 SelectedExpense.Description = NewExpenseDescription;
                 SelectedExpense.Amount = NewExpenseAmount;
@@ -732,7 +716,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             }
             else
             {
-                // Add new
+                // Neue hinzufügen
                 var expense = new Expense
                 {
                     Date = NewExpenseDate,
@@ -750,7 +734,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
                 var cat = expense.Type == TransactionType.Income ? "income" : "expense";
                 FloatingTextRequested?.Invoke($"{prefix}{expense.Amount:N2}\u20ac", cat);
 
-                // Create recurring transaction if toggled
+                // Dauerauftrag erstellen wenn aktiviert
                 if (IsRecurring)
                 {
                     var recurring = new RecurringTransaction
@@ -764,7 +748,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
                         StartDate = RecurringStartDate,
                         EndDate = HasRecurringEndDate ? RecurringEndDate : null,
                         IsActive = true,
-                        LastExecuted = NewExpenseDate // Prevent immediate re-creation
+                        LastExecuted = NewExpenseDate // Sofortige Neuerstellung verhindern
                     };
                     await _expenseService.CreateRecurringTransactionAsync(recurring);
                 }
@@ -1005,7 +989,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     private bool _showCsvExportAdOverlay;
 
     /// <summary>
-    /// Merkt sich welcher CSV-Export angefragt wurde ("month" oder "all")
+    /// Merkt sich welcher CSV-Export angefragt wurde ("month" oder "all").
     /// </summary>
     private string _pendingCsvExportType = "";
 
@@ -1176,7 +1160,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
 }
 
 /// <summary>
-/// Wrapper for ExpenseCategory with selection state for chip-based UI.
+/// Wrapper für ExpenseCategory mit Auswahl-Status für Chip-basierte UI.
 /// </summary>
 public partial class CategoryDisplayItem : ObservableObject
 {
@@ -1191,21 +1175,5 @@ public partial class CategoryDisplayItem : ObservableObject
     [ObservableProperty]
     private bool _isSelected;
 
-    public string CategoryDisplay => Category switch
-    {
-        ExpenseCategory.Food => "\U0001F354",
-        ExpenseCategory.Transport => "\U0001F697",
-        ExpenseCategory.Housing => "\U0001F3E0",
-        ExpenseCategory.Entertainment => "\U0001F3AC",
-        ExpenseCategory.Shopping => "\U0001F6D2",
-        ExpenseCategory.Health => "\U0001F48A",
-        ExpenseCategory.Education => "\U0001F4DA",
-        ExpenseCategory.Bills => "\U0001F4C4",
-        ExpenseCategory.Salary => "\U0001F4B0",
-        ExpenseCategory.Freelance => "\U0001F4BC",
-        ExpenseCategory.Investment => "\U0001F4C8",
-        ExpenseCategory.Gift => "\U0001F381",
-        ExpenseCategory.OtherIncome => "\U0001F4B5",
-        _ => "\U0001F4E6"
-    };
+    public string CategoryDisplay => CategoryLocalizationHelper.GetCategoryIcon(Category);
 }

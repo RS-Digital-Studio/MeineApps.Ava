@@ -1,7 +1,7 @@
 namespace FinanzRechner.Services;
 
 /// <summary>
-/// Service for exporting transactions in various formats
+/// Service für den Export von Transaktionen in verschiedenen Formaten
 /// </summary>
 public interface IExportService
 {

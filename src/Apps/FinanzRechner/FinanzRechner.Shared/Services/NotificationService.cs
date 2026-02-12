@@ -4,7 +4,7 @@ public class NotificationService : INotificationService
 {
     public Task SendBudgetAlertAsync(string categoryName, double percentageUsed, double spent, double limit)
     {
-        // Desktop: no-op for now, can be extended with platform-specific notifications
+        // Desktop: Keine Aktion, kann mit plattformspezifischen Benachrichtigungen erweitert werden
         return Task.CompletedTask;
     }
 

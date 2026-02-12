@@ -1,7 +1,7 @@
 namespace FinanzRechner.Services;
 
 /// <summary>
-/// Service for local notifications
+/// Service für lokale Benachrichtigungen
 /// </summary>
 public interface INotificationService
 {

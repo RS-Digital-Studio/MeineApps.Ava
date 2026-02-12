@@ -1,3 +1,5 @@
+using FinanzRechner.Helpers;
+
 namespace FinanzRechner.Models;
 
 /// <summary>
@@ -34,10 +36,10 @@ public class BudgetAnalysisReport
     public bool IsExpenseIncreased => MonthChangePercent > 0;
 
     // Display-Properties
-    public string TotalExpensesDisplay => $"{TotalExpenses:N2} \u20ac";
-    public string TotalIncomeDisplay => $"{TotalIncome:N2} \u20ac";
-    public string BalanceDisplay => Balance >= 0 ? $"+{Balance:N2} \u20ac" : $"{Balance:N2} \u20ac";
-    public string PreviousMonthDisplay => $"{PreviousMonthExpenses:N2} \u20ac";
+    public string TotalExpensesDisplay => CurrencyHelper.Format(TotalExpenses);
+    public string TotalIncomeDisplay => CurrencyHelper.Format(TotalIncome);
+    public string BalanceDisplay => CurrencyHelper.FormatSigned(Balance);
+    public string PreviousMonthDisplay => CurrencyHelper.Format(PreviousMonthExpenses);
     public string MonthChangeDisplay => MonthChangePercent >= 0 ? $"+{MonthChangePercent:F0}%" : $"{MonthChangePercent:F0}%";
     public bool IsBalancePositive => Balance >= 0;
 }
@@ -52,7 +54,7 @@ public class CategoryBreakdownItem
     public double Amount { get; set; }
     public double Percentage { get; set; }
 
-    public string AmountDisplay => $"{Amount:N2} \u20ac";
+    public string AmountDisplay => CurrencyHelper.Format(Amount);
     public string PercentageDisplay => $"{Percentage:F0}%";
 }
 
@@ -64,5 +66,5 @@ public class SavingTipItem
     public string CategoryName { get; set; } = string.Empty;
     public string Tip { get; set; } = string.Empty;
     public double Amount { get; set; }
-    public string AmountDisplay => $"{Amount:N2} \u20ac";
+    public string AmountDisplay => CurrencyHelper.Format(Amount);
 }

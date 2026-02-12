@@ -71,6 +71,9 @@
       <Border IsVisible="{Binding IsYieldActive}">
         <calcViews:YieldView DataContext="{Binding YieldViewModel}" />
       </Border>
+      <Border IsVisible="{Binding IsInflationActive}">
+        <calcViews:InflationView DataContext="{Binding InflationViewModel}" />
+      </Border>
     </Panel>
 
     <!-- Sub-Page Overlay (Budgets, Recurring Transactions) -->

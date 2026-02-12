@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
@@ -12,10 +15,13 @@ using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
-public partial class SavingsPlanViewModel : ObservableObject
+public partial class SavingsPlanViewModel : ObservableObject, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;
+
+    // Debounce-Timer für Live-Berechnung (300ms Verzögerung)
+    private Timer? _debounceTimer;
 
     public SavingsPlanViewModel(FinanceEngine financeEngine, ILocalizationService localizationService)
     {
@@ -58,6 +64,23 @@ public partial class SavingsPlanViewModel : ObservableObject
     [ObservableProperty]
     private int _years = 20;
 
+    // Live-Berechnung mit Debouncing auslösen
+    partial void OnMonthlyDepositChanged(double value) => ScheduleAutoCalculate();
+    partial void OnInitialDepositChanged(double value) => ScheduleAutoCalculate();
+    partial void OnAnnualRateChanged(double value) => ScheduleAutoCalculate();
+    partial void OnYearsChanged(int value) => ScheduleAutoCalculate();
+
+    /// <summary>
+    /// Startet den Debounce-Timer neu. Nach 300ms wird Calculate() auf dem UI-Thread aufgerufen.
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = new Timer(_ =>
+            Dispatcher.UIThread.Post(() => Calculate()),
+            null, 300, Timeout.Infinite);
+    }
+
     #endregion
 
     #region Result Properties
@@ -68,9 +91,9 @@ public partial class SavingsPlanViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasResult;
 
-    public string TotalDepositsDisplay => Result != null ? $"{Result.TotalDeposits:N2} \u20ac" : "";
-    public string FinalAmountDisplay => Result != null ? $"{Result.FinalAmount:N2} \u20ac" : "";
-    public string InterestEarnedDisplay => Result != null ? $"{Result.InterestEarned:N2} \u20ac" : "";
+    public string TotalDepositsDisplay => Result != null ? CurrencyHelper.Format(Result.TotalDeposits) : "";
+    public string FinalAmountDisplay => Result != null ? CurrencyHelper.Format(Result.FinalAmount) : "";
+    public string InterestEarnedDisplay => Result != null ? CurrencyHelper.Format(Result.InterestEarned) : "";
 
     partial void OnResultChanged(SavingsPlanResult? value)
     {
@@ -181,6 +204,10 @@ public partial class SavingsPlanViewModel : ObservableObject
     [RelayCommand]
     private void Reset()
     {
+        // Timer stoppen um keine verzögerte Berechnung nach Reset auszulösen
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         MonthlyDeposit = 200;
         InitialDeposit = 0;
         AnnualRate = 5;
@@ -192,4 +219,10 @@ public partial class SavingsPlanViewModel : ObservableObject
 
     [RelayCommand]
     private void GoBack() => GoBackAction?.Invoke();
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 }

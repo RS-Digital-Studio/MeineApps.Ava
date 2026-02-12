@@ -1,18 +1,21 @@
+using FinanzRechner.Helpers;
+
 namespace FinanzRechner.Models;
 
 /// <summary>
-/// Recurrence pattern for recurring transactions
+/// Wiederholungsmuster für Daueraufträge.
 /// </summary>
 public enum RecurrencePattern
 {
     Daily,
     Weekly,
+    Biweekly,
     Monthly,
     Yearly
 }
 
 /// <summary>
-/// Recurring transaction (template for automatic entries)
+/// Dauerauftrag (Vorlage für automatische Buchungen).
 /// </summary>
 public class RecurringTransaction
 {
@@ -30,7 +33,9 @@ public class RecurringTransaction
     public bool IsActive { get; set; } = true;
 
     public string CategoryName => Category.ToString();
-    public string AmountDisplay => Type == TransactionType.Expense ? $"-{Amount:N2} \u20ac" : $"+{Amount:N2} \u20ac";
+    public string AmountDisplay => Type == TransactionType.Expense
+        ? $"-{CurrencyHelper.Format(Amount)}"
+        : $"+{CurrencyHelper.Format(Amount)}";
 
     public DateTime GetNextDueDate()
     {
@@ -40,6 +45,7 @@ public class RecurringTransaction
         {
             RecurrencePattern.Daily => baseDate.AddDays(1),
             RecurrencePattern.Weekly => baseDate.AddDays(7),
+            RecurrencePattern.Biweekly => baseDate.AddDays(14),
             RecurrencePattern.Monthly => baseDate.AddMonths(1),
             RecurrencePattern.Yearly => baseDate.AddYears(1),
             _ => baseDate

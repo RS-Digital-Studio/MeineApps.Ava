@@ -7,8 +7,8 @@ using FinanzRechner.Models;
 namespace FinanzRechner.Converters;
 
 /// <summary>
-/// Converts BudgetAlertLevel to color brush (Safe: IncomeColor, Warning: WarningColor, Exceeded: ExpenseColor)
-/// Uses TryFindResource for theme support
+/// Konvertiert BudgetAlertLevel zu Farb-Brush (Safe: IncomeColor, Warning: WarningColor, Exceeded: ExpenseColor).
+/// Nutzt TryGetResource für Theme-Unterstützung.
 /// </summary>
 public class AlertLevelToColorConverter : IValueConverter
 {
@@ -30,7 +30,7 @@ public class AlertLevelToColorConverter : IValueConverter
             if (app != null && app.TryGetResource(resourceKey, app.ActualThemeVariant, out var brush) && brush is IBrush b)
                 return b;
 
-            // Fallback colors
+            // Fallback-Farben
             return alertLevel switch
             {
                 BudgetAlertLevel.Safe => new SolidColorBrush(Color.Parse("#4CAF50")),
@@ -40,7 +40,7 @@ public class AlertLevelToColorConverter : IValueConverter
             };
         }
 
-        // Default fallback
+        // Standard-Fallback
         var application = Application.Current;
         if (application != null && application.TryGetResource("IncomeColor", application.ActualThemeVariant, out var defaultBrush) && defaultBrush is IBrush db)
             return db;

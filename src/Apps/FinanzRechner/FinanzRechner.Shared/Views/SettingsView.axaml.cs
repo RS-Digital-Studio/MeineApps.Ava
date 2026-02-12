@@ -88,8 +88,8 @@ public partial class SettingsView : UserControl
             var localPath = file.TryGetLocalPath();
             if (localPath != null && _vm != null)
             {
-                // Einfach mergen (kein Merge/Replace-Dialog fuer jetzt)
-                await _vm.ProcessRestoreFileAsync(localPath, merge: true);
+                // Merge/Replace-Dialog anzeigen
+                _vm.OnRestoreFileSelected(localPath);
             }
             else if (_vm != null)
             {

@@ -3,10 +3,13 @@ using FinanzRechner.Models;
 namespace FinanzRechner.Services;
 
 /// <summary>
-/// Service for expense management (CRUD + Statistics)
+/// Service für Ausgabenverwaltung (CRUD + Statistiken)
 /// </summary>
 public interface IExpenseService
 {
+    /// <summary>Wird ausgelöst wenn beim Laden Fehler auftreten (Datei korrupt etc.)</summary>
+    event Action<string>? OnDataLoadError;
+
     Task InitializeAsync();
     Task<IReadOnlyList<Expense>> GetAllExpensesAsync();
     Task<IReadOnlyList<Expense>> GetExpensesByMonthAsync(int year, int month);
@@ -19,7 +22,7 @@ public interface IExpenseService
     Task<double> GetTotalExpensesAsync(DateTime startDate, DateTime endDate);
     Task ClearAllExpensesAsync();
 
-    // Budget Management
+    // Budget-Verwaltung
     Task<Budget> SetBudgetAsync(Budget budget);
     Task<Budget?> GetBudgetAsync(ExpenseCategory category);
     Task<IReadOnlyList<Budget>> GetAllBudgetsAsync();
@@ -27,7 +30,7 @@ public interface IExpenseService
     Task<BudgetStatus?> GetBudgetStatusAsync(ExpenseCategory category);
     Task<IReadOnlyList<BudgetStatus>> GetAllBudgetStatusAsync();
 
-    // Recurring Transactions
+    // Daueraufträge
     Task<RecurringTransaction> CreateRecurringTransactionAsync(RecurringTransaction transaction);
     Task<bool> UpdateRecurringTransactionAsync(RecurringTransaction transaction);
     Task<bool> DeleteRecurringTransactionAsync(Guid id);
@@ -35,7 +38,7 @@ public interface IExpenseService
     Task<IReadOnlyList<RecurringTransaction>> GetAllRecurringTransactionsAsync();
     Task<int> ProcessDueRecurringTransactionsAsync();
 
-    // Backup & Restore
+    // Sicherung & Wiederherstellung
     Task<string> ExportToJsonAsync();
     Task<int> ImportFromJsonAsync(string json, bool mergeData = false);
 }

@@ -872,6 +872,9 @@
   <data name="PatternMonthly" xml:space="preserve">
     <value>Mensuel</value>
   </data>
+  <data name="PatternBiweekly" xml:space="preserve">
+    <value>Bimensuel</value>
+  </data>
   <data name="PatternYearly" xml:space="preserve">
     <value>Annuel</value>
   </data>
@@ -1018,6 +1021,50 @@
   </data>
   <data name="AdVideoNotAvailableMessage" xml:space="preserve">
     <value>Aucune vidéo publicitaire n'est actuellement disponible. Veuillez réessayer plus tard.</value>
+  </data>
+
+  <!-- Restore Dialog -->
+  <data name="RestoreQuestion" xml:space="preserve">
+    <value>Comment voulez-vous restaurer?</value>
+  </data>
+  <data name="RestoreMerge" xml:space="preserve">
+    <value>Fusionner</value>
+  </data>
+  <data name="RestoreReplace" xml:space="preserve">
+    <value>Remplacer</value>
+  </data>
+  <data name="RestoreMergeDesc" xml:space="preserve">
+    <value>Combine les données existantes avec la sauvegarde</value>
+  </data>
+  <data name="RestoreReplaceDesc" xml:space="preserve">
+    <value>Remplace toutes les données par la sauvegarde</value>
+  </data>
+  <data name="TotalBudget" xml:space="preserve">
+    <value>Budget total</value>
+  </data>
+  <data name="CalcInflation" xml:space="preserve">
+    <value>Inflation</value>
+  </data>
+  <data name="CurrentAmount" xml:space="preserve">
+    <value>Montant actuel (EUR)</value>
+  </data>
+  <data name="AnnualInflationRate" xml:space="preserve">
+    <value>Taux d'inflation (%)</value>
+  </data>
+  <data name="FutureValue" xml:space="preserve">
+    <value>Valeur future</value>
+  </data>
+  <data name="PurchasingPower" xml:space="preserve">
+    <value>Pouvoir d'achat</value>
+  </data>
+  <data name="PurchasingPowerLoss" xml:space="preserve">
+    <value>Perte de pouvoir d'achat</value>
+  </data>
+  <data name="ChartPurchasingPower" xml:space="preserve">
+    <value>Pouvoir d'achat</value>
+  </data>
+  <data name="LossPercent" xml:space="preserve">
+    <value>Perte %</value>
   </data>
 
 </root>

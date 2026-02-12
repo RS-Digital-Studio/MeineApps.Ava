@@ -437,6 +437,87 @@
       </StackPanel>
     </ScrollViewer>
 
+    <!-- ==================== Restore Merge/Replace Dialog Overlay ==================== -->
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            IsVisible="{Binding ShowRestoreConfirmation}"
+            Background="#80000000">
+      <Border Background="{DynamicResource CardBrush}"
+              CornerRadius="16"
+              Padding="24"
+              Margin="32"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <!-- Titel -->
+          <TextBlock Text="{Binding RestoreQuestionText}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center"
+                     TextWrapping="Wrap" />
+
+          <!-- Merge/Replace Buttons nebeneinander -->
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+
+            <!-- Merge -->
+            <StackPanel Grid.Column="0" Spacing="8">
+              <Button Command="{Binding RestoreMergeCommand}"
+                      Classes="Primary"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      CornerRadius="8"
+                      Height="NaN"
+                      Padding="12">
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="Merge" Width="20" Height="20" />
+                  <TextBlock Text="{Binding RestoreMergeText}"
+                             FontWeight="SemiBold" FontSize="14"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <TextBlock Text="{Binding RestoreMergeDescText}"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap"
+                         HorizontalAlignment="Center"
+                         TextAlignment="Center" />
+            </StackPanel>
+
+            <!-- Replace -->
+            <StackPanel Grid.Column="1" Spacing="8">
+              <Button Command="{Binding RestoreReplaceCommand}"
+                      Classes="Secondary"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      CornerRadius="8"
+                      Height="NaN"
+                      Padding="12">
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="DatabaseRefresh" Width="20" Height="20" />
+                  <TextBlock Text="{Binding RestoreReplaceText}"
+                             FontWeight="SemiBold" FontSize="14"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <TextBlock Text="{Binding RestoreReplaceDescText}"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap"
+                         HorizontalAlignment="Center"
+                         TextAlignment="Center" />
+            </StackPanel>
+
+          </Grid>
+
+          <!-- Cancel Button -->
+          <Button Command="{Binding CancelRestoreCommand}"
+                  Classes="Outlined"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Content="{Binding CancelText}"
+                  CornerRadius="8" />
+        </StackPanel>
+      </Border>
+    </Border>
+
   </Grid>
 
 </UserControl>

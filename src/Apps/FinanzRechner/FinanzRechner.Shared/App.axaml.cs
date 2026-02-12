@@ -38,20 +38,20 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
-        // Setup DI
+        // DI einrichten
         var services = new ServiceCollection();
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
-        // Initialize theme (apply saved theme before window is created)
+        // Theme initialisieren (gespeichertes Theme anwenden bevor das Fenster erstellt wird)
         _ = Services.GetRequiredService<IThemeService>();
 
-        // Initialize localization
+        // Lokalisierung initialisieren
         var locService = Services.GetRequiredService<ILocalizationService>();
         locService.Initialize();
         LocalizationManager.Initialize(locService);
 
-        // Initialize expense service
+        // Ausgabenservice initialisieren
         var expenseService = Services.GetRequiredService<IExpenseService>();
         expenseService.InitializeAsync().ConfigureAwait(false);
 
@@ -75,22 +75,22 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
-        // Core Services
+        // Kern-Services
         services.AddSingleton<IPreferencesService>(sp => new PreferencesService("FinanzRechner"));
         services.AddSingleton<IThemeService, ThemeService>();
 
-        // Premium Services (Ads, Purchases)
+        // Premium-Services (Werbung, Käufe)
         services.AddMeineAppsPremium();
 
-        // Android-Override: Echte Rewarded Ads statt Desktop-Simulator
+        // Android-Überschreibung: Echte Rewarded Ads statt Desktop-Simulator
         if (RewardedAdServiceFactory != null)
             services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
 
-        // Localization
+        // Lokalisierung
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
-        // App Services
+        // App-Services
         services.AddSingleton<IFileDialogService, FileDialogService>();
         // Plattformspezifisch: Android setzt Factory, Desktop nutzt Default
         if (FileShareServiceFactory != null)
@@ -108,7 +108,7 @@ public partial class App : Application
                 sp.GetRequiredService<ILocalizationService>(),
                 sp.GetRequiredService<IFileShareService>()));
 
-        // Engine
+        // Berechnungs-Engine
         services.AddSingleton<FinanceEngine>();
 
         // ViewModels
@@ -122,6 +122,7 @@ public partial class App : Application
         services.AddTransient<SavingsPlanViewModel>();
         services.AddTransient<AmortizationViewModel>();
         services.AddTransient<YieldViewModel>();
+        services.AddTransient<InflationViewModel>();
         services.AddSingleton<MainViewModel>();
     }
 }

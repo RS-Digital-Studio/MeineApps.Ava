@@ -1,6 +1,9 @@
 using System;
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using LiveChartsCore;
 using LiveChartsCore.SkiaSharpView;
@@ -10,10 +13,13 @@ using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
-public partial class YieldViewModel : ObservableObject
+public partial class YieldViewModel : ObservableObject, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;
+
+    // Debounce-Timer für Live-Berechnung (300ms Verzögerung)
+    private Timer? _debounceTimer;
 
     public YieldViewModel(FinanceEngine financeEngine, ILocalizationService localizationService)
     {
@@ -52,6 +58,22 @@ public partial class YieldViewModel : ObservableObject
     [ObservableProperty]
     private int _years = 5;
 
+    // Live-Berechnung mit Debouncing auslösen
+    partial void OnInitialInvestmentChanged(double value) => ScheduleAutoCalculate();
+    partial void OnFinalValueChanged(double value) => ScheduleAutoCalculate();
+    partial void OnYearsChanged(int value) => ScheduleAutoCalculate();
+
+    /// <summary>
+    /// Startet den Debounce-Timer neu. Nach 300ms wird Calculate() auf dem UI-Thread aufgerufen.
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = new Timer(_ =>
+            Dispatcher.UIThread.Post(() => Calculate()),
+            null, 300, Timeout.Infinite);
+    }
+
     #endregion
 
     #region Result Properties
@@ -62,7 +84,7 @@ public partial class YieldViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasResult;
 
-    public string TotalReturnDisplay => Result != null ? $"{Result.TotalReturn:N2} \u20ac" : "";
+    public string TotalReturnDisplay => Result != null ? CurrencyHelper.Format(Result.TotalReturn) : "";
     public string TotalReturnPercentDisplay => Result != null ? $"{Result.TotalReturnPercent:N2} %" : "";
     public string EffectiveAnnualRateDisplay => Result != null ? $"{Result.EffectiveAnnualRate:N2} % p.a." : "";
 
@@ -141,6 +163,10 @@ public partial class YieldViewModel : ObservableObject
     [RelayCommand]
     private void Reset()
     {
+        // Timer stoppen um keine verzögerte Berechnung nach Reset auszulösen
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         InitialInvestment = 10000;
         FinalValue = 15000;
         Years = 5;
@@ -151,4 +177,10 @@ public partial class YieldViewModel : ObservableObject
 
     [RelayCommand]
     private void GoBack() => GoBackAction?.Invoke();
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+    }
 }

@@ -80,6 +80,14 @@ public partial class SettingsViewModel : ObservableObject
     public string ThemeForestName => _localizationService.GetString("ThemeForest") ?? "Forest";
     public string ThemeForestDescText => _localizationService.GetString("ThemeForestDesc") ?? "Dark green theme";
 
+    // Restore-Dialog Texte
+    public string RestoreQuestionText => _localizationService.GetString("RestoreQuestion") ?? "How do you want to restore?";
+    public string RestoreMergeText => _localizationService.GetString("RestoreMerge") ?? "Merge";
+    public string RestoreReplaceText => _localizationService.GetString("RestoreReplace") ?? "Replace";
+    public string RestoreMergeDescText => _localizationService.GetString("RestoreMergeDesc") ?? "Combines existing data with backup";
+    public string RestoreReplaceDescText => _localizationService.GetString("RestoreReplaceDesc") ?? "Replaces all data with backup";
+    public string CancelText => _localizationService.GetString("Cancel") ?? "Cancel";
+
     #endregion
 
     #region Language Selection
@@ -143,6 +151,12 @@ public partial class SettingsViewModel : ObservableObject
         OnPropertyChanged(nameof(ThemeDaylightDescText));
         OnPropertyChanged(nameof(ThemeForestName));
         OnPropertyChanged(nameof(ThemeForestDescText));
+        OnPropertyChanged(nameof(RestoreQuestionText));
+        OnPropertyChanged(nameof(RestoreMergeText));
+        OnPropertyChanged(nameof(RestoreReplaceText));
+        OnPropertyChanged(nameof(RestoreMergeDescText));
+        OnPropertyChanged(nameof(RestoreReplaceDescText));
+        OnPropertyChanged(nameof(CancelText));
     }
 
     #endregion
@@ -228,6 +242,12 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isBackupInProgress;
 
+    [ObservableProperty]
+    private bool _showRestoreConfirmation;
+
+    [ObservableProperty]
+    private string _restoreFilePath = string.Empty;
+
     [RelayCommand]
     private async Task CreateBackupAsync()
     {
@@ -300,9 +320,40 @@ public partial class SettingsViewModel : ObservableObject
     public event Action? RestoreFileRequested;
 
     /// <summary>
-    /// Called from view after user picks a file and chooses merge/replace
+    /// Wird von der View aufgerufen nachdem der User eine Datei ausgewaehlt hat.
+    /// Zeigt den Merge/Replace-Dialog an.
     /// </summary>
-    public async Task ProcessRestoreFileAsync(string filePath, bool merge)
+    public void OnRestoreFileSelected(string filePath)
+    {
+        RestoreFilePath = filePath;
+        ShowRestoreConfirmation = true;
+    }
+
+    [RelayCommand]
+    private async Task RestoreMerge()
+    {
+        ShowRestoreConfirmation = false;
+        await ProcessRestoreFileAsync(RestoreFilePath, merge: true);
+    }
+
+    [RelayCommand]
+    private async Task RestoreReplace()
+    {
+        ShowRestoreConfirmation = false;
+        await ProcessRestoreFileAsync(RestoreFilePath, merge: false);
+    }
+
+    [RelayCommand]
+    private void CancelRestore()
+    {
+        ShowRestoreConfirmation = false;
+        IsBackupInProgress = false;
+    }
+
+    /// <summary>
+    /// Fuehrt den eigentlichen Restore aus (Merge oder Replace).
+    /// </summary>
+    private async Task ProcessRestoreFileAsync(string filePath, bool merge)
     {
         try
         {

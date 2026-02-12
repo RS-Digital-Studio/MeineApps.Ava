@@ -6,29 +6,38 @@ using MeineApps.Core.Ava.Localization;
 namespace FinanzRechner.Services;
 
 /// <summary>
-/// Implementation of ExpenseService with local JSON storage
+/// Implementierung des ExpenseService mit lokalem JSON-Speicher
 /// </summary>
 public class ExpenseService : IExpenseService, IDisposable
 {
     private const string ExpensesFile = "expenses.json";
     private const string BudgetsFile = "budgets.json";
     private const string RecurringFile = "recurring_transactions.json";
+    private const string NotificationsFile = "notifications.json";
+    private const string LastProcessedFile = "last_processed.txt";
     private const double MaxAmount = 999_999_999.99;
     private const int MaxDescriptionLength = 200;
     private const int MaxNoteLength = 500;
+    private const int MaxBackupVersions = 5;
     private static readonly JsonSerializerOptions _jsonWriteOptions = new() { WriteIndented = true };
 
     private readonly string _expensesFilePath;
     private readonly string _budgetsFilePath;
     private readonly string _recurringFilePath;
+    private readonly string _notificationsFilePath;
+    private readonly string _lastProcessedFilePath;
+    private readonly string _backupDir;
     private readonly INotificationService? _notificationService;
     private readonly ILocalizationService? _localizationService;
     private List<Expense> _expenses = [];
     private List<Budget> _budgets = [];
     private List<RecurringTransaction> _recurringTransactions = [];
-    private readonly Dictionary<string, DateTime> _sentNotifications = new();
+    private Dictionary<string, DateTime> _sentNotifications = new();
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private bool _isInitialized;
+
+    /// <summary>Wird ausgelöst wenn beim Laden Fehler auftreten</summary>
+    public event Action<string>? OnDataLoadError;
 
     public ExpenseService(INotificationService? notificationService = null,
         ILocalizationService? localizationService = null)
@@ -44,6 +53,9 @@ public class ExpenseService : IExpenseService, IDisposable
         _expensesFilePath = Path.Combine(appDataDir, ExpensesFile);
         _budgetsFilePath = Path.Combine(appDataDir, BudgetsFile);
         _recurringFilePath = Path.Combine(appDataDir, RecurringFile);
+        _notificationsFilePath = Path.Combine(appDataDir, NotificationsFile);
+        _lastProcessedFilePath = Path.Combine(appDataDir, LastProcessedFile);
+        _backupDir = Path.Combine(appDataDir, "backups");
     }
 
     public async Task InitializeAsync()
@@ -57,6 +69,11 @@ public class ExpenseService : IExpenseService, IDisposable
             await LoadExpensesAsync();
             await LoadBudgetsAsync();
             await LoadRecurringTransactionsAsync();
+            await LoadNotificationsAsync();
+
+            // Auto-Backup nach erfolgreichem Laden (4.2)
+            await CreateAutoBackupAsync();
+
             _isInitialized = true;
         }
         finally
@@ -123,7 +140,14 @@ public class ExpenseService : IExpenseService, IDisposable
         }
 
         if (expense.Type == TransactionType.Expense)
-            _ = CheckBudgetWarningAsync(expense.Category, expense.Date);
+        {
+            // Fire-and-forget mit try-catch (4.8)
+            _ = Task.Run(async () =>
+            {
+                try { await CheckBudgetWarningAsync(expense.Category, expense.Date); }
+                catch (Exception) { /* Budget-Warnung ist nicht kritisch */ }
+            });
+        }
 
         return expense;
     }
@@ -281,8 +305,8 @@ public class ExpenseService : IExpenseService, IDisposable
         var budget = await GetBudgetAsync(category);
         if (budget == null || !budget.IsEnabled) return null;
 
-        var now = DateTime.Now;
-        var expenses = await GetExpensesByMonthAsync(now.Year, now.Month);
+        var today = DateTime.Today;
+        var expenses = await GetExpensesByMonthAsync(today.Year, today.Month);
         var spent = expenses
             .Where(e => e.Category == category && e.Type == TransactionType.Expense)
             .Sum(e => e.Amount);
@@ -300,10 +324,10 @@ public class ExpenseService : IExpenseService, IDisposable
     public async Task<IReadOnlyList<BudgetStatus>> GetAllBudgetStatusAsync()
     {
         await InitializeAsync();
-        var now = DateTime.Now;
+        var today = DateTime.Today;
         // Alle Monatsausgaben einmal laden statt pro Budget (N+1 vermeiden)
         var monthExpenses = _expenses
-            .Where(e => e.Date.Year == now.Year && e.Date.Month == now.Month && e.Type == TransactionType.Expense)
+            .Where(e => e.Date.Year == today.Year && e.Date.Month == today.Month && e.Type == TransactionType.Expense)
             .ToList();
 
         var statusList = new List<BudgetStatus>();
@@ -390,6 +414,10 @@ public class ExpenseService : IExpenseService, IDisposable
         await InitializeAsync();
         var today = DateTime.Today;
 
+        // Nur 1x pro Tag verarbeiten (4.6)
+        if (await WasProcessedTodayAsync(today))
+            return 0;
+
         await _semaphore.WaitAsync();
         try
         {
@@ -418,6 +446,9 @@ public class ExpenseService : IExpenseService, IDisposable
                 await SaveExpensesAsync();
                 await SaveRecurringTransactionsAsync();
             }
+
+            // Verarbeitungsdatum speichern
+            await MarkProcessedTodayAsync(today);
             return count;
         }
         finally
@@ -531,10 +562,10 @@ public class ExpenseService : IExpenseService, IDisposable
                 _expenses = JsonSerializer.Deserialize<List<Expense>>(json) ?? [];
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Silently handle load error - will use empty collection
             _expenses = [];
+            OnDataLoadError?.Invoke($"Ausgaben: {ex.Message}");
         }
     }
 
@@ -548,10 +579,10 @@ public class ExpenseService : IExpenseService, IDisposable
                 _budgets = JsonSerializer.Deserialize<List<Budget>>(json) ?? [];
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Silently handle load error - will use empty collection
             _budgets = [];
+            OnDataLoadError?.Invoke($"Budgets: {ex.Message}");
         }
     }
 
@@ -565,29 +596,121 @@ public class ExpenseService : IExpenseService, IDisposable
                 _recurringTransactions = JsonSerializer.Deserialize<List<RecurringTransaction>>(json) ?? [];
             }
         }
+        catch (Exception ex)
+        {
+            _recurringTransactions = [];
+            OnDataLoadError?.Invoke($"Daueraufträge: {ex.Message}");
+        }
+    }
+
+    /// <summary>Gesendete Benachrichtigungen laden (4.4)</summary>
+    private async Task LoadNotificationsAsync()
+    {
+        try
+        {
+            if (File.Exists(_notificationsFilePath))
+            {
+                var json = await File.ReadAllTextAsync(_notificationsFilePath);
+                _sentNotifications = JsonSerializer.Deserialize<Dictionary<string, DateTime>>(json) ?? new();
+            }
+        }
         catch (Exception)
         {
-            // Silently handle load error - will use empty collection
-            _recurringTransactions = [];
+            _sentNotifications = new();
         }
+    }
+
+    /// <summary>Gesendete Benachrichtigungen persistieren (4.4)</summary>
+    private async Task SaveNotificationsAsync()
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(_sentNotifications, _jsonWriteOptions);
+            await WriteAtomicAsync(_notificationsFilePath, json);
+        }
+        catch (Exception) { /* Nicht-kritisch */ }
+    }
+
+    /// <summary>Atomares Schreiben: temp-Datei + rename (4.1)</summary>
+    private static async Task WriteAtomicAsync(string targetPath, string content)
+    {
+        var tempPath = targetPath + ".tmp";
+        await File.WriteAllTextAsync(tempPath, content);
+        File.Move(tempPath, targetPath, overwrite: true);
     }
 
     private async Task SaveExpensesAsync()
     {
         var json = JsonSerializer.Serialize(_expenses, _jsonWriteOptions);
-        await File.WriteAllTextAsync(_expensesFilePath, json);
+        await WriteAtomicAsync(_expensesFilePath, json);
     }
 
     private async Task SaveBudgetsAsync()
     {
         var json = JsonSerializer.Serialize(_budgets, _jsonWriteOptions);
-        await File.WriteAllTextAsync(_budgetsFilePath, json);
+        await WriteAtomicAsync(_budgetsFilePath, json);
     }
 
     private async Task SaveRecurringTransactionsAsync()
     {
         var json = JsonSerializer.Serialize(_recurringTransactions, _jsonWriteOptions);
-        await File.WriteAllTextAsync(_recurringFilePath, json);
+        await WriteAtomicAsync(_recurringFilePath, json);
+    }
+
+    /// <summary>Auto-Backup erstellen, max. 5 Versionen rotieren (4.2)</summary>
+    private async Task CreateAutoBackupAsync()
+    {
+        try
+        {
+            if (_expenses.Count == 0 && _budgets.Count == 0 && _recurringTransactions.Count == 0)
+                return;
+
+            Directory.CreateDirectory(_backupDir);
+
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var backupPath = Path.Combine(_backupDir, $"backup_{timestamp}.json");
+
+            var backup = new BackupData("1.0", DateTime.UtcNow,
+                _expenses.ToList(), _budgets.ToList(), _recurringTransactions.ToList());
+            var json = JsonSerializer.Serialize(backup, _jsonWriteOptions);
+            await File.WriteAllTextAsync(backupPath, json);
+
+            // Alte Backups löschen (nur die ältesten, max. 5 behalten)
+            var backups = Directory.GetFiles(_backupDir, "backup_*.json")
+                .OrderByDescending(f => f)
+                .Skip(MaxBackupVersions)
+                .ToList();
+            foreach (var old in backups)
+            {
+                try { File.Delete(old); } catch { /* Löschen nicht kritisch */ }
+            }
+        }
+        catch (Exception)
+        {
+            // Backup-Fehler sind nicht kritisch
+        }
+    }
+
+    /// <summary>Prüft ob heute bereits verarbeitet wurde (4.6)</summary>
+    private async Task<bool> WasProcessedTodayAsync(DateTime today)
+    {
+        try
+        {
+            if (!File.Exists(_lastProcessedFilePath)) return false;
+            var dateStr = await File.ReadAllTextAsync(_lastProcessedFilePath);
+            return dateStr.Trim() == today.ToString("yyyy-MM-dd");
+        }
+        catch { return false; }
+    }
+
+    /// <summary>Heutiges Datum als verarbeitet markieren (4.6)</summary>
+    private async Task MarkProcessedTodayAsync(DateTime today)
+    {
+        try
+        {
+            await File.WriteAllTextAsync(_lastProcessedFilePath, today.ToString("yyyy-MM-dd"));
+        }
+        catch { /* Nicht-kritisch */ }
     }
 
     private static void ValidateExpense(Expense expense)
@@ -648,12 +771,13 @@ public class ExpenseService : IExpenseService, IDisposable
             {
                 var categoryName = CategoryLocalizationHelper.GetLocalizedName(category, _localizationService);
                 await _notificationService.SendBudgetAlertAsync(categoryName, percentageUsed, spent, budget.MonthlyLimit);
-                _sentNotifications[$"{notificationKey}_80"] = DateTime.Now;
+                _sentNotifications[$"{notificationKey}_80"] = DateTime.UtcNow;
+                await SaveNotificationsAsync();
             }
         }
         catch (Exception)
         {
-            // Silently handle budget warning check failure
+            // Budget-Warnungsprüfung stillschweigend ignorieren
         }
     }
 

@@ -1,13 +1,53 @@
 using FinanzRechner.Models;
 using MeineApps.Core.Ava.Localization;
+using SkiaSharp;
 
 namespace FinanzRechner.Helpers;
 
 /// <summary>
-/// Centralized helper for localized category names
+/// Zentraler Helper für lokalisierte Kategorie-Namen, Icons und Farben.
 /// </summary>
 public static class CategoryLocalizationHelper
 {
+    /// <summary>Emoji-Icon pro Kategorie (zentralisiert, statt Duplikate in VMs)</summary>
+    public static string GetCategoryIcon(ExpenseCategory category) => category switch
+    {
+        ExpenseCategory.Food => "\U0001F354",
+        ExpenseCategory.Transport => "\U0001F697",
+        ExpenseCategory.Housing => "\U0001F3E0",
+        ExpenseCategory.Entertainment => "\U0001F3AC",
+        ExpenseCategory.Shopping => "\U0001F6D2",
+        ExpenseCategory.Health => "\U0001F48A",
+        ExpenseCategory.Education => "\U0001F4DA",
+        ExpenseCategory.Bills => "\U0001F4C4",
+        ExpenseCategory.Salary => "\U0001F4B0",
+        ExpenseCategory.Freelance => "\U0001F4BC",
+        ExpenseCategory.Investment => "\U0001F4C8",
+        ExpenseCategory.Gift => "\U0001F381",
+        ExpenseCategory.OtherIncome => "\U0001F4B5",
+        _ => "\U0001F4E6"
+    };
+
+    /// <summary>SKColor pro Kategorie für Charts (zentralisiert)</summary>
+    public static SKColor GetCategoryColor(ExpenseCategory category) => category switch
+    {
+        ExpenseCategory.Food => new SKColor(0xFF, 0x98, 0x00),           // Orange
+        ExpenseCategory.Transport => new SKColor(0x21, 0x96, 0xF3),      // Blue
+        ExpenseCategory.Housing => new SKColor(0x9C, 0x27, 0xB0),        // Purple
+        ExpenseCategory.Entertainment => new SKColor(0xE9, 0x1E, 0x63),  // Pink
+        ExpenseCategory.Shopping => new SKColor(0x00, 0xBC, 0xD4),       // Cyan
+        ExpenseCategory.Health => new SKColor(0xF4, 0x43, 0x36),         // Red
+        ExpenseCategory.Education => new SKColor(0x3F, 0x51, 0xB5),      // Indigo
+        ExpenseCategory.Bills => new SKColor(0x60, 0x7D, 0x8B),          // Blue-grey
+        ExpenseCategory.Other => new SKColor(0x79, 0x55, 0x48),          // Brown
+        ExpenseCategory.Salary => new SKColor(0x4C, 0xAF, 0x50),         // Green
+        ExpenseCategory.Freelance => new SKColor(0x00, 0x96, 0x88),      // Teal
+        ExpenseCategory.Investment => new SKColor(0x8B, 0xC3, 0x4A),     // Light green
+        ExpenseCategory.Gift => new SKColor(0xFF, 0xC1, 0x07),           // Amber
+        ExpenseCategory.OtherIncome => new SKColor(0xCD, 0xDC, 0x39),    // Lime
+        _ => new SKColor(0x9E, 0x9E, 0x9E)                               // Grey
+    };
+
     public static string GetCategoryKey(ExpenseCategory category) => category switch
     {
         ExpenseCategory.Food => "CategoryFood",

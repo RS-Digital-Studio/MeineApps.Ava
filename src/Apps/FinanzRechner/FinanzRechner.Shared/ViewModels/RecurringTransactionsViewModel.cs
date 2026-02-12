@@ -85,7 +85,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
     [ObservableProperty]
     private bool _isLoading;
 
-    // Undo Delete
+    // Undo-Löschen
     [ObservableProperty]
     private bool _showUndoDelete;
 
@@ -98,7 +98,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
     [ObservableProperty]
     private bool _showAddDialog;
 
-    // Form Fields
+    // Formular-Felder
     [ObservableProperty]
     private string _description = string.Empty;
 
@@ -161,6 +161,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
     [
         RecurrencePattern.Daily,
         RecurrencePattern.Weekly,
+        RecurrencePattern.Biweekly,
         RecurrencePattern.Monthly,
         RecurrencePattern.Yearly
     ];
@@ -182,7 +183,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
         {
             IsLoading = true;
 
-            // Ensure ExpenseService is initialized
+            // ExpenseService sicherstellen dass initialisiert
             await _expenseService.InitializeAsync();
 
             var transactions = await _expenseService.GetAllRecurringTransactionsAsync();
@@ -225,7 +226,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
         {
             if (_editingTransaction != null)
             {
-                // Update existing
+                // Bestehende aktualisieren
                 _editingTransaction.Description = Description;
                 _editingTransaction.Amount = Amount;
                 _editingTransaction.Category = SelectedCategory;
@@ -240,7 +241,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
             }
             else
             {
-                // Create new
+                // Neue erstellen
                 var transaction = new RecurringTransaction
                 {
                     Description = Description,
@@ -293,25 +294,25 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
         CancellationTokenSource? cts = null;
         try
         {
-            // Save for undo
+            // Für Undo sichern
             _deletedTransaction = transaction;
 
-            // Remove from UI
+            // Aus UI entfernen
             RecurringTransactions.Remove(transaction);
             HasTransactions = RecurringTransactions.Count > 0;
 
-            // Show undo notification
+            // Undo-Benachrichtigung anzeigen
             UndoMessage = $"{_localizationService.GetString("RecurringDeleted") ?? "Recurring transaction deleted"} - {transaction.Description}";
             ShowUndoDelete = true;
 
-            // Start timer for permanent deletion (5 seconds)
+            // Timer für permanente Löschung starten (5 Sekunden)
             _undoCancellation?.Cancel();
             _undoCancellation?.Dispose();
             cts = _undoCancellation = new CancellationTokenSource();
 
             await Task.Delay(5000, cts.Token);
 
-            // Permanent deletion after 5 seconds
+            // Permanente Löschung nach 5 Sekunden
             if (_deletedTransaction != null)
             {
                 await _expenseService.DeleteRecurringTransactionAsync(_deletedTransaction.Id);
@@ -321,11 +322,11 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
         }
         catch (TaskCanceledException)
         {
-            // Undo was triggered - do nothing
+            // Undo wurde ausgelöst - nichts tun
         }
         catch (OperationCanceledException)
         {
-            // Undo was triggered - do nothing
+            // Undo wurde ausgelöst - nichts tun
         }
         catch (Exception)
         {
@@ -338,11 +339,11 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
     [RelayCommand]
     private async Task UndoDeleteAsync()
     {
-        // Stop timer
+        // Timer stoppen
         _undoCancellation?.Cancel();
         _undoCancellation?.Dispose();
 
-        // Restore deleted transaction
+        // Gelöschte Transaktion wiederherstellen
         if (_deletedTransaction != null)
         {
             await LoadTransactionsAsync();
@@ -369,7 +370,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
         }
         catch (Exception)
         {
-            // Revert on error
+            // Bei Fehler rückgängig machen
             transaction.IsActive = !transaction.IsActive;
             var title = _localizationService.GetString("Error") ?? "Error";
             var message = _localizationService.GetString("SaveError") ?? "Failed to update transaction. Please try again.";
@@ -416,6 +417,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
         {
             RecurrencePattern.Daily => "PatternDaily",
             RecurrencePattern.Weekly => "PatternWeekly",
+            RecurrencePattern.Biweekly => "PatternBiweekly",
             RecurrencePattern.Monthly => "PatternMonthly",
             RecurrencePattern.Yearly => "PatternYearly",
             _ => null

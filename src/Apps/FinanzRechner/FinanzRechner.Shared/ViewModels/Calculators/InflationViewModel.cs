@@ -15,7 +15,11 @@ using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
-public partial class CompoundInterestViewModel : ObservableObject, IDisposable
+/// <summary>
+/// ViewModel fuer den Inflationsrechner.
+/// Berechnet Kaufkraftverlust ueber die Jahre.
+/// </summary>
+public partial class InflationViewModel : ObservableObject, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;
@@ -23,7 +27,7 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
     // Debounce-Timer für Live-Berechnung (300ms Verzögerung)
     private Timer? _debounceTimer;
 
-    public CompoundInterestViewModel(FinanceEngine financeEngine, ILocalizationService localizationService)
+    public InflationViewModel(FinanceEngine financeEngine, ILocalizationService localizationService)
     {
         _financeEngine = financeEngine;
         _localizationService = localizationService;
@@ -33,15 +37,16 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
 
     #region Localized Text Properties
 
-    public string TitleText => _localizationService.GetString("CalcCompoundInterest") ?? "Compound Interest";
-    public string PrincipalText => _localizationService.GetString("Principal") ?? "Principal (EUR)";
-    public string AnnualRateText => _localizationService.GetString("AnnualRate") ?? "Annual Rate (%)";
+    public string TitleText => _localizationService.GetString("CalcInflation") ?? "Inflation";
+    public string CurrentAmountText => _localizationService.GetString("CurrentAmount") ?? "Current Amount (EUR)";
+    public string AnnualInflationRateText => _localizationService.GetString("AnnualInflationRate") ?? "Inflation Rate (%)";
     public string YearsText => _localizationService.GetString("Years") ?? "Years";
-    public string CompoundingsPerYearText => _localizationService.GetString("CompoundingsPerYear") ?? "Compoundings per Year";
     public string ResultText => _localizationService.GetString("Result") ?? "Result";
-    public string FinalAmountText => _localizationService.GetString("FinalAmount") ?? "Final Amount";
-    public string InterestEarnedText => _localizationService.GetString("InterestEarned") ?? "Interest Earned";
-    public string CapitalGrowthText => _localizationService.GetString("CapitalGrowth") ?? "Capital Growth";
+    public string FutureValueText => _localizationService.GetString("FutureValue") ?? "Future Value";
+    public string PurchasingPowerText => _localizationService.GetString("PurchasingPower") ?? "Purchasing Power";
+    public string PurchasingPowerLossText => _localizationService.GetString("PurchasingPowerLoss") ?? "Purchasing Power Loss";
+    public string LossPercentText => _localizationService.GetString("LossPercent") ?? "Loss %";
+    public string PurchasingPowerLossChartText => _localizationService.GetString("ChartPurchasingPower") ?? "Purchasing Power";
     public string ResetText => _localizationService.GetString("Reset") ?? "Reset";
     public string CalculateText => _localizationService.GetString("Calculate") ?? "Calculate";
 
@@ -50,22 +55,18 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
     #region Input Properties
 
     [ObservableProperty]
-    private double _principal = 10000;
+    private double _currentAmount = 10000;
 
     [ObservableProperty]
-    private double _annualRate = 5;
+    private double _annualInflationRate = 3;
 
     [ObservableProperty]
     private int _years = 10;
 
-    [ObservableProperty]
-    private int _compoundingsPerYear = 1;
-
     // Live-Berechnung mit Debouncing auslösen
-    partial void OnPrincipalChanged(double value) => ScheduleAutoCalculate();
-    partial void OnAnnualRateChanged(double value) => ScheduleAutoCalculate();
+    partial void OnCurrentAmountChanged(double value) => ScheduleAutoCalculate();
+    partial void OnAnnualInflationRateChanged(double value) => ScheduleAutoCalculate();
     partial void OnYearsChanged(int value) => ScheduleAutoCalculate();
-    partial void OnCompoundingsPerYearChanged(int value) => ScheduleAutoCalculate();
 
     /// <summary>
     /// Startet den Debounce-Timer neu. Nach 300ms wird Calculate() auf dem UI-Thread aufgerufen.
@@ -83,18 +84,22 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
     #region Result Properties
 
     [ObservableProperty]
-    private CompoundInterestResult? _result;
+    private InflationResult? _result;
 
     [ObservableProperty]
     private bool _hasResult;
 
-    public string FinalAmountDisplay => Result != null ? CurrencyHelper.Format(Result.FinalAmount) : "";
-    public string InterestEarnedDisplay => Result != null ? CurrencyHelper.Format(Result.InterestEarned) : "";
+    public string PurchasingPowerDisplay => Result != null ? CurrencyHelper.Format(Result.PurchasingPower) : "";
+    public string PurchasingPowerLossDisplay => Result != null ? CurrencyHelper.Format(Result.PurchasingPowerLoss) : "";
+    public string FutureValueDisplay => Result != null ? CurrencyHelper.Format(Result.FutureValue) : "";
+    public string LossPercentDisplay => Result != null ? $"{Result.LossPercent:F1} %" : "";
 
-    partial void OnResultChanged(CompoundInterestResult? value)
+    partial void OnResultChanged(InflationResult? value)
     {
-        OnPropertyChanged(nameof(FinalAmountDisplay));
-        OnPropertyChanged(nameof(InterestEarnedDisplay));
+        OnPropertyChanged(nameof(PurchasingPowerDisplay));
+        OnPropertyChanged(nameof(PurchasingPowerLossDisplay));
+        OnPropertyChanged(nameof(FutureValueDisplay));
+        OnPropertyChanged(nameof(LossPercentDisplay));
         UpdateChartData();
     }
 
@@ -119,25 +124,25 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
             return;
         }
 
-        var capitalValues = new List<double>();
-        var rate = AnnualRate / 100;
-        var n = CompoundingsPerYear;
+        var purchasingPowerValues = new List<double>();
+        var rate = AnnualInflationRate / 100;
 
         for (int year = 0; year <= Years; year++)
         {
-            var value = Principal * Math.Pow(1 + rate / n, n * year);
-            capitalValues.Add(value);
+            // Kaufkraft des heutigen Betrags in jedem Jahr
+            var value = CurrentAmount / Math.Pow(1 + rate, year);
+            purchasingPowerValues.Add(value);
         }
 
         ChartSeries = new ISeries[]
         {
             new LineSeries<double>
             {
-                Values = capitalValues,
-                Name = _localizationService.GetString("ChartCapital") ?? "Capital",
-                Fill = new SolidColorPaint(SKColor.Parse("#4CAF50").WithAlpha(50)),
-                Stroke = new SolidColorPaint(SKColor.Parse("#4CAF50")) { StrokeThickness = 3 },
-                GeometryFill = new SolidColorPaint(SKColor.Parse("#4CAF50")),
+                Values = purchasingPowerValues,
+                Name = _localizationService.GetString("ChartPurchasingPower") ?? "Purchasing Power",
+                Fill = new SolidColorPaint(SKColor.Parse("#EF4444").WithAlpha(50)),
+                Stroke = new SolidColorPaint(SKColor.Parse("#EF4444")) { StrokeThickness = 3 },
+                GeometryFill = new SolidColorPaint(SKColor.Parse("#EF4444")),
                 GeometryStroke = new SolidColorPaint(SKColors.White) { StrokeThickness = 2 },
                 GeometrySize = 8
             }
@@ -161,13 +166,13 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Calculate()
     {
-        if (Principal <= 0 || Years <= 0 || CompoundingsPerYear <= 0)
+        if (CurrentAmount <= 0 || Years <= 0)
         {
             HasResult = false;
             return;
         }
 
-        Result = _financeEngine.CalculateCompoundInterest(Principal, AnnualRate, Years, CompoundingsPerYear);
+        Result = _financeEngine.CalculateInflation(CurrentAmount, AnnualInflationRate, Years);
         HasResult = true;
     }
 
@@ -178,10 +183,9 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
         _debounceTimer?.Dispose();
         _debounceTimer = null;
 
-        Principal = 10000;
-        AnnualRate = 5;
+        CurrentAmount = 10000;
+        AnnualInflationRate = 3;
         Years = 10;
-        CompoundingsPerYear = 1;
         Result = null;
         HasResult = false;
         ChartSeries = Array.Empty<ISeries>();

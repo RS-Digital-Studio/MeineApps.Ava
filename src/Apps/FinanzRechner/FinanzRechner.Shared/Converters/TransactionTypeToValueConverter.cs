@@ -6,9 +6,9 @@ using FinanzRechner.Models;
 namespace FinanzRechner.Converters;
 
 /// <summary>
-/// Universal converter for TransactionType to various value types.
-/// Supports IBrush, double, string, FontWeight, bool.
-/// Parameter format: "0=Value1,1=Value2" where 0=Expense, 1=Income
+/// Universeller Converter von TransactionType zu verschiedenen Werttypen.
+/// Unterstützt IBrush, double, string, FontWeight, bool.
+/// Parameter-Format: "0=Value1,1=Value2" wobei 0=Expense, 1=Income
 /// </summary>
 public class TransactionTypeToValueConverter : IValueConverter
 {
@@ -32,7 +32,7 @@ public class TransactionTypeToValueConverter : IValueConverter
             var key = keyValue[0].Trim();
             var val = keyValue[1].Trim();
 
-            // Check if this part matches current transaction type
+            // Prüfen ob dieser Teil zum aktuellen TransactionType passt
             bool matches = (key == "0" && isExpense) || (key == "1" && !isExpense);
 
             if (matches)
@@ -71,7 +71,7 @@ public class TransactionTypeToValueConverter : IValueConverter
         }
         catch
         {
-            // Fall through to default
+            // Weiter zum Standardwert
         }
 
         return GetDefaultValue(targetType);

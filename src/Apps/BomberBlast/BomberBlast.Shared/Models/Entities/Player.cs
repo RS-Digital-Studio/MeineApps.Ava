@@ -196,28 +196,10 @@ public class Player : Entity
 
     private bool CanMoveTo(float newX, float newY, GameGrid grid)
     {
-        float size = GameGrid.CELL_SIZE * 0.35f; // Collision box half-size
-
-        // Check all four corners of collision box
-        var corners = new[]
-        {
-            (newX - size, newY - size),
-            (newX + size, newY - size),
-            (newX - size, newY + size),
-            (newX + size, newY + size)
-        };
-
-        foreach (var (cx, cy) in corners)
-        {
-            var cell = grid.TryGetCell((int)(cx / GameGrid.CELL_SIZE), (int)(cy / GameGrid.CELL_SIZE));
-            if (cell == null)
-                return false;
-
-            if (!cell.IsWalkable(HasWallpass, HasBombpass))
-                return false;
-        }
-
-        return true;
+        float halfSize = GameGrid.CELL_SIZE * 0.35f;
+        bool wallpass = HasWallpass;
+        bool bombpass = HasBombpass;
+        return CollisionHelper.CanMoveTo(newX, newY, halfSize, grid, cell => !cell.IsWalkable(wallpass, bombpass));
     }
 
     /// <summary>

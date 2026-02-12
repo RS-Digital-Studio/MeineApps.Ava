@@ -22,15 +22,15 @@ public class PlayerUpgrades
         { UpgradeType.TimeBonus, 1 }
     };
 
-    // Preise pro Level (Index 0 = Level 1, etc.)
+    // Preise pro Level (Index 0 = Level 1, etc.) - ~50% reduziert fuer bessere Progression
     private static readonly Dictionary<UpgradeType, int[]> Prices = new()
     {
-        { UpgradeType.StartBombs, [3000, 8000, 20000] },
-        { UpgradeType.StartFire, [3000, 8000, 20000] },
-        { UpgradeType.StartSpeed, [5000] },
-        { UpgradeType.ExtraLives, [15000, 40000] },
-        { UpgradeType.ScoreMultiplier, [10000, 30000, 75000] },
-        { UpgradeType.TimeBonus, [12000] }
+        { UpgradeType.StartBombs, [1500, 4000, 10000] },
+        { UpgradeType.StartFire, [1500, 4000, 10000] },
+        { UpgradeType.StartSpeed, [2500] },
+        { UpgradeType.ExtraLives, [7500, 20000] },
+        { UpgradeType.ScoreMultiplier, [5000, 15000, 35000] },
+        { UpgradeType.TimeBonus, [6000] }
     };
 
     // Score-Multiplikatoren pro Level

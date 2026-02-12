@@ -163,37 +163,12 @@ public class Enemy : Entity
 
     private bool CanMoveTo(float newX, float newY, GameGrid grid)
     {
-        float size = GameGrid.CELL_SIZE * 0.3f;
-
-        // Check all four corners
-        var corners = new[]
-        {
-            (newX - size, newY - size),
-            (newX + size, newY - size),
-            (newX - size, newY + size),
-            (newX + size, newY + size)
-        };
-
-        foreach (var (cx, cy) in corners)
-        {
-            var cell = grid.TryGetCell((int)(cx / GameGrid.CELL_SIZE), (int)(cy / GameGrid.CELL_SIZE));
-            if (cell == null)
-                return false;
-
-            // Walls always block
-            if (cell.Type == CellType.Wall)
-                return false;
-
-            // Blocks block unless we can pass walls
-            if (cell.Type == CellType.Block && !CanPassWalls)
-                return false;
-
-            // Bombs always block enemies
-            if (cell.Bomb != null)
-                return false;
-        }
-
-        return true;
+        float halfSize = GameGrid.CELL_SIZE * 0.3f;
+        bool canPass = CanPassWalls;
+        return CollisionHelper.CanMoveTo(newX, newY, halfSize, grid, cell =>
+            cell.Type == CellType.Wall ||
+            (cell.Type == CellType.Block && !canPass) ||
+            cell.Bomb != null);
     }
 
     /// <summary>

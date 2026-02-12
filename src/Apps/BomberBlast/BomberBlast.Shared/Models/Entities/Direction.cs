@@ -56,12 +56,11 @@ public static class DirectionExtensions
     }
 
     /// <summary>
-    /// Get all cardinal directions
+    /// Alle Kardinalrichtungen (statisch, keine Allokation)
     /// </summary>
-    public static Direction[] GetCardinalDirections()
-    {
-        return new[] { Direction.Up, Direction.Down, Direction.Left, Direction.Right };
-    }
+    private static readonly Direction[] Cardinals = { Direction.Up, Direction.Down, Direction.Left, Direction.Right };
+
+    public static Direction[] GetCardinalDirections() => Cardinals;
 
     /// <summary>
     /// Convert direction to angle in degrees (for sprite rotation)

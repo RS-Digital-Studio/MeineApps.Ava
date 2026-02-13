@@ -70,43 +70,58 @@ public class StaggerFadeInBehavior : Behavior<Control>
     {
         if (AssociatedObject == null) return;
 
-        var index = FixedIndex >= 0 ? FixedIndex : DetectIndex();
-        var delay = index * StaggerDelay;
-
-        if (delay > 0)
-            await Task.Delay(delay);
-
-        var animation = new Animation
+        try
         {
-            Duration = TimeSpan.FromMilliseconds(BaseDuration),
-            Easing = new CubicEaseOut(),
-            Children =
+            var index = FixedIndex >= 0 ? FixedIndex : DetectIndex();
+            var delay = index * StaggerDelay;
+
+            if (delay > 0)
+                await Task.Delay(delay);
+
+            if (AssociatedObject == null) return;
+
+            var animation = new Animation
             {
-                new KeyFrame
+                Duration = TimeSpan.FromMilliseconds(BaseDuration),
+                Easing = new CubicEaseOut(),
+                Children =
                 {
-                    Cue = new Cue(0),
-                    Setters =
+                    new KeyFrame
                     {
-                        new Setter(Visual.OpacityProperty, 0.0),
-                        new Setter(TranslateTransform.YProperty, 15.0)
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1),
-                    Setters =
+                        Cue = new Cue(0),
+                        Setters =
+                        {
+                            new Setter(Visual.OpacityProperty, 0.0),
+                            new Setter(TranslateTransform.YProperty, 15.0)
+                        }
+                    },
+                    new KeyFrame
                     {
-                        new Setter(Visual.OpacityProperty, 1.0),
-                        new Setter(TranslateTransform.YProperty, 0.0)
+                        Cue = new Cue(1),
+                        Setters =
+                        {
+                            new Setter(Visual.OpacityProperty, 1.0),
+                            new Setter(TranslateTransform.YProperty, 0.0)
+                        }
                     }
                 }
+            };
+
+            // TranslateTransform setzen falls noch nicht vorhanden
+            AssociatedObject.RenderTransform ??= new TranslateTransform();
+
+            await animation.RunAsync(AssociatedObject);
+        }
+        catch
+        {
+            // Bei Fehler (z.B. Control detached) Element sichtbar machen
+            if (AssociatedObject != null)
+            {
+                AssociatedObject.Opacity = 1;
+                if (AssociatedObject.RenderTransform is TranslateTransform tt)
+                    tt.Y = 0;
             }
-        };
-
-        // TranslateTransform setzen falls noch nicht vorhanden
-        AssociatedObject.RenderTransform ??= new TranslateTransform();
-
-        await animation.RunAsync(AssociatedObject);
+        }
     }
 
     private int DetectIndex()

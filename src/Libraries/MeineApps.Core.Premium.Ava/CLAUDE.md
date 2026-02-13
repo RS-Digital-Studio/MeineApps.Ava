@@ -78,6 +78,7 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 - Positioniert die Werbung direkt UEBER der Avalonia Tab-Bar (Bottom) oder am oberen Rand (Top)
 - `AdInsetListener` passt BottomMargin fuer Navigation-Bar-Insets an (Edge-to-Edge)
 - `OnAdsStateChanged` reagiert auf `BannerVisible` (Show/Hide) UND `IsBannerTop` (Position-Wechsel)
+- **Adaptive Banner-Hoehe**: `GetCurrentOrientationAnchoredAdaptiveBannerAdSize` erzeugt Banner mit variabler Hoehe (50-60dp+ je nach Geraet). Avalonia Ad-Spacer muss 64dp sein (nicht 50dp)!
 
 ### Tab-Bar-Hoehen (tabBarHeightDp Parameter)
 | App | tabBarHeightDp | Grund |

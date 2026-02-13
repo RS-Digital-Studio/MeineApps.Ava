@@ -50,8 +50,11 @@ public class LocalizationService : ILocalizationService
             }
             else
             {
+                // Gerätesprache erkennen und sofort in Preferences speichern
                 var deviceLang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-                SetCultureInternal(AvailableLanguages.Any(l => l.Code == deviceLang) ? deviceLang : "en");
+                var lang = AvailableLanguages.Any(l => l.Code == deviceLang) ? deviceLang : "en";
+                SetCultureInternal(lang);
+                _preferences.Set(LanguageKey, lang);
             }
         }
         catch

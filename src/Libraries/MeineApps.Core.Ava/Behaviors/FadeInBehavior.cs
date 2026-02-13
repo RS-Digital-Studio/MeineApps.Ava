@@ -83,28 +83,39 @@ public class FadeInBehavior : Behavior<Control>
     {
         if (AssociatedObject == null) return;
 
-        if (Delay > 0)
-            await Task.Delay(Delay);
-
-        var animation = new Animation
+        try
         {
-            Duration = TimeSpan.FromMilliseconds(Duration),
-            Easing = new CubicEaseOut(),
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters = { new Setter(Visual.OpacityProperty, 0.0) }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1),
-                    Setters = { new Setter(Visual.OpacityProperty, 1.0) }
-                }
-            }
-        };
+            if (Delay > 0)
+                await Task.Delay(Delay);
 
-        await animation.RunAsync(AssociatedObject);
+            if (AssociatedObject == null) return;
+
+            var animation = new Animation
+            {
+                Duration = TimeSpan.FromMilliseconds(Duration),
+                Easing = new CubicEaseOut(),
+                Children =
+                {
+                    new KeyFrame
+                    {
+                        Cue = new Cue(0),
+                        Setters = { new Setter(Visual.OpacityProperty, 0.0) }
+                    },
+                    new KeyFrame
+                    {
+                        Cue = new Cue(1),
+                        Setters = { new Setter(Visual.OpacityProperty, 1.0) }
+                    }
+                }
+            };
+
+            await animation.RunAsync(AssociatedObject);
+        }
+        catch
+        {
+            // Bei Fehler (z.B. Control detached) Element sichtbar machen
+            if (AssociatedObject != null)
+                AssociatedObject.Opacity = 1;
+        }
     }
 }

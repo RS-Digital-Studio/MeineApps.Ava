@@ -1,9 +1,7 @@
 using Avalonia;
-using Avalonia.Animation;
-using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Avalonia.Styling;
+using Avalonia.Threading;
 using System;
 
 namespace MeineApps.UI.Controls;
@@ -40,6 +38,7 @@ public class NotificationBadge : Border
     }
 
     private readonly TextBlock _label;
+    private DispatcherTimer? _bounceTimer;
 
     static NotificationBadge()
     {
@@ -112,45 +111,58 @@ public class NotificationBadge : Border
         Background = BadgeColor ?? new SolidColorBrush(Color.Parse("#DC2626"));
     }
 
-    private async void PlayBounceAnimation()
+    /// <summary>
+    /// DispatcherTimer-basierte Bounce-Animation.
+    /// NICHT Animation.RunAsync() verwenden - crasht mit ScaleTransform
+    /// (InvalidCastException in TransformAnimator.Apply).
+    /// </summary>
+    private void PlayBounceAnimation()
     {
-        var animation = new Animation
+        // Laufende Animation abbrechen
+        _bounceTimer?.Stop();
+
+        var scaleTransform = new ScaleTransform(0, 0);
+        RenderTransform = scaleTransform;
+
+        // ~300ms bei ~60fps = 18 Frames
+        const int totalFrames = 18;
+        const int phase1End = 11; // 60% → Scale 0→1.2
+        int frame = 0;
+
+        _bounceTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _bounceTimer.Tick += (_, _) =>
         {
-            Duration = TimeSpan.FromMilliseconds(300),
-            Easing = new CubicEaseOut(),
-            Children =
+            frame++;
+            double scale;
+
+            if (frame <= phase1End)
             {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters =
-                    {
-                        new Setter(RenderTransformProperty,
-                            new ScaleTransform(0.0, 0.0))
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(0.6),
-                    Setters =
-                    {
-                        new Setter(RenderTransformProperty,
-                            new ScaleTransform(1.2, 1.2))
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1.0),
-                    Setters =
-                    {
-                        new Setter(RenderTransformProperty,
-                            new ScaleTransform(1.0, 1.0))
-                    }
-                }
+                // Phase 1: 0 → 1.2 (CubicEaseOut)
+                double t = (double)frame / phase1End;
+                t = 1.0 - Math.Pow(1.0 - t, 3);
+                scale = t * 1.2;
+            }
+            else if (frame <= totalFrames)
+            {
+                // Phase 2: 1.2 → 1.0 (linear settle)
+                double t = (double)(frame - phase1End) / (totalFrames - phase1End);
+                scale = 1.2 - (0.2 * t);
+            }
+            else
+            {
+                scale = 1.0;
+            }
+
+            scaleTransform.ScaleX = scale;
+            scaleTransform.ScaleY = scale;
+
+            if (frame >= totalFrames)
+            {
+                _bounceTimer?.Stop();
+                _bounceTimer = null;
+                RenderTransform = null;
             }
         };
-
-        await animation.RunAsync(this);
-        RenderTransform = null;
+        _bounceTimer.Start();
     }
 }

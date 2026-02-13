@@ -1,36 +1,23 @@
 using Avalonia;
-using Avalonia.Animation;
-using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
-using Avalonia.Styling;
+using Avalonia.Threading;
 using Avalonia.Xaml.Interactivity;
 
 namespace MeineApps.Core.Ava.Behaviors;
 
 /// <summary>
-/// Behavior that scales a control when pressed/tapped with an elastic bounce effect
+/// Skaliert ein Control beim Drücken herunter mit Bounce-Effekt beim Loslassen.
+/// Nutzt direkte Property-Setzung statt Animation API (TransformAnimator crasht auf ScaleTransform).
 /// </summary>
 public class TapScaleBehavior : Behavior<Control>
 {
-    /// <summary>
-    /// Scale factor when pressed (0.95 = 95% of original size)
-    /// </summary>
     public static readonly StyledProperty<double> PressedScaleProperty =
         AvaloniaProperty.Register<TapScaleBehavior, double>(nameof(PressedScale), 0.95);
 
-    /// <summary>
-    /// Animation duration in milliseconds
-    /// </summary>
     public static readonly StyledProperty<int> DurationProperty =
         AvaloniaProperty.Register<TapScaleBehavior, int>(nameof(Duration), 100);
-
-    /// <summary>
-    /// Whether to use elastic easing for bounce effect
-    /// </summary>
-    public static readonly StyledProperty<bool> UseElasticEasingProperty =
-        AvaloniaProperty.Register<TapScaleBehavior, bool>(nameof(UseElasticEasing), true);
 
     public double PressedScale
     {
@@ -44,26 +31,22 @@ public class TapScaleBehavior : Behavior<Control>
         set => SetValue(DurationProperty, value);
     }
 
-    public bool UseElasticEasing
-    {
-        get => GetValue(UseElasticEasingProperty);
-        set => SetValue(UseElasticEasingProperty, value);
-    }
-
     private ScaleTransform? _scaleTransform;
+    private DispatcherTimer? _animTimer;
+    private double _animFrom;
+    private int _animFrame;
+    private int _totalFrames;
+    private const int FrameIntervalMs = 16;
 
     protected override void OnAttached()
     {
         base.OnAttached();
-
         if (AssociatedObject == null) return;
 
-        // Create scale transform if not exists
         _scaleTransform = new ScaleTransform(1, 1);
         AssociatedObject.RenderTransform = _scaleTransform;
         AssociatedObject.RenderTransformOrigin = RelativePoint.Center;
 
-        // Subscribe to pointer events
         AssociatedObject.PointerPressed += OnPointerPressed;
         AssociatedObject.PointerReleased += OnPointerReleased;
         AssociatedObject.PointerCaptureLost += OnPointerCaptureLost;
@@ -72,62 +55,84 @@ public class TapScaleBehavior : Behavior<Control>
     protected override void OnDetaching()
     {
         base.OnDetaching();
-
         if (AssociatedObject == null) return;
 
         AssociatedObject.PointerPressed -= OnPointerPressed;
         AssociatedObject.PointerReleased -= OnPointerReleased;
         AssociatedObject.PointerCaptureLost -= OnPointerCaptureLost;
+        StopAnimation();
     }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        AnimateScale(PressedScale);
+        StopAnimation();
+        SetScale(PressedScale);
     }
 
-    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
+    private void OnPointerReleased(object? sender, PointerReleasedEventArgs e) => AnimateBack();
+    private void OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e) => AnimateBack();
+
+    private void SetScale(double scale)
     {
-        AnimateScale(1.0);
+        if (_scaleTransform == null) return;
+        _scaleTransform.ScaleX = scale;
+        _scaleTransform.ScaleY = scale;
     }
 
-    private void OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    /// <summary>Bounce-Animation zurück auf Scale 1.0 via DispatcherTimer.</summary>
+    private void AnimateBack()
     {
-        AnimateScale(1.0);
-    }
+        if (_scaleTransform == null) return;
 
-    private async void AnimateScale(double targetScale)
-    {
-        if (_scaleTransform == null || AssociatedObject == null) return;
+        StopAnimation();
+        _animFrom = _scaleTransform.ScaleX;
+        _animFrame = 0;
+        _totalFrames = Math.Max(1, Duration / FrameIntervalMs);
 
-        var animation = new Animation
+        if (Math.Abs(_animFrom - 1.0) < 0.001)
         {
-            Duration = TimeSpan.FromMilliseconds(Duration),
-            Easing = UseElasticEasing && targetScale == 1.0
-                ? new ElasticEaseOut()
-                : new CubicEaseOut(),
-            Children =
-            {
-                new KeyFrame
-                {
-                    Cue = new Cue(0),
-                    Setters =
-                    {
-                        new Setter(ScaleTransform.ScaleXProperty, _scaleTransform.ScaleX),
-                        new Setter(ScaleTransform.ScaleYProperty, _scaleTransform.ScaleY)
-                    }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1),
-                    Setters =
-                    {
-                        new Setter(ScaleTransform.ScaleXProperty, targetScale),
-                        new Setter(ScaleTransform.ScaleYProperty, targetScale)
-                    }
-                }
-            }
-        };
+            SetScale(1.0);
+            return;
+        }
 
-        await animation.RunAsync(_scaleTransform);
+        _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(FrameIntervalMs) };
+        _animTimer.Tick += OnAnimTick;
+        _animTimer.Start();
+    }
+
+    private void OnAnimTick(object? sender, EventArgs e)
+    {
+        if (_scaleTransform == null) { StopAnimation(); return; }
+
+        _animFrame++;
+
+        if (_animFrame >= _totalFrames)
+        {
+            SetScale(1.0);
+            StopAnimation();
+            return;
+        }
+
+        // ElasticEaseOut fuer Bounce-Effekt
+        var t = (double)_animFrame / _totalFrames;
+        var eased = ElasticEaseOut(t);
+        var scale = _animFrom + (1.0 - _animFrom) * eased;
+        SetScale(scale);
+    }
+
+    /// <summary>Elastische Ease-Out Kurve fuer natuerlichen Bounce.</summary>
+    private static double ElasticEaseOut(double t)
+    {
+        if (t is <= 0 or >= 1) return t;
+        const double c4 = 2 * Math.PI / 3;
+        return Math.Pow(2, -10 * t) * Math.Sin((t * 10 - 0.75) * c4) + 1;
+    }
+
+    private void StopAnimation()
+    {
+        if (_animTimer == null) return;
+        _animTimer.Stop();
+        _animTimer.Tick -= OnAnimTick;
+        _animTimer = null;
     }
 }

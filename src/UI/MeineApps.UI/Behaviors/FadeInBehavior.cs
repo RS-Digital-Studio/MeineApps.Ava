@@ -79,35 +79,50 @@ public class FadeInBehavior : Behavior<Control>
     {
         if (AssociatedObject is null) return;
 
-        // Verzögerung: Delay-Property oder minimal 16ms für Layout
-        var delay = Delay > 0 ? Delay : 16;
-        await Task.Delay(delay);
-
-        var animation = new Avalonia.Animation.Animation
+        try
         {
-            Duration = TimeSpan.FromMilliseconds(Duration),
-            Easing = new CubicEaseOut(),
-            Children =
+            // Verzögerung: Delay-Property oder minimal 16ms für Layout
+            var delay = Delay > 0 ? Delay : 16;
+            await Task.Delay(delay);
+
+            if (AssociatedObject is null) return;
+
+            var animation = new Avalonia.Animation.Animation
             {
-                new KeyFrame
+                Duration = TimeSpan.FromMilliseconds(Duration),
+                Easing = new CubicEaseOut(),
+                Children =
                 {
-                    Cue = new Cue(0),
-                    Setters = { new Setter(Visual.OpacityProperty, 0.0) }
-                },
-                new KeyFrame
-                {
-                    Cue = new Cue(1),
-                    Setters = { new Setter(Visual.OpacityProperty, 1.0) }
+                    new KeyFrame
+                    {
+                        Cue = new Cue(0),
+                        Setters = { new Setter(Visual.OpacityProperty, 0.0) }
+                    },
+                    new KeyFrame
+                    {
+                        Cue = new Cue(1),
+                        Setters = { new Setter(Visual.OpacityProperty, 1.0) }
+                    }
                 }
+            };
+
+            await animation.RunAsync(AssociatedObject);
+            AssociatedObject.Opacity = 1;
+
+            if (SlideFromBottom && AssociatedObject.RenderTransform is TranslateTransform tt)
+            {
+                tt.Y = 0;
             }
-        };
-
-        await animation.RunAsync(AssociatedObject);
-        AssociatedObject.Opacity = 1;
-
-        if (SlideFromBottom && AssociatedObject.RenderTransform is TranslateTransform tt)
+        }
+        catch
         {
-            tt.Y = 0;
+            // Bei Fehler (z.B. Control detached) Element sichtbar machen
+            if (AssociatedObject is not null)
+            {
+                AssociatedObject.Opacity = 1;
+                if (SlideFromBottom && AssociatedObject.RenderTransform is TranslateTransform tt)
+                    tt.Y = 0;
+            }
         }
     }
 }

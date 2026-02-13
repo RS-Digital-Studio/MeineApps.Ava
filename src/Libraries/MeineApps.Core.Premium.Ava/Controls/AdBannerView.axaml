@@ -4,7 +4,7 @@
 
   <!-- Test ad placeholder (visible in debug / when ShowTestAd is true) -->
   <Border x:Name="TestAdBorder"
-          Background="#2196F3" Height="50"
+          Background="#2196F3" Height="64"
           HorizontalAlignment="Stretch"
           IsVisible="False">
     <TextBlock Text="Test Ad Banner"

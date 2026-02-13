@@ -132,6 +132,12 @@ public class GameState
     [JsonPropertyName("reputation")]
     public CustomerReputation Reputation { get; set; } = new();
 
+    /// <summary>
+    /// Letzter Zeitpunkt des täglichen Reputation-Decay (persistiert, damit App-Neustart nicht resettet).
+    /// </summary>
+    [JsonPropertyName("lastReputationDecay")]
+    public DateTime LastReputationDecay { get; set; } = DateTime.UtcNow;
+
     // ═══════════════════════════════════════════════════════════════════════
     // BUILDINGS
     // ═══════════════════════════════════════════════════════════════════════
@@ -241,11 +247,32 @@ public class GameState
     [JsonPropertyName("xpBoostEndTime")]
     public DateTime XpBoostEndTime { get; set; } = DateTime.MinValue;
 
+    /// <summary>
+    /// Feierabend-Rush: 2h 2x-Boost, einmal täglich gratis.
+    /// </summary>
+    [JsonPropertyName("rushBoostEndTime")]
+    public DateTime RushBoostEndTime { get; set; } = DateTime.MinValue;
+
+    /// <summary>
+    /// Letztes Datum an dem der gratis Rush verwendet wurde.
+    /// </summary>
+    [JsonPropertyName("lastFreeRushUsed")]
+    public DateTime LastFreeRushUsed { get; set; } = DateTime.MinValue;
+
     [JsonIgnore]
     public bool IsSpeedBoostActive => SpeedBoostEndTime > DateTime.UtcNow;
 
     [JsonIgnore]
     public bool IsXpBoostActive => XpBoostEndTime > DateTime.UtcNow;
+
+    [JsonIgnore]
+    public bool IsRushBoostActive => RushBoostEndTime > DateTime.UtcNow;
+
+    /// <summary>
+    /// Ob der tägliche Gratis-Rush verfügbar ist (noch nicht heute verwendet).
+    /// </summary>
+    [JsonIgnore]
+    public bool IsFreeRushAvailable => LastFreeRushUsed.Date < DateTime.UtcNow.Date;
 
     // ═══════════════════════════════════════════════════════════════════════
     // ACHIEVEMENTS
@@ -267,6 +294,12 @@ public class GameState
     [JsonPropertyName("totalQuickJobsCompleted")]
     public int TotalQuickJobsCompleted { get; set; }
 
+    [JsonPropertyName("quickJobsCompletedToday")]
+    public int QuickJobsCompletedToday { get; set; }
+
+    [JsonPropertyName("lastQuickJobDailyReset")]
+    public DateTime LastQuickJobDailyReset { get; set; } = DateTime.MinValue;
+
     // ═══════════════════════════════════════════════════════════════════════
     // DAILY CHALLENGES
     // ═══════════════════════════════════════════════════════════════════════
@@ -280,6 +313,38 @@ public class GameState
 
     [JsonPropertyName("tools")]
     public List<Tool> Tools { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MEISTERWERKZEUGE (Sammelbare Artefakte)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// IDs der gesammelten Meisterwerkzeuge.
+    /// </summary>
+    [JsonPropertyName("collectedMasterTools")]
+    public List<string> CollectedMasterTools { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LIEFERANT (Variable Rewards)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Nächster Zeitpunkt für eine Lieferung.
+    /// </summary>
+    [JsonPropertyName("nextDeliveryTime")]
+    public DateTime NextDeliveryTime { get; set; } = DateTime.MinValue;
+
+    /// <summary>
+    /// Aktuell wartende Lieferung (null = keine).
+    /// </summary>
+    [JsonPropertyName("pendingDelivery")]
+    public SupplierDelivery? PendingDelivery { get; set; }
+
+    /// <summary>
+    /// Gesamtanzahl abgeholter Lieferungen.
+    /// </summary>
+    [JsonPropertyName("totalDeliveriesClaimed")]
+    public int TotalDeliveriesClaimed { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // TUTORIAL
@@ -302,7 +367,7 @@ public class GameState
     public int BaseOfflineHours => 4;
 
     [JsonIgnore]
-    public int MaxOfflineHours => IsPremium ? 16 : 4;
+    public int MaxOfflineHours => IsPremium ? 16 : OfflineVideoExtended ? 8 : 4;
 
     /// <summary>
     /// Session flag: video extended offline duration.
@@ -335,7 +400,8 @@ public class GameState
     }
 
     /// <summary>
-    /// Total gross income per second from all workshops.
+    /// Brutto-Einkommen pro Sekunde aus allen Workshops (mit Prestige-Multiplikator, gekappt bei 20x).
+    /// Shop-Income-Boni werden separat im GameLoop angewendet.
     /// </summary>
     [JsonIgnore]
     public decimal TotalIncomePerSecond
@@ -343,7 +409,9 @@ public class GameState
         get
         {
             decimal total = Workshops.Sum(w => w.GrossIncomePerSecond);
-            return total * Prestige.PermanentMultiplier;
+            // Cap bei 20x für alte Spielstände die vor dem DoPrestige-Cap gespeichert wurden
+            decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 20.0m);
+            return total * multiplier;
         }
     }
 
@@ -370,8 +438,20 @@ public class GameState
         return (int)(100 * Math.Pow(level - 1, 1.2));
     }
 
+    /// <summary>
+    /// Fügt XP hinzu. Wendet XP-Boost (2x) und Prestige-Shop-XP-Bonus an.
+    /// </summary>
     public int AddXp(int amount)
     {
+        // XP-Boost aus DailyReward (2x)
+        if (IsXpBoostActive)
+            amount *= 2;
+
+        // Prestige-Shop XP-Multiplikator
+        var xpBonus = GetPrestigeXpBonus();
+        if (xpBonus > 0)
+            amount = (int)(amount * (1m + xpBonus));
+
         CurrentXp += amount;
         TotalXp += amount;
 
@@ -383,6 +463,24 @@ public class GameState
         }
 
         return levelUps;
+    }
+
+    /// <summary>
+    /// Berechnet den XP-Multiplikator-Bonus aus gekauften Prestige-Shop-Items.
+    /// </summary>
+    private decimal GetPrestigeXpBonus()
+    {
+        var purchased = Prestige.PurchasedShopItems;
+        if (purchased.Count == 0) return 0m;
+
+        var allItems = PrestigeShop.GetAllItems();
+        decimal bonus = 0m;
+        foreach (var item in allItems)
+        {
+            if (purchased.Contains(item.Id) && item.Effect.XpMultiplier > 0)
+                bonus += item.Effect.XpMultiplier;
+        }
+        return bonus;
     }
 
     public Workshop GetOrCreateWorkshop(WorkshopType type)

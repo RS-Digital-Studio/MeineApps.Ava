@@ -65,6 +65,20 @@ public class Worker
     public int ExperienceXp { get; set; }
 
     /// <summary>
+    /// Akkumulator für fraktionale XP-Gewinne beim Arbeiten.
+    /// Wird nicht persistiert - nur innerhalb einer Session relevant.
+    /// </summary>
+    [JsonIgnore]
+    public decimal WorkingXpAccumulator { get; set; }
+
+    /// <summary>
+    /// Akkumulator für fraktionale XP-Gewinne beim Training.
+    /// Wird nicht persistiert - nur innerhalb einer Session relevant.
+    /// </summary>
+    [JsonIgnore]
+    public decimal TrainingXpAccumulator { get; set; }
+
+    /// <summary>
     /// Hourly wage based on tier.
     /// </summary>
     [JsonPropertyName("wagePerHour")]
@@ -284,7 +298,7 @@ public class Worker
     /// </summary>
     public static Worker CreateForTier(WorkerTier tier)
     {
-        var random = new Random();
+        var random = Random.Shared;
         var personality = (WorkerPersonality)random.Next(0, 6);
         var talent = tier switch
         {
@@ -379,7 +393,7 @@ public class Worker
             "Dupont", "Brown", "Wilson", "Anderson", "Taylor"
         };
 
-        var random = new Random();
+        var random = Random.Shared;
         return $"{firstNames[random.Next(firstNames.Length)]} {surnames[random.Next(surnames.Length)]}";
     }
 }

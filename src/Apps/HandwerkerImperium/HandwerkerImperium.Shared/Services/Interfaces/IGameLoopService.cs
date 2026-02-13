@@ -1,3 +1,4 @@
+using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Events;
 
 namespace HandwerkerImperium.Services.Interfaces;
@@ -42,4 +43,14 @@ public interface IGameLoopService
     /// Resumes the game loop.
     /// </summary>
     void Resume();
+
+    /// <summary>
+    /// Event für neue Meisterwerkzeug-Freischaltungen.
+    /// </summary>
+    event EventHandler<MasterToolDefinition>? MasterToolUnlocked;
+
+    /// <summary>
+    /// Event für neue Lieferungen.
+    /// </summary>
+    event EventHandler<SupplierDelivery>? DeliveryArrived;
 }

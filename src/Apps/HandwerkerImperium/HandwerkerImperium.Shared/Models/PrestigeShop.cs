@@ -99,6 +99,35 @@ public static class PrestigeShop
                 Cost = 40,
                 Effect = new PrestigeEffect { IncomeMultiplier = 0.50m }
             },
+
+            // Neue Items: Rush, Lieferant, Goldschrauben
+            new PrestigeShopItem
+            {
+                Id = "pp_rush_boost",
+                NameKey = "PrestigeRushBoost",
+                DescriptionKey = "PrestigeRushBoostDesc",
+                Icon = "⚡",
+                Cost = 15,
+                Effect = new PrestigeEffect { RushMultiplierBonus = 0.50m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_delivery_speed",
+                NameKey = "PrestigeDeliverySpeed",
+                DescriptionKey = "PrestigeDeliverySpeedDesc",
+                Icon = "🚚",
+                Cost = 12,
+                Effect = new PrestigeEffect { DeliverySpeedBonus = 0.30m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_golden_screw_25",
+                NameKey = "PrestigeGoldenScrew25",
+                DescriptionKey = "PrestigeGoldenScrew25Desc",
+                Icon = "🔩",
+                Cost = 25,
+                Effect = new PrestigeEffect { GoldenScrewBonus = 0.25m }
+            },
         ];
     }
 }

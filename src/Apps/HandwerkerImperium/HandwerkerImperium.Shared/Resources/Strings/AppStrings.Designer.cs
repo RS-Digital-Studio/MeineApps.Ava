@@ -858,6 +858,8 @@ namespace HandwerkerImperium.Resources.Strings {
 
         public static string QuickRepair => ResourceManager.GetString("QuickRepair", resourceCulture) ?? "";
 
+        public static string QuickJobDailyLimit => ResourceManager.GetString("QuickJobDailyLimit", resourceCulture) ?? "";
+
         public static string QuickFix => ResourceManager.GetString("QuickFix", resourceCulture) ?? "";
 
         public static string ExpressService => ResourceManager.GetString("ExpressService", resourceCulture) ?? "";
@@ -1077,5 +1079,8 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string TrainingDuration => ResourceManager.GetString("TrainingDuration", resourceCulture) ?? "~{0} until Lvl {1}";
         public static string TrainingCost => ResourceManager.GetString("TrainingCost", resourceCulture) ?? "Cost: {0}/h";
         public static string RestDuration => ResourceManager.GetString("RestDuration", resourceCulture) ?? "~{0} until rested";
+
+        // Android Back-Button
+        public static string PressBackAgainToExit => ResourceManager.GetString("PressBackAgainToExit", resourceCulture) ?? "Press back again to exit";
     }
 }

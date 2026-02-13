@@ -10,14 +10,24 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 
 ## Haupt-Features
 
-- **6 Workshop-Typen** (Tischlerei, Malerei, Sanitaer, Elektrik, Landschaftsbau, Renovierung)
-- **3 Mini-Games** (Pipe Puzzle, Wire Match, Tile Swap)
-- **Worker-System** mit 3 Tiers (Auszubildender, Geselle, Meister)
-- **Goldschrauben-Economy** (Premium-Waehrung fuer Boosts/Unlock)
-- **Research Tree** (16 Upgrades in 4 Kategorien)
+- **8 Workshop-Typen** (Tischlerei, Malerei, Sanitär, Elektrik, Landschaftsbau, Renovierung, Architekt, Generalunternehmer)
+- **4 Mini-Games** (Sawing, Pipe Puzzle, Wiring, Painting)
+- **Worker-System** mit 10 Tiers (F/E/D/C/B/A/S/SS/SSS/Legendary)
+- **Goldschrauben-Economy** (Premium-Währung für Boosts/Unlock)
+- **Research Tree** (45 Upgrades in 3 Branches: Tools, Management, Marketing)
+- **7 Gebäude** (Canteen, Storage, Office, Showroom, TrainingCenter, VehicleFleet, WorkshopExtension)
 - **Daily Challenges** (3 pro Tag)
-- **Achievements** (33 Erfolge, inkl. Workshop-Level 100/250/500/1000, Player-Level 100/250/500/1000, Worker-Tiers SS/SSS/Legendary, 10B EUR)
+- **Daily Login Rewards** (30-Tage-Zyklus mit steigenden Belohnungen)
+- **Achievements** (33 Erfolge)
+- **Prestige-System** (3 Stufen: Bronze ab Lv.30, Silver ab Lv.100, Gold ab Lv.250)
+- **Events** (8 zufällige Events + saisonaler Multiplikator)
+- **Bulk Buy** (x1/x10/x100/Max für Workshop-Upgrades)
+- **Milestone-Celebrations** (Level 10/25/50/100/250/500/1000 mit Goldschrauben-Bonus)
 - **Statistiken** (Gesamt-Verdienst, Workshop-Verteilung)
+- **Feierabend-Rush** (2h 2x-Boost, 1x täglich gratis, danach 10 Goldschrauben)
+- **Meisterwerkzeuge** (12 sammelbare Artefakte mit passiven Einkommens-Boni, 5 Seltenheitsstufen)
+- **Lieferant-System** (Variable Rewards alle 2-5 Minuten: Geld, Schrauben, XP, Mood, Speed)
+- **Prestige-Shop** (12 Items: Income, XP, Mood, Kosten, Rush, Lieferant, Goldschrauben)
 
 ## Premium & Ads
 
@@ -39,12 +49,13 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 ## Architektur-Besonderheiten
 
 ### Game Loop
-- **GameLoopService** (60 FPS Timer) → Workshop-Produktion, Worker-Animationen, Mini-Game-State
-- **AutoSaveService** (alle 5 Min) → GameState → SQLite
+- **GameLoopService** (1-Sekunden-Takt via DispatcherTimer) → Idle-Einkommen, Kosten, Worker-States, Research-Timer, Event-Check
+- **AutoSave** im GameLoop (alle 30 Sekunden) → GameState → JSON via SaveGameService
+- **Research-/Gebäude-Effekte** werden pro Tick angewendet (EfficiencyBonus, CostReduction, WageReduction, ExtraWorkerSlots)
 
 ### Workshop-Typen
-Enum: `Carpentry`, `Painting`, `Plumbing`, `Electrical`, `Landscaping`, `Renovation`
-Jeder Typ hat: `BaseIncome`, `BaseUpgradeCost`, `UnlockLevel`, `UnlockCost`
+Enum: `Carpenter`, `Plumber`, `Electrician`, `Painter`, `Roofer`, `Contractor`, `Architect`, `GeneralContractor`
+Jeder Typ hat: `BaseIncomeMultiplier`, `UnlockLevel`, `UnlockCost`, `RequiredPrestige`
 
 ### Worker-System
 10 Tiers via Enum: `F` (0.5x), `E` (0.75x), `D` (1.0x), `C` (1.3x), `B` (1.7x), `A` (2.2x), `S` (3.0x), `SS` (4.5x), `SSS` (7.0x), `Legendary` (12.0x)
@@ -57,32 +68,43 @@ Tier-Farben: F=Grau, E=Gruen, D=#0E7490(Teal), C=#B45309(DarkOrange), B=Amber, A
 3. Achievements (5-50 Schrauben)
 4. Rewarded Ad (5 Schrauben)
 5. IAP-Paket (100/500/2000 Schrauben)
+6. Daily Login Rewards (1-25 Schrauben je nach Tag im 30-Tage-Zyklus)
+7. Milestone-Level (3-200 Schrauben bei Level 10/25/50/100/250/500/1000)
 
 ### Research Tree
-16 Upgrades in 4 Kategorien (Efficiency, Automation, Workers, Special)
-Jedes Research braucht: `GoldScrews` + `ResearchPoints` (verdient via Workshop-Produktion)
+45 Upgrades in 3 Branches à 15 Level: Tools (Effizienz + MiniGame-Zone), Management (Löhne + Worker-Slots), Marketing (Belohnungen + Order-Slots)
+Kosten: Geld (500 bis 1B). Dauer: 10min bis 72h (Echtzeit). Effekte werden im GameLoop auf Einkommen/Kosten angewendet.
 
 ### Mini-Games
-- **Pipe Puzzle**: Rohre drehen um Durchfluss zu schaffen (3 Schwierigkeiten)
-- **Wire Match**: Kabel-Farben verbinden (Simon Says mit Timing)
-- **Tile Swap**: 3x3 Tile-Puzzle (Sliding Puzzle)
+- **Sawing**: Holz im richtigen Bereich sägen (Timing + Präzision)
+- **Pipe Puzzle**: Rohre drehen um Durchfluss zu schaffen
+- **Wiring**: Farbige Kabel links-rechts verbinden
+- **Painting**: Zielzellen anmalen ohne Fehler
 
 ## App-spezifische Services
 
 | Service | Zweck |
 |---------|-------|
-| `GameLoopService` | 60 FPS Update-Loop |
-| `AutoSaveService` | Alle 5 Min GameState → SQLite |
-| `DailyChallengeService` | 3 Challenges/Tag generieren (00:00 Reset) |
+| `GameLoopService` | 1s-Takt Loop: Einkommen, Kosten, Worker-States, AutoSave (30s) |
+| `GameStateService` | Zentraler State mit Thread-Safety (lock) |
+| `SaveGameService` | JSON-Persistenz (Load/Save/Import/Export/Reset) |
+| `WorkerService` | Worker-Lifecycle: Mood, Fatigue, Training, Ruhe, Kündigung |
+| `PrestigeService` | 3-Tier Prestige (Bronze/Silver/Gold) + Shop-Effekte |
+| `ResearchService` | 45 Research-Nodes, Timer, Effekt-Berechnung |
+| `EventService` | Zufällige Events (8 Typen) + saisonaler Multiplikator |
+| `DailyChallengeService` | 3 Challenges/Tag (00:00 Reset) |
+| `DailyRewardService` | 30-Tage Login-Zyklus mit steigenden Belohnungen |
+| `QuickJobService` | Schnelle MiniGame-Jobs (4min Rotation, 20/Tag Limit) |
 | `AchievementService` | 33 Erfolge tracken + Goldschrauben-Rewards |
-| `WorkshopColorConverter` | Enum → Brush Mapping (warme Palette, keine kalten Farben) |
+| `OfflineProgressService` | Offline-Einnahmen (Brutto mit allen Modifikatoren - Kosten, * Saison-Multiplikator) |
+| `OrderGeneratorService` | Aufträge generieren (pro freigeschaltetem Workshop-Typ) |
 
 ## Game Juice
 
 | Feature | Implementierung |
 |---------|-----------------|
 | Workshop Cards | Farbiges BorderBrush nach Typ |
-| Worker Avatars | 3 Tier-Icons (Apprentice=Hat, Journeyman=Hammer, Master=Crown) |
+| Worker Avatars | 10 Tier-Farben (F=Grau bis Legendary=Rainbow-Gradient) |
 | Golden Screw Icon | Gold-Shimmer Animation (CSS scale+rotate Loop) |
 | Level-Up | CelebrationOverlay mit Confetti (100 Partikel, 2s) |
 | Income | FloatingTextOverlay (gruen, +100px, 1.5s) |
@@ -102,8 +124,74 @@ Jedes Research braucht: `GoldScrews` + `ResearchPoints` (verdient via Workshop-P
 - Jedes MiniGame-Ergebnis trackt `PlayMiniGames` + `AchieveMinigameScore` Challenges
 - Score-Mapping: Perfect=100%, Good=75%, Ok=50%, Miss=0%
 
+## Reputation-System
+
+- **CustomerReputation** (0-100 Score, startet bei 50): Beeinflusst Auftragsbelohnungen (0.7x bis 1.5x)
+- **AddRating()** wird automatisch bei Auftragsabschluss aufgerufen (MiniGame-Rating → 1-5 Sterne)
+- **Showroom-Gebäude**: Passive tägliche Reputation-Steigerung (0.5-2.5/Tag je nach Level)
+- **DecayReputation()**: Langsamer Abbau >50 wenn keine Aufträge abgeschlossen werden (1/Tag)
+- **Event-ReputationChange**: CelebrityEndorsement (+5), EconomicDownturn (+2) wirken einmalig bei Event-Start
+- **Prestige-Reset**: Setzt Reputation auf Startwert (50) zurück
+
+## Event-SpecialEffects
+
+- **TaxAudit** ("tax_10_percent"): 10% Steuer auf Brutto-Einkommen (dauerhaft während Event)
+- **WorkerStrike** ("mood_drop_all_20"): Alle Worker-Stimmungen -20 (einmalig bei Event-Start)
+- Event-ID-Tracking verhindert doppelte Anwendung einmaliger Effekte
+
+## Feierabend-Rush
+
+- **Täglicher 2x-Boost** für 2 Stunden (Einkommens-Verdopplung)
+- 1x pro Tag gratis, weitere Aktivierungen kosten 10 Goldschrauben
+- Stackt mit SpeedBoost (2x * 2x = 4x möglich)
+- Prestige-Shop "Rush-Verstärker" erhöht Rush auf 3x statt 2x
+- GameState: `RushBoostEndTime`, `LastFreeRushUsed`, `IsRushBoostActive`, `IsFreeRushAvailable`
+- Button im Dashboard zeigt Timer oder "Gratis-Rush!"
+
+## Meisterwerkzeuge (Sammelbare Artefakte)
+
+- **12 Werkzeuge** in 5 Seltenheitsstufen (Common/Uncommon/Rare/Epic/Legendary)
+- Jedes gibt permanenten Einkommens-Bonus (+2% bis +15%)
+- Maximaler Gesamt-Bonus: +74% wenn alle 12 gesammelt
+- Freischaltung durch Meilensteine: Workshop-Level, Aufträge, Minispiele, Prestige
+- Prüfung alle 2 Minuten im GameLoop (`MasterToolCheckIntervalTicks`)
+- `MasterToolUnlocked` Event → FloatingText + Celebration in MainViewModel
+- GameState: `CollectedMasterTools` (List<string> der IDs)
+- Statische Definitionen in `MasterTool.GetAllDefinitions()`, Eligibility in `MasterTool.CheckEligibility()`
+
+| ID | Name | Seltenheit | Bonus | Bedingung |
+|----|------|-----------|-------|-----------|
+| mt_golden_hammer | Goldener Hammer | Common | +2% | Workshop Lv.25 |
+| mt_diamond_saw | Diamant-Säge | Common | +2% | Workshop Lv.50 |
+| mt_titanium_pliers | Titanium-Zange | Common | +3% | 50 Aufträge |
+| mt_brass_level | Messing-Wasserwaage | Common | +3% | 100 Minispiele |
+| mt_silver_wrench | Silber-Schraubenschlüssel | Uncommon | +5% | Workshop Lv.100 |
+| mt_jade_brush | Jade-Pinsel | Uncommon | +5% | 25 Perfect Ratings |
+| mt_crystal_chisel | Kristall-Meißel | Uncommon | +5% | Bronze Prestige |
+| mt_obsidian_drill | Obsidian-Bohrmaschine | Rare | +7% | Workshop Lv.250 |
+| mt_ruby_blade | Rubinsägeblatt | Rare | +7% | Silver Prestige |
+| mt_emerald_toolbox | Smaragd-Werkzeugkasten | Epic | +10% | Workshop Lv.500 |
+| mt_dragon_anvil | Drachenschmiede-Amboss | Epic | +10% | Gold Prestige |
+| mt_master_crown | Meisterkrone | Legendary | +15% | Alle 11 Tools |
+
+## Lieferant-System (Variable Rewards)
+
+- Zufällige Bonus-Lieferungen alle **2-5 Minuten** (Prestige-Bonus reduziert Intervall)
+- 5 Lieferungstypen: Geld (35%), Goldschrauben (20%), XP (20%), Mood-Boost (15%), Speed-Boost (10%)
+- Lieferung muss innerhalb von **2 Minuten** abgeholt werden, sonst verfällt sie
+- `DeliveryArrived` Event → FloatingText-Benachrichtigung in MainViewModel
+- GameState: `NextDeliveryTime`, `PendingDelivery`, `TotalDeliveriesClaimed`
+- Model: `SupplierDelivery` (Type, Amount, CreatedAt, ExpiresAt)
+
 ## Changelog Highlights
 
+- **v2.0.3 (13.02.2026)**: Android Zurück-Taste: Double-Back-Press zum Beenden (2s Fenster, Toast-Hinweis). Zurück-Navigation stufenweise: Dialoge schließen → MiniGame/Detail-View → Sub-Tabs → Dashboard. TryGoBack() in MainViewModel, OnBackPressed() in MainActivity. RESX-Key `PressBackAgainToExit` in 6 Sprachen.
+- **v2.0.3 (13.02.2026)**: Deep-Audit #3 - 10 Fixes: (1) KRITISCH: Shop-IAP Consumables (Goldschrauben-Pakete, Instant-Cash, Booster) geben Rewards jetzt erst nach erfolgreichem PurchaseConsumableAsync() statt sofort ohne Kauf. IPurchaseService um PurchaseConsumableAsync erweitert. (2) ShopViewModel Memory Leak: IDisposable implementiert, PremiumStatusChanged wird korrekt unsubscribed. (3) Achievement "prestige_1" nutzt jetzt Prestige.TotalPrestigeCount statt Legacy-Feld PrestigeLevel. (4) Worker-Tier Achievements (SS/SSS/Legendary) prüfen jetzt tatsächlich Worker-Tiers statt Self-Reference. (5) all_workshops Achievement zählt UnlockedWorkshopTypes statt Workshop-Instanzen. (6) Reputation-Decay Timer in GameState persistiert (LastReputationDecay) statt lokales Feld in GameLoopService. (7) Training-XP Akkumulator-Pattern: TrainingXpAccumulator statt (int)xpGain Cast-Truncation. (8) Random.Shared statt new Random() in DailyChallengeService + QuickJobService. (9) Prestige-Reset: LastReputationDecay wird zurückgesetzt. (10) PermanentMultiplier 20x-Cap: Konsistent in DoPrestige() (Write), TotalIncomePerSecond (Read) und SanitizeState (Load) angewendet. GetPermanentMultiplier() vereinfacht (keine Shop-Boni mehr fälschlich addiert).
+- **v2.0.3 (13.02.2026)**: 7-Punkt Bugfix-Audit: (1) Prestige-Shop Income-Items (pp_income_10/25/50) werden jetzt im GameLoop auf Brutto-Einkommen angewendet. (2) GoldenScrewBonus (pp_golden_screw_25, +25%) wird jetzt in AddGoldenScrews() angewendet. (3) Worker Working-XP Fix: Math.Max(1,...) Bug entfernt, Akkumulator-Pattern statt 1 XP/Tick (war 72x schneller als Training). (4) Prestige-Reset ergänzt: Rush, Lieferant, QuickJobs, DailyChallenges, MasterTools werden zurückgesetzt. (5) Offline-Einnahmen nutzen jetzt alle Modifikatoren (Research, MasterTools, Prestige-Shop, CostReduction, Storage). (6) BulkUpgrade Event sendet korrekte oldLevel/newLevel/totalCost statt Nullwerte. (7) MasterTool als static class (tote Instance-Properties entfernt).
+- **v2.0.3 (12.02.2026)**: Neue Features: (1) Feierabend-Rush: 2h 2x-Boost, 1x täglich gratis, weitere 10 Goldschrauben. Stackt mit SpeedBoost. (2) Meisterwerkzeuge: 12 sammelbare Artefakte (5 Seltenheitsstufen) mit permanenten Einkommens-Boni (+2% bis +15%). Prüfung alle 2min im GameLoop. (3) Lieferant-System: Variable Rewards alle 2-5min (Geld/Schrauben/XP/Mood/Speed). 2min Abholzeit. (4) Prestige-Shop erweitert: 3 neue Items (Rush-Verstärker 3x, Lieferanten-Express -30% Intervall, Goldschrauben-Boost +25%). PrestigeEffect um RushMultiplierBonus, DeliverySpeedBonus, GoldenScrewBonus erweitert. 42 neue Lokalisierungs-Keys in 6 Sprachen.
+- **v2.0.3 (12.02.2026)**: Deep-Audit #2 - Tote Systeme + Balancing: (1) Reputation-System aktiviert: AddRating bei Auftragsabschluss, ReputationMultiplier (0.7x-1.5x) auf Belohnungen. (2) SpecialEffect-Events funktional: TaxAudit (-10% Einkommen), WorkerStrike (Mood -20 alle Worker). (3) Event-ReputationChange: CelebrityEndorsement/EconomicDownturn wirken auf Reputation. (4) ExtraOrderSlots: Office-Gebäude + Research erhöhen Auftragsanzahl über 3. (5) Showroom-DailyReputationGain + Reputation-Decay im GameLoop. (6) Random.Shared statt new Random() in OrderGeneratorService + EventService. (7) DailyChallengeService: Netto statt Brutto für Belohnungsberechnung. (8) Saisonaler Multiplikator zentralisiert (EventService.GetSeasonalMultiplier). (9) CostReduction Cap: 75%→50%. (10) Building-Kosten: 3^Level→2^Level (sanftere Kurve). (11) Research EfficiencyBonus Cap bei +50%. (12) SanitizeState erweitert: Prestige, DailyRewardStreak, Worker-Mood/Fatigue, Reputation, Building-Levels.
+- **v2.0.3 (12.02.2026)**: Deep-Audit Gameplay-Optimierungen: (1) Prestige früher verfügbar (Bronze Lv.30, Silver Lv.100, Gold Lv.250 statt 100/300/500). (2) Research-Effekte werden im GameLoop angewendet (EfficiencyBonus auf Einkommen, CostReduction+WageReduction auf Kosten). (3) Gebäude-Effekte aktiv: Canteen→Stimmungs-Erholung+Rest-Beschleunigung, Storage→Kosten-Reduktion, TrainingCenter→Training-Speed, VehicleFleet→Auftrags-Bonus, WorkshopExtension→Extra-Worker-Slots. (4) Offline-Einnahmen mit Saison-Multiplikator. (5) Milestone-Celebrations bei Level 10/25/50/100/250/500/1000 mit Goldschrauben-Bonus. (6) Bulk Buy (x1/x10/x100/Max) für Workshop-Upgrades. (7) Material-Kosten level-basiert statt zirkulär. (8) Login-Streak auf 30 Tage erweitert. (9) QuickJob-Exploit behoben (MiniGame muss gespielt werden). (10) Prestige-Shop-Effekte aktiv (CostReduction, MoodDecayReduction, XpMultiplier). (11) 8 Saison/BulkBuy-Lokalisierungskeys in 5 Sprachen.
+- **v2.0.3 (12.02.2026)**: 10-Punkte Bugfix-Audit: (1) Offline-Earnings nutzen jetzt NetIncomePerSecond statt Brutto (Exploit behoben: Kosten wurden offline ignoriert). (2+3) DateTime.Now→UtcNow in DailyRewardService (3 Stellen), DailyChallengeService (2 Stellen), EventService (1 Stelle) - konsistente UTC-Zeitzone. (4+5) MoneyFormatter+MoneyDisplayConverter: Negative Werte korrekt (U+2212 Minus), T-Stufe (Trillion) ergänzt, K-Schwelle konsistent auf >=1000. (6) SaveGameService: State-Validierung bei Load/Import (PlayerLevel, Money, Workshops, Prestige etc. sanitized). (7) PrestigeService: Multiplikator-Cap bei 20x, toter RecalculatePermanentMultiplier()-Code entfernt. (8) Offline-Dialog zeigt "(Max. Xh)" wenn Dauer gekappt wurde. (9) QuickJob Tageslimit (20/Tag) gegen Reward-Farming, neuer Lokalisierungs-Key QuickJobDailyLimit in 6 Sprachen, GameState-Felder QuickJobsCompletedToday + LastQuickJobDailyReset.
 - **v2.0.3 (12.02.2026)**: Statistik-Refresh beim Tab-Wechsel. Shop Instant-Cash: Belohnungen basieren auf stündlichem Einkommen statt fixem Level*Multiplikator (small=1h, large=4h, huge=12h, mega=48h). QuickJob-Belohnungen: ~5min Einkommen statt Cap bei 100€. Daily-Challenge-Belohnungen: ~10min Einkommen, 5 Level-Tiers (0-5/6-15/16-30/31-50/51+), bis zu 3 Goldschrauben. QuickJob-Timer Auto-Rotation im GameTick (UI aktualisiert bei Ablauf). Workshop-Auswahl-Dialog: Größere Buttons (MinHeight=56), sichtbarer Hintergrund+Rahmen. Research-ProgressBar: Background=SurfaceBrush (Fortschritt sichtbar).
 - **v2.0.3 (12.02.2026)**: UI-Verbesserungen + Bugfixes: SawingGame IsResultShown-Reset in SetOrderId (Ergebnis-Screen blieb stehen). ToggleSwitch On/Off-Text entfernt. ConfirmDialog Buttons untereinander statt nebeneinander. Dialog-Overlay-Klick schließt Dialoge. WorkerProfile Training/Rest-Dauer-Anzeige (TrainingTimeDisplay, TrainingCostDisplay, RestTimeDisplay). Auto-Rest bei 100% Erschöpfung (WorkerService). 3 neue Lokalisierungs-Keys (TrainingDuration, TrainingCost, RestDuration) in 6 Sprachen.
 - **v2.0.3 (12.02.2026)**: WorkshopView Kosten-Anzeige: Redundante TotalWorkerIncomeDisplay entfernt, stattdessen Income Stats Card mit Brutto/Netto/Kosten-Aufschlüsselung (Miete, Material, Löhne). Netto rot bei Verlust. MoneyFormatter.FormatPerHour() hinzugefügt. 6 neue Lokalisierungs-Keys (GrossIncome, NetIncome, RunningCosts, Rent, MaterialCosts, Wages) in 6 Sprachen.

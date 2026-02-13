@@ -1836,6 +1836,9 @@
   <data name="QuickRepair" xml:space="preserve">
     <value>Reparaci&#243;n r&#225;pida</value>
   </data>
+  <data name="QuickJobDailyLimit" xml:space="preserve">
+    <value>L&#237;mite diario alcanzado ({0}/d&#237;a)</value>
+  </data>
   <data name="QuickFix" xml:space="preserve">
     <value>Arreglo r&#225;pido</value>
   </data>
@@ -2221,6 +2224,169 @@
   </data>
   <data name="RestDuration" xml:space="preserve">
     <value>~{0} hasta descansado</value>
+  </data>
+
+  <data name="SeasonSpring" xml:space="preserve">
+    <value>Primavera +15%</value>
+  </data>
+  <data name="SeasonSummer" xml:space="preserve">
+    <value>Verano +20%</value>
+  </data>
+  <data name="SeasonAutumn" xml:space="preserve">
+    <value>Otoño +10%</value>
+  </data>
+  <data name="SeasonWinter" xml:space="preserve">
+    <value>Invierno -10%</value>
+  </data>
+  <data name="BulkBuy1" xml:space="preserve">
+    <value>x1</value>
+  </data>
+  <data name="BulkBuy10" xml:space="preserve">
+    <value>x10</value>
+  </data>
+  <data name="BulkBuy100" xml:space="preserve">
+    <value>x100</value>
+  </data>
+  <data name="BulkBuyMax" xml:space="preserve">
+    <value>Máx</value>
+  </data>
+  <data name="RushFreeActivation" xml:space="preserve">
+    <value>⚡ ¡Rush Gratis!</value>
+  </data>
+  <data name="RushCostScrews" xml:space="preserve">
+    <value>Rush cuesta {0} Tornillos Dorados</value>
+  </data>
+  <data name="DeliveryArrived" xml:space="preserve">
+    <value>Entrega recibida</value>
+  </data>
+  <data name="DeliveryMoney" xml:space="preserve">
+    <value>Bonus de dinero</value>
+  </data>
+  <data name="DeliveryGoldenScrews" xml:space="preserve">
+    <value>Tornillos Dorados</value>
+  </data>
+  <data name="DeliveryExperience" xml:space="preserve">
+    <value>Bonus de experiencia</value>
+  </data>
+  <data name="DeliveryMoodBoost" xml:space="preserve">
+    <value>Impulso de ánimo</value>
+  </data>
+  <data name="DeliverySpeedBoost" xml:space="preserve">
+    <value>Impulso de velocidad</value>
+  </data>
+  <data name="ClaimDelivery" xml:space="preserve">
+    <value>Recoger</value>
+  </data>
+  <data name="MasterToolGoldenHammer" xml:space="preserve">
+    <value>Martillo Dorado</value>
+  </data>
+  <data name="MasterToolGoldenHammerDesc" xml:space="preserve">
+    <value>+2% Ingresos (Taller Nv.25)</value>
+  </data>
+  <data name="MasterToolDiamondSaw" xml:space="preserve">
+    <value>Sierra de Diamante</value>
+  </data>
+  <data name="MasterToolDiamondSawDesc" xml:space="preserve">
+    <value>+2% Ingresos (Taller Nv.50)</value>
+  </data>
+  <data name="MasterToolTitaniumPliers" xml:space="preserve">
+    <value>Alicates de Titanio</value>
+  </data>
+  <data name="MasterToolTitaniumPliersDesc" xml:space="preserve">
+    <value>+3% Ingresos (50 Pedidos)</value>
+  </data>
+  <data name="MasterToolBrassLevel" xml:space="preserve">
+    <value>Nivel de Latón</value>
+  </data>
+  <data name="MasterToolBrassLevelDesc" xml:space="preserve">
+    <value>+3% Ingresos (100 Minijuegos)</value>
+  </data>
+  <data name="MasterToolSilverWrench" xml:space="preserve">
+    <value>Llave de Plata</value>
+  </data>
+  <data name="MasterToolSilverWrenchDesc" xml:space="preserve">
+    <value>+5% Ingresos (Taller Nv.100)</value>
+  </data>
+  <data name="MasterToolJadeBrush" xml:space="preserve">
+    <value>Pincel de Jade</value>
+  </data>
+  <data name="MasterToolJadeBrushDesc" xml:space="preserve">
+    <value>+5% Ingresos (25 Perfectos)</value>
+  </data>
+  <data name="MasterToolCrystalChisel" xml:space="preserve">
+    <value>Cincel de Cristal</value>
+  </data>
+  <data name="MasterToolCrystalChiselDesc" xml:space="preserve">
+    <value>+5% Ingresos (Prestigio Bronce)</value>
+  </data>
+  <data name="MasterToolObsidianDrill" xml:space="preserve">
+    <value>Taladro de Obsidiana</value>
+  </data>
+  <data name="MasterToolObsidianDrillDesc" xml:space="preserve">
+    <value>+7% Ingresos (Taller Nv.250)</value>
+  </data>
+  <data name="MasterToolRubyBlade" xml:space="preserve">
+    <value>Hoja de Rubí</value>
+  </data>
+  <data name="MasterToolRubyBladeDesc" xml:space="preserve">
+    <value>+7% Ingresos (Prestigio Plata)</value>
+  </data>
+  <data name="MasterToolEmeraldToolbox" xml:space="preserve">
+    <value>Caja de Esmeralda</value>
+  </data>
+  <data name="MasterToolEmeraldToolboxDesc" xml:space="preserve">
+    <value>+10% Ingresos (Taller Nv.500)</value>
+  </data>
+  <data name="MasterToolDragonAnvil" xml:space="preserve">
+    <value>Yunque del Dragón</value>
+  </data>
+  <data name="MasterToolDragonAnvilDesc" xml:space="preserve">
+    <value>+10% Ingresos (Prestigio Oro)</value>
+  </data>
+  <data name="MasterToolMasterCrown" xml:space="preserve">
+    <value>Corona del Maestro</value>
+  </data>
+  <data name="MasterToolMasterCrownDesc" xml:space="preserve">
+    <value>+15% Ingresos (Todas las herramientas)</value>
+  </data>
+  <data name="RarityCommon" xml:space="preserve">
+    <value>Común</value>
+  </data>
+  <data name="RarityUncommon" xml:space="preserve">
+    <value>Poco común</value>
+  </data>
+  <data name="RarityRare" xml:space="preserve">
+    <value>Raro</value>
+  </data>
+  <data name="RarityEpic" xml:space="preserve">
+    <value>Épico</value>
+  </data>
+  <data name="RarityLegendary" xml:space="preserve">
+    <value>Legendario</value>
+  </data>
+  <data name="MasterTools" xml:space="preserve">
+    <value>Herramientas Maestras</value>
+  </data>
+  <data name="PrestigeRushBoost" xml:space="preserve">
+    <value>Potenciador de Rush</value>
+  </data>
+  <data name="PrestigeRushBoostDesc" xml:space="preserve">
+    <value>Rush da 3x en vez de 2x</value>
+  </data>
+  <data name="PrestigeDeliverySpeed" xml:space="preserve">
+    <value>Express de Proveedor</value>
+  </data>
+  <data name="PrestigeDeliverySpeedDesc" xml:space="preserve">
+    <value>Entregas 30% más rápidas</value>
+  </data>
+  <data name="PrestigeGoldenScrew25" xml:space="preserve">
+    <value>Boost de Tornillos</value>
+  </data>
+  <data name="PrestigeGoldenScrew25Desc" xml:space="preserve">
+    <value>+25% Tornillos Dorados de todas las fuentes</value>
+  </data>
+  <data name="PressBackAgainToExit" xml:space="preserve">
+    <value>Pulsa atrás de nuevo para salir</value>
   </data>
 
 </root>

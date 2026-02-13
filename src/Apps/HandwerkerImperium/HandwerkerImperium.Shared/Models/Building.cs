@@ -32,7 +32,7 @@ public class Building
 
     /// <summary>
     /// Cost to build (level 1) or upgrade to next level.
-    /// Formula: BaseCost * 3^(Level)
+    /// Formula: BaseCost * 2^(Level) - sanftere Kurve als vorher (3^Level)
     /// </summary>
     [JsonIgnore]
     public decimal NextLevelCost
@@ -41,7 +41,7 @@ public class Building
         {
             if (!IsBuilt) return Type.GetBaseCost();
             if (Level >= Type.GetMaxLevel()) return 0m;
-            return Type.GetBaseCost() * (decimal)Math.Pow(3, Level);
+            return Type.GetBaseCost() * (decimal)Math.Pow(2, Level);
         }
     }
 

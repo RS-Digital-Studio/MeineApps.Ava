@@ -12,8 +12,9 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the shop page.
 /// Manages in-app purchases and premium features.
 /// </summary>
-public partial class ShopViewModel : ObservableObject
+public partial class ShopViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly ISaveGameService _saveGameService;
@@ -387,67 +388,73 @@ public partial class ShopViewModel : ObservableObject
                 if (item.Id == "premium")
                 {
                     success = await _purchaseService.PurchaseRemoveAdsAsync();
+                    if (success)
+                    {
+                        _gameStateService.State.IsPremium = true;
+                        await _saveGameService.SaveAsync();
+                        await _audioService.PlaySoundAsync(GameSound.LevelUp);
+                        ShowAlert(
+                            _localizationService.GetString("ThankYou"),
+                            _localizationService.GetString("ThankYouPremiumDesc"),
+                            _localizationService.GetString("Great"));
+                        LoadShopData();
+                    }
                 }
                 else if (item.Id == "booster_2x_2h")
                 {
-                    // Booster - Placeholder
-                    ShowAlert(
-                        _localizationService.GetString("ComingSoon"),
-                        _localizationService.GetString("ComingSoonDesc"),
-                        "OK");
-                    return;
+                    success = await _purchaseService.PurchaseConsumableAsync(item.Id);
+                    if (success)
+                    {
+                        _gameStateService.State.SpeedBoostEndTime = DateTime.UtcNow.AddHours(2);
+                        await _saveGameService.SaveAsync();
+                        ShowAlert(
+                            _localizationService.GetString("BoosterActivated"),
+                            _localizationService.GetString("BoosterActivatedDesc"),
+                            _localizationService.GetString("Great"));
+                    }
                 }
                 else if (item.Id is "instant_cash_large" or "instant_cash_huge" or "instant_cash_mega")
                 {
-                    var cashAmount = GetInstantCashAmount(item.Id);
-                    if (cashAmount > 0)
+                    success = await _purchaseService.PurchaseConsumableAsync(item.Id);
+                    if (success)
                     {
-                        // TODO: Echten IAP-Kauf via PurchaseService implementieren
-                        _gameStateService.AddMoney(cashAmount);
-                        CurrentBalance = FormatMoney(_gameStateService.State.Money);
-                        await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
-                        ShowAlert(
-                            _localizationService.GetString("MoneyReceived"),
-                            string.Format(_localizationService.GetString("MoneyReceivedFormat"), MoneyFormatter.FormatCompact(cashAmount)),
-                            _localizationService.GetString("Great"));
+                        var cashAmount = GetInstantCashAmount(item.Id);
+                        if (cashAmount > 0)
+                        {
+                            _gameStateService.AddMoney(cashAmount);
+                            CurrentBalance = FormatMoney(_gameStateService.State.Money);
+                            await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
+                            ShowAlert(
+                                _localizationService.GetString("MoneyReceived"),
+                                string.Format(_localizationService.GetString("MoneyReceivedFormat"), MoneyFormatter.FormatCompact(cashAmount)),
+                                _localizationService.GetString("Great"));
+                        }
                     }
-                    return;
                 }
                 else if (item.Id.StartsWith("golden_screws_"))
                 {
-                    // Goldschrauben IAP-Pakete (Placeholder fuer echten Kauf)
-                    int screwAmount = item.Id switch
+                    success = await _purchaseService.PurchaseConsumableAsync(item.Id);
+                    if (success)
                     {
-                        "golden_screws_50" => 50,
-                        "golden_screws_150" => 150,
-                        "golden_screws_450" => 450,
-                        _ => 0
-                    };
-                    if (screwAmount > 0)
-                    {
-                        // TODO: Echten IAP-Kauf via PurchaseService implementieren
-                        _gameStateService.AddGoldenScrews(screwAmount);
-                        GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
-                        await _audioService.PlaySoundAsync(GameSound.LevelUp);
-                        ShowAlert(
-                            _localizationService.GetString("GoldenScrews"),
-                            string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), screwAmount),
-                            _localizationService.GetString("Great"));
-                        LoadTools();
+                        int screwAmount = item.Id switch
+                        {
+                            "golden_screws_50" => 50,
+                            "golden_screws_150" => 150,
+                            "golden_screws_450" => 450,
+                            _ => 0
+                        };
+                        if (screwAmount > 0)
+                        {
+                            _gameStateService.AddGoldenScrews(screwAmount);
+                            GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
+                            await _audioService.PlaySoundAsync(GameSound.LevelUp);
+                            ShowAlert(
+                                _localizationService.GetString("GoldenScrews"),
+                                string.Format(_localizationService.GetString("GoldenScrewsReceivedFormat"), screwAmount),
+                                _localizationService.GetString("Great"));
+                            LoadTools();
+                        }
                     }
-                    return;
-                }
-
-                if (success)
-                {
-                    _gameStateService.State.IsPremium = true;
-                    await _saveGameService.SaveAsync();
-                    await _audioService.PlaySoundAsync(GameSound.LevelUp);
-                    ShowAlert(
-                        _localizationService.GetString("ThankYou"),
-                        _localizationService.GetString("ThankYouPremiumDesc"),
-                        _localizationService.GetString("Great"));
-                    LoadShopData();
                 }
             }
         }
@@ -494,7 +501,7 @@ public partial class ShopViewModel : ObservableObject
         switch (item.Id)
         {
             case "booster_2x_30min":
-                // TODO: Implement booster system
+                _gameStateService.State.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes(30);
                 ShowAlert(
                     _localizationService.GetString("BoosterActivated"),
                     _localizationService.GetString("BoosterActivatedDesc"),
@@ -513,7 +520,8 @@ public partial class ShopViewModel : ObservableObject
                 break;
 
             case "skip_time_1h":
-                var hourlyEarnings = _gameStateService.State.TotalIncomePerSecond * 3600;
+                // Netto-Einkommen statt Brutto (Kosten abziehen)
+                var hourlyEarnings = Math.Max(0m, _gameStateService.State.NetIncomePerSecond * 3600);
                 _gameStateService.AddMoney(hourlyEarnings);
                 CurrentBalance = FormatMoney(_gameStateService.State.Money);
                 await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
@@ -558,6 +566,14 @@ public partial class ShopViewModel : ObservableObject
     }
 
     private static string FormatMoney(decimal amount) => MoneyFormatter.Format(amount, 2);
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
+        _disposed = true;
+        GC.SuppressFinalize(this);
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

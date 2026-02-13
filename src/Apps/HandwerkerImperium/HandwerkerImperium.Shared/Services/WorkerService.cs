@@ -10,15 +10,17 @@ namespace HandwerkerImperium.Services;
 public class WorkerService : IWorkerService
 {
     private readonly IGameStateService _gameState;
+    private readonly IPrestigeService? _prestigeService;
     private readonly object _lock = new();
 
     public event EventHandler<Worker>? WorkerMoodWarning;
     public event EventHandler<Worker>? WorkerQuit;
     public event EventHandler<Worker>? WorkerLevelUp;
 
-    public WorkerService(IGameStateService gameState)
+    public WorkerService(IGameStateService gameState, IPrestigeService? prestigeService = null)
     {
         _gameState = gameState;
+        _prestigeService = prestigeService;
     }
 
     public bool HireWorker(Worker worker, WorkshopType workshop)
@@ -191,7 +193,7 @@ public class WorkerService : IWorkerService
                 {
                     if (worker.IsResting)
                     {
-                        UpdateResting(worker, deltaHours);
+                        UpdateResting(worker, deltaHours, state);
                     }
                     else if (worker.IsTraining)
                     {
@@ -199,7 +201,7 @@ public class WorkerService : IWorkerService
                     }
                     else
                     {
-                        UpdateWorking(worker, deltaHours);
+                        UpdateWorking(worker, deltaHours, state);
                     }
 
                     // Check quit conditions
@@ -232,16 +234,21 @@ public class WorkerService : IWorkerService
         }
     }
 
-    private void UpdateResting(Worker worker, decimal deltaHours)
+    private void UpdateResting(Worker worker, decimal deltaHours, GameState state)
     {
-        // Reduce fatigue during rest
-        decimal fatigueRecovery = (100m / worker.RestHoursNeeded) * deltaHours;
+        // Canteen-Gebäude: Erholungszeit-Reduktion
+        var canteen = state.GetBuilding(BuildingType.Canteen);
+        decimal restMultiplier = 1m + (canteen?.RestTimeReduction ?? 0m); // z.B. 1.5 = 50% schneller
+
+        // Fatigue-Erholung (schneller mit Canteen)
+        decimal fatigueRecovery = (100m / worker.RestHoursNeeded) * deltaHours * restMultiplier;
         worker.Fatigue = Math.Max(0m, worker.Fatigue - fatigueRecovery);
 
-        // Slight mood recovery during rest
-        worker.Mood = Math.Min(100m, worker.Mood + 1m * deltaHours);
+        // Stimmungs-Erholung beim Ruhen (Canteen-Bonus addiert)
+        decimal moodRecovery = 1m + (canteen?.MoodRecoveryPerHour ?? 0m);
+        worker.Mood = Math.Min(100m, worker.Mood + moodRecovery * deltaHours);
 
-        // Auto-stop resting when fully rested
+        // Automatisch Ruhe beenden wenn voll erholt
         if (worker.Fatigue <= 0m)
         {
             worker.IsResting = false;
@@ -251,20 +258,30 @@ public class WorkerService : IWorkerService
 
     private void UpdateTraining(Worker worker, decimal deltaHours, GameState state)
     {
-        // Training costs money per tick
+        // Training-Kosten pro Tick
         var trainingCost = worker.TrainingCostPerHour * deltaHours;
         if (!_gameState.CanAfford(trainingCost))
         {
-            // Stop training if can't afford
+            // Training stoppen wenn nicht leistbar
             worker.IsTraining = false;
             worker.TrainingStartedAt = null;
             return;
         }
         _gameState.TrySpendMoney(trainingCost);
 
-        // Gain XP
-        decimal xpGain = worker.TrainingXpPerHour * deltaHours * worker.Personality.GetXpMultiplier();
-        worker.ExperienceXp += (int)xpGain;
+        // TrainingCenter-Gebäude + Research: Trainings-Geschwindigkeit
+        var trainingCenter = state.GetBuilding(BuildingType.TrainingCenter);
+        decimal trainingMultiplier = trainingCenter?.TrainingSpeedMultiplier ?? 1m;
+
+        // XP-Gewinn (mit Gebäude-Multiplikator, Akkumulator für fraktionale XP)
+        decimal xpGain = worker.TrainingXpPerHour * deltaHours * worker.Personality.GetXpMultiplier() * trainingMultiplier;
+        worker.TrainingXpAccumulator += xpGain;
+        if (worker.TrainingXpAccumulator >= 1m)
+        {
+            int wholeXp = (int)worker.TrainingXpAccumulator;
+            worker.ExperienceXp += wholeXp;
+            worker.TrainingXpAccumulator -= wholeXp;
+        }
 
         // Level up check
         if (worker.ExperienceXp >= worker.XpForNextLevel && worker.ExperienceLevel < 10)
@@ -284,10 +301,26 @@ public class WorkerService : IWorkerService
         worker.Fatigue = Math.Min(100m, worker.Fatigue + worker.FatiguePerHour * 0.5m * deltaHours);
     }
 
-    private void UpdateWorking(Worker worker, decimal deltaHours)
+    private void UpdateWorking(Worker worker, decimal deltaHours, GameState state)
     {
-        // Mood decays while working
-        worker.Mood = Math.Max(0m, worker.Mood - worker.MoodDecayPerHour * deltaHours);
+        // Stimmungsabfall beim Arbeiten (mit Prestige-Shop MoodDecayReduction)
+        var moodDecay = worker.MoodDecayPerHour;
+        if (_prestigeService != null)
+        {
+            var reduction = _prestigeService.GetMoodDecayReduction();
+            if (reduction > 0)
+                moodDecay *= (1m - reduction);
+        }
+
+        // Canteen-Gebäude: Passive Stimmungs-Erholung auch beim Arbeiten
+        var canteen = state.GetBuilding(BuildingType.Canteen);
+        decimal passiveMoodRecovery = canteen?.MoodRecoveryPerHour ?? 0m;
+        decimal netMoodChange = moodDecay - passiveMoodRecovery;
+
+        if (netMoodChange > 0)
+            worker.Mood = Math.Max(0m, worker.Mood - netMoodChange * deltaHours);
+        else
+            worker.Mood = Math.Min(100m, worker.Mood + Math.Abs(netMoodChange) * deltaHours);
 
         // Fatigue increases while working
         worker.Fatigue = Math.Min(100m, worker.Fatigue + worker.FatiguePerHour * deltaHours);
@@ -299,9 +332,15 @@ public class WorkerService : IWorkerService
             worker.RestStartedAt = DateTime.UtcNow;
         }
 
-        // Small XP gain from working (10% of training rate)
+        // Langsamer XP-Gewinn beim Arbeiten (10% der Trainingsrate)
         decimal xpGain = worker.TrainingXpPerHour * 0.1m * deltaHours * worker.Personality.GetXpMultiplier();
-        worker.ExperienceXp += Math.Max(1, (int)xpGain);
+        worker.WorkingXpAccumulator += xpGain;
+        if (worker.WorkingXpAccumulator >= 1m)
+        {
+            int wholeXp = (int)worker.WorkingXpAccumulator;
+            worker.ExperienceXp += wholeXp;
+            worker.WorkingXpAccumulator -= wholeXp;
+        }
 
         // Level up check
         if (worker.ExperienceXp >= worker.XpForNextLevel && worker.ExperienceLevel < 10)

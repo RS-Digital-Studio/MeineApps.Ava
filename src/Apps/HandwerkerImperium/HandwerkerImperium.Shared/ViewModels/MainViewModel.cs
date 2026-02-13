@@ -50,9 +50,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IQuickJobService _quickJobService;
     private readonly IDailyChallengeService _dailyChallengeService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IEventService _eventService;
     private bool _disposed;
     private decimal _pendingOfflineEarnings;
     private QuickJob? _activeQuickJob;
+    private bool _quickJobMiniGamePlayed;
 
     // Statisches Array vermeidet Allokation bei jedem RefreshWorkshops()-Aufruf
     private static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
@@ -165,6 +167,68 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _challengesExpandIconKind = "ChevronUp";
+
+    // Bulk Buy Multiplikator (1, 10, 100, 0=Max)
+    [ObservableProperty]
+    private int _bulkBuyAmount = 1;
+
+    [ObservableProperty]
+    private string _bulkBuyLabel = "x1";
+
+    // Feierabend-Rush
+    [ObservableProperty]
+    private bool _isRushActive;
+
+    [ObservableProperty]
+    private string _rushTimeRemaining = "";
+
+    [ObservableProperty]
+    private bool _canActivateRush;
+
+    [ObservableProperty]
+    private string _rushButtonText = "";
+
+    // Lieferant (Variable Rewards)
+    [ObservableProperty]
+    private bool _hasPendingDelivery;
+
+    [ObservableProperty]
+    private string _deliveryIcon = "";
+
+    [ObservableProperty]
+    private string _deliveryDescription = "";
+
+    [ObservableProperty]
+    private string _deliveryAmountText = "";
+
+    [ObservableProperty]
+    private string _deliveryTimeRemaining = "";
+
+    // Meisterwerkzeuge
+    [ObservableProperty]
+    private int _masterToolsCollected;
+
+    [ObservableProperty]
+    private int _masterToolsTotal;
+
+    // Aktives Event (Banner-Anzeige)
+    [ObservableProperty]
+    private bool _hasActiveEvent;
+
+    [ObservableProperty]
+    private string _activeEventIcon = "";
+
+    [ObservableProperty]
+    private string _activeEventName = "";
+
+    [ObservableProperty]
+    private string _activeEventDescription = "";
+
+    [ObservableProperty]
+    private string _activeEventTimeRemaining = "";
+
+    [ObservableProperty]
+    private string _seasonalModifierText = "";
 
     // ═══════════════════════════════════════════════════════════════════════
     // DIALOG STATE
@@ -379,6 +443,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IQuickJobService quickJobService,
         IDailyChallengeService dailyChallengeService,
         IRewardedAdService rewardedAdService,
+        IEventService eventService,
         ShopViewModel shopViewModel,
         StatisticsViewModel statisticsViewModel,
         AchievementsViewModel achievementsViewModel,
@@ -408,6 +473,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _quickJobService = quickJobService;
         _dailyChallengeService = dailyChallengeService;
         _rewardedAdService = rewardedAdService;
+        _eventService = eventService;
         _rewardedAdService.AdUnavailable += () => ShowAlertDialog(
             _localizationService.GetString("AdVideoNotAvailableTitle"),
             _localizationService.GetString("AdVideoNotAvailableMessage"),
@@ -489,8 +555,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _gameStateService.WorkerHired += OnWorkerHired;
         _gameStateService.OrderCompleted += OnOrderCompleted;
         _gameStateService.StateLoaded += OnStateLoaded;
+        _gameStateService.MiniGameResultRecorded += OnMiniGameResultRecorded;
         _gameLoopService.OnTick += OnGameTick;
+        _gameLoopService.MasterToolUnlocked += OnMasterToolUnlocked;
+        _gameLoopService.DeliveryArrived += OnDeliveryArrived;
         _localizationService.LanguageChanged += OnLanguageChanged;
+        _eventService.EventStarted += OnEventStarted;
+        _eventService.EventEnded += OnEventEnded;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -579,9 +650,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var effectiveDuration = wasCapped ? maxDuration : offlineDuration;
 
         OfflineEarningsAmountText = MoneyFormatter.FormatCompact(earnings);
-        OfflineEarningsDurationText = effectiveDuration.TotalHours >= 1
+        var durationText = effectiveDuration.TotalHours >= 1
             ? $"{(int)effectiveDuration.TotalHours}h {effectiveDuration.Minutes}min"
             : $"{(int)effectiveDuration.TotalMinutes}min";
+        // Hinweis wenn Offline-Dauer gekappt wurde
+        if (wasCapped)
+            durationText += $" (Max. {(int)maxDuration.TotalHours}h)";
+        OfflineEarningsDurationText = durationText;
         IsOfflineEarningsDialogVisible = true;
 
         ShowOfflineEarnings?.Invoke(this, new OfflineEarningsEventArgs(
@@ -694,9 +769,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task CollectOfflineEarningsWithAdAsync()
     {
-        CollectOfflineEarnings(true);
+        var success = await _rewardedAdService.ShowAdAsync("offline_double");
+        CollectOfflineEarnings(success);
         IsOfflineEarningsDialogVisible = false;
-        await Task.CompletedTask;
     }
 
     private void RefreshFromState()
@@ -720,6 +795,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Login-Streak aktualisieren
         OnPropertyChanged(nameof(LoginStreak));
         OnPropertyChanged(nameof(HasLoginStreak));
+
+        // Rush/Delivery/MasterTools
+        UpdateRushDisplay();
+        UpdateDeliveryDisplay();
+        MasterToolsCollected = state.CollectedMasterTools.Count;
+        MasterToolsTotal = MasterTool.GetAllDefinitions().Count;
 
         // Refresh workshops
         RefreshWorkshops();
@@ -956,16 +1037,45 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void CycleBulkBuy()
+    {
+        BulkBuyAmount = BulkBuyAmount switch
+        {
+            1 => 10,
+            10 => 100,
+            100 => 0, // Max
+            _ => 1
+        };
+        BulkBuyLabel = BulkBuyAmount switch
+        {
+            0 => "Max",
+            _ => $"x{BulkBuyAmount}"
+        };
+        RefreshWorkshops();
+    }
+
+    [RelayCommand]
     private async Task UpgradeWorkshopAsync(WorkshopDisplayModel workshop)
     {
         if (!workshop.IsUnlocked || !workshop.CanUpgrade)
             return;
 
-        if (_gameStateService.TryUpgradeWorkshop(workshop.Type))
+        if (BulkBuyAmount == 1)
         {
-            await _audioService.PlaySoundAsync(GameSound.Upgrade);
-            // RefreshWorkshops() wird bereits vom WorkshopUpgraded-Event-Handler aufgerufen
-            FloatingTextRequested?.Invoke("+1 Level!", "level");
+            if (_gameStateService.TryUpgradeWorkshop(workshop.Type))
+            {
+                await _audioService.PlaySoundAsync(GameSound.Upgrade);
+                FloatingTextRequested?.Invoke("+1 Level!", "level");
+            }
+        }
+        else
+        {
+            int upgraded = _gameStateService.TryUpgradeWorkshopBulk(workshop.Type, BulkBuyAmount);
+            if (upgraded > 0)
+            {
+                await _audioService.PlaySoundAsync(GameSound.Upgrade);
+                FloatingTextRequested?.Invoke($"+{upgraded} Level!", "level");
+            }
         }
     }
 
@@ -1111,6 +1221,53 @@ public partial class MainViewModel : ObservableObject, IDisposable
         NotifyTabBarVisibility();
     }
 
+    /// <summary>
+    /// Versucht eine Ebene zurückzunavigieren. Wird von Android Back-Button aufgerufen.
+    /// Reihenfolge: Dialoge schließen → MiniGame/Detail → Sub-Tabs → Dashboard.
+    /// Gibt true zurück wenn eine Zurück-Navigation erfolgt ist, false wenn bereits auf Dashboard.
+    /// </summary>
+    public bool TryGoBack()
+    {
+        // 1. Offene Dialoge schließen (höchste Priorität)
+        if (IsConfirmDialogVisible) { ConfirmDialogCancel(); return true; }
+        if (IsAlertDialogVisible) { DismissAlertDialog(); return true; }
+        if (IsAchievementDialogVisible) { DismissAchievementDialog(); return true; }
+        if (IsLevelUpDialogVisible) { DismissLevelUpDialog(); return true; }
+        if (IsOfflineEarningsDialogVisible) { CollectOfflineEarningsNormal(); return true; }
+        if (IsDailyRewardDialogVisible) { IsDailyRewardDialogVisible = false; return true; }
+
+        // 2. MiniGame aktiv → zurück zum Dashboard
+        if (IsSawingGameActive || IsPipePuzzleActive || IsWiringGameActive || IsPaintingGameActive)
+        {
+            SelectDashboardTab();
+            return true;
+        }
+
+        // 3. Detail-Views → zurück zum Dashboard
+        if (IsWorkshopDetailActive || IsOrderDetailActive || IsWorkerProfileActive)
+        {
+            SelectDashboardTab();
+            return true;
+        }
+
+        // 4. Sub-Tabs (Markt, Gebäude, Research) → zurück zum Dashboard
+        if (IsWorkerMarketActive || IsBuildingsActive || IsResearchActive)
+        {
+            SelectDashboardTab();
+            return true;
+        }
+
+        // 5. Nicht-Dashboard-Tabs → zum Dashboard
+        if (IsShopActive || IsStatisticsActive || IsAchievementsActive || IsSettingsActive)
+        {
+            SelectDashboardTab();
+            return true;
+        }
+
+        // 6. Bereits auf Dashboard → false (App kann geschlossen werden)
+        return false;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // QUICK JOB + DAILY CHALLENGE COMMANDS
     // ═══════════════════════════════════════════════════════════════════════
@@ -1119,7 +1276,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void StartQuickJob(QuickJob? job)
     {
         if (job == null || job.IsCompleted) return;
+
+        // Tageslimit prüfen (verhindert Reward-Farming)
+        if ((_quickJobService as QuickJobService)?.IsDailyLimitReached == true)
+        {
+            var template = _localizationService.GetString("QuickJobDailyLimit");
+            var limitText = !string.IsNullOrEmpty(template)
+                ? string.Format(template, QuickJobService.MaxQuickJobsPerDay)
+                : $"Tageslimit erreicht ({QuickJobService.MaxQuickJobsPerDay}/Tag)";
+            FloatingTextRequested?.Invoke(limitText, "Warning");
+            return;
+        }
+
         _activeQuickJob = job;
+        _quickJobMiniGamePlayed = false;
         var route = job.MiniGameType.GetRoute();
         DeactivateAllTabs();
         NavigateToMiniGame(route, "");
@@ -1173,6 +1343,157 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // FEIERABEND-RUSH COMMANDS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private const int RushCostScrews = 10;
+    private const int RushDurationHours = 2;
+
+    [RelayCommand]
+    private void ActivateRush()
+    {
+        var state = _gameStateService.State;
+        if (state.IsRushBoostActive) return;
+
+        if (state.IsFreeRushAvailable)
+        {
+            // Täglicher Gratis-Rush
+            state.RushBoostEndTime = DateTime.UtcNow.AddHours(RushDurationHours);
+            state.LastFreeRushUsed = DateTime.UtcNow;
+            _gameStateService.MarkDirty();
+            _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+            FloatingTextRequested?.Invoke($"⚡ Rush 2x ({RushDurationHours}h)!", "Rush");
+            CelebrationRequested?.Invoke();
+        }
+        else if (_gameStateService.TrySpendGoldenScrews(RushCostScrews))
+        {
+            // Bezahlter Rush (Goldschrauben)
+            state.RushBoostEndTime = DateTime.UtcNow.AddHours(RushDurationHours);
+            _gameStateService.MarkDirty();
+            _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+            FloatingTextRequested?.Invoke($"⚡ Rush 2x ({RushDurationHours}h)!", "Rush");
+        }
+        else
+        {
+            ShowAlertDialog(
+                _localizationService.GetString("NotEnoughScrews"),
+                string.Format(_localizationService.GetString("RushCostScrews"), RushCostScrews),
+                "OK");
+        }
+
+        UpdateRushDisplay();
+    }
+
+    private void UpdateRushDisplay()
+    {
+        var state = _gameStateService.State;
+        IsRushActive = state.IsRushBoostActive;
+
+        if (IsRushActive)
+        {
+            var remaining = state.RushBoostEndTime - DateTime.UtcNow;
+            RushTimeRemaining = remaining.TotalMinutes >= 60
+                ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}m"
+                : $"{remaining.Minutes}m {remaining.Seconds:D2}s";
+            CanActivateRush = false;
+            RushButtonText = $"⚡ {RushTimeRemaining}";
+        }
+        else
+        {
+            RushTimeRemaining = "";
+            CanActivateRush = true;
+            RushButtonText = state.IsFreeRushAvailable
+                ? _localizationService.GetString("RushFreeActivation")
+                : $"⚡ Rush ({RushCostScrews} 🔩)";
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LIEFERANT COMMANDS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private void ClaimDelivery()
+    {
+        var state = _gameStateService.State;
+        var delivery = state.PendingDelivery;
+        if (delivery == null || delivery.IsExpired)
+        {
+            HasPendingDelivery = false;
+            state.PendingDelivery = null;
+            return;
+        }
+
+        // Belohnung anwenden
+        switch (delivery.Type)
+        {
+            case Models.Enums.DeliveryType.Money:
+                _gameStateService.AddMoney(delivery.Amount);
+                FloatingTextRequested?.Invoke($"+{MoneyFormatter.FormatCompact(delivery.Amount)}", "money");
+                break;
+
+            case Models.Enums.DeliveryType.GoldenScrews:
+                _gameStateService.AddGoldenScrews((int)delivery.Amount);
+                FloatingTextRequested?.Invoke($"+{(int)delivery.Amount} 🔩", "screw");
+                break;
+
+            case Models.Enums.DeliveryType.Experience:
+                _gameStateService.AddXp((int)delivery.Amount);
+                FloatingTextRequested?.Invoke($"+{(int)delivery.Amount} XP", "xp");
+                break;
+
+            case Models.Enums.DeliveryType.MoodBoost:
+                foreach (var ws in state.Workshops)
+                foreach (var worker in ws.Workers)
+                    worker.Mood = Math.Min(100m, worker.Mood + delivery.Amount);
+                FloatingTextRequested?.Invoke($"😊 +{(int)delivery.Amount} Mood", "mood");
+                break;
+
+            case Models.Enums.DeliveryType.SpeedBoost:
+                state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes((double)delivery.Amount);
+                FloatingTextRequested?.Invoke($"⚡ 2x ({(int)delivery.Amount}min)", "speed");
+                break;
+        }
+
+        _audioService.PlaySoundAsync(GameSound.MoneyEarned).FireAndForget();
+        state.TotalDeliveriesClaimed++;
+        state.PendingDelivery = null;
+        HasPendingDelivery = false;
+        _gameStateService.MarkDirty();
+    }
+
+    private void UpdateDeliveryDisplay()
+    {
+        var delivery = _gameStateService.State.PendingDelivery;
+        if (delivery == null || delivery.IsExpired)
+        {
+            if (HasPendingDelivery)
+            {
+                HasPendingDelivery = false;
+                _gameStateService.State.PendingDelivery = null;
+            }
+            return;
+        }
+
+        HasPendingDelivery = true;
+        DeliveryIcon = delivery.Icon;
+        DeliveryDescription = _localizationService.GetString(delivery.DescriptionKey);
+
+        DeliveryAmountText = delivery.Type switch
+        {
+            Models.Enums.DeliveryType.Money => MoneyFormatter.FormatCompact(delivery.Amount),
+            Models.Enums.DeliveryType.GoldenScrews => $"{(int)delivery.Amount} 🔩",
+            Models.Enums.DeliveryType.Experience => $"{(int)delivery.Amount} XP",
+            Models.Enums.DeliveryType.MoodBoost => $"+{(int)delivery.Amount} Mood",
+            Models.Enums.DeliveryType.SpeedBoost => $"{(int)delivery.Amount}min 2x",
+            _ => ""
+        };
+
+        var remaining = delivery.TimeRemaining;
+        DeliveryTimeRemaining = $"{remaining.Minutes}:{remaining.Seconds:D2}";
+    }
+
     private void RefreshQuickJobs()
     {
         QuickJobs = _quickJobService.GetAvailableJobs();
@@ -1202,16 +1523,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Pure back navigation: ".." or "../.."
         if (route is ".." or "../..")
         {
-            // QuickJob-Rueckkehr: Belohnung vergeben
+            // QuickJob-Rückkehr: Belohnung nur vergeben wenn MiniGame tatsächlich gespielt wurde
             if (_activeQuickJob != null)
             {
-                _activeQuickJob.IsCompleted = true;
-                _gameStateService.AddMoney(_activeQuickJob.Reward);
-                _gameStateService.AddXp(_activeQuickJob.XpReward);
-                _gameStateService.State.TotalQuickJobsCompleted++;
-                (_quickJobService as QuickJobService)?.NotifyJobCompleted(_activeQuickJob);
-                (_dailyChallengeService as DailyChallengeService)?.OnQuickJobCompleted();
+                if (_quickJobMiniGamePlayed)
+                {
+                    _activeQuickJob.IsCompleted = true;
+                    _gameStateService.AddMoney(_activeQuickJob.Reward);
+                    _gameStateService.AddXp(_activeQuickJob.XpReward);
+                    _gameStateService.State.TotalQuickJobsCompleted++;
+                    (_quickJobService as QuickJobService)?.NotifyJobCompleted(_activeQuickJob);
+                    (_dailyChallengeService as DailyChallengeService)?.OnQuickJobCompleted();
+                }
                 _activeQuickJob = null;
+                _quickJobMiniGamePlayed = false;
                 RefreshQuickJobs();
             }
 
@@ -1335,6 +1660,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         GoldenScrewsDisplay = e.NewAmount.ToString("N0");
     }
 
+    // Milestone-Level mit Goldschrauben-Belohnung
+    private static readonly (int level, int screws)[] _milestones =
+    [
+        (10, 3), (25, 5), (50, 10), (100, 20), (250, 50), (500, 100), (1000, 200)
+    ];
+
     private void OnLevelUp(object? sender, LevelUpEventArgs e)
     {
         PlayerLevel = e.NewLevel;
@@ -1342,17 +1673,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         RefreshWorkshops();
 
-        // Show level up dialog overlay
+        // Milestone-Bonus prüfen
+        string milestoneText = "";
+        foreach (var (level, screws) in _milestones)
+        {
+            if (e.NewLevel == level)
+            {
+                _gameStateService.AddGoldenScrews(screws);
+                milestoneText = $"\n🔩 +{screws} {_localizationService.GetString("GoldenScrews")}";
+                // Doppelte Celebration bei Milestone
+                _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+                break;
+            }
+        }
+
+        // Level-Up-Dialog anzeigen
         LevelUpNewLevel = e.NewLevel;
         if (e.NewlyUnlockedWorkshops.Count > 0)
         {
             var names = e.NewlyUnlockedWorkshops
                 .Select(w => _localizationService.GetString(w.GetLocalizationKey()));
-            LevelUpUnlockedText = string.Join(", ", names);
+            LevelUpUnlockedText = string.Join(", ", names) + milestoneText;
         }
         else
         {
-            LevelUpUnlockedText = "";
+            LevelUpUnlockedText = milestoneText;
         }
         IsLevelUpDialogVisible = true;
         CelebrationRequested?.Invoke();
@@ -1392,6 +1737,104 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         RefreshOrders();
+    }
+
+    private void OnMiniGameResultRecorded(object? sender, MiniGameResultRecordedEventArgs e)
+    {
+        // Flag setzen: MiniGame wurde tatsächlich gespielt (für QuickJob-Validierung)
+        _quickJobMiniGamePlayed = true;
+    }
+
+    private void OnMasterToolUnlocked(object? sender, MasterToolDefinition tool)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var name = _localizationService.GetString(tool.NameKey);
+            if (string.IsNullOrEmpty(name)) name = tool.Id;
+            FloatingTextRequested?.Invoke($"{tool.Icon} {name}!", "MasterTool");
+            CelebrationRequested?.Invoke();
+            _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
+
+            MasterToolsCollected = _gameStateService.State.CollectedMasterTools.Count;
+        });
+    }
+
+    private void OnDeliveryArrived(object? sender, SupplierDelivery delivery)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            UpdateDeliveryDisplay();
+            FloatingTextRequested?.Invoke(
+                $"📦 {_localizationService.GetString("DeliveryArrived")}!", "Delivery");
+        });
+    }
+
+    private void OnEventStarted(object? sender, GameEvent evt)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            HasActiveEvent = true;
+            ActiveEventIcon = evt.Icon;
+            ActiveEventName = _localizationService.GetString(evt.NameKey);
+            ActiveEventDescription = _localizationService.GetString(evt.DescriptionKey);
+            UpdateEventTimer();
+
+            // FloatingText-Benachrichtigung anzeigen
+            FloatingTextRequested?.Invoke(
+                $"{evt.Icon} {ActiveEventName}", "Event");
+        });
+    }
+
+    private void OnEventEnded(object? sender, GameEvent evt)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            HasActiveEvent = false;
+            ActiveEventIcon = "";
+            ActiveEventName = "";
+            ActiveEventDescription = "";
+            ActiveEventTimeRemaining = "";
+        });
+    }
+
+    /// <summary>
+    /// Aktualisiert Event-Timer und saisonalen Modifikator (wird im GameTick aufgerufen).
+    /// </summary>
+    private void UpdateEventDisplay()
+    {
+        var activeEvent = _eventService.ActiveEvent;
+        if (activeEvent != null)
+        {
+            HasActiveEvent = true;
+            ActiveEventIcon = activeEvent.Icon;
+            ActiveEventName = _localizationService.GetString(activeEvent.NameKey);
+            UpdateEventTimer();
+        }
+        else if (HasActiveEvent)
+        {
+            HasActiveEvent = false;
+        }
+
+        // Saisonaler Modifikator
+        var month = DateTime.UtcNow.Month;
+        SeasonalModifierText = month switch
+        {
+            3 or 4 or 5 => _localizationService.GetString("SeasonSpring"),
+            6 or 7 or 8 => _localizationService.GetString("SeasonSummer"),
+            9 or 10 or 11 => _localizationService.GetString("SeasonAutumn"),
+            _ => _localizationService.GetString("SeasonWinter")
+        };
+    }
+
+    private void UpdateEventTimer()
+    {
+        var activeEvent = _eventService.ActiveEvent;
+        if (activeEvent == null) return;
+
+        var remaining = activeEvent.RemainingTime;
+        ActiveEventTimeRemaining = remaining.TotalHours >= 1
+            ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}m"
+            : $"{remaining.Minutes}m {remaining.Seconds:D2}s";
     }
 
     private void OnStateLoaded(object? sender, EventArgs e)
@@ -1466,6 +1909,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (ResearchViewModel.HasActiveResearch)
         {
             ResearchViewModel.UpdateTimer();
+        }
+
+        // Rush-Timer aktualisieren
+        if (IsRushActive || CanActivateRush != !_gameStateService.State.IsRushBoostActive)
+        {
+            UpdateRushDisplay();
+        }
+
+        // Lieferant-Anzeige aktualisieren
+        if (_floatingTextCounter % 3 == 0)
+        {
+            UpdateDeliveryDisplay();
+        }
+
+        // Event-Anzeige aktualisieren (Timer + saisonaler Modifikator)
+        if (_floatingTextCounter % 5 == 0)
+        {
+            UpdateEventDisplay();
+        }
+        else if (HasActiveEvent)
+        {
+            UpdateEventTimer();
         }
     }
 
@@ -1615,10 +2080,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _gameStateService.WorkerHired -= OnWorkerHired;
         _gameStateService.OrderCompleted -= OnOrderCompleted;
         _gameStateService.StateLoaded -= OnStateLoaded;
+        _gameStateService.MiniGameResultRecorded -= OnMiniGameResultRecorded;
         _gameLoopService.OnTick -= OnGameTick;
+        _gameLoopService.MasterToolUnlocked -= OnMasterToolUnlocked;
+        _gameLoopService.DeliveryArrived -= OnDeliveryArrived;
         _achievementService.AchievementUnlocked -= OnAchievementUnlocked;
         _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
         _localizationService.LanguageChanged -= OnLanguageChanged;
+        _eventService.EventStarted -= OnEventStarted;
+        _eventService.EventEnded -= OnEventEnded;
 
         _disposed = true;
         GC.SuppressFinalize(this);

@@ -7,7 +7,6 @@ namespace HandwerkerImperium.Services;
 public class EventService : IEventService
 {
     private readonly IGameStateService _gameState;
-    private readonly Random _random = new();
 
     public event EventHandler<GameEvent>? EventStarted;
     public event EventHandler<GameEvent>? EventEnded;
@@ -43,7 +42,7 @@ public class EventService : IEventService
         state.LastEventCheck = DateTime.UtcNow;
 
         // 30% chance per check (= ~1-2 events/day with 8h interval)
-        if (_random.NextDouble() > 0.30) return;
+        if (Random.Shared.NextDouble() > 0.30) return;
 
         // Pick a random event type
         var randomTypes = new[]
@@ -58,7 +57,7 @@ public class EventService : IEventService
             GameEventType.CelebrityEndorsement
         };
 
-        var type = randomTypes[_random.Next(randomTypes.Length)];
+        var type = randomTypes[Random.Shared.Next(randomTypes.Length)];
         var evt = GameEvent.Create(type);
 
         state.ActiveEvent = evt;
@@ -79,17 +78,10 @@ public class EventService : IEventService
             effect = ActiveEvent.Effect;
         }
 
-        // Seasonal modifier based on real-world month
-        var month = DateTime.Now.Month;
-        var seasonalMultiplier = month switch
-        {
-            3 or 4 or 5 => 1.15m,   // Spring: +15%
-            6 or 7 or 8 => 1.20m,   // Summer: +20%
-            9 or 10 or 11 => 1.10m, // Autumn: +10%
-            _ => 0.90m               // Winter: -10%
-        };
+        // Saisonaler Modifikator basierend auf aktuellem Monat (UTC)
+        var seasonalMultiplier = GetSeasonalMultiplier(DateTime.UtcNow.Month);
 
-        // Combine: seasonal adjusts income
+        // Kombiniert: Saison beeinflusst Einkommen
         return new GameEventEffect
         {
             IncomeMultiplier = effect.IncomeMultiplier * seasonalMultiplier,
@@ -101,4 +93,16 @@ public class EventService : IEventService
             SpecialEffect = effect.SpecialEffect
         };
     }
+
+    /// <summary>
+    /// Berechnet den saisonalen Multiplikator für einen Monat.
+    /// Zentralisiert, damit OfflineProgressService die gleiche Formel nutzt.
+    /// </summary>
+    public static decimal GetSeasonalMultiplier(int month) => month switch
+    {
+        3 or 4 or 5 => 1.15m,   // Frühling: +15%
+        6 or 7 or 8 => 1.20m,   // Sommer: +20%
+        9 or 10 or 11 => 1.10m, // Herbst: +10%
+        _ => 0.90m               // Winter: -10%
+    };
 }

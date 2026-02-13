@@ -113,6 +113,12 @@ public interface IGameStateService
     bool TryUpgradeWorkshop(WorkshopType type);
 
     /// <summary>
+    /// Upgradet einen Workshop mehrfach (Bulk Buy). Gibt Anzahl Upgrades zurück.
+    /// count=0 bedeutet Max (so viele wie bezahlbar).
+    /// </summary>
+    int TryUpgradeWorkshopBulk(WorkshopType type, int count);
+
+    /// <summary>
     /// Attempts to hire a worker for a workshop. Returns true if successful.
     /// </summary>
     bool TryHireWorker(WorkshopType type);

@@ -14,7 +14,6 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
-    private readonly Random _random = new();
     private bool _disposed;
 
     private static readonly DailyChallengeType[] AllChallengeTypes = Enum.GetValues<DailyChallengeType>();
@@ -68,8 +67,8 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
     {
         var state = _gameStateService.State.DailyChallengeState;
 
-        // Lokale Zeit fuer Tagesgrenze (nicht UTC)
-        if (DateTime.Now.Date > state.LastResetDate.Date)
+        // UTC fuer konsistente Tagesgrenze
+        if (DateTime.UtcNow.Date > state.LastResetDate.Date)
         {
             GenerateDailyChallenges();
         }
@@ -138,13 +137,13 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
 
         state.Challenges.Clear();
         state.AllCompletedBonusClaimed = false;
-        state.LastResetDate = DateTime.Now;
+        state.LastResetDate = DateTime.UtcNow;
 
         // 3 zufaellige Typen (keine Duplikate)
         var availableTypes = new List<DailyChallengeType>(AllChallengeTypes);
         for (int i = 0; i < 3 && availableTypes.Count > 0; i++)
         {
-            var idx = _random.Next(availableTypes.Count);
+            var idx = Random.Shared.Next(availableTypes.Count);
             var type = availableTypes[idx];
             availableTypes.RemoveAt(idx);
 
@@ -167,8 +166,9 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
         };
 
         // Basis-Multiplikator: Belohnung skaliert mit Level
-        // ~10 Minuten Brutto-Einkommen als Basis, mindestens Level * 30
-        var incomeBase = Math.Max(level * 30m, _gameStateService.State.TotalIncomePerSecond * 600m);
+        // ~10 Minuten Netto-Einkommen als Basis, mindestens Level * 30
+        var netPerSecond = Math.Max(0m, _gameStateService.State.NetIncomePerSecond);
+        var incomeBase = Math.Max(level * 30m, netPerSecond * 600m);
 
         var challenge = new DailyChallenge { Type = type };
 

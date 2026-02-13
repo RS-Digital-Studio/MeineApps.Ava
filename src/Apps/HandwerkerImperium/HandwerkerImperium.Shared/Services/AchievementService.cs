@@ -142,7 +142,7 @@ public class AchievementService : IAchievementService, IDisposable
                 or "workshop_level100" or "workshop_level250" or "workshop_level500" or "workshop_level1000"
                     => state.Workshops.Count > 0 ? state.Workshops.Max(w => w.Level) : 0,
                 "all_workshops"
-                    => state.Workshops.Count,
+                    => state.UnlockedWorkshopTypes.Count,
                 "worker_first"
                     => state.Workshops.Sum(w => w.Workers.Count) > 0 ? 1 : 0,
                 "workers_10" or "workers_25"
@@ -164,11 +164,15 @@ public class AchievementService : IAchievementService, IDisposable
                 or "level_100" or "level_250" or "level_500" or "level_1000"
                     => state.PlayerLevel,
                 "prestige_1"
-                    => state.PrestigeLevel,
+                    => state.Prestige.TotalPrestigeCount,
 
-                // Worker-Tier Achievements (werden beim Hiring gesetzt, hier nur Fallback)
-                "worker_ss_tier" or "worker_sss_tier" or "worker_legendary"
-                    => achievement.CurrentValue,
+                // Worker-Tier Achievements: Prüft ob ein Worker des entsprechenden Tiers existiert
+                "worker_ss_tier"
+                    => state.Workshops.SelectMany(w => w.Workers).Any(w => w.Tier >= WorkerTier.SS) ? 1 : 0,
+                "worker_sss_tier"
+                    => state.Workshops.SelectMany(w => w.Workers).Any(w => w.Tier >= WorkerTier.SSS) ? 1 : 0,
+                "worker_legendary"
+                    => state.Workshops.SelectMany(w => w.Workers).Any(w => w.Tier >= WorkerTier.Legendary) ? 1 : 0,
 
                 _ => achievement.CurrentValue
             };

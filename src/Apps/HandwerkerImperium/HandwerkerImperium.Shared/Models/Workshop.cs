@@ -100,10 +100,11 @@ public class Workshop
     public decimal RentPerHour => 10m * Level;
 
     /// <summary>
-    /// Material cost per hour (20% of gross income).
+    /// Material-Kosten pro Stunde (skaliert mit Level, nicht mit Einkommen).
+    /// Formel: 5 * Level * TypeMultiplier - so profitiert man von Worker-Effizienz und Prestige-Boni.
     /// </summary>
     [JsonIgnore]
-    public decimal MaterialCostPerHour => GrossIncomePerSecond * 3600m * 0.20m;
+    public decimal MaterialCostPerHour => 5m * Level * Type.GetBaseIncomeMultiplier();
 
     /// <summary>
     /// Total worker wages per hour.

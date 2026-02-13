@@ -6,16 +6,16 @@ namespace HandwerkerImperium.Models.Enums;
 /// </summary>
 public enum PrestigeTier
 {
-    /// <summary>No prestige yet</summary>
+    /// <summary>Kein Prestige</summary>
     None = 0,
 
-    /// <summary>First prestige tier, requires Level 100</summary>
+    /// <summary>Erste Prestige-Stufe, erfordert Level 30</summary>
     Bronze = 1,
 
-    /// <summary>Second tier, requires Level 300 + 3x Bronze</summary>
+    /// <summary>Zweite Stufe, erfordert Level 100 + 3x Bronze</summary>
     Silver = 2,
 
-    /// <summary>Highest tier, requires Level 500 + 3x Silver</summary>
+    /// <summary>Höchste Stufe, erfordert Level 250 + 3x Silver</summary>
     Gold = 3
 }
 
@@ -26,9 +26,9 @@ public static class PrestigeTierExtensions
     /// </summary>
     public static int GetRequiredLevel(this PrestigeTier tier) => tier switch
     {
-        PrestigeTier.Bronze => 100,
-        PrestigeTier.Silver => 300,
-        PrestigeTier.Gold => 500,
+        PrestigeTier.Bronze => 30,
+        PrestigeTier.Silver => 100,
+        PrestigeTier.Gold => 250,
         _ => int.MaxValue
     };
 

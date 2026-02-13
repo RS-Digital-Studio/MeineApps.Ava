@@ -1,5 +1,6 @@
 using System.Text.Json;
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
@@ -122,6 +123,7 @@ public class SaveGameService : ISaveGameService
                     state = GameState.MigrateFromV1(state);
                 }
 
+                SanitizeState(state);
                 _gameStateService.Initialize(state);
             }
 
@@ -165,6 +167,7 @@ public class SaveGameService : ISaveGameService
             var state = JsonSerializer.Deserialize<GameState>(json, _jsonOptions);
             if (state == null) return false;
 
+            SanitizeState(state);
             _gameStateService.Initialize(state);
             await SaveAsync();
             return true;
@@ -173,5 +176,92 @@ public class SaveGameService : ISaveGameService
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// Korrigiert ungültige Werte im geladenen State.
+    /// Repariert statt abzulehnen - so gehen keine Savegames verloren.
+    /// </summary>
+    private static void SanitizeState(GameState state)
+    {
+        // Basis-Werte
+        if (state.PlayerLevel < 1) state.PlayerLevel = 1;
+        if (state.Money < 0) state.Money = 0;
+        if (state.CurrentXp < 0) state.CurrentXp = 0;
+        if (state.GoldenScrews < 0) state.GoldenScrews = 0;
+        if (state.TotalMoneyEarned < 0) state.TotalMoneyEarned = 0;
+        if (state.TotalMoneySpent < 0) state.TotalMoneySpent = 0;
+
+        // Workshops: mindestens ein Carpenter muss existieren
+        state.Workshops ??= [];
+        state.UnlockedWorkshopTypes ??= [];
+        if (state.Workshops.Count == 0)
+        {
+            state.UnlockedWorkshopTypes.Add(WorkshopType.Carpenter);
+            var carpenter = Workshop.Create(WorkshopType.Carpenter);
+            carpenter.IsUnlocked = true;
+            state.Workshops.Add(carpenter);
+        }
+
+        // Workshop-Levels: 1-1000
+        foreach (var ws in state.Workshops)
+        {
+            if (ws.Level < 1) ws.Level = 1;
+            if (ws.Level > Workshop.MaxLevel) ws.Level = Workshop.MaxLevel;
+        }
+
+        // Prestige: darf nicht null sein, Werte validieren
+        state.Prestige ??= new PrestigeData();
+        if (state.Prestige.PrestigePoints < 0) state.Prestige.PrestigePoints = 0;
+        if (state.Prestige.BronzeCount < 0) state.Prestige.BronzeCount = 0;
+        if (state.Prestige.SilverCount < 0) state.Prestige.SilverCount = 0;
+        if (state.Prestige.GoldCount < 0) state.Prestige.GoldCount = 0;
+        // PermanentMultiplier: Minimum 1.0 (kein Prestige), Maximum 20.0
+        if (state.Prestige.PermanentMultiplier < 1.0m) state.Prestige.PermanentMultiplier = 1.0m;
+        if (state.Prestige.PermanentMultiplier > 20.0m) state.Prestige.PermanentMultiplier = 20.0m;
+        state.Prestige.PurchasedShopItems ??= [];
+
+        // Daily Reward Streak
+        if (state.DailyRewardStreak < 0) state.DailyRewardStreak = 0;
+
+        // Worker-Daten validieren
+        foreach (var ws in state.Workshops)
+        {
+            foreach (var worker in ws.Workers)
+            {
+                worker.Mood = Math.Clamp(worker.Mood, 0m, 100m);
+                worker.Fatigue = Math.Clamp(worker.Fatigue, 0m, 100m);
+                if (worker.ExperienceLevel < 0) worker.ExperienceLevel = 0;
+                if (worker.ExperienceXp < 0) worker.ExperienceXp = 0;
+            }
+        }
+
+        // Reputation validieren
+        state.Reputation ??= new CustomerReputation();
+        state.Reputation.ReputationScore = Math.Clamp(state.Reputation.ReputationScore, 0, 100);
+
+        // Building-Levels validieren
+        foreach (var building in state.Buildings)
+        {
+            if (building.Level < 0) building.Level = 0;
+            if (building.Level > building.Type.GetMaxLevel())
+                building.Level = building.Type.GetMaxLevel();
+        }
+
+        // Listen: null-Safety
+        state.AvailableOrders ??= [];
+        state.Buildings ??= [];
+        state.Researches ??= [];
+        state.UnlockedAchievements ??= [];
+        state.QuickJobs ??= [];
+        state.EventHistory ??= [];
+        state.DailyChallengeState ??= new DailyChallengeState();
+        state.CollectedMasterTools ??= [];
+        state.Tools ??= [];
+
+        // Lieferant: Abgelaufene Lieferung entfernen
+        if (state.PendingDelivery?.IsExpired == true)
+            state.PendingDelivery = null;
+        if (state.TotalDeliveriesClaimed < 0) state.TotalDeliveriesClaimed = 0;
     }
 }

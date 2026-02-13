@@ -1,8 +1,11 @@
 using Android.App;
 using Android.Content.PM;
 using Android.OS;
+using Android.Widget;
 using Avalonia;
 using Avalonia.Android;
+using HandwerkerImperium.ViewModels;
+using MeineApps.Core.Ava.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
@@ -19,6 +22,10 @@ public class MainActivity : AvaloniaMainActivity<App>
 {
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
+
+    // Double-Back-Press zum Beenden
+    private DateTime _lastBackPress = DateTime.MinValue;
+    private const int BackPressIntervalMs = 2000;
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
@@ -63,6 +70,28 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         _adMobHelper?.Pause();
         base.OnPause();
+    }
+
+    [System.Obsolete("Avalonia nutzt OnBackPressed")]
+    public override void OnBackPressed()
+    {
+        // Zuerst im ViewModel prüfen ob eine Ebene zurücknavigiert werden kann
+        var mainVm = App.Services?.GetService<MainViewModel>();
+        if (mainVm != null && mainVm.TryGoBack())
+            return;
+
+        // Double-Back-Press zum Beenden
+        var now = DateTime.UtcNow;
+        if ((now - _lastBackPress).TotalMilliseconds < BackPressIntervalMs)
+        {
+            base.OnBackPressed();
+            return;
+        }
+
+        _lastBackPress = now;
+        var localization = App.Services?.GetService<ILocalizationService>();
+        var msg = localization?.GetString("PressBackAgainToExit") ?? "Erneut drücken zum Beenden";
+        Toast.MakeText(this, msg, ToastLength.Short)?.Show();
     }
 
     protected override void OnDestroy()

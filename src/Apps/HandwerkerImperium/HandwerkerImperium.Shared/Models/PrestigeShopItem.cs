@@ -54,4 +54,22 @@ public class PrestigeEffect
 
     [JsonPropertyName("startingWorkerTier")]
     public string? StartingWorkerTier { get; set; }
+
+    /// <summary>
+    /// Rush-Verstärker: Bonus-Multiplikator auf Rush-Boost (z.B. 0.5 = Rush gibt 3x statt 2x).
+    /// </summary>
+    [JsonPropertyName("rushMultiplierBonus")]
+    public decimal RushMultiplierBonus { get; set; }
+
+    /// <summary>
+    /// Lieferant-Turbo: Reduzierung des Lieferintervalls (z.B. 0.3 = 30% schneller).
+    /// </summary>
+    [JsonPropertyName("deliverySpeedBonus")]
+    public decimal DeliverySpeedBonus { get; set; }
+
+    /// <summary>
+    /// Goldschrauben-Boost: Bonus auf alle Goldschrauben-Quellen (z.B. 0.25 = +25%).
+    /// </summary>
+    [JsonPropertyName("goldenScrewBonus")]
+    public decimal GoldenScrewBonus { get; set; }
 }

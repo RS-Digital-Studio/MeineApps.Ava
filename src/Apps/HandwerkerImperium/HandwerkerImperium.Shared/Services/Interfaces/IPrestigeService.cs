@@ -48,6 +48,21 @@ public interface IPrestigeService
     decimal GetPermanentMultiplier();
 
     /// <summary>
+    /// Kosten-Reduktion aus Prestige-Shop (0.0 = keine, 0.15 = 15% günstiger).
+    /// </summary>
+    decimal GetCostReduction();
+
+    /// <summary>
+    /// Mood-Decay-Reduktion aus Prestige-Shop (0.0 = keine, 0.25 = 25% langsamer).
+    /// </summary>
+    decimal GetMoodDecayReduction();
+
+    /// <summary>
+    /// XP-Multiplikator-Bonus aus Prestige-Shop (0.0 = keine, 0.15 = +15% XP).
+    /// </summary>
+    decimal GetXpMultiplier();
+
+    /// <summary>
     /// Event fired when prestige is completed.
     /// </summary>
     event EventHandler? PrestigeCompleted;

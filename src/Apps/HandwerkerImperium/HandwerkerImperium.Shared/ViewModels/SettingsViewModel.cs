@@ -1,9 +1,9 @@
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
@@ -233,13 +233,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            // Open URL using default browser via Process.Start
-            var psi = new ProcessStartInfo
-            {
-                FileName = "https://sites.google.com/rs-digital.org/handwerkerimperium/privacy",
-                UseShellExecute = true
-            };
-            Process.Start(psi);
+            UriLauncher.OpenUri("https://sites.google.com/rs-digital.org/handwerkerimperium/privacy");
         }
         catch
         {
@@ -255,15 +249,9 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            // Open mailto link via Process.Start
             var subject = Uri.EscapeDataString($"Handwerker Imperium Feedback (v{AppVersion})");
             var body = Uri.EscapeDataString(_localizationService.GetString("FeedbackBody"));
-            var psi = new ProcessStartInfo
-            {
-                FileName = $"mailto:info@rs-digital.org?subject={subject}&body={body}",
-                UseShellExecute = true
-            };
-            Process.Start(psi);
+            UriLauncher.OpenUri($"mailto:info@rs-digital.org?subject={subject}&body={body}");
         }
         catch
         {

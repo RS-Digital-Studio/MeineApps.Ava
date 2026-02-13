@@ -4,7 +4,7 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Manages daily login rewards with a 7-day cycle and streak tracking.
+/// Manages daily login rewards with a 30-day cycle and streak tracking.
 /// </summary>
 public class DailyRewardService : IDailyRewardService
 {
@@ -21,8 +21,8 @@ public class DailyRewardService : IDailyRewardService
         {
             var streak = CurrentStreak;
             if (streak == 0) return 1;
-            // Cycle through days 1-7
-            return ((streak - 1) % 7) + 1;
+            // Cycle through days 1-30
+            return ((streak - 1) % 30) + 1;
         }
     }
 
@@ -36,8 +36,8 @@ public class DailyRewardService : IDailyRewardService
             if (lastClaim == DateTime.MinValue)
                 return true; // Never claimed before
 
-            var today = DateTime.Now.Date;
-            var lastClaimDate = lastClaim.ToLocalTime().Date;
+            var today = DateTime.UtcNow.Date;
+            var lastClaimDate = lastClaim.Date; // lastClaim ist bereits UTC
 
             return today > lastClaimDate;
         }
@@ -127,8 +127,8 @@ public class DailyRewardService : IDailyRewardService
         if (lastClaim == DateTime.MinValue)
             return false; // First time claiming
 
-        var today = DateTime.Now.Date;
-        var lastClaimDate = lastClaim.ToLocalTime().Date;
+        var today = DateTime.UtcNow.Date;
+        var lastClaimDate = lastClaim.Date; // lastClaim ist bereits UTC
         var daysSinceLastClaim = (today - lastClaimDate).Days;
 
         // Streak is broken if more than 1 day has passed
@@ -143,8 +143,8 @@ public class DailyRewardService : IDailyRewardService
                 return TimeSpan.Zero;
 
             var lastClaim = _gameStateService.State.LastDailyRewardClaim;
-            var nextRewardTime = lastClaim.ToLocalTime().Date.AddDays(1);
-            var timeUntil = nextRewardTime - DateTime.Now;
+            var nextRewardTime = lastClaim.Date.AddDays(1); // lastClaim ist bereits UTC
+            var timeUntil = nextRewardTime - DateTime.UtcNow;
 
             return timeUntil > TimeSpan.Zero ? timeUntil : TimeSpan.Zero;
         }

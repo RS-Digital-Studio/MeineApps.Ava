@@ -1844,6 +1844,9 @@
   <data name="QuickRepair" xml:space="preserve">
     <value>Schnell-Reparatur</value>
   </data>
+  <data name="QuickJobDailyLimit" xml:space="preserve">
+    <value>Tageslimit erreicht ({0}/Tag)</value>
+  </data>
   <data name="QuickFix" xml:space="preserve">
     <value>Sofort-Fix</value>
   </data>
@@ -2235,6 +2238,169 @@
   </data>
   <data name="RestDuration" xml:space="preserve">
     <value>~{0} bis erholt</value>
+  </data>
+
+  <data name="SeasonSpring" xml:space="preserve">
+    <value>Frühling +15%</value>
+  </data>
+  <data name="SeasonSummer" xml:space="preserve">
+    <value>Sommer +20%</value>
+  </data>
+  <data name="SeasonAutumn" xml:space="preserve">
+    <value>Herbst +10%</value>
+  </data>
+  <data name="SeasonWinter" xml:space="preserve">
+    <value>Winter -10%</value>
+  </data>
+  <data name="BulkBuy1" xml:space="preserve">
+    <value>x1</value>
+  </data>
+  <data name="BulkBuy10" xml:space="preserve">
+    <value>x10</value>
+  </data>
+  <data name="BulkBuy100" xml:space="preserve">
+    <value>x100</value>
+  </data>
+  <data name="BulkBuyMax" xml:space="preserve">
+    <value>Max</value>
+  </data>
+  <data name="RushFreeActivation" xml:space="preserve">
+    <value>⚡ Gratis-Rush!</value>
+  </data>
+  <data name="RushCostScrews" xml:space="preserve">
+    <value>Rush kostet {0} Goldschrauben</value>
+  </data>
+  <data name="DeliveryArrived" xml:space="preserve">
+    <value>Lieferung eingetroffen</value>
+  </data>
+  <data name="DeliveryMoney" xml:space="preserve">
+    <value>Geld-Bonus</value>
+  </data>
+  <data name="DeliveryGoldenScrews" xml:space="preserve">
+    <value>Goldschrauben</value>
+  </data>
+  <data name="DeliveryExperience" xml:space="preserve">
+    <value>Erfahrungs-Bonus</value>
+  </data>
+  <data name="DeliveryMoodBoost" xml:space="preserve">
+    <value>Stimmungs-Boost</value>
+  </data>
+  <data name="DeliverySpeedBoost" xml:space="preserve">
+    <value>Geschwindigkeits-Boost</value>
+  </data>
+  <data name="ClaimDelivery" xml:space="preserve">
+    <value>Abholen</value>
+  </data>
+  <data name="MasterToolGoldenHammer" xml:space="preserve">
+    <value>Goldener Hammer</value>
+  </data>
+  <data name="MasterToolGoldenHammerDesc" xml:space="preserve">
+    <value>+2% Einkommen (Werkstatt Lv.25)</value>
+  </data>
+  <data name="MasterToolDiamondSaw" xml:space="preserve">
+    <value>Diamant-Säge</value>
+  </data>
+  <data name="MasterToolDiamondSawDesc" xml:space="preserve">
+    <value>+2% Einkommen (Werkstatt Lv.50)</value>
+  </data>
+  <data name="MasterToolTitaniumPliers" xml:space="preserve">
+    <value>Titanium-Zange</value>
+  </data>
+  <data name="MasterToolTitaniumPliersDesc" xml:space="preserve">
+    <value>+3% Einkommen (50 Aufträge)</value>
+  </data>
+  <data name="MasterToolBrassLevel" xml:space="preserve">
+    <value>Messing-Wasserwaage</value>
+  </data>
+  <data name="MasterToolBrassLevelDesc" xml:space="preserve">
+    <value>+3% Einkommen (100 Minispiele)</value>
+  </data>
+  <data name="MasterToolSilverWrench" xml:space="preserve">
+    <value>Silber-Schraubenschlüssel</value>
+  </data>
+  <data name="MasterToolSilverWrenchDesc" xml:space="preserve">
+    <value>+5% Einkommen (Werkstatt Lv.100)</value>
+  </data>
+  <data name="MasterToolJadeBrush" xml:space="preserve">
+    <value>Jade-Pinsel</value>
+  </data>
+  <data name="MasterToolJadeBrushDesc" xml:space="preserve">
+    <value>+5% Einkommen (25 Perfekt-Bewertungen)</value>
+  </data>
+  <data name="MasterToolCrystalChisel" xml:space="preserve">
+    <value>Kristall-Meißel</value>
+  </data>
+  <data name="MasterToolCrystalChiselDesc" xml:space="preserve">
+    <value>+5% Einkommen (Bronze Prestige)</value>
+  </data>
+  <data name="MasterToolObsidianDrill" xml:space="preserve">
+    <value>Obsidian-Bohrmaschine</value>
+  </data>
+  <data name="MasterToolObsidianDrillDesc" xml:space="preserve">
+    <value>+7% Einkommen (Werkstatt Lv.250)</value>
+  </data>
+  <data name="MasterToolRubyBlade" xml:space="preserve">
+    <value>Rubinsägeblatt</value>
+  </data>
+  <data name="MasterToolRubyBladeDesc" xml:space="preserve">
+    <value>+7% Einkommen (Silber Prestige)</value>
+  </data>
+  <data name="MasterToolEmeraldToolbox" xml:space="preserve">
+    <value>Smaragd-Werkzeugkasten</value>
+  </data>
+  <data name="MasterToolEmeraldToolboxDesc" xml:space="preserve">
+    <value>+10% Einkommen (Werkstatt Lv.500)</value>
+  </data>
+  <data name="MasterToolDragonAnvil" xml:space="preserve">
+    <value>Drachenschmiede-Amboss</value>
+  </data>
+  <data name="MasterToolDragonAnvilDesc" xml:space="preserve">
+    <value>+10% Einkommen (Gold Prestige)</value>
+  </data>
+  <data name="MasterToolMasterCrown" xml:space="preserve">
+    <value>Meisterkrone</value>
+  </data>
+  <data name="MasterToolMasterCrownDesc" xml:space="preserve">
+    <value>+15% Einkommen (Alle Werkzeuge gesammelt)</value>
+  </data>
+  <data name="RarityCommon" xml:space="preserve">
+    <value>Gewöhnlich</value>
+  </data>
+  <data name="RarityUncommon" xml:space="preserve">
+    <value>Ungewöhnlich</value>
+  </data>
+  <data name="RarityRare" xml:space="preserve">
+    <value>Selten</value>
+  </data>
+  <data name="RarityEpic" xml:space="preserve">
+    <value>Episch</value>
+  </data>
+  <data name="RarityLegendary" xml:space="preserve">
+    <value>Legendär</value>
+  </data>
+  <data name="MasterTools" xml:space="preserve">
+    <value>Meisterwerkzeuge</value>
+  </data>
+  <data name="PrestigeRushBoost" xml:space="preserve">
+    <value>Rush-Verstärker</value>
+  </data>
+  <data name="PrestigeRushBoostDesc" xml:space="preserve">
+    <value>Rush gibt 3x statt 2x</value>
+  </data>
+  <data name="PrestigeDeliverySpeed" xml:space="preserve">
+    <value>Lieferanten-Express</value>
+  </data>
+  <data name="PrestigeDeliverySpeedDesc" xml:space="preserve">
+    <value>Lieferungen kommen 30% schneller</value>
+  </data>
+  <data name="PrestigeGoldenScrew25" xml:space="preserve">
+    <value>Goldschrauben-Boost</value>
+  </data>
+  <data name="PrestigeGoldenScrew25Desc" xml:space="preserve">
+    <value>+25% Goldschrauben aus allen Quellen</value>
+  </data>
+  <data name="PressBackAgainToExit" xml:space="preserve">
+    <value>Erneut drücken zum Beenden</value>
   </data>
 
 </root>

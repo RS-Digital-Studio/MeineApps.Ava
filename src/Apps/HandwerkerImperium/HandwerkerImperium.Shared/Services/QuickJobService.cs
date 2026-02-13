@@ -12,8 +12,12 @@ public class QuickJobService : IQuickJobService
 {
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
-    private readonly Random _random = new();
     private static readonly TimeSpan RotationInterval = TimeSpan.FromMinutes(15);
+
+    /// <summary>
+    /// Maximale Anzahl Quick Jobs pro Tag (verhindert Reward-Farming).
+    /// </summary>
+    public const int MaxQuickJobsPerDay = 20;
 
     // Verfuegbare MiniGame-Typen fuer Quick Jobs (nur die 4 implementierten)
     private static readonly MiniGameType[] AvailableMiniGames =
@@ -72,9 +76,9 @@ public class QuickJobService : IQuickJobService
         state.QuickJobs.Clear();
         for (int i = 0; i < count; i++)
         {
-            var workshopType = unlockedTypes[_random.Next(unlockedTypes.Count)];
-            var miniGameType = AvailableMiniGames[_random.Next(AvailableMiniGames.Length)];
-            var titleKey = TitleKeys[_random.Next(TitleKeys.Length)];
+            var workshopType = unlockedTypes[Random.Shared.Next(unlockedTypes.Count)];
+            var miniGameType = AvailableMiniGames[Random.Shared.Next(AvailableMiniGames.Length)];
+            var titleKey = TitleKeys[Random.Shared.Next(TitleKeys.Length)];
 
             // Belohnung skaliert mit Level und aktuellem Einkommen
             var (reward, xpReward) = CalculateQuickJobRewards(level);
@@ -101,6 +105,9 @@ public class QuickJobService : IQuickJobService
 
     public void RotateIfNeeded()
     {
+        // Tages-Counter zurücksetzen wenn neuer Tag
+        ResetDailyCounterIfNewDay();
+
         if (!NeedsRotation()) return;
 
         var state = _gameStateService.State;
@@ -118,9 +125,9 @@ public class QuickJobService : IQuickJobService
 
             for (int i = 0; i < missing; i++)
             {
-                var workshopType = unlockedTypes[_random.Next(unlockedTypes.Count)];
-                var miniGameType = AvailableMiniGames[_random.Next(AvailableMiniGames.Length)];
-                var titleKey = TitleKeys[_random.Next(TitleKeys.Length)];
+                var workshopType = unlockedTypes[Random.Shared.Next(unlockedTypes.Count)];
+                var miniGameType = AvailableMiniGames[Random.Shared.Next(AvailableMiniGames.Length)];
+                var titleKey = TitleKeys[Random.Shared.Next(TitleKeys.Length)];
                 var (reward, xpReward) = CalculateQuickJobRewards(level);
 
                 state.QuickJobs.Add(new QuickJob
@@ -140,13 +147,13 @@ public class QuickJobService : IQuickJobService
     }
 
     /// <summary>
-    /// Berechnet QuickJob-Belohnungen basierend auf Level und aktuellem Einkommen.
-    /// Gibt ~5 Minuten Einkommen als Basis, mindestens Level-skaliert.
+    /// Berechnet QuickJob-Belohnungen basierend auf Level und aktuellem Netto-Einkommen.
+    /// Gibt ~5 Minuten Netto-Einkommen als Basis, mindestens Level-skaliert.
     /// </summary>
     private (decimal reward, int xpReward) CalculateQuickJobRewards(int level)
     {
-        // Basis: ~5 Min Brutto-Einkommen (Mindestens Level * 50)
-        var fiveMinIncome = _gameStateService.State.TotalIncomePerSecond * 300m;
+        // Basis: ~5 Min Netto-Einkommen (Mindestens Level * 50)
+        var fiveMinIncome = Math.Max(0m, _gameStateService.State.NetIncomePerSecond) * 300m;
         var reward = Math.Max(20m + level * 50m, fiveMinIncome);
 
         // XP skaliert mit Level (kein starres Cap)
@@ -167,10 +174,50 @@ public class QuickJobService : IQuickJobService
     }
 
     /// <summary>
-    /// Wird vom MainViewModel aufgerufen um das Event zu feuern.
+    /// Prüft ob das tägliche Quick-Job-Limit erreicht ist.
+    /// </summary>
+    public bool IsDailyLimitReached
+    {
+        get
+        {
+            ResetDailyCounterIfNewDay();
+            return _gameStateService.State.QuickJobsCompletedToday >= MaxQuickJobsPerDay;
+        }
+    }
+
+    /// <summary>
+    /// Verbleibende Quick Jobs heute.
+    /// </summary>
+    public int RemainingJobsToday
+    {
+        get
+        {
+            ResetDailyCounterIfNewDay();
+            return Math.Max(0, MaxQuickJobsPerDay - _gameStateService.State.QuickJobsCompletedToday);
+        }
+    }
+
+    /// <summary>
+    /// Wird vom MainViewModel aufgerufen wenn ein QuickJob abgeschlossen wird.
+    /// Erhöht Tages-Counter und feuert Event.
     /// </summary>
     public void NotifyJobCompleted(QuickJob job)
     {
+        ResetDailyCounterIfNewDay();
+        _gameStateService.State.QuickJobsCompletedToday++;
         QuickJobCompleted?.Invoke(this, job);
+    }
+
+    /// <summary>
+    /// Setzt den Tages-Counter zurück wenn ein neuer Tag (UTC) begonnen hat.
+    /// </summary>
+    private void ResetDailyCounterIfNewDay()
+    {
+        var state = _gameStateService.State;
+        if (DateTime.UtcNow.Date > state.LastQuickJobDailyReset.Date)
+        {
+            state.QuickJobsCompletedToday = 0;
+            state.LastQuickJobDailyReset = DateTime.UtcNow;
+        }
     }
 }

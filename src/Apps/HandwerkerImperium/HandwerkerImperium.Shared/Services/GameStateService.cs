@@ -119,6 +119,11 @@ public class GameStateService : IGameStateService
     {
         if (amount <= 0) return;
 
+        // Prestige-Shop GoldenScrewBonus anwenden (z.B. +25%)
+        decimal bonus = GetGoldenScrewBonus();
+        if (bonus > 0)
+            amount = (int)Math.Ceiling(amount * (1m + bonus));
+
         int oldAmount;
         int newAmount;
 
@@ -131,6 +136,23 @@ public class GameStateService : IGameStateService
         }
 
         GoldenScrewsChanged?.Invoke(this, new GoldenScrewsChangedEventArgs(oldAmount, newAmount));
+    }
+
+    /// <summary>
+    /// Berechnet den Goldschrauben-Bonus aus gekauften Prestige-Shop-Items.
+    /// </summary>
+    private decimal GetGoldenScrewBonus()
+    {
+        var purchased = _state.Prestige.PurchasedShopItems;
+        if (purchased.Count == 0) return 0m;
+
+        decimal bonus = 0m;
+        foreach (var item in PrestigeShop.GetAllItems())
+        {
+            if (purchased.Contains(item.Id) && item.Effect.GoldenScrewBonus > 0)
+                bonus += item.Effect.GoldenScrewBonus;
+        }
+        return bonus;
     }
 
     public bool TrySpendGoldenScrews(int amount)
@@ -242,6 +264,58 @@ public class GameStateService : IGameStateService
         AddXp(xpReward);
 
         return true;
+    }
+
+    /// <summary>
+    /// Upgradet einen Workshop mehrfach (Bulk Buy).
+    /// Gibt die Anzahl der tatsächlich durchgeführten Upgrades zurück.
+    /// Bei count=0 (Max): So viele Upgrades wie bezahlbar.
+    /// </summary>
+    public int TryUpgradeWorkshopBulk(WorkshopType type, int count)
+    {
+        int upgraded = 0;
+        int totalXp = 0;
+        int oldLevel = 0;
+        int newLevel = 0;
+        decimal totalCost = 0;
+        decimal moneyBefore = 0;
+
+        lock (_stateLock)
+        {
+            var workshop = GetWorkshop(type);
+            if (workshop == null) return 0;
+
+            oldLevel = workshop.Level;
+            moneyBefore = _state.Money;
+            int maxUpgrades = count == 0 ? Workshop.MaxLevel - workshop.Level : count;
+
+            for (int i = 0; i < maxUpgrades; i++)
+            {
+                if (!workshop.CanUpgrade) break;
+
+                var cost = workshop.UpgradeCost;
+                if (_state.Money < cost) break;
+
+                _state.Money -= cost;
+                _state.TotalMoneySpent += cost;
+                totalCost += cost;
+                workshop.Level++;
+                upgraded++;
+
+                totalXp += 5 + workshop.Level / 10;
+            }
+
+            newLevel = workshop.Level;
+        }
+
+        if (upgraded > 0)
+        {
+            MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, _state.Money));
+            WorkshopUpgraded?.Invoke(this, new WorkshopUpgradedEventArgs(type, oldLevel, newLevel, totalCost));
+            AddXp(totalXp);
+        }
+
+        return upgraded;
     }
 
     public bool TryHireWorker(WorkshopType type)
@@ -376,7 +450,23 @@ public class GameStateService : IGameStateService
             order = _state.ActiveOrder;
             if (order == null || !order.IsCompleted) return;
 
-            moneyReward = order.FinalReward * _state.PrestigeMultiplier;
+            moneyReward = order.FinalReward * _state.Prestige.PermanentMultiplier;
+
+            // Research-RewardMultiplier anwenden
+            decimal researchRewardBonus = _state.Researches
+                .Where(r => r.IsResearched && r.Effect.RewardMultiplier > 0)
+                .Sum(r => r.Effect.RewardMultiplier);
+            if (researchRewardBonus > 0)
+                moneyReward *= (1m + researchRewardBonus);
+
+            // VehicleFleet-Gebäude: Auftragsbelohnungs-Bonus
+            var vehicleFleet = _state.GetBuilding(BuildingType.VehicleFleet);
+            if (vehicleFleet != null && vehicleFleet.OrderRewardBonus > 0)
+                moneyReward *= (1m + vehicleFleet.OrderRewardBonus);
+
+            // Reputation-Multiplikator: Höhere Reputation → bessere Belohnungen
+            moneyReward *= _state.Reputation.ReputationMultiplier;
+
             xpReward = order.FinalXp;
 
             var workshop = GetWorkshop(order.WorkshopType);
@@ -391,6 +481,16 @@ public class GameStateService : IGameStateService
             avgRating = order.TaskResults.Count > 0
                 ? (MiniGameRating)(int)Math.Round(order.TaskResults.Average(r => (int)r))
                 : MiniGameRating.Ok;
+
+            // Reputation-System: Bewertung basierend auf MiniGame-Leistung
+            int stars = avgRating switch
+            {
+                MiniGameRating.Perfect => 5,
+                MiniGameRating.Good => 4,
+                MiniGameRating.Ok => 3,
+                _ => 2
+            };
+            _state.Reputation.AddRating(stars);
 
             _state.ActiveOrder = null;
         }

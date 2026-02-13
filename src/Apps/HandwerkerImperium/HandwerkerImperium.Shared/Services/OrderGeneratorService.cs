@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 public class OrderGeneratorService : IOrderGeneratorService
 {
     private readonly IGameStateService _gameStateService;
-    private readonly Random _random = new();
+    private readonly IResearchService? _researchService;
 
     // Order templates per workshop type
     private static readonly Dictionary<WorkshopType, List<OrderTemplate>> _templates = new()
@@ -52,12 +52,25 @@ public class OrderGeneratorService : IOrderGeneratorService
         [
             new("order_renovation", "Home Renovation", MiniGameType.Measuring, MiniGameType.Sawing, MiniGameType.PipePuzzle),
             new("order_addition", "Build Addition", MiniGameType.Measuring, MiniGameType.Sawing, MiniGameType.WiringGame, MiniGameType.PipePuzzle)
+        ],
+        [WorkshopType.Architect] =
+        [
+            new("order_blueprint", "Design Blueprint", MiniGameType.Measuring, MiniGameType.PaintingGame),
+            new("order_floor_plan", "Create Floor Plan", MiniGameType.Measuring, MiniGameType.Measuring, MiniGameType.PaintingGame),
+            new("order_full_design", "Complete Building Design", MiniGameType.Measuring, MiniGameType.PaintingGame, MiniGameType.WiringGame, MiniGameType.PipePuzzle)
+        ],
+        [WorkshopType.GeneralContractor] =
+        [
+            new("order_house_build", "Build House", MiniGameType.Sawing, MiniGameType.PipePuzzle, MiniGameType.WiringGame, MiniGameType.PaintingGame),
+            new("order_commercial", "Commercial Build", MiniGameType.Sawing, MiniGameType.Sawing, MiniGameType.PipePuzzle, MiniGameType.WiringGame),
+            new("order_luxury_villa", "Luxury Villa Project", MiniGameType.Sawing, MiniGameType.PipePuzzle, MiniGameType.WiringGame, MiniGameType.PaintingGame, MiniGameType.TileLaying)
         ]
     };
 
-    public OrderGeneratorService(IGameStateService gameStateService)
+    public OrderGeneratorService(IGameStateService gameStateService, IResearchService? researchService = null)
     {
         _gameStateService = gameStateService;
+        _researchService = researchService;
     }
 
     public Order GenerateOrder(WorkshopType workshopType, int workshopLevel)
@@ -66,7 +79,7 @@ public class OrderGeneratorService : IOrderGeneratorService
 
         // Select a template based on level (higher levels get harder orders)
         int maxTemplateIndex = Math.Min(templates.Count - 1, (workshopLevel - 1) / 2);
-        var template = templates[_random.Next(0, maxTemplateIndex + 1)];
+        var template = templates[Random.Shared.Next(0, maxTemplateIndex + 1)];
 
         // Determine difficulty based on PLAYER level (not workshop level)
         // This provides progressive challenge as players advance
@@ -105,6 +118,12 @@ public class OrderGeneratorService : IOrderGeneratorService
         var orders = new List<Order>();
         var state = _gameStateService.State;
 
+        // ExtraOrderSlots aus Office-Gebäude + Research
+        var office = state.GetBuilding(BuildingType.Office);
+        int extraFromBuilding = office?.ExtraOrderSlots ?? 0;
+        int extraFromResearch = _researchService?.GetTotalEffects()?.ExtraOrderSlots ?? 0;
+        int totalCount = count + extraFromBuilding + extraFromResearch;
+
         // Get all unlocked workshops
         var unlockedWorkshops = state.Workshops
             .Where(w => state.IsWorkshopUnlocked(w.Type))
@@ -118,9 +137,9 @@ public class OrderGeneratorService : IOrderGeneratorService
         }
 
         // Generate orders for different workshops
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < totalCount; i++)
         {
-            var workshop = unlockedWorkshops[_random.Next(unlockedWorkshops.Count)];
+            var workshop = unlockedWorkshops[Random.Shared.Next(unlockedWorkshops.Count)];
             orders.Add(GenerateOrder(workshop.Type, workshop.Level));
         }
 
@@ -149,7 +168,7 @@ public class OrderGeneratorService : IOrderGeneratorService
     /// </summary>
     private OrderDifficulty GetDifficultyForPlayerLevel(int playerLevel)
     {
-        int roll = _random.Next(100);
+        int roll = Random.Shared.Next(100);
 
         return playerLevel switch
         {

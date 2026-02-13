@@ -4,8 +4,9 @@ using Avalonia.Data.Converters;
 namespace HandwerkerImperium.Converters;
 
 /// <summary>
-/// Converts a decimal money value to a formatted display string.
-/// Examples: 1234.56 -> "1.234 EUR", 1000000 -> "1,0M EUR"
+/// Konvertiert decimal-Geldbetrag in formatierten Anzeige-String.
+/// Konsistente Schwellen wie MoneyFormatter: T >= 1T, B >= 1B, M >= 1M, K >= 1K.
+/// Unterstützt negative Werte (Netto-Verlust).
 /// </summary>
 public class MoneyDisplayConverter : IValueConverter
 {
@@ -14,12 +15,17 @@ public class MoneyDisplayConverter : IValueConverter
         if (value is not decimal money)
             return "0 \u20AC";
 
-        return money switch
+        bool isNegative = money < 0;
+        decimal abs = Math.Abs(money);
+        string prefix = isNegative ? "\u2212" : "";
+
+        return abs switch
         {
-            >= 1_000_000_000 => $"{money / 1_000_000_000:F1}B \u20AC",
-            >= 1_000_000 => $"{money / 1_000_000:F1}M \u20AC",
-            >= 10_000 => $"{money / 1_000:F1}K \u20AC",
-            _ => $"{money:N0} \u20AC"
+            >= 1_000_000_000_000 => $"{prefix}{abs / 1_000_000_000_000:F1}T \u20AC",
+            >= 1_000_000_000 => $"{prefix}{abs / 1_000_000_000:F1}B \u20AC",
+            >= 1_000_000 => $"{prefix}{abs / 1_000_000:F1}M \u20AC",
+            >= 1_000 => $"{prefix}{abs / 1_000:F1}K \u20AC",
+            _ => $"{prefix}{abs:N0} \u20AC"
         };
     }
 

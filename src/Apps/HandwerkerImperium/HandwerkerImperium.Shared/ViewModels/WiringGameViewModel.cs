@@ -355,10 +355,11 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
         var order = _gameStateService.GetActiveOrder();
         if (order != null)
         {
-            decimal baseReward = order.BaseReward / order.Tasks.Count;
+            int taskCount = Math.Max(1, order.Tasks.Count);
+            decimal baseReward = order.BaseReward / taskCount;
             RewardAmount = baseReward * Result.GetRewardPercentage();
 
-            int baseXp = order.BaseXp / order.Tasks.Count;
+            int baseXp = order.BaseXp / taskCount;
             XpAmount = (int)(baseXp * Result.GetXpPercentage());
         }
 

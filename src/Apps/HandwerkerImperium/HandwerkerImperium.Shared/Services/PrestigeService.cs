@@ -68,9 +68,9 @@ public class PrestigeService : IPrestigeService
         if (tier > prestige.CurrentTier)
             prestige.CurrentTier = tier;
 
-        // Permanenten Multiplier erhoehen (Tier-Bonus)
+        // Permanenten Multiplier erhoehen (Tier-Bonus), Cap bei 20x
         prestige.PermanentMultiplier += tier.GetPermanentMultiplierBonus();
-        prestige.PermanentMultiplier = Math.Round(prestige.PermanentMultiplier, 3);
+        prestige.PermanentMultiplier = Math.Min(Math.Round(prestige.PermanentMultiplier, 3), MaxPermanentMultiplier);
 
         // Legacy-Felder synchron halten
         state.PrestigeLevel = prestige.TotalPrestigeCount;
@@ -117,44 +117,70 @@ public class PrestigeService : IPrestigeService
         prestige.PrestigePoints -= item.Cost;
         prestige.PurchasedShopItems.Add(itemId);
 
-        // Multiplier neu berechnen (Shop-Income-Bonus wirkt auf PermanentMultiplier)
-        RecalculatePermanentMultiplier();
+        // Shop-Boni werden dynamisch in GetPermanentMultiplier() berechnet,
+        // keine extra Neuberechnung nötig.
 
         return true;
     }
 
+    /// <summary>
+    /// Maximaler Prestige-Multiplikator (nur Tier-Boni, nicht Shop-Income-Boni).
+    /// Shop-Income-Boni werden separat im GameLoop/OfflineProgress angewendet.
+    /// </summary>
+    private const decimal MaxPermanentMultiplier = 20.0m;
+
     public decimal GetPermanentMultiplier()
     {
-        var prestige = _gameStateService.State.Prestige;
+        // Nur Tier-Multiplikator zurückgeben (bereits gekappt beim Schreiben in DoPrestige).
+        // Shop-Income-Boni (pp_income_10/25/50) werden separat in GameLoop + OfflineProgress angewendet.
+        return _gameStateService.State.Prestige.PermanentMultiplier;
+    }
 
-        // Basis: gespeicherter PermanentMultiplier (enthaelt Tier-Boni)
-        decimal multiplier = prestige.PermanentMultiplier;
-
-        // Shop-Income-Boni addieren
-        var purchased = prestige.PurchasedShopItems;
+    public decimal GetCostReduction()
+    {
+        var purchased = _gameStateService.State.Prestige.PurchasedShopItems;
         var allItems = PrestigeShop.GetAllItems();
+        decimal reduction = 0m;
 
         foreach (var item in allItems)
         {
-            if (purchased.Contains(item.Id) && item.Effect.IncomeMultiplier > 0)
-            {
-                multiplier += item.Effect.IncomeMultiplier;
-            }
+            if (purchased.Contains(item.Id) && item.Effect.CostReduction > 0)
+                reduction += item.Effect.CostReduction;
         }
 
-        return multiplier;
+        // Cap bei 50% Reduktion
+        return Math.Min(reduction, 0.50m);
     }
 
-    /// <summary>
-    /// Recalculates PermanentMultiplier in PrestigeData based on tier counts + shop bonuses.
-    /// Called after buying shop items to keep the stored multiplier correct.
-    /// Note: Shop income bonuses are NOT baked into PermanentMultiplier - they are added dynamically in GetPermanentMultiplier().
-    /// </summary>
-    private void RecalculatePermanentMultiplier()
+    public decimal GetMoodDecayReduction()
     {
-        // PermanentMultiplier bleibt wie es ist (Tier-Boni sind bereits eingerechnet).
-        // Shop-Boni werden dynamisch in GetPermanentMultiplier() addiert.
-        // Hier nichts zu tun - Methode existiert fuer zukuenftige Erweiterungen.
+        var purchased = _gameStateService.State.Prestige.PurchasedShopItems;
+        var allItems = PrestigeShop.GetAllItems();
+        decimal reduction = 0m;
+
+        foreach (var item in allItems)
+        {
+            if (purchased.Contains(item.Id) && item.Effect.MoodDecayReduction > 0)
+                reduction += item.Effect.MoodDecayReduction;
+        }
+
+        // Cap bei 50% Reduktion
+        return Math.Min(reduction, 0.50m);
+    }
+
+    public decimal GetXpMultiplier()
+    {
+        var purchased = _gameStateService.State.Prestige.PurchasedShopItems;
+        var allItems = PrestigeShop.GetAllItems();
+        decimal bonus = 0m;
+
+        foreach (var item in allItems)
+        {
+            if (purchased.Contains(item.Id) && item.Effect.XpMultiplier > 0)
+                bonus += item.Effect.XpMultiplier;
+        }
+
+        return bonus;
     }
 
     /// <summary>
@@ -225,6 +251,7 @@ public class PrestigeService : IPrestigeService
 
         // === RESET: Reputation ===
         state.Reputation = new CustomerReputation();
+        state.LastReputationDecay = DateTime.UtcNow;
 
         // === RESET: Buildings ===
         state.Buildings.Clear();
@@ -250,10 +277,30 @@ public class PrestigeService : IPrestigeService
         // === RESET: Boosts ===
         state.SpeedBoostEndTime = DateTime.MinValue;
         state.XpBoostEndTime = DateTime.MinValue;
+        state.RushBoostEndTime = DateTime.MinValue;
+        state.LastFreeRushUsed = DateTime.MinValue;
 
         // === RESET: Daily Rewards ===
         state.DailyRewardStreak = 0;
         state.LastDailyRewardClaim = DateTime.MinValue;
+
+        // === RESET: Lieferant ===
+        state.PendingDelivery = null;
+        state.NextDeliveryTime = DateTime.MinValue;
+        state.TotalDeliveriesClaimed = 0;
+
+        // === RESET: Quick Jobs ===
+        state.QuickJobs.Clear();
+        state.LastQuickJobRotation = DateTime.MinValue;
+        state.TotalQuickJobsCompleted = 0;
+        state.QuickJobsCompletedToday = 0;
+        state.LastQuickJobDailyReset = DateTime.MinValue;
+
+        // === RESET: Daily Challenges ===
+        state.DailyChallengeState = new DailyChallengeState();
+
+        // === RESET: Meisterwerkzeuge (werden nach Prestige neu verdient) ===
+        state.CollectedMasterTools.Clear();
 
         // === PRESERVED (nicht angefasst): ===
         // - state.Prestige (PrestigeData mit Punkten, Shop-Items, Tier-Counts)

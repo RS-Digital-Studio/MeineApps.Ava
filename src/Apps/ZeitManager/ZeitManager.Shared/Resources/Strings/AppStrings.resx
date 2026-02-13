@@ -602,4 +602,97 @@ Examples:
   <data name="PressBackAgainToExit" xml:space="preserve">
     <value>Press back again to exit</value>
   </data>
+  <!-- Pomodoro -->
+  <data name="Pomodoro" xml:space="preserve">
+    <value>Pomodoro</value>
+  </data>
+  <data name="PomodoroTitle" xml:space="preserve">
+    <value>Pomodoro</value>
+  </data>
+  <data name="Work" xml:space="preserve">
+    <value>Work</value>
+  </data>
+  <data name="ShortBreak" xml:space="preserve">
+    <value>Short Break</value>
+  </data>
+  <data name="LongBreak" xml:space="preserve">
+    <value>Long Break</value>
+  </data>
+  <data name="StartWork" xml:space="preserve">
+    <value>Start Work</value>
+  </data>
+  <data name="SkipPhase" xml:space="preserve">
+    <value>Skip Phase</value>
+  </data>
+  <data name="SessionsCompleted" xml:space="preserve">
+    <value>Sessions Completed</value>
+  </data>
+  <data name="PomodoroConfig" xml:space="preserve">
+    <value>Pomodoro Settings</value>
+  </data>
+  <data name="WorkDuration" xml:space="preserve">
+    <value>Work Duration</value>
+  </data>
+  <data name="ShortBreakDuration" xml:space="preserve">
+    <value>Short Break</value>
+  </data>
+  <data name="LongBreakDuration" xml:space="preserve">
+    <value>Long Break</value>
+  </data>
+  <data name="CyclesBeforeLongBreak" xml:space="preserve">
+    <value>Cycles before Long Break</value>
+  </data>
+  <data name="AutoStartNext" xml:space="preserve">
+    <value>Auto-start next phase</value>
+  </data>
+  <data name="CycleFormat" xml:space="preserve">
+    <value>Cycle {0} of {1}</value>
+  </data>
+  <data name="Statistics" xml:space="preserve">
+    <value>Statistics</value>
+  </data>
+  <data name="NoSessionsYet" xml:space="preserve">
+    <value>No sessions yet</value>
+  </data>
+  <data name="ThisWeek" xml:space="preserve">
+    <value>This Week</value>
+  </data>
+  <data name="TodaySessions" xml:space="preserve">
+    <value>{0} Sessions today</value>
+  </data>
+  <data name="TodayMinutes" xml:space="preserve">
+    <value>{0} Minutes focused</value>
+  </data>
+  <!-- Timer-Erweiterungen -->
+  <data name="DeleteAllTimers" xml:space="preserve">
+    <value>Delete All Timers</value>
+  </data>
+  <data name="DeleteAllTimersConfirm" xml:space="preserve">
+    <value>Delete all timers?</value>
+  </data>
+  <data name="ExtendTimer" xml:space="preserve">
+    <value>Extend Timer</value>
+  </data>
+  <data name="AutoRepeat" xml:space="preserve">
+    <value>Auto-repeat</value>
+  </data>
+  <data name="Presets" xml:space="preserve">
+    <value>Presets</value>
+  </data>
+  <data name="SaveAsPreset" xml:space="preserve">
+    <value>Save as Preset</value>
+  </data>
+  <data name="PresetSaved" xml:space="preserve">
+    <value>Preset saved</value>
+  </data>
+  <data name="TimerDurationTooLong" xml:space="preserve">
+    <value>Timer duration exceeds maximum of 23:59:59.</value>
+  </data>
+  <!-- On/Off -->
+  <data name="On" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
 </root>

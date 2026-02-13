@@ -94,6 +94,8 @@ public partial class PomodoroViewModel : ObservableObject, IDisposable
     public string AutoStartNextText => _localization.GetString("AutoStartNext");
     public string SaveText => _localization.GetString("Save");
     public string CancelText => _localization.GetString("Cancel");
+    public string OnText => _localization.GetString("On");
+    public string OffText => _localization.GetString("Off");
     public string MinutesText => _localization.GetString("Minutes");
     public string StatisticsText => _localization.GetString("Statistics");
     public string NoSessionsYetText => _localization.GetString("NoSessionsYet");

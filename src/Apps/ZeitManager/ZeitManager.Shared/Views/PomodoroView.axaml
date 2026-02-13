@@ -206,60 +206,63 @@
             Background="#80000000">
       <Border Classes="Card" Margin="24"
               VerticalAlignment="Center" HorizontalAlignment="Stretch"
-              MaxWidth="400">
-        <StackPanel Spacing="16">
-          <TextBlock Text="{Binding PomodoroConfigText}" Classes="HeadlineMedium" />
+              MaxWidth="400" MaxHeight="500">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="16">
+            <TextBlock Text="{Binding PomodoroConfigText}" Classes="HeadlineMedium" />
 
-          <!-- Arbeitsdauer -->
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{Binding WorkDurationText}" Classes="BodyMedium" VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-              <controls:WheelPicker Value="{Binding WorkMinutes}" Minimum="1" Maximum="60" />
-              <TextBlock Text="min" Classes="Caption" VerticalAlignment="Center"
-                         Foreground="{DynamicResource TextMutedBrush}" />
+            <!-- Arbeitsdauer -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding WorkDurationText}" Classes="BodyMedium" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <controls:WheelPicker Value="{Binding WorkMinutes}" Minimum="1" Maximum="60" />
+                <TextBlock Text="min" Classes="Caption" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </Grid>
+
+            <!-- Kurze Pause -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding ShortBreakDurationText}" Classes="BodyMedium" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <controls:WheelPicker Value="{Binding ShortBreakMinutes}" Minimum="1" Maximum="30" />
+                <TextBlock Text="min" Classes="Caption" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </Grid>
+
+            <!-- Lange Pause -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding LongBreakDurationText}" Classes="BodyMedium" VerticalAlignment="Center" />
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                <controls:WheelPicker Value="{Binding LongBreakMinutes}" Minimum="1" Maximum="60" />
+                <TextBlock Text="min" Classes="Caption" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+            </Grid>
+
+            <!-- Zyklen bis Lange Pause -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding CyclesBeforeLongBreakText}" Classes="BodyMedium" VerticalAlignment="Center" />
+              <controls:WheelPicker Grid.Column="1" Value="{Binding CyclesBeforeLongBreak}" Minimum="1" Maximum="10" />
+            </Grid>
+
+            <!-- Auto Start -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding AutoStartNextText}" Classes="BodyMedium" VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoStartNext, Mode=TwoWay}"
+                            OnContent="{Binding OnText}" OffContent="{Binding OffText}" />
+            </Grid>
+
+            <!-- Buttons -->
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Classes="Text" Content="{Binding CancelText}"
+                      Command="{Binding CancelConfigCommand}" />
+              <Button Classes="Primary" Content="{Binding SaveText}"
+                      Command="{Binding SaveConfigAndCloseCommand}" />
             </StackPanel>
-          </Grid>
-
-          <!-- Kurze Pause -->
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{Binding ShortBreakDurationText}" Classes="BodyMedium" VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-              <controls:WheelPicker Value="{Binding ShortBreakMinutes}" Minimum="1" Maximum="30" />
-              <TextBlock Text="min" Classes="Caption" VerticalAlignment="Center"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-          </Grid>
-
-          <!-- Lange Pause -->
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{Binding LongBreakDurationText}" Classes="BodyMedium" VerticalAlignment="Center" />
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
-              <controls:WheelPicker Value="{Binding LongBreakMinutes}" Minimum="1" Maximum="60" />
-              <TextBlock Text="min" Classes="Caption" VerticalAlignment="Center"
-                         Foreground="{DynamicResource TextMutedBrush}" />
-            </StackPanel>
-          </Grid>
-
-          <!-- Zyklen bis Lange Pause -->
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{Binding CyclesBeforeLongBreakText}" Classes="BodyMedium" VerticalAlignment="Center" />
-            <controls:WheelPicker Grid.Column="1" Value="{Binding CyclesBeforeLongBreak}" Minimum="1" Maximum="10" />
-          </Grid>
-
-          <!-- Auto Start -->
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Text="{Binding AutoStartNextText}" Classes="BodyMedium" VerticalAlignment="Center" />
-            <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoStartNext, Mode=TwoWay}" />
-          </Grid>
-
-          <!-- Buttons -->
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
-            <Button Classes="Text" Content="{Binding CancelText}"
-                    Command="{Binding CancelConfigCommand}" />
-            <Button Classes="Primary" Content="{Binding SaveText}"
-                    Command="{Binding SaveConfigAndCloseCommand}" />
           </StackPanel>
-        </StackPanel>
+        </ScrollViewer>
       </Border>
     </Border>
 

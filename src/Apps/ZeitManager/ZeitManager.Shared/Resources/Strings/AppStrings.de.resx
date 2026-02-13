@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -42,7 +42,7 @@
   <data name="Settings" xml:space="preserve">
     <value>Einstellungen</value>
   </data>
-  <!-- Timer Page -->
+  <!-- Timer-Seite -->
   <data name="TimerTitle" xml:space="preserve">
     <value>Timer</value>
   </data>
@@ -62,10 +62,10 @@
     <value>Stopp</value>
   </data>
   <data name="Reset" xml:space="preserve">
-    <value>ZurÃ¼cksetzen</value>
+    <value>Zurücksetzen</value>
   </data>
   <data name="Delete" xml:space="preserve">
-    <value>LÃ¶schen</value>
+    <value>Löschen</value>
   </data>
   <data name="NoTimers" xml:space="preserve">
     <value>Noch keine Timer</value>
@@ -100,7 +100,7 @@
   <data name="Create" xml:space="preserve">
     <value>Erstellen</value>
   </data>
-  <!-- Stopwatch Page -->
+  <!-- Stoppuhr-Seite -->
   <data name="StopwatchTitle" xml:space="preserve">
     <value>Stoppuhr</value>
   </data>
@@ -116,7 +116,7 @@
   <data name="LapNumber" xml:space="preserve">
     <value>Runde {0}</value>
   </data>
-  <!-- Alarm Page -->
+  <!-- Wecker-Seite -->
   <data name="AlarmTitle" xml:space="preserve">
     <value>Wecker</value>
   </data>
@@ -154,7 +154,7 @@
     <value>Einmalig</value>
   </data>
   <data name="Daily" xml:space="preserve">
-    <value>TÃ¤glich</value>
+    <value>Täglich</value>
   </data>
   <data name="Weekdays" xml:space="preserve">
     <value>Werktags</value>
@@ -187,7 +187,7 @@
     <value>Mathe-Aufgabe</value>
   </data>
   <data name="Shake" xml:space="preserve">
-    <value>SchÃ¼tteln</value>
+    <value>Schütteln</value>
   </data>
   <data name="Easy" xml:space="preserve">
     <value>Einfach</value>
@@ -199,7 +199,7 @@
     <value>Schwer</value>
   </data>
   <data name="ShakeMovementsCount" xml:space="preserve">
-    <value>Anzahl SchÃ¼ttel-Bewegungen: {0}</value>
+    <value>Anzahl Schüttel-Bewegungen: {0}</value>
   </data>
   <data name="Preview" xml:space="preserve">
     <value>Vorschau</value>
@@ -207,7 +207,7 @@
   <data name="AlarmNamePlaceholder" xml:space="preserve">
     <value>Name (optional)</value>
   </data>
-  <!-- Weekdays -->
+  <!-- Wochentage -->
   <data name="Monday" xml:space="preserve">
     <value>Montag</value>
   </data>
@@ -250,18 +250,18 @@
   <data name="SundayShort" xml:space="preserve">
     <value>So</value>
   </data>
-  <!-- Shift Page -->
+  <!-- Schichtplan-Seite -->
   <data name="ShiftTitle" xml:space="preserve">
     <value>Schichtplan</value>
   </data>
   <data name="NextShift" xml:space="preserve">
-    <value>NÃ¤chste Schicht</value>
+    <value>Nächste Schicht</value>
   </data>
   <data name="NoSchedule" xml:space="preserve">
     <value>Kein Schichtplan konfiguriert</value>
   </data>
   <data name="SetupSchedule" xml:space="preserve">
-    <value>Richte deinen Schichtplan ein, um automatisch Wecker fÃ¼r deine Schichten zu erhalten.</value>
+    <value>Richte deinen Schichtplan ein, um automatisch Wecker für deine Schichten zu erhalten.</value>
   </data>
   <data name="ConfigureSchedule" xml:space="preserve">
     <value>Schichtplan einrichten</value>
@@ -279,10 +279,10 @@
     <value>Weckzeiten</value>
   </data>
   <data name="EarlyShift" xml:space="preserve">
-    <value>FrÃ¼hschicht</value>
+    <value>Frühschicht</value>
   </data>
   <data name="LateShift" xml:space="preserve">
-    <value>SpÃ¤tschicht</value>
+    <value>Spätschicht</value>
   </data>
   <data name="NightShift" xml:space="preserve">
     <value>Nachtschicht</value>
@@ -311,7 +311,7 @@
   <data name="StartDateRhythm" xml:space="preserve">
     <value>Startdatum Rhythmus</value>
   </data>
-  <!-- Exceptions -->
+  <!-- Ausnahmen -->
   <data name="Vacation" xml:space="preserve">
     <value>Urlaub</value>
   </data>
@@ -327,7 +327,7 @@
   <data name="Other" xml:space="preserve">
     <value>Sonstiges</value>
   </data>
-  <!-- Settings Page -->
+  <!-- Einstellungen-Seite -->
   <data name="SettingsTitle" xml:space="preserve">
     <value>Einstellungen</value>
   </data>
@@ -338,12 +338,12 @@
     <value>Sprache</value>
   </data>
   <data name="About" xml:space="preserve">
-    <value>Ãœber</value>
+    <value>Über</value>
   </data>
   <data name="Version" xml:space="preserve">
     <value>Version</value>
   </data>
-  <!-- Common -->
+  <!-- Allgemein -->
   <data name="Save" xml:space="preserve">
     <value>Speichern</value>
   </data>
@@ -372,7 +372,7 @@
     <value>Gruppe</value>
   </data>
   <data name="PleaseSelectShiftModel" xml:space="preserve">
-    <value>Bitte wÃ¤hle ein Schichtmodell und eine Gruppe.</value>
+    <value>Bitte wähle ein Schichtmodell und eine Gruppe.</value>
   </data>
   <data name="Saved" xml:space="preserve">
     <value>Gespeichert</value>
@@ -393,16 +393,16 @@
     <value>Challenge-Vorschau</value>
   </data>
   <data name="ActivateChallengeFirst" xml:space="preserve">
-    <value>Bitte aktiviere zuerst eine Challenge und wÃ¤hle einen Typ.</value>
+    <value>Bitte aktiviere zuerst eine Challenge und wähle einen Typ.</value>
   </data>
   <data name="ShiftPlanInfo" xml:space="preserve">
-    <value>â„¹ï¸ 15-Schichten-Modell:\nMontag bis Freitag, 3 Gruppen\n3 Schichten pro Tag (FrÃ¼h, SpÃ¤t, Nacht)\n\nðŸ”„ 21-Schichten-Modell:\n24/7 Betrieb, 5 Gruppen\n2Ã— FrÃ¼h, 2Ã— SpÃ¤t, 2Ã— Nacht, 4 Tage frei\n\nâœï¸ Benutzerdefiniert:\nEigenes Schichtmuster erstellen\n\nDer Schichtplan generiert automatisch Wecker fÃ¼r deine Arbeitszeiten!</value>
+    <value>ℹ️ 15-Schichten-Modell:\nMontag bis Freitag, 3 Gruppen\n3 Schichten pro Tag (Früh, Spät, Nacht)\n\n🔄 21-Schichten-Modell:\n24/7 Betrieb, 5 Gruppen\n2× Früh, 2× Spät, 2× Nacht, 4 Tage frei\n\n✏️ Benutzerdefiniert:\nEigenes Schichtmuster erstellen\n\nDer Schichtplan generiert automatisch Wecker für deine Arbeitszeiten!</value>
   </data>
   <data name="ChallengeMathPreview" xml:space="preserve">
     <value>Schwierigkeit: {0}\n\nBeispiel-Aufgabe:\n{1}\n\nRichtige Antwort: {2}\n\nTipp: Bei falscher Antwort wird eine neue Aufgabe mit gleicher Schwierigkeit generiert.</value>
   </data>
   <data name="ChallengeShakePreview" xml:space="preserve">
-    <value>Anzahl SchÃ¼ttel-Bewegungen: {0}\n\nDu musst dein GerÃ¤t krÃ¤ftig schÃ¼tteln, um den Wecker zu stoppen.\n\nDer Fortschritt wird angezeigt: 0 / {0}\n\nTipp: SchÃ¼tteln wird mit dem Bewegungssensor erkannt.</value>
+    <value>Anzahl Schüttel-Bewegungen: {0}\n\nDu musst dein Gerät kräftig schütteln, um den Wecker zu stoppen.\n\nDer Fortschritt wird angezeigt: 0 / {0}\n\nTipp: Schütteln wird mit dem Bewegungssensor erkannt.</value>
   </data>
   <data name="ShiftPlanInfoTitle" xml:space="preserve">
     <value>Schichtplan-Info</value>
@@ -421,7 +421,7 @@
   </data>
   <!-- Google Assistant Tipp -->
   <data name="GoogleAssistantTipTitle" xml:space="preserve">
-    <value>ðŸ’¡ Sprachsteuerungs-Tipp</value>
+    <value>💡 Sprachsteuerungs-Tipp</value>
   </data>
   <data name="GoogleAssistantTipMessage" xml:space="preserve">
     <value>Du kannst ZeitManager mit Google Assistant steuern!
@@ -429,19 +429,19 @@
 Sage "Hey Google, stelle einen Timer auf 5 Minuten MIT ZEITMANAGER" um diese App anstelle der Standard-Uhr zu verwenden.
 
 Beispiele:
-â€¢ "Hey Google, Timer 10 Minuten mit ZeitManager"
-â€¢ "Hey Google, Wecker auf 7 Uhr mit ZeitManager"
-â€¢ "Hey Google, starte Stoppuhr mit ZeitManager"</value>
+• "Hey Google, Timer 10 Minuten mit ZeitManager"
+• "Hey Google, Wecker auf 7 Uhr mit ZeitManager"
+• "Hey Google, starte Stoppuhr mit ZeitManager"</value>
   </data>
   <data name="GotIt" xml:space="preserve">
     <value>Verstanden!</value>
   </data>
-  <!-- Settings - Timer Sound -->
+  <!-- Einstellungen - Timer-Ton -->
   <data name="TimerSound" xml:space="preserve">
     <value>Timer-Ton</value>
   </data>
   <data name="TimerSoundDescription" xml:space="preserve">
-    <value>Ton der abgespielt wird wenn ein Timer ablÃ¤uft</value>
+    <value>Ton der abgespielt wird wenn ein Timer abläuft</value>
   </data>
   <data name="GroupWithNumber" xml:space="preserve">
     <value>Gruppe {0}</value>
@@ -457,66 +457,66 @@ Beispiele:
     <value>Werbung entfernen (0,99 EUR)</value>
   </data>
   <data name="RestorePurchases" xml:space="preserve">
-    <value>KÃ¤ufe wiederherstellen</value>
+    <value>Käufe wiederherstellen</value>
   </data>
   <!-- Weck-Challenges -->
   <data name="ChallengeTitle" xml:space="preserve">
-    <value>â° Wecker-Challenge</value>
+    <value>⏰ Wecker-Challenge</value>
   </data>
   <data name="ChallengeMathInstruction" xml:space="preserve">
-    <value>LÃ¶se die Aufgabe, um den Wecker zu stoppen:</value>
+    <value>Löse die Aufgabe, um den Wecker zu stoppen:</value>
   </data>
   <data name="ChallengeShakeInstruction" xml:space="preserve">
-    <value>SchÃ¼ttle dein GerÃ¤t, um den Wecker zu stoppen!</value>
+    <value>Schüttle dein Gerät, um den Wecker zu stoppen!</value>
   </data>
   <data name="ChallengeAnswerHint" xml:space="preserve">
     <value>Deine Antwort</value>
   </data>
   <data name="ChallengeSubmit" xml:space="preserve">
-    <value>PRÃœFEN</value>
+    <value>PRÜFEN</value>
   </data>
   <data name="ChallengeEmptyAnswer" xml:space="preserve">
     <value>Bitte gib eine Antwort ein!</value>
   </data>
   <data name="ChallengeInvalidInput" xml:space="preserve">
-    <value>UngÃ¼ltige Eingabe!</value>
+    <value>Ungültige Eingabe!</value>
   </data>
   <data name="ChallengeCorrect" xml:space="preserve">
-    <value>âœ“ Richtig!</value>
+    <value>✔ Richtig!</value>
   </data>
   <data name="ChallengeWrong" xml:space="preserve">
-    <value>âœ— Falsch! Die richtige Antwort war {0}</value>
+    <value>✗ Falsch! Die richtige Antwort war {0}</value>
   </data>
   <data name="ChallengeCompleted" xml:space="preserve">
-    <value>âœ“ Geschafft! Wecker gestoppt.</value>
+    <value>✔ Geschafft! Wecker gestoppt.</value>
   </data>
   <!-- Snackbar/Toast Nachrichten -->
   <data name="StopwatchReset" xml:space="preserve">
-    <value>Stoppuhr zurÃ¼ckgesetzt</value>
+    <value>Stoppuhr zurückgesetzt</value>
   </data>
   <data name="UndoReset" xml:space="preserve">
-    <value>RÃœCKGÃ„NGIG</value>
+    <value>RÜCKGÄNGIG</value>
   </data>
   <data name="TimerStartedFormat" xml:space="preserve">
-    <value>âœ“ {0} Min Timer gestartet</value>
+    <value>✔ {0} Min Timer gestartet</value>
   </data>
   <data name="TimerFinishedNotification" xml:space="preserve">
     <value>Timer abgelaufen!</value>
   </data>
-  <!-- Navigation Accessibility -->
+  <!-- Navigations-Barrierefreiheit -->
   <data name="PreviousMonth" xml:space="preserve">
     <value>Vorheriger Monat</value>
   </data>
   <data name="NextMonth" xml:space="preserve">
-    <value>NÃ¤chster Monat</value>
+    <value>Nächster Monat</value>
   </data>
   <data name="NavigateToPreviousMonth" xml:space="preserve">
     <value>Zum vorherigen Monat navigieren</value>
   </data>
   <data name="NavigateToNextMonth" xml:space="preserve">
-    <value>Zum nÃ¤chsten Monat navigieren</value>
+    <value>Zum nächsten Monat navigieren</value>
   </data>
-  <!-- Theme Names (Avalonia) -->
+  <!-- Theme-Namen -->
   <data name="ThemeMidnight" xml:space="preserve">
     <value>Mitternacht</value>
   </data>
@@ -534,9 +534,9 @@ Beispiele:
     <value>Feedback senden</value>
   </data>
   <data name="PrivacyPolicy" xml:space="preserve">
-    <value>DatenschutzerklÃ¤rung</value>
+    <value>Datenschutzerklärung</value>
   </data>
-  <!-- Language Names -->
+  <!-- Sprach-Namen -->
   <data name="LanguageDE" xml:space="preserve">
     <value>Deutsch</value>
   </data>
@@ -547,7 +547,7 @@ Beispiele:
     <value>Spanisch</value>
   </data>
   <data name="LanguageFR" xml:space="preserve">
-    <value>FranzÃ¶sisch</value>
+    <value>Französisch</value>
   </data>
   <data name="LanguageIT" xml:space="preserve">
     <value>Italienisch</value>
@@ -555,15 +555,15 @@ Beispiele:
   <data name="LanguagePT" xml:space="preserve">
     <value>Portugiesisch</value>
   </data>
-  <!-- BestÃ¤tigungsdialoge -->
+  <!-- Bestätigungsdialoge -->
   <data name="ConfirmDeleteTitle" xml:space="preserve">
-    <value>LÃ¶schen bestÃ¤tigen</value>
+    <value>Löschen bestätigen</value>
   </data>
   <data name="ConfirmDeleteMessage" xml:space="preserve">
-    <value>Wirklich lÃ¶schen?</value>
+    <value>Wirklich löschen?</value>
   </data>
   <data name="ConfirmDeactivateTitle" xml:space="preserve">
-    <value>Deaktivierung bestÃ¤tigen</value>
+    <value>Deaktivierung bestätigen</value>
   </data>
   <data name="ConfirmDeactivateMessage" xml:space="preserve">
     <value>Diesen Schichtplan deaktivieren?</value>
@@ -582,9 +582,102 @@ Beispiele:
     <value>Fertig!</value>
   </data>
   <data name="TimerDurationInvalid" xml:space="preserve">
-    <value>Die Timer-Dauer muss grÃ¶ÃŸer als Null sein.</value>
+    <value>Die Timer-Dauer muss größer als Null sein.</value>
   </data>
   <data name="PressBackAgainToExit" xml:space="preserve">
-    <value>Erneut drÃ¼cken zum Beenden</value>
+    <value>Erneut drücken zum Beenden</value>
+  </data>
+  <!-- Pomodoro -->
+  <data name="Pomodoro" xml:space="preserve">
+    <value>Pomodoro</value>
+  </data>
+  <data name="PomodoroTitle" xml:space="preserve">
+    <value>Pomodoro</value>
+  </data>
+  <data name="Work" xml:space="preserve">
+    <value>Arbeit</value>
+  </data>
+  <data name="ShortBreak" xml:space="preserve">
+    <value>Kurze Pause</value>
+  </data>
+  <data name="LongBreak" xml:space="preserve">
+    <value>Lange Pause</value>
+  </data>
+  <data name="StartWork" xml:space="preserve">
+    <value>Arbeit starten</value>
+  </data>
+  <data name="SkipPhase" xml:space="preserve">
+    <value>Phase überspringen</value>
+  </data>
+  <data name="SessionsCompleted" xml:space="preserve">
+    <value>Abgeschlossene Sitzungen</value>
+  </data>
+  <data name="PomodoroConfig" xml:space="preserve">
+    <value>Pomodoro-Einstellungen</value>
+  </data>
+  <data name="WorkDuration" xml:space="preserve">
+    <value>Arbeitsdauer</value>
+  </data>
+  <data name="ShortBreakDuration" xml:space="preserve">
+    <value>Kurze Pause</value>
+  </data>
+  <data name="LongBreakDuration" xml:space="preserve">
+    <value>Lange Pause</value>
+  </data>
+  <data name="CyclesBeforeLongBreak" xml:space="preserve">
+    <value>Zyklen bis Langpause</value>
+  </data>
+  <data name="AutoStartNext" xml:space="preserve">
+    <value>Nächste Phase automatisch starten</value>
+  </data>
+  <data name="CycleFormat" xml:space="preserve">
+    <value>Zyklus {0} von {1}</value>
+  </data>
+  <data name="Statistics" xml:space="preserve">
+    <value>Statistiken</value>
+  </data>
+  <data name="NoSessionsYet" xml:space="preserve">
+    <value>Noch keine Sitzungen</value>
+  </data>
+  <data name="ThisWeek" xml:space="preserve">
+    <value>Diese Woche</value>
+  </data>
+  <data name="TodaySessions" xml:space="preserve">
+    <value>{0} Sitzungen heute</value>
+  </data>
+  <data name="TodayMinutes" xml:space="preserve">
+    <value>{0} Minuten fokussiert</value>
+  </data>
+  <!-- Timer-Erweiterungen -->
+  <data name="DeleteAllTimers" xml:space="preserve">
+    <value>Alle löschen</value>
+  </data>
+  <data name="DeleteAllTimersConfirm" xml:space="preserve">
+    <value>Alle Timer löschen?</value>
+  </data>
+  <data name="ExtendTimer" xml:space="preserve">
+    <value>Timer verlängern</value>
+  </data>
+  <data name="AutoRepeat" xml:space="preserve">
+    <value>Automatische Wiederholung</value>
+  </data>
+  <data name="Presets" xml:space="preserve">
+    <value>Vorlagen</value>
+  </data>
+  <data name="SaveAsPreset" xml:space="preserve">
+    <value>Als Vorlage speichern</value>
+  </data>
+  <data name="PresetSaved" xml:space="preserve">
+    <value>Vorlage gespeichert</value>
+  </data>
+  <data name="TimerDurationTooLong" xml:space="preserve">
+    <value>Die Timer-Dauer überschreitet das Maximum von 23:59:59.</value>
+  </data>
+  <!-- Ein/Aus -->
+  <data name="On" xml:space="preserve">
+    <value>Ein</value>
+  </data>
+  <data name="Off" xml:space="preserve">
+    <value>Aus</value>
   </data>
 </root>

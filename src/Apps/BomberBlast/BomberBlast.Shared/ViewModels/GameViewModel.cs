@@ -500,6 +500,9 @@ public partial class GameViewModel : ObservableObject, IDisposable
 
             // Banner-Status aktualisieren (z.B. Wechsel Level 4 → 5)
             UpdateBannerForLevel(_gameEngine.CurrentLevel);
+
+            // Game-Loop neu starten (war ggf. gestoppt wegen Score-Verdopplungs-Overlay)
+            StartGameLoop();
         }
     }
 
@@ -553,7 +556,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
 
             await Dispatcher.UIThread.InvokeAsync(async () =>
             {
-                await Task.Delay(3000);
+                await Task.Delay(1000);
 
                 // Score-Verdopplung anbieten (nur fuer Free User mit verfuegbarer Ad)
                 bool canDouble = !_purchaseService.IsPremium && _rewardedAdService.IsAvailable;

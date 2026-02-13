@@ -69,8 +69,8 @@
             IsVisible="{Binding IsAdBannerVisible}" />
 
     <!-- Ersatz-Spacer wenn Tab-Bar versteckt (SubPage offen) -->
-    <!-- Gleiche Hoehe wie Tab-Bar, damit Inhalt ueber der nativen Ad bleibt -->
-    <Border Grid.Row="2" Height="60"
+    <!-- Gleiche Höhe wie Tab-Bar (56dp), damit Inhalt über der nativen Ad bleibt -->
+    <Border Grid.Row="2" Height="56"
             IsVisible="{Binding IsSubPageActive}" />
 
     <!-- Row 2: Bottom Tab Bar                        -->

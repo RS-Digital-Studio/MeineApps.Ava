@@ -257,7 +257,16 @@ namespace WorkTimePro.Resources.Strings {
                 return ResourceManager.GetString("CumulativeBalance", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Confirm delete ähnelt.
+        /// </summary>
+        internal static string ConfirmDelete {
+            get {
+                return ResourceManager.GetString("ConfirmDelete", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Daily target (hours) ähnelt.
         /// </summary>
@@ -347,7 +356,25 @@ namespace WorkTimePro.Resources.Strings {
                 return ResourceManager.GetString("DayStatus_WorkDay", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die {0} days ähnelt.
+        /// </summary>
+        internal static string DaysFormat {
+            get {
+                return ResourceManager.GetString("DaysFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Open ähnelt.
+        /// </summary>
+        internal static string MonthOpen {
+            get {
+                return ResourceManager.GetString("MonthOpen", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Delete ähnelt.
         /// </summary>
@@ -2326,6 +2353,177 @@ namespace WorkTimePro.Resources.Strings {
         internal static string ValidationEndBeforeStart {
             get {
                 return ResourceManager.GetString("ValidationEndBeforeStart", resourceCulture);
+            }
+        }
+
+        internal static string Yes {
+            get {
+                return ResourceManager.GetString("Yes", resourceCulture);
+            }
+        }
+
+        internal static string No {
+            get {
+                return ResourceManager.GetString("No", resourceCulture);
+            }
+        }
+
+        internal static string ReminderMorningTitle {
+            get {
+                return ResourceManager.GetString("ReminderMorningTitle", resourceCulture);
+            }
+        }
+
+        internal static string ReminderMorningBody {
+            get {
+                return ResourceManager.GetString("ReminderMorningBody", resourceCulture);
+            }
+        }
+
+        internal static string ReminderEveningTitle {
+            get {
+                return ResourceManager.GetString("ReminderEveningTitle", resourceCulture);
+            }
+        }
+
+        internal static string ReminderEveningBody {
+            get {
+                return ResourceManager.GetString("ReminderEveningBody", resourceCulture);
+            }
+        }
+
+        internal static string ReminderPauseTitle {
+            get {
+                return ResourceManager.GetString("ReminderPauseTitle", resourceCulture);
+            }
+        }
+
+        internal static string ReminderPauseBody {
+            get {
+                return ResourceManager.GetString("ReminderPauseBody", resourceCulture);
+            }
+        }
+
+        internal static string ReminderOvertimeTitle {
+            get {
+                return ResourceManager.GetString("ReminderOvertimeTitle", resourceCulture);
+            }
+        }
+
+        internal static string ReminderOvertimeBody {
+            get {
+                return ResourceManager.GetString("ReminderOvertimeBody", resourceCulture);
+            }
+        }
+
+        internal static string ReminderWeeklyTitle {
+            get {
+                return ResourceManager.GetString("ReminderWeeklyTitle", resourceCulture);
+            }
+        }
+
+        internal static string ReminderWeeklyBody {
+            get {
+                return ResourceManager.GetString("ReminderWeeklyBody", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Undo ähnelt.
+        /// </summary>
+        internal static string Undo {
+            get {
+                return ResourceManager.GetString("Undo", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Check-in undone ähnelt.
+        /// </summary>
+        internal static string UndoCheckIn {
+            get {
+                return ResourceManager.GetString("UndoCheckIn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Check-out undone ähnelt.
+        /// </summary>
+        internal static string UndoCheckOut {
+            get {
+                return ResourceManager.GetString("UndoCheckOut", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Time rounding ähnelt.
+        /// </summary>
+        internal static string TimeRounding {
+            get {
+                return ResourceManager.GetString("TimeRounding", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die None ähnelt.
+        /// </summary>
+        internal static string NoRounding {
+            get {
+                return ResourceManager.GetString("NoRounding", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Hourly rate ähnelt.
+        /// </summary>
+        internal static string HourlyRate {
+            get {
+                return ResourceManager.GetString("HourlyRate", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Today's earnings ähnelt.
+        /// </summary>
+        internal static string TodayEarnings {
+            get {
+                return ResourceManager.GetString("TodayEarnings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Total earnings ähnelt.
+        /// </summary>
+        internal static string TotalEarnings {
+            get {
+                return ResourceManager.GetString("TotalEarnings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die {0} min ähnelt.
+        /// </summary>
+        internal static string MinutesShortFormat {
+            get {
+                return ResourceManager.GetString("MinutesShortFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Earnings ähnelt.
+        /// </summary>
+        internal static string Earnings {
+            get {
+                return ResourceManager.GetString("Earnings", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Press back again to exit ähnelt.
+        /// </summary>
+        internal static string PressBackAgainToExit {
+            get {
+                return ResourceManager.GetString("PressBackAgainToExit", resourceCulture);
             }
         }
     }

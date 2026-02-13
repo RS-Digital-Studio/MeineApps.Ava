@@ -120,6 +120,7 @@ public partial class MonthOverviewViewModel : ObservableObject
 
             // Generate weeks
             var weeksList = new List<WorkWeek>();
+            var seenWeeks = new HashSet<(int Year, int Week)>();
             var firstDay = new DateTime(SelectedMonth.Year, SelectedMonth.Month, 1);
             var lastDay = firstDay.AddMonths(1).AddDays(-1);
 
@@ -127,7 +128,7 @@ public partial class MonthOverviewViewModel : ObservableObject
             while (currentDate <= lastDay)
             {
                 var week = await _calculation.CalculateWeekAsync(currentDate);
-                if (!weeksList.Any(w => w.WeekNumber == week.WeekNumber && w.Year == week.Year))
+                if (seenWeeks.Add((week.Year, week.WeekNumber)))
                 {
                     weeksList.Add(week);
                 }

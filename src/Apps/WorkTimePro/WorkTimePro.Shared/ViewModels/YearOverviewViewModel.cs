@@ -158,6 +158,9 @@ public partial class YearOverviewViewModel : ObservableObject
             IsPremium = _purchaseService.IsPremium || _trialService.IsTrialActive;
             ShowAds = !IsPremium;
 
+            // Achsen bei jedem Laden aktualisieren (Sprachwechsel-Reaktivität)
+            InitializeAxes();
+
             var monthSummaries = new List<MonthSummary>();
             var monthlyWorkHours = new List<double>();
             var cumulativeBalance = new List<double>();
@@ -168,10 +171,18 @@ public partial class YearOverviewViewModel : ObservableObject
             int yearBalanceMinutes = 0;
             int yearWorkDays = 0;
 
-            for (int month = 1; month <= 12; month++)
+            // Alle 12 Monate parallel berechnen (statt sequentiell)
+            var monthTasks = Enumerable.Range(1, 12).Select(async month =>
             {
-                var monthData = await _calculation.CalculateMonthAsync(SelectedYear, month);
+                var data = await _calculation.CalculateMonthAsync(SelectedYear, month);
+                var locked = await _database.IsMonthLockedAsync(SelectedYear, month);
+                return (month, data, locked);
+            }).ToArray();
 
+            var monthResults = await Task.WhenAll(monthTasks);
+
+            foreach (var (month, monthData, isLocked) in monthResults.OrderBy(r => r.month))
+            {
                 var summary = new MonthSummary
                 {
                     Month = month,
@@ -180,7 +191,7 @@ public partial class YearOverviewViewModel : ObservableObject
                     WorkMinutes = monthData.ActualWorkMinutes,
                     TargetMinutes = monthData.TargetWorkMinutes,
                     BalanceMinutes = monthData.BalanceMinutes,
-                    IsLocked = await _database.IsMonthLockedAsync(SelectedYear, month)
+                    IsLocked = isLocked
                 };
 
                 monthSummaries.Add(summary);
@@ -199,9 +210,9 @@ public partial class YearOverviewViewModel : ObservableObject
 
             // Year totals
             TotalWorkDays = yearWorkDays;
-            TotalWorkTimeDisplay = FormatMinutes(yearWorkMinutes);
-            TotalTargetTimeDisplay = FormatMinutes(yearTargetMinutes);
-            TotalBalanceDisplay = FormatBalance(yearBalanceMinutes);
+            TotalWorkTimeDisplay = TimeFormatter.FormatMinutes(yearWorkMinutes);
+            TotalTargetTimeDisplay = TimeFormatter.FormatMinutes(yearTargetMinutes);
+            TotalBalanceDisplay = TimeFormatter.FormatBalance(yearBalanceMinutes);
             BalanceColor = yearBalanceMinutes >= 0 ? "#4CAF50" : "#F44336";
 
             // Average
@@ -339,18 +350,6 @@ public partial class YearOverviewViewModel : ObservableObject
         NavigationRequested?.Invoke($"month?date={date:yyyy-MM-dd}");
     }
 
-    private static string FormatMinutes(int minutes)
-    {
-        var hours = minutes / 60;
-        var mins = Math.Abs(minutes % 60);
-        return $"{hours}:{mins:D2}";
-    }
-
-    private static string FormatBalance(int minutes)
-    {
-        var sign = minutes >= 0 ? "+" : "";
-        return sign + FormatMinutes(minutes);
-    }
 }
 
 /// <summary>
@@ -366,16 +365,9 @@ public class MonthSummary
     public int BalanceMinutes { get; set; }
     public bool IsLocked { get; set; }
 
-    public string WorkTimeDisplay => FormatMinutes(WorkMinutes);
-    public string TargetTimeDisplay => FormatMinutes(TargetMinutes);
-    public string BalanceDisplay => (BalanceMinutes >= 0 ? "+" : "") + FormatMinutes(BalanceMinutes);
+    public string WorkTimeDisplay => TimeFormatter.FormatMinutes(WorkMinutes);
+    public string TargetTimeDisplay => TimeFormatter.FormatMinutes(TargetMinutes);
+    public string BalanceDisplay => TimeFormatter.FormatBalance(BalanceMinutes);
     public string BalanceColor => BalanceMinutes >= 0 ? "#4CAF50" : "#F44336";
     public string LockIcon => IsLocked ? Icons.Lock : "";
-
-    private static string FormatMinutes(int minutes)
-    {
-        var hours = minutes / 60;
-        var mins = Math.Abs(minutes % 60);
-        return $"{hours}:{mins:D2}";
-    }
 }

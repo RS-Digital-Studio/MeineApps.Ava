@@ -26,9 +26,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IPurchaseService _purchaseService;
     private readonly IAdService _adService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IHapticService _haptic;
 
     private System.Timers.Timer? _updateTimer;
     private bool _disposed;
+
+    // Undo-Mechanismus (5 Sekunden Fenster nach CheckIn/CheckOut)
+    private CancellationTokenSource? _undoCts;
+    private TimeEntry? _lastUndoEntry;
+    private TrackingStatus _statusBeforeUndo;
+
+    // Event-Handler-Referenzen für sauberes Dispose
+    private readonly List<(ObservableObject Vm, string EventName, Delegate Handler)> _wiredEvents = new();
 
     // === Sub-Page Navigation ===
 
@@ -84,7 +93,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         YearOverviewViewModel yearVm,
         VacationViewModel vacationVm,
         ShiftPlanViewModel shiftPlanVm,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService,
+        IHapticService haptic)
     {
         _timeTracking = timeTracking;
         _calculation = calculation;
@@ -94,10 +104,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _purchaseService = purchaseService;
         _adService = adService;
         _rewardedAdService = rewardedAdService;
-        _rewardedAdService.AdUnavailable += () => MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
+        _haptic = haptic;
+        _rewardedAdService.AdUnavailable += OnAdUnavailable;
 
         IsAdBannerVisible = _adService.BannerVisible;
-        _adService.AdsStateChanged += (_, _) => IsAdBannerVisible = _adService.BannerVisible;
+        _adService.AdsStateChanged += OnAdsStateChanged;
 
         // Banner beim Start anzeigen (fuer Desktop + Fallback falls AdMobHelper fehlschlaegt)
         if (_adService.AdsEnabled && !_purchaseService.IsPremium)
@@ -127,7 +138,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         // Timer for live updates (1 second) - only started when tracking is active
         _updateTimer = new System.Timers.Timer(1000);
-        _updateTimer.Elapsed += async (s, e) => await UpdateLiveDataAsync();
+        _updateTimer.Elapsed += OnUpdateTimerElapsed;
         // Timer is NOT started immediately - starts on status change
     }
 
@@ -137,11 +148,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var navEvent = vm.GetType().GetEvent("NavigationRequested");
         if (navEvent != null)
         {
-            navEvent.AddEventHandler(vm, new Action<string>(route =>
+            var handler = new Action<string>(route =>
             {
                 if (route == ".." || route.Contains("back", StringComparison.OrdinalIgnoreCase))
                     GoBack();
-            }));
+            });
+            navEvent.AddEventHandler(vm, handler);
+            _wiredEvents.Add((vm, "NavigationRequested", handler));
         }
     }
 
@@ -263,6 +276,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _showAds = true;
 
+    // === Verdienst (Stundenlohn) ===
+
+    [ObservableProperty]
+    private string _todayEarnings = "";
+
+    [ObservableProperty]
+    private bool _hasEarnings;
+
+    // === Undo ===
+
+    [ObservableProperty]
+    private bool _isUndoVisible;
+
+    [ObservableProperty]
+    private string _undoMessage = "";
+
     // Derived properties
     public bool IsWorking => CurrentStatus == TrackingStatus.Working || CurrentStatus == TrackingStatus.OnBreak;
     public bool HasCheckedIn => CurrentStatus != TrackingStatus.Idle;
@@ -296,23 +325,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
             switch (CurrentStatus)
             {
                 case TrackingStatus.Idle:
-                    await _timeTracking.CheckInAsync();
+                    var checkInEntry = await _timeTracking.CheckInAsync();
+                    _haptic.Click();
+                    ShowUndo(checkInEntry, TrackingStatus.Idle, AppStrings.CheckIn);
                     break;
 
                 case TrackingStatus.Working:
-                    await _timeTracking.CheckOutAsync();
+                    var statusBefore = CurrentStatus;
+                    var checkOutEntry = await _timeTracking.CheckOutAsync();
+                    _haptic.HeavyClick();
 
                     // Feierabend-Celebration
                     FloatingTextRequested?.Invoke(AppStrings.EndOfDay, "success");
                     CelebrationRequested?.Invoke();
 
-                    // Ueberstunden anzeigen falls vorhanden
+                    // Überstunden anzeigen falls vorhanden
                     var workTime = await _timeTracking.GetCurrentWorkTimeAsync();
                     var today = await _timeTracking.GetTodayAsync();
                     var overtime = workTime - today.TargetWorkTime;
                     if (overtime.TotalMinutes > 1)
                         FloatingTextRequested?.Invoke($"+{overtime.TotalHours:F1}h", "overtime");
 
+                    ShowUndo(checkOutEntry, statusBefore, AppStrings.CheckOut);
                     break;
 
                 case TrackingStatus.OnBreak:
@@ -344,10 +378,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (CurrentStatus == TrackingStatus.Working)
             {
                 await _timeTracking.StartPauseAsync();
+                _haptic.Click();
             }
             else if (CurrentStatus == TrackingStatus.OnBreak)
             {
                 await _timeTracking.EndPauseAsync();
+                _haptic.Click();
             }
 
             await LoadDataAsync();
@@ -475,13 +511,123 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsSubPageActive));
     }
 
+    // === Zurück-Taste (Double-Back-to-Exit) ===
+
+    private DateTime _lastBackPressTime;
+
+    /// <summary>
+    /// Verarbeitet den Zurück-Button des Geräts.
+    /// Gibt true zurück wenn behandelt, false wenn die App beendet werden soll.
+    /// </summary>
+    public bool HandleBackPressed()
+    {
+        // 1. Sub-Page offen → schließen
+        if (IsSubPageActive)
+        {
+            GoBack();
+            return true;
+        }
+
+        // 2. Nicht auf Today-Tab → zurück zu Today
+        if (CurrentTab != 0)
+        {
+            CurrentTab = 0;
+            return true;
+        }
+
+        // 3. Auf Today-Tab → Double-Back prüfen (2 Sekunden Fenster)
+        var now = DateTime.UtcNow;
+        if ((now - _lastBackPressTime).TotalMilliseconds < 2000)
+        {
+            return false; // App beenden
+        }
+
+        _lastBackPressTime = now;
+        FloatingTextRequested?.Invoke(AppStrings.PressBackAgainToExit, "info");
+        return true;
+    }
+
     [RelayCommand]
     private async Task RefreshAsync()
     {
         await LoadDataAsync();
     }
 
+    // === Undo Mechanismus ===
+
+    /// <summary>
+    /// Zeigt den Undo-Button für 5 Sekunden nach CheckIn/CheckOut
+    /// </summary>
+    private void ShowUndo(TimeEntry entry, TrackingStatus previousStatus, string actionText)
+    {
+        _undoCts?.Cancel();
+        _lastUndoEntry = entry;
+        _statusBeforeUndo = previousStatus;
+        UndoMessage = $"{actionText} - {AppStrings.Undo}?";
+        IsUndoVisible = true;
+
+        _undoCts = new CancellationTokenSource();
+        var token = _undoCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(5000, token);
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    IsUndoVisible = false;
+                    _lastUndoEntry = null;
+                });
+            }
+            catch (TaskCanceledException) { }
+        });
+    }
+
+    [RelayCommand]
+    private async Task UndoLastActionAsync()
+    {
+        if (_lastUndoEntry == null) return;
+
+        try
+        {
+            _undoCts?.Cancel();
+            IsUndoVisible = false;
+
+            var entryToDelete = _lastUndoEntry;
+            _lastUndoEntry = null;
+
+            // Eintrag löschen
+            await _database.DeleteTimeEntryAsync(entryToDelete.Id);
+
+            // WorkDay neu berechnen
+            var workDay = await _database.GetWorkDayAsync(entryToDelete.Timestamp.Date);
+            if (workDay != null)
+            {
+                await _calculation.RecalculateWorkDayAsync(workDay);
+            }
+
+            // Status neu laden
+            await _timeTracking.LoadStatusAsync();
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
+        }
+    }
+
     // === Helper methods ===
+
+    private void OnAdUnavailable()
+    {
+        MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
+    }
+
+    private void OnAdsStateChanged(object? sender, EventArgs e)
+    {
+        IsAdBannerVisible = _adService.BannerVisible;
+    }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
@@ -553,6 +699,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             var today = await _timeTracking.GetTodayAsync();
             var balance = workTime - today.TargetWorkTime;
+            var settings = await _database.GetSettingsAsync();
 
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
@@ -564,10 +711,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 BalanceTime = $"{prefix}{FormatTimeSpan(balance)}";
                 BalanceColor = SolidColorBrush.Parse(balance.TotalMinutes >= 0 ? "#4CAF50" : "#F44336");
 
-                // Day progress
+                // Tages-Fortschritt
                 if (today.TargetWorkMinutes > 0)
                 {
                     DayProgress = Math.Min(100, (workTime.TotalMinutes * 100) / today.TargetWorkMinutes);
+                }
+
+                // Verdienst berechnen (falls Stundenlohn konfiguriert)
+                if (settings.HourlyRate > 0)
+                {
+                    var earnings = workTime.TotalHours * settings.HourlyRate;
+                    TodayEarnings = earnings.ToString("C2");
+                    HasEarnings = true;
+                }
+                else
+                {
+                    HasEarnings = false;
                 }
             });
         }
@@ -585,15 +744,34 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return $"{sign}{totalHours}:{minutes:D2}";
     }
 
+    private async void OnUpdateTimerElapsed(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await UpdateLiveDataAsync();
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
 
         _disposed = true;
         _updateTimer?.Stop();
+        if (_updateTimer != null)
+            _updateTimer.Elapsed -= OnUpdateTimerElapsed;
         _updateTimer?.Dispose();
+        _undoCts?.Cancel();
+        _undoCts?.Dispose();
         _timeTracking.StatusChanged -= OnStatusChanged;
         _localization.LanguageChanged -= OnLanguageChanged;
+        _rewardedAdService.AdUnavailable -= OnAdUnavailable;
+        _adService.AdsStateChanged -= OnAdsStateChanged;
+
+        // Sub-Page Navigation Events abmelden
+        foreach (var (vm, eventName, handler) in _wiredEvents)
+        {
+            var navEvent = vm.GetType().GetEvent(eventName);
+            navEvent?.RemoveEventHandler(vm, handler);
+        }
+        _wiredEvents.Clear();
 
         GC.SuppressFinalize(this);
     }

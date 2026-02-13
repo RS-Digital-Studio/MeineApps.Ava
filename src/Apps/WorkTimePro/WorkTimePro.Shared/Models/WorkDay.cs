@@ -166,6 +166,7 @@ public class WorkDay
 
     /// <summary>
     /// Farbe für Saldo (grün = plus, rot = minus)
+    /// Material Design 500: gut lesbar auf Light + Dark Themes
     /// </summary>
     [Ignore]
     public string BalanceColor => BalanceMinutes >= 0 ? "#4CAF50" : "#F44336";

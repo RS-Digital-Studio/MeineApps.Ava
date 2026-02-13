@@ -207,8 +207,8 @@ public class TimeTrackingService : ITimeTrackingService
             activePause.EndTime = DateTime.Now;
             await _database.SavePauseEntryAsync(activePause);
 
-            // Pausenzeit aktualisieren
-            await _calculation.RecalculatePauseTimeAsync(targetDay);
+            // Pausenzeit aktualisieren (RecalculateWorkDayAsync ruft intern RecalculatePauseTimeAsync auf)
+            await _calculation.RecalculateWorkDayAsync(targetDay);
 
             CurrentStatus = TrackingStatus.Working;
             StatusChanged?.Invoke(this, CurrentStatus);
@@ -228,7 +228,7 @@ public class TimeTrackingService : ITimeTrackingService
 
     /// <summary>
     /// Findet den WorkDay mit dem aktiven CheckIn.
-    /// Berücksichtigt Mitternachts-Übergang bei Nachtarbeit.
+    /// Berücksichtigt Mitternachts-Übergang bei Nachtarbeit (bis zu 3 Tage rückwärts).
     /// </summary>
     private async Task<WorkDay> GetActiveWorkDayAsync()
     {
@@ -237,13 +237,16 @@ public class TimeTrackingService : ITimeTrackingService
         if (lastEntry?.Type == EntryType.CheckIn)
             return today;
 
-        // Gestern prüfen (Mitternachts-Übergang)
-        var yesterday = await _database.GetWorkDayAsync(DateTime.Today.AddDays(-1));
-        if (yesterday != null)
+        // Rückwärts prüfen (Mitternachts-Übergang, z.B. extrem lange Schichten)
+        for (int i = 1; i <= 3; i++)
         {
-            var yesterdayLast = await _database.GetLastTimeEntryAsync(yesterday.Id);
-            if (yesterdayLast?.Type == EntryType.CheckIn)
-                return yesterday;
+            var pastDay = await _database.GetWorkDayAsync(DateTime.Today.AddDays(-i));
+            if (pastDay != null)
+            {
+                var pastLast = await _database.GetLastTimeEntryAsync(pastDay.Id);
+                if (pastLast?.Type == EntryType.CheckIn)
+                    return pastDay;
+            }
         }
 
         return today;
@@ -277,8 +280,8 @@ public class TimeTrackingService : ITimeTrackingService
             }
         }
 
-        // Still checked in?
-        if (lastCheckIn != null && CurrentStatus == TrackingStatus.Working)
+        // Noch eingecheckt? (auch während Pause die laufende Session zählen)
+        if (lastCheckIn != null && CurrentStatus != TrackingStatus.Idle)
         {
             totalWork += DateTime.Now - lastCheckIn.Timestamp;
         }
@@ -296,7 +299,10 @@ public class TimeTrackingService : ITimeTrackingService
         }
 
         var result = totalWork - TimeSpan.FromMinutes(totalPauses);
-        _cachedWorkTime = result; // Update cache for non-blocking GetCurrentSessionDuration()
+        // Negative Arbeitszeit verhindern (wenn Pausen > Arbeitszeit)
+        if (result < TimeSpan.Zero)
+            result = TimeSpan.Zero;
+        _cachedWorkTime = result;
         return result;
     }
 
@@ -382,17 +388,45 @@ public class TimeTrackingService : ITimeTrackingService
 
     public async Task UpdatePauseEntryAsync(int pauseId, DateTime newStart, DateTime newEnd)
     {
-        var today = await GetTodayAsync();
-        var pauses = await _database.GetPauseEntriesAsync(today.Id);
-        var pause = pauses.FirstOrDefault(p => p.Id == pauseId);
+        // Pause im richtigen WorkDay suchen (nicht nur heute - für Bearbeitung vergangener Tage)
+        WorkDay? targetDay = null;
 
-        if (pause != null)
+        // Zuerst im WorkDay des Start-Datums suchen
+        var dayForDate = await _database.GetOrCreateWorkDayAsync(newStart.Date);
+        var pauses = await _database.GetPauseEntriesAsync(dayForDate.Id);
+        var pause = pauses.FirstOrDefault(p => p.Id == pauseId);
+        if (pause != null) targetDay = dayForDate;
+
+        // Fallback: heute suchen
+        if (pause == null)
+        {
+            var today = await GetTodayAsync();
+            if (today.Id != dayForDate.Id)
+            {
+                pauses = await _database.GetPauseEntriesAsync(today.Id);
+                pause = pauses.FirstOrDefault(p => p.Id == pauseId);
+                if (pause != null) targetDay = today;
+            }
+        }
+
+        // Fallback: gestern suchen (Mitternachts-Übergang)
+        if (pause == null)
+        {
+            var yesterday = await _database.GetWorkDayAsync(newStart.Date.AddDays(-1));
+            if (yesterday != null)
+            {
+                pauses = await _database.GetPauseEntriesAsync(yesterday.Id);
+                pause = pauses.FirstOrDefault(p => p.Id == pauseId);
+                if (pause != null) targetDay = yesterday;
+            }
+        }
+
+        if (pause != null && targetDay != null)
         {
             pause.StartTime = newStart;
             pause.EndTime = newEnd;
             await _database.SavePauseEntryAsync(pause);
-            await _calculation.RecalculatePauseTimeAsync(today);
-            await _calculation.RecalculateWorkDayAsync(today);
+            await _calculation.RecalculateWorkDayAsync(targetDay);
         }
     }
 

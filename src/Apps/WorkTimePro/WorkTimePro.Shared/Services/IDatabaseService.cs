@@ -19,6 +19,7 @@ public interface IDatabaseService
 
     // === TimeEntry ===
     Task<List<TimeEntry>> GetTimeEntriesAsync(int workDayId);
+    Task<Dictionary<int, List<TimeEntry>>> GetTimeEntriesForWorkDaysAsync(List<int> workDayIds);
     Task<TimeEntry?> GetTimeEntryByIdAsync(int id);
     Task<TimeEntry?> GetLastTimeEntryAsync(int workDayId);
     Task<int> SaveTimeEntryAsync(TimeEntry entry);
@@ -88,6 +89,7 @@ public interface IDatabaseService
     Task<bool> IsMonthLockedAsync(int year, int month);
 
     // === Statistics queries ===
+    Task<DateTime?> GetFirstWorkDayDateAsync();
     Task<int> GetTotalWorkMinutesAsync(DateTime startDate, DateTime endDate);
     Task<int> GetTotalOvertimeMinutesAsync(DateTime startDate, DateTime endDate);
     Task<Dictionary<int, double>> GetProjectHoursAsync(DateTime startDate, DateTime endDate);

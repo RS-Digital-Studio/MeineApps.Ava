@@ -62,6 +62,16 @@ public partial class VacationViewModel : ObservableObject
     [ObservableProperty]
     private bool _showAds = true;
 
+    // Quota-Edit Overlay
+    [ObservableProperty]
+    private bool _isEditingQuota;
+
+    [ObservableProperty]
+    private int _editTotalDays;
+
+    [ObservableProperty]
+    private int _editCarryOverDays;
+
     [ObservableProperty]
     private string _quotaDisplay = "";
 
@@ -247,8 +257,41 @@ public partial class VacationViewModel : ObservableObject
             return;
         }
 
-        // TODO: implement platform-specific quota edit dialog
-        await Task.CompletedTask;
+        try
+        {
+            var quota = await _vacationService.GetQuotaAsync(SelectedYear);
+            EditTotalDays = quota.TotalDays;
+            EditCarryOverDays = quota.CarryOverDays;
+            IsEditingQuota = true;
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, ex.Message));
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveQuotaAsync()
+    {
+        try
+        {
+            var quota = await _vacationService.GetQuotaAsync(SelectedYear);
+            quota.TotalDays = Math.Max(0, EditTotalDays);
+            quota.CarryOverDays = Math.Max(0, EditCarryOverDays);
+            await _vacationService.SaveQuotaAsync(quota);
+            IsEditingQuota = false;
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorSaving, ex.Message));
+        }
+    }
+
+    [RelayCommand]
+    private void CancelEditQuota()
+    {
+        IsEditingQuota = false;
     }
 
     [RelayCommand]

@@ -51,6 +51,7 @@
   <data name="CloseMonth" xml:space="preserve"><value>Chiudi mese</value></data>
   <data name="UnlockMonth" xml:space="preserve"><value>Sblocca mese</value></data>
   <data name="MonthLocked" xml:space="preserve"><value>Mese chiuso</value></data>
+  <data name="MonthOpen" xml:space="preserve"><value>Aperto</value></data>
   <data name="Calendar" xml:space="preserve"><value>Calendario</value></data>
   <data name="Legend" xml:space="preserve"><value>Legenda</value></data>
   <data name="Statistics" xml:space="preserve"><value>Statistiche</value></data>
@@ -453,5 +454,56 @@
   <data name="ValidationEndBeforeStart" xml:space="preserve">
     <value>L'ora di fine deve essere dopo l'ora di inizio</value>
   </data>
+  <data name="ReminderMorningTitle" xml:space="preserve">
+    <value>Ora di timbrare!</value>
+  </data>
+  <data name="ReminderMorningBody" xml:space="preserve">
+    <value>Non dimenticare di timbrare oggi</value>
+  </data>
+  <data name="ReminderEveningTitle" xml:space="preserve">
+    <value>Ancora al lavoro?</value>
+  </data>
+  <data name="ReminderEveningBody" xml:space="preserve">
+    <value>Non dimenticare di timbrare l'uscita</value>
+  </data>
+  <data name="ReminderPauseTitle" xml:space="preserve">
+    <value>È ora di una pausa!</value>
+  </data>
+  <data name="ReminderPauseBody" xml:space="preserve">
+    <value>Lavori da {0} ore senza pausa</value>
+  </data>
+  <data name="ReminderOvertimeTitle" xml:space="preserve">
+    <value>Avviso straordinari</value>
+  </data>
+  <data name="ReminderOvertimeBody" xml:space="preserve">
+    <value>Hai superato {0} ore di lavoro oggi</value>
+  </data>
+  <data name="ReminderWeeklyTitle" xml:space="preserve">
+    <value>Riepilogo settimanale</value>
+  </data>
+  <data name="ReminderWeeklyBody" xml:space="preserve">
+    <value>Sett {0}: {1} / {2} obiettivo | Saldo: {3}</value>
+  </data>
+
+  <!-- Undo Actions -->
+  <data name="Undo" xml:space="preserve">
+    <value>Annulla</value>
+  </data>
+  <data name="UndoCheckIn" xml:space="preserve">
+    <value>Timbratura annullata</value>
+  </data>
+  <data name="UndoCheckOut" xml:space="preserve">
+    <value>Uscita annullata</value>
+  </data>
+
+  <!-- Arrotondamento & Guadagno -->
+  <data name="MinutesShortFormat" xml:space="preserve"><value>{0} min</value></data>
+  <data name="TimeRounding" xml:space="preserve"><value>Arrotondamento tempo</value></data>
+  <data name="NoRounding" xml:space="preserve"><value>Nessuno</value></data>
+  <data name="HourlyRate" xml:space="preserve"><value>Tariffa oraria</value></data>
+  <data name="TodayEarnings" xml:space="preserve"><value>Guadagno di oggi</value></data>
+  <data name="TotalEarnings" xml:space="preserve"><value>Guadagno totale</value></data>
+  <data name="Earnings" xml:space="preserve"><value>Guadagno</value></data>
+  <data name="PressBackAgainToExit" xml:space="preserve"><value>Premi di nuovo per uscire</value></data>
 
 </root>

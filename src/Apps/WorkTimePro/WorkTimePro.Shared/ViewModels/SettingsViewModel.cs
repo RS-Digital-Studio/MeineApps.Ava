@@ -23,24 +23,28 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly ILocalizationService _localization;
     private readonly ITrialService _trialService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IReminderService _reminderService;
 
     private WorkSettings? _settings;
     private bool _disposed;
     private bool _isInitializing;
     private CancellationTokenSource? _autoSaveCts;
+    private CancellationTokenSource? _reminderRescheduleCts;
 
     public SettingsViewModel(
         IDatabaseService database,
         IThemeService themeService,
         ILocalizationService localization,
         ITrialService trialService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IReminderService reminderService)
     {
         _database = database;
         _themeService = themeService;
         _localization = localization;
         _trialService = trialService;
         _purchaseService = purchaseService;
+        _reminderService = reminderService;
 
         _purchaseService.PremiumStatusChanged += OnPurchaseStatusChanged;
     }
@@ -100,6 +104,29 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private double _sundayHours = 0.0;
 
+    // === Zeitrundung ===
+
+    [ObservableProperty]
+    private int _roundingMinutes;
+
+    /// <summary>
+    /// Verfügbare Rundungsoptionen (0 = keine, 5/10/15/30 Minuten)
+    /// </summary>
+    public int[] RoundingOptions => [0, 5, 10, 15, 30];
+
+    partial void OnRoundingMinutesChanged(int value) => ScheduleAutoSave();
+
+    // === Stundenlohn ===
+
+    [ObservableProperty]
+    private double _hourlyRate;
+
+    partial void OnHourlyRateChanged(double value)
+    {
+        if (value < 0) HourlyRate = 0;
+        else ScheduleAutoSave();
+    }
+
     // === Auto-Save mit Debounce (800ms) ===
 
     private void ScheduleAutoSave()
@@ -118,6 +145,33 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => SaveSettingsAsync());
             }
             catch (TaskCanceledException) { }
+        });
+    }
+
+    /// <summary>
+    /// Plant Reminder neu nach Settings-Änderung (nach Debounce)
+    /// </summary>
+    private void ScheduleReminderReschedule()
+    {
+        if (_isInitializing) return;
+
+        _reminderRescheduleCts?.Cancel();
+        _reminderRescheduleCts = new CancellationTokenSource();
+        var token = _reminderRescheduleCts.Token;
+
+        // Verzögert aufrufen damit Auto-Save zuerst durchläuft
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(1000, token); // Nach Auto-Save (800ms)
+                await _reminderService.RescheduleAsync();
+            }
+            catch (TaskCanceledException) { }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"ReminderReschedule Fehler: {ex.Message}");
+            }
         });
     }
 
@@ -345,10 +399,10 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public string EveningReminderTimeDisplay => EveningReminderTime.ToString(@"hh\:mm");
 
     partial void OnAutoPauseEnabledChanged(bool value) => ScheduleAutoSave();
-    partial void OnMorningReminderEnabledChanged(bool value) => ScheduleAutoSave();
-    partial void OnEveningReminderEnabledChanged(bool value) => ScheduleAutoSave();
-    partial void OnPauseReminderEnabledChanged(bool value) => ScheduleAutoSave();
-    partial void OnOvertimeWarningEnabledChanged(bool value) => ScheduleAutoSave();
+    partial void OnMorningReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
+    partial void OnEveningReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
+    partial void OnPauseReminderEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
+    partial void OnOvertimeWarningEnabledChanged(bool value) { ScheduleAutoSave(); ScheduleReminderReschedule(); }
     partial void OnLegalComplianceEnabledChanged(bool value) => ScheduleAutoSave();
     partial void OnSelectedRegionIndexChanged(int value) => ScheduleAutoSave();
 
@@ -356,12 +410,14 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     {
         OnPropertyChanged(nameof(MorningReminderTimeDisplay));
         ScheduleAutoSave();
+        ScheduleReminderReschedule();
     }
 
     partial void OnEveningReminderTimeChanged(TimeSpan value)
     {
         OnPropertyChanged(nameof(EveningReminderTimeDisplay));
         ScheduleAutoSave();
+        ScheduleReminderReschedule();
     }
 
     // === Input Validation ===
@@ -442,6 +498,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             FridayHours = _settings.GetHoursForDay(5);
             SaturdayHours = _settings.GetHoursForDay(6);
             SundayHours = _settings.GetHoursForDay(7);
+
+            // Zeitrundung
+            RoundingMinutes = _settings.RoundingMinutes;
+
+            // Stundenlohn
+            HourlyRate = _settings.HourlyRate;
 
             // Vacation
             VacationDaysPerYear = _settings.VacationDaysPerYear;
@@ -526,6 +588,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
                 _settings.DailyHoursPerDay = "";
             }
 
+            // Zeitrundung
+            _settings.RoundingMinutes = RoundingMinutes;
+
+            // Stundenlohn
+            _settings.HourlyRate = HourlyRate;
+
             // Vacation
             _settings.VacationDaysPerYear = VacationDaysPerYear;
 
@@ -546,7 +614,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
             _settings.OvertimeWarningHours = OvertimeWarningHours;
 
             // Holidays
-            var stateName = Enum.GetNames<GermanState>()[SelectedRegionIndex];
+            var stateNames = Enum.GetNames<GermanState>();
+            var regionIdx = Math.Clamp(SelectedRegionIndex, 0, stateNames.Length - 1);
+            var stateName = stateNames[regionIdx];
             _settings.HolidayRegion = $"DE-{stateName}";
 
             // Work time law
@@ -622,38 +692,13 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenArbZG()
     {
-        try
-        {
-            // In Avalonia, use Process.Start for URL opening
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = ARBZG_URL,
-                UseShellExecute = true
-            };
-            System.Diagnostics.Process.Start(psi);
-        }
-        catch (Exception ex)
-        {
-            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorOpenUrl, ex.Message));
-        }
+        UriLauncher.OpenUri(ARBZG_URL);
     }
 
     [RelayCommand]
     private void OpenHolidaysSource()
     {
-        try
-        {
-            var psi = new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = HOLIDAYS_URL,
-                UseShellExecute = true
-            };
-            System.Diagnostics.Process.Start(psi);
-        }
-        catch (Exception ex)
-        {
-            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorOpenUrl, ex.Message));
-        }
+        UriLauncher.OpenUri(HOLIDAYS_URL);
     }
 
     // === Helper methods ===
@@ -697,8 +742,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         {
             PremiumStatusText = string.Format(AppStrings.TrialDaysLeft, TrialDaysLeft);
             PremiumStatusColor = "#FF9800"; // Orange
-            TrialProgress = TrialDaysLeft / 14.0;
-            TrialProgressText = $"{TrialDaysLeft} / 14";
+            TrialProgress = TrialDaysLeft / 7.0;
+            TrialProgressText = $"{TrialDaysLeft} / 7";
         }
         else if (_trialService.IsTrialExpired)
         {

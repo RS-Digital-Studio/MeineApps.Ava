@@ -44,7 +44,7 @@ public class HolidayEntry
     /// Formatiertes Datum
     /// </summary>
     [Ignore]
-    public string DateDisplay => Date.ToString("dd.MM.yyyy");
+    public string DateDisplay => Date.ToString("d");
 
     /// <summary>
     /// Wochentag

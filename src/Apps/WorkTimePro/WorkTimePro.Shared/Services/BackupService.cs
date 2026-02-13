@@ -116,8 +116,9 @@ public class BackupService : IBackupService
 
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"BackupService.SignInWithGoogle Fehler: {ex.Message}");
             return false;
         }
     }
@@ -144,8 +145,9 @@ public class BackupService : IBackupService
 
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"BackupService.SignInWithMicrosoft Fehler: {ex.Message}");
             return false;
         }
     }
@@ -163,8 +165,9 @@ public class BackupService : IBackupService
 
             await Task.CompletedTask;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"BackupService.SignOut Fehler: {ex.Message}");
         }
     }
 
@@ -246,7 +249,7 @@ public class BackupService : IBackupService
             Version = "1.0",
             CreatedAt = DateTime.UtcNow,
             DeviceName = Environment.MachineName,
-            AppVersion = "1.0.0", // TODO: Get from app assembly
+            AppVersion = GetAppVersion(),
             Settings = settings,
             WorkDays = workDays,
             TimeEntries = timeEntries,
@@ -283,14 +286,15 @@ public class BackupService : IBackupService
                     CreatedAt = fileInfo.CreationTime,
                     SizeBytes = fileInfo.Length,
                     DeviceName = Environment.MachineName,
-                    AppVersion = "1.0.0"
+                    AppVersion = GetAppVersion()
                 });
             }
 
             await Task.CompletedTask;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler beim Laden der Backups: {ex.Message}");
         }
 
         return backups;
@@ -324,23 +328,49 @@ public class BackupService : IBackupService
                 return false;
             }
 
+            ProgressChanged?.Invoke(this, 40);
+
+            // Sicherheits-Backup der aktuellen Daten VOR dem Restore
+            var safetyBackup = await CreateBackupDataAsync();
             ProgressChanged?.Invoke(this, 50);
 
-            // Restore data
-            await RestoreDataAsync(backupData);
+            try
+            {
+                // Restore durchführen
+                await RestoreDataAsync(backupData);
+            }
+            catch (Exception restoreEx)
+            {
+                // Restore fehlgeschlagen → Sicherheits-Backup wiederherstellen
+                System.Diagnostics.Debug.WriteLine($"BackupService.Restore fehlgeschlagen, stelle Sicherheits-Backup wieder her: {restoreEx.Message}");
+                try
+                {
+                    await RestoreDataAsync(safetyBackup);
+                }
+                catch (Exception rollbackEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"BackupService.Rollback fehlgeschlagen: {rollbackEx.Message}");
+                }
+                throw; // Ursprünglichen Fehler weitergeben
+            }
 
             ProgressChanged?.Invoke(this, 100);
 
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"BackupService.RestoreBackup Fehler: {ex.Message}");
             return false;
         }
     }
 
     private async Task RestoreDataAsync(BackupData data)
     {
+        // HINWEIS: Restore überschreibt bestehende Einträge mit gleicher ID.
+        // Einträge mit neuen IDs werden zusätzlich eingefügt.
+        // Für ein sauberes Restore sollte ClearAllDataAsync() implementiert werden.
+
         if (data.Settings != null)
         {
             await _database.SaveSettingsAsync(data.Settings);
@@ -427,8 +457,9 @@ public class BackupService : IBackupService
             await Task.CompletedTask;
             return true;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"BackupService.DeleteBackup Fehler: {ex.Message}");
             return false;
         }
     }
@@ -484,6 +515,12 @@ public class BackupService : IBackupService
             result.ErrorMessage = ex.Message;
             return result;
         }
+    }
+
+    private static string GetAppVersion()
+    {
+        var version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        return version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "2.0.0";
     }
 }
 

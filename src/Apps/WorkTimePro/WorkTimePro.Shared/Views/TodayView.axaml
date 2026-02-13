@@ -3,6 +3,7 @@
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:ctrl="using:WorkTimePro.Controls"
              x:Class="WorkTimePro.Views.TodayView"
              x:DataType="vm:MainViewModel">
 
@@ -34,19 +35,30 @@
             </StackPanel>
           </Border>
 
-          <!-- Big Start/Stop Button -->
-          <Button Command="{Binding ToggleTrackingCommand}"
-                  HorizontalAlignment="Center"
-                  Width="120" Height="120"
-                  CornerRadius="60"
-                  Background="{Binding StatusColor}"
-                  Padding="0"
-                  HorizontalContentAlignment="Center"
-                  VerticalContentAlignment="Center">
-            <mi:MaterialIcon Kind="{Binding StatusIconKind}"
-                             Width="48" Height="48"
-                             Foreground="White" />
-          </Button>
+          <!-- Big Start/Stop Button mit Fortschrittsring -->
+          <Panel HorizontalAlignment="Center" Width="140" Height="140">
+            <!-- Fortschrittsring (hinter dem Button) -->
+            <ctrl:CircularProgressControl
+                Progress="{Binding DayProgress}"
+                TrackBrush="{DynamicResource CardBorderBrush}"
+                ProgressBrush="{DynamicResource SuccessBrush}"
+                StrokeWidth="6"
+                Width="140" Height="140" />
+            <!-- Button zentriert im Ring -->
+            <Button Command="{Binding ToggleTrackingCommand}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Width="120" Height="120"
+                    CornerRadius="60"
+                    Background="{Binding StatusColor}"
+                    Padding="0"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center">
+              <mi:MaterialIcon Kind="{Binding StatusIconKind}"
+                               Width="48" Height="48"
+                               Foreground="White" />
+            </Button>
+          </Panel>
 
           <!-- Pause Button -->
           <Button Content="{Binding PauseButtonText}"
@@ -56,6 +68,29 @@
                   IsVisible="{Binding IsWorking}" />
 
         </StackPanel>
+      </Border>
+
+      <!-- ==================== Undo Bar ==================== -->
+      <Border Background="{DynamicResource WarningBrush}" CornerRadius="8" Padding="12,8"
+              IsVisible="{Binding IsUndoVisible}"
+              HorizontalAlignment="Stretch">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Grid.Column="0"
+                     Text="{Binding UndoMessage}"
+                     Foreground="White" FontWeight="SemiBold"
+                     VerticalAlignment="Center" />
+          <Button Grid.Column="1"
+                  Command="{Binding UndoLastActionCommand}"
+                  Background="Transparent"
+                  BorderThickness="1" BorderBrush="White"
+                  CornerRadius="4" Padding="12,4">
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <mi:MaterialIcon Kind="Undo" Width="16" Height="16" Foreground="White" />
+              <TextBlock Text="{loc:Translate Undo}"
+                         Foreground="White" FontWeight="Bold" />
+            </StackPanel>
+          </Button>
+        </Grid>
       </Border>
 
       <!-- ==================== Time Metrics Card ==================== -->
@@ -130,6 +165,25 @@
           </StackPanel>
 
         </Grid>
+      </Border>
+
+      <!-- ==================== Earnings Card (nur wenn Stundenlohn konfiguriert) ==================== -->
+      <Border Classes="Card" Padding="12"
+              IsVisible="{Binding HasEarnings}">
+        <StackPanel Orientation="Horizontal" Spacing="12"
+                    HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="CurrencyEur"
+                           Width="24" Height="24"
+                           Foreground="{DynamicResource SuccessBrush}" />
+          <StackPanel>
+            <TextBlock Text="{Binding TodayEarnings}"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{DynamicResource SuccessBrush}" />
+            <TextBlock Text="{loc:Translate TodayEarnings}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </StackPanel>
+        </StackPanel>
       </Border>
 
       <!-- ==================== Auto-Pause Warning ==================== -->

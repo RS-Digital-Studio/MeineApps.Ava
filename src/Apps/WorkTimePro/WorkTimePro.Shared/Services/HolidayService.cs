@@ -9,10 +9,20 @@ public class HolidayService : IHolidayService
 {
     private readonly IDatabaseService _database;
     private readonly Dictionary<int, List<HolidayEntry>> _cache = new();
+    private string? _cachedRegion;
 
     public HolidayService(IDatabaseService database)
     {
         _database = database;
+    }
+
+    /// <summary>
+    /// Cache invalidieren (z.B. bei Region-Wechsel in Settings)
+    /// </summary>
+    public void ClearCache()
+    {
+        _cache.Clear();
+        _cachedRegion = null;
     }
 
     public async Task<List<HolidayEntry>> GetHolidaysAsync(int year)
@@ -73,6 +83,13 @@ public class HolidayService : IHolidayService
 
     private List<HolidayEntry> GetHolidaysForRegion(int year, string region)
     {
+        // Cache invalidieren wenn Region gewechselt wurde
+        if (_cachedRegion != null && _cachedRegion != region)
+        {
+            _cache.Clear();
+        }
+        _cachedRegion = region;
+
         var cacheKey = year * 100 + GetRegionIndex(region);
         if (_cache.TryGetValue(cacheKey, out var cached))
         {

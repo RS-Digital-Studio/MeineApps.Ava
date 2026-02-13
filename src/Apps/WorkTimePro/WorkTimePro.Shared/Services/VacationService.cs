@@ -33,17 +33,43 @@ public class VacationService : IVacationService
             await _database.SaveVacationQuotaAsync(quota);
         }
 
-        // Calculate taken and planned days
+        // Genommene und geplante Urlaubstage berechnen
+        // Laufende Urlaube (StartDate < heute UND EndDate >= heute) anteilig aufteilen
         var entries = await GetVacationEntriesAsync(year);
         var today = DateTime.Today;
 
-        quota.TakenDays = entries
-            .Where(e => e.Type == DayStatus.Vacation && e.EndDate < today)
-            .Sum(e => e.Days);
+        var taken = 0;
+        var planned = 0;
 
-        quota.PlannedDays = entries
-            .Where(e => e.Type == DayStatus.Vacation && e.StartDate >= today)
-            .Sum(e => e.Days);
+        foreach (var e in entries.Where(e => e.Type == DayStatus.Vacation))
+        {
+            if (e.EndDate < today)
+            {
+                // Komplett vergangen
+                taken += e.Days;
+            }
+            else if (e.StartDate >= today)
+            {
+                // Komplett in der Zukunft
+                planned += e.Days;
+            }
+            else
+            {
+                // Laufender Urlaub: anteilig aufteilen
+                var totalDays = (e.EndDate - e.StartDate).Days + 1;
+                var pastDays = (today - e.StartDate).Days;
+                if (totalDays > 0 && e.Days > 0)
+                {
+                    var pastRatio = (double)pastDays / totalDays;
+                    var pastWorkDays = (int)Math.Round(e.Days * pastRatio);
+                    taken += pastWorkDays;
+                    planned += e.Days - pastWorkDays;
+                }
+            }
+        }
+
+        quota.TakenDays = taken;
+        quota.PlannedDays = planned;
 
         return quota;
     }
@@ -100,7 +126,7 @@ public class VacationService : IVacationService
     public async Task<int> CalculateWorkDaysAsync(DateTime start, DateTime end)
     {
         var settings = await _database.GetSettingsAsync();
-        var workDaysArray = settings.WorkDays.Split(',').Select(int.Parse).ToArray();
+        var workDaysArray = settings.WorkDaysArray;
         var holidays = await _holidayService.GetHolidaysAsync(start, end);
 
         int count = 0;
@@ -132,17 +158,33 @@ public class VacationService : IVacationService
         var entries = await GetVacationEntriesAsync(year);
         var today = DateTime.Today;
 
+        // Genommene/geplante Urlaubstage korrekt berechnen (inkl. laufender Urlaube)
+        var statsTaken = 0;
+        var statsPlanned = 0;
+        foreach (var e in entries.Where(e => e.Type == DayStatus.Vacation))
+        {
+            if (e.EndDate < today) statsTaken += e.Days;
+            else if (e.StartDate >= today) statsPlanned += e.Days;
+            else
+            {
+                var totalDays = (e.EndDate - e.StartDate).Days + 1;
+                var pastDays = (today - e.StartDate).Days;
+                if (totalDays > 0 && e.Days > 0)
+                {
+                    var pastWorkDays = (int)Math.Round(e.Days * ((double)pastDays / totalDays));
+                    statsTaken += pastWorkDays;
+                    statsPlanned += e.Days - pastWorkDays;
+                }
+            }
+        }
+
         var stats = new VacationStatistics
         {
             Year = year,
             TotalDays = quota.TotalDays,
             CarryOverDays = quota.CarryOverDays,
-            TakenDays = entries
-                .Where(e => e.Type == DayStatus.Vacation && e.EndDate < today)
-                .Sum(e => e.Days),
-            PlannedDays = entries
-                .Where(e => e.Type == DayStatus.Vacation && e.StartDate >= today)
-                .Sum(e => e.Days),
+            TakenDays = statsTaken,
+            PlannedDays = statsPlanned,
             SickDays = entries
                 .Where(e => e.Type == DayStatus.Sick)
                 .Sum(e => e.Days),
@@ -178,7 +220,7 @@ public class VacationService : IVacationService
         {
             var workDay = await _database.GetOrCreateWorkDayAsync(current);
 
-            if (workDay.Status == DayStatus.WorkDay || workDay.Status == DayStatus.Work)
+            if (workDay.Status == DayStatus.WorkDay)
             {
                 workDay.Status = entry.Type;
                 workDay.Note = entry.Note;

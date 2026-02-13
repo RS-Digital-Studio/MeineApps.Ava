@@ -413,7 +413,7 @@
           <!-- Table Header -->
           <Border Background="{DynamicResource PrimaryBrush}"
                   Padding="6" CornerRadius="4">
-            <Grid ColumnDefinitions="70,60,42,42,42,38,48">
+            <Grid ColumnDefinitions="2*,1.5*,Auto,Auto,Auto,Auto,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate TableDate}" Foreground="White" FontSize="10" FontWeight="Bold" />
               <TextBlock Grid.Column="1" Text="{loc:Translate TableStatus}" Foreground="White" FontSize="10" FontWeight="Bold" />
               <TextBlock Grid.Column="2" Text="{loc:Translate TableCheckIn}" Foreground="White" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
@@ -430,7 +430,7 @@
               <DataTemplate x:DataType="vm:WorkDayTableItem">
                 <Border Padding="6,5"
                         Background="{DynamicResource CardBrush}">
-                  <Grid ColumnDefinitions="70,60,42,42,42,38,48">
+                  <Grid ColumnDefinitions="2*,1.5*,Auto,Auto,Auto,Auto,Auto">
                     <TextBlock Grid.Column="0" Text="{Binding DateDisplay}"
                                FontSize="10"
                                Foreground="{DynamicResource TextPrimaryBrush}"

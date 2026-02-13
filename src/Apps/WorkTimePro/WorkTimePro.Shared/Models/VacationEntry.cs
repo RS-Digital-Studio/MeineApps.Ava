@@ -1,6 +1,7 @@
 using Material.Icons;
 using SQLite;
 using WorkTimePro.Helpers;
+using WorkTimePro.Resources.Strings;
 
 namespace WorkTimePro.Models;
 
@@ -24,9 +25,14 @@ public class VacationEntry
     public DateTime StartDate { get; set; }
 
     /// <summary>
-    /// Enddatum
+    /// Enddatum (wird automatisch auf StartDate korrigiert falls kleiner)
     /// </summary>
-    public DateTime EndDate { get; set; }
+    private DateTime _endDate;
+    public DateTime EndDate
+    {
+        get => _endDate;
+        set => _endDate = value < StartDate ? StartDate : value;
+    }
 
     /// <summary>
     /// Anzahl Urlaubstage (Werktage)
@@ -73,7 +79,7 @@ public class VacationEntry
     /// Tage-Anzeige (z.B. "3 Tage")
     /// </summary>
     [Ignore]
-    public string DaysDisplay => Days == 1 ? "1 Tag" : $"{Days} Tage";
+    public string DaysDisplay => string.Format(AppStrings.DaysFormat, Days);
 
     /// <summary>
     /// Type-Icon

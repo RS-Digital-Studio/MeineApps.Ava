@@ -1,3 +1,5 @@
+using WorkTimePro.Resources.Strings;
+
 namespace WorkTimePro.Models;
 
 /// <summary>
@@ -188,14 +190,16 @@ public class WorkMonth
         get
         {
             if (WorkedDays == 0) return TimeSpan.Zero;
-            return TimeSpan.FromMinutes(ActualWorkMinutes / WorkedDays);
+            return TimeSpan.FromMinutes((double)ActualWorkMinutes / WorkedDays);
         }
     }
 
     /// <summary>
     /// Status-Text für Abschluss
     /// </summary>
-    public string LockStatusDisplay => IsLocked ? $"{Helpers.Icons.Lock} Abgeschlossen" : $"{Helpers.Icons.Pencil} Offen";
+    public string LockStatusDisplay => IsLocked
+        ? $"{Helpers.Icons.Lock} {AppStrings.MonthLocked}"
+        : $"{Helpers.Icons.Pencil} {AppStrings.MonthOpen}";
 
     private static string FormatTimeSpan(TimeSpan ts)
     {

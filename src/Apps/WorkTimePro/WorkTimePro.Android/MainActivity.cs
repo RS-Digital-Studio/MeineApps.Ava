@@ -1,3 +1,4 @@
+using Android;
 using Android.App;
 using Android.Content.PM;
 using Android.OS;
@@ -7,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
+using WorkTimePro.Android.Services;
 
 namespace WorkTimePro.Android;
 
@@ -32,6 +34,8 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         // Factories MUESSEN vor base.OnCreate (DI) registriert werden
         App.FileShareServiceFactory = () => new AndroidFileShareService(this);
+        App.NotificationServiceFactory = () => new AndroidNotificationService();
+        App.HapticServiceFactory = () => new AndroidHapticService();
 
         _rewardedAdHelper = new RewardedAdHelper();
         App.RewardedAdServiceFactory = sp =>
@@ -39,6 +43,12 @@ public class MainActivity : AvaloniaMainActivity<App>
                 _rewardedAdHelper!, sp.GetRequiredService<IPurchaseService>(), "WorkTimePro");
 
         base.OnCreate(savedInstanceState);
+
+        // POST_NOTIFICATIONS Permission (Android 13+)
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu)
+        {
+            RequestPermissions([Manifest.Permission.PostNotifications], 100);
+        }
 
         // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
         AdMobHelper.Initialize(this, () =>
@@ -56,6 +66,27 @@ public class MainActivity : AvaloniaMainActivity<App>
             AdMobHelper.RequestConsent(this);
         });
     }
+
+    // === Zurück-Taste: Navigation oder Double-Back-to-Exit ===
+
+#pragma warning disable CS0672 // OnBackPressed ist deprecated ab API 33, aber Avalonia nutzt es intern
+    public override void OnBackPressed()
+    {
+        try
+        {
+            var mainVm = App.Services.GetRequiredService<WorkTimePro.ViewModels.MainViewModel>();
+            if (!mainVm.HandleBackPressed())
+            {
+                // Zweimal gedrückt → App in den Hintergrund (nicht destroyen)
+                MoveTaskToBack(true);
+            }
+        }
+        catch
+        {
+            base.OnBackPressed();
+        }
+    }
+#pragma warning restore CS0672
 
     protected override void OnResume()
     {

@@ -3,8 +3,13 @@
              xmlns:vm="using:WorkTimePro.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:conv="using:WorkTimePro.Converters"
              x:Class="WorkTimePro.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
+
+  <UserControl.Resources>
+    <conv:RoundingDisplayConverter x:Key="RoundingDisplayConverter" />
+  </UserControl.Resources>
 
   <ScrollViewer>
     <StackPanel Spacing="8" Margin="16">
@@ -189,6 +194,41 @@
               <TextBox Grid.Row="6" Grid.Column="1" Text="{Binding SundayHours}" />
             </Grid>
           </StackPanel>
+
+          <Separator />
+
+          <!-- Zeitrundung -->
+          <Grid ColumnDefinitions="*,140">
+            <TextBlock Text="{loc:Translate TimeRounding}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1"
+                      ItemsSource="{Binding RoundingOptions}"
+                      SelectedItem="{Binding RoundingMinutes}"
+                      HorizontalAlignment="Stretch">
+              <ComboBox.ItemTemplate>
+                <DataTemplate>
+                  <TextBlock Text="{Binding Converter={StaticResource RoundingDisplayConverter}}" />
+                </DataTemplate>
+              </ComboBox.ItemTemplate>
+            </ComboBox>
+          </Grid>
+
+          <!-- Stundenlohn -->
+          <Grid ColumnDefinitions="*,120">
+            <TextBlock Text="{loc:Translate HourlyRate}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+            <NumericUpDown Grid.Column="1"
+                           Value="{Binding HourlyRate}"
+                           Minimum="0"
+                           Maximum="10000"
+                           Increment="0.50"
+                           FormatString="0.00"
+                           HorizontalContentAlignment="Center" />
+          </Grid>
         </StackPanel>
       </Border>
 
@@ -255,10 +295,11 @@
                        FontSize="14"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
-            <TextBox Grid.Column="2" Width="80"
-                     Text="{Binding MorningReminderTimeDisplay}"
-                     IsEnabled="{Binding MorningReminderEnabled}"
-                     HorizontalContentAlignment="Center" />
+            <TimePicker Grid.Column="2"
+                       SelectedTime="{Binding MorningReminderTime}"
+                       IsEnabled="{Binding MorningReminderEnabled}"
+                       ClockIdentifier="24HourClock"
+                       MinuteIncrement="5" />
           </Grid>
 
           <!-- Evening -->
@@ -269,10 +310,11 @@
                        FontSize="14"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
-            <TextBox Grid.Column="2" Width="80"
-                     Text="{Binding EveningReminderTimeDisplay}"
-                     IsEnabled="{Binding EveningReminderEnabled}"
-                     HorizontalContentAlignment="Center" />
+            <TimePicker Grid.Column="2"
+                       SelectedTime="{Binding EveningReminderTime}"
+                       IsEnabled="{Binding EveningReminderEnabled}"
+                       ClockIdentifier="24HourClock"
+                       MinuteIncrement="5" />
           </Grid>
 
           <!-- Break -->

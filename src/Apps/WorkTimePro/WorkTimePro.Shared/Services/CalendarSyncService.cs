@@ -1,5 +1,6 @@
 using System.Text.Json;
 using MeineApps.Core.Ava.Services;
+using WorkTimePro.Helpers;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
 
@@ -370,7 +371,7 @@ public class CalendarSyncService : ICalendarSyncService
 
         if (workDay.Status != DayStatus.WorkDay)
         {
-            lines.Add($"Status: {GetStatusName(workDay.Status)}");
+            lines.Add($"Status: {TimeFormatter.GetStatusName(workDay.Status)}");
         }
 
         lines.Add("");
@@ -379,22 +380,4 @@ public class CalendarSyncService : ICalendarSyncService
         return string.Join("\n", lines);
     }
 
-    private static string GetStatusName(DayStatus status)
-    {
-        return status switch
-        {
-            DayStatus.WorkDay => AppStrings.DayStatus_WorkDay,
-            DayStatus.Weekend => AppStrings.DayStatus_Weekend,
-            DayStatus.Vacation => AppStrings.DayStatus_Vacation,
-            DayStatus.Holiday => AppStrings.DayStatus_Holiday,
-            DayStatus.Sick => AppStrings.DayStatus_Sick,
-            DayStatus.HomeOffice => AppStrings.DayStatus_HomeOffice,
-            DayStatus.BusinessTrip => AppStrings.DayStatus_BusinessTrip,
-            DayStatus.OvertimeCompensation => AppStrings.OvertimeCompensation,
-            DayStatus.SpecialLeave => AppStrings.SpecialLeave,
-            DayStatus.Training => AppStrings.DayStatus_Training,
-            DayStatus.CompensatoryTime => AppStrings.DayStatus_CompensatoryTime,
-            _ => status.ToString()
-        };
-    }
 }

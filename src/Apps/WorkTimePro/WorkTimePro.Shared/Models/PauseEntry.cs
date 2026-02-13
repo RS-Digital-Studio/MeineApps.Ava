@@ -57,7 +57,17 @@ public class PauseEntry
         {
             if (EndTime == null)
                 return TimeSpan.Zero;
-            return EndTime.Value - StartTime;
+            var duration = EndTime.Value - StartTime;
+            // Negative Dauer bei Mitternachts-Übergang abfangen
+            if (duration < TimeSpan.Zero)
+                duration += TimeSpan.FromHours(24);
+            // Unplausible Pausendauer begrenzen (max 12h)
+            if (duration > TimeSpan.FromHours(12))
+            {
+                System.Diagnostics.Debug.WriteLine($"PauseEntry.Duration unplausibel ({duration}) - auf 0 gesetzt");
+                return TimeSpan.Zero;
+            }
+            return duration;
         }
     }
 

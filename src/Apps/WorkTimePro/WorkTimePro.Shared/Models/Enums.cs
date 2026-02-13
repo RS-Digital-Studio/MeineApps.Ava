@@ -48,10 +48,7 @@ public enum DayStatus
     Training = 10,
 
     /// <summary>Zeitausgleich / Gleittag</summary>
-    CompensatoryTime = 11,
-
-    /// <summary>Normaler Arbeitstag (Alias)</summary>
-    Work = 0
+    CompensatoryTime = 11
 }
 
 /// <summary>

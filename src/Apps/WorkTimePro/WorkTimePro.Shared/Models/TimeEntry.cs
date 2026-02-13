@@ -66,10 +66,10 @@ public class TimeEntry
     public string TimeDisplay => Timestamp.ToString("HH:mm");
 
     /// <summary>
-    /// Icon basierend auf Typ
+    /// Icon basierend auf Typ (nutze TypeIconKind für MaterialIcon in Views)
     /// </summary>
     [Ignore]
-    public string TypeIcon => Type == EntryType.CheckIn ? "▶" : "⏹";
+    public string TypeIcon => Type == EntryType.CheckIn ? "▶" : "■";
 
     /// <summary>
     /// Typ als Text (Arbeitsbeginn/Arbeitsende)

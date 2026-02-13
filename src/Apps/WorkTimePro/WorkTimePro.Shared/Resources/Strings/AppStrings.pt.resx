@@ -51,6 +51,7 @@
   <data name="CloseMonth" xml:space="preserve"><value>Fechar mes</value></data>
   <data name="UnlockMonth" xml:space="preserve"><value>Desbloquear mes</value></data>
   <data name="MonthLocked" xml:space="preserve"><value>Mes fechado</value></data>
+  <data name="MonthOpen" xml:space="preserve"><value>Aberto</value></data>
   <data name="Calendar" xml:space="preserve"><value>Calendario</value></data>
   <data name="Legend" xml:space="preserve"><value>Legenda</value></data>
   <data name="Statistics" xml:space="preserve"><value>Estatisticas</value></data>
@@ -453,5 +454,56 @@
   <data name="ValidationEndBeforeStart" xml:space="preserve">
     <value>A hora de fim deve ser após a hora de início</value>
   </data>
+  <data name="ReminderMorningTitle" xml:space="preserve">
+    <value>Hora de registrar entrada!</value>
+  </data>
+  <data name="ReminderMorningBody" xml:space="preserve">
+    <value>Não esqueça de registrar entrada hoje</value>
+  </data>
+  <data name="ReminderEveningTitle" xml:space="preserve">
+    <value>Ainda trabalhando?</value>
+  </data>
+  <data name="ReminderEveningBody" xml:space="preserve">
+    <value>Não esqueça de registrar saída</value>
+  </data>
+  <data name="ReminderPauseTitle" xml:space="preserve">
+    <value>Hora de uma pausa!</value>
+  </data>
+  <data name="ReminderPauseBody" xml:space="preserve">
+    <value>Você trabalha há {0} horas sem pausa</value>
+  </data>
+  <data name="ReminderOvertimeTitle" xml:space="preserve">
+    <value>Aviso de horas extras</value>
+  </data>
+  <data name="ReminderOvertimeBody" xml:space="preserve">
+    <value>Você excedeu {0} horas de trabalho hoje</value>
+  </data>
+  <data name="ReminderWeeklyTitle" xml:space="preserve">
+    <value>Resumo semanal</value>
+  </data>
+  <data name="ReminderWeeklyBody" xml:space="preserve">
+    <value>Sem {0}: {1} / {2} meta | Saldo: {3}</value>
+  </data>
+
+  <!-- Undo Actions -->
+  <data name="Undo" xml:space="preserve">
+    <value>Desfazer</value>
+  </data>
+  <data name="UndoCheckIn" xml:space="preserve">
+    <value>Registo de entrada desfeito</value>
+  </data>
+  <data name="UndoCheckOut" xml:space="preserve">
+    <value>Registo de saída desfeito</value>
+  </data>
+
+  <!-- Arredondamento & Ganhos -->
+  <data name="MinutesShortFormat" xml:space="preserve"><value>{0} min</value></data>
+  <data name="TimeRounding" xml:space="preserve"><value>Arredondamento de tempo</value></data>
+  <data name="NoRounding" xml:space="preserve"><value>Nenhum</value></data>
+  <data name="HourlyRate" xml:space="preserve"><value>Taxa horária</value></data>
+  <data name="TodayEarnings" xml:space="preserve"><value>Ganhos de hoje</value></data>
+  <data name="TotalEarnings" xml:space="preserve"><value>Ganhos totais</value></data>
+  <data name="Earnings" xml:space="preserve"><value>Ganhos</value></data>
+  <data name="PressBackAgainToExit" xml:space="preserve"><value>Pressione voltar novamente para sair</value></data>
 
 </root>

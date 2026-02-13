@@ -154,6 +154,20 @@ public class WorkSettings
     /// </summary>
     public int MinRestHours { get; set; } = 11;
 
+    // === Zeitrundung ===
+
+    /// <summary>
+    /// Rundung der Arbeitszeit in Minuten (0 = keine Rundung, 5/10/15/30)
+    /// </summary>
+    public int RoundingMinutes { get; set; } = 0;
+
+    // === Stundenlohn ===
+
+    /// <summary>
+    /// Stundenlohn für Verdienst-Berechnung (0 = deaktiviert)
+    /// </summary>
+    public double HourlyRate { get; set; } = 0;
+
     // === UI-Einstellungen ===
 
     /// <summary>
@@ -239,14 +253,39 @@ public class WorkSettings
     [Ignore]
     public int WeeklyMinutes => (int)(WeeklyHours * 60);
 
+    // Cache für WorkDaysArray (wird bei jedem set/get von WorkDays invalidiert)
+    private int[]? _cachedWorkDaysArray;
+    private string? _cachedWorkDaysString;
+
     /// <summary>
-    /// Arbeitstage als int-Array
+    /// Arbeitstage als int-Array (gecacht, da häufig aufgerufen)
     /// </summary>
     [Ignore]
     public int[] WorkDaysArray
     {
-        get => WorkDays.Split(',').Select(int.Parse).ToArray();
-        set => WorkDays = string.Join(",", value);
+        get
+        {
+            if (string.IsNullOrWhiteSpace(WorkDays))
+                return Array.Empty<int>();
+
+            // Cache invalidieren wenn sich der String geändert hat
+            if (_cachedWorkDaysArray == null || _cachedWorkDaysString != WorkDays)
+            {
+                _cachedWorkDaysString = WorkDays;
+                _cachedWorkDaysArray = WorkDays.Split(',')
+                    .Where(s => !string.IsNullOrWhiteSpace(s))
+                    .Select(s => int.TryParse(s.Trim(), out var v) ? v : -1)
+                    .Where(v => v >= 0)
+                    .ToArray();
+            }
+            return _cachedWorkDaysArray;
+        }
+        set
+        {
+            WorkDays = string.Join(",", value);
+            _cachedWorkDaysArray = value;
+            _cachedWorkDaysString = WorkDays;
+        }
     }
 
     /// <summary>
@@ -258,6 +297,19 @@ public class WorkSettings
         // Unser Format: Monday=1, ..., Sunday=7
         var ourDay = dayOfWeek == DayOfWeek.Sunday ? 7 : (int)dayOfWeek;
         return WorkDaysArray.Contains(ourDay);
+    }
+
+    /// <summary>
+    /// Gibt die Soll-Minuten für einen bestimmten Wochentag zurück.
+    /// Berücksichtigt individuelle Tagesstunden wenn konfiguriert.
+    /// </summary>
+    public int GetDailyMinutesForDay(DayOfWeek dayOfWeek)
+    {
+        if (string.IsNullOrEmpty(DailyHoursPerDay))
+            return DailyMinutes;
+
+        var ourDay = dayOfWeek == DayOfWeek.Sunday ? 7 : (int)dayOfWeek;
+        return (int)(GetHoursForDay(ourDay) * 60);
     }
 
     /// <summary>
@@ -274,7 +326,10 @@ public class WorkSettings
             if (dict != null && dict.TryGetValue(dayOfWeek.ToString(), out var hours))
                 return hours;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"DailyHoursPerDay JSON-Fehler: {ex.Message}");
+        }
 
         return DailyHours;
     }

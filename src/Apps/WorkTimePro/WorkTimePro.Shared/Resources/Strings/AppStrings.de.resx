@@ -51,6 +51,7 @@
   <data name="CloseMonth" xml:space="preserve"><value>Monat abschließen</value></data>
   <data name="UnlockMonth" xml:space="preserve"><value>Monat entsperren</value></data>
   <data name="MonthLocked" xml:space="preserve"><value>Monat abgeschlossen</value></data>
+  <data name="MonthOpen" xml:space="preserve"><value>Offen</value></data>
   <data name="Calendar" xml:space="preserve"><value>Kalender</value></data>
   <data name="Legend" xml:space="preserve"><value>Legende</value></data>
   <data name="Statistics" xml:space="preserve"><value>Statistik</value></data>
@@ -453,5 +454,57 @@
   <data name="ValidationEndBeforeStart" xml:space="preserve">
     <value>Endzeit muss nach Startzeit liegen</value>
   </data>
+  <data name="ReminderMorningTitle" xml:space="preserve">
+    <value>Zeit einzustempeln!</value>
+  </data>
+  <data name="ReminderMorningBody" xml:space="preserve">
+    <value>Vergiss nicht, dich heute einzustempeln</value>
+  </data>
+  <data name="ReminderEveningTitle" xml:space="preserve">
+    <value>Noch am Arbeiten?</value>
+  </data>
+  <data name="ReminderEveningBody" xml:space="preserve">
+    <value>Vergiss nicht auszustempeln</value>
+  </data>
+  <data name="ReminderPauseTitle" xml:space="preserve">
+    <value>Zeit für eine Pause!</value>
+  </data>
+  <data name="ReminderPauseBody" xml:space="preserve">
+    <value>Du arbeitest seit {0} Stunden ohne Pause</value>
+  </data>
+  <data name="ReminderOvertimeTitle" xml:space="preserve">
+    <value>Überstunden-Warnung</value>
+  </data>
+  <data name="ReminderOvertimeBody" xml:space="preserve">
+    <value>Du hast heute {0} Stunden Arbeitszeit überschritten</value>
+  </data>
+  <data name="ReminderWeeklyTitle" xml:space="preserve">
+    <value>Wochenzusammenfassung</value>
+  </data>
+  <data name="ReminderWeeklyBody" xml:space="preserve">
+    <value>KW {0}: {1} / {2} Soll | Saldo: {3}</value>
+  </data>
+
+  <!-- Undo Actions -->
+  <data name="Undo" xml:space="preserve">
+    <value>Rückgängig</value>
+  </data>
+  <data name="UndoCheckIn" xml:space="preserve">
+    <value>Einstempeln rückgängig gemacht</value>
+  </data>
+  <data name="UndoCheckOut" xml:space="preserve">
+    <value>Ausstempeln rückgängig gemacht</value>
+  </data>
+
+  <data name="MinutesShortFormat" xml:space="preserve"><value>{0} min</value></data>
+
+  <!-- Zeitrundung & Verdienst -->
+  <data name="TimeRounding" xml:space="preserve"><value>Zeitrundung</value></data>
+  <data name="NoRounding" xml:space="preserve"><value>Keine</value></data>
+  <data name="HourlyRate" xml:space="preserve"><value>Stundenlohn</value></data>
+  <data name="TodayEarnings" xml:space="preserve"><value>Tagesverdienst</value></data>
+  <data name="TotalEarnings" xml:space="preserve"><value>Gesamtverdienst</value></data>
+  <data name="Earnings" xml:space="preserve"><value>Verdienst</value></data>
+  <data name="PressBackAgainToExit" xml:space="preserve"><value>Nochmal drücken zum Beenden</value></data>
 
 </root>

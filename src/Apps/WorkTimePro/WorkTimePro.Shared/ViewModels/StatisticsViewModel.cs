@@ -373,8 +373,8 @@ public partial class StatisticsViewModel : ObservableObject
         var totalMinutes = workDays.Sum(w => w.ActualWorkMinutes);
         var totalOvertime = workDays.Sum(w => w.BalanceMinutes);
 
-        TotalWorkDisplay = FormatMinutes(totalMinutes);
-        TotalOvertimeDisplay = (totalOvertime >= 0 ? "+" : "") + FormatMinutes(totalOvertime);
+        TotalWorkDisplay = TimeFormatter.FormatMinutes(totalMinutes);
+        TotalOvertimeDisplay = (totalOvertime >= 0 ? "+" : "") + TimeFormatter.FormatMinutes(totalOvertime);
         OvertimeColor = totalOvertime >= 0 ? "#4CAF50" : "#F44336";
 
         WorkedDays = workDays.Count(w => w.ActualWorkMinutes > 0);
@@ -386,7 +386,7 @@ public partial class StatisticsViewModel : ObservableObject
         if (WorkedDays > 0)
         {
             var avgMinutes = totalMinutes / WorkedDays;
-            AverageDailyDisplay = FormatMinutes(avgMinutes);
+            AverageDailyDisplay = TimeFormatter.FormatMinutes(avgMinutes);
         }
         else
         {
@@ -398,9 +398,9 @@ public partial class StatisticsViewModel : ObservableObject
         var totalAutoPause = workDays.Sum(w => w.AutoPauseMinutes);
         var totalPause = totalManualPause + totalAutoPause;
 
-        TotalManualPauseDisplay = FormatMinutes(totalManualPause);
-        TotalAutoPauseDisplay = FormatMinutes(totalAutoPause);
-        AveragePauseDisplay = WorkedDays > 0 ? FormatMinutes(totalPause / WorkedDays) : "0:00";
+        TotalManualPauseDisplay = TimeFormatter.FormatMinutes(totalManualPause);
+        TotalAutoPauseDisplay = TimeFormatter.FormatMinutes(totalAutoPause);
+        AveragePauseDisplay = WorkedDays > 0 ? TimeFormatter.FormatMinutes(totalPause / WorkedDays) : "0:00";
     }
 
     private void CalculatePeriod()
@@ -439,8 +439,11 @@ public partial class StatisticsViewModel : ObservableObject
 
     // === Chart creation ===
 
-    private Task CreateWeeklyChartAsync(List<WorkDay> workDays)
+    private async Task CreateWeeklyChartAsync(List<WorkDay> workDays)
     {
+        var settings = await _database.GetSettingsAsync();
+        var weeklyTarget = settings.WeeklyHours;
+
         var weeks = workDays
             .Where(w => w.ActualWorkMinutes > 0)
             .GroupBy(w => _calculation.GetIsoWeekNumber(w.Date))
@@ -450,7 +453,7 @@ public partial class StatisticsViewModel : ObservableObject
 
         var weekLabels = weeks.Select(g => $"KW {g.Key}").ToArray();
         var weekValues = weeks.Select(g => g.Sum(w => w.ActualWorkMinutes) / 60.0).ToArray();
-        var targetValues = weeks.Select(g => 40.0).ToArray(); // Default weekly target
+        var targetValues = weeks.Select(g => weeklyTarget).ToArray();
 
         WeeklyChart = new ISeries[]
         {
@@ -464,7 +467,7 @@ public partial class StatisticsViewModel : ObservableObject
             new LineSeries<double>
             {
                 Values = targetValues,
-                Name = string.Format(AppStrings.ChartTargetFormat, 40),
+                Name = string.Format(AppStrings.ChartTargetFormat, weeklyTarget),
                 Stroke = new SolidColorPaint(SKColor.Parse("#FF9800"), 2),
                 Fill = null,
                 GeometrySize = 0,
@@ -496,7 +499,6 @@ public partial class StatisticsViewModel : ObservableObject
             }
         };
 
-        return Task.CompletedTask;
     }
 
     private Task CreateOvertimeChartAsync(List<WorkDay> workDays)
@@ -780,12 +782,12 @@ public partial class StatisticsViewModel : ObservableObject
                 DateDisplay = w.Date.ToString("ddd, dd.MM"),
                 Status = w.Status,
                 StatusIcon = GetStatusIcon(w.Status),
-                StatusName = GetStatusName(w.Status),
+                StatusName = TimeFormatter.GetStatusName(w.Status),
                 CheckInTime = w.FirstCheckIn?.ToString("HH:mm") ?? "--:--",
                 CheckOutTime = w.LastCheckOut?.ToString("HH:mm") ?? "--:--",
-                WorkTime = FormatMinutes(w.ActualWorkMinutes),
-                PauseTime = FormatMinutes(w.ManualPauseMinutes + w.AutoPauseMinutes),
-                Balance = (w.BalanceMinutes >= 0 ? "+" : "") + FormatMinutes(w.BalanceMinutes),
+                WorkTime = TimeFormatter.FormatMinutes(w.ActualWorkMinutes),
+                PauseTime = TimeFormatter.FormatMinutes(w.ManualPauseMinutes + w.AutoPauseMinutes),
+                Balance = (w.BalanceMinutes >= 0 ? "+" : "") + TimeFormatter.FormatMinutes(w.BalanceMinutes),
                 BalanceColor = w.BalanceMinutes >= 0 ? "#4CAF50" : "#F44336",
                 HasAutoBreak = w.AutoPauseMinutes > 0,
                 IsSpecialDay = w.Status != DayStatus.WorkDay && w.Status != DayStatus.HomeOffice && w.Status != DayStatus.Weekend
@@ -795,22 +797,6 @@ public partial class StatisticsViewModel : ObservableObject
         TableDays = new ObservableCollection<WorkDayTableItem>(items);
     }
 
-    private static string GetStatusName(DayStatus status)
-    {
-        return status switch
-        {
-            DayStatus.WorkDay => AppStrings.DayStatus_WorkDay,
-            DayStatus.HomeOffice => AppStrings.DayStatus_HomeOffice,
-            DayStatus.Vacation => AppStrings.DayStatus_Vacation,
-            DayStatus.Sick => AppStrings.DayStatus_Sick,
-            DayStatus.Holiday => AppStrings.DayStatus_Holiday,
-            DayStatus.Weekend => AppStrings.DayStatus_Weekend,
-            DayStatus.BusinessTrip => AppStrings.DayStatus_BusinessTrip,
-            DayStatus.OvertimeCompensation => AppStrings.OvertimeCompensation,
-            DayStatus.SpecialLeave => AppStrings.SpecialLeave,
-            _ => ""
-        };
-    }
 
     private static string GetStatusIcon(DayStatus status)
     {
@@ -826,15 +812,6 @@ public partial class StatisticsViewModel : ObservableObject
         };
     }
 
-    // === Helper methods ===
-
-    private static string FormatMinutes(int minutes)
-    {
-        var hours = Math.Abs(minutes) / 60;
-        var mins = Math.Abs(minutes) % 60;
-        var sign = minutes < 0 ? "-" : "";
-        return $"{sign}{hours}:{mins:D2}";
-    }
 }
 
 /// <summary>

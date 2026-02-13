@@ -1,5 +1,6 @@
 using System.Globalization;
 using Avalonia.Data.Converters;
+using WorkTimePro.Resources.Strings;
 
 namespace WorkTimePro.Converters;
 
@@ -87,6 +88,28 @@ public class StringNotNullConverter : IValueConverter
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         return !string.IsNullOrEmpty(value as string);
+    }
+
+    public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>
+/// Konvertiert Rundungsminuten (0/5/10/15/30) in einen Anzeige-String
+/// </summary>
+public class RoundingDisplayConverter : IValueConverter
+{
+    public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is int minutes)
+        {
+            return minutes == 0
+                ? AppStrings.NoRounding
+                : string.Format(AppStrings.MinutesShortFormat, minutes);
+        }
+        return value?.ToString();
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

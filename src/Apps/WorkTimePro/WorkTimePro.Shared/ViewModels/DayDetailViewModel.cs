@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
 using MeineApps.Core.Premium.Ava.Services;
+using WorkTimePro.Helpers;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
 using WorkTimePro.Services;
@@ -137,6 +138,16 @@ public partial class DayDetailViewModel : ObservableObject
     [ObservableProperty]
     private string _pauseNote = "";
 
+    // === Confirm Delete Overlay Properties ===
+
+    [ObservableProperty]
+    private bool _isConfirmDeleteVisible;
+
+    [ObservableProperty]
+    private string _confirmDeleteMessage = "";
+
+    private Func<Task>? _pendingDeleteAction;
+
     // Derived properties
     public bool HasWarnings => Warnings.Count > 0;
     public bool HasNoTimeEntries => TimeEntries.Count == 0;
@@ -183,7 +194,7 @@ public partial class DayDetailViewModel : ObservableObject
             WorkDay = await _database.GetOrCreateWorkDayAsync(SelectedDate);
 
             DateDisplay = SelectedDate.ToString("dddd, dd. MMMM yyyy");
-            StatusDisplay = GetStatusText(WorkDay.Status);
+            StatusDisplay = TimeFormatter.GetStatusName(WorkDay.Status);
             StatusIcon = WorkDay.StatusIcon;
             IsLocked = WorkDay.IsLocked;
 
@@ -196,8 +207,8 @@ public partial class DayDetailViewModel : ObservableObject
 
             // Zeiten
             WorkTimeDisplay = WorkDay.ActualWorkDisplay;
-            PauseTimeDisplay = FormatMinutes(WorkDay.ManualPauseMinutes);
-            AutoPauseDisplay = FormatMinutes(WorkDay.AutoPauseMinutes);
+            PauseTimeDisplay = TimeFormatter.FormatMinutes(WorkDay.ManualPauseMinutes);
+            AutoPauseDisplay = TimeFormatter.FormatMinutes(WorkDay.AutoPauseMinutes);
             BalanceDisplay = WorkDay.BalanceDisplay;
             BalanceColor = WorkDay.BalanceColor;
             HasAutoPause = WorkDay.HasAutoPause;
@@ -236,6 +247,11 @@ public partial class DayDetailViewModel : ObservableObject
             DayStatus.Vacation => DayStatus.Sick,
             DayStatus.Sick => DayStatus.Holiday,
             DayStatus.Holiday => DayStatus.BusinessTrip,
+            DayStatus.BusinessTrip => DayStatus.SpecialLeave,
+            DayStatus.SpecialLeave => DayStatus.UnpaidLeave,
+            DayStatus.UnpaidLeave => DayStatus.OvertimeCompensation,
+            DayStatus.OvertimeCompensation => DayStatus.Training,
+            DayStatus.Training => DayStatus.CompensatoryTime,
             _ => DayStatus.WorkDay
         };
 
@@ -423,7 +439,6 @@ public partial class DayDetailViewModel : ObservableObject
         }
 
         IsPauseOverlayVisible = false;
-        await _calculation.RecalculatePauseTimeAsync(WorkDay);
         await _calculation.RecalculateWorkDayAsync(WorkDay);
         await LoadDataAsync();
     }
@@ -437,17 +452,23 @@ public partial class DayDetailViewModel : ObservableObject
     // === Bestehende Commands ===
 
     [RelayCommand]
-    private async Task DeleteEntryAsync(TimeEntry? entry)
+    private void DeleteEntry(TimeEntry? entry)
     {
         if (entry == null || WorkDay == null || IsLocked) return;
 
-        await _database.DeleteTimeEntryAsync(entry.Id);
-        await _calculation.RecalculateWorkDayAsync(WorkDay);
-        await LoadDataAsync();
+        // Bestätigung anfordern
+        ConfirmDeleteMessage = string.Format(AppStrings.DeleteEntryConfirm, entry.Timestamp.ToString("HH:mm"));
+        _pendingDeleteAction = async () =>
+        {
+            await _database.DeleteTimeEntryAsync(entry.Id);
+            await _calculation.RecalculateWorkDayAsync(WorkDay);
+            await LoadDataAsync();
+        };
+        IsConfirmDeleteVisible = true;
     }
 
     [RelayCommand]
-    private async Task DeletePauseAsync(PauseEntry? pause)
+    private void DeletePause(PauseEntry? pause)
     {
         if (pause == null || WorkDay == null || IsLocked) return;
 
@@ -457,10 +478,33 @@ public partial class DayDetailViewModel : ObservableObject
             return;
         }
 
-        await _database.DeletePauseEntryAsync(pause.Id);
-        await _calculation.RecalculatePauseTimeAsync(WorkDay);
-        await _calculation.RecalculateWorkDayAsync(WorkDay);
-        await LoadDataAsync();
+        // Bestätigung anfordern
+        ConfirmDeleteMessage = AppStrings.DeletePauseConfirm;
+        _pendingDeleteAction = async () =>
+        {
+            await _database.DeletePauseEntryAsync(pause.Id);
+            await _calculation.RecalculateWorkDayAsync(WorkDay);
+            await LoadDataAsync();
+        };
+        IsConfirmDeleteVisible = true;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmDeleteAsync()
+    {
+        IsConfirmDeleteVisible = false;
+        if (_pendingDeleteAction != null)
+        {
+            await _pendingDeleteAction();
+            _pendingDeleteAction = null;
+        }
+    }
+
+    [RelayCommand]
+    private void CancelDelete()
+    {
+        IsConfirmDeleteVisible = false;
+        _pendingDeleteAction = null;
     }
 
     [RelayCommand]
@@ -526,26 +570,4 @@ public partial class DayDetailViewModel : ObservableObject
         return true;
     }
 
-    // === Helper methods ===
-
-    private static string GetStatusText(DayStatus status) => status switch
-    {
-        DayStatus.WorkDay => AppStrings.DayStatus_WorkDay,
-        DayStatus.Weekend => AppStrings.DayStatus_Weekend,
-        DayStatus.Vacation => AppStrings.DayStatus_Vacation,
-        DayStatus.Holiday => AppStrings.DayStatus_Holiday,
-        DayStatus.Sick => AppStrings.DayStatus_Sick,
-        DayStatus.HomeOffice => AppStrings.DayStatus_HomeOffice,
-        DayStatus.BusinessTrip => AppStrings.DayStatus_BusinessTrip,
-        DayStatus.OvertimeCompensation => AppStrings.OvertimeCompensation,
-        DayStatus.SpecialLeave => AppStrings.SpecialLeave,
-        _ => ""
-    };
-
-    private static string FormatMinutes(int minutes)
-    {
-        var hours = minutes / 60;
-        var mins = minutes % 60;
-        return $"{hours}:{mins:D2}";
-    }
 }

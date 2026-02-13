@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Models;
 using WorkTimePro.Helpers;
@@ -20,6 +21,7 @@ public partial class CalendarViewModel : ObservableObject
     private readonly IPurchaseService _purchaseService;
     private readonly ITrialService _trialService;
     private readonly IVacationService _vacationService;
+    private readonly IThemeService _themeService;
 
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
@@ -29,14 +31,16 @@ public partial class CalendarViewModel : ObservableObject
         ICalculationService calculation,
         IPurchaseService purchaseService,
         ITrialService trialService,
-        IVacationService vacationService)
+        IVacationService vacationService,
+        IThemeService themeService)
     {
         _database = database;
         _calculation = calculation;
         _purchaseService = purchaseService;
         _trialService = trialService;
         _vacationService = vacationService;
-        _ = LoadDataAsync();
+        _themeService = themeService;
+        // Daten werden bei Tab-Wechsel geladen (MainViewModel.LoadTabDataAsync)
     }
 
     // === Properties ===
@@ -219,7 +223,7 @@ public partial class CalendarViewModel : ObservableObject
         OverlayHasExistingStatus = hasSpecialStatus;
         if (hasSpecialStatus)
         {
-            OverlayExistingStatusText = GetStatusName(day.Status);
+            OverlayExistingStatusText = TimeFormatter.GetStatusName(day.Status);
             // Pre-select existing type
             var existing = AvailableStatusTypes.FirstOrDefault(t => t.Status == day.Status);
             if (existing != null)
@@ -290,20 +294,6 @@ public partial class CalendarViewModel : ObservableObject
         }
     }
 
-    private static string GetStatusName(DayStatus status) => status switch
-    {
-        DayStatus.Vacation => AppStrings.Vacation,
-        DayStatus.Sick => AppStrings.Illness,
-        DayStatus.HomeOffice => AppStrings.DayStatus_HomeOffice,
-        DayStatus.BusinessTrip => AppStrings.DayStatus_BusinessTrip,
-        DayStatus.SpecialLeave => AppStrings.SpecialLeave,
-        DayStatus.UnpaidLeave => AppStrings.UnpaidLeave,
-        DayStatus.OvertimeCompensation => AppStrings.OvertimeCompensation,
-        DayStatus.Holiday => AppStrings.Holiday,
-        DayStatus.Training => AppStrings.DayStatus_Training,
-        DayStatus.CompensatoryTime => AppStrings.DayStatus_CompensatoryTime,
-        _ => AppStrings.DayStatus_WorkDay
-    };
 
     /// <summary>
     /// Set status for a specific day
@@ -347,6 +337,7 @@ public partial class CalendarViewModel : ObservableObject
 
     private async Task GenerateCalendarDaysAsync()
     {
+        var isDark = _themeService.CurrentTheme != AppTheme.Daylight;
         var days = new List<CalendarDay>();
 
         var firstDayOfMonth = SelectedMonth;
@@ -363,7 +354,8 @@ public partial class CalendarViewModel : ObservableObject
             days.Add(new CalendarDay
             {
                 Date = prevMonthStart.AddDays(i),
-                IsCurrentMonth = false
+                IsCurrentMonth = false,
+                IsDarkTheme = isDark
             });
         }
 
@@ -382,7 +374,8 @@ public partial class CalendarViewModel : ObservableObject
                 IsToday = date.Date == DateTime.Today,
                 WorkMinutes = workDay?.ActualWorkMinutes ?? 0,
                 Status = workDay?.Status ?? (IsWeekend(date) ? DayStatus.Weekend : DayStatus.WorkDay),
-                HasData = workDay != null && workDay.ActualWorkMinutes > 0
+                HasData = workDay != null && workDay.ActualWorkMinutes > 0,
+                IsDarkTheme = isDark
             });
         }
 
@@ -394,7 +387,8 @@ public partial class CalendarViewModel : ObservableObject
             days.Add(new CalendarDay
             {
                 Date = nextMonthStart.AddDays(i),
-                IsCurrentMonth = false
+                IsCurrentMonth = false,
+                IsDarkTheme = isDark
             });
         }
 
@@ -427,22 +421,30 @@ public class CalendarDay
     public DayStatus Status { get; set; }
     public bool HasData { get; set; }
 
+    /// <summary>
+    /// Wird von CalendarViewModel gesetzt: true wenn Dark-Theme aktiv (Midnight/Aurora/Forest)
+    /// </summary>
+    public bool IsDarkTheme { get; set; } = true;
+
     public string DayNumber => Date.Day.ToString();
 
     public string HeatmapColor
     {
         get
         {
-            if (!IsCurrentMonth) return "#F5F5F5";
-            if (!HasData) return "#EEEEEE";
+            if (!IsCurrentMonth)
+                return IsDarkTheme ? "#1E1E1E" : "#F5F5F5";
+
+            if (!HasData)
+                return IsDarkTheme ? "#2A2A2A" : "#EEEEEE";
 
             return WorkMinutes switch
             {
-                < 240 => "#C8E6C9",  // < 4h
+                < 240 => "#C8E6C9",  // < 4h (hellgrün - ok auf beiden)
                 < 360 => "#81C784",  // 4-6h
                 < 480 => "#4CAF50",  // 6-8h
                 < 600 => "#388E3C",  // 8-10h
-                _ => "#F44336"       // > 10h (overtime)
+                _ => "#F44336"       // > 10h (Überstunden)
             };
         }
     }
@@ -451,10 +453,15 @@ public class CalendarDay
     {
         get
         {
-            if (!IsCurrentMonth) return "#BDBDBD";
+            if (!IsCurrentMonth)
+                return IsDarkTheme ? "#555555" : "#BDBDBD";
+
             if (IsToday) return "#FFFFFF";
-            if (Status == DayStatus.Weekend) return "#9E9E9E";
-            return "#212121";
+
+            if (Status == DayStatus.Weekend)
+                return IsDarkTheme ? "#757575" : "#9E9E9E";
+
+            return IsDarkTheme ? "#E0E0E0" : "#212121";
         }
     }
 

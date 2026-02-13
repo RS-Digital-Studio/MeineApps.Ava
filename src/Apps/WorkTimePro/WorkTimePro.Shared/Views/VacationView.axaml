@@ -258,6 +258,64 @@
       </StackPanel>
     </ScrollViewer>
 
+    <!-- ==================== Quota Edit Overlay ==================== -->
+    <Border IsVisible="{Binding IsEditingQuota}"
+            Background="#CC000000"
+            ZIndex="99"
+            Grid.RowSpan="2">
+      <Border Background="{DynamicResource CardBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="360"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{loc:Translate VacationAccount}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+
+          <!-- Urlaubstage pro Jahr -->
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Translate VacationDaysPerYear}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <NumericUpDown Value="{Binding EditTotalDays}"
+                           Minimum="0" Maximum="365"
+                           FormatString="0"
+                           HorizontalAlignment="Stretch" />
+          </StackPanel>
+
+          <!-- Resturlaub -->
+          <StackPanel Spacing="4">
+            <TextBlock Text="{loc:Translate CarryOverDays}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <NumericUpDown Value="{Binding EditCarryOverDays}"
+                           Minimum="0" Maximum="365"
+                           FormatString="0"
+                           HorizontalAlignment="Stretch" />
+          </StackPanel>
+
+          <!-- Buttons -->
+          <Grid ColumnDefinitions="*,8,*">
+            <Button Grid.Column="0"
+                    Content="{loc:Translate Cancel}"
+                    Classes="Outlined"
+                    Command="{Binding CancelEditQuotaCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" />
+            <Button Grid.Column="2"
+                    Content="{loc:Translate Save}"
+                    Classes="Primary"
+                    Command="{Binding SaveQuotaCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+
     <!-- ==================== Rewarded Ad Overlay ==================== -->
     <Border IsVisible="{Binding ShowRewardedAdOverlay}"
             Background="#CC000000"

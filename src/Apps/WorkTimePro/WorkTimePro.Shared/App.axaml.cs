@@ -29,6 +29,18 @@ public partial class App : Application
     /// </summary>
     public static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen INotificationService.
+    /// Android setzt AndroidNotificationService, Desktop nutzt DesktopNotificationService.
+    /// </summary>
+    public static Func<INotificationService>? NotificationServiceFactory { get; set; }
+
+    /// <summary>
+    /// Factory fuer plattformspezifischen IHapticService.
+    /// Android setzt AndroidHapticService, Desktop nutzt NoOpHapticService.
+    /// </summary>
+    public static Func<IHapticService>? HapticServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -64,7 +76,23 @@ public partial class App : Application
             };
         }
 
+        // Reminder-Service initialisieren (nach DI + UI Setup)
+        _ = InitializeServicesAsync();
+
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static async Task InitializeServicesAsync()
+    {
+        try
+        {
+            var reminderService = Services.GetRequiredService<IReminderService>();
+            await reminderService.InitializeAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"InitializeServicesAsync Fehler: {ex.Message}");
+        }
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -106,6 +134,19 @@ public partial class App : Application
         services.AddSingleton<IEmployerService, EmployerService>();
         services.AddSingleton<ICalendarSyncService, CalendarSyncService>();
         services.AddSingleton<IBackupService, BackupService>();
+
+        // Notification + Reminder Services
+        if (NotificationServiceFactory != null)
+            services.AddSingleton(NotificationServiceFactory());
+        else
+            services.AddSingleton<INotificationService, DesktopNotificationService>();
+        services.AddSingleton<IReminderService, ReminderService>();
+
+        // Haptic Feedback (Desktop: NoOp, Android setzt via HapticServiceFactory)
+        if (HapticServiceFactory != null)
+            services.AddSingleton(HapticServiceFactory());
+        else
+            services.AddSingleton<IHapticService, NoOpHapticService>();
 
         // ViewModels (child VMs are Transient, MainVM is Singleton since it holds them)
         services.AddTransient<WeekOverviewViewModel>();

@@ -57,11 +57,20 @@ public class CalculationService : ICalculationService
         // Calculate pauses
         await RecalculatePauseTimeAsync(workDay);
 
-        // Net work time (gross - pauses)
+        // Netto-Arbeitszeit (Brutto - Pausen)
         var totalPauseMinutes = workDay.ManualPauseMinutes + workDay.AutoPauseMinutes;
-        workDay.ActualWorkMinutes = Math.Max(0, totalMinutes - totalPauseMinutes);
+        var netMinutes = Math.Max(0, totalMinutes - totalPauseMinutes);
 
-        // Calculate balance
+        // Zeitrundung anwenden (falls konfiguriert)
+        var settings = await _database.GetSettingsAsync();
+        if (settings.RoundingMinutes > 0)
+        {
+            netMinutes = (int)(Math.Round((double)netMinutes / settings.RoundingMinutes) * settings.RoundingMinutes);
+        }
+
+        workDay.ActualWorkMinutes = netMinutes;
+
+        // Saldo berechnen
         workDay.BalanceMinutes = workDay.ActualWorkMinutes - workDay.TargetWorkMinutes;
 
         await _database.SaveWorkDayAsync(workDay);
@@ -92,7 +101,7 @@ public class CalculationService : ICalculationService
             return;
         }
 
-        // Calculate gross work time (without pauses)
+        // Brutto-Arbeitszeit berechnen (ohne Pausen)
         var entries = await _database.GetTimeEntriesAsync(workDay.Id);
         var bruttoMinutes = 0;
         TimeEntry? lastCheckIn = null;
@@ -108,6 +117,12 @@ public class CalculationService : ICalculationService
             }
         }
 
+        // Laufende Arbeitszeit berücksichtigen (noch eingecheckt, kein CheckOut)
+        if (lastCheckIn != null)
+        {
+            bruttoMinutes += (int)(DateTime.Now - lastCheckIn.Timestamp).TotalMinutes;
+        }
+
         // Legally required pause
         var requiredPauseMinutes = settings.GetRequiredPauseMinutes(bruttoMinutes);
 
@@ -116,9 +131,10 @@ public class CalculationService : ICalculationService
 
         if (difference > 0)
         {
+            // AutoPauseMinutes immer setzen (für korrekte Netto-Berechnung)
             workDay.AutoPauseMinutes = difference;
 
-            // Create PauseEntry for display
+            // PauseEntry nur erstellen/aktualisieren wenn CheckOut vorhanden
             var existingAutoPause = (await _database.GetPauseEntriesAsync(workDay.Id))
                 .FirstOrDefault(p => p.IsAutoPause);
 
@@ -177,13 +193,21 @@ public class CalculationService : ICalculationService
         var settings = await _database.GetSettingsAsync();
         var workDays = await _database.GetWorkDaysAsync(firstDay, lastDay);
 
+        // Wochen-Soll berechnen: individuelle Tagesstunden berücksichtigen
+        var weekTargetMinutes = 0;
+        for (var d = firstDay; d <= lastDay; d = d.AddDays(1))
+        {
+            if (settings.IsWorkDay(d.DayOfWeek))
+                weekTargetMinutes += settings.GetDailyMinutesForDay(d.DayOfWeek);
+        }
+
         var week = new WorkWeek
         {
             WeekNumber = weekNumber,
             Year = year,
             StartDate = DateOnly.FromDateTime(firstDay),
             EndDate = DateOnly.FromDateTime(lastDay),
-            TargetWorkMinutes = settings.WeeklyMinutes
+            TargetWorkMinutes = weekTargetMinutes
         };
 
         // Process days
@@ -193,7 +217,7 @@ public class CalculationService : ICalculationService
 
             if (workDay == null)
             {
-                var targetMinutes = settings.IsWorkDay(date.DayOfWeek) ? settings.DailyMinutes : 0;
+                var targetMinutes = settings.IsWorkDay(date.DayOfWeek) ? settings.GetDailyMinutesForDay(date.DayOfWeek) : 0;
                 workDay = new WorkDay
                 {
                     Date = date,
@@ -253,14 +277,18 @@ public class CalculationService : ICalculationService
             Year = year
         };
 
-        // Calculate target work days
+        // Monats-Soll berechnen: individuelle Tagesstunden berücksichtigen
+        var monthTargetMinutes = 0;
         for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
         {
             if (settings.IsWorkDay(date.DayOfWeek))
+            {
                 workMonth.TargetWorkDays++;
+                monthTargetMinutes += settings.GetDailyMinutesForDay(date.DayOfWeek);
+            }
         }
 
-        workMonth.TargetWorkMinutes = workMonth.TargetWorkDays * settings.DailyMinutes;
+        workMonth.TargetWorkMinutes = monthTargetMinutes;
 
         // Process days
         for (var date = firstDay; date <= lastDay; date = date.AddDays(1))
@@ -269,7 +297,7 @@ public class CalculationService : ICalculationService
 
             if (workDay == null)
             {
-                var targetMinutes = settings.IsWorkDay(date.DayOfWeek) ? settings.DailyMinutes : 0;
+                var targetMinutes = settings.IsWorkDay(date.DayOfWeek) ? settings.GetDailyMinutesForDay(date.DayOfWeek) : 0;
                 workDay = new WorkDay
                 {
                     Date = date,
@@ -325,7 +353,10 @@ public class CalculationService : ICalculationService
 
     public async Task<int> GetCumulativeBalanceAsync(DateTime upToDate)
     {
-        return await _database.GetTotalOvertimeMinutesAsync(new DateTime(2020, 1, 1), upToDate);
+        // Ersten WorkDay als Startdatum nutzen statt hardcoded 2020
+        var firstWorkDay = await _database.GetFirstWorkDayDateAsync();
+        var startDate = firstWorkDay ?? upToDate.AddYears(-1);
+        return await _database.GetTotalOvertimeMinutesAsync(startDate, upToDate);
     }
 
     public async Task<double> GetWeekProgressAsync()

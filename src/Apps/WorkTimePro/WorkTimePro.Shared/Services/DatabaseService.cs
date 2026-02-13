@@ -50,6 +50,13 @@ public class DatabaseService : IDatabaseService
             await _database.CreateTableAsync<ShiftPattern>();
             await _database.CreateTableAsync<ShiftAssignment>();
 
+            // Indizes für häufig abgefragte FK-Spalten
+            await _database.ExecuteAsync("CREATE UNIQUE INDEX IF NOT EXISTS idx_workday_date ON WorkDay(Date)");
+            await _database.ExecuteAsync("CREATE INDEX IF NOT EXISTS idx_timeentry_workdayid ON TimeEntry(WorkDayId)");
+            await _database.ExecuteAsync("CREATE INDEX IF NOT EXISTS idx_pauseentry_workdayid ON PauseEntry(WorkDayId)");
+            await _database.ExecuteAsync("CREATE INDEX IF NOT EXISTS idx_vacation_year ON VacationEntry(Year)");
+            await _database.ExecuteAsync("CREATE INDEX IF NOT EXISTS idx_shiftassignment_date ON ShiftAssignment(Date)");
+
             _isInitialized = true;
             return _database;
         }
@@ -107,7 +114,18 @@ public class DatabaseService : IDatabaseService
             workDay.BalanceMinutes = 0;
         }
 
-        await SaveWorkDayAsync(workDay);
+        try
+        {
+            await SaveWorkDayAsync(workDay);
+        }
+        catch (SQLiteException)
+        {
+            // UNIQUE Constraint verletzt → paralleler Thread hat bereits eingefügt
+            workDay = await GetWorkDayAsync(date);
+            if (workDay != null)
+                return workDay;
+            throw; // Unerwarteter Fehler
+        }
         return workDay;
     }
 
@@ -169,6 +187,23 @@ public class DatabaseService : IDatabaseService
             .Where(t => t.WorkDayId == workDayId)
             .OrderBy(t => t.Timestamp)
             .ToListAsync();
+    }
+
+    public async Task<Dictionary<int, List<TimeEntry>>> GetTimeEntriesForWorkDaysAsync(List<int> workDayIds)
+    {
+        if (workDayIds.Count == 0)
+            return new Dictionary<int, List<TimeEntry>>();
+
+        var db = await GetDatabaseAsync();
+        // Alle TimeEntries für die gegebenen WorkDayIds in einer Query laden
+        var allEntries = await db.Table<TimeEntry>()
+            .Where(t => workDayIds.Contains(t.WorkDayId))
+            .OrderBy(t => t.Timestamp)
+            .ToListAsync();
+
+        return allEntries
+            .GroupBy(e => e.WorkDayId)
+            .ToDictionary(g => g.Key, g => g.ToList());
     }
 
     public async Task<TimeEntry?> GetLastTimeEntryAsync(int workDayId)
@@ -722,6 +757,16 @@ public class DatabaseService : IDatabaseService
     }
 
     // ==================== Statistics queries ====================
+
+    public async Task<DateTime?> GetFirstWorkDayDateAsync()
+    {
+        var db = await GetDatabaseAsync();
+        var firstDay = await db.Table<WorkDay>()
+            .Where(w => w.ActualWorkMinutes > 0)
+            .OrderBy(w => w.Date)
+            .FirstOrDefaultAsync();
+        return firstDay?.Date;
+    }
 
     public async Task<int> GetTotalWorkMinutesAsync(DateTime startDate, DateTime endDate)
     {

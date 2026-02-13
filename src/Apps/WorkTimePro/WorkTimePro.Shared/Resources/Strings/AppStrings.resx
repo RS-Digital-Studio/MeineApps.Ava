@@ -129,6 +129,9 @@
   <data name="MonthLocked" xml:space="preserve">
     <value>Month closed</value>
   </data>
+  <data name="MonthOpen" xml:space="preserve">
+    <value>Open</value>
+  </data>
 
   <!-- Calendar -->
   <data name="Calendar" xml:space="preserve">
@@ -1051,6 +1054,9 @@
   <data name="MinutesShort" xml:space="preserve">
     <value>min</value>
   </data>
+  <data name="MinutesShortFormat" xml:space="preserve">
+    <value>{0} min</value>
+  </data>
   <data name="StartTime" xml:space="preserve">
     <value>Start time</value>
   </data>
@@ -1074,6 +1080,70 @@
   </data>
   <data name="ValidationEndBeforeStart" xml:space="preserve">
     <value>End time must be after start time</value>
+  </data>
+  <data name="ReminderMorningTitle" xml:space="preserve">
+    <value>Time to check in!</value>
+  </data>
+  <data name="ReminderMorningBody" xml:space="preserve">
+    <value>Don't forget to check in for today</value>
+  </data>
+  <data name="ReminderEveningTitle" xml:space="preserve">
+    <value>Still working?</value>
+  </data>
+  <data name="ReminderEveningBody" xml:space="preserve">
+    <value>Don't forget to check out</value>
+  </data>
+  <data name="ReminderPauseTitle" xml:space="preserve">
+    <value>Time for a break!</value>
+  </data>
+  <data name="ReminderPauseBody" xml:space="preserve">
+    <value>You've been working for {0} hours without a break</value>
+  </data>
+  <data name="ReminderOvertimeTitle" xml:space="preserve">
+    <value>Overtime warning</value>
+  </data>
+  <data name="ReminderOvertimeBody" xml:space="preserve">
+    <value>You have exceeded {0} hours of work today</value>
+  </data>
+  <data name="ReminderWeeklyTitle" xml:space="preserve">
+    <value>Weekly summary</value>
+  </data>
+  <data name="ReminderWeeklyBody" xml:space="preserve">
+    <value>KW {0}: {1} / {2} target | Balance: {3}</value>
+  </data>
+
+  <!-- Undo Actions -->
+  <data name="Undo" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="UndoCheckIn" xml:space="preserve">
+    <value>Check-in undone</value>
+  </data>
+  <data name="UndoCheckOut" xml:space="preserve">
+    <value>Check-out undone</value>
+  </data>
+
+  <!-- Time Rounding & Earnings -->
+  <data name="TimeRounding" xml:space="preserve">
+    <value>Time rounding</value>
+  </data>
+  <data name="NoRounding" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="HourlyRate" xml:space="preserve">
+    <value>Hourly rate</value>
+  </data>
+  <data name="TodayEarnings" xml:space="preserve">
+    <value>Today's earnings</value>
+  </data>
+  <data name="TotalEarnings" xml:space="preserve">
+    <value>Total earnings</value>
+  </data>
+  <data name="Earnings" xml:space="preserve">
+    <value>Earnings</value>
+  </data>
+  <data name="PressBackAgainToExit" xml:space="preserve">
+    <value>Press back again to exit</value>
   </data>
 
 </root>

@@ -68,6 +68,12 @@ public partial class GameEngine
         // State-Overlays rendern
         RenderStateOverlay(canvas, screenWidth, screenHeight);
 
+        // Welt-/Wave-Ankündigung rendern (über State-Overlay, unter Tutorial)
+        if (_worldAnnouncementTimer > 0)
+        {
+            RenderWorldAnnouncement(canvas, screenWidth, screenHeight);
+        }
+
         // Tutorial-Overlay rendern (über allem)
         if (_tutorialService.IsActive && _state == GameState.Playing && _tutorialService.CurrentStep != null)
         {
@@ -210,6 +216,66 @@ public partial class GameEngine
         _overlayFont.Size = 24;
         // Gecachten TimeBonus verwenden (berechnet in CompleteLevel, nicht neu berechnen)
         canvas.DrawText(string.Format(_localizationService.GetString("TimeBonusFormat"), LastTimeBonus), screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+
+        // Sterne-Anzeige (nur Story-Modus, mit Bounce-Animation)
+        if (_levelCompleteStars > 0)
+        {
+            float starY = screenHeight / 2 + 100;
+            float starSize = 20f;
+            float starSpacing = 50f;
+            float startX = screenWidth / 2 - starSpacing;
+
+            for (int i = 0; i < 3; i++)
+            {
+                float sx = startX + i * starSpacing;
+
+                // Gestaffelte Animation: Stern i erscheint nach i*0.3s
+                float starDelay = i * 0.3f;
+                float starProgress = Math.Clamp((_stateTimer - 0.5f - starDelay) / 0.3f, 0f, 1f);
+
+                if (starProgress <= 0) continue;
+
+                bool earned = i < _levelCompleteStars;
+
+                // Scale-Bounce: Overshoots auf 1.3, dann zurück auf 1.0
+                float bounceScale = starProgress < 0.6f
+                    ? starProgress / 0.6f * 1.3f
+                    : 1.3f - (starProgress - 0.6f) / 0.4f * 0.3f;
+
+                float s = starSize * bounceScale;
+
+                // Stern zeichnen (5-zackiger Stern via SKPath)
+                using var starPath = new SKPath();
+                for (int p = 0; p < 10; p++)
+                {
+                    float angle = MathF.PI / 2f + p * MathF.PI / 5f;
+                    float r = p % 2 == 0 ? s : s * 0.4f;
+                    float px = sx + MathF.Cos(angle) * r;
+                    float py = starY - MathF.Sin(angle) * r;
+                    if (p == 0) starPath.MoveTo(px, py);
+                    else starPath.LineTo(px, py);
+                }
+                starPath.Close();
+
+                _overlayTextPaint.Style = SKPaintStyle.Fill;
+                _overlayTextPaint.MaskFilter = earned ? _overlayGlowFilter : null;
+                _overlayTextPaint.Color = earned
+                    ? new SKColor(255, 215, 0, (byte)(255 * starProgress))  // Gold
+                    : new SKColor(80, 80, 80, (byte)(150 * starProgress));  // Grau (nicht verdient)
+
+                canvas.DrawPath(starPath, _overlayTextPaint);
+
+                // Umrandung
+                _overlayTextPaint.Style = SKPaintStyle.Stroke;
+                _overlayTextPaint.StrokeWidth = 1.5f;
+                _overlayTextPaint.Color = earned
+                    ? new SKColor(200, 160, 0, (byte)(255 * starProgress))
+                    : new SKColor(60, 60, 60, (byte)(150 * starProgress));
+                canvas.DrawPath(starPath, _overlayTextPaint);
+            }
+            _overlayTextPaint.Style = SKPaintStyle.StrokeAndFill;
+            _overlayTextPaint.MaskFilter = null;
+        }
     }
 
     private void RenderGameOverOverlay(SKCanvas canvas, float screenWidth, float screenHeight)
@@ -313,6 +379,49 @@ public partial class GameEngine
         canvas.DrawRect(cx + gap, cy - barH / 2, barW, barH, _overlayTextPaint);
 
         // Style zurücksetzen
+        _overlayTextPaint.Style = SKPaintStyle.StrokeAndFill;
+    }
+
+    private void RenderWorldAnnouncement(SKCanvas canvas, float screenWidth, float screenHeight)
+    {
+        // Fade: 0→1 in den ersten 0.3s, halten bis 1.7s, dann 1→0 in 0.3s
+        float alpha;
+        if (_worldAnnouncementTimer > 1.7f)
+            alpha = (2.0f - _worldAnnouncementTimer) / 0.3f; // Fade-In
+        else if (_worldAnnouncementTimer < 0.3f)
+            alpha = _worldAnnouncementTimer / 0.3f; // Fade-Out
+        else
+            alpha = 1f;
+
+        alpha = Math.Clamp(alpha, 0f, 1f);
+        if (alpha < 0.01f) return;
+
+        byte a = (byte)(255 * alpha);
+
+        // Hintergrund-Band (halbtransparent)
+        _overlayBgPaint.Color = new SKColor(0, 0, 0, (byte)(160 * alpha));
+        float bandHeight = 80;
+        float bandY = screenHeight * 0.25f - bandHeight / 2;
+        canvas.DrawRect(0, bandY, screenWidth, bandHeight, _overlayBgPaint);
+
+        // Grosser Text mit Glow
+        _overlayFont.Size = 48;
+        _overlayTextPaint.Color = new SKColor(255, 215, 0, a); // Gold
+        _overlayTextPaint.MaskFilter = _overlayGlowFilterLarge;
+        _overlayTextPaint.Style = SKPaintStyle.Fill;
+
+        // Leichter Scale-Bounce
+        float scale = _worldAnnouncementTimer > 1.7f
+            ? 0.8f + 0.2f * ((2.0f - _worldAnnouncementTimer) / 0.3f)
+            : 1.0f;
+
+        canvas.Save();
+        canvas.Translate(screenWidth / 2, bandY + bandHeight / 2 + 12);
+        canvas.Scale(scale);
+        canvas.DrawText(_worldAnnouncementText, 0, 0, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+        canvas.Restore();
+
+        _overlayTextPaint.MaskFilter = null;
         _overlayTextPaint.Style = SKPaintStyle.StrokeAndFill;
     }
 }

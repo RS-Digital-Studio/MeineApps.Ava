@@ -191,7 +191,7 @@
           <!-- Continue Button (nur Story, 1x) -->
           <Button IsVisible="{Binding CanContinue}"
                   Command="{Binding ContinueGameCommand}"
-                  Classes="Primary"
+                  Classes="Primary GameButton"
                   Background="#7B1FA2"
                   FontSize="16"
                   Height="48"
@@ -208,7 +208,7 @@
           <!-- Level-Skip Button (nach 3x Game Over) -->
           <Button IsVisible="{Binding CanSkipLevel}"
                   Command="{Binding SkipLevelCommand}"
-                  Classes="Primary"
+                  Classes="Primary GameButton"
                   Background="#FF9800"
                   FontSize="14"
                   Height="44"
@@ -231,7 +231,7 @@
           </Button>
 
           <Button Content="{loc:Translate TryAgain}"
-                  Classes="Primary"
+                  Classes="Primary GameButton"
                   Background="{DynamicResource SuccessBrush}"
                   Command="{Binding TryAgainCommand}"
                   FontSize="20"
@@ -240,7 +240,7 @@
                   HorizontalContentAlignment="Center" />
 
           <Button Content="{loc:Translate MainMenu}"
-                  Classes="Secondary"
+                  Classes="Secondary GameButton"
                   Command="{Binding MainMenuCommand}"
                   FontSize="18"
                   Height="48"

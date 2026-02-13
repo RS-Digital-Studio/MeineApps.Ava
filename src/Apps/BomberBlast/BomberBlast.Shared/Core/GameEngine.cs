@@ -106,6 +106,13 @@ public partial class GameEngine : IDisposable
     private const float SLOW_MOTION_DURATION = 0.8f; // Sekunden (in Echtzeit)
     private const float SLOW_MOTION_FACTOR = 0.3f; // 30% Geschwindigkeit
 
+    // Sterne-Rating bei Level-Complete (für Overlay-Rendering)
+    private int _levelCompleteStars;
+
+    // Welt-/Wave-Ankündigung
+    private float _worldAnnouncementTimer;
+    private string _worldAnnouncementText = "";
+
     // Pontan-Strafe (gestaffeltes Spawning)
     private bool _pontanPunishmentActive;
     private int _pontanSpawned;
@@ -335,6 +342,7 @@ public partial class GameEngine : IDisposable
         _screenShake.Update(deltaTime);
         _particleSystem.Update(deltaTime);
         _floatingText.Update(deltaTime);
+        _soundManager.Update(deltaTime);
 
         // Hit-Pause: Update wird übersprungen, Rendering läuft weiter (Freeze-Effekt)
         if (_hitPauseTimer > 0)
@@ -417,6 +425,13 @@ public partial class GameEngine : IDisposable
         // Pontan-Strafe (gestaffeltes Spawning nach Timer-Ablauf)
         if (_pontanPunishmentActive)
             UpdatePontanPunishment(realDeltaTime);
+
+        // Welt-Ankündigungs-Timer aktualisieren
+        if (_worldAnnouncementTimer > 0)
+            _worldAnnouncementTimer -= realDeltaTime;
+
+        // Collecting-PowerUp-Animationen aktualisieren
+        UpdateCollectingPowerUps(deltaTime);
 
         // Combo-Timer in Echtzeit aktualisieren (Slow-Motion verlängert keine Combos)
         if (_comboTimer > 0)
@@ -602,6 +617,24 @@ public partial class GameEngine : IDisposable
         _explosions.Clear();
 
         _inputManager.Reset();
+    }
+
+    /// <summary>
+    /// PowerUps die gerade eingesammelt werden: Timer runterzählen, bei 0 endgültig entfernen
+    /// </summary>
+    private void UpdateCollectingPowerUps(float deltaTime)
+    {
+        for (int i = _powerUps.Count - 1; i >= 0; i--)
+        {
+            var pu = _powerUps[i];
+            if (!pu.IsBeingCollected) continue;
+
+            pu.CollectTimer -= deltaTime;
+            if (pu.CollectTimer <= 0)
+            {
+                pu.IsMarkedForRemoval = true;
+            }
+        }
     }
 
     private void CleanupEntities()

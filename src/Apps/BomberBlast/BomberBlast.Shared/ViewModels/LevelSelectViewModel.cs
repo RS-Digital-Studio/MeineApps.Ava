@@ -283,11 +283,41 @@ public class LevelDisplayItem
     public bool IsLocked => !IsUnlocked;
     public string StarsDisplay => StarsText;
 
-    public Color BackgroundColor =>
-        IsWorldLocked ? Color.Parse("#333333") :
-        !IsUnlocked ? Color.Parse("#444444") :
-        IsCompleted ? Color.Parse("#2E7D32") :
-        Color.Parse("#1565C0");
+    /// <summary>
+    /// Welt-basierte Hintergrundfarbe (5 Welten, 5 Farben)
+    /// </summary>
+    public Color BackgroundColor
+    {
+        get
+        {
+            if (IsWorldLocked) return Color.Parse("#333333");
+            if (!IsUnlocked) return Color.Parse("#444444");
+
+            // Welt-Farben: Forest, Industrial, Cavern, Sky, Inferno
+            int world = (LevelNumber - 1) / 10; // 0-4
+            if (IsCompleted)
+            {
+                return world switch
+                {
+                    0 => Color.Parse("#2E7D32"), // Forest - Dunkelgrün
+                    1 => Color.Parse("#37474F"), // Industrial - Stahlgrau
+                    2 => Color.Parse("#4A148C"), // Cavern - Dunkelviolett
+                    3 => Color.Parse("#0277BD"), // Sky - Dunkelcyan
+                    4 => Color.Parse("#B71C1C"), // Inferno - Dunkelrot
+                    _ => Color.Parse("#2E7D32")
+                };
+            }
+            return world switch
+            {
+                0 => Color.Parse("#388E3C"), // Forest - Grün
+                1 => Color.Parse("#546E7A"), // Industrial - Blaugrau
+                2 => Color.Parse("#6A1B9A"), // Cavern - Lila
+                3 => Color.Parse("#0288D1"), // Sky - Cyan
+                4 => Color.Parse("#C62828"), // Inferno - Rot
+                _ => Color.Parse("#1565C0")
+            };
+        }
+    }
 
     public IBrush TextBrush =>
         !IsUnlocked || IsWorldLocked ? Brushes.Gray : Brushes.White;

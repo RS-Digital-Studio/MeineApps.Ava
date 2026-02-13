@@ -17,6 +17,15 @@ public class PowerUp : Entity
     /// <summary>Time remaining before disappearing (0 = infinite)</summary>
     public float RemainingTime { get; set; }
 
+    /// <summary>Ob das PowerUp gerade eingesammelt wird (Shrink+Spin Animation)</summary>
+    public bool IsBeingCollected { get; set; }
+
+    /// <summary>Timer für Einsammel-Animation (startet bei 0.3s, zählt runter)</summary>
+    public float CollectTimer { get; set; }
+
+    /// <summary>Dauer der Einsammel-Animation</summary>
+    public const float COLLECT_DURATION = 0.3f;
+
     /// <summary>Standard lifetime before disappearing (0 = never)</summary>
     public const float DEFAULT_LIFETIME = 0f; // Infinite in original
 

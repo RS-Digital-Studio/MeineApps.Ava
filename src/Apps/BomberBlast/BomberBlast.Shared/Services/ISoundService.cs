@@ -35,4 +35,9 @@ public interface ISoundService : IDisposable
     /// Resume background music
     /// </summary>
     void ResumeMusic();
+
+    /// <summary>
+    /// Musik-Lautstärke setzen (für Crossfade)
+    /// </summary>
+    void SetMusicVolume(float volume);
 }

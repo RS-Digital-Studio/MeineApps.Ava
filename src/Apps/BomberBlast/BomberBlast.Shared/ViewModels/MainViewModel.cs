@@ -1,4 +1,5 @@
 using BomberBlast.Resources.Strings;
+using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
@@ -71,6 +72,12 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _isAchievementsActive;
 
+    /// <summary>
+    /// Ad-Banner-Spacer: sichtbar in Menü-Views, versteckt im Game-View
+    /// </summary>
+    [ObservableProperty]
+    private bool _isAdBannerVisible;
+
     // ═══════════════════════════════════════════════════════════════════════
     // DIALOG PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -110,7 +117,9 @@ public partial class MainViewModel : ObservableObject
     private bool _returnToGameFromSettings;
 
     private readonly ILocalizationService _localizationService;
+    private readonly IAdService _adService;
     private readonly IRewardedAdService _rewardedAdService;
+    private readonly IAchievementService _achievementService;
 
     /// <summary>
     /// Zeitpunkt des letzten Back-Presses (für Double-Back-to-Exit)
@@ -140,7 +149,8 @@ public partial class MainViewModel : ObservableObject
         ILocalizationService localization,
         IAdService adService,
         IPurchaseService purchaseService,
-        IRewardedAdService rewardedAdService)
+        IRewardedAdService rewardedAdService,
+        IAchievementService achievementService)
     {
         MenuVm = menuVm;
         GameVm = gameVm;
@@ -153,16 +163,42 @@ public partial class MainViewModel : ObservableObject
         ShopVm = shopVm;
         AchievementsVm = achievementsVm;
         _localizationService = localization;
+        _adService = adService;
         _rewardedAdService = rewardedAdService;
+        _achievementService = achievementService;
 
         // Game Juice Events weiterleiten
         GameOverVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         MenuVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        MenuVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
         LevelSelectVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
+
+        // Achievement-Toast bei Unlock
+        _achievementService.AchievementUnlocked += (_, achievement) =>
+        {
+            var name = localization.GetString(achievement.NameKey) ?? achievement.NameKey;
+            FloatingTextRequested?.Invoke($"Achievement: {name}!", "gold");
+        };
+
+        // Shop: Kauf-Feedback
+        ShopVm.PurchaseSucceeded += name =>
+        {
+            FloatingTextRequested?.Invoke(name, "success");
+            CelebrationRequested?.Invoke();
+        };
+        ShopVm.InsufficientFunds += () =>
+        {
+            var msg = localization.GetString("ShopNotEnoughCoins") ?? "Nicht genug Coins!";
+            FloatingTextRequested?.Invoke(msg, "error");
+        };
 
         // Ad-Banner starten
         if (adService.AdsEnabled && !purchaseService.IsPremium)
             adService.ShowBanner();
+
+        // Ad-Spacer-Sichtbarkeit (Menü-Views: sichtbar, Game-View: versteckt)
+        IsAdBannerVisible = adService.BannerVisible;
+        adService.AdsStateChanged += (_, _) => IsAdBannerVisible = adService.BannerVisible && !IsGameActive;
 
         // Ad-Unavailable Meldung anzeigen (benannte Methode statt Lambda fuer Unsubscribe)
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
@@ -248,11 +284,13 @@ public partial class MainViewModel : ObservableObject
             case "MainMenu":
                 _returnToGameFromSettings = false;
                 IsMainMenuActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 MenuVm.OnAppearing();
                 break;
 
             case "Game":
                 IsGameActive = true;
+                IsAdBannerVisible = false; // Kein Spacer im Spiel (Banner ist oben)
                 // Parse game parameters
                 if (route.Contains('?'))
                 {
@@ -280,22 +318,26 @@ public partial class MainViewModel : ObservableObject
 
             case "LevelSelect":
                 IsLevelSelectActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 LevelSelectVm.OnAppearing();
                 break;
 
             case "Settings":
                 _returnToGameFromSettings = wasGameActive;
                 IsSettingsActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 SettingsVm.OnAppearing();
                 break;
 
             case "HighScores":
                 IsHighScoresActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 HighScoresVm.OnAppearing();
                 break;
 
             case "GameOver":
                 IsGameOverActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 if (route.Contains('?'))
                 {
                     var query = route[(route.IndexOf('?') + 1)..];
@@ -360,15 +402,18 @@ public partial class MainViewModel : ObservableObject
 
             case "Shop":
                 IsShopActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 ShopVm.OnAppearing();
                 break;
 
             case "Help":
                 IsHelpActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 break;
 
             case "Achievements":
                 IsAchievementsActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 AchievementsVm.OnAppearing();
                 break;
 
@@ -378,17 +423,20 @@ public partial class MainViewModel : ObservableObject
                 {
                     _returnToGameFromSettings = false;
                     IsGameActive = true;
+                    IsAdBannerVisible = false;
                     await GameVm.OnAppearingAsync();
                 }
                 else
                 {
                     IsMainMenuActive = true;
+                    IsAdBannerVisible = _adService.BannerVisible;
                     MenuVm.OnAppearing();
                 }
                 break;
 
             default:
                 IsMainMenuActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 MenuVm.OnAppearing();
                 break;
         }
@@ -455,6 +503,7 @@ public partial class MainViewModel : ObservableObject
                 GameVm.OnDisappearing();
                 HideAll();
                 IsMainMenuActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
                 MenuVm.OnAppearing();
             }
             return true;
@@ -473,6 +522,7 @@ public partial class MainViewModel : ObservableObject
         {
             HideAll();
             IsMainMenuActive = true;
+            IsAdBannerVisible = _adService.BannerVisible;
             MenuVm.OnAppearing();
             return true;
         }

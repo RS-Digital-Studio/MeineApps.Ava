@@ -45,6 +45,15 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         base.OnCreate(savedInstanceState);
 
+        // Fullscreen/Immersive Mode (Landscape-Spiel, System-Bars ausblenden)
+        if (Window != null)
+        {
+            AndroidX.Core.View.WindowCompat.SetDecorFitsSystemWindows(Window, false);
+            var controller = AndroidX.Core.View.WindowCompat.GetInsetsController(Window, Window.DecorView);
+            controller.Hide(AndroidX.Core.View.WindowInsetsCompat.Type.SystemBars());
+            controller.SystemBarsBehavior = AndroidX.Core.View.WindowInsetsControllerCompat.BehaviorShowTransientBarsBySwipe;
+        }
+
         // Back-Navigation: ViewModel holen + Toast-Event verdrahten
         _mainVm = App.Services.GetService<MainViewModel>();
         if (_mainVm != null)
@@ -74,6 +83,16 @@ public class MainActivity : AvaloniaMainActivity<App>
     protected override void OnResume()
     {
         base.OnResume();
+
+        // Fullscreen/Immersive Mode erneut setzen (kann bei Alt-Tab etc. verloren gehen)
+        if (Window != null)
+        {
+            AndroidX.Core.View.WindowCompat.SetDecorFitsSystemWindows(Window, false);
+            var controller = AndroidX.Core.View.WindowCompat.GetInsetsController(Window, Window.DecorView);
+            controller.Hide(AndroidX.Core.View.WindowInsetsCompat.Type.SystemBars());
+            controller.SystemBarsBehavior = AndroidX.Core.View.WindowInsetsControllerCompat.BehaviorShowTransientBarsBySwipe;
+        }
+
         _adMobHelper?.Resume();
     }
 

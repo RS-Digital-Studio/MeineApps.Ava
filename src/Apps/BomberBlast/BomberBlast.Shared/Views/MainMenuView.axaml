@@ -3,12 +3,16 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="BomberBlast.Views.MainMenuView"
              x:DataType="vm:MainMenuViewModel">
 
   <!-- Background -->
   <Panel Background="{DynamicResource BackgroundBrush}">
     <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+
+    <!-- Hintergrund-Partikel (SkiaSharp Canvas) -->
+    <skia:SKCanvasView x:Name="BgCanvas" />
 
     <Grid RowDefinitions="*" Margin="24,16">
 
@@ -67,7 +71,7 @@
           <!-- Primaere Buttons (Linke Spalte) -->
           <Button Grid.Row="0" Grid.Column="0"
                   Content="{loc:Translate StoryMode}"
-                  Classes="Primary"
+                  Classes="Primary GameButton"
                   Command="{Binding StoryModeCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
@@ -76,7 +80,7 @@
 
           <Button Grid.Row="1" Grid.Column="0"
                   Content="{loc:Translate Continue}"
-                  Classes="Primary"
+                  Classes="Primary GameButton"
                   Background="{DynamicResource SuccessBrush}"
                   Command="{Binding ContinueCommand}"
                   IsVisible="{Binding HasProgress}"
@@ -87,7 +91,7 @@
 
           <Button Grid.Row="2" Grid.Column="0"
                   Content="{loc:Translate ArcadeMode}"
-                  Classes="Primary"
+                  Classes="Primary GameButton"
                   Background="{DynamicResource ErrorBrush}"
                   Command="{Binding ArcadeModeCommand}"
                   HorizontalAlignment="Stretch"
@@ -97,7 +101,7 @@
 
           <Button Grid.Row="3" Grid.Column="0"
                   Content="{loc:Translate QuickPlay}"
-                  Classes="Primary"
+                  Classes="Primary GameButton"
                   Background="{DynamicResource WarningBrush}"
                   Command="{Binding QuickPlayCommand}"
                   HorizontalAlignment="Stretch"
@@ -107,7 +111,7 @@
 
           <!-- Sekundaere Buttons (Rechte Spalte) -->
           <Button Grid.Row="0" Grid.Column="1"
-                  Classes="Secondary"
+                  Classes="Secondary GameButton"
                   Command="{Binding ShopCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
@@ -123,7 +127,7 @@
 
           <Button Grid.Row="1" Grid.Column="1"
                   Content="{loc:Translate HighScores}"
-                  Classes="Secondary"
+                  Classes="Secondary GameButton"
                   Command="{Binding HighScoresCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
@@ -132,7 +136,7 @@
 
           <Button Grid.Row="2" Grid.Column="1"
                   Content="{loc:Translate Help}"
-                  Classes="Secondary"
+                  Classes="Secondary GameButton"
                   Command="{Binding HelpCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
@@ -141,7 +145,7 @@
 
           <Button Grid.Row="3" Grid.Column="1"
                   Content="{loc:Translate Settings}"
-                  Classes="Secondary"
+                  Classes="Secondary GameButton"
                   Command="{Binding SettingsCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"

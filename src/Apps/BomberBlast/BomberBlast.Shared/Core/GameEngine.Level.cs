@@ -3,6 +3,7 @@ using BomberBlast.Models;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
 using BomberBlast.Models.Levels;
+using SkiaSharp;
 
 namespace BomberBlast.Core;
 
@@ -28,6 +29,11 @@ public partial class GameEngine
         _soundManager.PlayMusic(_currentLevel.MusicTrack == "boss"
             ? SoundManager.MUSIC_BOSS
             : SoundManager.MUSIC_GAMEPLAY);
+
+        // Welt-Ankündigung bei Level 1 (immer "World 1")
+        int world = (_currentLevelNumber - 1) / 10 + 1;
+        _worldAnnouncementText = $"WORLD {world}";
+        _worldAnnouncementTimer = 2.0f;
     }
 
     /// <summary>
@@ -93,6 +99,7 @@ public partial class GameEngine
         // Spieler spawnen bei (1,1)
         _player.SetGridPosition(1, 1);
         _player.MovementDirection = Direction.None;
+        _inputManager.Reset(); // Input-State zurücksetzen (verhindert Geister-Bewegung im nächsten Level)
 
         // PowerUps in Blöcken platzieren
         PlacePowerUps(random);
@@ -102,6 +109,10 @@ public partial class GameEngine
 
         // Gegner spawnen
         SpawnEnemies(random);
+
+        // Welt-Theme setzen (basierend auf Level-Nummer)
+        int worldIndex = (_currentLevelNumber - 1) / 10;
+        _renderer.SetWorldTheme(worldIndex);
 
         // Timer zurücksetzen
         _timer.Reset(_currentLevel.TimeLimit);
@@ -432,6 +443,10 @@ public partial class GameEngine
         _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
         OnScoreChanged?.Invoke(_player.Score);
 
+        // Sterne-Anzeige: Arcade hat keine Sterne
+        if (_isArcadeMode)
+            _levelCompleteStars = 0;
+
         // Coins basierend auf Level-Score (nicht kumuliert, verhindert Inflation)
         int levelScore = _player.Score - _scoreAtLevelStart;
         int coins = levelScore / 3;
@@ -448,6 +463,14 @@ public partial class GameEngine
             coins *= 2;
         OnCoinsEarned?.Invoke(coins, _player.Score, true);
 
+        // Coin-Floating-Text über dem Exit (gold, groß)
+        if (coins > 0 && _exitCell != null)
+        {
+            float coinX = _exitCell.X * Models.Grid.GameGrid.CELL_SIZE + Models.Grid.GameGrid.CELL_SIZE / 2f;
+            float coinY = _exitCell.Y * Models.Grid.GameGrid.CELL_SIZE;
+            _floatingText.Spawn(coinX, coinY, $"+{coins} Coins", new SKColor(255, 215, 0), 18f, 1.5f);
+        }
+
         // Achievements prüfen (G-R6-1)
         // Score + BestScore ZUERST speichern, damit GetLevelStars/GetTotalStars korrekt sind
         if (!_isArcadeMode)
@@ -455,6 +478,7 @@ public partial class GameEngine
             _progressService.SetLevelBestScore(_currentLevelNumber, _player.Score);
 
             int stars = _progressService.GetLevelStars(_currentLevelNumber);
+            _levelCompleteStars = stars;
             float timeUsed = _currentLevel!.TimeLimit - _timer.RemainingTime;
             _achievementService.OnLevelCompleted(
                 _currentLevelNumber, _player.Score, stars, _bombsUsed,
@@ -596,6 +620,13 @@ public partial class GameEngine
             _achievementService.OnArcadeWaveReached(_arcadeWave);
 
             _currentLevel = LevelGenerator.GenerateArcadeLevel(_arcadeWave);
+
+            // Wave-Ankündigung bei Meilensteinen (5/10/15/20/25)
+            if (_arcadeWave % 5 == 0)
+            {
+                _worldAnnouncementText = $"WAVE {_arcadeWave}!";
+                _worldAnnouncementTimer = 2.0f;
+            }
         }
         else
         {
@@ -610,6 +641,14 @@ public partial class GameEngine
                 return;
             }
             _currentLevel = LevelGenerator.GenerateLevel(_currentLevelNumber);
+
+            // Welt-Ankündigung bei neuem Welt-Start (Level 11, 21, 31, 41)
+            if ((_currentLevelNumber - 1) % 10 == 0)
+            {
+                int world = (_currentLevelNumber - 1) / 10 + 1;
+                _worldAnnouncementText = $"WORLD {world}";
+                _worldAnnouncementTimer = 2.0f;
+            }
         }
 
         await LoadLevelAsync();

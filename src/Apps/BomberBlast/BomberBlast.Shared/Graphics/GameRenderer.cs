@@ -180,6 +180,103 @@ public class GameRenderer : IDisposable
     };
 
     // ═══════════════════════════════════════════════════════════════════════
+    // WELT-THEMES (5 Welten, je Classic + Neon Variante)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private sealed class WorldPalette
+    {
+        public SKColor Floor1, Floor2, FloorLine;
+        public SKColor WallMain, WallHighlight, WallShadow;
+        public SKColor BlockMain, BlockMortar, BlockHighlight, BlockShadow;
+        public SKColor Accent;
+    }
+
+    // Classic Welt-Paletten
+    private static readonly WorldPalette[] ClassicWorldPalettes =
+    [
+        // Welt 1: Forest (Grün)
+        new() { Floor1 = new(180, 210, 160), Floor2 = new(160, 190, 140), FloorLine = new(140, 170, 120),
+                WallMain = new(85, 90, 80), WallHighlight = new(125, 130, 115), WallShadow = new(55, 58, 50),
+                BlockMain = new(140, 105, 55), BlockMortar = new(170, 140, 90), BlockHighlight = new(165, 130, 70), BlockShadow = new(105, 75, 35),
+                Accent = new(80, 200, 80) },
+        // Welt 2: Industrial (Grau/Blau)
+        new() { Floor1 = new(195, 195, 200), Floor2 = new(180, 180, 188), FloorLine = new(160, 160, 170),
+                WallMain = new(70, 80, 100), WallHighlight = new(100, 115, 140), WallShadow = new(45, 50, 65),
+                BlockMain = new(170, 120, 70), BlockMortar = new(200, 155, 95), BlockHighlight = new(195, 140, 80), BlockShadow = new(120, 80, 40),
+                Accent = new(80, 140, 220) },
+        // Welt 3: Cavern (Lila)
+        new() { Floor1 = new(190, 175, 200), Floor2 = new(170, 155, 185), FloorLine = new(150, 135, 165),
+                WallMain = new(65, 55, 80), WallHighlight = new(100, 85, 125), WallShadow = new(40, 32, 55),
+                BlockMain = new(140, 100, 160), BlockMortar = new(175, 140, 190), BlockHighlight = new(160, 120, 175), BlockShadow = new(100, 65, 120),
+                Accent = new(180, 100, 240) },
+        // Welt 4: Sky (Cyan/Blau)
+        new() { Floor1 = new(200, 220, 235), Floor2 = new(185, 210, 228), FloorLine = new(165, 195, 215),
+                WallMain = new(220, 225, 235), WallHighlight = new(240, 245, 250), WallShadow = new(180, 190, 210),
+                BlockMain = new(150, 200, 220), BlockMortar = new(180, 220, 235), BlockHighlight = new(170, 215, 230), BlockShadow = new(110, 170, 195),
+                Accent = new(0, 200, 240) },
+        // Welt 5: Inferno (Rot/Schwarz)
+        new() { Floor1 = new(120, 70, 60), Floor2 = new(100, 55, 45), FloorLine = new(80, 40, 30),
+                WallMain = new(45, 40, 45), WallHighlight = new(70, 60, 65), WallShadow = new(25, 20, 25),
+                BlockMain = new(200, 100, 40), BlockMortar = new(230, 140, 60), BlockHighlight = new(220, 120, 50), BlockShadow = new(150, 65, 25),
+                Accent = new(240, 60, 40) },
+    ];
+
+    // Neon Welt-Paletten (dunkler, leuchtender)
+    private static readonly WorldPalette[] NeonWorldPalettes =
+    [
+        // Welt 1: Forest (Neon-Grün)
+        new() { Floor1 = new(25, 40, 30), Floor2 = new(20, 35, 25), FloorLine = new(0, 180, 80, 50),
+                WallMain = new(35, 50, 40), WallHighlight = new(0, 220, 80, 120), WallShadow = new(18, 28, 22),
+                BlockMain = new(55, 45, 30), BlockMortar = new(0, 200, 80, 170), BlockHighlight = new(0, 180, 60, 100), BlockShadow = new(30, 24, 16),
+                Accent = new(0, 255, 100) },
+        // Welt 2: Industrial (Neon-Blau)
+        new() { Floor1 = new(28, 30, 42), Floor2 = new(24, 26, 38), FloorLine = new(0, 140, 255, 50),
+                WallMain = new(40, 45, 65), WallHighlight = new(0, 150, 255, 120), WallShadow = new(22, 25, 40),
+                BlockMain = new(60, 50, 40), BlockMortar = new(0, 160, 255, 170), BlockHighlight = new(0, 140, 230, 100), BlockShadow = new(35, 28, 22),
+                Accent = new(0, 160, 255) },
+        // Welt 3: Cavern (Neon-Lila)
+        new() { Floor1 = new(32, 24, 45), Floor2 = new(26, 20, 38), FloorLine = new(180, 0, 255, 50),
+                WallMain = new(45, 35, 60), WallHighlight = new(180, 0, 255, 120), WallShadow = new(24, 18, 35),
+                BlockMain = new(50, 35, 60), BlockMortar = new(180, 80, 255, 170), BlockHighlight = new(160, 60, 230, 100), BlockShadow = new(30, 20, 40),
+                Accent = new(200, 80, 255) },
+        // Welt 4: Sky (Neon-Cyan)
+        new() { Floor1 = new(22, 32, 42), Floor2 = new(18, 28, 38), FloorLine = new(0, 220, 240, 50),
+                WallMain = new(35, 50, 60), WallHighlight = new(0, 240, 255, 120), WallShadow = new(16, 24, 32),
+                BlockMain = new(30, 55, 65), BlockMortar = new(0, 230, 255, 170), BlockHighlight = new(0, 210, 240, 100), BlockShadow = new(16, 38, 48),
+                Accent = new(0, 240, 255) },
+        // Welt 5: Inferno (Neon-Rot)
+        new() { Floor1 = new(40, 18, 18), Floor2 = new(34, 14, 14), FloorLine = new(255, 40, 0, 50),
+                WallMain = new(50, 25, 25), WallHighlight = new(255, 40, 40, 120), WallShadow = new(28, 12, 12),
+                BlockMain = new(65, 30, 20), BlockMortar = new(255, 80, 0, 170), BlockHighlight = new(255, 60, 30, 100), BlockShadow = new(40, 18, 10),
+                Accent = new(255, 40, 40) },
+    ];
+
+    // Aktive Welt-Palette (wird bei Level-Wechsel gesetzt)
+    private WorldPalette? _worldPalette;
+
+    /// <summary>
+    /// Welt-Theme setzen (0-4 für Welt 1-5)
+    /// </summary>
+    public void SetWorldTheme(int worldIndex)
+    {
+        worldIndex = Math.Clamp(worldIndex, 0, 4);
+        var palettes = _styleService.CurrentStyle == GameVisualStyle.Neon ? NeonWorldPalettes : ClassicWorldPalettes;
+        _worldPalette = palettes[worldIndex];
+
+        // Basis-Palette Farben mit Welt-Theme überschreiben
+        _palette.FloorBase = _worldPalette.Floor1;
+        _palette.FloorAlt = _worldPalette.Floor2;
+        _palette.FloorLine = _worldPalette.FloorLine;
+        _palette.WallBase = _worldPalette.WallMain;
+        _palette.WallHighlight = _worldPalette.WallHighlight;
+        _palette.WallShadow = _worldPalette.WallShadow;
+        _palette.BlockBase = _worldPalette.BlockMain;
+        _palette.BlockMortar = _worldPalette.BlockMortar;
+        _palette.BlockHighlight = _worldPalette.BlockHighlight;
+        _palette.BlockShadow = _worldPalette.BlockShadow;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // POOLED PAINT OBJECTS
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -1081,8 +1178,20 @@ public class GameRenderer : IDisposable
         bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
 
         // Blinking when about to expire
-        if (powerUp.IsBlinking && ((int)(_globalTimer * 8) % 2) == 0)
+        if (powerUp.IsBlinking && !powerUp.IsBeingCollected && ((int)(_globalTimer * 8) % 2) == 0)
             return;
+
+        // Einsammel-Animation: Shrink + Spin + Fade
+        float collectScale = 1f;
+        float collectRotation = 0f;
+        byte collectAlpha = 255;
+        if (powerUp.IsBeingCollected)
+        {
+            float progress = 1f - (powerUp.CollectTimer / PowerUp.COLLECT_DURATION); // 0→1
+            collectScale = 1f - progress; // 1→0
+            collectRotation = progress * 720f; // 2 volle Drehungen
+            collectAlpha = (byte)(255 * (1f - progress));
+        }
 
         // Bobbing animation
         float bob = MathF.Sin(_globalTimer * 3) * 2;
@@ -1090,7 +1199,16 @@ public class GameRenderer : IDisposable
         float py = powerUp.Y + bob;
 
         SKColor color = GetPowerUpColor(powerUp.Type);
-        float radius = cs * 0.35f;
+        float radius = cs * 0.35f * collectScale;
+
+        // Einsammel-Animation: Canvas transformieren
+        if (powerUp.IsBeingCollected)
+        {
+            canvas.Save();
+            canvas.Translate(px, py);
+            canvas.RotateDegrees(collectRotation);
+            canvas.Translate(-px, -py);
+        }
 
         // Neon glow aura
         if (isNeon)
@@ -1101,14 +1219,26 @@ public class GameRenderer : IDisposable
             _glowPaint.MaskFilter = null;
         }
 
-        // Rounded background
-        _fillPaint.Color = color;
+        // Rounded background (mit Alpha bei Einsammel-Animation)
+        byte bgAlpha = powerUp.IsBeingCollected
+            ? (byte)(255 * Math.Clamp(powerUp.CollectTimer / PowerUp.COLLECT_DURATION, 0f, 1f))
+            : (byte)255;
+        _fillPaint.Color = color.WithAlpha(bgAlpha);
         _fillPaint.MaskFilter = null;
         canvas.DrawCircle(px, py, radius, _fillPaint);
 
-        // Icon/symbol
-        _fillPaint.Color = SKColors.White;
+        // Icon/symbol (mit Alpha bei Einsammel-Animation)
+        byte iconAlpha = powerUp.IsBeingCollected
+            ? (byte)(255 * Math.Clamp(powerUp.CollectTimer / PowerUp.COLLECT_DURATION, 0f, 1f))
+            : (byte)255;
+        _fillPaint.Color = SKColors.White.WithAlpha(iconAlpha);
         RenderPowerUpIcon(canvas, powerUp.Type, px, py, radius * 0.6f);
+
+        // Canvas-Transform wiederherstellen nach Einsammel-Animation
+        if (powerUp.IsBeingCollected)
+        {
+            canvas.Restore();
+        }
     }
 
     private void RenderPowerUpIcon(SKCanvas canvas, PowerUpType type, float cx, float cy, float size)

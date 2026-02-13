@@ -24,6 +24,12 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
 
+    /// <summary>Kauf erfolgreich (Upgrade-Name)</summary>
+    public event Action<string>? PurchaseSucceeded;
+
+    /// <summary>Zu wenig Coins</summary>
+    public event Action? InsufficientFunds;
+
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -121,14 +127,14 @@ public partial class ShopViewModel : ObservableObject, IDisposable
 
         if (!_coinService.CanAfford(item.NextPrice))
         {
-            MessageRequested?.Invoke(
-                _localizationService.GetString("ShopTitle"),
-                _localizationService.GetString("ShopNotEnoughCoins"));
+            InsufficientFunds?.Invoke();
             return;
         }
 
         if (_shopService.TryPurchase(item.Type))
         {
+            var upgradeName = _localizationService.GetString(item.NameKey);
+            PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
             RefreshItems();
             UpdateCoinDisplay();
         }

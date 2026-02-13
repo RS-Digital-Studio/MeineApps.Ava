@@ -149,6 +149,7 @@
                             Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseCommand}"
                             CommandParameter="{Binding}"
                             IsEnabled="{Binding CanBuy}"
+                            Classes="GameButton"
                             HorizontalAlignment="Stretch"
                             HorizontalContentAlignment="Center"
                             CornerRadius="8"

@@ -18,5 +18,7 @@ public class NullSoundService : ISoundService
 
     public void ResumeMusic() { }
 
+    public void SetMusicVolume(float volume) { }
+
     public void Dispose() { }
 }

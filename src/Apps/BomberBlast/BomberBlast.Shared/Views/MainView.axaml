@@ -7,45 +7,82 @@
              x:Class="BomberBlast.Views.MainView"
              x:DataType="vm:MainViewModel">
 
-  <Panel>
-    <!-- Main Menu -->
-    <views:MainMenuView DataContext="{Binding MenuVm}"
-                         IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsMainMenuActive}" />
+  <UserControl.Styles>
+    <!-- PageView: Default unsichtbar, mit Fade-Transition -->
+    <Style Selector="Border.PageView">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="IsVisible" Value="False" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.PageView.Active">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </UserControl.Styles>
 
-    <!-- Game -->
-    <views:GameView DataContext="{Binding GameVm}"
-                     IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsGameActive}" />
+  <Grid RowDefinitions="*,Auto">
+    <!-- Row 0: Alle Page-Views -->
+    <Panel Grid.Row="0">
+      <!-- Main Menu -->
+      <Border Classes="PageView" x:Name="MainMenuBorder">
+        <views:MainMenuView DataContext="{Binding MenuVm}" />
+      </Border>
 
-    <!-- Level Select -->
-    <views:LevelSelectView DataContext="{Binding LevelSelectVm}"
-                            IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsLevelSelectActive}" />
+      <!-- Game -->
+      <Border Classes="PageView" x:Name="GameBorder">
+        <views:GameView DataContext="{Binding GameVm}" />
+      </Border>
 
-    <!-- Settings -->
-    <views:SettingsView DataContext="{Binding SettingsVm}"
-                         IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsSettingsActive}" />
+      <!-- Level Select -->
+      <Border Classes="PageView" x:Name="LevelSelectBorder">
+        <views:LevelSelectView DataContext="{Binding LevelSelectVm}" />
+      </Border>
 
-    <!-- High Scores -->
-    <views:HighScoresView DataContext="{Binding HighScoresVm}"
-                           IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsHighScoresActive}" />
+      <!-- Settings -->
+      <Border Classes="PageView" x:Name="SettingsBorder">
+        <views:SettingsView DataContext="{Binding SettingsVm}" />
+      </Border>
 
-    <!-- Game Over -->
-    <views:GameOverView DataContext="{Binding GameOverVm}"
-                         IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsGameOverActive}" />
+      <!-- High Scores -->
+      <Border Classes="PageView" x:Name="HighScoresBorder">
+        <views:HighScoresView DataContext="{Binding HighScoresVm}" />
+      </Border>
 
-    <!-- Help -->
-    <views:HelpView DataContext="{Binding HelpVm}"
-                     IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsHelpActive}" />
+      <!-- Game Over -->
+      <Border Classes="PageView" x:Name="GameOverBorder">
+        <views:GameOverView DataContext="{Binding GameOverVm}" />
+      </Border>
 
-    <!-- Shop -->
-    <views:ShopView DataContext="{Binding ShopVm}"
-                     IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsShopActive}" />
+      <!-- Help -->
+      <Border Classes="PageView" x:Name="HelpBorder">
+        <views:HelpView DataContext="{Binding HelpVm}" />
+      </Border>
 
-    <!-- Achievements -->
-    <views:AchievementsView DataContext="{Binding AchievementsVm}"
-                            IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsAchievementsActive}" />
+      <!-- Shop -->
+      <Border Classes="PageView" x:Name="ShopBorder">
+        <views:ShopView DataContext="{Binding ShopVm}" />
+      </Border>
 
+      <!-- Achievements -->
+      <Border Classes="PageView" x:Name="AchievementsBorder">
+        <views:AchievementsView DataContext="{Binding AchievementsVm}" />
+      </Border>
+    </Panel>
+
+    <!-- Row 1: Ad-Banner Spacer (50dp, nur sichtbar wenn Banner aktiv und nicht im Spiel) -->
+    <Border Grid.Row="1" Height="50"
+            IsVisible="{Binding IsAdBannerVisible}"
+            Background="Transparent" />
+
+    <!-- Dialog-Overlays + Game Juice: über beide Rows gespannt -->
     <!-- Alert Dialog Overlay -->
-    <Border IsVisible="{Binding IsAlertDialogVisible}"
+    <Border Grid.RowSpan="2" IsVisible="{Binding IsAlertDialogVisible}"
             Background="#80000000" ZIndex="100"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -67,7 +104,7 @@
     </Border>
 
     <!-- Confirm Dialog Overlay -->
-    <Border IsVisible="{Binding IsConfirmDialogVisible}"
+    <Border Grid.RowSpan="2" IsVisible="{Binding IsConfirmDialogVisible}"
             Background="#80000000" ZIndex="100"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -95,11 +132,11 @@
 
     <!-- Game Juice Overlays -->
     <controls:FloatingTextOverlay x:Name="FloatingTextCanvas"
-                                   ZIndex="15"
+                                   Grid.RowSpan="2" ZIndex="15"
                                    IsHitTestVisible="False" />
     <controls:CelebrationOverlay x:Name="CelebrationCanvas"
-                                  ZIndex="16"
+                                  Grid.RowSpan="2" ZIndex="16"
                                   IsHitTestVisible="False" />
-  </Panel>
+  </Grid>
 
 </UserControl>

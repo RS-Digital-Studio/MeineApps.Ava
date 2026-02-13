@@ -31,6 +31,9 @@ public partial class MainMenuViewModel : ObservableObject
     /// <summary>Floating-Text anzeigen (z.B. Daily Bonus)</summary>
     public event Action<string, string>? FloatingTextRequested;
 
+    /// <summary>Celebration-Effekt (Confetti)</summary>
+    public event Action? CelebrationRequested;
+
     /// <summary>In-App Review anfordern (Android: ReviewManagerFactory)</summary>
     public event Action? ReviewRequested;
 
@@ -109,6 +112,7 @@ public partial class MainMenuViewModel : ObservableObject
                 }
 
                 FloatingTextRequested?.Invoke(bonusText, "gold");
+                CelebrationRequested?.Invoke();
             }
         }
 

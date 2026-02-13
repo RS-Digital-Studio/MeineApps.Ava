@@ -184,6 +184,19 @@ public class AndroidSoundService : ISoundService
         catch { /* Kann nicht fortgesetzt werden */ }
     }
 
+    public void SetMusicVolume(float volume)
+    {
+        try
+        {
+            if (_musicPlayer != null)
+            {
+                var v = Math.Clamp(volume, 0f, 1f);
+                _musicPlayer.SetVolume(v, v);
+            }
+        }
+        catch { /* Volume-Änderung fehlgeschlagen */ }
+    }
+
     public void Dispose()
     {
         if (_disposed) return;

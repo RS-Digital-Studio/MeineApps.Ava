@@ -54,6 +54,17 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Preis**: 3,99 EUR (`remove_ads`)
 - Kostenlos spielbar, Upgrades grindbar, Ads optional
 
+### Fullscreen/Immersive Mode (Android)
+- **Aktivierung**: OnCreate + OnResume in MainActivity (WindowInsetsController)
+- **Modus**: SystemBars ausgeblendet, TransientBarsBySwipe (Wisch-Geste zeigt Bars kurz an)
+- **Landscape-Spiel**: Maximale Bildschirmfläche, keine Status-/Navigationsleiste
+
+### Ad-Banner-Spacer (MainView)
+- **MainView**: Grid mit `RowDefinitions="*,Auto"` → Row 0 Content-Panel, Row 1 Ad-Spacer (50dp)
+- **IsAdBannerVisible**: Property im MainViewModel, gesteuert per Route (Game=false, andere=BannerVisible)
+- **AdsStateChanged Event**: Reagiert auf Show/Hide des Banners
+- **Dialoge/Overlays**: `Grid.RowSpan="2"` (über beide Rows, nicht abgeschnitten)
+
 ### Banner im GameView (Level-basiert)
 - **Level 1-4**: Kein Banner (ungestoertes Spielerlebnis)
 - **Ab Level 5**: Banner oben (Top-Position), Viewport verschiebt sich nach unten
@@ -125,6 +136,20 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Neon Style**: Brightened Palette, 3D Block-Edges, Glow-Cracks, Outer-Glow HUD-Text
 - **Mini-Icons**: Bomb/Flame Icons statt "B"/"F" Labels im HUD
 - **Curse-Indikator**: Pulsierender violetter Glow um Spieler bei aktivem Curse, HUD zeigt Curse-Typ + Timer
+- **Musik-Crossfade**: SoundManager.Update() mit Fade-Out/Fade-In beim Track-Wechsel (0.5s)
+- **View-Transitions**: CSS-Klassen-basiert (Border.PageView + .Active), Opacity DoubleTransition (200ms) zwischen allen 9 Views
+- **Welt-Themes**: 5 Farbpaletten pro Style (Forest/Industrial/Cavern/Sky/Inferno), WorldPalette in GameRenderer
+- **Sterne-Animation**: 3 Sterne bei Level-Complete mit gestaffelter Scale-Bounce Animation (0.3s Delay)
+- **PowerUp-Einsammel-Animation**: Shrink + Spin + Fade (0.3s) bei Collect statt sofortigem Entfernen
+- **Welt-/Wave-Ankündigung**: Großer "WORLD X!" / "WAVE X!" Text bei Welt-Wechsel (Story) und Meilensteinen (Arcade, alle 5 Waves)
+- **Coin-Floating-Text**: "+X Coins" (gold) über dem Exit bei Level-Complete
+- **Button-Animationen**: GameButton-Style mit Scale-Transition (1.05x hover, 0.95x pressed) in allen Menüs
+- **Shop-Kauf-Feedback**: PurchaseSucceeded → Confetti + FloatingText, InsufficientFunds → roter FloatingText
+- **Achievement-Toast**: AchievementUnlocked Event → goldener FloatingText "Achievement: [Name]!"
+- **Coin-Counter-Animation**: GameOverView zählt Coins von 0 hoch (~30 Frames, DispatcherTimer)
+- **MainMenu-Hintergrund**: SKCanvasView Partikelsystem (25 farbige Punkte, langsam aufsteigend, ~30fps)
+- **LevelSelect Welt-Farben**: Level-Buttons farblich nach Welt unterschieden (Forest grün, Industrial grau, etc.)
+- **Tutorial-Replay**: "Tutorial wiederholen" Button in HelpView (ITutorialService.Reset + Level 1 starten)
 
 ## Tutorial-System (Phase 5)
 
@@ -161,7 +186,8 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
   - SoundPool fuer SFX (12 Sounds: explosion, place_bomb, fuse, powerup, player_death, enemy_death, exit_appear, level_complete, game_over, time_warning, menu_select, menu_confirm)
   - MediaPlayer fuer Musik (4 Tracks: menu, gameplay, boss, victory)
   - Assets in `Assets/Sounds/` (.ogg + .wav, versucht beide Formate)
-- **SoundManager** (`Core/SoundManager.cs`): Wraps ISoundService mit Lautstaerke-/Enable-Settings
+- **SoundManager** (`Core/SoundManager.cs`): Wraps ISoundService mit Lautstaerke-/Enable-Settings, Crossfade-Logik (Update() Methode, Fade-Out/Fade-In bei Track-Wechsel)
+- **ISoundService.SetMusicVolume(float)**: Für Crossfade-Steuerung (AndroidSoundService: MediaPlayer.SetVolume)
 - **SoundServiceFactory** in App.axaml.cs (analog RewardedAdServiceFactory)
 - **Sound-Assets**: CC0 Lizenz, Juhani Junkala (OpenGameArt.org), ~8.5 MB gesamt
 
@@ -252,6 +278,8 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ## Changelog Highlights
 
+- **13.02.2026 (11)**: Fullscreen + Ad-Spacer + Bugfixes: Fullscreen/Immersive Mode in MainActivity (OnCreate+OnResume, WindowInsetsController SystemBars hide + TransientBarsBySwipe), Ad-Banner-Spacer (MainView Panel→Grid mit 50dp Spacer Row, IsAdBannerVisible im MainViewModel mit AdsStateChanged-Event, versteckt im Game-View), Input-Reset Bug gefixt (\_inputManager.Reset() in LoadLevelAsync → keine Geister-Bewegung im nächsten Level), MainMenu-Partikel canvas.Clear(Transparent) → keine Partikel-Spuren mehr. Rewarded-Ad-Timeout 30s→8s (RewardedAdHelper). CelebrationOverlay 2.5s→1.5s, FloatingTextOverlay 1.5s→1.2s (betrifft alle Apps).
+- **13.02.2026 (10)**: UI/UX-Overhaul (15 Punkte): Musik-Crossfade (ISoundService.SetMusicVolume, SoundManager.Update Fade-Logik), View-Transitions (CSS-Klassen PageView+Active mit Opacity DoubleTransition 200ms), 5 Welt-Farbpaletten (Forest/Industrial/Cavern/Sky/Inferno, WorldPalette in GameRenderer, Classic+Neon), Sterne-Animation bei Level-Complete (Scale-Bounce, gestaffelter Delay), PowerUp-Einsammel-Animation (Shrink+Spin+Fade 0.3s), Welt-/Wave-Ankündigungen (großer Text bei Story-Welt-Wechsel + Arcade-Wave-Meilensteine), Coin-Floating-Text über Exit, GameButton-Style mit Scale-Transition (alle Menü-Views), Shop-Kauf-Feedback (Confetti+FloatingText bei Erfolg, roter Text bei zu wenig Coins), Achievement-Toast (AchievementUnlocked Event → goldener FloatingText), Coin-Counter-Animation (GameOverView zählt hoch), MainMenu-Hintergrund-Partikel (SKCanvasView, 25 farbige Punkte ~30fps), LevelSelect Welt-basierte Button-Farben, Tutorial-Replay Button in HelpView. 1 RESX-Key (ReplayTutorial) in 6 Sprachen.
 - **13.02.2026 (9)**: Balancing + Shop-Erweiterung + Bug-Fix: Level-Complete Bug gefixt (StartGameLoop() fehlte nach Score-Verdopplungs-Overlay), HandleLevelComplete Delay 3s→1s (Engine hat eigene Iris-Wipe). Coin-Balancing: Score÷3=Coins (statt 1:1), Game-Over÷6 (statt ÷2), Effizienz-Bonus skaliert nach Welt (1-5). 3 neue Shop-Upgrades: ShieldStart (Cyan-Glow, absorbiert 1 Gegnerkontakt, 15.000), CoinBonus (+25%/+50%, 8.000/25.000), PowerUpLuck (1-2 extra PowerUps, 5.000/15.000). Shop-Gesamt: 190.000 Coins (vorher ~68.000). 6 RESX-Keys in 6 Sprachen.
 - **13.02.2026 (8)**: Round 8 Feature-Implementation (6 Features aus Best-Practices-Recherche): Kick-Bomb Mechanik (Bomb.IsSliding/SlideDirection, UpdateBombSlide, TryKickBomb bei Spielerbewegung auf Bombe), Line-Bomb PowerUp (alle Bomben in Blickrichtung platzieren, PlaceLineBombs), Power-Bomb PowerUp (Mega-Bombe Range=FireRange+MaxBombs-1, verbraucht alle Slots), Skull/Curse System (4 CurseTypes: Diarrhea/Slow/Constipation/ReverseControls, 10s Dauer, violetter Glow), Danger Telegraphing (RenderDangerWarning pulsierend rot bei Zündschnur <0.8s), Squash/Stretch Animationen (Birth-Bounce Bomben 0.3s, Slide-Stretch 15%, Enemy-Tod Squash, Player-Tod 2-Phasen). PowerUpType.cs +4 Enum-Werte +CurseType Enum, Player.cs Curse-System +3 HasX Properties, Bomb.cs Kick/Slide, GameEngine.cs ReverseControls+Diarrhea+TryKickBomb, GameEngine.Explosion.cs PlacePowerBomb+PlaceLineBombs+UpdateBombSlide, GameRenderer.cs Danger+Squash/Stretch+4 neue PowerUp-Icons+Curse-HUD, LevelGenerator.cs neue PowerUps in Level-Progression+Arcade-Pool.
 - **13.02.2026 (7)**: Round 7 Deep-Analysis (alle Dateien, 16 Findings): Bugs: Achievement-Sterne vor Score-Speicherung geprüft → SetLevelBestScore in CompleteLevel() verschoben (B-R7-1/2), "DEFEAT ALL!" FloatingText Spam jeden Frame → 2s Cooldown (B-R7-3), LastEnemyKillPoints kumuliert statt Level-Score (B-R7-6), Speed-Boost PowerUp ineffektiv bei bestehendem Speed → SpeedLevel+1 (B-R7-7), Redundantes Lives=1 in Arcade entfernt (B-R7-8), PlayerDied-State stoppt Welt (Bomben/Explosionen/Gegner) → klassisches Bomberman-Verhalten (B-R7-15), Countdown "3-2-1" bei nur 2s → START_DELAY=3f (U-R7-1). Systematisch: (int)-Cast statt MathF.Floor bei Pixel→Grid in 4 Dateien (GameEngine.Explosion, CollisionHelper, GameGrid, GameRenderer) → alle 12 Stellen gefixt (B-R7-4/10/11/12). Tutorial-Warning-Timer nutzt Echtzeit statt Slow-Motion-deltaTime (B-R7-13). Gameplay: Exit-Platzierung weniger vorhersagbar → Zufallswahl aus Blöcken ab 60% Maximaldistanz (G-R7-1). Android-Crash: SettingsVM.OpenPrivacyPolicy Process.Start → UriLauncher.OpenUri (B-R7-16). Performance: HighScoreService.GetTopScores LINQ eliminiert (P-R7-1).

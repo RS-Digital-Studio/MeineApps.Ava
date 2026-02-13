@@ -859,5 +859,8 @@
   <data name="UpgradePowerUpLuckDesc" xml:space="preserve">
     <value>Extra random power-ups per level</value>
   </data>
+  <data name="ReplayTutorial" xml:space="preserve">
+    <value>Replay Tutorial</value>
+  </data>
 
 </root>

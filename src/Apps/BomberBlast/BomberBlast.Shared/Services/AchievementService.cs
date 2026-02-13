@@ -17,6 +17,8 @@ public class AchievementService : IAchievementService
     private readonly List<Achievement> _achievements;
     private AchievementData _data;
 
+    public event EventHandler<Achievement>? AchievementUnlocked;
+
     public IReadOnlyList<Achievement> Achievements => _achievements;
     public int UnlockedCount => _achievements.Count(a => a.IsUnlocked);
     public int TotalCount => _achievements.Count;
@@ -126,6 +128,10 @@ public class AchievementService : IAchievementService
         achievement.Progress = achievement.Target;
         _data.UnlockedIds.Add(id);
         Save();
+
+        // Event feuern für Toast-Anzeige
+        AchievementUnlocked?.Invoke(this, achievement);
+
         return achievement;
     }
 

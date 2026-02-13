@@ -7,6 +7,9 @@ namespace BomberBlast.Services;
 /// </summary>
 public interface IAchievementService
 {
+    /// <summary>Event wenn ein Achievement freigeschaltet wird</summary>
+    event EventHandler<Achievement>? AchievementUnlocked;
+
     /// <summary>Alle Achievements</summary>
     IReadOnlyList<Achievement> Achievements { get; }
 

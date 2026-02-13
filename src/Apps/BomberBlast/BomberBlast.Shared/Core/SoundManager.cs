@@ -22,6 +22,12 @@ public class SoundManager : IDisposable
     private bool _sfxEnabled = true;
     private bool _musicEnabled = true;
 
+    // Crossfade-Felder
+    private float _fadeOutTimer;
+    private float _fadeOutDuration;
+    private string? _nextMusicKey;
+    private float _currentFadeVolume = 1f;
+
     // Sound effect keys
     public const string SFX_EXPLOSION = "explosion";
     public const string SFX_PLACE_BOMB = "place_bomb";
@@ -130,7 +136,37 @@ public class SoundManager : IDisposable
     }
 
     /// <summary>
-    /// Play background music (loops continuously)
+    /// Crossfade-Timer aktualisieren (pro Frame aufrufen)
+    /// </summary>
+    public void Update(float deltaTime)
+    {
+        if (_fadeOutTimer <= 0 || _nextMusicKey == null)
+            return;
+
+        _fadeOutTimer -= deltaTime;
+        if (_fadeOutTimer <= 0)
+        {
+            // Fade-Out abgeschlossen → alten Track stoppen, neuen starten
+            _soundService.StopMusic();
+            _currentMusic = null;
+            _currentFadeVolume = 1f;
+
+            _soundService.PlayMusic(_nextMusicKey, _musicVolume);
+            _soundService.SetMusicVolume(_musicVolume);
+            _currentMusic = _nextMusicKey;
+            _nextMusicKey = null;
+        }
+        else
+        {
+            // Lautstärke graduell senken
+            float progress = _fadeOutTimer / _fadeOutDuration;
+            _currentFadeVolume = progress;
+            _soundService.SetMusicVolume(_musicVolume * progress);
+        }
+    }
+
+    /// <summary>
+    /// Play background music (loops continuously, mit Crossfade)
     /// </summary>
     public void PlayMusic(string musicKey)
     {
@@ -144,9 +180,18 @@ public class SoundManager : IDisposable
         if (_currentMusic == musicKey)
             return;
 
-        StopMusic();
+        // Crossfade wenn bereits Musik läuft
+        if (_currentMusic != null)
+        {
+            _nextMusicKey = musicKey;
+            _fadeOutDuration = 0.5f;
+            _fadeOutTimer = _fadeOutDuration;
+            return;
+        }
+
         _soundService.PlayMusic(musicKey, _musicVolume);
         _currentMusic = musicKey;
+        _currentFadeVolume = 1f;
     }
 
     /// <summary>

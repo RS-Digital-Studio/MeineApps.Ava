@@ -20,6 +20,23 @@
     <StyleInclude Source="avares://MeineApps.UI/Styles/InputStyles.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Controls/Card.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Controls/FloatingActionButton.axaml" />
+
+    <!-- BomberBlast GameButton: Scale-Transition bei Hover/Press -->
+    <Style Selector="Button.GameButton">
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.GameButton:pointerover">
+      <Setter Property="RenderTransform" Value="scale(1.05)" />
+    </Style>
+    <Style Selector="Button.GameButton:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.95)" />
+    </Style>
   </Application.Styles>
 
 </Application>

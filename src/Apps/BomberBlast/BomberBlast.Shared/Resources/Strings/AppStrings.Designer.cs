@@ -1254,5 +1254,11 @@ namespace BomberBlast.Resources.Strings {
                 return ResourceManager.GetString("PressBackAgainToExit", resourceCulture);
             }
         }
+
+        internal static string ReplayTutorial {
+            get {
+                return ResourceManager.GetString("ReplayTutorial", resourceCulture);
+            }
+        }
     }
 }

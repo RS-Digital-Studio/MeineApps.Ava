@@ -97,6 +97,7 @@
                 <Button IsVisible="{Binding !IsWorldHeader}"
                         Command="{Binding SelectCommand}"
                         IsEnabled="{Binding IsUnlocked}"
+                        Classes="GameButton"
                         Width="70" Height="85"
                         Margin="5"
                         Padding="0"
@@ -194,7 +195,7 @@
                      TextAlignment="Center" />
 
           <StackPanel Spacing="8">
-            <Button Classes="Filled"
+            <Button Classes="Filled GameButton"
                     Command="{Binding AcceptBoostCommand}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"

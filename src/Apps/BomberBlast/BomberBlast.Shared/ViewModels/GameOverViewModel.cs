@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -19,6 +20,9 @@ public partial class GameOverViewModel : ObservableObject
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IProgressService _progressService;
     private bool _coinsClaimed;
+    private DispatcherTimer? _coinAnimTimer;
+    private int _animatedCoins;
+    private int _targetCoins;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -176,10 +180,13 @@ public partial class GameOverViewModel : ObservableObject
             ? string.Format(_localizationService.GetString("WaveOverlay"), level)
             : string.Format(_localizationService.GetString("LevelFormat"), level);
 
-        // Coins
+        // Coins (mit hochzählender Animation)
         CoinsEarned = coins;
-        CoinsEarnedText = $"+{coins:N0}";
+        _targetCoins = coins;
+        _animatedCoins = 0;
+        CoinsEarnedText = "+0";
         HasDoubled = false;
+        StartCoinAnimation();
         HasContinued = false;
         _coinsClaimed = false;
         CanDoubleCoins = coins > 0 && _rewardedAdService.IsAvailable;
@@ -310,5 +317,35 @@ public partial class GameOverViewModel : ObservableObject
             _coinService.AddCoins(CoinsEarned);
             _coinsClaimed = true;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COIN-COUNTER ANIMATION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void StartCoinAnimation()
+    {
+        _coinAnimTimer?.Stop();
+        if (_targetCoins <= 0)
+        {
+            CoinsEarnedText = "+0";
+            return;
+        }
+
+        _coinAnimTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _coinAnimTimer.Tick += (_, _) =>
+        {
+            // Increment pro Frame: Coins / 30 Frames (~0.5s bei 60fps)
+            int step = Math.Max(1, _targetCoins / 30);
+            _animatedCoins = Math.Min(_animatedCoins + step, _targetCoins);
+            CoinsEarnedText = $"+{_animatedCoins:N0}";
+
+            if (_animatedCoins >= _targetCoins)
+            {
+                _coinAnimTimer?.Stop();
+                _coinAnimTimer = null;
+            }
+        };
+        _coinAnimTimer.Start();
     }
 }

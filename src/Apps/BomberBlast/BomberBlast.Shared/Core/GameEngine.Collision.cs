@@ -66,13 +66,16 @@ public partial class GameEngine
         for (int i = _powerUps.Count - 1; i >= 0; i--)
         {
             var powerUp = _powerUps[i];
-            if (!powerUp.IsActive || powerUp.IsMarkedForRemoval)
+            if (!powerUp.IsActive || powerUp.IsMarkedForRemoval || powerUp.IsBeingCollected)
                 continue;
 
             if (_player.GridX == powerUp.GridX && _player.GridY == powerUp.GridY)
             {
                 _player.CollectPowerUp(powerUp);
-                powerUp.IsMarkedForRemoval = true;
+
+                // Einsammel-Animation starten (nicht sofort entfernen)
+                powerUp.IsBeingCollected = true;
+                powerUp.CollectTimer = Models.Entities.PowerUp.COLLECT_DURATION;
 
                 var gridCell = _grid.TryGetCell(powerUp.GridX, powerUp.GridY);
                 if (gridCell != null)

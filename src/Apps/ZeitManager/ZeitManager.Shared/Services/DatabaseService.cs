@@ -30,6 +30,8 @@ public class DatabaseService : IDatabaseService
             await _database.CreateTableAsync<ShiftSchedule>();
             await _database.CreateTableAsync<ShiftException>();
             await _database.CreateTableAsync<CustomShiftPattern>();
+            await _database.CreateTableAsync<TimerPreset>();
+            await _database.CreateTableAsync<FocusSession>();
         }
         finally
         {
@@ -145,5 +147,45 @@ public class DatabaseService : IDatabaseService
     {
         var db = await GetDatabaseAsync();
         return await db.DeleteAsync(exception);
+    }
+
+    // Timer Presets
+    public async Task<List<TimerPreset>> GetTimerPresetsAsync()
+    {
+        var db = await GetDatabaseAsync();
+        return await db.Table<TimerPreset>().OrderByDescending(p => p.Id).ToListAsync();
+    }
+
+    public async Task<int> SaveTimerPresetAsync(TimerPreset preset)
+    {
+        var db = await GetDatabaseAsync();
+        if (preset.Id != 0)
+            return await db.UpdateAsync(preset);
+        return await db.InsertAsync(preset);
+    }
+
+    public async Task<int> DeleteTimerPresetAsync(TimerPreset preset)
+    {
+        var db = await GetDatabaseAsync();
+        return await db.DeleteAsync(preset);
+    }
+
+    // Focus Sessions (Pomodoro)
+    public async Task<List<FocusSession>> GetFocusSessionsAsync(DateTime from, DateTime to)
+    {
+        var db = await GetDatabaseAsync();
+        var fromStr = from.ToString("O");
+        var toStr = to.ToString("O");
+        return await db.Table<FocusSession>()
+            .Where(s => string.Compare(s.CompletedAt, fromStr) >= 0 && string.Compare(s.CompletedAt, toStr) <= 0)
+            .ToListAsync();
+    }
+
+    public async Task<int> SaveFocusSessionAsync(FocusSession session)
+    {
+        var db = await GetDatabaseAsync();
+        if (session.Id != 0)
+            return await db.UpdateAsync(session);
+        return await db.InsertAsync(session);
     }
 }

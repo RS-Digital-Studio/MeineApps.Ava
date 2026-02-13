@@ -13,6 +13,20 @@ public class AndroidNotificationService : INotificationService
     // Neuer Channel mit Sound (alter "zeitmanager_alarm" hatte SetSound(null, null))
     public const string AlarmChannelIdV2 = "zeitmanager_alarm_v2";
 
+    /// <summary>
+    /// Deterministischer Hash (statt GetHashCode(), der zwischen Neustarts nicht stabil ist).
+    /// </summary>
+    internal static int StableHash(string input)
+    {
+        unchecked
+        {
+            int hash = 17;
+            foreach (char c in input)
+                hash = hash * 31 + c;
+            return Math.Abs(hash);
+        }
+    }
+
     public AndroidNotificationService()
     {
         CreateNotificationChannels();
@@ -70,7 +84,7 @@ public class AndroidNotificationService : INotificationService
             .SetCategory(NotificationCompat.CategoryAlarm);
 
         var manager = NotificationManagerCompat.From(context);
-        manager.Notify(Math.Abs(actionId?.GetHashCode() ?? 1), builder.Build());
+        manager.Notify(StableHash(actionId ?? "default"), builder.Build());
 
         return Task.CompletedTask;
     }
@@ -91,7 +105,7 @@ public class AndroidNotificationService : INotificationService
         intent.PutExtra("id", id);
 
         var pendingIntent = PendingIntent.GetBroadcast(
-            context, Math.Abs(id.GetHashCode()), intent,
+            context, StableHash(id), intent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
         var triggerMs = (long)(triggerAt.ToUniversalTime() - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
@@ -113,6 +127,13 @@ public class AndroidNotificationService : INotificationService
         return Task.CompletedTask;
     }
 
+    public bool CanScheduleExactAlarms()
+    {
+        if (Build.VERSION.SdkInt < BuildVersionCodes.S) return true;
+        var alarmManager = (AlarmManager?)Application.Context.GetSystemService(Context.AlarmService);
+        return alarmManager?.CanScheduleExactAlarms() ?? false;
+    }
+
     public Task CancelNotificationAsync(string id)
     {
         var context = Application.Context;
@@ -121,7 +142,7 @@ public class AndroidNotificationService : INotificationService
 
         var intent = new Intent(context, typeof(AlarmReceiver));
         var pendingIntent = PendingIntent.GetBroadcast(
-            context, Math.Abs(id.GetHashCode()), intent,
+            context, StableHash(id), intent,
             PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
         if (pendingIntent != null)
@@ -130,7 +151,7 @@ public class AndroidNotificationService : INotificationService
         }
 
         var manager = NotificationManagerCompat.From(context);
-        manager.Cancel(Math.Abs(id.GetHashCode()));
+        manager.Cancel(StableHash(id));
 
         return Task.CompletedTask;
     }

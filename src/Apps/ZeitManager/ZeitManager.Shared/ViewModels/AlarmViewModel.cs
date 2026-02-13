@@ -70,6 +70,13 @@ public partial class AlarmViewModel : ObservableObject
     [ObservableProperty]
     private bool _isDeleteConfirmVisible;
 
+    // Urlaubsmodus (Alarm-Pause)
+    [ObservableProperty]
+    private bool _isPauseDialogVisible;
+
+    [ObservableProperty]
+    private int _pauseDays = 7;
+
     // Localized strings
     public string TitleText => _localization.GetString("AlarmTitle");
     public string NewAlarmText => _localization.GetString("NewAlarm");
@@ -100,9 +107,25 @@ public partial class AlarmViewModel : ObservableObject
     public string HoursShortText => _localization.GetString("HoursShort");
     public string MinutesShortText => _localization.GetString("MinutesShort");
 
+    public string PickFromDeviceText => _localization.GetString("PickFromDevice");
+
+    // Urlaubsmodus Texte
+    public bool IsAllPaused => _alarmScheduler.IsAllPaused;
+    public string PausedUntilText => _alarmScheduler.PausedUntil != null
+        ? string.Format(_localization.GetString("PausedUntilFormat"), _alarmScheduler.PausedUntil.Value.ToLocalTime().ToString("dd.MM.yyyy HH:mm"))
+        : string.Empty;
+    public string PauseAllAlarmsText => _localization.GetString("PauseAllAlarms");
+    public string ResumeAllAlarmsText => _localization.GetString("ResumeAllAlarms");
+    public string VacationModeText => _localization.GetString("VacationMode");
+    public string PauseDurationText => _localization.GetString("PauseDuration");
+    public string DaysText => _localization.GetString("Days");
+
     public bool HasAlarms => Alarms.Count > 0;
 
-    public IReadOnlyList<SoundItem> AvailableSounds => _audioService.AvailableSounds;
+    [ObservableProperty]
+    private IReadOnlyList<SoundItem> _availableSounds;
+
+    private void RefreshAvailableSounds() => AvailableSounds = _audioService.AvailableSounds;
 
     public AlarmViewModel(IDatabaseService database, ILocalizationService localization, IAudioService audioService, IAlarmSchedulerService alarmScheduler, ShiftScheduleViewModel shiftScheduleViewModel)
     {
@@ -111,6 +134,7 @@ public partial class AlarmViewModel : ObservableObject
         _audioService = audioService;
         _alarmScheduler = alarmScheduler;
         _shiftScheduleViewModel = shiftScheduleViewModel;
+        _availableSounds = _audioService.AvailableSounds;
         _localization.LanguageChanged += OnLanguageChanged;
         _ = LoadAlarms();
     }
@@ -254,13 +278,54 @@ public partial class AlarmViewModel : ObservableObject
     [RelayCommand]
     private async Task PreviewSound()
     {
-        await _audioService.PlayAsync(SelectedAlarmTone);
+        // Prüfen ob gewählter Sound eine URI hat (System/Custom Sound)
+        var sound = AvailableSounds.FirstOrDefault(s => s.Id == SelectedAlarmTone);
+        if (sound?.Uri != null)
+            await _audioService.PlayUriAsync(sound.Uri);
+        else
+            await _audioService.PlayAsync(SelectedAlarmTone);
+    }
+
+    [RelayCommand]
+    private async Task PickAlarmSound()
+    {
+        var picked = await _audioService.PickSoundAsync();
+        if (picked != null)
+        {
+            RefreshAvailableSounds();
+            SelectedAlarmTone = picked.Id;
+        }
     }
 
     [RelayCommand]
     private void ToggleViewMode()
     {
         IsShiftScheduleMode = !IsShiftScheduleMode;
+    }
+
+    // Urlaubsmodus Commands
+    [RelayCommand]
+    private void ShowPauseDialog() => IsPauseDialogVisible = true;
+
+    [RelayCommand]
+    private void CancelPauseDialog() => IsPauseDialogVisible = false;
+
+    [RelayCommand]
+    private async Task PauseAllAlarms()
+    {
+        var pauseUntil = DateTime.UtcNow.AddDays(PauseDays);
+        await _alarmScheduler.PauseAllAlarmsAsync(pauseUntil);
+        IsPauseDialogVisible = false;
+        OnPropertyChanged(nameof(IsAllPaused));
+        OnPropertyChanged(nameof(PausedUntilText));
+    }
+
+    [RelayCommand]
+    private async Task ResumeAllAlarms()
+    {
+        await _alarmScheduler.ResumeAllAlarmsAsync();
+        OnPropertyChanged(nameof(IsAllPaused));
+        OnPropertyChanged(nameof(PausedUntilText));
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)

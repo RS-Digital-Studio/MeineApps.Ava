@@ -51,11 +51,14 @@ public class DesktopNotificationService : INotificationService
             finally
             {
                 _scheduledNotifications.TryRemove(id, out _);
+                cts.Dispose();
             }
         }, cts.Token);
 
         return Task.CompletedTask;
     }
+
+    public bool CanScheduleExactAlarms() => true;
 
     public Task CancelNotificationAsync(string id)
     {
@@ -99,10 +102,14 @@ $xml.LoadXml($template)
 $toast = [Windows.UI.Notifications.ToastNotification]::new($xml)
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier('ZeitManager').Show($toast)";
 
+            // Base64-encodiertes Script verhindert Escaping-Probleme mit Anführungszeichen
+            var scriptBytes = System.Text.Encoding.Unicode.GetBytes(script);
+            var encodedScript = Convert.ToBase64String(scriptBytes);
+
             using var process = Process.Start(new ProcessStartInfo
             {
                 FileName = "powershell",
-                Arguments = $"-NoProfile -ExecutionPolicy Bypass -Command \"{script.Replace("\"", "\\\"")}\"",
+                Arguments = $"-NoProfile -ExecutionPolicy Bypass -EncodedCommand {encodedScript}",
                 UseShellExecute = false,
                 CreateNoWindow = true
             });

@@ -28,4 +28,13 @@ public interface IDatabaseService
     Task<List<ShiftException>> GetShiftExceptionsAsync(int scheduleId);
     Task<int> SaveShiftExceptionAsync(ShiftException exception);
     Task<int> DeleteShiftExceptionAsync(ShiftException exception);
+
+    // Timer Presets
+    Task<List<TimerPreset>> GetTimerPresetsAsync();
+    Task<int> SaveTimerPresetAsync(TimerPreset preset);
+    Task<int> DeleteTimerPresetAsync(TimerPreset preset);
+
+    // Focus Sessions (Pomodoro)
+    Task<List<FocusSession>> GetFocusSessionsAsync(DateTime from, DateTime to);
+    Task<int> SaveFocusSessionAsync(FocusSession session);
 }

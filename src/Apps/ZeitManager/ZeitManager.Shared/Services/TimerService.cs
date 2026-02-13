@@ -25,6 +25,10 @@ public class TimerService : ITimerService, IDisposable
         get { lock (_lock) return _timers.Where(t => t.State == TimerState.Running).ToList().AsReadOnly(); }
     }
 
+    // Callbacks fuer Android ForegroundService
+    public Action<string, string>? ForegroundNotificationCallback { get; set; }
+    public Action? StopForegroundCallback { get; set; }
+
     public event EventHandler<TimerItem>? TimerFinished;
     public event EventHandler<TimerItem>? TimerTick;
     public event EventHandler? TimersChanged;
@@ -129,6 +133,10 @@ public class TimerService : ITimerService, IDisposable
         EnsureUiTimer();
         TimersChanged?.Invoke(this, EventArgs.Empty);
 
+        // ForegroundService starten (Android)
+        var remaining = timer.RemainingTime;
+        ForegroundNotificationCallback?.Invoke(timer.Name, FormatRemaining(remaining));
+
         // System-Notification fuer den erwarteten Fertigstellungszeitpunkt planen
         var finishAt = DateTime.Now.Add(timer.RemainingTime);
         await _notificationService.ScheduleNotificationAsync(
@@ -186,6 +194,53 @@ public class TimerService : ITimerService, IDisposable
         await _notificationService.CancelNotificationAsync($"timer_{timer.Id}");
     }
 
+    public async Task DeleteAllTimersAsync()
+    {
+        List<TimerItem> snapshot;
+        lock (_lock)
+        {
+            snapshot = _timers.ToList();
+            _timers.Clear();
+        }
+
+        foreach (var timer in snapshot)
+        {
+            await _database.DeleteTimerAsync(timer);
+            await _notificationService.CancelNotificationAsync($"timer_{timer.Id}");
+        }
+
+        CheckStopUiTimer();
+        TimersChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task ExtendTimerAsync(TimerItem timer, TimeSpan extra)
+    {
+        if (timer.State == TimerState.Running)
+        {
+            // Snapshot aktualisieren damit GetRemainingTime mehr anzeigt
+            timer.RemainingAtStartTicks += extra.Ticks;
+            timer.DurationTicks += extra.Ticks;
+            await _database.SaveTimerAsync(timer);
+
+            // System-Notification neu planen
+            var remaining = GetRemainingTime(timer);
+            var finishAt = DateTime.Now.Add(remaining);
+            await _notificationService.ScheduleNotificationAsync(
+                $"timer_{timer.Id}",
+                timer.Name,
+                _localization.GetString("TimerFinishedNotification"),
+                finishAt);
+        }
+        else if (timer.State == TimerState.Paused)
+        {
+            timer.RemainingTimeTicks += extra.Ticks;
+            timer.DurationTicks += extra.Ticks;
+            await _database.SaveTimerAsync(timer);
+        }
+
+        TimersChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     public TimeSpan GetRemainingTime(TimerItem timer)
     {
         if (timer.State != TimerState.Running || timer.StartedAtDateTime == null)
@@ -213,6 +268,9 @@ public class TimerService : ITimerService, IDisposable
             _uiTimer.Elapsed -= OnUiTimerTick;
             _uiTimer.Dispose();
             _uiTimer = null;
+
+            // ForegroundService stoppen (Android)
+            StopForegroundCallback?.Invoke();
         }
     }
 
@@ -220,26 +278,76 @@ public class TimerService : ITimerService, IDisposable
     {
         Dispatcher.UIThread.Post(() =>
         {
-            foreach (var timer in RunningTimers.ToList())
+            // Einmaliger Snapshot unter Lock (verhindert Race-Condition mit Remove)
+            List<TimerItem> snapshot;
+            lock (_lock) snapshot = _timers.Where(t => t.State == TimerState.Running).ToList();
+
+            var finished = new List<TimerItem>();
+            TimerItem? firstRunning = null;
+
+            foreach (var timer in snapshot)
             {
                 var remaining = GetRemainingTime(timer);
                 if (remaining <= TimeSpan.Zero)
                 {
                     timer.State = TimerState.Finished;
                     timer.RemainingTimeTicks = 0;
-                    // Remove from list (hides from UI) but keep in DB for snooze
-                    lock (_lock) _timers.Remove(timer);
-                    TimersChanged?.Invoke(this, EventArgs.Empty);
-                    TimerFinished?.Invoke(this, timer);
-                    // System-Notification canceln (App war im Vordergrund, Overlay wird gezeigt)
-                    _ = _notificationService.CancelNotificationAsync($"timer_{timer.Id}");
+                    finished.Add(timer);
                 }
                 else
                 {
+                    firstRunning ??= timer;
                     TimerTick?.Invoke(this, timer);
                 }
             }
+
+            // Batch-Remove fertige Timer
+            if (finished.Count > 0)
+            {
+                lock (_lock)
+                {
+                    foreach (var timer in finished)
+                        _timers.Remove(timer);
+                }
+                TimersChanged?.Invoke(this, EventArgs.Empty);
+
+                // Events nach dem Entfernen feuern
+                foreach (var timer in finished)
+                {
+                    TimerFinished?.Invoke(this, timer);
+                    _ = _notificationService.CancelNotificationAsync($"timer_{timer.Id}");
+                }
+
+                // AutoRepeat: Timer zurücksetzen und neu starten
+                foreach (var timer in finished.Where(t => t.AutoRepeat))
+                {
+                    timer.State = TimerState.Stopped;
+                    timer.RemainingTimeTicks = timer.DurationTicks;
+                    timer.StartedAt = null;
+                    timer.PausedAt = null;
+                    lock (_lock)
+                    {
+                        if (!_timers.Contains(timer))
+                            _timers.Add(timer);
+                    }
+                    _ = StartTimerAsync(timer);
+                }
+            }
+
+            // ForegroundService-Notification mit dem ersten laufenden Timer aktualisieren
+            if (firstRunning != null)
+            {
+                var rem = GetRemainingTime(firstRunning);
+                ForegroundNotificationCallback?.Invoke(firstRunning.Name, FormatRemaining(rem));
+            }
         });
+    }
+
+    private static string FormatRemaining(TimeSpan remaining)
+    {
+        return remaining.TotalHours >= 1
+            ? remaining.ToString(@"h\:mm\:ss")
+            : remaining.ToString(@"mm\:ss");
     }
 
     public void Dispose()

@@ -1,37 +1,69 @@
 using Android.App;
+using Android.Content;
 using Android.Media;
+using ZeitManager.Audio;
 using ZeitManager.Models;
 using ZeitManager.Services;
 
 namespace ZeitManager.Android.Services;
 
 /// <summary>
-/// Android-spezifischer AudioService - nutzt MediaPlayer fuer Tonwiedergabe.
-/// Generiert WAV-Daten in-memory (gleiche Toene wie Desktop) und spielt sie via MediaPlayer ab.
+/// Android-spezifischer AudioService - nutzt MediaPlayer für Tonwiedergabe.
+/// Unterstützt eingebaute Töne, System-Ringtones und benutzerdefinierte Sounds.
 /// </summary>
 public class AndroidAudioService : IAudioService
 {
     private readonly object _lock = new();
     private CancellationTokenSource? _loopCts;
     private MediaPlayer? _currentPlayer;
+    private string? _currentTempFile;
+    private List<SoundItem>? _cachedSystemSounds;
+    // Cache für AvailableSounds (wird bei Änderungen invalidiert)
+    private IReadOnlyList<SoundItem>? _cachedAvailableSounds;
 
-    private static readonly List<SoundItem> _sounds =
-    [
-        new("default", "Default Beep"),
-        new("alert_high", "Alert High"),
-        new("alert_low", "Alert Low"),
-        new("chime", "Chime"),
-        new("bell", "Bell"),
-        new("digital", "Digital"),
-    ];
+    /// <summary>
+    /// Callback für Ringtone-Picker. Wird von MainActivity gesetzt.
+    /// Gibt die gewählte URI zurück (oder null bei Abbruch).
+    /// </summary>
+    public static Func<Task<string?>>? PickRingtoneCallback { get; set; }
 
-    public IReadOnlyList<SoundItem> AvailableSounds => _sounds;
+    public IReadOnlyList<SoundItem> AvailableSounds
+    {
+        get
+        {
+            if (_cachedAvailableSounds == null)
+            {
+                var all = new List<SoundItem>(SoundDefinitions.BuiltInSounds);
+                all.AddRange(SystemSounds);
+                _cachedAvailableSounds = all;
+            }
+            return _cachedAvailableSounds;
+        }
+    }
+
+    public IReadOnlyList<SoundItem> SystemSounds
+    {
+        get
+        {
+            _cachedSystemSounds ??= LoadSystemSounds();
+            return _cachedSystemSounds;
+        }
+    }
+
     public string DefaultTimerSound => "default";
     public string DefaultAlarmSound => "default";
 
     public async Task PlayAsync(string soundId, bool loop = false)
     {
         Stop();
+
+        // Prüfen ob es ein System-Sound mit URI ist
+        var systemSound = SystemSounds.FirstOrDefault(s => s.Id == soundId);
+        if (systemSound?.Uri != null)
+        {
+            await PlayUriAsync(systemSound.Uri, loop);
+            return;
+        }
 
         if (loop)
         {
@@ -62,6 +94,39 @@ public class AndroidAudioService : IAudioService
         }
     }
 
+    public async Task PlayUriAsync(string uri, bool loop = false)
+    {
+        Stop();
+
+        if (loop)
+        {
+            CancellationTokenSource cts;
+            lock (_lock)
+            {
+                cts = new CancellationTokenSource();
+                _loopCts = cts;
+            }
+            var token = cts.Token;
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    while (!token.IsCancellationRequested)
+                    {
+                        PlayFromUri(uri);
+                        await Task.Delay(2000, token);
+                    }
+                }
+                catch (OperationCanceledException) { }
+            }, token);
+        }
+        else
+        {
+            await Task.Run(() => PlayFromUri(uri));
+        }
+    }
+
     public void Stop()
     {
         // Loop stoppen
@@ -82,13 +147,30 @@ public class AndroidAudioService : IAudioService
         StopCurrentPlayer();
     }
 
+    public async Task<SoundItem?> PickSoundAsync()
+    {
+        if (PickRingtoneCallback == null) return null;
+
+        var uri = await PickRingtoneCallback();
+        if (string.IsNullOrEmpty(uri)) return null;
+
+        // Sound-Name aus URI ermitteln
+        var name = GetRingtoneName(uri) ?? "Custom Sound";
+        var soundId = $"ringtone_{HashHelper.StableHash(uri):X8}";
+
+        return new SoundItem(soundId, name, IsSystem: false, Uri: uri);
+    }
+
     private void StopCurrentPlayer()
     {
         MediaPlayer? player;
+        string? tempFile;
         lock (_lock)
         {
             player = _currentPlayer;
             _currentPlayer = null;
+            tempFile = _currentTempFile;
+            _currentTempFile = null;
         }
 
         if (player != null)
@@ -103,25 +185,21 @@ public class AndroidAudioService : IAudioService
                 // Player bereits freigegeben
             }
         }
+
+        // Temp-Datei aufräumen
+        if (tempFile != null)
+        {
+            try { File.Delete(tempFile); } catch { }
+        }
     }
 
     private void PlayTone(string soundId)
     {
         try
         {
-            var (frequency, durationMs) = soundId switch
-            {
-                "alert_high" => (1200, 300),
-                "alert_low" => (600, 500),
-                "chime" => (880, 200),
-                "bell" => (1000, 400),
-                "digital" => (1500, 150),
-                _ => (800, 300) // default
-            };
+            var (frequency, durationMs) = SoundDefinitions.GetToneParams(soundId);
+            var wavData = WavGenerator.GenerateWav(frequency, durationMs);
 
-            var wavData = GenerateWav(frequency, durationMs);
-
-            // WAV in temporaere Datei schreiben und mit MediaPlayer abspielen
             var tempFile = Path.Combine(
                 Application.Context.CacheDir?.AbsolutePath ?? Path.GetTempPath(),
                 $"zeitmanager_tone_{Guid.NewGuid():N}.wav");
@@ -138,12 +216,12 @@ public class AndroidAudioService : IAudioService
             player.SetDataSource(tempFile);
             player.Prepare();
 
-            // Alten Player stoppen
             StopCurrentPlayer();
 
             lock (_lock)
             {
                 _currentPlayer = player;
+                _currentTempFile = tempFile;
             }
 
             player.Completion += (_, _) =>
@@ -153,15 +231,15 @@ public class AndroidAudioService : IAudioService
                     player.Release();
                     File.Delete(tempFile);
                 }
-                catch
-                {
-                    // Cleanup-Fehler ignorieren
-                }
+                catch { }
 
                 lock (_lock)
                 {
                     if (_currentPlayer == player)
+                    {
                         _currentPlayer = null;
+                        _currentTempFile = null;
+                    }
                 }
             };
 
@@ -174,50 +252,128 @@ public class AndroidAudioService : IAudioService
     }
 
     /// <summary>
-    /// Generiert PCM WAV-Daten in-memory mit einem Sinuston (gleich wie Desktop AudioService).
+    /// Spielt einen Sound von einer content:// URI ab.
     /// </summary>
-    private static byte[] GenerateWav(int frequency, int durationMs)
+    private void PlayFromUri(string uri)
     {
-        const int sampleRate = 44100;
-        int samples = sampleRate * durationMs / 1000;
-        int dataSize = samples * 2; // 16-bit mono
-        int fadeOut = Math.Min(samples / 10, sampleRate / 20); // ~50ms Fade
-
-        using var ms = new MemoryStream(44 + dataSize);
-        using var bw = new BinaryWriter(ms);
-
-        // RIFF Header
-        bw.Write((byte)'R'); bw.Write((byte)'I'); bw.Write((byte)'F'); bw.Write((byte)'F');
-        bw.Write(36 + dataSize);
-        bw.Write((byte)'W'); bw.Write((byte)'A'); bw.Write((byte)'V'); bw.Write((byte)'E');
-
-        // fmt Sub-Chunk
-        bw.Write((byte)'f'); bw.Write((byte)'m'); bw.Write((byte)'t'); bw.Write((byte)' ');
-        bw.Write(16);          // Chunk-Groesse
-        bw.Write((short)1);    // PCM Format
-        bw.Write((short)1);    // Mono
-        bw.Write(sampleRate);
-        bw.Write(sampleRate * 2); // Byte Rate
-        bw.Write((short)2);    // Block Align
-        bw.Write((short)16);   // Bits pro Sample
-
-        // data Sub-Chunk
-        bw.Write((byte)'d'); bw.Write((byte)'a'); bw.Write((byte)'t'); bw.Write((byte)'a');
-        bw.Write(dataSize);
-
-        for (int i = 0; i < samples; i++)
+        try
         {
-            double t = (double)i / sampleRate;
-            double amplitude = 0.5;
+            StopCurrentPlayer();
 
-            // Fade-Out am Ende gegen Klick-Artefakte
-            if (i >= samples - fadeOut)
-                amplitude *= (double)(samples - i) / fadeOut;
+            var context = Application.Context;
+            var player = new MediaPlayer();
+            player.SetAudioAttributes(
+                new AudioAttributes.Builder()
+                    .SetUsage(AudioUsageKind.Alarm)!
+                    .SetContentType(AudioContentType.Sonification)!
+                    .Build()!);
 
-            short sample = (short)(Math.Sin(2 * Math.PI * frequency * t) * short.MaxValue * amplitude);
-            bw.Write(sample);
+            if (uri.StartsWith("content://") || uri.StartsWith("file://"))
+            {
+                var androidUri = global::Android.Net.Uri.Parse(uri)!;
+                player.SetDataSource(context, androidUri);
+            }
+            else
+            {
+                // Lokaler Dateipfad
+                player.SetDataSource(uri);
+            }
+
+            player.Prepare();
+
+            lock (_lock)
+            {
+                _currentPlayer = player;
+                _currentTempFile = null;
+            }
+
+            player.Completion += (_, _) =>
+            {
+                try { player.Release(); } catch { }
+                lock (_lock)
+                {
+                    if (_currentPlayer == player)
+                        _currentPlayer = null;
+                }
+            };
+
+            player.Start();
+        }
+        catch
+        {
+            // URI-Wiedergabe fehlgeschlagen
+        }
+    }
+
+    /// <summary>
+    /// Lädt alle System-Ringtones (Alarm, Notification, Ringtone) via RingtoneManager.
+    /// </summary>
+    private static List<SoundItem> LoadSystemSounds()
+    {
+        var sounds = new List<SoundItem>();
+        try
+        {
+            var context = Application.Context;
+            var types = new[] { RingtoneType.Alarm, RingtoneType.Notification, RingtoneType.Ringtone };
+
+            // Duplikate über URI vermeiden
+            var seenUris = new HashSet<string>();
+
+            foreach (var type in types)
+            {
+                var manager = new RingtoneManager(context);
+                manager.SetType(type);
+
+                var cursor = manager.Cursor;
+                if (cursor == null) continue;
+
+                while (cursor.MoveToNext())
+                {
+                    try
+                    {
+                        // Spalte 1 = Titel (TITLE_COLUMN_INDEX)
+                        var title = cursor.GetString(1);
+                        var uri = manager.GetRingtoneUri(cursor.Position);
+                        if (uri == null || string.IsNullOrEmpty(title)) continue;
+
+                        var uriStr = uri.ToString()!;
+                        if (!seenUris.Add(uriStr)) continue;
+
+                        var id = $"sys_{HashHelper.StableHash(uriStr):X8}";
+                        sounds.Add(new SoundItem(id, title, IsSystem: true, Uri: uriStr));
+                    }
+                    catch
+                    {
+                        // Einzelnen Eintrag überspringen
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // System-Sound-Laden ist best-effort
         }
 
-        return ms.ToArray();
+        return sounds;
+    }
+
+    /// <summary>
+    /// Ermittelt den Namen eines Ringtones aus seiner URI.
+    /// </summary>
+    private static string? GetRingtoneName(string uri)
+    {
+        try
+        {
+            var context = Application.Context;
+            var androidUri = global::Android.Net.Uri.Parse(uri);
+            if (androidUri == null) return null;
+
+            var ringtone = RingtoneManager.GetRingtone(context, androidUri);
+            return ringtone?.GetTitle(context);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

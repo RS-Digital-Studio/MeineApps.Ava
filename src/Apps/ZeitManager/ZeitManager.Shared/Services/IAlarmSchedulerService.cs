@@ -10,5 +10,11 @@ public interface IAlarmSchedulerService
     Task SnoozeAlarmAsync(AlarmItem alarm);
     Task DismissAlarmAsync(AlarmItem alarm);
 
+    Task PauseAllAlarmsAsync(DateTime pauseUntil);
+    Task ResumeAllAlarmsAsync();
+    DateTime? PausedUntil { get; }
+    bool IsAllPaused { get; }
+
     event EventHandler<AlarmItem>? AlarmTriggered;
+    event EventHandler? AlarmPermissionMissing;
 }

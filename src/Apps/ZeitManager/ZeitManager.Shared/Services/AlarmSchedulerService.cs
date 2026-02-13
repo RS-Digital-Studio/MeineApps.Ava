@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Timers;
 using Avalonia.Threading;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using ZeitManager.Models;
 using Timer = System.Timers.Timer;
 
@@ -11,19 +13,35 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
     private readonly IDatabaseService _database;
     private readonly INotificationService _notificationService;
     private readonly ILocalizationService _localization;
+    private readonly IPreferencesService _preferences;
     private Timer? _checkTimer;
     private readonly List<AlarmItem> _activeAlarms = [];
     private readonly object _lock = new();
     private readonly HashSet<int> _triggeredToday = [];
     private DateOnly _lastTriggerDate = DateOnly.MinValue;
 
-    public event EventHandler<AlarmItem>? AlarmTriggered;
+    public DateTime? PausedUntil { get; private set; }
+    public bool IsAllPaused => PausedUntil != null && PausedUntil > DateTime.UtcNow;
 
-    public AlarmSchedulerService(IDatabaseService database, INotificationService notificationService, ILocalizationService localization)
+    public event EventHandler<AlarmItem>? AlarmTriggered;
+    public event EventHandler? AlarmPermissionMissing;
+
+    public AlarmSchedulerService(IDatabaseService database, INotificationService notificationService, ILocalizationService localization, IPreferencesService preferences)
     {
         _database = database;
         _notificationService = notificationService;
         _localization = localization;
+        _preferences = preferences;
+
+        // Gespeicherte Pause laden
+        var pausedUntilStr = _preferences.Get<string>("alarm_paused_until", "");
+        if (!string.IsNullOrEmpty(pausedUntilStr) && DateTime.TryParse(pausedUntilStr, null, DateTimeStyles.RoundtripKind, out var dt))
+        {
+            if (dt > DateTime.UtcNow)
+                PausedUntil = dt;
+            else
+                _preferences.Set("alarm_paused_until", "");
+        }
     }
 
     public async Task InitializeAsync()
@@ -35,6 +53,13 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
             _activeAlarms.AddRange(alarms.Where(a => a.IsEnabled && !a.IsShiftAlarm));
         }
         EnsureCheckTimer();
+
+        // Alarm-Permission pruefen und warnen
+        if (!_notificationService.CanScheduleExactAlarms())
+        {
+            AlarmPermissionMissing?.Invoke(this, EventArgs.Empty);
+            return;
+        }
 
         // Alle aktiven Alarme beim Android AlarmManager registrieren
         List<AlarmItem> snapshot;
@@ -61,9 +86,18 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
 
         // Android AlarmManager: planen oder canceln
         if (alarm.IsEnabled)
+        {
+            if (!_notificationService.CanScheduleExactAlarms())
+            {
+                AlarmPermissionMissing?.Invoke(this, EventArgs.Empty);
+                return;
+            }
             await ScheduleSystemNotificationAsync(alarm);
+        }
         else
+        {
             await _notificationService.CancelNotificationAsync(alarm.Id.ToString());
+        }
     }
 
     public async Task CancelAlarmAsync(AlarmItem alarm)
@@ -118,6 +152,30 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
             await ScheduleSystemNotificationAsync(alarm);
     }
 
+    public async Task PauseAllAlarmsAsync(DateTime pauseUntil)
+    {
+        PausedUntil = pauseUntil;
+        _preferences.Set("alarm_paused_until", pauseUntil.ToString("O"));
+
+        // Alle aktiven Alarm-Notifications canceln
+        List<AlarmItem> snapshot;
+        lock (_lock) snapshot = _activeAlarms.ToList();
+        foreach (var alarm in snapshot)
+            await _notificationService.CancelNotificationAsync(alarm.Id.ToString());
+    }
+
+    public async Task ResumeAllAlarmsAsync()
+    {
+        PausedUntil = null;
+        _preferences.Set("alarm_paused_until", "");
+
+        // Alle aktiven Alarme neu planen
+        List<AlarmItem> snapshot;
+        lock (_lock) snapshot = _activeAlarms.ToList();
+        foreach (var alarm in snapshot)
+            await ScheduleSystemNotificationAsync(alarm);
+    }
+
     /// <summary>
     /// Plant eine System-Notification (Android AlarmManager / Desktop Task.Delay)
     /// fuer den naechsten Auslösezeitpunkt des Alarms.
@@ -157,19 +215,7 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
         for (int i = 0; i < 7; i++)
         {
             var candidate = alarmToday.AddDays(i);
-            var dayFlag = candidate.DayOfWeek switch
-            {
-                DayOfWeek.Monday => WeekDays.Monday,
-                DayOfWeek.Tuesday => WeekDays.Tuesday,
-                DayOfWeek.Wednesday => WeekDays.Wednesday,
-                DayOfWeek.Thursday => WeekDays.Thursday,
-                DayOfWeek.Friday => WeekDays.Friday,
-                DayOfWeek.Saturday => WeekDays.Saturday,
-                DayOfWeek.Sunday => WeekDays.Sunday,
-                _ => WeekDays.None
-            };
-
-            if (alarm.RepeatDaysEnum.HasFlag(dayFlag) && candidate > now)
+            if (alarm.RepeatDaysEnum.HasFlag(ToWeekDays(candidate.DayOfWeek)) && candidate > now)
                 return candidate;
         }
 
@@ -177,10 +223,26 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
         return alarmToday.AddDays(1);
     }
 
+    /// <summary>
+    /// Konvertiert System.DayOfWeek zu WeekDays-Flag.
+    /// Eliminiert Switch-Duplikate in CalculateNextTriggerTime und ShouldTrigger.
+    /// </summary>
+    private static WeekDays ToWeekDays(DayOfWeek day) => day switch
+    {
+        DayOfWeek.Monday => WeekDays.Monday,
+        DayOfWeek.Tuesday => WeekDays.Tuesday,
+        DayOfWeek.Wednesday => WeekDays.Wednesday,
+        DayOfWeek.Thursday => WeekDays.Thursday,
+        DayOfWeek.Friday => WeekDays.Friday,
+        DayOfWeek.Saturday => WeekDays.Saturday,
+        DayOfWeek.Sunday => WeekDays.Sunday,
+        _ => WeekDays.None
+    };
+
     private void EnsureCheckTimer()
     {
         if (_checkTimer != null) return;
-        _checkTimer = new Timer(10_000); // Check every 10 seconds (30s konnte Alarme verpassen)
+        _checkTimer = new Timer(10_000); // Check every 10 seconds
         _checkTimer.Elapsed += OnCheckTimerTick;
         _checkTimer.Start();
     }
@@ -211,13 +273,19 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
                 _lastTriggerDate = today;
             }
 
+            // Abgelaufene Pause aufheben
+            if (PausedUntil != null && DateTime.UtcNow >= PausedUntil)
+            {
+                _ = ResumeAllAlarmsAsync();
+            }
+
             List<AlarmItem> alarms;
             lock (_lock) alarms = _activeAlarms.ToList();
             foreach (var alarm in alarms)
             {
                 if (ShouldTrigger(alarm, now))
                 {
-                    // Prevent double-trigger: skip if already triggered this minute (unless snoozed)
+                    // Double-Trigger-Schutz
                     var triggerKey = alarm.NextTriggerDateTime != null
                         ? alarm.Id * 10000 + now.Hour * 100 + now.Minute + alarm.CurrentSnoozeCount
                         : alarm.Id * 10000 + now.Hour * 100 + now.Minute;
@@ -225,7 +293,7 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
                     if (_triggeredToday.Contains(triggerKey)) continue;
                     _triggeredToday.Add(triggerKey);
 
-                    // Clear snooze after trigger
+                    // Snooze nach Trigger zuruecksetzen
                     alarm.NextTriggerDateTime = null;
 
                     AlarmTriggered?.Invoke(this, alarm);
@@ -234,38 +302,30 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
         });
     }
 
-    private static bool ShouldTrigger(AlarmItem alarm, DateTime now)
+    private bool ShouldTrigger(AlarmItem alarm, DateTime now)
     {
-        // Check snoozed alarm
+        // Urlaubsmodus aktiv → keine Alarme auslösen
+        if (IsAllPaused) return false;
+
+        // Snoozed Alarm pruefen
         if (alarm.NextTriggerDateTime != null)
         {
             return now >= alarm.NextTriggerDateTime.Value;
         }
 
-        // Check regular alarm time
+        // Regulaere Alarmzeit pruefen
         var alarmTime = alarm.Time;
         if (now.Hour != alarmTime.Hour || now.Minute != alarmTime.Minute)
             return false;
 
-        // Only trigger within first 30 seconds of the minute
+        // Nur in den ersten 30 Sekunden der Minute auslösen
         if (now.Second > 30)
             return false;
 
-        // Check weekday
+        // Wochentag pruefen
         if (alarm.IsRepeating)
         {
-            var todayFlag = now.DayOfWeek switch
-            {
-                DayOfWeek.Monday => WeekDays.Monday,
-                DayOfWeek.Tuesday => WeekDays.Tuesday,
-                DayOfWeek.Wednesday => WeekDays.Wednesday,
-                DayOfWeek.Thursday => WeekDays.Thursday,
-                DayOfWeek.Friday => WeekDays.Friday,
-                DayOfWeek.Saturday => WeekDays.Saturday,
-                DayOfWeek.Sunday => WeekDays.Sunday,
-                _ => WeekDays.None
-            };
-            return alarm.RepeatDaysEnum.HasFlag(todayFlag);
+            return alarm.RepeatDaysEnum.HasFlag(ToWeekDays(now.DayOfWeek));
         }
 
         return true;

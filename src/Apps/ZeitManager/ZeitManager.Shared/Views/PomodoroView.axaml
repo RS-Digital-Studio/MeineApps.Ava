@@ -1,0 +1,268 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:ZeitManager.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:controls="using:MeineApps.UI.Controls"
+             x:Class="ZeitManager.Views.PomodoroView"
+             x:DataType="vm:PomodoroViewModel">
+
+  <UserControl.Styles>
+    <!-- Pulsier-Animation fuer laufenden Timer -->
+    <Style Selector="Border.PomodoroPulse">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="0.7" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
+
+  <Panel>
+
+    <!-- Timer-Ansicht -->
+    <ScrollViewer IsVisible="{Binding !IsStatisticsView}">
+      <StackPanel Spacing="16" Margin="24,16,24,80">
+
+        <!-- Header mit Statistik-Toggle und Config -->
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Button Grid.Column="0" Classes="Text" Padding="8"
+                  Command="{Binding ToggleStatisticsCommand}">
+            <mi:MaterialIcon Kind="ChartBar" Width="22" Height="22"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+          </Button>
+          <TextBlock Grid.Column="1" Text="{Binding PomodoroTitleText}" Classes="HeadlineMedium"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Classes="Text" Padding="8"
+                  Command="{Binding ShowConfigCommand}">
+            <mi:MaterialIcon Kind="Cog" Width="22" Height="22"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+          </Button>
+        </Grid>
+
+        <!-- Phase Label + Zyklus -->
+        <StackPanel HorizontalAlignment="Center" Spacing="4">
+          <TextBlock Text="{Binding PhaseText}" Classes="TitleLarge"
+                     HorizontalAlignment="Center" FontWeight="SemiBold"
+                     Foreground="{DynamicResource PomodoroAccentBrush}" />
+          <TextBlock Text="{Binding CycleText}" FontSize="14"
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource TextMutedBrush}" />
+        </StackPanel>
+
+        <!-- Grosser Kreis-Fortschritt -->
+        <Panel HorizontalAlignment="Center" Margin="0,16,0,16">
+          <!-- Pulsierender Glow-Ring bei laufendem Timer -->
+          <Border Classes.PomodoroPulse="{Binding IsRunning}"
+                  Width="240" Height="240" CornerRadius="120"
+                  Background="Transparent"
+                  BorderThickness="8"
+                  BorderBrush="{DynamicResource BorderSubtleBrush}" />
+          <!-- Fortschrittsring -->
+          <controls:CircularProgress Width="240" Height="240"
+                                     Value="{Binding ProgressFraction}"
+                                     StrokeWidth="8"
+                                     TrackBrush="{DynamicResource BorderSubtleBrush}"
+                                     StrokeBrush="{DynamicResource PomodoroAccentBrush}" />
+          <!-- Zeit zentriert im Kreis -->
+          <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="4">
+            <TextBlock Text="{Binding RemainingFormatted}"
+                       FontSize="48" FontWeight="Light"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding PhaseText}" FontSize="14"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Panel>
+
+        <!-- Start/Pause/Reset/Skip Buttons -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
+          <!-- Reset -->
+          <Button Classes="Outlined" Width="48" Height="48" CornerRadius="24" Padding="0"
+                  Command="{Binding ResetPomodoroCommand}">
+            <mi:MaterialIcon Kind="Refresh" Width="24" Height="24" />
+          </Button>
+
+          <!-- Start/Pause (grosser Button) -->
+          <Button Width="72" Height="72" CornerRadius="36" Padding="0"
+                  Background="{DynamicResource PomodoroAccentBrush}"
+                  Foreground="White"
+                  Command="{Binding ToggleTimerCommand}">
+            <Panel>
+              <mi:MaterialIcon Kind="Play" Width="36" Height="36"
+                               IsVisible="{Binding !IsRunning}" />
+              <mi:MaterialIcon Kind="Pause" Width="36" Height="36"
+                               IsVisible="{Binding IsRunning}" />
+            </Panel>
+          </Button>
+
+          <!-- Skip -->
+          <Button Classes="Outlined" Width="48" Height="48" CornerRadius="24" Padding="0"
+                  Command="{Binding SkipPhaseCommand}">
+            <mi:MaterialIcon Kind="SkipNext" Width="24" Height="24" />
+          </Button>
+        </StackPanel>
+
+        <!-- Abgeschlossene Sessions -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12"
+                Padding="16" Margin="0,8,0,0">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <mi:MaterialIcon Grid.Column="0" Kind="Fire" Width="24" Height="24"
+                             Foreground="{DynamicResource PomodoroAccentBrush}"
+                             VerticalAlignment="Center" Margin="0,0,12,0" />
+            <TextBlock Grid.Column="1" Text="{Binding SessionsCompletedText}"
+                       Classes="BodyMedium" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" Text="{Binding CompletedSessions}"
+                       FontSize="24" FontWeight="Bold"
+                       Foreground="{DynamicResource PomodoroAccentBrush}"
+                       VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Statistiken-Ansicht -->
+    <ScrollViewer IsVisible="{Binding IsStatisticsView}">
+      <StackPanel Spacing="16" Margin="24,16,24,80">
+
+        <!-- Header mit Zurueck-Button -->
+        <Grid ColumnDefinitions="Auto,*">
+          <Button Grid.Column="0" Classes="Text" Padding="8"
+                  Command="{Binding ToggleStatisticsCommand}">
+            <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" />
+          </Button>
+          <TextBlock Grid.Column="1" Text="{Binding StatisticsText}" Classes="HeadlineMedium"
+                     VerticalAlignment="Center" Margin="8,0,0,0" />
+        </Grid>
+
+        <!-- Zusammenfassung: Heute -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="16">
+          <StackPanel Spacing="8">
+            <TextBlock Text="{Binding TodaySessionsText}" Classes="TitleMedium"
+                       Foreground="{DynamicResource PomodoroAccentBrush}" />
+            <TextBlock Text="{Binding TodayMinutesText}" FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Wochenbalkendiagramm -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="16">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{Binding ThisWeekText}" Classes="TitleSmall"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+
+            <!-- Keine Sessions -->
+            <TextBlock Text="{Binding NoSessionsYetText}"
+                       IsVisible="{Binding !HasSessions}"
+                       Classes="BodyMedium"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" Margin="0,16" />
+
+            <!-- Balkendiagramm (7 Tage) -->
+            <ItemsControl ItemsSource="{Binding WeekDays}" IsVisible="{Binding HasSessions}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Columns="7" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:DayStatistic">
+                  <StackPanel Spacing="4" HorizontalAlignment="Center" Height="160">
+                    <!-- Sessions-Zahl -->
+                    <TextBlock Text="{Binding Sessions}" FontSize="11"
+                               HorizontalAlignment="Center"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                    <!-- Balken via ScaleTransform (skaliert von unten) -->
+                    <Panel Height="120" Width="28" VerticalAlignment="Bottom">
+                      <Border CornerRadius="4,4,0,0"
+                              Background="{DynamicResource PomodoroAccentBrush}"
+                              VerticalAlignment="Bottom"
+                              Height="120"
+                              RenderTransformOrigin="0.5,1">
+                        <Border.RenderTransform>
+                          <ScaleTransform ScaleY="{Binding HeightFraction}" ScaleX="1" />
+                        </Border.RenderTransform>
+                      </Border>
+                    </Panel>
+                    <!-- Tagesname (fett wenn heute) -->
+                    <TextBlock Text="{Binding DayName}" FontSize="10"
+                               HorizontalAlignment="Center"
+                               FontWeight="{Binding DayFontWeight}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Config Overlay -->
+    <Border IsVisible="{Binding IsConfigVisible}"
+            Background="#80000000">
+      <Border Classes="Card" Margin="24"
+              VerticalAlignment="Center" HorizontalAlignment="Stretch"
+              MaxWidth="400">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{Binding PomodoroConfigText}" Classes="HeadlineMedium" />
+
+          <!-- Arbeitsdauer -->
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{Binding WorkDurationText}" Classes="BodyMedium" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+              <controls:WheelPicker Value="{Binding WorkMinutes}" Minimum="1" Maximum="60" />
+              <TextBlock Text="min" Classes="Caption" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Kurze Pause -->
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{Binding ShortBreakDurationText}" Classes="BodyMedium" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+              <controls:WheelPicker Value="{Binding ShortBreakMinutes}" Minimum="1" Maximum="30" />
+              <TextBlock Text="min" Classes="Caption" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Lange Pause -->
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{Binding LongBreakDurationText}" Classes="BodyMedium" VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+              <controls:WheelPicker Value="{Binding LongBreakMinutes}" Minimum="1" Maximum="60" />
+              <TextBlock Text="min" Classes="Caption" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+          </Grid>
+
+          <!-- Zyklen bis Lange Pause -->
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{Binding CyclesBeforeLongBreakText}" Classes="BodyMedium" VerticalAlignment="Center" />
+            <controls:WheelPicker Grid.Column="1" Value="{Binding CyclesBeforeLongBreak}" Minimum="1" Maximum="10" />
+          </Grid>
+
+          <!-- Auto Start -->
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="{Binding AutoStartNextText}" Classes="BodyMedium" VerticalAlignment="Center" />
+            <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoStartNext, Mode=TwoWay}" />
+          </Grid>
+
+          <!-- Buttons -->
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="Text" Content="{Binding CancelText}"
+                    Command="{Binding CancelConfigCommand}" />
+            <Button Classes="Primary" Content="{Binding SaveText}"
+                    Command="{Binding SaveConfigAndCloseCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
+
+  </Panel>
+
+</UserControl>

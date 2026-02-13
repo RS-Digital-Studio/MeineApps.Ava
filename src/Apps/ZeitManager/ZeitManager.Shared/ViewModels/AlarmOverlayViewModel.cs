@@ -13,6 +13,7 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
     private readonly IAlarmSchedulerService _alarmScheduler;
     private readonly IAudioService _audioService;
     private readonly ILocalizationService _localization;
+    private readonly IShakeDetectionService _shakeDetection;
 
     [ObservableProperty]
     private string _title = string.Empty;
@@ -32,6 +33,43 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isTimerSource;
 
+    // Challenge-Zustand
+    [ObservableProperty]
+    private bool _hasChallengeActive;
+
+    [ObservableProperty]
+    private bool _challengeSolved;
+
+    [ObservableProperty]
+    private string _challengeQuestion = string.Empty;
+
+    [ObservableProperty]
+    private string _challengeAnswer = string.Empty;
+
+    [ObservableProperty]
+    private string _challengeFeedback = string.Empty;
+
+    [ObservableProperty]
+    private bool _isMathChallenge;
+
+    [ObservableProperty]
+    private bool _isShakeChallenge;
+
+    [ObservableProperty]
+    private int _shakeProgress;
+
+    [ObservableProperty]
+    private int _shakeTarget;
+
+    public double ShakeProgressFraction => ShakeTarget > 0 ? (double)ShakeProgress / ShakeTarget : 0;
+
+    public bool HasPhysicalSensor => _shakeDetection.HasPhysicalSensor;
+
+    public string ShakeInstructionText => _localization.GetString("ChallengeShakeInstruction");
+    public string SimulateShakeText => _localization.GetString("SimulateShake");
+
+    private MathChallenge? _currentChallenge;
+
     private TimerItem? _sourceTimer;
     private AlarmItem? _sourceAlarm;
     private System.Timers.Timer? _clockTimer;
@@ -39,17 +77,26 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
     // Localized strings
     public string DismissText => _localization.GetString("Dismiss");
     public string SnoozeLabel => _localization.GetString("Snooze");
+    public string ChallengeInstructionText => _localization.GetString("ChallengeMathInstruction");
+    public string ChallengeAnswerHintText => _localization.GetString("ChallengeAnswerHint");
+    public string ChallengeSubmitText => _localization.GetString("ChallengeSubmit");
+
+    public bool CanDismiss => !HasChallengeActive || ChallengeSolved;
 
     public AlarmOverlayViewModel(
         ITimerService timerService,
         IAlarmSchedulerService alarmScheduler,
         IAudioService audioService,
-        ILocalizationService localization)
+        ILocalizationService localization,
+        IShakeDetectionService shakeDetection)
     {
         _timerService = timerService;
         _alarmScheduler = alarmScheduler;
         _audioService = audioService;
         _localization = localization;
+        _shakeDetection = shakeDetection;
+
+        _shakeDetection.ShakeDetected += OnShakeDetected;
     }
 
     public void ShowForTimer(TimerItem timer)
@@ -74,6 +121,43 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
         Subtitle = alarm.TimeFormatted;
         CanSnooze = alarm.CurrentSnoozeCount < alarm.MaxSnoozeCount;
         SnoozeText = $"{alarm.SnoozeDurationMinutes} {_localization.GetString("MinutesShort")} ({alarm.MaxSnoozeCount - alarm.CurrentSnoozeCount}x)";
+
+        // Challenge initialisieren
+        if (alarm.ChallengeEnabled && alarm.ChallengeType == ChallengeType.Math)
+        {
+            HasChallengeActive = true;
+            ChallengeSolved = false;
+            IsMathChallenge = true;
+            IsShakeChallenge = false;
+            ChallengeAnswer = string.Empty;
+            ChallengeFeedback = string.Empty;
+            _currentChallenge = MathChallenge.Generate(alarm.ChallengeDifficulty);
+            ChallengeQuestion = _currentChallenge.Question;
+            OnPropertyChanged(nameof(CanDismiss));
+        }
+        else if (alarm.ChallengeEnabled && alarm.ChallengeType == ChallengeType.Shake)
+        {
+            HasChallengeActive = true;
+            ChallengeSolved = false;
+            IsMathChallenge = false;
+            IsShakeChallenge = true;
+            ShakeProgress = 0;
+            ShakeTarget = alarm.ShakeCount > 0 ? alarm.ShakeCount : 20;
+            ChallengeAnswer = string.Empty;
+            ChallengeFeedback = string.Empty;
+            OnPropertyChanged(nameof(CanDismiss));
+            OnPropertyChanged(nameof(ShakeProgressFraction));
+            _shakeDetection.StartListening();
+        }
+        else
+        {
+            HasChallengeActive = false;
+            ChallengeSolved = false;
+            IsMathChallenge = false;
+            IsShakeChallenge = false;
+            OnPropertyChanged(nameof(CanDismiss));
+        }
+
         StartClock();
         _ = _audioService.PlayAsync(alarm.AlarmTone, loop: true);
     }
@@ -82,6 +166,7 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
     private async Task Dismiss()
     {
         _audioService.Stop();
+        _shakeDetection.StopListening();
         StopClock();
 
         if (_sourceTimer != null)
@@ -97,9 +182,69 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void SubmitChallenge()
+    {
+        if (_currentChallenge == null || _sourceAlarm == null) return;
+
+        if (string.IsNullOrWhiteSpace(ChallengeAnswer))
+        {
+            ChallengeFeedback = _localization.GetString("ChallengeEmptyAnswer");
+            return;
+        }
+
+        if (!int.TryParse(ChallengeAnswer.Trim(), out var answer))
+        {
+            ChallengeFeedback = _localization.GetString("ChallengeInvalidInput");
+            return;
+        }
+
+        if (answer == _currentChallenge.Answer)
+        {
+            // Richtig!
+            ChallengeSolved = true;
+            ChallengeFeedback = _localization.GetString("ChallengeCorrect");
+            OnPropertyChanged(nameof(CanDismiss));
+        }
+        else
+        {
+            // Falsch → neue Aufgabe generieren
+            ChallengeFeedback = string.Format(_localization.GetString("ChallengeWrong"), _currentChallenge.Answer);
+            ChallengeAnswer = string.Empty;
+            _currentChallenge = MathChallenge.Generate(_sourceAlarm.ChallengeDifficulty);
+            ChallengeQuestion = _currentChallenge.Question;
+        }
+    }
+
+    [RelayCommand]
+    private void SimulateShake()
+    {
+        _shakeDetection.SimulateShake();
+    }
+
+    private void OnShakeDetected(object? sender, EventArgs e)
+    {
+        if (!IsShakeChallenge || ChallengeSolved) return;
+
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            ShakeProgress++;
+            OnPropertyChanged(nameof(ShakeProgressFraction));
+
+            if (ShakeProgress >= ShakeTarget)
+            {
+                ChallengeSolved = true;
+                ChallengeFeedback = _localization.GetString("ChallengeCompleted");
+                OnPropertyChanged(nameof(CanDismiss));
+                _shakeDetection.StopListening();
+            }
+        });
+    }
+
+    [RelayCommand]
     private async Task Snooze()
     {
         _audioService.Stop();
+        _shakeDetection.StopListening();
         StopClock();
 
         if (_sourceTimer != null)
@@ -140,6 +285,8 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
 
         StopClock();
         _audioService.Stop();
+        _shakeDetection.StopListening();
+        _shakeDetection.ShakeDetected -= OnShakeDetected;
 
         _disposed = true;
         GC.SuppressFinalize(this);

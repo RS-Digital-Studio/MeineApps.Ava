@@ -40,6 +40,10 @@
         <views:StopwatchView DataContext="{Binding StopwatchViewModel}" />
       </Border>
       <Border Classes="TabContent"
+              Classes.Active="{Binding IsPomodoroActive}">
+        <views:PomodoroView DataContext="{Binding PomodoroViewModel}" />
+      </Border>
+      <Border Classes="TabContent"
               Classes.Active="{Binding IsAlarmActive}">
         <views:AlarmView DataContext="{Binding AlarmViewModel}" />
       </Border>
@@ -54,7 +58,7 @@
             Background="{DynamicResource SurfaceBrush}"
             BorderBrush="{DynamicResource BorderSubtleBrush}"
             BorderThickness="0,1,0,0">
-      <Grid ColumnDefinitions="*,*,*,*" Margin="0,2">
+      <Grid ColumnDefinitions="*,*,*,*,*" Margin="0,2">
 
         <!-- Timer Tab (Amber) -->
         <Button Grid.Column="0"
@@ -134,8 +138,47 @@
           </StackPanel>
         </Button>
 
-        <!-- Alarm Tab (Violet) -->
+        <!-- Pomodoro Tab (Rot) -->
         <Button Grid.Column="2"
+                Classes="Text"
+                Command="{Binding NavigateToPomodoroCommand}"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Padding="0"
+                Height="56">
+          <StackPanel Spacing="2">
+            <Border Height="3" CornerRadius="2" Margin="12,0"
+                    IsVisible="{Binding IsPomodoroActive}">
+              <Border.Background>
+                <SolidColorBrush Color="{DynamicResource PomodoroAccentColor}" />
+              </Border.Background>
+            </Border>
+            <Border Height="3" IsVisible="{Binding !IsPomodoroActive}" />
+            <Panel>
+              <mi:MaterialIcon Kind="Brain" Width="24" Height="24"
+                               Foreground="{DynamicResource PomodoroAccentBrush}"
+                               IsVisible="{Binding IsPomodoroActive}" />
+              <mi:MaterialIcon Kind="Brain" Width="24" Height="24"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               IsVisible="{Binding !IsPomodoroActive}" />
+            </Panel>
+            <Panel>
+              <TextBlock Text="{Binding NavPomodoroText}" FontSize="11"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource PomodoroAccentBrush}"
+                         FontWeight="Medium"
+                         IsVisible="{Binding IsPomodoroActive}" />
+              <TextBlock Text="{Binding NavPomodoroText}" FontSize="11"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         IsVisible="{Binding !IsPomodoroActive}" />
+            </Panel>
+          </StackPanel>
+        </Button>
+
+        <!-- Alarm Tab (Violet) -->
+        <Button Grid.Column="3"
                 Classes="Text"
                 Command="{Binding NavigateToAlarmCommand}"
                 HorizontalAlignment="Stretch"
@@ -174,7 +217,7 @@
         </Button>
 
         <!-- Settings Tab (Primary) -->
-        <Button Grid.Column="3"
+        <Button Grid.Column="4"
                 Classes="Text"
                 Command="{Binding NavigateToSettingsCommand}"
                 HorizontalAlignment="Stretch"

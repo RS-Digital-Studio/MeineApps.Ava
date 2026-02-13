@@ -39,6 +39,28 @@
     <!-- Alarm Content -->
     <Panel Grid.Row="1" IsVisible="{Binding !IsShiftScheduleMode}">
 
+      <!-- Urlaubsmodus Status-Banner -->
+      <Border IsVisible="{Binding IsAllPaused}"
+              Background="{DynamicResource WarningBackgroundBrush}"
+              CornerRadius="8" Margin="16,0,16,8" Padding="12"
+              VerticalAlignment="Top" ZIndex="1">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <mi:MaterialIcon Grid.Column="0" Kind="Beach" Width="24" Height="24"
+                           Foreground="{DynamicResource WarningBrush}" Margin="0,0,12,0"
+                           VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="{Binding VacationModeText}" Classes="TitleSmall" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding PausedUntilText}" FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="Text" MinWidth="0" Padding="8,4"
+                  Command="{Binding ResumeAllAlarmsCommand}">
+            <TextBlock Text="{Binding ResumeAllAlarmsText}" FontSize="12"
+                       Foreground="{DynamicResource PrimaryBrush}" />
+          </Button>
+        </Grid>
+      </Border>
+
       <!-- Empty State -->
       <StackPanel IsVisible="{Binding !HasAlarms}"
                   VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
@@ -110,6 +132,17 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </ScrollViewer>
+
+      <!-- Pause-Button (Urlaubsmodus) -->
+      <Button Command="{Binding ShowPauseDialogCommand}"
+              IsVisible="{Binding !IsAllPaused}"
+              HorizontalAlignment="Right" VerticalAlignment="Bottom"
+              Margin="0,0,24,88" Width="44" Height="44"
+              CornerRadius="22" Padding="0"
+              Background="{DynamicResource SurfaceBrush}">
+        <mi:MaterialIcon Kind="Beach" Width="22" Height="22"
+                         Foreground="{DynamicResource AlarmAccentBrush}" />
+      </Button>
 
       <!-- FAB: New Alarm -->
       <Button Command="{Binding NewAlarmCommand}"
@@ -194,7 +227,7 @@
             <StackPanel Spacing="8">
               <TextBlock Text="{Binding AlarmSoundText}" Classes="TitleSmall"
                          Foreground="{DynamicResource TextMutedBrush}" />
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+              <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                 <ComboBox Grid.Column="0" ItemsSource="{Binding AvailableSounds}"
                           SelectedValue="{Binding SelectedAlarmTone}"
                           SelectedValueBinding="{Binding Id}"
@@ -204,6 +237,11 @@
                         Command="{Binding PreviewSoundCommand}"
                         ToolTip.Tip="{Binding TestText}">
                   <mi:MaterialIcon Kind="Play" Width="20" Height="20" />
+                </Button>
+                <Button Grid.Column="2" Classes="Outlined" MinWidth="48" MinHeight="48" Padding="8"
+                        Command="{Binding PickAlarmSoundCommand}"
+                        ToolTip.Tip="{Binding PickFromDeviceText}">
+                  <mi:MaterialIcon Kind="FolderMusic" Width="20" Height="20" />
                 </Button>
               </Grid>
             </StackPanel>
@@ -246,6 +284,35 @@
                     Command="{Binding CancelDeleteAlarmCommand}" />
             <Button Classes="Primary" Content="{Binding YesText}"
                     Command="{Binding ConfirmDeleteAlarmCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Pause Dialog Overlay (Urlaubsmodus) -->
+    <Border Grid.Row="0" Grid.RowSpan="2"
+            IsVisible="{Binding IsPauseDialogVisible}"
+            Background="#80000000">
+      <Border Classes="Card" Margin="32"
+              VerticalAlignment="Center" HorizontalAlignment="Stretch"
+              MaxWidth="350">
+        <StackPanel Spacing="16">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Beach" Width="24" Height="24"
+                             Foreground="{DynamicResource AlarmAccentBrush}" />
+            <TextBlock Text="{Binding VacationModeText}" Classes="TitleLarge" />
+          </StackPanel>
+          <TextBlock Text="{Binding PauseDurationText}" Classes="BodyMedium"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="8">
+            <controls:WheelPicker Value="{Binding PauseDays}" Minimum="1" Maximum="30" />
+            <TextBlock Text="{Binding DaysText}" Classes="TitleMedium" VerticalAlignment="Center" />
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+            <Button Classes="Text" Content="{Binding CancelText}"
+                    Command="{Binding CancelPauseDialogCommand}" />
+            <Button Classes="Primary" Content="{Binding PauseAllAlarmsText}"
+                    Command="{Binding PauseAllAlarmsCommand}" />
           </StackPanel>
         </StackPanel>
       </Border>

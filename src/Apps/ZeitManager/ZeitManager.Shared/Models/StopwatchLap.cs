@@ -1,3 +1,5 @@
+using ZeitManager.Audio;
+
 namespace ZeitManager.Models;
 
 public record StopwatchLap(
@@ -6,13 +8,6 @@ public record StopwatchLap(
     TimeSpan TotalTime,
     DateTime Timestamp)
 {
-    public string LapTimeFormatted => FormatTime(LapTime);
-    public string TotalTimeFormatted => FormatTime(TotalTime);
-
-    private static string FormatTime(TimeSpan time)
-    {
-        if (time.Hours > 0)
-            return $"{time.Hours:D2}:{time.Minutes:D2}:{time.Seconds:D2}.{time.Milliseconds / 10:D2}";
-        return $"{time.Minutes:D2}:{time.Seconds:D2}.{time.Milliseconds / 10:D2}";
-    }
+    public string LapTimeFormatted => TimeFormatHelper.Format(LapTime);
+    public string TotalTimeFormatted => TimeFormatHelper.Format(TotalTime);
 }

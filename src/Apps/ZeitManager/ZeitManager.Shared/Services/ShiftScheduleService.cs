@@ -70,7 +70,8 @@ public class ShiftScheduleService : IShiftScheduleService
 
         var startDate = schedule.StartDateValue;
         var daysSinceStart = date.DayNumber - startDate.DayNumber;
-        if (daysSinceStart < 0) daysSinceStart += 36500; // Handle dates before start
+        // 36400 ist durch 7 (15-Schicht) UND 10 (21-Schicht) teilbar → korrekte Zyklusberechnung
+        if (daysSinceStart < 0) daysSinceStart += 36400;
 
         return schedule.PatternType switch
         {

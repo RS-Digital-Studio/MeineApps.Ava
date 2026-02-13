@@ -17,6 +17,7 @@ public partial class TimerItem : ObservableObject
     private bool _notifyOnFinish = true;
     private string _alarmTone = "default";
     private bool _vibrate = true;
+    private bool _autoRepeat;
     private string _createdAt = DateTime.UtcNow.ToString("O");
 
     [PrimaryKey, AutoIncrement]
@@ -64,6 +65,7 @@ public partial class TimerItem : ObservableObject
                 OnPropertyChanged(nameof(IsNotRunning));
                 OnPropertyChanged(nameof(IsPaused));
                 OnPropertyChanged(nameof(IsFinished));
+                OnPropertyChanged(nameof(IsNotFinished));
             }
         }
     }
@@ -96,6 +98,12 @@ public partial class TimerItem : ObservableObject
     {
         get => _vibrate;
         set => SetProperty(ref _vibrate, value);
+    }
+
+    public bool AutoRepeat
+    {
+        get => _autoRepeat;
+        set => SetProperty(ref _autoRepeat, value);
     }
 
     public string CreatedAt
@@ -161,6 +169,9 @@ public partial class TimerItem : ObservableObject
 
     [Ignore]
     public bool IsFinished => State == TimerState.Finished;
+
+    [Ignore]
+    public bool IsNotFinished => State != TimerState.Finished;
 
     [Ignore]
     public string RemainingTimeFormatted

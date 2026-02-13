@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
@@ -61,6 +60,7 @@ public partial class SettingsViewModel : ObservableObject
     public string TimerSoundText => _localization.GetString("TimerSound");
     public string TimerSoundDescriptionText => _localization.GetString("TimerSoundDescription");
     public string TestText => _localization.GetString("Test");
+    public string PickFromDeviceText => _localization.GetString("PickFromDevice");
 
     // Theme names
     public string ThemeMidnightName => _localization.GetString("ThemeMidnight");
@@ -68,7 +68,10 @@ public partial class SettingsViewModel : ObservableObject
     public string ThemeDaylightName => _localization.GetString("ThemeDaylight");
     public string ThemeForestName => _localization.GetString("ThemeForest");
 
-    public IReadOnlyList<SoundItem> TimerSounds => _audioService.AvailableSounds;
+    [ObservableProperty]
+    private IReadOnlyList<SoundItem> _timerSounds;
+
+    private void RefreshTimerSounds() => TimerSounds = _audioService.AvailableSounds;
 
     public SettingsViewModel(
         IThemeService themeService,
@@ -83,6 +86,7 @@ public partial class SettingsViewModel : ObservableObject
         _selectedTheme = _themeService.CurrentTheme;
         _selectedLanguage = _localization.CurrentLanguage;
         _selectedTimerSound = _preferences.Get("timer_sound", _audioService.DefaultTimerSound);
+        _timerSounds = _audioService.AvailableSounds;
         _localization.LanguageChanged += OnLanguageChanged;
     }
 
@@ -104,7 +108,23 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task PreviewTimerSound()
     {
-        await _audioService.PlayAsync(SelectedTimerSound);
+        // Prüfen ob gewählter Sound eine URI hat (System/Custom Sound)
+        var sound = TimerSounds.FirstOrDefault(s => s.Id == SelectedTimerSound);
+        if (sound?.Uri != null)
+            await _audioService.PlayUriAsync(sound.Uri);
+        else
+            await _audioService.PlayAsync(SelectedTimerSound);
+    }
+
+    [RelayCommand]
+    private async Task PickTimerSound()
+    {
+        var picked = await _audioService.PickSoundAsync();
+        if (picked != null)
+        {
+            RefreshTimerSounds();
+            SelectedTimerSound = picked.Id;
+        }
     }
 
     public event EventHandler<string>? MessageRequested;
@@ -114,8 +134,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            var uri = "mailto:info@rs-digital.org?subject=ZeitManager%20Feedback";
-            Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true });
+            MeineApps.Core.Ava.Services.UriLauncher.OpenUri("mailto:info@rs-digital.org?subject=ZeitManager%20Feedback");
         }
         catch
         {
@@ -128,8 +147,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            var url = "https://sites.google.com/rs-digital.org/zeitmanager/startseite";
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+            MeineApps.Core.Ava.Services.UriLauncher.OpenUri("https://sites.google.com/rs-digital.org/zeitmanager/startseite");
         }
         catch
         {

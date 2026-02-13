@@ -60,6 +60,13 @@ public partial class ShiftScheduleViewModel : ObservableObject
     [ObservableProperty]
     private bool _isDeactivateConfirmVisible;
 
+    // Exception-Dialog state
+    [ObservableProperty]
+    private bool _isExceptionDialogVisible;
+
+    [ObservableProperty]
+    private CalendarDay? _selectedDay;
+
     // Localized strings
     public string TitleText => _localization.GetString("ShiftTitle");
     public string NoScheduleText => _localization.GetString("NoSchedule");
@@ -89,6 +96,14 @@ public partial class ShiftScheduleViewModel : ObservableObject
     public string FridayShortText => _localization.GetString("FridayShort");
     public string SaturdayShortText => _localization.GetString("SaturdayShort");
     public string SundayShortText => _localization.GetString("SundayShort");
+
+    // Exception-Dialog strings
+    public string SelectExceptionText => _localization.GetString("SelectException");
+    public string VacationText => _localization.GetString("Vacation");
+    public string SickText => _localization.GetString("Sick");
+    public string ShiftSwapText => _localization.GetString("ShiftSwap");
+    public string NormalText => _localization.GetString("DayOff");
+    public string CloseText => _localization.GetString("Cancel");
 
     // Localized shift labels for legend
     public string EarlyShiftShortText => _localization.GetString("ShiftEarlyShort");
@@ -146,10 +161,18 @@ public partial class ShiftScheduleViewModel : ObservableObject
     private void HideEditor() => IsEditing = false;
 
     [RelayCommand]
-    private void SelectFifteenShift() => SelectedPatternType = ShiftPatternType.FifteenShift;
+    private void SelectFifteenShift()
+    {
+        SelectedPatternType = ShiftPatternType.FifteenShift;
+        if (SelectedGroup > MaxGroup) SelectedGroup = 1;
+    }
 
     [RelayCommand]
-    private void SelectTwentyOneShift() => SelectedPatternType = ShiftPatternType.TwentyOneShift;
+    private void SelectTwentyOneShift()
+    {
+        SelectedPatternType = ShiftPatternType.TwentyOneShift;
+        if (SelectedGroup > MaxGroup) SelectedGroup = 1;
+    }
 
     [RelayCommand]
     private async Task SaveSchedule()
@@ -189,6 +212,79 @@ public partial class ShiftScheduleViewModel : ObservableObject
     {
         IsDeactivateConfirmVisible = false;
     }
+
+    // Exception-Dialog: Tap auf Kalendertag
+    [RelayCommand]
+    private void SelectDay(CalendarDay day)
+    {
+        if (day.IsEmpty || ActiveSchedule == null) return;
+        SelectedDay = day;
+        IsExceptionDialogVisible = true;
+    }
+
+    [RelayCommand]
+    private async Task SetException(string exceptionType)
+    {
+        if (SelectedDay == null || ActiveSchedule == null)
+        {
+            IsExceptionDialogVisible = false;
+            return;
+        }
+
+        // "normal" = Ausnahme entfernen
+        if (exceptionType == "normal")
+        {
+            var existing = _exceptions.FirstOrDefault(e => e.DateValue == SelectedDay.Date);
+            if (existing != null)
+            {
+                await _shiftService.DeleteExceptionAsync(existing);
+                _exceptions.Remove(existing);
+            }
+        }
+        else
+        {
+            var type = exceptionType switch
+            {
+                "vacation" => ExceptionType.Vacation,
+                "sick" => ExceptionType.Sick,
+                "swap" => ExceptionType.ShiftSwap,
+                _ => ExceptionType.Other
+            };
+
+            var shiftType = type switch
+            {
+                ExceptionType.Vacation => ShiftType.Vacation,
+                ExceptionType.Sick => ShiftType.Sick,
+                _ => (ShiftType?)null
+            };
+
+            var existing = _exceptions.FirstOrDefault(e => e.DateValue == SelectedDay.Date);
+            if (existing != null)
+            {
+                existing.ExceptionType = type;
+                existing.NewShiftType = shiftType;
+                await _shiftService.SaveExceptionAsync(existing);
+            }
+            else
+            {
+                var exception = new ShiftException
+                {
+                    ShiftScheduleId = ActiveSchedule.Id,
+                    DateValue = SelectedDay.Date,
+                    ExceptionType = type,
+                    NewShiftType = shiftType
+                };
+                await _shiftService.SaveExceptionAsync(exception);
+                _exceptions.Add(exception);
+            }
+        }
+
+        IsExceptionDialogVisible = false;
+        UpdateCalendar();
+    }
+
+    [RelayCommand]
+    private void CloseExceptionDialog() => IsExceptionDialogVisible = false;
 
     [RelayCommand]
     private void PreviousMonth()

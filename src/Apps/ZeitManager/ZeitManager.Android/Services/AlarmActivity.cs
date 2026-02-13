@@ -30,8 +30,12 @@ public class AlarmActivity : Activity
     private Ringtone? _ringtone;
     private Vibrator? _vibrator;
     private string? _alarmId;
+    private int _snoozeDurationMinutes = 5;
     private Handler? _timeHandler;
     private Java.Lang.Runnable? _timeRunnable;
+    private Handler? _volumeHandler;
+    private Java.Lang.Runnable? _volumeRunnable;
+    private float _currentVolume = 0.1f;
 
     protected override void OnCreate(Bundle? savedInstanceState)
     {
@@ -53,6 +57,8 @@ public class AlarmActivity : Activity
         var title = Intent?.GetStringExtra("title") ?? "ZeitManager";
         var body = Intent?.GetStringExtra("body") ?? "Alarm!";
         _alarmId = Intent?.GetStringExtra("id") ?? "alarm";
+        _snoozeDurationMinutes = Intent?.GetIntExtra("snooze_duration", 5) ?? 5;
+        if (_snoozeDurationMinutes < 1) _snoozeDurationMinutes = 5;
 
         SetContentView(CreateAlarmLayout(title, body));
 
@@ -188,7 +194,7 @@ public class AlarmActivity : Activity
         dismissBtn.Click += (_, _) => DismissAlarm();
         container.AddView(dismissBtn);
 
-        // Snooze-Button
+        // Snooze-Button (Dauer aus Intent)
         var snoozeBtn = new Button(this)
         {
             LayoutParameters = new LinearLayout.LayoutParams(
@@ -197,7 +203,7 @@ public class AlarmActivity : Activity
             {
                 Gravity = GravityFlags.CenterHorizontal
             },
-            Text = $"{GetLocalizedString("Snooze", "Snooze")} (5 min)",
+            Text = $"{GetLocalizedString("Snooze", "Snooze")} ({_snoozeDurationMinutes} min)",
             TextSize = 16
         };
         snoozeBtn.SetTextColor(Color.White);
@@ -227,7 +233,6 @@ public class AlarmActivity : Activity
         StopVibration();
         CancelNotification();
 
-        // Neuen Alarm in 5 Minuten planen
         ScheduleSnooze();
         Finish();
     }
@@ -239,8 +244,9 @@ public class AlarmActivity : Activity
             var alarmManager = (AlarmManager?)GetSystemService(AlarmService);
             if (alarmManager == null) return;
 
-            var snoozeTime = DateTime.UtcNow.AddMinutes(5);
-            var triggerMs = (long)(snoozeTime - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
+            // DateTime.Now verwenden (konsistent mit AlarmSchedulerService)
+            var snoozeTime = DateTime.Now.AddMinutes(_snoozeDurationMinutes);
+            var triggerMs = (long)(snoozeTime.ToUniversalTime() - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds;
 
             var title = Intent?.GetStringExtra("title") ?? "ZeitManager";
             var body = Intent?.GetStringExtra("body") ?? "Alarm!";
@@ -248,15 +254,22 @@ public class AlarmActivity : Activity
             var intent = new Intent(this, typeof(AlarmReceiver));
             intent.PutExtra("title", title);
             intent.PutExtra("body", body);
-            intent.PutExtra("id", _alarmId + "_snooze");
+            // Original-Alarm-ID beibehalten (nicht "_snooze" anhängen)
+            intent.PutExtra("id", _alarmId);
+            intent.PutExtra("snooze_duration", _snoozeDurationMinutes);
 
             var pendingIntent = PendingIntent.GetBroadcast(
-                this, Math.Abs((_alarmId + "_snooze").GetHashCode()), intent,
+                this, AndroidNotificationService.StableHash(_alarmId ?? "alarm"), intent,
                 PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
 
             if (pendingIntent != null)
             {
-                alarmManager.SetExactAndAllowWhileIdle(AlarmType.RtcWakeup, triggerMs, pendingIntent);
+                // SetAlarmClock statt SetExactAndAllowWhileIdle (zuverlaessiger)
+                var showIntent = PendingIntent.GetActivity(
+                    this, 0, new Intent(this, typeof(MainActivity)),
+                    PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
+                var alarmClock = new AlarmManager.AlarmClockInfo(triggerMs, showIntent);
+                alarmManager.SetAlarmClock(alarmClock, pendingIntent);
             }
         }
         catch
@@ -269,8 +282,20 @@ public class AlarmActivity : Activity
     {
         try
         {
-            var uri = RingtoneManager.GetDefaultUri(RingtoneType.Alarm)
-                      ?? RingtoneManager.GetDefaultUri(RingtoneType.Notification);
+            // Benutzerdefinierten Alarm-Ton aus Intent lesen
+            var alarmTone = Intent?.GetStringExtra("alarm_tone");
+            global::Android.Net.Uri? uri = null;
+
+            if (!string.IsNullOrEmpty(alarmTone) && alarmTone.StartsWith("content://"))
+            {
+                // Benutzerdefinierter System-Ringtone
+                uri = global::Android.Net.Uri.Parse(alarmTone);
+            }
+
+            // Fallback: System-Default
+            uri ??= RingtoneManager.GetDefaultUri(RingtoneType.Alarm)
+                     ?? RingtoneManager.GetDefaultUri(RingtoneType.Notification);
+
             _ringtone = RingtoneManager.GetRingtone(this, uri);
             if (_ringtone != null)
             {
@@ -289,6 +314,14 @@ public class AlarmActivity : Activity
                     _ringtone.Looping = true;
                 }
 
+                // Langsam ansteigende Lautstärke (API 28+)
+                if (Build.VERSION.SdkInt >= BuildVersionCodes.P)
+                {
+                    _currentVolume = 0.1f;
+                    _ringtone.Volume = _currentVolume;
+                    StartVolumeRamp();
+                }
+
                 _ringtone.Play();
             }
         }
@@ -298,10 +331,35 @@ public class AlarmActivity : Activity
         }
     }
 
+    /// <summary>
+    /// Erhöht die Lautstärke alle 3 Sekunden um 10% bis 100%.
+    /// </summary>
+    private void StartVolumeRamp()
+    {
+        _volumeHandler = new Handler(Looper.MainLooper!);
+        _volumeRunnable = new Java.Lang.Runnable(() =>
+        {
+            if (_ringtone == null || !_ringtone.IsPlaying) return;
+            _currentVolume = Math.Min(1.0f, _currentVolume + 0.1f);
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.P)
+            {
+                _ringtone.Volume = _currentVolume;
+            }
+            if (_currentVolume < 1.0f)
+            {
+                _volumeHandler?.PostDelayed(_volumeRunnable!, 3000);
+            }
+        });
+        _volumeHandler.PostDelayed(_volumeRunnable, 3000);
+    }
+
     private void StopAlarmSound()
     {
         try
         {
+            _volumeHandler?.RemoveCallbacks(_volumeRunnable!);
+            _volumeHandler = null;
+            _volumeRunnable = null;
             if (_ringtone?.IsPlaying == true)
                 _ringtone.Stop();
             _ringtone = null;
@@ -356,7 +414,7 @@ public class AlarmActivity : Activity
         if (_alarmId != null)
         {
             var manager = (NotificationManager?)GetSystemService(NotificationService);
-            manager?.Cancel(Math.Abs(_alarmId.GetHashCode()));
+            manager?.Cancel(AndroidNotificationService.StableHash(_alarmId));
         }
     }
 
@@ -365,6 +423,9 @@ public class AlarmActivity : Activity
         _timeHandler?.RemoveCallbacks(_timeRunnable!);
         _timeHandler = null;
         _timeRunnable = null;
+        _volumeHandler?.RemoveCallbacks(_volumeRunnable!);
+        _volumeHandler = null;
+        _volumeRunnable = null;
         StopAlarmSound();
         StopVibration();
         base.OnDestroy();
@@ -372,8 +433,8 @@ public class AlarmActivity : Activity
 
     public override void OnBackPressed()
     {
-        // Back-Button soll den Alarm nicht versehentlich schliessen
-        // Nutzer muss Dismiss oder Snooze druecken
+        // Hinweis anzeigen, dass Dismiss oder Snooze gedrückt werden muss
+        Toast.MakeText(this, GetLocalizedString("DismissAlarmHint", "Please press Dismiss or Snooze"), ToastLength.Short)?.Show();
     }
 
     /// <summary>

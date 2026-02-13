@@ -4,6 +4,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using ZeitManager.Audio;
 using ZeitManager.Models;
 
 namespace ZeitManager.ViewModels;
@@ -110,7 +111,7 @@ public partial class StopwatchViewModel : ObservableObject, IDisposable
         _offset = _undoElapsedTime;
         Laps = new ObservableCollection<StopwatchLap>(_undoLaps);
         _lastLapTime = _undoLastLapTime;
-        ElapsedTimeFormatted = FormatTime(_undoElapsedTime);
+        ElapsedTimeFormatted = TimeFormatHelper.Format(_undoElapsedTime);
         CanUndo = false;
         OnPropertyChanged(nameof(HasLaps));
     }
@@ -150,14 +151,7 @@ public partial class StopwatchViewModel : ObservableObject, IDisposable
 
     private void UpdateDisplay()
     {
-        Dispatcher.UIThread.Post(() => ElapsedTimeFormatted = FormatTime(TotalElapsed));
-    }
-
-    private static string FormatTime(TimeSpan time)
-    {
-        if (time.Hours > 0)
-            return $"{time.Hours:D2}:{time.Minutes:D2}:{time.Seconds:D2}.{time.Milliseconds / 10:D2}";
-        return $"{time.Minutes:D2}:{time.Seconds:D2}.{time.Milliseconds / 10:D2}";
+        Dispatcher.UIThread.Post(() => ElapsedTimeFormatted = TimeFormatHelper.Format(TotalElapsed));
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)

@@ -13,6 +13,8 @@ public interface ITimerService
     Task PauseTimerAsync(TimerItem timer);
     Task StopTimerAsync(TimerItem timer);
     Task DeleteTimerAsync(TimerItem timer);
+    Task DeleteAllTimersAsync();
+    Task ExtendTimerAsync(TimerItem timer, TimeSpan extra);
     Task SnoozeTimerAsync(TimerItem timer, int minutes = 1);
     TimeSpan GetRemainingTime(TimerItem timer);
 

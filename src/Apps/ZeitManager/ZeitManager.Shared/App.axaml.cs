@@ -86,6 +86,7 @@ public partial class App : Application
         services.AddSingleton<IAudioService, AudioService>();
         services.AddSingleton<IAlarmSchedulerService, AlarmSchedulerService>();
         services.AddSingleton<IShiftScheduleService, ShiftScheduleService>();
+        services.AddSingleton<IShakeDetectionService, DesktopShakeDetectionService>();
 
         // Platform-specific services (Android registers AndroidNotificationService, Desktop uses default)
         if (ConfigurePlatformServices != null)
@@ -97,6 +98,7 @@ public partial class App : Application
         services.AddSingleton<MainViewModel>();
         services.AddTransient<TimerViewModel>();
         services.AddTransient<StopwatchViewModel>();
+        services.AddTransient<PomodoroViewModel>();
         services.AddTransient<AlarmViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddSingleton<AlarmOverlayViewModel>();

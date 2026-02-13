@@ -9,20 +9,23 @@
              Background="{DynamicResource BackgroundBrush}">
 
   <UserControl.Styles>
-    <!-- Fade-Transition für Tab-Wechsel -->
+    <!-- Fade+Slide-Transition für Tab-Wechsel -->
     <Style Selector="Border.TabContent">
       <Setter Property="Transitions">
         <Transitions>
           <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" />
         </Transitions>
       </Setter>
     </Style>
     <Style Selector="Border.TabContent:not(.Active)">
       <Setter Property="Opacity" Value="0" />
+      <Setter Property="RenderTransform" Value="translate(0px, 8px)" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Border.TabContent.Active">
       <Setter Property="Opacity" Value="1" />
+      <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
       <Setter Property="IsHitTestVisible" Value="True" />
     </Style>
   </UserControl.Styles>
@@ -267,6 +270,21 @@
                                   Grid.Row="0" Grid.RowSpan="2"
                                   ZIndex="20"
                                   IsHitTestVisible="False" />
+
+    <!-- Onboarding Overlay -->
+    <Panel x:Name="OnboardingOverlay" IsVisible="False" Grid.Row="0" Grid.RowSpan="2" ZIndex="25">
+      <Border Background="#60000000" />
+      <controls:TooltipBubble x:Name="OnboardingTooltip"
+                               HorizontalAlignment="Center"
+                               Margin="32,0">
+        <controls:TooltipBubble.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CubicEaseOut" />
+            <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+          </Transitions>
+        </controls:TooltipBubble.Transitions>
+      </controls:TooltipBubble>
+    </Panel>
 
     <!-- Snackbar Message -->
     <Border Grid.Row="0" Grid.RowSpan="2"

@@ -5,8 +5,23 @@
              xmlns:models="using:ZeitManager.Models"
              xmlns:views="using:ZeitManager.Views"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="ZeitManager.Views.AlarmView"
              x:DataType="vm:AlarmViewModel">
+
+  <UserControl.Styles>
+    <!-- Weekday-Toggle: Normal -->
+    <Style Selector="Button.WeekdayToggle">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+    </Style>
+    <!-- Weekday-Toggle: Ausgewählt -->
+    <Style Selector="Button.WeekdayToggle.Selected">
+      <Setter Property="Background" Value="{DynamicResource AlarmAccentBrush}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+  </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*">
 
@@ -61,72 +76,94 @@
         </Grid>
       </Border>
 
+      <!-- Nächster-Alarm-Countdown-Banner -->
+      <Border IsVisible="{Binding HasNextAlarm}"
+              Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="8" Margin="16,0,16,8" Padding="12"
+              VerticalAlignment="Top">
+        <Grid ColumnDefinitions="Auto,*">
+          <mi:MaterialIcon Grid.Column="0" Kind="AlarmCheck" Width="22" Height="22"
+                           Foreground="{DynamicResource AlarmAccentBrush}" Margin="0,0,12,0"
+                           VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <TextBlock Text="{Binding NextAlarmInText}" Classes="BodyMedium"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{Binding NextAlarmCountdown}" Classes="BodyMedium"
+                       FontWeight="SemiBold"
+                       Foreground="{DynamicResource AlarmAccentBrush}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
       <!-- Empty State -->
-      <StackPanel IsVisible="{Binding !HasAlarms}"
-                  VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
-        <mi:MaterialIcon Kind="AlarmOff" Width="64" Height="64"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding NoAlarmsText}" Classes="TitleMedium"
-                   Foreground="{DynamicResource TextMutedBrush}"
-                   HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding CreateAlarmText}" Classes="BodyMedium"
-                   Foreground="{DynamicResource TextMutedBrush}"
-                   HorizontalAlignment="Center" TextWrapping="Wrap"
-                   TextAlignment="Center" />
-      </StackPanel>
+      <controls:EmptyStateView IsVisible="{Binding !HasAlarms}"
+          Icon="AlarmOff" Title="{Binding NoAlarmsText}"
+          Subtitle="{Binding CreateAlarmText}"
+          ActionText="{Binding NewAlarmButtonText}"
+          ActionCommand="{Binding NewAlarmCommand}" />
 
       <!-- Alarm List -->
       <ScrollViewer IsVisible="{Binding HasAlarms}">
         <ItemsControl ItemsSource="{Binding Alarms}" Margin="16,0">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:AlarmItem">
-              <Border Classes="Card" Margin="0,0,0,8">
-                <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                  <!-- Alarm Icon -->
-                  <Panel Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
-                    <mi:MaterialIcon Kind="Alarm" Width="28" Height="28"
-                                     Foreground="{DynamicResource AlarmAccentBrush}"
-                                     IsVisible="{Binding IsEnabled}" />
-                    <mi:MaterialIcon Kind="AlarmOff" Width="28" Height="28"
-                                     Foreground="{DynamicResource TextMutedBrush}"
-                                     IsVisible="{Binding !IsEnabled}" />
-                  </Panel>
-
-                  <!-- Alarm Info -->
-                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                    <TextBlock Text="{Binding TimeFormatted}" FontSize="28" FontWeight="Light"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="{Binding Name}" FontSize="13"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               IsVisible="{Binding Name, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                    <TextBlock Text="{Binding RepeatDaysFormatted}" FontSize="12"
-                               Foreground="{DynamicResource AlarmAccentBrush}"
-                               IsVisible="{Binding RepeatDaysFormatted, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                  </StackPanel>
-
-                  <!-- Toggle -->
-                  <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsEnabled}"
-                                VerticalAlignment="Center" Margin="8,0"
-                                Command="{Binding $parent[ItemsControl].((vm:AlarmViewModel)DataContext).ToggleAlarmCommand}"
-                                CommandParameter="{Binding}" />
-
-                  <!-- Actions -->
-                  <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="4"
-                              VerticalAlignment="Center">
-                    <Button Classes="Text" MinWidth="48" MinHeight="48" Padding="6"
-                            Command="{Binding $parent[ItemsControl].((vm:AlarmViewModel)DataContext).EditAlarmCommand}"
+              <Border Classes="Card Interactive" Margin="0,0,0,8" ClipToBounds="True">
+                <i:Interaction.Behaviors>
+                  <behaviors:StaggerFadeInBehavior StaggerDelay="50" BaseDuration="300" />
+                </i:Interaction.Behaviors>
+                <Panel>
+                  <!-- Delete-Layer (rechts, dahinter) -->
+                  <Border Background="#EF4444" HorizontalAlignment="Right" Width="80">
+                    <Button Classes="Text" Padding="0" MinWidth="0" MinHeight="0"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Command="{Binding $parent[ItemsControl].((vm:AlarmViewModel)DataContext).SwipeDeleteAlarmCommand}"
                             CommandParameter="{Binding}">
-                      <mi:MaterialIcon Kind="Pencil" Width="18" Height="18" />
+                      <mi:MaterialIcon Kind="Delete" Foreground="White" Width="24" Height="24" />
                     </Button>
-                    <Button Classes="Text" MinWidth="48" MinHeight="48" Padding="6"
-                            Command="{Binding $parent[ItemsControl].((vm:AlarmViewModel)DataContext).DeleteAlarmCommand}"
-                            CommandParameter="{Binding}">
-                      <mi:MaterialIcon Kind="Delete" Width="18" Height="18"
-                                       Foreground="{DynamicResource ErrorBrush}" />
-                    </Button>
-                  </StackPanel>
-                </Grid>
+                  </Border>
+                  <!-- Content-Layer (nach links verschiebbar) -->
+                  <Border Background="{DynamicResource CardBrush}">
+                    <i:Interaction.Behaviors>
+                      <behaviors:SwipeToRevealBehavior SwipeThreshold="80" RevealWidth="80" />
+                    </i:Interaction.Behaviors>
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" Margin="12">
+                      <!-- Alarm Icon -->
+                      <Panel Grid.Column="0" Margin="0,0,12,0" VerticalAlignment="Center">
+                        <mi:MaterialIcon Kind="Alarm" Width="28" Height="28"
+                                         Foreground="{DynamicResource AlarmAccentBrush}"
+                                         IsVisible="{Binding IsEnabled}" />
+                        <mi:MaterialIcon Kind="AlarmOff" Width="28" Height="28"
+                                         Foreground="{DynamicResource TextMutedBrush}"
+                                         IsVisible="{Binding !IsEnabled}" />
+                      </Panel>
+
+                      <!-- Alarm Info -->
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding TimeFormatted}" FontSize="28" FontWeight="Light"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding Name}" FontSize="13"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   IsVisible="{Binding Name, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        <TextBlock Text="{Binding RepeatDaysFormatted}" FontSize="12"
+                                   Foreground="{DynamicResource AlarmAccentBrush}"
+                                   IsVisible="{Binding RepeatDaysFormatted, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                      </StackPanel>
+
+                      <!-- Toggle -->
+                      <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsEnabled}"
+                                    VerticalAlignment="Center" Margin="8,0"
+                                    Command="{Binding $parent[ItemsControl].((vm:AlarmViewModel)DataContext).ToggleAlarmCommand}"
+                                    CommandParameter="{Binding}" />
+
+                      <!-- Edit -->
+                      <Button Grid.Column="3" Classes="Text" MinWidth="48" MinHeight="48" Padding="6"
+                              Command="{Binding $parent[ItemsControl].((vm:AlarmViewModel)DataContext).EditAlarmCommand}"
+                              CommandParameter="{Binding}">
+                        <mi:MaterialIcon Kind="Pencil" Width="18" Height="18" />
+                      </Button>
+                    </Grid>
+                  </Border>
+                </Panel>
               </Border>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
@@ -162,14 +199,20 @@
       <views:ShiftScheduleView DataContext="{Binding ShiftScheduleViewModel}" />
     </Panel>
 
-    <!-- Alarm Editor Overlay -->
+    <!-- Alarm Editor Overlay (Bottom-Sheet) -->
     <Border Grid.Row="0" Grid.RowSpan="2"
             IsVisible="{Binding IsEditMode}"
-            Background="#80000000">
-        <Border Classes="Card" Margin="16,16"
-                VerticalAlignment="Center" HorizontalAlignment="Stretch"
-                MaxWidth="450">
+            Background="#AA000000">
+        <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+                Background="{DynamicResource CardBrush}"
+                CornerRadius="20,20,0,0" Padding="24,16,24,32"
+                MaxWidth="500" BoxShadow="0 -4 16 0 #40000000">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="600">
           <StackPanel Spacing="16">
+            <!-- Drag Handle -->
+            <Border Width="40" Height="4" CornerRadius="2"
+                    Background="{DynamicResource TextMutedBrush}"
+                    HorizontalAlignment="Center" Margin="0,0,0,8" />
 
             <!-- Editor Title -->
             <TextBlock Text="{Binding NewAlarmText}" Classes="HeadlineMedium" />
@@ -194,33 +237,54 @@
             <TextBox Text="{Binding AlarmName, Mode=TwoWay}"
                      Watermark="{Binding AlarmNamePlaceholderText}" />
 
-            <!-- Weekday Toggles -->
+            <!-- Weekday Toggles (runde Buttons) -->
             <StackPanel Spacing="8">
               <TextBlock Text="{Binding RepeatText}" Classes="TitleSmall"
                          Foreground="{DynamicResource TextMutedBrush}" />
-              <WrapPanel Orientation="Horizontal">
-                <Button Classes="Outlined Small" Content="{Binding MondayShortText}"
-                        Command="{Binding ToggleDayCommand}" CommandParameter="Monday"
-                        Margin="0,0,4,4" />
-                <Button Classes="Outlined Small" Content="{Binding TuesdayShortText}"
-                        Command="{Binding ToggleDayCommand}" CommandParameter="Tuesday"
-                        Margin="0,0,4,4" />
-                <Button Classes="Outlined Small" Content="{Binding WednesdayShortText}"
-                        Command="{Binding ToggleDayCommand}" CommandParameter="Wednesday"
-                        Margin="0,0,4,4" />
-                <Button Classes="Outlined Small" Content="{Binding ThursdayShortText}"
-                        Command="{Binding ToggleDayCommand}" CommandParameter="Thursday"
-                        Margin="0,0,4,4" />
-                <Button Classes="Outlined Small" Content="{Binding FridayShortText}"
-                        Command="{Binding ToggleDayCommand}" CommandParameter="Friday"
-                        Margin="0,0,4,4" />
-                <Button Classes="Outlined Small" Content="{Binding SaturdayShortText}"
-                        Command="{Binding ToggleDayCommand}" CommandParameter="Saturday"
-                        Margin="0,0,4,4" />
-                <Button Classes="Outlined Small" Content="{Binding SundayShortText}"
-                        Command="{Binding ToggleDayCommand}" CommandParameter="Sunday"
-                        Margin="0,0,4,4" />
-              </WrapPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsMondaySelected}"
+                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Command="{Binding ToggleDayCommand}" CommandParameter="Monday">
+                  <TextBlock Text="{Binding MondayShortText}" FontSize="11" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+                <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsTuesdaySelected}"
+                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Command="{Binding ToggleDayCommand}" CommandParameter="Tuesday">
+                  <TextBlock Text="{Binding TuesdayShortText}" FontSize="11" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+                <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsWednesdaySelected}"
+                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Command="{Binding ToggleDayCommand}" CommandParameter="Wednesday">
+                  <TextBlock Text="{Binding WednesdayShortText}" FontSize="11" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+                <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsThursdaySelected}"
+                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Command="{Binding ToggleDayCommand}" CommandParameter="Thursday">
+                  <TextBlock Text="{Binding ThursdayShortText}" FontSize="11" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+                <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsFridaySelected}"
+                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Command="{Binding ToggleDayCommand}" CommandParameter="Friday">
+                  <TextBlock Text="{Binding FridayShortText}" FontSize="11" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+                <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsSaturdaySelected}"
+                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Command="{Binding ToggleDayCommand}" CommandParameter="Saturday">
+                  <TextBlock Text="{Binding SaturdayShortText}" FontSize="11" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+                <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsSundaySelected}"
+                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Command="{Binding ToggleDayCommand}" CommandParameter="Sunday">
+                  <TextBlock Text="{Binding SundayShortText}" FontSize="11" FontWeight="SemiBold"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </StackPanel>
             </StackPanel>
 
             <!-- Sound Selection -->
@@ -265,17 +329,23 @@
             </StackPanel>
 
           </StackPanel>
+          </ScrollViewer>
         </Border>
     </Border>
 
-    <!-- Delete Confirmation Overlay -->
+    <!-- Delete Confirmation Overlay (Bottom-Sheet) -->
     <Border Grid.Row="0" Grid.RowSpan="2"
             IsVisible="{Binding IsDeleteConfirmVisible}"
-            Background="#80000000">
-      <Border Classes="Card" Margin="32"
-              VerticalAlignment="Center" HorizontalAlignment="Stretch"
-              MaxWidth="350">
+            Background="#AA000000">
+      <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="20,20,0,0" Padding="24,16,24,32"
+              MaxWidth="500" BoxShadow="0 -4 16 0 #40000000">
         <StackPanel Spacing="16">
+          <!-- Drag Handle -->
+          <Border Width="40" Height="4" CornerRadius="2"
+                  Background="{DynamicResource TextMutedBrush}"
+                  HorizontalAlignment="Center" Margin="0,0,0,8" />
           <TextBlock Text="{Binding ConfirmDeleteTitleText}" Classes="TitleLarge" />
           <TextBlock Text="{Binding ConfirmDeleteMessageText}" Classes="BodyMedium"
                      TextWrapping="Wrap" />
@@ -289,14 +359,19 @@
       </Border>
     </Border>
 
-    <!-- Pause Dialog Overlay (Urlaubsmodus) -->
+    <!-- Pause Dialog Overlay (Bottom-Sheet) -->
     <Border Grid.Row="0" Grid.RowSpan="2"
             IsVisible="{Binding IsPauseDialogVisible}"
-            Background="#80000000">
-      <Border Classes="Card" Margin="32"
-              VerticalAlignment="Center" HorizontalAlignment="Stretch"
-              MaxWidth="350">
+            Background="#AA000000">
+      <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="20,20,0,0" Padding="24,16,24,32"
+              MaxWidth="500" BoxShadow="0 -4 16 0 #40000000">
         <StackPanel Spacing="16">
+          <!-- Drag Handle -->
+          <Border Width="40" Height="4" CornerRadius="2"
+                  Background="{DynamicResource TextMutedBrush}"
+                  HorizontalAlignment="Center" Margin="0,0,0,8" />
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Beach" Width="24" Height="24"
                              Foreground="{DynamicResource AlarmAccentBrush}" />

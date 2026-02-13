@@ -680,4 +680,35 @@ Ejemplos:
   <data name="Off" xml:space="preserve">
     <value>Desactivado</value>
   </data>
+  <!-- UI/UX Rediseño -->
+  <data name="TimerEmptyHint" xml:space="preserve">
+    <value>Inicia un temporizador para mantener el rumbo</value>
+  </data>
+  <data name="CreateTimerButton" xml:space="preserve">
+    <value>Crear temporizador</value>
+  </data>
+  <data name="StopwatchEmptyHint" xml:space="preserve">
+    <value>Inicia el cronómetro y toca la bandera para registrar vueltas</value>
+  </data>
+  <data name="StreakDays" xml:space="preserve">
+    <value>{0} días seguidos</value>
+  </data>
+  <data name="NextAlarmIn" xml:space="preserve">
+    <value>Próxima alarma en</value>
+  </data>
+  <data name="NextAlarmCountdownFormat" xml:space="preserve">
+    <value>{0}h {1}min</value>
+  </data>
+  <data name="NewAlarmButton" xml:space="preserve">
+    <value>Nueva alarma</value>
+  </data>
+  <data name="Support" xml:space="preserve">
+    <value>Ayuda y soporte</value>
+  </data>
+  <data name="OnboardingQuickTimer" xml:space="preserve">
+    <value>Toca un temporizador rápido para empezar</value>
+  </data>
+  <data name="OnboardingCreateTimer" xml:space="preserve">
+    <value>O crea tu propio temporizador</value>
+  </data>
 </root>

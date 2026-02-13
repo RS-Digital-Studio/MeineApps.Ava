@@ -3,6 +3,9 @@
              xmlns:vm="using:ZeitManager.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:models="using:ZeitManager.Models"
+             xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="ZeitManager.Views.StopwatchView"
              x:DataType="vm:StopwatchViewModel">
 
@@ -23,19 +26,19 @@
 
     <!-- Time Display mit Ring -->
     <Border Grid.Row="0" Margin="16,16,16,8" HorizontalAlignment="Center">
-      <Grid Width="280" Height="280">
+      <Grid Width="340" Height="340">
         <!-- Äußerer Ring (Track) -->
-        <Border CornerRadius="140" BorderThickness="4" Width="280" Height="280"
+        <Border CornerRadius="170" BorderThickness="4" Width="340" Height="340"
                 BorderBrush="{DynamicResource BorderSubtleBrush}" />
 
         <!-- Aktiver Ring (Cyan, sichtbar wenn laufend) -->
-        <Border CornerRadius="140" BorderThickness="4" Width="280" Height="280"
+        <Border CornerRadius="170" BorderThickness="4" Width="340" Height="340"
                 BorderBrush="{DynamicResource StopwatchAccentBrush}"
                 IsVisible="{Binding IsRunning}" />
 
         <!-- Glow-Ring (animierter äußerer Schein) -->
         <Border Classes="StopwatchGlow"
-                CornerRadius="148" BorderThickness="3" Width="296" Height="296"
+                CornerRadius="178" BorderThickness="3" Width="356" Height="356"
                 BorderBrush="{DynamicResource StopwatchAccentBrush}"
                 IsVisible="{Binding IsRunning}"
                 HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -102,15 +105,9 @@
     <Panel Grid.Row="2" Margin="16,8,16,0">
 
       <!-- Empty State -->
-      <StackPanel IsVisible="{Binding !HasLaps}"
-                  VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8">
-        <mi:MaterialIcon Kind="FlagCheckered" Width="48" Height="48"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding NoLapsText}" Classes="BodyMedium"
-                   Foreground="{DynamicResource TextMutedBrush}"
-                   HorizontalAlignment="Center" />
-      </StackPanel>
+      <controls:EmptyStateView IsVisible="{Binding !HasLaps}"
+          Icon="FlagCheckered" Title="{Binding NoLapsText}"
+          Subtitle="{Binding StopwatchEmptyHintText}" />
 
       <!-- Rundenliste -->
       <DockPanel IsVisible="{Binding HasLaps}">
@@ -125,8 +122,13 @@
           <ItemsControl ItemsSource="{Binding Laps}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="models:StopwatchLap">
-                <Border Classes="Card" Margin="0,0,0,4" Padding="12,8">
-                  <Grid ColumnDefinitions="Auto,*,Auto">
+                <Border Classes="Card" Margin="0,0,0,4" Padding="12,8"
+                        BorderBrush="{Binding LapHighlightColor}"
+                        BorderThickness="0,0,0,2">
+                  <i:Interaction.Behaviors>
+                    <behaviors:FadeInBehavior Duration="250" SlideFromBottom="True" />
+                  </i:Interaction.Behaviors>
+                  <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                     <!-- Runden-Badge mit Cyan-Akzent -->
                     <Border Grid.Column="0"
                             Background="{DynamicResource StopwatchAccentBrush}"
@@ -140,7 +142,13 @@
                                FontSize="18" FontWeight="Medium"
                                VerticalAlignment="Center" />
 
-                    <TextBlock Grid.Column="2" Text="{Binding TotalTimeFormatted}"
+                    <!-- Delta zur vorherigen Runde -->
+                    <TextBlock Grid.Column="2" Text="{Binding DeltaFormatted}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               VerticalAlignment="Center" Margin="8,0" />
+
+                    <TextBlock Grid.Column="3" Text="{Binding TotalTimeFormatted}"
                                FontSize="14"
                                Foreground="{DynamicResource TextMutedBrush}"
                                VerticalAlignment="Center" />

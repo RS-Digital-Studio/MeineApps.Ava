@@ -3,6 +3,8 @@
              xmlns:vm="using:ZeitManager.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="ZeitManager.Views.PomodoroView"
              x:DataType="vm:PomodoroViewModel">
 
@@ -49,6 +51,20 @@
           <TextBlock Text="{Binding CycleText}" FontSize="14"
                      HorizontalAlignment="Center"
                      Foreground="{DynamicResource TextMutedBrush}" />
+
+          <!-- Zyklus-Punkte -->
+          <ItemsControl ItemsSource="{Binding CycleDots}" Margin="0,4,0,0">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CycleDot">
+                <Ellipse Width="12" Height="12" Fill="{Binding DotBrush}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
         </StackPanel>
 
         <!-- Grosser Kreis-Fortschritt -->
@@ -64,7 +80,7 @@
                                      Value="{Binding ProgressFraction}"
                                      StrokeWidth="8"
                                      TrackBrush="{DynamicResource BorderSubtleBrush}"
-                                     StrokeBrush="{DynamicResource PomodoroAccentBrush}" />
+                                     StrokeBrush="{Binding PhaseBrush}" />
           <!-- Zeit zentriert im Kreis -->
           <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="4">
             <TextBlock Text="{Binding RemainingFormatted}"
@@ -114,10 +130,32 @@
                              VerticalAlignment="Center" Margin="0,0,12,0" />
             <TextBlock Grid.Column="1" Text="{Binding SessionsCompletedText}"
                        Classes="BodyMedium" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="2" Text="{Binding CompletedSessions}"
-                       FontSize="24" FontWeight="Bold"
+            <TextBlock Grid.Column="2" FontSize="24" FontWeight="Bold"
                        Foreground="{DynamicResource PomodoroAccentBrush}"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center">
+              <i:Interaction.Behaviors>
+                <behaviors:CountUpBehavior TargetValue="{Binding CompletedSessions}" Format="F0" Duration="500" />
+              </i:Interaction.Behaviors>
+            </TextBlock>
+          </Grid>
+        </Border>
+
+        <!-- Streak-Anzeige (nur sichtbar wenn Streak > 1) -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12"
+                Padding="16" IsVisible="{Binding HasStreak}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <mi:MaterialIcon Grid.Column="0" Kind="Fire" Width="24" Height="24"
+                             Foreground="#F59E0B"
+                             VerticalAlignment="Center" Margin="0,0,12,0" />
+            <TextBlock Grid.Column="1" Text="{Binding StreakText}"
+                       Classes="BodyMedium" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="2" FontSize="24" FontWeight="Bold"
+                       Foreground="#F59E0B"
+                       VerticalAlignment="Center">
+              <i:Interaction.Behaviors>
+                <behaviors:CountUpBehavior TargetValue="{Binding CurrentStreak}" Format="F0" Duration="500" />
+              </i:Interaction.Behaviors>
+            </TextBlock>
           </Grid>
         </Border>
 
@@ -170,18 +208,24 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:DayStatistic">
-                  <StackPanel Spacing="4" HorizontalAlignment="Center" Height="160">
+                  <StackPanel Spacing="4" HorizontalAlignment="Center" Height="200">
                     <!-- Sessions-Zahl -->
-                    <TextBlock Text="{Binding Sessions}" FontSize="11"
+                    <TextBlock Text="{Binding Sessions}" FontSize="13"
+                               FontWeight="SemiBold"
                                HorizontalAlignment="Center"
-                               Foreground="{DynamicResource TextMutedBrush}" />
+                               Foreground="{DynamicResource PomodoroAccentBrush}" />
                     <!-- Balken via ScaleTransform (skaliert von unten) -->
-                    <Panel Height="120" Width="28" VerticalAlignment="Bottom">
-                      <Border CornerRadius="4,4,0,0"
-                              Background="{DynamicResource PomodoroAccentBrush}"
+                    <Panel Height="160" Width="32" VerticalAlignment="Bottom">
+                      <Border CornerRadius="6,6,0,0"
                               VerticalAlignment="Bottom"
-                              Height="120"
+                              Height="160"
                               RenderTransformOrigin="0.5,1">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                            <GradientStop Color="#EF4444" Offset="0" />
+                            <GradientStop Color="#F87171" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
                         <Border.RenderTransform>
                           <ScaleTransform ScaleY="{Binding HeightFraction}" ScaleX="1" />
                         </Border.RenderTransform>
@@ -201,14 +245,19 @@
       </StackPanel>
     </ScrollViewer>
 
-    <!-- Config Overlay -->
+    <!-- Config Overlay (Bottom-Sheet) -->
     <Border IsVisible="{Binding IsConfigVisible}"
-            Background="#80000000">
-      <Border Classes="Card" Margin="24"
-              VerticalAlignment="Center" HorizontalAlignment="Stretch"
-              MaxWidth="400" MaxHeight="500">
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            Background="#AA000000">
+      <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="20,20,0,0" Padding="24,16,24,32"
+              MaxWidth="500" BoxShadow="0 -4 16 0 #40000000">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="500">
           <StackPanel Spacing="16">
+            <!-- Drag Handle -->
+            <Border Width="40" Height="4" CornerRadius="2"
+                    Background="{DynamicResource TextMutedBrush}"
+                    HorizontalAlignment="Center" Margin="0,0,0,8" />
             <TextBlock Text="{Binding PomodoroConfigText}" Classes="HeadlineMedium" />
 
             <!-- Arbeitsdauer -->

@@ -49,5 +49,55 @@ namespace ZeitManager.Resources.Strings {
                 return ResourceManager.GetString("TimerDurationInvalid", resourceCulture);
             }
         }
+        internal static string TimerEmptyHint {
+            get {
+                return ResourceManager.GetString("TimerEmptyHint", resourceCulture);
+            }
+        }
+        internal static string CreateTimerButton {
+            get {
+                return ResourceManager.GetString("CreateTimerButton", resourceCulture);
+            }
+        }
+        internal static string StopwatchEmptyHint {
+            get {
+                return ResourceManager.GetString("StopwatchEmptyHint", resourceCulture);
+            }
+        }
+        internal static string StreakDays {
+            get {
+                return ResourceManager.GetString("StreakDays", resourceCulture);
+            }
+        }
+        internal static string NextAlarmIn {
+            get {
+                return ResourceManager.GetString("NextAlarmIn", resourceCulture);
+            }
+        }
+        internal static string NextAlarmCountdownFormat {
+            get {
+                return ResourceManager.GetString("NextAlarmCountdownFormat", resourceCulture);
+            }
+        }
+        internal static string NewAlarmButton {
+            get {
+                return ResourceManager.GetString("NewAlarmButton", resourceCulture);
+            }
+        }
+        internal static string Support {
+            get {
+                return ResourceManager.GetString("Support", resourceCulture);
+            }
+        }
+        internal static string OnboardingQuickTimer {
+            get {
+                return ResourceManager.GetString("OnboardingQuickTimer", resourceCulture);
+            }
+        }
+        internal static string OnboardingCreateTimer {
+            get {
+                return ResourceManager.GetString("OnboardingCreateTimer", resourceCulture);
+            }
+        }
     }
 }

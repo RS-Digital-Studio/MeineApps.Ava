@@ -4,6 +4,8 @@
              xmlns:models="using:ZeitManager.Models"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="ZeitManager.Views.TimerView"
              x:DataType="vm:TimerViewModel">
 
@@ -38,6 +40,9 @@
                   Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
                   BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
                   Command="{Binding AddQuickTimerCommand}" CommandParameter="1">
+            <i:Interaction.Behaviors>
+              <behaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="FlashOutline" Width="16" Height="16" />
               <TextBlock Text="1 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
@@ -48,6 +53,9 @@
                   Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
                   BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
                   Command="{Binding AddQuickTimerCommand}" CommandParameter="5">
+            <i:Interaction.Behaviors>
+              <behaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="CoffeeOutline" Width="16" Height="16" />
               <TextBlock Text="5 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
@@ -58,6 +66,9 @@
                   Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
                   BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
                   Command="{Binding AddQuickTimerCommand}" CommandParameter="10">
+            <i:Interaction.Behaviors>
+              <behaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="TimerSand" Width="16" Height="16" />
               <TextBlock Text="10 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
@@ -68,6 +79,9 @@
                   Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
                   BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
                   Command="{Binding AddQuickTimerCommand}" CommandParameter="15">
+            <i:Interaction.Behaviors>
+              <behaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="FoodAppleOutline" Width="16" Height="16" />
               <TextBlock Text="15 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
@@ -78,6 +92,9 @@
                   Background="{DynamicResource CardBrush}" Foreground="{DynamicResource TimerAccentBrush}"
                   BorderBrush="{DynamicResource TimerAccentBrush}" BorderThickness="1.5"
                   Command="{Binding AddQuickTimerCommand}" CommandParameter="30">
+            <i:Interaction.Behaviors>
+              <behaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="WeightLifter" Width="16" Height="16" />
               <TextBlock Text="30 min" FontWeight="SemiBold" FontSize="13" VerticalAlignment="Center" />
@@ -134,26 +151,21 @@
     <Panel Grid.Row="2">
 
       <!-- Empty State -->
-      <StackPanel IsVisible="{Binding !HasTimers}"
-                  VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
-        <mi:MaterialIcon Kind="TimerSandEmpty" Width="64" Height="64"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding NoTimersText}" Classes="TitleMedium"
-                   Foreground="{DynamicResource TextMutedBrush}"
-                   HorizontalAlignment="Center" />
-        <TextBlock Text="{Binding CreateTimerText}" Classes="BodyMedium"
-                   Foreground="{DynamicResource TextMutedBrush}"
-                   HorizontalAlignment="Center" TextWrapping="Wrap"
-                   TextAlignment="Center" />
-      </StackPanel>
+      <controls:EmptyStateView IsVisible="{Binding !HasTimers}"
+          Icon="TimerSandEmpty" Title="{Binding NoTimersText}"
+          Subtitle="{Binding TimerEmptyHintText}"
+          ActionText="{Binding CreateTimerButtonText}"
+          ActionCommand="{Binding ShowCreateTimerCommand}" />
 
       <!-- Timer List -->
       <ScrollViewer IsVisible="{Binding HasTimers}">
         <ItemsControl ItemsSource="{Binding Timers}" Margin="16,0">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:TimerItem">
-              <Border Classes="Card" Margin="0,0,0,8" Padding="12">
+              <Border Classes="Card Interactive" Margin="0,0,0,8" Padding="12">
+                <i:Interaction.Behaviors>
+                  <behaviors:StaggerFadeInBehavior StaggerDelay="50" BaseDuration="300" />
+                </i:Interaction.Behaviors>
                 <Grid ColumnDefinitions="Auto,*,Auto">
 
                   <!-- Fortschrittsring -->
@@ -162,7 +174,7 @@
                         Value="{Binding ProgressFraction}"
                         StrokeWidth="5"
                         TrackBrush="{DynamicResource BorderSubtleBrush}"
-                        StrokeBrush="{DynamicResource TimerAccentBrush}" />
+                        StrokeBrush="{Binding ProgressBrush}" />
                     <!-- Pulsierender Amber-Punkt bei laufendem Timer -->
                     <Border Classes="TimerRunningPulse"
                             IsVisible="{Binding IsRunning}"
@@ -284,14 +296,19 @@
 
     </Panel>
 
-    <!-- Create Timer Dialog Overlay -->
+    <!-- Create Timer Dialog Overlay (Bottom-Sheet) -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             IsVisible="{Binding IsCreatingTimer}"
-            Background="#80000000">
-      <Border Classes="Card" Margin="32"
-              VerticalAlignment="Center" HorizontalAlignment="Stretch"
-              MaxWidth="400">
+            Background="#AA000000">
+      <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="20,20,0,0" Padding="24,16,24,32"
+              MaxWidth="500" BoxShadow="0 -4 16 0 #40000000">
         <StackPanel Spacing="16">
+          <!-- Drag Handle -->
+          <Border Width="40" Height="4" CornerRadius="2"
+                  Background="{DynamicResource TextMutedBrush}"
+                  HorizontalAlignment="Center" Margin="0,0,0,8" />
           <TextBlock Text="{Binding NewTimerTitleText}" Classes="HeadlineMedium" />
 
           <TextBox Text="{Binding NewTimerName, Mode=TwoWay}"
@@ -341,14 +358,19 @@
       </Border>
     </Border>
 
-    <!-- Delete Confirmation Overlay -->
+    <!-- Delete Confirmation Overlay (Bottom-Sheet) -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             IsVisible="{Binding IsDeleteConfirmVisible}"
-            Background="#80000000">
-      <Border Classes="Card" Margin="32"
-              VerticalAlignment="Center" HorizontalAlignment="Stretch"
-              MaxWidth="350">
+            Background="#AA000000">
+      <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="20,20,0,0" Padding="24,16,24,32"
+              MaxWidth="500" BoxShadow="0 -4 16 0 #40000000">
         <StackPanel Spacing="16">
+          <!-- Drag Handle -->
+          <Border Width="40" Height="4" CornerRadius="2"
+                  Background="{DynamicResource TextMutedBrush}"
+                  HorizontalAlignment="Center" Margin="0,0,0,8" />
           <TextBlock Text="{Binding ConfirmDeleteTitleText}" Classes="TitleLarge" />
           <TextBlock Text="{Binding ConfirmDeleteMessageText}" Classes="BodyMedium"
                      TextWrapping="Wrap" />
@@ -362,14 +384,19 @@
       </Border>
     </Border>
 
-    <!-- Delete All Confirmation Overlay -->
+    <!-- Delete All Confirmation Overlay (Bottom-Sheet) -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             IsVisible="{Binding IsDeleteAllConfirmVisible}"
-            Background="#80000000">
-      <Border Classes="Card" Margin="32"
-              VerticalAlignment="Center" HorizontalAlignment="Stretch"
-              MaxWidth="350">
+            Background="#AA000000">
+      <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="20,20,0,0" Padding="24,16,24,32"
+              MaxWidth="500" BoxShadow="0 -4 16 0 #40000000">
         <StackPanel Spacing="16">
+          <!-- Drag Handle -->
+          <Border Width="40" Height="4" CornerRadius="2"
+                  Background="{DynamicResource TextMutedBrush}"
+                  HorizontalAlignment="Center" Margin="0,0,0,8" />
           <TextBlock Text="{Binding DeleteAllText}" Classes="TitleLarge" />
           <TextBlock Text="{Binding ConfirmDeleteAllMessageText}" Classes="BodyMedium"
                      TextWrapping="Wrap" />

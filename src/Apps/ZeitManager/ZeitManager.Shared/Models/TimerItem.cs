@@ -1,4 +1,5 @@
 using System.Globalization;
+using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SQLite;
 
@@ -50,6 +51,7 @@ public partial class TimerItem : ObservableObject
                 OnPropertyChanged(nameof(RemainingTimeFormatted));
                 OnPropertyChanged(nameof(ProgressPercent));
                 OnPropertyChanged(nameof(ProgressFraction));
+                OnPropertyChanged(nameof(ProgressBrush));
             }
         }
     }
@@ -172,6 +174,21 @@ public partial class TimerItem : ObservableObject
 
     [Ignore]
     public bool IsNotFinished => State != TimerState.Finished;
+
+    /// <summary>Farbwechsel-Ring: Grün > 30%, Amber 10-30%, Rot < 10%.</summary>
+    [Ignore]
+    public string ProgressColor => DurationTicks <= 0 ? "#F59E0B" :
+        ((double)RemainingTimeTicks / DurationTicks) switch
+        {
+            <= 0.1 => "#EF4444",   // Rot bei < 10%
+            <= 0.3 => "#F59E0B",   // Amber bei < 30%
+            _ => "#22C55E"          // Grün sonst
+        };
+
+    /// <summary>Brush für Fortschrittsring-Binding.</summary>
+    [Ignore]
+    public IBrush ProgressBrush =>
+        new SolidColorBrush(Color.Parse(ProgressColor));
 
     [Ignore]
     public string RemainingTimeFormatted

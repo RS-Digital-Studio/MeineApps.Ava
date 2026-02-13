@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Timers;
+using Avalonia.Media;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -73,6 +74,14 @@ public partial class PomodoroViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private ObservableCollection<DayStatistic> _weekDays = [];
 
+    // Streak
+    [ObservableProperty]
+    private int _currentStreak;
+
+    // CycleDots
+    [ObservableProperty]
+    private ObservableCollection<CycleDot> _cycleDots = [];
+
     private TimeSpan _totalPhaseTime;
     private DateTime _phaseStartedAt;
 
@@ -103,6 +112,8 @@ public partial class PomodoroViewModel : ObservableObject, IDisposable
 
     public string TodaySessionsText => string.Format(_localization.GetString("TodaySessions"), TodaySessions);
     public string TodayMinutesText => string.Format(_localization.GetString("TodayMinutes"), TodayMinutes);
+    public string StreakText => string.Format(_localization.GetString("StreakDays"), CurrentStreak);
+    public bool HasStreak => CurrentStreak > 1;
 
     public string PhaseText => CurrentPhase switch
     {
@@ -132,6 +143,9 @@ public partial class PomodoroViewModel : ObservableObject, IDisposable
         _ => "#EF4444"
     };
 
+    /// <summary>Brush für den Fortschrittsring, passt sich der aktuellen Phase an.</summary>
+    public IBrush PhaseBrush => new SolidColorBrush(Color.Parse(PhaseColor));
+
     public bool HasSessions => TodaySessions > 0 || WeekSessions > 0;
 
     public event Action<string, string>? FloatingTextRequested;
@@ -151,6 +165,7 @@ public partial class PomodoroViewModel : ObservableObject, IDisposable
 
         LoadConfig();
         ResetPhase();
+        UpdateCycleDots();
         _ = LoadStatisticsAsync();
     }
 
@@ -206,9 +221,11 @@ public partial class PomodoroViewModel : ObservableObject, IDisposable
         CurrentCycle = 1;
         CompletedSessions = 0;
         ResetPhase();
+        UpdateCycleDots();
         OnPropertyChanged(nameof(PhaseText));
         OnPropertyChanged(nameof(CycleText));
         OnPropertyChanged(nameof(PhaseColor));
+        OnPropertyChanged(nameof(PhaseBrush));
     }
 
     [RelayCommand]
@@ -323,9 +340,11 @@ public partial class PomodoroViewModel : ObservableObject, IDisposable
         }
 
         ResetPhase();
+        UpdateCycleDots();
         OnPropertyChanged(nameof(PhaseText));
         OnPropertyChanged(nameof(CycleText));
         OnPropertyChanged(nameof(PhaseColor));
+        OnPropertyChanged(nameof(PhaseBrush));
 
         // Automatisch nächste Phase starten falls aktiviert
         if (AutoStartNext)
@@ -378,6 +397,26 @@ public partial class PomodoroViewModel : ObservableObject, IDisposable
 
             WeekDays = days;
 
+            // Streak berechnen: Aufeinanderfolgende Tage mit Work-Sessions
+            var streak = 0;
+            var checkDay = today;
+            // Wenn heute noch keine Session: ab gestern zählen
+            if (TodaySessions == 0)
+                checkDay = today.AddDays(-1);
+            for (int i = 0; i < 365; i++)
+            {
+                var dayStart = checkDay.AddDays(-i);
+                var dayEnd = dayStart.AddDays(1);
+                var daySessions = await _database.GetFocusSessionsAsync(dayStart, dayEnd);
+                if (daySessions.Any(s => s.Type == "Work"))
+                    streak++;
+                else
+                    break;
+            }
+            CurrentStreak = streak;
+            OnPropertyChanged(nameof(StreakText));
+            OnPropertyChanged(nameof(HasStreak));
+
             OnPropertyChanged(nameof(HasSessions));
             OnPropertyChanged(nameof(TodaySessionsText));
             OnPropertyChanged(nameof(TodayMinutesText));
@@ -386,6 +425,28 @@ public partial class PomodoroViewModel : ObservableObject, IDisposable
         {
             // Statistik-Laden ist best-effort, Fehler nicht propagieren
         }
+    }
+
+    /// <summary>Erstellt die CycleDot-Anzeige basierend auf aktuellem Zyklus und Phase.</summary>
+    private void UpdateCycleDots()
+    {
+        var dots = new ObservableCollection<CycleDot>();
+        for (int i = 1; i <= CyclesBeforeLongBreak; i++)
+        {
+            var isCompleted = i < CurrentCycle;
+            var isCurrent = i == CurrentCycle && CurrentPhase == PomodoroPhase.Work;
+            dots.Add(new CycleDot
+            {
+                IsCompleted = isCompleted,
+                IsCurrent = isCurrent,
+                DotBrush = isCompleted
+                    ? new SolidColorBrush(Color.Parse("#22C55E"))
+                    : isCurrent
+                        ? new SolidColorBrush(Color.Parse(PhaseColor))
+                        : new SolidColorBrush(Color.Parse("#4B5563"))
+            });
+        }
+        CycleDots = dots;
     }
 
     /// <summary>Lokalisierte Texte aktualisieren (wird von MainViewModel aufgerufen).</summary>
@@ -410,4 +471,12 @@ public class DayStatistic
     public bool IsToday { get; set; }
     public double HeightFraction { get; set; }
     public Avalonia.Media.FontWeight DayFontWeight => IsToday ? Avalonia.Media.FontWeight.Bold : Avalonia.Media.FontWeight.Normal;
+}
+
+/// <summary>Einzelner Punkt in der Zyklus-Anzeige des Pomodoro-Timers.</summary>
+public class CycleDot
+{
+    public bool IsCompleted { get; set; }
+    public bool IsCurrent { get; set; }
+    public IBrush DotBrush { get; set; } = new SolidColorBrush(Color.Parse("#4B5563"));
 }

@@ -71,6 +71,8 @@ public partial class TimerViewModel : ObservableObject
     public string AutoRepeatText => _localization.GetString("AutoRepeat");
     public string PresetsText => _localization.GetString("Presets");
     public string SaveAsPresetText => _localization.GetString("SaveAsPreset");
+    public string TimerEmptyHintText => _localization.GetString("TimerEmptyHint");
+    public string CreateTimerButtonText => _localization.GetString("CreateTimerButton");
 
     public bool HasTimers => Timers.Count > 0;
 

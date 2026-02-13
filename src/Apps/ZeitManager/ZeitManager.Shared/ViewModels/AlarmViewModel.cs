@@ -1,9 +1,12 @@
 using System.Collections.ObjectModel;
+using System.Timers;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Avalonia.Threading;
 using MeineApps.Core.Ava.Localization;
 using ZeitManager.Models;
 using ZeitManager.Services;
+using Timer = System.Timers.Timer;
 
 namespace ZeitManager.ViewModels;
 
@@ -60,6 +63,12 @@ public partial class AlarmViewModel : ObservableObject
 
     [ObservableProperty]
     private ChallengeDifficulty _selectedDifficulty = ChallengeDifficulty.Easy;
+
+    // Nächster-Alarm-Countdown
+    [ObservableProperty]
+    private string _nextAlarmCountdown = "";
+
+    private Timer? _countdownTimer;
 
     // Guards gegen Double-Tap
     private bool _isToggling;
@@ -122,6 +131,19 @@ public partial class AlarmViewModel : ObservableObject
 
     public bool HasAlarms => Alarms.Count > 0;
 
+    public bool HasNextAlarm => !string.IsNullOrEmpty(NextAlarmCountdown);
+    public string NextAlarmInText => _localization.GetString("NextAlarmIn");
+    public string NewAlarmButtonText => _localization.GetString("NewAlarmButton");
+
+    // Weekday-Selected Properties für runde Toggle-Buttons
+    public bool IsMondaySelected => RepeatDays.HasFlag(WeekDays.Monday);
+    public bool IsTuesdaySelected => RepeatDays.HasFlag(WeekDays.Tuesday);
+    public bool IsWednesdaySelected => RepeatDays.HasFlag(WeekDays.Wednesday);
+    public bool IsThursdaySelected => RepeatDays.HasFlag(WeekDays.Thursday);
+    public bool IsFridaySelected => RepeatDays.HasFlag(WeekDays.Friday);
+    public bool IsSaturdaySelected => RepeatDays.HasFlag(WeekDays.Saturday);
+    public bool IsSundaySelected => RepeatDays.HasFlag(WeekDays.Sunday);
+
     [ObservableProperty]
     private IReadOnlyList<SoundItem> _availableSounds;
 
@@ -136,7 +158,66 @@ public partial class AlarmViewModel : ObservableObject
         _shiftScheduleViewModel = shiftScheduleViewModel;
         _availableSounds = _audioService.AvailableSounds;
         _localization.LanguageChanged += OnLanguageChanged;
-        _ = LoadAlarms();
+        _ = InitializeAsync();
+    }
+
+    private async Task InitializeAsync()
+    {
+        await LoadAlarms();
+        UpdateNextAlarmCountdown();
+
+        // Timer für regelmäßige Countdown-Aktualisierung (60s)
+        _countdownTimer = new Timer(60_000);
+        _countdownTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(UpdateNextAlarmCountdown);
+        _countdownTimer.Start();
+    }
+
+    /// <summary>Berechnet den Countdown zum nächsten aktiven Alarm.</summary>
+    private void UpdateNextAlarmCountdown()
+    {
+        if (Alarms.Count == 0 || _alarmScheduler.IsAllPaused)
+        {
+            NextAlarmCountdown = "";
+            OnPropertyChanged(nameof(HasNextAlarm));
+            return;
+        }
+
+        var now = DateTime.Now;
+        TimeSpan? shortest = null;
+
+        foreach (var alarm in Alarms.Where(a => a.IsEnabled))
+        {
+            var alarmToday = now.Date.Add(alarm.Time.ToTimeSpan());
+            if (alarmToday <= now)
+                alarmToday = alarmToday.AddDays(1);
+
+            var delta = alarmToday - now;
+            if (shortest == null || delta < shortest)
+                shortest = delta;
+        }
+
+        if (shortest != null)
+        {
+            var h = (int)shortest.Value.TotalHours;
+            var m = shortest.Value.Minutes;
+            NextAlarmCountdown = string.Format(_localization.GetString("NextAlarmCountdownFormat"), h, m);
+        }
+        else
+        {
+            NextAlarmCountdown = "";
+        }
+        OnPropertyChanged(nameof(HasNextAlarm));
+    }
+
+    partial void OnRepeatDaysChanged(WeekDays value)
+    {
+        OnPropertyChanged(nameof(IsMondaySelected));
+        OnPropertyChanged(nameof(IsTuesdaySelected));
+        OnPropertyChanged(nameof(IsWednesdaySelected));
+        OnPropertyChanged(nameof(IsThursdaySelected));
+        OnPropertyChanged(nameof(IsFridaySelected));
+        OnPropertyChanged(nameof(IsSaturdaySelected));
+        OnPropertyChanged(nameof(IsSundaySelected));
     }
 
     [RelayCommand]
@@ -145,6 +226,7 @@ public partial class AlarmViewModel : ObservableObject
         var alarms = await _database.GetAlarmsAsync();
         Alarms = new ObservableCollection<AlarmItem>(alarms.Where(a => !a.IsShiftAlarm));
         OnPropertyChanged(nameof(HasAlarms));
+        UpdateNextAlarmCountdown();
     }
 
     [RelayCommand]
@@ -250,6 +332,7 @@ public partial class AlarmViewModel : ObservableObject
                 await _alarmScheduler.ScheduleAlarmAsync(alarm);
             else
                 await _alarmScheduler.CancelAlarmAsync(alarm);
+            UpdateNextAlarmCountdown();
         }
         finally
         {
@@ -295,6 +378,14 @@ public partial class AlarmViewModel : ObservableObject
             RefreshAvailableSounds();
             SelectedAlarmTone = picked.Id;
         }
+    }
+
+    [RelayCommand]
+    private async Task SwipeDeleteAlarm(AlarmItem alarm)
+    {
+        await _alarmScheduler.CancelAlarmAsync(alarm);
+        await _database.DeleteAlarmAsync(alarm);
+        await LoadAlarms();
     }
 
     [RelayCommand]

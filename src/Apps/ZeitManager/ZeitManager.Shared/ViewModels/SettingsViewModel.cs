@@ -55,6 +55,7 @@ public partial class SettingsViewModel : ObservableObject
     public string LanguageText => _localization.GetString("Language");
     public string AboutText => _localization.GetString("About");
     public string VersionText => string.Format(_localization.GetString("VersionWithNumber"), AppVersion);
+    public string SupportText => _localization.GetString("Support");
     public string FeedbackText => _localization.GetString("FeedbackButton");
     public string PrivacyPolicyText => _localization.GetString("PrivacyPolicy");
     public string TimerSoundText => _localization.GetString("TimerSound");

@@ -46,6 +46,8 @@ public partial class StopwatchViewModel : ObservableObject, IDisposable
     public string ResetText => _localization.GetString("Reset");
     public string UndoResetText => _localization.GetString("UndoReset");
 
+    public string StopwatchEmptyHintText => _localization.GetString("StopwatchEmptyHint");
+
     public event Action<string, string>? FloatingTextRequested;
 
     public bool HasLaps => Laps.Count > 0;
@@ -125,10 +127,44 @@ public partial class StopwatchViewModel : ObservableObject, IDisposable
         var lapTime = totalTime - _lastLapTime;
         _lastLapTime = totalTime;
 
-        var lap = new StopwatchLap(Laps.Count + 1, lapTime, totalTime, DateTime.Now);
+        // Delta zur vorherigen Runde berechnen
+        TimeSpan? delta = null;
+        if (Laps.Count > 0)
+        {
+            // Laps[0] ist die zuletzt hinzugefügte Runde (neueste zuerst)
+            delta = lapTime - Laps[0].LapTime;
+        }
+
+        var lap = new StopwatchLap(Laps.Count + 1, lapTime, totalTime, DateTime.Now)
+        {
+            DeltaToPrevious = delta
+        };
         Laps.Insert(0, lap);
+        RecalculateLapMarkers();
         OnPropertyChanged(nameof(HasLaps));
         FloatingTextRequested?.Invoke($"#{Laps.Count}", "info");
+    }
+
+    /// <summary>Markiert die schnellste und langsamste Runde (bei 2+ Runden).</summary>
+    private void RecalculateLapMarkers()
+    {
+        if (Laps.Count < 2) return;
+
+        var best = Laps.MinBy(l => l.LapTime);
+        var worst = Laps.MaxBy(l => l.LapTime);
+
+        foreach (var lap in Laps)
+        {
+            lap.IsBestLap = false;
+            lap.IsWorstLap = false;
+        }
+
+        if (best != null) best.IsBestLap = true;
+        if (worst != null && worst != best) worst.IsWorstLap = true;
+
+        // Collection neu zuweisen für UI-Update
+        Laps = new ObservableCollection<StopwatchLap>(Laps);
+        OnPropertyChanged(nameof(HasLaps));
     }
 
     private void EnsureUiTimer()

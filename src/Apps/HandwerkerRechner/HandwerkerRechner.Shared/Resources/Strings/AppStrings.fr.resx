@@ -157,6 +157,9 @@
   <data name="RollsNeeded" xml:space="preserve">
     <value>Rouleaux nécessaires</value>
   </data>
+  <data name="StripsNeeded" xml:space="preserve">
+    <value>Bandes nécessaires</value>
+  </data>
   <data name="LitersNeeded" xml:space="preserve">
     <value>Litres nécessaires</value>
   </data>
@@ -906,6 +909,9 @@ Vous économisez 0,96 € par rapport à l'achat individuel !</value>
   </data>
   <data name="ResultTilesNeeded" xml:space="preserve">
     <value>Tuiles nécessaires</value>
+  </data>
+  <data name="ResultTilesWithReserve" xml:space="preserve">
+    <value>Avec réserve</value>
   </data>
   <data name="ResultUsableArea" xml:space="preserve">
     <value>Surface utile</value>
@@ -1668,7 +1674,7 @@ Le rendement diminue sur les surfaces rugueuses !</value>
     <value>Outils pro</value>
   </data>
   <data name="CalculatorCount" xml:space="preserve">
-    <value>9 calculateurs professionnels</value>
+    <value>11 calculateurs</value>
   </data>
   <data name="GetPremium" xml:space="preserve">
     <value>Sans publicité</value>
@@ -1737,4 +1743,54 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   <data name="LabelPricePerKwh" xml:space="preserve">
     <value>Prix électricité (€/kWh)</value>
   </data>
+  <!-- Calculateur de béton -->
+  <data name="CalcConcrete" xml:space="preserve"><value>Béton</value></data>
+  <data name="CalcConcreteDesc" xml:space="preserve"><value>Volume, sacs &amp; mélange</value></data>
+  <data name="ConcreteShape" xml:space="preserve"><value>Forme de béton</value></data>
+  <data name="ConcreteSlab" xml:space="preserve"><value>Dalle de béton</value></data>
+  <data name="StripFoundation" xml:space="preserve"><value>Semelle filante</value></data>
+  <data name="ConcreteColumn" xml:space="preserve"><value>Colonne de béton</value></data>
+  <data name="SlabLength" xml:space="preserve"><value>Longueur (m)</value></data>
+  <data name="SlabWidth" xml:space="preserve"><value>Largeur (m)</value></data>
+  <data name="SlabHeight" xml:space="preserve"><value>Épaisseur (cm)</value></data>
+  <data name="StripLength" xml:space="preserve"><value>Longueur totale (m)</value></data>
+  <data name="StripWidth" xml:space="preserve"><value>Largeur (cm)</value></data>
+  <data name="StripDepth" xml:space="preserve"><value>Profondeur (cm)</value></data>
+  <data name="ColumnDiameter" xml:space="preserve"><value>Diamètre (cm)</value></data>
+  <data name="ColumnHeight" xml:space="preserve"><value>Hauteur (cm)</value></data>
+  <data name="BagWeight" xml:space="preserve"><value>Poids du sac (kg)</value></data>
+  <data name="PricePerBag" xml:space="preserve"><value>Prix par sac</value></data>
+  <data name="PricePerCubicMeter" xml:space="preserve"><value>Prix par m³</value></data>
+  <data name="ResultBags" xml:space="preserve"><value>Sacs de béton</value></data>
+  <data name="SelfMixing" xml:space="preserve"><value>Mélange manuel</value></data>
+  <data name="ResultCite" xml:space="preserve"><value>Ciment</value></data>
+  <data name="ResultSand" xml:space="preserve"><value>Sable</value></data>
+  <data name="ResultGravel" xml:space="preserve"><value>Gravier</value></data>
+  <data name="ResultWater" xml:space="preserve"><value>Eau</value></data>
+  <data name="CostBags" xml:space="preserve"><value>Coût des sacs</value></data>
+  <data name="CostCubicMeter" xml:space="preserve"><value>Coût par m³</value></data>
+  <!-- Calculateur d'escalier -->
+  <data name="CalcStairs" xml:space="preserve"><value>Calcul escalier</value></data>
+  <data name="CalcStairsDesc" xml:space="preserve"><value>Dimensions selon DIN 18065</value></data>
+  <data name="StairsDimensions" xml:space="preserve"><value>Dimensions</value></data>
+  <data name="FloorHeight" xml:space="preserve"><value>Hauteur d'étage (cm)</value></data>
+  <data name="StairWidth" xml:space="preserve"><value>Largeur escalier (cm)</value></data>
+  <data name="CustomStepCount" xml:space="preserve"><value>Marches (0=auto)</value></data>
+  <data name="PricePerStep" xml:space="preserve"><value>Prix par marche</value></data>
+  <data name="ResultStepCount" xml:space="preserve"><value>Marches</value></data>
+  <data name="ResultStepHeight" xml:space="preserve"><value>Hauteur de marche</value></data>
+  <data name="ResultTreadDepth" xml:space="preserve"><value>Giron</value></data>
+  <data name="ResultRunLength" xml:space="preserve"><value>Longueur de foulée</value></data>
+  <data name="ResultAngle" xml:space="preserve"><value>Angle</value></data>
+  <data name="ResultStepMeasure" xml:space="preserve"><value>Mesure de pas (2h+g)</value></data>
+  <data name="ResultStairLength" xml:space="preserve"><value>Longueur escalier</value></data>
+  <data name="StepsUnit" xml:space="preserve"><value>marches</value></data>
+  <data name="DinCompliant" xml:space="preserve"><value>DIN 18065 ✓</value></data>
+  <data name="NotDinCompliant" xml:space="preserve"><value>Non conforme DIN</value></data>
+  <data name="ComfortableStairs" xml:space="preserve"><value>Confortable</value></data>
+  <data name="UncomfortableStairs" xml:space="preserve"><value>Inconfortable</value></data>
+  <data name="ComfortLevel" xml:space="preserve"><value>Confort</value></data>
+  <data name="ShareResult" xml:space="preserve"><value>Copier</value></data>
+  <data name="CopiedToClipboard" xml:space="preserve"><value>Copié !</value></data>
+  <data name="PressBackToExit" xml:space="preserve"><value>Appuyez à nouveau pour quitter</value></data>
 </root>

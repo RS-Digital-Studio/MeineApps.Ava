@@ -23,6 +23,7 @@ public partial class RoofSolarViewModel : ObservableObject
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action<string>? ClipboardRequested;
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
     public RoofSolarViewModel(
@@ -86,7 +87,8 @@ public partial class RoofSolarViewModel : ObservableObject
         HasResult = false;
     }
 
-    public List<string> Calculators => [
+    private List<string>? _calculators;
+    public List<string> Calculators => _calculators ??= [
         _localization.GetString("RoofPitch"),
         _localization.GetString("RoofTiles"),
         _localization.GetString("SolarYield")
@@ -126,6 +128,9 @@ public partial class RoofSolarViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCalculating;
 
+    [ObservableProperty]
+    private bool _isExporting;
+
     #region Cost Calculation
 
     // Dachneigung: Keine Kostenberechnung (nur Winkelberechnung)
@@ -137,8 +142,8 @@ public partial class RoofSolarViewModel : ObservableObject
     [ObservableProperty]
     private bool _showTileCost = false;
 
-    public string RoofTileCostDisplay => (ShowTileCost && PricePerTile > 0 && TilesResult != null && TilesResult.TilesNeeded > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(TilesResult.TilesNeeded * PricePerTile):F2} {_localization.GetString("CurrencySymbol")}"
+    public string RoofTileCostDisplay => (ShowTileCost && PricePerTile > 0 && TilesResult != null && TilesResult.TilesWithReserve > 0)
+        ? $"{_localization.GetString("TotalCost")}: {(TilesResult.TilesWithReserve * PricePerTile):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
     partial void OnPricePerTileChanged(double value)
@@ -237,6 +242,10 @@ public partial class RoofSolarViewModel : ObservableObject
                             _localization.GetString("ValueMustBePositive"));
                         return;
                     }
+                    // Physikalische Obergrenzen: Effizienz max 100%, Neigung 0-90°
+                    if (PanelEfficiency > 100) PanelEfficiency = 100;
+                    if (TiltDegrees < 0) TiltDegrees = 0;
+                    if (TiltDegrees > 90) TiltDegrees = 90;
                     var orientation = (Orientation)SelectedOrientation;
                     SolarResult = _engine.EstimateSolarYield(SolarRoofArea, PanelEfficiency / 100, orientation, TiltDegrees);
                     PitchResult = null;
@@ -347,10 +356,10 @@ public partial class RoofSolarViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveProject()
+    private void SaveProject()
     {
         if (!HasResult) return;
-        SaveProjectName = string.Empty;
+        SaveProjectName = _currentProjectId != null ? string.Empty : DefaultProjectName;
         ShowSaveDialog = true;
     }
 
@@ -402,6 +411,51 @@ public partial class RoofSolarViewModel : ObservableObject
                 ["PricePerKwh"] = PricePerKwh,
                 ["SolarSystemCost"] = SolarSystemCost
             };
+
+            // Result-Daten mitspeichern (je nach aktuellem Sub-Rechner)
+            if (HasResult)
+            {
+                switch (SelectedCalculator)
+                {
+                    case 0 when PitchResult != null:
+                    {
+                        data["Result"] = new Dictionary<string, object>
+                        {
+                            ["ResultPitchDegrees"] = $"{PitchResult.PitchDegrees:F1}\u00b0",
+                            ["ResultPitchPercent"] = $"{PitchResult.PitchPercent:F1} %"
+                        };
+                        break;
+                    }
+                    case 1 when TilesResult != null:
+                    {
+                        var resultData = new Dictionary<string, object>
+                        {
+                            ["ResultTilesNeeded"] = TilesResult.TilesNeeded,
+                            ["ResultTilesWithReserve"] = TilesResult.TilesWithReserve
+                        };
+                        if (PricePerTile > 0)
+                            resultData["TotalCost"] = $"{(TilesResult.TilesWithReserve * PricePerTile):F2}";
+                        data["Result"] = resultData;
+                        break;
+                    }
+                    case 2 when SolarResult != null:
+                    {
+                        var resultData = new Dictionary<string, object>
+                        {
+                            ["ResultPeakPower"] = $"{SolarResult.KwPeak:F1} kWp",
+                            ["ResultAnnualYield"] = $"{SolarResult.AnnualYieldKwh:F0} kWh",
+                            ["ResultUsableArea"] = $"{SolarResult.UsableArea:F1} m\u00b2"
+                        };
+                        if (SolarSystemCost > 0 && SolarResult.AnnualYieldKwh > 0 && PricePerKwh > 0)
+                        {
+                            var paybackYears = SolarSystemCost / (SolarResult.AnnualYieldKwh * PricePerKwh);
+                            resultData["ResultPaybackTime"] = $"{paybackYears:F1} {_localization.GetString("HistoryYears") ?? "years"}";
+                        }
+                        data["Result"] = resultData;
+                        break;
+                    }
+                }
+            }
 
             project.SetData(data);
             await _projectService.SaveProjectAsync(project);
@@ -463,12 +517,59 @@ public partial class RoofSolarViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ExportMaterialList()
+    private void ShareResult()
     {
         if (!HasResult) return;
 
+        string text;
+        switch (SelectedCalculator)
+        {
+            case 0 when PitchResult != null:
+                text = $"{Calculators[0]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("ResultPitchDegrees")}: {PitchResult.PitchDegrees:F1}\u00b0\n" +
+                       $"{_localization.GetString("ResultPitchPercent")}: {PitchResult.PitchPercent:F1} %";
+                break;
+
+            case 1 when TilesResult != null:
+                text = $"{Calculators[1]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("ResultTilesNeeded")}: {TilesResult.TilesNeeded}\n" +
+                       $"{_localization.GetString("ResultWithReserveFivePercent")}: {TilesResult.TilesWithReserve}";
+                if (ShowTileCost && PricePerTile > 0)
+                    text += $"\n{_localization.GetString("TotalCost")}: {RoofTileCostDisplay}";
+                break;
+
+            case 2 when SolarResult != null:
+                text = $"{Calculators[2]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("ResultPeakPower")}: {SolarResult.KwPeak:F1} kWp\n" +
+                       $"{_localization.GetString("ResultAnnualYield")}: {SolarResult.AnnualYieldKwh:F0} kWh\n" +
+                       $"{_localization.GetString("ResultUsableArea")}: {SolarResult.UsableArea:F1} m\u00b2";
+                if (ShowSolarCost && SolarSystemCost > 0)
+                    text += $"\n{SolarCostDisplay}";
+                if (ShowSolarCost && SolarSystemCost > 0 && !string.IsNullOrEmpty(PaybackTimeDisplay))
+                    text += $"\n{PaybackTimeDisplay}";
+                break;
+
+            default:
+                return;
+        }
+
+        ClipboardRequested?.Invoke(text);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
+    }
+
+    [RelayCommand]
+    private async Task ExportMaterialList()
+    {
+        if (!HasResult) return;
+        if (IsExporting) return;
+
         try
         {
+            IsExporting = true;
+
             if (!_purchaseService.IsPremium)
             {
                 var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
@@ -491,8 +592,9 @@ public partial class RoofSolarViewModel : ObservableObject
                     inputs[_localization.GetString("LabelRoofAreaSqm") ?? "Roof area"] = $"{RoofArea:F1} m\u00b2";
                     inputs[_localization.GetString("LabelTilesPerSqm") ?? "Tiles/m\u00b2"] = $"{TilesPerSqm}";
                     results[_localization.GetString("ResultTilesNeeded") ?? "Tiles"] = $"{TilesResult.TilesNeeded}";
+                    results[_localization.GetString("ResultTilesWithReserve") ?? "With reserve"] = $"{TilesResult.TilesWithReserve}";
                     if (PricePerTile > 0)
-                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{TilesResult.TilesNeeded * PricePerTile:F2} {_localization.GetString("CurrencySymbol")}";
+                        results[_localization.GetString("TotalCost") ?? "Total cost"] = $"{TilesResult.TilesWithReserve * PricePerTile:F2} {_localization.GetString("CurrencySymbol")}";
                     break;
                 case 2 when SolarResult != null:
                     inputs[_localization.GetString("LabelRoofAreaSqm") ?? "Roof area"] = $"{SolarRoofArea:F1} m\u00b2";
@@ -517,6 +619,10 @@ public partial class RoofSolarViewModel : ObservableObject
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 }

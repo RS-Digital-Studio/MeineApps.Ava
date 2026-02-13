@@ -23,6 +23,7 @@ public partial class GardenViewModel : ObservableObject
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action<string>? ClipboardRequested;
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
     public GardenViewModel(
@@ -88,7 +89,8 @@ public partial class GardenViewModel : ObservableObject
         HasResult = false;
     }
 
-    public List<string> Calculators => [
+    private List<string>? _calculators;
+    public List<string> Calculators => _calculators ??= [
         _localization.GetString("Paving"),
         _localization.GetString("Soil"),
         _localization.GetString("PondLiner")
@@ -120,8 +122,8 @@ public partial class GardenViewModel : ObservableObject
     [ObservableProperty]
     private bool _showPavingCost = false;
 
-    public string PavingCostDisplay => (ShowPavingCost && PricePerStone > 0 && PavingResult != null && PavingResult.StonesNeeded > 0)
-        ? $"{_localization.GetString("TotalCost")}: {(PavingResult.StonesNeeded * PricePerStone):F2} {_localization.GetString("CurrencySymbol")}"
+    public string PavingCostDisplay => (ShowPavingCost && PricePerStone > 0 && PavingResult != null && PavingResult.StonesWithReserve > 0)
+        ? $"{_localization.GetString("TotalCost")}: {(PavingResult.StonesWithReserve * PricePerStone):F2} {_localization.GetString("CurrencySymbol")}"
         : "";
 
     partial void OnPricePerStoneChanged(double value)
@@ -175,6 +177,9 @@ public partial class GardenViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCalculating;
 
+    [ObservableProperty]
+    private bool _isExporting;
+
     partial void OnPavingResultChanged(PavingResult? value)
     {
         OnPropertyChanged(nameof(PavingCostDisplay));
@@ -210,6 +215,8 @@ public partial class GardenViewModel : ObservableObject
                             _localization.GetString("ValueMustBePositive"));
                         return;
                     }
+                    // Negative Fugenbreite ergibt keinen Sinn und kann Division/0 verursachen
+                    if (JointWidth < 0) JointWidth = 0;
                     PavingResult = _engine.CalculatePaving(PavingArea, StoneLength, StoneWidth, JointWidth);
                     SoilResult = null;
                     PondResult = null;
@@ -238,6 +245,8 @@ public partial class GardenViewModel : ObservableObject
                             _localization.GetString("ValueMustBePositive"));
                         return;
                     }
+                    // Negativer Überstand ist nicht sinnvoll
+                    if (Overlap < 0) Overlap = 0;
                     PondResult = _engine.CalculatePondLiner(PondLength, PondWidth, PondDepth, Overlap);
                     PavingResult = null;
                     SoilResult = null;
@@ -356,7 +365,7 @@ public partial class GardenViewModel : ObservableObject
     private void SaveProject()
     {
         if (!HasResult) return;
-        SaveProjectName = string.Empty;
+        SaveProjectName = _currentProjectId != null ? string.Empty : DefaultProjectName;
         ShowSaveDialog = true;
     }
 
@@ -411,6 +420,51 @@ public partial class GardenViewModel : ObservableObject
                 ["Overlap"] = Overlap,
                 ["PricePerSqmLiner"] = PricePerSqmLiner
             };
+
+            // Result-Daten mitspeichern (je nach aktuellem Sub-Rechner)
+            if (HasResult)
+            {
+                switch (SelectedCalculator)
+                {
+                    case 0 when PavingResult != null:
+                    {
+                        var resultData = new Dictionary<string, object>
+                        {
+                            ["ResultStonesNeeded"] = PavingResult.StonesNeeded,
+                            ["ResultWithReserveFivePercent"] = PavingResult.StonesWithReserve
+                        };
+                        if (PricePerStone > 0)
+                            resultData["TotalCost"] = $"{(PavingResult.StonesWithReserve * PricePerStone):F2}";
+                        data["Result"] = resultData;
+                        break;
+                    }
+                    case 1 when SoilResult != null:
+                    {
+                        var resultData = new Dictionary<string, object>
+                        {
+                            ["ResultVolumeNeeded"] = $"{SoilResult.VolumeLiters:F1} L",
+                            ["ResultBagsNeeded"] = SoilResult.BagsNeeded
+                        };
+                        if (PricePerBag > 0)
+                            resultData["TotalCost"] = $"{(SoilResult.BagsNeeded * PricePerBag):F2}";
+                        data["Result"] = resultData;
+                        break;
+                    }
+                    case 2 when PondResult != null:
+                    {
+                        var resultData = new Dictionary<string, object>
+                        {
+                            ["ResultLinerLength"] = $"{PondResult.LinerLength:F2} m",
+                            ["ResultLinerWidth"] = $"{PondResult.LinerWidth:F2} m",
+                            ["ResultLinerArea"] = $"{PondResult.LinerArea:F2} m\u00b2"
+                        };
+                        if (PricePerSqmLiner > 0)
+                            resultData["TotalCost"] = $"{(PondResult.LinerArea * PricePerSqmLiner):F2}";
+                        data["Result"] = resultData;
+                        break;
+                    }
+                }
+            }
 
             project.SetData(data);
             await _projectService.SaveProjectAsync(project);
@@ -475,12 +529,59 @@ public partial class GardenViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ExportMaterialList()
+    private void ShareResult()
     {
         if (!HasResult) return;
 
+        string text;
+        switch (SelectedCalculator)
+        {
+            case 0 when PavingResult != null:
+                text = $"{Calculators[0]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("ResultStonesNeeded")}: {PavingResult.StonesNeeded}\n" +
+                       $"{_localization.GetString("ResultWithReserveFivePercent")}: {PavingResult.StonesWithReserve}";
+                if (ShowPavingCost && PricePerStone > 0)
+                    text += $"\n{_localization.GetString("TotalCost")}: {PavingCostDisplay}";
+                break;
+
+            case 1 when SoilResult != null:
+                text = $"{Calculators[1]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("ResultVolumeNeeded")}: {SoilResult.VolumeLiters:F1} L\n" +
+                       $"{_localization.GetString("ResultBagsNeeded")}: {SoilResult.BagsNeeded}";
+                if (ShowSoilCost && PricePerBag > 0)
+                    text += $"\n{_localization.GetString("TotalCost")}: {SoilCostDisplay}";
+                break;
+
+            case 2 when PondResult != null:
+                text = $"{Calculators[2]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("ResultLinerLength")}: {PondResult.LinerLength:F2} m\n" +
+                       $"{_localization.GetString("ResultLinerWidth")}: {PondResult.LinerWidth:F2} m\n" +
+                       $"{_localization.GetString("ResultLinerArea")}: {PondResult.LinerArea:F2} m\u00b2";
+                if (ShowLinerCost && PricePerSqmLiner > 0)
+                    text += $"\n{_localization.GetString("TotalCost")}: {LinerCostDisplay}";
+                break;
+
+            default:
+                return;
+        }
+
+        ClipboardRequested?.Invoke(text);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
+    }
+
+    [RelayCommand]
+    private async Task ExportMaterialList()
+    {
+        if (!HasResult) return;
+        if (IsExporting) return;
+
         try
         {
+            IsExporting = true;
+
             if (!_purchaseService.IsPremium)
             {
                 var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
@@ -531,6 +632,10 @@ public partial class GardenViewModel : ObservableObject
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 }

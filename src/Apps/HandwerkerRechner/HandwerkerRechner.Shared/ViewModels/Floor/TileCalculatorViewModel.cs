@@ -31,6 +31,7 @@ public partial class TileCalculatorViewModel : ObservableObject
     /// </summary>
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action<string>? ClipboardRequested;
 
     [ObservableProperty]
     private bool _showSaveDialog;
@@ -164,6 +165,9 @@ public partial class TileCalculatorViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCalculating;
 
+    [ObservableProperty]
+    private bool _isExporting;
+
     public string AreaDisplay => Result != null
         ? _unitConverter.FormatArea(Result.RoomArea)
         : "";
@@ -201,6 +205,9 @@ public partial class TileCalculatorViewModel : ObservableObject
                 MessageRequested?.Invoke(_localization.GetString("InvalidInputTitle"), _localization.GetString("ValueMustBePositive"));
                 return;
             }
+
+            // Negativer Verschnitt ist nicht sinnvoll
+            if (WastePercentage < 0) WastePercentage = 0;
 
             Result = _craftEngine.CalculateTiles(RoomLength, RoomWidth, TileLength, TileWidth, WastePercentage);
             HasResult = true;
@@ -302,6 +309,20 @@ public partial class TileCalculatorViewModel : ObservableObject
                 ["PricePerTile"] = PricePerTile
             };
 
+            // Result-Daten mitspeichern für Export
+            if (HasResult && Result != null)
+            {
+                var resultData = new Dictionary<string, object>
+                {
+                    ["Area"] = Result.RoomArea.ToString("F2"),
+                    ["TilesNeeded"] = Result.TilesNeeded,
+                    ["TilesWithWaste"] = Result.TilesWithWaste
+                };
+                if (ShowCost && PricePerTile > 0)
+                    resultData["TotalCost"] = (Result.TilesWithWaste * PricePerTile).ToString("F2");
+                data["Result"] = resultData;
+            }
+
             project.SetData(data);
             await _projectService.SaveProjectAsync(project);
             _currentProjectId = project.Id;
@@ -349,12 +370,34 @@ public partial class TileCalculatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ExportMaterialList()
+    private void ShareResult()
     {
         if (!HasResult || Result == null) return;
 
+        var title = _localization.GetString("CalcTiles") ?? "Tiles";
+        var text = $"{title}\n" +
+                   $"─────────────\n" +
+                   $"{_localization.GetString("Area") ?? "Area"}: {AreaDisplay}\n" +
+                   $"{_localization.GetString("TilesNeeded") ?? "Tiles needed"}: {TilesNeededDisplay}\n" +
+                   $"{_localization.GetString("TilesWithWaste") ?? "With waste"}: {TilesWithWasteDisplay}";
+
+        if (ShowCost && PricePerTile > 0)
+            text += $"\n{_localization.GetString("TotalCost") ?? "Total cost"}: {TotalCostDisplay}";
+
+        ClipboardRequested?.Invoke(text);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
+    }
+
+    [RelayCommand]
+    private async Task ExportMaterialList()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
         try
         {
+            IsExporting = true;
+
             // Premium: Direkt. Free: Rewarded Ad
             if (!_purchaseService.IsPremium)
             {
@@ -387,6 +430,10 @@ public partial class TileCalculatorViewModel : ObservableObject
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 

@@ -328,6 +328,5 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
 
         _disposed = true;
-        GC.SuppressFinalize(this);
     }
 }

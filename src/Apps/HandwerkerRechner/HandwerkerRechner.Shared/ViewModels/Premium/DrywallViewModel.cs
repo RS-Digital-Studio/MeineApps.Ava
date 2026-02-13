@@ -23,6 +23,7 @@ public partial class DrywallViewModel : ObservableObject
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action<string>? ClipboardRequested;
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
     public DrywallViewModel(
@@ -88,6 +89,9 @@ public partial class DrywallViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isCalculating;
+
+    [ObservableProperty]
+    private bool _isExporting;
 
     public string PlatesNeeded => Result != null ? $"{Result.Plates} {_localization.GetString("UnitPlates")}" : "";
     public string CwProfilesNeeded => Result != null ? $"{Result.CwProfiles} {_localization.GetString("UnitPieces")}" : "";
@@ -168,6 +172,7 @@ public partial class DrywallViewModel : ObservableObject
         WallLength = 3.0;
         WallHeight = 2.5;
         DoublePlated = false;
+        PricePerSqm = 0;
         Result = null;
         HasResult = false;
     }
@@ -179,10 +184,10 @@ public partial class DrywallViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task SaveProject()
+    private void SaveProject()
     {
         if (!HasResult) return;
-        SaveProjectName = string.Empty;
+        SaveProjectName = _currentProjectId != null ? string.Empty : DefaultProjectName;
         ShowSaveDialog = true;
     }
 
@@ -215,6 +220,21 @@ public partial class DrywallViewModel : ObservableObject
                 ["DoublePlated"] = DoublePlated,
                 ["PricePerSqm"] = PricePerSqm
             };
+
+            // Result-Daten mitspeichern
+            if (HasResult && Result != null)
+            {
+                var resultData = new Dictionary<string, object>
+                {
+                    ["DrywallSheets"] = Result.Plates,
+                    ["CWProfilesStuds"] = Result.CwProfiles,
+                    ["UWProfilesTopBottom"] = $"{Result.UwLengthMeters:F1} m",
+                    ["Screws"] = Result.Screws
+                };
+                if (ShowCost && PricePerSqm > 0)
+                    resultData["TotalCost"] = $"{(Result.WallArea * PricePerSqm):F2}";
+                data["Result"] = resultData;
+            }
 
             project.SetData(data);
             await _projectService.SaveProjectAsync(project);
@@ -262,12 +282,34 @@ public partial class DrywallViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ExportMaterialList()
+    private void ShareResult()
     {
         if (!HasResult || Result == null) return;
 
+        var text = $"{_localization.GetString("CategoryDrywall")}\n" +
+                   $"─────────────\n" +
+                   $"{_localization.GetString("DrywallSheets")}: {PlatesNeeded}\n" +
+                   $"{_localization.GetString("CWProfilesStuds")}: {CwProfilesNeeded}\n" +
+                   $"{_localization.GetString("UWProfilesTopBottom")}: {UwLengthNeeded}\n" +
+                   $"{_localization.GetString("Screws")}: {ScrewsNeeded}";
+
+        if (ShowCost && PricePerSqm > 0)
+            text += $"\n{_localization.GetString("TotalCost")}: {TotalCostDisplay}";
+
+        ClipboardRequested?.Invoke(text);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
+    }
+
+    [RelayCommand]
+    private async Task ExportMaterialList()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
         try
         {
+            IsExporting = true;
+
             if (!_purchaseService.IsPremium)
             {
                 var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
@@ -300,6 +342,10 @@ public partial class DrywallViewModel : ObservableObject
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 }

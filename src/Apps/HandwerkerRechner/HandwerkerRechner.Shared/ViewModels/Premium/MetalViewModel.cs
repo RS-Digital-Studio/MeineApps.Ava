@@ -23,6 +23,7 @@ public partial class MetalViewModel : ObservableObject
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action<string>? ClipboardRequested;
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
     public MetalViewModel(
@@ -119,6 +120,9 @@ public partial class MetalViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCalculating;
 
+    [ObservableProperty]
+    private bool _isExporting;
+
     #region Cost Calculation
 
     // Metallgewicht: Preis pro kg
@@ -167,9 +171,21 @@ public partial class MetalViewModel : ObservableObject
                             _localization.GetString("ValueMustBePositive"));
                         return;
                     }
+
+                    // Wandstärke bei Hohlprofilen begrenzen: darf nicht größer als halber Außendurchmesser sein
+                    var selectedProfile = (ProfileType)SelectedProfile;
+                    if (selectedProfile is ProfileType.RoundTube or ProfileType.SquareTube &&
+                        WallThickness >= Dimension1 / 2)
+                    {
+                        HasResult = false;
+                        MessageRequested?.Invoke(
+                            _localization.GetString("InvalidInputTitle"),
+                            _localization.GetString("WallThicknessTooLarge") ?? "Wall thickness must be less than half the outer dimension");
+                        return;
+                    }
+
                     var metal = (MetalType)SelectedMetal;
-                    var profile = (ProfileType)SelectedProfile;
-                    WeightResult = _engine.CalculateMetalWeight(metal, profile, Length, Dimension1, Dimension2, WallThickness);
+                    WeightResult = _engine.CalculateMetalWeight(metal, selectedProfile, Length, Dimension1, Dimension2, WallThickness);
                     ThreadResult = null;
                     break;
 
@@ -268,7 +284,7 @@ public partial class MetalViewModel : ObservableObject
     private void SaveProject()
     {
         if (!HasResult) return;
-        SaveProjectName = string.Empty;
+        SaveProjectName = _currentProjectId != null ? string.Empty : DefaultProjectName;
         ShowSaveDialog = true;
     }
 
@@ -315,6 +331,35 @@ public partial class MetalViewModel : ObservableObject
                 // Thread Drill
                 ["SelectedThread"] = SelectedThread
             };
+
+            // Result-Daten mitspeichern (je nach aktuellem Sub-Rechner)
+            if (HasResult)
+            {
+                switch (SelectedCalculator)
+                {
+                    case 0 when WeightResult != null:
+                    {
+                        var resultData = new Dictionary<string, object>
+                        {
+                            ["ResultWeight"] = $"{WeightResult.Weight:F2} kg",
+                            ["ResultVolume"] = $"{WeightResult.Volume:F4} cm\u00b3"
+                        };
+                        if (ShowMetalCost && PricePerKg > 0)
+                            resultData["ResultMaterialCost"] = $"{(WeightResult.Weight * PricePerKg):F2}";
+                        data["Result"] = resultData;
+                        break;
+                    }
+                    case 1 when ThreadResult != null:
+                    {
+                        data["Result"] = new Dictionary<string, object>
+                        {
+                            ["ResultThread"] = ThreadResult.ThreadSize,
+                            ["ResultCoreDrill"] = $"{ThreadResult.DrillSize:F2} mm"
+                        };
+                        break;
+                    }
+                }
+            }
 
             project.SetData(data);
             await _projectService.SaveProjectAsync(project);
@@ -371,12 +416,49 @@ public partial class MetalViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ExportMaterialList()
+    private void ShareResult()
     {
         if (!HasResult) return;
 
+        string text;
+        switch (SelectedCalculator)
+        {
+            case 0 when WeightResult != null:
+                text = $"{Calculators[0]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("LabelMetal")}: {Metals[SelectedMetal]}\n" +
+                       $"{_localization.GetString("LabelProfile")}: {Profiles[SelectedProfile]}\n" +
+                       $"{_localization.GetString("ResultWeight")}: {WeightResult.Weight:F2} kg\n" +
+                       $"{_localization.GetString("ResultVolume")}: {WeightResult.Volume:F4} cm\u00b3";
+                if (ShowMetalCost && PricePerKg > 0)
+                    text += $"\n{_localization.GetString("ResultMaterialCost")}: {(WeightResult.Weight * PricePerKg):F2} {_localization.GetString("CurrencySymbol")}";
+                break;
+
+            case 1 when ThreadResult != null:
+                text = $"{Calculators[1]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("ResultThread")}: {ThreadResult.ThreadSize}\n" +
+                       $"{_localization.GetString("ResultCoreDrill")}: {ThreadResult.DrillSize:F2} mm";
+                break;
+
+            default:
+                return;
+        }
+
+        ClipboardRequested?.Invoke(text);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
+    }
+
+    [RelayCommand]
+    private async Task ExportMaterialList()
+    {
+        if (!HasResult) return;
+        if (IsExporting) return;
+
         try
         {
+            IsExporting = true;
+
             if (!_purchaseService.IsPremium)
             {
                 var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
@@ -415,6 +497,10 @@ public partial class MetalViewModel : ObservableObject
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 }

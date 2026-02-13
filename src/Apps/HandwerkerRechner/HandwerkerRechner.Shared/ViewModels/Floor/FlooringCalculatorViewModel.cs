@@ -31,6 +31,7 @@ public partial class FlooringCalculatorViewModel : ObservableObject
     /// </summary>
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action<string>? ClipboardRequested;
 
     [ObservableProperty]
     private bool _showSaveDialog;
@@ -162,6 +163,9 @@ public partial class FlooringCalculatorViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCalculating;
 
+    [ObservableProperty]
+    private bool _isExporting;
+
     public string AreaDisplay => Result != null
         ? _unitConverter.FormatArea(Result.RoomArea)
         : "";
@@ -199,6 +203,9 @@ public partial class FlooringCalculatorViewModel : ObservableObject
                 MessageRequested?.Invoke(_localization.GetString("InvalidInputTitle"), _localization.GetString("ValueMustBePositive"));
                 return;
             }
+
+            // Negativer Verschnitt ist nicht sinnvoll
+            if (WastePercentage < 0) WastePercentage = 0;
 
             Result = _craftEngine.CalculateFlooring(RoomLength, RoomWidth, BoardLength, BoardWidth, WastePercentage);
             HasResult = true;
@@ -299,6 +306,20 @@ public partial class FlooringCalculatorViewModel : ObservableObject
                 ["PricePerBoard"] = PricePerBoard
             };
 
+            // Result-Daten mitspeichern für Export
+            if (HasResult && Result != null)
+            {
+                var resultData = new Dictionary<string, object>
+                {
+                    ["Area"] = Result.RoomArea.ToString("F2"),
+                    ["BoardsNeeded"] = Result.BoardsNeeded,
+                    ["BoardsWithWaste"] = Result.BoardsWithWaste
+                };
+                if (ShowCost && PricePerBoard > 0)
+                    resultData["TotalCost"] = (Result.BoardsWithWaste * PricePerBoard).ToString("F2");
+                data["Result"] = resultData;
+            }
+
             project.SetData(data);
             await _projectService.SaveProjectAsync(project);
             _currentProjectId = project.Id;
@@ -346,12 +367,34 @@ public partial class FlooringCalculatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ExportMaterialList()
+    private void ShareResult()
     {
         if (!HasResult || Result == null) return;
 
+        var title = _localization.GetString("CalcFlooring") ?? "Flooring";
+        var text = $"{title}\n" +
+                   $"─────────────\n" +
+                   $"{_localization.GetString("Area") ?? "Area"}: {AreaDisplay}\n" +
+                   $"{_localization.GetString("BoardsNeeded") ?? "Boards needed"}: {BoardsNeededDisplay}\n" +
+                   $"{_localization.GetString("BoardsWithWaste") ?? "With waste"}: {BoardsWithWasteDisplay}";
+
+        if (ShowCost && PricePerBoard > 0)
+            text += $"\n{_localization.GetString("TotalCost") ?? "Total cost"}: {TotalCostDisplay}";
+
+        ClipboardRequested?.Invoke(text);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
+    }
+
+    [RelayCommand]
+    private async Task ExportMaterialList()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
         try
         {
+            IsExporting = true;
+
             if (!_purchaseService.IsPremium)
             {
                 var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
@@ -383,6 +426,10 @@ public partial class FlooringCalculatorViewModel : ObservableObject
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 

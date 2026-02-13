@@ -20,6 +20,8 @@ public class CraftEngine
     {
         var roomArea = roomLength * roomWidth;
         var tileArea = (tileLength / 100) * (tileWidth / 100);
+        if (tileArea <= 0) tileArea = 0.001; // Schutz gegen Division durch 0
+        wastePercent = Math.Max(0, wastePercent); // Negativer Verschnitt nicht erlaubt
         var tilesNeeded = roomArea / tileArea;
         var tilesWithWaste = tilesNeeded * (1 + wastePercent / 100);
 
@@ -47,6 +49,7 @@ public class CraftEngine
         double rollLength = 10.05, double rollWidth = 53, double patternRepeat = 0)
     {
         var perimeter = 2 * (roomLength + roomWidth);
+        if (rollWidth <= 0) rollWidth = 0.1; // Schutz gegen Division durch 0
         var rollWidthM = rollWidth / 100;
 
         // Bahnen pro Rolle (unter Berücksichtigung von Rapport)
@@ -81,6 +84,7 @@ public class CraftEngine
     /// <returns>Benötigte Liter</returns>
     public PaintResult CalculatePaint(double area, double coveragePerLiter = 10, int coats = 2)
     {
+        if (coveragePerLiter <= 0) coveragePerLiter = 0.001; // Schutz gegen Division durch 0
         var totalArea = area * coats;
         var litersNeeded = totalArea / coveragePerLiter;
 
@@ -107,6 +111,8 @@ public class CraftEngine
     {
         var roomArea = roomLength * roomWidth;
         var boardArea = boardLength * (boardWidth / 100);
+        if (boardArea <= 0) boardArea = 0.001; // Schutz gegen Division durch 0
+        wastePercent = Math.Max(0, wastePercent); // Negativer Verschnitt nicht erlaubt
         var boardsNeeded = roomArea / boardArea;
         var boardsWithWaste = boardsNeeded * (1 + wastePercent / 100);
 
@@ -159,7 +165,7 @@ public class CraftEngine
     /// </summary>
     public double CalculateBaseboard(double perimeter, double doorWidth, int doorCount)
     {
-        return perimeter - (doorWidth * doorCount);
+        return Math.Max(0, perimeter - (doorWidth * doorCount));
     }
 
     #endregion
@@ -181,8 +187,9 @@ public class CraftEngine
         var resistivity = isCopper ? 0.0178 : 0.0287;
 
         // Formel: U = 2 * I * L * rho / A (Faktor 2 für Hin- und Rückleiter)
+        if (crossSection <= 0) crossSection = 0.001; // Schutz gegen Division durch 0
         var voltageDrop = 2 * current * length * resistivity / crossSection;
-        var percentDrop = (voltageDrop / voltage) * 100;
+        var percentDrop = voltage > 0 ? (voltageDrop / voltage) * 100 : 0; // Schutz gegen Division durch 0
 
         return new VoltageDropResult
         {
@@ -249,8 +256,8 @@ public class CraftEngine
         }
         else if (power.HasValue && resistance.HasValue)
         {
-            // P = I² * R → I = sqrt(P/R)
-            i = r != 0 ? Math.Sqrt(p / r) : 0;
+            // P = I² * R → I = sqrt(P/R) - Math.Abs verhindert NaN bei negativen Werten
+            i = r != 0 ? Math.Sqrt(Math.Abs(p / r)) : 0;
             v = i * r;
         }
 
@@ -293,13 +300,13 @@ public class CraftEngine
 
             case ProfileType.RoundTube:
                 var outerR = dimension1 / 2 / 1000;
-                var innerR = (dimension1 - 2 * wallThickness) / 2 / 1000;
+                var innerR = Math.Max(0, (dimension1 - 2 * wallThickness) / 2 / 1000); // Wandstärke darf nicht größer als halber Durchmesser sein
                 volume = Math.PI * (outerR * outerR - innerR * innerR) * length;
                 break;
 
             case ProfileType.SquareTube:
                 var outer = dimension1 / 1000;
-                var inner = (dimension1 - 2 * wallThickness) / 1000;
+                var inner = Math.Max(0, (dimension1 - 2 * wallThickness) / 1000); // Wandstärke darf nicht größer als halbe Kantenlänge sein
                 volume = (outer * outer - inner * inner) * length;
                 break;
 
@@ -307,7 +314,7 @@ public class CraftEngine
                 // L-Profil: 2 Schenkel
                 var width = dimension1 / 1000;
                 var height = dimension2 / 1000;
-                var thick = wallThickness / 1000;
+                var thick = Math.Min(wallThickness / 1000, Math.Min(width, height)); // Wandstärke begrenzen
                 volume = (width * thick + (height - thick) * thick) * length;
                 break;
         }
@@ -338,18 +345,20 @@ public class CraftEngine
     /// <summary>
     /// Gibt die Kernlochgröße für ein Gewinde zurück
     /// </summary>
+    // Statisches Dictionary fuer Kernloch-Tabelle (vermeidet Neuallokation bei jedem Aufruf)
+    private static readonly Dictionary<string, double> ThreadDrillSizes = new()
+    {
+        { "M3", 2.5 }, { "M4", 3.3 }, { "M5", 4.2 }, { "M6", 5.0 },
+        { "M8", 6.8 }, { "M10", 8.5 }, { "M12", 10.2 }, { "M14", 12.0 },
+        { "M16", 14.0 }, { "M18", 15.5 }, { "M20", 17.5 }, { "M22", 19.5 },
+        { "M24", 21.0 }, { "M27", 24.0 }, { "M30", 26.5 }
+    };
+
     public ThreadDrillResult GetThreadDrill(string threadSize)
     {
-        var drillSizes = new Dictionary<string, double>
-        {
-            { "M3", 2.5 }, { "M4", 3.3 }, { "M5", 4.2 }, { "M6", 5.0 },
-            { "M8", 6.8 }, { "M10", 8.5 }, { "M12", 10.2 }, { "M14", 12.0 },
-            { "M16", 14.0 }, { "M18", 15.5 }, { "M20", 17.5 }, { "M22", 19.5 },
-            { "M24", 21.0 }, { "M27", 24.0 }, { "M30", 26.5 }
-        };
 
         var key = threadSize.ToUpperInvariant();
-        if (drillSizes.TryGetValue(key, out var drill))
+        if (ThreadDrillSizes.TryGetValue(key, out var drill))
         {
             return new ThreadDrillResult { ThreadSize = key, DrillSize = drill, Found = true };
         }
@@ -366,10 +375,13 @@ public class CraftEngine
     /// </summary>
     public PavingResult CalculatePaving(double area, double stoneLength, double stoneWidth, double jointWidth = 3)
     {
+        // Negative Fugenbreite nicht erlaubt
+        if (jointWidth < 0) jointWidth = 0;
         // Steinmaße inkl. Fuge
         var stoneLengthWithJoint = (stoneLength + jointWidth) / 100;
         var stoneWidthWithJoint = (stoneWidth + jointWidth) / 100;
         var stoneArea = stoneLengthWithJoint * stoneWidthWithJoint;
+        if (stoneArea <= 0) stoneArea = 0.001; // Schutz gegen Division durch 0
 
         var stonesNeeded = area / stoneArea;
         var stonesWithWaste = stonesNeeded * 1.05; // 5% Reserve
@@ -387,6 +399,7 @@ public class CraftEngine
     /// </summary>
     public SoilResult CalculateSoil(double area, double depthCm, double bagLiters = 40)
     {
+        if (bagLiters <= 0) bagLiters = 0.001; // Schutz gegen Division durch 0
         var volumeLiters = area * (depthCm / 100) * 1000;
         var bags = Math.Ceiling(volumeLiters / bagLiters);
 
@@ -496,6 +509,135 @@ public class CraftEngine
             AnnualYieldKwh = annualYield,
             Orientation = orientation,
             TiltDegrees = tiltDegrees
+        };
+    }
+
+    #endregion
+
+    #region Beton (FREE)
+
+    /// <summary>
+    /// Berechnet Betonbedarf für verschiedene Formen
+    /// </summary>
+    /// <param name="shape">0=Platte, 1=Fundament (Streifen), 2=Säule (rund)</param>
+    /// <param name="dim1">Platte/Fundament: Länge in m, Säule: Durchmesser in cm</param>
+    /// <param name="dim2">Platte: Breite in m, Fundament: Breite in cm, Säule: ignoriert</param>
+    /// <param name="height">Höhe/Tiefe in cm</param>
+    /// <param name="bagWeight">Fertigbeton-Sackgewicht in kg (25 oder 40)</param>
+    public ConcreteResult CalculateConcrete(int shape, double dim1, double dim2, double height, double bagWeight = 25)
+    {
+        double volumeM3;
+
+        switch (shape)
+        {
+            case 0: // Platte: L x B x H
+                volumeM3 = dim1 * dim2 * (height / 100);
+                break;
+            case 1: // Streifenfundament: Umfang x Breite x Tiefe
+                // dim1 = Gesamtlänge des Streifens in m, dim2 = Breite in cm
+                volumeM3 = dim1 * (dim2 / 100) * (height / 100);
+                break;
+            case 2: // Rundsäule: π * r² * h
+                var radiusM = (dim1 / 100) / 2; // cm zu m, dann Radius
+                volumeM3 = Math.PI * radiusM * radiusM * (height / 100);
+                break;
+            default:
+                volumeM3 = 0;
+                break;
+        }
+
+        // Standard-Mischverhältnis C25/30 pro m³
+        var cementKg = volumeM3 * 300;    // 300 kg Zement pro m³
+        var sandKg = volumeM3 * 700;      // 700 kg Sand (0-4mm) pro m³
+        var gravelKg = volumeM3 * 1100;   // 1100 kg Kies (4-16mm) pro m³
+        var waterL = volumeM3 * 150;      // 150 L Wasser pro m³
+
+        // Fertigbeton-Säcke (1 m³ ≈ 2300 kg Fertigbeton)
+        var totalWeight = volumeM3 * 2300;
+        if (bagWeight <= 0) bagWeight = 25;
+        var bags = (int)Math.Ceiling(totalWeight / bagWeight);
+
+        return new ConcreteResult
+        {
+            VolumeM3 = volumeM3,
+            CementKg = cementKg,
+            SandKg = sandKg,
+            GravelKg = gravelKg,
+            WaterLiters = waterL,
+            BagWeight = bagWeight,
+            BagsNeeded = bags
+        };
+    }
+
+    #endregion
+
+    #region Treppen (PREMIUM)
+
+    /// <summary>
+    /// Berechnet Treppenmaße nach DIN 18065 (Schrittmaßregel)
+    /// </summary>
+    /// <param name="floorHeight">Geschosshöhe in cm</param>
+    /// <param name="stairWidth">Treppenbreite in cm</param>
+    /// <param name="customStepCount">Manuelle Stufenanzahl (0 = automatisch berechnen)</param>
+    // DIN 18065 Treppen-Konstanten
+    private const double OptimalStepHeightCm = 17.5;
+    private const double StepMeasureOptimalCm = 63.0; // Schrittmaßregel: 2h + g = 63 cm
+    private const double StepMeasureMinCm = 59.0;
+    private const double StepMeasureMaxCm = 65.0;
+    private const double MinTreadDepthCm = 15.0;
+    private const double DinMinStepHeightCm = 14.0;
+    private const double DinMaxStepHeightCm = 21.0;
+    private const double DinMinTreadDepthCm = 21.0;
+    private const double DinMaxTreadDepthCm = 35.0;
+
+    public StairsResult CalculateStairs(double floorHeight, double stairWidth, int customStepCount = 0)
+    {
+        // Stufenanzahl: automatisch basierend auf optimaler Stufenhöhe
+        int stepCount;
+        if (customStepCount > 0)
+            stepCount = customStepCount;
+        else
+            stepCount = (int)Math.Round(floorHeight / OptimalStepHeightCm);
+
+        if (stepCount < 1) stepCount = 1;
+
+        // Stufenhöhe = Geschosshöhe / Stufenanzahl
+        var stepHeight = floorHeight / stepCount;
+
+        // Schrittmaßregel: 2h + g = 63 cm (DIN 18065)
+        var treadDepth = StepMeasureOptimalCm - 2 * stepHeight;
+        if (treadDepth < MinTreadDepthCm) treadDepth = MinTreadDepthCm;
+
+        // Lauflänge = (Stufenanzahl - 1) * Auftrittstiefe (letzte Stufe = Podest)
+        var runLength = (stepCount - 1) * treadDepth;
+
+        // Steigungswinkel
+        var angle = treadDepth > 0 ? Math.Atan(stepHeight / treadDepth) * 180 / Math.PI : 90;
+
+        // Schrittmaß-Check (DIN 18065)
+        var stepMeasure = 2 * stepHeight + treadDepth;
+        var isComfortable = stepMeasure >= StepMeasureMinCm && stepMeasure <= StepMeasureMaxCm;
+        var isDinCompliant = stepHeight >= DinMinStepHeightCm && stepHeight <= DinMaxStepHeightCm
+                          && treadDepth >= DinMinTreadDepthCm && treadDepth <= DinMaxTreadDepthCm;
+
+        // Treppenlänge (Hypotenuse)
+        var totalHeight = floorHeight / 100; // in m
+        var totalRun = runLength / 100;      // in m
+        var stairLength = Math.Sqrt(totalHeight * totalHeight + totalRun * totalRun);
+
+        return new StairsResult
+        {
+            StepCount = stepCount,
+            StepHeight = stepHeight,
+            TreadDepth = treadDepth,
+            RunLength = runLength,
+            StairWidth = stairWidth,
+            FloorHeight = floorHeight,
+            Angle = angle,
+            StepMeasure = stepMeasure,
+            StairLength = stairLength * 100, // zurück in cm
+            IsComfortable = isComfortable,
+            IsDinCompliant = isDinCompliant
         };
     }
 
@@ -644,6 +786,32 @@ public record SolarYieldResult
     public double AnnualYieldKwh { get; init; }
     public Orientation Orientation { get; init; }
     public double TiltDegrees { get; init; }
+}
+
+public record ConcreteResult
+{
+    public double VolumeM3 { get; init; }
+    public double CementKg { get; init; }
+    public double SandKg { get; init; }
+    public double GravelKg { get; init; }
+    public double WaterLiters { get; init; }
+    public double BagWeight { get; init; }
+    public int BagsNeeded { get; init; }
+}
+
+public record StairsResult
+{
+    public int StepCount { get; init; }
+    public double StepHeight { get; init; }     // cm
+    public double TreadDepth { get; init; }     // cm (Auftrittstiefe)
+    public double RunLength { get; init; }      // cm (Lauflänge)
+    public double StairWidth { get; init; }     // cm
+    public double FloorHeight { get; init; }    // cm (Geschosshöhe)
+    public double Angle { get; init; }          // Grad
+    public double StepMeasure { get; init; }    // 2h+g (Schrittmaß)
+    public double StairLength { get; init; }    // cm (Hypotenuse)
+    public bool IsComfortable { get; init; }    // Schrittmaß 59-65
+    public bool IsDinCompliant { get; init; }   // DIN 18065 konform
 }
 
 #endregion

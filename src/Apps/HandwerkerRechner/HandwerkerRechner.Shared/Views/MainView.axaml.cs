@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Input.Platform;
 using Avalonia.Media;
 using HandwerkerRechner.ViewModels;
 
@@ -22,6 +23,7 @@ public partial class MainView : UserControl
         {
             _vm.FloatingTextRequested -= OnFloatingText;
             _vm.CelebrationRequested -= OnCelebration;
+            _vm.ClipboardRequested -= OnClipboardRequested;
         }
 
         _vm = DataContext as MainViewModel;
@@ -31,6 +33,7 @@ public partial class MainView : UserControl
         {
             _vm.FloatingTextRequested += OnFloatingText;
             _vm.CelebrationRequested += OnCelebration;
+            _vm.ClipboardRequested += OnClipboardRequested;
         }
     }
 
@@ -53,5 +56,19 @@ public partial class MainView : UserControl
     private void OnCelebration()
     {
         CelebrationCanvas.ShowConfetti();
+    }
+
+    private async void OnClipboardRequested(string text)
+    {
+        try
+        {
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+            if (clipboard != null)
+                await clipboard.SetTextAsync(text);
+        }
+        catch (Exception)
+        {
+            // Clipboard-Fehler still ignorieren
+        }
     }
 }

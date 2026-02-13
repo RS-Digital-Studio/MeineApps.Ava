@@ -157,6 +157,9 @@
   <data name="RollsNeeded" xml:space="preserve">
     <value>Rolos necessários</value>
   </data>
+  <data name="StripsNeeded" xml:space="preserve">
+    <value>Tiras necessárias</value>
+  </data>
   <data name="LitersNeeded" xml:space="preserve">
     <value>Litros necessários</value>
   </data>
@@ -1775,7 +1778,7 @@ O rendimento diminui em superfícies rugosas!</value>
     <value>Ferramentas profissionais</value>
   </data>
   <data name="CalculatorCount" xml:space="preserve">
-    <value>9 calculadoras profissionais</value>
+    <value>11 calculadoras</value>
   </data>
   <data name="GetPremium" xml:space="preserve">
     <value>Sem publicidade</value>
@@ -1844,4 +1847,54 @@ O rendimento diminui em superfícies rugosas!</value>
   <data name="LabelPricePerKwh" xml:space="preserve">
     <value>Preço eletricidade (€/kWh)</value>
   </data>
+  <!-- Calculadora de concreto -->
+  <data name="CalcConcrete" xml:space="preserve"><value>Concreto</value></data>
+  <data name="CalcConcreteDesc" xml:space="preserve"><value>Volume, sacos &amp; mistura</value></data>
+  <data name="ConcreteShape" xml:space="preserve"><value>Forma do concreto</value></data>
+  <data name="ConcreteSlab" xml:space="preserve"><value>Laje de concreto</value></data>
+  <data name="StripFoundation" xml:space="preserve"><value>Fundação corrida</value></data>
+  <data name="ConcreteColumn" xml:space="preserve"><value>Coluna de concreto</value></data>
+  <data name="SlabLength" xml:space="preserve"><value>Comprimento (m)</value></data>
+  <data name="SlabWidth" xml:space="preserve"><value>Largura (m)</value></data>
+  <data name="SlabHeight" xml:space="preserve"><value>Espessura (cm)</value></data>
+  <data name="StripLength" xml:space="preserve"><value>Comprimento total (m)</value></data>
+  <data name="StripWidth" xml:space="preserve"><value>Largura (cm)</value></data>
+  <data name="StripDepth" xml:space="preserve"><value>Profundidade (cm)</value></data>
+  <data name="ColumnDiameter" xml:space="preserve"><value>Diâmetro (cm)</value></data>
+  <data name="ColumnHeight" xml:space="preserve"><value>Altura (cm)</value></data>
+  <data name="BagWeight" xml:space="preserve"><value>Peso do saco (kg)</value></data>
+  <data name="PricePerBag" xml:space="preserve"><value>Preço por saco</value></data>
+  <data name="PricePerCubicMeter" xml:space="preserve"><value>Preço por m³</value></data>
+  <data name="ResultBags" xml:space="preserve"><value>Sacos de concreto</value></data>
+  <data name="SelfMixing" xml:space="preserve"><value>Mistura manual</value></data>
+  <data name="ResultCite" xml:space="preserve"><value>Cimento</value></data>
+  <data name="ResultSand" xml:space="preserve"><value>Areia</value></data>
+  <data name="ResultGravel" xml:space="preserve"><value>Cascalho</value></data>
+  <data name="ResultWater" xml:space="preserve"><value>Água</value></data>
+  <data name="CostBags" xml:space="preserve"><value>Custo dos sacos</value></data>
+  <data name="CostCubicMeter" xml:space="preserve"><value>Custo por m³</value></data>
+  <!-- Calculadora de escadas -->
+  <data name="CalcStairs" xml:space="preserve"><value>Cálculo escadas</value></data>
+  <data name="CalcStairsDesc" xml:space="preserve"><value>Dimensões conforme DIN 18065</value></data>
+  <data name="StairsDimensions" xml:space="preserve"><value>Dimensões</value></data>
+  <data name="FloorHeight" xml:space="preserve"><value>Altura do piso (cm)</value></data>
+  <data name="StairWidth" xml:space="preserve"><value>Largura escada (cm)</value></data>
+  <data name="CustomStepCount" xml:space="preserve"><value>Degraus (0=auto)</value></data>
+  <data name="PricePerStep" xml:space="preserve"><value>Preço por degrau</value></data>
+  <data name="ResultStepCount" xml:space="preserve"><value>Degraus</value></data>
+  <data name="ResultStepHeight" xml:space="preserve"><value>Altura do degrau</value></data>
+  <data name="ResultTreadDepth" xml:space="preserve"><value>Piso</value></data>
+  <data name="ResultRunLength" xml:space="preserve"><value>Comprimento de passada</value></data>
+  <data name="ResultAngle" xml:space="preserve"><value>Ângulo</value></data>
+  <data name="ResultStepMeasure" xml:space="preserve"><value>Medida do passo (2h+g)</value></data>
+  <data name="ResultStairLength" xml:space="preserve"><value>Comprimento escada</value></data>
+  <data name="StepsUnit" xml:space="preserve"><value>degraus</value></data>
+  <data name="DinCompliant" xml:space="preserve"><value>DIN 18065 ✓</value></data>
+  <data name="NotDinCompliant" xml:space="preserve"><value>Não conforme DIN</value></data>
+  <data name="ComfortableStairs" xml:space="preserve"><value>Confortável</value></data>
+  <data name="UncomfortableStairs" xml:space="preserve"><value>Desconfortável</value></data>
+  <data name="ComfortLevel" xml:space="preserve"><value>Conforto</value></data>
+  <data name="ShareResult" xml:space="preserve"><value>Copiar</value></data>
+  <data name="CopiedToClipboard" xml:space="preserve"><value>Copiado!</value></data>
+  <data name="PressBackToExit" xml:space="preserve"><value>Pressione voltar novamente para sair</value></data>
 </root>

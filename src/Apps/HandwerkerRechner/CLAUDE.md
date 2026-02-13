@@ -4,26 +4,28 @@
 
 ## App-Beschreibung
 
-Handwerker-App mit 9 Rechnern (4 Free Floor + 5 Premium), Projektverwaltung und Einheiten-Umrechnung.
+Handwerker-App mit 11 Rechnern (5 Free Floor + 6 Premium), Projektverwaltung und Einheiten-Umrechnung.
 
 **Version:** 2.0.0 | **Package-ID:** com.meineapps.handwerkerrechner | **Status:** Geschlossener Test
 
 ## Features
 
-### 9 Rechner in 2 Kategorien
+### 11 Rechner in 2 Kategorien
 
-**Free Floor Calculators (4):**
+**Free Floor Calculators (5):**
 1. TileCalculator - Fliesenbedarf (Raum, Verschnitt, Fugenmasse)
 2. WallpaperCalculator - Tapetenrollen (Wandhoehe, Muster-Rapport)
 3. PaintCalculator - Farbbedarf (Anstriche, Deckfaehigkeit)
 4. FlooringCalculator - Laminat/Parkett (Raumform, Verschnitt)
+5. ConcreteCalculator - Beton (Platte/Fundament/Säule, Volumen, Säcke, Mischverhältnis)
 
-**Premium Calculators (5):**
-5. DrywallCalculator - Trockenbau (Platten, Profile, Schrauben)
-6. ElectricalCalculator - Elektrik (Kabel, Kosten, Ohm'sches Gesetz)
-7. MetalCalculator - Metall (Gewicht, Gewindegroesse, Bohrung)
-8. GardenCalculator - Garten (Erde, Mulch, Pflaster, Rasen)
-9. RoofSolarCalculator - Dach+Solar (Dachflaeche, Solarpanel, Amortisation)
+**Premium Calculators (6):**
+6. DrywallCalculator - Trockenbau (Platten, Profile, Schrauben)
+7. ElectricalCalculator - Elektrik (Kabel, Kosten, Ohm'sches Gesetz)
+8. MetalCalculator - Metall (Gewicht, Gewindegroesse, Bohrung)
+9. GardenCalculator - Garten (Erde, Mulch, Pflaster, Rasen)
+10. RoofSolarCalculator - Dach+Solar (Dachflaeche, Solarpanel, Amortisation)
+11. StairsCalculator - Treppen (DIN 18065, Schrittmaß, Stufenhöhe, Komfort)
 
 ### Weitere Features
 - **Projektverwaltung**: CRUD mit JSON-Persistenz + SemaphoreSlim
@@ -41,9 +43,9 @@ Handwerker-App mit 9 Rechnern (4 Free Floor + 5 Premium), Projektverwaltung und 
 ## Premium & Ads
 
 ### Ad-Placements (Rewarded)
-1. **premium_access**: 30 Minuten Zugang zu 5 Premium-Rechnern (HomeView)
+1. **premium_access**: 30 Minuten Zugang zu 6 Premium-Rechnern (HomeView)
 2. **extended_history**: 24h-Zugang zu 30 statt 10 History-Eintraegen (HomeView)
-3. **material_pdf**: Material-Liste PDF Export (alle 9 Calculator Views)
+3. **material_pdf**: Material-Liste PDF Export (alle 11 Calculator Views)
 4. **project_export**: Projekt-Export als PDF (ProjectsView)
 
 ### Premium-Modell
@@ -54,12 +56,13 @@ Handwerker-App mit 9 Rechnern (4 Free Floor + 5 Premium), Projektverwaltung und 
 
 ### Calculator Overlay via DataTemplates
 - `MainViewModel`: `CurrentPage` + `CurrentCalculatorVm` Properties
-- `MainView`: DataTemplates fuer automatische View-Zuordnung per VM-Typ (9 VMs)
+- `MainView`: DataTemplates fuer automatische View-Zuordnung per VM-Typ (11 VMs)
 - Tab-Wechsel: `SelectHomeTab/SelectProjectsTab/SelectSettingsTab` setzen `CurrentPage=null`
 
 ### Projekt-Navigation
-- ProjectsVM.NavigationRequested → MainVM → `CurrentPage = route` (inkl. projectId Query-Parameter)
+- ProjectsVM.NavigationRequested → MainVM.OnProjectNavigation (mit Premium-Check via `IsPremiumRoute`)
 - WireCalculatorEvents: Per switch/case (kein gemeinsames Interface)
+- SelectProjectsTab löst automatisch Reload der Projektliste aus
 
 ### Floor vs Premium VMs
 - Beide erben direkt von `ObservableObject` (nicht von CalculatorViewModelBase)
@@ -71,6 +74,60 @@ Handwerker-App mit 9 Rechnern (4 Free Floor + 5 Premium), Projektverwaltung und 
 
 ## Changelog (Highlights)
 
+- **13.02.2026**: Double-Back-to-Exit: Android-Zurücktaste navigiert schrittweise zurück (Overlays→SaveDialog→Calculator→Home-Tab), App schließt erst bei 2x schnellem Drücken auf Home. HandleBackPressed() in MainViewModel (plattformunabhängig), OnBackPressed()-Override in MainActivity mit Toast-Hinweis. Overlay-Kette: PremiumAccess→ExtendedHistory→SaveDialog→Calculator→Tab→Home→Exit. Neuer RESX-Key "PressBackToExit" in 6 Sprachen.
+- **13.02.2026**: Vierter Pass: Result-Daten + Code-Qualität:
+  - Result-Daten in ConfirmSaveProject: Alle 11 VMs speichern jetzt Results im Projekt-Dictionary
+  - ProjectsVM.ExportProject nutzt Result-Daten im PDF (war vorher nur Inputs)
+  - BUG: MainVM Lambda-Events (4x) konnten nicht unsubscribed werden → benannte Handler + Dispose
+  - BUG: HistoryItem DisplayDate zeigte UTC statt Lokalzeit → `CreatedAt.ToLocalTime()`
+  - OPT: SettingsVM + ProjectsVM Transient → Singleton (waren unnötig Transient)
+  - OPT: Calculators-Property in 3 Premium-VMs gecacht (`??=` statt neue Liste pro Zugriff)
+  - OPT: ProjectService Read-Methoden mit Semaphore-Lock (Race-Condition bei parallelen Reads)
+  - OPT: Tote `RestorePurchases`-Methode aus MainVM entfernt (nur in SettingsVM gebraucht)
+  - OPT: `GC.SuppressFinalize` aus 3 Dispose-Methoden entfernt (kein Finalizer vorhanden)
+  - OPT: `ResultTilesWithReserve` Lokalisierung in alle 6 Sprachen nachgerüstet
+  - Duplicate `MoreCategoriesLabel` OnPropertyChanged entfernt
+- **13.02.2026**: Dritter Pass: Lokalisierung, Views, UI-Konsistenz:
+  - BUG: ConcreteVM PDF-Export nutzte nicht-existierenden Key `ResultCement` → `ResultCite`
+  - BUG: FlooringView `TilesWithWaste` Label für Dielen → `BoardsWithWaste`
+  - BUG: FlooringView Board-Sektion nutzte `RoomLength/RoomWidth` Labels → `BoardLength/BoardWidth`
+  - BUG: WallpaperView Sektionstitel `WallLength` → `WallDimensions`
+  - BUG: WallpaperView Strips-Zeile nutzte `RollsNeeded` wie Rollen → neuer Key `StripsNeeded` (6 Sprachen)
+  - ShareResult-Button + IsExporting-Binding in alle 9 fehlenden Calculator Views nachgerüstet
+  - Premium-Views UI-Konsistenz: Header (Background+Border), Button-Icons (Reset+Calculate), ScrollViewer-Padding
+  - DrywallView: Save-Button `IsVisible="{Binding HasResult}"` + Icon hinzugefügt
+- **13.02.2026**: Zweiter Bugfix + Optimierungs-Pass:
+  - KRITISCH: ProjectsViewModel fehlte Routes für Beton+Treppen → Projekte konnten nicht geöffnet werden
+  - BUG: CalculationHistoryService nutzte DateTime.Now statt DateTime.UtcNow
+  - BUG: ProjectService Race Condition bei parallelen Saves (Semaphore umschließt jetzt gesamte Operation)
+  - BUG: RoofSolar TileCostDisplay + PDF-Export rechnete ohne 5% Reserve (TilesWithReserve)
+  - KONSISTENZ: ClipboardRequested-Deklaration in ConcreteVM + StairsVM nach oben verschoben
+  - OPT: CalculationHistoryService Thread-Safety (SemaphoreSlim hinzugefügt)
+  - OPT: CraftEngine Treppen-Konstanten als benannte Konstanten (DIN 18065)
+- **12.02.2026**: Bugfixes + Konsistenz-Pass:
+  - BUG: GardenVM JointWidth konnte negativ sein → Division/0 (Guard hinzugefügt)
+  - BUG: DrywallVM Reset() setzte PricePerSqm nicht zurück
+  - BUG: GardenVM PavingCostDisplay nutzte StonesNeeded statt StonesWithReserve (inkonsistent mit PDF)
+  - BUG: 6 Premium-VMs SaveProjectName nicht mit DefaultProjectName vorbefüllt (nur bei neuen Projekten)
+  - BUG: CraftEngine fehlende Division/0 Guards (Paint, Wallpaper, Soil, Paving)
+  - ShareResult (Quick-Share via Clipboard) in alle 9 restlichen VMs nachgerüstet (vorher nur Beton+Treppen)
+  - CraftEngine: ThreadDrill-Dictionary auf static readonly umgestellt (Performance)
+  - MaterialExportService: Graphics null-safe Dispose
+- **12.02.2026**: 2 neue Rechner hinzugefügt:
+  - Beton-Rechner (Free): 3 Sub-Rechner (Platte, Streifenfundament, Säule), Volumen, Fertigbeton-Säcke, Selbstmischung (Zement/Sand/Kies/Wasser), Kosten
+  - Treppen-Rechner (Premium): DIN 18065, Schrittmaßregel, Stufenhöhe/-tiefe, Lauflänge, Steigungswinkel, Komfort-Bewertung
+  - CraftEngine: CalculateConcrete() + CalculateStairs() mit ConcreteResult/StairsResult Records
+  - MainViewModel: Neue Routes (ConcretePage, StairsPage), Navigation, Wiring, IsPremiumRoute
+  - 6 Sprachen: Alle neuen Keys in DE/EN/ES/FR/IT/PT
+  - UX: IsExporting (Loading-State) in allen 11 VMs, ShareResult (Quick-Share) initial in Beton+Treppen (später auf alle 11 erweitert)
+  - UI: TextBox :error Validation-Styles (rote Border), ClipboardRequested Event-Chain (VM→MainVM→View)
+- **12.02.2026**: Umfangreicher Bugfix-Pass (14 Fixes):
+  - KRITISCH: Premium-Bypass via Projekt-Laden behoben (IsPremiumRoute-Check in OnProjectNavigation)
+  - CraftEngine: Defensive Guards (Division-durch-0, Sqrt-NaN, negative innerR bei Metallprofilen, Baseboard Math.Max)
+  - Validierungen: WastePercentage >= 0 (Tile+Flooring), PatternRepeat >= 0 (Wallpaper), PanelEfficiency 0-100 + TiltDegrees 0-90 (Solar), HoursPerDay max 24 (Elektro), WallThickness < halber Durchmesser (Metal), Overlap >= 0 (Garten), OhmsLaw negative R/P abgelehnt
+  - Projektliste: Automatischer Refresh bei Tab-Wechsel (SelectProjectsTab)
+  - PDF-Export: Seitenumbruch-Logik bei vielen Einträgen (MaterialExportService)
+  - Compiler: async→void bei DrywallVM + RoofSolarVM SaveProject (CS1998)
 - **11.02.2026**: Optimierungen & Fixes:
   - CraftEngine: Fehlende P+R Kombination im Ohm'schen Gesetz ergaenzt
   - RoofSolarVM: Konfigurierbarer Strompreis (PricePerKwh) statt hardcoded 0.30

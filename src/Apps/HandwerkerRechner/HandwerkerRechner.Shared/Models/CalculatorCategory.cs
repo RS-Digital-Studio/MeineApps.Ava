@@ -34,6 +34,9 @@ public enum CalculatorType
     Wallpaper,      // Tapetenbedarf
     Paint,          // Farbbedarf
     Flooring,       // Holz/Dielen
+    ConcreteSlab,   // Betonplatte
+    ConcreteStrip,  // Streifenfundament
+    ConcreteColumn, // Betonsäule
 
     // Raum/Trockenbau (PREMIUM)
     DrywallFraming, // Ständerwerk & Platten
@@ -56,5 +59,8 @@ public enum CalculatorType
     // Dach & Solar (PREMIUM)
     RoofPitch,      // Dachneigung
     RoofTiles,      // Ziegelbedarf
-    SolarYield      // Solar-Ertrag
+    SolarYield,     // Solar-Ertrag
+
+    // Treppen (PREMIUM)
+    Stairs          // Treppenberechnung
 }

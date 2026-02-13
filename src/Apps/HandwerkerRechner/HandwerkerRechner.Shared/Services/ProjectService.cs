@@ -26,56 +26,100 @@ public class ProjectService : IProjectService
     {
         await EnsureLoadedAsync();
 
-        var existingProject = _cachedProjects.FirstOrDefault(p => p.Id == project.Id);
-        if (existingProject != null)
+        await _semaphore.WaitAsync();
+        try
         {
-            existingProject.Name = project.Name;
-            existingProject.Description = project.Description;
-            existingProject.CalculatorType = project.CalculatorType;
-            existingProject.DataJson = project.DataJson;
-            existingProject.LastModified = DateTime.UtcNow;
-        }
-        else
-        {
-            project.Id = Guid.NewGuid().ToString();
-            project.CreatedDate = DateTime.UtcNow;
-            project.LastModified = DateTime.UtcNow;
-            _cachedProjects.Add(project);
-        }
+            var existingProject = _cachedProjects.FirstOrDefault(p => p.Id == project.Id);
+            if (existingProject != null)
+            {
+                existingProject.Name = project.Name;
+                existingProject.Description = project.Description;
+                existingProject.CalculatorType = project.CalculatorType;
+                existingProject.DataJson = project.DataJson;
+                existingProject.LastModified = DateTime.UtcNow;
+            }
+            else
+            {
+                project.Id = Guid.NewGuid().ToString();
+                project.CreatedDate = DateTime.UtcNow;
+                project.LastModified = DateTime.UtcNow;
+                _cachedProjects.Add(project);
+            }
 
-        await SaveToFileAsync();
+            await SaveToFileInternalAsync();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     public async Task<List<Project>> LoadAllProjectsAsync()
     {
         await EnsureLoadedAsync();
-        return _cachedProjects.OrderByDescending(p => p.LastModified).ToList();
+
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _cachedProjects.OrderByDescending(p => p.LastModified).ToList();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     public async Task<Project?> LoadProjectAsync(string projectId)
     {
         await EnsureLoadedAsync();
-        return _cachedProjects.FirstOrDefault(p => p.Id == projectId);
+
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _cachedProjects.FirstOrDefault(p => p.Id == projectId);
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     public async Task DeleteProjectAsync(string projectId)
     {
         await EnsureLoadedAsync();
-        var project = _cachedProjects.FirstOrDefault(p => p.Id == projectId);
-        if (project != null)
+
+        await _semaphore.WaitAsync();
+        try
         {
-            _cachedProjects.Remove(project);
-            await SaveToFileAsync();
+            var project = _cachedProjects.FirstOrDefault(p => p.Id == projectId);
+            if (project != null)
+            {
+                _cachedProjects.Remove(project);
+                await SaveToFileInternalAsync();
+            }
+        }
+        finally
+        {
+            _semaphore.Release();
         }
     }
 
     public async Task<List<Project>> LoadProjectsByTypeAsync(CalculatorType calculatorType)
     {
         await EnsureLoadedAsync();
-        return _cachedProjects
-            .Where(p => p.CalculatorType == calculatorType)
-            .OrderByDescending(p => p.LastModified)
-            .ToList();
+
+        await _semaphore.WaitAsync();
+        try
+        {
+            return _cachedProjects
+                .Where(p => p.CalculatorType == calculatorType)
+                .OrderByDescending(p => p.LastModified)
+                .ToList();
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     private async Task EnsureLoadedAsync()
@@ -108,9 +152,11 @@ public class ProjectService : IProjectService
         }
     }
 
-    private async Task SaveToFileAsync()
+    /// <summary>
+    /// Interner File-Write - MUSS innerhalb eines Semaphore-Locks aufgerufen werden
+    /// </summary>
+    private async Task SaveToFileInternalAsync()
     {
-        await _semaphore.WaitAsync();
         try
         {
             var options = new JsonSerializerOptions { WriteIndented = true };
@@ -120,10 +166,6 @@ public class ProjectService : IProjectService
         catch (Exception)
         {
             // Save failed silently - data remains in cache
-        }
-        finally
-        {
-            _semaphore.Release();
         }
     }
 }

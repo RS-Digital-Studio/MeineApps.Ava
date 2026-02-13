@@ -105,14 +105,15 @@ public partial class App : Application
 
         // ViewModels
         services.AddSingleton<MainViewModel>();
-        services.AddTransient<SettingsViewModel>();
-        services.AddTransient<ProjectsViewModel>();
+        services.AddSingleton<SettingsViewModel>();
+        services.AddSingleton<ProjectsViewModel>();
 
         // Floor Calculator ViewModels
         services.AddTransient<TileCalculatorViewModel>();
         services.AddTransient<PaintCalculatorViewModel>();
         services.AddTransient<WallpaperCalculatorViewModel>();
         services.AddTransient<FlooringCalculatorViewModel>();
+        services.AddTransient<ConcreteCalculatorViewModel>();
 
         // Premium Calculator ViewModels
         services.AddTransient<DrywallViewModel>();
@@ -120,5 +121,6 @@ public partial class App : Application
         services.AddTransient<MetalViewModel>();
         services.AddTransient<GardenViewModel>();
         services.AddTransient<RoofSolarViewModel>();
+        services.AddTransient<StairsViewModel>();
     }
 }

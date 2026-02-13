@@ -14,7 +14,11 @@
   <Grid RowDefinitions="Auto,*,Auto">
 
     <!-- Header -->
-    <Border Grid.Row="0" Padding="16,12">
+    <Border Grid.Row="0"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderThickness="0,0,0,1"
+            BorderBrush="{DynamicResource CardBorderBrush}"
+            Padding="16,12">
       <Grid ColumnDefinitions="Auto,*">
         <Button Grid.Column="0" Classes="Text"
                 Command="{Binding GoBackCommand}"
@@ -30,7 +34,7 @@
     </Border>
 
     <!-- Content -->
-    <ScrollViewer Grid.Row="1" Padding="16,0">
+    <ScrollViewer Grid.Row="1" Padding="16,16,16,120">
       <StackPanel Spacing="16">
 
         <!-- Calculator Selector -->
@@ -285,9 +289,6 @@
           </StackPanel>
         </Panel>
 
-        <!-- Bottom spacing -->
-        <Panel Height="120" />
-
       </StackPanel>
     </ScrollViewer>
 
@@ -297,14 +298,29 @@
             BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource CardBorderBrush}">
       <Grid ColumnDefinitions="*,8,*,8,*" RowDefinitions="Auto,Auto">
-        <Button Grid.Column="0" Content="{loc:Translate Reset}"
+        <Button Grid.Column="0"
                 Command="{Binding ResetCommand}"
                 Classes="Outlined"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
-        <Button Grid.Column="2" Content="{loc:Translate Calculate}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Refresh" Width="18" Height="18"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Translate Reset}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="2"
                 Command="{Binding CalculateCommand}"
                 Classes="Primary"
-                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" />
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Calculator" Width="18" Height="18" />
+            <TextBlock Text="{loc:Translate Calculate}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
         <!-- Save Project -->
         <Button Grid.Column="4"
                 Classes="Secondary"
@@ -318,21 +334,36 @@
                        VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-        <!-- Material-Export (PDF) -->
-        <Button Grid.Row="1" Grid.ColumnSpan="5"
-                Command="{Binding ExportMaterialListCommand}"
-                Classes="Outlined"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                IsVisible="{Binding HasResult}"
-                Margin="0,8,0,0">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18"
-                             Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="{loc:Translate ExportMaterialList}"
-                       VerticalAlignment="Center" />
-          </StackPanel>
-        </Button>
+        <!-- Aktions-Buttons: Share + PDF Export -->
+        <Grid Grid.Row="1" Grid.ColumnSpan="5"
+              ColumnDefinitions="*,8,*" Margin="0,8,0,0"
+              IsVisible="{Binding HasResult}">
+          <Button Grid.Column="0"
+                  Command="{Binding ShareResultCommand}"
+                  Classes="Outlined"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="ContentCopy" Width="18" Height="18"
+                               Foreground="{DynamicResource AccentBrush}" />
+              <TextBlock Text="{loc:Translate ShareResult}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+          <Button Grid.Column="2"
+                  Command="{Binding ExportMaterialListCommand}"
+                  Classes="Outlined"
+                  IsEnabled="{Binding !IsExporting}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18"
+                               Foreground="{DynamicResource AccentBrush}" />
+              <TextBlock Text="{loc:Translate ExportMaterialList}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Grid>
       </Grid>
     </Border>
 

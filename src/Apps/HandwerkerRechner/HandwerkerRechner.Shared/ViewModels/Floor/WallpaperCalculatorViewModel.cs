@@ -31,6 +31,7 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
     /// </summary>
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action<string>? ClipboardRequested;
 
     [ObservableProperty]
     private bool _showSaveDialog;
@@ -162,6 +163,9 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
     [ObservableProperty]
     private bool _isCalculating;
 
+    [ObservableProperty]
+    private bool _isExporting;
+
     public string AreaDisplay => Result != null
         ? _unitConverter.FormatArea(Result.WallArea)
         : "";
@@ -199,6 +203,9 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
                 MessageRequested?.Invoke(_localization.GetString("InvalidInputTitle"), _localization.GetString("ValueMustBePositive"));
                 return;
             }
+
+            // Negativer Rapport ist nicht sinnvoll
+            if (PatternRepeat < 0) PatternRepeat = 0;
 
             // WallLength = Raumumfang (gesamte Wandlänge). Engine erwartet roomLength+roomWidth
             // und berechnet perimeter = 2*(L+W). Mit L=Umfang/2, W=0 ergibt sich perimeter=Umfang.
@@ -301,6 +308,20 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
                 ["PricePerRoll"] = PricePerRoll
             };
 
+            // Result-Daten mitspeichern für Export
+            if (HasResult && Result != null)
+            {
+                var resultData = new Dictionary<string, object>
+                {
+                    ["WallArea"] = Result.WallArea.ToString("F2"),
+                    ["StripsNeeded"] = Result.StripsNeeded,
+                    ["RollsNeeded"] = Result.RollsNeeded
+                };
+                if (ShowCost && PricePerRoll > 0)
+                    resultData["TotalCost"] = (Result.RollsNeeded * PricePerRoll).ToString("F2");
+                data["Result"] = resultData;
+            }
+
             project.SetData(data);
             await _projectService.SaveProjectAsync(project);
             _currentProjectId = project.Id;
@@ -348,12 +369,34 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ExportMaterialList()
+    private void ShareResult()
     {
         if (!HasResult || Result == null) return;
 
+        var title = _localization.GetString("CalcWallpaper") ?? "Wallpaper";
+        var text = $"{title}\n" +
+                   $"─────────────\n" +
+                   $"{_localization.GetString("WallArea") ?? "Wall area"}: {AreaDisplay}\n" +
+                   $"{_localization.GetString("StripsNeeded") ?? "Strips"}: {StripsNeededDisplay}\n" +
+                   $"{_localization.GetString("RollsNeeded") ?? "Rolls"}: {RollsNeededDisplay}";
+
+        if (ShowCost && PricePerRoll > 0)
+            text += $"\n{_localization.GetString("TotalCost") ?? "Total cost"}: {TotalCostDisplay}";
+
+        ClipboardRequested?.Invoke(text);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
+    }
+
+    [RelayCommand]
+    private async Task ExportMaterialList()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
         try
         {
+            IsExporting = true;
+
             if (!_purchaseService.IsPremium)
             {
                 var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
@@ -384,6 +427,10 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 

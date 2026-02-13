@@ -121,6 +121,5 @@ public class PremiumAccessService : IPremiumAccessService, IDisposable
         _checkTimer.Stop();
         _checkTimer.Tick -= OnCheckTimerTick;
         _disposed = true;
-        GC.SuppressFinalize(this);
     }
 }

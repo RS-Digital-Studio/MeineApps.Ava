@@ -2,8 +2,10 @@ using Android.App;
 using Android.Content;
 using Android.Content.PM;
 using Android.OS;
+using Android.Widget;
 using Avalonia;
 using Avalonia.Android;
+using HandwerkerRechner.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Droid;
@@ -22,6 +24,7 @@ public class MainActivity : AvaloniaMainActivity<App>
 {
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
+    private MainViewModel? _mainVm;
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
@@ -56,6 +59,15 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         base.OnCreate(savedInstanceState);
 
+        // Back-Navigation: Toast bei "Nochmal drücken zum Beenden"
+        _mainVm = App.Services.GetService<MainViewModel>();
+        if (_mainVm != null)
+        {
+            _mainVm.ExitHintRequested += msg =>
+                RunOnUiThread(() =>
+                    Toast.MakeText(this, msg, ToastLength.Short)?.Show());
+        }
+
         // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
         AdMobHelper.Initialize(this, () =>
         {
@@ -72,6 +84,18 @@ public class MainActivity : AvaloniaMainActivity<App>
             AdMobHelper.RequestConsent(this);
         });
     }
+
+    // OnBackPressed ist ab API 33 deprecated, funktioniert aber weiterhin
+    // solange enableOnBackInvokedCallback nicht in AndroidManifest gesetzt ist.
+#pragma warning disable CA1422
+    public override void OnBackPressed()
+    {
+        if (_mainVm != null && _mainVm.HandleBackPressed())
+            return;
+
+        base.OnBackPressed();
+    }
+#pragma warning restore CA1422
 
     protected override void OnResume()
     {

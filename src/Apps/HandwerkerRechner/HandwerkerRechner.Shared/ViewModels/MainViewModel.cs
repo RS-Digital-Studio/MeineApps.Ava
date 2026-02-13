@@ -32,6 +32,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
+    public event Action<string>? ClipboardRequested;
 
     // Sub-ViewModels for embedded tabs
     public SettingsViewModel SettingsViewModel { get; }
@@ -56,7 +57,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ProjectsViewModel = projectsViewModel;
 
         IsAdBannerVisible = _adService.BannerVisible;
-        _adService.AdsStateChanged += (_, _) => IsAdBannerVisible = _adService.BannerVisible;
+        _adService.AdsStateChanged += OnAdsStateChanged;
 
         // Banner beim Start anzeigen (fuer Desktop + Fallback falls AdMobHelper fehlschlaegt)
         if (_adService.AdsEnabled && !_purchaseService.IsPremium)
@@ -64,15 +65,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         // Wire Projects navigation und Messages
         ProjectsViewModel.NavigationRequested += OnProjectNavigation;
-        ProjectsViewModel.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+        ProjectsViewModel.MessageRequested += OnChildMessage;
 
         // Wire Settings Messages
-        SettingsViewModel.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+        SettingsViewModel.MessageRequested += OnChildMessage;
 
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
         _premiumAccessService.AccessExpired += OnAccessExpired;
-        _rewardedAdService.AdUnavailable += () =>
-            MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
+        _rewardedAdService.AdUnavailable += OnAdUnavailable;
 
         // Subscribe to language changes
         SettingsViewModel.LanguageChanged += OnLanguageChanged;
@@ -104,7 +104,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void SelectHomeTab() { CurrentPage = null; SelectedTab = 0; }
 
     [RelayCommand]
-    private void SelectProjectsTab() { CurrentPage = null; SelectedTab = 1; }
+    private void SelectProjectsTab()
+    {
+        CurrentPage = null;
+        SelectedTab = 1;
+        // Projektliste beim Tab-Wechsel aktualisieren
+        ProjectsViewModel.LoadProjectsCommand.Execute(null);
+    }
 
     [RelayCommand]
     private void SelectSettingsTab() { CurrentPage = null; SelectedTab = 2; }
@@ -158,12 +164,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CalculatorCountText));
         OnPropertyChanged(nameof(GetPremiumText));
         OnPropertyChanged(nameof(PremiumPriceText));
-        OnPropertyChanged(nameof(MoreCategoriesLabel));
         OnPropertyChanged(nameof(PremiumLockedText));
         OnPropertyChanged(nameof(VideoFor30MinText));
         OnPropertyChanged(nameof(PremiumLockedDescText));
         OnPropertyChanged(nameof(ExtendedHistoryTitleText));
         OnPropertyChanged(nameof(ExtendedHistoryDescText));
+        OnPropertyChanged(nameof(CalcConcreteLabel));
+        OnPropertyChanged(nameof(CalcConcreteDescLabel));
+        OnPropertyChanged(nameof(CalcStairsLabel));
+        OnPropertyChanged(nameof(CalcStairsDescLabel));
     }
 
     private void OnLanguageChanged()
@@ -205,6 +214,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             case WallpaperCalculatorViewModel w: w.Cleanup(); break;
             case PaintCalculatorViewModel p: p.Cleanup(); break;
             case FlooringCalculatorViewModel f: f.Cleanup(); break;
+            case ConcreteCalculatorViewModel c: c.Cleanup(); break;
         }
     }
 
@@ -233,6 +243,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             "MetalPage" => App.Services.GetRequiredService<MetalViewModel>(),
             "GardenPage" => App.Services.GetRequiredService<GardenViewModel>(),
             "RoofSolarPage" => App.Services.GetRequiredService<RoofSolarViewModel>(),
+            "ConcretePage" => App.Services.GetRequiredService<ConcreteCalculatorViewModel>(),
+            "StairsPage" => App.Services.GetRequiredService<StairsViewModel>(),
             _ => null
         };
 
@@ -251,55 +263,78 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 t.NavigationRequested += OnCalculatorGoBack;
                 t.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
                 t.FloatingTextRequested += OnChildFloatingText;
+                t.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = t.LoadFromProjectIdAsync(projectId);
                 break;
             case WallpaperCalculatorViewModel w:
                 w.NavigationRequested += OnCalculatorGoBack;
                 w.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
                 w.FloatingTextRequested += OnChildFloatingText;
+                w.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = w.LoadFromProjectIdAsync(projectId);
                 break;
             case PaintCalculatorViewModel p:
                 p.NavigationRequested += OnCalculatorGoBack;
                 p.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
                 p.FloatingTextRequested += OnChildFloatingText;
+                p.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = p.LoadFromProjectIdAsync(projectId);
                 break;
             case FlooringCalculatorViewModel f:
                 f.NavigationRequested += OnCalculatorGoBack;
                 f.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
                 f.FloatingTextRequested += OnChildFloatingText;
+                f.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = f.LoadFromProjectIdAsync(projectId);
                 break;
             case DrywallViewModel d:
                 d.NavigationRequested += OnCalculatorGoBack;
                 d.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
                 d.FloatingTextRequested += OnChildFloatingText;
+                d.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = d.LoadFromProjectIdAsync(projectId);
                 break;
             case ElectricalViewModel e:
                 e.NavigationRequested += OnCalculatorGoBack;
                 e.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
                 e.FloatingTextRequested += OnChildFloatingText;
+                e.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = e.LoadFromProjectIdAsync(projectId);
                 break;
             case MetalViewModel m:
                 m.NavigationRequested += OnCalculatorGoBack;
                 m.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
                 m.FloatingTextRequested += OnChildFloatingText;
+                m.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = m.LoadFromProjectIdAsync(projectId);
                 break;
             case GardenViewModel g:
                 g.NavigationRequested += OnCalculatorGoBack;
                 g.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
                 g.FloatingTextRequested += OnChildFloatingText;
+                g.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = g.LoadFromProjectIdAsync(projectId);
                 break;
             case RoofSolarViewModel r:
                 r.NavigationRequested += OnCalculatorGoBack;
                 r.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
                 r.FloatingTextRequested += OnChildFloatingText;
+                r.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = r.LoadFromProjectIdAsync(projectId);
+                break;
+            case ConcreteCalculatorViewModel c:
+                c.NavigationRequested += OnCalculatorGoBack;
+                c.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+                c.FloatingTextRequested += OnChildFloatingText;
+                c.ClipboardRequested += OnClipboardRequested;
+                if (projectId != null) _ = c.LoadFromProjectIdAsync(projectId);
+                break;
+            case StairsViewModel s:
+                s.NavigationRequested += OnCalculatorGoBack;
+                s.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+                s.FloatingTextRequested += OnChildFloatingText;
+                s.ClipboardRequested += OnClipboardRequested;
+                if (projectId != null) _ = s.LoadFromProjectIdAsync(projectId);
                 break;
         }
     }
@@ -311,6 +346,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
             CelebrationRequested?.Invoke();
     }
 
+    private void OnClipboardRequested(string text)
+    {
+        ClipboardRequested?.Invoke(text);
+    }
+
     private void OnCalculatorGoBack(string route)
     {
         if (route == "..")
@@ -319,9 +359,32 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Prüft ob eine Route zu einem Premium-Rechner führt
+    /// </summary>
+    private static bool IsPremiumRoute(string route)
+    {
+        // Route kann Query-Parameter enthalten (z.B. "DrywallPage?projectId=abc")
+        var routeName = route;
+        var qIdx = route.IndexOf('?');
+        if (qIdx >= 0)
+            routeName = route[..qIdx];
+
+        return routeName is "DrywallPage" or "ElectricalPage" or "MetalPage" or "GardenPage" or "RoofSolarPage" or "StairsPage";
+    }
+
     private void OnProjectNavigation(string route)
     {
         if (route == "..") return;
+
+        // Premium-Check: Projekt-Laden darf Premium-Sperre nicht umgehen
+        if (IsPremiumRoute(route) && !_premiumAccessService.HasAccess)
+        {
+            PendingPremiumRoute = route;
+            ShowPremiumAccessOverlay = true;
+            return;
+        }
+
         CurrentPage = route;
     }
 
@@ -353,6 +416,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string CategoryMetalDescLabel => _localization.GetString("CategoryMetalDesc") ?? "";
     public string CategoryGardenDescLabel => _localization.GetString("CategoryGardenDesc") ?? "";
     public string CategoryRoofSolarDescLabel => _localization.GetString("CategoryRoofSolarDesc") ?? "";
+    public string CalcConcreteLabel => _localization.GetString("CalcConcrete") ?? "Concrete";
+    public string CalcConcreteDescLabel => _localization.GetString("CalcConcreteDesc") ?? "";
+    public string CalcStairsLabel => _localization.GetString("CalcStairs") ?? "Stairs";
+    public string CalcStairsDescLabel => _localization.GetString("CalcStairsDesc") ?? "";
 
     // Design-Redesign Properties
     public string SectionFloorWallText => _localization.GetString("SectionFloorWall") ?? "Floor & Wall";
@@ -409,6 +476,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void NavigateToRoofSolar() => NavigatePremium("RoofSolarPage");
+
+    [RelayCommand]
+    private void NavigateToConcrete() => NavigateTo("ConcretePage");
+
+    [RelayCommand]
+    private void NavigateToStairs() => NavigatePremium("StairsPage");
 
     /// <summary>
     /// Prueft Premium-Zugang vor Navigation zu Premium-Rechnern.
@@ -547,26 +620,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    [RelayCommand]
-    private async Task RestorePurchases()
-    {
-        var restored = await _purchaseService.RestorePurchasesAsync();
-
-        if (restored)
-        {
-            MessageRequested?.Invoke(_localization.GetString("PurchasesRestored"), _localization.GetString("AdsRemovedRestoredMessage"));
-            UpdateStatus();
-        }
-        else
-        {
-            MessageRequested?.Invoke(_localization.GetString("NoPurchasesFound"), _localization.GetString("NoPurchasesFoundMessage"));
-        }
-    }
-
     private void OnPremiumStatusChanged(object? sender, EventArgs e)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(UpdateStatus);
     }
+
+    private void OnAdsStateChanged(object? sender, EventArgs e)
+        => IsAdBannerVisible = _adService.BannerVisible;
+
+    private void OnChildMessage(string title, string msg)
+        => MessageRequested?.Invoke(title, msg);
+
+    private void OnAdUnavailable()
+        => MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
 
     private void OnFeedbackRequested(string appName)
     {
@@ -574,17 +640,102 @@ public partial class MainViewModel : ObservableObject, IDisposable
         MeineApps.Core.Ava.Services.UriLauncher.OpenUri(uri);
     }
 
+    #region Back-Navigation
+
+    /// <summary>
+    /// Event für Toast-Hinweis "Nochmal drücken zum Beenden"
+    /// </summary>
+    public event Action<string>? ExitHintRequested;
+
+    private DateTime _lastBackPress = DateTime.MinValue;
+
+    /// <summary>
+    /// Behandelt Android-Zurücktaste. Gibt true zurück wenn die App NICHT beendet werden soll.
+    /// Reihenfolge: Overlays → SaveDialog → Calculator → Tab → Home (Double-Tap-Exit)
+    /// </summary>
+    public bool HandleBackPressed()
+    {
+        // 1. Overlays schließen
+        if (ShowPremiumAccessOverlay) { CancelPremiumAd(); return true; }
+        if (ShowExtendedHistoryOverlay) { CancelExtendedHistoryAd(); return true; }
+
+        // 2. SaveDialog im aktuellen Calculator schließen
+        if (CurrentCalculatorVm != null)
+        {
+            var hasSaveDialog = CurrentCalculatorVm switch
+            {
+                Floor.TileCalculatorViewModel t => t.ShowSaveDialog,
+                Floor.WallpaperCalculatorViewModel w => w.ShowSaveDialog,
+                Floor.PaintCalculatorViewModel p => p.ShowSaveDialog,
+                Floor.FlooringCalculatorViewModel f => f.ShowSaveDialog,
+                Floor.ConcreteCalculatorViewModel c => c.ShowSaveDialog,
+                DrywallViewModel d => d.ShowSaveDialog,
+                ElectricalViewModel e => e.ShowSaveDialog,
+                MetalViewModel m => m.ShowSaveDialog,
+                GardenViewModel g => g.ShowSaveDialog,
+                RoofSolarViewModel r => r.ShowSaveDialog,
+                StairsViewModel s => s.ShowSaveDialog,
+                _ => false
+            };
+
+            if (hasSaveDialog)
+            {
+                // Dialog schließen
+                switch (CurrentCalculatorVm)
+                {
+                    case Floor.TileCalculatorViewModel t: t.ShowSaveDialog = false; break;
+                    case Floor.WallpaperCalculatorViewModel w: w.ShowSaveDialog = false; break;
+                    case Floor.PaintCalculatorViewModel p: p.ShowSaveDialog = false; break;
+                    case Floor.FlooringCalculatorViewModel f: f.ShowSaveDialog = false; break;
+                    case Floor.ConcreteCalculatorViewModel c: c.ShowSaveDialog = false; break;
+                    case DrywallViewModel d: d.ShowSaveDialog = false; break;
+                    case ElectricalViewModel e: e.ShowSaveDialog = false; break;
+                    case MetalViewModel m: m.ShowSaveDialog = false; break;
+                    case GardenViewModel g: g.ShowSaveDialog = false; break;
+                    case RoofSolarViewModel r: r.ShowSaveDialog = false; break;
+                    case StairsViewModel s: s.ShowSaveDialog = false; break;
+                }
+                return true;
+            }
+
+            // 3. Calculator schließen → zurück zur Tab-Ansicht
+            CurrentPage = null;
+            return true;
+        }
+
+        // 4. Vom Projekt-/Settings-Tab zurück zum Home-Tab
+        if (SelectedTab != 0)
+        {
+            SelectHomeTab();
+            return true;
+        }
+
+        // 5. Auf Home-Tab: Double-Tap-Exit
+        var now = DateTime.UtcNow;
+        if ((now - _lastBackPress).TotalMilliseconds < 2000)
+            return false; // App beenden
+
+        _lastBackPress = now;
+        ExitHintRequested?.Invoke(_localization.GetString("PressBackToExit") ?? "Press back again to exit");
+        return true;
+    }
+
+    #endregion
+
     public void Dispose()
     {
         if (_disposed) return;
 
+        _adService.AdsStateChanged -= OnAdsStateChanged;
         _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
         _premiumAccessService.AccessExpired -= OnAccessExpired;
+        _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         SettingsViewModel.LanguageChanged -= OnLanguageChanged;
         SettingsViewModel.FeedbackRequested -= OnFeedbackRequested;
+        SettingsViewModel.MessageRequested -= OnChildMessage;
         ProjectsViewModel.NavigationRequested -= OnProjectNavigation;
+        ProjectsViewModel.MessageRequested -= OnChildMessage;
 
         _disposed = true;
-        GC.SuppressFinalize(this);
     }
 }

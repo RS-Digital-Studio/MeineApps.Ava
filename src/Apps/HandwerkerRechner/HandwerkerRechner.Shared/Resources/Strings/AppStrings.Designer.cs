@@ -392,7 +392,16 @@ namespace HandwerkerRechner.Resources.Strings {
                 return ResourceManager.GetString("RollsNeeded", resourceCulture);
             }
         }
-        
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Strips needed ähnelt.
+        /// </summary>
+        internal static string StripsNeeded {
+            get {
+                return ResourceManager.GetString("StripsNeeded", resourceCulture);
+            }
+        }
+
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Roll width (cm) ähnelt.
         /// </summary>

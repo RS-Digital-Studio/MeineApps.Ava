@@ -1,16 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:HandwerkerRechner.ViewModels.Floor"
+             xmlns:vm="using:HandwerkerRechner.ViewModels.Premium"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
-             x:Class="HandwerkerRechner.Views.Floor.WallpaperCalculatorView"
-             x:DataType="vm:WallpaperCalculatorViewModel">
+             x:Class="HandwerkerRechner.Views.Premium.StairsView"
+             x:DataType="vm:StairsViewModel">
 
   <Grid RowDefinitions="Auto,*,Auto">
 
-    <!-- ============================================ -->
-    <!-- Row 0: Header with Back Button + Title       -->
-    <!-- ============================================ -->
+    <!-- Row 0: Header -->
     <Border Grid.Row="0"
             Background="{DynamicResource SurfaceBrush}"
             BorderThickness="0,0,0,1"
@@ -26,7 +24,7 @@
                            Foreground="{DynamicResource TextPrimaryBrush}" />
         </Button>
         <TextBlock Grid.Column="1"
-                   Text="{loc:Translate CalcWallpaper}"
+                   Text="{loc:Translate CalcStairs}"
                    FontSize="20" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    VerticalAlignment="Center"
@@ -34,100 +32,49 @@
       </Grid>
     </Border>
 
-    <!-- ============================================ -->
-    <!-- Row 1: Scrollable Content                    -->
-    <!-- ============================================ -->
+    <!-- Row 1: Scrollable Content -->
     <ScrollViewer Grid.Row="1" Padding="16,16,16,120">
       <StackPanel Spacing="16">
 
-        <!-- Input Section: Wall Dimensions -->
+        <!-- Eingabe: Geschosshöhe + Treppenbreite -->
         <Border Classes="Card" Padding="16" CornerRadius="12">
           <StackPanel Spacing="12">
-            <TextBlock Text="{loc:Translate WallDimensions}"
+            <TextBlock Text="{loc:Translate StairsDimensions}"
                        FontSize="16" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
-
-            <!-- Wall Length -->
             <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Translate WallLength}"
-                         FontSize="13"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding WallLength}"
-                       Watermark="m"
-                       Classes="Outlined" />
+              <TextBlock Text="{loc:Translate FloorHeight}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding FloorHeight}" Watermark="cm" Classes="Outlined" />
             </StackPanel>
-
-            <!-- Room Height -->
             <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Translate RoomHeight}"
-                         FontSize="13"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding RoomHeight}"
-                       Watermark="m"
-                       Classes="Outlined" />
+              <TextBlock Text="{loc:Translate StairWidth}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding StairWidth}" Watermark="cm" Classes="Outlined" />
+            </StackPanel>
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate CustomStepCount}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding CustomStepCount}" Watermark="0 = auto" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
         </Border>
 
-        <!-- Input Section: Roll Dimensions -->
-        <Border Classes="Card" Padding="16" CornerRadius="12">
-          <StackPanel Spacing="12">
-            <TextBlock Text="{loc:Translate RollDimensions}"
-                       FontSize="16" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
-
-            <!-- Roll Length -->
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Translate RollLength}"
-                         FontSize="13"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding RollLength}"
-                       Watermark="m"
-                       Classes="Outlined" />
-            </StackPanel>
-
-            <!-- Roll Width -->
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Translate RollWidth}"
-                         FontSize="13"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding RollWidth}"
-                       Watermark="cm"
-                       Classes="Outlined" />
-            </StackPanel>
-
-            <!-- Pattern Repeat -->
-            <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Translate PatternRepeat}"
-                         FontSize="13"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding PatternRepeat}"
-                       Watermark="cm"
-                       Classes="Outlined" />
-            </StackPanel>
-          </StackPanel>
-        </Border>
-
-        <!-- Input Section: Pricing -->
+        <!-- Kosten -->
         <Border Classes="Card" Padding="16" CornerRadius="12">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate CostCalculation}"
                        FontSize="16" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
-
-            <!-- Price Per Roll (optional) -->
             <StackPanel Spacing="4">
-              <TextBlock Text="{loc:Translate PricePerRoll}"
-                         FontSize="13"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBox Text="{Binding PricePerRoll}"
-                       Watermark="EUR"
-                       Classes="Outlined" />
+              <TextBlock Text="{loc:Translate PricePerStep}"
+                         FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding PricePerStep}" Watermark="EUR" Classes="Outlined" />
             </StackPanel>
           </StackPanel>
         </Border>
 
-        <!-- Results Section -->
+        <!-- Ergebnisse -->
         <Border Classes="Card Elevated" Padding="16" CornerRadius="12"
                 IsVisible="{Binding HasResult}">
           <StackPanel Spacing="12">
@@ -135,54 +82,100 @@
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}" />
 
-            <!-- Area -->
+            <!-- Stufenanzahl -->
             <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0"
-                         Text="{loc:Translate TotalArea}"
-                         FontSize="14"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Grid.Column="1"
-                         Text="{Binding AreaDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </Grid>
-
-            <!-- Strips Needed -->
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0"
-                         Text="{loc:Translate StripsNeeded}"
-                         FontSize="14"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Grid.Column="1"
-                         Text="{Binding StripsNeededDisplay}"
-                         FontSize="14" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </Grid>
-
-            <!-- Rolls Needed -->
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0"
-                         Text="{loc:Translate RollsNeeded}"
-                         FontSize="14"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Grid.Column="1"
-                         Text="{Binding RollsNeededDisplay}"
+              <TextBlock Grid.Column="0" Text="{loc:Translate ResultStepCount}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding StepCountDisplay}"
                          FontSize="16" FontWeight="Bold"
                          Foreground="{DynamicResource AccentBrush}" />
             </Grid>
 
-            <!-- Total Cost (only when ShowCost) -->
+            <!-- Stufenhöhe -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate ResultStepHeight}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding StepHeightDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+
+            <!-- Auftrittstiefe -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate ResultTreadDepth}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding TreadDepthDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+
+            <!-- Lauflänge -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate ResultRunLength}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding RunLengthDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+
+            <!-- Steigungswinkel -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate ResultAngle}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding AngleDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+
+            <!-- Schrittmaß -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate ResultStepMeasure}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding StepMeasureDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+
+            <!-- Treppenlänge -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate ResultStairLength}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding StairLengthDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+
+            <!-- Separator -->
+            <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4" />
+
+            <!-- DIN-Status -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="DIN 18065"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding DinStatusDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+
+            <!-- Komfort-Status -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate ComfortLevel}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding ComfortStatusDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </Grid>
+
+            <!-- Gesamtkosten -->
             <Grid ColumnDefinitions="*,Auto"
                   IsVisible="{Binding ShowCost}">
-              <TextBlock Grid.Column="0"
-                         Text="{loc:Translate TotalCost}"
-                         FontSize="14"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Grid.Column="1"
-                         Text="{Binding TotalCostDisplay}"
+              <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
+                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding TotalCostDisplay}"
                          FontSize="16" FontWeight="Bold"
                          Foreground="{DynamicResource PrimaryBrush}" />
             </Grid>
+
             <!-- Aktions-Buttons: Share + PDF Export -->
             <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
               <Button Grid.Column="0"
@@ -217,16 +210,13 @@
       </StackPanel>
     </ScrollViewer>
 
-    <!-- ============================================ -->
-    <!-- Row 2: Action Buttons                        -->
-    <!-- ============================================ -->
+    <!-- Row 2: Action Buttons -->
     <Border Grid.Row="2"
             Background="{DynamicResource SurfaceBrush}"
             BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource CardBorderBrush}"
             Padding="16,12">
       <Grid ColumnDefinitions="*,8,*,8,*">
-        <!-- Reset -->
         <Button Grid.Column="0"
                 Classes="Outlined"
                 Command="{Binding ResetCommand}"
@@ -235,12 +225,9 @@
           <StackPanel Orientation="Horizontal" Spacing="6">
             <mi:MaterialIcon Kind="Refresh" Width="18" Height="18"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{loc:Translate Reset}"
-                       VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Translate Reset}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-
-        <!-- Calculate -->
         <Button Grid.Column="2"
                 Classes="Primary"
                 Command="{Binding CalculateCommand}"
@@ -248,12 +235,9 @@
                 HorizontalContentAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <mi:MaterialIcon Kind="Calculator" Width="18" Height="18" />
-            <TextBlock Text="{loc:Translate Calculate}"
-                       VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Translate Calculate}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
-
-        <!-- Save Project -->
         <Button Grid.Column="4"
                 Classes="Secondary"
                 Command="{Binding SaveProjectCommand}"
@@ -262,14 +246,13 @@
                 HorizontalContentAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />
-            <TextBlock Text="{loc:Translate Save}"
-                       VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Translate Save}" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
       </Grid>
     </Border>
 
-    <!-- Save Project Dialog Overlay -->
+    <!-- Save Dialog Overlay -->
     <Border Grid.Row="0" Grid.RowSpan="3"
             ZIndex="100"
             Background="#80000000"

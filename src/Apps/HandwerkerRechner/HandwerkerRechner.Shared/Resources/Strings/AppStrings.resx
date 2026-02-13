@@ -157,6 +157,9 @@
   <data name="RollsNeeded" xml:space="preserve">
     <value>Rolls needed</value>
   </data>
+  <data name="StripsNeeded" xml:space="preserve">
+    <value>Strips needed</value>
+  </data>
   <data name="LitersNeeded" xml:space="preserve">
     <value>Liters needed</value>
   </data>
@@ -930,6 +933,9 @@ Save 0.96 € compared to individual purchase!</value>
   <data name="ResultTilesNeeded" xml:space="preserve">
     <value>Tiles needed</value>
   </data>
+  <data name="ResultTilesWithReserve" xml:space="preserve">
+    <value>With reserve</value>
+  </data>
   <data name="ResultUsableArea" xml:space="preserve">
     <value>Usable area</value>
   </data>
@@ -1670,7 +1676,7 @@ Coverage decreases on rough surfaces!</value>
     <value>Pro Tools</value>
   </data>
   <data name="CalculatorCount" xml:space="preserve">
-    <value>9 Pro Calculators</value>
+    <value>11 Calculators</value>
   </data>
   <data name="GetPremium" xml:space="preserve">
     <value>Go Ad-Free</value>
@@ -1745,5 +1751,154 @@ Coverage decreases on rough surfaces!</value>
   </data>
   <data name="LabelPricePerKwh" xml:space="preserve">
     <value>Electricity price (€/kWh)</value>
+  </data>
+  <!-- Concrete Calculator -->
+  <data name="CalcConcrete" xml:space="preserve">
+    <value>Concrete</value>
+  </data>
+  <data name="CalcConcreteDesc" xml:space="preserve">
+    <value>Volume, bags &amp; mixing ratios</value>
+  </data>
+  <data name="ConcreteShape" xml:space="preserve">
+    <value>Concrete Shape</value>
+  </data>
+  <data name="ConcreteSlab" xml:space="preserve">
+    <value>Concrete Slab</value>
+  </data>
+  <data name="StripFoundation" xml:space="preserve">
+    <value>Strip Foundation</value>
+  </data>
+  <data name="ConcreteColumn" xml:space="preserve">
+    <value>Concrete Column</value>
+  </data>
+  <data name="SlabLength" xml:space="preserve">
+    <value>Slab Length (m)</value>
+  </data>
+  <data name="SlabWidth" xml:space="preserve">
+    <value>Slab Width (m)</value>
+  </data>
+  <data name="SlabHeight" xml:space="preserve">
+    <value>Slab Thickness (cm)</value>
+  </data>
+  <data name="StripLength" xml:space="preserve">
+    <value>Total Length (m)</value>
+  </data>
+  <data name="StripWidth" xml:space="preserve">
+    <value>Width (cm)</value>
+  </data>
+  <data name="StripDepth" xml:space="preserve">
+    <value>Depth (cm)</value>
+  </data>
+  <data name="ColumnDiameter" xml:space="preserve">
+    <value>Diameter (cm)</value>
+  </data>
+  <data name="ColumnHeight" xml:space="preserve">
+    <value>Height (cm)</value>
+  </data>
+  <data name="BagWeight" xml:space="preserve">
+    <value>Bag Weight (kg)</value>
+  </data>
+  <data name="PricePerBag" xml:space="preserve">
+    <value>Price per Bag</value>
+  </data>
+  <data name="PricePerCubicMeter" xml:space="preserve">
+    <value>Price per m³</value>
+  </data>
+  <data name="ResultBags" xml:space="preserve">
+    <value>Ready-Mix Bags</value>
+  </data>
+  <data name="SelfMixing" xml:space="preserve">
+    <value>Self-Mixing</value>
+  </data>
+  <data name="ResultCite" xml:space="preserve">
+    <value>Cement</value>
+  </data>
+  <data name="ResultSand" xml:space="preserve">
+    <value>Sand</value>
+  </data>
+  <data name="ResultGravel" xml:space="preserve">
+    <value>Gravel</value>
+  </data>
+  <data name="ResultWater" xml:space="preserve">
+    <value>Water</value>
+  </data>
+  <data name="CostBags" xml:space="preserve">
+    <value>Bag Cost</value>
+  </data>
+  <data name="CostCubicMeter" xml:space="preserve">
+    <value>Cost per m³</value>
+  </data>
+
+  <!-- Stair Calculator -->
+  <data name="CalcStairs" xml:space="preserve">
+    <value>Stair Calculator</value>
+  </data>
+  <data name="CalcStairsDesc" xml:space="preserve">
+    <value>DIN 18065 compliant stair design</value>
+  </data>
+  <data name="StairsDimensions" xml:space="preserve">
+    <value>Stair Dimensions</value>
+  </data>
+  <data name="FloorHeight" xml:space="preserve">
+    <value>Floor Height (cm)</value>
+  </data>
+  <data name="StairWidth" xml:space="preserve">
+    <value>Stair Width (cm)</value>
+  </data>
+  <data name="CustomStepCount" xml:space="preserve">
+    <value>Custom Steps (0=auto)</value>
+  </data>
+  <data name="PricePerStep" xml:space="preserve">
+    <value>Price per Step</value>
+  </data>
+  <data name="ResultStepCount" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="ResultStepHeight" xml:space="preserve">
+    <value>Step Height</value>
+  </data>
+  <data name="ResultTreadDepth" xml:space="preserve">
+    <value>Tread Depth</value>
+  </data>
+  <data name="ResultRunLength" xml:space="preserve">
+    <value>Run Length</value>
+  </data>
+  <data name="ResultAngle" xml:space="preserve">
+    <value>Pitch Angle</value>
+  </data>
+  <data name="ResultStepMeasure" xml:space="preserve">
+    <value>Step Measure (2h+g)</value>
+  </data>
+  <data name="ResultStairLength" xml:space="preserve">
+    <value>Stair Length</value>
+  </data>
+  <data name="StepsUnit" xml:space="preserve">
+    <value>Steps</value>
+  </data>
+  <data name="DinCompliant" xml:space="preserve">
+    <value>DIN 18065 ✓</value>
+  </data>
+  <data name="NotDinCompliant" xml:space="preserve">
+    <value>Not DIN Compliant</value>
+  </data>
+  <data name="ComfortableStairs" xml:space="preserve">
+    <value>Comfortable</value>
+  </data>
+  <data name="UncomfortableStairs" xml:space="preserve">
+    <value>Uncomfortable</value>
+  </data>
+  <data name="ComfortLevel" xml:space="preserve">
+    <value>Comfort</value>
+  </data>
+
+  <!-- UX -->
+  <data name="ShareResult" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="CopiedToClipboard" xml:space="preserve">
+    <value>Copied!</value>
+  </data>
+  <data name="PressBackToExit" xml:space="preserve">
+    <value>Press back again to exit</value>
   </data>
 </root>

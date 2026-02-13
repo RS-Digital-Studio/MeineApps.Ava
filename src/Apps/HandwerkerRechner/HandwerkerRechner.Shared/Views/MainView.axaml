@@ -47,6 +47,9 @@
     <DataTemplate DataType="floorVm:FlooringCalculatorViewModel">
       <floorViews:FlooringCalculatorView />
     </DataTemplate>
+    <DataTemplate DataType="floorVm:ConcreteCalculatorViewModel">
+      <floorViews:ConcreteCalculatorView />
+    </DataTemplate>
     <!-- Premium Calculator VMs → Views -->
     <DataTemplate DataType="premVm:DrywallViewModel">
       <premViews:DrywallView />
@@ -62,6 +65,9 @@
     </DataTemplate>
     <DataTemplate DataType="premVm:RoofSolarViewModel">
       <premViews:RoofSolarView />
+    </DataTemplate>
+    <DataTemplate DataType="premVm:StairsViewModel">
+      <premViews:StairsView />
     </DataTemplate>
   </UserControl.DataTemplates>
 
@@ -121,7 +127,7 @@
                              VerticalAlignment="Center" />
                 </StackPanel>
 
-                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="12">
                   <!-- Fliesen -->
                   <Button Grid.Row="0" Grid.Column="0"
                           CornerRadius="12" Height="120" Padding="8"
@@ -237,6 +243,34 @@
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
                     </StackPanel>
                   </Button>
+                  <!-- Beton -->
+                  <Button Grid.Row="2" Grid.Column="0"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToConcreteCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#78716C" Offset="0" />
+                            <GradientStop Color="#57534E" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="CubeOutline" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CalcConcreteLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
                 </Grid>
               </StackPanel>
 
@@ -252,7 +286,7 @@
                              VerticalAlignment="Center" />
                 </StackPanel>
 
-                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="12">
                   <!-- Trockenbau -->
                   <Button Grid.Row="0" Grid.Column="0"
                           CornerRadius="12" Height="120" Padding="8"
@@ -393,6 +427,35 @@
                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
                       </Border>
                       <TextBlock Text="{Binding CategoryRoofSolarLabel}"
+                                 FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                    </StackPanel>
+                  </Button>
+
+                  <!-- Treppen -->
+                  <Button Grid.Row="2" Grid.Column="1"
+                          CornerRadius="12" Height="120" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToStairsCommand}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="#A855F7" Offset="0" />
+                            <GradientStop Color="#9333EA" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="Stairs" Width="24" Height="24"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+                      <TextBlock Text="{Binding CalcStairsLabel}"
                                  FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
                     </StackPanel>

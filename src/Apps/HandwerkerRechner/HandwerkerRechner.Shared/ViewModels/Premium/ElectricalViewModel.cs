@@ -41,6 +41,7 @@ public partial class ElectricalViewModel : ObservableObject
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action<string>? ClipboardRequested;
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
     public ElectricalViewModel(
@@ -95,7 +96,8 @@ public partial class ElectricalViewModel : ObservableObject
         HasResult = false;
     }
 
-    public List<string> Calculators => [
+    private List<string>? _calculators;
+    public List<string> Calculators => _calculators ??= [
         _localization.GetString("VoltageDrop"),
         _localization.GetString("PowerCost"),
         _localization.GetString("OhmsLaw")
@@ -127,6 +129,9 @@ public partial class ElectricalViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isCalculating;
+
+    [ObservableProperty]
+    private bool _isExporting;
 
     #region Cost Calculation
 
@@ -192,6 +197,8 @@ public partial class ElectricalViewModel : ObservableObject
                             _localization.GetString("ValueMustBePositive"));
                         return;
                     }
+                    // Stunden pro Tag können nicht über 24 sein
+                    if (HoursPerDay > 24) HoursPerDay = 24;
                     PowerCostResult = _engine.CalculatePowerCost(Watts, HoursPerDay, PricePerKwh);
                     VoltageDropResult = null;
                     OhmsLawResult = null;
@@ -210,6 +217,16 @@ public partial class ElectricalViewModel : ObservableObject
                         MessageRequested?.Invoke(
                             _localization.GetString("InvalidInputTitle"),
                             _localization.GetString("OhmsLawMinValues") ?? "Enter at least 2 values");
+                        return;
+                    }
+
+                    // Widerstand und Leistung dürfen physikalisch nicht negativ sein
+                    if ((r.HasValue && r.Value < 0) || (p.HasValue && p.Value < 0))
+                    {
+                        HasResult = false;
+                        MessageRequested?.Invoke(
+                            _localization.GetString("InvalidInputTitle"),
+                            _localization.GetString("ValueMustBePositive"));
                         return;
                     }
 
@@ -334,7 +351,7 @@ public partial class ElectricalViewModel : ObservableObject
     private void SaveProject()
     {
         if (!HasResult) return;
-        SaveProjectName = string.Empty;
+        SaveProjectName = _currentProjectId != null ? string.Empty : DefaultProjectName;
         ShowSaveDialog = true;
     }
 
@@ -388,6 +405,50 @@ public partial class ElectricalViewModel : ObservableObject
                 ["OhmsResistance"] = OhmsResistance,
                 ["OhmsPower"] = OhmsPower
             };
+
+            // Result-Daten mitspeichern (je nach aktuellem Sub-Rechner)
+            if (HasResult)
+            {
+                switch (SelectedCalculator)
+                {
+                    case 0 when VoltageDropResult != null:
+                    {
+                        var resultData = new Dictionary<string, object>
+                        {
+                            ["InfoVoltageDrop"] = $"{VoltageDropResult.VoltageDrop:F2} V",
+                            ["ResultPercentDrop"] = $"{VoltageDropResult.PercentDrop:F1} %",
+                            ["ResultAcceptable"] = VoltageDropResult.IsAcceptable
+                                ? (_localization.GetString("Yes") ?? "Yes")
+                                : (_localization.GetString("No") ?? "No")
+                        };
+                        if (ShowCableCost && CablePrice > 0)
+                            resultData["CableCostLabel"] = $"{(CableLength * CablePrice):F2}";
+                        data["Result"] = resultData;
+                        break;
+                    }
+                    case 1 when PowerCostResult != null:
+                    {
+                        data["Result"] = new Dictionary<string, object>
+                        {
+                            ["CostPerDay"] = $"{PowerCostResult.CostPerDay:F2}",
+                            ["CostPerMonth"] = $"{PowerCostResult.CostPerMonth:F2}",
+                            ["CostPerYear"] = $"{PowerCostResult.CostPerYear:F2}"
+                        };
+                        break;
+                    }
+                    case 2 when OhmsLawResult != null:
+                    {
+                        data["Result"] = new Dictionary<string, object>
+                        {
+                            ["VoltageULabel"] = $"{OhmsLawResult.Voltage:F2} V",
+                            ["CurrentILabel"] = $"{OhmsLawResult.Current:F3} A",
+                            ["ResistanceRLabel"] = $"{OhmsLawResult.Resistance:F2} \u03a9",
+                            ["PowerPLabel"] = $"{OhmsLawResult.Power:F2} W"
+                        };
+                        break;
+                    }
+                }
+            }
 
             project.SetData(data);
             await _projectService.SaveProjectAsync(project);
@@ -451,12 +512,58 @@ public partial class ElectricalViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ExportMaterialList()
+    private void ShareResult()
     {
         if (!HasResult) return;
 
+        string text;
+        switch (SelectedCalculator)
+        {
+            case 0 when VoltageDropResult != null:
+                text = $"{Calculators[0]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("InfoVoltageDrop")}: {VoltageDropResult.VoltageDrop:F2} V\n" +
+                       $"{_localization.GetString("ResultPercentDrop")}: {VoltageDropResult.PercentDrop:F1} %\n" +
+                       $"{_localization.GetString("ResultAcceptable")}: {(VoltageDropResult.IsAcceptable ? _localization.GetString("Yes") : _localization.GetString("No"))}";
+                if (ShowCableCost && CablePrice > 0)
+                    text += $"\n{_localization.GetString("CableCostLabel")}: {(CableLength * CablePrice):F2} {_localization.GetString("CurrencySymbol")}";
+                break;
+
+            case 1 when PowerCostResult != null:
+                text = $"{Calculators[1]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("CostPerDay")}: {PowerCostResult.CostPerDay:F2} {_localization.GetString("CurrencySymbol")}\n" +
+                       $"{_localization.GetString("CostPerMonth")}: {PowerCostResult.CostPerMonth:F2} {_localization.GetString("CurrencySymbol")}\n" +
+                       $"{_localization.GetString("CostPerYear")}: {PowerCostResult.CostPerYear:F2} {_localization.GetString("CurrencySymbol")}";
+                break;
+
+            case 2 when OhmsLawResult != null:
+                text = $"{Calculators[2]}\n" +
+                       $"─────────────\n" +
+                       $"{_localization.GetString("VoltageULabel")}: {OhmsLawResult.Voltage:F2} V\n" +
+                       $"{_localization.GetString("CurrentILabel")}: {OhmsLawResult.Current:F3} A\n" +
+                       $"{_localization.GetString("ResistanceRLabel")}: {OhmsLawResult.Resistance:F2} \u03a9\n" +
+                       $"{_localization.GetString("PowerPLabel")}: {OhmsLawResult.Power:F2} W";
+                break;
+
+            default:
+                return;
+        }
+
+        ClipboardRequested?.Invoke(text);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
+    }
+
+    [RelayCommand]
+    private async Task ExportMaterialList()
+    {
+        if (!HasResult) return;
+        if (IsExporting) return;
+
         try
         {
+            IsExporting = true;
+
             if (!_purchaseService.IsPremium)
             {
                 var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
@@ -504,6 +611,10 @@ public partial class ElectricalViewModel : ObservableObject
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 }

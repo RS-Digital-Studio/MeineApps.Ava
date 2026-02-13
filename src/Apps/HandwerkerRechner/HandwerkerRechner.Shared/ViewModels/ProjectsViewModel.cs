@@ -236,6 +236,10 @@ public partial class ProjectsViewModel : ObservableObject
         CalculatorType.RoofPitch => "RoofSolarPage",
         CalculatorType.RoofTiles => "RoofSolarPage",
         CalculatorType.SolarYield => "RoofSolarPage",
+        CalculatorType.ConcreteSlab => "ConcretePage",
+        CalculatorType.ConcreteStrip => "ConcretePage",
+        CalculatorType.ConcreteColumn => "ConcretePage",
+        CalculatorType.Stairs => "StairsPage",
 
         _ => string.Empty
     };

@@ -31,6 +31,7 @@ public partial class PaintCalculatorViewModel : ObservableObject
     /// </summary>
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    public event Action<string>? ClipboardRequested;
 
     [ObservableProperty]
     private bool _showSaveDialog;
@@ -152,6 +153,9 @@ public partial class PaintCalculatorViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isCalculating;
+
+    [ObservableProperty]
+    private bool _isExporting;
 
     public string TotalAreaDisplay => Result != null
         ? _unitConverter.FormatArea(Result.TotalArea)
@@ -278,6 +282,19 @@ public partial class PaintCalculatorViewModel : ObservableObject
                 ["PricePerLiter"] = PricePerLiter
             };
 
+            // Result-Daten mitspeichern für Export
+            if (HasResult && Result != null)
+            {
+                var resultData = new Dictionary<string, object>
+                {
+                    ["TotalArea"] = Result.TotalArea.ToString("F2"),
+                    ["LitersNeeded"] = Result.LitersNeeded.ToString("F1")
+                };
+                if (ShowCost && PricePerLiter > 0)
+                    resultData["TotalCost"] = (Result.LitersNeeded * PricePerLiter).ToString("F2");
+                data["Result"] = resultData;
+            }
+
             project.SetData(data);
             await _projectService.SaveProjectAsync(project);
             _currentProjectId = project.Id;
@@ -323,12 +340,34 @@ public partial class PaintCalculatorViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private async Task ExportMaterialList()
+    private void ShareResult()
     {
         if (!HasResult || Result == null) return;
 
+        var title = _localization.GetString("CalcPaint") ?? "Paint";
+        var text = $"{title}\n" +
+                   $"─────────────\n" +
+                   $"{_localization.GetString("TotalArea") ?? "Total area"}: {TotalAreaDisplay}\n" +
+                   $"{_localization.GetString("LitersNeeded") ?? "Liters needed"}: {LitersNeededDisplay}\n" +
+                   $"{_localization.GetString("Coats") ?? "Coats"}: {NumberOfCoats}";
+
+        if (ShowCost && PricePerLiter > 0)
+            text += $"\n{_localization.GetString("TotalCost") ?? "Total cost"}: {TotalCostDisplay}";
+
+        ClipboardRequested?.Invoke(text);
+        FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
+    }
+
+    [RelayCommand]
+    private async Task ExportMaterialList()
+    {
+        if (!HasResult || Result == null) return;
+        if (IsExporting) return;
+
         try
         {
+            IsExporting = true;
+
             if (!_purchaseService.IsPremium)
             {
                 var adResult = await _rewardedAdService.ShowAdAsync("material_pdf");
@@ -357,6 +396,10 @@ public partial class PaintCalculatorViewModel : ObservableObject
         catch (Exception)
         {
             MessageRequested?.Invoke(_localization.GetString("Error") ?? "Error", _localization.GetString("PdfExportFailed") ?? "Export failed.");
+        }
+        finally
+        {
+            IsExporting = false;
         }
     }
 

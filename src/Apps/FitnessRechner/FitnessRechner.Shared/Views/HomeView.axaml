@@ -3,8 +3,37 @@
              xmlns:vm="using:FitnessRechner.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:behaviors="using:MeineApps.Core.Ava.Behaviors"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
+             xmlns:uiControls="using:MeineApps.UI.Controls"
+             xmlns:models="using:FitnessRechner.Models"
+             xmlns:conv="using:FitnessRechner.Converters"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="FitnessRechner.Views.HomeView"
              x:DataType="vm:MainViewModel">
+
+  <UserControl.Resources>
+    <conv:LocalizeKeyConverter x:Key="LocalizeKey" />
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <!-- Streak-Flamme Puls-Animation (nur wenn HasStreak=true) -->
+    <Style Selector="Border.StreakFlame">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="Infinite" PlaybackDirection="Alternate">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="1.0" />
+          </KeyFrame>
+          <KeyFrame Cue="50%">
+            <Setter Property="Opacity" Value="0.7" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="1.0" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
 
   <ScrollViewer Padding="0,0,0,100">
     <StackPanel Spacing="0">
@@ -18,7 +47,8 @@
             <GradientStop Color="{DynamicResource AccentColor}" Offset="1" />
           </LinearGradientBrush>
         </Border.Background>
-        <StackPanel Spacing="8" HorizontalAlignment="Center">
+        <StackPanel Spacing="12" HorizontalAlignment="Center">
+          <!-- Begrüßung + App-Name -->
           <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center">
             <Border Width="36" Height="36" CornerRadius="18" Background="#33FFFFFF">
               <mi:MaterialIcon Kind="HeartPulse" Width="20" Height="20"
@@ -32,16 +62,102 @@
                          FontSize="20" FontWeight="Bold" Foreground="White" />
             </StackPanel>
           </StackPanel>
+          <!-- Motivations-Zitat -->
+          <TextBlock Text="{Binding MotivationalQuote}"
+                     FontSize="12" FontStyle="Italic"
+                     Foreground="#BBFFFFFF"
+                     TextWrapping="Wrap" TextAlignment="Center"
+                     HorizontalAlignment="Center"
+                     MaxWidth="300" />
         </StackPanel>
       </Border>
 
       <!-- ========== Content ========== -->
       <StackPanel Spacing="16" Margin="12,16,12,0">
 
+        <!-- ========== Tages-Score Ring ========== -->
+        <Border Classes="Card" Padding="16" BoxShadow="{DynamicResource CardShadow}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:StaggerFadeInBehavior FixedIndex="0" StaggerDelay="80" BaseDuration="400" />
+          </i:Interaction.Behaviors>
+          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+            <!-- Score-Ring -->
+            <Panel Width="80" Height="80">
+              <uiControls:CircularProgress Width="80" Height="80"
+                  Value="{Binding DailyScoreFraction}"
+                  StrokeWidth="6"
+                  StrokeBrush="{DynamicResource PrimaryBrush}"
+                  TrackBrush="{DynamicResource BorderSubtleBrush}" />
+              <!-- Score-Text in der Mitte -->
+              <TextBlock Text="{Binding DailyScoreDisplay}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Panel>
+            <!-- Beschreibung rechts -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
+              <TextBlock Text="{Binding DailyProgressLabel}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <!-- 3 Mini-Indikatoren -->
+              <StackPanel Spacing="4">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Border Width="8" Height="8" CornerRadius="4" Background="#F59E0B" />
+                  <TextBlock Text="{Binding TodayCaloriesDisplay, StringFormat='{}{0} kcal'}"
+                             FontSize="12" Foreground="{DynamicResource TextMutedBrush}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Border Width="8" Height="8" CornerRadius="4" Background="#22C55E" />
+                  <TextBlock Text="{Binding TodayWaterDisplay}"
+                             FontSize="12" Foreground="{DynamicResource TextMutedBrush}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <Border Width="8" Height="8" CornerRadius="4" Background="#8B5CF6" />
+                  <TextBlock Text="{Binding TodayWeightDisplay, StringFormat='{}{0} kg'}"
+                             FontSize="12" Foreground="{DynamicResource TextMutedBrush}" />
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- ========== XP / Level Bar ========== -->
+        <Border Classes="Card" Padding="10,8" BoxShadow="{DynamicResource CardShadow}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:StaggerFadeInBehavior FixedIndex="1" StaggerDelay="80" BaseDuration="300" />
+          </i:Interaction.Behaviors>
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+            <!-- Level-Badge -->
+            <Border Background="{DynamicResource PrimaryBrush}" CornerRadius="10" Padding="8,2"
+                    VerticalAlignment="Center">
+              <TextBlock Text="{Binding LevelLabel}"
+                         FontSize="11" FontWeight="Bold" Foreground="White" />
+            </Border>
+            <!-- XP ProgressBar -->
+            <ProgressBar Grid.Column="1" Value="{Binding LevelProgress}" Maximum="1.0"
+                         Height="6" CornerRadius="3" VerticalAlignment="Center"
+                         Foreground="{DynamicResource PrimaryBrush}"
+                         Background="{DynamicResource BorderSubtleBrush}">
+              <ProgressBar.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Value" Duration="0:0:0.5" />
+                </Transitions>
+              </ProgressBar.Transitions>
+            </ProgressBar>
+            <!-- XP Text -->
+            <TextBlock Grid.Column="2" Text="{Binding XpDisplay}"
+                       FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                       VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+
         <!-- ========== Today Dashboard Card ========== -->
         <Border Classes="Card" Padding="16"
                 BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasDashboardData}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:StaggerFadeInBehavior FixedIndex="2" StaggerDelay="80" BaseDuration="300" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="CalendarToday" Width="20" Height="20"
@@ -112,61 +228,73 @@
               <Border Grid.Row="1" Grid.Column="0"
                       Background="{DynamicResource SurfaceBrush}"
                       CornerRadius="10" Padding="12">
-                <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center">
-                    <Border.Background>
-                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                        <GradientStop Color="#22C55E" Offset="0" />
-                        <GradientStop Color="#16A34A" Offset="1" />
-                      </LinearGradientBrush>
-                    </Border.Background>
-                    <mi:MaterialIcon Kind="Water" Width="20" Height="20"
-                                     Foreground="White"
-                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  </Border>
-                  <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                  <StackPanel Spacing="6">
+                    <Border CornerRadius="10" Width="40" Height="40">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#22C55E" Offset="0" />
+                          <GradientStop Color="#16A34A" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <mi:MaterialIcon Kind="Water" Width="20" Height="20"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
                     <TextBlock Text="{Binding TodayWaterDisplay}"
                                FontSize="18" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
-                  <!-- Wasser-Fortschrittsbalken (nur bei Wert > 0 sichtbar) -->
-                  <ProgressBar Value="{Binding WaterProgress}" Maximum="100"
-                               Height="4" CornerRadius="2" Margin="4,2,4,0"
-                               Foreground="#22C55E"
-                               IsVisible="{Binding HasWaterProgress}" />
-                </StackPanel>
+                  <!-- Wasser CircularProgress Ring -->
+                  <uiControls:CircularProgress Grid.Column="1" Width="44" Height="44"
+                      Value="{Binding WaterProgressFraction}"
+                      StrokeWidth="4"
+                      TrackBrush="{DynamicResource BorderSubtleBrush}"
+                      VerticalAlignment="Center">
+                    <uiControls:CircularProgress.StrokeBrush>
+                      <SolidColorBrush Color="#22C55E" />
+                    </uiControls:CircularProgress.StrokeBrush>
+                  </uiControls:CircularProgress>
+                </Grid>
               </Border>
 
               <!-- Kalorien -->
               <Border Grid.Row="1" Grid.Column="1"
                       Background="{DynamicResource SurfaceBrush}"
                       CornerRadius="10" Padding="12">
-                <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <Border CornerRadius="10" Width="40" Height="40" HorizontalAlignment="Center">
-                    <Border.Background>
-                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                        <GradientStop Color="#F59E0B" Offset="0" />
-                        <GradientStop Color="#D97706" Offset="1" />
-                      </LinearGradientBrush>
-                    </Border.Background>
-                    <mi:MaterialIcon Kind="Fire" Width="20" Height="20"
-                                     Foreground="White"
-                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  </Border>
-                  <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding TodayCaloriesDisplay}"
-                               FontSize="18" FontWeight="Bold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="kcal" FontSize="12"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               VerticalAlignment="Bottom" Margin="0,0,0,2" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                  <StackPanel Spacing="6">
+                    <Border CornerRadius="10" Width="40" Height="40">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#F59E0B" Offset="0" />
+                          <GradientStop Color="#D97706" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <mi:MaterialIcon Kind="Fire" Width="20" Height="20"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <TextBlock Text="{Binding TodayCaloriesDisplay}"
+                                 FontSize="18" FontWeight="Bold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Text="kcal" FontSize="12"
+                                 Foreground="{DynamicResource TextMutedBrush}"
+                                 VerticalAlignment="Bottom" Margin="0,0,0,2" />
+                    </StackPanel>
                   </StackPanel>
-                  <!-- Kalorien-Fortschrittsbalken (nur bei Wert > 0 sichtbar) -->
-                  <ProgressBar Value="{Binding CalorieProgress}" Maximum="100"
-                               Height="4" CornerRadius="2" Margin="4,2,4,0"
-                               Foreground="#F59E0B"
-                               IsVisible="{Binding HasCalorieProgress}" />
-                </StackPanel>
+                  <!-- Kalorien CircularProgress Ring -->
+                  <uiControls:CircularProgress Grid.Column="1" Width="44" Height="44"
+                      Value="{Binding CalorieProgressFraction}"
+                      StrokeWidth="4"
+                      TrackBrush="{DynamicResource BorderSubtleBrush}"
+                      VerticalAlignment="Center">
+                    <uiControls:CircularProgress.StrokeBrush>
+                      <SolidColorBrush Color="#F59E0B" />
+                    </uiControls:CircularProgress.StrokeBrush>
+                  </uiControls:CircularProgress>
+                </Grid>
               </Border>
 
             </Grid>
@@ -175,10 +303,16 @@
 
         <!-- ========== Quick Actions Row ========== -->
         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:StaggerFadeInBehavior FixedIndex="3" StaggerDelay="80" BaseDuration="300" />
+          </i:Interaction.Behaviors>
           <!-- +kg Button (lila) -->
           <Button Grid.Column="0" CornerRadius="12" Height="48" Padding="6"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                   Command="{Binding OpenWeightQuickAddCommand}">
+            <i:Interaction.Behaviors>
+              <behaviors:TapScaleBehavior PressedScale="0.95" />
+            </i:Interaction.Behaviors>
             <Button.Background>
               <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                 <GradientStop Color="#8B5CF6" Offset="0" />
@@ -196,6 +330,9 @@
           <Button Grid.Column="1" CornerRadius="12" Height="48" Padding="6"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                   Command="{Binding QuickAddWaterCommand}" CommandParameter="250">
+            <i:Interaction.Behaviors>
+              <behaviors:TapScaleBehavior PressedScale="0.95" />
+            </i:Interaction.Behaviors>
             <Button.Background>
               <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                 <GradientStop Color="#22C55E" Offset="0" />
@@ -213,6 +350,9 @@
           <Button Grid.Column="2" CornerRadius="12" Height="48" Padding="6"
                   HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                   Command="{Binding OpenFoodQuickAddCommand}">
+            <i:Interaction.Behaviors>
+              <behaviors:TapScaleBehavior PressedScale="0.95" />
+            </i:Interaction.Behaviors>
             <Button.Background>
               <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                 <GradientStop Color="#F59E0B" Offset="0" />
@@ -265,11 +405,63 @@
           </StackPanel>
         </Border>
 
+        <!-- ========== Daily Challenge Card ========== -->
+        <Border CornerRadius="12" Padding="14" BoxShadow="{DynamicResource CardShadow}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:StaggerFadeInBehavior FixedIndex="4" StaggerDelay="80" BaseDuration="300" />
+          </i:Interaction.Behaviors>
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#6366F1" Offset="0" />
+              <GradientStop Color="#8B5CF6" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <!-- Challenge Icon -->
+            <Border Width="40" Height="40" CornerRadius="20" Background="#33FFFFFF"
+                    VerticalAlignment="Center">
+              <mi:MaterialIcon Kind="{Binding TodayChallenge.Icon}" Width="22" Height="22"
+                               Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <!-- Challenge Info -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
+              <TextBlock Text="{Binding DailyChallengeLabel}"
+                         FontSize="10" Foreground="#BBFFFFFF" />
+              <TextBlock Text="{Binding ChallengeTitleText}"
+                         FontSize="14" FontWeight="Bold" Foreground="White" />
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                <ProgressBar Value="{Binding ChallengeProgressValue}" Maximum="1.0"
+                             Height="4" CornerRadius="2"
+                             Foreground="#22C55E" Background="#33FFFFFF">
+                  <ProgressBar.Transitions>
+                    <Transitions>
+                      <DoubleTransition Property="Value" Duration="0:0:0.5" />
+                    </Transitions>
+                  </ProgressBar.Transitions>
+                </ProgressBar>
+                <TextBlock Grid.Column="1" Text="{Binding ChallengeProgressText}"
+                           FontSize="10" Foreground="#CCFFFFFF" VerticalAlignment="Center" />
+              </Grid>
+            </StackPanel>
+            <!-- XP Badge -->
+            <Border Grid.Column="2" CornerRadius="8" Padding="6,2"
+                    Background="#33FFFFFF" VerticalAlignment="Top">
+              <TextBlock Text="{Binding ChallengeXpText}"
+                         FontSize="10" FontWeight="Bold" Foreground="White" />
+            </Border>
+          </Grid>
+        </Border>
+
         <!-- ========== Streak Card ========== -->
         <Border Classes="Card" Padding="14" BoxShadow="{DynamicResource CardShadow}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:StaggerFadeInBehavior FixedIndex="5" StaggerDelay="80" BaseDuration="300" />
+          </i:Interaction.Behaviors>
           <Grid ColumnDefinitions="Auto,*,Auto">
-            <!-- Flammen-Icon mit Gradient -->
-            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="12" Margin="0,0,12,0">
+            <!-- Flammen-Icon mit Gradient + Puls-Animation -->
+            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="12" Margin="0,0,12,0"
+                    Classes.StreakFlame="{Binding HasStreak}">
               <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                   <GradientStop Color="#F59E0B" Offset="0" />
@@ -299,6 +491,194 @@
           </Grid>
         </Border>
 
+        <!-- ========== Recent Badges ========== -->
+        <Border Classes="Card" Padding="12" BoxShadow="{DynamicResource CardShadow}"
+                IsVisible="{Binding HasRecentAchievements}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:StaggerFadeInBehavior FixedIndex="6" StaggerDelay="80" BaseDuration="300" />
+          </i:Interaction.Behaviors>
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding BadgesLabel}"
+                         FontSize="13" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <ItemsControl ItemsSource="{Binding RecentAchievements}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal" Spacing="8" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate DataType="models:FitnessAchievement">
+                    <Border Width="36" Height="36" CornerRadius="18">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="{DynamicResource PrimaryColor}" Offset="0" />
+                          <GradientStop Color="{DynamicResource AccentColor}" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <mi:MaterialIcon Kind="{Binding Icon}" Width="18" Height="18"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <!-- "Alle anzeigen" Button -->
+            <Button Grid.Column="1" Classes="Text" VerticalAlignment="Center"
+                    Command="{Binding OpenAchievementsCommand}">
+              <i:Interaction.Behaviors>
+                <behaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="{Binding ShowAllLabel}"
+                           FontSize="11" Foreground="{DynamicResource PrimaryBrush}" />
+                <mi:MaterialIcon Kind="ChevronRight" Width="16" Height="16"
+                                 Foreground="{DynamicResource PrimaryBrush}" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- ========== Aktivitäts-Heatmap ========== -->
+        <Border Classes="Card" Padding="14" BoxShadow="{DynamicResource CardShadow}"
+                IsVisible="{Binding HasHeatmapData}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:StaggerFadeInBehavior FixedIndex="7" StaggerDelay="80" BaseDuration="300" />
+          </i:Interaction.Behaviors>
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="CalendarMonth" Width="18" Height="18"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+              <TextBlock Text="{loc:Translate ActivityCalendar}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+            <!-- Heatmap -->
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+              <uiControls:HeatmapCalendar Data="{Binding HeatmapData}"
+                                           Months="3"
+                                           CellSize="11"
+                                           CellSpacing="2" />
+            </ScrollViewer>
+            <!-- Legende -->
+            <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+              <TextBlock Text="{loc:Translate LessActive}" FontSize="10"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         VerticalAlignment="Center" />
+              <StackPanel Orientation="Horizontal" Spacing="2">
+                <Border Width="10" Height="10" CornerRadius="2"
+                        Background="{DynamicResource BorderSubtleBrush}" />
+                <Border Width="10" Height="10" CornerRadius="2" Opacity="0.25"
+                        Background="{DynamicResource PrimaryBrush}" />
+                <Border Width="10" Height="10" CornerRadius="2" Opacity="0.5"
+                        Background="{DynamicResource PrimaryBrush}" />
+                <Border Width="10" Height="10" CornerRadius="2" Opacity="0.75"
+                        Background="{DynamicResource PrimaryBrush}" />
+                <Border Width="10" Height="10" CornerRadius="2"
+                        Background="{DynamicResource PrimaryBrush}" />
+              </StackPanel>
+              <TextBlock Text="{loc:Translate MoreActive}" FontSize="10"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- ========== Weekly Comparison Card ========== -->
+        <Border Classes="Card" Padding="14" BoxShadow="{DynamicResource CardShadow}"
+                IsVisible="{Binding HasWeeklyComparison}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:StaggerFadeInBehavior FixedIndex="8" StaggerDelay="80" BaseDuration="300" />
+          </i:Interaction.Behaviors>
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="ChartBar" Width="18" Height="18"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+              <TextBlock Text="{Binding WeeklyComparisonLabel}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+            <!-- Vergleichs-Grid -->
+            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto,Auto"
+                  ColumnSpacing="12" RowSpacing="8">
+              <!-- Kalorien -->
+              <mi:MaterialIcon Grid.Row="0" Kind="Fire" Width="16" Height="16"
+                               VerticalAlignment="Center">
+                <mi:MaterialIcon.Foreground>
+                  <SolidColorBrush Color="{Binding WeeklyCaloriesColor}" />
+                </mi:MaterialIcon.Foreground>
+              </mi:MaterialIcon>
+              <TextBlock Grid.Row="0" Grid.Column="1"
+                         Text="{Binding WeeklyCaloriesChange}"
+                         FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <!-- Wasser -->
+              <mi:MaterialIcon Grid.Row="1" Kind="Water" Width="16" Height="16"
+                               VerticalAlignment="Center">
+                <mi:MaterialIcon.Foreground>
+                  <SolidColorBrush Color="{Binding WeeklyWaterColor}" />
+                </mi:MaterialIcon.Foreground>
+              </mi:MaterialIcon>
+              <TextBlock Grid.Row="1" Grid.Column="1"
+                         Text="{Binding WeeklyWaterChange}"
+                         FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <!-- Gewicht -->
+              <mi:MaterialIcon Grid.Row="2" Kind="ScaleBathroom" Width="16" Height="16"
+                               VerticalAlignment="Center">
+                <mi:MaterialIcon.Foreground>
+                  <SolidColorBrush Color="{Binding WeeklyWeightColor}" />
+                </mi:MaterialIcon.Foreground>
+              </mi:MaterialIcon>
+              <TextBlock Grid.Row="2" Grid.Column="1"
+                         Text="{Binding WeeklyWeightChange}"
+                         FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <!-- Logging-Tage -->
+              <mi:MaterialIcon Grid.Row="3" Kind="CalendarCheck" Width="16" Height="16"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               VerticalAlignment="Center" />
+              <TextBlock Grid.Row="3" Grid.Column="1"
+                         Text="{Binding WeeklyLogDays}"
+                         FontSize="12" Foreground="{DynamicResource TextMutedBrush}"
+                         VerticalAlignment="Center" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- ========== Abend-Zusammenfassung (nach 20 Uhr) ========== -->
+        <Border Classes="Card" IsVisible="{Binding ShowEveningSummary}" Margin="0,0,0,12">
+          <i:Interaction.Behaviors>
+            <behaviors:FadeInBehavior Duration="400" />
+          </i:Interaction.Behaviors>
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#1E293B" Offset="0" />
+              <GradientStop Color="#0F172A" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="WeatherNight" Width="20" Height="20" Foreground="#818CF8" />
+              <TextBlock Text="{Binding EveningSummaryLabel}"
+                         FontSize="14" FontWeight="SemiBold" Foreground="White" />
+            </StackPanel>
+            <TextBlock Text="{Binding EveningSummaryText}"
+                       FontSize="16" FontWeight="Bold" Foreground="White" />
+            <TextBlock Text="{Binding EveningSummaryRating}"
+                       FontSize="13">
+              <TextBlock.Foreground>
+                <SolidColorBrush Color="{Binding EveningSummaryRatingColor}" />
+              </TextBlock.Foreground>
+            </TextBlock>
+          </StackPanel>
+        </Border>
+
         <!-- ========== Calculators Section ========== -->
         <StackPanel Spacing="12">
           <StackPanel Orientation="Horizontal" Spacing="8">
@@ -320,6 +700,9 @@
                     CornerRadius="12" Height="120" Padding="8"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenBmiCommand}">
+              <i:Interaction.Behaviors>
+                <behaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
               <Button.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                   <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
@@ -349,6 +732,9 @@
                     CornerRadius="12" Height="120" Padding="8"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenCaloriesCommand}">
+              <i:Interaction.Behaviors>
+                <behaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
               <Button.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                   <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
@@ -378,6 +764,9 @@
                     CornerRadius="12" Height="120" Padding="8"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenWaterCommand}">
+              <i:Interaction.Behaviors>
+                <behaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
               <Button.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                   <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
@@ -407,6 +796,9 @@
                     CornerRadius="12" Height="120" Padding="8"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenIdealWeightCommand}">
+              <i:Interaction.Behaviors>
+                <behaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
               <Button.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                   <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
@@ -436,6 +828,9 @@
                     CornerRadius="12" Height="120" Padding="8"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenBodyFatCommand}">
+              <i:Interaction.Behaviors>
+                <behaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
               <Button.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                   <GradientStop Color="{DynamicResource CardColor}" Offset="0" />

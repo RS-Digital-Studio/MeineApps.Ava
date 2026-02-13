@@ -37,6 +37,24 @@ public partial class App : Application
     /// </summary>
     public static Func<IBarcodeService>? BarcodeServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen IHapticService.
+    /// Android setzt dies auf AndroidHapticService (Vibrator).
+    /// </summary>
+    public static Func<IHapticService>? HapticServiceFactory { get; set; }
+
+    /// <summary>
+    /// Factory fuer plattformspezifischen IFitnessSoundService.
+    /// Android setzt dies auf AndroidFitnessSoundService (System-Sound).
+    /// </summary>
+    public static Func<IFitnessSoundService>? SoundServiceFactory { get; set; }
+
+    /// <summary>
+    /// Factory fuer plattformspezifischen IReminderService.
+    /// Android setzt dies auf AndroidReminderService (AlarmManager).
+    /// </summary>
+    public static Func<IServiceProvider, IReminderService>? ReminderServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -110,9 +128,29 @@ public partial class App : Application
         // App Services
         services.AddSingleton<FitnessEngine>();
         services.AddSingleton<StreakService>();
+        services.AddSingleton<IAchievementService, AchievementService>();
+        services.AddSingleton<ILevelService, LevelService>();
+        services.AddSingleton<IChallengeService, ChallengeService>();
         services.AddSingleton<ITrackingService, TrackingService>();
         services.AddSingleton<IFoodSearchService, FoodSearchService>();
         services.AddSingleton<IBarcodeLookupService, BarcodeLookupService>();
+
+        // Plattform-Services (Haptic, Sound, Reminders)
+        if (HapticServiceFactory != null)
+            services.AddSingleton<IHapticService>(_ => HapticServiceFactory!());
+        else
+            services.AddSingleton<IHapticService, NoOpHapticService>();
+
+        if (SoundServiceFactory != null)
+            services.AddSingleton<IFitnessSoundService>(_ => SoundServiceFactory!());
+        else
+            services.AddSingleton<IFitnessSoundService, NoOpFitnessSoundService>();
+
+        if (ReminderServiceFactory != null)
+            services.AddSingleton<IReminderService>(sp => ReminderServiceFactory!(sp));
+        else
+            services.AddSingleton<IReminderService, ReminderService>();
+
         // ViewModels
         services.AddSingleton<MainViewModel>();
         services.AddTransient<ProgressViewModel>();

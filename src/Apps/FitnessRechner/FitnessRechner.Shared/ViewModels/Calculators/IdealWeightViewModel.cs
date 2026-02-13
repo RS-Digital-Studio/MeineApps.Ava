@@ -44,6 +44,7 @@ public partial class IdealWeightViewModel : ObservableObject
     private bool _hasResult;
 
     public string AverageIdealDisplay => Result != null ? $"{Result.AverageIdeal:F1} kg" : "";
+    public double AverageIdealValue => Result?.AverageIdeal ?? 0;
     public string BrocaDisplay => Result != null ? $"{Result.BrocaWeight:F1} kg" : "";
     public string CreffDisplay => Result != null ? $"{Result.CreffWeight:F1} kg" : "";
     public string HealthyRangeDisplay => Result != null
@@ -52,6 +53,7 @@ public partial class IdealWeightViewModel : ObservableObject
     partial void OnResultChanged(IdealWeightResult? value)
     {
         OnPropertyChanged(nameof(AverageIdealDisplay));
+        OnPropertyChanged(nameof(AverageIdealValue));
         OnPropertyChanged(nameof(BrocaDisplay));
         OnPropertyChanged(nameof(CreffDisplay));
         OnPropertyChanged(nameof(HealthyRangeDisplay));

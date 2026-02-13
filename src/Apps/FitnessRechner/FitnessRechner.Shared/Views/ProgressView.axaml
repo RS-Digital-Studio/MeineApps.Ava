@@ -198,13 +198,29 @@
                   <TextBlock Text="kg" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
                   <TextBlock Text="{loc:Translate Average}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
                 </StackPanel>
+                <!-- Trend mit Richtungspfeil -->
                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                  <TextBlock Text="{Binding WeightTrendDisplay}"
-                             FontSize="18" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             HorizontalAlignment="Center" />
-                  <TextBlock Text="kg" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
-                  <TextBlock Text="{loc:Translate Trend}" FontSize="11" Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center" />
+                  <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="{Binding WeightTrendIcon}" Width="18" Height="18"
+                                     VerticalAlignment="Center">
+                      <mi:MaterialIcon.Foreground>
+                        <SolidColorBrush Color="{Binding WeightTrendColor}" />
+                      </mi:MaterialIcon.Foreground>
+                    </mi:MaterialIcon>
+                    <TextBlock Text="{Binding WeightTrendDisplay}"
+                               FontSize="18" FontWeight="Bold"
+                               HorizontalAlignment="Center">
+                      <TextBlock.Foreground>
+                        <SolidColorBrush Color="{Binding WeightTrendColor}" />
+                      </TextBlock.Foreground>
+                    </TextBlock>
+                  </StackPanel>
+                  <TextBlock Text="{Binding WeightTrendLabel}" FontSize="11"
+                             HorizontalAlignment="Center">
+                    <TextBlock.Foreground>
+                      <SolidColorBrush Color="{Binding WeightTrendColor}" />
+                    </TextBlock.Foreground>
+                  </TextBlock>
                 </StackPanel>
               </Grid>
             </StackPanel>
@@ -229,7 +245,13 @@
                            VerticalAlignment="Center" />
               </Grid>
               <ProgressBar Value="{Binding WeightGoalProgress}" Maximum="1"
-                           Foreground="#8B5CF6" Height="10" />
+                           Foreground="#8B5CF6" Height="10">
+                <ProgressBar.Transitions>
+                  <Transitions>
+                    <DoubleTransition Property="Value" Duration="0:0:0.5" Easing="CubicEaseOut" />
+                  </Transitions>
+                </ProgressBar.Transitions>
+              </ProgressBar>
             </StackPanel>
           </Border>
 
@@ -290,9 +312,11 @@
                                   Series="{Binding WeightChartSeries}"
                                   XAxes="{Binding XAxes}"
                                   YAxes="{Binding YAxesWeight}"
+                                  Sections="{Binding WeightMilestoneSections}"
                                   DrawMarginFrame="{Binding ChartFrame}"
                                   Background="{DynamicResource CardBrush}"
-                                  ZoomMode="None" />
+                                  ZoomMode="None"
+                                  AnimationsSpeed="0:0:0.3" />
             </StackPanel>
           </Border>
 
@@ -513,7 +537,8 @@
                                     Sections="{Binding BmiSections}"
                                     DrawMarginFrame="{Binding ChartFrame}"
                                     Background="{DynamicResource CardBrush}"
-                                    ZoomMode="None" />
+                                    ZoomMode="None"
+                                  AnimationsSpeed="0:0:0.3" />
                 <TextBlock Text="{loc:Translate HealthyBmiRange}" Classes="Caption"
                            HorizontalAlignment="Center" />
               </StackPanel>
@@ -638,7 +663,8 @@
                                   YAxes="{Binding YAxesBodyFat}"
                                   DrawMarginFrame="{Binding ChartFrame}"
                                   Background="{DynamicResource CardBrush}"
-                                  ZoomMode="None" />
+                                  ZoomMode="None"
+                                  AnimationsSpeed="0:0:0.3" />
             </Border>
 
             <!-- Body Fat Entries -->
@@ -754,7 +780,13 @@
                   <ProgressBar Value="{Binding WaterProgress}"
                                Maximum="1"
                                Foreground="#06B6D4"
-                               Height="14" />
+                               Height="14">
+                    <ProgressBar.Transitions>
+                      <Transitions>
+                        <DoubleTransition Property="Value" Duration="0:0:0.5" Easing="CubicEaseOut" />
+                      </Transitions>
+                    </ProgressBar.Transitions>
+                  </ProgressBar>
                   <TextBlock Grid.Column="1"
                              Text="{Binding TodayWater, StringFormat='{}{0:F0} ml'}"
                              FontSize="18" FontWeight="Bold"
@@ -1046,7 +1078,8 @@
                                   YAxes="{Binding WeeklyYAxes}"
                                   DrawMarginFrame="{Binding ChartFrame}"
                                   Background="{DynamicResource CardBrush}"
-                                  ZoomMode="None" />
+                                  ZoomMode="None"
+                                  AnimationsSpeed="0:0:0.3" />
             </StackPanel>
           </Border>
 

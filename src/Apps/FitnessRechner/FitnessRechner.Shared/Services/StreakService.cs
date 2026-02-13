@@ -106,6 +106,20 @@ public class StreakService
     }
 
     /// <summary>
+    /// Gibt alle aktiven Tage zurück (Tage an denen geloggt wurde).
+    /// Wird für die Heatmap-Kalender-Anzeige benötigt.
+    /// </summary>
+    public HashSet<DateTime> GetLoggedDates(IReadOnlyList<DateTime> trackingDates, IReadOnlyList<DateTime> foodLogDates)
+    {
+        var result = new HashSet<DateTime>();
+        foreach (var d in trackingDates)
+            result.Add(d.Date);
+        foreach (var d in foodLogDates)
+            result.Add(d.Date);
+        return result;
+    }
+
+    /// <summary>
     /// Nächster Meilenstein ab aktuellem Streak.
     /// </summary>
     public int NextMilestone

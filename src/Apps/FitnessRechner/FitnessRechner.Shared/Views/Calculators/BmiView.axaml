@@ -3,6 +3,8 @@
              xmlns:vm="using:FitnessRechner.ViewModels.Calculators"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="FitnessRechner.Views.Calculators.BmiView"
              x:DataType="vm:BmiViewModel">
 
@@ -77,12 +79,15 @@
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}" />
 
-            <!-- BMI Value (large) -->
-            <TextBlock Text="{Binding BmiDisplay}"
-                       FontSize="36" FontWeight="Bold"
+            <!-- BMI Value (large) mit CountUp-Animation -->
+            <TextBlock FontSize="36" FontWeight="Bold"
                        Foreground="{DynamicResource AccentBrush}"
                        HorizontalAlignment="Center"
-                       Margin="0,8" />
+                       Margin="0,8">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:CountUpBehavior TargetValue="{Binding BmiValue}" Format="F1" Duration="500" />
+              </i:Interaction.Behaviors>
+            </TextBlock>
 
             <!-- Category -->
             <Grid ColumnDefinitions="*,Auto">

@@ -173,6 +173,32 @@ public partial class ProgressViewModel : ObservableObject, IDisposable
         ? (WeightStats.TrendValue >= 0 ? $"+{WeightStats.TrendValue:F1}" : $"{WeightStats.TrendValue:F1}")
         : "-";
 
+    // Trend-Pfeil: Richtung, Icon und Farbe basierend auf TrendValue
+    public string WeightTrendIcon => WeightStats == null ? "TrendingFlat" : WeightStats.TrendValue switch
+    {
+        > 0.1 => "TrendingUp",
+        < -0.1 => "TrendingDown",
+        _ => "TrendingFlat"
+    };
+
+    public string WeightTrendColor => WeightStats == null ? "#EAB308" : WeightStats.TrendValue switch
+    {
+        > 0.1 => "#EF4444",   // Rot = zunehmen
+        < -0.1 => "#22C55E",  // Grün = abnehmen
+        _ => "#EAB308"         // Gelb = stabil
+    };
+
+    public string WeightTrendLabel => WeightStats == null ? "" : WeightStats.TrendValue switch
+    {
+        > 0.1 => AppStrings.TrendUp,
+        < -0.1 => AppStrings.TrendDown,
+        _ => AppStrings.TrendFlat
+    };
+
+    // Meilenstein-Markierungen im Weight-Chart (vertikale Linien bei ganzen kg-Wechseln)
+    [ObservableProperty]
+    private RectangularSection[] _weightMilestoneSections = [];
+
     #endregion
 
     #region Body Tab (BMI + BodyFat)
@@ -1213,9 +1239,13 @@ public partial class ProgressViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(WeightCurrentDisplay));
         OnPropertyChanged(nameof(WeightAverageDisplay));
         OnPropertyChanged(nameof(WeightTrendDisplay));
+        OnPropertyChanged(nameof(WeightTrendIcon));
+        OnPropertyChanged(nameof(WeightTrendColor));
+        OnPropertyChanged(nameof(WeightTrendLabel));
 
         UpdateWeightGoalStatus();
         UpdateWeightChart();
+        UpdateWeightMilestones();
     }
 
     private async Task LoadBodyDataAsync()
@@ -1569,6 +1599,50 @@ public partial class ProgressViewModel : ObservableObject, IDisposable
         {
             WeightGoalStatusText = string.Format(AppStrings.WeightRemaining, $"{remaining:F1}");
         }
+    }
+
+    /// <summary>
+    /// Berechnet Meilenstein-Markierungen im Weight-Chart.
+    /// Vertikale Linien an Tagen wo ein ganzes Kilo unterschritten wurde.
+    /// </summary>
+    private void UpdateWeightMilestones()
+    {
+        if (WeightEntries.Count < 2)
+        {
+            WeightMilestoneSections = [];
+            return;
+        }
+
+        var sorted = WeightEntries.OrderBy(e => e.Date).ToList();
+        var sections = new List<RectangularSection>();
+        var markedKgs = new HashSet<int>();
+
+        for (int i = 1; i < sorted.Count; i++)
+        {
+            var prev = sorted[i - 1].Value;
+            var curr = sorted[i].Value;
+
+            // Abwärts: ganzes Kilo unterschritten
+            if (curr < prev)
+            {
+                var upperKg = (int)Math.Floor(prev);
+                var lowerKg = (int)Math.Ceiling(curr);
+                for (int kg = upperKg; kg > lowerKg && kg > 0; kg--)
+                {
+                    if (markedKgs.Add(kg))
+                    {
+                        sections.Add(new RectangularSection
+                        {
+                            Xi = sorted[i].Date.Ticks,
+                            Xj = sorted[i].Date.Ticks,
+                            Stroke = new SolidColorPaint(new SKColor(139, 92, 246, 60)) { StrokeThickness = 1 }
+                        });
+                    }
+                }
+            }
+        }
+
+        WeightMilestoneSections = sections.ToArray();
     }
 
     private void GroupMealsByType(List<FoodLogEntry> meals)

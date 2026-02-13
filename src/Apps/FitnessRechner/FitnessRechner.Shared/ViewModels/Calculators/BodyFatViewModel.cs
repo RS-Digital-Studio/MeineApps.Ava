@@ -60,11 +60,13 @@ public partial class BodyFatViewModel : ObservableObject
     }
 
     public string BodyFatDisplay => Result != null ? $"{Result.BodyFatPercent:F1} %" : "";
+    public double BodyFatValue => Result?.BodyFatPercent ?? 0;
     public string CategoryDisplay => Result != null ? GetCategoryText(Result.Category) : "";
 
     partial void OnResultChanged(BodyFatResult? value)
     {
         OnPropertyChanged(nameof(BodyFatDisplay));
+        OnPropertyChanged(nameof(BodyFatValue));
         OnPropertyChanged(nameof(CategoryDisplay));
     }
 

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using FitnessRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
@@ -12,6 +13,9 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly IThemeService _themeService;
     private readonly ILocalizationService _localizationService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IHapticService _hapticService;
+    private readonly IFitnessSoundService _soundService;
+    private readonly IReminderService _reminderService;
 
     /// <summary>
     /// Raised when the VM wants to navigate (e.g. go back)
@@ -36,15 +40,30 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public SettingsViewModel(
         IThemeService themeService,
         ILocalizationService localizationService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IHapticService hapticService,
+        IFitnessSoundService soundService,
+        IReminderService reminderService)
     {
         _themeService = themeService;
         _localizationService = localizationService;
         _purchaseService = purchaseService;
+        _hapticService = hapticService;
+        _soundService = soundService;
+        _reminderService = reminderService;
 
         _selectedTheme = _themeService.CurrentTheme;
         _selectedLanguage = _localizationService.CurrentLanguage;
         _isPremium = _purchaseService.IsPremium;
+
+        // Haptic/Sound-Status aus Service laden
+        _isHapticEnabled = _hapticService.IsEnabled;
+        _isSoundEnabled = _soundService.IsEnabled;
+
+        // Reminder-Status laden
+        _isWaterReminderEnabled = _reminderService.IsWaterReminderEnabled;
+        _isWeightReminderEnabled = _reminderService.IsWeightReminderEnabled;
+        _isEveningSummaryEnabled = _reminderService.IsEveningSummaryEnabled;
 
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
     }
@@ -130,6 +149,57 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(IsAuroraSelected));
         OnPropertyChanged(nameof(IsDaylightSelected));
         OnPropertyChanged(nameof(IsForestSelected));
+    }
+
+    #endregion
+
+    #region Haptic & Sound
+
+    [ObservableProperty]
+    private bool _isHapticEnabled;
+
+    [ObservableProperty]
+    private bool _isSoundEnabled;
+
+    partial void OnIsHapticEnabledChanged(bool value)
+    {
+        _hapticService.IsEnabled = value;
+    }
+
+    partial void OnIsSoundEnabledChanged(bool value)
+    {
+        _soundService.IsEnabled = value;
+    }
+
+    #endregion
+
+    #region Reminders
+
+    [ObservableProperty]
+    private bool _isWaterReminderEnabled;
+
+    [ObservableProperty]
+    private bool _isWeightReminderEnabled;
+
+    [ObservableProperty]
+    private bool _isEveningSummaryEnabled;
+
+    partial void OnIsWaterReminderEnabledChanged(bool value)
+    {
+        _reminderService.IsWaterReminderEnabled = value;
+        _reminderService.UpdateSchedule();
+    }
+
+    partial void OnIsWeightReminderEnabledChanged(bool value)
+    {
+        _reminderService.IsWeightReminderEnabled = value;
+        _reminderService.UpdateSchedule();
+    }
+
+    partial void OnIsEveningSummaryEnabledChanged(bool value)
+    {
+        _reminderService.IsEveningSummaryEnabled = value;
+        _reminderService.UpdateSchedule();
     }
 
     #endregion

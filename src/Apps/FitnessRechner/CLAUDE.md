@@ -74,11 +74,32 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 - `PreferenceKeys.cs` im Shared-Projekt: Alle Preference-Keys + Konstanten (UndoTimeoutMs=5000) zentral definiert
 - Alle ViewModels + ScanLimitService + StreakService referenzieren PreferenceKeys statt lokaler Konstanten
 - Streak-Keys: `streak_current`, `streak_best`, `streak_last_log_date`
+- Gamification-Keys: `fitness_xp`, `fitness_level`, `achievements_unlocked`, `achievements_progress`, `challenge_completed_date`, `total_meals_logged`, `total_barcodes_scanned`, `distinct_foods_tracked`, `calculators_used_mask`
 
 ### Quick-Add Kalorien
 - Blitz-Button im FoodSearch-Header → Quick-Add Panel (Orange Gradient)
 - Kalorien direkt eingeben ohne Food-Suche, optionaler Name, Mahlzeit-Auswahl
 - `FoodSearchViewModel.ConfirmQuickAdd()` → `FoodLogEntry` mit Grams=0
+
+### Gamification (Phase 5)
+- **AchievementService**: 20 Achievements in 5 Kategorien (Tracking/Ernährung/Wasser/Körper/Special), Preferences-basiert (JSON), `AchievementUnlocked`-Event
+- **LevelService**: XP-System (Max Level 50), Formel `XpForLevel(n) = 100*n*(n+1)/2`, Preferences-basiert, `LevelUp`-Event
+- **ChallengeService**: 10 tägliche Challenges (rotierend nach DayOfYear), `ChallengeCompleted`-Event
+- **AchievementsView**: Fullscreen-Overlay (WrapPanel Grid), freigeschaltet=Gradient-Icon, gesperrt=grau+Fortschrittsbalken
+- **LocalizeKeyConverter**: Konvertiert RESX-Keys in lokalisierte Texte (für Achievement-Titel/Beschreibungen in DataTemplates)
+- **Dashboard-Elemente**: XP/Level-Bar, Daily Challenge Card (lila Gradient), Badge-Reihe (letzte 3), Wochenvergleich-Card (Kalorien/Wasser/Gewicht/Logging-Tage)
+- **XP-Vergabe**: Gewicht +10, Mahlzeit +5, Wasser +3, Rechner +2, Achievement +50-200, Challenge +25-50
+- **Calculator-Bitmask**: 5 Rechner als Bit-Flags (BMI=1, Calories=2, Water=4, IdealWeight=8, BodyFat=16) für "Alle benutzt"-Achievement
+
+### Polish & Platform Features (Phase 6)
+- **IHapticService**: Tick/Click/HeavyClick, IsEnabled Toggle in Settings, Android: Vibrator + HapticFeedback Fallback
+- **IFitnessSoundService**: PlaySuccess (System-Notification-Sound), IsEnabled Toggle in Settings, Android: MediaPlayer
+- **IReminderService / ReminderService**: 3 Erinnerungstypen (Wasser alle 2h, Gewicht täglich, Abend-Zusammenfassung), Preferences-basiert
+- **AndroidReminderService**: AlarmManager + NotificationChannel + ReminderReceiver BroadcastReceiver
+- **Haptic-Trigger**: Quick-Add=Tick, Speichern=Click, Achievement/Level-Up/Ziel-Erreichung=HeavyClick
+- **Sound-Trigger**: Achievement, Level-Up, Challenge, Wasser-Ziel, Streak-Meilenstein
+- **Abend-Zusammenfassung**: Dashboard-Card nach 20 Uhr (Kalorien|Wasser|Gewicht + Bewertung: Super/Gut/Morgen besser)
+- **Settings-Toggles**: Haptic, Sound, 3 Reminder (Wasser/Gewicht/Abend) mit ToggleSwitch
 
 ### Dashboard Fortschrittsbalken
 - Kalorien + Wasser Cards haben ProgressBar (4px, farbig passend zur Card)
@@ -93,6 +114,12 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 
 ## Changelog (Highlights)
 
+- **13.02.2026 (10)**: Phase 6 Polish: IHapticService (Tick/Click/HeavyClick, Android Vibrator), IFitnessSoundService (System-Sound bei Erfolgen), IReminderService (3 Typen: Wasser/Gewicht/Abend, AlarmManager + NotificationChannel), Abend-Zusammenfassung Dashboard-Card (nach 20 Uhr), Settings-Toggles (Haptic/Sound/3 Reminders). 10 neue RESX-Keys in 6 Sprachen.
+- **13.02.2026 (9)**: Phase 5 Gamification: AchievementService (20 Badges in 5 Kategorien), LevelService (XP/Level-System, Max 50), ChallengeService (10 tägliche Challenges), AchievementsView Fullscreen-Overlay, Dashboard XP-Bar + Challenge-Card + Badge-Reihe + Wochenvergleich, LocalizeKeyConverter, 73 neue RESX-Keys in 6 Sprachen.
+- **13.02.2026 (8)**: Phase 4 Charts: HeatmapCalendar Control (Aktivitäts-Heatmap wie GitHub), Trend-Pfeil (TrendingUp/Down/Flat mit Puls-Animation), Chart-Morphing (AnimationsSpeed 300ms), StreakService.GetActivityDates(). 8 neue RESX-Keys.
+- **13.02.2026 (7)**: Phase 3 Food Search UX: SkeletonLoader (Shimmer-Animation), FoodCategory-Icons + Farben (7 Kategorien), SwipeToRevealBehavior (Slide-to-Delete), Recent Foods Chips. 3 neue RESX-Keys.
+- **13.02.2026 (6)**: Phase 2 Dashboard Redesign: CircularProgress Ringe (Wasser grün, Kalorien orange), Tages-Score Ring (kombinierter Fortschritt), Motivationszitate (15, täglich wechselnd). 20 neue RESX-Keys.
+- **13.02.2026 (5)**: Phase 1 Animationen: CountUpBehavior, StaggerFadeInBehavior, Page-Slide-Transition, ProgressBar smooth, Streak-Flamme Puls, TapScaleBehavior auf allen Cards.
 - **13.02.2026 (4)**: Dashboard-Fixes: ProgressBar bei Value=0 ausgeblendet (HasWaterProgress/HasCalorieProgress), Streak FloatingText bei jedem täglichen Update (nicht nur Meilensteinen), Dashboard Quick-Add (3 Buttons: +kg Gewicht-Panel, +250ml Wasser direkt, +kcal wechselt zu FoodSearch). 2 neue RESX-Keys (StreakIncreased, QuickAddWeight) in 6 Sprachen.
 - **13.02.2026 (3)**: Double-Back-to-Exit (Android): Zurück-Taste navigiert stufenweise zurück (Calculator schließen → Overlay schließen → Home-Tab), erst bei doppeltem Drücken innerhalb 2s wird App beendet (Toast-Hinweis). TryGoBack() in MainViewModel, OnBackPressed() in MainActivity, PressBackAgainToExit RESX-Key in 6 Sprachen.
 - **13.02.2026 (2)**: UX-Verbesserungen (7 Features): Gewichtsziel-Tracking (Ziel setzen, ProgressBar, Confetti bei Erreichen, Fortschritts-Status), Chart-Zeitraum wählbar (7T/30T/90T Toggle in Weight+Body Tabs, Preferences-persistent), Mahlzeiten nach Typ gruppiert (Frühstück/Mittag/Abend/Snack mit Icons + Zwischensummen, wiederverwendbares DataTemplate), Wochen-Kalorien Balkendiagramm (ColumnSeries, 7-Tage Übersicht), Mahlzeiten von Gestern kopieren (CopyYesterdayMeals Command), Tageszeit-Begrüßung auf Dashboard (Morgen/Tag/Abend lokalisiert), Motivierende leere Zustände (Icon + Hinweistext für Weight/BMI/BodyFat/Kalorien). 22 neue RESX-Keys in 6 Sprachen.

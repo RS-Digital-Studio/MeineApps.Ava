@@ -27,6 +27,24 @@
       <Setter Property="Opacity" Value="1" />
       <Setter Property="IsHitTestVisible" Value="True" />
     </Style>
+
+    <!-- Calculator Slide-In Transition -->
+    <Style Selector="Panel.CalculatorOverlay">
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.25" Easing="CubicEaseOut" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.2" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Panel.CalculatorOverlay.Open">
+      <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Panel.CalculatorOverlay:not(.Open)">
+      <Setter Property="RenderTransform" Value="translate(400px, 0px)" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
   </UserControl.Styles>
 
   <UserControl.DataTemplates>
@@ -76,10 +94,20 @@
         <views:SettingsView DataContext="{Binding SettingsViewModel}" />
       </Border>
 
-      <!-- Calculator Page Overlay -->
-      <Panel IsVisible="{Binding IsCalculatorOpen}"
+      <!-- Calculator Page Overlay (Slide-In von rechts) -->
+      <Panel Classes="CalculatorOverlay"
+             Classes.Open="{Binding IsCalculatorOpen}"
+             IsVisible="{Binding IsCalculatorOpen}"
              Background="{DynamicResource BackgroundBrush}">
         <ContentControl Content="{Binding CurrentCalculatorVm}" />
+      </Panel>
+
+      <!-- Achievements Overlay (Fullscreen) -->
+      <Panel Classes="CalculatorOverlay"
+             Classes.Open="{Binding ShowAchievements}"
+             IsVisible="{Binding ShowAchievements}"
+             Background="{DynamicResource BackgroundBrush}">
+        <views:AchievementsView DataContext="{Binding}" />
       </Panel>
     </Panel>
 

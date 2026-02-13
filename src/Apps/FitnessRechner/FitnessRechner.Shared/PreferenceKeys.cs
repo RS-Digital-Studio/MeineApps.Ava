@@ -30,6 +30,19 @@ public static class PreferenceKeys
     public const string ChartDays = "chart_days";
     public const int DefaultChartDays = 30;
 
+    // Gamification
+    public const string FitnessXp = "fitness_xp";
+    public const string FitnessLevel = "fitness_level";
+    public const string AchievementsUnlocked = "achievements_unlocked";
+    public const string AchievementsProgress = "achievements_progress";
+    public const string ChallengeCompletedDate = "challenge_completed_date";
+
+    // Gamification-Zähler (kumulativ, nie zurückgesetzt)
+    public const string TotalMealsLogged = "total_meals_logged";
+    public const string TotalBarcodesScanned = "total_barcodes_scanned";
+    public const string DistinctFoodsTracked = "distinct_foods_tracked";
+    public const string CalculatorsUsedMask = "calculators_used_mask";
+
     // UI-Konstanten
     public const int UndoTimeoutMs = 5000;
 }

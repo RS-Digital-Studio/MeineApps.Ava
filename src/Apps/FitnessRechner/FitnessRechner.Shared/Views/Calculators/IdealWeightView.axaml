@@ -3,6 +3,8 @@
              xmlns:vm="using:FitnessRechner.ViewModels.Calculators"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="FitnessRechner.Views.Calculators.IdealWeightView"
              x:DataType="vm:IdealWeightViewModel">
 
@@ -93,11 +95,14 @@
                        Foreground="{DynamicResource PrimaryBrush}" />
 
             <!-- Average Ideal Weight (large) -->
-            <TextBlock Text="{Binding AverageIdealDisplay}"
-                       FontSize="36" FontWeight="Bold"
+            <TextBlock FontSize="36" FontWeight="Bold"
                        Foreground="{DynamicResource AccentBrush}"
                        HorizontalAlignment="Center"
-                       Margin="0,8" />
+                       Margin="0,8">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:CountUpBehavior TargetValue="{Binding AverageIdealValue}" Format="F1" Suffix=" kg" Duration="500" />
+              </i:Interaction.Behaviors>
+            </TextBlock>
 
             <!-- Separator -->
             <Border Height="1" Background="{DynamicResource CardBorderBrush}" Margin="0,4" />

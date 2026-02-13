@@ -1862,5 +1862,611 @@ namespace FitnessRechner.Resources.Strings {
                 return ResourceManager.GetString("QuickAddWeight", resourceCulture);
             }
         }
+
+        public static string DailyProgress {
+            get {
+                return ResourceManager.GetString("DailyProgress", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote1 {
+            get {
+                return ResourceManager.GetString("MotivQuote1", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote2 {
+            get {
+                return ResourceManager.GetString("MotivQuote2", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote3 {
+            get {
+                return ResourceManager.GetString("MotivQuote3", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote4 {
+            get {
+                return ResourceManager.GetString("MotivQuote4", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote5 {
+            get {
+                return ResourceManager.GetString("MotivQuote5", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote6 {
+            get {
+                return ResourceManager.GetString("MotivQuote6", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote7 {
+            get {
+                return ResourceManager.GetString("MotivQuote7", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote8 {
+            get {
+                return ResourceManager.GetString("MotivQuote8", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote9 {
+            get {
+                return ResourceManager.GetString("MotivQuote9", resourceCulture);
+            }
+        }
+
+        public static string MotivQuote10 {
+            get {
+                return ResourceManager.GetString("MotivQuote10", resourceCulture);
+            }
+        }
+
+        public static string TrendUp {
+            get {
+                return ResourceManager.GetString("TrendUp", resourceCulture);
+            }
+        }
+
+        public static string TrendDown {
+            get {
+                return ResourceManager.GetString("TrendDown", resourceCulture);
+            }
+        }
+
+        public static string TrendFlat {
+            get {
+                return ResourceManager.GetString("TrendFlat", resourceCulture);
+            }
+        }
+
+        public static string ActivityCalendar {
+            get {
+                return ResourceManager.GetString("ActivityCalendar", resourceCulture);
+            }
+        }
+
+        public static string LessActive {
+            get {
+                return ResourceManager.GetString("LessActive", resourceCulture);
+            }
+        }
+
+        public static string MoreActive {
+            get {
+                return ResourceManager.GetString("MoreActive", resourceCulture);
+            }
+        }
+
+        public static string Milestones {
+            get {
+                return ResourceManager.GetString("Milestones", resourceCulture);
+            }
+        }
+
+        public static string AchFirstLog {
+            get {
+                return ResourceManager.GetString("AchFirstLog", resourceCulture);
+            }
+        }
+
+        public static string AchWeekStreak {
+            get {
+                return ResourceManager.GetString("AchWeekStreak", resourceCulture);
+            }
+        }
+
+        public static string AchMonthStreak {
+            get {
+                return ResourceManager.GetString("AchMonthStreak", resourceCulture);
+            }
+        }
+
+        public static string AchQuarterStreak {
+            get {
+                return ResourceManager.GetString("AchQuarterStreak", resourceCulture);
+            }
+        }
+
+        public static string AchYearStreak {
+            get {
+                return ResourceManager.GetString("AchYearStreak", resourceCulture);
+            }
+        }
+
+        public static string AchGourmet {
+            get {
+                return ResourceManager.GetString("AchGourmet", resourceCulture);
+            }
+        }
+
+        public static string AchMealMaster {
+            get {
+                return ResourceManager.GetString("AchMealMaster", resourceCulture);
+            }
+        }
+
+        public static string AchBarcodeScanner {
+            get {
+                return ResourceManager.GetString("AchBarcodeScanner", resourceCulture);
+            }
+        }
+
+        public static string AchRecipeChef {
+            get {
+                return ResourceManager.GetString("AchRecipeChef", resourceCulture);
+            }
+        }
+
+        public static string AchCaloriePro {
+            get {
+                return ResourceManager.GetString("AchCaloriePro", resourceCulture);
+            }
+        }
+
+        public static string AchFirstWater {
+            get {
+                return ResourceManager.GetString("AchFirstWater", resourceCulture);
+            }
+        }
+
+        public static string AchHydrationHero {
+            get {
+                return ResourceManager.GetString("AchHydrationHero", resourceCulture);
+            }
+        }
+
+        public static string AchAquaMaster {
+            get {
+                return ResourceManager.GetString("AchAquaMaster", resourceCulture);
+            }
+        }
+
+        public static string AchOceanConqueror {
+            get {
+                return ResourceManager.GetString("AchOceanConqueror", resourceCulture);
+            }
+        }
+
+        public static string AchScaleFriend {
+            get {
+                return ResourceManager.GetString("AchScaleFriend", resourceCulture);
+            }
+        }
+
+        public static string AchTransformation {
+            get {
+                return ResourceManager.GetString("AchTransformation", resourceCulture);
+            }
+        }
+
+        public static string AchBodyConscious {
+            get {
+                return ResourceManager.GetString("AchBodyConscious", resourceCulture);
+            }
+        }
+
+        public static string AchPremiumAthlete {
+            get {
+                return ResourceManager.GetString("AchPremiumAthlete", resourceCulture);
+            }
+        }
+
+        public static string AchNightOwl {
+            get {
+                return ResourceManager.GetString("AchNightOwl", resourceCulture);
+            }
+        }
+
+        public static string AchEarlyBird {
+            get {
+                return ResourceManager.GetString("AchEarlyBird", resourceCulture);
+            }
+        }
+
+        public static string AchFirstLogDesc {
+            get {
+                return ResourceManager.GetString("AchFirstLogDesc", resourceCulture);
+            }
+        }
+
+        public static string AchWeekStreakDesc {
+            get {
+                return ResourceManager.GetString("AchWeekStreakDesc", resourceCulture);
+            }
+        }
+
+        public static string AchMonthStreakDesc {
+            get {
+                return ResourceManager.GetString("AchMonthStreakDesc", resourceCulture);
+            }
+        }
+
+        public static string AchQuarterStreakDesc {
+            get {
+                return ResourceManager.GetString("AchQuarterStreakDesc", resourceCulture);
+            }
+        }
+
+        public static string AchYearStreakDesc {
+            get {
+                return ResourceManager.GetString("AchYearStreakDesc", resourceCulture);
+            }
+        }
+
+        public static string AchGourmetDesc {
+            get {
+                return ResourceManager.GetString("AchGourmetDesc", resourceCulture);
+            }
+        }
+
+        public static string AchMealMasterDesc {
+            get {
+                return ResourceManager.GetString("AchMealMasterDesc", resourceCulture);
+            }
+        }
+
+        public static string AchBarcodeScannerDesc {
+            get {
+                return ResourceManager.GetString("AchBarcodeScannerDesc", resourceCulture);
+            }
+        }
+
+        public static string AchRecipeChefDesc {
+            get {
+                return ResourceManager.GetString("AchRecipeChefDesc", resourceCulture);
+            }
+        }
+
+        public static string AchCalorieProDesc {
+            get {
+                return ResourceManager.GetString("AchCalorieProDesc", resourceCulture);
+            }
+        }
+
+        public static string AchFirstWaterDesc {
+            get {
+                return ResourceManager.GetString("AchFirstWaterDesc", resourceCulture);
+            }
+        }
+
+        public static string AchHydrationHeroDesc {
+            get {
+                return ResourceManager.GetString("AchHydrationHeroDesc", resourceCulture);
+            }
+        }
+
+        public static string AchAquaMasterDesc {
+            get {
+                return ResourceManager.GetString("AchAquaMasterDesc", resourceCulture);
+            }
+        }
+
+        public static string AchOceanConquerorDesc {
+            get {
+                return ResourceManager.GetString("AchOceanConquerorDesc", resourceCulture);
+            }
+        }
+
+        public static string AchScaleFriendDesc {
+            get {
+                return ResourceManager.GetString("AchScaleFriendDesc", resourceCulture);
+            }
+        }
+
+        public static string AchTransformationDesc {
+            get {
+                return ResourceManager.GetString("AchTransformationDesc", resourceCulture);
+            }
+        }
+
+        public static string AchBodyConsciousDesc {
+            get {
+                return ResourceManager.GetString("AchBodyConsciousDesc", resourceCulture);
+            }
+        }
+
+        public static string AchPremiumAthleteDesc {
+            get {
+                return ResourceManager.GetString("AchPremiumAthleteDesc", resourceCulture);
+            }
+        }
+
+        public static string AchNightOwlDesc {
+            get {
+                return ResourceManager.GetString("AchNightOwlDesc", resourceCulture);
+            }
+        }
+
+        public static string AchEarlyBirdDesc {
+            get {
+                return ResourceManager.GetString("AchEarlyBirdDesc", resourceCulture);
+            }
+        }
+
+        public static string ChallWater8 {
+            get {
+                return ResourceManager.GetString("ChallWater8", resourceCulture);
+            }
+        }
+
+        public static string ChallLog3Meals {
+            get {
+                return ResourceManager.GetString("ChallLog3Meals", resourceCulture);
+            }
+        }
+
+        public static string ChallWeighToday {
+            get {
+                return ResourceManager.GetString("ChallWeighToday", resourceCulture);
+            }
+        }
+
+        public static string ChallUnderCalorie {
+            get {
+                return ResourceManager.GetString("ChallUnderCalorie", resourceCulture);
+            }
+        }
+
+        public static string ChallAllMainMeals {
+            get {
+                return ResourceManager.GetString("ChallAllMainMeals", resourceCulture);
+            }
+        }
+
+        public static string ChallProtein100 {
+            get {
+                return ResourceManager.GetString("ChallProtein100", resourceCulture);
+            }
+        }
+
+        public static string ChallTrack5Foods {
+            get {
+                return ResourceManager.GetString("ChallTrack5Foods", resourceCulture);
+            }
+        }
+
+        public static string ChallWaterBefore16 {
+            get {
+                return ResourceManager.GetString("ChallWaterBefore16", resourceCulture);
+            }
+        }
+
+        public static string ChallCalcBmi {
+            get {
+                return ResourceManager.GetString("ChallCalcBmi", resourceCulture);
+            }
+        }
+
+        public static string ChallScanBarcode {
+            get {
+                return ResourceManager.GetString("ChallScanBarcode", resourceCulture);
+            }
+        }
+
+        public static string ChallWater8Desc {
+            get {
+                return ResourceManager.GetString("ChallWater8Desc", resourceCulture);
+            }
+        }
+
+        public static string ChallLog3MealsDesc {
+            get {
+                return ResourceManager.GetString("ChallLog3MealsDesc", resourceCulture);
+            }
+        }
+
+        public static string ChallWeighTodayDesc {
+            get {
+                return ResourceManager.GetString("ChallWeighTodayDesc", resourceCulture);
+            }
+        }
+
+        public static string ChallUnderCalorieDesc {
+            get {
+                return ResourceManager.GetString("ChallUnderCalorieDesc", resourceCulture);
+            }
+        }
+
+        public static string ChallAllMainMealsDesc {
+            get {
+                return ResourceManager.GetString("ChallAllMainMealsDesc", resourceCulture);
+            }
+        }
+
+        public static string ChallProtein100Desc {
+            get {
+                return ResourceManager.GetString("ChallProtein100Desc", resourceCulture);
+            }
+        }
+
+        public static string ChallTrack5FoodsDesc {
+            get {
+                return ResourceManager.GetString("ChallTrack5FoodsDesc", resourceCulture);
+            }
+        }
+
+        public static string ChallWaterBefore16Desc {
+            get {
+                return ResourceManager.GetString("ChallWaterBefore16Desc", resourceCulture);
+            }
+        }
+
+        public static string ChallCalcBmiDesc {
+            get {
+                return ResourceManager.GetString("ChallCalcBmiDesc", resourceCulture);
+            }
+        }
+
+        public static string ChallScanBarcodeDesc {
+            get {
+                return ResourceManager.GetString("ChallScanBarcodeDesc", resourceCulture);
+            }
+        }
+
+        public static string Level {
+            get {
+                return ResourceManager.GetString("Level", resourceCulture);
+            }
+        }
+
+        public static string DailyChallenge {
+            get {
+                return ResourceManager.GetString("DailyChallenge", resourceCulture);
+            }
+        }
+
+        public static string ChallengeCompleted {
+            get {
+                return ResourceManager.GetString("ChallengeCompleted", resourceCulture);
+            }
+        }
+
+        public static string AchievementUnlockedText {
+            get {
+                return ResourceManager.GetString("AchievementUnlockedText", resourceCulture);
+            }
+        }
+
+        public static string LevelUpText {
+            get {
+                return ResourceManager.GetString("LevelUpText", resourceCulture);
+            }
+        }
+
+        public static string AchievementsTitle {
+            get {
+                return ResourceManager.GetString("AchievementsTitle", resourceCulture);
+            }
+        }
+
+        public static string Badges {
+            get {
+                return ResourceManager.GetString("Badges", resourceCulture);
+            }
+        }
+
+        public static string ShowAll {
+            get {
+                return ResourceManager.GetString("ShowAll", resourceCulture);
+            }
+        }
+
+        public static string WeeklyComparison {
+            get {
+                return ResourceManager.GetString("WeeklyComparison", resourceCulture);
+            }
+        }
+
+        public static string ThisWeek {
+            get {
+                return ResourceManager.GetString("ThisWeek", resourceCulture);
+            }
+        }
+
+        public static string LastWeek {
+            get {
+                return ResourceManager.GetString("LastWeek", resourceCulture);
+            }
+        }
+
+        public static string LoggingDays {
+            get {
+                return ResourceManager.GetString("LoggingDays", resourceCulture);
+            }
+        }
+
+        public static string Locked {
+            get {
+                return ResourceManager.GetString("Locked", resourceCulture);
+            }
+        }
+
+        public static string SettingsNotifications {
+            get {
+                return ResourceManager.GetString("SettingsNotifications", resourceCulture);
+            }
+        }
+
+        public static string HapticFeedback {
+            get {
+                return ResourceManager.GetString("HapticFeedback", resourceCulture);
+            }
+        }
+
+        public static string SoundEffects {
+            get {
+                return ResourceManager.GetString("SoundEffects", resourceCulture);
+            }
+        }
+
+        public static string WaterReminder {
+            get {
+                return ResourceManager.GetString("WaterReminder", resourceCulture);
+            }
+        }
+
+        public static string WeightReminder {
+            get {
+                return ResourceManager.GetString("WeightReminder", resourceCulture);
+            }
+        }
+
+        public static string EveningReminder {
+            get {
+                return ResourceManager.GetString("EveningReminder", resourceCulture);
+            }
+        }
+
+        public static string EveningSummary {
+            get {
+                return ResourceManager.GetString("EveningSummary", resourceCulture);
+            }
+        }
+
+        public static string RatingGreatDay {
+            get {
+                return ResourceManager.GetString("RatingGreatDay", resourceCulture);
+            }
+        }
+
+        public static string RatingGoodDay {
+            get {
+                return ResourceManager.GetString("RatingGoodDay", resourceCulture);
+            }
+        }
+
+        public static string RatingTomorrowBetter {
+            get {
+                return ResourceManager.GetString("RatingTomorrowBetter", resourceCulture);
+            }
+        }
     }
 }

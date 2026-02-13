@@ -407,7 +407,7 @@
   <data name="MealSubtotal" xml:space="preserve"><value>Subtotale</value></data>
 
   <!-- Recent Foods -->
-  <data name="RecentFoods" xml:space="preserve"><value>Usati di recente</value></data>
+  <data name="RecentFoods" xml:space="preserve"><value>Recenti</value></data>
 
   <!-- Copy Meals -->
   <data name="CopyYesterday" xml:space="preserve"><value>Copia da ieri</value></data>
@@ -431,4 +431,118 @@
 
   <!-- Weekly Overview -->
   <data name="WeeklyCalories" xml:space="preserve"><value>Panoramica settimanale</value></data>
+  <!-- Phase 2: Dashboard Redesign -->
+  <data name="DailyProgress" xml:space="preserve"><value>Progresso giornaliero</value></data>
+  <data name="MotivQuote1" xml:space="preserve"><value>Ogni passo conta. Vai avanti!</value></data>
+  <data name="MotivQuote2" xml:space="preserve"><value>Il tuo corpo è il tuo strumento più importante.</value></data>
+  <data name="MotivQuote3" xml:space="preserve"><value>Piccoli cambiamenti portano a grandi risultati.</value></data>
+  <data name="MotivQuote4" xml:space="preserve"><value>Oggi è una nuova occasione per migliorare.</value></data>
+  <data name="MotivQuote5" xml:space="preserve"><value>La costanza batte la perfezione.</value></data>
+  <data name="MotivQuote6" xml:space="preserve"><value>Sei più forte di quanto pensi.</value></data>
+  <data name="MotivQuote7" xml:space="preserve"><value>Progresso, non perfezione.</value></data>
+  <data name="MotivQuote8" xml:space="preserve"><value>Ogni scelta sana è una vittoria.</value></data>
+  <data name="MotivQuote9" xml:space="preserve"><value>Il tuo futuro te ne sarà grato.</value></data>
+  <data name="MotivQuote10" xml:space="preserve"><value>Un giorno alla volta.</value></data>
+
+  <!-- Phase 4: UI Redesign -->
+  <data name="TrendUp" xml:space="preserve"><value>In aumento</value></data>
+  <data name="TrendDown" xml:space="preserve"><value>In calo</value></data>
+  <data name="TrendFlat" xml:space="preserve"><value>Stabile</value></data>
+  <data name="ActivityCalendar" xml:space="preserve"><value>Attività</value></data>
+  <data name="LessActive" xml:space="preserve"><value>Meno</value></data>
+  <data name="MoreActive" xml:space="preserve"><value>Più</value></data>
+  <data name="Milestones" xml:space="preserve"><value>Traguardi</value></data>
+
+  <!-- Achievement Titles -->
+  <data name="AchFirstLog" xml:space="preserve"><value>Primi passi</value></data>
+  <data name="AchWeekStreak" xml:space="preserve"><value>Settimana completa</value></data>
+  <data name="AchMonthStreak" xml:space="preserve"><value>Maratona mensile</value></data>
+  <data name="AchQuarterStreak" xml:space="preserve"><value>Campione trimestrale</value></data>
+  <data name="AchYearStreak" xml:space="preserve"><value>Leggenda annuale</value></data>
+  <data name="AchGourmet" xml:space="preserve"><value>Buongustaio</value></data>
+  <data name="AchMealMaster" xml:space="preserve"><value>Maestro dei pasti</value></data>
+  <data name="AchBarcodeScanner" xml:space="preserve"><value>Scanner di codici</value></data>
+  <data name="AchRecipeChef" xml:space="preserve"><value>Chef di ricette</value></data>
+  <data name="AchCaloriePro" xml:space="preserve"><value>Professionista calorie</value></data>
+  <data name="AchFirstWater" xml:space="preserve"><value>Prima fonte</value></data>
+  <data name="AchHydrationHero" xml:space="preserve"><value>Eroe dell'idratazione</value></data>
+  <data name="AchAquaMaster" xml:space="preserve"><value>Maestro dell'acqua</value></data>
+  <data name="AchOceanConqueror" xml:space="preserve"><value>Conquistatore dell'oceano</value></data>
+  <data name="AchScaleFriend" xml:space="preserve"><value>Amico della bilancia</value></data>
+  <data name="AchTransformation" xml:space="preserve"><value>Trasformazione</value></data>
+  <data name="AchBodyConscious" xml:space="preserve"><value>Consapevole del corpo</value></data>
+  <data name="AchPremiumAthlete" xml:space="preserve"><value>Atleta Premium</value></data>
+  <data name="AchNightOwl" xml:space="preserve"><value>Gufo notturno</value></data>
+  <data name="AchEarlyBird" xml:space="preserve"><value>Mattiniero</value></data>
+
+  <!-- Achievement Descriptions -->
+  <data name="AchFirstLogDesc" xml:space="preserve"><value>Registra la tua prima voce</value></data>
+  <data name="AchWeekStreakDesc" xml:space="preserve"><value>7 giorni consecutivi registrati</value></data>
+  <data name="AchMonthStreakDesc" xml:space="preserve"><value>30 giorni consecutivi registrati</value></data>
+  <data name="AchQuarterStreakDesc" xml:space="preserve"><value>90 giorni di serie raggiunti</value></data>
+  <data name="AchYearStreakDesc" xml:space="preserve"><value>365 giorni di serie raggiunti</value></data>
+  <data name="AchGourmetDesc" xml:space="preserve"><value>10 alimenti diversi registrati</value></data>
+  <data name="AchMealMasterDesc" xml:space="preserve"><value>100 pasti registrati</value></data>
+  <data name="AchBarcodeScannerDesc" xml:space="preserve"><value>10 codici a barre scansionati</value></data>
+  <data name="AchRecipeChefDesc" xml:space="preserve"><value>5 ricette create</value></data>
+  <data name="AchCalorieProDesc" xml:space="preserve"><value>Obiettivo calorie raggiunto 7 giorni</value></data>
+  <data name="AchFirstWaterDesc" xml:space="preserve"><value>Prima acqua registrata</value></data>
+  <data name="AchHydrationHeroDesc" xml:space="preserve"><value>Obiettivo acqua raggiunto 7 giorni</value></data>
+  <data name="AchAquaMasterDesc" xml:space="preserve"><value>100 litri bevuti in totale</value></data>
+  <data name="AchOceanConquerorDesc" xml:space="preserve"><value>1000 litri bevuti in totale</value></data>
+  <data name="AchScaleFriendDesc" xml:space="preserve"><value>10 voci di peso create</value></data>
+  <data name="AchTransformationDesc" xml:space="preserve"><value>Obiettivo di peso raggiunto</value></data>
+  <data name="AchBodyConsciousDesc" xml:space="preserve"><value>Usati tutti i 5 calcolatori</value></data>
+  <data name="AchPremiumAthleteDesc" xml:space="preserve"><value>Premium acquistato</value></data>
+  <data name="AchNightOwlDesc" xml:space="preserve"><value>Registrato dopo le 22</value></data>
+  <data name="AchEarlyBirdDesc" xml:space="preserve"><value>Registrato prima delle 6</value></data>
+
+  <!-- Challenge Titles -->
+  <data name="ChallWater8" xml:space="preserve"><value>8 bicchieri d'acqua</value></data>
+  <data name="ChallLog3Meals" xml:space="preserve"><value>Registra 3 pasti</value></data>
+  <data name="ChallWeighToday" xml:space="preserve"><value>Pesarsi oggi</value></data>
+  <data name="ChallUnderCalorie" xml:space="preserve"><value>Sotto l'obiettivo calorico</value></data>
+  <data name="ChallAllMainMeals" xml:space="preserve"><value>Tutti i pasti principali</value></data>
+  <data name="ChallProtein100" xml:space="preserve"><value>100g di proteine</value></data>
+  <data name="ChallTrack5Foods" xml:space="preserve"><value>Traccia 5 alimenti</value></data>
+  <data name="ChallWaterBefore16" xml:space="preserve"><value>Acqua prima delle 16</value></data>
+  <data name="ChallCalcBmi" xml:space="preserve"><value>Calcola BMI</value></data>
+  <data name="ChallScanBarcode" xml:space="preserve"><value>Scansiona un codice</value></data>
+
+  <!-- Challenge Descriptions -->
+  <data name="ChallWater8Desc" xml:space="preserve"><value>Bevi 8 bicchieri d'acqua (2000ml)</value></data>
+  <data name="ChallLog3MealsDesc" xml:space="preserve"><value>Registra 3 pasti oggi</value></data>
+  <data name="ChallWeighTodayDesc" xml:space="preserve"><value>Inserisci il tuo peso di oggi</value></data>
+  <data name="ChallUnderCalorieDesc" xml:space="preserve"><value>Resta sotto il tuo obiettivo calorico</value></data>
+  <data name="ChallAllMainMealsDesc" xml:space="preserve"><value>Registra colazione, pranzo e cena</value></data>
+  <data name="ChallProtein100Desc" xml:space="preserve"><value>Mangia oltre 100g di proteine oggi</value></data>
+  <data name="ChallTrack5FoodsDesc" xml:space="preserve"><value>Traccia almeno 5 alimenti</value></data>
+  <data name="ChallWaterBefore16Desc" xml:space="preserve"><value>Raggiungi 2L d'acqua prima delle 16</value></data>
+  <data name="ChallCalcBmiDesc" xml:space="preserve"><value>Usa il calcolatore BMI</value></data>
+  <data name="ChallScanBarcodeDesc" xml:space="preserve"><value>Scansiona un codice a barre</value></data>
+
+  <!-- Gamification UI -->
+  <data name="Level" xml:space="preserve"><value>Livello {0}</value></data>
+  <data name="DailyChallenge" xml:space="preserve"><value>Sfida giornaliera</value></data>
+  <data name="ChallengeCompleted" xml:space="preserve"><value>Completato!</value></data>
+  <data name="AchievementUnlockedText" xml:space="preserve"><value>Obiettivo sbloccato!</value></data>
+  <data name="LevelUpText" xml:space="preserve"><value>Livello aumentato!</value></data>
+  <data name="AchievementsTitle" xml:space="preserve"><value>Obiettivi</value></data>
+  <data name="Badges" xml:space="preserve"><value>Badge</value></data>
+  <data name="ShowAll" xml:space="preserve"><value>Mostra tutto</value></data>
+  <data name="WeeklyComparison" xml:space="preserve"><value>Confronto settimanale</value></data>
+  <data name="ThisWeek" xml:space="preserve"><value>Questa settimana</value></data>
+  <data name="LastWeek" xml:space="preserve"><value>Settimana scorsa</value></data>
+  <data name="LoggingDays" xml:space="preserve"><value>Giorni di registrazione</value></data>
+  <data name="Locked" xml:space="preserve"><value>Bloccato</value></data>
+  <data name="SettingsNotifications" xml:space="preserve"><value>Notifiche</value></data>
+  <data name="HapticFeedback" xml:space="preserve"><value>Feedback aptico</value></data>
+  <data name="SoundEffects" xml:space="preserve"><value>Effetti sonori</value></data>
+  <data name="WaterReminder" xml:space="preserve"><value>Promemoria acqua</value></data>
+  <data name="WeightReminder" xml:space="preserve"><value>Promemoria peso</value></data>
+  <data name="EveningReminder" xml:space="preserve"><value>Riepilogo serale</value></data>
+  <data name="EveningSummary" xml:space="preserve"><value>Riepilogo del giorno</value></data>
+  <data name="RatingGreatDay" xml:space="preserve"><value>Ottima giornata!</value></data>
+  <data name="RatingGoodDay" xml:space="preserve"><value>Buona giornata!</value></data>
+  <data name="RatingTomorrowBetter" xml:space="preserve"><value>Domani andrà meglio!</value></data>
 </root>

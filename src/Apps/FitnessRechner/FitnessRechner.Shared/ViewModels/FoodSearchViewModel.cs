@@ -145,6 +145,10 @@ public partial class FoodSearchViewModel : ObservableObject, IDisposable
     [ObservableProperty] private bool _hasFavorites;
     [ObservableProperty] private bool _isSelectedFoodFavorite;
 
+    // Letzte Einträge (Chips über Suchergebnissen)
+    [ObservableProperty] private ObservableCollection<FoodItem> _recentFoods = [];
+    [ObservableProperty] private bool _hasRecentFoods;
+
     public List<string> Meals =>
     [
         AppStrings.Breakfast,
@@ -770,11 +774,54 @@ public partial class FoodSearchViewModel : ObservableObject, IDisposable
         try
         {
             await LoadFavoritesAsync();
+            await LoadRecentFoodsAsync();
             await LoadTodaySummaryAsync();
         }
         catch (Exception)
         {
             // Silently handle - data will be loaded on next appearance
+        }
+    }
+
+    /// <summary>
+    /// Lädt die letzten 5 geloggten Lebensmittel (distinct by Name) für Quick-Access Chips.
+    /// </summary>
+    private async Task LoadRecentFoodsAsync()
+    {
+        try
+        {
+            // Letzte 7 Tage durchsuchen für Recent Foods
+            var allEntries = new List<FoodLogEntry>();
+            for (var i = 0; i < 7; i++)
+            {
+                var entries = await _foodSearchService.GetFoodLogAsync(DateTime.Today.AddDays(-i));
+                allEntries.AddRange(entries);
+            }
+
+            var recentNames = allEntries
+                .OrderByDescending(e => e.Date)
+                .Select(e => e.FoodName)
+                .Where(n => !string.IsNullOrEmpty(n))
+                .Distinct()
+                .Take(5)
+                .ToList();
+
+            // FoodItems aus der Datenbank holen
+            var recentItems = new ObservableCollection<FoodItem>();
+            foreach (var name in recentNames)
+            {
+                var results = _foodSearchService.Search(name, 1);
+                var match = results.FirstOrDefault(r => r.Food.Name == name)?.Food;
+                if (match != null)
+                    recentItems.Add(match);
+            }
+
+            RecentFoods = recentItems;
+            HasRecentFoods = RecentFoods.Count > 0;
+        }
+        catch
+        {
+            // Silently handle
         }
     }
 
@@ -818,6 +865,12 @@ public partial class FoodSearchViewModel : ObservableObject, IDisposable
     private void SelectFavorite(FavoriteFoodEntry favorite)
     {
         SelectedFood = favorite.Food;
+    }
+
+    [RelayCommand]
+    private void SelectRecentFood(FoodItem food)
+    {
+        SelectedFood = food;
     }
 
     private async Task UpdateSelectedFoodFavoriteStatus()

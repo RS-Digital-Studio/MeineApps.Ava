@@ -44,6 +44,7 @@ public partial class BmiViewModel : ObservableObject
     private bool _hasResult;
 
     public string BmiDisplay => Result != null ? $"{Result.Bmi:F1}" : "";
+    public double BmiValue => Result?.Bmi ?? 0;
     public string CategoryDisplay => Result != null ? GetCategoryText(Result.Category) : "";
     public string HealthyRangeDisplay => Result != null
         ? $"{Result.MinHealthyWeight:F1} - {Result.MaxHealthyWeight:F1} kg" : "";
@@ -51,6 +52,7 @@ public partial class BmiViewModel : ObservableObject
     partial void OnResultChanged(BmiResult? value)
     {
         OnPropertyChanged(nameof(BmiDisplay));
+        OnPropertyChanged(nameof(BmiValue));
         OnPropertyChanged(nameof(CategoryDisplay));
         OnPropertyChanged(nameof(HealthyRangeDisplay));
     }

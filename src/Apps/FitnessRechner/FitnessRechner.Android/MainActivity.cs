@@ -8,6 +8,7 @@ using Avalonia;
 using Avalonia.Android;
 using FitnessRechner.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
 
@@ -61,6 +62,16 @@ public class MainActivity : AvaloniaMainActivity<App>
         // BarcodeService Factory fuer Android (CameraX + ML Kit)
         _barcodeService = new AndroidBarcodeService(this);
         App.BarcodeServiceFactory = () => _barcodeService;
+
+        // Haptic Feedback für Android (Vibrator)
+        App.HapticServiceFactory = () => new AndroidHapticService(this);
+
+        // Sound Service für Android (System-Notification-Sound)
+        App.SoundServiceFactory = () => new AndroidFitnessSoundService(this);
+
+        // Reminder Service für Android (AlarmManager + Notifications)
+        App.ReminderServiceFactory = sp =>
+            new AndroidReminderService(this, sp.GetRequiredService<IPreferencesService>());
 
         try
         {

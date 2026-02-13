@@ -1,0 +1,127 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:FitnessRechner.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:models="using:FitnessRechner.Models"
+             xmlns:conv="using:FitnessRechner.Converters"
+             x:Class="FitnessRechner.Views.AchievementsView"
+             x:DataType="vm:MainViewModel">
+
+  <UserControl.Resources>
+    <conv:LocalizeKeyConverter x:Key="LocalizeKey" />
+  </UserControl.Resources>
+
+  <Grid RowDefinitions="Auto,*">
+
+    <!-- Header -->
+    <Border Grid.Row="0" Padding="16,12" Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Grid.Column="0" Classes="Text" Command="{Binding CloseAchievementsCommand}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+        </Button>
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <TextBlock Text="{Binding AchievementsTitleLabel}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding AchievementCountDisplay}"
+                     FontSize="12" Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+        <!-- Level-Badge rechts -->
+        <Border Grid.Column="2" CornerRadius="12" Padding="10,4"
+                Background="{DynamicResource PrimaryBrush}">
+          <TextBlock Text="{Binding LevelLabel}"
+                     FontSize="12" FontWeight="Bold" Foreground="White" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- Achievements Grid -->
+    <ScrollViewer Grid.Row="1" Padding="12,12,12,80">
+      <ItemsControl ItemsSource="{Binding AllAchievements}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate DataType="models:FitnessAchievement">
+            <Border Width="170" Margin="4" Padding="12" CornerRadius="12"
+                    BoxShadow="{DynamicResource CardShadow}">
+              <Border.Background>
+                <SolidColorBrush Color="{DynamicResource CardColor}" />
+              </Border.Background>
+              <StackPanel Spacing="8" HorizontalAlignment="Center">
+                <!-- Icon: Farbig wenn freigeschaltet, grau wenn gesperrt -->
+                <Panel HorizontalAlignment="Center">
+                  <!-- Freigeschaltet: Gradient-Background -->
+                  <Border Width="48" Height="48" CornerRadius="24"
+                          IsVisible="{Binding IsUnlocked}">
+                    <Border.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource PrimaryColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource AccentColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Border.Background>
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24"
+                                     Foreground="White"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                  <!-- Gesperrt: Grauer Background -->
+                  <Border Width="48" Height="48" CornerRadius="24"
+                          Background="{DynamicResource SurfaceBrush}"
+                          IsVisible="{Binding !IsUnlocked}">
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24"
+                                     Foreground="{DynamicResource TextMutedBrush}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+                </Panel>
+
+                <!-- Titel (lokalisiert) -->
+                <TextBlock Text="{Binding TitleKey, Converter={StaticResource LocalizeKey}}"
+                           FontSize="12" FontWeight="SemiBold"
+                           TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="140"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+
+                <!-- Beschreibung (lokalisiert) -->
+                <TextBlock Text="{Binding DescriptionKey, Converter={StaticResource LocalizeKey}}"
+                           FontSize="10" TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="140"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+
+                <!-- Fortschritt oder Freigeschaltet -->
+                <Panel>
+                  <!-- Unlock-Status -->
+                  <StackPanel Orientation="Horizontal" Spacing="4"
+                              HorizontalAlignment="Center"
+                              IsVisible="{Binding IsUnlocked}">
+                    <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14" Foreground="#22C55E" />
+                    <TextBlock Text="{Binding XpReward, StringFormat='+{0} XP'}"
+                               FontSize="10" FontWeight="Bold" Foreground="#22C55E" />
+                  </StackPanel>
+
+                  <!-- Fortschrittsbalken -->
+                  <StackPanel IsVisible="{Binding !IsUnlocked}" Spacing="4">
+                    <ProgressBar Value="{Binding Progress}" Maximum="1.0"
+                                 Height="4" CornerRadius="2"
+                                 Foreground="{DynamicResource PrimaryBrush}"
+                                 Background="{DynamicResource BorderSubtleBrush}" />
+                    <TextBlock Text="{Binding CurrentValue, StringFormat='{}{0}'}"
+                               FontSize="9" Foreground="{DynamicResource TextMutedBrush}"
+                               HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Panel>
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

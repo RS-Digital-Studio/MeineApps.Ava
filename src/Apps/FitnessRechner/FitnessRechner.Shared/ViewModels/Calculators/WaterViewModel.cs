@@ -47,6 +47,7 @@ public partial class WaterViewModel : ObservableObject
     private bool _hasResult;
 
     public string TotalLitersDisplay => Result != null ? $"{Result.TotalLiters:F1} L" : "";
+    public double TotalLitersValue => Result?.TotalLiters ?? 0;
     public string GlassesDisplay => Result != null ? $"{Result.Glasses}" : "";
     public string BaseWaterDisplay => Result != null ? $"{Result.BaseWater:F1} L" : "";
     public string ActivityWaterDisplay => Result != null ? $"+{Result.ActivityWater:F1} L" : "";
@@ -55,6 +56,7 @@ public partial class WaterViewModel : ObservableObject
     partial void OnResultChanged(WaterResult? value)
     {
         OnPropertyChanged(nameof(TotalLitersDisplay));
+        OnPropertyChanged(nameof(TotalLitersValue));
         OnPropertyChanged(nameof(GlassesDisplay));
         OnPropertyChanged(nameof(BaseWaterDisplay));
         OnPropertyChanged(nameof(ActivityWaterDisplay));

@@ -22,6 +22,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly ILocalizationService _localization;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly StreakService _streakService;
+    private readonly IAchievementService _achievementService;
+    private readonly ILevelService _levelService;
+    private readonly IChallengeService _challengeService;
+    private readonly IHapticService _hapticService;
+    private readonly IFitnessSoundService _soundService;
 
     /// <summary>
     /// Raised when the VM wants to show a message (title, message).
@@ -51,6 +56,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ILocalizationService localization,
         IThemeService themeService,
         StreakService streakService,
+        IAchievementService achievementService,
+        ILevelService levelService,
+        IChallengeService challengeService,
+        IHapticService hapticService,
+        IFitnessSoundService soundService,
         SettingsViewModel settingsViewModel,
         ProgressViewModel progressViewModel,
         FoodSearchViewModel foodSearchViewModel)
@@ -63,6 +73,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _preferences = preferences;
         _localization = localization;
         _streakService = streakService;
+        _achievementService = achievementService;
+        _levelService = levelService;
+        _challengeService = challengeService;
+        _hapticService = hapticService;
+        _soundService = soundService;
 
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
 
@@ -90,6 +105,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Streak bei jeder Logging-Aktivität aktualisieren
         _trackingService.EntryAdded += RecordStreakActivity;
         _foodSearchService.FoodLogAdded += RecordStreakActivity;
+
+        // Gamification Events verdrahten
+        _achievementService.AchievementUnlocked += OnAchievementUnlocked;
+        _levelService.LevelUp += OnLevelUp;
+        _challengeService.ChallengeCompleted += OnChallengeCompleted;
     }
 
     private void OnLanguageChanged()
@@ -112,6 +132,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(StreakTitleText));
         OnPropertyChanged(nameof(GreetingText));
         OnPropertyChanged(nameof(QuickAddWeightLabel));
+        OnPropertyChanged(nameof(MotivationalQuote));
+        OnPropertyChanged(nameof(DailyProgressLabel));
+        OnPropertyChanged(nameof(DailyChallengeLabel));
+        OnPropertyChanged(nameof(ChallengeCompletedLabel));
+        OnPropertyChanged(nameof(AchievementsTitleLabel));
+        OnPropertyChanged(nameof(BadgesLabel));
+        OnPropertyChanged(nameof(ShowAllLabel));
+        OnPropertyChanged(nameof(WeeklyComparisonLabel));
+        OnPropertyChanged(nameof(ThisWeekLabel));
+        OnPropertyChanged(nameof(LastWeekLabel));
+        OnPropertyChanged(nameof(EveningSummaryLabel));
+        OnPropertyChanged(nameof(LevelLabel));
+        OnPropertyChanged(nameof(ChallengeTitleText));
+        OnPropertyChanged(nameof(ChallengeDescText));
         UpdateStreakDisplay();
 
         // Aktiven Calculator aktualisieren falls nötig
@@ -206,8 +240,48 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public bool HasWaterProgress => WaterProgress > 0;
     public bool HasCalorieProgress => CalorieProgress > 0;
 
-    partial void OnWaterProgressChanged(double value) => OnPropertyChanged(nameof(HasWaterProgress));
-    partial void OnCalorieProgressChanged(double value) => OnPropertyChanged(nameof(HasCalorieProgress));
+    // CircularProgress Fraction (0.0-1.0) für Dashboard-Ringe
+    public double WaterProgressFraction => Math.Min(WaterProgress / 100.0, 1.0);
+    public double CalorieProgressFraction => Math.Min(CalorieProgress / 100.0, 1.0);
+
+    // Tages-Score: Kombinierter Fortschritt (Wasser + Kalorien + Gewicht geloggt)
+    [ObservableProperty]
+    private bool _hasLoggedWeightToday;
+
+    public double DailyScoreFraction
+    {
+        get
+        {
+            var waterPart = Math.Min(WaterProgress, 100);
+            var caloriePart = Math.Min(CalorieProgress, 100);
+            var weightPart = HasLoggedWeightToday ? 100.0 : 0.0;
+            return (waterPart + caloriePart + weightPart) / 300.0;
+        }
+    }
+
+    public string DailyScoreDisplay => $"{DailyScoreFraction * 100:F0}%";
+
+    partial void OnWaterProgressChanged(double value)
+    {
+        OnPropertyChanged(nameof(HasWaterProgress));
+        OnPropertyChanged(nameof(WaterProgressFraction));
+        OnPropertyChanged(nameof(DailyScoreFraction));
+        OnPropertyChanged(nameof(DailyScoreDisplay));
+    }
+
+    partial void OnCalorieProgressChanged(double value)
+    {
+        OnPropertyChanged(nameof(HasCalorieProgress));
+        OnPropertyChanged(nameof(CalorieProgressFraction));
+        OnPropertyChanged(nameof(DailyScoreFraction));
+        OnPropertyChanged(nameof(DailyScoreDisplay));
+    }
+
+    partial void OnHasLoggedWeightTodayChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DailyScoreFraction));
+        OnPropertyChanged(nameof(DailyScoreDisplay));
+    }
 
     // Quick-Add Properties
     [ObservableProperty]
@@ -231,6 +305,104 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasStreak;
 
+    // Heatmap-Kalender Daten
+    [ObservableProperty]
+    private Dictionary<DateTime, int> _heatmapData = new();
+
+    [ObservableProperty]
+    private bool _hasHeatmapData;
+
+    // Abend-Zusammenfassung (nach 20 Uhr)
+    [ObservableProperty]
+    private bool _showEveningSummary;
+
+    [ObservableProperty]
+    private string _eveningSummaryText = "";
+
+    [ObservableProperty]
+    private string _eveningSummaryRating = "";
+
+    [ObservableProperty]
+    private string _eveningSummaryRatingColor = "#EAB308";
+
+    #endregion
+
+    #region Gamification Properties
+
+    // Level/XP
+    [ObservableProperty]
+    private int _currentGamificationLevel;
+
+    [ObservableProperty]
+    private double _levelProgress;
+
+    [ObservableProperty]
+    private string _xpDisplay = "";
+
+    // Challenge
+    [ObservableProperty]
+    private bool _isChallengeCompleted;
+
+    // Achievements Overlay
+    [ObservableProperty]
+    private bool _showAchievements;
+
+    // Weekly Comparison
+    [ObservableProperty]
+    private string _weeklyCaloriesChange = "";
+
+    [ObservableProperty]
+    private string _weeklyWaterChange = "";
+
+    [ObservableProperty]
+    private string _weeklyWeightChange = "";
+
+    [ObservableProperty]
+    private string _weeklyLogDays = "";
+
+    [ObservableProperty]
+    private string _weeklyCaloriesColor = "#EAB308";
+
+    [ObservableProperty]
+    private string _weeklyWaterColor = "#EAB308";
+
+    [ObservableProperty]
+    private string _weeklyWeightColor = "#EAB308";
+
+    [ObservableProperty]
+    private bool _hasWeeklyComparison;
+
+    // Computed Gamification Properties
+    public DailyChallenge TodayChallenge => _challengeService.TodayChallenge;
+
+    public string ChallengeTitleText =>
+        _localization.GetString(TodayChallenge.TitleKey) ?? TodayChallenge.TitleKey;
+
+    public string ChallengeDescText =>
+        _localization.GetString(TodayChallenge.DescriptionKey) ?? TodayChallenge.DescriptionKey;
+
+    public double ChallengeProgressValue => TodayChallenge.Progress;
+
+    public string ChallengeProgressText =>
+        $"{TodayChallenge.CurrentValue}/{TodayChallenge.TargetValue}";
+
+    public string ChallengeXpText => $"+{TodayChallenge.XpReward} XP";
+
+    public IReadOnlyList<FitnessAchievement> RecentAchievements =>
+        _achievementService.RecentUnlocked;
+
+    public IReadOnlyList<FitnessAchievement> AllAchievements =>
+        _achievementService.Achievements;
+
+    public string AchievementCountDisplay =>
+        $"{_achievementService.UnlockedCount}/{_achievementService.Achievements.Count}";
+
+    public bool HasRecentAchievements =>
+        _achievementService.RecentUnlocked.Count > 0;
+
+    public string LevelLabel =>
+        string.Format(_localization.GetString("Level") ?? "Level {0}", CurrentGamificationLevel);
+
     #endregion
 
     #region Localized Labels
@@ -250,6 +422,28 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string SectionCalculatorsText => _localization.GetString("SectionCalculators") ?? "Calculators";
     public string StreakTitleText => _localization.GetString("StreakTitle") ?? "Logging Streak";
     public string QuickAddWeightLabel => _localization.GetString("QuickAddWeight") ?? "Enter weight";
+
+    // Motivations-Zitat (wechselt täglich)
+    public string MotivationalQuote
+    {
+        get
+        {
+            var index = DateTime.Today.DayOfYear % 10;
+            var key = $"MotivQuote{index + 1}";
+            return _localization.GetString(key) ?? "Every step counts!";
+        }
+    }
+
+    public string DailyProgressLabel => _localization.GetString("DailyProgress") ?? "Daily Progress";
+    public string DailyChallengeLabel => _localization.GetString("DailyChallenge") ?? "Daily Challenge";
+    public string ChallengeCompletedLabel => _localization.GetString("ChallengeCompleted") ?? "Completed!";
+    public string AchievementsTitleLabel => _localization.GetString("AchievementsTitle") ?? "Achievements";
+    public string BadgesLabel => _localization.GetString("Badges") ?? "Badges";
+    public string ShowAllLabel => _localization.GetString("ShowAll") ?? "Show All";
+    public string WeeklyComparisonLabel => _localization.GetString("WeeklyComparison") ?? "Weekly Comparison";
+    public string ThisWeekLabel => _localization.GetString("ThisWeek") ?? "This Week";
+    public string LastWeekLabel => _localization.GetString("LastWeek") ?? "Last Week";
+    public string EveningSummaryLabel => _localization.GetString("EveningSummary") ?? "Today's Summary";
 
     // Tageszeit-Begrüßung
     public string GreetingText
@@ -274,6 +468,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsPremium = _purchaseService.IsPremium;
         UpdateStreakDisplay();
         await LoadDashboardDataAsync();
+        await LoadHeatmapDataAsync();
+        await CheckGamificationProgressAsync();
+        await LoadWeeklyComparisonAsync();
+        await CheckEveningSummaryAsync();
     }
 
     /// <summary>
@@ -292,6 +490,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var text = string.Format(_localization.GetString("StreakMilestone") ?? "{0} day streak!", milestone);
             FloatingTextRequested?.Invoke(text, "streak");
             CelebrationRequested?.Invoke();
+            _hapticService.HeavyClick();
+            _soundService.PlaySuccess();
         }
         else if (!wasLoggedToday && _streakService.IsLoggedToday)
         {
@@ -300,6 +500,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var text = string.Format(_localization.GetString("StreakIncreased") ?? "+1! {0} day streak", streak);
             FloatingTextRequested?.Invoke(text, "streak");
         }
+
+        // XP für Logging-Aktivität (+5 für Mahlzeiten/Tracking)
+        _levelService.AddXp(5);
+
+        // Meal-Counter inkrementieren (für Achievements)
+        var meals = _preferences.Get(PreferenceKeys.TotalMealsLogged, 0);
+        _preferences.Set(PreferenceKeys.TotalMealsLogged, meals + 1);
+
+        // Gamification aktuell halten
+        _ = CheckGamificationProgressAsync();
     }
 
     private void UpdateStreakDisplay()
@@ -333,6 +543,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             // Weight
             var weightEntry = await _trackingService.GetLatestEntryAsync(TrackingType.Weight);
+            HasLoggedWeightToday = weightEntry != null && weightEntry.Date.Date == DateTime.Today;
             if (weightEntry != null && weightEntry.Date.Date >= DateTime.Today.AddDays(-7))
             {
                 TodayWeightDisplay = $"{weightEntry.Value:F1}";
@@ -579,14 +790,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// </summary>
     public bool TryGoBack()
     {
-        // 1. Weight Quick-Add Panel offen → schließen
+        // 1. Achievements-Overlay offen → schließen
+        if (ShowAchievements)
+        {
+            ShowAchievements = false;
+            return true;
+        }
+
+        // 2. Weight Quick-Add Panel offen → schließen
         if (ShowWeightQuickAdd)
         {
             ShowWeightQuickAdd = false;
             return true;
         }
 
-        // 2. Calculator-Page offen → schließen
+        // 3. Calculator-Page offen → schließen
         if (CurrentPage != null)
         {
             Avalonia.Threading.Dispatcher.UIThread.Post(() => CurrentPage = null);
@@ -620,19 +838,40 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OpenSettings() => SelectedTab = 3;
 
     [RelayCommand]
-    private void OpenBmi() => CurrentPage = "BmiPage";
+    private void OpenBmi() { CurrentPage = "BmiPage"; TrackCalculatorUsed(0); }
 
     [RelayCommand]
-    private void OpenCalories() => CurrentPage = "CaloriesPage";
+    private void OpenCalories() { CurrentPage = "CaloriesPage"; TrackCalculatorUsed(1); }
 
     [RelayCommand]
-    private void OpenWater() => CurrentPage = "WaterPage";
+    private void OpenWater() { CurrentPage = "WaterPage"; TrackCalculatorUsed(2); }
 
     [RelayCommand]
-    private void OpenIdealWeight() => CurrentPage = "IdealWeightPage";
+    private void OpenIdealWeight() { CurrentPage = "IdealWeightPage"; TrackCalculatorUsed(3); }
 
     [RelayCommand]
-    private void OpenBodyFat() => CurrentPage = "BodyFatPage";
+    private void OpenBodyFat() { CurrentPage = "BodyFatPage"; TrackCalculatorUsed(4); }
+
+    /// <summary>
+    /// Trackt welche Rechner verwendet wurden (Bitmask) + XP.
+    /// </summary>
+    private void TrackCalculatorUsed(int calcIndex)
+    {
+        var mask = _preferences.Get(PreferenceKeys.CalculatorsUsedMask, 0);
+        var bit = 1 << calcIndex;
+        if ((mask & bit) == 0)
+        {
+            mask |= bit;
+            _preferences.Set(PreferenceKeys.CalculatorsUsedMask, mask);
+        }
+        _levelService.AddXp(2); // XP für Rechner benutzen
+    }
+
+    [RelayCommand]
+    private void OpenAchievements() => ShowAchievements = true;
+
+    [RelayCommand]
+    private void CloseAchievements() => ShowAchievements = false;
 
     [RelayCommand]
     private void OpenProgress() { CurrentPage = null; SelectedTab = 1; }
@@ -675,7 +914,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             ShowWeightQuickAdd = false;
             FloatingTextRequested?.Invoke($"+{QuickAddWeight:F1} kg", "info");
+            _hapticService.Click(); // Mittleres Feedback bei Speicherung
+            _levelService.AddXp(10); // XP für Gewicht loggen
             await LoadDashboardDataAsync();
+            _ = CheckGamificationProgressAsync();
         }
         catch (Exception)
         {
@@ -713,7 +955,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
             }
 
             FloatingTextRequested?.Invoke($"+{amount} ml", "info");
+            _hapticService.Tick(); // Leichtes Feedback bei Quick-Add
+            _levelService.AddXp(3); // XP für Wasser loggen
             await LoadDashboardDataAsync();
+            _ = CheckGamificationProgressAsync();
 
             // Wasser-Ziel Celebration (einmal pro Session)
             if (!_wasWaterGoalReachedOnDashboard && WaterProgress >= 100)
@@ -722,6 +967,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 FloatingTextRequested?.Invoke(
                     _localization.GetString("GoalReached") ?? "Goal reached!", "success");
                 CelebrationRequested?.Invoke();
+                _hapticService.HeavyClick();
+                _soundService.PlaySuccess();
             }
         }
         catch (Exception)
@@ -739,6 +986,424 @@ public partial class MainViewModel : ObservableObject, IDisposable
         SelectedTab = 2;
         // Quick-Add Panel im FoodSearch öffnen
         FoodSearchViewModel.ShowQuickAddPanel = true;
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Lädt Aktivitäts-Daten für die Heatmap (letzte 3 Monate).
+    /// Kombiniert Tracking-Einträge und Food-Logs zu einem Aktivitäts-Level pro Tag.
+    /// </summary>
+    private async Task LoadHeatmapDataAsync()
+    {
+        try
+        {
+            var startDate = DateTime.Today.AddMonths(-3);
+            var endDate = DateTime.Today;
+
+            // Tracking-Einträge laden (alle Typen)
+            var weightEntries = await _trackingService.GetEntriesAsync(TrackingType.Weight, startDate, endDate);
+            var waterEntries = await _trackingService.GetEntriesAsync(TrackingType.Water, startDate, endDate);
+            var bmiEntries = await _trackingService.GetEntriesAsync(TrackingType.Bmi, startDate, endDate);
+            var bodyFatEntries = await _trackingService.GetEntriesAsync(TrackingType.BodyFat, startDate, endDate);
+
+            // Tracking-Tage sammeln
+            var trackingDates = weightEntries.Select(e => e.Date)
+                .Concat(waterEntries.Select(e => e.Date))
+                .Concat(bmiEntries.Select(e => e.Date))
+                .Concat(bodyFatEntries.Select(e => e.Date))
+                .ToList();
+
+            // Food-Log-Tage laden (iteriere über jeden Tag)
+            var foodLogDates = new List<DateTime>();
+            var totalDays = (endDate - startDate).Days + 1;
+            for (var i = 0; i < totalDays; i++)
+            {
+                var date = startDate.AddDays(i);
+                var foodLog = await _foodSearchService.GetFoodLogAsync(date);
+                if (foodLog.Count > 0)
+                    foodLogDates.Add(date);
+            }
+
+            // Aktivitäts-Level berechnen
+            var data = new Dictionary<DateTime, int>();
+            var waterGoal = _preferences.Get(PreferenceKeys.WaterGoal, 2500.0);
+            var calorieGoal = _preferences.Get(PreferenceKeys.CalorieGoal, 2000.0);
+
+            for (var i = 0; i < totalDays; i++)
+            {
+                var date = startDate.AddDays(i).Date;
+                int level = 0;
+
+                // Punkte sammeln
+                var hasWeight = weightEntries.Any(e => e.Date.Date == date);
+                var hasWater = waterEntries.Any(e => e.Date.Date == date);
+                var hasFood = foodLogDates.Contains(date);
+                var hasBmi = bmiEntries.Any(e => e.Date.Date == date) || bodyFatEntries.Any(e => e.Date.Date == date);
+
+                var score = (hasWeight ? 1 : 0) + (hasWater ? 1 : 0) + (hasFood ? 1 : 0) + (hasBmi ? 1 : 0);
+                level = score switch
+                {
+                    >= 4 => 4,
+                    3 => 3,
+                    2 => 2,
+                    1 => 1,
+                    _ => 0
+                };
+
+                if (level > 0)
+                    data[date] = level;
+            }
+
+            HeatmapData = data;
+            HasHeatmapData = data.Count > 0;
+        }
+        catch
+        {
+            // Heatmap ist optional - Fehler ignorieren
+        }
+    }
+
+    #region Gamification Methods
+
+    /// <summary>
+    /// Gamification-Event: Achievement freigeschaltet.
+    /// </summary>
+    private void OnAchievementUnlocked(string titleKey, int xpReward)
+    {
+        _levelService.AddXp(xpReward);
+        var title = _localization.GetString(titleKey) ?? titleKey;
+        var text = $"{_localization.GetString("AchievementUnlockedText") ?? "Achievement!"} {title}";
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            FloatingTextRequested?.Invoke(text, "achievement");
+            CelebrationRequested?.Invoke();
+            _hapticService.HeavyClick();
+            _soundService.PlaySuccess();
+            UpdateGamificationDisplay();
+        });
+    }
+
+    /// <summary>
+    /// Gamification-Event: Level Up.
+    /// </summary>
+    private void OnLevelUp(int newLevel)
+    {
+        var text = $"{_localization.GetString("LevelUpText") ?? "Level Up!"} → Level {newLevel}";
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            FloatingTextRequested?.Invoke(text, "levelup");
+            CelebrationRequested?.Invoke();
+            _hapticService.HeavyClick();
+            _soundService.PlaySuccess();
+            UpdateGamificationDisplay();
+        });
+    }
+
+    /// <summary>
+    /// Gamification-Event: Challenge abgeschlossen.
+    /// </summary>
+    private void OnChallengeCompleted(int xpReward)
+    {
+        _levelService.AddXp(xpReward);
+        var text = $"{ChallengeCompletedLabel} +{xpReward} XP";
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            FloatingTextRequested?.Invoke(text, "challenge");
+            CelebrationRequested?.Invoke();
+            _hapticService.HeavyClick();
+            _soundService.PlaySuccess();
+            IsChallengeCompleted = true;
+            UpdateGamificationDisplay();
+        });
+    }
+
+    /// <summary>
+    /// Aktualisiert alle Gamification-UI-Properties.
+    /// </summary>
+    private void UpdateGamificationDisplay()
+    {
+        CurrentGamificationLevel = _levelService.CurrentLevel;
+        LevelProgress = _levelService.LevelProgress;
+        XpDisplay = _levelService.XpDisplay;
+        IsChallengeCompleted = TodayChallenge.IsCompleted;
+
+        OnPropertyChanged(nameof(LevelLabel));
+        OnPropertyChanged(nameof(ChallengeTitleText));
+        OnPropertyChanged(nameof(ChallengeDescText));
+        OnPropertyChanged(nameof(ChallengeProgressValue));
+        OnPropertyChanged(nameof(ChallengeProgressText));
+        OnPropertyChanged(nameof(ChallengeXpText));
+        OnPropertyChanged(nameof(RecentAchievements));
+        OnPropertyChanged(nameof(AllAchievements));
+        OnPropertyChanged(nameof(AchievementCountDisplay));
+        OnPropertyChanged(nameof(HasRecentAchievements));
+    }
+
+    /// <summary>
+    /// Baut Check-Kontexte und prüft Achievement- und Challenge-Fortschritt.
+    /// </summary>
+    private async Task CheckGamificationProgressAsync()
+    {
+        try
+        {
+            // Achievement-Kontext aufbauen
+            var startDate = DateTime.Today.AddYears(-1);
+            var weightEntries = await _trackingService.GetEntriesAsync(TrackingType.Weight, startDate, DateTime.Today);
+            var waterEntries = await _trackingService.GetEntriesAsync(TrackingType.Water, startDate, DateTime.Today);
+            var totalWaterMl = waterEntries.Sum(e => e.Value);
+
+            var recipes = await _foodSearchService.GetRecipesAsync();
+            var weightGoal = _preferences.Get(PreferenceKeys.WeightGoal, 0.0);
+            var latestWeight = await _trackingService.GetLatestEntryAsync(TrackingType.Weight);
+            var hasReachedGoal = weightGoal > 0 && latestWeight != null &&
+                                 Math.Abs(latestWeight.Value - weightGoal) < 0.5;
+
+            // Bitmask: Wie viele verschiedene Rechner wurden benutzt?
+            var calcMask = _preferences.Get(PreferenceKeys.CalculatorsUsedMask, 0);
+            var calcsUsed = 0;
+            for (int i = 0; i < 5; i++)
+                if ((calcMask & (1 << i)) != 0) calcsUsed++;
+
+            // Kalorienziel-Tage in Folge berechnen (max letzte 14 Tage)
+            var calorieGoal = _preferences.Get(PreferenceKeys.CalorieGoal, 2000.0);
+            var waterGoal = _preferences.Get(PreferenceKeys.WaterGoal, 2500.0);
+            var calorieDaysInRow = 0;
+            var waterDaysInRow = 0;
+
+            for (int i = 1; i <= 14; i++)
+            {
+                var date = DateTime.Today.AddDays(-i);
+                if (calorieGoal > 0)
+                {
+                    var summary = await _foodSearchService.GetDailySummaryAsync(date);
+                    if (summary.TotalCalories > 0 && summary.TotalCalories <= calorieGoal)
+                        calorieDaysInRow++;
+                    else break;
+                }
+            }
+
+            for (int i = 1; i <= 14; i++)
+            {
+                var date = DateTime.Today.AddDays(-i);
+                var dayWater = waterEntries.Where(e => e.Date.Date == date).Sum(e => e.Value);
+                if (waterGoal > 0 && dayWater >= waterGoal)
+                    waterDaysInRow++;
+                else break;
+            }
+
+            var achievementCtx = new AchievementCheckContext
+            {
+                CurrentStreak = _streakService.CurrentStreak,
+                TotalWeightEntries = weightEntries.Count,
+                TotalWaterMl = totalWaterMl,
+                TotalMealsLogged = _preferences.Get(PreferenceKeys.TotalMealsLogged, 0),
+                TotalBarcodesScanned = _preferences.Get(PreferenceKeys.TotalBarcodesScanned, 0),
+                TotalRecipesCreated = recipes.Count,
+                DistinctFoodsLogged = _preferences.Get(PreferenceKeys.DistinctFoodsTracked, 0),
+                CalculatorsUsed = calcsUsed,
+                HasReachedWeightGoal = hasReachedGoal,
+                IsPremium = _purchaseService.IsPremium,
+                CurrentHour = DateTime.Now.Hour,
+                CalorieGoalDaysInRow = calorieDaysInRow,
+                WaterGoalDaysInRow = waterDaysInRow
+            };
+
+            _achievementService.CheckProgress(achievementCtx);
+
+            // Challenge-Kontext aufbauen (heutige Daten)
+            var todaySummary = await _foodSearchService.GetDailySummaryAsync(DateTime.Today);
+            var todayFoodLog = await _foodSearchService.GetFoodLogAsync(DateTime.Today);
+            var todayWater = waterEntries.Where(e => e.Date.Date == DateTime.Today).Sum(e => e.Value);
+            var todayWeight = weightEntries.Any(e => e.Date.Date == DateTime.Today);
+            var bmiEntries = await _trackingService.GetEntriesAsync(TrackingType.Bmi,
+                DateTime.Today, DateTime.Today.AddDays(1));
+
+            var challengeCtx = new ChallengeCheckContext
+            {
+                TodayWaterMl = todayWater,
+                TodayMealsCount = todayFoodLog.Count,
+                HasWeightEntry = todayWeight,
+                TodayCalories = todaySummary.TotalCalories,
+                CalorieGoal = calorieGoal,
+                TodayFoodsTracked = todayFoodLog.Count,
+                TodayProtein = todaySummary.TotalProtein,
+                HasUsedBmi = bmiEntries.Count > 0,
+                HasScannedBarcode = _preferences.Get(PreferenceKeys.TotalBarcodesScanned, 0) > 0,
+                HasBreakfast = todayFoodLog.Any(f => f.Meal == MealType.Breakfast),
+                HasLunch = todayFoodLog.Any(f => f.Meal == MealType.Lunch),
+                HasDinner = todayFoodLog.Any(f => f.Meal == MealType.Dinner)
+            };
+
+            _challengeService.CheckProgress(challengeCtx);
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(UpdateGamificationDisplay);
+        }
+        catch
+        {
+            // Gamification ist optional - Fehler ignorieren
+        }
+    }
+
+    /// <summary>
+    /// Prüft ob Abend-Zusammenfassung angezeigt werden soll (nach 20 Uhr, wenn Einträge vorhanden).
+    /// </summary>
+    private async Task CheckEveningSummaryAsync()
+    {
+        try
+        {
+            var hour = DateTime.Now.Hour;
+            if (hour < 20)
+            {
+                ShowEveningSummary = false;
+                return;
+            }
+
+            var summary = await _foodSearchService.GetDailySummaryAsync(DateTime.Today);
+            var waterEntry = await _trackingService.GetLatestEntryAsync(TrackingType.Water);
+            var todayWater = (waterEntry != null && waterEntry.Date.Date == DateTime.Today) ? waterEntry.Value : 0;
+            var weightEntry = await _trackingService.GetLatestEntryAsync(TrackingType.Weight);
+            var todayWeight = (weightEntry != null && weightEntry.Date.Date == DateTime.Today) ? weightEntry.Value : 0;
+
+            // Nur anzeigen wenn heute etwas geloggt wurde
+            if (summary.TotalCalories <= 0 && todayWater <= 0 && todayWeight <= 0)
+            {
+                ShowEveningSummary = false;
+                return;
+            }
+
+            // Zusammenfassungs-Text
+            var parts = new List<string>();
+            if (summary.TotalCalories > 0) parts.Add($"{summary.TotalCalories:F0} kcal");
+            if (todayWater > 0) parts.Add($"{todayWater:F0} ml");
+            if (todayWeight > 0) parts.Add($"{todayWeight:F1} kg");
+            EveningSummaryText = string.Join(" | ", parts);
+
+            // Bewertung basierend auf Zielerreichung
+            var score = DailyScoreFraction * 100;
+            if (score >= 90)
+            {
+                EveningSummaryRating = _localization.GetString("RatingGreatDay") ?? "Great day!";
+                EveningSummaryRatingColor = "#22C55E"; // Grün
+            }
+            else if (score >= 50)
+            {
+                EveningSummaryRating = _localization.GetString("RatingGoodDay") ?? "Good day!";
+                EveningSummaryRatingColor = "#3B82F6"; // Blau
+            }
+            else
+            {
+                EveningSummaryRating = _localization.GetString("RatingTomorrowBetter") ?? "Tomorrow will be better!";
+                EveningSummaryRatingColor = "#EAB308"; // Gelb
+            }
+
+            ShowEveningSummary = true;
+        }
+        catch
+        {
+            ShowEveningSummary = false;
+        }
+    }
+
+    /// <summary>
+    /// Lädt Wochenvergleichs-Daten (diese Woche vs. letzte Woche).
+    /// </summary>
+    private async Task LoadWeeklyComparisonAsync()
+    {
+        try
+        {
+            var today = DateTime.Today;
+            var thisWeekStart = today.AddDays(-6);
+            var lastWeekStart = today.AddDays(-13);
+            var lastWeekEnd = today.AddDays(-7);
+
+            // Kalorien
+            double thisWeekCal = 0, lastWeekCal = 0;
+            int thisWeekDays = 0, lastWeekDays = 0;
+            for (int i = 0; i < 7; i++)
+            {
+                var s1 = await _foodSearchService.GetDailySummaryAsync(thisWeekStart.AddDays(i));
+                if (s1.TotalCalories > 0) { thisWeekCal += s1.TotalCalories; thisWeekDays++; }
+
+                var s2 = await _foodSearchService.GetDailySummaryAsync(lastWeekStart.AddDays(i));
+                if (s2.TotalCalories > 0) { lastWeekCal += s2.TotalCalories; lastWeekDays++; }
+            }
+
+            // Wasser
+            var waterEntries = await _trackingService.GetEntriesAsync(
+                TrackingType.Water, lastWeekStart, today.AddDays(1));
+            var thisWeekWater = waterEntries.Where(e => e.Date.Date >= thisWeekStart).Sum(e => e.Value);
+            var lastWeekWater = waterEntries.Where(e => e.Date.Date >= lastWeekStart && e.Date.Date <= lastWeekEnd).Sum(e => e.Value);
+            var thisWeekWaterDays = waterEntries.Where(e => e.Date.Date >= thisWeekStart).Select(e => e.Date.Date).Distinct().Count();
+            var lastWeekWaterDays = waterEntries.Where(e => e.Date.Date >= lastWeekStart && e.Date.Date <= lastWeekEnd).Select(e => e.Date.Date).Distinct().Count();
+
+            // Gewicht
+            var weightEntries = await _trackingService.GetEntriesAsync(
+                TrackingType.Weight, lastWeekStart, today.AddDays(1));
+            var thisWeekWeight = weightEntries.Where(e => e.Date.Date >= thisWeekStart).OrderByDescending(e => e.Date).FirstOrDefault();
+            var lastWeekWeight = weightEntries.Where(e => e.Date.Date >= lastWeekStart && e.Date.Date <= lastWeekEnd).OrderByDescending(e => e.Date).FirstOrDefault();
+
+            // Logging-Tage
+            var trackingDates = await _trackingService.GetEntriesAsync(TrackingType.Weight, lastWeekStart, today.AddDays(1));
+            var allLogDates = trackingDates.Select(e => e.Date.Date)
+                .Concat(waterEntries.Select(e => e.Date.Date))
+                .Distinct().ToList();
+            var thisWeekLogCount = allLogDates.Count(d => d >= thisWeekStart);
+            var lastWeekLogCount = allLogDates.Count(d => d >= lastWeekStart && d <= lastWeekEnd);
+
+            // UI aktualisieren
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                // Kalorien
+                if (thisWeekDays > 0 && lastWeekDays > 0)
+                {
+                    var avgThis = thisWeekCal / thisWeekDays;
+                    var avgLast = lastWeekCal / lastWeekDays;
+                    var diff = avgThis - avgLast;
+                    WeeklyCaloriesChange = $"{avgThis:F0} vs {avgLast:F0} kcal";
+                    WeeklyCaloriesColor = diff > 50 ? "#EF4444" : diff < -50 ? "#22C55E" : "#EAB308";
+                }
+                else
+                {
+                    WeeklyCaloriesChange = "-";
+                }
+
+                // Wasser
+                if (thisWeekWaterDays > 0 && lastWeekWaterDays > 0)
+                {
+                    var avgThis = thisWeekWater / thisWeekWaterDays / 1000.0;
+                    var avgLast = lastWeekWater / lastWeekWaterDays / 1000.0;
+                    var diff = avgThis - avgLast;
+                    WeeklyWaterChange = $"{avgThis:F1} vs {avgLast:F1} L";
+                    WeeklyWaterColor = diff > 0.2 ? "#22C55E" : diff < -0.2 ? "#EF4444" : "#EAB308";
+                }
+                else
+                {
+                    WeeklyWaterChange = "-";
+                }
+
+                // Gewicht
+                if (thisWeekWeight != null && lastWeekWeight != null)
+                {
+                    var diff = thisWeekWeight.Value - lastWeekWeight.Value;
+                    var arrow = diff > 0 ? "↑" : diff < 0 ? "↓" : "→";
+                    WeeklyWeightChange = $"{arrow} {Math.Abs(diff):F1} kg";
+                    // Bei Gewicht ist ↓ oft positiv (Abnahme erwünscht)
+                    WeeklyWeightColor = diff < -0.1 ? "#22C55E" : diff > 0.1 ? "#EF4444" : "#EAB308";
+                }
+                else
+                {
+                    WeeklyWeightChange = "-";
+                }
+
+                WeeklyLogDays = $"{thisWeekLogCount}/7 vs {lastWeekLogCount}/7";
+                HasWeeklyComparison = thisWeekDays > 0 || thisWeekWaterDays > 0 || thisWeekWeight != null;
+            });
+        }
+        catch
+        {
+            // Weekly Comparison ist optional
+        }
     }
 
     #endregion
@@ -773,6 +1438,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _foodSearchService.FoodLogAdded -= RecordStreakActivity;
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         _adService.AdsStateChanged -= OnAdsStateChanged;
+        _achievementService.AchievementUnlocked -= OnAchievementUnlocked;
+        _levelService.LevelUp -= OnLevelUp;
+        _challengeService.ChallengeCompleted -= OnChallengeCompleted;
         ProgressViewModel.FloatingTextRequested -= OnProgressFloatingText;
         ProgressViewModel.CelebrationRequested -= OnProgressCelebration;
         FoodSearchViewModel.NavigationRequested -= OnFoodSearchNavigation;

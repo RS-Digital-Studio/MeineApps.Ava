@@ -369,6 +369,87 @@
           </StackPanel>
         </Border>
 
+        <!-- ==================== Feedback & Notifications Section ==================== -->
+        <Border Classes="Card">
+          <StackPanel Spacing="16">
+            <StackPanel Orientation="Horizontal" Spacing="12">
+              <mi:MaterialIcon Kind="BellOutline" Width="24" Height="24"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+              <TextBlock Text="{loc:Translate SettingsNotifications}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Haptic Feedback Toggle -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Grid.Column="0" Kind="Vibrate" Width="20" Height="20"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" Margin="0,0,12,0" />
+              <TextBlock Grid.Column="1" Text="{loc:Translate HapticFeedback}"
+                         FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsHapticEnabled}"
+                            OnContent="" OffContent=""
+                            VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- Sound Toggle -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Grid.Column="0" Kind="VolumeHigh" Width="20" Height="20"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" Margin="0,0,12,0" />
+              <TextBlock Grid.Column="1" Text="{loc:Translate SoundEffects}"
+                         FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsSoundEnabled}"
+                            OnContent="" OffContent=""
+                            VerticalAlignment="Center" />
+            </Grid>
+
+            <Border Height="1" Background="{DynamicResource BorderSubtleBrush}" Margin="0,4" />
+
+            <!-- Wasser-Erinnerung Toggle -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Grid.Column="0" Kind="WaterOutline" Width="20" Height="20"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" Margin="0,0,12,0" />
+              <TextBlock Grid.Column="1" Text="{loc:Translate WaterReminder}"
+                         FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsWaterReminderEnabled}"
+                            OnContent="" OffContent=""
+                            VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- Gewicht-Erinnerung Toggle -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Grid.Column="0" Kind="ScaleBathroom" Width="20" Height="20"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" Margin="0,0,12,0" />
+              <TextBlock Grid.Column="1" Text="{loc:Translate WeightReminder}"
+                         FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsWeightReminderEnabled}"
+                            OnContent="" OffContent=""
+                            VerticalAlignment="Center" />
+            </Grid>
+
+            <!-- Abend-Zusammenfassung Toggle -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Grid.Column="0" Kind="WeatherNight" Width="20" Height="20"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" Margin="0,0,12,0" />
+              <TextBlock Grid.Column="1" Text="{loc:Translate EveningReminder}"
+                         FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="2" IsChecked="{Binding IsEveningSummaryEnabled}"
+                            OnContent="" OffContent=""
+                            VerticalAlignment="Center" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
         <!-- ==================== About Section ==================== -->
         <Border Classes="Card">
           <StackPanel Spacing="12">

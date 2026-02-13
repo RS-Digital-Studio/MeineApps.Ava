@@ -91,6 +91,19 @@
                     </StackPanel>
                 </Border>
 
+                <!-- Fehlermeldung bei Überlauf -->
+                <Border Classes="Card"
+                        IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <mi:MaterialIcon Kind="AlertCircle" Width="20" Height="20"
+                                         Foreground="{DynamicResource ExpenseBrush}" />
+                        <TextBlock Text="{Binding ErrorMessage}"
+                                   Foreground="{DynamicResource ExpenseBrush}"
+                                   FontSize="14" TextWrapping="Wrap"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+
                 <!-- Summary Result Card -->
                 <Border Classes="Card Elevated"
                         IsVisible="{Binding HasResult}">

@@ -145,7 +145,7 @@ public class ExpenseService : IExpenseService, IDisposable
             _ = Task.Run(async () =>
             {
                 try { await CheckBudgetWarningAsync(expense.Category, expense.Date); }
-                catch (Exception) { /* Budget-Warnung ist nicht kritisch */ }
+                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Budget-Warnung fehlgeschlagen: {ex.Message}"); }
             });
         }
 
@@ -422,15 +422,17 @@ public class ExpenseService : IExpenseService, IDisposable
         try
         {
             var count = 0;
+            const int maxIterationsPerRecurring = 365; // Schutz vor Endlosschleife (z.B. beschädigte lastProcessed-Datei)
             foreach (var recurring in _recurringTransactions.Where(r => r.IsActive))
             {
-                // Alle verpassten Zeitraeume nachholen (z.B. wenn App laenger nicht geoeffnet wurde)
-                while (recurring.IsDue(today))
+                var iterations = 0;
+                // Alle verpassten Zeiträume nachholen (z.B. wenn App länger nicht geöffnet wurde)
+                while (recurring.IsDue(today) && iterations < maxIterationsPerRecurring)
                 {
                     var dueDate = recurring.GetNextDueDate();
-                    // Faelligkeitsdatum nicht in der Zukunft
+                    // Fälligkeitsdatum nicht in der Zukunft
                     if (dueDate > today) dueDate = today;
-                    // Enddatum pruefen
+                    // Enddatum prüfen
                     if (recurring.EndDate.HasValue && dueDate > recurring.EndDate.Value) break;
 
                     var expense = recurring.CreateExpense(dueDate);
@@ -438,7 +440,10 @@ public class ExpenseService : IExpenseService, IDisposable
                     _expenses.Add(expense);
                     recurring.LastExecuted = dueDate;
                     count++;
+                    iterations++;
                 }
+                if (iterations >= maxIterationsPerRecurring)
+                    System.Diagnostics.Debug.WriteLine($"WARNUNG: Dauerauftrag '{recurring.Description}' (ID: {recurring.Id}) hat Iterations-Limit ({maxIterationsPerRecurring}) erreicht.");
             }
             // Batch-Save: Alles auf einmal statt pro Expense einzeln
             if (count > 0)
@@ -500,6 +505,7 @@ public class ExpenseService : IExpenseService, IDisposable
                 _expenses.Clear();
                 _budgets.Clear();
                 _recurringTransactions.Clear();
+                _sentNotifications.Clear();
             }
 
             if (backup.Expenses != null)
@@ -523,6 +529,7 @@ public class ExpenseService : IExpenseService, IDisposable
                         if (existing != null) _budgets.Remove(existing);
                     }
                     _budgets.Add(budget);
+                    importedCount++;
                 }
             }
 
@@ -533,6 +540,7 @@ public class ExpenseService : IExpenseService, IDisposable
                 {
                     if (mergeData && existingRecurringIds!.Contains(recurring.Id)) continue;
                     _recurringTransactions.Add(recurring);
+                    importedCount++;
                 }
             }
 
@@ -565,7 +573,7 @@ public class ExpenseService : IExpenseService, IDisposable
         catch (Exception ex)
         {
             _expenses = [];
-            OnDataLoadError?.Invoke($"Ausgaben: {ex.Message}");
+            OnDataLoadError?.Invoke($"{_localizationService?.GetString("LoadErrorExpenses") ?? "Expenses"}: {ex.Message}");
         }
     }
 
@@ -582,7 +590,7 @@ public class ExpenseService : IExpenseService, IDisposable
         catch (Exception ex)
         {
             _budgets = [];
-            OnDataLoadError?.Invoke($"Budgets: {ex.Message}");
+            OnDataLoadError?.Invoke($"{_localizationService?.GetString("LoadErrorBudgets") ?? "Budgets"}: {ex.Message}");
         }
     }
 
@@ -599,7 +607,7 @@ public class ExpenseService : IExpenseService, IDisposable
         catch (Exception ex)
         {
             _recurringTransactions = [];
-            OnDataLoadError?.Invoke($"Daueraufträge: {ex.Message}");
+            OnDataLoadError?.Invoke($"{_localizationService?.GetString("LoadErrorRecurring") ?? "Recurring transactions"}: {ex.Message}");
         }
     }
 

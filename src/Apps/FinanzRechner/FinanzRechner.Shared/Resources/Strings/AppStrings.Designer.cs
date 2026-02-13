@@ -131,5 +131,65 @@ namespace FinanzRechner.Resources.Strings {
                 return ResourceManager.GetString("AdVideoNotAvailableMessage", resourceCulture);
             }
         }
+
+        // Lade-Fehler
+        internal static string LoadError {
+            get {
+                return ResourceManager.GetString("LoadError", resourceCulture);
+            }
+        }
+
+        internal static string LoadErrorExpenses {
+            get {
+                return ResourceManager.GetString("LoadErrorExpenses", resourceCulture);
+            }
+        }
+
+        internal static string LoadErrorBudgets {
+            get {
+                return ResourceManager.GetString("LoadErrorBudgets", resourceCulture);
+            }
+        }
+
+        internal static string LoadErrorRecurring {
+            get {
+                return ResourceManager.GetString("LoadErrorRecurring", resourceCulture);
+            }
+        }
+
+        // Datumsvalidierung
+        internal static string ErrorEndDateBeforeStart {
+            get {
+                return ResourceManager.GetString("ErrorEndDateBeforeStart", resourceCulture);
+            }
+        }
+
+        // Rechner-Überlauf
+        internal static string ErrorOverflow {
+            get {
+                return ResourceManager.GetString("ErrorOverflow", resourceCulture);
+            }
+        }
+
+        // "p.a." (pro Jahr) für Rendite-Anzeige
+        internal static string PerAnnum {
+            get {
+                return ResourceManager.GetString("PerAnnum", resourceCulture);
+            }
+        }
+
+        // PDF-Dokumenttitel
+        internal static string FinancialStatistics {
+            get {
+                return ResourceManager.GetString("FinancialStatistics", resourceCulture);
+            }
+        }
+
+        // Trend-Anzeige bei fehlenden Vormonatsdaten
+        internal static string New {
+            get {
+                return ResourceManager.GetString("New", resourceCulture);
+            }
+        }
     }
 }

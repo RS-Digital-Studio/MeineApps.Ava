@@ -88,6 +88,9 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasResult;
 
+    [ObservableProperty]
+    private string? _errorMessage;
+
     public string FinalAmountDisplay => Result != null ? CurrencyHelper.Format(Result.FinalAmount) : "";
     public string InterestEarnedDisplay => Result != null ? CurrencyHelper.Format(Result.InterestEarned) : "";
 
@@ -171,14 +174,23 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Calculate()
     {
+        ErrorMessage = null;
         if (Principal <= 0 || Years <= 0 || CompoundingsPerYear <= 0)
         {
             HasResult = false;
             return;
         }
 
-        Result = _financeEngine.CalculateCompoundInterest(Principal, AnnualRate, Years, CompoundingsPerYear);
-        HasResult = true;
+        try
+        {
+            Result = _financeEngine.CalculateCompoundInterest(Principal, AnnualRate, Years, CompoundingsPerYear);
+            HasResult = true;
+        }
+        catch (OverflowException)
+        {
+            HasResult = false;
+            ErrorMessage = _localizationService.GetString("ErrorOverflow") ?? "The input values lead to unrealistic results.";
+        }
     }
 
     [RelayCommand]
@@ -194,6 +206,7 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
         CompoundingsPerYear = 1;
         Result = null;
         HasResult = false;
+        ErrorMessage = null;
         ChartSeries = Array.Empty<ISeries>();
     }
 

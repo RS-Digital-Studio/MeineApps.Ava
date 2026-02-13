@@ -389,7 +389,7 @@
 
     <!-- PDF Export Indicator -->
     <Border Grid.RowSpan="3"
-            IsVisible="{Binding IsExportingPdf}"
+            IsVisible="{Binding IsExporting}"
             Background="#80000000"
             ZIndex="100">
       <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">

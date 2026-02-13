@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
@@ -107,14 +106,7 @@ public partial class SettingsView : UserControl
     /// </summary>
     private void OnOpenUrlRequested(string url)
     {
-        try
-        {
-            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-        }
-        catch (Exception)
-        {
-            // URL konnte nicht geoeffnet werden
-        }
+        UriLauncher.OpenUri(url);
     }
 
     /// <summary>
@@ -122,14 +114,7 @@ public partial class SettingsView : UserControl
     /// </summary>
     private void OnFeedbackRequested(string appName)
     {
-        try
-        {
-            var uri = $"mailto:info@rs-digital.org?subject={Uri.EscapeDataString(appName + " Feedback")}";
-            Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true });
-        }
-        catch (Exception)
-        {
-            // E-Mail-Client konnte nicht geoeffnet werden
-        }
+        var uri = $"mailto:info@rs-digital.org?subject={Uri.EscapeDataString(appName + " Feedback")}";
+        UriLauncher.OpenUri(uri);
     }
 }

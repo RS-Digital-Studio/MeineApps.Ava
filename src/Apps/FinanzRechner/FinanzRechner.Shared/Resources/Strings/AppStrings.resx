@@ -603,6 +603,12 @@
   <data name="ErrorInvalidTransaction" xml:space="preserve">
     <value>Please enter description and amount.</value>
   </data>
+  <data name="ErrorEndDateBeforeStart" xml:space="preserve">
+    <value>End date must be after start date.</value>
+  </data>
+  <data name="ErrorOverflow" xml:space="preserve">
+    <value>The input values lead to unrealistic results. Please adjust.</value>
+  </data>
   <data name="PremiumRequired" xml:space="preserve">
     <value>Premium Required</value>
   </data>
@@ -735,6 +741,18 @@
   </data>
   <data name="DeleteError" xml:space="preserve">
     <value>Failed to delete. Please try again.</value>
+  </data>
+  <data name="LoadError" xml:space="preserve">
+    <value>Load error</value>
+  </data>
+  <data name="LoadErrorExpenses" xml:space="preserve">
+    <value>Expenses</value>
+  </data>
+  <data name="LoadErrorBudgets" xml:space="preserve">
+    <value>Budgets</value>
+  </data>
+  <data name="LoadErrorRecurring" xml:space="preserve">
+    <value>Recurring transactions</value>
   </data>
   <data name="Warning" xml:space="preserve">
     <value>Warning</value>
@@ -1067,4 +1085,16 @@
     <value>Loss %</value>
   </data>
 
+  <data name="PerAnnum" xml:space="preserve">
+    <value>p.a.</value>
+  </data>
+  <data name="FinancialStatistics" xml:space="preserve">
+    <value>Financial Statistics</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="PressBackToExit" xml:space="preserve">
+    <value>Press back again to exit</value>
+  </data>
 </root>

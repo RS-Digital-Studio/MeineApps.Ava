@@ -603,6 +603,12 @@
   <data name="ErrorInvalidTransaction" xml:space="preserve">
     <value>Inserisci descrizione e importo.</value>
   </data>
+  <data name="ErrorEndDateBeforeStart" xml:space="preserve">
+    <value>La data di fine deve essere successiva alla data di inizio.</value>
+  </data>
+  <data name="ErrorOverflow" xml:space="preserve">
+    <value>I valori inseriti generano risultati irrealistici. Regola i valori.</value>
+  </data>
   <data name="PremiumRequired" xml:space="preserve">
     <value>Premium Richiesto</value>
   </data>
@@ -735,6 +741,18 @@
   </data>
   <data name="DeleteError" xml:space="preserve">
     <value>Eliminazione fallita. Riprova.</value>
+  </data>
+  <data name="LoadError" xml:space="preserve">
+    <value>Errore di caricamento</value>
+  </data>
+  <data name="LoadErrorExpenses" xml:space="preserve">
+    <value>Spese</value>
+  </data>
+  <data name="LoadErrorBudgets" xml:space="preserve">
+    <value>Budget</value>
+  </data>
+  <data name="LoadErrorRecurring" xml:space="preserve">
+    <value>Transazioni ricorrenti</value>
   </data>
   <data name="Warning" xml:space="preserve">
     <value>Avviso</value>
@@ -1067,4 +1085,16 @@
     <value>Perdita %</value>
   </data>
 
+  <data name="PerAnnum" xml:space="preserve">
+    <value>annuo</value>
+  </data>
+  <data name="FinancialStatistics" xml:space="preserve">
+    <value>Statistiche finanziarie</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nuovo</value>
+  </data>
+  <data name="PressBackToExit" xml:space="preserve">
+    <value>Premi di nuovo indietro per uscire</value>
+  </data>
 </root>

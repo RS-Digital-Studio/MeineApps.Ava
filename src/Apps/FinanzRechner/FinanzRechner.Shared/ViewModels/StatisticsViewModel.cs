@@ -15,7 +15,7 @@ using SkiaSharp;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class StatisticsViewModel : ObservableObject
+public partial class StatisticsViewModel : ObservableObject, IDisposable
 {
     private readonly IExpenseService _expenseService;
     private readonly IExportService _exportService;
@@ -50,11 +50,20 @@ public partial class StatisticsViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Markiert die Daten als veraltet, sodass beim nächsten Tab-Wechsel neu geladen wird.
+    /// </summary>
+    public void InvalidateCache() => _isDataStale = true;
+    private bool _isDataStale = true;
+
+    /// <summary>
     /// Wird beim Tab-Wechsel zur Statistik aufgerufen.
+    /// Lädt nur neu wenn Daten als veraltet markiert sind.
     /// </summary>
     public async Task OnAppearingAsync()
     {
+        if (!_isDataStale) return;
         await LoadStatisticsAsync();
+        _isDataStale = false;
     }
 
     #region Localized Text Properties
@@ -160,26 +169,29 @@ public partial class StatisticsViewModel : ObservableObject
             return;
         }
 
-        LoadStatisticsAsync().ContinueWith(t =>
-        {
-            if (t.IsFaulted)
-            {
-                var errorTitle = _localizationService.GetString("Error") ?? "Error";
-                MessageRequested?.Invoke(errorTitle, t.Exception?.Message ?? string.Empty);
-            }
-        }, TaskScheduler.Default);
+        _ = LoadStatisticsWithErrorHandlingAsync();
     }
 
     partial void OnSelectedDateChanged(DateTime value)
     {
-        LoadStatisticsAsync().ContinueWith(t =>
+        _ = LoadStatisticsWithErrorHandlingAsync();
+    }
+
+    /// <summary>
+    /// Lädt Statistiken und fängt Fehler auf dem UI-Thread ab.
+    /// </summary>
+    private async Task LoadStatisticsWithErrorHandlingAsync()
+    {
+        try
         {
-            if (t.IsFaulted)
-            {
-                var errorTitle = _localizationService.GetString("Error") ?? "Error";
-                MessageRequested?.Invoke(errorTitle, t.Exception?.Message ?? string.Empty);
-            }
-        }, TaskScheduler.Default);
+            await LoadStatisticsAsync();
+            _isDataStale = false;
+        }
+        catch (Exception ex)
+        {
+            var errorTitle = _localizationService.GetString("Error") ?? "Error";
+            MessageRequested?.Invoke(errorTitle, ex.Message);
+        }
     }
 
     #endregion
@@ -205,7 +217,7 @@ public partial class StatisticsViewModel : ObservableObject
     private bool _isLoading;
 
     [ObservableProperty]
-    private bool _isExportingPdf;
+    private bool _isExporting;
 
     [ObservableProperty]
     private bool _hasNoData;
@@ -360,6 +372,7 @@ public partial class StatisticsViewModel : ObservableObject
                     totalExpenses > 0 ? kvp.Value / totalExpenses : 0,
                     GetCategoryName(kvp.Key)))
                 .OrderByDescending(c => c.Amount)
+                .ThenBy(c => c.CategoryName)
                 .ToList();
 
             ExpensesByCategory = new ObservableCollection<CategoryStatistic>(expenseCategories);
@@ -376,6 +389,7 @@ public partial class StatisticsViewModel : ObservableObject
                     totalIncome > 0 ? kvp.Value / totalIncome : 0,
                     GetCategoryName(kvp.Key)))
                 .OrderByDescending(c => c.Amount)
+                .ThenBy(c => c.CategoryName)
                 .ToList();
 
             IncomeByCategory = new ObservableCollection<CategoryStatistic>(incomeCategories);
@@ -446,7 +460,7 @@ public partial class StatisticsViewModel : ObservableObject
         }
         else
         {
-            ExpensesTrend = currentMonthExpenses > 0 ? "+\u221e" : "0%";
+            ExpensesTrend = currentMonthExpenses > 0 ? (_localizationService.GetString("New") ?? "Neu") : "—";
         }
 
         if (LastMonthIncome > 0)
@@ -456,7 +470,7 @@ public partial class StatisticsViewModel : ObservableObject
         }
         else
         {
-            IncomeTrend = currentMonthIncome > 0 ? "+\u221e" : "0%";
+            IncomeTrend = currentMonthIncome > 0 ? (_localizationService.GetString("New") ?? "Neu") : "—";
         }
 
         // Determine label color based on theme (light vs dark)
@@ -507,7 +521,7 @@ public partial class StatisticsViewModel : ObservableObject
             {
                 LabelsPaint = new SolidColorPaint(labelColor),
                 TextSize = 12,
-                Labeler = value => $"{value:N0} \u20ac"
+                Labeler = value => CurrencyHelper.FormatAxis(value)
             }
         ];
     }
@@ -733,7 +747,7 @@ public partial class StatisticsViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportToCsvAsync()
     {
-        if (IsExportingPdf) return;
+        if (IsExporting) return;
 
         // Premium: Direkt exportieren. Free: Ad-Overlay anzeigen.
         if (_purchaseService.IsPremium)
@@ -748,11 +762,11 @@ public partial class StatisticsViewModel : ObservableObject
 
     private async Task DoExportToCsvAsync()
     {
-        if (IsExportingPdf) return;
+        if (IsExporting) return;
 
         try
         {
-            IsExportingPdf = true;
+            IsExporting = true;
 
             var (startDate, endDate) = GetDateRange();
             var suggestedName = $"statistics_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
@@ -780,7 +794,7 @@ public partial class StatisticsViewModel : ObservableObject
         }
         finally
         {
-            IsExportingPdf = false;
+            IsExporting = false;
         }
     }
 
@@ -799,6 +813,7 @@ public partial class StatisticsViewModel : ObservableObject
     private async Task ShowExportStatusAsync(string message)
     {
         _statusCts?.Cancel();
+        _statusCts?.Dispose();
         _statusCts = new CancellationTokenSource();
         var token = _statusCts.Token;
 
@@ -816,7 +831,7 @@ public partial class StatisticsViewModel : ObservableObject
     [RelayCommand]
     private async Task ExportToPdfAsync()
     {
-        if (IsExportingPdf) return;
+        if (IsExporting) return;
 
         // Premium: Direkt exportieren. Free: Ad-Overlay anzeigen.
         if (_purchaseService.IsPremium)
@@ -835,7 +850,7 @@ public partial class StatisticsViewModel : ObservableObject
     /// </summary>
     private async Task DoExportToPdfAsync()
     {
-        if (IsExportingPdf) return;
+        if (IsExporting) return;
 
         try
         {
@@ -851,7 +866,7 @@ public partial class StatisticsViewModel : ObservableObject
                 targetPath = Path.Combine(exportDir, suggestedName);
             }
 
-            IsExportingPdf = true;
+            IsExporting = true;
             var (pdfStartDate, pdfEndDate) = GetDateRange();
             var filePath = await _exportService.ExportStatisticsToPdfAsync(PeriodLabel, pdfStartDate, pdfEndDate, targetPath);
 
@@ -868,8 +883,19 @@ public partial class StatisticsViewModel : ObservableObject
         }
         finally
         {
-            IsExportingPdf = false;
+            IsExporting = false;
         }
+    }
+
+    #endregion
+
+    #region IDisposable
+
+    public void Dispose()
+    {
+        _statusCts?.Cancel();
+        _statusCts?.Dispose();
+        _statusCts = null;
     }
 
     #endregion

@@ -157,7 +157,7 @@
     <value>Envoyer des commentaires</value>
   </data>
   <data name="PrivacyPolicy" xml:space="preserve">
-    <value>Politique de confidentialite</value>
+    <value>Politique de confidentialité</value>
   </data>
 
   <!-- Themes -->
@@ -165,25 +165,25 @@
     <value>Minuit</value>
   </data>
   <data name="ThemeMidnightDesc" xml:space="preserve">
-    <value>Theme indigo sombre</value>
+    <value>Thème indigo sombre</value>
   </data>
   <data name="ThemeAurora" xml:space="preserve">
     <value>Aurore</value>
   </data>
   <data name="ThemeAuroraDesc" xml:space="preserve">
-    <value>Theme degrade rose sombre</value>
+    <value>Thème dégradé rose sombre</value>
   </data>
   <data name="ThemeDaylight" xml:space="preserve">
-    <value>Lumiere du jour</value>
+    <value>Lumière du jour</value>
   </data>
   <data name="ThemeDaylightDesc" xml:space="preserve">
-    <value>Theme bleu clair</value>
+    <value>Thème bleu clair</value>
   </data>
   <data name="ThemeForest" xml:space="preserve">
-    <value>Foret</value>
+    <value>Forêt</value>
   </data>
   <data name="ThemeForestDesc" xml:space="preserve">
-    <value>Theme vert sombre</value>
+    <value>Thème vert sombre</value>
   </data>
 
   <!-- Expense Tracker -->
@@ -603,6 +603,12 @@
   <data name="ErrorInvalidTransaction" xml:space="preserve">
     <value>Veuillez saisir une description et un montant.</value>
   </data>
+  <data name="ErrorEndDateBeforeStart" xml:space="preserve">
+    <value>La date de fin doit être postérieure à la date de début.</value>
+  </data>
+  <data name="ErrorOverflow" xml:space="preserve">
+    <value>Les valeurs saisies mènent à des résultats irréalistes. Veuillez ajuster.</value>
+  </data>
   <data name="PremiumRequired" xml:space="preserve">
     <value>Premium Requis</value>
   </data>
@@ -735,6 +741,18 @@
   </data>
   <data name="DeleteError" xml:space="preserve">
     <value>Échec de la suppression. Veuillez réessayer.</value>
+  </data>
+  <data name="LoadError" xml:space="preserve">
+    <value>Erreur de chargement</value>
+  </data>
+  <data name="LoadErrorExpenses" xml:space="preserve">
+    <value>Dépenses</value>
+  </data>
+  <data name="LoadErrorBudgets" xml:space="preserve">
+    <value>Budgets</value>
+  </data>
+  <data name="LoadErrorRecurring" xml:space="preserve">
+    <value>Transactions récurrentes</value>
   </data>
   <data name="Warning" xml:space="preserve">
     <value>Avertissement</value>
@@ -916,36 +934,36 @@
     <value>Aucune transaction</value>
   </data>
   <data name="EmptyTransactionsDesc" xml:space="preserve">
-    <value>Commencez a suivre vos revenus et depenses avec le bouton +</value>
+    <value>Commencez à suivre vos revenus et dépenses avec le bouton +</value>
   </data>
   <data name="EmptyStatsTitle" xml:space="preserve">
     <value>Aucune statistique</value>
   </data>
   <data name="EmptyStatsDesc" xml:space="preserve">
-    <value>Ajoutez d'abord des transactions pour voir votre apercu financier</value>
+    <value>Ajoutez d'abord des transactions pour voir votre aperçu financier</value>
   </data>
   <data name="EmptyBudgetsTitle" xml:space="preserve">
     <value>Aucun budget</value>
   </data>
   <data name="EmptyBudgetsDesc" xml:space="preserve">
-    <value>Definissez des limites de depenses mensuelles pour vos categories</value>
+    <value>Définissez des limites de dépenses mensuelles pour vos catégories</value>
   </data>
   <data name="EmptyRecurringTitle" xml:space="preserve">
-    <value>Aucune entree recurrente</value>
+    <value>Aucune entrée récurrente</value>
   </data>
   <data name="EmptyRecurringDesc" xml:space="preserve">
-    <value>Ajoutez des revenus ou depenses recurrentes qui se repetent automatiquement</value>
+    <value>Ajoutez des revenus ou dépenses récurrentes qui se répètent automatiquement</value>
   </data>
 
   <!-- Recurring (Add Dialog) -->
   <data name="Recurring" xml:space="preserve">
-    <value>Recurrent</value>
+    <value>Récurrent</value>
   </data>
   <data name="MakeRecurring" xml:space="preserve">
-    <value>Rendre recurrent</value>
+    <value>Rendre récurrent</value>
   </data>
   <data name="RecurringHint" xml:space="preserve">
-    <value>Enregistre egalement comme entree recurrente</value>
+    <value>Enregistré également comme entrée récurrente</value>
   </data>
   <data name="SectionBudget" xml:space="preserve">
     <value>État du budget</value>
@@ -985,30 +1003,30 @@
 
   <!-- Rapport d'analyse budgetaire -->
   <data name="BudgetAnalysisTitle" xml:space="preserve">
-    <value>Analyse Budgetaire</value>
+    <value>Analyse Budgétaire</value>
   </data>
   <data name="BudgetAnalysisDesc" xml:space="preserve">
-    <value>Regarde une video pour voir ton rapport mensuel detaille.</value>
+    <value>Regarde une vidéo pour voir ton rapport mensuel détaillé.</value>
   </data>
   <data name="MonthlyReport" xml:space="preserve">
     <value>Rapport Mensuel</value>
   </data>
   <data name="SavingTip" xml:space="preserve">
-    <value>Depense la plus importante : {0}</value>
+    <value>Dépense la plus importante : {0}</value>
   </data>
   <data name="ComparedToLastMonth" xml:space="preserve">
     <value>Par rapport au mois dernier</value>
   </data>
 
-  <!-- Statistiques etendues -->
+  <!-- Statistiques étendues -->
   <data name="ExtendedStatsTitle" xml:space="preserve">
-    <value>Statistiques Etendues</value>
+    <value>Statistiques Étendues</value>
   </data>
   <data name="ExtendedStatsDesc" xml:space="preserve">
-    <value>Regarde une video pour 24h d'acces aux statistiques trimestrielles et annuelles.</value>
+    <value>Regarde une vidéo pour 24h d'accès aux statistiques trimestrielles et annuelles.</value>
   </data>
   <data name="AccessFor24h" xml:space="preserve">
-    <value>Acces pendant 24 heures</value>
+    <value>Accès pendant 24 heures</value>
   </data>
   <data name="BudgetGoalReached" xml:space="preserve">
     <value>Objectif atteint !</value>
@@ -1067,4 +1085,16 @@
     <value>Perte %</value>
   </data>
 
+  <data name="PerAnnum" xml:space="preserve">
+    <value>par an</value>
+  </data>
+  <data name="FinancialStatistics" xml:space="preserve">
+    <value>Statistiques financières</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Nouveau</value>
+  </data>
+  <data name="PressBackToExit" xml:space="preserve">
+    <value>Appuyez à nouveau pour quitter</value>
+  </data>
 </root>

@@ -91,6 +91,9 @@ public partial class SavingsPlanViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasResult;
 
+    [ObservableProperty]
+    private string? _errorMessage;
+
     public string TotalDepositsDisplay => Result != null ? CurrencyHelper.Format(Result.TotalDeposits) : "";
     public string FinalAmountDisplay => Result != null ? CurrencyHelper.Format(Result.FinalAmount) : "";
     public string InterestEarnedDisplay => Result != null ? CurrencyHelper.Format(Result.InterestEarned) : "";
@@ -192,14 +195,23 @@ public partial class SavingsPlanViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Calculate()
     {
+        ErrorMessage = null;
         if (MonthlyDeposit < 0 || Years <= 0)
         {
             HasResult = false;
             return;
         }
 
-        Result = _financeEngine.CalculateSavingsPlan(MonthlyDeposit, AnnualRate, Years, InitialDeposit);
-        HasResult = true;
+        try
+        {
+            Result = _financeEngine.CalculateSavingsPlan(MonthlyDeposit, AnnualRate, Years, InitialDeposit);
+            HasResult = true;
+        }
+        catch (OverflowException)
+        {
+            HasResult = false;
+            ErrorMessage = _localizationService.GetString("ErrorOverflow") ?? "The input values lead to unrealistic results.";
+        }
     }
 
     [RelayCommand]
@@ -215,6 +227,7 @@ public partial class SavingsPlanViewModel : ObservableObject, IDisposable
         Years = 20;
         Result = null;
         HasResult = false;
+        ErrorMessage = null;
         ChartSeries = Array.Empty<ISeries>();
     }
 

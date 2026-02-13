@@ -89,6 +89,9 @@ public partial class InflationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasResult;
 
+    [ObservableProperty]
+    private string? _errorMessage;
+
     public string PurchasingPowerDisplay => Result != null ? CurrencyHelper.Format(Result.PurchasingPower) : "";
     public string PurchasingPowerLossDisplay => Result != null ? CurrencyHelper.Format(Result.PurchasingPowerLoss) : "";
     public string FutureValueDisplay => Result != null ? CurrencyHelper.Format(Result.FutureValue) : "";
@@ -176,14 +179,23 @@ public partial class InflationViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Calculate()
     {
+        ErrorMessage = null;
         if (CurrentAmount <= 0 || Years <= 0)
         {
             HasResult = false;
             return;
         }
 
-        Result = _financeEngine.CalculateInflation(CurrentAmount, AnnualInflationRate, Years);
-        HasResult = true;
+        try
+        {
+            Result = _financeEngine.CalculateInflation(CurrentAmount, AnnualInflationRate, Years);
+            HasResult = true;
+        }
+        catch (OverflowException)
+        {
+            HasResult = false;
+            ErrorMessage = _localizationService.GetString("ErrorOverflow") ?? "The input values lead to unrealistic results.";
+        }
     }
 
     [RelayCommand]
@@ -198,6 +210,7 @@ public partial class InflationViewModel : ObservableObject, IDisposable
         Years = 10;
         Result = null;
         HasResult = false;
+        ErrorMessage = null;
         ChartSeries = Array.Empty<ISeries>();
     }
 

@@ -32,6 +32,11 @@ public partial class MainViewModel : ObservableObject
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
 
+    /// <summary>
+    /// Wird ausgelöst um einen Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").
+    /// </summary>
+    public event Action<string>? ExitHintRequested;
+
     public ExpenseTrackerViewModel ExpenseTrackerViewModel { get; }
     public StatisticsViewModel StatisticsViewModel { get; }
     public SettingsViewModel SettingsViewModel { get; }
@@ -87,10 +92,29 @@ public partial class MainViewModel : ObservableObject
         // ExpenseTracker FloatingText weiterleiten
         expenseTrackerViewModel.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
 
+        // Datenänderungen im Tracker invalidieren Home + Statistics Cache
+        expenseTrackerViewModel.DataChanged += () =>
+        {
+            statisticsViewModel.InvalidateCache();
+            _isHomeDataStale = true;
+        };
+
         StatisticsViewModel = statisticsViewModel;
         SettingsViewModel = settingsViewModel;
         BudgetsViewModel = budgetsViewModel;
         RecurringTransactionsViewModel = recurringTransactionsViewModel;
+
+        // Budget-/Dauerauftrags-Änderungen invalidieren Home + Statistics Cache
+        budgetsViewModel.DataChanged += () =>
+        {
+            statisticsViewModel.InvalidateCache();
+            _isHomeDataStale = true;
+        };
+        recurringTransactionsViewModel.DataChanged += () =>
+        {
+            statisticsViewModel.InvalidateCache();
+            _isHomeDataStale = true;
+        };
         CompoundInterestViewModel = compoundInterestViewModel;
         SavingsPlanViewModel = savingsPlanViewModel;
         LoanViewModel = loanViewModel;
@@ -131,6 +155,72 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isPremium;
+
+    /// <summary>Home-Tab Daten-Cache: true = veraltet, muss neu geladen werden.</summary>
+    private bool _isHomeDataStale = true;
+
+    #region Back-Navigation (Double-Back-to-Exit)
+
+    private DateTime _lastBackPressTime = DateTime.MinValue;
+
+    /// <summary>
+    /// Verarbeitet den Zurück-Button. Gibt true zurück wenn behandelt,
+    /// false wenn die App geschlossen werden darf (Double-Back).
+    /// </summary>
+    public bool HandleBackPressed()
+    {
+        // Overlays schließen (höchste Priorität zuerst)
+        if (ShowBudgetAnalysisOverlay) { CloseBudgetAnalysis(); return true; }
+        if (ShowBudgetAdOverlay) { ShowBudgetAdOverlay = false; return true; }
+        if (ShowQuickAdd) { ShowQuickAdd = false; return true; }
+
+        // Tab-spezifische Dialoge schließen
+        if (SelectedTab == 3 && SettingsViewModel.ShowRestoreConfirmation)
+        {
+            SettingsViewModel.CancelRestoreCommand.Execute(null);
+            return true;
+        }
+        if (SelectedTab == 1 && ExpenseTrackerViewModel.IsAddingExpense)
+        {
+            ExpenseTrackerViewModel.CancelAddExpenseCommand.Execute(null);
+            return true;
+        }
+
+        // SubPage-interne Dialoge schließen, dann SubPage selbst
+        if (IsSubPageOpen)
+        {
+            if (IsBudgetsPageActive && BudgetsViewModel.ShowAddBudget)
+            {
+                BudgetsViewModel.CancelAddBudgetCommand.Execute(null);
+                return true;
+            }
+            if (IsRecurringPageActive && RecurringTransactionsViewModel.ShowAddDialog)
+            {
+                RecurringTransactionsViewModel.CancelAddDialogCommand.Execute(null);
+                return true;
+            }
+            CurrentSubPage = null;
+            return true;
+        }
+
+        // Calculator schließen
+        if (IsCalculatorOpen) { CloseCalculator(); return true; }
+
+        // Nicht auf Home-Tab → zu Home wechseln
+        if (SelectedTab != 0) { SelectedTab = 0; return true; }
+
+        // Home-Tab, kein Overlay → Double-Back-to-Exit (2s Fenster)
+        var now = DateTime.UtcNow;
+        if ((now - _lastBackPressTime).TotalSeconds < 2)
+            return false;
+
+        _lastBackPressTime = now;
+        ExitHintRequested?.Invoke(
+            _localizationService.GetString("PressBackToExit") ?? "Press back again to exit");
+        return true;
+    }
+
+    #endregion
 
     #region Navigation
 
@@ -186,14 +276,19 @@ public partial class MainViewModel : ObservableObject
             CloseCalculator();
         if (IsSubPageOpen)
             CurrentSubPage = null;
+        if (ShowQuickAdd)
+            ShowQuickAdd = false;
         if (ShowBudgetAdOverlay)
             ShowBudgetAdOverlay = false;
         if (ShowBudgetAnalysisOverlay)
             CloseBudgetAnalysis();
 
-        // Daten laden beim Tab-Wechsel
-        if (value == 0)
+        // Daten laden beim Tab-Wechsel (nur wenn Cache veraltet)
+        if (value == 0 && _isHomeDataStale)
+        {
             _ = LoadMonthlyDataAsync();
+            _isHomeDataStale = false;
+        }
         else if (value == 1)
             _ = ExpenseTrackerViewModel.OnAppearingAsync();
         else if (value == 2)
@@ -592,6 +687,7 @@ public partial class MainViewModel : ObservableObject
         }
 
         await LoadMonthlyDataAsync();
+        _isHomeDataStale = false;
     }
 
     private async Task LoadMonthlyDataAsync()
@@ -702,6 +798,8 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private BudgetAnalysisReport? _budgetAnalysisReport;
 
+    private CancellationTokenSource? _budgetAnalysisCts;
+
     public string MonthlyReportText => _localizationService.GetString("MonthlyReport") ?? "Monthly Report";
     public string BudgetAnalysisTitleText => _localizationService.GetString("BudgetAnalysisTitle") ?? "Budget Analysis";
     public string BudgetAnalysisDescText => _localizationService.GetString("BudgetAnalysisDesc") ?? "Watch a video to see your detailed monthly report.";
@@ -752,12 +850,21 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void CloseBudgetAnalysis()
     {
+        _budgetAnalysisCts?.Cancel();
+        _budgetAnalysisCts?.Dispose();
+        _budgetAnalysisCts = null;
         ShowBudgetAnalysisOverlay = false;
         BudgetAnalysisReport = null;
     }
 
     private async Task GenerateAndShowBudgetAnalysis()
     {
+        // Vorherige Generierung abbrechen falls noch aktiv
+        _budgetAnalysisCts?.Cancel();
+        _budgetAnalysisCts?.Dispose();
+        _budgetAnalysisCts = new CancellationTokenSource();
+        var ct = _budgetAnalysisCts.Token;
+
         try
         {
             var today = DateTime.Today;
@@ -767,6 +874,7 @@ public partial class MainViewModel : ObservableObject
             // Aktuellen Monat laden
             var filter = new ExpenseFilter { StartDate = startDate, EndDate = endDate };
             var transactions = await _expenseService.GetExpensesAsync(filter);
+            ct.ThrowIfCancellationRequested();
 
             double totalExpenses = 0, totalIncome = 0;
             var categoryExpenses = new Dictionary<ExpenseCategory, double>();
@@ -791,6 +899,8 @@ public partial class MainViewModel : ObservableObject
             var prevEnd = startDate.AddDays(-1);
             var prevFilter = new ExpenseFilter { StartDate = prevStart, EndDate = prevEnd };
             var prevTransactions = await _expenseService.GetExpensesAsync(prevFilter);
+            ct.ThrowIfCancellationRequested();
+
             double prevExpenses = 0;
             foreach (var t in prevTransactions)
             {
@@ -838,11 +948,17 @@ public partial class MainViewModel : ObservableObject
                 MonthChangePercent = changePercent
             };
 
+            ct.ThrowIfCancellationRequested();
+
             BudgetAnalysisReport = report;
             ShowBudgetAnalysisOverlay = true;
 
             // Celebration-Effekt bei Budget-Analyse
             CelebrationRequested?.Invoke();
+        }
+        catch (OperationCanceledException)
+        {
+            // Generierung wurde abgebrochen (Tab-Wechsel oder Overlay geschlossen)
         }
         catch (Exception ex)
         {
@@ -904,12 +1020,17 @@ public partial class MainViewModel : ObservableObject
 
             await _expenseService.AddExpenseAsync(expense);
             ShowQuickAdd = false;
+
+            // Caches der Sub-VMs invalidieren (Daten haben sich geändert)
+            ExpenseTrackerViewModel.InvalidateCache();
+            StatisticsViewModel.InvalidateCache();
+
             await LoadMonthlyDataAsync();
 
             // Floating Text fuer Quick-Add Feedback
-            var prefix = expense.Type == TransactionType.Income ? "+" : "-";
+            var signedAmount = expense.Type == TransactionType.Income ? expense.Amount : -expense.Amount;
             var cat = expense.Type == TransactionType.Income ? "income" : "expense";
-            FloatingTextRequested?.Invoke($"{prefix}{expense.Amount:N2}\u20ac", cat);
+            FloatingTextRequested?.Invoke(CurrencyHelper.FormatCompactSigned(signedAmount), cat);
         }
         catch (Exception ex)
         {

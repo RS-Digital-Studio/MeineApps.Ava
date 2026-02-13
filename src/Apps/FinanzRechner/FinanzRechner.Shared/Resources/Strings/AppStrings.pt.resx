@@ -157,7 +157,7 @@
     <value>Enviar feedback</value>
   </data>
   <data name="PrivacyPolicy" xml:space="preserve">
-    <value>Politica de privacidade</value>
+    <value>Política de privacidade</value>
   </data>
 
   <!-- Themes -->
@@ -603,6 +603,12 @@
   <data name="ErrorInvalidTransaction" xml:space="preserve">
     <value>Por favor, insira descrição e valor.</value>
   </data>
+  <data name="ErrorEndDateBeforeStart" xml:space="preserve">
+    <value>A data de término deve ser posterior à data de início.</value>
+  </data>
+  <data name="ErrorOverflow" xml:space="preserve">
+    <value>Os valores inseridos geram resultados irreais. Por favor, ajuste.</value>
+  </data>
   <data name="PremiumRequired" xml:space="preserve">
     <value>Premium Necessário</value>
   </data>
@@ -735,6 +741,18 @@
   </data>
   <data name="DeleteError" xml:space="preserve">
     <value>Falha ao excluir. Por favor, tente novamente.</value>
+  </data>
+  <data name="LoadError" xml:space="preserve">
+    <value>Erro de carregamento</value>
+  </data>
+  <data name="LoadErrorExpenses" xml:space="preserve">
+    <value>Despesas</value>
+  </data>
+  <data name="LoadErrorBudgets" xml:space="preserve">
+    <value>Orçamentos</value>
+  </data>
+  <data name="LoadErrorRecurring" xml:space="preserve">
+    <value>Transações recorrentes</value>
   </data>
   <data name="Warning" xml:space="preserve">
     <value>Aviso</value>
@@ -913,19 +931,19 @@
 
   <!-- Empty State Messages -->
   <data name="EmptyTransactionsTitle" xml:space="preserve">
-    <value>Sem transacoes</value>
+    <value>Sem transações</value>
   </data>
   <data name="EmptyTransactionsDesc" xml:space="preserve">
-    <value>Comece a registrar suas receitas e despesas com o botao +</value>
+    <value>Comece a registrar suas receitas e despesas com o botão +</value>
   </data>
   <data name="EmptyStatsTitle" xml:space="preserve">
-    <value>Sem estatisticas</value>
+    <value>Sem estatísticas</value>
   </data>
   <data name="EmptyStatsDesc" xml:space="preserve">
-    <value>Adicione transacoes primeiro para ver seu resumo financeiro</value>
+    <value>Adicione transações primeiro para ver seu resumo financeiro</value>
   </data>
   <data name="EmptyBudgetsTitle" xml:space="preserve">
-    <value>Sem orcamentos</value>
+    <value>Sem orçamentos</value>
   </data>
   <data name="EmptyBudgetsDesc" xml:space="preserve">
     <value>Defina limites de gastos mensais para suas categorias</value>
@@ -945,7 +963,7 @@
     <value>Tornar recorrente</value>
   </data>
   <data name="RecurringHint" xml:space="preserve">
-    <value>Tambem salvo como entrada recorrente</value>
+    <value>Também salvo como entrada recorrente</value>
   </data>
   <data name="SectionBudget" xml:space="preserve">
     <value>Estado do orçamento</value>
@@ -985,27 +1003,27 @@
 
   <!-- Relatorio de analise de orcamento -->
   <data name="BudgetAnalysisTitle" xml:space="preserve">
-    <value>Analise de Orcamento</value>
+    <value>Análise de Orçamento</value>
   </data>
   <data name="BudgetAnalysisDesc" xml:space="preserve">
-    <value>Assista um video para ver seu relatorio mensal detalhado.</value>
+    <value>Assista um vídeo para ver seu relatório mensal detalhado.</value>
   </data>
   <data name="MonthlyReport" xml:space="preserve">
-    <value>Relatorio Mensal</value>
+    <value>Relatório Mensal</value>
   </data>
   <data name="SavingTip" xml:space="preserve">
     <value>Maior gasto: {0}</value>
   </data>
   <data name="ComparedToLastMonth" xml:space="preserve">
-    <value>Comparado com o mes anterior</value>
+    <value>Comparado com o mês anterior</value>
   </data>
 
-  <!-- Estatisticas estendidas -->
+  <!-- Estatísticas estendidas -->
   <data name="ExtendedStatsTitle" xml:space="preserve">
-    <value>Estatisticas Estendidas</value>
+    <value>Estatísticas Estendidas</value>
   </data>
   <data name="ExtendedStatsDesc" xml:space="preserve">
-    <value>Assista um video para 24h de acesso a estatisticas trimestrais e anuais.</value>
+    <value>Assista um vídeo para 24h de acesso a estatísticas trimestrais e anuais.</value>
   </data>
   <data name="AccessFor24h" xml:space="preserve">
     <value>Acesso por 24 horas</value>
@@ -1067,4 +1085,16 @@
     <value>Perda %</value>
   </data>
 
+  <data name="PerAnnum" xml:space="preserve">
+    <value>ao ano</value>
+  </data>
+  <data name="FinancialStatistics" xml:space="preserve">
+    <value>Estatísticas financeiras</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Novo</value>
+  </data>
+  <data name="PressBackToExit" xml:space="preserve">
+    <value>Pressione voltar novamente para sair</value>
+  </data>
 </root>

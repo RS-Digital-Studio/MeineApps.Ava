@@ -5,16 +5,32 @@ namespace FinanzRechner.Models;
 /// </summary>
 public class FinanceEngine
 {
+    /// <summary>
+    /// Prüft ob ein Berechnungsergebnis gültig ist (kein Infinity/NaN).
+    /// Wirft OverflowException bei ungültigen Werten.
+    /// </summary>
+    private static void ValidateResult(double value, string description)
+    {
+        if (double.IsInfinity(value) || double.IsNaN(value))
+            throw new OverflowException($"Berechnungsergebnis ungültig ({description}): Die Eingabewerte führen zu einem Überlauf.");
+    }
+
     #region Compound Interest
 
     public CompoundInterestResult CalculateCompoundInterest(
         double principal, double annualRate, int years, int compoundingsPerYear = 1)
     {
+        if (years <= 0)
+            throw new ArgumentException("Years must be greater than zero.", nameof(years));
+        if (compoundingsPerYear <= 0)
+            throw new ArgumentException("Compoundings per year must be greater than zero.", nameof(compoundingsPerYear));
+
         var rate = annualRate / 100;
         var n = compoundingsPerYear;
         var t = years;
 
         var finalAmount = principal * Math.Pow(1 + rate / n, n * t);
+        ValidateResult(finalAmount, "FinalAmount");
         var interestEarned = finalAmount - principal;
 
         return new CompoundInterestResult
@@ -44,6 +60,7 @@ public class FinanceEngine
             savingsGrowth = monthlyDeposit * months;
 
         var finalAmount = initialGrowth + savingsGrowth;
+        ValidateResult(finalAmount, "FinalAmount");
         var totalDeposits = initialDeposit + (monthlyDeposit * months);
         var interestEarned = finalAmount - totalDeposits;
 
@@ -62,6 +79,11 @@ public class FinanceEngine
 
     public LoanResult CalculateLoan(double loanAmount, double annualRate, int years)
     {
+        if (loanAmount <= 0)
+            throw new ArgumentException("Loan amount must be greater than zero.", nameof(loanAmount));
+        if (years <= 0)
+            throw new ArgumentException("Years must be greater than zero.", nameof(years));
+
         var monthlyRate = (annualRate / 100) / 12;
         var months = years * 12;
 
@@ -76,6 +98,7 @@ public class FinanceEngine
         {
             monthlyPayment = loanAmount / months;
         }
+        ValidateResult(monthlyPayment, "MonthlyPayment");
 
         var totalPayment = monthlyPayment * months;
         var totalInterest = totalPayment - loanAmount;
@@ -141,6 +164,7 @@ public class FinanceEngine
             throw new ArgumentException("Years must be greater than zero.", nameof(years));
 
         var effectiveAnnualRate = (Math.Pow(finalValue / initialInvestment, 1.0 / years) - 1) * 100;
+        ValidateResult(effectiveAnnualRate, "EffectiveAnnualRate");
         var totalReturn = finalValue - initialInvestment;
         var totalReturnPercent = (totalReturn / initialInvestment) * 100;
 
@@ -161,9 +185,16 @@ public class FinanceEngine
     /// </summary>
     public InflationResult CalculateInflation(double currentAmount, double annualInflationRate, int years)
     {
+        if (currentAmount <= 0)
+            throw new ArgumentException("Current amount must be greater than zero.", nameof(currentAmount));
+        if (years <= 0)
+            throw new ArgumentException("Years must be greater than zero.", nameof(years));
+
         var rate = annualInflationRate / 100;
         var futureValue = currentAmount * Math.Pow(1 + rate, years);
+        ValidateResult(futureValue, "FutureValue");
         var purchasingPower = currentAmount / Math.Pow(1 + rate, years);
+        ValidateResult(purchasingPower, "PurchasingPower");
         var purchasingPowerLoss = currentAmount - purchasingPower;
         var lossPercent = (purchasingPowerLoss / currentAmount) * 100;
 

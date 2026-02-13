@@ -27,6 +27,8 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
 
     public event Action<string, string>? MessageRequested;
     public event Action<string, string>? FloatingTextRequested;
+    /// <summary>Wird ausgelöst wenn Daten geändert wurden (Add/Delete/Update), damit andere VMs ihren Cache invalidieren.</summary>
+    public event Action? DataChanged;
 
     public ExpenseTrackerViewModel(IExpenseService expenseService, ILocalizationService localizationService,
         IExportService exportService, IFileDialogService fileDialogService,
@@ -174,28 +176,31 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     partial void OnSelectedYearChanged(int value)
     {
         if (_suppressLoad) return;
-        LoadExpensesAsync().ContinueWith(t =>
-        {
-            if (t.IsFaulted)
-            {
-                var errorTitle = _localizationService.GetString("Error") ?? "Error";
-                MessageRequested?.Invoke(errorTitle, t.Exception?.Message ?? string.Empty);
-            }
-        }, TaskScheduler.Default);
+        _ = LoadExpensesWithErrorHandlingAsync();
     }
 
     partial void OnSelectedMonthChanged(int value)
     {
         OnPropertyChanged(nameof(MonthYearDisplay));
         if (_suppressLoad) return;
-        LoadExpensesAsync().ContinueWith(t =>
+        _ = LoadExpensesWithErrorHandlingAsync();
+    }
+
+    /// <summary>
+    /// Lädt Expenses und fängt Fehler auf dem UI-Thread ab.
+    /// </summary>
+    private async Task LoadExpensesWithErrorHandlingAsync()
+    {
+        try
         {
-            if (t.IsFaulted)
-            {
-                var errorTitle = _localizationService.GetString("Error") ?? "Error";
-                MessageRequested?.Invoke(errorTitle, t.Exception?.Message ?? string.Empty);
-            }
-        }, TaskScheduler.Default);
+            await LoadExpensesAsync();
+            _isDataStale = false;
+        }
+        catch (Exception ex)
+        {
+            var errorTitle = _localizationService.GetString("Error") ?? "Error";
+            MessageRequested?.Invoke(errorTitle, ex.Message);
+        }
     }
 
     #endregion
@@ -513,9 +518,17 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Wird beim Tab-Wechsel zum Tracker aufgerufen.
     /// </summary>
+    /// <summary>
+    /// Markiert die Daten als veraltet, sodass beim nächsten Tab-Wechsel neu geladen wird.
+    /// </summary>
+    public void InvalidateCache() => _isDataStale = true;
+    private bool _isDataStale = true;
+
     public async Task OnAppearingAsync()
     {
+        if (!_isDataStale) return;
         await LoadExpensesAsync();
+        _isDataStale = false;
     }
 
     [RelayCommand]
@@ -702,6 +715,15 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         if (string.IsNullOrWhiteSpace(NewExpenseDescription) || NewExpenseAmount <= 0)
             return;
 
+        // Enddatum muss nach Startdatum liegen (bei Daueraufträgen)
+        if (IsRecurring && HasRecurringEndDate && RecurringEndDate < RecurringStartDate)
+        {
+            MessageRequested?.Invoke(
+                _localizationService.GetString("Error") ?? "Error",
+                _localizationService.GetString("ErrorEndDateBeforeStart") ?? "End date must be after start date.");
+            return;
+        }
+
         try
         {
             if (IsEditing && SelectedExpense != null)
@@ -732,9 +754,9 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
                 await _expenseService.AddExpenseAsync(expense);
 
                 // Floating Text fuer visuelles Feedback
-                var prefix = expense.Type == TransactionType.Income ? "+" : "-";
+                var signedAmount = expense.Type == TransactionType.Income ? expense.Amount : -expense.Amount;
                 var cat = expense.Type == TransactionType.Income ? "income" : "expense";
-                FloatingTextRequested?.Invoke($"{prefix}{expense.Amount:N2}\u20ac", cat);
+                FloatingTextRequested?.Invoke(Helpers.CurrencyHelper.FormatCompactSigned(signedAmount), cat);
 
                 // Dauerauftrag erstellen wenn aktiviert
                 if (IsRecurring)
@@ -755,6 +777,9 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
                     await _expenseService.CreateRecurringTransactionAsync(recurring);
                 }
             }
+
+            // Andere VMs informieren dass sich Daten geändert haben
+            DataChanged?.Invoke();
 
             // Datum VOR ResetForm sichern (ResetForm setzt NewExpenseDate auf Today)
             var savedDate = NewExpenseDate;
@@ -841,6 +866,8 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             var expense = _deletedExpenses.Dequeue();
             await _expenseService.DeleteExpenseAsync(expense.Id);
         }
+        // Andere VMs informieren dass sich Daten geändert haben
+        DataChanged?.Invoke();
     }
 
     [RelayCommand]
@@ -971,6 +998,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     private async Task ShowExportStatusAsync(string message)
     {
         _statusCts?.Cancel();
+        _statusCts?.Dispose();
         _statusCts = new CancellationTokenSource();
         var token = _statusCts.Token;
 
@@ -1156,6 +1184,8 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         _undoCancellation?.Dispose();
         _searchCancellation?.Cancel();
         _searchCancellation?.Dispose();
+        _statusCts?.Cancel();
+        _statusCts?.Dispose();
     }
 
     #endregion

@@ -20,6 +20,7 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     private static readonly object _cleanupLock = new();
 
     public event Action<string, string>? MessageRequested;
+    public event Action? DataChanged;
 
     public BudgetsViewModel(IExpenseService expenseService, ILocalizationService localizationService, INotificationService notificationService)
     {
@@ -105,6 +106,12 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     [ObservableProperty] private double _totalBudgetPercentage;
     [ObservableProperty] private bool _hasTotalBudget;
 
+    /// <summary>True wenn Gesamt-Budget überschritten (> 100%)</summary>
+    public bool IsTotalBudgetOverLimit => TotalBudgetPercentage > 100;
+
+    partial void OnTotalBudgetPercentageChanged(double value)
+        => OnPropertyChanged(nameof(IsTotalBudgetOverLimit));
+
     partial void OnTotalBudgetSpentChanged(double value)
         => OnPropertyChanged(nameof(TotalBudgetSpentDisplay));
 
@@ -147,7 +154,7 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
             TotalBudgetLimit = statuses.Sum(s => s.Limit);
             TotalBudgetSpent = statuses.Sum(s => s.Spent);
             TotalBudgetPercentage = TotalBudgetLimit > 0
-                ? Math.Min(100, TotalBudgetSpent / TotalBudgetLimit * 100)
+                ? TotalBudgetSpent / TotalBudgetLimit * 100
                 : 0;
             HasTotalBudget = true;
         }
@@ -266,6 +273,7 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
             await _expenseService.SetBudgetAsync(budget);
             ShowAddBudget = false;
             await LoadBudgetsAsync();
+            DataChanged?.Invoke();
         }
         catch (Exception)
         {
@@ -324,6 +332,7 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
                 await _expenseService.DeleteBudgetAsync(_deletedBudget.Category);
                 _deletedBudget = null;
                 ShowUndoDelete = false;
+                DataChanged?.Invoke();
             }
         }
         catch (TaskCanceledException)

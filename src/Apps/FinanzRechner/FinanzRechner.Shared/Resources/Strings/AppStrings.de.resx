@@ -157,7 +157,7 @@
     <value>Feedback senden</value>
   </data>
   <data name="PrivacyPolicy" xml:space="preserve">
-    <value>Datenschutzerklaerung</value>
+    <value>Datenschutzerklärung</value>
   </data>
 
   <!-- Themes -->
@@ -183,7 +183,7 @@
     <value>Wald</value>
   </data>
   <data name="ThemeForestDesc" xml:space="preserve">
-    <value>Dunkles Gruen-Thema</value>
+    <value>Dunkles Grün-Thema</value>
   </data>
 
   <!-- Expense Tracker -->
@@ -603,6 +603,12 @@
   <data name="ErrorInvalidTransaction" xml:space="preserve">
     <value>Bitte Beschreibung und Betrag eingeben.</value>
   </data>
+  <data name="ErrorEndDateBeforeStart" xml:space="preserve">
+    <value>Das Enddatum muss nach dem Startdatum liegen.</value>
+  </data>
+  <data name="ErrorOverflow" xml:space="preserve">
+    <value>Die Eingabewerte führen zu unrealistischen Ergebnissen. Bitte anpassen.</value>
+  </data>
   <data name="PremiumRequired" xml:space="preserve">
     <value>Premium erforderlich</value>
   </data>
@@ -735,6 +741,18 @@
   </data>
   <data name="DeleteError" xml:space="preserve">
     <value>Löschen fehlgeschlagen. Bitte versuchen Sie es erneut.</value>
+  </data>
+  <data name="LoadError" xml:space="preserve">
+    <value>Fehler beim Laden</value>
+  </data>
+  <data name="LoadErrorExpenses" xml:space="preserve">
+    <value>Ausgaben</value>
+  </data>
+  <data name="LoadErrorBudgets" xml:space="preserve">
+    <value>Budgets</value>
+  </data>
+  <data name="LoadErrorRecurring" xml:space="preserve">
+    <value>Daueraufträge</value>
   </data>
   <data name="Warning" xml:space="preserve">
     <value>Warnung</value>
@@ -922,19 +940,19 @@
     <value>Keine Statistiken</value>
   </data>
   <data name="EmptyStatsDesc" xml:space="preserve">
-    <value>Fuege zuerst Transaktionen hinzu, um deine Finanzuebersicht zu sehen</value>
+    <value>Füge zuerst Transaktionen hinzu, um deine Finanzübersicht zu sehen</value>
   </data>
   <data name="EmptyBudgetsTitle" xml:space="preserve">
     <value>Keine Budgets</value>
   </data>
   <data name="EmptyBudgetsDesc" xml:space="preserve">
-    <value>Setze monatliche Ausgabenlimits fuer deine Kategorien</value>
+    <value>Setze monatliche Ausgabenlimits für deine Kategorien</value>
   </data>
   <data name="EmptyRecurringTitle" xml:space="preserve">
     <value>Keine wiederkehrenden Buchungen</value>
   </data>
   <data name="EmptyRecurringDesc" xml:space="preserve">
-    <value>Fuege wiederkehrende Einnahmen oder Ausgaben hinzu, die sich automatisch wiederholen</value>
+    <value>Füge wiederkehrende Einnahmen oder Ausgaben hinzu, die sich automatisch wiederholen</value>
   </data>
 
   <!-- Recurring (Add Dialog) -->
@@ -994,7 +1012,7 @@
     <value>Monatsbericht</value>
   </data>
   <data name="SavingTip" xml:space="preserve">
-    <value>Groesste Ausgabe: {0}</value>
+    <value>Größte Ausgabe: {0}</value>
   </data>
   <data name="ComparedToLastMonth" xml:space="preserve">
     <value>Im Vergleich zum Vormonat</value>
@@ -1005,7 +1023,7 @@
     <value>Erweiterte Statistik</value>
   </data>
   <data name="ExtendedStatsDesc" xml:space="preserve">
-    <value>Schau ein Video fuer 24h Zugang zu Quartals- und Jahresstatistiken.</value>
+    <value>Schau ein Video für 24h Zugang zu Quartals- und Jahresstatistiken.</value>
   </data>
   <data name="AccessFor24h" xml:space="preserve">
     <value>24 Stunden Zugang</value>
@@ -1067,4 +1085,16 @@
     <value>Verlust %</value>
   </data>
 
+  <data name="PerAnnum" xml:space="preserve">
+    <value>p.a.</value>
+  </data>
+  <data name="FinancialStatistics" xml:space="preserve">
+    <value>Finanzstatistik</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Neu</value>
+  </data>
+  <data name="PressBackToExit" xml:space="preserve">
+    <value>Nochmal drücken zum Beenden</value>
+  </data>
 </root>

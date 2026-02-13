@@ -13,6 +13,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
     private readonly ILocalizationService _localizationService;
 
     public event Action<string, string>? MessageRequested;
+    public event Action? DataChanged;
 
     public RecurringTransactionsViewModel(IExpenseService expenseService, ILocalizationService localizationService)
     {
@@ -222,6 +223,15 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
             return;
         }
 
+        // Enddatum muss nach Startdatum liegen
+        if (HasEndDate && EndDate < StartDate)
+        {
+            var title = _localizationService.GetString("Error") ?? "Error";
+            var message = _localizationService.GetString("ErrorEndDateBeforeStart") ?? "End date must be after start date.";
+            MessageRequested?.Invoke(title, message);
+            return;
+        }
+
         try
         {
             if (_editingTransaction != null)
@@ -261,6 +271,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
             ShowAddDialog = false;
             ResetForm();
             await LoadTransactionsAsync();
+            DataChanged?.Invoke();
         }
         catch (Exception)
         {
@@ -318,6 +329,7 @@ public partial class RecurringTransactionsViewModel : ObservableObject, IDisposa
                 await _expenseService.DeleteRecurringTransactionAsync(_deletedTransaction.Id);
                 _deletedTransaction = null;
                 ShowUndoDelete = false;
+                DataChanged?.Invoke();
             }
         }
         catch (TaskCanceledException)

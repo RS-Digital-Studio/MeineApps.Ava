@@ -88,6 +88,9 @@ public partial class AmortizationViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasResult;
 
+    [ObservableProperty]
+    private string? _errorMessage;
+
     public string MonthlyPaymentDisplay => Result != null ? CurrencyHelper.Format(Result.MonthlyPayment) : "";
     public string TotalInterestDisplay => Result != null ? CurrencyHelper.Format(Result.TotalInterest) : "";
 
@@ -183,14 +186,23 @@ public partial class AmortizationViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Calculate()
     {
-        if (LoanAmount <= 0 || Years <= 0)
+        ErrorMessage = null;
+        if (LoanAmount <= 0 || AnnualRate < 0 || Years <= 0)
         {
             HasResult = false;
             return;
         }
 
-        Result = _financeEngine.CalculateAmortization(LoanAmount, AnnualRate, Years);
-        HasResult = true;
+        try
+        {
+            Result = _financeEngine.CalculateAmortization(LoanAmount, AnnualRate, Years);
+            HasResult = true;
+        }
+        catch (OverflowException)
+        {
+            HasResult = false;
+            ErrorMessage = _localizationService.GetString("ErrorOverflow") ?? "The input values lead to unrealistic results.";
+        }
     }
 
     [RelayCommand]
@@ -205,6 +217,7 @@ public partial class AmortizationViewModel : ObservableObject, IDisposable
         Years = 5;
         Result = null;
         HasResult = false;
+        ErrorMessage = null;
         ChartSeries = Array.Empty<ISeries>();
     }
 

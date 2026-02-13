@@ -84,9 +84,13 @@ public partial class YieldViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasResult;
 
+    [ObservableProperty]
+    private string? _errorMessage;
+
     public string TotalReturnDisplay => Result != null ? CurrencyHelper.Format(Result.TotalReturn) : "";
     public string TotalReturnPercentDisplay => Result != null ? $"{Result.TotalReturnPercent:N2} %" : "";
-    public string EffectiveAnnualRateDisplay => Result != null ? $"{Result.EffectiveAnnualRate:N2} % p.a." : "";
+    public string EffectiveAnnualRateDisplay => Result != null
+        ? $"{Result.EffectiveAnnualRate:N2} % {_localizationService.GetString("PerAnnum") ?? "p.a."}" : "";
 
     partial void OnResultChanged(YieldResult? value)
     {
@@ -143,14 +147,23 @@ public partial class YieldViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Calculate()
     {
+        ErrorMessage = null;
         if (InitialInvestment <= 0 || FinalValue <= 0 || Years <= 0)
         {
             HasResult = false;
             return;
         }
 
-        Result = _financeEngine.CalculateEffectiveYield(InitialInvestment, FinalValue, Years);
-        HasResult = true;
+        try
+        {
+            Result = _financeEngine.CalculateEffectiveYield(InitialInvestment, FinalValue, Years);
+            HasResult = true;
+        }
+        catch (OverflowException)
+        {
+            HasResult = false;
+            ErrorMessage = _localizationService.GetString("ErrorOverflow") ?? "The input values lead to unrealistic results.";
+        }
     }
 
     [RelayCommand]
@@ -165,6 +178,7 @@ public partial class YieldViewModel : ObservableObject, IDisposable
         Years = 5;
         Result = null;
         HasResult = false;
+        ErrorMessage = null;
         ChartSeries = Array.Empty<ISeries>();
     }
 

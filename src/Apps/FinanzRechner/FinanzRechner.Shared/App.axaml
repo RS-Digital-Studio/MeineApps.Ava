@@ -30,6 +30,7 @@
     <StyleInclude Source="avares://MeineApps.UI/Styles/InputStyles.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Controls/Card.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Controls/FloatingActionButton.axaml" />
+    <StyleInclude Source="avares://MeineApps.UI/Styles/ModernCardStyles.axaml" />
   </Application.Styles>
 
 </Application>

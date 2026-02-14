@@ -4,6 +4,12 @@
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              x:Class="FitnessRechner.App">
 
+  <Application.Resources>
+    <!-- FitnessRechner-spezifische Farben -->
+    <Color x:Key="ExpenseColor">#EF4444</Color>
+    <SolidColorBrush x:Key="ExpenseBrush" Color="{StaticResource ExpenseColor}" />
+  </Application.Resources>
+
   <Application.Styles>
     <!-- Avalonia Fluent Theme as base -->
     <FluentTheme />
@@ -22,6 +28,7 @@
     <StyleInclude Source="avares://MeineApps.UI/Styles/InputStyles.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Controls/Card.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Controls/FloatingActionButton.axaml" />
+    <StyleInclude Source="avares://MeineApps.UI/Styles/ModernCardStyles.axaml" />
   </Application.Styles>
 
 </Application>

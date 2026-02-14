@@ -3,6 +3,7 @@
 ## Zweck
 Wiederverwendbare UI-Komponenten für alle Avalonia Apps:
 - Cards (verschiedene Varianten)
+- ModernCardStyles (StatsCard Hover-Lift, SettingsCard, EmptyPulse, SectionTitle)
 - EmptyStateView
 - FloatingActionButton (FAB)
 - WheelPicker (Drum-Style Swipe-Zahlen-Picker)
@@ -42,7 +43,8 @@ MeineApps.UI/
 └── Styles/
     ├── ButtonStyles.axaml
     ├── TextStyles.axaml
-    └── InputStyles.axaml
+    ├── InputStyles.axaml
+    └── ModernCardStyles.axaml      # Hover-Lift Styles (StatsCard, SettingsCard, EmptyPulse, SectionTitle)
 ```
 
 ## Cards
@@ -69,6 +71,73 @@ MeineApps.UI/
 <Border Classes="Card Error" />
 <Border Classes="Card Info" />
 ```
+
+## ModernCardStyles (Hover-Lift + Animationen)
+
+Gemeinsame Styles für alle 8 Apps. Importiert via `<StyleInclude Source="avares://MeineApps.UI/Styles/ModernCardStyles.axaml" />` in jeder App.axaml.
+
+### StatsCard (Hover-Lift -2px)
+
+Für Statistik-, Dashboard- und Content-Cards. Hebt sich bei Hover um 2px an.
+
+```axaml
+<!-- Standalone StatsCard -->
+<Border Classes="StatsCard">
+  <TextBlock Text="Statistik-Card mit Hover-Lift" />
+</Border>
+
+<!-- Kombination mit Card-Basis-Style (häufigster Fall) -->
+<Border Classes="Card StatsCard">
+  <TextBlock Text="Card + Hover-Lift" />
+</Border>
+
+<!-- Kombination mit Card Elevated -->
+<Border Classes="Card Elevated StatsCard">
+  <TextBlock Text="Elevated Card + Hover-Lift" />
+</Border>
+```
+
+- Background: CardBrush, CornerRadius: 16, Padding: 16, Margin: 0,0,0,12
+- Hover: translateY(-2px) mit 200ms Transition
+- **NICHT verwenden in**: DataTemplates/ItemTemplates, Dialog-Overlays, Header-Banner
+
+### SettingsCard (Hover-Lift -1px)
+
+Für Settings-Sections. Subtilerer Hover-Effekt als StatsCard.
+
+```axaml
+<Border Classes="SettingsCard">
+  <StackPanel Spacing="12">
+    <TextBlock Text="Einstellungs-Kategorie" FontWeight="Bold" />
+    <!-- Settings-Inhalt -->
+  </StackPanel>
+</Border>
+```
+
+- Gleiche Basis-Properties wie StatsCard
+- Hover: translateY(-1px) mit 200ms Transition (subtiler)
+
+### EmptyPulse (Pulse-Animation)
+
+Pulsierende Opacity-Animation für Empty-State-Icons.
+
+```axaml
+<Border Classes="EmptyPulse" Width="64" Height="64" CornerRadius="32">
+  <mi:MaterialIcon Kind="InboxOutline" Width="32" Height="32" />
+</Border>
+```
+
+- Opacity: 1.0 → 0.5, 2s Dauer, INFINITE, Alternate, CubicEaseInOut
+
+### SectionTitle
+
+Konsistenter Section-Header-Text.
+
+```axaml
+<TextBlock Classes="SectionTitle" Text="Übersicht" />
+```
+
+- FontSize: 16, FontWeight: Bold, Foreground: TextPrimaryBrush
 
 ## WheelPicker
 

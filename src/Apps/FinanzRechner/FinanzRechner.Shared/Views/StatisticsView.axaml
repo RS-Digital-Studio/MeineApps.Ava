@@ -8,128 +8,38 @@
              x:Class="FinanzRechner.Views.StatisticsView"
              x:DataType="vm:StatisticsViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*" Margin="16">
+  <!-- Styles aus ModernCardStyles.axaml (global) -->
 
-    <!-- Header -->
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,8,0,16">
+  <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="16,8,16,0">
+
+    <!-- ═══ Row 0: Header (Titel + Period-Navigation + Export) ═══ -->
+    <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,4,0,10">
+      <!-- Titel -->
       <TextBlock Grid.Column="0"
                  Text="{Binding StatisticsTitleText}"
-                 Classes="PageTitle"
+                 FontSize="22" FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
                  VerticalAlignment="Center" />
 
-      <!-- Export Button -->
-      <Button Grid.Column="1" Classes="Text"
-              Command="{Binding ExportToPdfCommand}"
-              Width="48" Height="48" Padding="0">
-        <mi:MaterialIcon Kind="Export" Width="22" Height="22"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-      </Button>
-    </Grid>
-
-    <!-- Time Period Selection -->
-    <Border Grid.Row="1"
-            Background="{DynamicResource CardBrush}"
-            CornerRadius="12"
-            Padding="16"
-            Margin="0,0,0,16">
-      <StackPanel Spacing="12">
-
-        <!-- Period Buttons (mit Active-Scale) -->
-        <WrapPanel>
-          <!-- Week -->
-          <Panel Margin="0,0,4,4">
-            <Button Background="{DynamicResource AccentBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding IsWeekSelected}"
-                    RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="Week">
-              <TextBlock Text="{Binding WeekText}" Foreground="White" FontSize="12" FontWeight="Bold" />
-            </Button>
-            <Button Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding !IsWeekSelected}"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="Week">
-              <TextBlock Text="{Binding WeekText}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-            </Button>
-          </Panel>
-
-          <!-- Month -->
-          <Panel Margin="0,0,4,4">
-            <Button Background="{DynamicResource AccentBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding IsMonthSelected}"
-                    RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="Month">
-              <TextBlock Text="{Binding MonthText}" Foreground="White" FontSize="12" FontWeight="Bold" />
-            </Button>
-            <Button Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding !IsMonthSelected}"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="Month">
-              <TextBlock Text="{Binding MonthText}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-            </Button>
-          </Panel>
-
-          <!-- Quarter -->
-          <Panel Margin="0,0,4,4">
-            <Button Background="{DynamicResource AccentBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding IsQuarterSelected}"
-                    RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="Quarter">
-              <TextBlock Text="{Binding QuarterText}" Foreground="White" FontSize="12" FontWeight="Bold" />
-            </Button>
-            <Button Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding !IsQuarterSelected}"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="Quarter">
-              <TextBlock Text="{Binding QuarterText}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-            </Button>
-          </Panel>
-
-          <!-- Half Year -->
-          <Panel Margin="0,0,4,4">
-            <Button Background="{DynamicResource AccentBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding IsHalfYearSelected}"
-                    RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="HalfYear">
-              <TextBlock Text="{Binding HalfYearText}" Foreground="White" FontSize="12" FontWeight="Bold" />
-            </Button>
-            <Button Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding !IsHalfYearSelected}"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="HalfYear">
-              <TextBlock Text="{Binding HalfYearText}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-            </Button>
-          </Panel>
-
-          <!-- Year -->
-          <Panel Margin="0,0,4,4">
-            <Button Background="{DynamicResource AccentBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding IsYearSelected}"
-                    RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="Year">
-              <TextBlock Text="{Binding YearText}" Foreground="White" FontSize="12" FontWeight="Bold" />
-            </Button>
-            <Button Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding !IsYearSelected}"
-                    Command="{Binding SelectPeriodCommand}" CommandParameter="Year">
-              <TextBlock Text="{Binding YearText}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" />
-            </Button>
-          </Panel>
-        </WrapPanel>
-
-        <!-- Period Navigation -->
+      <!-- Period-Navigation: < Februar 2026 > + Heute -->
+      <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <Button Grid.Column="0" Classes="Text"
                   Command="{Binding PreviousPeriodCommand}"
-                  Padding="8">
-            <mi:MaterialIcon Kind="ChevronLeft" Width="20" Height="20"
+                  Padding="6" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="ChevronLeft" Width="18" Height="18"
                              Foreground="{DynamicResource PrimaryBrush}" />
           </Button>
 
-          <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+          <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
             <TextBlock Text="{Binding PeriodLabel}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="14" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        HorizontalAlignment="Center" />
-            <Button Classes="Text" Padding="4,2" HorizontalAlignment="Center"
+            <Button Classes="Text" Padding="2,0" HorizontalAlignment="Center"
                     Command="{Binding GoToTodayCommand}">
               <TextBlock Text="{Binding TodayText}"
-                         FontSize="12"
+                         FontSize="11"
                          Foreground="{DynamicResource PrimaryBrush}"
                          TextDecorations="Underline" />
             </Button>
@@ -137,150 +47,264 @@
 
           <Button Grid.Column="2" Classes="Text"
                   Command="{Binding NextPeriodCommand}"
-                  Padding="8">
-            <mi:MaterialIcon Kind="ChevronRight" Width="20" Height="20"
+                  Padding="6" VerticalAlignment="Center">
+            <mi:MaterialIcon Kind="ChevronRight" Width="18" Height="18"
                              Foreground="{DynamicResource PrimaryBrush}" />
           </Button>
         </Grid>
-
-        <!-- Summary Cards (mit Hover-Effekt) -->
-        <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,0,0,4">
-          <!-- Einnahmen -->
-          <Border Grid.Column="0" Classes="SummaryCard" CornerRadius="12" Padding="12">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Color="#22C55E" Offset="0" />
-                <GradientStop Color="#16A34A" Offset="1" />
-              </LinearGradientBrush>
-            </Border.Background>
-            <StackPanel Spacing="4">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14" Foreground="#CCFFFFFF" />
-                <TextBlock Text="{Binding IncomeLabelText}" FontSize="11" Foreground="#CCFFFFFF" />
-              </StackPanel>
-              <TextBlock Text="{Binding TotalIncomeDisplay}" FontSize="18" FontWeight="Bold" Foreground="White" />
-            </StackPanel>
-          </Border>
-          <!-- Ausgaben -->
-          <Border Grid.Column="1" Classes="SummaryCard" CornerRadius="12" Padding="12">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Color="#EF4444" Offset="0" />
-                <GradientStop Color="#DC2626" Offset="1" />
-              </LinearGradientBrush>
-            </Border.Background>
-            <StackPanel Spacing="4">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="ArrowDownBold" Width="14" Height="14" Foreground="#CCFFFFFF" />
-                <TextBlock Text="{Binding ExpensesLabelText}" FontSize="11" Foreground="#CCFFFFFF" />
-              </StackPanel>
-              <TextBlock Text="{Binding TotalExpensesDisplay}" FontSize="18" FontWeight="Bold" Foreground="White" />
-            </StackPanel>
-          </Border>
-        </Grid>
-
-        <!-- Bilanz -->
-        <Border Classes="SummaryCard" CornerRadius="12" Padding="10,8" HorizontalAlignment="Stretch">
-          <Border.Background>
-            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-              <GradientStop Color="{DynamicResource PrimaryColor}" Offset="0" />
-              <GradientStop Color="{DynamicResource SecondaryColor}" Offset="1" />
-            </LinearGradientBrush>
-          </Border.Background>
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="ScaleBalance" Width="20" Height="20" Foreground="#CCFFFFFF" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding BalanceLabelText}" FontSize="14" Foreground="#CCFFFFFF" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding BalanceDisplay}" FontSize="20" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
-          </StackPanel>
-        </Border>
       </StackPanel>
+
+      <!-- Export Button -->
+      <Button Grid.Column="2" Classes="Text"
+              Command="{Binding ExportToPdfCommand}"
+              Width="40" Height="40" Padding="0"
+              VerticalAlignment="Center">
+        <mi:MaterialIcon Kind="Export" Width="20" Height="20"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+      </Button>
+    </Grid>
+
+    <!-- ═══ Row 1: Period-Chips (kompakte Pill-Leiste) ═══ -->
+    <Border Grid.Row="1"
+            Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="20"
+            Padding="4"
+            Margin="0,0,0,10">
+      <WrapPanel HorizontalAlignment="Center">
+        <!-- Woche -->
+        <Panel Margin="2">
+          <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding IsWeekSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="Week">
+            <TextBlock Text="{Binding WeekText}" Foreground="White" FontSize="12" FontWeight="SemiBold" />
+          </Button>
+          <Button Background="Transparent" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding !IsWeekSelected}"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="Week">
+            <TextBlock Text="{Binding WeekText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          </Button>
+        </Panel>
+
+        <!-- Monat -->
+        <Panel Margin="2">
+          <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding IsMonthSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="Month">
+            <TextBlock Text="{Binding MonthText}" Foreground="White" FontSize="12" FontWeight="SemiBold" />
+          </Button>
+          <Button Background="Transparent" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding !IsMonthSelected}"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="Month">
+            <TextBlock Text="{Binding MonthText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          </Button>
+        </Panel>
+
+        <!-- Quartal -->
+        <Panel Margin="2">
+          <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding IsQuarterSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="Quarter">
+            <TextBlock Text="{Binding QuarterText}" Foreground="White" FontSize="12" FontWeight="SemiBold" />
+          </Button>
+          <Button Background="Transparent" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding !IsQuarterSelected}"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="Quarter">
+            <TextBlock Text="{Binding QuarterText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          </Button>
+        </Panel>
+
+        <!-- Halbjahr -->
+        <Panel Margin="2">
+          <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding IsHalfYearSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="HalfYear">
+            <TextBlock Text="{Binding HalfYearText}" Foreground="White" FontSize="12" FontWeight="SemiBold" />
+          </Button>
+          <Button Background="Transparent" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding !IsHalfYearSelected}"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="HalfYear">
+            <TextBlock Text="{Binding HalfYearText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          </Button>
+        </Panel>
+
+        <!-- Jahr -->
+        <Panel Margin="2">
+          <Button Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding IsYearSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="Year">
+            <TextBlock Text="{Binding YearText}" Foreground="White" FontSize="12" FontWeight="SemiBold" />
+          </Button>
+          <Button Background="Transparent" CornerRadius="16" Padding="10,6"
+                  IsVisible="{Binding !IsYearSelected}"
+                  Command="{Binding SelectPeriodCommand}" CommandParameter="Year">
+            <TextBlock Text="{Binding YearText}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
+          </Button>
+        </Panel>
+      </WrapPanel>
     </Border>
 
-    <!-- Charts ScrollView (mit Monats-Fade) -->
-    <ScrollViewer Grid.Row="2" Classes="MonthFade">
-      <StackPanel Spacing="16">
+    <!-- ═══ Row 2: Summary-Band (Einnahmen | Ausgaben | Bilanz) ═══ -->
+    <Border Grid.Row="2"
+            Background="{DynamicResource CardBrush}"
+            CornerRadius="16"
+            Padding="12,10"
+            Margin="0,0,0,10">
+      <Grid ColumnDefinitions="*,Auto,*,Auto,*">
 
-        <!-- Empty State: No Data -->
-        <StackPanel IsVisible="{Binding HasNoData}"
-                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                    Spacing="8" Margin="0,40,0,0">
-          <mi:MaterialIcon Kind="ChartBar" Width="48" Height="48"
-                           Foreground="{DynamicResource TextMutedBrush}"
-                           HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding NoStatsTitleText}"
-                     FontSize="16" FontWeight="Bold"
-                     Foreground="{DynamicResource TextSecondaryBrush}"
-                     HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding NoStatsDescText}"
-                     FontSize="13"
-                     Foreground="{DynamicResource TextMutedBrush}"
+        <!-- Einnahmen -->
+        <StackPanel Grid.Column="0" Spacing="2" HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+            <Border Background="#2022C55E" Width="18" Height="18" CornerRadius="9">
+              <mi:MaterialIcon Kind="TrendingUp" Width="11" Height="11"
+                               Foreground="{DynamicResource IncomeBrush}" />
+            </Border>
+            <TextBlock Text="{Binding IncomeLabelText}" FontSize="10"
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{Binding TotalIncomeDisplay}"
+                     FontSize="15" FontWeight="Bold"
+                     Foreground="{DynamicResource IncomeBrush}"
                      HorizontalAlignment="Center" />
         </StackPanel>
 
-        <!-- Expenses PieChart -->
-        <Border Background="{DynamicResource CardBrush}"
-                CornerRadius="12"
-                Padding="16"
-                IsVisible="{Binding HasExpenseData}">
-          <StackPanel Spacing="12">
-            <TextBlock Text="{Binding ExpensesByCategoryText}"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+        <!-- Trennlinie -->
+        <Border Grid.Column="1" Width="1" Height="32"
+                Background="{DynamicResource BorderSubtleBrush}" Margin="6,0" />
 
+        <!-- Ausgaben -->
+        <StackPanel Grid.Column="2" Spacing="2" HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+            <Border Background="#20EF4444" Width="18" Height="18" CornerRadius="9">
+              <mi:MaterialIcon Kind="TrendingDown" Width="11" Height="11"
+                               Foreground="{DynamicResource ExpenseBrush}" />
+            </Border>
+            <TextBlock Text="{Binding ExpensesLabelText}" FontSize="10"
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{Binding TotalExpensesDisplay}"
+                     FontSize="15" FontWeight="Bold"
+                     Foreground="{DynamicResource ExpenseBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Trennlinie -->
+        <Border Grid.Column="3" Width="1" Height="32"
+                Background="{DynamicResource BorderSubtleBrush}" Margin="6,0" />
+
+        <!-- Bilanz -->
+        <StackPanel Grid.Column="4" Spacing="2" HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+            <Border Background="#206366F1" Width="18" Height="18" CornerRadius="9">
+              <mi:MaterialIcon Kind="ScaleBalance" Width="11" Height="11"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+            </Border>
+            <TextBlock Text="{Binding BalanceLabelText}" FontSize="10"
+                       Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+          </StackPanel>
+          <TextBlock Text="{Binding BalanceDisplay}"
+                     FontSize="16" FontWeight="Bold"
+                     Foreground="{DynamicResource PrimaryBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+
+      </Grid>
+    </Border>
+
+    <!-- ═══ Row 3: ScrollViewer mit Charts ═══ -->
+    <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12" Margin="0,0,0,0">
+
+        <!-- ── Empty State ── -->
+        <StackPanel IsVisible="{Binding HasNoData}"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    Spacing="12" Margin="0,48,0,0">
+
+          <!-- Pulsierendes Icon -->
+          <Border Classes="EmptyPulse" Width="80" Height="80" CornerRadius="40"
+                  Background="{DynamicResource SurfaceBrush}"
+                  HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="ChartDonut" Width="40" Height="40"
+                             Foreground="{DynamicResource PrimaryBrush}" />
+          </Border>
+
+          <TextBlock Text="{Binding NoStatsTitleText}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+          <TextBlock Text="{Binding NoStatsDescText}"
+                     FontSize="13" MaxWidth="280"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     HorizontalAlignment="Center"
+                     TextWrapping="Wrap" TextAlignment="Center" />
+        </StackPanel>
+
+        <!-- ── Ausgaben: PieChart + Kategorie-Breakdown in einer Card ── -->
+        <Border Classes="StatsCard" IsVisible="{Binding HasExpenseData}">
+          <StackPanel Spacing="12">
+            <!-- Überschrift mit Akzent-Icon -->
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Background="#20EF4444" Width="28" Height="28" CornerRadius="8">
+                <mi:MaterialIcon Kind="ChartDonut" Width="16" Height="16"
+                                 Foreground="{DynamicResource ExpenseBrush}" />
+              </Border>
+              <TextBlock Text="{Binding ExpensesByCategoryText}"
+                         Classes="SectionTitle"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Donut-Chart -->
             <lvc:PieChart Series="{Binding ExpenseChartSeries}"
-                          Height="250"
-                          Background="{DynamicResource CardBrush}"
+                          Height="220"
+                          Background="Transparent"
                           LegendPosition="Right"
                           InitialRotation="-90" />
-          </StackPanel>
-        </Border>
 
-        <!-- Ausgaben nach Kategorie (Details mit farbigen Balken) -->
-        <Border Background="{DynamicResource CardBrush}"
-                CornerRadius="12"
-                Padding="16"
-                IsVisible="{Binding HasExpenseData}">
-          <StackPanel Spacing="12">
+            <!-- Kategorie-Breakdown (Details mit Fortschrittsbalken) -->
             <TextBlock Text="{Binding CategoryBreakdownText}"
-                       FontSize="16" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       Margin="0,4,0,0" />
 
             <ItemsControl ItemsSource="{Binding ExpensesByCategory}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <StackPanel Spacing="6" Margin="0,0,0,10">
+                  <StackPanel Spacing="4" Margin="0,0,0,8">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-                      <!-- Farbiger Kategorie-Punkt -->
                       <Border Grid.Column="0" Width="10" Height="10" CornerRadius="5"
                               Background="{Binding Category, Converter={x:Static conv:CategoryToColorBrushConverter.Instance}}"
                               VerticalAlignment="Center" Margin="0,0,8,0" />
                       <TextBlock Grid.Column="1"
                                  Text="{Binding CategoryName}"
-                                 FontSize="14"
+                                 FontSize="13"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
                                  VerticalAlignment="Center" />
                       <TextBlock Grid.Column="2" Text="{Binding AmountDisplay}"
-                                 FontSize="14" FontWeight="Bold"
+                                 FontSize="13" FontWeight="Bold"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
                                  VerticalAlignment="Center" Margin="0,0,8,0" />
                       <Border Grid.Column="3" CornerRadius="10"
                               Padding="6,2"
                               Background="{Binding Category, Converter={x:Static conv:CategoryToColorBrushConverter.Instance}, ConverterParameter=0.15}">
                         <TextBlock Text="{Binding PercentageDisplay}"
-                                   FontSize="11" FontWeight="SemiBold"
+                                   FontSize="10" FontWeight="SemiBold"
                                    Foreground="{Binding Category, Converter={x:Static conv:CategoryToColorBrushConverter.Instance}}" />
                       </Border>
                     </Grid>
-                    <!-- Farbiger Fortschrittsbalken -->
+                    <!-- Fortschrittsbalken -->
                     <Grid>
                       <Border Background="{DynamicResource SurfaceBrush}"
-                              Height="6" CornerRadius="3"
+                              Height="4" CornerRadius="2"
                               HorizontalAlignment="Stretch" />
                       <ProgressBar Minimum="0" Maximum="1"
                                    Value="{Binding Percentage}"
-                                   Height="6" CornerRadius="3"
+                                   Height="4" CornerRadius="2"
                                    Foreground="{Binding Category, Converter={x:Static conv:CategoryToColorBrushConverter.Instance}}"
-                                   Background="{DynamicResource CardBrush}" />
+                                   Background="Transparent" />
                     </Grid>
                   </StackPanel>
                 </DataTemplate>
@@ -289,77 +313,72 @@
           </StackPanel>
         </Border>
 
-        <!-- Income PieChart -->
-        <Border Background="{DynamicResource CardBrush}"
-                CornerRadius="12"
-                Padding="16"
-                IsVisible="{Binding HasIncomeData}">
+        <!-- ── Einnahmen: PieChart in eigener Card ── -->
+        <Border Classes="StatsCard" IsVisible="{Binding HasIncomeData}">
           <StackPanel Spacing="12">
-            <TextBlock Text="{Binding IncomeByCategoryText}"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <Border Background="#2022C55E" Width="28" Height="28" CornerRadius="8">
+                <mi:MaterialIcon Kind="ChartArc" Width="16" Height="16"
+                                 Foreground="{DynamicResource IncomeBrush}" />
+              </Border>
+              <TextBlock Text="{Binding IncomeByCategoryText}"
+                         Classes="SectionTitle"
+                         VerticalAlignment="Center" />
+            </StackPanel>
 
             <lvc:PieChart Series="{Binding IncomeChartSeries}"
-                          Height="250"
-                          Background="{DynamicResource CardBrush}"
+                          Height="220"
+                          Background="Transparent"
                           LegendPosition="Right"
                           InitialRotation="-90" />
           </StackPanel>
         </Border>
 
-        <!-- 6-Month Trend LineChart -->
-        <Border Background="{DynamicResource CardBrush}"
-                CornerRadius="12"
-                Padding="16">
+        <!-- ── 6-Monats-Trend ── -->
+        <Border Classes="StatsCard">
           <StackPanel Spacing="12">
-            <TextBlock Text="{Binding TrendOverviewText}"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <!-- Überschrift mit Durchschnitts-Pills -->
+            <Grid ColumnDefinitions="Auto,*">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                <Border Background="#206366F1" Width="28" Height="28" CornerRadius="8">
+                  <mi:MaterialIcon Kind="ChartLine" Width="16" Height="16"
+                                   Foreground="{DynamicResource PrimaryBrush}" />
+                </Border>
+                <TextBlock Text="{Binding TrendOverviewText}"
+                           Classes="SectionTitle"
+                           VerticalAlignment="Center" />
+              </StackPanel>
 
-            <!-- Month Comparison -->
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" Margin="0,0,0,8">
-              <Border Grid.Column="0"
-                      Background="{DynamicResource SurfaceBrush}"
-                      CornerRadius="8"
-                      Padding="12">
-                <StackPanel Spacing="4">
-                  <TextBlock Text="{Binding LastMonthText}" FontSize="12"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="{Binding LastMonthExpensesDisplay}"
-                               FontSize="14" FontWeight="Bold"
-                               Foreground="{DynamicResource ExpenseBrush}" />
-                    <TextBlock Text="{Binding ExpensesTrend}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextMutedBrush}" />
+              <!-- Durchschnitts-Pills rechts -->
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6"
+                          HorizontalAlignment="Right" VerticalAlignment="Center">
+                <Border Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="10" Padding="6,3">
+                  <StackPanel Orientation="Horizontal" Spacing="3">
+                    <mi:MaterialIcon Kind="TrendingUp" Width="12" Height="12"
+                                     Foreground="{DynamicResource IncomeBrush}" />
+                    <TextBlock Text="{Binding AvgMonthlyIncomeDisplay}" FontSize="10"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                   </StackPanel>
-                </StackPanel>
-              </Border>
-              <Border Grid.Column="1"
-                      Background="{DynamicResource SurfaceBrush}"
-                      CornerRadius="8"
-                      Padding="12">
-                <StackPanel Spacing="4">
-                  <TextBlock Text="{Binding LastMonthText}" FontSize="12"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock Text="{Binding LastMonthIncomeDisplay}"
-                               FontSize="14" FontWeight="Bold"
-                               Foreground="{DynamicResource IncomeBrush}" />
-                    <TextBlock Text="{Binding IncomeTrend}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextMutedBrush}" />
+                </Border>
+                <Border Background="{DynamicResource SurfaceBrush}"
+                        CornerRadius="10" Padding="6,3">
+                  <StackPanel Orientation="Horizontal" Spacing="3">
+                    <mi:MaterialIcon Kind="TrendingDown" Width="12" Height="12"
+                                     Foreground="{DynamicResource ExpenseBrush}" />
+                    <TextBlock Text="{Binding AvgMonthlyExpenseDisplay}" FontSize="10"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
                   </StackPanel>
-                </StackPanel>
-              </Border>
+                </Border>
+              </StackPanel>
             </Grid>
 
             <!-- Trend Chart -->
             <lvc:CartesianChart Series="{Binding TrendChartSeries}"
                                 XAxes="{Binding TrendXAxes}"
                                 YAxes="{Binding TrendYAxes}"
-                                Height="220"
-                                Background="{DynamicResource CardBrush}"
+                                Height="200"
+                                Background="Transparent"
                                 ZoomMode="None"
                                 TooltipPosition="Top" />
 
@@ -368,32 +387,34 @@
               <StackPanel Orientation="Horizontal" Spacing="4">
                 <Border Background="{DynamicResource IncomeBrush}" Width="16" Height="4"
                         CornerRadius="2" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding IncomeText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding IncomeText}" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
               <StackPanel Orientation="Horizontal" Spacing="4">
                 <Border Background="{DynamicResource ExpenseBrush}" Width="16" Height="4"
                         CornerRadius="2" VerticalAlignment="Center" />
-                <TextBlock Text="{Binding ExpensesText}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding ExpensesText}" FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </StackPanel>
           </StackPanel>
         </Border>
 
-        <!-- Bottom Spacer (60dp fuer Ad-Banner Overlay) -->
+        <!-- Bottom Spacer (60dp für Ad-Banner Overlay) -->
         <Border Height="60" />
 
       </StackPanel>
     </ScrollViewer>
 
     <!-- Loading Indicator -->
-    <ProgressBar Grid.Row="2"
+    <ProgressBar Grid.Row="3"
                  IsIndeterminate="True"
                  IsVisible="{Binding IsLoading}"
                  HorizontalAlignment="Center"
                  VerticalAlignment="Center" />
 
     <!-- PDF Export Indicator -->
-    <Border Grid.RowSpan="3"
+    <Border Grid.RowSpan="4"
             IsVisible="{Binding IsExporting}"
             Background="#80000000"
             ZIndex="100">
@@ -407,7 +428,7 @@
     </Border>
 
     <!-- Export Ad Overlay -->
-    <Border Grid.RowSpan="3"
+    <Border Grid.RowSpan="4"
             IsVisible="{Binding ShowExportAdOverlay}"
             Background="#CC000000"
             ZIndex="150">
@@ -466,7 +487,7 @@
     </Border>
 
     <!-- Extended Stats Ad Overlay -->
-    <Border Grid.RowSpan="3"
+    <Border Grid.RowSpan="4"
             IsVisible="{Binding ShowExtendedStatsAdOverlay}"
             Background="#CC000000"
             ZIndex="160">
@@ -537,7 +558,7 @@
     </Border>
 
     <!-- Export Status Toast -->
-    <Border Grid.RowSpan="3"
+    <Border Grid.RowSpan="4"
             IsVisible="{Binding IsExportStatusVisible}"
             Background="{DynamicResource CardBrush}"
             CornerRadius="8"

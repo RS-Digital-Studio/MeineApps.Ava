@@ -262,6 +262,16 @@ public partial class StatisticsViewModel : ObservableObject, IDisposable
     public string TotalExpensesDisplay => CurrencyHelper.Format(TotalExpenses);
     public string BalanceDisplay => CurrencyHelper.Format(Balance);
 
+    // 6-Monats-Durchschnitte (berechnet in LoadTrendDataAsync)
+    [ObservableProperty]
+    private double _avgMonthlyIncome;
+
+    [ObservableProperty]
+    private double _avgMonthlyExpense;
+
+    public string AvgMonthlyIncomeDisplay => $"Ø {CurrencyHelper.Format(AvgMonthlyIncome)}";
+    public string AvgMonthlyExpenseDisplay => $"Ø {CurrencyHelper.Format(AvgMonthlyExpense)}";
+
     // Farben via CategoryLocalizationHelper.GetCategoryColor() (5.1 zentralisiert)
 
     #endregion
@@ -442,6 +452,12 @@ public partial class StatisticsViewModel : ObservableObject, IDisposable
             else
                 monthlyIncomes[monthDiff] += t.Amount;
         }
+
+        // 6-Monats-Durchschnitte berechnen
+        AvgMonthlyIncome = monthlyIncomes.Average();
+        AvgMonthlyExpense = monthlyExpenses.Average();
+        OnPropertyChanged(nameof(AvgMonthlyIncomeDisplay));
+        OnPropertyChanged(nameof(AvgMonthlyExpenseDisplay));
 
         // Last month comparison
         LastMonthExpenses = monthlyExpenses[trendMonths - 2];

@@ -6,20 +6,21 @@
              x:Class="FinanzRechner.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-  <Grid RowDefinitions="Auto,*" Margin="16">
+  <Grid RowDefinitions="Auto,*">
 
     <!-- Header -->
     <TextBlock Grid.Row="0"
                Text="{Binding SettingsTitleText}"
-               Classes="PageTitle"
-               Margin="0,8,0,16" />
+               FontSize="22" FontWeight="Bold"
+               Foreground="{DynamicResource TextPrimaryBrush}"
+               Margin="16,12,16,4" />
 
     <!-- Content -->
     <ScrollViewer Grid.Row="1">
-      <StackPanel Spacing="16">
+      <StackPanel Spacing="12" Margin="16">
 
         <!-- ==================== Theme Selection Card ==================== -->
-        <Border Classes="Card">
+        <Border Classes="SettingsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <mi:MaterialIcon Kind="Palette" Width="24" Height="24"
@@ -253,7 +254,7 @@
         </Border>
 
         <!-- ==================== Language Selection Card ==================== -->
-        <Border Classes="Card">
+        <Border Classes="SettingsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <mi:MaterialIcon Kind="Translate" Width="24" Height="24"
@@ -341,7 +342,7 @@
         </Border>
 
         <!-- ==================== Premium Section (mit Shimmer) ==================== -->
-        <Border Classes="Card PremiumShimmer"
+        <Border Classes="SettingsCard PremiumShimmer"
                 IsVisible="{Binding IsNotPremium}">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="12">
@@ -369,7 +370,7 @@
         </Border>
 
         <!-- ==================== Backup & Restore Section ==================== -->
-        <Border Classes="Card">
+        <Border Classes="SettingsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <mi:MaterialIcon Kind="CloudSync" Width="24" Height="24"
@@ -405,7 +406,7 @@
         </Border>
 
         <!-- ==================== About Section ==================== -->
-        <Border Classes="Card">
+        <Border Classes="SettingsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="12">
               <mi:MaterialIcon Kind="InformationOutline" Width="24" Height="24"
@@ -431,7 +432,7 @@
           </StackPanel>
         </Border>
 
-        <!-- Bottom Spacer (60dp fuer Ad-Banner Overlay) -->
+        <!-- Bottom Spacer (60dp für Ad-Banner Overlay) -->
         <Border Height="60" />
 
       </StackPanel>

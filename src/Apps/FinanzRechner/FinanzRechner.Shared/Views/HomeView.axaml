@@ -126,16 +126,18 @@
       <StackPanel Spacing="16" Margin="16,16,16,0">
 
         <!-- ========== B) Budget-Status Sektion ========== -->
-        <Border Classes="Card SummaryCard" Padding="16"
+        <Border Classes="StatsCard"
                 BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasBudgets}">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="ChartDonut" Width="20" Height="20"
-                               Foreground="{DynamicResource AccentBrush}" />
+              <Border Background="#206366F1" Width="28" Height="28" CornerRadius="8">
+                <mi:MaterialIcon Kind="ChartDonut" Width="16" Height="16"
+                                 Foreground="{DynamicResource AccentBrush}" />
+              </Border>
               <TextBlock Text="{Binding SectionBudgetText}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                         Classes="SectionTitle"
+                         VerticalAlignment="Center" />
             </StackPanel>
 
             <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
@@ -182,37 +184,41 @@
         </Border>
 
         <!-- ========== C) Ausgabenverteilung (Mini-Donut) ========== -->
-        <Border Classes="Card SummaryCard" Padding="16"
+        <Border Classes="StatsCard"
                 BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasHomeChartData}">
           <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="ChartDonut" Width="20" Height="20"
-                               Foreground="{DynamicResource AccentBrush}" />
+              <Border Background="#20EF4444" Width="28" Height="28" CornerRadius="8">
+                <mi:MaterialIcon Kind="ChartDonut" Width="16" Height="16"
+                                 Foreground="{DynamicResource ExpenseBrush}" />
+              </Border>
               <TextBlock Text="{Binding SectionExpensesText}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                         Classes="SectionTitle"
+                         VerticalAlignment="Center" />
             </StackPanel>
             <lvc:PieChart Series="{Binding HomeExpenseChartSeries}"
                           Height="180"
-                          Background="{DynamicResource CardBrush}"
+                          Background="Transparent"
                           LegendPosition="Right"
                           InitialRotation="-90" />
           </StackPanel>
         </Border>
 
         <!-- ========== D) Letzte Transaktionen ========== -->
-        <Border Classes="Card SummaryCard" Padding="16"
+        <Border Classes="StatsCard"
                 BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasRecentTransactions}">
           <StackPanel Spacing="10">
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Orientation="Horizontal" Spacing="8" Grid.Column="0">
-                <mi:MaterialIcon Kind="ClockOutline" Width="20" Height="20"
-                                 Foreground="{DynamicResource AccentBrush}" />
+                <Border Background="#201565C0" Width="28" Height="28" CornerRadius="8">
+                  <mi:MaterialIcon Kind="ClockOutline" Width="16" Height="16"
+                                   Foreground="{DynamicResource PrimaryBrush}" />
+                </Border>
                 <TextBlock Text="{Binding SectionRecentText}"
-                           FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Classes="SectionTitle"
+                           VerticalAlignment="Center" />
               </StackPanel>
               <Button Grid.Column="1" Classes="Flat"
                       Content="{Binding ViewAllText}" FontSize="12"
@@ -266,13 +272,12 @@
         <!-- ========== E) Finanz-Rechner (2x3 Grid) ========== -->
         <StackPanel Spacing="12">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <Border Background="{DynamicResource PrimaryBrush}"
-                    CornerRadius="6" Padding="8,4">
-              <TextBlock Text="{Binding SectionCalculatorsText}" FontSize="11" FontWeight="Bold" Foreground="White" />
+            <Border Background="#2022C55E" Width="28" Height="28" CornerRadius="8">
+              <mi:MaterialIcon Kind="Calculator" Width="16" Height="16"
+                               Foreground="#22C55E" />
             </Border>
             <TextBlock Text="{Binding CalculatorsTitleText}"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       Classes="SectionTitle"
                        VerticalAlignment="Center" />
           </StackPanel>
 

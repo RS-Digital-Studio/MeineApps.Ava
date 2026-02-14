@@ -40,7 +40,7 @@
             <StackPanel Spacing="16" Margin="16,16,16,0">
 
                 <!-- Input Card -->
-                <Border Classes="Card">
+                <Border Classes="Card StatsCard">
                     <StackPanel Spacing="14">
 
                         <!-- Loan Amount -->
@@ -108,7 +108,7 @@
                 </Border>
 
                 <!-- Summary Result Card -->
-                <Border Classes="Card Elevated"
+                <Border Classes="Card Elevated StatsCard"
                         IsVisible="{Binding HasResult}">
                     <StackPanel Spacing="12">
                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -145,7 +145,7 @@
                 </Border>
 
                 <!-- Chart Card -->
-                <Border Classes="Card Elevated"
+                <Border Classes="Card Elevated StatsCard"
                         IsVisible="{Binding HasResult}">
                     <StackPanel Spacing="8">
                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -181,7 +181,7 @@
                 </Border>
 
                 <!-- Amortization Schedule Table (ausklappbar) -->
-                <Border Classes="Card Elevated"
+                <Border Classes="Card Elevated StatsCard"
                         IsVisible="{Binding HasResult}">
                     <StackPanel Spacing="10">
                         <!-- Klickbarer Header zum Auf-/Zuklappen -->

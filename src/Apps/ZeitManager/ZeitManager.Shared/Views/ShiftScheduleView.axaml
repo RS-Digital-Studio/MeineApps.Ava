@@ -92,7 +92,7 @@
           </ItemsControl>
 
           <!-- Legend -->
-          <Border Classes="Card">
+          <Border Classes="Card StatsCard">
             <WrapPanel Orientation="Horizontal" Margin="4">
               <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,16,4">
                 <Border Width="16" Height="16" CornerRadius="4" Background="#FBBF24" />

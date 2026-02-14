@@ -7,14 +7,16 @@
              x:DataType="vm:SettingsViewModel">
 
   <ScrollViewer>
-    <StackPanel Margin="16" Spacing="16">
+    <StackPanel Margin="16" Spacing="12">
 
       <!-- Header -->
       <TextBlock Text="{Binding SettingsTitle}"
-                 Classes="HeadlineMedium" />
+                 FontSize="22" FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
+                 Margin="0,4,0,4" />
 
       <!-- ==================== Theme Selection Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <!-- Card Header -->
           <StackPanel Orientation="Horizontal" Spacing="12">
@@ -251,7 +253,7 @@
       </Border>
 
       <!-- ==================== Language Selection Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <!-- Card Header -->
           <StackPanel Orientation="Horizontal" Spacing="12">
@@ -341,7 +343,7 @@
       </Border>
 
       <!-- ==================== Decimal Places Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="DecimalIncrease" Width="24" Height="24"
@@ -374,7 +376,7 @@
       </Border>
 
       <!-- ==================== Number Format Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="Numeric" Width="24" Height="24"
@@ -416,7 +418,7 @@
       </Border>
 
       <!-- ==================== Haptic Feedback Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <mi:MaterialIcon Grid.Column="0" Kind="Vibrate" Width="24" Height="24"
                            Foreground="{DynamicResource PrimaryBrush}"
@@ -434,7 +436,7 @@
       </Border>
 
       <!-- ==================== About Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <!-- Card Header -->
           <StackPanel Orientation="Horizontal" Spacing="12">

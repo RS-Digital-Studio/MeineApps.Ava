@@ -89,7 +89,7 @@
         </StackPanel>
 
         <!-- Wiring Panel -->
-        <Border Classes="Card" Padding="20"
+        <Border Classes="Card StatsCard" Padding="20"
                 HorizontalAlignment="Center">
           <Grid ColumnDefinitions="100,60,100" ColumnSpacing="20">
 
@@ -191,7 +191,7 @@
         </Border>
 
         <!-- Result Display -->
-        <Border Classes="Card"
+        <Border Classes="Card StatsCard"
                 IsVisible="{Binding IsResultShown}"
                 Padding="24">
           <StackPanel Spacing="16" HorizontalAlignment="Center">

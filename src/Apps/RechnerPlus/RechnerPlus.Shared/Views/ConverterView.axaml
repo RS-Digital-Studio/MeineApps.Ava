@@ -13,7 +13,7 @@
                  Classes="HeadlineMedium" />
 
       <!-- Category Selection -->
-      <Border Classes="Card">
+      <Border Classes="Card StatsCard">
         <StackPanel Spacing="12">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="Shape"
@@ -30,7 +30,7 @@
       </Border>
 
       <!-- From Section -->
-      <Border Classes="Card">
+      <Border Classes="Card StatsCard">
         <StackPanel Spacing="12">
           <TextBlock Text="{Binding FromText}"
                      Classes="LabelLarge" />
@@ -63,7 +63,7 @@
       </Button>
 
       <!-- To Section -->
-      <Border Classes="Card">
+      <Border Classes="Card StatsCard">
         <StackPanel Spacing="12">
           <TextBlock Text="{Binding ToText}"
                      Classes="LabelLarge" />

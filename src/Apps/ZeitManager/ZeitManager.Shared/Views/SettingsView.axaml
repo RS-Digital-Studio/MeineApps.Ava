@@ -8,13 +8,16 @@
              x:DataType="vm:SettingsViewModel">
 
   <ScrollViewer>
-    <StackPanel Margin="16" Spacing="16">
+    <StackPanel Margin="16" Spacing="12">
 
       <!-- Header -->
-      <TextBlock Text="{Binding SettingsTitle}" Classes="HeadlineMedium" />
+      <TextBlock Text="{Binding SettingsTitle}"
+                 FontSize="22" FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimaryBrush}"
+                 Margin="0,4,0,4" />
 
       <!-- ==================== Theme Selection Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="Palette" Width="24" Height="24"
@@ -168,7 +171,7 @@
       </Border>
 
       <!-- ==================== Language Selection Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="Translate" Width="24" Height="24"
@@ -243,7 +246,7 @@
       </Border>
 
       <!-- ==================== Timer Sound Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="MusicNote" Width="24" Height="24"
@@ -277,7 +280,7 @@
       </Border>
 
       <!-- ==================== About Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="InformationOutline" Width="24" Height="24"
@@ -297,7 +300,7 @@
       </Border>
 
       <!-- ==================== Support Card ==================== -->
-      <Border Classes="Card">
+      <Border Classes="SettingsCard">
         <StackPanel Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="HeartOutline" Width="24" Height="24"
@@ -326,7 +329,7 @@
         </StackPanel>
       </Border>
 
-      <Border Height="32" />
+      <Border Height="60" />
 
     </StackPanel>
   </ScrollViewer>

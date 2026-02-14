@@ -30,8 +30,9 @@
           <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{loc:Translate Settings}"
-                     FontSize="20" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     FontSize="22" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     Margin="0,4,0,4" />
         </StackPanel>
 
         <!-- Spacer for symmetry -->
@@ -43,14 +44,18 @@
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="20" Margin="16">
+      <StackPanel Spacing="12" Margin="16">
 
         <!-- SOUND & VIBRATION -->
-        <Border Classes="Card">
+        <Border Classes="SettingsCard">
           <StackPanel Spacing="16">
-            <TextBlock Text="{loc:Translate Audio}"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="VolumeHigh" Width="20" Height="20"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+              <TextBlock Text="{loc:Translate Audio}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
 
             <!-- Sound Toggle -->
             <Grid ColumnDefinitions="Auto,*,Auto">
@@ -85,11 +90,11 @@
         </Border>
 
         <!-- LANGUAGE -->
-        <Border Classes="Card">
+        <Border Classes="SettingsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Translate" Width="20" Height="20"
-                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                               Foreground="{DynamicResource PrimaryBrush}" />
               <TextBlock Text="{loc:Translate Language}"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -108,7 +113,7 @@
         </Border>
 
         <!-- PREMIUM -->
-        <Border Classes="Card">
+        <Border Classes="SettingsCard">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
@@ -165,7 +170,7 @@
         </Border>
 
         <!-- DATA (Danger Zone) -->
-        <Border Classes="Card"
+        <Border Classes="SettingsCard"
                 BorderBrush="{DynamicResource ErrorBrush}"
                 BorderThickness="2">
           <StackPanel Spacing="16">
@@ -193,11 +198,11 @@
         </Border>
 
         <!-- ABOUT -->
-        <Border Classes="Card">
+        <Border Classes="SettingsCard">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20"
-                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                               Foreground="{DynamicResource PrimaryBrush}" />
               <TextBlock Text="{loc:Translate About}"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />

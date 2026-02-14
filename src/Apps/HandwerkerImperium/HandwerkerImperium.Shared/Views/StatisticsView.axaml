@@ -56,7 +56,7 @@
       <StackPanel Spacing="20" Margin="16">
 
         <!-- PLAYER OVERVIEW -->
-        <Border Classes="Card">
+        <Border Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="AccountHardHat" Width="20" Height="20"
@@ -126,7 +126,7 @@
         </Border>
 
         <!-- ORDERS & MINIGAMES -->
-        <Border Classes="Card">
+        <Border Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="GamepadVariant" Width="20" Height="20"
@@ -204,7 +204,7 @@
         </Border>
 
         <!-- PRESTIGE -->
-        <Border Classes="Card">
+        <Border Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Creation" Width="20" Height="20"
@@ -271,7 +271,7 @@
         </Border>
 
         <!-- WORKSHOP SUMMARY -->
-        <Border Classes="Card">
+        <Border Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Factory" Width="20" Height="20"
@@ -313,7 +313,7 @@
         </Border>
 
         <!-- WORKSHOP DETAILS -->
-        <Border Classes="Card"
+        <Border Classes="Card StatsCard"
                 IsVisible="{Binding HasWorkshopStats}">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">

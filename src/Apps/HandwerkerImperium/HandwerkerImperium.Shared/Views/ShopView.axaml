@@ -264,7 +264,7 @@
                 Margin="0,16,0,0" />
 
         <!-- INFO -->
-        <Border Classes="Card">
+        <Border Classes="Card StatsCard">
           <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="InformationOutline" Width="14" Height="14"

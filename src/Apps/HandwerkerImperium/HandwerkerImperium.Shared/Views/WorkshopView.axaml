@@ -65,7 +65,7 @@
       <StackPanel Spacing="20" Margin="16">
 
         <!-- Level Progress Card -->
-        <Border Classes="Card">
+        <Border Classes="Card StatsCard">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate LevelProgress}"
                        FontSize="18" FontWeight="Bold"
@@ -105,7 +105,7 @@
         </Border>
 
         <!-- Income Stats Card -->
-        <Border Classes="Card">
+        <Border Classes="Card StatsCard">
           <StackPanel Spacing="14">
 
             <!-- Brutto + Netto nebeneinander -->
@@ -237,7 +237,7 @@
         </Border>
 
         <!-- Workers Section Card -->
-        <Border Classes="Card">
+        <Border Classes="Card StatsCard">
           <StackPanel Spacing="16">
 
             <Grid ColumnDefinitions="*,Auto">
@@ -335,7 +335,7 @@
         </Border>
 
         <!-- Ad Speedup Button (2h Produktionsertrag) -->
-        <Border Classes="Card"
+        <Border Classes="Card StatsCard"
                 IsVisible="{Binding CanWatchSpeedupAd}">
           <Button Classes="Secondary"
                   Command="{Binding WatchAdForSpeedupCommand}"

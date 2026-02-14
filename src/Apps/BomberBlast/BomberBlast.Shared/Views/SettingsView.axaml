@@ -38,9 +38,9 @@
                       HorizontalAlignment="Center"
                       Spacing="8">
             <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                             Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock Text="{loc:Translate Settings}"
-                       FontSize="20" FontWeight="Bold"
+                       FontSize="22" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
 
@@ -53,13 +53,13 @@
       <ScrollViewer Grid.Row="1"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="12" Margin="12,12,12,80">
+        <StackPanel Spacing="12" Margin="16">
 
           <!-- Controls + Sound: Side by Side -->
           <Grid ColumnDefinitions="*,*">
 
             <!-- Controls Section -->
-            <Border Grid.Column="0" Classes="Card" Margin="0,0,6,0">
+            <Border Grid.Column="0" Classes="SettingsCard" Margin="0,0,6,0">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="Gamepad" Width="20" Height="20"
@@ -131,7 +131,7 @@
             </Border>
 
             <!-- Sound Section -->
-            <Border Grid.Column="1" Classes="Card" Margin="6,0,0,0">
+            <Border Grid.Column="1" Classes="SettingsCard" Margin="6,0,0,0">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="VolumeHigh" Width="20" Height="20"
@@ -202,7 +202,7 @@
           </Grid>
 
           <!-- Visual Style Section -->
-          <Border Classes="Card">
+          <Border Classes="SettingsCard">
             <StackPanel Spacing="12">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="PaletteOutline" Width="20" Height="20"
@@ -300,7 +300,7 @@
           <Grid ColumnDefinitions="*,*">
 
             <!-- Language Section -->
-            <Border Grid.Column="0" Classes="Card" Margin="0,0,6,0">
+            <Border Grid.Column="0" Classes="SettingsCard" Margin="0,0,6,0">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="Translate" Width="20" Height="20"
@@ -323,7 +323,7 @@
             </Border>
 
             <!-- Premium Section -->
-            <Border Grid.Column="1" Classes="Card" Margin="6,0,0,0">
+            <Border Grid.Column="1" Classes="SettingsCard" Margin="6,0,0,0">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
@@ -374,7 +374,7 @@
           <Grid ColumnDefinitions="*,*">
 
             <!-- Data Section -->
-            <Border Grid.Column="0" Classes="Card" Margin="0,0,6,0"
+            <Border Grid.Column="0" Classes="SettingsCard" Margin="0,0,6,0"
                     BorderBrush="{DynamicResource ErrorBrush}"
                     BorderThickness="2">
               <StackPanel Spacing="12">
@@ -405,7 +405,7 @@
             </Border>
 
             <!-- About Section -->
-            <Border Grid.Column="1" Classes="Card" Margin="6,0,0,0">
+            <Border Grid.Column="1" Classes="SettingsCard" Margin="6,0,0,0">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20"

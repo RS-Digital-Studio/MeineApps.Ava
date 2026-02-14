@@ -128,7 +128,7 @@
         </Grid>
 
         <!-- Canvas Grid -->
-        <Border Classes="Card" Padding="16"
+        <Border Classes="Card StatsCard" Padding="16"
                 HorizontalAlignment="Center">
           <ItemsControl ItemsSource="{Binding Cells}"
                         Width="{Binding PaintGridWidth}">
@@ -192,7 +192,7 @@
         </StackPanel>
 
         <!-- Result Display -->
-        <Border Classes="Card"
+        <Border Classes="Card StatsCard"
                 IsVisible="{Binding IsResultShown}"
                 Padding="24">
           <StackPanel Spacing="16" HorizontalAlignment="Center">

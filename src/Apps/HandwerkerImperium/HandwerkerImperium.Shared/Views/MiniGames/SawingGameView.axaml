@@ -127,7 +127,7 @@
         </StackPanel>
 
         <!-- Result Display (shown after action) -->
-        <Border Classes="Card"
+        <Border Classes="Card StatsCard"
                 IsVisible="{Binding IsResultShown}"
                 Padding="24">
           <StackPanel Spacing="16" HorizontalAlignment="Center">

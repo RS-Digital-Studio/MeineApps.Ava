@@ -14,7 +14,7 @@
     <!-- Hintergrund-Partikel (SkiaSharp Canvas) -->
     <skia:SKCanvasView x:Name="BgCanvas" />
 
-    <Grid RowDefinitions="*" Margin="24,16">
+    <Grid RowDefinitions="*" Margin="24,16,24,80">
 
       <!-- Main Content: 2-Column Layout -->
       <Grid Grid.Row="0"
@@ -64,7 +64,7 @@
         <!-- Rechts: Button Grid (2 Spalten) -->
         <Grid Grid.Column="1"
               ColumnDefinitions="*,*"
-              RowDefinitions="Auto,Auto,Auto,Auto"
+              RowDefinitions="Auto,Auto,Auto,Auto,Auto"
               Margin="24,0,0,0"
               VerticalAlignment="Center">
 
@@ -151,6 +151,22 @@
                   HorizontalContentAlignment="Center"
                   Margin="6,0,0,6"
                   Height="48" />
+
+          <!-- Achievements (über beide Spalten) -->
+          <Button Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2"
+                  Classes="Secondary GameButton"
+                  Command="{Binding AchievementsCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Margin="0,6,0,0"
+                  Height="48">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Trophy" Width="18" Height="18"
+                               Foreground="#FFD700" />
+              <TextBlock Text="{loc:Translate AchievementsTitle}"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+          </Button>
 
         </Grid>
       </Grid>

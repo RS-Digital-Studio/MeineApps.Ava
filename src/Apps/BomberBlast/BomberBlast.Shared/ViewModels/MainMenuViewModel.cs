@@ -10,7 +10,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the main menu page.
 /// Provides navigation commands for Story, Arcade, Quick Play, and other menu options.
 /// </summary>
-public partial class MainMenuViewModel : ObservableObject
+public partial class MainMenuViewModel : ObservableObject, IDisposable
 {
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;
@@ -71,6 +71,9 @@ public partial class MainMenuViewModel : ObservableObject
         _localizationService = localizationService;
         _dailyRewardService = dailyRewardService;
         _reviewService = reviewService;
+
+        // Live-Update bei Coin-Änderungen (z.B. aus Shop, Rewarded Ads)
+        _coinService.BalanceChanged += OnBalanceChanged;
 
         // Set version from assembly
         var assembly = System.Reflection.Assembly.GetEntryAssembly();
@@ -188,5 +191,24 @@ public partial class MainMenuViewModel : ObservableObject
     private void Achievements()
     {
         NavigationRequested?.Invoke("Achievements");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BALANCE CHANGED
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void OnBalanceChanged(object? sender, EventArgs e)
+    {
+        CoinBalance = _coinService.Balance;
+        CoinsText = _coinService.Balance.ToString("N0");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DISPOSE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public void Dispose()
+    {
+        _coinService.BalanceChanged -= OnBalanceChanged;
     }
 }

@@ -50,8 +50,10 @@
       </Border>
 
       <!-- Content -->
-      <ScrollViewer Grid.Row="1" Padding="12,12,12,60">
-        <StackPanel Spacing="12">
+      <ScrollViewer Grid.Row="1"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12" Margin="12,12,12,80">
 
           <!-- Controls + Sound: Side by Side -->
           <Grid ColumnDefinitions="*,*">
@@ -437,8 +439,8 @@
 
           </Grid>
 
-          <!-- Bottom Spacer (60dp fuer Ad-Banner Overlay) -->
-          <Border Height="60" />
+          <!-- Bottom Spacer (80dp fuer Ad-Banner + Navigation-Bar) -->
+          <Border Height="80" />
 
         </StackPanel>
       </ScrollViewer>

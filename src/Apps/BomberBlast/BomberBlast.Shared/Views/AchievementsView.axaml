@@ -55,8 +55,10 @@
       </Border>
 
       <!-- Achievement List -->
-      <ScrollViewer Grid.Row="1" Padding="12,12,12,60">
-        <ItemsControl ItemsSource="{Binding Items}">
+      <ScrollViewer Grid.Row="1"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding Items}" Margin="12,12,12,80">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:AchievementItem">
               <Border Classes="Card" Margin="0,4"

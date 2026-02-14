@@ -60,8 +60,10 @@
       </Border>
 
       <!-- Upgrade-Liste -->
-      <ScrollViewer Grid.Row="1" Padding="12,8,12,60">
-        <ItemsControl ItemsSource="{Binding ShopItems}">
+      <ScrollViewer Grid.Row="1"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding ShopItems}" Margin="12,8,12,80">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <WrapPanel Orientation="Horizontal"

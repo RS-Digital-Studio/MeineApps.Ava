@@ -7,8 +7,8 @@
     <!-- App Identity -->
     <ApplicationId>com.meineapps.handwerkerrechner</ApplicationId>
     <ApplicationTitle>HandwerkerRechner</ApplicationTitle>
-    <ApplicationVersion>17</ApplicationVersion>
-    <ApplicationDisplayVersion>2.0.2</ApplicationDisplayVersion>
+    <ApplicationVersion>18</ApplicationVersion>
+    <ApplicationDisplayVersion>2.0.3</ApplicationDisplayVersion>
 
     <!-- Android Settings -->
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>

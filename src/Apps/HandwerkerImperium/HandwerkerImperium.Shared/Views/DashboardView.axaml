@@ -157,9 +157,9 @@
     <!-- ================================================================= -->
     <!-- MAIN CONTENT                                                      -->
     <!-- ================================================================= -->
-    <ScrollViewer Grid.Row="1" Padding="16" HorizontalScrollBarVisibility="Disabled"
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
                   Name="DashboardScrollViewer">
-      <StackPanel Spacing="20">
+      <StackPanel Spacing="20" Margin="16">
 
         <!-- ============================================================= -->
         <!-- DAILY CHALLENGES                                              -->
@@ -316,7 +316,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:WorkshopDisplayModel">
               <Button Classes="Text" Margin="4" Padding="0" Height="NaN"
-                      HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                      HorizontalAlignment="Stretch" VerticalAlignment="Top"
                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                       Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).SelectWorkshopCommand}"
                       CommandParameter="{Binding .}">
@@ -324,67 +324,69 @@
                         Background="{DynamicResource CardBrush}"
                         BoxShadow="{Binding MaxLevelGlow}"
                         HorizontalAlignment="Stretch">
-                  <Grid RowDefinitions="Auto,*,Auto">
+                  <!-- Kein * Row mehr - alles Auto, damit nichts abgeschnitten wird -->
+                  <Grid RowDefinitions="Auto,Auto,Auto">
 
-                    <!-- Row 0: Farbiger Header mit Icon + Name -->
+                    <!-- Row 0: Kompakter Header mit Icon + Name + Level -->
                     <Panel Grid.Row="0">
                       <Border Background="{Binding Type, Converter={StaticResource WorkshopColor}}"
                               Opacity="0.12" />
-                      <StackPanel Margin="12,10,12,8" Spacing="6">
-                        <!-- Icon + Name Zeile -->
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                          <Grid Width="36" Height="36">
-                            <Border CornerRadius="10"
-                                    Background="{Binding Type, Converter={StaticResource WorkshopColor}, ConverterParameter=bg}" />
-                            <mi:MaterialIcon Kind="{Binding IconKind}" Width="18" Height="18"
-                                             Foreground="{Binding Type, Converter={StaticResource WorkshopColor}}"
-                                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                                             IsVisible="{Binding IsUnlocked}" />
-                            <mi:MaterialIcon Kind="Lock" Width="16" Height="16"
-                                             Foreground="{DynamicResource TextSecondaryBrush}"
-                                             HorizontalAlignment="Center" VerticalAlignment="Center"
-                                             IsVisible="{Binding !IsUnlocked}" />
-                          </Grid>
-                          <TextBlock Text="{Binding Name}"
-                                     FontSize="14" FontWeight="Bold"
-                                     Foreground="{DynamicResource TextPrimaryBrush}"
-                                     TextTrimming="CharacterEllipsis"
-                                     VerticalAlignment="Center" />
-                        </StackPanel>
+                      <Grid Margin="8,8,8,6" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                        <!-- Icon -->
+                        <Grid Width="28" Height="28">
+                          <Border CornerRadius="7"
+                                  Background="{Binding Type, Converter={StaticResource WorkshopColor}, ConverterParameter=bg}" />
+                          <mi:MaterialIcon Kind="{Binding IconKind}" Width="14" Height="14"
+                                           Foreground="{Binding Type, Converter={StaticResource WorkshopColor}}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsVisible="{Binding IsUnlocked}" />
+                          <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           IsVisible="{Binding !IsUnlocked}" />
+                        </Grid>
+                        <!-- Name -->
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Name}"
+                                   FontSize="12" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   VerticalAlignment="Center" />
                         <!-- Level Badge -->
-                        <Border CornerRadius="8" Background="Gold" Padding="8,3"
-                                HorizontalAlignment="Left"
-                                IsVisible="{Binding IsUnlocked}">
-                          <TextBlock Text="{Binding Level, StringFormat='Level {0}'}"
-                                     FontSize="11" FontWeight="Bold"
+                        <Border Grid.Column="2" CornerRadius="6" Background="Gold" Padding="4,2"
+                                IsVisible="{Binding IsUnlocked}"
+                                VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Level, StringFormat='Lv.{0}'}"
+                                     FontSize="9" FontWeight="Bold"
                                      Foreground="#3D2B00" />
                         </Border>
-                      </StackPanel>
+                      </Grid>
                     </Panel>
 
-                    <!-- Row 1: Body (flexibel, füllt den Raum) -->
-                    <StackPanel Grid.Row="1" Margin="12,8,12,8" Spacing="6">
+                    <!-- Row 1: Body -->
+                    <StackPanel Grid.Row="1" Margin="8,4,8,6" Spacing="4">
 
                       <!-- Freigeschaltet: Workers + Income + Progress -->
                       <Grid ColumnDefinitions="*,Auto"
                             IsVisible="{Binding IsUnlocked}">
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                          <mi:MaterialIcon Kind="AccountHardHat" Width="14" Height="14"
+                          <mi:MaterialIcon Kind="AccountHardHat" Width="13" Height="13"
                                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                          <TextBlock FontSize="12"
+                          <TextBlock FontSize="11"
                                      Foreground="{DynamicResource TextSecondaryBrush}">
                             <Run Text="{Binding WorkerCount}" />/<Run Text="{Binding MaxWorkers}" />
                           </TextBlock>
                         </StackPanel>
-                        <TextBlock Grid.Column="1" Text="{Binding IncomeDisplay}" FontSize="12"
+                        <TextBlock Grid.Column="1" Text="{Binding IncomeDisplay}" FontSize="10"
                                    FontWeight="SemiBold"
-                                   Foreground="{DynamicResource SuccessBrush}" />
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   TextTrimming="CharacterEllipsis" />
                       </Grid>
 
                       <!-- Animierte Level-ProgressBar -->
                       <ProgressBar Value="{Binding LevelProgress}" Maximum="1"
                                    Foreground="{Binding Type, Converter={StaticResource WorkshopColor}}"
-                                   Height="5"
+                                   Height="4"
                                    IsVisible="{Binding IsUnlocked}">
                         <ProgressBar.Transitions>
                           <Transitions>
@@ -394,20 +396,22 @@
                       </ProgressBar>
 
                       <!-- Gesperrt: Unlock-Info mit Level + Kosten -->
-                      <StackPanel IsVisible="{Binding !IsUnlocked}" Spacing="4">
+                      <StackPanel IsVisible="{Binding !IsUnlocked}" Spacing="2" MinHeight="40">
                         <TextBlock Text="{Binding UnlockDisplay}"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                                   FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center" />
                         <TextBlock Text="{Binding UnlockCostDisplay}"
                                    FontSize="11"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                   HorizontalAlignment="Center"
                                    IsVisible="{Binding CanBuyUnlock}" />
-                        <mi:MaterialIcon Kind="LockOpen" Width="24" Height="24"
+                        <mi:MaterialIcon Kind="LockOpen" Width="20" Height="20"
                                          Foreground="{StaticResource CraftPrimaryLightBrush}"
                                          Opacity="0.5"
                                          HorizontalAlignment="Center"
                                          IsVisible="{Binding CanBuyUnlock}" />
-                        <mi:MaterialIcon Kind="LockOutline" Width="24" Height="24"
+                        <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20"
                                          Foreground="{DynamicResource TextSecondaryBrush}"
                                          Opacity="0.3"
                                          HorizontalAlignment="Center"
@@ -418,7 +422,7 @@
 
                     <!-- Row 2: Upgrade-Button (volle Breite, abgerundete untere Ecken) -->
                     <Button Grid.Row="2" Classes="Primary"
-                            Padding="0,7" MinHeight="30"
+                            Padding="0,6" MinHeight="28"
                             CornerRadius="0,0,16,16"
                             Background="{Binding Type, Converter={StaticResource WorkshopColor}}"
                             HorizontalAlignment="Stretch"

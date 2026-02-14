@@ -124,7 +124,7 @@ public partial class MainView : UserControl
     private void OnWorkerProfileBackdropPressed(object? sender, PointerPressedEventArgs e)
     {
         if (DataContext is MainViewModel vm)
-            vm.TryGoBack();
+            vm.HandleBackPressed();
     }
 
     // Klick auf Dialog-Inhalt: Event nicht zum Overlay durchbubblen lassen

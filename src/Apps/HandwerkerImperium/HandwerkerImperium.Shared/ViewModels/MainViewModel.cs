@@ -327,6 +327,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // Celebration Event fuer Confetti-Overlay (Level-Up, Achievement, Prestige)
     public event Action? CelebrationRequested;
 
+    /// <summary>Wird ausgelöst um einen Exit-Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").</summary>
+    public event Action<string>? ExitHintRequested;
+
     // Navigation button texts
     public string NavHomeText => $"🏠\n{_localizationService.GetString("Home")}";
     public string NavStatsText => $"📊\n{_localizationService.GetString("Stats")}";
@@ -571,6 +574,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _localizationService.LanguageChanged += OnLanguageChanged;
         _eventService.EventStarted += OnEventStarted;
         _eventService.EventEnded += OnEventEnded;
+        _dailyChallengeService.ChallengeProgressChanged += OnChallengeProgressChanged;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1235,12 +1239,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
         NotifyTabBarVisibility();
     }
 
+    #region Back-Navigation (Double-Back-to-Exit)
+
+    private DateTime _lastBackPress = DateTime.MinValue;
+    private const int BackPressIntervalMs = 2000;
+
     /// <summary>
-    /// Versucht eine Ebene zurückzunavigieren. Wird von Android Back-Button aufgerufen.
-    /// Reihenfolge: Dialoge schließen → MiniGame/Detail → Sub-Tabs → Dashboard.
-    /// Gibt true zurück wenn eine Zurück-Navigation erfolgt ist, false wenn bereits auf Dashboard.
+    /// Behandelt die Zurück-Taste. Gibt true zurück wenn konsumiert (App bleibt offen),
+    /// false wenn die App geschlossen werden darf (Double-Back).
+    /// Reihenfolge: Dialoge → MiniGame/Detail → Sub-Tabs → Dashboard → Double-Back-to-Exit.
     /// </summary>
-    public bool TryGoBack()
+    public bool HandleBackPressed()
     {
         // 1. Offene Dialoge schließen (höchste Priorität)
         if (IsConfirmDialogVisible) { ConfirmDialogCancel(); return true; }
@@ -1274,23 +1283,32 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return true;
         }
 
-        // 4. Sub-Tabs (Markt, Gebäude, Research) → zurück zum Dashboard
+        // 5. Sub-Tabs (Markt, Gebäude, Research) → zurück zum Dashboard
         if (IsWorkerMarketActive || IsBuildingsActive || IsResearchActive)
         {
             SelectDashboardTab();
             return true;
         }
 
-        // 5. Nicht-Dashboard-Tabs → zum Dashboard
+        // 6. Nicht-Dashboard-Tabs → zum Dashboard
         if (IsShopActive || IsStatisticsActive || IsAchievementsActive || IsSettingsActive)
         {
             SelectDashboardTab();
             return true;
         }
 
-        // 6. Bereits auf Dashboard → false (App kann geschlossen werden)
-        return false;
+        // 7. Auf Dashboard: Double-Back-to-Exit
+        var now = DateTime.UtcNow;
+        if ((now - _lastBackPress).TotalMilliseconds < BackPressIntervalMs)
+            return false; // App beenden lassen
+
+        _lastBackPress = now;
+        var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Erneut drücken zum Beenden";
+        ExitHintRequested?.Invoke(msg);
+        return true; // Konsumiert
     }
+
+    #endregion
 
     // ═══════════════════════════════════════════════════════════════════════
     // QUICK JOB + DAILY CHALLENGE COMMANDS
@@ -1526,7 +1544,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void RefreshChallenges()
     {
         var state = _dailyChallengeService.GetState();
-        DailyChallenges = state.Challenges;
+        // Neue Liste erstellen, damit PropertyChanged zuverlässig feuert
+        // (gleiche Referenz wird vom CommunityToolkit-Setter ignoriert)
+        DailyChallenges = new List<DailyChallenge>(state.Challenges);
         HasDailyChallenges = state.Challenges.Count > 0;
         CanClaimAllBonus = _dailyChallengeService.AreAllCompleted && !state.AllCompletedBonusClaimed;
     }
@@ -1779,6 +1799,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         RefreshOrders();
+    }
+
+    /// <summary>
+    /// Wird vom DailyChallengeService bei jeder Fortschrittsänderung ausgelöst.
+    /// Aktualisiert die Challenge-Anzeige sofort statt nur alle 5 Ticks.
+    /// </summary>
+    private void OnChallengeProgressChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(RefreshChallenges);
     }
 
     private void OnMiniGameResultRecorded(object? sender, MiniGameResultRecordedEventArgs e)
@@ -2140,6 +2169,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _localizationService.LanguageChanged -= OnLanguageChanged;
         _eventService.EventStarted -= OnEventStarted;
         _eventService.EventEnded -= OnEventEnded;
+        _dailyChallengeService.ChallengeProgressChanged -= OnChallengeProgressChanged;
 
         _disposed = true;
         GC.SuppressFinalize(this);

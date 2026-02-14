@@ -198,7 +198,8 @@ public partial class ResearchViewModel : ObservableObject
             return;
         }
 
-        ActiveResearchProgress = active.Progress;
+        // Progress ist 0-100 (Prozent), ProgressBar hat Maximum=1 → durch 100 teilen
+        ActiveResearchProgress = active.Progress / 100.0;
         ActiveResearchName = _localizationService.GetString(active.NameKey);
 
         var remaining = active.RemainingTime;
@@ -420,7 +421,8 @@ public partial class ResearchViewModel : ObservableObject
                 IsActive = r.IsActive,
                 IsLocked = !prerequisitesMet,
                 CanStart = canStart,
-                Progress = r.Progress,
+                // Progress ist 0-100, ProgressBar hat Maximum=1 → normalisieren
+                Progress = r.Progress / 100.0,
                 Effect = r.Effect,
                 InstantFinishScrewCost = r.InstantFinishScrewCost
             };

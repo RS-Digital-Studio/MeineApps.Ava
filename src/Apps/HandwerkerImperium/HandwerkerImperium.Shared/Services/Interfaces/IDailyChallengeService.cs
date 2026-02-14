@@ -19,4 +19,9 @@ public interface IDailyChallengeService
     /// Setzt den Fortschritt einer Challenge zurueck (Retry per Rewarded Ad, max 1x pro Challenge).
     /// </summary>
     bool RetryChallenge(string challengeId);
+
+    /// <summary>
+    /// Wird ausgelöst wenn sich der Fortschritt einer Challenge ändert.
+    /// </summary>
+    event EventHandler? ChallengeProgressChanged;
 }

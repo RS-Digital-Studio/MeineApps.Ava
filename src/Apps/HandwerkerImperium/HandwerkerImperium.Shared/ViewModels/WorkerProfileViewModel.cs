@@ -113,6 +113,12 @@ public partial class WorkerProfileViewModel : ObservableObject
     private List<WorkshopTransferItem> _availableWorkshops = [];
 
     [ObservableProperty]
+    private bool _hasAvailableWorkshops;
+
+    [ObservableProperty]
+    private WorkshopTransferItem? _selectedTransferWorkshop;
+
+    [ObservableProperty]
     private string _trainingTimeDisplay = string.Empty;
 
     [ObservableProperty]
@@ -499,10 +505,11 @@ public partial class WorkerProfileViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void TransferWorker(WorkshopType targetWorkshop)
+    private void TransferWorker()
     {
-        if (_workerId == null) return;
+        if (_workerId == null || SelectedTransferWorkshop == null) return;
 
+        var targetWorkshop = SelectedTransferWorkshop.Type;
         bool success = _workerService.TransferWorker(_workerId, targetWorkshop);
         if (success)
         {
@@ -531,8 +538,11 @@ public partial class WorkerProfileViewModel : ObservableObject
     private void LoadAvailableWorkshops()
     {
         var state = _gameStateService.State;
+        // Nur freigeschaltete Workshops anzeigen, die nicht der aktuelle Workshop sind
+        // und noch Platz für weitere Worker haben
         var workshops = state.Workshops
-            .Where(w => w.IsUnlocked && (Worker == null || w.Type != Worker.AssignedWorkshop))
+            .Where(w => w.IsUnlocked && (Worker == null || w.Type != Worker.AssignedWorkshop)
+                        && w.Workers.Count < w.MaxWorkers)
             .Select(w => new WorkshopTransferItem
             {
                 Type = w.Type,
@@ -542,6 +552,9 @@ public partial class WorkerProfileViewModel : ObservableObject
             .ToList();
 
         AvailableWorkshops = workshops;
+        HasAvailableWorkshops = workshops.Count > 0;
+        // Ersten Eintrag vorselektieren, damit der Transfer-Button sofort funktioniert
+        SelectedTransferWorkshop = workshops.FirstOrDefault();
     }
 }
 

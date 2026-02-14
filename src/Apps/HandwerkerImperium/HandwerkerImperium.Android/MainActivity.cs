@@ -6,7 +6,6 @@ using Android.Widget;
 using Avalonia;
 using Avalonia.Android;
 using HandwerkerImperium.ViewModels;
-using MeineApps.Core.Ava.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
@@ -23,10 +22,7 @@ public class MainActivity : AvaloniaMainActivity<App>
 {
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
-
-    // Double-Back-Press zum Beenden
-    private DateTime _lastBackPress = DateTime.MinValue;
-    private const int BackPressIntervalMs = 2000;
+    private MainViewModel? _mainVm;
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
@@ -43,6 +39,14 @@ public class MainActivity : AvaloniaMainActivity<App>
                 _rewardedAdHelper!, sp.GetRequiredService<IPurchaseService>(), "HandwerkerImperium");
 
         base.OnCreate(savedInstanceState);
+
+        // ViewModel holen und ExitHint-Event verdrahten
+        _mainVm = App.Services.GetService<MainViewModel>();
+        if (_mainVm != null)
+        {
+            _mainVm.ExitHintRequested += msg =>
+                RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short)?.Show());
+        }
 
         // Immersive Fullscreen aktivieren
         EnableImmersiveMode();
@@ -118,27 +122,14 @@ public class MainActivity : AvaloniaMainActivity<App>
         if (hasFocus) EnableImmersiveMode();
     }
 
-    [System.Obsolete("Avalonia nutzt OnBackPressed")]
+#pragma warning disable CA1422 // OnBackPressed ab API 33 veraltet, aber notwendig für ältere API-Level
     public override void OnBackPressed()
     {
-        // Zuerst im ViewModel prüfen ob eine Ebene zurücknavigiert werden kann
-        var mainVm = App.Services?.GetService<MainViewModel>();
-        if (mainVm != null && mainVm.TryGoBack())
+        if (_mainVm != null && _mainVm.HandleBackPressed())
             return;
-
-        // Double-Back-Press zum Beenden
-        var now = DateTime.UtcNow;
-        if ((now - _lastBackPress).TotalMilliseconds < BackPressIntervalMs)
-        {
-            base.OnBackPressed();
-            return;
-        }
-
-        _lastBackPress = now;
-        var localization = App.Services?.GetService<ILocalizationService>();
-        var msg = localization?.GetString("PressBackAgainToExit") ?? "Erneut drücken zum Beenden";
-        Toast.MakeText(this, msg, ToastLength.Short)?.Show();
+        base.OnBackPressed();
     }
+#pragma warning restore CA1422
 
     protected override void OnDestroy()
     {

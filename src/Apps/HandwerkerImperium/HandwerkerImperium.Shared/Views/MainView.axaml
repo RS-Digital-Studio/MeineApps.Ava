@@ -193,7 +193,8 @@
               </mi:MaterialIcon.Styles>
             </mi:MaterialIcon>
             <TextBlock Text="{loc:Translate Home}"
-                       FontSize="10" HorizontalAlignment="Center"
+                       FontSize="9" HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource TextMutedBrush}" />
             <!-- Pill-Indikator (breiter, abgerundet) -->
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
@@ -212,7 +213,8 @@
             <mi:MaterialIcon Kind="AccountGroup" Width="24" Height="24"
                              Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Text="{loc:Translate Workers}"
-                       FontSize="10" HorizontalAlignment="Center"
+                       FontSize="9" HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource TextMutedBrush}" />
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
                     Background="{StaticResource CraftPrimaryLightBrush}"
@@ -230,7 +232,8 @@
             <mi:MaterialIcon Kind="FlaskOutline" Width="24" Height="24"
                              Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Text="{loc:Translate Research}"
-                       FontSize="10" HorizontalAlignment="Center"
+                       FontSize="9" HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource TextMutedBrush}" />
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
                     Background="{StaticResource CraftPrimaryLightBrush}"
@@ -248,7 +251,8 @@
             <mi:MaterialIcon Kind="Cart" Width="24" Height="24"
                              Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Text="{loc:Translate Shop}"
-                       FontSize="10" HorizontalAlignment="Center"
+                       FontSize="9" HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource TextMutedBrush}" />
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
                     Background="{StaticResource CraftPrimaryLightBrush}"
@@ -266,7 +270,8 @@
             <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
                              Foreground="{DynamicResource TextMutedBrush}" />
             <TextBlock Text="{loc:Translate Settings}"
-                       FontSize="10" HorizontalAlignment="Center"
+                       FontSize="9" HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource TextMutedBrush}" />
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
                     Background="{StaticResource CraftPrimaryLightBrush}"

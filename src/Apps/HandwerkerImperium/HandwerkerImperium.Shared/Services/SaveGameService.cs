@@ -233,6 +233,9 @@ public class SaveGameService : ISaveGameService
                 worker.Fatigue = Math.Clamp(worker.Fatigue, 0m, 100m);
                 if (worker.ExperienceLevel < 0) worker.ExperienceLevel = 0;
                 if (worker.ExperienceXp < 0) worker.ExperienceXp = 0;
+                // AssignedWorkshop muss zum Workshop passen, in dem der Worker steckt
+                if (worker.AssignedWorkshop != ws.Type)
+                    worker.AssignedWorkshop = ws.Type;
             }
         }
 

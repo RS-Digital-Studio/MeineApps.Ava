@@ -18,6 +18,8 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
 
     private static readonly DailyChallengeType[] AllChallengeTypes = Enum.GetValues<DailyChallengeType>();
 
+    public event EventHandler? ChallengeProgressChanged;
+
     public decimal AllCompletedBonusAmount => 500m;
     public int AllCompletedBonusScrews => 10;
 
@@ -266,6 +268,8 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
             }
         }
         _gameStateService.MarkDirty();
+        // UI sofort über Fortschrittsänderung benachrichtigen
+        ChallengeProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
@@ -282,6 +286,8 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
                 challenge.IsCompleted = true;
         }
         _gameStateService.MarkDirty();
+        // UI sofort über Fortschrittsänderung benachrichtigen
+        ChallengeProgressChanged?.Invoke(this, EventArgs.Empty);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

@@ -264,7 +264,12 @@ public partial class DayDetailViewModel : ObservableObject
     [RelayCommand]
     private void AddEntry()
     {
-        if (WorkDay == null || IsLocked) return;
+        if (WorkDay == null)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, "WorkDay"));
+            return;
+        }
+        if (IsLocked) return;
 
         _editingTimeEntry = null;
         TimeEntryOverlayTitle = AppStrings.AddEntry;
@@ -358,7 +363,12 @@ public partial class DayDetailViewModel : ObservableObject
     [RelayCommand]
     private void AddPause()
     {
-        if (WorkDay == null || IsLocked) return;
+        if (WorkDay == null)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorLoading, "WorkDay"));
+            return;
+        }
+        if (IsLocked) return;
 
         _editingPauseEntry = null;
         PauseOverlayTitle = AppStrings.AddBreak;

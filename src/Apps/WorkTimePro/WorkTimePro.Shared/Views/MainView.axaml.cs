@@ -195,12 +195,16 @@ public partial class MainView : UserControl
     {
         System.Diagnostics.Debug.WriteLine($"[WorkTimePro] {title}: {message}");
 
-        // Fehlermeldungen als FloatingText anzeigen
+        // Fehlermeldungen als FloatingText anzeigen (Titel + Nachricht für Kontext)
         var color = Color.Parse("#F44336"); // Rot für Fehler
         var w = FloatingTextCanvas.Bounds.Width;
         if (w < 10) w = 300;
         var h = FloatingTextCanvas.Bounds.Height;
         if (h < 10) h = 400;
-        FloatingTextCanvas.ShowFloatingText(title, w * 0.5, Math.Max(80, h * 0.3), color, 16);
+        // Nachricht kürzen falls zu lang (max 80 Zeichen für FloatingText)
+        var displayText = string.IsNullOrWhiteSpace(message) ? title : message;
+        if (displayText.Length > 80)
+            displayText = displayText[..77] + "...";
+        FloatingTextCanvas.ShowFloatingText(displayText, w * 0.5, Math.Max(80, h * 0.3), color, 14);
     }
 }

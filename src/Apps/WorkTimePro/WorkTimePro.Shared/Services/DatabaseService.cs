@@ -161,9 +161,10 @@ public class DatabaseService : IDatabaseService
             }
 
             workDay.CreatedAt = DateTime.UtcNow;
-            var newId = await db.InsertAsync(workDay);
-            workDay.Id = newId;
-            return newId;
+            // InsertAsync gibt Row-Count zurück (immer 1), NICHT die Auto-Increment-ID.
+            // sqlite-net setzt die ID direkt auf dem Objekt nach dem Insert.
+            await db.InsertAsync(workDay);
+            return workDay.Id;
         }
         else
         {
@@ -227,9 +228,9 @@ public class DatabaseService : IDatabaseService
         if (entry.Id == 0)
         {
             entry.CreatedAt = DateTime.UtcNow;
-            var newId = await db.InsertAsync(entry);
-            entry.Id = newId;
-            return newId;
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(entry);
+            return entry.Id;
         }
         else
         {
@@ -294,9 +295,9 @@ public class DatabaseService : IDatabaseService
         if (entry.Id == 0)
         {
             entry.CreatedAt = DateTime.UtcNow;
-            var newId = await db.InsertAsync(entry);
-            entry.Id = newId;
-            return newId;
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(entry);
+            return entry.Id;
         }
         else
         {
@@ -349,9 +350,9 @@ public class DatabaseService : IDatabaseService
         if (vacation.Id == 0)
         {
             vacation.CreatedAt = DateTime.UtcNow;
-            var newId = await db.InsertAsync(vacation);
-            vacation.Id = newId;
-            return newId;
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(vacation);
+            return vacation.Id;
         }
         else
         {
@@ -489,9 +490,9 @@ public class DatabaseService : IDatabaseService
         if (project.Id == 0)
         {
             project.CreatedAt = DateTime.UtcNow;
-            var newId = await db.InsertAsync(project);
-            project.Id = newId;
-            return newId;
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(project);
+            return project.Id;
         }
         else
         {
@@ -534,9 +535,9 @@ public class DatabaseService : IDatabaseService
         if (entry.Id == 0)
         {
             entry.CreatedAt = DateTime.UtcNow;
-            var newId = await db.InsertAsync(entry);
-            entry.Id = newId;
-            return newId;
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(entry);
+            return entry.Id;
         }
         else
         {
@@ -576,9 +577,9 @@ public class DatabaseService : IDatabaseService
         if (employer.Id == 0)
         {
             employer.CreatedAt = DateTime.UtcNow;
-            var newId = await db.InsertAsync(employer);
-            employer.Id = newId;
-            return newId;
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(employer);
+            return employer.Id;
         }
         else
         {
@@ -634,9 +635,9 @@ public class DatabaseService : IDatabaseService
         if (pattern.Id == 0)
         {
             pattern.CreatedAt = DateTime.UtcNow;
-            var newId = await db.InsertAsync(pattern);
-            pattern.Id = newId;
-            return newId;
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(pattern);
+            return pattern.Id;
         }
         else
         {
@@ -696,9 +697,9 @@ public class DatabaseService : IDatabaseService
         if (assignment.Id == 0)
         {
             assignment.CreatedAt = DateTime.UtcNow;
-            var newId = await db.InsertAsync(assignment);
-            assignment.Id = newId;
-            return newId;
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(assignment);
+            return assignment.Id;
         }
         else
         {

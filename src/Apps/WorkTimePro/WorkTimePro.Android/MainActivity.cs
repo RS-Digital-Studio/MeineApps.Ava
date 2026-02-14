@@ -89,32 +89,9 @@ public class MainActivity : AvaloniaMainActivity<App>
     }
 #pragma warning restore CS0672
 
-    // === Immersive Fullscreen: Statusbar + Navbar ausblenden ===
-
-    public override void OnWindowFocusChanged(bool hasFocus)
-    {
-        base.OnWindowFocusChanged(hasFocus);
-        if (hasFocus)
-            EnableImmersiveMode();
-    }
-
-    private void EnableImmersiveMode()
-    {
-        if (Build.VERSION.SdkInt < BuildVersionCodes.R) return;
-
-        // WindowInsetsController (API 30+)
-        var controller = Window?.InsetsController;
-        if (controller != null)
-        {
-            controller.Hide(WindowInsets.Type.StatusBars() | WindowInsets.Type.NavigationBars());
-            controller.SystemBarsBehavior = (int)WindowInsetsControllerBehavior.ShowTransientBarsBySwipe;
-        }
-    }
-
     protected override void OnResume()
     {
         base.OnResume();
-        EnableImmersiveMode();
         _adMobHelper?.Resume();
     }
 

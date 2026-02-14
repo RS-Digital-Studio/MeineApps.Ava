@@ -126,12 +126,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         VacationVm = vacationVm;
         ShiftPlanVm = shiftPlanVm;
 
-        // Wire up GoBack from sub-page VMs
+        // Navigation-Events verdrahten (Sub-Pages + Tab-VMs die navigieren können)
         WireSubPageNavigation(dayDetailVm);
         WireSubPageNavigation(monthVm);
         WireSubPageNavigation(yearVm);
         WireSubPageNavigation(vacationVm);
         WireSubPageNavigation(shiftPlanVm);
+        // Tab-VMs die DayDetail-Navigation auslösen können
+        WireSubPageNavigation(weekVm);
+        WireSubPageNavigation(calendarVm);
 
         // Settings-Änderungen propagieren
         SettingsVm.SettingsChanged += OnSettingsChanged;
@@ -150,12 +153,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Initialisierung mit Fehlerbehandlung (statt Fire-and-Forget)
+    /// Initialisierung mit Fehlerbehandlung (statt Fire-and-Forget).
+    /// Stellt sicher, dass die Datenbank bereit ist, bevor Daten geladen werden.
     /// </summary>
     private async Task InitializeAsync()
     {
-        try { await LoadDataAsync(); }
-        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Init-Fehler: {ex.Message}"); }
+        try
+        {
+            // DB explizit initialisieren (Tabellen + Indizes erstellen)
+            await _database.InitializeAsync();
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Init-Fehler: {ex}");
+            // Fehler dem User anzeigen statt verschlucken
+            MessageRequested?.Invoke(
+                AppStrings.Error,
+                string.Format(AppStrings.ErrorLoading, ex.Message));
+        }
     }
 
     /// <summary>
@@ -177,17 +193,40 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void WireSubPageNavigation(ObservableObject vm)
     {
-        // Sub-page VMs fire NavigationRequested(".." or back) - we close overlays
+        // Sub-page VMs navigieren per Route-Strings
         var navEvent = vm.GetType().GetEvent("NavigationRequested");
         if (navEvent != null)
         {
-            var handler = new Action<string>(route =>
-            {
-                if (route == ".." || route.Contains("back", StringComparison.OrdinalIgnoreCase))
-                    GoBack();
-            });
+            var handler = new Action<string>(route => HandleNavigation(route));
             navEvent.AddEventHandler(vm, handler);
             _wiredEvents.Add((vm, "NavigationRequested", handler));
+        }
+    }
+
+    /// <summary>
+    /// Zentrale Navigations-Behandlung für alle Sub-Page-Routes
+    /// </summary>
+    private async void HandleNavigation(string route)
+    {
+        // Zurück-Navigation
+        if (route == ".." || route.Contains("back", StringComparison.OrdinalIgnoreCase))
+        {
+            GoBack();
+            return;
+        }
+
+        // DayDetail-Navigation (z.B. "DayDetailPage?date=2026-02-13")
+        if (route.StartsWith("DayDetailPage", StringComparison.OrdinalIgnoreCase))
+        {
+            var dateParam = route.Split("date=", StringSplitOptions.RemoveEmptyEntries);
+            if (dateParam.Length > 1 && DateTime.TryParse(dateParam[1], out var date))
+            {
+                DayDetailVm.SelectedDate = date;
+            }
+            CloseAllSubPages();
+            IsDayDetailActive = true;
+            OnPropertyChanged(nameof(IsSubPageActive));
+            await DayDetailVm.LoadDataAsync();
         }
     }
 
@@ -513,6 +552,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task NavigateToDayDetailAsync()
     {
+        // Immer den heutigen Tag anzeigen wenn von TodayView aus navigiert
+        DayDetailVm.SelectedDate = DateTime.Today;
         CloseAllSubPages();
         IsDayDetailActive = true;
         OnPropertyChanged(nameof(IsSubPageActive));

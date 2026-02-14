@@ -61,87 +61,132 @@
         </Grid>
       </Border>
 
-      <!-- Level Grid -->
-      <ScrollViewer Grid.Row="1" Padding="12,12,12,60">
-        <ItemsControl ItemsSource="{Binding Levels}">
+      <!-- Welt-Sektionen -->
+      <ScrollViewer Grid.Row="1"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding WorldGroups}" Margin="4,4,4,80">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
-              <WrapPanel Orientation="Horizontal"
-                         HorizontalAlignment="Center" />
+              <StackPanel Spacing="6" />
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:LevelDisplayItem">
+            <DataTemplate x:DataType="vm:WorldGroup">
+              <!-- Welt-Sektion -->
               <Panel>
-                <!-- Welt-Header -->
-                <Border IsVisible="{Binding IsWorldHeader}"
-                        Background="{DynamicResource SurfaceBrush}"
-                        CornerRadius="8"
-                        Padding="16,8"
-                        Margin="5,12,5,4"
-                        Width="660"
-                        HorizontalAlignment="Center"
-                        Opacity="{Binding WorldHeaderOpacity}">
-                  <StackPanel Orientation="Horizontal" Spacing="8"
-                              HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="{Binding WorldIconKind}"
-                                     Width="20" Height="20"
-                                     Foreground="{Binding WorldHeaderBrush}" />
-                    <TextBlock Text="{Binding WorldLockText}"
-                               FontSize="15" FontWeight="SemiBold"
-                               Foreground="{Binding WorldHeaderBrush}" />
+                <!-- Content-Bereich -->
+                <Border CornerRadius="10"
+                        Padding="6,4,6,6"
+                        Opacity="{Binding SectionOpacity}"
+                        Background="{Binding HeaderBackgroundBrush}">
+                  <StackPanel Spacing="4">
+
+                    <!-- Welt-Header -->
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <!-- Icon + Name -->
+                      <StackPanel Grid.Column="0"
+                                  Orientation="Horizontal" Spacing="8"
+                                  VerticalAlignment="Center">
+                        <mi:MaterialIcon Kind="{Binding LockIcon}"
+                                         Width="20" Height="20"
+                                         Foreground="{Binding HeaderTextBrush}" />
+                        <TextBlock Text="{Binding WorldLockText}"
+                                   FontSize="15" FontWeight="SemiBold"
+                                   Foreground="{Binding HeaderTextBrush}" />
+                      </StackPanel>
+
+                      <!-- Sterne-Fortschritt (rechts) -->
+                      <TextBlock Grid.Column="2"
+                                 Text="{Binding ProgressText}"
+                                 FontSize="13"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- Level-Buttons: 10 Spalten x 1 Reihe (Landscape-optimiert) -->
+                    <ItemsControl ItemsSource="{Binding Levels}">
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <UniformGrid Columns="10" />
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:LevelDisplayItem">
+                          <!-- Border stretcht automatisch auf volle UniformGrid-Zelle -->
+                          <Border Margin="1" CornerRadius="8"
+                                  Background="{Binding BackgroundColor}"
+                                  BorderBrush="#40FFFFFF"
+                                  BorderThickness="1"
+                                  MinHeight="52">
+                            <Button Command="{Binding SelectCommand}"
+                                    IsEnabled="{Binding IsUnlocked}"
+                                    Classes="GameButton"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch"
+                                    HorizontalContentAlignment="Stretch"
+                                    VerticalContentAlignment="Stretch">
+                              <Grid RowDefinitions="*,Auto">
+                                <!-- Level-Nummer -->
+                                <TextBlock Grid.Row="0"
+                                           Text="{Binding LevelNumber}"
+                                           FontSize="20"
+                                           FontWeight="Bold"
+                                           Foreground="{Binding TextBrush}"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+
+                                <!-- Sterne oder Schloss -->
+                                <TextBlock Grid.Row="1"
+                                           Text="{Binding StarsDisplay}"
+                                           FontSize="10"
+                                           Foreground="Gold"
+                                           HorizontalAlignment="Center"
+                                           Margin="0,0,0,2"
+                                           IsVisible="{Binding IsCompleted}" />
+
+                                <mi:MaterialIcon Grid.Row="1"
+                                                 Kind="Lock"
+                                                 Width="12" Height="12"
+                                                 Foreground="{DynamicResource TextMutedBrush}"
+                                                 HorizontalAlignment="Center"
+                                                 Margin="0,0,0,2"
+                                                 IsVisible="{Binding IsLocked}" />
+                              </Grid>
+                            </Button>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
                   </StackPanel>
                 </Border>
 
-                <!-- Level-Button -->
-                <Button IsVisible="{Binding !IsWorldHeader}"
-                        Command="{Binding SelectCommand}"
-                        IsEnabled="{Binding IsUnlocked}"
-                        Classes="GameButton"
-                        Width="70" Height="85"
-                        Margin="5"
-                        Padding="0"
-                        CornerRadius="10"
-                        HorizontalContentAlignment="Stretch"
-                        VerticalContentAlignment="Stretch">
-                  <Button.Background>
-                    <SolidColorBrush Color="{Binding BackgroundColor}" />
-                  </Button.Background>
-                  <Grid RowDefinitions="*,Auto">
-                    <!-- Level-Nummer -->
-                    <TextBlock Grid.Row="0"
-                               Text="{Binding LevelNumber}"
-                               FontSize="24"
-                               FontWeight="Bold"
-                               Foreground="{Binding TextBrush}"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center" />
-
-                    <!-- Sterne oder Schloss -->
-                    <TextBlock Grid.Row="1"
-                               Text="{Binding StarsDisplay}"
-                               FontSize="12"
-                               Foreground="Gold"
-                               HorizontalAlignment="Center"
-                               Margin="0,0,0,5"
-                               IsVisible="{Binding IsCompleted}" />
-
-                    <mi:MaterialIcon Grid.Row="1"
-                                     Kind="Lock"
-                                     Width="14" Height="14"
-                                     Foreground="{DynamicResource TextMutedBrush}"
-                                     HorizontalAlignment="Center"
-                                     Margin="0,0,0,5"
-                                     IsVisible="{Binding IsLocked}" />
-                  </Grid>
-                </Button>
+                <!-- Lock-Overlay (nur fuer gesperrte Welten) -->
+                <Border IsVisible="{Binding IsLocked}"
+                        Background="#80000000"
+                        CornerRadius="12"
+                        IsHitTestVisible="False">
+                  <StackPanel HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Spacing="4">
+                    <mi:MaterialIcon Kind="Lock" Width="28" Height="28"
+                                     Foreground="#888888" />
+                    <TextBlock Text="{Binding WorldLockText}"
+                               FontSize="13"
+                               Foreground="#AAAAAA"
+                               HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
               </Panel>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
       </ScrollViewer>
 
-      <!-- Footer: Fortschritt + Ad Banner -->
+      <!-- Footer: Fortschritt -->
       <Border Grid.Row="2"
               Background="{DynamicResource SurfaceBrush}"
               Padding="12,8">

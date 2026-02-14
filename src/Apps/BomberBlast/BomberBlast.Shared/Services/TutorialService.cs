@@ -4,7 +4,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Tutorial-Service: 5 interaktive Schritte beim ersten Spielstart.
+/// Tutorial-Service: 6 interaktive Schritte beim ersten Spielstart.
 /// Persistiert den Abschluss-Status via IPreferencesService.
 /// </summary>
 public class TutorialService : ITutorialService
@@ -18,7 +18,8 @@ public class TutorialService : ITutorialService
         new() { Id = 1, TextKey = "TutorialBomb", Type = TutorialStepType.PlaceBomb, Highlight = TutorialHighlight.BombButton },
         new() { Id = 2, TextKey = "TutorialHide", Type = TutorialStepType.Warning, Highlight = TutorialHighlight.GameField },
         new() { Id = 3, TextKey = "TutorialPowerUp", Type = TutorialStepType.CollectPowerUp, Highlight = TutorialHighlight.PowerUp },
-        new() { Id = 4, TextKey = "TutorialExit", Type = TutorialStepType.FindExit, Highlight = TutorialHighlight.Exit },
+        new() { Id = 4, TextKey = "TutorialDefeatEnemies", Type = TutorialStepType.DefeatEnemies, Highlight = TutorialHighlight.GameField },
+        new() { Id = 5, TextKey = "TutorialExit", Type = TutorialStepType.FindExit, Highlight = TutorialHighlight.Exit },
     ];
 
     private int _currentStepIndex = -1;

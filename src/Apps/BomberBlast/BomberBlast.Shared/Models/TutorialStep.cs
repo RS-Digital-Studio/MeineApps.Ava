@@ -31,6 +31,8 @@ public enum TutorialStepType
     Warning,
     /// <summary>Spieler muss PowerUp einsammeln</summary>
     CollectPowerUp,
+    /// <summary>Spieler muss alle Gegner besiegen</summary>
+    DefeatEnemies,
     /// <summary>Spieler muss zum Exit gehen</summary>
     FindExit
 }

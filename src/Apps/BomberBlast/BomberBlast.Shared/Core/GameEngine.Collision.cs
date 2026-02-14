@@ -243,6 +243,12 @@ public partial class GameEngine
 
         // Prüfen ob alle Gegner besiegt
         CheckExitReveal();
+
+        // Tutorial: DefeatEnemies-Schritt abgeschlossen wenn letzter Gegner besiegt
+        if (isLastEnemy)
+        {
+            _tutorialService.CheckStepCompletion(TutorialStepType.DefeatEnemies);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

@@ -1112,6 +1112,36 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        internal static string WorldForest {
+            get {
+                return ResourceManager.GetString("WorldForest", resourceCulture);
+            }
+        }
+
+        internal static string WorldIndustrial {
+            get {
+                return ResourceManager.GetString("WorldIndustrial", resourceCulture);
+            }
+        }
+
+        internal static string WorldCavern {
+            get {
+                return ResourceManager.GetString("WorldCavern", resourceCulture);
+            }
+        }
+
+        internal static string WorldSky {
+            get {
+                return ResourceManager.GetString("WorldSky", resourceCulture);
+            }
+        }
+
+        internal static string WorldInferno {
+            get {
+                return ResourceManager.GetString("WorldInferno", resourceCulture);
+            }
+        }
+
         // Rewarded Ads
         internal static string PowerUpBoost {
             get {
@@ -1233,6 +1263,12 @@ namespace BomberBlast.Resources.Strings {
         internal static string TutorialPowerUp {
             get {
                 return ResourceManager.GetString("TutorialPowerUp", resourceCulture);
+            }
+        }
+
+        internal static string TutorialDefeatEnemies {
+            get {
+                return ResourceManager.GetString("TutorialDefeatEnemies", resourceCulture);
             }
         }
 

@@ -13,8 +13,9 @@ namespace BomberBlast.ViewModels;
 /// ViewModel fuer die Level-Auswahl.
 /// Zeigt 50 Level in 5 Welten mit Stern-basiertem World-Gating.
 /// Power-Up Boost Overlay ab Level 20 (Rewarded Ad).
+/// Implementiert IDisposable fuer BalanceChanged-Unsubscription.
 /// </summary>
-public partial class LevelSelectViewModel : ObservableObject
+public partial class LevelSelectViewModel : ObservableObject, IDisposable
 {
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;
@@ -34,7 +35,7 @@ public partial class LevelSelectViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     [ObservableProperty]
-    private ObservableCollection<LevelDisplayItem> _levels = [];
+    private ObservableCollection<WorldGroup> _worldGroups = [];
 
     [ObservableProperty]
     private string _progressText = "";
@@ -73,6 +74,20 @@ public partial class LevelSelectViewModel : ObservableObject
     private int _previousTotalStars = -1;
 
     // ═══════════════════════════════════════════════════════════════════════
+    // WELT-KONFIGURATION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Statische Welt-Konfiguration: Icon, Farben, RESX-Key</summary>
+    private static readonly (MaterialIconKind Icon, string Primary, string Dark, string Accent, string NameKey)[] WorldConfigs =
+    [
+        (MaterialIconKind.PineTree,     "#388E3C", "#1B5E20", "#66BB6A", "WorldForest"),
+        (MaterialIconKind.Factory,      "#546E7A", "#263238", "#90A4AE", "WorldIndustrial"),
+        (MaterialIconKind.DiamondStone, "#6A1B9A", "#311B92", "#AB47BC", "WorldCavern"),
+        (MaterialIconKind.Cloud,        "#0288D1", "#01579B", "#4FC3F7", "WorldSky"),
+        (MaterialIconKind.Fire,         "#C62828", "#7F0000", "#EF5350", "WorldInferno"),
+    ];
+
+    // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -88,6 +103,9 @@ public partial class LevelSelectViewModel : ObservableObject
         _coinService = coinService;
         _localizationService = localizationService;
         _rewardedAdService = rewardedAdService;
+
+        // Coin-Anzeige bei Balance-Aenderung aktualisieren (z.B. nach Kauf im Shop)
+        _coinService.BalanceChanged += OnBalanceChanged;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -96,13 +114,13 @@ public partial class LevelSelectViewModel : ObservableObject
 
     public void OnAppearing()
     {
-        BuildLevelList();
+        BuildWorldGroups();
         UpdateProgressInfo();
     }
 
-    private void BuildLevelList()
+    private void BuildWorldGroups()
     {
-        Levels.Clear();
+        WorldGroups.Clear();
         int totalStars = _progressService.GetTotalStars();
 
         // Neue Welt freigeschaltet erkennen → Confetti
@@ -121,51 +139,64 @@ public partial class LevelSelectViewModel : ObservableObject
         }
         _previousTotalStars = totalStars;
 
-        for (int i = 1; i <= _progressService.TotalLevels; i++)
+        for (int w = 1; w <= 5; w++)
         {
-            int world = _progressService.GetWorldForLevel(i);
-            int worldStarsRequired = _progressService.GetWorldStarsRequired(i);
-            bool isWorldLocked = worldStarsRequired > 0 && totalStars < worldStarsRequired;
-            bool isFirstInWorld = ((i - 1) % 10) == 0;
+            int firstLevel = (w - 1) * 10 + 1;
+            int starsRequired = _progressService.GetWorldStarsRequired(firstLevel);
+            bool isWorldLocked = starsRequired > 0 && totalStars < starsRequired;
+            var config = WorldConfigs[w - 1];
 
-            // Welt-Header einfuegen (vor dem ersten Level jeder Welt)
-            if (isFirstInWorld && world > 1)
+            // Lokalisierter Welt-Name
+            string worldName = _localizationService.GetString(config.NameKey);
+            string worldTitle = $"{string.Format(_localizationService.GetString("WorldFormat"), w)} - {worldName}";
+
+            var group = new WorldGroup
             {
-                var header = new LevelDisplayItem
-                {
-                    LevelNumber = 0,
-                    IsWorldHeader = true,
-                    WorldNumber = world,
-                    WorldStarsRequired = worldStarsRequired,
-                    IsWorldLocked = isWorldLocked,
-                    WorldLockText = isWorldLocked
-                        ? string.Format(_localizationService.GetString("WorldLocked"), worldStarsRequired)
-                        : string.Format(_localizationService.GetString("WorldFormat"), world),
-                    DisplayText = ""
-                };
-                Levels.Add(header);
-            }
-
-            bool isUnlocked = !isWorldLocked && _progressService.IsLevelUnlocked(i);
-            int stars = _progressService.GetLevelStars(i);
-            int bestScore = _progressService.GetLevelBestScore(i);
-            bool isCompleted = bestScore > 0;
-
-            var item = new LevelDisplayItem
-            {
-                LevelNumber = i,
-                DisplayText = i.ToString(),
-                IsUnlocked = isUnlocked,
-                IsCompleted = isCompleted,
-                Stars = stars,
-                StarsText = isCompleted && stars > 0
-                    ? new string('\u2605', stars) + new string('\u2606', 3 - stars)
-                    : "",
-                BestScore = bestScore,
-                IsWorldLocked = isWorldLocked
+                WorldNumber = w,
+                WorldName = worldTitle,
+                WorldLockText = isWorldLocked
+                    ? string.Format(_localizationService.GetString("WorldLocked"), starsRequired)
+                    : worldTitle,
+                IsLocked = isWorldLocked,
+                StarsRequired = starsRequired,
+                MaxStars = 30,
+                PrimaryColor = Color.Parse(config.Primary),
+                DarkColor = Color.Parse(config.Dark),
+                AccentColor = Color.Parse(config.Accent),
+                WorldIcon = config.Icon,
             };
-            item.SelectCommand = new RelayCommand(() => SelectLevel(item));
-            Levels.Add(item);
+
+            // Sterne pro Welt zaehlen + Level-Items erstellen
+            int worldStars = 0;
+            for (int i = firstLevel; i < firstLevel + 10 && i <= _progressService.TotalLevels; i++)
+            {
+                int stars = _progressService.GetLevelStars(i);
+                worldStars += stars;
+
+                bool isUnlocked = !isWorldLocked && _progressService.IsLevelUnlocked(i);
+                int bestScore = _progressService.GetLevelBestScore(i);
+                bool isCompleted = bestScore > 0;
+
+                var item = new LevelDisplayItem
+                {
+                    LevelNumber = i,
+                    DisplayText = i.ToString(),
+                    IsUnlocked = isUnlocked,
+                    IsCompleted = isCompleted,
+                    Stars = stars,
+                    StarsText = isCompleted && stars > 0
+                        ? new string('\u2605', stars) + new string('\u2606', 3 - stars)
+                        : "",
+                    BestScore = bestScore,
+                    IsWorldLocked = isWorldLocked,
+                    WorldNumber = w,
+                };
+                item.SelectCommand = new RelayCommand(() => SelectLevel(item));
+                group.Levels.Add(item);
+            }
+            group.StarsEarned = worldStars;
+
+            WorldGroups.Add(group);
         }
     }
 
@@ -181,6 +212,14 @@ public partial class LevelSelectViewModel : ObservableObject
         CoinsText = _coinService.Balance.ToString("N0");
     }
 
+    /// <summary>
+    /// Reagiert auf Coin-Balance-Aenderungen (z.B. nach Shop-Kauf oder Rewarded Ad)
+    /// </summary>
+    private void OnBalanceChanged(object? sender, EventArgs e)
+    {
+        CoinsText = _coinService.Balance.ToString("N0");
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // COMMANDS
     // ═══════════════════════════════════════════════════════════════════════
@@ -188,7 +227,7 @@ public partial class LevelSelectViewModel : ObservableObject
     [RelayCommand]
     private void SelectLevel(LevelDisplayItem? level)
     {
-        if (level == null || !level.IsUnlocked || level.IsWorldHeader)
+        if (level == null || !level.IsUnlocked)
             return;
 
         // Ab Level 20: Boost-Overlay anbieten (nur fuer Free User)
@@ -257,7 +296,53 @@ public partial class LevelSelectViewModel : ObservableObject
     {
         NavigationRequested?.Invoke("..");
     }
+
+    public void Dispose()
+    {
+        _coinService.BalanceChanged -= OnBalanceChanged;
+    }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WORLD GROUP
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// Gruppiert eine Welt mit ihren 10 Levels fuer die Level-Auswahl.
+/// Jede WorldGroup ist eine visuelle Sektion mit Header und Level-Grid.
+/// </summary>
+public class WorldGroup
+{
+    public int WorldNumber { get; set; }
+    public string WorldName { get; set; } = "";
+    public string WorldLockText { get; set; } = "";
+    public bool IsLocked { get; set; }
+    public int StarsRequired { get; set; }
+    public int StarsEarned { get; set; }
+    public int MaxStars { get; set; } = 30;
+
+    // Welt-Farben
+    public Color PrimaryColor { get; set; }
+    public Color DarkColor { get; set; }
+    public Color AccentColor { get; set; }
+
+    // Material Icon
+    public MaterialIconKind WorldIcon { get; set; }
+
+    // Level-Items (10 pro Welt)
+    public ObservableCollection<LevelDisplayItem> Levels { get; set; } = [];
+
+    // Abgeleitete Properties fuer die View
+    public double SectionOpacity => IsLocked ? 0.4 : 1.0;
+    public IBrush HeaderTextBrush => IsLocked ? Brushes.Gray : new SolidColorBrush(AccentColor);
+    public IBrush HeaderBackgroundBrush => new SolidColorBrush(DarkColor);
+    public MaterialIconKind LockIcon => IsLocked ? MaterialIconKind.Lock : WorldIcon;
+    public string ProgressText => $"\u2605 {StarsEarned}/{MaxStars}";
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LEVEL DISPLAY ITEM
+// ═══════════════════════════════════════════════════════════════════════════
 
 /// <summary>
 /// Anzeige-Model fuer ein Level in der Level-Auswahl
@@ -271,13 +356,8 @@ public class LevelDisplayItem
     public int Stars { get; set; }
     public string StarsText { get; set; } = "";
     public int BestScore { get; set; }
-
-    // Welt-Header Properties
-    public bool IsWorldHeader { get; set; }
     public int WorldNumber { get; set; }
-    public int WorldStarsRequired { get; set; }
     public bool IsWorldLocked { get; set; }
-    public string WorldLockText { get; set; } = "";
 
     public IRelayCommand? SelectCommand { get; set; }
     public bool IsLocked => !IsUnlocked;
@@ -321,18 +401,4 @@ public class LevelDisplayItem
 
     public IBrush TextBrush =>
         !IsUnlocked || IsWorldLocked ? Brushes.Gray : Brushes.White;
-
-    // Welt-Header Anzeige-Properties
-    public double WorldHeaderOpacity => IsWorldLocked ? 0.5 : 1.0;
-
-    public Material.Icons.MaterialIconKind WorldIconKind =>
-        IsWorldLocked ? Material.Icons.MaterialIconKind.Lock : Material.Icons.MaterialIconKind.Earth;
-
-    public IBrush WorldHeaderBrush =>
-        IsWorldLocked ? Brushes.Gray : Brush.Parse("#FFD700");
 }
-
-/// <summary>
-/// Alias fuer LevelDisplayItem in View DataTemplates
-/// </summary>
-public class LevelItem : LevelDisplayItem { }

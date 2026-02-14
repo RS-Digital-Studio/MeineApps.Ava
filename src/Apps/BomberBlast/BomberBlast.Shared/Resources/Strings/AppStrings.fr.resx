@@ -587,6 +587,21 @@
   <data name="WorldLocked" xml:space="preserve">
     <value>{0} ★ requises</value>
   </data>
+  <data name="WorldForest" xml:space="preserve">
+    <value>Forêt</value>
+  </data>
+  <data name="WorldIndustrial" xml:space="preserve">
+    <value>Industriel</value>
+  </data>
+  <data name="WorldCavern" xml:space="preserve">
+    <value>Caverne</value>
+  </data>
+  <data name="WorldSky" xml:space="preserve">
+    <value>Ciel</value>
+  </data>
+  <data name="WorldInferno" xml:space="preserve">
+    <value>Enfer</value>
+  </data>
 
   <!-- Rewarded Ads -->
   <data name="PowerUpBoost" xml:space="preserve">
@@ -829,6 +844,9 @@
   </data>
   <data name="TutorialPowerUp" xml:space="preserve">
     <value>Collectez des power-ups pour devenir plus fort</value>
+  </data>
+  <data name="TutorialDefeatEnemies" xml:space="preserve">
+    <value>Éliminez tous les ennemis pour ouvrir la sortie</value>
   </data>
   <data name="TutorialExit" xml:space="preserve">
     <value>Trouvez la sortie pour terminer le niveau</value>

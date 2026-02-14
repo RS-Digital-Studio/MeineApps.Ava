@@ -39,6 +39,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// <summary>Event fuer Floating-Text-Anzeige (Text, Kategorie).</summary>
     public event Action<string, string>? FloatingTextRequested;
 
+    /// <summary>Wird ausgelöst um einen Exit-Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").</summary>
+    public event Action<string>? ExitHintRequested;
+
     public MainViewModel(
         IThemeService themeService,
         ILocalizationService localization,
@@ -77,12 +80,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
             CalculatorViewModel.RefreshNumberFormat();
     }
 
+    #region Back-Navigation (Double-Back-to-Exit)
+
+    private DateTime _lastBackPress = DateTime.MinValue;
+    private const int BackPressIntervalMs = 2000;
+
     /// <summary>
-    /// Behandelt die Zurück-Taste. Gibt true zurück wenn intern navigiert wurde,
-    /// false wenn die App geschlossen werden soll.
-    /// Reihenfolge: History schließen → Bestätigungsdialog schließen → Tab zum Rechner zurück.
+    /// Behandelt die Zurück-Taste. Gibt true zurück wenn konsumiert (App bleibt offen),
+    /// false wenn die App geschlossen werden darf (Double-Back).
+    /// Reihenfolge: History schließen → Bestätigungsdialog schließen → Tab zum Rechner zurück → Double-Back-to-Exit.
     /// </summary>
-    public bool HandleBack()
+    public bool HandleBackPressed()
     {
         // 1. History-Panel offen → schließen
         if (CalculatorViewModel.IsHistoryVisible)
@@ -105,9 +113,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return true;
         }
 
-        // 4. Bereits auf dem Rechner-Tab, nichts offen → App soll schließen
-        return false;
+        // 4. Auf Startseite: Double-Back-to-Exit
+        var now = DateTime.UtcNow;
+        if ((now - _lastBackPress).TotalMilliseconds < BackPressIntervalMs)
+            return false; // App beenden lassen
+
+        _lastBackPress = now;
+        var msg = _localization.GetString("BackPressToExit") ?? "Erneut drücken zum Beenden";
+        ExitHintRequested?.Invoke(msg);
+        return true; // Konsumiert
     }
+
+    #endregion
 
     [RelayCommand]
     private void NavigateToCalculator() => SelectedTabIndex = 0;

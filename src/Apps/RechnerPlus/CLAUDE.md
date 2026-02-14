@@ -29,7 +29,7 @@ Scientific Calculator mit Unit Converter - werbefrei, kostenlos.
 - **Live-Preview**: Zeigt Zwischenergebnis grau unter dem Display bei jeder Eingabe
 - **Operator-Highlight**: Aktiver Operator (÷×−+) wird visuell hervorgehoben
 - **Swipe-to-Backspace**: Horizontaler Swipe nach links auf Display = Backspace
-- **Landscape = Scientific**: Automatisch Scientific Mode im Querformat
+- **Landscape = Scientific**: Automatisch Scientific Mode im Querformat, 2-Spalten-Layout (Display+Scientific links, BasicGrid rechts)
 - **Copy-Button im Display**: ContentCopy-Icon neben Backspace
 - Wiederholtes "=" wiederholt letzte Operation (z.B. 5+3=== → 8, 11, 14)
 - Implizite Multiplikation nach Klammern: (5+3)2 → (5+3) × 2 (sowohl im ViewModel als auch im ExpressionParser)
@@ -38,7 +38,7 @@ Scientific Calculator mit Unit Converter - werbefrei, kostenlos.
 - Smart-Parenthesis-Button "( )" wählt automatisch ( oder ) je nach Kontext
 - **Klammer-Validierung**: ")" wird ignoriert wenn keine offene Klammer existiert
 - **Haptic Feedback (Android)**: Tick/Click/HeavyClick bei Button-Aktionen, **abschaltbar** in Settings (IHapticService.IsEnabled)
-- **Double-Back-to-Exit (Android)**: Zurücktaste navigiert intern (History→Tab→Rechner), erst 2x schnell drücken schließt App
+- **Double-Back-to-Exit (Android)**: Zurücktaste navigiert intern (History→Tab→Rechner), erst 2x schnell drücken schließt App. Logik komplett im MainViewModel (`HandleBackPressed()` + `ExitHintRequested` Event), MainActivity ruft nur VM auf
 - **Tausender-Trennzeichen**: Display zeigt `1,000,000` statt `1000000` (RawDisplay ohne Kommas für Berechnungen)
 - **Responsive Schriftgröße**: DisplayFontSize passt sich an Zahlenlänge an (52→42→34→26→20)
 - **Startup-Modus persistent**: Basic/Scientific-Wahl wird gespeichert (nicht bei Auto-Landscape)
@@ -122,10 +122,16 @@ baseValue = value * ToBase + Offset
 - Offene Klammern automatisch schließen, trailing Operatoren entfernen für Preview
 - Nur angezeigt wenn sich der Wert vom Display unterscheidet
 
-### Landscape = Scientific (CalculatorView.axaml.cs)
-- `OnSizeChanged` prüft Width > Height
+### Landscape-Layout (CalculatorView.axaml.cs, 13.02.2026)
+- `OnSizeChanged` prueft Width > Height
 - Automatischer Wechsel zu Scientific Mode mit `_autoSwitchedToScientific` Flag
-- Zurück zu Basic nur wenn automatisch gewechselt wurde (nicht manuell)
+- Zurueck zu Basic nur wenn automatisch gewechselt wurde (nicht manuell)
+- **2-Spalten-Layout**: Spalte 0 (40%): Display+ModeSelector+ScientificPanel+Memory | Spalte 1 (60%): BasicGrid (RowSpan=4)
+- RowDefinitions: `Auto,Auto,Auto,*` - letzte Zeile * fuer BasicGrid-Gesamthoehe
+- Memory-Row: `VerticalAlignment.Bottom` im Landscape (zurueckgesetzt auf Stretch in Portrait)
+- Kompaktere Landscape-Styles: CalcButton MinHeight 36, Function MinHeight 32, Memory MinHeight 28
+- ModeSelector-Buttons: FontSize 11, Padding 8,3 im Landscape
+- Scientific: ColumnSpacing/RowSpacing 4 statt 6
 
 ### Code-Qualität
 - `TryParseDisplay()`: Zentrale Hilfsmethode, nutzt `RawDisplay` (ohne Tausender-Trennzeichen)

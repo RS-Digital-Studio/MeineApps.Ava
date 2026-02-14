@@ -96,25 +96,46 @@
       <Setter Property="Opacity" Value="1"/>
     </Style>
     <!-- Landscape: kompaktere Abstände und Buttons -->
-    <Style Selector="Grid.Landscape > Border#DisplayBorder">
-      <Setter Property="Padding" Value="12,8"/>
+    <Style Selector="Grid.Landscape Border#DisplayBorder">
+      <Setter Property="Padding" Value="12,6"/>
       <Setter Property="Margin" Value="0,0,0,4"/>
     </Style>
-    <Style Selector="Grid.Landscape > Grid#ModeSelector">
+    <Style Selector="Grid.Landscape Grid#ModeSelector">
+      <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
+    <Style Selector="Grid.Landscape Grid#ModeSelector Button">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="Padding" Value="8,3"/>
+      <Setter Property="MinHeight" Value="0"/>
+    </Style>
+    <Style Selector="Grid.Landscape Grid#MemoryRowGrid">
       <Setter Property="Margin" Value="0,0,0,4"/>
     </Style>
     <Style Selector="Grid.Landscape Button.CalcButton">
-      <Setter Property="MinHeight" Value="40"/>
-      <Setter Property="CornerRadius" Value="12"/>
+      <Setter Property="MinHeight" Value="0"/>
+      <Setter Property="CornerRadius" Value="10"/>
+      <Setter Property="Padding" Value="2"/>
     </Style>
     <Style Selector="Grid.Landscape Button.Digit">
-      <Setter Property="FontSize" Value="20"/>
+      <Setter Property="FontSize" Value="18"/>
     </Style>
     <Style Selector="Grid.Landscape Button.Operator">
-      <Setter Property="FontSize" Value="20"/>
+      <Setter Property="FontSize" Value="18"/>
+    </Style>
+    <Style Selector="Grid.Landscape Button.Function">
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="MinHeight" Value="0"/>
+      <Setter Property="Padding" Value="2"/>
     </Style>
     <Style Selector="Grid.Landscape Button.Equals">
-      <Setter Property="FontSize" Value="24"/>
+      <Setter Property="FontSize" Value="22"/>
+    </Style>
+    <!-- Landscape: Memory-Buttons kompakter -->
+    <Style Selector="Grid.Landscape Grid#MemoryRowGrid Button">
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="Padding" Value="4,2"/>
+      <Setter Property="MinHeight" Value="0"/>
+      <Setter Property="MinWidth" Value="0"/>
     </Style>
   </UserControl.Styles>
 

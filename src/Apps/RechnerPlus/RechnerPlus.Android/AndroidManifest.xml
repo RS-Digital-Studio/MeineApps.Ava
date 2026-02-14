@@ -10,6 +10,7 @@
       android:roundIcon="@mipmap/appicon_round"
       android:label="RechnerPlus"
       android:supportsRtl="true"
+      android:enableOnBackInvokedCallback="false"
       android:theme="@style/MyTheme.NoActionBar">
   </application>
   <uses-permission android:name="android.permission.INTERNET" />

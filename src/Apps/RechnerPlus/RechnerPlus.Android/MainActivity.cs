@@ -5,10 +5,10 @@ using Android.OS;
 using Android.Widget;
 using Avalonia;
 using Avalonia.Android;
-using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
 using RechnerPlus.Services;
+using RechnerPlus.ViewModels;
 
 namespace RechnerPlus.Android;
 
@@ -21,8 +21,7 @@ namespace RechnerPlus.Android;
     ConfigurationChanges = ConfigChanges.Orientation | ConfigChanges.ScreenSize | ConfigChanges.UiMode)]
 public class MainActivity : AvaloniaMainActivity<App>
 {
-    private DateTime _lastBackPress = DateTime.MinValue;
-    private const int BackPressIntervalMs = 2000;
+    private MainViewModel? _mainVm;
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
@@ -51,27 +50,22 @@ public class MainActivity : AvaloniaMainActivity<App>
         App.HapticServiceFactory = _ => new AndroidHapticService(this);
 
         base.OnCreate(savedInstanceState);
+
+        // ViewModel holen und ExitHint-Event verdrahten
+        _mainVm = App.Services.GetService<MainViewModel>();
+        if (_mainVm != null)
+        {
+            _mainVm.ExitHintRequested += msg =>
+                RunOnUiThread(() => Toast.MakeText(this, msg, ToastLength.Short)?.Show());
+        }
     }
 
 #pragma warning disable CA1422 // OnBackPressed ab API 33 veraltet, aber notwendig für ältere API-Level
     public override void OnBackPressed()
     {
-        // 1. Interne Navigation versuchen (History schließen, Tab zurück)
-        if (App.BackPressHandler?.Invoke() == true)
+        if (_mainVm != null && _mainVm.HandleBackPressed())
             return;
-
-        // 2. Double-Back-to-Exit: Nur schließen wenn 2x kurz hintereinander gedrückt
-        var now = DateTime.UtcNow;
-        if ((now - _lastBackPress).TotalMilliseconds < BackPressIntervalMs)
-        {
-            base.OnBackPressed();
-            return;
-        }
-
-        _lastBackPress = now;
-        var loc = App.Services.GetService<ILocalizationService>();
-        var msg = loc?.GetString("BackPressToExit") ?? "Press again to exit";
-        Toast.MakeText(this, msg, ToastLength.Short)?.Show();
+        base.OnBackPressed();
     }
 #pragma warning restore CA1422
 }

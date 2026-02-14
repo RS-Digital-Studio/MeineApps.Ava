@@ -18,12 +18,6 @@ public partial class App : Application
     /// <summary>Factory für plattformspezifischen Haptic-Service (Android setzt in MainActivity).</summary>
     public static Func<IServiceProvider, IHapticService>? HapticServiceFactory { get; set; }
 
-    /// <summary>
-    /// Zurück-Taste Handler. Gibt true zurück wenn intern navigiert wurde (App bleibt offen),
-    /// false wenn die App geschlossen werden soll. Wird in MainActivity aufgerufen.
-    /// </summary>
-    public static Func<bool>? BackPressHandler { get; set; }
-
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -45,9 +39,6 @@ public partial class App : Application
         LocalizationManager.Initialize(locService);
 
         var mainVm = Services.GetRequiredService<MainViewModel>();
-
-        // Zurück-Taste Handler registrieren (für Android)
-        BackPressHandler = mainVm.HandleBack;
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

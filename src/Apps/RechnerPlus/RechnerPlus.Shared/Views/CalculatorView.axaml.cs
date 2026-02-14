@@ -101,8 +101,13 @@ public partial class CalculatorView : UserControl
         if (rootGrid == null) return;
 
         rootGrid.Classes.Add("Landscape");
-        rootGrid.Margin = new Thickness(8);
-        rootGrid.RowDefinitions = new RowDefinitions("Auto,Auto,*,Auto");
+        rootGrid.Margin = new Thickness(8, 4, 8, 4);
+
+        // Landscape 2-Spalten-Layout:
+        // Spalte 0 (40%): Display, ModeSelector, ScientificPanel, Memory+Freiraum
+        // Spalte 1 (60%): BasicGrid (gesamte Hoehe via RowSpan=4)
+        // Letzte Zeile * damit BasicGrid rechts die volle Hoehe nutzt
+        rootGrid.RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*");
         rootGrid.ColumnDefinitions = new ColumnDefinitions("2*,3*");
         rootGrid.ColumnSpacing = 8;
 
@@ -112,40 +117,51 @@ public partial class CalculatorView : UserControl
         var memory = this.FindControl<Grid>("MemoryRowGrid");
         var basic = this.FindControl<Grid>("BasicGrid");
 
-        // Display: oben, volle Breite
+        // Display: links oben, Zeile 0
         if (display != null)
-            Grid.SetColumnSpan(display, 2);
+        {
+            Grid.SetRow(display, 0);
+            Grid.SetColumn(display, 0);
+            Grid.SetColumnSpan(display, 1);
+        }
 
-        // Mode Selector: zweite Zeile, volle Breite
+        // Mode Selector: links, Zeile 1
         if (mode != null)
         {
             Grid.SetRow(mode, 1);
-            Grid.SetColumnSpan(mode, 2);
+            Grid.SetColumn(mode, 0);
+            Grid.SetColumnSpan(mode, 1);
         }
 
-        // Scientific Panel: links, Zeilen strecken
+        // Scientific Panel: links, Zeile 2 (fuellt verfuegbaren Platz)
         if (scientific != null)
         {
             Grid.SetRow(scientific, 2);
             Grid.SetColumn(scientific, 0);
+            Grid.SetColumnSpan(scientific, 1);
             scientific.RowDefinitions = new RowDefinitions("*,*,*");
+            scientific.ColumnSpacing = 2;
+            scientific.RowSpacing = 2;
         }
 
-        // Memory Row: links unten
+        // Memory Row: links, Zeile 3 (*-Zeile), am unteren Rand
         if (memory != null)
         {
             Grid.SetRow(memory, 3);
             Grid.SetColumn(memory, 0);
+            Grid.SetColumnSpan(memory, 1);
+            memory.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom;
         }
 
-        // Basic Grid: rechts, über Scientific+Memory Zeilen
+        // Basic Grid: rechts, ueber alle 4 Zeilen (gesamte Hoehe)
         if (basic != null)
         {
-            Grid.SetRow(basic, 2);
+            Grid.SetRow(basic, 0);
             Grid.SetColumn(basic, 1);
-            Grid.SetRowSpan(basic, 2);
-            basic.RowSpacing = 4;
-            basic.ColumnSpacing = 4;
+            Grid.SetColumnSpan(basic, 1);
+            Grid.SetRowSpan(basic, 4);
+            basic.RowSpacing = 2;
+            basic.ColumnSpacing = 2;
         }
     }
 
@@ -167,23 +183,31 @@ public partial class CalculatorView : UserControl
         var memory = this.FindControl<Grid>("MemoryRowGrid");
         var basic = this.FindControl<Grid>("BasicGrid");
 
-        // Display: oben
+        // Display: oben, Zeile 0
         if (display != null)
+        {
+            Grid.SetRow(display, 0);
+            Grid.SetColumn(display, 0);
             Grid.SetColumnSpan(display, 1);
+        }
 
         // Mode Selector: Zeile 1
         if (mode != null)
         {
             Grid.SetRow(mode, 1);
+            Grid.SetColumn(mode, 0);
             Grid.SetColumnSpan(mode, 1);
         }
 
-        // Scientific Panel: Zeile 2, Auto-Rows zurücksetzen
+        // Scientific Panel: Zeile 2, Auto-Rows zuruecksetzen
         if (scientific != null)
         {
             Grid.SetRow(scientific, 2);
             Grid.SetColumn(scientific, 0);
+            Grid.SetColumnSpan(scientific, 1);
             scientific.RowDefinitions = new RowDefinitions("Auto,Auto,Auto");
+            scientific.ColumnSpacing = 6;
+            scientific.RowSpacing = 6;
         }
 
         // Memory Row: Zeile 3
@@ -191,6 +215,8 @@ public partial class CalculatorView : UserControl
         {
             Grid.SetRow(memory, 3);
             Grid.SetColumn(memory, 0);
+            Grid.SetColumnSpan(memory, 1);
+            memory.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
         }
 
         // Basic Grid: Zeile 4
@@ -198,6 +224,7 @@ public partial class CalculatorView : UserControl
         {
             Grid.SetRow(basic, 4);
             Grid.SetColumn(basic, 0);
+            Grid.SetColumnSpan(basic, 1);
             Grid.SetRowSpan(basic, 1);
             basic.RowSpacing = 8;
             basic.ColumnSpacing = 8;

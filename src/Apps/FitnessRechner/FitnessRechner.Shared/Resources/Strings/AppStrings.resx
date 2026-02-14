@@ -547,4 +547,9 @@
   <data name="RatingGreatDay" xml:space="preserve"><value>Great day!</value></data>
   <data name="RatingGoodDay" xml:space="preserve"><value>Good day!</value></data>
   <data name="RatingTomorrowBetter" xml:space="preserve"><value>Tomorrow will be better!</value></data>
+
+  <!-- Empty State -->
+  <data name="EmptyStateTitle" xml:space="preserve"><value>Start your fitness journey!</value></data>
+  <data name="EmptyStateSubtitle" xml:space="preserve"><value>Track your weight, water and calories to unlock all dashboard features.</value></data>
+  <data name="EmptyStateHint" xml:space="preserve"><value>Use the buttons above to get started</value></data>
 </root>

@@ -153,6 +153,14 @@
                                 DataContext="{Binding WiringGameViewModel}" />
       <miniGames:PaintingGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsPaintingGameActive}"
                                   DataContext="{Binding PaintingGameViewModel}" />
+      <miniGames:RoofTilingGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsRoofTilingGameActive}"
+                                    DataContext="{Binding RoofTilingGameViewModel}" />
+      <miniGames:BlueprintGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBlueprintGameActive}"
+                                   DataContext="{Binding BlueprintGameViewModel}" />
+      <miniGames:DesignPuzzleGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsDesignPuzzleGameActive}"
+                                      DataContext="{Binding DesignPuzzleGameViewModel}" />
+      <miniGames:InspectionGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsInspectionGameActive}"
+                                    DataContext="{Binding InspectionGameViewModel}" />
     </Panel>
 
     <!-- ============================================ -->

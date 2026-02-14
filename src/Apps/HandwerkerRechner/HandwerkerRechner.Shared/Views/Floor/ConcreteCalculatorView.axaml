@@ -242,11 +242,11 @@
                       Classes="Outlined"
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="ContentCopy" Width="18" Height="18"
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{loc:Translate ShareResult}"
-                             VerticalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate ShareResult}" FontSize="12"
+                             VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
               </Button>
               <Button Grid.Column="2"
@@ -255,11 +255,11 @@
                       IsEnabled="{Binding !IsExporting}"
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Center">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="FilePdfBox" Width="18" Height="18"
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
                                    Foreground="{DynamicResource AccentBrush}" />
-                  <TextBlock Text="{loc:Translate ExportMaterialList}"
-                             VerticalAlignment="Center" />
+                  <TextBlock Text="{loc:Translate ExportMaterialList}" FontSize="12"
+                             VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
               </Button>
             </Grid>
@@ -277,10 +277,11 @@
                 Command="{Binding ResetCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="Refresh" Width="18" Height="18"
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{loc:Translate Reset}" VerticalAlignment="Center" />
+            <TextBlock Text="{loc:Translate Reset}" FontSize="12"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Button>
         <Button Grid.Column="2"
@@ -288,9 +289,10 @@
                 Command="{Binding CalculateCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="Calculator" Width="18" Height="18" />
-            <TextBlock Text="{loc:Translate Calculate}" VerticalAlignment="Center" />
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
+            <TextBlock Text="{loc:Translate Calculate}" FontSize="12"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Button>
         <Button Grid.Column="4"
@@ -299,9 +301,10 @@
                 IsVisible="{Binding HasResult}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="ContentSave" Width="18" Height="18" />
-            <TextBlock Text="{loc:Translate Save}" VerticalAlignment="Center" />
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
+            <TextBlock Text="{loc:Translate Save}" FontSize="12"
+                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
           </StackPanel>
         </Button>
       </Grid>

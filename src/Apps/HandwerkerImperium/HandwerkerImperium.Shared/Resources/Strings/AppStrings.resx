@@ -2029,6 +2029,26 @@
     <value>Tap to paint</value>
   </data>
 
+  <!-- RoofTiling MiniGame -->
+  <data name="RoofTilingGame" xml:space="preserve">
+    <value>Roof Tiling</value>
+  </data>
+  <data name="PlaceMatchingTiles" xml:space="preserve">
+    <value>Place tiles in the correct pattern!</value>
+  </data>
+  <data name="TapTileToPlace" xml:space="preserve">
+    <value>Select a color, then tap a tile</value>
+  </data>
+  <data name="SelectColor" xml:space="preserve">
+    <value>Select Color</value>
+  </data>
+  <data name="SelectedColorLabel" xml:space="preserve">
+    <value>Selected:</value>
+  </data>
+  <data name="StartRoofTiling" xml:space="preserve">
+    <value>Start Tiling</value>
+  </data>
+
   <!-- Rewarded Ad Placements -->
   <data name="WatchAdForSpeedup" xml:space="preserve">
     <value>2h Speedup (Video)</value>
@@ -2447,6 +2467,88 @@
   </data>
   <data name="TutorialUpgradeHint" xml:space="preserve">
     <value>Tap a workshop to upgrade!</value>
+  </data>
+
+  <!-- Blueprint MiniGame -->
+  <data name="BlueprintGame" xml:space="preserve">
+    <value>Blueprint</value>
+  </data>
+  <data name="BlueprintInstructionBefore" xml:space="preserve">
+    <value>Memorize the order of the construction steps!</value>
+  </data>
+  <data name="BlueprintInstructionMemorize" xml:space="preserve">
+    <value>Memorize the numbers!</value>
+  </data>
+  <data name="BlueprintInstructionPlay" xml:space="preserve">
+    <value>Tap the steps in the correct order!</value>
+  </data>
+  <data name="BlueprintFoundation" xml:space="preserve">
+    <value>Foundation</value>
+  </data>
+  <data name="BlueprintWalls" xml:space="preserve">
+    <value>Walls</value>
+  </data>
+  <data name="BlueprintFramework" xml:space="preserve">
+    <value>Framework</value>
+  </data>
+  <data name="BlueprintElectrics" xml:space="preserve">
+    <value>Electrics</value>
+  </data>
+  <data name="BlueprintPlumbing" xml:space="preserve">
+    <value>Plumbing</value>
+  </data>
+  <data name="BlueprintWindows" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="BlueprintDoors" xml:space="preserve">
+    <value>Doors</value>
+  </data>
+  <data name="BlueprintPainting" xml:space="preserve">
+    <value>Painting</value>
+  </data>
+  <data name="BlueprintRoof" xml:space="preserve">
+    <value>Roof</value>
+  </data>
+  <data name="BlueprintFittings" xml:space="preserve">
+    <value>Fittings</value>
+  </data>
+  <data name="BlueprintMeasuring" xml:space="preserve">
+    <value>Measuring</value>
+  </data>
+  <data name="BlueprintScaffolding" xml:space="preserve">
+    <value>Scaffolding</value>
+  </data>
+
+  <data name="DesignPuzzleGame" xml:space="preserve">
+    <value>Floor Plan Design</value>
+  </data>
+  <data name="DesignPuzzleInstructions" xml:space="preserve">
+    <value>Place rooms in the correct floor plan positions!</value>
+  </data>
+  <data name="SelectRoomThenSlot" xml:space="preserve">
+    <value>Select a room, then tap a slot</value>
+  </data>
+  <data name="FloorPlan" xml:space="preserve">
+    <value>Floor Plan</value>
+  </data>
+  <data name="AvailableRooms" xml:space="preserve">
+    <value>Available Rooms</value>
+  </data>
+
+  <data name="InspectionGame" xml:space="preserve">
+    <value>Site Inspection</value>
+  </data>
+  <data name="InspectionInstruction" xml:space="preserve">
+    <value>Find all defects on the construction site! Tap on suspicious elements.</value>
+  </data>
+  <data name="TapToInspect" xml:space="preserve">
+    <value>Tap elements to inspect</value>
+  </data>
+  <data name="FalseAlarmsLabel" xml:space="preserve">
+    <value>False alarms:</value>
+  </data>
+  <data name="StartInspection" xml:space="preserve">
+    <value>Start Inspection</value>
   </data>
 
 </root>

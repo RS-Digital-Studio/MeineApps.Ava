@@ -45,25 +45,27 @@ public class OrderGeneratorService : IOrderGeneratorService
         ],
         [WorkshopType.Roofer] =
         [
-            new("order_repair_roof", "Repair Roof Section", MiniGameType.TileLaying),
-            new("order_new_roof", "Install New Roof", MiniGameType.TileLaying, MiniGameType.TileLaying, MiniGameType.TileLaying)
+            new("order_repair_roof", "Repair Roof Section", MiniGameType.RoofTiling),
+            new("order_new_roof", "Install New Roof", MiniGameType.RoofTiling, MiniGameType.RoofTiling),
+            new("order_roof_complete", "Complete Roof Replacement", MiniGameType.RoofTiling, MiniGameType.TileLaying, MiniGameType.RoofTiling)
         ],
         [WorkshopType.Contractor] =
         [
-            new("order_renovation", "Home Renovation", MiniGameType.Measuring, MiniGameType.Sawing, MiniGameType.PipePuzzle),
-            new("order_addition", "Build Addition", MiniGameType.Measuring, MiniGameType.Sawing, MiniGameType.WiringGame, MiniGameType.PipePuzzle)
+            new("order_renovation", "Home Renovation", MiniGameType.Blueprint, MiniGameType.Sawing),
+            new("order_addition", "Build Addition", MiniGameType.Blueprint, MiniGameType.Sawing, MiniGameType.WiringGame),
+            new("order_multi_unit", "Multi-Unit Project", MiniGameType.Blueprint, MiniGameType.Blueprint, MiniGameType.PipePuzzle, MiniGameType.WiringGame)
         ],
         [WorkshopType.Architect] =
         [
-            new("order_blueprint", "Design Blueprint", MiniGameType.Measuring, MiniGameType.PaintingGame),
-            new("order_floor_plan", "Create Floor Plan", MiniGameType.Measuring, MiniGameType.Measuring, MiniGameType.PaintingGame),
-            new("order_full_design", "Complete Building Design", MiniGameType.Measuring, MiniGameType.PaintingGame, MiniGameType.WiringGame, MiniGameType.PipePuzzle)
+            new("order_blueprint", "Design Blueprint", MiniGameType.DesignPuzzle),
+            new("order_floor_plan", "Create Floor Plan", MiniGameType.DesignPuzzle, MiniGameType.DesignPuzzle),
+            new("order_full_design", "Complete Building Design", MiniGameType.DesignPuzzle, MiniGameType.Blueprint, MiniGameType.DesignPuzzle)
         ],
         [WorkshopType.GeneralContractor] =
         [
-            new("order_house_build", "Build House", MiniGameType.Sawing, MiniGameType.PipePuzzle, MiniGameType.WiringGame, MiniGameType.PaintingGame),
-            new("order_commercial", "Commercial Build", MiniGameType.Sawing, MiniGameType.Sawing, MiniGameType.PipePuzzle, MiniGameType.WiringGame),
-            new("order_luxury_villa", "Luxury Villa Project", MiniGameType.Sawing, MiniGameType.PipePuzzle, MiniGameType.WiringGame, MiniGameType.PaintingGame, MiniGameType.TileLaying)
+            new("order_house_build", "Build House", MiniGameType.Inspection, MiniGameType.Sawing, MiniGameType.PipePuzzle),
+            new("order_commercial", "Commercial Build", MiniGameType.Inspection, MiniGameType.Blueprint, MiniGameType.WiringGame),
+            new("order_luxury_villa", "Luxury Villa Project", MiniGameType.Inspection, MiniGameType.Inspection, MiniGameType.RoofTiling, MiniGameType.DesignPuzzle)
         ]
     };
 

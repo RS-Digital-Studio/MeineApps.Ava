@@ -374,6 +374,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isPaintingGameActive;
 
     [ObservableProperty]
+    private bool _isRoofTilingGameActive;
+
+    [ObservableProperty]
+    private bool _isBlueprintGameActive;
+
+    [ObservableProperty]
+    private bool _isDesignPuzzleGameActive;
+
+    [ObservableProperty]
+    private bool _isInspectionGameActive;
+
+    [ObservableProperty]
     private bool _isWorkerMarketActive;
 
     [ObservableProperty]
@@ -391,6 +403,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public bool IsTabBarVisible => !IsWorkshopDetailActive && !IsOrderDetailActive &&
                                     !IsSawingGameActive && !IsPipePuzzleActive &&
                                     !IsWiringGameActive && !IsPaintingGameActive &&
+                                    !IsRoofTilingGameActive && !IsBlueprintGameActive &&
+                                    !IsDesignPuzzleGameActive && !IsInspectionGameActive &&
                                     !IsWorkerProfileActive && !IsBuildingsActive;
 
     private void DeactivateAllTabs()
@@ -406,6 +420,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsPipePuzzleActive = false;
         IsWiringGameActive = false;
         IsPaintingGameActive = false;
+        IsRoofTilingGameActive = false;
+        IsBlueprintGameActive = false;
+        IsDesignPuzzleGameActive = false;
+        IsInspectionGameActive = false;
         IsWorkerMarketActive = false;
         IsWorkerProfileActive = false;
         IsBuildingsActive = false;
@@ -435,6 +453,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public PipePuzzleViewModel PipePuzzleViewModel { get; }
     public WiringGameViewModel WiringGameViewModel { get; }
     public PaintingGameViewModel PaintingGameViewModel { get; }
+    public RoofTilingGameViewModel RoofTilingGameViewModel { get; }
+    public BlueprintGameViewModel BlueprintGameViewModel { get; }
+    public DesignPuzzleGameViewModel DesignPuzzleGameViewModel { get; }
+    public InspectionGameViewModel InspectionGameViewModel { get; }
     public WorkerMarketViewModel WorkerMarketViewModel { get; }
     public WorkerProfileViewModel WorkerProfileViewModel { get; }
     public BuildingsViewModel BuildingsViewModel { get; }
@@ -466,6 +488,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PipePuzzleViewModel pipePuzzleViewModel,
         WiringGameViewModel wiringGameViewModel,
         PaintingGameViewModel paintingGameViewModel,
+        RoofTilingGameViewModel roofTilingGameViewModel,
+        BlueprintGameViewModel blueprintGameViewModel,
+        DesignPuzzleGameViewModel designPuzzleGameViewModel,
+        InspectionGameViewModel inspectionGameViewModel,
         WorkerMarketViewModel workerMarketViewModel,
         WorkerProfileViewModel workerProfileViewModel,
         BuildingsViewModel buildingsViewModel,
@@ -509,6 +535,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PipePuzzleViewModel = pipePuzzleViewModel;
         WiringGameViewModel = wiringGameViewModel;
         PaintingGameViewModel = paintingGameViewModel;
+        RoofTilingGameViewModel = roofTilingGameViewModel;
+        BlueprintGameViewModel = blueprintGameViewModel;
+        DesignPuzzleGameViewModel = designPuzzleGameViewModel;
+        InspectionGameViewModel = inspectionGameViewModel;
         WorkerMarketViewModel = workerMarketViewModel;
         WorkerProfileViewModel = workerProfileViewModel;
         BuildingsViewModel = buildingsViewModel;
@@ -525,6 +555,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PipePuzzleViewModel.NavigationRequested += OnChildNavigation;
         WiringGameViewModel.NavigationRequested += OnChildNavigation;
         PaintingGameViewModel.NavigationRequested += OnChildNavigation;
+        RoofTilingGameViewModel.NavigationRequested += OnChildNavigation;
+        BlueprintGameViewModel.NavigationRequested += OnChildNavigation;
+        DesignPuzzleGameViewModel.NavigationRequested += OnChildNavigation;
+        InspectionGameViewModel.NavigationRequested += OnChildNavigation;
 
         _workerMarketNavHandler = (_, route) => OnChildNavigation(route);
         _workerProfileNavHandler = (_, route) => OnChildNavigation(route);
@@ -1260,7 +1294,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (IsDailyRewardDialogVisible) { IsDailyRewardDialogVisible = false; return true; }
 
         // 2. MiniGame aktiv → zurück zum Dashboard
-        if (IsSawingGameActive || IsPipePuzzleActive || IsWiringGameActive || IsPaintingGameActive)
+        if (IsSawingGameActive || IsPipePuzzleActive || IsWiringGameActive || IsPaintingGameActive ||
+            IsRoofTilingGameActive || IsBlueprintGameActive || IsDesignPuzzleGameActive || IsInspectionGameActive)
         {
             SelectDashboardTab();
             return true;
@@ -1688,6 +1723,22 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 PaintingGameViewModel.SetOrderId(orderId);
                 IsPaintingGameActive = true;
                 break;
+            case "minigame/rooftiling":
+                RoofTilingGameViewModel.SetOrderId(orderId);
+                IsRoofTilingGameActive = true;
+                break;
+            case "minigame/blueprint":
+                BlueprintGameViewModel.SetOrderId(orderId);
+                IsBlueprintGameActive = true;
+                break;
+            case "minigame/designpuzzle":
+                DesignPuzzleGameViewModel.SetOrderId(orderId);
+                IsDesignPuzzleGameActive = true;
+                break;
+            case "minigame/inspection":
+                InspectionGameViewModel.SetOrderId(orderId);
+                IsInspectionGameActive = true;
+                break;
         }
     }
 
@@ -2007,6 +2058,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
             UpdateEventTimer();
         }
 
+        // Arbeitsmarkt Rotations-Timer jede Sekunde aktualisieren
+        if (IsWorkerMarketActive)
+        {
+            WorkerMarketViewModel.UpdateTimer();
+        }
+
         // WorkerProfile-Fortschritt aktualisieren (Training/Rest-Balken in Echtzeit)
         if (IsWorkerProfileActive && _floatingTextCounter % 3 == 0)
         {
@@ -2133,6 +2190,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         PipePuzzleViewModel.NavigationRequested -= OnChildNavigation;
         WiringGameViewModel.NavigationRequested -= OnChildNavigation;
         PaintingGameViewModel.NavigationRequested -= OnChildNavigation;
+        RoofTilingGameViewModel.NavigationRequested -= OnChildNavigation;
+        BlueprintGameViewModel.NavigationRequested -= OnChildNavigation;
+        DesignPuzzleGameViewModel.NavigationRequested -= OnChildNavigation;
+        InspectionGameViewModel.NavigationRequested -= OnChildNavigation;
         WorkerMarketViewModel.NavigationRequested -= _workerMarketNavHandler;
         WorkerProfileViewModel.NavigationRequested -= _workerProfileNavHandler;
         BuildingsViewModel.NavigationRequested -= _buildingsNavHandler;

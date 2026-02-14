@@ -11,7 +11,7 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 ## Haupt-Features
 
 - **8 Workshop-Typen** (Tischlerei, Malerei, Sanitär, Elektrik, Landschaftsbau, Renovierung, Architekt, Generalunternehmer)
-- **4 Mini-Games** (Sawing, Pipe Puzzle, Wiring, Painting)
+- **8 Mini-Games** (Sawing, Pipe Puzzle, Wiring, Painting, RoofTiling, Blueprint, DesignPuzzle, Inspection)
 - **Worker-System** mit 10 Tiers (F/E/D/C/B/A/S/SS/SSS/Legendary)
 - **Goldschrauben-Economy** (Premium-Währung für Boosts/Unlock)
 - **Research Tree** (45 Upgrades in 3 Branches: Tools, Management, Marketing)
@@ -81,6 +81,11 @@ Kosten: Geld (500 bis 1B). Dauer: 10min bis 72h (Echtzeit). Effekte werden im Ga
 - **Pipe Puzzle**: Rohre drehen um Durchfluss zu schaffen
 - **Wiring**: Farbige Kabel links-rechts verbinden
 - **Painting**: Zielzellen anmalen ohne Fehler
+- **Blueprint**: Bauschritte in korrekter Reihenfolge antippen (Sequenz-Memory)
+- **RoofTiling**: Dachziegel im korrekten Farbmuster platzieren (Pattern-Match, Dachdecker)
+- **Blueprint**: Bauschritte in korrekter Reihenfolge antippen (Sequenz-Memory, Bauunternehmer)
+- **DesignPuzzle**: Räume im Grundriss zuordnen (Drag&Drop, Architekt)
+- **Inspection**: Mängel auf der Baustelle finden (Suchbild, Grid-basiert, Generalunternehmer)
 
 ## App-spezifische Services
 

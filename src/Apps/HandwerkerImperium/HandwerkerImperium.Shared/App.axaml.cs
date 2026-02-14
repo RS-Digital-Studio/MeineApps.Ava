@@ -116,6 +116,10 @@ public partial class App : Application
         services.AddSingleton<PipePuzzleViewModel>();
         services.AddSingleton<WiringGameViewModel>();
         services.AddSingleton<PaintingGameViewModel>();
+        services.AddSingleton<RoofTilingGameViewModel>();
+        services.AddSingleton<BlueprintGameViewModel>();
+        services.AddSingleton<DesignPuzzleGameViewModel>();
+        services.AddSingleton<InspectionGameViewModel>();
         services.AddSingleton<WorkerMarketViewModel>();
         services.AddSingleton<WorkerProfileViewModel>();
         services.AddSingleton<BuildingsViewModel>();

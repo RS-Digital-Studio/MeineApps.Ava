@@ -106,13 +106,25 @@ public partial class WeekOverviewViewModel : ObservableObject
         {
             IsLoading = true;
 
+            // Fallback-Werte VOR DB-Zugriff setzen (damit bei Exception zumindest Titel sichtbar ist)
+            var culture = System.Globalization.CultureInfo.CurrentCulture;
+            var cal = culture.Calendar;
+            var weekNum = cal.GetWeekOfYear(SelectedDate, System.Globalization.CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+            WeekDisplay = $"KW {weekNum}";
+
+            // Montag bis Sonntag der aktuellen Woche
+            var dayOfWeek = ((int)SelectedDate.DayOfWeek + 6) % 7;
+            var monday = SelectedDate.AddDays(-dayOfWeek);
+            var sunday = monday.AddDays(6);
+            DateRangeDisplay = $"{monday:dd.MM} - {sunday:dd.MM.yyyy}";
+
             // Load current week
             CurrentWeek = await _calculation.CalculateWeekAsync(SelectedDate);
 
             // Load previous week
             PreviousWeek = await _calculation.CalculateWeekAsync(SelectedDate.AddDays(-7));
 
-            // Update UI
+            // Update UI (überschreibt Fallback-Werte mit exakten Berechnungen)
             WeekDisplay = CurrentWeek.WeekDisplay;
             DateRangeDisplay = CurrentWeek.DateRangeDisplay;
             WorkTimeDisplay = CurrentWeek.ActualWorkDisplay;

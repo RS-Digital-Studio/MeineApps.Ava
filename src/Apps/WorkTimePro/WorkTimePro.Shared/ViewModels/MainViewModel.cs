@@ -136,6 +136,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         WireSubPageNavigation(weekVm);
         WireSubPageNavigation(calendarVm);
 
+        // Tab-VMs ohne Navigation aber mit MessageRequested
+        WireSubPageNavigation(statisticsVm);
+        WireSubPageNavigation(settingsVm);
+
         // Settings-Änderungen propagieren
         SettingsVm.SettingsChanged += OnSettingsChanged;
 
@@ -200,6 +204,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var handler = new Action<string>(route => HandleNavigation(route));
             navEvent.AddEventHandler(vm, handler);
             _wiredEvents.Add((vm, "NavigationRequested", handler));
+        }
+
+        // MessageRequested weiterleiten (Fehlermeldungen der Sub-VMs dem User anzeigen)
+        var msgEvent = vm.GetType().GetEvent("MessageRequested");
+        if (msgEvent != null)
+        {
+            var handler = new Action<string, string>((title, msg) => MessageRequested?.Invoke(title, msg));
+            msgEvent.AddEventHandler(vm, handler);
+            _wiredEvents.Add((vm, "MessageRequested", handler));
         }
     }
 

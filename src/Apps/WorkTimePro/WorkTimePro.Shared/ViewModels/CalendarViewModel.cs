@@ -159,7 +159,11 @@ public partial class CalendarViewModel : ObservableObject
         {
             IsLoading = true;
 
+            // MonthDisplay VOR DB-Zugriff setzen (Fallback bei Exception)
             MonthDisplay = SelectedMonth.ToString("MMMM yyyy");
+
+            // Kalender-Tage auch ohne DB generieren (leere Heatmap als Fallback)
+            await GenerateCalendarDaysAsync();
 
             // Load month summary
             MonthSummary = await _calculation.CalculateMonthAsync(SelectedMonth.Year, SelectedMonth.Month);
@@ -168,7 +172,7 @@ public partial class CalendarViewModel : ObservableObject
             BalanceDisplay = MonthSummary.BalanceDisplay;
             BalanceColor = MonthSummary.BalanceColor;
 
-            // Generate calendar days
+            // Kalender-Tage nochmal mit DB-Daten regenerieren (überschreibt Fallback)
             await GenerateCalendarDaysAsync();
 
             // Premium status
@@ -359,8 +363,16 @@ public partial class CalendarViewModel : ObservableObject
             });
         }
 
-        // Load WorkDays for the month
-        var workDays = await _database.GetWorkDaysAsync(firstDayOfMonth, lastDayOfMonth);
+        // Load WorkDays for the month (bei DB-Fehler leere Liste als Fallback)
+        List<WorkDay> workDays;
+        try
+        {
+            workDays = await _database.GetWorkDaysAsync(firstDayOfMonth, lastDayOfMonth);
+        }
+        catch
+        {
+            workDays = new List<WorkDay>();
+        }
 
         // Days of current month
         for (var date = firstDayOfMonth; date <= lastDayOfMonth; date = date.AddDays(1))

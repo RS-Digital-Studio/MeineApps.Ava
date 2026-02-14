@@ -405,6 +405,69 @@
           </StackPanel>
         </Border>
 
+        <!-- ========== Empty-State (wenn keine Tracking-Daten) ========== -->
+        <Border Classes="Card" CornerRadius="16" Padding="24,28"
+                IsVisible="{Binding ShowEmptyState}"
+                BoxShadow="{DynamicResource CardShadow}">
+          <StackPanel Spacing="16" HorizontalAlignment="Center">
+            <!-- Großes Icon mit Gradient-Hintergrund -->
+            <Border Width="72" Height="72" CornerRadius="36" HorizontalAlignment="Center">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#22C55E" Offset="0" />
+                  <GradientStop Color="{DynamicResource AccentColor}" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <mi:MaterialIcon Kind="RocketLaunchOutline" Width="36" Height="36"
+                               Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <!-- Titel -->
+            <TextBlock Text="{Binding EmptyStateTitle}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       TextAlignment="Center" TextWrapping="Wrap"
+                       HorizontalAlignment="Center" />
+            <!-- Beschreibung -->
+            <TextBlock Text="{Binding EmptyStateSubtitle}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       TextAlignment="Center" TextWrapping="Wrap"
+                       MaxWidth="280"
+                       HorizontalAlignment="Center" />
+            <!-- 3 Feature-Hinweise -->
+            <StackPanel Spacing="8" HorizontalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="6" Height="6" CornerRadius="3" Background="#8B5CF6"
+                        VerticalAlignment="Center" />
+                <TextBlock Text="{Binding QuickAddWeightLabel}"
+                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="6" Height="6" CornerRadius="3" Background="#22C55E"
+                        VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Translate CalcWater}"
+                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="6" Height="6" CornerRadius="3" Background="#F59E0B"
+                        VerticalAlignment="Center" />
+                <TextBlock Text="{loc:Translate CalcCalories}"
+                           FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+            <!-- Hint mit Pfeil -->
+            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center"
+                        Margin="0,4,0,0">
+              <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14"
+                               Foreground="{DynamicResource PrimaryBrush}" />
+              <TextBlock Text="{Binding EmptyStateHint}"
+                         FontSize="11" FontStyle="Italic"
+                         Foreground="{DynamicResource PrimaryBrush}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
         <!-- ========== Daily Challenge Card ========== -->
         <Border CornerRadius="12" Padding="14" BoxShadow="{DynamicResource CardShadow}">
           <i:Interaction.Behaviors>

@@ -315,6 +315,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasHeatmapData;
 
+    // Empty-State: Wird angezeigt wenn keine Tracking-Daten vorhanden sind
+    [ObservableProperty]
+    private bool _showEmptyState = true;
+
     // Abend-Zusammenfassung (nach 20 Uhr)
     [ObservableProperty]
     private bool _showEveningSummary;
@@ -447,6 +451,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string ThisWeekLabel => _localization.GetString("ThisWeek") ?? "This Week";
     public string LastWeekLabel => _localization.GetString("LastWeek") ?? "Last Week";
     public string EveningSummaryLabel => _localization.GetString("EveningSummary") ?? "Today's Summary";
+    public string EmptyStateTitle => _localization.GetString("EmptyStateTitle") ?? "Start your fitness journey!";
+    public string EmptyStateSubtitle => _localization.GetString("EmptyStateSubtitle") ?? "Track your weight, water and calories to unlock all dashboard features.";
+    public string EmptyStateHint => _localization.GetString("EmptyStateHint") ?? "Use the buttons above to get started";
 
     // Tageszeit-Begrüßung
     public string GreetingText
@@ -470,11 +477,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         IsPremium = _purchaseService.IsPremium;
         UpdateStreakDisplay();
-        await LoadDashboardDataAsync();
-        await LoadHeatmapDataAsync();
-        await CheckGamificationProgressAsync();
-        await LoadWeeklyComparisonAsync();
-        await CheckEveningSummaryAsync();
+
+        try
+        {
+            await LoadDashboardDataAsync();
+            await LoadHeatmapDataAsync();
+            await CheckGamificationProgressAsync();
+            await LoadWeeklyComparisonAsync();
+            await CheckEveningSummaryAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"OnAppearingAsync Fehler: {ex.Message}");
+        }
+        finally
+        {
+            // Empty-State IMMER berechnen (auch bei Exception), sonst leerer Bereich
+            ShowEmptyState = !HasDashboardData && !HasHeatmapData && !HasWeeklyComparison && !HasRecentAchievements;
+        }
     }
 
     /// <summary>
@@ -588,7 +608,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             // Calories (today only)
             var summary = await _foodSearchService.GetDailySummaryAsync(DateTime.Today);
             var calorieGoal = _preferences.Get(PreferenceKeys.CalorieGoal, 2000.0);
-            if (summary.TotalCalories > 0 || calorieGoal > 0)
+            if (summary.TotalCalories > 0)
             {
                 TodayCaloriesDisplay = $"{summary.TotalCalories:F0}";
                 CalorieProgress = calorieGoal > 0

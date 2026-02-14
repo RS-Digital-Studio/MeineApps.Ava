@@ -25,7 +25,19 @@ public enum MiniGameType
     TileLaying = 5,
 
     /// <summary>Timing: Measure and cut accurately</summary>
-    Measuring = 6
+    Measuring = 6,
+
+    /// <summary>Pattern: Dachziegel im korrekten Muster platzieren</summary>
+    RoofTiling = 7,
+
+    /// <summary>Memory: Bauschritte in korrekter Reihenfolge antippen</summary>
+    Blueprint = 8,
+
+    /// <summary>Puzzle: Räume im Grundriss zuordnen</summary>
+    DesignPuzzle = 9,
+
+    /// <summary>Suchbild: Fehler auf der Baustelle finden</summary>
+    Inspection = 10
 }
 
 /// <summary>
@@ -45,6 +57,10 @@ public static class MiniGameTypeExtensions
         MiniGameType.PaintingGame => "minigame/painting",
         MiniGameType.TileLaying => "minigame/sawing", // Uses same timing mechanic
         MiniGameType.Measuring => "minigame/sawing", // Uses same timing mechanic
+        MiniGameType.RoofTiling => "minigame/rooftiling",
+        MiniGameType.Blueprint => "minigame/blueprint",
+        MiniGameType.DesignPuzzle => "minigame/designpuzzle",
+        MiniGameType.Inspection => "minigame/inspection",
         _ => "minigame/sawing"
     };
 
@@ -60,6 +76,10 @@ public static class MiniGameTypeExtensions
         MiniGameType.PaintingGame => [WorkshopType.Painter],
         MiniGameType.TileLaying => [WorkshopType.Roofer],
         MiniGameType.Measuring => [WorkshopType.Contractor, WorkshopType.Carpenter],
+        MiniGameType.RoofTiling => [WorkshopType.Roofer],
+        MiniGameType.Blueprint => [WorkshopType.Contractor],
+        MiniGameType.DesignPuzzle => [WorkshopType.Architect],
+        MiniGameType.Inspection => [WorkshopType.GeneralContractor],
         _ => [WorkshopType.Carpenter]
     };
 
@@ -75,6 +95,10 @@ public static class MiniGameTypeExtensions
         MiniGameType.PaintingGame => "PaintingGame",
         MiniGameType.TileLaying => "TileLaying",
         MiniGameType.Measuring => "Measuring",
+        MiniGameType.RoofTiling => "RoofTiling",
+        MiniGameType.Blueprint => "Blueprint",
+        MiniGameType.DesignPuzzle => "DesignPuzzle",
+        MiniGameType.Inspection => "Inspection",
         _ => "Unknown"
     };
 }

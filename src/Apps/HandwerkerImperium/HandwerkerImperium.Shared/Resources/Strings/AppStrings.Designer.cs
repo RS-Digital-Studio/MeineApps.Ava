@@ -1110,5 +1110,71 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string ComboX => ResourceManager.GetString("ComboX", resourceCulture) ?? "Combo x{0}";
 
         public static string TutorialUpgradeHint => ResourceManager.GetString("TutorialUpgradeHint", resourceCulture) ?? "Tap a workshop to upgrade!";
+
+        public static string RoofTilingGame => ResourceManager.GetString("RoofTilingGame", resourceCulture) ?? "Roof Tiling";
+
+        public static string PlaceMatchingTiles => ResourceManager.GetString("PlaceMatchingTiles", resourceCulture) ?? "Place tiles in the correct pattern!";
+
+        public static string TapTileToPlace => ResourceManager.GetString("TapTileToPlace", resourceCulture) ?? "Select a color, then tap a tile";
+
+        public static string SelectColor => ResourceManager.GetString("SelectColor", resourceCulture) ?? "Select Color";
+
+        public static string SelectedColorLabel => ResourceManager.GetString("SelectedColorLabel", resourceCulture) ?? "Selected:";
+
+        public static string StartRoofTiling => ResourceManager.GetString("StartRoofTiling", resourceCulture) ?? "Start Tiling";
+
+        public static string BlueprintGame => ResourceManager.GetString("BlueprintGame", resourceCulture) ?? "Blueprint";
+
+        public static string BlueprintInstructionBefore => ResourceManager.GetString("BlueprintInstructionBefore", resourceCulture) ?? "Memorize the order of the construction steps!";
+
+        public static string BlueprintInstructionMemorize => ResourceManager.GetString("BlueprintInstructionMemorize", resourceCulture) ?? "Memorize the numbers!";
+
+        public static string BlueprintInstructionPlay => ResourceManager.GetString("BlueprintInstructionPlay", resourceCulture) ?? "Tap the steps in the correct order!";
+
+        public static string BlueprintFoundation => ResourceManager.GetString("BlueprintFoundation", resourceCulture) ?? "Foundation";
+
+        public static string BlueprintWalls => ResourceManager.GetString("BlueprintWalls", resourceCulture) ?? "Walls";
+
+        public static string BlueprintFramework => ResourceManager.GetString("BlueprintFramework", resourceCulture) ?? "Framework";
+
+        public static string BlueprintElectrics => ResourceManager.GetString("BlueprintElectrics", resourceCulture) ?? "Electrics";
+
+        public static string BlueprintPlumbing => ResourceManager.GetString("BlueprintPlumbing", resourceCulture) ?? "Plumbing";
+
+        public static string BlueprintWindows => ResourceManager.GetString("BlueprintWindows", resourceCulture) ?? "Windows";
+
+        public static string BlueprintDoors => ResourceManager.GetString("BlueprintDoors", resourceCulture) ?? "Doors";
+
+        public static string BlueprintPainting => ResourceManager.GetString("BlueprintPainting", resourceCulture) ?? "Painting";
+
+        public static string BlueprintRoof => ResourceManager.GetString("BlueprintRoof", resourceCulture) ?? "Roof";
+
+        public static string BlueprintFittings => ResourceManager.GetString("BlueprintFittings", resourceCulture) ?? "Fittings";
+
+        public static string BlueprintMeasuring => ResourceManager.GetString("BlueprintMeasuring", resourceCulture) ?? "Measuring";
+
+        public static string BlueprintScaffolding => ResourceManager.GetString("BlueprintScaffolding", resourceCulture) ?? "Scaffolding";
+
+        // DesignPuzzle Game (Architekt)
+        public static string DesignPuzzleGame => ResourceManager.GetString("DesignPuzzleGame", resourceCulture) ?? "Floor Plan Design";
+
+        public static string DesignPuzzleInstructions => ResourceManager.GetString("DesignPuzzleInstructions", resourceCulture) ?? "Place rooms in the correct floor plan positions!";
+
+        public static string SelectRoomThenSlot => ResourceManager.GetString("SelectRoomThenSlot", resourceCulture) ?? "Select a room, then tap a slot";
+
+        public static string FloorPlan => ResourceManager.GetString("FloorPlan", resourceCulture) ?? "Floor Plan";
+
+        public static string AvailableRooms => ResourceManager.GetString("AvailableRooms", resourceCulture) ?? "Available Rooms";
+
+        // Inspection Game (Generalunternehmer)
+        public static string InspectionGame => ResourceManager.GetString("InspectionGame", resourceCulture) ?? "Site Inspection";
+
+        public static string InspectionInstruction => ResourceManager.GetString("InspectionInstruction", resourceCulture) ?? "Find all defects on the construction site!";
+
+        public static string TapToInspect => ResourceManager.GetString("TapToInspect", resourceCulture) ?? "Tap elements to inspect";
+
+        public static string FalseAlarmsLabel => ResourceManager.GetString("FalseAlarmsLabel", resourceCulture) ?? "False alarms:";
+
+        public static string StartInspection => ResourceManager.GetString("StartInspection", resourceCulture) ?? "Start Inspection";
     }
 }

@@ -117,77 +117,74 @@
         </Border>
 
         <!-- ============================================================= -->
-        <!-- MOOD BAR                                                      -->
+        <!-- STIMMUNG / ERSCHÖPFUNG / ERFAHRUNG (kompakt in einer Card)  -->
         <!-- ============================================================= -->
-        <Border Classes="CardElevated" Padding="16">
-          <StackPanel Spacing="8">
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="EmoticonHappy" Width="20" Height="20"
-                                 Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate Mood}"
-                           FontSize="14" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-              </StackPanel>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding MoodDisplay}"
-                         FontSize="14" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </Grid>
-            <ProgressBar Value="{Binding MoodPercent}"
-                         Maximum="100"
-                         Foreground="{DynamicResource SuccessBrush}"
-                         Height="8" />
-          </StackPanel>
-        </Border>
+        <Border Classes="CardElevated" Padding="14,12">
+          <StackPanel Spacing="10">
 
-        <!-- ============================================================= -->
-        <!-- FATIGUE BAR                                                   -->
-        <!-- ============================================================= -->
-        <Border Classes="CardElevated" Padding="16">
-          <StackPanel Spacing="8">
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Sleep" Width="20" Height="20"
-                                 Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate Fatigue}"
-                           FontSize="14" FontWeight="SemiBold"
+            <!-- Stimmung -->
+            <StackPanel Spacing="4">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="EmoticonHappy" Width="18" Height="18"
+                                   Foreground="{DynamicResource SuccessBrush}" />
+                  <TextBlock Text="{loc:Translate Mood}"
+                             FontSize="13" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding MoodDisplay}"
+                           FontSize="13" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-              </StackPanel>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding FatigueDisplay}"
-                         FontSize="14" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </Grid>
-            <ProgressBar Value="{Binding FatiguePercent}"
-                         Maximum="100"
-                         Foreground="{DynamicResource ErrorBrush}"
-                         Height="8" />
-          </StackPanel>
-        </Border>
+              </Grid>
+              <ProgressBar Value="{Binding MoodPercent}"
+                           Maximum="100"
+                           Foreground="{DynamicResource SuccessBrush}"
+                           Height="6" />
+            </StackPanel>
 
-        <!-- ============================================================= -->
-        <!-- XP BAR                                                        -->
-        <!-- ============================================================= -->
-        <Border Classes="CardElevated" Padding="16">
-          <StackPanel Spacing="8">
-            <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="TrendingUp" Width="20" Height="20"
-                                 Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Text="{loc:Translate Experience}"
-                           FontSize="14" FontWeight="SemiBold"
+            <!-- Erschöpfung -->
+            <StackPanel Spacing="4">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Sleep" Width="18" Height="18"
+                                   Foreground="{DynamicResource ErrorBrush}" />
+                  <TextBlock Text="{loc:Translate Fatigue}"
+                             FontSize="13" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding FatigueDisplay}"
+                           FontSize="13" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
-              </StackPanel>
-              <TextBlock Grid.Column="1"
-                         Text="{Binding XpProgress}"
-                         FontSize="13"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-            </Grid>
-            <ProgressBar Value="{Binding XpPercent}"
-                         Maximum="100"
-                         Foreground="{StaticResource CraftPrimaryLightBrush}"
-                         Height="8" />
+              </Grid>
+              <ProgressBar Value="{Binding FatiguePercent}"
+                           Maximum="100"
+                           Foreground="{DynamicResource ErrorBrush}"
+                           Height="6" />
+            </StackPanel>
+
+            <!-- Erfahrung -->
+            <StackPanel Spacing="4">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="TrendingUp" Width="18" Height="18"
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                  <TextBlock Text="{loc:Translate Experience}"
+                             FontSize="13" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+                <TextBlock Grid.Column="1"
+                           Text="{Binding XpProgress}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </Grid>
+              <ProgressBar Value="{Binding XpPercent}"
+                           Maximum="100"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           Height="6" />
+            </StackPanel>
+
           </StackPanel>
         </Border>
 
@@ -212,12 +209,13 @@
                         Command="{Binding SelectTrainingTypeCommand}"
                         CommandParameter="Efficiency"
                         IsEnabled="{Binding CanTrainEfficiency}"
-                        HorizontalAlignment="Stretch" Padding="8,8">
+                        HorizontalAlignment="Stretch" Padding="4,8">
                   <StackPanel HorizontalAlignment="Center" Spacing="2">
                     <mi:MaterialIcon Kind="Dumbbell" Width="20" Height="20"
                                      HorizontalAlignment="Center" />
                     <TextBlock Text="{loc:Translate TrainingTypeEfficiency}"
-                               FontSize="11" TextAlignment="Center" />
+                               FontSize="10" TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                 </Button>
                 <!-- Ausdauer -->
@@ -225,12 +223,13 @@
                         Command="{Binding SelectTrainingTypeCommand}"
                         CommandParameter="Endurance"
                         IsEnabled="{Binding CanTrainEndurance}"
-                        HorizontalAlignment="Stretch" Padding="8,8">
+                        HorizontalAlignment="Stretch" Padding="4,8">
                   <StackPanel HorizontalAlignment="Center" Spacing="2">
                     <mi:MaterialIcon Kind="Run" Width="20" Height="20"
                                      HorizontalAlignment="Center" />
                     <TextBlock Text="{loc:Translate TrainingTypeEndurance}"
-                               FontSize="11" TextAlignment="Center" />
+                               FontSize="10" TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                 </Button>
                 <!-- Stimmung -->
@@ -238,12 +237,13 @@
                         Command="{Binding SelectTrainingTypeCommand}"
                         CommandParameter="Morale"
                         IsEnabled="{Binding CanTrainMorale}"
-                        HorizontalAlignment="Stretch" Padding="8,8">
+                        HorizontalAlignment="Stretch" Padding="4,8">
                   <StackPanel HorizontalAlignment="Center" Spacing="2">
                     <mi:MaterialIcon Kind="EmoticonHappy" Width="20" Height="20"
                                      HorizontalAlignment="Center" />
                     <TextBlock Text="{loc:Translate TrainingTypeMorale}"
-                               FontSize="11" TextAlignment="Center" />
+                               FontSize="10" TextAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                 </Button>
               </Grid>

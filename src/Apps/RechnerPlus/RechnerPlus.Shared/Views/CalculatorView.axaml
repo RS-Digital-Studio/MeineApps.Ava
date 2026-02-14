@@ -166,7 +166,7 @@
                      x:Name="ExpressionText"
                      Expression="{Binding Expression}"
                      FontSize="14"
-                     Foreground="{DynamicResource TextMutedBrush}"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
                      HorizontalAlignment="Right"
                      VerticalAlignment="Center"
                      MinHeight="20"
@@ -305,12 +305,13 @@
           RowSpacing="6"
           ColumnSpacing="6"
           Margin="0,0,0,8"
-          Classes.ScientificVisible="{Binding IsScientificMode}"
-          Opacity="0"
-          MaxHeight="0"
-          IsHitTestVisible="False">
+          Classes.ScientificVisible="{Binding IsScientificMode}">
       <Grid.Styles>
-        <Style Selector="Grid">
+        <!-- Basis-Zustand: versteckt -->
+        <Style Selector="Grid#ScientificPanel">
+          <Setter Property="Opacity" Value="0"/>
+          <Setter Property="MaxHeight" Value="0"/>
+          <Setter Property="IsHitTestVisible" Value="False"/>
           <Setter Property="Transitions">
             <Transitions>
               <DoubleTransition Property="Opacity" Duration="0:0:0.2"/>
@@ -318,7 +319,8 @@
             </Transitions>
           </Setter>
         </Style>
-        <Style Selector="Grid.ScientificVisible">
+        <!-- Aktiver Zustand: sichtbar -->
+        <Style Selector="Grid#ScientificPanel.ScientificVisible">
           <Setter Property="Opacity" Value="1"/>
           <Setter Property="MaxHeight" Value="500"/>
           <Setter Property="IsHitTestVisible" Value="True"/>

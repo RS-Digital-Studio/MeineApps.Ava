@@ -86,6 +86,11 @@ public partial class App : Application
     {
         try
         {
+            // DB zuerst initialisieren (Tabellen + Indizes erstellen)
+            // bevor ReminderService darauf zugreift
+            var db = Services.GetRequiredService<IDatabaseService>();
+            await db.InitializeAsync();
+
             var reminderService = Services.GetRequiredService<IReminderService>();
             await reminderService.InitializeAsync();
         }

@@ -545,4 +545,9 @@
   <data name="RatingGreatDay" xml:space="preserve"><value>¡Gran día!</value></data>
   <data name="RatingGoodDay" xml:space="preserve"><value>¡Buen día!</value></data>
   <data name="RatingTomorrowBetter" xml:space="preserve"><value>¡Mañana será mejor!</value></data>
+
+  <!-- Empty State -->
+  <data name="EmptyStateTitle" xml:space="preserve"><value>¡Comienza tu viaje fitness!</value></data>
+  <data name="EmptyStateSubtitle" xml:space="preserve"><value>Registra tu peso, agua y calorías para desbloquear todas las funciones del panel.</value></data>
+  <data name="EmptyStateHint" xml:space="preserve"><value>Usa los botones de arriba para empezar</value></data>
 </root>

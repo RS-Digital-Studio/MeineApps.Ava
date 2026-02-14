@@ -175,13 +175,27 @@
         <Border Classes="Card StatsCard"
                 IsVisible="{Binding IsResultShown}"
                 Padding="24">
-          <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <StackPanel Spacing="12" HorizontalAlignment="Center">
+            <!-- Ergebnis-Emoji -->
             <TextBlock Text="{Binding ResultEmoji}"
                        FontSize="48"
                        HorizontalAlignment="Center" />
 
+            <!-- Sterne-Bewertung (staggered) -->
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+                               Foreground="#FFD700"
+                               Opacity="{Binding Star1Opacity}" />
+              <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+                               Foreground="#FFD700"
+                               Opacity="{Binding Star2Opacity}" />
+              <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+                               Foreground="#FFD700"
+                               Opacity="{Binding Star3Opacity}" />
+            </StackPanel>
+
             <TextBlock Text="{Binding ResultText}"
-                       FontSize="24" FontWeight="Bold"
+                       FontSize="22" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        HorizontalAlignment="Center" />
 
@@ -224,6 +238,15 @@
 
       </StackPanel>
     </Grid>
+
+    <!-- Countdown Overlay (3, 2, 1, Los!) -->
+    <Border Grid.RowSpan="3" Background="#CC000000"
+            IsVisible="{Binding IsCountdownActive}">
+      <TextBlock Text="{Binding CountdownText}"
+                 FontSize="72" FontWeight="Bold"
+                 Foreground="#FFD700"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Border>
 
     <!-- ================================================================= -->
     <!-- ACTION BUTTONS                                                    -->

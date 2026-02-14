@@ -1,0 +1,576 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using Avalonia.Threading;
+using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services.Interfaces;
+using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Premium.Ava.Services;
+
+namespace HandwerkerImperium.ViewModels;
+
+/// <summary>
+/// ViewModel für das Bauplan-Reihenfolge-Minispiel.
+/// Der Spieler merkt sich die Reihenfolge der Bauschritte und tippt sie danach korrekt an.
+/// </summary>
+public partial class BlueprintGameViewModel : ObservableObject, IDisposable
+{
+    private static readonly Random _random = new();
+
+    private readonly IGameStateService _gameStateService;
+    private readonly IAudioService _audioService;
+    private readonly IRewardedAdService _rewardedAdService;
+    private readonly ILocalizationService _localizationService;
+    private DispatcherTimer? _gameTimer;
+    private bool _disposed;
+    private bool _isEnding;
+
+    // Bauschritt-Icons (Emojis)
+    private static readonly string[] StepIcons =
+        { "\U0001F3D7\uFE0F", "\U0001F9F1", "\U0001FAB5", "\u26A1", "\U0001F527", "\U0001FA9F", "\U0001F6AA", "\U0001F3A8", "\U0001F3E0", "\U0001F529", "\U0001F4D0", "\U0001FA9C" };
+
+    // Lokalisierte Bauschritt-Labels (Keys)
+    private static readonly string[] StepLabelKeys =
+        { "BlueprintFoundation", "BlueprintWalls", "BlueprintFramework", "BlueprintElectrics", "BlueprintPlumbing", "BlueprintWindows", "BlueprintDoors", "BlueprintPainting", "BlueprintRoof", "BlueprintFittings", "BlueprintMeasuring", "BlueprintScaffolding" };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EVENTS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public event Action<string>? NavigationRequested;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // OBSERVABLE PROPERTIES
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private string _orderId = string.Empty;
+
+    [ObservableProperty]
+    private OrderDifficulty _difficulty = OrderDifficulty.Medium;
+
+    [ObservableProperty]
+    private ObservableCollection<BlueprintStep> _steps = [];
+
+    [ObservableProperty]
+    private bool _isMemorizing;
+
+    [ObservableProperty]
+    private int _nextExpectedStep = 1;
+
+    [ObservableProperty]
+    private int _mistakeCount;
+
+    [ObservableProperty]
+    private int _completedSteps;
+
+    [ObservableProperty]
+    private int _totalSteps;
+
+    [ObservableProperty]
+    private int _timeRemaining;
+
+    [ObservableProperty]
+    private int _maxTime;
+
+    [ObservableProperty]
+    private bool _isPlaying;
+
+    [ObservableProperty]
+    private bool _isResultShown;
+
+    [ObservableProperty]
+    private MiniGameRating _result;
+
+    [ObservableProperty]
+    private string _resultText = "";
+
+    [ObservableProperty]
+    private string _resultEmoji = "";
+
+    [ObservableProperty]
+    private decimal _rewardAmount;
+
+    [ObservableProperty]
+    private int _xpAmount;
+
+    [ObservableProperty]
+    private bool _canWatchAd;
+
+    [ObservableProperty]
+    private bool _adWatched;
+
+    // Countdown vor Spielstart
+    [ObservableProperty]
+    private bool _isCountdownActive;
+
+    [ObservableProperty]
+    private string _countdownText = "";
+
+    // Sterne-Anzeige (staggered: 0→1 mit Verzögerung)
+    [ObservableProperty]
+    private double _star1Opacity;
+
+    [ObservableProperty]
+    private double _star2Opacity;
+
+    [ObservableProperty]
+    private double _star3Opacity;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMPUTED PROPERTIES
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Schwierigkeit als Sterne-Anzeige.
+    /// </summary>
+    public string DifficultyStars => Difficulty switch
+    {
+        OrderDifficulty.Easy => "★☆☆",
+        OrderDifficulty.Medium => "★★☆",
+        OrderDifficulty.Hard => "★★★",
+        _ => "★☆☆"
+    };
+
+    /// <summary>
+    /// Breite des Grids in Pixeln für WrapPanel-Constraint.
+    /// Jeder Schritt: 68px + 6px Margin = 74px.
+    /// </summary>
+    public double GridWidth => _gridColumns * 74;
+
+    private int _gridColumns = 3;
+
+    partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CONSTRUCTOR
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public BlueprintGameViewModel(
+        IGameStateService gameStateService,
+        IAudioService audioService,
+        IRewardedAdService rewardedAdService,
+        ILocalizationService localizationService)
+    {
+        _gameStateService = gameStateService;
+        _audioService = audioService;
+        _rewardedAdService = rewardedAdService;
+        _localizationService = localizationService;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // INITIALIZATION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Initialisiert das Spiel mit einer Auftrags-ID.
+    /// </summary>
+    public void SetOrderId(string orderId)
+    {
+        OrderId = orderId;
+
+        // Zustand zurücksetzen (sonst bleibt Ergebnis-Screen stehen)
+        IsPlaying = false;
+        IsResultShown = false;
+        IsMemorizing = false;
+        _isEnding = false;
+
+        var activeOrder = _gameStateService.GetActiveOrder();
+        if (activeOrder != null)
+        {
+            Difficulty = activeOrder.Difficulty;
+        }
+
+        InitializeGame();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GAME LOGIC
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void InitializeGame()
+    {
+        // Schwierigkeit bestimmt Schrittanzahl, Grid-Spalten, Memorisierungs-Zeit und Spielzeit
+        (TotalSteps, _gridColumns, MaxTime) = Difficulty switch
+        {
+            OrderDifficulty.Easy => (6, 3, 45),
+            OrderDifficulty.Medium => (9, 3, 35),
+            OrderDifficulty.Hard => (12, 4, 25),
+            _ => (9, 3, 35)
+        };
+
+        // Tool-Bonus: Wasserwaage gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Saw);
+        TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
+        CompletedSteps = 0;
+        MistakeCount = 0;
+        NextExpectedStep = 1;
+        IsPlaying = false;
+        IsResultShown = false;
+        IsMemorizing = false;
+
+        OnPropertyChanged(nameof(GridWidth));
+
+        GenerateSteps();
+    }
+
+    private void GenerateSteps()
+    {
+        Steps.Clear();
+
+        // Zufällige Auswahl und Anordnung der Schritte
+        var indices = Enumerable.Range(0, StepIcons.Length).ToList();
+        // Mischen
+        for (int i = indices.Count - 1; i > 0; i--)
+        {
+            int j = _random.Next(i + 1);
+            (indices[i], indices[j]) = (indices[j], indices[i]);
+        }
+
+        for (int i = 0; i < TotalSteps; i++)
+        {
+            int iconIndex = indices[i % indices.Count];
+            string label = _localizationService.GetString(StepLabelKeys[iconIndex]) ?? StepLabelKeys[iconIndex];
+
+            Steps.Add(new BlueprintStep
+            {
+                StepNumber = i + 1,
+                Icon = StepIcons[iconIndex],
+                Label = label,
+                IsRevealed = false,
+                IsCompleted = false,
+                HasError = false
+            });
+        }
+
+        // Positionen im Grid mischen (Nummern bleiben, aber physische Position variiert)
+        var shuffled = Steps.OrderBy(_ => _random.Next()).ToList();
+        Steps.Clear();
+        foreach (var step in shuffled)
+        {
+            Steps.Add(step);
+        }
+    }
+
+    [RelayCommand]
+    private async Task StartGameAsync()
+    {
+        if (IsPlaying || IsCountdownActive || IsMemorizing) return;
+
+        IsResultShown = false;
+        _isEnding = false;
+
+        // Countdown 3-2-1-Los!
+        IsCountdownActive = true;
+        foreach (var text in new[] { "3", "2", "1", _localizationService.GetString("CountdownGo") })
+        {
+            CountdownText = text;
+            await Task.Delay(700);
+        }
+        IsCountdownActive = false;
+
+        // Memorisierungsphase: Alle Nummern aufdecken
+        IsMemorizing = true;
+        foreach (var step in Steps)
+        {
+            step.IsRevealed = true;
+        }
+
+        // Memorisierungszeit je nach Schwierigkeit
+        int memorizeMs = Difficulty switch
+        {
+            OrderDifficulty.Easy => 4000,
+            OrderDifficulty.Medium => 3000,
+            OrderDifficulty.Hard => 2500,
+            _ => 3000
+        };
+
+        await Task.Delay(memorizeMs);
+
+        // Nummern verstecken, Spiel starten
+        foreach (var step in Steps)
+        {
+            step.IsRevealed = false;
+        }
+        IsMemorizing = false;
+
+        // Spiel starten mit Timer
+        IsPlaying = true;
+        _gameTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(1)
+        };
+        _gameTimer.Tick += OnGameTimerTick;
+        _gameTimer.Start();
+    }
+
+    private async void OnGameTimerTick(object? sender, EventArgs e)
+    {
+        if (!IsPlaying || _isEnding) return;
+
+        TimeRemaining--;
+
+        if (TimeRemaining <= 0)
+        {
+            await EndGameAsync();
+        }
+    }
+
+    [RelayCommand]
+    private async Task SelectStepAsync(BlueprintStep? step)
+    {
+        if (step == null || !IsPlaying || IsResultShown || step.IsCompleted) return;
+
+        if (step.StepNumber == NextExpectedStep)
+        {
+            // Korrekt! Schritt als erledigt markieren
+            step.IsCompleted = true;
+            step.HasError = false;
+            CompletedSteps++;
+            NextExpectedStep++;
+
+            await _audioService.PlaySoundAsync(GameSound.Good);
+
+            // Alle Schritte erledigt?
+            if (CompletedSteps >= TotalSteps)
+            {
+                await EndGameAsync();
+            }
+        }
+        else
+        {
+            // Falsch! Kurzes rotes Blinken
+            MistakeCount++;
+            step.HasError = true;
+
+            await _audioService.PlaySoundAsync(GameSound.Miss);
+
+            // Fehler nach kurzer Zeit zurücksetzen
+            _ = ResetErrorAsync(step);
+        }
+    }
+
+    private static async Task ResetErrorAsync(BlueprintStep step)
+    {
+        await Task.Delay(500);
+        step.HasError = false;
+    }
+
+    private async Task EndGameAsync()
+    {
+        if (_isEnding) return;
+        _isEnding = true;
+
+        IsPlaying = false;
+        _gameTimer?.Stop();
+
+        // Rating berechnen basierend auf Leistung
+        bool allCompleted = CompletedSteps >= TotalSteps;
+        double timeRatio = MaxTime > 0 ? (double)TimeRemaining / MaxTime : 0;
+
+        if (allCompleted && MistakeCount == 0 && timeRatio > 0.4)
+        {
+            Result = MiniGameRating.Perfect;
+        }
+        else if (allCompleted && MistakeCount <= 2 && timeRatio > 0.2)
+        {
+            Result = MiniGameRating.Good;
+        }
+        else if (allCompleted)
+        {
+            Result = MiniGameRating.Ok;
+        }
+        else
+        {
+            Result = MiniGameRating.Miss;
+        }
+
+        // Ergebnis aufzeichnen
+        _gameStateService.RecordMiniGameResult(Result);
+
+        // Sound abspielen
+        var sound = Result switch
+        {
+            MiniGameRating.Perfect => GameSound.Perfect,
+            MiniGameRating.Good => GameSound.Good,
+            MiniGameRating.Ok => GameSound.ButtonTap,
+            _ => GameSound.Miss
+        };
+        await _audioService.PlaySoundAsync(sound);
+
+        // Belohnungen berechnen
+        var order = _gameStateService.GetActiveOrder();
+        if (order != null)
+        {
+            int taskCount = Math.Max(1, order.Tasks.Count);
+            decimal baseReward = order.BaseReward / taskCount;
+            RewardAmount = baseReward * Result.GetRewardPercentage();
+
+            int baseXp = order.BaseXp / taskCount;
+            XpAmount = (int)(baseXp * Result.GetXpPercentage());
+        }
+
+        // Ergebnis-Anzeige setzen
+        ResultText = _localizationService.GetString(Result.GetLocalizationKey());
+        ResultEmoji = Result switch
+        {
+            MiniGameRating.Perfect => "\u2B50\u2B50\u2B50",
+            MiniGameRating.Good => "\u2B50\u2B50",
+            MiniGameRating.Ok => "\u2B50",
+            _ => "\U0001F4A8"
+        };
+
+        IsResultShown = true;
+
+        // Sterne staggered einblenden
+        Star1Opacity = 0; Star2Opacity = 0; Star3Opacity = 0;
+        int starCount = Result switch
+        {
+            MiniGameRating.Perfect => 3,
+            MiniGameRating.Good => 2,
+            MiniGameRating.Ok => 1,
+            _ => 0
+        };
+        if (starCount >= 1) { await Task.Delay(200); Star1Opacity = 1.0; }
+        if (starCount >= 2) { await Task.Delay(200); Star2Opacity = 1.0; }
+        if (starCount >= 3) { await Task.Delay(200); Star3Opacity = 1.0; }
+
+        AdWatched = false;
+        CanWatchAd = _rewardedAdService.IsAvailable;
+    }
+
+    [RelayCommand]
+    private async Task WatchAdAsync()
+    {
+        if (!CanWatchAd || AdWatched) return;
+
+        var success = await _rewardedAdService.ShowAdAsync("score_double");
+        if (success)
+        {
+            // Belohnungen verdoppeln
+            RewardAmount *= 2;
+            XpAmount *= 2;
+            AdWatched = true;
+            CanWatchAd = false;
+
+            await _audioService.PlaySoundAsync(GameSound.MoneyEarned);
+        }
+    }
+
+    [RelayCommand]
+    private void Continue()
+    {
+        // Prüfen ob weitere Aufgaben in der Order sind
+        var order = _gameStateService.GetActiveOrder();
+        if (order == null)
+        {
+            NavigationRequested?.Invoke("../..");
+            return;
+        }
+
+        if (order.IsCompleted)
+        {
+            // Auftrag fertig - Belohnungen vergeben und zurück
+            _gameStateService.CompleteActiveOrder();
+            NavigationRequested?.Invoke("../..");
+        }
+        else
+        {
+            // Mehr Aufgaben - zum nächsten Mini-Game
+            var nextTask = order.CurrentTask;
+            if (nextTask != null)
+            {
+                NavigationRequested?.Invoke($"../{nextTask.GameType.GetRoute()}?orderId={order.Id}");
+            }
+            else
+            {
+                NavigationRequested?.Invoke("../..");
+            }
+        }
+    }
+
+    [RelayCommand]
+    private void Cancel()
+    {
+        _gameTimer?.Stop();
+        IsPlaying = false;
+        IsMemorizing = false;
+
+        _gameStateService.CancelActiveOrder();
+        NavigationRequested?.Invoke("../..");
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DISPOSAL
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        _gameTimer?.Stop();
+        if (_gameTimer != null)
+        {
+            _gameTimer.Tick -= OnGameTimerTick;
+        }
+
+        _disposed = true;
+        GC.SuppressFinalize(this);
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SUPPORTING TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// Repräsentiert einen einzelnen Bauschritt im Bauplan-Spiel.
+/// </summary>
+public partial class BlueprintStep : ObservableObject
+{
+    [ObservableProperty]
+    private int _stepNumber; // Korrekte Reihenfolgenummer (1-basiert)
+
+    [ObservableProperty]
+    private string _icon = ""; // Emoji-Icon
+
+    [ObservableProperty]
+    private bool _isRevealed; // Nummer sichtbar (Memorisierungsphase)
+
+    [ObservableProperty]
+    private bool _isCompleted; // Wurde korrekt angetippt
+
+    [ObservableProperty]
+    private bool _hasError; // Wurde falsch angetippt (kurzes Blinken)
+
+    [ObservableProperty]
+    private string _label = ""; // Beschreibungstext (z.B. "Fundament")
+
+    // Berechnete Anzeige-Properties aktualisieren bei Zustandsänderung
+    partial void OnIsRevealedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DisplayNumber));
+        OnPropertyChanged(nameof(BackgroundColor));
+    }
+
+    partial void OnIsCompletedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DisplayNumber));
+        OnPropertyChanged(nameof(BackgroundColor));
+    }
+
+    partial void OnHasErrorChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BackgroundColor));
+    }
+
+    /// <summary>
+    /// Angezeigte Nummer: Sichtbar während Memorisierung und nach Abschluss, sonst "?".
+    /// </summary>
+    public string DisplayNumber => IsRevealed || IsCompleted ? StepNumber.ToString() : "?";
+
+    /// <summary>
+    /// Hintergrundfarbe basierend auf Zustand.
+    /// </summary>
+    public string BackgroundColor => IsCompleted ? "#4CAF50" : (HasError ? "#F44336" : "#2A2A2A");
+}

@@ -3,8 +3,8 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
-             x:Class="HandwerkerImperium.Views.MiniGames.PaintingGameView"
-             x:DataType="vm:PaintingGameViewModel">
+             x:Class="HandwerkerImperium.Views.MiniGames.InspectionGameView"
+             x:DataType="vm:InspectionGameViewModel">
 
   <Grid RowDefinitions="Auto,*,Auto" Margin="20">
 
@@ -21,13 +21,13 @@
           <mi:MaterialIcon Kind="Close" Width="24" Height="24" />
         </Button>
 
-        <!-- Title -->
+        <!-- Titel -->
         <StackPanel Grid.Column="1" HorizontalAlignment="Center">
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="6">
-            <mi:MaterialIcon Kind="FormatPaint" Width="22" Height="22" />
-            <TextBlock Text="{loc:Translate PaintingGame}"
+            <mi:MaterialIcon Kind="ClipboardCheck" Width="22" Height="22" />
+            <TextBlock Text="{loc:Translate InspectionGame}"
                        FontSize="18" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
@@ -58,117 +58,99 @@
     <Grid Grid.Row="1" VerticalAlignment="Center" Margin="0,20">
       <StackPanel Spacing="20">
 
-        <!-- Instructions -->
-        <TextBlock Text="{loc:Translate PaintAllMarkedCells}"
+        <!-- Anleitung (vor Spielstart) -->
+        <TextBlock Text="{loc:Translate InspectionInstruction}"
                    FontSize="12"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    HorizontalAlignment="Center"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
                    IsVisible="{Binding !IsPlaying}" />
 
-        <TextBlock Text="{loc:Translate TapToPaint}"
+        <!-- Anleitung (waehrend Spiel) -->
+        <TextBlock Text="{loc:Translate TapToInspect}"
                    FontSize="12"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    HorizontalAlignment="Center"
                    IsVisible="{Binding IsPlaying}" />
 
-        <!-- Progress Bar -->
+        <!-- Fortschrittsbalken -->
         <Grid ColumnDefinitions="Auto,*,Auto"
               IsVisible="{Binding IsPlaying}"
-              Margin="0,0,0,8">
-          <mi:MaterialIcon Kind="FormatPaint" Width="20" Height="20" />
+              Margin="0,0,0,4">
+          <mi:MaterialIcon Kind="MagnifyPlus" Width="20" Height="20" />
           <ProgressBar Grid.Column="1"
-                       Value="{Binding PaintProgress}"
+                       Value="{Binding InspectionProgress}"
                        Maximum="1"
-                       Foreground="{StaticResource CraftPrimaryLightBrush}"
+                       Foreground="{StaticResource CraftPrimaryBrush}"
                        Height="12"
                        Margin="12,0" />
           <TextBlock Grid.Column="2" FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      VerticalAlignment="Center">
-            <Run Text="{Binding PaintedTargetCount}" />
+            <Run Text="{Binding FoundDefects}" />
             <Run Text="/" />
-            <Run Text="{Binding TargetCellCount}" />
+            <Run Text="{Binding TotalDefects}" />
           </TextBlock>
         </Grid>
 
-        <!-- Stats Bar + Combo -->
-        <Grid ColumnDefinitions="*,Auto,*"
-              IsVisible="{Binding IsPlaying}">
+        <!-- Statistik-Leiste: Fehl-Taps -->
+        <StackPanel Orientation="Horizontal" Spacing="4"
+                    HorizontalAlignment="Center"
+                    IsVisible="{Binding IsPlaying}">
+          <mi:MaterialIcon Kind="AlertCircle" Width="16" Height="16"
+                           Foreground="{DynamicResource ErrorBrush}" />
+          <TextBlock FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}">
+            <Run Text="{loc:Translate FalseAlarmsLabel}" />
+            <Run Text=" " />
+            <Run Text="{Binding FalseAlarms}" />
+          </TextBlock>
+        </StackPanel>
 
-          <!-- Fehler links -->
-          <StackPanel Orientation="Horizontal" Spacing="4"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="Close" Width="16" Height="16"
-                             Foreground="{DynamicResource ErrorBrush}" />
-            <TextBlock FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}">
-              <Run Text="{loc:Translate MistakesLabel}" />
-              <Run Text=" " />
-              <Run Text="{Binding MistakeCount}" />
-            </TextBlock>
-          </StackPanel>
-
-          <!-- Combo-Badge mittig -->
-          <Border Grid.Column="1"
-                  Name="ComboBadge"
-                  Background="#E8AA00"
-                  CornerRadius="12"
-                  Padding="12,4"
-                  IsVisible="{Binding IsComboActive}"
-                  RenderTransformOrigin="0.5,0.5">
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="Fire" Width="16" Height="16"
-                               Foreground="White" />
-              <TextBlock Text="{Binding ComboDisplay}"
-                         FontSize="14" FontWeight="Bold"
-                         Foreground="White" />
-            </StackPanel>
-          </Border>
-        </Grid>
-
-        <!-- Canvas Grid -->
+        <!-- Inspektions-Grid -->
         <Border Classes="Card StatsCard" Padding="16"
                 HorizontalAlignment="Center">
           <ItemsControl ItemsSource="{Binding Cells}"
-                        Width="{Binding PaintGridWidth}">
+                        Width="{Binding GridWidth}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <WrapPanel Orientation="Horizontal" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:PaintCell">
+              <DataTemplate x:DataType="vm:InspectionCell">
                 <Button Classes="Text" Padding="0" Margin="2"
-                        Command="{Binding $parent[ItemsControl].((vm:PaintingGameViewModel)DataContext).PaintCellCommand}"
+                        Command="{Binding $parent[ItemsControl].((vm:InspectionGameViewModel)DataContext).InspectCellCommand}"
                         CommandParameter="{Binding .}">
-                  <Border Width="50" Height="50"
-                          CornerRadius="4"
+                  <Border Width="56" Height="56"
+                          CornerRadius="6"
                           BorderThickness="2"
                           BorderBrush="{Binding BorderColor}"
-                          Background="{Binding DisplayColor}">
+                          Background="{Binding BackgroundColor}">
                     <Panel>
-                      <!-- Target indicator -->
-                      <TextBlock Text="*"
-                                 FontSize="24"
-                                 Foreground="#40FFFFFF"
+                      <!-- Baustellen-Element Icon -->
+                      <TextBlock Text="{Binding Icon}"
+                                 FontSize="26"
+                                 Opacity="{Binding ContentOpacity}"
                                  HorizontalAlignment="Center"
-                                 VerticalAlignment="Center"
-                                 IsVisible="{Binding IsTarget}" />
+                                 VerticalAlignment="Center" />
 
-                      <!-- Painted checkmark -->
-                      <mi:MaterialIcon Kind="Check" Width="20" Height="20"
+                      <!-- Haekchen bei gefundenem Fehler -->
+                      <mi:MaterialIcon Kind="CheckCircle" Width="20" Height="20"
                                        Foreground="White"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       IsVisible="{Binding IsPaintedCorrectly}" />
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Top"
+                                       Margin="0,2,2,0"
+                                       IsVisible="{Binding IsDefectFound}" />
 
-                      <!-- Error mark -->
-                      <mi:MaterialIcon Kind="Close" Width="20" Height="20"
-                                       Foreground="{DynamicResource ErrorBrush}"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center"
-                                       IsVisible="{Binding HasError}" />
+                      <!-- X-Markierung bei Fehlalarm -->
+                      <mi:MaterialIcon Kind="CloseCircle" Width="20" Height="20"
+                                       Foreground="White"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Top"
+                                       Margin="0,2,2,0"
+                                       IsVisible="{Binding IsFalseAlarm}" />
                     </Panel>
                   </Border>
                 </Button>
@@ -177,25 +159,12 @@
           </ItemsControl>
         </Border>
 
-        <!-- Paint Color Display -->
-        <StackPanel Orientation="Horizontal"
-                    HorizontalAlignment="Center"
-                    Spacing="8"
-                    IsVisible="{Binding !IsResultShown}">
-          <TextBlock Text="{loc:Translate Color}"
-                     FontSize="12"
-                     Foreground="{DynamicResource TextSecondaryBrush}"
-                     VerticalAlignment="Center" />
-          <Border Width="30" Height="30"
-                  CornerRadius="6"
-                  Background="{Binding SelectedColor}" />
-        </StackPanel>
-
-        <!-- Result Display -->
+        <!-- Ergebnis-Anzeige -->
         <Border Classes="Card StatsCard"
                 IsVisible="{Binding IsResultShown}"
                 Padding="24">
           <StackPanel Spacing="16" HorizontalAlignment="Center">
+            <!-- Emoji -->
             <TextBlock Text="{Binding ResultEmoji}"
                        FontSize="48"
                        HorizontalAlignment="Center" />
@@ -213,18 +182,19 @@
                                Opacity="{Binding Star3Opacity}" />
             </StackPanel>
 
+            <!-- Rating-Text -->
             <TextBlock Text="{Binding ResultText}"
                        FontSize="24" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        HorizontalAlignment="Center" />
 
-            <!-- Rewards -->
+            <!-- Belohnungen -->
             <StackPanel Orientation="Horizontal" Spacing="20"
                         HorizontalAlignment="Center">
               <StackPanel Orientation="Horizontal" Spacing="4">
                 <mi:MaterialIcon Kind="CashMultiple" Width="20" Height="20"
                                  Foreground="{DynamicResource SuccessBrush}" />
-                <TextBlock Text="{Binding RewardAmount, StringFormat='+{0:N0} €'}"
+                <TextBlock Text="{Binding RewardAmount, StringFormat='+{0:N0} \u20AC'}"
                            FontSize="14" FontWeight="Bold"
                            Foreground="{DynamicResource SuccessBrush}"
                            VerticalAlignment="Center" />
@@ -259,9 +229,9 @@
     <!-- ================================================================= -->
     <StackPanel Grid.Row="2" Spacing="16">
 
-      <!-- Start Button (versteckt während Spiel und nach Ergebnis) -->
+      <!-- Start Button (versteckt waehrend Spiel und nach Ergebnis) -->
       <Panel IsVisible="{Binding !IsResultShown}">
-        <Button Content="{loc:Translate StartPainting}"
+        <Button Content="{loc:Translate StartInspection}"
                 Classes="Primary"
                 Command="{Binding StartGameCommand}"
                 IsVisible="{Binding !IsPlaying}"
@@ -269,11 +239,12 @@
                 MinWidth="220" />
       </Panel>
 
-      <!-- Continue Buttons -->
+      <!-- Continue Buttons (nach Ergebnis) -->
       <Grid ColumnDefinitions="*,*"
             ColumnSpacing="12"
             IsVisible="{Binding IsResultShown}">
 
+        <!-- Werbung fuer Verdopplung -->
         <Button Content="{loc:Translate WatchAdForDouble}"
                 Classes="Secondary"
                 IsEnabled="{Binding CanWatchAd}"
@@ -281,6 +252,7 @@
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center" />
 
+        <!-- Weiter -->
         <Button Grid.Column="1"
                 Content="{loc:Translate Continue}"
                 Classes="Primary"

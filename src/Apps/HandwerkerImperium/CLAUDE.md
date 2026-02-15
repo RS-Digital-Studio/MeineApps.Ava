@@ -78,6 +78,8 @@ Tier-Farben: F=Grau, E=Gruen, D=#0E7490(Teal), C=#B45309(DarkOrange), B=Amber, A
 ### Research Tree
 45 Upgrades in 3 Branches à 15 Level: Tools (Effizienz + MiniGame-Zone), Management (Löhne + Worker-Slots), Marketing (Belohnungen + Order-Slots)
 Kosten: Geld (500 bis 1B). Dauer: 10min bis 72h (Echtzeit). Effekte werden im GameLoop auf Einkommen/Kosten angewendet.
+**UI**: 2D-Baum-Layout (Top Heroes-Style) mit 6 SKCanvasViews: HeaderCanvas (Labor-Szene), ActiveResearchCanvas (aktive Forschung), TabCanvas (Branch-Tabs), BranchBannerCanvas (Branch-Header), TreeCanvas (2D-Baum), CelebrationCanvas (Confetti). ResearchView.axaml.cs verdrahtet alle 6 Canvas + CelebrationRequested Event. 20fps Render-Loop.
+**Renderer**: ResearchTreeRenderer (2D-Baum), ResearchIconRenderer (12 Icons), ResearchActiveRenderer (Kolben-Animation), ResearchBranchBannerRenderer (3 Branch-Szenen), ResearchTabRenderer (Tab-Leiste), ResearchCelebrationRenderer (Confetti+Glow), ResearchLabRenderer (Labor-Header).
 
 ### Mini-Games (alle SkiaSharp-basiert)
 Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spielfeld. Header, Result-Display, Countdown und Action-Buttons bleiben XAML. Jeder Renderer hat `Render()` + `HitTest()`, View hat 20fps Render-Loop (DispatcherTimer 50ms), Touch via `PointerPressed` + DPI-Skalierung.
@@ -114,7 +116,7 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 
 | Feature | Implementierung |
 |---------|-----------------|
-| Workshop Cards | Farbiges BorderBrush nach Typ |
+| Workshop Cards | Farbiges BorderBrush nach Typ + SkiaSharp-Illustrationen (WorkshopCardRenderer) als Header auf jeder Dashboard-Karte (48dp, 8 thematische Szenen: Hobel+Holz, Rohre+Wasser, Kabel+Blitze, Farbroller+Palette, Dachziegel+Dachstuhl, Kran+Bauhelm, Zirkel+Bauplan, Gebäude+Krone). WorkshopIllustrationView (Custom SKCanvasView für DataTemplates) |
 | Worker Avatars | WorkerAvatarControl (SKCanvasView) mit SkiaSharp Pixel-Art: Hauttonfarbe (6), Haarfarbe (6), Tier-Helm (10 Farben + Sterne fuer S+), Mood-Gesichtsausdruck, Geschlecht (laengere Haare/Lippen vs. breiterer Kiefer). 40dp in WorkerMarketView, 64dp in WorkerProfileView |
 | Golden Screw Icon | Gold-Shimmer Animation (CSS scale+rotate Loop) |
 | Level-Up | CelebrationOverlay mit Confetti (100 Partikel, 2s) |
@@ -139,6 +141,12 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 | Research-Labor Header | SKCanvasView als Header-Hintergrund in ResearchView, ResearchLabRenderer zeichnet Werkstatt-Szene mit Tisch/Kolben/Büchern/Zahnrädern, semi-transparenter Gradient-Overlay darüber, 20fps Render-Loop |
 | Rotierende Zahnräder | 2 gegenläufige Zahnräder an der Wand im Research-Labor (CraftMetall-Farbe) |
 | Dampf-Partikel | 5 aufsteigende Dampf-Partikel aus Glaskolben im Research-Labor |
+| Research 2D-Baum | Top Heroes-Style 2D-Baumstruktur (ResearchTreeRenderer): Abwechselnd zentrierte Einzel-Items + Zweiergruppen, Bezier-Verbindungen mit Flow-Partikeln, Branch-Farben (Tools=Orange, Management=Braun, Marketing=Lime), Lock/Unlock/Active/Completed States, Scroll-Unterstützung |
+| Research-Tabs | Animierte Tab-Leiste (ResearchTabRenderer): 3 Branch-Tabs mit Sliding Underline, aktiver Tab mit vollem Hintergrund |
+| Research-Branch-Banner | Animierte Branch-Header (ResearchBranchBannerRenderer): Tools=Amboss+Funken, Management=Schreibtisch+Papiere, Marketing=Megafon+Wellen |
+| Research-Item-Icons | 12 einzigartige SkiaSharp-Illustrationen (ResearchIconRenderer): Hammer, Schraubenschlüssel, Säge, Zange, Lupe, Aktentasche, Krawatte, Diplom, Megafon, Stern, Rakete, Krone - je 64x64 |
+| Research-Aktiv-Anzeige | Aktive Forschung Animation (ResearchActiveRenderer): Kolben mit Flüssigkeit+Blasen, Dampf, Countdown-Timer |
+| Research-Celebration | Confetti+Glow-Ringe bei Forschungsabschluss (ResearchCelebrationRenderer): 100 Confetti-Partikel, 3 expandierende Glow-Ringe, Branch-Farben |
 | Glühbirne pulsiert | Glühbirne an der Decke im Research-Labor, Glow pulsiert (2.5Hz Sinus) |
 | Forschungs-Funken | Orange→Gelb Funkenpartikel bei aktiver Forschung (max 30 Partikel) |
 | Forschungs-Fortschritt | Glühender Fortschrittsbalken im SkiaSharp-Header bei aktiver Forschung |
@@ -226,6 +234,8 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 
 ## Changelog Highlights
 
+- **v2.0.3 (16.02.2026)**: Research UX-Verbesserungen: (1) Header verkleinert (MinHeight 140→90, Font 20→16, Icons 28→22/24→20, Badges 14→12, Padding 16,12→12,6). (2) TopPadding im ResearchTreeRenderer 10→30 (erste Forschung nicht mehr verdeckt). (3) Bestätigungsdialog beim Starten einer Forschung: Zeigt Name, Effekt-Beschreibung, Kosten und Dauer. StartResearch ist jetzt async mit ConfirmationRequested (Ad-Banner wird automatisch ausgeblendet). 2 neue Lokalisierungs-Keys (ResearchConfirmCost, ResearchConfirmDuration) in 6 Sprachen. (4) Tab-Selector Margin 12→8.
+- **v2.0.3 (16.02.2026)**: Research 2D-Baum + Workshop-Illustrationen: (1) Research-Tree komplett auf Top Heroes-Style 2D-Baumstruktur umgebaut: 6 neue Renderer (ResearchTreeRenderer, ResearchIconRenderer, ResearchActiveRenderer, ResearchBranchBannerRenderer, ResearchTabRenderer, ResearchCelebrationRenderer) + ResearchView.axaml.cs komplett neu geschrieben für 6 SKCanvasViews + CelebrationRequested Event in ResearchViewModel. (2) Workshop-Karten auf Dashboard mit SkiaSharp-Illustrationen als Header: WorkshopCardRenderer (8 thematische Szenen) + WorkshopIllustrationView (Custom SKCanvasView für DataTemplates). (3) Billing-Berechtigung (`com.android.vending.BILLING`) in allen 6 Premium-App AndroidManifest.xml ergänzt.
 - **v2.0.3 (15.02.2026)**: Workshop-Freischalten UX-Verbesserung: (1) Ad-Banner wird beim Confirm-Dialog ausgeblendet (HideBanner beim Öffnen, ShowBanner beim Schließen). (2) Freischaltbare Workshops (Level erreicht) visuell hervorgehoben: Craft-Orange Glow-Schatten auf der Karte, farbiges offenes Schloss-Icon statt grauem Lock, prominente Kostenanzeige mit "Tippe zum Freischalten"-Hinweis, erhöhte Header-Farbintensität (0.30 statt 0.10). Nicht-freischaltbare Workshops bleiben gedimmt mit grauem Schloss. 1 neuer Lokalisierungs-Key (TapToUnlock) in 6 Sprachen.
 - **v2.0.3 (15.02.2026)**: MiniGame-Spielfeld-Optimierung v5 (DPI-Root-Cause-Fix): Alle 8 MiniGame Code-Behind Dateien verwendeten `SKRect.Create(0, 0, info.Width, info.Height)` (physische Pixel) statt `canvas.LocalClipBounds` (tatsächlicher sichtbarer Bereich). Bei DPI-Skalierung war info.Width/Height größer als die geclippte Fläche → asymmetrisches Rechts-Clipping (selbes Problem wie Dashboard-Workshops). Fix: Alle 8 Views auf `canvas.LocalClipBounds` umgestellt (SawingGame, PipePuzzle, Wiring, Painting, Inspection, Blueprint, RoofTiling, DesignPuzzle). Touch-Skalierung nutzt konsistent `_lastBounds` aus dem letzten Render. WiringGameRenderer Padding von 20→12 zurückgesetzt (DPI war die wahre Ursache, nicht Padding).
 - **v2.0.3 (15.02.2026)**: MiniGame-Spielfeld-Optimierung v4: Alle Renderer von vertikaler Zentrierung auf Oben-Ausrichtung umgestellt (PipePuzzle, Inspection, Painting, Blueprint, DesignPuzzle, RoofTiling) - eliminiert leeren Raum unterhalb des Grids. Wiring-Renderer Padding 12→20 + Gap 6→8 (OUT-Panel rechts nicht mehr abgeschnitten). PaintingGameRenderer AddSplatter-Methode auf konsistente Padding/Size-Werte aktualisiert. HitTest-Methoden in allen Renderern identisch mit Render-Methoden synchronisiert.

@@ -19,12 +19,10 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - GC-Optimierung: Gepoolte SKPaint/SKFont/SKPath (6 per-frame Allokationen eliminiert)
 - HUD: Side-Panel rechts (TIME, SCORE, BOMBS/FIRE mit Mini-Icons, PowerUp-Liste mit Glow)
 
-### Input-Handler (4x)
-- **FloatingJoystick**: Touch-basiert, draggable (Android Default)
-- **SwipeGesture**: Wisch-Richtung
-- **ClassicDPad**: On-screen D-Pad Buttons
+### Input-Handler (2x)
+- **FloatingJoystick**: Touch-basiert, zwei Modi: Floating (erscheint wo getippt, Standard) + Fixed (immer sichtbar unten links). Bomb-Button weiter in die Spielfläche gerückt (80px/60px Offset statt 30px/20px)
 - **Keyboard**: Arrow/WASD + Space (Bomb) + E (Detonate) + Escape (Pause) → Desktop Default
-- InputManager verwaltet aktiven Handler, auto-detect Desktop vs Android
+- InputManager verwaltet aktiven Handler, auto-detect Desktop vs Android, JoystickFixed-Setting persistiert
 
 ### AI (EnemyAI.cs + AStar.cs)
 - A* Pathfinding (Object-Pooled PriorityQueue, HashSet, Dictionaries)
@@ -65,12 +63,10 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **AdsStateChanged Event**: Reagiert auf Show/Hide des Banners
 - **Dialoge/Overlays**: `Grid.RowSpan="2"` (über beide Rows, nicht abgeschnitten)
 
-### Banner im GameView (Level-basiert)
-- **Level 1-4**: Kein Banner (ungestoertes Spielerlebnis)
-- **Ab Level 5**: Banner oben (Top-Position), Viewport verschiebt sich nach unten
-- **GameRenderer.BannerTopOffset** (55f): Grid + HUD werden nach unten verschoben, Controls (D-Pad/Bomb) bleiben unten
-- **IAdService.SetBannerPosition(true)**: Wechselt nativen Android-Banner von Bottom auf Top
-- Beim Verlassen des GameView: Position zurueck auf Bottom (Standard fuer andere Views)
+### Banner im GameView
+- **Deaktiviert**: Kein Banner während Gameplay (seit 15.02.2026)
+- Banner wird beim Betreten des GameView versteckt, beim Verlassen wieder angezeigt
+- BannerTopOffset immer 0 (kein Viewport-Offset mehr nötig)
 
 ### Rewarded (4 Placements)
 1. `continue` → GameOver: Coins verdoppeln / Weitermachen (1x pro Versuch)
@@ -93,6 +89,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | ICustomizationService | Spieler/Gegner-Skins (Default, Gold, Neon, Cyber, Retro) |
 | IReviewService | In-App Review nach Level 3-5, 14-Tage Cooldown |
 | IAchievementService | 16 Achievements in 5 Kategorien, JSON-Persistenz |
+| IDailyChallengeService | Tägliche Herausforderung, Streak-Tracking, Score-Persistenz |
 
 ## Architektur-Entscheidungen
 
@@ -100,7 +97,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Touch-Koordinaten**: Proportionale Skalierung (Render-Bounds / Control-Bounds Ratio) fuer DPI-korrektes Mapping
 - **Invalidierung**: IMMER `InvalidateSurface()` (InvalidateVisual feuert NICHT PaintSurface bei SKCanvasView)
 - **Keyboard Input**: Window-Level KeyDown/KeyUp in MainWindow.axaml.cs → GameViewModel
-- **DI**: 10 ViewModels, 13 Services, GameEngine + GameRenderer + SpriteSheet in App.axaml.cs (GameRenderer + IAchievementService per DI in GameEngine injiziert)
+- **DI**: 11 ViewModels, 14 Services, GameEngine + GameRenderer + SpriteSheet in App.axaml.cs (GameRenderer + IAchievementService per DI in GameEngine injiziert)
 - **GameEngine Partial Classes**: GameEngine.cs (Kern), .Collision.cs, .Explosion.cs, .Level.cs, .Render.cs
 - **12 PowerUp-Typen**: BombUp, Fire, Speed, Wallpass, Detonator, Bombpass, Flamepass, Mystery, Kick, LineBomb, PowerBomb, Skull
 - **Exit-Cell-Cache**: `_exitCell` in GameEngine, gesetzt bei RevealExit/Block-Zerstörung → Kollisions-Check + RenderExit ohne Grid-Iteration
@@ -161,6 +158,18 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - Skip-Button in jedem Schritt, Warning-Schritt mit 3s Auto-Advance
 - DefeatEnemies-Schritt: Wird getriggert wenn letzter Gegner getötet wird (GameEngine.Collision.cs)
 - RESX-Keys fuer 6 Sprachen (TutorialMove/Bomb/Hide/PowerUp/DefeatEnemies/Exit/Skip)
+
+## Daily Challenge (Phase 10)
+
+- **Tägliches Level**: Einzigartiges Level pro Tag, deterministisch via Seed (Datum-basiert: YYYY*10000+MM*100+DD)
+- **Schwierigkeit**: ~Level 20-30, zufällige Mechanik + Layout (kein BossArena), 4-6 mittlere/starke Gegner, 180s Zeitlimit
+- **Streak-System**: Konsekutive Tage mit Coin-Bonus (200/400/600/1000/1500/2000/3000), Reset bei >1 Tag Pause
+- **Score-Tracking**: Best-Score pro Tag, TotalCompleted, CurrentStreak, LongestStreak
+- **Ablauf**: MainMenu → DailyChallengeView → Game (mode=daily, level=seed) → GameOver → Score-Submit + Streak-Bonus
+- **Navigation**: Eigene View (DailyChallengeView.axaml), DailyChallengeViewModel, IDailyChallengeService
+- **Game-Engine Integration**: `StartDailyChallengeModeAsync(seed)`, `_isDailyChallenge` Flag, kein Continue, kein NextLevel (direkt GameOver nach LevelComplete)
+- **LevelGenerator**: `GenerateDailyChallengeLevel(seed)` statische Methode, zufällige Mechanik/Layout/Gegner aus Seed
+- **RESX-Keys**: 9 Keys in 6 Sprachen (DailyChallengeTitle/BestScore/Streak/LongestStreak/Completed/StreakBonus/CompletedToday/Play/Retry)
 
 ## Daily Reward & Monetarisierung (Phase 6)
 
@@ -281,6 +290,10 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ## Changelog Highlights
 
+- **15.02.2026 (4)**: HelpView SkiaSharp-Icons: HelpIconRenderer.cs (statische DrawEnemy/DrawPowerUp Methoden, identische Render-Logik wie GameRenderer ohne Animationen), SKCanvasView (32x32) pro Gegner- und PowerUp-Karte in HelpView.axaml, 4 fehlende PowerUps ergänzt (Kick/LineBomb/PowerBomb/Skull), 8 RESX-Keys (Name+Desc) in 6 Sprachen, PaintSurface-Handler in HelpView.axaml.cs.
+- **15.02.2026 (3)**: Daily Challenge Feature: IDailyChallengeService (Streak-System, Score-Tracking, Coin-Bonus 200-3000 pro Streak-Tag), DailyChallengeView mit Stats-Karten (Best Score, Streak, Longest Streak, Total Completed, Streak-Bonus), LevelGenerator.GenerateDailyChallengeLevel(seed) deterministisch aus Datum, GameEngine.StartDailyChallengeModeAsync + _isDailyChallenge Flag (kein Continue, kein NextLevel), MainMenu-Button (orange, #FF6B00), 9 RESX-Keys in 6 Sprachen, DI-Registrierung (14 Services + 11 ViewModels).
+- **15.02.2026 (2)**: Welt-Mechaniken + Layout-Patterns + Balancing: 5 Welt-Mechaniken implementiert (Ice=40% Speed-Boost, Conveyor=40px/s Push, Teleporter=gepaarte Portale mit Cooldown, LavaCrack=periodischer Schaden 4s-Zyklus). 8 Layout-Patterns in GameGrid (Classic, Cross, Arena, Maze, TwoRooms, Spiral, Diagonal, BossArena). Boss-Ankündigung "BOSS FIGHT!" mit 2.5s Timer. SkiaSharp-Rendering für alle 4 neuen Zelltypen (Classic+Neon: Ice=blaue Reflexion+Shimmer, Conveyor=Metall+animierte Chevrons, Teleporter=rotierende Bogenringe farbcodiert, LavaCrack=Zickzack-Risse+pulsierendes Glühen). Shop-Balancing: ScoreMultiplier Gesamtkosten 55k→34k. Daily Reward: Streak-Reset Gnade 1→3 Tage. Grid-Align + Corner-Assist Bewegungsfix in Player.cs.
+- **15.02.2026**: Steuerung vereinfacht: Swipe/DPad-Handler komplett entfernt (Dateien gelöscht), nur Joystick mit zwei Modi (Floating/Fixed). Settings: 3 RadioButtons → ToggleSwitch für "Fester Joystick". Bomb-Button repositioniert (80px/60px Offset statt 30px/20px). Banner-Ads im Gameplay deaktiviert (HideBanner beim Betreten, ShowBanner beim Verlassen). Neuer RESX-Key JoystickModeFixed in 6 Sprachen. InputManager-Migration für alte Swipe/DPad-Settings.
 - **14.02.2026 (14)**: LevelSelect Redesign (WorldGroups mit farbigen Sektionen, UniformGrid 10-Spalten, Lock-Overlay), Tutorial-Overlay Fix (4-Rechteck-Dimming statt SaveLayer+Clear, reduziertes Alpha, DefeatEnemies-Schritt hinzugefügt, HUD-Overlap-Fix), ScrollViewer-Fix in 6 Views (Padding→Margin auf Kind-Element + VerticalScrollBarVisibility=Auto), Achievements-Button im MainMenu hinzugefügt.
 - **13.02.2026 (13)**: Scroll-Padding + Coin-Anzeige Fix: Bottom-Padding in allen 6 ScrollViewern von 60dp auf 80dp erhoeht (ShopView, LevelSelectView, HighScoresView, HelpView, AchievementsView, SettingsView) + Bottom-Spacer in HelpView/SettingsView auf 80dp. LevelSelectViewModel: BalanceChanged-Subscription hinzugefuegt → CoinsText aktualisiert sich live bei Coin-Aenderungen (z.B. Rewarded Ad). IDisposable implementiert fuer saubere Event-Unsubscription.
 - **13.02.2026 (12)**: Immersive-Mode-Fix: OnWindowFocusChanged Override hinzugefügt → EnableImmersiveMode() wird bei Fokus-Wechsel erneut aufgerufen (z.B. nach Ad-Anzeige, Alt-Tab). Vorher blieben Status-/Navigationsleiste nach Fokus-Verlust sichtbar. EnableImmersiveMode() refactored: Native WindowInsetsController (API 30+) + SystemUiFlags Fallback (< API 30).

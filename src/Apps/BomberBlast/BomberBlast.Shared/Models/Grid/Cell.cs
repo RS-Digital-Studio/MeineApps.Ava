@@ -46,6 +46,26 @@ public class Cell
     /// <summary>Direction of explosion passing through (for sprite selection)</summary>
     public ExplosionDirection ExplosionDirection { get; set; }
 
+    // === Welt-Mechaniken ===
+
+    /// <summary>Förderband-Richtung (nur für CellType.Conveyor)</summary>
+    public Direction ConveyorDirection { get; set; } = Direction.None;
+
+    /// <summary>Teleporter-Partner-Position (nur für CellType.Teleporter)</summary>
+    public (int x, int y)? TeleporterTarget { get; set; }
+
+    /// <summary>Teleporter-Farbe/ID für visuelles Pairing (0 = blau, 1 = grün, 2 = orange)</summary>
+    public int TeleporterColorId { get; set; }
+
+    /// <summary>Lava-Riss Timer: Zählt hoch, aktiv wenn Timer mod Periode > Schwellwert</summary>
+    public float LavaCrackTimer { get; set; }
+
+    /// <summary>Ob Lava-Riss gerade aktiv/gefährlich ist</summary>
+    public bool IsLavaCrackActive => Type == CellType.LavaCrack && (LavaCrackTimer % 4f) > 2.5f;
+
+    /// <summary>Teleporter-Cooldown (verhindert Ping-Pong)</summary>
+    public float TeleporterCooldown { get; set; }
+
     public Cell(int x, int y, CellType type = CellType.Empty)
     {
         X = x;
@@ -63,6 +83,9 @@ public class Cell
 
         if (Type == CellType.Block && !canPassWalls)
             return false;
+
+        // Neue Welt-Typen sind begehbar (Ice, Conveyor, Teleporter, LavaCrack)
+        // LavaCrack tötet bei aktivem Zustand, blockiert aber nicht
 
         // Bomb blocks movement unless:
         // - canPassBombs is true (Bombpass power-up), OR
@@ -104,6 +127,11 @@ public class Cell
         IsExploding = false;
         ExplosionProgress = 0;
         AfterglowTimer = 0;
+        ConveyorDirection = Direction.None;
+        TeleporterTarget = null;
+        TeleporterColorId = 0;
+        LavaCrackTimer = 0;
+        TeleporterCooldown = 0;
     }
 }
 

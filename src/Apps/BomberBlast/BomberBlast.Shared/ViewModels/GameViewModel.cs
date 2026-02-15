@@ -17,10 +17,6 @@ namespace BomberBlast.ViewModels;
 public partial class GameViewModel : ObservableObject, IDisposable
 {
     private const float MAX_DELTA_TIME = 0.1f;
-    /// <summary>Höhe des Banners in Canvas-Einheiten (~dp) für Viewport-Verschiebung</summary>
-    private const float BANNER_AD_HEIGHT = 55f;
-    /// <summary>Ab diesem Level wird der Banner im GameView angezeigt</summary>
-    private const int BANNER_MIN_LEVEL = 5;
 
     private readonly GameEngine _gameEngine;
     private readonly IRewardedAdService _rewardedAdService;
@@ -162,8 +158,9 @@ public partial class GameViewModel : ObservableObject, IDisposable
             }
         }
 
-        // Banner-Steuerung: Ab Level 5 oben anzeigen, darunter verstecken
-        UpdateBannerForLevel(_gameEngine.CurrentLevel);
+        // Kein Banner während Gameplay - Banner verstecken
+        _adService.HideBanner();
+        _gameEngine.BannerTopOffset = 0;
 
         IsLoading = false;
         _frameStopwatch.Restart();
@@ -178,7 +175,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
         StopGameLoop();
         _gameEngine.Pause();
 
-        // Banner: Position zurücksetzen auf unten (Standard für andere Views)
+        // Banner nach Spiel-Ende wieder anzeigen (Standard-Position unten)
         _gameEngine.BannerTopOffset = 0;
         if (_adService.AdsEnabled && !_purchaseService.IsPremium)
         {
@@ -212,6 +209,10 @@ public partial class GameViewModel : ObservableObject, IDisposable
                 await _gameEngine.StartArcadeModeAsync();
                 break;
 
+            case "daily":
+                await _gameEngine.StartDailyChallengeModeAsync(_level); // _level wird als Seed verwendet
+                break;
+
             case "quick":
                 var random = new Random();
                 int maxLevel = Math.Max(_progressService.HighestCompletedLevel, 10);
@@ -230,37 +231,6 @@ public partial class GameViewModel : ObservableObject, IDisposable
         {
             _gameEngine.ApplyBoostPowerUp(_boostType);
             _boostType = "";
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // BANNER-STEUERUNG
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Banner ab Level 5 oben anzeigen, darunter verstecken.
-    /// Setzt auch BannerTopOffset im GameEngine/Renderer.
-    /// </summary>
-    private void UpdateBannerForLevel(int level)
-    {
-        if (_purchaseService.IsPremium || !_adService.AdsEnabled)
-        {
-            _gameEngine.BannerTopOffset = 0;
-            return;
-        }
-
-        if (level >= BANNER_MIN_LEVEL)
-        {
-            // Banner oben anzeigen, Viewport nach unten verschieben
-            _adService.SetBannerPosition(true);
-            _adService.ShowBanner();
-            _gameEngine.BannerTopOffset = BANNER_AD_HEIGHT;
-        }
-        else
-        {
-            // Banner verstecken (Level 1-4)
-            _adService.HideBanner();
-            _gameEngine.BannerTopOffset = 0;
         }
     }
 
@@ -475,7 +445,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
         var score = _gameEngine.Score;
         var level = _gameEngine.IsArcadeMode ? _gameEngine.ArcadeWave : _gameEngine.CurrentLevel;
         var isHighScore = _gameEngine.IsCurrentScoreHighScore;
-        var mode = _gameEngine.IsArcadeMode ? "arcade" : "story";
+        var mode = _gameEngine.IsDailyChallenge ? "daily" : _gameEngine.IsArcadeMode ? "arcade" : "story";
         var coins = _lastCoinsEarned;
 
         // Score-Aufschlüsselung aus GameEngine
@@ -484,9 +454,9 @@ public partial class GameViewModel : ObservableObject, IDisposable
         var effBonus = _gameEngine.LastEfficiencyBonus;
         var multiplier = _gameEngine.LastScoreMultiplier;
 
-        if (_gameEngine.CurrentLevel >= 50 && !_gameEngine.IsArcadeMode)
+        if (_gameEngine.IsDailyChallenge || (_gameEngine.CurrentLevel >= 50 && !_gameEngine.IsArcadeMode))
         {
-            // Sieg! -> Game Over Screen mit Level-Complete-Flag
+            // Daily Challenge oder Sieg → Game Over Screen mit Level-Complete-Flag
             NavigationRequested?.Invoke(
                 $"GameOver?score={score}&level={level}&highscore={isHighScore}&mode={mode}" +
                 $"&coins={coins}&levelcomplete=true&cancontinue=false" +
@@ -494,12 +464,9 @@ public partial class GameViewModel : ObservableObject, IDisposable
         }
         else
         {
-            // Naechstes Level
+            // Nächstes Level
             await _gameEngine.NextLevelAsync();
             _frameStopwatch.Restart();
-
-            // Banner-Status aktualisieren (z.B. Wechsel Level 4 → 5)
-            UpdateBannerForLevel(_gameEngine.CurrentLevel);
 
             // Game-Loop neu starten (war ggf. gestoppt wegen Score-Verdopplungs-Overlay)
             StartGameLoop();
@@ -532,7 +499,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
                 var score = _gameEngine.Score;
                 var level = _gameEngine.IsArcadeMode ? _gameEngine.ArcadeWave : _gameEngine.CurrentLevel;
                 var isHighScore = _gameEngine.IsCurrentScoreHighScore;
-                var mode = _gameEngine.IsArcadeMode ? "arcade" : "story";
+                var mode = _gameEngine.IsDailyChallenge ? "daily" : _gameEngine.IsArcadeMode ? "arcade" : "story";
                 var coins = _lastCoinsEarned;
                 var canContinue = _gameEngine.CanContinue;
 

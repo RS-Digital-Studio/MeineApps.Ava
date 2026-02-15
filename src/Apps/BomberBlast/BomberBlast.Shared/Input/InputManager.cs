@@ -1,13 +1,13 @@
 using Avalonia.Input;
 using BomberBlast.Models.Entities;
-using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using SkiaSharp;
 
 namespace BomberBlast.Input;
 
 /// <summary>
-/// Verwaltet Input-Handler und wechselt zwischen Input-Methoden.
+/// Verwaltet Input-Handler: Joystick (Android) + Keyboard (Desktop).
+/// Joystick hat zwei Modi: Floating (Standard) und Fixed (immer sichtbar).
 /// </summary>
 public class InputManager : IDisposable
 {
@@ -20,6 +20,7 @@ public class InputManager : IDisposable
     private float _joystickSize = 120f;
     private float _joystickOpacity = 0.7f;
     private bool _hapticEnabled = true;
+    private bool _joystickFixed; // Fixed-Modus
 
     public InputType CurrentInputType
     {
@@ -32,7 +33,7 @@ public class InputManager : IDisposable
     public bool DetonatePressed => _activeHandler.DetonatePressed;
 
     /// <summary>
-    /// Detonator-Button auf Touch-Handlern anzeigen
+    /// Detonator-Button auf Joystick-Handler anzeigen
     /// </summary>
     public bool HasDetonator
     {
@@ -40,8 +41,6 @@ public class InputManager : IDisposable
         {
             if (_handlers.TryGetValue(InputType.FloatingJoystick, out var fj))
                 ((FloatingJoystick)fj).HasDetonator = value;
-            if (_handlers.TryGetValue(InputType.ClassicDPad, out var dp))
-                ((DPadHandler)dp).HasDetonator = value;
         }
     }
 
@@ -71,15 +70,26 @@ public class InputManager : IDisposable
         set => _hapticEnabled = value;
     }
 
-    public InputManager(IPreferencesService preferences, ILocalizationService? localizationService = null)
+    /// <summary>
+    /// Joystick-Modus: true = fixiert (immer sichtbar), false = schwebend (Standard)
+    /// </summary>
+    public bool JoystickFixed
+    {
+        get => _joystickFixed;
+        set
+        {
+            _joystickFixed = value;
+            ApplySettings();
+        }
+    }
+
+    public InputManager(IPreferencesService preferences)
     {
         _preferences = preferences;
 
         _handlers = new Dictionary<InputType, IInputHandler>
         {
             { InputType.FloatingJoystick, new FloatingJoystick() },
-            { InputType.SwipeGesture, new SwipeGestureHandler(localizationService) },
-            { InputType.ClassicDPad, new DPadHandler() },
             { InputType.Keyboard, new KeyboardHandler() }
         };
 
@@ -95,18 +105,22 @@ public class InputManager : IDisposable
     }
 
     /// <summary>
-    /// Load input settings from preferences
+    /// Einstellungen aus Preferences laden
     /// </summary>
     private void LoadSettings()
     {
-        _currentType = (InputType)_preferences.Get("InputType", (int)InputType.FloatingJoystick);
+        var savedType = _preferences.Get("InputType", (int)InputType.FloatingJoystick);
+        // Migration: Alte Swipe(1)/DPad(2) Werte auf Joystick(0) zurücksetzen
+        _currentType = savedType == (int)InputType.Keyboard ? InputType.Keyboard : InputType.FloatingJoystick;
+
         _joystickSize = (float)_preferences.Get("JoystickSize", 120.0);
         _joystickOpacity = (float)_preferences.Get("JoystickOpacity", 0.7);
         _hapticEnabled = _preferences.Get("HapticEnabled", true);
+        _joystickFixed = _preferences.Get("JoystickFixed", false);
     }
 
     /// <summary>
-    /// Save input settings to preferences
+    /// Einstellungen in Preferences speichern
     /// </summary>
     public void SaveSettings()
     {
@@ -114,10 +128,11 @@ public class InputManager : IDisposable
         _preferences.Set("JoystickSize", (double)_joystickSize);
         _preferences.Set("JoystickOpacity", (double)_joystickOpacity);
         _preferences.Set("HapticEnabled", _hapticEnabled);
+        _preferences.Set("JoystickFixed", _joystickFixed);
     }
 
     /// <summary>
-    /// Set the active input type
+    /// Aktiven Input-Typ setzen
     /// </summary>
     public void SetInputType(InputType type)
     {
@@ -131,7 +146,7 @@ public class InputManager : IDisposable
     }
 
     /// <summary>
-    /// Apply settings to handlers
+    /// Einstellungen auf Handler anwenden
     /// </summary>
     private void ApplySettings()
     {
@@ -140,74 +155,47 @@ public class InputManager : IDisposable
             var fj = (FloatingJoystick)joystick;
             fj.JoystickSize = _joystickSize;
             fj.Opacity = _joystickOpacity;
-        }
-
-        if (_handlers.TryGetValue(InputType.ClassicDPad, out var dpad))
-        {
-            var dp = (DPadHandler)dpad;
-            dp.DPadSize = _joystickSize * 1.25f;
-            dp.Opacity = _joystickOpacity;
+            fj.IsFixed = _joystickFixed;
         }
     }
 
-    /// <summary>
-    /// Handle touch start
-    /// </summary>
     public void OnTouchStart(float x, float y, float screenWidth, float screenHeight)
     {
         _activeHandler.OnTouchStart(x, y, screenWidth, screenHeight);
-
-        // Haptic feedback is platform-specific; skip in shared library
-        // The View layer can hook into this if needed
     }
 
-    /// <summary>
-    /// Handle touch move
-    /// </summary>
     public void OnTouchMove(float x, float y)
     {
         _activeHandler.OnTouchMove(x, y);
     }
 
-    /// <summary>
-    /// Handle touch end
-    /// </summary>
     public void OnTouchEnd()
     {
         _activeHandler.OnTouchEnd();
     }
 
-    /// <summary>
-    /// Update input state
-    /// </summary>
     public void Update(float deltaTime)
     {
         _activeHandler.Update(deltaTime);
     }
 
-    /// <summary>
-    /// Reset input state
-    /// </summary>
     public void Reset()
     {
         _activeHandler.Reset();
     }
 
-    /// <summary>
-    /// Render input UI
-    /// </summary>
     public void Render(SKCanvas canvas, float screenWidth, float screenHeight)
     {
         _activeHandler.Render(canvas, screenWidth, screenHeight);
     }
 
     /// <summary>
-    /// Forward keyboard key-down event to the keyboard handler.
-    /// Automatically switches to keyboard input on first key press.
+    /// Keyboard Key-Down an den Keyboard-Handler weiterleiten.
+    /// Wechselt automatisch zu Keyboard-Input beim ersten Tastendruck.
     /// </summary>
     public void OnKeyDown(Key key)
     {
-        // Auto-switch to keyboard when a game key is pressed
+        // Auto-switch zu Keyboard beim ersten Tastendruck
         if (_currentType != InputType.Keyboard)
         {
             SetInputType(InputType.Keyboard);
@@ -220,7 +208,7 @@ public class InputManager : IDisposable
     }
 
     /// <summary>
-    /// Forward keyboard key-up event to the keyboard handler.
+    /// Keyboard Key-Up an den Keyboard-Handler weiterleiten.
     /// </summary>
     public void OnKeyUp(Key key)
     {
@@ -231,7 +219,7 @@ public class InputManager : IDisposable
     }
 
     /// <summary>
-    /// Handler-Ressourcen freigeben (SKPaint/SKFont/SKPath in FloatingJoystick, DPadHandler, SwipeGestureHandler)
+    /// Handler-Ressourcen freigeben (SKPaint/SKFont/SKPath in FloatingJoystick)
     /// </summary>
     public void Dispose()
     {
@@ -240,16 +228,5 @@ public class InputManager : IDisposable
             if (handler is IDisposable disposable)
                 disposable.Dispose();
         }
-    }
-
-    /// <summary>
-    /// Get all available input types
-    /// </summary>
-    public static IEnumerable<(InputType type, string name)> GetAvailableInputTypes()
-    {
-        yield return (InputType.FloatingJoystick, "Floating Joystick");
-        yield return (InputType.SwipeGesture, "Swipe Gestures");
-        yield return (InputType.ClassicDPad, "Classic D-Pad");
-        yield return (InputType.Keyboard, "Keyboard (WASD/Arrows)");
     }
 }

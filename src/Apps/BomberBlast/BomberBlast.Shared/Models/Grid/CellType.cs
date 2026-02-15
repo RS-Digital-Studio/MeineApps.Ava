@@ -15,5 +15,17 @@ public enum CellType
     Block,
 
     /// <summary>Exit portal - appears after all enemies are defeated</summary>
-    Exit
+    Exit,
+
+    /// <summary>Eis-Boden (Welt 2: Industrial) - Spieler/Gegner rutschen weiter bis Hindernis</summary>
+    Ice,
+
+    /// <summary>Förderband (Welt 3: Cavern) - schiebt Entities in eine Richtung</summary>
+    Conveyor,
+
+    /// <summary>Teleporter (Welt 4: Sky) - transportiert zum gepaarten Teleporter</summary>
+    Teleporter,
+
+    /// <summary>Lava-Riss (Welt 5: Inferno) - pulsiert periodisch, tötet bei aktivem Zustand</summary>
+    LavaCrack
 }

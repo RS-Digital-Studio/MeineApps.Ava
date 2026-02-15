@@ -56,6 +56,7 @@ public partial class GameEngine : IDisposable
     private Level? _currentLevel;
     private int _currentLevelNumber;
     private bool _isArcadeMode;
+    private bool _isDailyChallenge;
     private int _arcadeWave;
     private bool _levelCompleteHandled;
     private bool _continueUsed;
@@ -161,10 +162,11 @@ public partial class GameEngine : IDisposable
     public int ArcadeWave => _arcadeWave;
     public float RemainingTime => _timer?.RemainingTime ?? 0;
     public bool IsArcadeMode => _isArcadeMode;
+    public bool IsDailyChallenge => _isDailyChallenge;
     public bool IsCurrentScoreHighScore => _highScoreService.IsHighScore(Score);
 
     /// <summary>Ob Continue möglich ist (nur Story, nur 1x pro Level-Versuch)</summary>
-    public bool CanContinue => !_continueUsed && !_isArcadeMode;
+    public bool CanContinue => !_continueUsed && !_isArcadeMode && !_isDailyChallenge;
 
     /// <summary>Verschiebung nach unten für Banner-Ad oben (Proxy für GameRenderer)</summary>
     public float BannerTopOffset
@@ -419,6 +421,7 @@ public partial class GameEngine : IDisposable
         UpdateDestroyingBlocks(deltaTime);
         UpdateEnemies(deltaTime);
         UpdatePowerUps(deltaTime);
+        UpdateWorldMechanics(deltaTime);
         CheckCollisions();
         CleanupEntities();
 
@@ -617,6 +620,227 @@ public partial class GameEngine : IDisposable
         _explosions.Clear();
 
         _inputManager.Reset();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WELT-MECHANIKEN (Ice, Conveyor, Teleporter, LavaCrack)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Welt-spezifische Mechaniken pro Frame aktualisieren
+    /// </summary>
+    private void UpdateWorldMechanics(float deltaTime)
+    {
+        if (_currentLevel == null || _currentLevel.Mechanic == WorldMechanic.None)
+            return;
+
+        switch (_currentLevel.Mechanic)
+        {
+            case WorldMechanic.Ice:
+                UpdateIceMechanic(deltaTime);
+                break;
+            case WorldMechanic.Conveyor:
+                UpdateConveyorMechanic(deltaTime);
+                break;
+            case WorldMechanic.Teleporter:
+                UpdateTeleporterMechanic(deltaTime);
+                break;
+            case WorldMechanic.LavaCrack:
+                UpdateLavaCrackMechanic(deltaTime);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Eis: Spieler rutscht in Bewegungsrichtung weiter wenn auf Eis (Trägheit)
+    /// Implementiert als erhöhte Geschwindigkeit + verringerter Grip
+    /// </summary>
+    private void UpdateIceMechanic(float deltaTime)
+    {
+        var cell = _grid.TryGetCell(_player.GridX, _player.GridY);
+        if (cell?.Type == CellType.Ice)
+        {
+            // Eis-Boost: Auf Eis bewegt sich der Spieler 40% schneller (Rutsch-Gefühl)
+            // Die Player.Move() Methode berechnet bereits die Geschwindigkeit,
+            // hier wenden wir den Effekt als nachträglichen Positions-Nudge an
+            if (_player.IsMoving && _player.FacingDirection != Direction.None)
+            {
+                float iceBoost = _player.Speed * 0.4f * deltaTime;
+                float dx = _player.FacingDirection.GetDeltaX() * iceBoost;
+                float dy = _player.FacingDirection.GetDeltaY() * iceBoost;
+
+                // Nur anwenden wenn Zielposition begehbar ist
+                float newX = _player.X + dx;
+                float newY = _player.Y + dy;
+                int targetGX = (int)MathF.Floor(newX / GameGrid.CELL_SIZE);
+                int targetGY = (int)MathF.Floor(newY / GameGrid.CELL_SIZE);
+                var targetCell = _grid.TryGetCell(targetGX, targetGY);
+                if (targetCell != null && targetCell.IsWalkable(_player.HasWallpass, _player.HasBombpass))
+                {
+                    _player.X = newX;
+                    _player.Y = newY;
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Förderband: Schiebt Spieler und Gegner langsam in Pfeilrichtung
+    /// </summary>
+    private void UpdateConveyorMechanic(float deltaTime)
+    {
+        float conveyorSpeed = 40f; // Pixel pro Sekunde
+
+        // Spieler auf Förderband
+        var playerCell = _grid.TryGetCell(_player.GridX, _player.GridY);
+        if (playerCell?.Type == CellType.Conveyor)
+        {
+            float dx = playerCell.ConveyorDirection.GetDeltaX() * conveyorSpeed * deltaTime;
+            float dy = playerCell.ConveyorDirection.GetDeltaY() * conveyorSpeed * deltaTime;
+
+            float newX = _player.X + dx;
+            float newY = _player.Y + dy;
+            int targetGX = (int)MathF.Floor(newX / GameGrid.CELL_SIZE);
+            int targetGY = (int)MathF.Floor(newY / GameGrid.CELL_SIZE);
+            var targetCell = _grid.TryGetCell(targetGX, targetGY);
+            if (targetCell != null && targetCell.IsWalkable(_player.HasWallpass, _player.HasBombpass))
+            {
+                _player.X = newX;
+                _player.Y = newY;
+            }
+        }
+
+        // Gegner auf Förderbändern
+        foreach (var enemy in _enemies)
+        {
+            if (!enemy.IsActive || enemy.IsDying) continue;
+            var enemyCell = _grid.TryGetCell(enemy.GridX, enemy.GridY);
+            if (enemyCell?.Type != CellType.Conveyor) continue;
+
+            float dx = enemyCell.ConveyorDirection.GetDeltaX() * conveyorSpeed * deltaTime;
+            float dy = enemyCell.ConveyorDirection.GetDeltaY() * conveyorSpeed * deltaTime;
+            float newX = enemy.X + dx;
+            float newY = enemy.Y + dy;
+            int targetGX = (int)MathF.Floor(newX / GameGrid.CELL_SIZE);
+            int targetGY = (int)MathF.Floor(newY / GameGrid.CELL_SIZE);
+            var targetCell = _grid.TryGetCell(targetGX, targetGY);
+            if (targetCell != null && targetCell.IsWalkable())
+            {
+                enemy.X = newX;
+                enemy.Y = newY;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Teleporter: Transportiert Spieler/Gegner zum gepaarten Portal
+    /// </summary>
+    private void UpdateTeleporterMechanic(float deltaTime)
+    {
+        // Teleporter-Cooldowns aktualisieren
+        for (int x = 0; x < GameGrid.WIDTH; x++)
+        {
+            for (int y = 0; y < GameGrid.HEIGHT; y++)
+            {
+                var cell = _grid[x, y];
+                if (cell.Type == CellType.Teleporter && cell.TeleporterCooldown > 0)
+                    cell.TeleporterCooldown -= deltaTime;
+            }
+        }
+
+        // Spieler-Teleportation
+        var playerCell = _grid.TryGetCell(_player.GridX, _player.GridY);
+        if (playerCell?.Type == CellType.Teleporter && playerCell.TeleporterCooldown <= 0 && playerCell.TeleporterTarget.HasValue)
+        {
+            var target = playerCell.TeleporterTarget.Value;
+            var targetCell = _grid.TryGetCell(target.x, target.y);
+            if (targetCell != null)
+            {
+                float newX = target.x * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                float newY = target.y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                _player.X = newX;
+                _player.Y = newY;
+
+                // Cooldown auf beiden Seiten setzen (verhindert Ping-Pong)
+                playerCell.TeleporterCooldown = 1.0f;
+                targetCell.TeleporterCooldown = 1.0f;
+
+                // Partikel-Effekt
+                _particleSystem.Emit(newX, newY, 10, new SkiaSharp.SKColor(100, 200, 255), 60f, 0.5f);
+                _soundManager.PlaySound(SoundManager.SFX_POWERUP);
+            }
+        }
+
+        // Gegner-Teleportation
+        foreach (var enemy in _enemies)
+        {
+            if (!enemy.IsActive || enemy.IsDying) continue;
+            var enemyCell = _grid.TryGetCell(enemy.GridX, enemy.GridY);
+            if (enemyCell?.Type != CellType.Teleporter || enemyCell.TeleporterCooldown > 0 || !enemyCell.TeleporterTarget.HasValue)
+                continue;
+
+            var target = enemyCell.TeleporterTarget.Value;
+            var targetCell = _grid.TryGetCell(target.x, target.y);
+            if (targetCell == null) continue;
+
+            enemy.X = target.x * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+            enemy.Y = target.y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+
+            enemyCell.TeleporterCooldown = 1.5f; // Gegner etwas längerer Cooldown
+            targetCell.TeleporterCooldown = 1.5f;
+        }
+    }
+
+    /// <summary>
+    /// Lava-Risse: Timer hochzählen, Schaden bei aktivem Zustand
+    /// </summary>
+    private void UpdateLavaCrackMechanic(float deltaTime)
+    {
+        for (int x = 0; x < GameGrid.WIDTH; x++)
+        {
+            for (int y = 0; y < GameGrid.HEIGHT; y++)
+            {
+                var cell = _grid[x, y];
+                if (cell.Type != CellType.LavaCrack) continue;
+
+                cell.LavaCrackTimer += deltaTime;
+
+                // Spieler-Schaden bei aktivem Lava-Riss
+                if (cell.IsLavaCrackActive && _player.GridX == x && _player.GridY == y)
+                {
+                    if (!_player.IsInvincible && !_player.HasSpawnProtection && !_player.IsDying)
+                    {
+                        if (_player.HasShield)
+                        {
+                            _player.HasShield = false;
+                            _particleSystem.Emit(_player.X, _player.Y, 12,
+                                new SkiaSharp.SKColor(255, 80, 0), 60f, 0.5f);
+                            _floatingText.Spawn(_player.X, _player.Y - 16,
+                                "SHIELD!", new SkiaSharp.SKColor(0, 229, 255), 16f, 1.2f);
+                            _player.ActivateInvincibility(0.5f);
+                        }
+                        else
+                        {
+                            KillPlayer();
+                        }
+                    }
+                }
+
+                // Gegner-Schaden bei aktivem Lava-Riss
+                if (cell.IsLavaCrackActive)
+                {
+                    for (int i = _enemies.Count - 1; i >= 0; i--)
+                    {
+                        var enemy = _enemies[i];
+                        if (!enemy.IsActive || enemy.IsDying) continue;
+                        if (enemy.GridX == x && enemy.GridY == y)
+                        {
+                            KillEnemy(enemy);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>

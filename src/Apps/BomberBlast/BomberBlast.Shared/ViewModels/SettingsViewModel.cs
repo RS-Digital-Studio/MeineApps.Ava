@@ -50,28 +50,7 @@ public partial class SettingsViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     [ObservableProperty]
-    private int _selectedInputType; // 0=Joystick, 1=Swipe, 2=DPad
-
-    /// <summary>Whether Joystick control is selected.</summary>
-    public bool IsJoystickSelected
-    {
-        get => SelectedInputType == 0;
-        set { if (value) SelectedInputType = 0; }
-    }
-
-    /// <summary>Whether Swipe control is selected.</summary>
-    public bool IsSwipeSelected
-    {
-        get => SelectedInputType == 1;
-        set { if (value) SelectedInputType = 1; }
-    }
-
-    /// <summary>Whether DPad control is selected.</summary>
-    public bool IsDPadSelected
-    {
-        get => SelectedInputType == 2;
-        set { if (value) SelectedInputType = 2; }
-    }
+    private bool _joystickFixed; // false=schwebend, true=fixiert
 
     [ObservableProperty]
     private double _joystickSize = 120;
@@ -216,7 +195,7 @@ public partial class SettingsViewModel : ObservableObject
     private void LoadSettings()
     {
         // Input-Einstellungen aus InputManager laden
-        SelectedInputType = (int)_inputManager.CurrentInputType;
+        JoystickFixed = _inputManager.JoystickFixed;
         JoystickSize = _inputManager.JoystickSize;
         JoystickOpacity = _inputManager.JoystickOpacity;
         HapticEnabled = _inputManager.HapticEnabled;
@@ -247,15 +226,11 @@ public partial class SettingsViewModel : ObservableObject
     // PROPERTY CHANGE HANDLERS
     // ═══════════════════════════════════════════════════════════════════════
 
-    partial void OnSelectedInputTypeChanged(int value)
+    partial void OnJoystickFixedChanged(bool value)
     {
-        OnPropertyChanged(nameof(IsJoystickSelected));
-        OnPropertyChanged(nameof(IsSwipeSelected));
-        OnPropertyChanged(nameof(IsDPadSelected));
         if (_isInitializing) return;
 
-        // InputType im InputManager setzen und persistieren
-        _inputManager.CurrentInputType = (InputType)value;
+        _inputManager.JoystickFixed = value;
         _inputManager.SaveSettings();
     }
 

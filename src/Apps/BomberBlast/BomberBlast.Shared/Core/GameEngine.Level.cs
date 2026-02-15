@@ -18,6 +18,7 @@ public partial class GameEngine
     public async Task StartStoryModeAsync(int levelNumber)
     {
         _isArcadeMode = false;
+        _isDailyChallenge = false;
         _currentLevelNumber = levelNumber;
         _currentLevel = LevelGenerator.GenerateLevel(levelNumber);
         _continueUsed = false;
@@ -30,10 +31,18 @@ public partial class GameEngine
             ? SoundManager.MUSIC_BOSS
             : SoundManager.MUSIC_GAMEPLAY);
 
-        // Welt-Ankündigung bei Level 1 (immer "World 1")
+        // Welt-/Boss-Ankündigung
         int world = (_currentLevelNumber - 1) / 10 + 1;
-        _worldAnnouncementText = $"WORLD {world}";
-        _worldAnnouncementTimer = 2.0f;
+        if (_currentLevel.IsBossLevel)
+        {
+            _worldAnnouncementText = $"BOSS FIGHT!";
+            _worldAnnouncementTimer = 2.5f;
+        }
+        else
+        {
+            _worldAnnouncementText = $"WORLD {world}";
+            _worldAnnouncementTimer = 2.0f;
+        }
     }
 
     /// <summary>
@@ -42,6 +51,7 @@ public partial class GameEngine
     public async Task StartArcadeModeAsync()
     {
         _isArcadeMode = true;
+        _isDailyChallenge = false;
         _arcadeWave = 1;
         _currentLevelNumber = 1;
         _currentLevel = LevelGenerator.GenerateArcadeLevel(1);
@@ -52,6 +62,27 @@ public partial class GameEngine
         await LoadLevelAsync();
 
         _soundManager.PlayMusic(SoundManager.MUSIC_GAMEPLAY);
+    }
+
+    /// <summary>
+    /// Daily-Challenge-Modus starten (einmaliges Level pro Tag)
+    /// </summary>
+    public async Task StartDailyChallengeModeAsync(int seed)
+    {
+        _isArcadeMode = false;
+        _isDailyChallenge = true;
+        _currentLevelNumber = 99;
+        _currentLevel = LevelGenerator.GenerateDailyChallengeLevel(seed);
+        _continueUsed = false;
+
+        _player.ResetForNewGame();
+        ApplyUpgrades();
+        await LoadLevelAsync();
+
+        _soundManager.PlayMusic(SoundManager.MUSIC_GAMEPLAY);
+
+        _worldAnnouncementText = "DAILY CHALLENGE";
+        _worldAnnouncementTimer = 2.5f;
     }
 
     /// <summary>
@@ -89,11 +120,20 @@ public partial class GameEngine
 
         // Grid aufbauen
         _grid.Reset();
-        _grid.SetupClassicPattern();
+
+        // Layout-Pattern verwenden (oder Classic als Fallback)
+        if (_currentLevel.Layout.HasValue)
+            _grid.SetupLayoutPattern(_currentLevel.Layout.Value);
+        else
+            _grid.SetupClassicPattern();
 
         var random = new Random(_currentLevel.Seed ?? Environment.TickCount);
 
-        // Blöcke platzieren
+        // Welt-Mechanik-Zellen platzieren (VOR Blöcken, damit Blöcke nur auf leere Zellen kommen)
+        if (_currentLevel.Mechanic != WorldMechanic.None)
+            _grid.PlaceWorldMechanicCells(_currentLevel.Mechanic, random);
+
+        // Blöcke platzieren (überspringt Spezial-Zellen automatisch)
         _grid.PlaceBlocks(_currentLevel.BlockDensity, random);
 
         // Spieler spawnen bei (1,1)

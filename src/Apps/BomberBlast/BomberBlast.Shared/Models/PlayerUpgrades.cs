@@ -32,7 +32,7 @@ public class PlayerUpgrades
         { UpgradeType.StartFire, [1500, 4000, 10000] },
         { UpgradeType.StartSpeed, [2500] },
         { UpgradeType.ExtraLives, [7500, 20000] },
-        { UpgradeType.ScoreMultiplier, [5000, 15000, 35000] },
+        { UpgradeType.ScoreMultiplier, [4000, 10000, 20000] },
         { UpgradeType.TimeBonus, [6000] },
         { UpgradeType.ShieldStart, [15000] },
         { UpgradeType.CoinBonus, [8000, 25000] },

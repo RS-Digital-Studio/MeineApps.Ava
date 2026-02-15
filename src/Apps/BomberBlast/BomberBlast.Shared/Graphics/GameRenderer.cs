@@ -468,6 +468,22 @@ public class GameRenderer : IDisposable
                         else
                             RenderBlockTile(canvas, px, py, cs, x, isNeon);
                         break;
+
+                    case CellType.Ice:
+                        RenderIceTile(canvas, px, py, cs, x, y, isNeon);
+                        break;
+
+                    case CellType.Conveyor:
+                        RenderConveyorTile(canvas, px, py, cs, cell, isNeon);
+                        break;
+
+                    case CellType.Teleporter:
+                        RenderTeleporterTile(canvas, px, py, cs, cell, isNeon);
+                        break;
+
+                    case CellType.LavaCrack:
+                        RenderLavaCrackTile(canvas, px, py, cs, cell, isNeon);
+                        break;
                 }
             }
         }
@@ -682,6 +698,271 @@ public class GameRenderer : IDisposable
             _glowPaint.MaskFilter = _mediumGlow;
             canvas.DrawRect(px + shrink, py + shrink, cs - shrink * 2, cs - shrink * 2, _glowPaint);
             _glowPaint.MaskFilter = null;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WELT-MECHANIK-TILES
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Eis-Boden: Hellblauer reflektiver Glanz mit Schimmer-Animation</summary>
+    private void RenderIceTile(SKCanvas canvas, float px, float py, int cs, int gx, int gy, bool isNeon)
+    {
+        _fillPaint.MaskFilter = null;
+
+        // Basis-Eis-Farbe (Schachbrett-Variation)
+        bool alt = (gx + gy) % 2 == 0;
+        if (isNeon)
+        {
+            _fillPaint.Color = alt ? new SKColor(40, 60, 80) : new SKColor(35, 55, 75);
+            canvas.DrawRect(px, py, cs, cs, _fillPaint);
+
+            // Neon-Glow-Linien (Riss-Muster)
+            _strokePaint.Color = new SKColor(100, 200, 255, 80);
+            _strokePaint.StrokeWidth = 0.8f;
+            _strokePaint.MaskFilter = _smallGlow;
+            canvas.DrawLine(px + 3, py + cs * 0.3f, px + cs - 5, py + cs * 0.6f, _strokePaint);
+            canvas.DrawLine(px + cs * 0.4f, py + 2, px + cs * 0.7f, py + cs - 3, _strokePaint);
+            _strokePaint.MaskFilter = null;
+        }
+        else
+        {
+            _fillPaint.Color = alt ? new SKColor(180, 210, 235) : new SKColor(170, 200, 225);
+            canvas.DrawRect(px, py, cs, cs, _fillPaint);
+
+            // Riss-Linien
+            _strokePaint.Color = new SKColor(200, 230, 250, 120);
+            _strokePaint.StrokeWidth = 0.8f;
+            _strokePaint.MaskFilter = null;
+            canvas.DrawLine(px + 3, py + cs * 0.3f, px + cs - 5, py + cs * 0.6f, _strokePaint);
+            canvas.DrawLine(px + cs * 0.4f, py + 2, px + cs * 0.7f, py + cs - 3, _strokePaint);
+        }
+
+        // Wandernder Glanz-Highlight (Lichtreflexion)
+        float shimmerX = (MathF.Sin(_globalTimer * 1.5f + gx * 0.5f) * 0.5f + 0.5f) * cs;
+        float shimmerY = (MathF.Cos(_globalTimer * 1.2f + gy * 0.7f) * 0.5f + 0.5f) * cs;
+        byte shimmerAlpha = isNeon ? (byte)60 : (byte)90;
+        _fillPaint.Color = new SKColor(255, 255, 255, shimmerAlpha);
+        canvas.DrawCircle(px + shimmerX, py + shimmerY, cs * 0.15f, _fillPaint);
+
+        // Grid-Linie
+        _strokePaint.Color = isNeon ? new SKColor(80, 160, 220, 40) : new SKColor(150, 190, 215);
+        _strokePaint.StrokeWidth = 0.5f;
+        _strokePaint.MaskFilter = null;
+        canvas.DrawLine(px, py, px + cs, py, _strokePaint);
+        canvas.DrawLine(px, py, px, py + cs, _strokePaint);
+    }
+
+    /// <summary>Förderband: Animierte Pfeile in Förderrichtung</summary>
+    private void RenderConveyorTile(SKCanvas canvas, float px, float py, int cs, Cell cell, bool isNeon)
+    {
+        _fillPaint.MaskFilter = null;
+
+        // Basis (metallisch-grauer Boden)
+        if (isNeon)
+        {
+            _fillPaint.Color = new SKColor(45, 45, 55);
+            canvas.DrawRect(px, py, cs, cs, _fillPaint);
+        }
+        else
+        {
+            _fillPaint.Color = new SKColor(160, 165, 175);
+            canvas.DrawRect(px, py, cs, cs, _fillPaint);
+        }
+
+        // Seitenleisten (metallische Ränder)
+        bool horizontal = cell.ConveyorDirection is Models.Entities.Direction.Left or Models.Entities.Direction.Right;
+        _fillPaint.Color = isNeon ? new SKColor(60, 60, 75) : new SKColor(130, 135, 145);
+        if (horizontal)
+        {
+            canvas.DrawRect(px, py, cs, 3, _fillPaint);
+            canvas.DrawRect(px, py + cs - 3, cs, 3, _fillPaint);
+        }
+        else
+        {
+            canvas.DrawRect(px, py, 3, cs, _fillPaint);
+            canvas.DrawRect(px + cs - 3, py, 3, cs, _fillPaint);
+        }
+
+        // Animierte Pfeil-Chevrons (3 Stück, wandern in Förderrichtung)
+        float animOffset = (_globalTimer * 40f) % cs; // Pixel-Offset Animation
+
+        var arrowColor = isNeon ? new SKColor(255, 200, 0, 180) : new SKColor(220, 180, 40, 200);
+        _strokePaint.Color = arrowColor;
+        _strokePaint.StrokeWidth = 2f;
+        _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
+
+        float cx = px + cs / 2f;
+        float cy = py + cs / 2f;
+
+        for (int i = 0; i < 3; i++)
+        {
+            float offset = (i * cs / 3f + animOffset) % cs - cs / 2f;
+            float chevronSize = cs * 0.2f;
+
+            switch (cell.ConveyorDirection)
+            {
+                case Models.Entities.Direction.Right:
+                    canvas.DrawLine(cx + offset - chevronSize, cy - chevronSize, cx + offset, cy, _strokePaint);
+                    canvas.DrawLine(cx + offset, cy, cx + offset - chevronSize, cy + chevronSize, _strokePaint);
+                    break;
+                case Models.Entities.Direction.Left:
+                    canvas.DrawLine(cx - offset + chevronSize, cy - chevronSize, cx - offset, cy, _strokePaint);
+                    canvas.DrawLine(cx - offset, cy, cx - offset + chevronSize, cy + chevronSize, _strokePaint);
+                    break;
+                case Models.Entities.Direction.Down:
+                    canvas.DrawLine(cx - chevronSize, cy + offset - chevronSize, cx, cy + offset, _strokePaint);
+                    canvas.DrawLine(cx, cy + offset, cx + chevronSize, cy + offset - chevronSize, _strokePaint);
+                    break;
+                case Models.Entities.Direction.Up:
+                    canvas.DrawLine(cx - chevronSize, cy - offset + chevronSize, cx, cy - offset, _strokePaint);
+                    canvas.DrawLine(cx, cy - offset, cx + chevronSize, cy - offset + chevronSize, _strokePaint);
+                    break;
+            }
+        }
+        _strokePaint.MaskFilter = null;
+    }
+
+    /// <summary>Teleporter: Leuchtender pulsierender Ring mit Farb-ID</summary>
+    private void RenderTeleporterTile(SKCanvas canvas, float px, float py, int cs, Cell cell, bool isNeon)
+    {
+        _fillPaint.MaskFilter = null;
+
+        // Boden (Basis)
+        bool alt = (cell.X + cell.Y) % 2 == 0;
+        _fillPaint.Color = alt ? _palette.FloorBase : _palette.FloorAlt;
+        canvas.DrawRect(px, py, cs, cs, _fillPaint);
+
+        // Portal-Farbe basierend auf ColorId
+        SKColor portalColor = cell.TeleporterColorId switch
+        {
+            0 => new SKColor(50, 150, 255),  // Blau
+            1 => new SKColor(50, 255, 120),  // Grün
+            2 => new SKColor(255, 150, 50),  // Orange
+            _ => new SKColor(200, 100, 255)  // Lila
+        };
+
+        float cx = px + cs / 2f;
+        float cy = py + cs / 2f;
+        float pulse = MathF.Sin(_globalTimer * 4f + cell.X * 0.5f) * 0.15f + 0.85f;
+        float cooldownFade = cell.TeleporterCooldown > 0 ? 0.3f : 1f;
+
+        // Äußerer Glow
+        _glowPaint.Color = portalColor.WithAlpha((byte)(80 * pulse * cooldownFade));
+        _glowPaint.MaskFilter = _mediumGlow;
+        canvas.DrawCircle(cx, cy, cs * 0.45f, _glowPaint);
+        _glowPaint.MaskFilter = null;
+
+        // Rotierender Ring
+        float rotation = _globalTimer * 90f; // 90° pro Sekunde
+        canvas.Save();
+        canvas.Translate(cx, cy);
+        canvas.RotateDegrees(rotation);
+
+        // Ring zeichnen (4 Arcs)
+        _strokePaint.Color = portalColor.WithAlpha((byte)(220 * cooldownFade));
+        _strokePaint.StrokeWidth = 2.5f;
+        _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
+
+        float r = cs * 0.35f * pulse;
+        var arcRect = new SKRect(-r, -r, r, r);
+
+        // 3 Arcs für rotierenden Portal-Ring (wiederverwendeter _fusePath)
+        _fusePath.Reset();
+        _fusePath.AddArc(arcRect, 0, 80);
+        canvas.DrawPath(_fusePath, _strokePaint);
+        _fusePath.Reset();
+        _fusePath.AddArc(arcRect, 120, 80);
+        canvas.DrawPath(_fusePath, _strokePaint);
+        _fusePath.Reset();
+        _fusePath.AddArc(arcRect, 240, 80);
+        canvas.DrawPath(_fusePath, _strokePaint);
+        _strokePaint.MaskFilter = null;
+
+        canvas.Restore();
+
+        // Innerer Punkt (Kern des Portals)
+        _fillPaint.Color = portalColor.WithAlpha((byte)(180 * pulse * cooldownFade));
+        _fillPaint.MaskFilter = isNeon ? _smallGlow : null;
+        canvas.DrawCircle(cx, cy, cs * 0.1f, _fillPaint);
+        _fillPaint.MaskFilter = null;
+    }
+
+    /// <summary>Lava-Riss: Pulsierender roter Riss, gefährlich wenn aktiv</summary>
+    private void RenderLavaCrackTile(SKCanvas canvas, float px, float py, int cs, Cell cell, bool isNeon)
+    {
+        _fillPaint.MaskFilter = null;
+
+        // Boden (dunkler als normal, vulkanisch)
+        _fillPaint.Color = isNeon ? new SKColor(45, 20, 20) : new SKColor(100, 65, 55);
+        canvas.DrawRect(px, py, cs, cs, _fillPaint);
+
+        float cx = px + cs / 2f;
+        float cy = py + cs / 2f;
+
+        bool isActive = cell.IsLavaCrackActive;
+        float timerMod = cell.LavaCrackTimer % 4f;
+
+        // Riss-Muster (immer sichtbar, auch wenn inaktiv)
+        byte crackAlpha = isActive ? (byte)255 : (byte)100;
+        var crackColor = isActive
+            ? (isNeon ? new SKColor(255, 60, 0, crackAlpha) : new SKColor(255, 80, 20, crackAlpha))
+            : (isNeon ? new SKColor(200, 80, 40, crackAlpha) : new SKColor(180, 90, 50, crackAlpha));
+
+        _strokePaint.Color = crackColor;
+        _strokePaint.StrokeWidth = isActive ? 2.5f : 1.5f;
+        _strokePaint.MaskFilter = isActive && isNeon ? _smallGlow : null;
+
+        // Zickzack-Riss
+        _fusePath.Reset();
+        _fusePath.MoveTo(px + cs * 0.2f, py + 2);
+        _fusePath.LineTo(px + cs * 0.45f, py + cs * 0.35f);
+        _fusePath.LineTo(px + cs * 0.3f, py + cs * 0.5f);
+        _fusePath.LineTo(px + cs * 0.6f, py + cs * 0.65f);
+        _fusePath.LineTo(px + cs * 0.5f, py + cs - 2);
+        canvas.DrawPath(_fusePath, _strokePaint);
+
+        // Zweiter kleinerer Riss
+        _fusePath.Reset();
+        _fusePath.MoveTo(px + cs * 0.7f, py + 4);
+        _fusePath.LineTo(px + cs * 0.55f, py + cs * 0.4f);
+        _fusePath.LineTo(px + cs * 0.8f, py + cs * 0.7f);
+        canvas.DrawPath(_fusePath, _strokePaint);
+        _strokePaint.MaskFilter = null;
+
+        // Aktiver Zustand: Glühende Lava-Füllung
+        if (isActive)
+        {
+            float intensity = (timerMod - 2.5f) / 1.5f; // 0→1 während aktiver Phase
+            byte lavaAlpha = (byte)(120 + 80 * MathF.Sin(_globalTimer * 8f));
+
+            // Roter/orangener Glow über die ganze Zelle
+            _glowPaint.Color = isNeon
+                ? new SKColor(255, 40, 0, lavaAlpha)
+                : new SKColor(255, 100, 20, lavaAlpha);
+            _glowPaint.MaskFilter = _smallGlow;
+            canvas.DrawRect(px + 2, py + 2, cs - 4, cs - 4, _glowPaint);
+            _glowPaint.MaskFilter = null;
+
+            // Gefahren-Indikator: Pulsierendes X in der Mitte
+            _strokePaint.Color = new SKColor(255, 255, 200, (byte)(200 * intensity));
+            _strokePaint.StrokeWidth = 2f;
+            float xSize = cs * 0.15f;
+            canvas.DrawLine(cx - xSize, cy - xSize, cx + xSize, cy + xSize, _strokePaint);
+            canvas.DrawLine(cx + xSize, cy - xSize, cx - xSize, cy + xSize, _strokePaint);
+        }
+        else
+        {
+            // Inaktiv: Schwacher Warn-Glow wenn fast aktiv (timerMod > 2.0)
+            if (timerMod > 2.0f)
+            {
+                float warnIntensity = (timerMod - 2.0f) / 0.5f;
+                byte warnAlpha = (byte)(40 * warnIntensity);
+                _fillPaint.Color = isNeon
+                    ? new SKColor(255, 60, 0, warnAlpha)
+                    : new SKColor(255, 100, 20, warnAlpha);
+                canvas.DrawRect(px + 2, py + 2, cs - 4, cs - 4, _fillPaint);
+            }
         }
     }
 

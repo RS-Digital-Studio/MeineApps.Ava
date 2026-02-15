@@ -159,8 +159,14 @@ public class Player : Entity
         return IsMoving ? 4 : 1;
     }
 
+    // Toleranz fuer Grid-Alignment (wie weit vom Zentrum entfernt noch auto-korrigiert wird)
+    private const float GRID_ALIGN_THRESHOLD = 0.45f; // 45% der Zellgroesse
+    private const float GRID_ALIGN_SPEED = 6f; // Multiplikator fuer Align-Geschwindigkeit
+
     /// <summary>
-    /// Move player in current direction
+    /// Bewege Spieler in aktuelle Richtung mit automatischem Grid-Alignment.
+    /// Klassisches Bomberman-Gefühl: Querachse wird sanft zum Grid-Zentrum gezogen,
+    /// sodass der Spieler nicht an Ecken hängen bleibt.
     /// </summary>
     public void Move(float deltaTime, GameGrid grid)
     {
@@ -169,11 +175,37 @@ public class Player : Entity
 
         FacingDirection = MovementDirection;
 
-        float dx = MovementDirection.GetDeltaX() * Speed * deltaTime;
-        float dy = MovementDirection.GetDeltaY() * Speed * deltaTime;
+        float speed = Speed * deltaTime;
+        float dx = MovementDirection.GetDeltaX() * speed;
+        float dy = MovementDirection.GetDeltaY() * speed;
 
-        // Try to move with collision detection
+        // Grid-Alignment: Querachse automatisch zum Zellzentrum ziehen
+        // Wenn horizontal → Y alignen, wenn vertikal → X alignen
+        if (dx != 0)
+            AlignToGridAxis(ref dy, Y, speed, deltaTime);
+        else if (dy != 0)
+            AlignToGridAxis(ref dx, X, speed, deltaTime);
+
         TryMove(dx, dy, grid);
+    }
+
+    /// <summary>
+    /// Querachse sanft zum nächsten Grid-Zentrum ziehen.
+    /// Das verhindert das Hängenbleiben an Ecken komplett.
+    /// </summary>
+    private void AlignToGridAxis(ref float crossDelta, float crossPos, float speed, float deltaTime)
+    {
+        float cellCenter = MathF.Floor(crossPos / GameGrid.CELL_SIZE) * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+        float offset = crossPos - cellCenter;
+        float absOffset = MathF.Abs(offset);
+
+        // Nur alignen wenn nah genug am Zentrum (sonst wäre es ein Zell-Wechsel)
+        if (absOffset > 0.5f && absOffset < GameGrid.CELL_SIZE * GRID_ALIGN_THRESHOLD)
+        {
+            // Sanft zum Zentrum ziehen, Geschwindigkeit proportional zum Offset
+            float alignAmount = MathF.Min(absOffset, speed * GRID_ALIGN_SPEED * deltaTime);
+            crossDelta = -MathF.Sign(offset) * alignAmount;
+        }
     }
 
     private void TryMove(float dx, float dy, GameGrid grid)
@@ -181,7 +213,7 @@ public class Player : Entity
         float newX = X + dx;
         float newY = Y + dy;
 
-        // Check collision at new position
+        // Direkte Bewegung möglich?
         if (CanMoveTo(newX, newY, grid))
         {
             X = newX;
@@ -189,52 +221,98 @@ public class Player : Entity
         }
         else
         {
-            // Try sliding along walls (for smoother movement)
+            // Achsen-Sliding: Versuche Bewegung auf einzelner Achse
+            bool movedX = false, movedY = false;
+
             if (dx != 0 && CanMoveTo(newX, Y, grid))
             {
                 X = newX;
+                movedX = true;
             }
-            else if (dy != 0 && CanMoveTo(X, newY, grid))
+            if (dy != 0 && CanMoveTo(movedX ? X : X, newY, grid))
             {
                 Y = newY;
+                movedY = true;
             }
-            // Apply corner sliding (helps player round corners smoothly)
-            else if (dx != 0)
+
+            // Corner-Assist: Wenn blockiert, prüfe ob wir fast an einer Ecke vorbei sind
+            if (!movedX && !movedY)
             {
-                TryCornerSlide(newX, Y, grid, dy: true);
-            }
-            else if (dy != 0)
-            {
-                TryCornerSlide(X, newY, grid, dy: false);
+                TryCornerAssist(dx, dy, grid);
             }
         }
 
-        // Keep within grid bounds
-        float halfSize = GameGrid.CELL_SIZE * 0.4f;
+        // Grid-Bounds einhalten
+        float halfSize = GameGrid.CELL_SIZE * 0.35f;
         X = Math.Clamp(X, halfSize, grid.PixelWidth - halfSize);
         Y = Math.Clamp(Y, halfSize, grid.PixelHeight - halfSize);
     }
 
-    private void TryCornerSlide(float targetX, float targetY, GameGrid grid, bool dy)
+    /// <summary>
+    /// Starker Corner-Assist: Wenn der Spieler knapp an einer Ecke hängt,
+    /// wird er automatisch um die Ecke geschoben. Prüft ob eine Nachbarzelle
+    /// frei ist und nudgt den Spieler dorthin.
+    /// </summary>
+    private void TryCornerAssist(float dx, float dy, GameGrid grid)
     {
-        // Corner sliding: if blocked, try to nudge perpendicular to help round corners
-        float slideAmount = Speed * 0.016f; // Small nudge
+        float halfSize = GameGrid.CELL_SIZE * 0.35f;
+        float cellCenter;
+        float offset;
 
-        if (dy)
+        if (dx != 0)
         {
-            // Try sliding up or down
-            if (CanMoveTo(targetX, Y - slideAmount, grid))
-                Y -= slideAmount;
-            else if (CanMoveTo(targetX, Y + slideAmount, grid))
-                Y += slideAmount;
+            // Horizontal blockiert → prüfe ob Y-Offset zum nächsten freien Gang reicht
+            cellCenter = MathF.Floor(Y / GameGrid.CELL_SIZE) * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+            offset = Y - cellCenter;
+
+            // Prüfe ob Ausrichten nach oben oder unten die Blockade löst
+            float targetX = X + dx;
+            float nudgeSpeed = Speed * 0.04f; // Stärkerer Nudge als vorher (4% statt 1.6%)
+
+            if (MathF.Abs(offset) < GameGrid.CELL_SIZE * 0.5f)
+            {
+                // Versuche zum Zellzentrum zu schieben
+                float nudge = MathF.Min(MathF.Abs(offset), nudgeSpeed);
+                float nudgedY = Y - MathF.Sign(offset) * nudge;
+                if (CanMoveTo(targetX, nudgedY, grid))
+                {
+                    Y = nudgedY;
+                    X = targetX;
+                    return;
+                }
+            }
+
+            // Alternativ: In beide Richtungen probieren
+            if (CanMoveTo(targetX, Y - nudgeSpeed, grid))
+                Y -= nudgeSpeed;
+            else if (CanMoveTo(targetX, Y + nudgeSpeed, grid))
+                Y += nudgeSpeed;
         }
-        else
+        else if (dy != 0)
         {
-            // Try sliding left or right
-            if (CanMoveTo(X - slideAmount, targetY, grid))
-                X -= slideAmount;
-            else if (CanMoveTo(X + slideAmount, targetY, grid))
-                X += slideAmount;
+            // Vertikal blockiert → prüfe ob X-Offset zum nächsten freien Gang reicht
+            cellCenter = MathF.Floor(X / GameGrid.CELL_SIZE) * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+            offset = X - cellCenter;
+
+            float targetY = Y + dy;
+            float nudgeSpeed = Speed * 0.04f;
+
+            if (MathF.Abs(offset) < GameGrid.CELL_SIZE * 0.5f)
+            {
+                float nudge = MathF.Min(MathF.Abs(offset), nudgeSpeed);
+                float nudgedX = X - MathF.Sign(offset) * nudge;
+                if (CanMoveTo(nudgedX, targetY, grid))
+                {
+                    X = nudgedX;
+                    Y = targetY;
+                    return;
+                }
+            }
+
+            if (CanMoveTo(X - nudgeSpeed, targetY, grid))
+                X -= nudgeSpeed;
+            else if (CanMoveTo(X + nudgeSpeed, targetY, grid))
+                X += nudgeSpeed;
         }
     }
 

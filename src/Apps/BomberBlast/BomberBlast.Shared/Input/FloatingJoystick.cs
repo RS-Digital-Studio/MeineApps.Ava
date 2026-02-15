@@ -4,11 +4,13 @@ using SkiaSharp;
 namespace BomberBlast.Input;
 
 /// <summary>
-/// Floating Joystick der erscheint wo der Spieler tippt
+/// Joystick-Input-Handler mit zwei Modi:
+/// - Floating: Erscheint wo der Spieler tippt (Standard)
+/// - Fixed: Immer sichtbar an fester Position unten links
 /// </summary>
 public class FloatingJoystick : IInputHandler, IDisposable
 {
-    public string Name => "Floating Joystick";
+    public string Name => "Joystick";
 
     // Joystick-Zustand
     private bool _isPressed;
@@ -31,6 +33,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
     private float _bombButtonRadius = 50f;
     private float _detonatorButtonRadius = 40f;
     private float _opacity = 0.7f;
+    private bool _isFixed; // Fixed-Modus: immer sichtbar an fester Position
 
     // Bewegung
     private Direction _currentDirection = Direction.None;
@@ -54,6 +57,13 @@ public class FloatingJoystick : IInputHandler, IDisposable
     /// <summary>Ob der Detonator-Button angezeigt wird</summary>
     public bool HasDetonator { get; set; }
 
+    /// <summary>Fixed-Modus: Joystick immer sichtbar an fester Position unten links</summary>
+    public bool IsFixed
+    {
+        get => _isFixed;
+        set => _isFixed = value;
+    }
+
     public float JoystickSize
     {
         get => _joystickRadius * 2;
@@ -64,6 +74,20 @@ public class FloatingJoystick : IInputHandler, IDisposable
     {
         get => _opacity;
         set => _opacity = Math.Clamp(value, 0.1f, 1f);
+    }
+
+    /// <summary>
+    /// Feste Position des Joysticks berechnen (unten links)
+    /// </summary>
+    private void UpdateFixedPosition(float screenWidth, float screenHeight)
+    {
+        _baseX = 30 + _joystickRadius;
+        _baseY = screenHeight - 20 - _joystickRadius;
+        if (!_isPressed)
+        {
+            _stickX = _baseX;
+            _stickY = _baseY;
+        }
     }
 
     public void OnTouchStart(float x, float y, float screenWidth, float screenHeight)
@@ -95,15 +119,33 @@ public class FloatingJoystick : IInputHandler, IDisposable
             return;
         }
 
-        // Linke Haelfte - Joystick
-        if (x < screenWidth * 0.6f)
+        if (_isFixed)
         {
-            _isPressed = true;
-            _baseX = x;
-            _baseY = y;
-            _stickX = x;
-            _stickY = y;
-            UpdateDirection();
+            // Fixed-Modus: Nur auf Joystick-Bereich reagieren
+            UpdateFixedPosition(screenWidth, screenHeight);
+            float jdx = x - _baseX;
+            float jdy = y - _baseY;
+            if (jdx * jdx + jdy * jdy <= (_joystickRadius * 1.5f) * (_joystickRadius * 1.5f))
+            {
+                _isPressed = true;
+                _stickX = x;
+                _stickY = y;
+                ClampStick();
+                UpdateDirection();
+            }
+        }
+        else
+        {
+            // Floating-Modus: Linke Hälfte - Joystick erscheint wo getippt wird
+            if (x < screenWidth * 0.6f)
+            {
+                _isPressed = true;
+                _baseX = x;
+                _baseY = y;
+                _stickX = x;
+                _stickY = y;
+                UpdateDirection();
+            }
         }
     }
 
@@ -114,8 +156,15 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
         _stickX = x;
         _stickY = y;
+        ClampStick();
+        UpdateDirection();
+    }
 
-        // Stick auf Joystick-Radius begrenzen
+    /// <summary>
+    /// Stick auf Joystick-Radius begrenzen
+    /// </summary>
+    private void ClampStick()
+    {
         float dx = _stickX - _baseX;
         float dy = _stickY - _baseY;
         float distance = MathF.Sqrt(dx * dx + dy * dy);
@@ -126,8 +175,6 @@ public class FloatingJoystick : IInputHandler, IDisposable
             _stickX = _baseX + dx * ratio;
             _stickY = _baseY + dy * ratio;
         }
-
-        UpdateDirection();
     }
 
     public void OnTouchEnd()
@@ -193,8 +240,9 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
     private void UpdateBombButtonPosition(float screenWidth, float screenHeight)
     {
-        _bombButtonX = screenWidth - _bombButtonRadius - 30;
-        _bombButtonY = screenHeight - _bombButtonRadius - 20;
+        // Bomb-Button weiter in die Spielfläche (mehr Abstand vom Rand)
+        _bombButtonX = screenWidth - _bombButtonRadius - 80;
+        _bombButtonY = screenHeight - _bombButtonRadius - 60;
         // Detonator-Button ueber dem Bomb-Button
         _detonatorButtonX = _bombButtonX;
         _detonatorButtonY = _bombButtonY - _bombButtonRadius - _detonatorButtonRadius - 15;
@@ -205,17 +253,36 @@ public class FloatingJoystick : IInputHandler, IDisposable
         UpdateBombButtonPosition(screenWidth, screenHeight);
         byte alpha = (byte)(_opacity * 255);
 
-        // Joystick zeichnen wenn gedrueckt
-        if (_isPressed)
+        if (_isFixed)
         {
-            _basePaint.Color = new SKColor(100, 100, 100, (byte)(alpha * 0.5f));
+            // Fixed-Modus: Joystick immer sichtbar
+            UpdateFixedPosition(screenWidth, screenHeight);
+
+            _basePaint.Color = new SKColor(100, 100, 100, (byte)(alpha * 0.4f));
             canvas.DrawCircle(_baseX, _baseY, _joystickRadius, _basePaint);
 
-            _borderPaint.Color = new SKColor(255, 255, 255, alpha);
+            _borderPaint.Color = new SKColor(255, 255, 255, (byte)(alpha * 0.6f));
             canvas.DrawCircle(_baseX, _baseY, _joystickRadius, _borderPaint);
 
-            _stickPaint.Color = new SKColor(255, 255, 255, alpha);
+            // Stick (zeigt Auslenkung wenn gedrueckt)
+            byte stickAlpha = _isPressed ? alpha : (byte)(alpha * 0.7f);
+            _stickPaint.Color = new SKColor(255, 255, 255, stickAlpha);
             canvas.DrawCircle(_stickX, _stickY, _joystickRadius * 0.4f, _stickPaint);
+        }
+        else
+        {
+            // Floating-Modus: Joystick nur wenn gedrueckt
+            if (_isPressed)
+            {
+                _basePaint.Color = new SKColor(100, 100, 100, (byte)(alpha * 0.5f));
+                canvas.DrawCircle(_baseX, _baseY, _joystickRadius, _basePaint);
+
+                _borderPaint.Color = new SKColor(255, 255, 255, alpha);
+                canvas.DrawCircle(_baseX, _baseY, _joystickRadius, _borderPaint);
+
+                _stickPaint.Color = new SKColor(255, 255, 255, alpha);
+                canvas.DrawCircle(_stickX, _stickY, _joystickRadius * 0.4f, _stickPaint);
+            }
         }
 
         // Bomb-Button zeichnen

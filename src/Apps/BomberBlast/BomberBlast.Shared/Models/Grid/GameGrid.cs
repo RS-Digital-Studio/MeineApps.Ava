@@ -1,3 +1,6 @@
+using BomberBlast.Models.Entities;
+using BomberBlast.Models.Levels;
+
 namespace BomberBlast.Models.Grid;
 
 /// <summary>
@@ -69,12 +72,58 @@ public class GameGrid
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // LAYOUT-PATTERNS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Layout-Pattern aufsetzen (Wände platzieren basierend auf Layout-Typ)
+    /// </summary>
+    public void SetupLayoutPattern(LevelLayout layout)
+    {
+        // Border-Wände immer zuerst
+        SetupBorderWalls();
+
+        switch (layout)
+        {
+            case LevelLayout.Classic:
+                SetupClassicInterior();
+                break;
+            case LevelLayout.Cross:
+                SetupCrossInterior();
+                break;
+            case LevelLayout.Arena:
+                SetupArenaInterior();
+                break;
+            case LevelLayout.Maze:
+                SetupMazeInterior();
+                break;
+            case LevelLayout.TwoRooms:
+                SetupTwoRoomsInterior();
+                break;
+            case LevelLayout.Spiral:
+                SetupSpiralInterior();
+                break;
+            case LevelLayout.Diagonal:
+                SetupDiagonalInterior();
+                break;
+            case LevelLayout.BossArena:
+                SetupBossArenaInterior();
+                break;
+        }
+    }
+
     /// <summary>
     /// Setup classic Bomberman grid pattern with indestructible walls
     /// </summary>
     public void SetupClassicPattern()
     {
-        // Border walls
+        SetupBorderWalls();
+        SetupClassicInterior();
+    }
+
+    private void SetupBorderWalls()
+    {
         for (int x = 0; x < WIDTH; x++)
         {
             _cells[x, 0].Type = CellType.Wall;
@@ -85,8 +134,11 @@ public class GameGrid
             _cells[0, y].Type = CellType.Wall;
             _cells[WIDTH - 1, y].Type = CellType.Wall;
         }
+    }
 
-        // Interior walls in checkerboard pattern (every 2nd cell)
+    /// <summary>Klassisches Schachbrett-Muster (Original Bomberman)</summary>
+    private void SetupClassicInterior()
+    {
         for (int x = 2; x < WIDTH - 1; x += 2)
         {
             for (int y = 2; y < HEIGHT - 1; y += 2)
@@ -95,6 +147,339 @@ public class GameGrid
             }
         }
     }
+
+    /// <summary>Kreuzförmiger Korridor: Offene horizontale + vertikale Achse</summary>
+    private void SetupCrossInterior()
+    {
+        int midX = WIDTH / 2;
+        int midY = HEIGHT / 2;
+
+        for (int x = 2; x < WIDTH - 1; x += 2)
+        {
+            for (int y = 2; y < HEIGHT - 1; y += 2)
+            {
+                // Kein Wall auf der Kreuz-Achse (±1 Zelle Breite)
+                if (Math.Abs(x - midX) <= 1 || Math.Abs(y - midY) <= 1)
+                    continue;
+                _cells[x, y].Type = CellType.Wall;
+            }
+        }
+    }
+
+    /// <summary>Arena: Großer offener Bereich mit vereinzelten Säulen</summary>
+    private void SetupArenaInterior()
+    {
+        // Nur 4 Säulen symmetrisch platziert
+        _cells[4, 3].Type = CellType.Wall;
+        _cells[10, 3].Type = CellType.Wall;
+        _cells[4, 6].Type = CellType.Wall;
+        _cells[10, 6].Type = CellType.Wall;
+
+        // Kleine L-förmige Wände in den Ecken (mehr Deckung)
+        _cells[3, 2].Type = CellType.Wall;
+        _cells[2, 3].Type = CellType.Wall;
+        _cells[11, 2].Type = CellType.Wall;
+        _cells[12, 3].Type = CellType.Wall;
+        _cells[3, 7].Type = CellType.Wall;
+        _cells[2, 6].Type = CellType.Wall;
+        _cells[11, 7].Type = CellType.Wall;
+        _cells[12, 6].Type = CellType.Wall;
+    }
+
+    /// <summary>Labyrinth: Enge Gänge, viele Wände</summary>
+    private void SetupMazeInterior()
+    {
+        // Dichteres Wand-Pattern: Jede zweite Zelle + zusätzliche Wand-Reihen
+        for (int x = 2; x < WIDTH - 1; x += 2)
+        {
+            for (int y = 2; y < HEIGHT - 1; y += 2)
+            {
+                _cells[x, y].Type = CellType.Wall;
+            }
+        }
+
+        // Zusätzliche Wände für engere Gänge (nicht auf Spawn-Area)
+        // Horizontale Wand-Segmente
+        for (int x = 3; x <= 5; x++)
+            _cells[x, 4].Type = CellType.Wall;
+        for (int x = 9; x <= 11; x++)
+            _cells[x, 4].Type = CellType.Wall;
+        for (int x = 5; x <= 7; x++)
+            _cells[x, 6].Type = CellType.Wall;
+
+        // Vertikale Wand-Segmente
+        _cells[6, 2].Type = CellType.Wall;
+        _cells[6, 3].Type = CellType.Wall;
+        _cells[8, 6].Type = CellType.Wall;
+        _cells[8, 7].Type = CellType.Wall;
+    }
+
+    /// <summary>Zwei Räume verbunden durch eine Engstelle in der Mitte</summary>
+    private void SetupTwoRoomsInterior()
+    {
+        int midX = WIDTH / 2;
+
+        // Vertikale Trennwand in der Mitte (mit einem Durchgang)
+        for (int y = 1; y < HEIGHT - 1; y++)
+        {
+            // Durchgang bei y=4 und y=5
+            if (y == 4 || y == 5)
+                continue;
+            _cells[midX, y].Type = CellType.Wall;
+        }
+
+        // Einige Säulen in jedem Raum
+        // Linker Raum
+        _cells[3, 3].Type = CellType.Wall;
+        _cells[3, 6].Type = CellType.Wall;
+        _cells[5, 4].Type = CellType.Wall;
+
+        // Rechter Raum
+        _cells[11, 3].Type = CellType.Wall;
+        _cells[11, 6].Type = CellType.Wall;
+        _cells[9, 5].Type = CellType.Wall;
+    }
+
+    /// <summary>Spirale: Von außen nach innen windend</summary>
+    private void SetupSpiralInterior()
+    {
+        // Äußerer Ring (Teilwände, spiralförmig angeordnet)
+        // Obere Wand (links nach rechts, lässt Eingang links)
+        for (int x = 3; x <= 12; x++)
+            _cells[x, 2].Type = CellType.Wall;
+
+        // Rechte Wand (oben nach unten, lässt Eingang unten)
+        for (int y = 2; y <= 6; y++)
+            _cells[12, y].Type = CellType.Wall;
+
+        // Untere Wand (rechts nach links, lässt Eingang rechts)
+        for (int x = 3; x <= 11; x++)
+            _cells[x, 7].Type = CellType.Wall;
+
+        // Linke innere Wand (unten nach oben, lässt Eingang oben)
+        for (int y = 4; y <= 7; y++)
+            _cells[3, y].Type = CellType.Wall;
+
+        // Innerer Kern
+        _cells[6, 4].Type = CellType.Wall;
+        _cells[7, 4].Type = CellType.Wall;
+        _cells[8, 4].Type = CellType.Wall;
+        _cells[8, 5].Type = CellType.Wall;
+    }
+
+    /// <summary>Diagonale Korridore: Wände bilden diagonale Linien</summary>
+    private void SetupDiagonalInterior()
+    {
+        // Diagonale von links-oben nach rechts-unten
+        for (int i = 0; i < Math.Min(WIDTH - 2, HEIGHT - 2); i++)
+        {
+            int x = 2 + i;
+            int y = 2 + (i * (HEIGHT - 3)) / (WIDTH - 3);
+            if (x > 0 && x < WIDTH - 1 && y > 0 && y < HEIGHT - 1 && !IsPlayerSpawnArea(x, y))
+                _cells[x, y].Type = CellType.Wall;
+        }
+
+        // Gegendiagonale
+        for (int i = 0; i < Math.Min(WIDTH - 2, HEIGHT - 2); i++)
+        {
+            int x = WIDTH - 3 - i;
+            int y = 2 + (i * (HEIGHT - 3)) / (WIDTH - 3);
+            if (x > 0 && x < WIDTH - 1 && y > 0 && y < HEIGHT - 1 && !IsPlayerSpawnArea(x, y))
+                _cells[x, y].Type = CellType.Wall;
+        }
+
+        // Einige Säulen für mehr Struktur
+        _cells[4, 4].Type = CellType.Wall;
+        _cells[10, 4].Type = CellType.Wall;
+        _cells[7, 2].Type = CellType.Wall;
+        _cells[7, 7].Type = CellType.Wall;
+    }
+
+    /// <summary>Boss-Arena: Großer offener Raum mit nur 2 Säulen</summary>
+    private void SetupBossArenaInterior()
+    {
+        // Nur 2 symmetrische Säulen als minimale Deckung
+        _cells[5, 4].Type = CellType.Wall;
+        _cells[5, 5].Type = CellType.Wall;
+        _cells[9, 4].Type = CellType.Wall;
+        _cells[9, 5].Type = CellType.Wall;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WELT-MECHANIK-ZELLEN PLATZIEREN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Welt-spezifische Spezial-Zellen auf leeren Boden-Feldern platzieren
+    /// </summary>
+    public void PlaceWorldMechanicCells(WorldMechanic mechanic, Random random)
+    {
+        switch (mechanic)
+        {
+            case WorldMechanic.Ice:
+                PlaceIceCells(random);
+                break;
+            case WorldMechanic.Conveyor:
+                PlaceConveyorCells(random);
+                break;
+            case WorldMechanic.Teleporter:
+                PlaceTeleporterCells(random);
+                break;
+            case WorldMechanic.LavaCrack:
+                PlaceLavaCrackCells(random);
+                break;
+        }
+    }
+
+    /// <summary>Eis-Boden: 30-45% der leeren Zellen werden zu Eis</summary>
+    private void PlaceIceCells(Random random)
+    {
+        var emptyCells = GetPlaceableMechanicCells();
+        int count = (int)(emptyCells.Count * (0.3f + random.NextSingle() * 0.15f));
+        ShuffleList(emptyCells, random);
+
+        for (int i = 0; i < count && i < emptyCells.Count; i++)
+        {
+            emptyCells[i].Type = CellType.Ice;
+        }
+    }
+
+    /// <summary>Förderbänder: 4-8 Streifen in verschiedenen Richtungen</summary>
+    private void PlaceConveyorCells(Random random)
+    {
+        var directions = DirectionExtensions.GetCardinalDirections();
+        int stripCount = 4 + random.Next(5); // 4-8 Streifen
+
+        for (int s = 0; s < stripCount; s++)
+        {
+            var dir = directions[random.Next(directions.Length)];
+            bool horizontal = dir is Direction.Left or Direction.Right;
+
+            if (horizontal)
+            {
+                // Horizontaler Streifen: Eine Reihe, 3-6 Zellen lang
+                int y = 2 + random.Next(HEIGHT - 3);
+                int startX = 2 + random.Next(WIDTH - 6);
+                int length = 3 + random.Next(4);
+
+                for (int i = 0; i < length; i++)
+                {
+                    int x = startX + i;
+                    if (x >= WIDTH - 1) break;
+                    var cell = _cells[x, y];
+                    if (cell.Type == CellType.Empty && !IsPlayerSpawnArea(x, y))
+                    {
+                        cell.Type = CellType.Conveyor;
+                        cell.ConveyorDirection = dir;
+                    }
+                }
+            }
+            else
+            {
+                // Vertikaler Streifen
+                int x = 2 + random.Next(WIDTH - 4);
+                int startY = 2 + random.Next(HEIGHT - 5);
+                int length = 3 + random.Next(3);
+
+                for (int i = 0; i < length; i++)
+                {
+                    int y = startY + i;
+                    if (y >= HEIGHT - 1) break;
+                    var cell = _cells[x, y];
+                    if (cell.Type == CellType.Empty && !IsPlayerSpawnArea(x, y))
+                    {
+                        cell.Type = CellType.Conveyor;
+                        cell.ConveyorDirection = dir;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>Teleporter: 2-3 Paare von gepaarten Portalen</summary>
+    private void PlaceTeleporterCells(Random random)
+    {
+        var emptyCells = GetPlaceableMechanicCells();
+        ShuffleList(emptyCells, random);
+
+        int pairCount = 2 + random.Next(2); // 2-3 Paare
+        int colorId = 0;
+
+        for (int p = 0; p < pairCount && emptyCells.Count >= 2; p++)
+        {
+            var cellA = emptyCells[0];
+            emptyCells.RemoveAt(0);
+
+            // Partner suchen: Mindestens 5 Zellen Abstand
+            Cell? cellB = null;
+            for (int i = 0; i < emptyCells.Count; i++)
+            {
+                int dist = Math.Abs(emptyCells[i].X - cellA.X) + Math.Abs(emptyCells[i].Y - cellA.Y);
+                if (dist >= 5)
+                {
+                    cellB = emptyCells[i];
+                    emptyCells.RemoveAt(i);
+                    break;
+                }
+            }
+
+            if (cellB == null) continue;
+
+            cellA.Type = CellType.Teleporter;
+            cellA.TeleporterTarget = (cellB.X, cellB.Y);
+            cellA.TeleporterColorId = colorId;
+
+            cellB.Type = CellType.Teleporter;
+            cellB.TeleporterTarget = (cellA.X, cellA.Y);
+            cellB.TeleporterColorId = colorId;
+
+            colorId++;
+        }
+    }
+
+    /// <summary>Lava-Risse: 15-25% der leeren Zellen, mit zufälligem Timer-Offset</summary>
+    private void PlaceLavaCrackCells(Random random)
+    {
+        var emptyCells = GetPlaceableMechanicCells();
+        int count = (int)(emptyCells.Count * (0.15f + random.NextSingle() * 0.1f));
+        ShuffleList(emptyCells, random);
+
+        for (int i = 0; i < count && i < emptyCells.Count; i++)
+        {
+            var cell = emptyCells[i];
+            cell.Type = CellType.LavaCrack;
+            // Zufälliger Timer-Offset, damit nicht alle gleichzeitig aktiv werden
+            cell.LavaCrackTimer = random.NextSingle() * 4f;
+        }
+    }
+
+    /// <summary>Leere Zellen sammeln die für Mechaniken geeignet sind (kein Spawn-Bereich)</summary>
+    private List<Cell> GetPlaceableMechanicCells()
+    {
+        var cells = new List<Cell>();
+        for (int x = 1; x < WIDTH - 1; x++)
+        {
+            for (int y = 1; y < HEIGHT - 1; y++)
+            {
+                if (_cells[x, y].Type == CellType.Empty && !IsPlayerSpawnArea(x, y))
+                    cells.Add(_cells[x, y]);
+            }
+        }
+        return cells;
+    }
+
+    private static void ShuffleList<T>(List<T> list, Random random)
+    {
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int j = random.Next(i + 1);
+            (list[i], list[j]) = (list[j], list[i]);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BLOCK-PLATZIERUNG
+    // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Place destructible blocks randomly
@@ -112,8 +497,8 @@ public class GameGrid
             {
                 var cell = _cells[x, y];
 
-                // Skip walls
-                if (cell.Type == CellType.Wall)
+                // Skip walls und Spezial-Zellen (Ice, Conveyor, Teleporter, LavaCrack)
+                if (cell.Type != CellType.Empty)
                     continue;
 
                 // Skip player spawn area (top-left corner)
@@ -148,6 +533,10 @@ public class GameGrid
         // Player spawns at (1,1), keep (1,1), (1,2), (2,1) clear
         return (x == 1 && y == 1) || (x == 1 && y == 2) || (x == 2 && y == 1);
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ABFRAGEN
+    // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Check if position is valid grid coordinate

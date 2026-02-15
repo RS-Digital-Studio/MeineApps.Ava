@@ -7,20 +7,20 @@
              x:Class="HandwerkerImperium.Views.ResearchView"
              x:DataType="vm:ResearchViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*">
+  <Grid RowDefinitions="Auto,Auto,Auto,*">
 
     <!-- ================================================================= -->
-    <!-- HEADER mit SkiaSharp Forschungslabor-Hintergrund                  -->
+    <!-- ROW 0: HEADER mit SkiaSharp Forschungslabor-Hintergrund           -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
             CornerRadius="0,0,12,12"
             ClipToBounds="True">
       <Panel>
         <!-- Forschungslabor SkiaSharp Layer (unterste Schicht) -->
-        <skia:SKCanvasView x:Name="ResearchCanvas" MinHeight="140" />
+        <skia:SKCanvasView x:Name="ResearchCanvas" MinHeight="90" />
 
         <!-- Gradient-Overlay (semi-transparent, damit Labor durchscheint) -->
-        <Border Padding="16,12">
+        <Border Padding="12,6">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
               <GradientStop Color="#B092400E" Offset="0" />
@@ -31,7 +31,7 @@
             <!-- Back Button -->
             <Button Classes="Text"
                     Command="{Binding GoBackCommand}">
-              <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+              <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </Button>
 
@@ -40,31 +40,31 @@
                         Orientation="Horizontal"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        Spacing="8">
-              <mi:MaterialIcon Kind="FlaskOutline" Width="28" Height="28"
+                        Spacing="6">
+              <mi:MaterialIcon Kind="FlaskOutline" Width="22" Height="22"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{Binding Title}"
-                         FontSize="20" FontWeight="Bold"
+                         FontSize="16" FontWeight="Bold"
                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
             <!-- Balance Badges -->
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
                         VerticalAlignment="Center">
               <!-- Goldschrauben-Badge -->
               <Border Background="{DynamicResource SurfaceBrush}"
-                      CornerRadius="12" Padding="8,4">
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700" />
-                  <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="14" FontWeight="Bold"
+                      CornerRadius="10" Padding="6,3">
+                <StackPanel Orientation="Horizontal" Spacing="3">
+                  <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700" />
+                  <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="12" FontWeight="Bold"
                              Foreground="#FFD700" />
                 </StackPanel>
               </Border>
               <!-- Euro-Badge -->
               <Border Background="{DynamicResource SurfaceBrush}"
-                      CornerRadius="12" Padding="8,4">
+                      CornerRadius="10" Padding="6,3">
                 <TextBlock Text="{Binding CurrentBalance}"
-                           FontSize="14" FontWeight="Bold"
+                           FontSize="12" FontWeight="Bold"
                            Foreground="{DynamicResource SuccessBrush}" />
               </Border>
             </StackPanel>
@@ -74,278 +74,120 @@
     </Border>
 
     <!-- ================================================================= -->
-    <!-- ACTIVE RESEARCH BANNER                                            -->
+    <!-- ROW 1: ACTIVE RESEARCH BANNER (SkiaSharp + Overlay-Buttons)       -->
     <!-- ================================================================= -->
-    <Border Grid.Row="1"
-            Classes="CardElevated"
-            Margin="16,12,16,0"
-            Padding="16"
-            IsVisible="{Binding HasActiveResearch}">
-      <StackPanel Spacing="8">
-        <Grid ColumnDefinitions="*,Auto">
-          <StackPanel Spacing="2">
-            <TextBlock Text="{loc:Translate CurrentResearch}"
-                       FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{Binding ActiveResearchName}"
-                       FontSize="16" FontWeight="Bold"
-                       Foreground="{StaticResource CraftPrimaryLightBrush}" />
-          </StackPanel>
-          <Button Grid.Column="1"
-                  Classes="Text"
-                  Command="{Binding CancelResearchCommand}"
-                  VerticalAlignment="Center"
-                  Padding="8">
-            <mi:MaterialIcon Kind="Close" Width="20" Height="20"
-                             Foreground="{DynamicResource ErrorBrush}" />
-          </Button>
-        </Grid>
-        <ProgressBar Value="{Binding ActiveResearchProgress}"
-                     Maximum="1"
-                     Foreground="{StaticResource CraftPrimaryLightBrush}"
-                     Background="{DynamicResource SurfaceBrush}"
-                     Height="6" />
-        <Grid ColumnDefinitions="*,Auto">
-          <TextBlock Text="{Binding ActiveResearchTimeRemaining}"
-                     FontSize="13" FontWeight="SemiBold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     HorizontalAlignment="Center"
-                     VerticalAlignment="Center" />
-          <!-- Sofort-Fertigstellen Button (ab Level 8) -->
-          <Button Grid.Column="1"
-                  Classes="Secondary"
-                  Padding="10,6"
-                  IsVisible="{Binding CanInstantFinish}"
-                  Command="{Binding InstantFinishResearchCommand}">
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="LightningBolt" Width="16" Height="16" />
-              <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
-                               Foreground="#FFD700" />
-              <TextBlock Text="{Binding InstantFinishCost}"
-                         FontSize="12" FontWeight="SemiBold"
-                         Foreground="#FFD700" />
-            </StackPanel>
-          </Button>
-        </Grid>
+    <Panel Grid.Row="1"
+           Margin="16,12,16,0"
+           IsVisible="{Binding HasActiveResearch}">
 
+      <!-- SkiaSharp Reagenzglas-Animation -->
+      <skia:SKCanvasView x:Name="ActiveResearchCanvas" MinHeight="100" />
+
+      <!-- Overlay-Buttons (über der SkiaSharp-Grafik, rechts oben) -->
+      <StackPanel HorizontalAlignment="Right"
+                  VerticalAlignment="Top"
+                  Margin="8"
+                  Spacing="4">
+        <!-- Cancel Button -->
+        <Button Classes="Text"
+                Command="{Binding CancelResearchCommand}"
+                Padding="6">
+          <mi:MaterialIcon Kind="Close" Width="18" Height="18"
+                           Foreground="{DynamicResource ErrorBrush}" />
+        </Button>
+      </StackPanel>
+
+      <!-- Overlay-Buttons (unten, Sofort + Ad) -->
+      <StackPanel HorizontalAlignment="Right"
+                  VerticalAlignment="Bottom"
+                  Orientation="Horizontal"
+                  Margin="8"
+                  Spacing="6">
+        <!-- Sofort-Fertigstellen Button (ab Level 8) -->
+        <Button Classes="Secondary"
+                Padding="10,6"
+                IsVisible="{Binding CanInstantFinish}"
+                Command="{Binding InstantFinishResearchCommand}">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="LightningBolt" Width="16" Height="16" />
+            <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
+                             Foreground="#FFD700" />
+            <TextBlock Text="{Binding InstantFinishCost}"
+                       FontSize="12" FontWeight="SemiBold"
+                       Foreground="#FFD700" />
+          </StackPanel>
+        </Button>
         <!-- Gratis per Video-Ad fertigstellen -->
         <Button Classes="Secondary"
                 Padding="10,6"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
                 IsVisible="{Binding CanWatchAdToFinish}"
                 Command="{Binding WatchAdToFinishResearchCommand}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="Video" Width="18" Height="18"
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Video" Width="16" Height="16"
                              Foreground="{StaticResource CraftPrimaryLightBrush}" />
             <TextBlock Text="{loc:Translate WatchAdToFinishResearch}"
-                       FontSize="13" FontWeight="SemiBold" />
+                       FontSize="12" FontWeight="SemiBold" />
           </StackPanel>
         </Button>
       </StackPanel>
-    </Border>
+    </Panel>
 
     <!-- ================================================================= -->
-    <!-- RESEARCH TREE (vertical list, branch tabs)                        -->
+    <!-- ROW 2: TAB SELECTOR (SkiaSharp mit Touch-Overlay)                 -->
     <!-- ================================================================= -->
-    <Grid Grid.Row="2" RowDefinitions="Auto,*">
+    <Panel Grid.Row="2" Margin="16,8,16,0">
+      <skia:SKCanvasView x:Name="TabCanvas" Height="44" />
 
-      <!-- Branch Tab Selector -->
-      <Border Margin="16,12,16,0"
-              Classes="CardElevated"
-              Padding="4"
-              CornerRadius="12">
-        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
-          <!-- Tools Tab - Orange -->
-          <Button HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Padding="8,8"
-                  CornerRadius="8"
-                  Background="#EA580C"
-                  Command="{Binding SelectToolsBranchCommand}"
-                  Opacity="{Binding ToolsTabOpacity}">
-            <StackPanel Orientation="Horizontal" Spacing="4"
-                        HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Hammer" Width="14" Height="14"
-                               Foreground="White" />
-              <TextBlock Text="{Binding ToolsBranchLabel}"
-                         FontSize="12" FontWeight="SemiBold"
-                         Foreground="White"
-                         TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-          </Button>
-          <!-- Management Tab - Indigo -->
-          <Button Grid.Column="1"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Padding="8,8"
-                  CornerRadius="8"
-                  Background="{StaticResource BranchManagementBrush}"
-                  Command="{Binding SelectManagementBranchCommand}"
-                  Opacity="{Binding ManagementTabOpacity}">
-            <StackPanel Orientation="Horizontal" Spacing="4"
-                        HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="BriefcaseOutline" Width="14" Height="14"
-                               Foreground="White" />
-              <TextBlock Text="{Binding ManagementBranchLabel}"
-                         FontSize="12" FontWeight="SemiBold"
-                         Foreground="White"
-                         TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-          </Button>
-          <!-- Marketing Tab - Gruen -->
-          <Button Grid.Column="2"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Padding="8,8"
-                  CornerRadius="8"
-                  Background="{StaticResource BranchMarketingBrush}"
-                  Command="{Binding SelectMarketingBranchCommand}"
-                  Opacity="{Binding MarketingTabOpacity}">
-            <StackPanel Orientation="Horizontal" Spacing="4"
-                        HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Bullhorn" Width="14" Height="14"
-                               Foreground="White" />
-              <TextBlock Text="{Binding MarketingBranchLabel}"
-                         FontSize="12" FontWeight="SemiBold"
-                         Foreground="White"
-                         TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-          </Button>
-        </Grid>
-      </Border>
+      <!-- Unsichtbare Touch-Buttons über den Tabs -->
+      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4" Margin="4">
+        <Button Grid.Column="0"
+                HorizontalAlignment="Stretch"
+                Background="Transparent"
+                Foreground="Transparent"
+                Padding="0"
+                Command="{Binding SelectToolsBranchCommand}" />
+        <Button Grid.Column="1"
+                HorizontalAlignment="Stretch"
+                Background="Transparent"
+                Foreground="Transparent"
+                Padding="0"
+                Command="{Binding SelectManagementBranchCommand}" />
+        <Button Grid.Column="2"
+                HorizontalAlignment="Stretch"
+                Background="Transparent"
+                Foreground="Transparent"
+                Padding="0"
+                Command="{Binding SelectMarketingBranchCommand}" />
+      </Grid>
+    </Panel>
 
-      <!-- Branch Description -->
-      <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="8" Margin="16,12">
+    <!-- ================================================================= -->
+    <!-- ROW 3: RESEARCH TREE (SkiaSharp Branch-Banner + Tree + Buttons)   -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="3"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="16,0,16,0" Spacing="0">
 
-          <!-- Branch Description -->
-          <TextBlock Text="{Binding SelectedBranchDescription}"
-                     FontSize="12"
-                     Foreground="{DynamicResource TextSecondaryBrush}"
-                     TextWrapping="Wrap"
-                     Margin="0,0,0,4" />
+        <!-- Branch-Banner (SkiaSharp animierte Szene) -->
+        <skia:SKCanvasView x:Name="BranchBannerCanvas" Height="60" Margin="0,8,0,8" />
 
-          <!-- Research Items -->
-          <ItemsControl ItemsSource="{Binding SelectedBranch}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:ResearchDisplayItem">
-                <Border Classes="Card"
-                        Margin="0,0,0,6"
-                        Padding="10"
-                        Opacity="{Binding DisplayOpacity}">
-                  <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto"
-                        ColumnDefinitions="Auto,*,Auto"
-                        RowSpacing="4" ColumnSpacing="10">
+        <!-- Research Tree (SkiaSharp: Items + Verbindungslinien) -->
+        <!-- Touch auf TreeCanvas → HitTest → Forschung starten per Tap auf Node -->
+        <skia:SKCanvasView x:Name="TreeCanvas" />
 
-                    <!-- Row 0: Level Badge + Name + Status Icon -->
-                    <Border Background="{StaticResource CraftPrimaryBrush}"
-                            CornerRadius="4"
-                            Padding="6,2"
-                            VerticalAlignment="Center">
-                      <TextBlock Text="{Binding LevelDisplay}"
-                                 FontSize="11" FontWeight="Bold"
-                                 Foreground="White" />
-                    </Border>
+        <!-- Bottom Spacer -->
+        <Border Height="80" />
 
-                    <TextBlock Grid.Column="1"
-                               Text="{Binding Name}"
-                               FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               TextWrapping="Wrap"
-                               VerticalAlignment="Center" />
+      </StackPanel>
+    </ScrollViewer>
 
-                    <!-- Status Icon -->
-                    <mi:MaterialIcon Grid.Column="2"
-                                     Kind="CheckCircle" Width="20" Height="20"
-                                     Foreground="{DynamicResource SuccessBrush}"
-                                     IsVisible="{Binding IsResearched}"
-                                     VerticalAlignment="Center" />
-                    <mi:MaterialIcon Grid.Column="2"
-                                     Kind="Lock" Width="20" Height="20"
-                                     Foreground="{DynamicResource TextSecondaryBrush}"
-                                     IsVisible="{Binding IsLocked}"
-                                     VerticalAlignment="Center" />
-
-                    <!-- Row 1: Description -->
-                    <TextBlock Grid.Row="1" Grid.ColumnSpan="3"
-                               Text="{Binding Description}"
-                               FontSize="11"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextWrapping="Wrap" />
-
-                    <!-- Row 2: Cost + Duration + Instant Finish (only when not researched) -->
-                    <StackPanel Grid.Row="2" Grid.ColumnSpan="3"
-                                Orientation="Horizontal" Spacing="16"
-                                IsVisible="{Binding !IsResearched}">
-                      <StackPanel Orientation="Horizontal" Spacing="4">
-                        <mi:MaterialIcon Kind="CurrencyEur" Width="14" Height="14"
-                                         Foreground="{DynamicResource WarningBrush}" />
-                        <TextBlock Text="{Binding CostDisplay}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource WarningBrush}"
-                                   VerticalAlignment="Center" />
-                      </StackPanel>
-                      <StackPanel Orientation="Horizontal" Spacing="4">
-                        <mi:MaterialIcon Kind="Clock" Width="14" Height="14"
-                                         Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="{Binding DurationDisplay}"
-                                   FontSize="12"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   VerticalAlignment="Center" />
-                      </StackPanel>
-                      <!-- Goldschrauben fuer Sofort-Finish (ab Level 8) -->
-                      <StackPanel Orientation="Horizontal" Spacing="4"
-                                  IsVisible="{Binding HasInstantFinishOption}">
-                        <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding InstantFinishScrewCost}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#FFD700"
-                                   VerticalAlignment="Center" />
-                      </StackPanel>
-                    </StackPanel>
-
-                    <!-- Row 3: Active Progress Bar -->
-                    <StackPanel Grid.Row="3" Grid.ColumnSpan="3"
-                                IsVisible="{Binding IsActive}" Spacing="4">
-                      <ProgressBar Value="{Binding Progress}"
-                                   Maximum="1"
-                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
-                                   Background="{DynamicResource SurfaceBrush}"
-                                   Height="6" />
-                    </StackPanel>
-
-                    <!-- Row 4: Start Button -->
-                    <Button Grid.Row="4" Grid.ColumnSpan="3"
-                            Classes="Primary"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            Padding="8,8"
-                            IsVisible="{Binding CanStart}"
-                            Command="{Binding $parent[ItemsControl].((vm:ResearchViewModel)DataContext).StartResearchCommand}"
-                            CommandParameter="{Binding Id}">
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="FlaskOutline" Width="16" Height="16" />
-                        <TextBlock Text="{loc:Translate StartResearch}"
-                                   FontSize="13" FontWeight="SemiBold" />
-                      </StackPanel>
-                    </Button>
-
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <!-- Bottom Spacer -->
-          <Border Height="60" />
-
-        </StackPanel>
-      </ScrollViewer>
-
-    </Grid>
+    <!-- ================================================================= -->
+    <!-- CELEBRATION OVERLAY (über allem, transparent wenn inaktiv)         -->
+    <!-- ================================================================= -->
+    <skia:SKCanvasView x:Name="CelebrationCanvas"
+                       Grid.RowSpan="4"
+                       IsHitTestVisible="False" />
 
   </Grid>
 

@@ -5,6 +5,7 @@
              xmlns:controls="using:MeineApps.UI.Controls"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="ZeitManager.Views.PomodoroView"
              x:DataType="vm:PomodoroViewModel">
 
@@ -67,31 +68,11 @@
           </ItemsControl>
         </StackPanel>
 
-        <!-- Grosser Kreis-Fortschritt -->
-        <Panel HorizontalAlignment="Center" Margin="0,16,0,16">
-          <!-- Pulsierender Glow-Ring bei laufendem Timer -->
-          <Border Classes.PomodoroPulse="{Binding IsRunning}"
-                  Width="240" Height="240" CornerRadius="120"
-                  Background="Transparent"
-                  BorderThickness="8"
-                  BorderBrush="{DynamicResource BorderSubtleBrush}" />
-          <!-- Fortschrittsring -->
-          <controls:CircularProgress Width="240" Height="240"
-                                     Value="{Binding ProgressFraction}"
-                                     StrokeWidth="8"
-                                     TrackBrush="{DynamicResource BorderSubtleBrush}"
-                                     StrokeBrush="{Binding PhaseBrush}" />
-          <!-- Zeit zentriert im Kreis -->
-          <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="4">
-            <TextBlock Text="{Binding RemainingFormatted}"
-                       FontSize="48" FontWeight="Light"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding PhaseText}" FontSize="14"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       HorizontalAlignment="Center" />
-          </StackPanel>
-        </Panel>
+        <!-- SkiaSharp Pomodoro-Fortschrittsring -->
+        <Border HorizontalAlignment="Center" Margin="0,16,0,16"
+                Width="260" Height="260" ClipToBounds="True">
+          <skia:SKCanvasView x:Name="PomodoroRingCanvas" PaintSurface="OnPaintPomodoroRing" />
+        </Border>
 
         <!-- Start/Pause/Reset/Skip Buttons -->
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="16">
@@ -186,11 +167,11 @@
           </StackPanel>
         </Border>
 
-        <!-- Wochenbalkendiagramm -->
-        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="16">
-          <StackPanel Spacing="12">
+        <!-- SkiaSharp Wochenbalkendiagramm -->
+        <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="12" Padding="0">
+          <StackPanel Spacing="8">
             <TextBlock Text="{Binding ThisWeekText}" Classes="TitleSmall"
-                       Foreground="{DynamicResource TextMutedBrush}" />
+                       Foreground="{DynamicResource TextMutedBrush}" Margin="16,16,16,0" />
 
             <!-- Keine Sessions -->
             <TextBlock Text="{Binding NoSessionsYetText}"
@@ -199,46 +180,10 @@
                        Foreground="{DynamicResource TextMutedBrush}"
                        HorizontalAlignment="Center" Margin="0,16" />
 
-            <!-- Balkendiagramm (7 Tage) -->
-            <ItemsControl ItemsSource="{Binding WeekDays}" IsVisible="{Binding HasSessions}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                  <UniformGrid Columns="7" />
-                </ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-              <ItemsControl.ItemTemplate>
-                <DataTemplate x:DataType="vm:DayStatistic">
-                  <StackPanel Spacing="4" HorizontalAlignment="Center" Height="200">
-                    <!-- Sessions-Zahl -->
-                    <TextBlock Text="{Binding Sessions}" FontSize="13"
-                               FontWeight="SemiBold"
-                               HorizontalAlignment="Center"
-                               Foreground="{DynamicResource PomodoroAccentBrush}" />
-                    <!-- Balken via ScaleTransform (skaliert von unten) -->
-                    <Panel Height="160" Width="32" VerticalAlignment="Bottom">
-                      <Border CornerRadius="6,6,0,0"
-                              VerticalAlignment="Bottom"
-                              Height="160"
-                              RenderTransformOrigin="0.5,1">
-                        <Border.Background>
-                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                            <GradientStop Color="#EF4444" Offset="0" />
-                            <GradientStop Color="#F87171" Offset="1" />
-                          </LinearGradientBrush>
-                        </Border.Background>
-                        <Border.RenderTransform>
-                          <ScaleTransform ScaleY="{Binding HeightFraction}" ScaleX="1" />
-                        </Border.RenderTransform>
-                      </Border>
-                    </Panel>
-                    <!-- Tagesname (fett wenn heute) -->
-                    <TextBlock Text="{Binding DayName}" FontSize="10"
-                               HorizontalAlignment="Center"
-                               FontWeight="{Binding DayFontWeight}" />
-                  </StackPanel>
-                </DataTemplate>
-              </ItemsControl.ItemTemplate>
-            </ItemsControl>
+            <!-- SkiaSharp Balkendiagramm -->
+            <Border Height="220" ClipToBounds="True" IsVisible="{Binding HasSessions}">
+              <skia:SKCanvasView x:Name="WeeklyBarsCanvas" PaintSurface="OnPaintWeeklyBars" />
+            </Border>
           </StackPanel>
         </Border>
 

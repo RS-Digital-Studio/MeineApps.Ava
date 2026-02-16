@@ -52,6 +52,7 @@ public partial class TimerItem : ObservableObject
                 OnPropertyChanged(nameof(ProgressPercent));
                 OnPropertyChanged(nameof(ProgressFraction));
                 OnPropertyChanged(nameof(ProgressBrush));
+                OnPropertyChanged(nameof(ProgressRingColor));
             }
         }
     }
@@ -189,6 +190,10 @@ public partial class TimerItem : ObservableObject
     [Ignore]
     public IBrush ProgressBrush =>
         new SolidColorBrush(Color.Parse(ProgressColor));
+
+    /// <summary>Fortschrittsfarbe als Avalonia Color für SkiaGradientRing-Binding.</summary>
+    [Ignore]
+    public Color ProgressRingColor => Color.Parse(ProgressColor);
 
     [Ignore]
     public string RemainingTimeFormatted

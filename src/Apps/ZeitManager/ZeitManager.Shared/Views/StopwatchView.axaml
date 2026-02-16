@@ -6,6 +6,7 @@
              xmlns:controls="using:MeineApps.UI.Controls"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="ZeitManager.Views.StopwatchView"
              x:DataType="vm:StopwatchViewModel">
 
@@ -24,34 +25,10 @@
 
   <Grid RowDefinitions="Auto,Auto,*">
 
-    <!-- Time Display mit Ring -->
-    <Border Grid.Row="0" Margin="16,16,16,8" HorizontalAlignment="Center">
-      <Grid Width="340" Height="340">
-        <!-- Äußerer Ring (Track) -->
-        <Border CornerRadius="170" BorderThickness="4" Width="340" Height="340"
-                BorderBrush="{DynamicResource BorderSubtleBrush}" />
-
-        <!-- Aktiver Ring (Cyan, sichtbar wenn laufend) -->
-        <Border CornerRadius="170" BorderThickness="4" Width="340" Height="340"
-                BorderBrush="{DynamicResource StopwatchAccentBrush}"
-                IsVisible="{Binding IsRunning}" />
-
-        <!-- Glow-Ring (animierter äußerer Schein) -->
-        <Border Classes="StopwatchGlow"
-                CornerRadius="178" BorderThickness="3" Width="356" Height="356"
-                BorderBrush="{DynamicResource StopwatchAccentBrush}"
-                IsVisible="{Binding IsRunning}"
-                HorizontalAlignment="Center" VerticalAlignment="Center" />
-
-        <!-- Zeitanzeige -->
-        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="0">
-          <!-- Hauptzeit (min:sec) -->
-          <TextBlock Text="{Binding ElapsedTimeFormatted}"
-                     FontSize="48" FontWeight="Light"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     HorizontalAlignment="Center" />
-        </StackPanel>
-      </Grid>
+    <!-- SkiaSharp Stoppuhr-Ring -->
+    <Border Grid.Row="0" Margin="16,16,16,8" HorizontalAlignment="Center"
+            Width="340" Height="340" ClipToBounds="True">
+      <skia:SKCanvasView x:Name="StopwatchCanvas" PaintSurface="OnPaintStopwatch" />
     </Border>
 
     <!-- Steuerungs-Buttons -->

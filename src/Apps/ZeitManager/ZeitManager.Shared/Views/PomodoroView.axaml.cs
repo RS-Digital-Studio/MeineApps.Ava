@@ -1,8 +1,12 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Labs.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
+using SkiaSharp;
+using ZeitManager.Graphics;
+using ZeitManager.Models;
 using ZeitManager.ViewModels;
 
 namespace ZeitManager.Views;
@@ -16,6 +20,10 @@ public partial class PomodoroView : UserControl
     private double _springFrom;
     private int _springFrame;
 
+    // SkiaSharp Animation
+    private DispatcherTimer? _animTimer;
+    private float _animTime;
+
     private const double DismissThreshold = 80;
     private const int SpringFrames = 10;
     private const int SpringIntervalMs = 16;
@@ -26,6 +34,96 @@ public partial class PomodoroView : UserControl
     }
 
     private PomodoroViewModel? ViewModel => DataContext as PomodoroViewModel;
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+
+        if (DataContext is PomodoroViewModel vm)
+        {
+            vm.PropertyChanged += (_, args) =>
+            {
+                if (args.PropertyName is nameof(vm.ProgressFraction) or nameof(vm.IsRunning)
+                    or nameof(vm.CurrentPhase) or nameof(vm.CurrentCycle)
+                    or nameof(vm.RemainingFormatted) or nameof(vm.WeekDays)
+                    or nameof(vm.IsStatisticsView))
+                {
+                    PomodoroRingCanvas?.InvalidateSurface();
+                    WeeklyBarsCanvas?.InvalidateSurface();
+                    UpdateAnimation(vm.IsRunning);
+                }
+            };
+        }
+    }
+
+    private void UpdateAnimation(bool isRunning)
+    {
+        if (isRunning && _animTimer == null)
+        {
+            _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+            _animTimer.Tick += (_, _) =>
+            {
+                _animTime += 0.033f;
+                PomodoroRingCanvas?.InvalidateSurface();
+            };
+            _animTimer.Start();
+        }
+        else if (!isRunning && _animTimer != null)
+        {
+            _animTimer.Stop();
+            _animTimer = null;
+        }
+    }
+
+    /// <summary>Rendert den Pomodoro-Fortschrittsring mit SkiaSharp.</summary>
+    private void OnPaintPomodoroRing(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+
+        if (DataContext is not PomodoroViewModel vm) return;
+
+        int phase = vm.CurrentPhase switch
+        {
+            PomodoroPhase.Work => 0,
+            PomodoroPhase.ShortBreak => 1,
+            PomodoroPhase.LongBreak => 2,
+            _ => 0
+        };
+
+        PomodoroVisualization.RenderRing(canvas, bounds,
+            (float)vm.ProgressFraction, phase,
+            vm.CurrentCycle, vm.CyclesBeforeLongBreak,
+            vm.IsRunning, vm.RemainingFormatted ?? "25:00",
+            vm.PhaseText ?? "", _animTime);
+    }
+
+    /// <summary>Rendert das Wochen-Balkendiagramm mit SkiaSharp.</summary>
+    private void OnPaintWeeklyBars(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+
+        if (DataContext is not PomodoroViewModel vm) return;
+        if (vm.WeekDays == null || vm.WeekDays.Count != 7) return;
+
+        var dayNames = new string[7];
+        var sessions = new int[7];
+        int todayIndex = -1;
+
+        for (int i = 0; i < 7; i++)
+        {
+            dayNames[i] = vm.WeekDays[i].DayName;
+            sessions[i] = vm.WeekDays[i].Sessions;
+            if (vm.WeekDays[i].IsToday)
+                todayIndex = i;
+        }
+
+        PomodoroVisualization.RenderWeeklyBars(canvas, bounds,
+            dayNames, sessions, todayIndex);
+    }
 
     /// <summary>Backdrop-Tap schließt Config-Overlay.</summary>
     private void OnConfigBackdropPressed(object? sender, PointerPressedEventArgs e)
@@ -149,5 +247,12 @@ public partial class PomodoroView : UserControl
         _springTimer.Stop();
         _springTimer.Tick -= OnSpringTick;
         _springTimer = null;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _animTimer?.Stop();
+        _animTimer = null;
     }
 }

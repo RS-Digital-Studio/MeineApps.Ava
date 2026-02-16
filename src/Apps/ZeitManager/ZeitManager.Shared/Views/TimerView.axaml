@@ -4,6 +4,7 @@
              xmlns:models="using:ZeitManager.Models"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:skiaControls="using:MeineApps.UI.SkiaSharp"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="ZeitManager.Views.TimerView"
@@ -168,19 +169,15 @@
                 </i:Interaction.Behaviors>
                 <Grid ColumnDefinitions="Auto,*,Auto">
 
-                  <!-- Fortschrittsring -->
+                  <!-- SkiaSharp Fortschrittsring mit Glow -->
                   <Panel Grid.Column="0" Margin="0,0,16,0" VerticalAlignment="Center">
-                    <controls:CircularProgress Width="64" Height="64"
+                    <skiaControls:SkiaGradientRing Width="64" Height="64"
                         Value="{Binding ProgressFraction}"
                         StrokeWidth="5"
-                        TrackBrush="{DynamicResource BorderSubtleBrush}"
-                        StrokeBrush="{Binding ProgressBrush}" />
-                    <!-- Pulsierender Amber-Punkt bei laufendem Timer -->
-                    <Border Classes="TimerRunningPulse"
-                            IsVisible="{Binding IsRunning}"
-                            Width="10" Height="10" CornerRadius="5"
-                            Background="{DynamicResource TimerAccentBrush}"
-                            HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        StartColor="{Binding ProgressRingColor}"
+                        EndColor="{Binding ProgressRingColor}"
+                        GlowEnabled="{Binding IsRunning}"
+                        IsPulsing="{Binding IsRunning}" />
                     <!-- Fertiges Häkchen -->
                     <mi:MaterialIcon Kind="Check" Width="24" Height="24"
                                      IsVisible="{Binding IsFinished}"

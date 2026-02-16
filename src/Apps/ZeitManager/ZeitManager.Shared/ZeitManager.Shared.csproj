@@ -25,6 +25,10 @@
     <!-- Database -->
     <PackageReference Include="sqlite-net-pcl" />
     <PackageReference Include="SQLitePCLRaw.bundle_green" />
+
+    <!-- SkiaSharp Visualisierungen -->
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Avalonia.Labs.Controls" />
   </ItemGroup>
 
   <ItemGroup>

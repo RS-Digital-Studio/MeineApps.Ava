@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:conv="using:HandwerkerRechner.Converters"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerRechner.Views.Premium.MetalView"
              x:DataType="vm:MetalViewModel">
 
@@ -49,6 +50,12 @@
           <ComboBox ItemsSource="{Binding Calculators}"
                     SelectedIndex="{Binding SelectedCalculator}"
                     HorizontalAlignment="Stretch" />
+        </Border>
+
+        <!-- Visualisierung -->
+        <Border Classes="Card" Padding="0" Height="220" Margin="0,0,0,0"
+                IsVisible="{Binding HasResult}" ClipToBounds="True" CornerRadius="12">
+          <skia:SKCanvasView x:Name="MetalCanvas" PaintSurface="OnPaintVisualization" />
         </Border>
 
         <!-- Calculator 0: Metal Weight -->

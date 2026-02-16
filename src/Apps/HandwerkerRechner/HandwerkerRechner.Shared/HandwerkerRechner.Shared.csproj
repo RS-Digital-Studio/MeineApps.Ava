@@ -25,6 +25,10 @@
 
     <!-- PDF Export -->
     <PackageReference Include="PdfSharpCore" />
+
+    <!-- SkiaSharp Visualisierungen -->
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Avalonia.Labs.Controls" />
   </ItemGroup>
 
   <ItemGroup>

@@ -3,6 +3,7 @@
              xmlns:vm="using:HandwerkerRechner.ViewModels.Floor"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerRechner.Views.Floor.FlooringCalculatorView"
              x:DataType="vm:FlooringCalculatorViewModel">
 
@@ -128,6 +129,12 @@
                        Classes="Outlined" />
             </StackPanel>
           </StackPanel>
+        </Border>
+
+        <!-- Visualisierung -->
+        <Border Classes="Card" Padding="0" Height="220" Margin="0,0,0,0"
+                IsVisible="{Binding HasResult}" ClipToBounds="True" CornerRadius="12">
+          <skia:SKCanvasView x:Name="FlooringCanvas" PaintSurface="OnPaintVisualization" />
         </Border>
 
         <!-- Results Section -->

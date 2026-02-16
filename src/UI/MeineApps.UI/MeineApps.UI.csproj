@@ -11,6 +11,8 @@
     <PackageReference Include="Material.Icons.Avalonia" />
     <PackageReference Include="Xaml.Behaviors.Avalonia" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Avalonia.Labs.Controls" />
   </ItemGroup>
 
   <ItemGroup>

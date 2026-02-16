@@ -3,6 +3,7 @@
              xmlns:vm="using:RechnerPlus.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:ctrl="using:RechnerPlus.Controls"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="RechnerPlus.Views.CalculatorView"
              x:DataType="vm:CalculatorViewModel">
 
@@ -98,6 +99,8 @@
     <!-- Landscape: kompaktere Abstände und Buttons -->
     <Style Selector="Grid.Landscape Border#DisplayBorder">
       <Setter Property="Padding" Value="12,6"/>
+    </Style>
+    <Style Selector="Grid.Landscape Panel#DisplayPanel">
       <Setter Property="Margin" Value="0,0,0,4"/>
     </Style>
     <Style Selector="Grid.Landscape Grid#ModeSelector">
@@ -144,104 +147,119 @@
     <!-- ============================================ -->
     <!-- 1. Display Area                              -->
     <!-- ============================================ -->
-    <Border Grid.Row="0"
-            Background="{DynamicResource DisplayGradientBrush}"
-            CornerRadius="16"
-            Padding="16"
-            Margin="0,0,0,8"
-            x:Name="DisplayBorder">
-      <Grid RowDefinitions="Auto,Auto,Auto,Auto">
-        <!-- Expression line mit Copy + Backspace-Button -->
-        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto">
-          <TextBlock Grid.Column="0"
-                     Text="M"
-                     FontSize="13"
-                     FontWeight="Bold"
-                     Foreground="{DynamicResource PrimaryBrush}"
-                     IsVisible="{Binding HasMemory}"
-                     VerticalAlignment="Center"
-                     Margin="0,0,6,0"
-                     ToolTip.Tip="{Binding MemoryDisplay}"/>
-          <ctrl:ExpressionHighlightControl Grid.Column="1"
-                     x:Name="ExpressionText"
-                     Expression="{Binding Expression}"
-                     FontSize="14"
-                     Foreground="{DynamicResource TextSecondaryBrush}"
+    <Panel x:Name="DisplayPanel" Grid.Row="0" Margin="0,0,0,8">
+      <Border Background="{DynamicResource DisplayGradientBrush}"
+              CornerRadius="16"
+              Padding="16"
+              x:Name="DisplayBorder">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+          <!-- Expression line mit Copy + Backspace-Button -->
+          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+            <TextBlock Grid.Column="0"
+                       Text="M"
+                       FontSize="13"
+                       FontWeight="Bold"
+                       Foreground="{DynamicResource PrimaryBrush}"
+                       IsVisible="{Binding HasMemory}"
+                       VerticalAlignment="Center"
+                       Margin="0,0,6,0"
+                       ToolTip.Tip="{Binding MemoryDisplay}"/>
+            <ctrl:ExpressionHighlightControl Grid.Column="1"
+                       x:Name="ExpressionText"
+                       Expression="{Binding Expression}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       MinHeight="20"
+                       TextTrimming="CharacterEllipsis"/>
+            <Button Grid.Column="2"
+                    Classes="Text"
+                    Padding="8,4"
+                    MinWidth="0"
+                    MinHeight="0"
+                    Command="{Binding ShareDisplayCommand}"
+                    ToolTip.Tip="Share">
+              <mi:MaterialIcon Kind="ShareVariantOutline" Width="16" Height="16"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               Opacity="0.6"/>
+            </Button>
+            <Button Grid.Column="3"
+                    Classes="Text"
+                    Padding="8,4"
+                    MinWidth="0"
+                    MinHeight="0"
+                    Command="{Binding CopyDisplayCommand}"
+                    ToolTip.Tip="Copy">
+              <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               Opacity="0.6"/>
+            </Button>
+            <Button Grid.Column="4"
+                    Classes="Text"
+                    Padding="8,4"
+                    MinWidth="0"
+                    MinHeight="0"
+                    Command="{Binding BackspaceCommand}">
+              <mi:MaterialIcon Kind="BackspaceOutline" Width="20" Height="20"
+                               Foreground="{DynamicResource TextMutedBrush}"/>
+            </Button>
+          </Grid>
+
+          <!-- VFD 7-Segment-Display (SkiaSharp-Overlay) -->
+          <Border Grid.Row="1" Height="56" Margin="0,4,0,0"
+                  ClipToBounds="True" CornerRadius="8"
+                  Background="#0A0A0A">
+            <skia:SKCanvasView x:Name="VfdCanvas" PaintSurface="OnPaintVfd" />
+          </Border>
+
+          <!-- Main display (unsichtbar, wird für Messung/Fallback benötigt) -->
+          <TextBlock Grid.Row="1"
+                     x:Name="DisplayText"
+                     Text="{Binding Display}"
+                     FontSize="{Binding DisplayFontSize}"
+                     FontFamily="JetBrains Mono, Consolas, monospace"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Right"
-                     VerticalAlignment="Center"
+                     Margin="0,4,0,0"
+                     Opacity="0"
+                     IsHitTestVisible="False"
+                     TextTrimming="CharacterEllipsis"
+                     RenderTransformOrigin="1,0.5">
+            <TextBlock.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
+              </Transitions>
+            </TextBlock.Transitions>
+          </TextBlock>
+
+          <!-- Live Preview -->
+          <TextBlock Grid.Row="2"
+                     Text="{Binding PreviewResult}"
+                     FontSize="16"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     Opacity="0.6"
+                     HorizontalAlignment="Right"
                      MinHeight="20"
-                     TextTrimming="CharacterEllipsis"/>
-          <Button Grid.Column="2"
-                  Classes="Text"
-                  Padding="8,4"
-                  MinWidth="0"
-                  MinHeight="0"
-                  Command="{Binding ShareDisplayCommand}"
-                  ToolTip.Tip="Share">
-            <mi:MaterialIcon Kind="ShareVariantOutline" Width="16" Height="16"
-                             Foreground="{DynamicResource TextMutedBrush}"
-                             Opacity="0.6"/>
-          </Button>
-          <Button Grid.Column="3"
-                  Classes="Text"
-                  Padding="8,4"
-                  MinWidth="0"
-                  MinHeight="0"
-                  Command="{Binding CopyDisplayCommand}"
-                  ToolTip.Tip="Copy">
-            <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
-                             Foreground="{DynamicResource TextMutedBrush}"
-                             Opacity="0.6"/>
-          </Button>
-          <Button Grid.Column="4"
-                  Classes="Text"
-                  Padding="8,4"
-                  MinWidth="0"
-                  MinHeight="0"
-                  Command="{Binding BackspaceCommand}">
-            <mi:MaterialIcon Kind="BackspaceOutline" Width="20" Height="20"
-                             Foreground="{DynamicResource TextMutedBrush}"/>
-          </Button>
+                     Margin="0,0,0,2"
+                     IsVisible="{Binding PreviewResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+          <!-- Error message -->
+          <TextBlock Grid.Row="3"
+                     Text="{Binding ErrorMessage}"
+                     FontSize="12"
+                     Foreground="{DynamicResource ErrorBrush}"
+                     IsVisible="{Binding HasError}"
+                     HorizontalAlignment="Right"/>
         </Grid>
+      </Border>
 
-        <!-- Main display (größere Schrift, Animation via Code-Behind) -->
-        <TextBlock Grid.Row="1"
-                   x:Name="DisplayText"
-                   Text="{Binding Display}"
-                   FontSize="{Binding DisplayFontSize}"
-                   FontFamily="JetBrains Mono, Consolas, monospace"
-                   Foreground="{DynamicResource TextPrimaryBrush}"
-                   HorizontalAlignment="Right"
-                   Margin="0,4,0,0"
-                   TextTrimming="CharacterEllipsis"
-                   RenderTransformOrigin="1,0.5">
-          <TextBlock.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Opacity" Duration="0:0:0.2" Easing="CubicEaseOut"/>
-            </Transitions>
-          </TextBlock.Transitions>
-        </TextBlock>
-
-        <!-- Live Preview -->
-        <TextBlock Grid.Row="2"
-                   Text="{Binding PreviewResult}"
-                   FontSize="16"
-                   Foreground="{DynamicResource TextMutedBrush}"
-                   Opacity="0.6"
-                   HorizontalAlignment="Right"
-                   MinHeight="20"
-                   Margin="0,0,0,2"
-                   IsVisible="{Binding PreviewResult, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
-
-        <!-- Error message -->
-        <TextBlock Grid.Row="3"
-                   Text="{Binding ErrorMessage}"
-                   FontSize="12"
-                   Foreground="{DynamicResource ErrorBrush}"
-                   IsVisible="{Binding HasError}"
-                   HorizontalAlignment="Right"/>
-      </Grid>
-    </Border>
+      <!-- Result-Burst-Overlay (transparent, nur bei Animation sichtbar) -->
+      <Border x:Name="BurstOverlay" CornerRadius="16" ClipToBounds="True"
+              IsHitTestVisible="False" IsVisible="False">
+        <skia:SKCanvasView x:Name="BurstCanvas" PaintSurface="OnPaintBurst" />
+      </Border>
+    </Panel>
 
     <!-- ============================================ -->
     <!-- 2. Mode Selector + INV + Angle Mode          -->

@@ -21,6 +21,10 @@
 
     <!-- DI -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+
+    <!-- SkiaSharp Visualisierungen -->
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Avalonia.Labs.Controls" />
   </ItemGroup>
 
   <ItemGroup>

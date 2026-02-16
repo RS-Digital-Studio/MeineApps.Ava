@@ -1,9 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Labs.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
+using MeineApps.UI.SkiaSharp;
+using RechnerPlus.Graphics;
 using RechnerPlus.ViewModels;
+using SkiaSharp;
 
 namespace RechnerPlus.Views;
 
@@ -15,6 +19,16 @@ public partial class CalculatorView : UserControl
     private bool _autoSwitchedToScientific;
     private bool _isLandscapeLayout;
     private const double SwipeThreshold = 40;
+
+    // VFD-Flicker-Animation
+    private DispatcherTimer? _vfdTimer;
+    private float _vfdAnimTime;
+
+    // Result-Burst-Animation
+    private DispatcherTimer? _burstTimer;
+    private float _burstProgress;
+    private const float BurstDuration = 0.5f; // Sekunden
+    private const float BurstStep = 33f / 1000f; // ~30fps
 
     public CalculatorView()
     {
@@ -30,12 +44,28 @@ public partial class CalculatorView : UserControl
             displayBorder.PointerPressed += OnDisplayPointerPressed;
             displayBorder.PointerReleased += OnDisplayPointerReleased;
         }
+
+        // VFD-Flicker-Timer (subtiles ~7Hz Flackern)
+        _vfdTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+        _vfdTimer.Tick += (_, _) =>
+        {
+            _vfdAnimTime += 0.033f;
+            VfdCanvas?.InvalidateSurface();
+        };
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
         Focus();
+        _vfdTimer?.Start();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+        _vfdTimer?.Stop();
+        _burstTimer?.Stop();
     }
 
     protected override void OnSizeChanged(SizeChangedEventArgs e)
@@ -53,6 +83,7 @@ public partial class CalculatorView : UserControl
             _currentVm.ClipboardPasteRequested -= OnClipboardPaste;
             _currentVm.ShareRequested -= OnShare;
             _currentVm.CalculationCompleted -= OnCalculationCompleted;
+            _currentVm.PropertyChanged -= OnVmPropertyChanged;
         }
 
         _currentVm = DataContext as CalculatorViewModel;
@@ -63,8 +94,86 @@ public partial class CalculatorView : UserControl
             _currentVm.ClipboardPasteRequested += OnClipboardPaste;
             _currentVm.ShareRequested += OnShare;
             _currentVm.CalculationCompleted += OnCalculationCompleted;
+            _currentVm.PropertyChanged += OnVmPropertyChanged;
         }
     }
+
+    /// <summary>
+    /// Bei Display-Änderungen VFD-Canvas neu zeichnen.
+    /// </summary>
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(CalculatorViewModel.Display) or nameof(CalculatorViewModel.HasError))
+        {
+            VfdCanvas?.InvalidateSurface();
+        }
+    }
+
+    #region VFD-Display (SkiaSharp)
+
+    /// <summary>
+    /// Zeichnet den VFD 7-Segment-Display.
+    /// </summary>
+    private void OnPaintVfd(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(new SKColor(10, 10, 10)); // Fast-schwarz
+
+        if (_currentVm == null) return;
+
+        var bounds = canvas.LocalClipBounds;
+        var displayText = _currentVm.Display ?? "0";
+        var hasError = _currentVm.HasError;
+
+        VfdDisplayVisualization.Render(canvas, bounds, displayText, hasError, _vfdAnimTime);
+    }
+
+    #endregion
+
+    #region Result-Burst (SkiaSharp)
+
+    /// <summary>
+    /// Startet die Burst-Animation bei Berechnung.
+    /// </summary>
+    private void StartBurstAnimation()
+    {
+        _burstProgress = 0;
+        var burstOverlay = this.FindControl<Border>("BurstOverlay");
+        if (burstOverlay != null) burstOverlay.IsVisible = true;
+
+        _burstTimer?.Stop();
+        _burstTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+        _burstTimer.Tick += (_, _) =>
+        {
+            _burstProgress += BurstStep / BurstDuration;
+            if (_burstProgress >= 1f)
+            {
+                _burstProgress = 0;
+                _burstTimer?.Stop();
+                var overlay = this.FindControl<Border>("BurstOverlay");
+                if (overlay != null) overlay.IsVisible = false;
+            }
+            BurstCanvas?.InvalidateSurface();
+        };
+        _burstTimer.Start();
+    }
+
+    /// <summary>
+    /// Zeichnet den Ergebnis-Burst-Effekt.
+    /// </summary>
+    private void OnPaintBurst(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
+        if (_burstProgress <= 0 || _burstProgress >= 1) return;
+
+        var bounds = canvas.LocalClipBounds;
+        var burstColor = SkiaThemeHelper.Primary;
+        ResultBurstVisualization.Render(canvas, bounds, _burstProgress, burstColor);
+    }
+
+    #endregion
 
     #region Landscape = Scientific Mode
 
@@ -105,13 +214,13 @@ public partial class CalculatorView : UserControl
 
         // Landscape 2-Spalten-Layout:
         // Spalte 0 (40%): Display, ModeSelector, ScientificPanel, Memory+Freiraum
-        // Spalte 1 (60%): BasicGrid (gesamte Hoehe via RowSpan=4)
-        // Letzte Zeile * damit BasicGrid rechts die volle Hoehe nutzt
+        // Spalte 1 (60%): BasicGrid (gesamte Höhe via RowSpan=4)
+        // Letzte Zeile * damit BasicGrid rechts die volle Höhe nutzt
         rootGrid.RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*");
         rootGrid.ColumnDefinitions = new ColumnDefinitions("2*,3*");
         rootGrid.ColumnSpacing = 8;
 
-        var display = this.FindControl<Border>("DisplayBorder");
+        var display = this.FindControl<Panel>("DisplayPanel");
         var mode = this.FindControl<Grid>("ModeSelector");
         var scientific = this.FindControl<Grid>("ScientificPanel");
         var memory = this.FindControl<Grid>("MemoryRowGrid");
@@ -133,7 +242,7 @@ public partial class CalculatorView : UserControl
             Grid.SetColumnSpan(mode, 1);
         }
 
-        // Scientific Panel: links, Zeile 2 (fuellt verfuegbaren Platz)
+        // Scientific Panel: links, Zeile 2 (füllt verfügbaren Platz)
         if (scientific != null)
         {
             Grid.SetRow(scientific, 2);
@@ -153,7 +262,7 @@ public partial class CalculatorView : UserControl
             memory.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom;
         }
 
-        // Basic Grid: rechts, ueber alle 4 Zeilen (gesamte Hoehe)
+        // Basic Grid: rechts, über alle 4 Zeilen (gesamte Höhe)
         if (basic != null)
         {
             Grid.SetRow(basic, 0);
@@ -177,7 +286,7 @@ public partial class CalculatorView : UserControl
         rootGrid.ColumnDefinitions = new ColumnDefinitions();
         rootGrid.ColumnSpacing = 0;
 
-        var display = this.FindControl<Border>("DisplayBorder");
+        var display = this.FindControl<Panel>("DisplayPanel");
         var mode = this.FindControl<Grid>("ModeSelector");
         var scientific = this.FindControl<Grid>("ScientificPanel");
         var memory = this.FindControl<Grid>("MemoryRowGrid");
@@ -199,7 +308,7 @@ public partial class CalculatorView : UserControl
             Grid.SetColumnSpan(mode, 1);
         }
 
-        // Scientific Panel: Zeile 2, Auto-Rows zuruecksetzen
+        // Scientific Panel: Zeile 2, Auto-Rows zurücksetzen
         if (scientific != null)
         {
             Grid.SetRow(scientific, 2);
@@ -295,19 +404,11 @@ public partial class CalculatorView : UserControl
     {
         Dispatcher.UIThread.Post(() =>
         {
-            // Display: Fade+Scale-Animation
-            var displayText = this.FindControl<TextBlock>("DisplayText");
-            if (displayText != null)
-            {
-                displayText.Opacity = 0.3;
-                displayText.RenderTransform = new ScaleTransform(0.96, 0.96);
+            // VFD-Display invalidieren (zeigt neues Ergebnis)
+            VfdCanvas?.InvalidateSurface();
 
-                DispatcherTimer.RunOnce(() =>
-                {
-                    displayText.Opacity = 1;
-                    displayText.RenderTransform = new ScaleTransform(1, 1);
-                }, TimeSpan.FromMilliseconds(16));
-            }
+            // Result-Burst-Animation starten
+            StartBurstAnimation();
 
             // Equals-Button: Kurzer Weiß-Flash (100ms)
             var equalsBtn = this.FindControl<Button>("EqualsButton");

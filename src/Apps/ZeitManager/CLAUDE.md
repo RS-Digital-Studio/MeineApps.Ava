@@ -66,10 +66,23 @@ ZeitManager.Android/Services/
 - **AlarmItem:** Erbt ObservableObject, IsEnabled nutzt SetProperty fuer UI-Notification
 - **CustomShiftPattern:** ShortName() nutzt LocalizationManager.GetString() fuer lokalisierte Schicht-Kuerzel
 
+## SkiaSharp-Visualisierungen
+
+3 Visualisierungen in `Graphics/`:
+
+| Datei | Beschreibung | Genutzt in |
+|-------|-------------|------------|
+| `StopwatchVisualization.cs` | Stoppuhr-Ring mit 60 Sekunden-Ticks, Glow, Minuten-Zeiger, Rundenpunkte, zentrale Zeitanzeige | StopwatchView (ersetzt CSS-Border-Ring) |
+| `PomodoroVisualization.cs` | RenderRing: Fortschrittsring mit Phase-Farben + Zyklus-Segmente; RenderWeeklyBars: Wochen-Balkendiagramm | PomodoroView (Ring + Statistik) |
+| `TimerVisualization.cs` | Timer-Ring mit Flüssigkeits-Füllung, Welleneffekt, Farbwechsel nach Restzeit | *(Reserve, Render-Methode vorhanden)* |
+
+**TimerView:** Nutzt `SkiaGradientRing` aus MeineApps.UI (Shared Control) statt `CircularProgress` pro Timer-Item, mit `GlowEnabled`/`IsPulsing` bei laufendem Timer.
+
 ## Abhaengigkeiten
 
 - MeineApps.Core.Ava, MeineApps.UI
 - sqlite-net-pcl + SQLitePCLRaw.bundle_green
+- SkiaSharp + Avalonia.Labs.Controls (SkiaSharp-Visualisierungen)
 - **Kein MeineApps.Core.Premium - komplett werbefrei!**
 
 ## Changelog (Highlights)

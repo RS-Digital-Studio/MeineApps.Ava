@@ -17,6 +17,7 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 - **Mahlzeiten**: Gruppiert nach Typ (Frühstück/Mittag/Abend/Snack mit Icons + Subtotals), "Gestern kopieren" Funktion
 - **Food Search**: Fuzzy Matching, Favorites, Recipes (FoodDatabase mit 114 Items + Aliase)
 - **Barcode Scanner**: Nativer CameraX + ML Kit Scanner (Android), manuelle Eingabe (Desktop), Open Food Facts API (BarcodeLookupService)
+- **SkiaSharp-Visualisierungen**: BMI-Gauge (BmiGaugeRenderer), Körperfett-Grafik (BodyFatRenderer), Kalorien-Ringe (CalorieRingRenderer), Wasserglas (inline in WaterView). HomeView nutzt SkiaGradientRing statt CircularProgress
 
 ## App-spezifische Services
 
@@ -114,6 +115,7 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 
 ## Changelog (Highlights)
 
+- **16.02.2026**: SkiaSharp-Visualisierungen in 4 Rechner-Views integriert: BmiView (BMI-Gauge via BmiGaugeRenderer), BodyFatView (Körperfett-Visualisierung via BodyFatRenderer), CaloriesView (Kalorien-Ring via CalorieRingRenderer), WaterView (Wasserglas mit Füllstand + Wellen inline gezeichnet). HomeView: 3 CircularProgress Controls durch SkiaGradientRing ersetzt (Score-Ring, Wasser-Ring, Kalorien-Ring) mit Gradient + Glow-Effekt. Renderer-Dateien in Graphics/ Ordner.
 - **13.02.2026 (12)**: 2 Bugfixes: (1) Dashboard-Leerraum: StaggerFadeInBehavior + FadeInBehavior (alle 3 Dateien) robuster gemacht - `IsAttachedToVisualTree`-Fallback falls AttachedToVisualTree nicht feuert, Opacity=1 nach RunAsync als Sicherheit, Opacity=1 bei OnDetaching. HomeView ScrollViewer Bottom-Padding 100→60. (2) Kamera-Crash nach Permission: AndroidBarcodeService try-catch um ScanBarcodeAsync/StartScannerActivity, 300ms Delay nach Permission-Grant bevor Scanner startet (System braucht Zeit um Permission zu aktivieren). BarcodeScannerActivity: Permission-Recheck in StartCamera(), IsFinishing/IsDestroyed Guard in BindCameraUseCases(), Fehler-Fallback auf Result.Canceled+Finish(). FoodSearchViewModel: try-catch um Barcode-Scan mit Fallback auf manuelle Eingabe.
 - **13.02.2026 (11)**: Crash-Fix: StaggerFadeInBehavior + FadeInBehavior (MeineApps.UI + MeineApps.Core.Ava) hatten `async void OnAttachedToVisualTree` ohne try-catch. Bei detached Control während Animation → unhandled Exception → App-Crash. Fix: try-catch + Fallback `Opacity=1` bei Fehler (Element bleibt sichtbar statt unsichtbar hängen). Behebt den "leeren Bereich" auf Dashboard (Elemente blieben bei Opacity=0 wenn Animation fehlschlug).
 - **13.02.2026 (10)**: Phase 6 Polish: IHapticService (Tick/Click/HeavyClick, Android Vibrator), IFitnessSoundService (System-Sound bei Erfolgen), IReminderService (3 Typen: Wasser/Gewicht/Abend, AlarmManager + NotificationChannel), Abend-Zusammenfassung Dashboard-Card (nach 20 Uhr), Settings-Toggles (Haptic/Sound/3 Reminders). 10 neue RESX-Keys in 6 Sprachen.

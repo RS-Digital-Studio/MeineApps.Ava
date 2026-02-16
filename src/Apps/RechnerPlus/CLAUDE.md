@@ -170,6 +170,40 @@ baseValue = value * ToBase + Offset
 ### Display-Card Header (5 Spalten)
 - Memory-Indikator (M) | Expression | Share-Icon | Copy-Icon | Backspace-Icon
 
+## SkiaSharp-Visualisierungen (16.02.2026)
+
+### Graphics-Ordner: `RechnerPlus.Shared/Graphics/`
+
+| Datei | Beschreibung |
+|-------|-------------|
+| `VfdDisplayVisualization.cs` | 7-Segment VFD (Vacuum Fluorescent Display) mit Glow, Ghost-Segmenten, Flicker-Effekt |
+| `ResultBurstVisualization.cs` | Expandierender Lichtring + 8 Partikel-Strahlen bei "="-Berechnung |
+
+### VFD-Display
+- Ersetzt das TextBlock-basierte Display durch SkiaSharp-gerenderte 7-Segment-Ziffern
+- Cyan-Grün (#00FFB0) im Normalzustand, Rot (#FF4444) bei Fehler
+- Ghost-Segmente (alle 7 Segmente dezent sichtbar) wie bei echten VFD-Röhren
+- Glow-Effekt (SKMaskFilter.CreateBlur) auf aktiven Segmenten
+- Subtiles Flicker (±3%, ~7Hz sin-basiert) simuliert echte Röhren-Schwankung
+- Hintergrund: Fast-schwarz (#0A0A0A)
+- Segment-Map: 0-9, Minus, E, r, Space; Punkt/Komma als leuchtender Dot
+- Rechtsbündige Darstellung, Tausender-Trennzeichen als Dezimalpunkte
+
+### Result-Burst
+- Wird bei `CalculationCompleted` Event ausgelöst
+- Expandierender Ring mit Glow + 8 gleichmäßig verteilte Partikel
+- Cubic ease-out Easing, 500ms Dauer
+- Transparentes Overlay über dem gesamten Display-Bereich
+
+### Integration (CalculatorView)
+- `xmlns:skia="using:Avalonia.Labs.Controls"` im AXAML
+- Display-Bereich in Panel gewrappt (für Burst-Overlay)
+- VFD-Canvas: Border mit `#0A0A0A` Hintergrund, 56px Höhe, CornerRadius 8
+- Original-TextBlock unsichtbar (Opacity=0, für Layout-Referenz)
+- VFD-Flicker-Timer: DispatcherTimer 33ms, startet bei OnAttachedToVisualTree
+- Burst-Timer: DispatcherTimer 33ms, startet bei CalculationCompleted, stoppt nach 500ms
+- PropertyChanged-Handler invalidiert VFD bei Display/HasError-Änderung
+
 ## App-spezifische Abhängigkeiten
 
 - **MeineApps.CalcLib** - Calculator Engine + ExpressionParser + IHistoryService

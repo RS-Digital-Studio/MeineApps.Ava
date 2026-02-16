@@ -20,7 +20,7 @@ Zeiterfassung & Arbeitszeitmanagement mit Pausen, Kalender-Heatmap, Statistiken,
 ### Kern-Features
 - **Zeiterfassung**: Check-in/out mit Pausen-Management, Auto-Pause
 - **Kalender-Heatmap**: Monatsuebersicht mit Status-Overlay (Urlaub, Krank, HomeOffice etc.)
-- **Statistiken**: Charts (LiveCharts) + Tabelle, Taeglich/Woechentlich/Monatlich/Quartal/Jahr
+- **Statistiken**: Charts (SkiaSharp) + Tabelle, Taeglich/Woechentlich/Monatlich/Quartal/Jahr
 - **Export**: PDF, Excel (XLSX), CSV via PdfSharpCore + ClosedXML
 - **Urlaubsverwaltung**: 9 Status-Typen, Resturlaub, Uebertrag, Urlaubsanspruch
 - **Feiertage**: 16 deutsche Bundeslaender
@@ -91,6 +91,24 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 - **INotificationService**: Plattform-abstrakt (Desktop: PowerShell Toast / notify-send + Task.Delay, Android: NotificationChannel + AlarmManager + ReminderReceiver)
 - **IReminderService → ReminderService**: Orchestriert 5 Typen (Morgen, Abend, Pause, Überstunden, Wochenzusammenfassung). Subscribed auf `ITimeTrackingService.StatusChanged`. SettingsViewModel ruft `RescheduleAsync()` bei Reminder-Änderungen auf.
 - **Android**: `worktimepro_reminder` NotificationChannel, `ReminderReceiver` BroadcastReceiver, `SetExactAndAllowWhileIdle` für Hintergrund-Notifications. Permissions: POST_NOTIFICATIONS, SCHEDULE_EXACT_ALARM.
+
+## SkiaSharp-Visualisierungen
+
+| Datei | Zweck |
+|-------|-------|
+| `Graphics/DayTimelineVisualization.cs` | 24h-Timeline mit Arbeits-/Pausen-Blöcken, Stundenticks, Jetzt-Markierung |
+| `Graphics/WeekBarVisualization.cs` | Wochen-Balkendiagramm (7 Tage), Ist/Soll-Vergleich, farbige Balken |
+| `Graphics/OvertimeSplineVisualization.cs` | Überstunden-Trend: Tagesbalken (grün/rot) + kumulative Spline-Kurve mit Flächenfüllung |
+| `Graphics/WeekdayRadialVisualization.cs` | Radiales Balkendiagramm (Mo-So), gestrichelte Soll-Linie, Ø-Wert in Mitte |
+| `Graphics/WeeklyWorkChartVisualization.cs` | Wöchentliche Arbeitsstunden als Balkendiagramm mit Soll-Linie |
+| `Graphics/MonthlyBarChartVisualization.cs` | Monatliche Arbeitsstunden-Balken + optionale kumulative Saldo-Kurve |
+| `Graphics/LinearProgressVisualization.cs` | Linearer Fortschrittsbalken mit Gradient, Glow, Prozent-Text (ersetzt ProgressBar) |
+
+- **TodayView**: SkiaGradientRing (Tagesfortschritt, 24 Ticks, Glow+Pulsation bei Tracking) + DayTimeline (Arbeitsblöcke grün, Pausen orange schraffiert)
+- **WeekOverviewView**: WeekBarVisualization (Balken pro Tag) + LinearProgressVisualization (Wochenfortschritt, ersetzt ProgressBar)
+- **StatisticsView**: 6 SkiaSharp-Charts (PauseDonut, WeeklyChart, OvertimeSpline, WeekdayRadial, ProjectDonut, EmployerDonut) - LiveCharts vollständig ersetzt
+- **YearOverviewView**: MonthlyBarChartVisualization (Monatsbalken + kumulative Saldo-Kurve) - LiveCharts vollständig ersetzt
+- Shared: `DonutChartVisualization` aus MeineApps.UI/SkiaSharp/ (wiederverwendbar für alle Apps)
 
 ## Game Juice
 

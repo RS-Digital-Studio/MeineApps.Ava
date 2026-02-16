@@ -462,3 +462,124 @@ OnboardingTooltip.Dismissed += (_, _) => { /* naechster Tooltip */ };
 - Tap-to-Dismiss: PointerPressed ruft Hide() auf
 - Background: PrimaryBrush aus Theme (Fallback #6366F1)
 - CornerRadius 12, Padding 16/12, MaxWidth 260, weisser Text
+
+---
+
+## SkiaSharp Controls & Helpers
+
+Wiederverwendbare SkiaSharp-basierte Controls und Hilfsklassen für visuell anspruchsvolle Darstellungen.
+
+### SkiaThemeHelper.cs
+
+Statische Klasse die Avalonia-Theme-Farben (DynamicResource) zu `SKColor` konvertiert. Cached die Farben für performanten Zugriff in SkiaSharp Paint-Operationen.
+
+- `RefreshColors()` bei Theme-Wechsel aufrufen (z.B. im ThemeChanged-Handler)
+- Stellt alle Theme-Farben als `SKColor`-Properties bereit (Primary, Background, Surface, Text etc.)
+- Vermeidet wiederholtes Parsen von Avalonia-Brushes in jedem PaintSurface-Call
+
+### SkiaParticleSystem.cs
+
+Struct-basiertes Partikelsystem für performante Partikel-Effekte ohne GC-Druck.
+
+- `SkiaParticle` (struct): Position, Velocity, Farbe, Größe, Lifetime, Rotation
+- `SkiaParticleManager`: Verwaltet Partikel-Array, Update/Draw-Loop
+- `SkiaParticlePresets`: Vordefinierte Effekte:
+  - **Confetti** - Bunte Rechteck-Partikel mit Schwerkraft und Rotation
+  - **Sparkle** - Kleine leuchtende Funken
+  - **WaterDrop** - Tropfen-Effekt mit Schwerkraft
+  - **Glow** - Leuchtende Partikel mit Fade-Out
+  - **Coin** - Münz-Partikel (für Belohnungen/Idle-Games)
+  - **Firework** - Explosionsartige Partikel-Emission
+
+### SkiaBlueprintCanvas.cs
+
+Statische Helper-Klasse für technische Zeichnungen auf SKCanvas. Ideal für Bau-/Handwerker-Visualisierungen.
+
+- **Raster**: Zeichnet Hintergrund-Gitter (konfigurierbare Abstände/Farben)
+- **Maßlinien**: Bemaßungs-Pfeile mit Text (horizontal/vertikal)
+- **Winkel-Arcs**: Winkelbögen mit Grad-Beschriftung
+- **Schraffuren**: Diagonale Linien für Flächen-Markierungen
+- **Auto-Skalierung**: Berechnet Scale/Offset damit Zeichnung in Canvas passt
+
+### DonutChartVisualization.cs
+
+Wiederverwendbarer Donut-Chart-Renderer für alle Apps. Segmente mit Farben, InnerRadius konfigurierbar, Labels, optionale Legende.
+
+```csharp
+// Segment-Definition
+var segments = new DonutChartVisualization.Segment[]
+{
+    new() { Value = 60, Color = SKColors.Green, Label = "Arbeit", ValueText = "60%" },
+    new() { Value = 30, Color = SKColors.Orange, Label = "Pause", ValueText = "30%" },
+    new() { Value = 10, Color = SKColors.Red, Label = "Sonstiges", ValueText = "10%" }
+};
+
+// Im PaintSurface-Handler:
+DonutChartVisualization.Render(canvas, bounds, segments,
+    innerRadiusFraction: 0.55f, showLabels: true, showLegend: true);
+```
+
+- **Segment** struct: `Value`, `Color`, `Label`, `ValueText`
+- **innerRadiusFraction**: 0.0 (Pie) bis 0.9 (dünner Ring)
+- **centerText / centerSubText**: Optionaler Text in der Donut-Mitte
+- **showLabels**: Prozent-Labels auf Segmenten (bei genug Platz)
+- **showLegend**: Farbige Legende unter dem Chart
+- Arc-Path-Segmente mit Gradient, Gaps, Inner-Glow
+
+### SkiaGradientRing.cs (Avalonia Control)
+
+Gradient-Fortschrittsring mit Glow-Effekt, Tick-Marks und Partikeln. Erbt von `Control`, rendert via `SKCanvasView`.
+
+```axaml
+xmlns:controls="using:MeineApps.UI.Controls"
+
+<controls:SkiaGradientRing Width="200" Height="200"
+    Value="{Binding Progress}"
+    StartColor="#6366F1"
+    EndColor="#22D3EE"
+    GlowEnabled="True"
+    ShowTickMarks="True"
+    IsPulsing="{Binding IsActive}" />
+```
+
+- **Value**: Fortschrittswert 0.0–1.0
+- **StartColor / EndColor**: Gradient-Farben des Rings
+- **GlowEnabled**: Äußerer Glow-Effekt am Fortschritts-Ende
+- **ShowTickMarks**: Tick-Markierungen auf dem Ring
+- **IsPulsing**: Pulsier-Animation bei aktivem Zustand
+
+### SkiaGauge.cs (Avalonia Control)
+
+Halbkreis-Tachometer mit konfigurierbaren Farbzonen und animiertem Zeiger.
+
+```axaml
+<controls:SkiaGauge Width="240" Height="140"
+    Value="{Binding CurrentValue}"
+    Minimum="0" Maximum="100"
+    Zones="{Binding GaugeZones}"
+    NeedleAnimated="True"
+    Unit="km/h" />
+```
+
+- **Value**: Aktueller Wert (animiert zum Ziel wenn NeedleAnimated=True)
+- **Minimum / Maximum**: Wertebereich
+- **Zones**: Liste von Farbzonen (z.B. Grün 0–60, Gelb 60–80, Rot 80–100)
+- **NeedleAnimated**: Zeiger-Animation beim Wertwechsel
+- **Unit**: Einheits-Text unter dem Wert
+
+### SkiaWaterGlass.cs (Avalonia Control)
+
+Animiertes Wasserglas mit Wellen-Animation, Tropfen-Effekt und Glas-Glanz.
+
+```axaml
+<controls:SkiaWaterGlass Width="120" Height="200"
+    FillPercent="{Binding WaterLevel}"
+    WaveEnabled="True"
+    WaterColor="#3B82F6"
+    ShowDrops="True" />
+```
+
+- **FillPercent**: Füllstand 0.0–1.0
+- **WaveEnabled**: Animierte Wellen-Oberfläche
+- **WaterColor**: Farbe des Wassers
+- **ShowDrops**: Tropfen-Partikel die ins Glas fallen

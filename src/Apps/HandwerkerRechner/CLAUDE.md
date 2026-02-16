@@ -52,6 +52,26 @@ Handwerker-App mit 11 Rechnern (5 Free Floor + 6 Premium), Projektverwaltung und
 - **Preis**: 3,99 EUR (`remove_ads`)
 - **Vorteile**: Keine Ads, permanenter Premium-Rechner-Zugang, unbegrenzte History, direkter PDF-Export
 
+## SkiaSharp Visualisierungen (Graphics/)
+
+11 statische Renderer-Klassen in `HandwerkerRechner.Shared/Graphics/`, alle nutzen `SkiaBlueprintCanvas` + `SkiaThemeHelper` aus MeineApps.UI.
+
+| Datei | Typ | Beschreibung |
+|-------|-----|--------------|
+| `TileVisualization.cs` | Floor | 2D-Grundriss mit Fliesengitter, Verschnitt-Fliesen rot schraffiert, Maßlinien |
+| `FlooringVisualization.cs` | Floor | Dielen-Verlegung mit 50%-Versatz, 3 Holzfarben abwechselnd, Maßlinien |
+| `WallpaperVisualization.cs` | Floor | Wand-Abwicklung mit vertikalen Bahnen, Rapport-Versatz gestrichelt |
+| `PaintVisualization.cs` | Floor | Wand mit semi-transparenten Farbschichten pro Anstrich |
+| `ConcreteVisualization.cs` | Floor | 3 Sub-Typen: Platte (Isometrie), Fundament (Schnitt), Säule (Zylinder) |
+| `StairsVisualization.cs` | Premium | Seitenansicht Treppenprofil, Winkel-Arc, DIN-Farbcode (Grün/Gelb/Rot) |
+| `RoofSolarVisualization.cs` | Premium | 3 Sub-Typen: Dachdreieck+Winkel, Ziegelraster, Solar-Panel-Layout mit Kompass |
+| `DrywallVisualization.cs` | Premium | Wandschnitt mit CW/UW-Ständerwerk, Plattenaufteilung |
+| `ElectricalVisualization.cs` | Premium | 3 Sub-Typen: Spannungsabfall-Kurve, Kosten-Balken, Ohmsches Dreieck |
+| `MetalVisualization.cs` | Premium | 2 Sub-Typen: 6 Profil-Querschnitte, Gewindebohrung-Kreis |
+| `GardenVisualization.cs` | Premium | 3 Sub-Typen: Pflastermuster, Erdschichten-Profil, Teichfolie-Draufsicht |
+
+**Pattern**: Alle `public static void Render(SKCanvas, SKRect, ...)` mit gecachten `SKPaint` (static readonly). Views haben `OnPaintVisualization` Code-Behind Handler. Visualisierung in `<Border Classes="Card" Height="220" ClipToBounds="True">` mit `IsVisible="{Binding HasResult}"`.
+
 ## Besondere Architektur
 
 ### Calculator Overlay via DataTemplates

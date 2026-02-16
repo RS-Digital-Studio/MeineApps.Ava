@@ -78,6 +78,17 @@ Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 6 Finan
 - CancelRestoreCommand → Dialog schliessen, IsBackupInProgress zuruecksetzen
 - RESX-Keys: RestoreQuestion, RestoreMerge, RestoreReplace, RestoreMergeDesc, RestoreReplaceDesc, TotalBudget
 
+### SkiaSharp-Visualisierungen
+
+| Datei | Zweck |
+|-------|-------|
+| `Graphics/BudgetGaugeVisualization.cs` | Halbkreis-Tachometer (Grün→Gelb→Rot) für Gesamt-Budget |
+| `Graphics/SparklineVisualization.cs` | Mini-Sparkline mit Gradient-Füllung für Ausgaben-Trends |
+| `Graphics/BudgetMiniRingVisualization.cs` | Kompakte Mini-Ringe für Budget-Kategorien-Übersicht |
+
+- **HomeView**: Budget-Gauge als Halbkreis-Tachometer (ersetzt ProgressBar)
+- **BudgetsView**: Budget-Gauge mit Spent/Limit-Anzeige (ersetzt ProgressBar)
+
 ### Game Juice
 - **FloatingText**: Quick-Add (+/- Betrag, income=gruen, expense=rot)
 - **Celebration**: Confetti bei Budget-Analyse (CelebrationRequested Event in MainViewModel)

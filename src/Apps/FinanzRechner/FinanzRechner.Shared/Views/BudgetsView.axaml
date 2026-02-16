@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:FinanzRechner.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FinanzRechner.Views.BudgetsView"
              x:DataType="vm:BudgetsViewModel">
 
@@ -33,50 +34,15 @@
           <!-- Gesamt-Monatsbudget -->
           <Border Classes="Card" Margin="0,0,0,4"
                   IsVisible="{Binding HasTotalBudget}">
-            <StackPanel Spacing="8">
-              <Grid ColumnDefinitions="*,Auto">
-                <TextBlock Text="{Binding TotalBudgetText}"
-                           FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-                <TextBlock Grid.Column="1"
-                           FontSize="14" FontWeight="SemiBold"
-                           Classes.overLimit="{Binding IsTotalBudgetOverLimit}"
-                           Foreground="{DynamicResource TextPrimaryBrush}">
-                  <TextBlock.Styles>
-                    <Style Selector="TextBlock.overLimit">
-                      <Setter Property="Foreground" Value="#EF4444" />
-                    </Style>
-                  </TextBlock.Styles>
-                  <TextBlock.Text>
-                    <MultiBinding StringFormat="{}{0:F0}%">
-                      <Binding Path="TotalBudgetPercentage" />
-                    </MultiBinding>
-                  </TextBlock.Text>
-                </TextBlock>
-              </Grid>
-              <ProgressBar Minimum="0" Maximum="100"
-                           Value="{Binding TotalBudgetPercentage}"
-                           Height="10" CornerRadius="5"
-                           Classes.overLimit="{Binding IsTotalBudgetOverLimit}"
-                           Foreground="{DynamicResource AccentBrush}"
-                           Background="{DynamicResource SurfaceBrush}">
-                <ProgressBar.Styles>
-                  <Style Selector="ProgressBar.overLimit">
-                    <Setter Property="Foreground" Value="#EF4444" />
-                  </Style>
-                </ProgressBar.Styles>
-              </ProgressBar>
-              <Grid ColumnDefinitions="*,Auto">
-                <TextBlock FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}">
-                  <TextBlock.Text>
-                    <MultiBinding StringFormat="{}{0} / {1}">
-                      <Binding Path="TotalBudgetSpentDisplay" />
-                      <Binding Path="TotalBudgetLimitDisplay" />
-                    </MultiBinding>
-                  </TextBlock.Text>
-                </TextBlock>
-              </Grid>
+            <StackPanel Spacing="4">
+              <TextBlock Text="{Binding TotalBudgetText}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center" />
+              <!-- SkiaSharp Budget-Gauge (Halbkreis-Tachometer) -->
+              <Border Height="120" ClipToBounds="True">
+                <skia:SKCanvasView x:Name="BudgetGaugeCanvas" PaintSurface="OnPaintBudgetGauge" />
+              </Border>
             </StackPanel>
           </Border>
 

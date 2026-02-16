@@ -5,6 +5,7 @@
              xmlns:conv="using:FinanzRechner.Converters"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FinanzRechner.Views.HomeView"
              x:DataType="vm:MainViewModel">
 
@@ -140,24 +141,10 @@
                          VerticalAlignment="Center" />
             </StackPanel>
 
-            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
-              <ProgressBar Grid.Row="0" Grid.ColumnSpan="2"
-                           Minimum="0" Maximum="100"
-                           Value="{Binding OverallBudgetPercentage}"
-                           Height="8" CornerRadius="4"
-                           Foreground="{DynamicResource AccentBrush}"
-                           Background="{DynamicResource SurfaceBrush}" />
-              <TextBlock Grid.Row="1" Grid.Column="1"
-                         FontSize="11"
-                         Foreground="{DynamicResource TextSecondaryBrush}"
-                         Margin="0,4,0,0">
-                <TextBlock.Text>
-                  <MultiBinding StringFormat="{}{0:F0}%">
-                    <Binding Path="OverallBudgetPercentage" />
-                  </MultiBinding>
-                </TextBlock.Text>
-              </TextBlock>
-            </Grid>
+            <!-- SkiaSharp Budget-Gauge (Halbkreis-Tachometer) -->
+            <Border Height="110" ClipToBounds="True" Margin="0,0,0,4">
+              <skia:SKCanvasView x:Name="BudgetGaugeCanvas" PaintSurface="OnPaintBudgetGauge" />
+            </Border>
 
             <ItemsControl ItemsSource="{Binding TopBudgets}">
               <ItemsControl.ItemTemplate>

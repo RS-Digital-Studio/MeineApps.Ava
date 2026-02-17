@@ -12,6 +12,7 @@ using FinanzRechner.Services;
 using FinanzRechner.ViewModels;
 using FinanzRechner.ViewModels.Calculators;
 using FinanzRechner.Views;
+using MeineApps.UI.SkiaSharp;
 
 namespace FinanzRechner;
 
@@ -44,7 +45,9 @@ public partial class App : Application
         Services = services.BuildServiceProvider();
 
         // Theme initialisieren (gespeichertes Theme anwenden bevor das Fenster erstellt wird)
-        _ = Services.GetRequiredService<IThemeService>();
+        var themeService = Services.GetRequiredService<IThemeService>();
+        SkiaThemeHelper.RefreshColors();
+        themeService.ThemeChanged += (_, _) => SkiaThemeHelper.RefreshColors();
 
         // Lokalisierung initialisieren
         var locService = Services.GetRequiredService<ILocalizationService>();

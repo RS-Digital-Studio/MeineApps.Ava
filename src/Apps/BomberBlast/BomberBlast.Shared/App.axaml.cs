@@ -13,6 +13,7 @@ using BomberBlast.Resources.Strings;
 using BomberBlast.Services;
 using BomberBlast.ViewModels;
 using BomberBlast.Views;
+using MeineApps.UI.SkiaSharp;
 
 namespace BomberBlast;
 
@@ -49,7 +50,9 @@ public partial class App : Application
         LocalizationManager.Initialize(locService);
 
         // Initialize theme (must be resolved to apply saved theme at startup)
-        _ = Services.GetRequiredService<IThemeService>();
+        var themeService = Services.GetRequiredService<IThemeService>();
+        SkiaThemeHelper.RefreshColors();
+        themeService.ThemeChanged += (_, _) => SkiaThemeHelper.RefreshColors();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {

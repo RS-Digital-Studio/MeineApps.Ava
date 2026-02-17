@@ -8,6 +8,7 @@ using ZeitManager.Resources.Strings;
 using ZeitManager.Services;
 using ZeitManager.ViewModels;
 using ZeitManager.Views;
+using MeineApps.UI.SkiaSharp;
 
 namespace ZeitManager;
 
@@ -33,7 +34,9 @@ public partial class App : Application
         Services = services.BuildServiceProvider();
 
         // Initialize theme (apply saved theme before window is created)
-        _ = Services.GetRequiredService<IThemeService>();
+        var themeService = Services.GetRequiredService<IThemeService>();
+        SkiaThemeHelper.RefreshColors();
+        themeService.ThemeChanged += (_, _) => SkiaThemeHelper.RefreshColors();
 
         // Initialize localization
         var locService = Services.GetRequiredService<ILocalizationService>();

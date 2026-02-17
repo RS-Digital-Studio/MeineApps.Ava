@@ -13,6 +13,7 @@ using HandwerkerRechner.ViewModels;
 using HandwerkerRechner.ViewModels.Floor;
 using HandwerkerRechner.ViewModels.Premium;
 using HandwerkerRechner.Views;
+using MeineApps.UI.SkiaSharp;
 
 namespace HandwerkerRechner;
 
@@ -45,7 +46,9 @@ public partial class App : Application
         Services = services.BuildServiceProvider();
 
         // Initialize theme (must be resolved to apply saved theme at startup)
-        _ = Services.GetRequiredService<IThemeService>();
+        var themeService = Services.GetRequiredService<IThemeService>();
+        SkiaThemeHelper.RefreshColors();
+        themeService.ThemeChanged += (_, _) => SkiaThemeHelper.RefreshColors();
 
         // Initialize localization
         var locService = Services.GetRequiredService<ILocalizationService>();

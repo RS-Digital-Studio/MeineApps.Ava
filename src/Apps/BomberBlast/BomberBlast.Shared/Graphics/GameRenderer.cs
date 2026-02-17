@@ -1043,17 +1043,17 @@ public class GameRenderer : IDisposable
             { stretchY = 1f + stretch; stretchX = 1f - stretch * 0.5f; }
         }
 
-        // Pulsation beschleunigt sich je naeher die Explosion (8→24 Hz)
+        // Pulsation beschleunigt sich je näher die Explosion (4→12 Hz)
         float fuseProgress = 1f - (bomb.FuseTimer / Bomb.DEFAULT_FUSE_TIME);
-        float pulseSpeed = 8f + fuseProgress * 16f;
-        float pulseAmount = 0.1f + fuseProgress * 0.05f; // Staerkere Pulsation kurz vor Explosion
+        float pulseSpeed = 4f + fuseProgress * 8f;
+        float pulseAmount = 0.06f + fuseProgress * 0.04f; // Dezente Pulsation, stärker kurz vor Explosion
         float pulse = MathF.Sin(_globalTimer * pulseSpeed) * pulseAmount + (1f - pulseAmount);
         float drawSize = cs * pulse * birthScale;
 
         // Glow beschleunigt und intensiviert sich
-        float glowSpeed = 6f + fuseProgress * 10f;
+        float glowSpeed = 3f + fuseProgress * 6f;
         float glowPulse = MathF.Sin(_globalTimer * glowSpeed) * 0.3f + 0.5f;
-        byte glowAlpha = (byte)(100 + fuseProgress * 100); // Heller kurz vor Explosion
+        byte glowAlpha = (byte)(80 + fuseProgress * 80); // Heller kurz vor Explosion
         _glowPaint.Color = _palette.BombGlowColor.WithAlpha((byte)(glowAlpha * glowPulse));
         _glowPaint.MaskFilter = _mediumGlow;
         canvas.DrawCircle(bomb.X, bomb.Y, drawSize * 0.5f, _glowPaint);

@@ -76,6 +76,7 @@
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                   <ToggleSwitch Grid.Column="1"
+                                OnContent="" OffContent=""
                                 IsChecked="{Binding JoystickFixed}" />
                 </Grid>
 
@@ -122,6 +123,7 @@
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                   <ToggleSwitch Grid.Column="1"
+                                OnContent="" OffContent=""
                                 IsChecked="{Binding HapticEnabled}" />
                 </Grid>
               </StackPanel>
@@ -145,6 +147,7 @@
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                   <ToggleSwitch Grid.Column="1"
+                                OnContent="" OffContent=""
                                 IsChecked="{Binding SfxEnabled}" />
                 </Grid>
 
@@ -173,6 +176,7 @@
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                   <ToggleSwitch Grid.Column="1"
+                                OnContent="" OffContent=""
                                 IsChecked="{Binding MusicEnabled}" />
                 </Grid>
 

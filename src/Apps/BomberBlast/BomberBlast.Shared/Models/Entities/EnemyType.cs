@@ -46,7 +46,7 @@ public static class EnemyTypeExtensions
             EnemyType.Kondoria => 20f,  // Very slow
             EnemyType.Ovapi => 35f,     // Slow
             EnemyType.Pass => 70f,      // Fast
-            EnemyType.Pontan => 85f,    // Very fast
+            EnemyType.Pontan => 60f,    // Fast (Strafe, aber nicht unfair)
             _ => 45f
         };
     }

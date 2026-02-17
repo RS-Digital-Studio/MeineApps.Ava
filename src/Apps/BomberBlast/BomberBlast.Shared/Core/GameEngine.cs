@@ -118,8 +118,8 @@ public partial class GameEngine : IDisposable
     private bool _pontanPunishmentActive;
     private int _pontanSpawned;
     private float _pontanSpawnTimer;
-    private const int PONTAN_MAX_COUNT = 4;
-    private const float PONTAN_SPAWN_INTERVAL = 3f; // Sekunden zwischen Spawns
+    private const int PONTAN_MAX_COUNT = 3;
+    private const float PONTAN_SPAWN_INTERVAL = 5f; // Sekunden zwischen Spawns
     private const int PONTAN_MIN_DISTANCE = 5; // Mindestabstand zum Spieler
     private readonly Random _pontanRandom = new(); // Wiederverwendbar statt new Random() pro Aufruf
 

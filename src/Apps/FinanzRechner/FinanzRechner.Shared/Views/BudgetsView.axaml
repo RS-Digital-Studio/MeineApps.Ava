@@ -97,19 +97,9 @@
                       </Border>
                     </StackPanel>
 
-                    <!-- Progress Bar -->
-                    <Grid ColumnDefinitions="*,Auto">
-                      <ProgressBar Value="{Binding PercentageUsed}"
-                                   Maximum="100"
-                                   Height="8"
-                                   Foreground="{DynamicResource AccentBrush}" />
-                      <TextBlock Grid.Column="1"
-                                 Text="{Binding PercentageUsed, StringFormat='{}{0:F0}%'}"
-                                 FontSize="12" FontWeight="Bold"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 Margin="8,0,0,0"
-                                 VerticalAlignment="Center" />
-                    </Grid>
+                    <!-- Progress Bar (SkiaSharp) -->
+                    <skia:SKCanvasView Height="18"
+                                        PaintSurface="OnPaintBudgetProgress" />
 
                     <!-- Budget Details -->
                     <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">

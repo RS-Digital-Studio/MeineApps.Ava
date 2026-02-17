@@ -4,7 +4,6 @@
              xmlns:models="using:FinanzRechner.Models"
              xmlns:conv="using:FinanzRechner.Converters"
              xmlns:mi="using:Material.Icons.Avalonia"
-             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FinanzRechner.Views.HomeView"
              x:DataType="vm:MainViewModel">
@@ -74,6 +73,13 @@
                 </StackPanel>
               </Border>
             </StackPanel>
+
+            <!-- Sparkline: 30-Tage-Ausgaben-Trend -->
+            <skia:SKCanvasView x:Name="SparklineCanvas"
+                                PaintSurface="OnPaintSparkline"
+                                Height="40"
+                                IsVisible="{Binding HasSparklineData}"
+                                Margin="0,4,0,0" />
           </StackPanel>
 
           <!-- Ohne Transaktionen: Animiertes Icon + Onboarding-Text -->
@@ -146,6 +152,14 @@
               <skia:SKCanvasView x:Name="BudgetGaugeCanvas" PaintSurface="OnPaintBudgetGauge" />
             </Border>
 
+            <!-- Mini-Ringe für Budget-Kategorien -->
+            <Border Height="60" ClipToBounds="True"
+                    IsVisible="{Binding HasBudgetRings}"
+                    Margin="0,0,0,4">
+              <skia:SKCanvasView x:Name="BudgetMiniRingCanvas"
+                                  PaintSurface="OnPaintBudgetMiniRings" />
+            </Border>
+
             <ItemsControl ItemsSource="{Binding TopBudgets}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:BudgetDisplayItem">
@@ -184,11 +198,9 @@
                          Classes="SectionTitle"
                          VerticalAlignment="Center" />
             </StackPanel>
-            <lvc:PieChart Series="{Binding HomeExpenseChartSeries}"
-                          Height="180"
-                          Background="Transparent"
-                          LegendPosition="Right"
-                          InitialRotation="-90" />
+            <skia:SKCanvasView x:Name="ExpenseDonutCanvas"
+                                 PaintSurface="OnPaintExpenseDonut"
+                                 Height="180" />
           </StackPanel>
         </Border>
 

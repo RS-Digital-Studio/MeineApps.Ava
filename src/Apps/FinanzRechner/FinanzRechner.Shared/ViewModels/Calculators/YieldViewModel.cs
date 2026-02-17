@@ -5,10 +5,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
@@ -105,39 +103,31 @@ public partial class YieldViewModel : ObservableObject, IDisposable
     #region Chart Properties
 
     [ObservableProperty]
-    private ISeries[] _chartSeries = Array.Empty<ISeries>();
-
-    [ObservableProperty]
-    private Axis[] _xAxes = Array.Empty<Axis>();
-
-    [ObservableProperty]
-    private Axis[] _yAxes = Array.Empty<Axis>();
+    private DonutChartVisualization.Segment[]? _donutSegments;
 
     private void UpdateChartData()
     {
         if (Result == null)
         {
-            ChartSeries = Array.Empty<ISeries>();
+            DonutSegments = null;
             return;
         }
 
-        ChartSeries = new ISeries[]
+        DonutSegments = new[]
         {
-            new PieSeries<double>
+            new DonutChartVisualization.Segment
             {
-                Values = new[] { Result.InitialInvestment },
-                Name = _localizationService.GetString("ChartInitialValue") ?? "Initial Value",
-                Fill = new SolidColorPaint(new SKColor(0x3B, 0x82, 0xF6)),
-                InnerRadius = 50,
-                HoverPushout = 8
+                Value = (float)Result.InitialInvestment,
+                Color = new SKColor(0x3B, 0x82, 0xF6),
+                Label = _localizationService.GetString("ChartInitialValue") ?? "Initial Value",
+                ValueText = CurrencyHelper.Format(Result.InitialInvestment)
             },
-            new PieSeries<double>
+            new DonutChartVisualization.Segment
             {
-                Values = new[] { Result.TotalReturn },
-                Name = _localizationService.GetString("TotalReturn") ?? "Return",
-                Fill = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E)),
-                InnerRadius = 50,
-                HoverPushout = 8
+                Value = (float)Result.TotalReturn,
+                Color = new SKColor(0x22, 0xC5, 0x5E),
+                Label = _localizationService.GetString("TotalReturn") ?? "Return",
+                ValueText = CurrencyHelper.Format(Result.TotalReturn)
             }
         };
     }
@@ -179,7 +169,7 @@ public partial class YieldViewModel : ObservableObject, IDisposable
         Result = null;
         HasResult = false;
         ErrorMessage = null;
-        ChartSeries = Array.Empty<ISeries>();
+        DonutSegments = null;
     }
 
     [RelayCommand]

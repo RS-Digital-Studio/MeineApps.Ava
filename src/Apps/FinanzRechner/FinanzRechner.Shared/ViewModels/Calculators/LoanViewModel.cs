@@ -5,10 +5,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
@@ -104,33 +102,31 @@ public partial class LoanViewModel : ObservableObject, IDisposable
     #region Chart Properties
 
     [ObservableProperty]
-    private ISeries[] _chartSeries = Array.Empty<ISeries>();
+    private DonutChartVisualization.Segment[]? _donutSegments;
 
     private void UpdateChartData()
     {
         if (Result == null)
         {
-            ChartSeries = Array.Empty<ISeries>();
+            DonutSegments = null;
             return;
         }
 
-        ChartSeries = new ISeries[]
+        DonutSegments = new[]
         {
-            new PieSeries<double>
+            new DonutChartVisualization.Segment
             {
-                Values = new[] { Result.LoanAmount },
-                Name = _localizationService.GetString("ChartRepayment") ?? "Repayment",
-                Fill = new SolidColorPaint(SKColor.Parse("#22C55E")),
-                InnerRadius = 50,
-                HoverPushout = 8
+                Value = (float)Result.LoanAmount,
+                Color = new SKColor(0x22, 0xC5, 0x5E),
+                Label = _localizationService.GetString("ChartRepayment") ?? "Repayment",
+                ValueText = CurrencyHelper.Format(Result.LoanAmount)
             },
-            new PieSeries<double>
+            new DonutChartVisualization.Segment
             {
-                Values = new[] { Result.TotalInterest },
-                Name = _localizationService.GetString("ChartInterest") ?? "Interest",
-                Fill = new SolidColorPaint(SKColor.Parse("#F59E0B")),
-                InnerRadius = 50,
-                HoverPushout = 8
+                Value = (float)Result.TotalInterest,
+                Color = new SKColor(0xF5, 0x9E, 0x0B),
+                Label = _localizationService.GetString("ChartInterest") ?? "Interest",
+                ValueText = CurrencyHelper.Format(Result.TotalInterest)
             }
         };
     }
@@ -172,7 +168,7 @@ public partial class LoanViewModel : ObservableObject, IDisposable
         Result = null;
         HasResult = false;
         ErrorMessage = null;
-        ChartSeries = Array.Empty<ISeries>();
+        DonutSegments = null;
     }
 
     [RelayCommand]

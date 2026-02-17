@@ -1,11 +1,10 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.UI.SkiaSharp;
+using FinanzRechner.Graphics;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using FinanzRechner.Services;
@@ -327,9 +326,9 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 0;
         IsCalculatorOpen = true;
-        // Automatisch mit Standardwerten berechnen
-        if (!CompoundInterestViewModel.HasResult)
-            CompoundInterestViewModel.CalculateCommand.Execute(null);
+        // IMMER berechnen - InvalidateSurface() auf unsichtbare Canvas wird ignoriert,
+        // daher muss nach Sichtbar-Werden ein frisches PropertyChanged feuern
+        CompoundInterestViewModel.CalculateCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -337,8 +336,7 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 1;
         IsCalculatorOpen = true;
-        if (!SavingsPlanViewModel.HasResult)
-            SavingsPlanViewModel.CalculateCommand.Execute(null);
+        SavingsPlanViewModel.CalculateCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -346,8 +344,7 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 2;
         IsCalculatorOpen = true;
-        if (!LoanViewModel.HasResult)
-            LoanViewModel.CalculateCommand.Execute(null);
+        LoanViewModel.CalculateCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -355,8 +352,7 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 3;
         IsCalculatorOpen = true;
-        if (!AmortizationViewModel.HasResult)
-            AmortizationViewModel.CalculateCommand.Execute(null);
+        AmortizationViewModel.CalculateCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -364,8 +360,7 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 4;
         IsCalculatorOpen = true;
-        if (!YieldViewModel.HasResult)
-            YieldViewModel.CalculateCommand.Execute(null);
+        YieldViewModel.CalculateCommand.Execute(null);
     }
 
     [RelayCommand]
@@ -373,8 +368,7 @@ public partial class MainViewModel : ObservableObject
     {
         ActiveCalculatorIndex = 5;
         IsCalculatorOpen = true;
-        if (!InflationViewModel.HasResult)
-            InflationViewModel.CalculateCommand.Execute(null);
+        InflationViewModel.CalculateCommand.Execute(null);
     }
 
     private void CloseCalculator()
@@ -532,16 +526,16 @@ public partial class MainViewModel : ObservableObject
 
     #endregion
 
-    #region Home Expense Chart (Mini-Donut)
+    #region Home Expense Chart (Mini-Donut via SkiaSharp)
 
     [ObservableProperty]
-    private IEnumerable<ISeries> _homeExpenseChartSeries = [];
+    private DonutChartVisualization.Segment[] _homeExpenseSegments = [];
 
     [ObservableProperty]
     private bool _hasHomeChartData;
 
     /// <summary>
-    /// Baut Mini-Donut-Chart für HomeView aus den Monats-Ausgaben auf.
+    /// Baut Mini-Donut-Segmente für HomeView aus den Monats-Ausgaben auf.
     /// </summary>
     private void BuildHomeExpenseChart(List<Expense> monthExpenses)
     {
@@ -556,22 +550,107 @@ public partial class MainViewModel : ObservableObject
         if (expensesByCategory.Count == 0)
         {
             HasHomeChartData = false;
-            HomeExpenseChartSeries = [];
+            HomeExpenseSegments = [];
             return;
         }
 
         HasHomeChartData = true;
-        HomeExpenseChartSeries = expensesByCategory.Select(c => new PieSeries<double>
+        HomeExpenseSegments = expensesByCategory.Select(c => new DonutChartVisualization.Segment
         {
-            Values = [c.Amount],
-            Name = CategoryLocalizationHelper.GetLocalizedName(c.Category, _localizationService),
-            Fill = new SolidColorPaint(CategoryLocalizationHelper.GetCategoryColor(c.Category)),
-            InnerRadius = 40,
-            DataLabelsSize = 0,
-            HoverPushout = 3,
-            RelativeOuterRadius = 8,
-            RelativeInnerRadius = 8
+            Value = (float)c.Amount,
+            Color = CategoryLocalizationHelper.GetCategoryColor(c.Category),
+            Label = CategoryLocalizationHelper.GetLocalizedName(c.Category, _localizationService),
+            ValueText = $"{c.Amount:N0} €"
         }).ToArray();
+    }
+
+    #endregion
+
+    #region Sparkline (30-Tage-Ausgaben-Trend)
+
+    [ObservableProperty]
+    private float[]? _sparklineValues;
+
+    [ObservableProperty]
+    private string? _sparklineTrendLabel;
+
+    [ObservableProperty]
+    private bool _hasSparklineData;
+
+    /// <summary>
+    /// Baut Sparkline-Daten aus den letzten 30 Tagen auf.
+    /// </summary>
+    private void BuildSparklineData(List<Expense> monthExpenses)
+    {
+        var today = DateTime.Today;
+        var days = new float[30];
+
+        // Ausgaben pro Tag summieren (letzte 30 Tage)
+        foreach (var e in monthExpenses.Where(e => e.Type == TransactionType.Expense))
+        {
+            int daysAgo = (today - e.Date.Date).Days;
+            if (daysAgo >= 0 && daysAgo < 30)
+                days[29 - daysAgo] += (float)e.Amount;
+        }
+
+        // Prüfen ob überhaupt Daten vorhanden
+        float total = days.Sum();
+        if (total < 0.01f)
+        {
+            HasSparklineData = false;
+            SparklineValues = null;
+            SparklineTrendLabel = null;
+            return;
+        }
+
+        HasSparklineData = true;
+        SparklineValues = days;
+
+        // Trend-Label: Vergleich letzte 7 Tage vs. vorherige 7 Tage
+        float recent7 = days[23..].Sum();
+        float prev7 = days[16..23].Sum();
+        if (prev7 > 0.01f)
+        {
+            double changePercent = ((recent7 - prev7) / prev7) * 100;
+            SparklineTrendLabel = changePercent >= 0 ? $"+{changePercent:F0}%" : $"{changePercent:F0}%";
+        }
+        else
+        {
+            SparklineTrendLabel = null;
+        }
+    }
+
+    #endregion
+
+    #region Budget Mini-Ringe
+
+    [ObservableProperty]
+    private BudgetMiniRingVisualization.BudgetRingData[]? _budgetRings;
+
+    [ObservableProperty]
+    private bool _hasBudgetRings;
+
+    /// <summary>
+    /// Baut Mini-Ring-Daten aus den Budget-Status auf.
+    /// </summary>
+    private void BuildBudgetRings(IReadOnlyList<BudgetStatus> budgetStatuses)
+    {
+        if (budgetStatuses.Count == 0)
+        {
+            HasBudgetRings = false;
+            BudgetRings = null;
+            return;
+        }
+
+        HasBudgetRings = true;
+        BudgetRings = budgetStatuses
+            .OrderByDescending(b => b.PercentageUsed)
+            .Take(5) // Max 5 Ringe
+            .Select(b => new BudgetMiniRingVisualization.BudgetRingData(
+                CategoryLocalizationHelper.GetLocalizedName(b.Category, _localizationService),
+                (float)b.PercentageUsed,
+                CategoryLocalizationHelper.GetCategoryColor(b.Category)))
+            .ToArray();
     }
 
     #endregion
@@ -748,11 +827,16 @@ public partial class MainViewModel : ObservableObject
                     });
 
                 TopBudgets = new ObservableCollection<BudgetDisplayItem>(top3);
+
+                // Mini-Ringe für Budget-Übersicht aufbauen
+                BuildBudgetRings(budgetStatuses);
             }
             else
             {
                 TopBudgets.Clear();
                 OverallBudgetPercentage = 0;
+                HasBudgetRings = false;
+                BudgetRings = null;
             }
         }
         catch (Exception)
@@ -779,6 +863,9 @@ public partial class MainViewModel : ObservableObject
 
             // Mini-Donut-Chart für HomeView aufbauen
             BuildHomeExpenseChart(expenseList);
+
+            // Sparkline für 30-Tage-Trend aufbauen
+            BuildSparklineData(expenseList);
         }
         catch (Exception)
         {

@@ -4,7 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:conv="using:FinanzRechner.Converters"
-             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FinanzRechner.Views.StatisticsView"
              x:DataType="vm:StatisticsViewModel">
 
@@ -258,11 +258,9 @@
             </StackPanel>
 
             <!-- Donut-Chart -->
-            <lvc:PieChart Series="{Binding ExpenseChartSeries}"
-                          Height="220"
-                          Background="Transparent"
-                          LegendPosition="Right"
-                          InitialRotation="-90" />
+            <skia:SKCanvasView x:Name="ExpenseDonutCanvas"
+                                 PaintSurface="OnPaintExpenseDonut"
+                                 Height="220" />
 
             <!-- Kategorie-Breakdown (Details mit Fortschrittsbalken) -->
             <TextBlock Text="{Binding CategoryBreakdownText}"
@@ -326,11 +324,9 @@
                          VerticalAlignment="Center" />
             </StackPanel>
 
-            <lvc:PieChart Series="{Binding IncomeChartSeries}"
-                          Height="220"
-                          Background="Transparent"
-                          LegendPosition="Right"
-                          InitialRotation="-90" />
+            <skia:SKCanvasView x:Name="IncomeDonutCanvas"
+                                 PaintSurface="OnPaintIncomeDonut"
+                                 Height="220" />
           </StackPanel>
         </Border>
 
@@ -374,13 +370,9 @@
             </Grid>
 
             <!-- Trend Chart -->
-            <lvc:CartesianChart Series="{Binding TrendChartSeries}"
-                                XAxes="{Binding TrendXAxes}"
-                                YAxes="{Binding TrendYAxes}"
-                                Height="200"
-                                Background="Transparent"
-                                ZoomMode="None"
-                                TooltipPosition="Top" />
+            <skia:SKCanvasView x:Name="TrendChartCanvas"
+                                 PaintSurface="OnPaintTrendChart"
+                                 Height="200" />
 
             <!-- Legend -->
             <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">

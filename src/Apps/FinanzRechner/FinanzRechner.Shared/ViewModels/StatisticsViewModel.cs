@@ -5,12 +5,10 @@ using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using FinanzRechner.Services;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
 namespace FinanzRechner.ViewModels;
@@ -225,22 +223,22 @@ public partial class StatisticsViewModel : ObservableObject, IDisposable
     public bool HasExpenseData => ExpensesByCategory.Count > 0;
     public bool HasIncomeData => IncomeByCategory.Count > 0;
 
-    // LiveCharts PieChart Series
+    // SkiaSharp Donut-Chart Segmente
     [ObservableProperty]
-    private IEnumerable<ISeries> _expenseChartSeries = [];
+    private DonutChartVisualization.Segment[] _expenseDonutSegments = [];
 
     [ObservableProperty]
-    private IEnumerable<ISeries> _incomeChartSeries = [];
+    private DonutChartVisualization.Segment[] _incomeDonutSegments = [];
 
-    // LineChart Trend (6 months)
+    // SkiaSharp Trend-Chart Daten (6 Monate)
     [ObservableProperty]
-    private IEnumerable<ISeries> _trendChartSeries = [];
-
-    [ObservableProperty]
-    private Axis[] _trendXAxes = [];
+    private string[] _trendMonthLabels = [];
 
     [ObservableProperty]
-    private Axis[] _trendYAxes = [];
+    private float[] _trendIncomeData = [];
+
+    [ObservableProperty]
+    private float[] _trendExpenseData = [];
 
     // Month comparison
     [ObservableProperty]
@@ -489,92 +487,30 @@ public partial class StatisticsViewModel : ObservableObject, IDisposable
             IncomeTrend = currentMonthIncome > 0 ? (_localizationService.GetString("New") ?? "Neu") : "—";
         }
 
-        // Determine label color based on theme (light vs dark)
-        var labelColor = _themeService.IsDarkTheme
-            ? new SKColor(0xFF, 0xFF, 0xFF)
-            : new SKColor(0x21, 0x21, 0x21);
-
-        // LineSeries mit semi-transparentem Fill für Fläche unter den Linien
-        TrendChartSeries =
-        [
-            new LineSeries<double>
-            {
-                Values = monthlyIncomes,
-                Name = _localizationService.GetString("Income") ?? "Income",
-                Stroke = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E)) { StrokeThickness = 3 },
-                GeometryStroke = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E)) { StrokeThickness = 2 },
-                GeometryFill = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E)),
-                GeometrySize = 6,
-                Fill = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E, 0x33)),
-                LineSmoothness = 0.3
-            },
-            new LineSeries<double>
-            {
-                Values = monthlyExpenses,
-                Name = _localizationService.GetString("Expenses") ?? "Expenses",
-                Stroke = new SolidColorPaint(new SKColor(0xEF, 0x44, 0x44)) { StrokeThickness = 3 },
-                GeometryStroke = new SolidColorPaint(new SKColor(0xEF, 0x44, 0x44)) { StrokeThickness = 2 },
-                GeometryFill = new SolidColorPaint(new SKColor(0xEF, 0x44, 0x44)),
-                GeometrySize = 6,
-                Fill = new SolidColorPaint(new SKColor(0xEF, 0x44, 0x44, 0x33)),
-                LineSmoothness = 0.3
-            }
-        ];
-
-        TrendXAxes =
-        [
-            new Axis
-            {
-                Labels = monthLabels,
-                LabelsPaint = new SolidColorPaint(labelColor),
-                TextSize = 12
-            }
-        ];
-
-        TrendYAxes =
-        [
-            new Axis
-            {
-                LabelsPaint = new SolidColorPaint(labelColor),
-                TextSize = 12,
-                Labeler = value => CurrencyHelper.FormatAxis(value)
-            }
-        ];
+        // SkiaSharp Trend-Daten setzen (float[] statt LiveCharts ISeries)
+        TrendMonthLabels = monthLabels;
+        TrendIncomeData = monthlyIncomes.Select(v => (float)v).ToArray();
+        TrendExpenseData = monthlyExpenses.Select(v => (float)v).ToArray();
     }
 
     private void UpdateCharts(List<CategoryStatistic> expenses, List<CategoryStatistic> incomes)
     {
-        // Determine label color based on theme (light vs dark)
-        var labelColor = _themeService.IsDarkTheme
-            ? new SKColor(0xFF, 0xFF, 0xFF)
-            : new SKColor(0x21, 0x21, 0x21);
-
-        // Expenses Donut-Chart (InnerRadius für Ring-Effekt)
-        ExpenseChartSeries = expenses.Select(c => new PieSeries<double>
+        // Ausgaben-Donut als SkiaSharp-Segmente
+        ExpenseDonutSegments = expenses.Select(c => new DonutChartVisualization.Segment
         {
-            Values = [c.Amount],
-            Name = GetCategoryName(c.Category),
-            Fill = new SolidColorPaint(GetCategoryColor(c.Category)),
-            InnerRadius = 50,
-            DataLabelsPosition = LiveChartsCore.Measure.PolarLabelsPosition.Outer,
-            DataLabelsPaint = new SolidColorPaint(labelColor),
-            DataLabelsFormatter = point => $"{c.Percentage * 100:F0}%",
-            DataLabelsSize = 12,
-            HoverPushout = 5
+            Value = (float)c.Amount,
+            Color = GetCategoryColor(c.Category),
+            Label = GetCategoryName(c.Category),
+            ValueText = $"{c.Percentage * 100:F0}%"
         }).ToArray();
 
-        // Income Donut-Chart
-        IncomeChartSeries = incomes.Select(c => new PieSeries<double>
+        // Einnahmen-Donut als SkiaSharp-Segmente
+        IncomeDonutSegments = incomes.Select(c => new DonutChartVisualization.Segment
         {
-            Values = [c.Amount],
-            Name = GetCategoryName(c.Category),
-            Fill = new SolidColorPaint(GetCategoryColor(c.Category)),
-            InnerRadius = 50,
-            DataLabelsPosition = LiveChartsCore.Measure.PolarLabelsPosition.Outer,
-            DataLabelsPaint = new SolidColorPaint(labelColor),
-            DataLabelsFormatter = point => $"{c.Percentage * 100:F0}%",
-            DataLabelsSize = 12,
-            HoverPushout = 5
+            Value = (float)c.Amount,
+            Color = GetCategoryColor(c.Category),
+            Label = GetCategoryName(c.Category),
+            ValueText = $"{c.Percentage * 100:F0}%"
         }).ToArray();
     }
 

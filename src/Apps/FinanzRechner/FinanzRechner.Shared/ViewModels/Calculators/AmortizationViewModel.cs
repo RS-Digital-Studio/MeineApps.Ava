@@ -7,11 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
-using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
@@ -106,69 +102,42 @@ public partial class AmortizationViewModel : ObservableObject, IDisposable
     #region Chart Properties
 
     [ObservableProperty]
-    private ISeries[] _chartSeries = Array.Empty<ISeries>();
+    private string[]? _amortYearLabels;
 
     [ObservableProperty]
-    private Axis[] _xAxes = Array.Empty<Axis>();
+    private float[]? _amortPrincipalData;
 
     [ObservableProperty]
-    private Axis[] _yAxes = Array.Empty<Axis>();
+    private float[]? _amortInterestData;
 
     private void UpdateChartData()
     {
         if (Result == null || Result.Schedule.Count == 0)
         {
-            ChartSeries = Array.Empty<ISeries>();
+            AmortYearLabels = null;
+            AmortPrincipalData = null;
+            AmortInterestData = null;
             return;
         }
 
         // Tilgung und Zinsen pro Jahr aggregieren
-        var principalPerYear = new List<double>();
-        var interestPerYear = new List<double>();
-        var labels = new List<string>();
+        var labels = new string[Years];
+        var principalPerYear = new float[Years];
+        var interestPerYear = new float[Years];
 
         for (int year = 1; year <= Years; year++)
         {
             var yearEntries = Result.Schedule
                 .Where(e => e.Month > (year - 1) * 12 && e.Month <= year * 12)
                 .ToList();
-            principalPerYear.Add(yearEntries.Sum(e => e.Principal));
-            interestPerYear.Add(yearEntries.Sum(e => e.Interest));
-            labels.Add(year.ToString());
+            labels[year - 1] = year.ToString();
+            principalPerYear[year - 1] = (float)yearEntries.Sum(e => e.Principal);
+            interestPerYear[year - 1] = (float)yearEntries.Sum(e => e.Interest);
         }
 
-        ChartSeries = new ISeries[]
-        {
-            new StackedColumnSeries<double>
-            {
-                Values = principalPerYear,
-                Name = _localizationService.GetString("PrincipalPortion") ?? "Principal",
-                Fill = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E)),
-                Stroke = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E)) { StrokeThickness = 0 },
-                Rx = 3,
-                Ry = 3,
-                MaxBarWidth = 35
-            },
-            new StackedColumnSeries<double>
-            {
-                Values = interestPerYear,
-                Name = _localizationService.GetString("InterestPortion") ?? "Interest",
-                Fill = new SolidColorPaint(new SKColor(0xF5, 0x9E, 0x0B)),
-                Stroke = new SolidColorPaint(new SKColor(0xF5, 0x9E, 0x0B)) { StrokeThickness = 0 },
-                Rx = 3,
-                Ry = 3,
-                MaxBarWidth = 35
-            }
-        };
-
-        XAxes = new Axis[]
-        {
-            new Axis
-            {
-                Name = _localizationService.GetString("ChartYears") ?? "Years",
-                Labels = labels.ToArray()
-            }
-        };
+        AmortYearLabels = labels;
+        AmortPrincipalData = principalPerYear;
+        AmortInterestData = interestPerYear;
     }
 
     #endregion
@@ -218,7 +187,9 @@ public partial class AmortizationViewModel : ObservableObject, IDisposable
         Result = null;
         HasResult = false;
         ErrorMessage = null;
-        ChartSeries = Array.Empty<ISeries>();
+        AmortYearLabels = null;
+        AmortPrincipalData = null;
+        AmortInterestData = null;
     }
 
     [RelayCommand]

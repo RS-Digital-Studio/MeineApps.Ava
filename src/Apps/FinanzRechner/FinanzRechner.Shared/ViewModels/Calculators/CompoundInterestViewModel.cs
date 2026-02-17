@@ -7,11 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
-using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
@@ -106,67 +102,41 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
     #region Chart Properties
 
     [ObservableProperty]
-    private ISeries[] _chartSeries = Array.Empty<ISeries>();
+    private string[]? _chartXLabels;
 
     [ObservableProperty]
-    private Axis[] _xAxes = Array.Empty<Axis>();
+    private float[]? _chartArea1Data;
 
     [ObservableProperty]
-    private Axis[] _yAxes = Array.Empty<Axis>();
+    private float[]? _chartArea2Data;
 
     private void UpdateChartData()
     {
         if (Result == null || Years <= 0)
         {
-            ChartSeries = Array.Empty<ISeries>();
+            ChartXLabels = null;
+            ChartArea1Data = null;
+            ChartArea2Data = null;
             return;
         }
 
-        var principalValues = new List<double>();
-        var interestValues = new List<double>();
+        var labels = new string[Years + 1];
+        var principalValues = new float[Years + 1];
+        var interestValues = new float[Years + 1];
         var rate = AnnualRate / 100;
         var n = CompoundingsPerYear;
 
         for (int year = 0; year <= Years; year++)
         {
-            principalValues.Add(Principal);
+            labels[year] = year.ToString();
+            principalValues[year] = (float)Principal;
             var total = Principal * Math.Pow(1 + rate / n, n * year);
-            interestValues.Add(Math.Max(0, total - Principal));
+            interestValues[year] = (float)Math.Max(0, total - Principal);
         }
 
-        ChartSeries = new ISeries[]
-        {
-            new StackedAreaSeries<double>
-            {
-                Values = principalValues,
-                Name = _localizationService.GetString("PrincipalPortion") ?? "Principal",
-                Fill = new SolidColorPaint(new SKColor(0x3B, 0x82, 0xF6, 0x88)),
-                Stroke = new SolidColorPaint(new SKColor(0x3B, 0x82, 0xF6)) { StrokeThickness = 2 },
-                GeometrySize = 0,
-                LineSmoothness = 0
-            },
-            new StackedAreaSeries<double>
-            {
-                Values = interestValues,
-                Name = _localizationService.GetString("InterestEarned") ?? "Interest",
-                Fill = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E, 0x88)),
-                Stroke = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E)) { StrokeThickness = 2 },
-                GeometrySize = 0,
-                LineSmoothness = 0.3
-            }
-        };
-
-        XAxes = new Axis[]
-        {
-            new Axis
-            {
-                Name = _localizationService.GetString("ChartYears") ?? "Years",
-                MinLimit = 0,
-                MaxLimit = Years,
-                MinStep = 1,
-                Labels = Enumerable.Range(0, Years + 1).Select(x => x.ToString()).ToArray()
-            }
-        };
+        ChartXLabels = labels;
+        ChartArea1Data = principalValues;
+        ChartArea2Data = interestValues;
     }
 
     #endregion
@@ -207,7 +177,9 @@ public partial class CompoundInterestViewModel : ObservableObject, IDisposable
         Result = null;
         HasResult = false;
         ErrorMessage = null;
-        ChartSeries = Array.Empty<ISeries>();
+        ChartXLabels = null;
+        ChartArea1Data = null;
+        ChartArea2Data = null;
     }
 
     [RelayCommand]

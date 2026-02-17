@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:FinanzRechner.ViewModels.Calculators"
              xmlns:mi="using:Material.Icons.Avalonia"
-             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FinanzRechner.Views.Calculators.AmortizationView"
              x:DataType="vm:AmortizationViewModel">
 
@@ -156,13 +156,9 @@
                                        Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </StackPanel>
 
-                        <lvc:CartesianChart Series="{Binding ChartSeries}"
-                                            XAxes="{Binding XAxes}"
-                                            YAxes="{Binding YAxes}"
-                                            Height="200"
-                                            Background="{DynamicResource CardBrush}"
-                                            ZoomMode="None"
-                                            TooltipPosition="Top"/>
+                        <skia:SKCanvasView x:Name="AmortBarCanvas"
+                                            PaintSurface="OnPaintAmortBars"
+                                            Height="200" />
 
                         <!-- Legende -->
                         <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">

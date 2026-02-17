@@ -7,11 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
-using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
@@ -111,33 +107,37 @@ public partial class SavingsPlanViewModel : ObservableObject, IDisposable
     #region Chart Properties
 
     [ObservableProperty]
-    private ISeries[] _chartSeries = Array.Empty<ISeries>();
+    private string[]? _chartXLabels;
 
     [ObservableProperty]
-    private Axis[] _xAxes = Array.Empty<Axis>();
+    private float[]? _chartArea1Data;
 
     [ObservableProperty]
-    private Axis[] _yAxes = Array.Empty<Axis>();
+    private float[]? _chartArea2Data;
 
     private void UpdateChartData()
     {
         if (Result == null || Years <= 0)
         {
-            ChartSeries = Array.Empty<ISeries>();
+            ChartXLabels = null;
+            ChartArea1Data = null;
+            ChartArea2Data = null;
             return;
         }
 
-        var depositValues = new List<double>();
-        var totalValues = new List<double>();
+        var labels = new string[Years + 1];
+        var depositValues = new float[Years + 1];
+        var interestValues = new float[Years + 1];
         var monthlyRate = (AnnualRate / 100) / 12;
 
         for (int year = 0; year <= Years; year++)
         {
+            labels[year] = year.ToString();
             var months = year * 12;
             var deposits = InitialDeposit + (MonthlyDeposit * months);
-            depositValues.Add(deposits);
+            depositValues[year] = (float)deposits;
 
-            // Calculate total value for this year
+            // Gesamtwert für dieses Jahr berechnen
             double total;
             if (monthlyRate > 0)
             {
@@ -149,45 +149,12 @@ public partial class SavingsPlanViewModel : ObservableObject, IDisposable
             {
                 total = deposits;
             }
-            totalValues.Add(total);
+            interestValues[year] = (float)Math.Max(0, total - deposits);
         }
 
-        // Zinsen pro Jahr (Gesamtkapital - Einzahlungen)
-        var interestValues = totalValues.Zip(depositValues, (total, dep) => Math.Max(0, total - dep)).ToList();
-
-        ChartSeries = new ISeries[]
-        {
-            new StackedAreaSeries<double>
-            {
-                Values = depositValues,
-                Name = _localizationService.GetString("ChartDeposits") ?? "Deposits",
-                Fill = new SolidColorPaint(new SKColor(0x3B, 0x82, 0xF6, 0x88)),
-                Stroke = new SolidColorPaint(new SKColor(0x3B, 0x82, 0xF6)) { StrokeThickness = 2 },
-                GeometrySize = 0,
-                LineSmoothness = 0
-            },
-            new StackedAreaSeries<double>
-            {
-                Values = interestValues,
-                Name = _localizationService.GetString("InterestEarned") ?? "Interest",
-                Fill = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E, 0x88)),
-                Stroke = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E)) { StrokeThickness = 2 },
-                GeometrySize = 0,
-                LineSmoothness = 0.3
-            }
-        };
-
-        XAxes = new Axis[]
-        {
-            new Axis
-            {
-                Name = _localizationService.GetString("ChartYears") ?? "Years",
-                MinLimit = 0,
-                MaxLimit = Years,
-                MinStep = Years > 10 ? 5 : 1,
-                Labels = Enumerable.Range(0, Years + 1).Where(x => Years <= 10 || x % 5 == 0).Select(x => x.ToString()).ToArray()
-            }
-        };
+        ChartXLabels = labels;
+        ChartArea1Data = depositValues;
+        ChartArea2Data = interestValues;
     }
 
     #endregion
@@ -228,7 +195,9 @@ public partial class SavingsPlanViewModel : ObservableObject, IDisposable
         Result = null;
         HasResult = false;
         ErrorMessage = null;
-        ChartSeries = Array.Empty<ISeries>();
+        ChartXLabels = null;
+        ChartArea1Data = null;
+        ChartArea2Data = null;
     }
 
     [RelayCommand]

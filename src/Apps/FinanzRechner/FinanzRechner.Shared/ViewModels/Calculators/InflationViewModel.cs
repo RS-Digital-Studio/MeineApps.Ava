@@ -7,11 +7,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
-using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
@@ -111,67 +107,40 @@ public partial class InflationViewModel : ObservableObject, IDisposable
     #region Chart Properties
 
     [ObservableProperty]
-    private ISeries[] _chartSeries = Array.Empty<ISeries>();
+    private string[]? _chartXLabels;
 
     [ObservableProperty]
-    private Axis[] _xAxes = Array.Empty<Axis>();
+    private float[]? _chartArea1Data;
 
     [ObservableProperty]
-    private Axis[] _yAxes = Array.Empty<Axis>();
+    private float[]? _chartArea2Data;
 
     private void UpdateChartData()
     {
         if (Result == null || Years <= 0)
         {
-            ChartSeries = Array.Empty<ISeries>();
+            ChartXLabels = null;
+            ChartArea1Data = null;
+            ChartArea2Data = null;
             return;
         }
 
-        // Kaufkraft und Verlust als gestapelte Flächen
-        var remainingValues = new List<double>();
-        var lostValues = new List<double>();
+        var labels = new string[Years + 1];
+        var remainingValues = new float[Years + 1];
+        var lostValues = new float[Years + 1];
         var rate = AnnualInflationRate / 100;
 
         for (int year = 0; year <= Years; year++)
         {
+            labels[year] = year.ToString();
             var remaining = CurrentAmount / Math.Pow(1 + rate, year);
-            remainingValues.Add(remaining);
-            lostValues.Add(CurrentAmount - remaining);
+            remainingValues[year] = (float)remaining;
+            lostValues[year] = (float)(CurrentAmount - remaining);
         }
 
-        ChartSeries = new ISeries[]
-        {
-            new StackedAreaSeries<double>
-            {
-                Values = remainingValues,
-                Name = _localizationService.GetString("ChartPurchasingPower") ?? "Purchasing Power",
-                Fill = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E, 0x88)),
-                Stroke = new SolidColorPaint(new SKColor(0x22, 0xC5, 0x5E)) { StrokeThickness = 2 },
-                GeometrySize = 0,
-                LineSmoothness = 0.3
-            },
-            new StackedAreaSeries<double>
-            {
-                Values = lostValues,
-                Name = _localizationService.GetString("PurchasingPowerLoss") ?? "Loss",
-                Fill = new SolidColorPaint(new SKColor(0xEF, 0x44, 0x44, 0x88)),
-                Stroke = new SolidColorPaint(new SKColor(0xEF, 0x44, 0x44)) { StrokeThickness = 2 },
-                GeometrySize = 0,
-                LineSmoothness = 0.3
-            }
-        };
-
-        XAxes = new Axis[]
-        {
-            new Axis
-            {
-                Name = _localizationService.GetString("ChartYears") ?? "Years",
-                MinLimit = 0,
-                MaxLimit = Years,
-                MinStep = 1,
-                Labels = Enumerable.Range(0, Years + 1).Select(x => x.ToString()).ToArray()
-            }
-        };
+        ChartXLabels = labels;
+        ChartArea1Data = remainingValues;
+        ChartArea2Data = lostValues;
     }
 
     #endregion
@@ -211,7 +180,9 @@ public partial class InflationViewModel : ObservableObject, IDisposable
         Result = null;
         HasResult = false;
         ErrorMessage = null;
-        ChartSeries = Array.Empty<ISeries>();
+        ChartXLabels = null;
+        ChartArea1Data = null;
+        ChartArea2Data = null;
     }
 
     [RelayCommand]

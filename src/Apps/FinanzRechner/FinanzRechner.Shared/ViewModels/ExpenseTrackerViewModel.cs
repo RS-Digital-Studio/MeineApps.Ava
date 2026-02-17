@@ -4,12 +4,10 @@ using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using FinanzRechner.Services;
-using LiveChartsCore;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
 namespace FinanzRechner.ViewModels;
@@ -371,7 +369,7 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     #region Category Chart
 
     [ObservableProperty]
-    private IEnumerable<ISeries> _categoryChartSeries = [];
+    private DonutChartVisualization.Segment[]? _categoryDonutSegments;
 
     [ObservableProperty]
     private bool _hasCategoryChartData;
@@ -383,15 +381,11 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         if (_allExpenses.Count == 0)
         {
             HasCategoryChartData = false;
-            CategoryChartSeries = [];
+            CategoryDonutSegments = null;
             return;
         }
 
-        var labelColor = _themeService.IsDarkTheme
-            ? new SKColor(0xFF, 0xFF, 0xFF)
-            : new SKColor(0x21, 0x21, 0x21);
-
-        // Nur Ausgaben im Kreisdiagramm (Einnahmen wuerden es verzerren)
+        // Nur Ausgaben im Kreisdiagramm (Einnahmen würden es verzerren)
         var expensesByCategory = _allExpenses
             .Where(e => e.Type == TransactionType.Expense)
             .GroupBy(e => e.Category)
@@ -402,23 +396,18 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
         if (expensesByCategory.Count == 0)
         {
             HasCategoryChartData = false;
-            CategoryChartSeries = [];
+            CategoryDonutSegments = null;
             return;
         }
 
         var total = expensesByCategory.Sum(x => x.Amount);
 
-        CategoryChartSeries = expensesByCategory.Select(c => new PieSeries<double>
+        CategoryDonutSegments = expensesByCategory.Select(c => new DonutChartVisualization.Segment
         {
-            Values = [c.Amount],
-            Name = CategoryLocalizationHelper.GetLocalizedName(c.Category, _localizationService),
-            Fill = new SolidColorPaint(CategoryLocalizationHelper.GetCategoryColor(c.Category)),
-            InnerRadius = 35,
-            DataLabelsPosition = LiveChartsCore.Measure.PolarLabelsPosition.Outer,
-            DataLabelsPaint = new SolidColorPaint(labelColor),
-            DataLabelsFormatter = _ => total > 0 ? $"{c.Amount / total * 100:F0}%" : "",
-            DataLabelsSize = 11,
-            HoverPushout = 3
+            Value = (float)c.Amount,
+            Color = CategoryLocalizationHelper.GetCategoryColor(c.Category),
+            Label = CategoryLocalizationHelper.GetLocalizedName(c.Category, _localizationService),
+            ValueText = total > 0 ? $"{c.Amount / total * 100:F0}%" : ""
         }).ToArray();
 
         HasCategoryChartData = true;

@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:FinanzRechner.ViewModels.Calculators"
              xmlns:mi="using:Material.Icons.Avalonia"
-             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FinanzRechner.Views.Calculators.SavingsPlanView"
              x:DataType="vm:SavingsPlanViewModel">
 
@@ -184,13 +184,9 @@
                                        Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </StackPanel>
 
-                        <lvc:CartesianChart Series="{Binding ChartSeries}"
-                                            XAxes="{Binding XAxes}"
-                                            YAxes="{Binding YAxes}"
-                                            Height="220"
-                                            Background="{DynamicResource CardBrush}"
-                                            ZoomMode="None"
-                                            TooltipPosition="Top"/>
+                        <skia:SKCanvasView x:Name="StackedAreaCanvas"
+                                            PaintSurface="OnPaintStackedArea"
+                                            Height="220" />
 
                         <!-- Legend -->
                         <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">

@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:FinanzRechner.ViewModels.Calculators"
              xmlns:mi="using:Material.Icons.Avalonia"
-             xmlns:lvc="using:LiveChartsCore.SkiaSharpView.Avalonia"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FinanzRechner.Views.Calculators.LoanView"
              x:DataType="vm:LoanViewModel">
 
@@ -168,10 +168,9 @@
                                        Foreground="{DynamicResource TextPrimaryBrush}"/>
                         </StackPanel>
 
-                        <lvc:PieChart Series="{Binding ChartSeries}"
-                                      Height="200"
-                                      Background="{DynamicResource CardBrush}"
-                                      TooltipPosition="Top"/>
+                        <skia:SKCanvasView x:Name="DonutCanvas"
+                                            PaintSurface="OnPaintDonut"
+                                            Height="200" />
 
                         <!-- Legend -->
                         <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center">

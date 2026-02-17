@@ -1,8 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
+using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 using FinanzRechner.Graphics;
+using FinanzRechner.Helpers;
+using FinanzRechner.Models;
 using FinanzRechner.ViewModels;
 
 namespace FinanzRechner.Views;
@@ -55,5 +58,43 @@ public partial class BudgetsView : UserControl
             vm.TotalBudgetSpentDisplay,
             vm.TotalBudgetLimitDisplay,
             vm.IsTotalBudgetOverLimit);
+    }
+
+    /// <summary>
+    /// Zeichnet den Budget-Fortschrittsbalken pro Kategorie (im DataTemplate).
+    /// </summary>
+    private void OnPaintBudgetProgress(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+
+        if (sender is not SKCanvasView canvasView) return;
+        if (canvasView.DataContext is not BudgetStatus budget) return;
+
+        float progress = (float)(budget.PercentageUsed / 100.0);
+
+        // Farbe je nach Warnstufe: Grün → Gelb → Rot
+        SKColor startColor, endColor;
+        switch (budget.AlertLevel)
+        {
+            case BudgetAlertLevel.Exceeded:
+                startColor = SKColor.Parse("#EF4444");
+                endColor = SKColor.Parse("#DC2626");
+                break;
+            case BudgetAlertLevel.Warning:
+                startColor = SKColor.Parse("#F59E0B");
+                endColor = SKColor.Parse("#D97706");
+                break;
+            default:
+                // Kategorie-Farbe als Gradient verwenden
+                var catColor = CategoryLocalizationHelper.GetCategoryColor(budget.Category);
+                startColor = catColor;
+                endColor = SkiaThemeHelper.AdjustBrightness(catColor, 0.85f);
+                break;
+        }
+
+        LinearProgressVisualization.Render(canvas, bounds, progress,
+            startColor, endColor, showText: true, glowEnabled: true);
     }
 }

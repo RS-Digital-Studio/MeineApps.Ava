@@ -23,9 +23,6 @@
     <!-- DI -->
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
 
-    <!-- Charts -->
-    <PackageReference Include="LiveChartsCore.SkiaSharpView.Avalonia" />
-
     <!-- Export -->
     <PackageReference Include="PdfSharpCore" />
 

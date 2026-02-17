@@ -5,8 +5,8 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>BomberBlast</RootNamespace>
     <ApplicationId>org.rsdigital.bomberblast</ApplicationId>
-    <ApplicationVersion>14</ApplicationVersion>
-    <ApplicationDisplayVersion>2.0.5</ApplicationDisplayVersion>
+    <ApplicationVersion>16</ApplicationVersion>
+    <ApplicationDisplayVersion>2.0.6</ApplicationDisplayVersion>
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
   </PropertyGroup>
@@ -23,6 +23,7 @@
     <PackageReference Include="Avalonia.Android" />
     <PackageReference Include="Xamarin.GooglePlayServices.Ads.Lite" />
     <PackageReference Include="Xamarin.Google.UserMessagingPlatform" />
+    <PackageReference Include="Xamarin.Android.Google.BillingClient" />
   </ItemGroup>
 
   <ItemGroup>
@@ -33,6 +34,7 @@
     <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AdMobHelper.cs" Link="Services\AdMobHelper.cs" />
     <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\RewardedAdHelper.cs" Link="Services\RewardedAdHelper.cs" />
     <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidRewardedAdService.cs" Link="Services\AndroidRewardedAdService.cs" />
+    <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidPurchaseService.cs" Link="Services\AndroidPurchaseService.cs" />
   </ItemGroup>
 
   <!-- Sound-Assets (CC0 Lizenz, Juhani Junkala) -->

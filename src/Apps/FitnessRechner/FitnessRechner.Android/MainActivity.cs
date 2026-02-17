@@ -56,6 +56,11 @@ public class MainActivity : AvaloniaMainActivity<App>
             new MeineApps.Core.Premium.Ava.Droid.AndroidRewardedAdService(
                 _rewardedAdHelper!, sp.GetRequiredService<IPurchaseService>(), "FitnessRechner");
 
+        // Google Play Billing (echte In-App-Käufe statt Desktop-Stub)
+        App.PurchaseServiceFactory = sp =>
+            new MeineApps.Core.Premium.Ava.Droid.AndroidPurchaseService(
+                this, sp.GetRequiredService<IPreferencesService>(), sp.GetRequiredService<IAdService>());
+
         // FileShareService Factory fuer Android (Share Intent mit FileProvider)
         App.FileShareServiceFactory = () =>
             new MeineApps.Core.Premium.Ava.Droid.AndroidFileShareService(this);

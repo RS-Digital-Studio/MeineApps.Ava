@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Android;
 using HandwerkerImperium.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
 
@@ -37,6 +38,11 @@ public class MainActivity : AvaloniaMainActivity<App>
         App.RewardedAdServiceFactory = sp =>
             new MeineApps.Core.Premium.Ava.Droid.AndroidRewardedAdService(
                 _rewardedAdHelper!, sp.GetRequiredService<IPurchaseService>(), "HandwerkerImperium");
+
+        // Google Play Billing (echte In-App-Käufe statt Desktop-Stub)
+        App.PurchaseServiceFactory = sp =>
+            new MeineApps.Core.Premium.Ava.Droid.AndroidPurchaseService(
+                this, sp.GetRequiredService<IPreferencesService>(), sp.GetRequiredService<IAdService>());
 
         base.OnCreate(savedInstanceState);
 

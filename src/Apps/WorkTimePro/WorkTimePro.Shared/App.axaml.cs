@@ -31,6 +31,11 @@ public partial class App : Application
     public static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory { get; set; }
 
     /// <summary>
+    /// Factory fuer plattformspezifischen IPurchaseService (Android setzt AndroidPurchaseService).
+    /// </summary>
+    public static Func<IServiceProvider, IPurchaseService>? PurchaseServiceFactory { get; set; }
+
+    /// <summary>
     /// Factory fuer plattformspezifischen INotificationService.
     /// Android setzt AndroidNotificationService, Desktop nutzt DesktopNotificationService.
     /// </summary>
@@ -129,6 +134,10 @@ public partial class App : Application
         // Android-Override: Echte Rewarded Ads statt Desktop-Simulator
         if (RewardedAdServiceFactory != null)
             services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
+
+        // Android-Override: Echte Google Play Billing statt Stub
+        if (PurchaseServiceFactory != null)
+            services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
 
         // Localization
         services.AddSingleton<ILocalizationService>(sp =>

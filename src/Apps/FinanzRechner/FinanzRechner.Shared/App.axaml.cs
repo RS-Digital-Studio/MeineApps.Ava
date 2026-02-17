@@ -32,6 +32,11 @@ public partial class App : Application
     /// </summary>
     public static Func<IServiceProvider, IRewardedAdService>? RewardedAdServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen IPurchaseService (Android setzt AndroidPurchaseService).
+    /// </summary>
+    public static Func<IServiceProvider, IPurchaseService>? PurchaseServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -88,6 +93,10 @@ public partial class App : Application
         // Android-Überschreibung: Echte Rewarded Ads statt Desktop-Simulator
         if (RewardedAdServiceFactory != null)
             services.AddSingleton<IRewardedAdService>(sp => RewardedAdServiceFactory!(sp));
+
+        // Android-Überschreibung: Echte Google Play Billing statt Stub
+        if (PurchaseServiceFactory != null)
+            services.AddSingleton<IPurchaseService>(sp => PurchaseServiceFactory!(sp));
 
         // Lokalisierung
         services.AddSingleton<ILocalizationService>(sp =>

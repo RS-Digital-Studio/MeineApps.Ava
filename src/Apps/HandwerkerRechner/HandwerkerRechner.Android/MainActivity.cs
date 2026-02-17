@@ -57,6 +57,11 @@ public class MainActivity : AvaloniaMainActivity<App>
             new MeineApps.Core.Premium.Ava.Droid.AndroidRewardedAdService(
                 _rewardedAdHelper!, sp.GetRequiredService<IPurchaseService>(), "HandwerkerRechner");
 
+        // Google Play Billing (echte In-App-Käufe statt Desktop-Stub)
+        App.PurchaseServiceFactory = sp =>
+            new MeineApps.Core.Premium.Ava.Droid.AndroidPurchaseService(
+                this, sp.GetRequiredService<IPreferencesService>(), sp.GetRequiredService<IAdService>());
+
         base.OnCreate(savedInstanceState);
 
         // Back-Navigation: Toast bei "Nochmal drücken zum Beenden"

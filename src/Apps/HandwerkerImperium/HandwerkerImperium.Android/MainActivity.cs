@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
+using HandwerkerImperium.Android;
 
 namespace HandwerkerImperium;
 
@@ -43,6 +44,21 @@ public class MainActivity : AvaloniaMainActivity<App>
         App.PurchaseServiceFactory = sp =>
             new MeineApps.Core.Premium.Ava.Droid.AndroidPurchaseService(
                 this, sp.GetRequiredService<IPreferencesService>(), sp.GetRequiredService<IAdService>());
+
+        // Audio-Service für Sounds und Haptik
+        // TODO: AndroidAudioService-Klasse erstellen
+        App.AudioServiceFactory = _ => new AndroidAudioService(this);
+
+        // Benachrichtigungs-Service für lokale Push-Benachrichtigungen
+        // TODO: AndroidNotificationService-Klasse erstellen
+        App.NotificationServiceFactory = _ => new AndroidNotificationService(this);
+
+        // Google Play Games für Leaderboards und Achievements
+        // TODO: AndroidPlayGamesService-Klasse erstellen
+        App.PlayGamesServiceFactory = _ => new AndroidPlayGamesService(this);
+
+        // In-App Review-Prompt über Google Play Review API
+        App.ReviewPromptRequested = () => LaunchReviewFlow();
 
         base.OnCreate(savedInstanceState);
 
@@ -78,6 +94,7 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         base.OnResume();
         _adMobHelper?.Resume();
+        _mainVm?.ResumeGameLoop();
 
         // Immersive Mode nach Resume wiederherstellen (z.B. nach Ad-Anzeige)
         EnableImmersiveMode();
@@ -85,6 +102,7 @@ public class MainActivity : AvaloniaMainActivity<App>
 
     protected override void OnPause()
     {
+        _mainVm?.PauseGameLoop();
         _adMobHelper?.Pause();
         base.OnPause();
     }
@@ -136,6 +154,19 @@ public class MainActivity : AvaloniaMainActivity<App>
         base.OnBackPressed();
     }
 #pragma warning restore CA1422
+
+    /// <summary>
+    /// Startet den Google In-App Review Flow.
+    /// Zeigt dem Nutzer den nativen Play Store Bewertungsdialog.
+    /// </summary>
+    private void LaunchReviewFlow()
+    {
+        // Google In-App Review API
+        // TODO: Xamarin.Google.Android.Play.Review NuGet hinzufügen
+        // var manager = ReviewManagerFactory.Create(this);
+        // var request = manager.RequestReviewFlow();
+        // request.AddOnCompleteListener(new ReviewListener(this, manager));
+    }
 
     protected override void OnDestroy()
     {

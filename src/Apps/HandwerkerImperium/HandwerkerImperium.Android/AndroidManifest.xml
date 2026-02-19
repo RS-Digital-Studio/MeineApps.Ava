@@ -11,8 +11,12 @@
     android:theme="@style/MyTheme.NoActionBar">
     <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"
                android:value="ca-app-pub-2588160251469436~3907946957" />
+    <meta-data android:name="com.google.android.gms.games.APP_ID" android:value="348869160993" />
   </application>
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="com.android.vending.BILLING" />
+  <uses-permission android:name="android.permission.VIBRATE" />
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 </manifest>

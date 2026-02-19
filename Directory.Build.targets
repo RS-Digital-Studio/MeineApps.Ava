@@ -9,6 +9,13 @@
 
     <!-- Play Store erfordert AAB -->
     <AndroidPackageFormat>aab</AndroidPackageFormat>
+
+    <!-- Full AOT: ALLE Methoden AOT-kompiliert, kein JIT-Fallback.
+         Behebt Mono JIT-Assertion "!ji->async" Crash auf manchen Geraeten (z.B. Huawei P30).
+         SDK-Default ist Profiled AOT (nur hot Methods), Rest faellt auf JIT zurueck.
+         UseInterpreter geht nicht zusammen mit AOT (XA0119 Warnung, Interpreter wird ignoriert).
+         Daher: Full AOT via AndroidEnableProfiledAot=false → alle Methoden kompiliert. -->
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
   </PropertyGroup>
 
   <!-- D8/DEX: Duplizierter DoNotRetain.class aus Ads.Lite transitiver Dependency -->

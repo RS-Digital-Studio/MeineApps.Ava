@@ -54,6 +54,11 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="Xamarin.Android.Google.BillingClient" Version="8.3.0.1" />
 
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- GOOGLE PLAY GAMES SERVICES v2                                     -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="Xamarin.GooglePlayServices.Games.V2" Version="121.0.0.2" />
+
     <!-- Transitive dependency von Ads.Lite: JVM-Variante muss excluded werden,
          da .android-Variante dieselben Klassen enthaelt (D8 duplicate type error) -->
     <PackageVersion Include="Xamarin.AndroidX.Compose.Runtime.Annotation.Jvm" Version="1.10.0.1" />

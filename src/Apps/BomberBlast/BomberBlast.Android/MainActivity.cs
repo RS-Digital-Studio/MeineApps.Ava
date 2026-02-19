@@ -50,6 +50,11 @@ public class MainActivity : AvaloniaMainActivity<App>
         // Sound Service Factory: Android-SoundPool/MediaPlayer statt NullSoundService
         App.SoundServiceFactory = _ => new AndroidSoundService(this);
 
+        // Google Play Games Services Factory
+        App.PlayGamesServiceFactory = sp =>
+            new MeineApps.Core.Premium.Ava.Droid.AndroidPlayGamesService(
+                this, sp.GetRequiredService<IPreferencesService>());
+
         base.OnCreate(savedInstanceState);
 
         // Fullscreen/Immersive Mode (Landscape-Spiel, System-Bars komplett ausblenden)
@@ -63,6 +68,12 @@ public class MainActivity : AvaloniaMainActivity<App>
                 RunOnUiThread(() =>
                     Toast.MakeText(this, msg, ToastLength.Short)?.Show());
         }
+
+        // Google Play Games Services initialisieren + Auto-Sign-In
+        var playGames = App.Services.GetService<BomberBlast.Services.IPlayGamesService>()
+            as MeineApps.Core.Premium.Ava.Droid.AndroidPlayGamesService;
+        playGames?.InitializeSdk();
+        _ = playGames?.SignInAsync(); // Fire-and-Forget Auto-Login (GPGS v2 Standard)
 
         // Google Mobile Ads initialisieren - Ads erst nach SDK-Callback laden
         AdMobHelper.Initialize(this, () =>

@@ -11,6 +11,8 @@
     android:theme="@style/MyTheme.NoActionBar">
     <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID"
                android:value="ca-app-pub-2588160251469436~8809763733" />
+    <meta-data android:name="com.google.android.gms.games.APP_ID"
+               android:value="@string/game_services_project_id" />
   </application>
   <uses-permission android:name="android.permission.INTERNET" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />

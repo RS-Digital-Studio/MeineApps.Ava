@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <!-- Google Play Games Services Project-ID (aus der Play Console) -->
+  <string name="game_services_project_id" translatable="false">TODO_APP_ID</string>
+</resources>

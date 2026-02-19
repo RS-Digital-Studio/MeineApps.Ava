@@ -24,6 +24,7 @@
     <PackageReference Include="Xamarin.GooglePlayServices.Ads.Lite" />
     <PackageReference Include="Xamarin.Google.UserMessagingPlatform" />
     <PackageReference Include="Xamarin.Android.Google.BillingClient" />
+    <PackageReference Include="Xamarin.GooglePlayServices.Games.V2" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,6 +36,7 @@
     <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\RewardedAdHelper.cs" Link="Services\RewardedAdHelper.cs" />
     <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidRewardedAdService.cs" Link="Services\AndroidRewardedAdService.cs" />
     <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidPurchaseService.cs" Link="Services\AndroidPurchaseService.cs" />
+    <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidPlayGamesService.cs" Link="Services\AndroidPlayGamesService.cs" />
   </ItemGroup>
 
   <!-- Sound-Assets (CC0 Lizenz, Juhani Junkala) -->

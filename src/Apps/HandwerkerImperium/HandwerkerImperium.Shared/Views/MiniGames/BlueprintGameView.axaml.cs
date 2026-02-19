@@ -42,9 +42,15 @@ public partial class BlueprintGameView : UserControl
         _gameCanvas = this.FindControl<SKCanvasView>("GameCanvas");
         if (_gameCanvas != null)
         {
+            _gameCanvas.PaintSurface -= OnPaintSurface;
             _gameCanvas.PaintSurface += OnPaintSurface;
+            _gameCanvas.PointerPressed -= OnCanvasPointerPressed;
             _gameCanvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
+        }
+        else
+        {
+            StopRenderLoop();
         }
     }
 

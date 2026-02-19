@@ -40,9 +40,15 @@ public partial class WiringGameView : UserControl
         var canvas = this.FindControl<SKCanvasView>("WiringCanvas");
         if (canvas != null)
         {
+            canvas.PaintSurface -= OnPaintSurface;
             canvas.PaintSurface += OnPaintSurface;
+            canvas.PointerPressed -= OnCanvasPointerPressed;
             canvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
+        }
+        else
+        {
+            StopRenderLoop();
         }
     }
 

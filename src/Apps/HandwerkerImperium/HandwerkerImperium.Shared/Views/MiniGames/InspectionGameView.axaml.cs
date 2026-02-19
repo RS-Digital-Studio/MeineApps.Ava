@@ -42,9 +42,15 @@ public partial class InspectionGameView : UserControl
         var canvas = this.FindControl<SKCanvasView>("GameCanvas");
         if (canvas != null)
         {
+            canvas.PaintSurface -= OnPaintSurface;
             canvas.PaintSurface += OnPaintSurface;
+            canvas.PointerPressed -= OnCanvasPointerPressed;
             canvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
+        }
+        else
+        {
+            StopRenderLoop();
         }
     }
 

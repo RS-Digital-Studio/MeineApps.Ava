@@ -83,21 +83,23 @@ public partial class ResearchView : UserControl
             _treeCanvas = this.FindControl<SKCanvasView>("TreeCanvas");
             _celebrationCanvas = this.FindControl<SKCanvasView>("CelebrationCanvas");
 
-            // PaintSurface-Handler registrieren
-            if (_headerCanvas != null) _headerCanvas.PaintSurface += OnHeaderPaintSurface;
-            if (_activeResearchCanvas != null) _activeResearchCanvas.PaintSurface += OnActivePaintSurface;
-            if (_tabCanvas != null) _tabCanvas.PaintSurface += OnTabPaintSurface;
-            if (_bannerCanvas != null) _bannerCanvas.PaintSurface += OnBannerPaintSurface;
+            // PaintSurface-Handler registrieren (erst -= dann += gegen Doppelregistrierung)
+            if (_headerCanvas != null) { _headerCanvas.PaintSurface -= OnHeaderPaintSurface; _headerCanvas.PaintSurface += OnHeaderPaintSurface; }
+            if (_activeResearchCanvas != null) { _activeResearchCanvas.PaintSurface -= OnActivePaintSurface; _activeResearchCanvas.PaintSurface += OnActivePaintSurface; }
+            if (_tabCanvas != null) { _tabCanvas.PaintSurface -= OnTabPaintSurface; _tabCanvas.PaintSurface += OnTabPaintSurface; }
+            if (_bannerCanvas != null) { _bannerCanvas.PaintSurface -= OnBannerPaintSurface; _bannerCanvas.PaintSurface += OnBannerPaintSurface; }
             if (_treeCanvas != null)
             {
+                _treeCanvas.PaintSurface -= OnTreePaintSurface;
                 _treeCanvas.PaintSurface += OnTreePaintSurface;
                 // Tunnel-Routing damit Touch VOR dem ScrollViewer ankommt
+                _treeCanvas.RemoveHandler(Avalonia.Input.InputElement.PointerPressedEvent, OnTreePointerPressed);
                 _treeCanvas.AddHandler(
                     Avalonia.Input.InputElement.PointerPressedEvent,
                     OnTreePointerPressed,
                     Avalonia.Interactivity.RoutingStrategies.Tunnel);
             }
-            if (_celebrationCanvas != null) _celebrationCanvas.PaintSurface += OnCelebrationPaintSurface;
+            if (_celebrationCanvas != null) { _celebrationCanvas.PaintSurface -= OnCelebrationPaintSurface; _celebrationCanvas.PaintSurface += OnCelebrationPaintSurface; }
 
             // TreeCanvas-Höhe berechnen
             UpdateTreeCanvasHeight();

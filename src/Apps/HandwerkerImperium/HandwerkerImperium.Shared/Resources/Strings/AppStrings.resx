@@ -2086,6 +2086,9 @@
   <data name="WorkerSlotBonusDesc" xml:space="preserve">
     <value>Extra worker slot added!</value>
   </data>
+  <data name="MaxSlotReached" xml:space="preserve">
+    <value>Maximum bonus slots reached for this workshop.</value>
+  </data>
   <data name="WatchAdToFinishResearch" xml:space="preserve">
     <value>Free (Video)</value>
   </data>
@@ -2578,66 +2581,159 @@
     <value>Start Inspection</value>
   </data>
 
-  <!-- Story-Kapitel (Meister Hans) -->
+  <!-- Story-Kapitel (Meister Hans) - 25 Chapters -->
+  <data name="StoryTipFromHans" xml:space="preserve">
+    <value>Tip from Master Hans</value>
+  </data>
   <data name="Story_Ch01_Title" xml:space="preserve">
     <value>Welcome, Apprentice!</value>
   </data>
   <data name="Story_Ch01_Text" xml:space="preserve">
-    <value>I am Master Hans, the most experienced craftsman in town. You have potential, I can see that! Together we will build a craftsman empire. Start by upgrading your carpentry!</value>
+    <value>I'm Master Hans! 40 years of experience, and I've seen it all. Well, almost – I've never seen an apprentice as motivated as you! Your carpentry is small but mighty. Upgrade it, and we'll talk more!</value>
   </data>
   <data name="Story_Ch02_Title" xml:space="preserve">
-    <value>Good Work!</value>
-  </data>
-  <data name="Story_Ch02_Text" xml:space="preserve">
-    <value>You upgraded your first workshop! That's how every master starts. Now you need an apprentice to help you. A good worker is worth their weight in gold!</value>
-  </data>
-  <data name="Story_Ch03_Title" xml:space="preserve">
-    <value>Time for Expansion!</value>
-  </data>
-  <data name="Story_Ch03_Text" xml:space="preserve">
-    <value>The plumber's guild is looking for new talent! Unlock the plumbing workshop and double your income. Multiple business lines are the secret of a successful empire.</value>
-  </data>
-  <data name="Story_Ch04_Title" xml:space="preserve">
     <value>Your First Order!</value>
   </data>
+  <data name="Story_Ch02_Text" xml:space="preserve">
+    <value>Phone's ringing? That's a customer! Orders involve mini-games – sawing, laying pipes, wiring. The better you perform, the more money and XP you earn. So: get to work!</value>
+  </data>
+  <data name="Story_Ch03_Title" xml:space="preserve">
+    <value>Hire Workers!</value>
+  </data>
+  <data name="Story_Ch03_Text" xml:space="preserve">
+    <value>You can't do this alone forever, apprentice. The job market has skilled workers – each with their own strengths and weaknesses. Hire some and they'll earn money while you drink coffee! Well, almost...</value>
+  </data>
+  <data name="Story_Ch04_Title" xml:space="preserve">
+    <value>Golden Screws!</value>
+  </data>
   <data name="Story_Ch04_Text" xml:space="preserve">
-    <value>A customer called! Orders bring extra money and experience. Show what you've got - the better your work, the higher the reward!</value>
+    <value>See those golden screws? They're rare and valuable! You get them from mini-games, challenges, and achievements. Use them to hire premium workers and buy special boosts. Guard them with your life!</value>
   </data>
   <data name="Story_Ch05_Title" xml:space="preserve">
-    <value>Growing Business</value>
+    <value>Buildings &amp; Research!</value>
   </data>
   <data name="Story_Ch05_Text" xml:space="preserve">
-    <value>Three workshops! You're becoming a real entrepreneur. Remember: each workshop has its own strengths. Invest wisely and keep an eye on costs!</value>
+    <value>Now it gets serious! The research tree unlocks powerful upgrades – better tools, efficient management, stronger marketing. And buildings give permanent bonuses. A canteen, for example, keeps your workers happy!</value>
   </data>
   <data name="Story_Ch06_Title" xml:space="preserve">
-    <value>Master Tools</value>
+    <value>The Plumbing Shop Opens!</value>
   </data>
   <data name="Story_Ch06_Text" xml:space="preserve">
-    <value>I heard you're collecting master tools! Each tool has special powers. Collect them all and you'll be unstoppable!</value>
+    <value>Water's flowing! Plumbing is a gold mine, trust me. Everyone needs a plumber – especially at 3 AM when a pipe bursts! The orders are lucrative and the mini-games are fun even for me.</value>
   </data>
   <data name="Story_Ch07_Title" xml:space="preserve">
-    <value>The Empire Builder</value>
+    <value>Your First Real Employee!</value>
   </data>
   <data name="Story_Ch07_Text" xml:space="preserve">
-    <value>Five workshops and a thriving business! You're well on your way to building the biggest craftsman empire in town. Keep it up!</value>
+    <value>The tier system for workers matters: F-tier workers are cheap, but... well, they sometimes mix up hammers and screwdrivers. Save up for better tiers – an A-tier worker earns ten times more!</value>
   </data>
   <data name="Story_Ch08_Title" xml:space="preserve">
-    <value>A Fresh Start with Experience</value>
+    <value>Under Voltage!</value>
   </data>
   <data name="Story_Ch08_Text" xml:space="preserve">
-    <value>Sometimes you have to take a step back to take two steps forward. Prestige gives you permanent bonuses for your next run. Go for it!</value>
+    <value>The electrical shop – my favorite! Wiring is art, not just craft. One wrong wire and... *poof*! But don't worry, everything's well insulated here. Electrical work brings in great money!</value>
   </data>
   <data name="Story_Ch09_Title" xml:space="preserve">
-    <value>The Legend</value>
+    <value>Daily Challenges!</value>
   </data>
   <data name="Story_Ch09_Text" xml:space="preserve">
-    <value>You made it! All workshops, countless orders, and your name is known throughout the city. I'm proud of you, Master!</value>
+    <value>Check this out, journeyman – every day there are three new challenges! Complete orders, play mini-games, earn money. The rewards are worth it, especially the golden screws. A true craftsman works every day!</value>
   </data>
   <data name="Story_Ch10_Title" xml:space="preserve">
-    <value>Grand Master</value>
+    <value>Show Your Colors!</value>
   </data>
   <data name="Story_Ch10_Text" xml:space="preserve">
-    <value>Level 100! You are now the Grand Master of the Craftsman's Guild. Your empire is a role model for everyone. But remember: a true master never stops learning!</value>
+    <value>Painting brings color to your empire! A good painter has an eye for color – and patience. In the painting mini-game, you need to hit the right sequence. My tip: watch for the flashing tiles, journeyman!</value>
+  </data>
+  <data name="Story_Ch11_Title" xml:space="preserve">
+    <value>Legendary Tools!</value>
+  </data>
+  <data name="Story_Ch11_Text" xml:space="preserve">
+    <value>You've discovered master tools! These ancient artifacts carry the power of past master craftsmen. Each gives a permanent income bonus. Collect all 12 and you'll receive the Master Crown – the most powerful tool of all!</value>
+  </data>
+  <data name="Story_Ch12_Title" xml:space="preserve">
+    <value>Reaching New Heights!</value>
+  </data>
+  <data name="Story_Ch12_Text" xml:space="preserve">
+    <value>Roofing – not for those afraid of heights! But the margins are fantastic. And between us: soon you'll reach a level where something special awaits. 'Prestige' we call it. But more on that later...</value>
+  </data>
+  <data name="Story_Ch13_Title" xml:space="preserve">
+    <value>The Contractor!</value>
+  </data>
+  <data name="Story_Ch13_Text" xml:space="preserve">
+    <value>Five workshops and 50 orders – you're no apprentice anymore, journeyman! Contracting is the next step: building walls, operating cranes, constructing entire houses. This is the Champions League of craftsmanship!</value>
+  </data>
+  <data name="Story_Ch14_Title" xml:space="preserve">
+    <value>The Craftsman's Quarter!</value>
+  </data>
+  <data name="Story_Ch14_Text" xml:space="preserve">
+    <value>Six workshops! People already call your district the 'Craftsman's Quarter'. Your workers whistle happily on their way to work – well, most of them anyway. Keep their spirits high and business will thrive!</value>
+  </data>
+  <data name="Story_Ch15_Title" xml:space="preserve">
+    <value>The City's Reputation!</value>
+  </data>
+  <data name="Story_Ch15_Text" xml:space="preserve">
+    <value>75 orders – your reputation precedes you! Reputation determines how much customers are willing to pay. Good work = good reviews = more money. Bad work... well, we don't talk about that. Just keep it up!</value>
+  </data>
+  <data name="Story_Ch16_Title" xml:space="preserve">
+    <value>A Fresh Start?</value>
+  </data>
+  <data name="Story_Ch16_Text" xml:space="preserve">
+    <value>Journeyman, I need to talk to you about Prestige. It sounds crazy: give up everything and start over. But trust me – with permanent bonuses, you'll grow twice as fast the second time. I did it three times myself. Think about it...</value>
+  </data>
+  <data name="Story_Ch17_Title" xml:space="preserve">
+    <value>Ready for Rebirth!</value>
+  </data>
+  <data name="Story_Ch17_Text" xml:space="preserve">
+    <value>100 orders and Level 250 – you've mastered everything this life has to offer. The Prestige door stands open. Walk through and come back stronger. I'll be waiting for you, journeyman. No, I'll be waiting for you... Master!</value>
+  </data>
+  <data name="Story_Ch18_Title" xml:space="preserve">
+    <value>Like a Phoenix from the Ashes!</value>
+  </data>
+  <data name="Story_Ch18_Text" xml:space="preserve">
+    <value>You did it, Master! A fresh start – but this time with experience and permanent bonuses. Everything feels familiar, but you're faster, stronger, wiser. That's the secret of true masters: fall down and get back up!</value>
+  </data>
+  <data name="Story_Ch19_Title" xml:space="preserve">
+    <value>The Architecture Office!</value>
+  </data>
+  <data name="Story_Ch19_Text" xml:space="preserve">
+    <value>A new workshop type, Master! The architecture office – where dreams become blueprints. Drawing floor plans, designing houses, realizing visions. This is craftsmanship at its finest. I'm... *sniff*... so proud of you!</value>
+  </data>
+  <data name="Story_Ch20_Title" xml:space="preserve">
+    <value>Silver Prestige!</value>
+  </data>
+  <data name="Story_Ch20_Text" xml:space="preserve">
+    <value>Started over four times – and better each time! You've reached Silver Prestige, Master. Very few achieve that. Your empire now grows at a speed that even impresses me. And I'm not easily impressed!</value>
+  </data>
+  <data name="Story_Ch21_Title" xml:space="preserve">
+    <value>The General Contractor!</value>
+  </data>
+  <data name="Story_Ch21_Text" xml:space="preserve">
+    <value>The final workshop type: General Contractor! You now coordinate EVERYTHING – from the smallest screw to the largest crane. No project is too big for you. You're no longer just a craftsman, you're an institution!</value>
+  </data>
+  <data name="Story_Ch22_Title" xml:space="preserve">
+    <value>Gold Prestige!</value>
+  </data>
+  <data name="Story_Ch22_Text" xml:space="preserve">
+    <value>I... I'm speechless, Grand Master. 13 Prestige runs. GOLD. In 40 years of craftsmanship, I've never seen anything like it. Your name will be written in the Guild Chronicle. Next to mine, of course – I trained you after all!</value>
+  </data>
+  <data name="Story_Ch23_Title" xml:space="preserve">
+    <value>The Living Legend!</value>
+  </data>
+  <data name="Story_Ch23_Text" xml:space="preserve">
+    <value>Level 500 and seven workshops at their peak – you're a living legend! The Chamber of Crafts called, they want to hang your portrait. Right next to mine. Well, maybe even ABOVE mine. You've earned it.</value>
+  </data>
+  <data name="Story_Ch24_Title" xml:space="preserve">
+    <value>All Workshops, All Masters!</value>
+  </data>
+  <data name="Story_Ch24_Text" xml:space="preserve">
+    <value>Eight workshops, 500 orders, everything maxed out. Your empire spans the entire city! The next generation of craftsmen looks up to you. You know what? I think the student has surpassed the master. And I don't say that lightly!</value>
+  </data>
+  <data name="Story_Ch25_Title" xml:space="preserve">
+    <value>Grand Master of the Craftsman's Guild!</value>
+  </data>
+  <data name="Story_Ch25_Text" xml:space="preserve">
+    <value>Level 1000. Grand Master of the Craftsman's Guild. There is no higher title. From a nervous apprentice with a tiny carpentry to the most powerful craftsman in history – YOUR story! I've grown old with you, Grand Master. But it was worth every minute. Thank you.</value>
   </data>
   <data name="TaskProgress" xml:space="preserve">
     <value>Task {0}/{1}</value>
@@ -2673,7 +2769,7 @@
     <value>Roof Tiling</value>
   </data>
   <data name="TutorialRoofTilingText" xml:space="preserve">
-    <value>Place roof tiles in the correct color pattern. Select a color from the palette, then tap the empty tile positions.</value>
+    <value>Place roof tiles to match the color pattern. Gold-bordered tiles show the correct colors — use them as reference. Select a color from the palette, then tap empty positions.</value>
   </data>
   <data name="TutorialBlueprintTitle" xml:space="preserve">
     <value>Blueprint</value>
@@ -2695,6 +2791,99 @@
   </data>
   <data name="TutorialGotIt" xml:space="preserve">
     <value>Got it!</value>
+  </data>
+
+  <!-- Order Types -->
+  <data name="OrderTypeStandard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="OrderTypeLarge" xml:space="preserve">
+    <value>Large Order</value>
+  </data>
+  <data name="OrderTypeWeekly" xml:space="preserve">
+    <value>Weekly Contract</value>
+  </data>
+  <data name="OrderTypeCooperation" xml:space="preserve">
+    <value>Cooperation</value>
+  </data>
+  <data name="OrderExpired" xml:space="preserve">
+    <value>Order expired!</value>
+  </data>
+  <data name="RegularCustomerBonus" xml:space="preserve">
+    <value>Regular Customer Bonus</value>
+  </data>
+  <data name="MarketRestricted" xml:space="preserve">
+    <value>Worker Strike: Only tiers up to C available!</value>
+  </data>
+
+  <!-- Phase 1: General + SaveGame -->
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="SaveErrorMessage" xml:space="preserve">
+    <value>Failed to save game data.</value>
+  </data>
+  <data name="LoadErrorMessage" xml:space="preserve">
+    <value>Failed to load save file.</value>
+  </data>
+  <data name="DeleteSaveErrorMessage" xml:space="preserve">
+    <value>Failed to delete save data.</value>
+  </data>
+  <data name="ImportErrorMessage" xml:space="preserve">
+    <value>Failed to import save data.</value>
+  </data>
+
+  <!-- Phase 3: Tutorial -->
+  <data name="TutorialSkip" xml:space="preserve">
+    <value>Skip</value>
+  </data>
+  <data name="TutorialNext" xml:space="preserve">
+    <value>Next</value>
+  </data>
+
+  <!-- Phase 5: Notifications -->
+  <data name="Notifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
+  <data name="ResearchDoneNotif" xml:space="preserve">
+    <value>Research complete! Come collect your results.</value>
+  </data>
+  <data name="DeliveryWaitingNotif" xml:space="preserve">
+    <value>A supplier is waiting with a delivery!</value>
+  </data>
+  <data name="RushAvailableNotif" xml:space="preserve">
+    <value>Rush hour is available! Double your income now.</value>
+  </data>
+  <data name="DailyRewardNotif" xml:space="preserve">
+    <value>Your daily reward is waiting! Don't miss it.</value>
+  </data>
+
+  <!-- Phase 6: Leaderboard -->
+  <data name="Leaderboard" xml:space="preserve">
+    <value>Leaderboards</value>
+  </data>
+  <data name="LeaderboardSignIn" xml:space="preserve">
+    <value>Sign in to Play Games to see leaderboards.</value>
+  </data>
+
+  <!-- Phase 7: Cloud Save -->
+  <data name="CloudSave" xml:space="preserve">
+    <value>Cloud Save</value>
+  </data>
+  <data name="CloudSaveDesc" xml:space="preserve">
+    <value>Sync your progress across devices via Google Play Games.</value>
+  </data>
+  <data name="CloudSaveNewer" xml:space="preserve">
+    <value>A newer cloud save was found (Level {0}). Use cloud save?</value>
+  </data>
+  <data name="UseCloudSave" xml:space="preserve">
+    <value>Use Cloud</value>
+  </data>
+  <data name="UseLocalSave" xml:space="preserve">
+    <value>Keep Local</value>
+  </data>
+  <data name="CloudSyncFailed" xml:space="preserve">
+    <value>Cloud sync failed. Your local save is still safe.</value>
   </data>
 
 </root>

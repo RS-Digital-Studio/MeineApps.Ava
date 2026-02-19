@@ -47,9 +47,15 @@ public partial class PaintingGameView : UserControl
         var canvas = this.FindControl<SKCanvasView>("PaintCanvas");
         if (canvas != null)
         {
+            canvas.PaintSurface -= OnPaintSurface;
             canvas.PaintSurface += OnPaintSurface;
+            canvas.PointerPressed -= OnCanvasPointerPressed;
             canvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
+        }
+        else
+        {
+            StopRenderLoop();
         }
     }
 

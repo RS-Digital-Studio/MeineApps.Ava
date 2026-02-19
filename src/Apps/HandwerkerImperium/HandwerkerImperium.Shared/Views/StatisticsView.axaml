@@ -55,6 +55,18 @@
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
       <StackPanel Spacing="20" Margin="16">
 
+        <!-- LEADERBOARD BUTTON (nur sichtbar wenn Play Games angemeldet) -->
+        <Button Classes="Primary"
+                Command="{Binding ShowLeaderboardsCommand}"
+                IsVisible="{Binding IsPlayGamesAvailable}"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,8">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <mi:MaterialIcon Kind="Trophy" Width="20" Height="20" />
+            <TextBlock Text="{loc:Translate Leaderboard}" VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
         <!-- PLAYER OVERVIEW -->
         <Border Classes="Card StatsCard">
           <StackPanel Spacing="12">

@@ -41,9 +41,15 @@ public partial class PipePuzzleView : UserControl
         _puzzleCanvas = this.FindControl<SKCanvasView>("PuzzleCanvas");
         if (_puzzleCanvas != null)
         {
+            _puzzleCanvas.PaintSurface -= OnPaintSurface;
             _puzzleCanvas.PaintSurface += OnPaintSurface;
+            _puzzleCanvas.PointerPressed -= OnCanvasPointerPressed;
             _puzzleCanvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
+        }
+        else
+        {
+            StopRenderLoop();
         }
     }
 

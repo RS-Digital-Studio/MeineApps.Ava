@@ -77,6 +77,9 @@ public partial class DashboardView : UserControl
             _vm = null;
         }
 
+        // Timer stoppen wenn kein neues VM kommt
+        _renderTimer?.Stop();
+
         // Neues VM abonnieren
         if (DataContext is MainViewModel vm)
         {
@@ -88,6 +91,7 @@ public partial class DashboardView : UserControl
             _cityCanvas = this.FindControl<SKCanvasView>("CityCanvas");
             if (_cityCanvas != null)
             {
+                _cityCanvas.PaintSurface -= OnCityPaintSurface;
                 _cityCanvas.PaintSurface += OnCityPaintSurface;
                 StartCityRenderLoop();
             }

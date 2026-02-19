@@ -103,7 +103,7 @@
     <!-- ================================================================= -->
     <!-- ROW 2: FARBAUSWAHL-LEISTE (bleibt XAML fuer Klick-Interaktion)    -->
     <!-- ================================================================= -->
-    <Border Grid.Row="2"
+    <Border x:Name="ColorPaletteBorder" Grid.Row="2"
             Classes="Card StatsCard" Padding="12"
             HorizontalAlignment="Center"
             IsVisible="{Binding !IsResultShown}"

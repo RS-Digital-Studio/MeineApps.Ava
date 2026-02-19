@@ -86,6 +86,39 @@
                             IsChecked="{Binding VibrationEnabled}"
                             OnContent="" OffContent="" />
             </Grid>
+
+            <!-- Notifications Toggle -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Kind="Bell" Width="24" Height="24"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <TextBlock Grid.Column="1"
+                         Text="{loc:Translate Notifications}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         Margin="12,0,0,0"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="2"
+                            IsChecked="{Binding NotificationsEnabled}"
+                            OnContent="" OffContent="" />
+            </Grid>
+
+            <!-- Cloud Save Toggle (nur sichtbar wenn Play Games angemeldet) -->
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  IsVisible="{Binding IsPlayGamesSignedIn}">
+              <mi:MaterialIcon Kind="CloudSync" Width="24" Height="24"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Translate CloudSave}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate CloudSaveDesc}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="2"
+                            IsChecked="{Binding CloudSaveEnabled}"
+                            OnContent="" OffContent="" />
+            </Grid>
           </StackPanel>
         </Border>
 

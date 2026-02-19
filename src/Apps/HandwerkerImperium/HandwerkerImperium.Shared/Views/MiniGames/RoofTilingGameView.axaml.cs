@@ -26,21 +26,33 @@ public partial class RoofTilingGameView : UserControl
     {
         // Altes ViewModel abmelden
         if (_vm != null)
+        {
             _vm.GameCompleted -= OnGameCompleted;
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+        }
 
         _vm = DataContext as RoofTilingGameViewModel;
 
         // Neues ViewModel anmelden
         if (_vm != null)
+        {
             _vm.GameCompleted += OnGameCompleted;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
 
         // Canvas-Setup: PaintSurface + Touch-Events
         var canvas = this.FindControl<SKCanvasView>("GameCanvas");
         if (canvas != null)
         {
+            canvas.PaintSurface -= OnPaintSurface;
             canvas.PaintSurface += OnPaintSurface;
+            canvas.PointerPressed -= OnCanvasPointerPressed;
             canvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
+        }
+        else
+        {
+            StopRenderLoop();
         }
     }
 
@@ -168,6 +180,30 @@ public partial class RoofTilingGameView : UserControl
         {
             return 0xFF3A3A3A;
         }
+    }
+
+    /// <summary>
+    /// Reagiert auf SelectColorHint-Änderung → Farbpalette pulsieren.
+    /// </summary>
+    private async void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(RoofTilingGameViewModel.SelectColorHint)) return;
+        if (_vm?.SelectColorHint != true) return;
+
+        var border = this.FindControl<Border>("ColorPaletteBorder");
+        if (border == null) return;
+
+        // Schnelles Opacity-Pulsieren (2x blinken)
+        await Dispatcher.UIThread.InvokeAsync(async () =>
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                border.Opacity = 0.4;
+                await Task.Delay(150);
+                border.Opacity = 1.0;
+                await Task.Delay(150);
+            }
+        });
     }
 
     /// <summary>

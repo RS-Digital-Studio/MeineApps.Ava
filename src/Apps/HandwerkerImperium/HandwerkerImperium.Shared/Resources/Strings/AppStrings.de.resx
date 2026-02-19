@@ -2086,6 +2086,9 @@
   <data name="WorkerSlotBonusDesc" xml:space="preserve">
     <value>Extra Arbeiterplatz hinzugefügt!</value>
   </data>
+  <data name="MaxSlotReached" xml:space="preserve">
+    <value>Maximale Bonus-Plätze für diese Werkstatt erreicht.</value>
+  </data>
   <data name="WatchAdToFinishResearch" xml:space="preserve">
     <value>Gratis (Video)</value>
   </data>
@@ -2574,66 +2577,159 @@
     <value>Inspektion starten</value>
   </data>
 
-  <!-- Story-Kapitel (Meister Hans) -->
+  <!-- Story-Kapitel (Meister Hans) - 25 Kapitel -->
+  <data name="StoryTipFromHans" xml:space="preserve">
+    <value>Tipp von Meister Hans</value>
+  </data>
   <data name="Story_Ch01_Title" xml:space="preserve">
     <value>Willkommen, Lehrling!</value>
   </data>
   <data name="Story_Ch01_Text" xml:space="preserve">
-    <value>Ich bin Meister Hans, der erfahrenste Handwerker der Stadt. Du hast Potenzial, das sehe ich! Zusammen bauen wir ein Handwerker-Imperium auf. Fang an, indem du deine Schreinerei aufrüstest!</value>
+    <value>Ich bin Meister Hans! 40 Jahre Erfahrung, und ich hab' schon alles gesehen. Na ja, fast alles – einen Lehrling der so motiviert aussieht wie du noch nicht! Deine Schreinerei ist klein, aber fein. Rüste sie auf, dann reden wir weiter!</value>
   </data>
   <data name="Story_Ch02_Title" xml:space="preserve">
-    <value>Gute Arbeit!</value>
-  </data>
-  <data name="Story_Ch02_Text" xml:space="preserve">
-    <value>Du hast deine erste Werkstatt aufgerüstet! So fängt jeder Meister an. Jetzt brauchst du einen Lehrling, der dir hilft. Ein guter Arbeiter ist Gold wert!</value>
-  </data>
-  <data name="Story_Ch03_Title" xml:space="preserve">
-    <value>Zeit für Expansion!</value>
-  </data>
-  <data name="Story_Ch03_Text" xml:space="preserve">
-    <value>Die Klempner-Zunft sucht Nachwuchs! Schalte die Klempnerei frei und verdopple dein Einkommen. Mehrere Standbeine sind das Geheimnis eines erfolgreichen Imperiums.</value>
-  </data>
-  <data name="Story_Ch04_Title" xml:space="preserve">
     <value>Dein erster Auftrag!</value>
   </data>
+  <data name="Story_Ch02_Text" xml:space="preserve">
+    <value>Telefon klingelt? Das ist ein Kunde! Bei Aufträgen musst du kleine Geschicklichkeitsspiele meistern – Sägen, Rohre legen, Kabel verlegen. Je besser du abschneidest, desto mehr Geld und Erfahrung gibt's. Also: Ran an die Arbeit!</value>
+  </data>
+  <data name="Story_Ch03_Title" xml:space="preserve">
+    <value>Arbeiter einstellen!</value>
+  </data>
+  <data name="Story_Ch03_Text" xml:space="preserve">
+    <value>Allein schaffst du das auf Dauer nicht, Lehrling. Auf dem Arbeitsmarkt warten Fachkräfte – jeder hat eigene Stärken und Schwächen. Stell welche ein und sie verdienen Geld, während du Kaffee trinkst! Na ja, fast...</value>
+  </data>
+  <data name="Story_Ch04_Title" xml:space="preserve">
+    <value>Goldschrauben!</value>
+  </data>
   <data name="Story_Ch04_Text" xml:space="preserve">
-    <value>Ein Kunde hat angerufen! Aufträge bringen Extra-Geld und Erfahrung. Zeig was du drauf hast - je besser deine Arbeit, desto höher die Belohnung!</value>
+    <value>Siehst du diese goldenen Schrauben? Die sind selten und wertvoll! Du bekommst sie durch Mini-Games, Herausforderungen und Erfolge. Damit kannst du Premium-Arbeiter anheuern und besondere Boosts kaufen. Hüte sie wie deinen Augapfel!</value>
   </data>
   <data name="Story_Ch05_Title" xml:space="preserve">
-    <value>Wachsendes Geschäft</value>
+    <value>Gebäude &amp; Forschung!</value>
   </data>
   <data name="Story_Ch05_Text" xml:space="preserve">
-    <value>Drei Werkstätten! Du wirst langsam zum echten Unternehmer. Denk daran: Jede Werkstatt hat eigene Stärken. Investiere klug und halte die Kosten im Blick!</value>
+    <value>Jetzt wird's ernst! Im Forschungsbaum kannst du mächtige Upgrades freischalten – bessere Werkzeuge, effizienteres Management, stärkeres Marketing. Und Gebäude geben permanente Boni. Eine Kantine zum Beispiel hält deine Arbeiter bei Laune!</value>
   </data>
   <data name="Story_Ch06_Title" xml:space="preserve">
-    <value>Meisterwerkzeuge</value>
+    <value>Die Klempnerei öffnet!</value>
   </data>
   <data name="Story_Ch06_Text" xml:space="preserve">
-    <value>Ich habe gehört, du sammelst Meisterwerkzeuge! Jedes Werkzeug hat besondere Kräfte. Sammle sie alle und du wirst unaufhaltbar!</value>
+    <value>Wasser marsch! Die Klempnerei ist ein Goldesel, glaub mir. Jeder braucht mal einen Klempner – besonders nachts um drei, wenn das Rohr platzt! Die Aufträge sind lukrativ und die Mini-Games machen sogar mir Spaß.</value>
   </data>
   <data name="Story_Ch07_Title" xml:space="preserve">
-    <value>Der Imperium-Erbauer</value>
+    <value>Dein erster richtiger Mitarbeiter!</value>
   </data>
   <data name="Story_Ch07_Text" xml:space="preserve">
-    <value>Fünf Werkstätten und ein florierendes Geschäft! Du bist auf dem besten Weg, das größte Handwerker-Imperium der Stadt aufzubauen. Weiter so!</value>
+    <value>Das Tier-System bei Arbeitern ist wichtig: F-Tier Arbeiter sind günstig, aber... naja, sie verwechseln schon mal Hammer und Schraubenzieher. Spar auf bessere Tiers – ein A-Tier Arbeiter bringt das Zehnfache rein!</value>
   </data>
   <data name="Story_Ch08_Title" xml:space="preserve">
-    <value>Neuanfang mit Erfahrung</value>
+    <value>Unter Strom!</value>
   </data>
   <data name="Story_Ch08_Text" xml:space="preserve">
-    <value>Manchmal muss man einen Schritt zurück machen, um zwei vorwärts zu gehen. Prestige gibt dir permanente Boni für deinen nächsten Durchlauf. Trau dich!</value>
+    <value>Die Elektrikerei – mein Liebling! Kabel verlegen ist Kunst, nicht Handwerk. Ein falscher Draht und... *puff*! Aber keine Sorge, bei uns ist alles gut isoliert. Die Elektrik bringt richtig gutes Geld!</value>
   </data>
   <data name="Story_Ch09_Title" xml:space="preserve">
-    <value>Die Legende</value>
+    <value>Tägliche Herausforderungen!</value>
   </data>
   <data name="Story_Ch09_Text" xml:space="preserve">
-    <value>Du hast es geschafft! Alle Werkstätten, zahllose Aufträge, und dein Name ist in der ganzen Stadt bekannt. Ich bin stolz auf dich, Meister!</value>
+    <value>Schau mal, Geselle – jeden Tag gibt's drei neue Herausforderungen! Schließ Aufträge ab, spiel Mini-Games, verdiene Geld. Die Belohnungen lohnen sich, besonders die Goldschrauben. Ein echter Handwerker arbeitet jeden Tag!</value>
   </data>
   <data name="Story_Ch10_Title" xml:space="preserve">
-    <value>Großmeister</value>
+    <value>Farbe bekennen!</value>
   </data>
   <data name="Story_Ch10_Text" xml:space="preserve">
-    <value>Level 100! Du bist jetzt der Großmeister der Handwerker-Gilde. Dein Imperium ist ein Vorbild für alle. Aber vergiss nicht: Ein wahrer Meister hört nie auf zu lernen!</value>
+    <value>Die Malerei bringt Farbe in dein Imperium! Ein guter Maler hat Farbgefühl – und Geduld. Beim Streich-Minigame musst du die richtige Reihenfolge treffen. Mein Tipp: Achte auf die blinkenden Felder, Geselle!</value>
+  </data>
+  <data name="Story_Ch11_Title" xml:space="preserve">
+    <value>Legendäre Werkzeuge!</value>
+  </data>
+  <data name="Story_Ch11_Text" xml:space="preserve">
+    <value>Du hast Meisterwerkzeuge entdeckt! Diese antiken Artefakte tragen die Kraft vergangener Handwerksmeister in sich. Jedes gibt einen permanenten Einkommensbonus. Sammle alle 12 und du wirst die Meisterkrone erhalten – das mächtigste Werkzeug von allen!</value>
+  </data>
+  <data name="Story_Ch12_Title" xml:space="preserve">
+    <value>Hoch hinaus!</value>
+  </data>
+  <data name="Story_Ch12_Text" xml:space="preserve">
+    <value>Die Dachdeckerei – nichts für Leute mit Höhenangst! Aber die Margen sind fantastisch. Und zwischen uns: Bald wirst du ein Level erreichen, wo etwas Besonderes wartet. 'Prestige' nennen wir das. Aber dazu später mehr...</value>
+  </data>
+  <data name="Story_Ch13_Title" xml:space="preserve">
+    <value>Der Bauunternehmer!</value>
+  </data>
+  <data name="Story_Ch13_Text" xml:space="preserve">
+    <value>Fünf Werkstätten und 50 Aufträge – du bist kein Lehrling mehr, Geselle! Die Bauunternehmung ist der nächste Schritt: Mauern hochziehen, Krane bedienen, ganze Häuser bauen. Das ist die Champions League des Handwerks!</value>
+  </data>
+  <data name="Story_Ch14_Title" xml:space="preserve">
+    <value>Das Handwerker-Viertel!</value>
+  </data>
+  <data name="Story_Ch14_Text" xml:space="preserve">
+    <value>Sechs Werkstätten! Die Leute nennen deinen Bezirk schon 'Handwerker-Viertel'. Deine Arbeiter pfeifen morgens fröhlich auf dem Weg zur Arbeit – na gut, die meisten jedenfalls. Halte ihre Stimmung hoch, dann läuft der Laden!</value>
+  </data>
+  <data name="Story_Ch15_Title" xml:space="preserve">
+    <value>Der Ruf der Stadt!</value>
+  </data>
+  <data name="Story_Ch15_Text" xml:space="preserve">
+    <value>75 Aufträge – dein Ruf eilt dir voraus! Die Reputation bestimmt, wie viel Kunden bereit sind zu zahlen. Gute Arbeit = gute Bewertungen = mehr Geld. Schlechte Arbeit... naja, davon reden wir nicht. Mach einfach weiter so!</value>
+  </data>
+  <data name="Story_Ch16_Title" xml:space="preserve">
+    <value>Ein Neuanfang?</value>
+  </data>
+  <data name="Story_Ch16_Text" xml:space="preserve">
+    <value>Geselle, ich muss mit dir über Prestige reden. Es klingt verrückt: Alles aufgeben und von vorne anfangen. Aber glaub mir – mit den permanenten Boni wächst du beim zweiten Mal doppelt so schnell. Ich selbst hab's dreimal gemacht. Überlege es dir gut...</value>
+  </data>
+  <data name="Story_Ch17_Title" xml:space="preserve">
+    <value>Bereit für den Neuanfang!</value>
+  </data>
+  <data name="Story_Ch17_Text" xml:space="preserve">
+    <value>100 Aufträge und Level 250 – du hast alles gemeistert was dieses Leben zu bieten hat. Die Prestige-Tür steht offen. Geh hindurch und komm stärker zurück. Ich warte hier auf dich, Geselle. Nein, ich warte auf dich... Meister!</value>
+  </data>
+  <data name="Story_Ch18_Title" xml:space="preserve">
+    <value>Wie Phönix aus der Asche!</value>
+  </data>
+  <data name="Story_Ch18_Text" xml:space="preserve">
+    <value>Du hast es getan, Meister! Ein Neuanfang – aber diesmal mit Erfahrung und permanenten Boni. Alles fühlt sich vertraut an, aber du bist schneller, stärker, klüger. Das ist das Geheimnis der wahren Meister: Fallen und wieder aufstehen!</value>
+  </data>
+  <data name="Story_Ch19_Title" xml:space="preserve">
+    <value>Das Architekturbüro!</value>
+  </data>
+  <data name="Story_Ch19_Text" xml:space="preserve">
+    <value>Ein neuer Workshop-Typ, Meister! Das Architekturbüro – hier werden Träume zu Bauplänen. Grundrisse zeichnen, Häuser designen, Visionen verwirklichen. Das ist Handwerk auf höchstem Niveau. Ich bin... *schnief*... so stolz auf dich!</value>
+  </data>
+  <data name="Story_Ch20_Title" xml:space="preserve">
+    <value>Silber-Prestige!</value>
+  </data>
+  <data name="Story_Ch20_Text" xml:space="preserve">
+    <value>Viermal neu angefangen – und jedes Mal besser! Du hast Silber-Prestige erreicht, Meister. Das schaffen die wenigsten. Dein Imperium wächst jetzt mit einer Geschwindigkeit, die selbst mich beeindruckt. Und ich bin nicht leicht zu beeindrucken!</value>
+  </data>
+  <data name="Story_Ch21_Title" xml:space="preserve">
+    <value>Der Generalunternehmer!</value>
+  </data>
+  <data name="Story_Ch21_Text" xml:space="preserve">
+    <value>Der letzte Workshop-Typ: Generalunternehmer! Du koordinierst jetzt ALLES – von der kleinsten Schraube bis zum größten Kran. Kein Projekt ist dir zu groß. Du bist nicht mehr nur ein Handwerker, du bist eine Institution!</value>
+  </data>
+  <data name="Story_Ch22_Title" xml:space="preserve">
+    <value>Gold-Prestige!</value>
+  </data>
+  <data name="Story_Ch22_Text" xml:space="preserve">
+    <value>Ich... ich bin sprachlos, Großmeister. 13 Prestige-Durchläufe. GOLD. In 40 Jahren Handwerk habe ich so etwas noch nie gesehen. Dein Name wird in die Gilden-Chronik eingehen. Neben meinem natürlich – ich hab dich schließlich ausgebildet!</value>
+  </data>
+  <data name="Story_Ch23_Title" xml:space="preserve">
+    <value>Die lebende Legende!</value>
+  </data>
+  <data name="Story_Ch23_Text" xml:space="preserve">
+    <value>Level 500 und sieben Werkstätten auf dem Höhepunkt – du bist eine lebende Legende! Die Handwerkskammer hat angerufen, sie wollen ein Portrait von dir aufhängen. Gleich neben meinem. Na gut, vielleicht sogar ÜBER meinem. Du hast es verdient.</value>
+  </data>
+  <data name="Story_Ch24_Title" xml:space="preserve">
+    <value>Alle Werkstätten, alle Meister!</value>
+  </data>
+  <data name="Story_Ch24_Text" xml:space="preserve">
+    <value>Acht Werkstätten, 500 Aufträge, alles auf Maximum. Dein Imperium erstreckt sich über die ganze Stadt! Die Handwerker der nächsten Generation schauen zu dir auf. Weißt du was? Ich glaube, der Schüler hat den Meister übertroffen. Und das sage ich nicht leichtfertig!</value>
+  </data>
+  <data name="Story_Ch25_Title" xml:space="preserve">
+    <value>Großmeister der Handwerker-Gilde!</value>
+  </data>
+  <data name="Story_Ch25_Text" xml:space="preserve">
+    <value>Level 1000. Großmeister der Handwerker-Gilde. Es gibt keinen höheren Titel. Von einem nervösen Lehrling mit einer kleinen Schreinerei zum mächtigsten Handwerker der Geschichte – DEINE Geschichte! Ich bin alt geworden mit dir, Großmeister. Aber es war jede Minute wert. Danke.</value>
   </data>
   <data name="TaskProgress" xml:space="preserve">
     <value>Aufgabe {0}/{1}</value>
@@ -2669,7 +2765,7 @@
     <value>Dachdecken</value>
   </data>
   <data name="TutorialRoofTilingText" xml:space="preserve">
-    <value>Platziere Dachziegel im richtigen Farbmuster. Wähle eine Farbe aus der Palette und tippe auf die leeren Positionen.</value>
+    <value>Platziere Dachziegel im richtigen Farbmuster. Ziegel mit goldenem Rand zeigen die richtige Farbe — nutze sie als Referenz. Wähle eine Farbe aus der Palette und tippe auf die leeren Positionen.</value>
   </data>
   <data name="TutorialBlueprintTitle" xml:space="preserve">
     <value>Bauplan</value>
@@ -2691,6 +2787,99 @@
   </data>
   <data name="TutorialGotIt" xml:space="preserve">
     <value>Verstanden!</value>
+  </data>
+
+  <!-- Order Types -->
+  <data name="OrderTypeStandard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="OrderTypeLarge" xml:space="preserve">
+    <value>Großauftrag</value>
+  </data>
+  <data name="OrderTypeWeekly" xml:space="preserve">
+    <value>Wochenvertrag</value>
+  </data>
+  <data name="OrderTypeCooperation" xml:space="preserve">
+    <value>Kooperation</value>
+  </data>
+  <data name="OrderExpired" xml:space="preserve">
+    <value>Auftrag abgelaufen!</value>
+  </data>
+  <data name="RegularCustomerBonus" xml:space="preserve">
+    <value>Stammkunden-Bonus</value>
+  </data>
+  <data name="MarketRestricted" xml:space="preserve">
+    <value>Arbeiterstreik: Nur Stufen bis C verfügbar!</value>
+  </data>
+
+  <!-- Phase 1: General + SaveGame -->
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="SaveErrorMessage" xml:space="preserve">
+    <value>Spielstand konnte nicht gespeichert werden.</value>
+  </data>
+  <data name="LoadErrorMessage" xml:space="preserve">
+    <value>Spielstand konnte nicht geladen werden.</value>
+  </data>
+  <data name="DeleteSaveErrorMessage" xml:space="preserve">
+    <value>Spielstand konnte nicht gelöscht werden.</value>
+  </data>
+  <data name="ImportErrorMessage" xml:space="preserve">
+    <value>Spielstand konnte nicht importiert werden.</value>
+  </data>
+
+  <!-- Phase 3: Tutorial -->
+  <data name="TutorialSkip" xml:space="preserve">
+    <value>Überspringen</value>
+  </data>
+  <data name="TutorialNext" xml:space="preserve">
+    <value>Weiter</value>
+  </data>
+
+  <!-- Phase 5: Notifications -->
+  <data name="Notifications" xml:space="preserve">
+    <value>Benachrichtigungen</value>
+  </data>
+  <data name="ResearchDoneNotif" xml:space="preserve">
+    <value>Forschung abgeschlossen! Ergebnisse abholen.</value>
+  </data>
+  <data name="DeliveryWaitingNotif" xml:space="preserve">
+    <value>Ein Lieferant wartet mit einer Lieferung!</value>
+  </data>
+  <data name="RushAvailableNotif" xml:space="preserve">
+    <value>Feierabend-Rush verfügbar! Verdopple dein Einkommen.</value>
+  </data>
+  <data name="DailyRewardNotif" xml:space="preserve">
+    <value>Deine tägliche Belohnung wartet! Nicht verpassen.</value>
+  </data>
+
+  <!-- Phase 6: Leaderboard -->
+  <data name="Leaderboard" xml:space="preserve">
+    <value>Bestenlisten</value>
+  </data>
+  <data name="LeaderboardSignIn" xml:space="preserve">
+    <value>Bei Play Games anmelden um Bestenlisten zu sehen.</value>
+  </data>
+
+  <!-- Phase 7: Cloud Save -->
+  <data name="CloudSave" xml:space="preserve">
+    <value>Cloud-Speicher</value>
+  </data>
+  <data name="CloudSaveDesc" xml:space="preserve">
+    <value>Fortschritt über Google Play Games geräteübergreifend synchronisieren.</value>
+  </data>
+  <data name="CloudSaveNewer" xml:space="preserve">
+    <value>Neuerer Cloud-Spielstand gefunden (Level {0}). Cloud-Spielstand verwenden?</value>
+  </data>
+  <data name="UseCloudSave" xml:space="preserve">
+    <value>Cloud verwenden</value>
+  </data>
+  <data name="UseLocalSave" xml:space="preserve">
+    <value>Lokal behalten</value>
+  </data>
+  <data name="CloudSyncFailed" xml:space="preserve">
+    <value>Cloud-Sync fehlgeschlagen. Dein lokaler Spielstand ist sicher.</value>
   </data>
 
 </root>

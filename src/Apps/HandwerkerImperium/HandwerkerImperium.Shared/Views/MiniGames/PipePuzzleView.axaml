@@ -165,7 +165,7 @@
             <mi:MaterialIcon Kind="CashMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
-                       Text="{Binding RewardAmount, StringFormat='+{0:N0} \u20ac'}"
+                       Text="{Binding RewardAmount, StringFormat='+{0:N0} &#x20AC;'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}"
                        VerticalAlignment="Center" />

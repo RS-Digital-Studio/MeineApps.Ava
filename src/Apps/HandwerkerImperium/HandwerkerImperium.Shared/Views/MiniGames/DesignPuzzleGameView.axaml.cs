@@ -50,6 +50,10 @@ public partial class DesignPuzzleGameView : UserControl
 
             StartRenderLoop();
         }
+        else
+        {
+            StopRenderLoop();
+        }
     }
 
     /// <summary>

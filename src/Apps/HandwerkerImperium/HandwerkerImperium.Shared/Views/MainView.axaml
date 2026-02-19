@@ -6,6 +6,7 @@
              xmlns:miniGames="using:HandwerkerImperium.Views.MiniGames"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MainView"
              x:DataType="vm:MainViewModel">
 
@@ -399,7 +400,7 @@
                      HorizontalAlignment="Center"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      IsVisible="{Binding LevelUpUnlockedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <Button Classes="Primary" Content="OK"
+          <Button Classes="Primary" Content="{loc:Translate OK}"
                   Background="{StaticResource CraftPrimaryBrush}"
                   Command="{Binding DismissLevelUpDialogCommand}"
                   HorizontalAlignment="Center" MinWidth="140" />
@@ -507,7 +508,7 @@
                      FontSize="14" TextWrapping="Wrap"
                      HorizontalAlignment="Center"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
-          <Button Classes="Primary" Content="OK"
+          <Button Classes="Primary" Content="{loc:Translate OK}"
                   Background="{StaticResource CraftPrimaryBrush}"
                   Command="{Binding DismissAchievementDialogCommand}"
                   HorizontalAlignment="Center" MinWidth="120" />
@@ -516,7 +517,77 @@
     </Border>
 
     <!-- ================================================================= -->
-    <!-- STORY DIALOG (Meister Hans NPC)                                   -->
+    <!-- TUTORIAL OVERLAY (8 Schritte, Bottom-Sheet-Stil) -->
+    <!-- ================================================================= -->
+    <Border Grid.RowSpan="3"
+            Classes="SheetBackdrop"
+            Classes.Open="{Binding IsTutorialVisible}"
+            IsVisible="{Binding IsTutorialVisible}"
+            Background="#AA000000"
+            IsHitTestVisible="{Binding IsTutorialVisible}">
+      <Border Classes="BottomSheet"
+              Classes.Open="{Binding IsTutorialVisible}"
+              VerticalAlignment="Center" HorizontalAlignment="Center"
+              MaxWidth="380"
+              Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="24"
+              Padding="24"
+              BoxShadow="0 0 40 0 #40D97706"
+              Margin="16">
+        <StackPanel Spacing="16">
+
+          <!-- Schritt-Anzeige -->
+          <Border Background="#20D97706"
+                  CornerRadius="12"
+                  Padding="10,4"
+                  HorizontalAlignment="Center">
+            <TextBlock Text="{Binding TutorialStepDisplay}"
+                       FontSize="11" FontWeight="SemiBold"
+                       Foreground="#D97706"
+                       HorizontalAlignment="Center" />
+          </Border>
+
+          <!-- Icon (gross, zentriert) -->
+          <TextBlock Text="{Binding TutorialIcon}"
+                     FontSize="48"
+                     HorizontalAlignment="Center" />
+
+          <!-- Titel -->
+          <TextBlock Text="{Binding TutorialTitle}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     HorizontalAlignment="Center"
+                     TextWrapping="Wrap"
+                     TextAlignment="Center" />
+
+          <!-- Beschreibung -->
+          <TextBlock Text="{Binding TutorialDescription}"
+                     FontSize="14"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     TextWrapping="Wrap"
+                     TextAlignment="Center"
+                     LineHeight="22" />
+
+          <!-- Buttons -->
+          <Grid ColumnDefinitions="*,12,*">
+            <Button Grid.Column="0"
+                    Content="{loc:Translate TutorialSkip}"
+                    Classes="Outlined"
+                    Command="{Binding TutorialSkipCommand}"
+                    HorizontalAlignment="Stretch" />
+            <Button Grid.Column="2"
+                    Content="{loc:Translate TutorialNext}"
+                    Classes="Primary"
+                    Command="{Binding TutorialNextCommand}"
+                    HorizontalAlignment="Stretch" />
+          </Grid>
+
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- STORY DIALOG (Meister Hans NPC) - 25 Kapitel mit SkiaSharp-Portrait -->
     <!-- ================================================================= -->
     <Border Grid.RowSpan="3"
             Classes="SheetBackdrop"
@@ -527,49 +598,74 @@
       <Border Classes="BottomSheet"
               Classes.Open="{Binding IsStoryDialogVisible}"
               VerticalAlignment="Center" HorizontalAlignment="Center"
-              MaxWidth="380"
+              MaxWidth="400"
               Background="{DynamicResource SurfaceBrush}"
               CornerRadius="24"
-              Padding="24"
+              Padding="20"
               BoxShadow="0 0 40 0 #40D97706"
-              Margin="20">
-        <StackPanel Spacing="16">
+              Margin="16">
+        <StackPanel Spacing="12">
 
-          <!-- Meister Hans Portrait -->
-          <Border Width="80" Height="80"
-                  CornerRadius="40"
-                  Background="#20D97706"
-                  HorizontalAlignment="Center"
-                  BoxShadow="0 0 20 0 #30D97706">
-            <mi:MaterialIcon Kind="AccountHardHat" Width="48" Height="48"
-                             Foreground="#D97706"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          <!-- Kapitel-Badge -->
+          <Border Background="#20D97706"
+                  CornerRadius="12"
+                  Padding="10,4"
+                  HorizontalAlignment="Center">
+            <TextBlock Text="{Binding StoryChapterBadge}"
+                       FontSize="11" FontWeight="SemiBold"
+                       Foreground="#D97706"
+                       HorizontalAlignment="Center" />
           </Border>
 
-          <!-- Kapitel-Titel -->
-          <TextBlock Text="{Binding StoryTitle}"
-                     FontSize="20" FontWeight="Bold"
-                     Foreground="{StaticResource CraftPrimaryLightBrush}"
-                     HorizontalAlignment="Center"
-                     TextAlignment="Center" />
+          <!-- Meister Hans SkiaSharp-Portrait mit Sprechblasen-Zeiger -->
+          <Grid ColumnDefinitions="Auto,*" HorizontalAlignment="Center">
+            <!-- Portrait -->
+            <Border Grid.Column="0"
+                    Width="120" Height="120"
+                    CornerRadius="60"
+                    Background="#15D97706"
+                    BoxShadow="0 0 24 0 #30D97706"
+                    Margin="0,0,12,0">
+              <skia:SKCanvasView x:Name="MeisterHansCanvas"
+                                 Width="120" Height="120"
+                                 PaintSurface="OnMeisterHansPaintSurface" />
+            </Border>
 
-          <!-- Dialog-Text -->
-          <TextBlock Text="{Binding StoryText}"
-                     FontSize="14"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     TextWrapping="Wrap"
-                     TextAlignment="Center"
-                     LineHeight="22" />
+            <!-- Sprechblase -->
+            <Border Grid.Column="1"
+                    Background="#10D97706"
+                    CornerRadius="16"
+                    Padding="14,10"
+                    MinHeight="80">
+              <StackPanel Spacing="6">
+                <!-- Kapitel-Titel -->
+                <TextBlock Text="{Binding StoryTitle}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           TextWrapping="Wrap" />
 
-          <!-- Belohnungen -->
+                <!-- Dialog-Text -->
+                <TextBlock Text="{Binding StoryText}"
+                           FontSize="13"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           TextWrapping="Wrap"
+                           LineHeight="20" />
+              </StackPanel>
+            </Border>
+          </Grid>
+
+          <!-- Belohnungen mit Gold-Shimmer-Rand -->
           <Border Background="#15FFD700"
                   CornerRadius="12"
                   Padding="12,8"
+                  BorderBrush="#40FFD700"
+                  BorderThickness="1.5"
+                  BoxShadow="0 0 12 0 #20FFD700"
                   IsVisible="{Binding StoryRewardText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Gift" Width="18" Height="18" Foreground="Gold" />
+              <mi:MaterialIcon Kind="Gift" Width="20" Height="20" Foreground="Gold" />
               <TextBlock Text="{Binding StoryRewardText}"
-                         FontSize="13" FontWeight="SemiBold"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="Gold" />
             </StackPanel>
           </Border>
@@ -580,7 +676,7 @@
                   Command="{Binding DismissStoryDialogCommand}"
                   HorizontalAlignment="Center"
                   MinWidth="160"
-                  Margin="0,8,0,0" />
+                  Margin="0,4,0,0" />
 
         </StackPanel>
       </Border>

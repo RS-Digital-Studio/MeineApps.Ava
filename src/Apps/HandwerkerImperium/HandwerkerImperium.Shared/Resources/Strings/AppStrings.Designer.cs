@@ -1181,7 +1181,8 @@ namespace HandwerkerImperium.Resources.Strings {
 
         public static string StartInspection => ResourceManager.GetString("StartInspection", resourceCulture) ?? "Start Inspection";
 
-        // Story-Kapitel (Meister Hans)
+        // Story-Kapitel (Meister Hans) - 25 Kapitel
+        public static string StoryTipFromHans => ResourceManager.GetString("StoryTipFromHans", resourceCulture) ?? "";
         public static string Story_Ch01_Title => ResourceManager.GetString("Story_Ch01_Title", resourceCulture) ?? "";
         public static string Story_Ch01_Text => ResourceManager.GetString("Story_Ch01_Text", resourceCulture) ?? "";
         public static string Story_Ch02_Title => ResourceManager.GetString("Story_Ch02_Title", resourceCulture) ?? "";
@@ -1202,6 +1203,36 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string Story_Ch09_Text => ResourceManager.GetString("Story_Ch09_Text", resourceCulture) ?? "";
         public static string Story_Ch10_Title => ResourceManager.GetString("Story_Ch10_Title", resourceCulture) ?? "";
         public static string Story_Ch10_Text => ResourceManager.GetString("Story_Ch10_Text", resourceCulture) ?? "";
+        public static string Story_Ch11_Title => ResourceManager.GetString("Story_Ch11_Title", resourceCulture) ?? "";
+        public static string Story_Ch11_Text => ResourceManager.GetString("Story_Ch11_Text", resourceCulture) ?? "";
+        public static string Story_Ch12_Title => ResourceManager.GetString("Story_Ch12_Title", resourceCulture) ?? "";
+        public static string Story_Ch12_Text => ResourceManager.GetString("Story_Ch12_Text", resourceCulture) ?? "";
+        public static string Story_Ch13_Title => ResourceManager.GetString("Story_Ch13_Title", resourceCulture) ?? "";
+        public static string Story_Ch13_Text => ResourceManager.GetString("Story_Ch13_Text", resourceCulture) ?? "";
+        public static string Story_Ch14_Title => ResourceManager.GetString("Story_Ch14_Title", resourceCulture) ?? "";
+        public static string Story_Ch14_Text => ResourceManager.GetString("Story_Ch14_Text", resourceCulture) ?? "";
+        public static string Story_Ch15_Title => ResourceManager.GetString("Story_Ch15_Title", resourceCulture) ?? "";
+        public static string Story_Ch15_Text => ResourceManager.GetString("Story_Ch15_Text", resourceCulture) ?? "";
+        public static string Story_Ch16_Title => ResourceManager.GetString("Story_Ch16_Title", resourceCulture) ?? "";
+        public static string Story_Ch16_Text => ResourceManager.GetString("Story_Ch16_Text", resourceCulture) ?? "";
+        public static string Story_Ch17_Title => ResourceManager.GetString("Story_Ch17_Title", resourceCulture) ?? "";
+        public static string Story_Ch17_Text => ResourceManager.GetString("Story_Ch17_Text", resourceCulture) ?? "";
+        public static string Story_Ch18_Title => ResourceManager.GetString("Story_Ch18_Title", resourceCulture) ?? "";
+        public static string Story_Ch18_Text => ResourceManager.GetString("Story_Ch18_Text", resourceCulture) ?? "";
+        public static string Story_Ch19_Title => ResourceManager.GetString("Story_Ch19_Title", resourceCulture) ?? "";
+        public static string Story_Ch19_Text => ResourceManager.GetString("Story_Ch19_Text", resourceCulture) ?? "";
+        public static string Story_Ch20_Title => ResourceManager.GetString("Story_Ch20_Title", resourceCulture) ?? "";
+        public static string Story_Ch20_Text => ResourceManager.GetString("Story_Ch20_Text", resourceCulture) ?? "";
+        public static string Story_Ch21_Title => ResourceManager.GetString("Story_Ch21_Title", resourceCulture) ?? "";
+        public static string Story_Ch21_Text => ResourceManager.GetString("Story_Ch21_Text", resourceCulture) ?? "";
+        public static string Story_Ch22_Title => ResourceManager.GetString("Story_Ch22_Title", resourceCulture) ?? "";
+        public static string Story_Ch22_Text => ResourceManager.GetString("Story_Ch22_Text", resourceCulture) ?? "";
+        public static string Story_Ch23_Title => ResourceManager.GetString("Story_Ch23_Title", resourceCulture) ?? "";
+        public static string Story_Ch23_Text => ResourceManager.GetString("Story_Ch23_Text", resourceCulture) ?? "";
+        public static string Story_Ch24_Title => ResourceManager.GetString("Story_Ch24_Title", resourceCulture) ?? "";
+        public static string Story_Ch24_Text => ResourceManager.GetString("Story_Ch24_Text", resourceCulture) ?? "";
+        public static string Story_Ch25_Title => ResourceManager.GetString("Story_Ch25_Title", resourceCulture) ?? "";
+        public static string Story_Ch25_Text => ResourceManager.GetString("Story_Ch25_Text", resourceCulture) ?? "";
 
         public static string TaskProgress => ResourceManager.GetString("TaskProgress", resourceCulture) ?? "";
 

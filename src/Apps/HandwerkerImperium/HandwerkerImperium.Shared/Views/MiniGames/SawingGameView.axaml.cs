@@ -47,8 +47,13 @@ public partial class SawingGameView : UserControl
         var canvas = this.FindControl<SKCanvasView>("GameCanvas");
         if (canvas != null)
         {
+            canvas.PaintSurface -= OnPaintSurface;
             canvas.PaintSurface += OnPaintSurface;
             StartRenderLoop();
+        }
+        else
+        {
+            StopRenderLoop();
         }
     }
 

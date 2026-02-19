@@ -2075,6 +2075,9 @@
   <data name="WorkerSlotBonusDesc" xml:space="preserve">
     <value>Posto extra per lavoratore aggiunto!</value>
   </data>
+  <data name="MaxSlotReached" xml:space="preserve">
+    <value>Posti bonus massimi raggiunti per questa bottega.</value>
+  </data>
   <data name="WatchAdToFinishResearch" xml:space="preserve">
     <value>Gratis (Video)</value>
   </data>
@@ -2557,66 +2560,159 @@
     <value>Avvia ispezione</value>
   </data>
 
-  <!-- Capitoli della storia (Maestro Hans) -->
+  <!-- Capitoli della storia (Maestro Hans) - 25 Capitoli -->
+  <data name="StoryTipFromHans" xml:space="preserve">
+    <value>Consiglio del Maestro Hans</value>
+  </data>
   <data name="Story_Ch01_Title" xml:space="preserve">
     <value>Benvenuto, apprendista!</value>
   </data>
   <data name="Story_Ch01_Text" xml:space="preserve">
-    <value>Sono il Maestro Hans, l'artigiano più esperto della città. Hai potenziale, lo vedo! Insieme costruiremo un impero artigianale. Inizia migliorando la tua falegnameria!</value>
+    <value>Sono il Maestro Hans! 40 anni di esperienza, e ho visto di tutto. Beh, quasi – non avevo mai visto un apprendista motivato come te! La tua falegnameria è piccola ma promettente. Migliorala e ne riparliamo!</value>
   </data>
   <data name="Story_Ch02_Title" xml:space="preserve">
-    <value>Buon lavoro!</value>
-  </data>
-  <data name="Story_Ch02_Text" xml:space="preserve">
-    <value>Hai migliorato il tuo primo laboratorio! Così inizia ogni maestro. Ora hai bisogno di un apprendista che ti aiuti. Un buon lavoratore vale il suo peso in oro!</value>
-  </data>
-  <data name="Story_Ch03_Title" xml:space="preserve">
-    <value>È ora di espandersi!</value>
-  </data>
-  <data name="Story_Ch03_Text" xml:space="preserve">
-    <value>La corporazione degli idraulici cerca nuovi talenti! Sblocca l'officina idraulica e raddoppia le tue entrate. Più attività sono il segreto di un impero di successo.</value>
-  </data>
-  <data name="Story_Ch04_Title" xml:space="preserve">
     <value>Il tuo primo ordine!</value>
   </data>
+  <data name="Story_Ch02_Text" xml:space="preserve">
+    <value>Squilla il telefono? È un cliente! Gli ordini includono mini-giochi: segare, posare tubi, cablare. Meglio ti comporti, più soldi e XP guadagni. Quindi: al lavoro!</value>
+  </data>
+  <data name="Story_Ch03_Title" xml:space="preserve">
+    <value>Assumi lavoratori!</value>
+  </data>
+  <data name="Story_Ch03_Text" xml:space="preserve">
+    <value>Non puoi farcela da solo per sempre, apprendista. Il mercato del lavoro offre operai qualificati, ognuno con i propri punti di forza e debolezza. Assumili e guadagneranno soldi mentre tu bevi il caffè! Beh, quasi...</value>
+  </data>
+  <data name="Story_Ch04_Title" xml:space="preserve">
+    <value>Viti dorate!</value>
+  </data>
   <data name="Story_Ch04_Text" xml:space="preserve">
-    <value>Un cliente ha chiamato! Gli ordini portano soldi extra e esperienza. Mostra quello che sai fare - migliore è il tuo lavoro, maggiore è la ricompensa!</value>
+    <value>Vedi quelle viti dorate? Sono rare e preziose! Le ottieni nei mini-giochi, sfide e traguardi. Con esse puoi assumere lavoratori premium e comprare potenziamenti speciali. Custodiscile gelosamente!</value>
   </data>
   <data name="Story_Ch05_Title" xml:space="preserve">
-    <value>Affari in crescita</value>
+    <value>Edifici e ricerca!</value>
   </data>
   <data name="Story_Ch05_Text" xml:space="preserve">
-    <value>Tre laboratori! Stai diventando un vero imprenditore. Ricorda: ogni laboratorio ha i suoi punti di forza. Investi saggiamente e tieni d'occhio i costi!</value>
+    <value>Ora si fa sul serio! L'albero della ricerca sblocca potenti miglioramenti: strumenti migliori, gestione efficiente, marketing più forte. E gli edifici danno bonus permanenti. Una mensa tiene felici i tuoi operai!</value>
   </data>
   <data name="Story_Ch06_Title" xml:space="preserve">
-    <value>Strumenti del maestro</value>
+    <value>Apre l'idraulica!</value>
   </data>
   <data name="Story_Ch06_Text" xml:space="preserve">
-    <value>Ho sentito che collezioni strumenti del maestro! Ogni strumento ha poteri speciali. Collezionali tutti e sarai inarrestabile!</value>
+    <value>Acqua corrente! L'idraulica è una miniera d'oro, credimi. Tutti hanno bisogno di un idraulico, specialmente alle 3 di notte quando scoppia un tubo! Gli ordini sono redditizi e i mini-giochi divertono persino me.</value>
   </data>
   <data name="Story_Ch07_Title" xml:space="preserve">
-    <value>Il costruttore di imperi</value>
+    <value>Il tuo primo vero dipendente!</value>
   </data>
   <data name="Story_Ch07_Text" xml:space="preserve">
-    <value>Cinque laboratori e un'attività fiorente! Sei sulla buona strada per costruire il più grande impero artigianale della città. Continua così!</value>
+    <value>Il sistema di livelli dei lavoratori conta: quelli di livello F costano poco, ma... diciamo che a volte confondono martello e cacciavite. Risparmia per livelli migliori: un lavoratore livello A rende dieci volte di più!</value>
   </data>
   <data name="Story_Ch08_Title" xml:space="preserve">
-    <value>Un nuovo inizio con esperienza</value>
+    <value>Sotto tensione!</value>
   </data>
   <data name="Story_Ch08_Text" xml:space="preserve">
-    <value>A volte bisogna fare un passo indietro per farne due avanti. Il prestigio ti dà bonus permanenti per la prossima partita. Provaci!</value>
+    <value>L'officina elettrica, la mia preferita! Cablare è arte, non solo mestiere. Un filo sbagliato e... *puf*! Ma tranquillo, qui tutto è ben isolato. I lavori elettrici rendono davvero bene!</value>
   </data>
   <data name="Story_Ch09_Title" xml:space="preserve">
-    <value>La leggenda</value>
+    <value>Sfide giornaliere!</value>
   </data>
   <data name="Story_Ch09_Text" xml:space="preserve">
-    <value>Ce l'hai fatta! Tutti i laboratori, innumerevoli ordini, e il tuo nome è conosciuto in tutta la città. Sono orgoglioso di te, Maestro!</value>
+    <value>Guarda qui, operaio: ogni giorno tre nuove sfide! Completa ordini, gioca mini-giochi, guadagna soldi. Le ricompense valgono la pena, specialmente le viti dorate. Un vero artigiano lavora ogni giorno!</value>
   </data>
   <data name="Story_Ch10_Title" xml:space="preserve">
-    <value>Gran Maestro</value>
+    <value>Dai colore!</value>
   </data>
   <data name="Story_Ch10_Text" xml:space="preserve">
-    <value>Livello 100! Ora sei il Gran Maestro della Gilda degli Artigiani. Il tuo impero è un esempio per tutti. Ma ricorda: un vero maestro non smette mai di imparare!</value>
+    <value>La pittura porta colore al tuo impero! Un buon pittore ha occhio per i colori e pazienza. Nel mini-gioco di pittura devi trovare la sequenza giusta. Il mio consiglio: guarda le caselle lampeggianti, operaio!</value>
+  </data>
+  <data name="Story_Ch11_Title" xml:space="preserve">
+    <value>Strumenti leggendari!</value>
+  </data>
+  <data name="Story_Ch11_Text" xml:space="preserve">
+    <value>Hai scoperto gli strumenti del maestro! Questi antichi artefatti portano il potere dei maestri artigiani del passato. Ognuno dà un bonus permanente di reddito. Raccoglili tutti e 12 e riceverai la Corona del Maestro, lo strumento più potente!</value>
+  </data>
+  <data name="Story_Ch12_Title" xml:space="preserve">
+    <value>Sempre più in alto!</value>
+  </data>
+  <data name="Story_Ch12_Text" xml:space="preserve">
+    <value>I tetti, non per chi soffre di vertigini! Ma i margini sono fantastici. E tra noi: presto raggiungerai un livello dove qualcosa di speciale ti aspetta. Lo chiamiamo 'Prestigio'. Ma ne riparleremo...</value>
+  </data>
+  <data name="Story_Ch13_Title" xml:space="preserve">
+    <value>L'imprenditore edile!</value>
+  </data>
+  <data name="Story_Ch13_Text" xml:space="preserve">
+    <value>Cinque officine e 50 ordini: non sei più un apprendista, operaio! L'impresa edile è il passo successivo: alzare muri, gestire gru, costruire case intere. È la Champions League dell'artigianato!</value>
+  </data>
+  <data name="Story_Ch14_Title" xml:space="preserve">
+    <value>Il quartiere artigiano!</value>
+  </data>
+  <data name="Story_Ch14_Text" xml:space="preserve">
+    <value>Sei officine! La gente chiama già la tua zona il 'Quartiere Artigiano'. I tuoi operai fischettano allegramente andando al lavoro... beh, la maggior parte. Tieni alto il morale e gli affari andranno a gonfie vele!</value>
+  </data>
+  <data name="Story_Ch15_Title" xml:space="preserve">
+    <value>La reputazione della città!</value>
+  </data>
+  <data name="Story_Ch15_Text" xml:space="preserve">
+    <value>75 ordini: la tua reputazione ti precede! La reputazione determina quanto i clienti sono disposti a pagare. Buon lavoro = buone recensioni = più soldi. Lavoro scadente... beh, non ne parliamo. Continua così!</value>
+  </data>
+  <data name="Story_Ch16_Title" xml:space="preserve">
+    <value>Un nuovo inizio?</value>
+  </data>
+  <data name="Story_Ch16_Text" xml:space="preserve">
+    <value>Operaio, devo parlarti del Prestigio. Sembra folle: lasciare tutto e ricominciare. Ma credimi, con i bonus permanenti crescerai il doppio la seconda volta. L'ho fatto tre volte. Pensaci bene...</value>
+  </data>
+  <data name="Story_Ch17_Title" xml:space="preserve">
+    <value>Pronto per rinascere!</value>
+  </data>
+  <data name="Story_Ch17_Text" xml:space="preserve">
+    <value>100 ordini e livello 250: hai padroneggiato tutto ciò che questa vita ha da offrire. La porta del Prestigio è aperta. Attraversala e torna più forte. Ti aspetto qui, operaio. No, ti aspetto... Maestro!</value>
+  </data>
+  <data name="Story_Ch18_Title" xml:space="preserve">
+    <value>Come la fenice dalle ceneri!</value>
+  </data>
+  <data name="Story_Ch18_Text" xml:space="preserve">
+    <value>Ce l'hai fatta, Maestro! Un nuovo inizio, ma questa volta con esperienza e bonus permanenti. Tutto sembra familiare, ma sei più veloce, più forte, più saggio. È il segreto dei veri maestri: cadere e rialzarsi!</value>
+  </data>
+  <data name="Story_Ch19_Title" xml:space="preserve">
+    <value>Lo studio di architettura!</value>
+  </data>
+  <data name="Story_Ch19_Text" xml:space="preserve">
+    <value>Un nuovo tipo di officina, Maestro! Lo studio di architettura: dove i sogni diventano progetti. Disegnare planimetrie, progettare case, realizzare visioni. Questo è artigianato al massimo livello. Sono... *snif*... così orgoglioso di te!</value>
+  </data>
+  <data name="Story_Ch20_Title" xml:space="preserve">
+    <value>Prestigio Argento!</value>
+  </data>
+  <data name="Story_Ch20_Text" xml:space="preserve">
+    <value>Ricominciato quattro volte, e ogni volta meglio! Hai raggiunto il Prestigio Argento, Maestro. Pochissimi ci riescono. Il tuo impero cresce ora a una velocità che impressiona persino me. E non sono facile da impressionare!</value>
+  </data>
+  <data name="Story_Ch21_Title" xml:space="preserve">
+    <value>L'imprenditore generale!</value>
+  </data>
+  <data name="Story_Ch21_Text" xml:space="preserve">
+    <value>L'ultimo tipo di officina: Imprenditore Generale! Ora coordini TUTTO: dalla vite più piccola alla gru più grande. Nessun progetto è troppo grande per te. Non sei più solo un artigiano, sei un'istituzione!</value>
+  </data>
+  <data name="Story_Ch22_Title" xml:space="preserve">
+    <value>Prestigio Oro!</value>
+  </data>
+  <data name="Story_Ch22_Text" xml:space="preserve">
+    <value>Io... sono senza parole, Gran Maestro. 13 cicli di Prestigio. ORO. In 40 anni di artigianato non ho mai visto nulla del genere. Il tuo nome sarà scritto nella Cronaca della Gilda. Accanto al mio, ovviamente: ti ho formato io!</value>
+  </data>
+  <data name="Story_Ch23_Title" xml:space="preserve">
+    <value>La leggenda vivente!</value>
+  </data>
+  <data name="Story_Ch23_Text" xml:space="preserve">
+    <value>Livello 500 e sette officine al massimo: sei una leggenda vivente! La Camera dell'Artigianato ha chiamato, vogliono appendere il tuo ritratto. Accanto al mio. Beh, forse anche SOPRA il mio. Te lo sei meritato.</value>
+  </data>
+  <data name="Story_Ch24_Title" xml:space="preserve">
+    <value>Tutte le officine, tutti i maestri!</value>
+  </data>
+  <data name="Story_Ch24_Text" xml:space="preserve">
+    <value>Otto officine, 500 ordini, tutto al massimo. Il tuo impero si estende su tutta la città! La prossima generazione di artigiani ti ammira. Sai cosa? Credo che l'allievo abbia superato il maestro. E non lo dico alla leggera!</value>
+  </data>
+  <data name="Story_Ch25_Title" xml:space="preserve">
+    <value>Gran Maestro della Gilda degli Artigiani!</value>
+  </data>
+  <data name="Story_Ch25_Text" xml:space="preserve">
+    <value>Livello 1000. Gran Maestro della Gilda degli Artigiani. Non esiste titolo più alto. Da un apprendista nervoso con una piccola falegnameria al più potente artigiano della storia: la TUA storia! Sono invecchiato con te, Gran Maestro. Ma ne è valsa ogni minuto. Grazie.</value>
   </data>
   <data name="TaskProgress" xml:space="preserve">
     <value>Compito {0}/{1}</value>
@@ -2655,7 +2751,7 @@
     <value>Tegole</value>
   </data>
   <data name="TutorialRoofTilingText" xml:space="preserve">
-    <value>Posiziona le tegole nel motivo di colori corretto. Seleziona un colore e tocca le posizioni vuote.</value>
+    <value>Posiziona le tegole nel motivo di colori corretto. Le tegole con bordo dorato mostrano i colori corretti — usale come riferimento. Seleziona un colore e tocca le posizioni vuote.</value>
   </data>
   <data name="TutorialBlueprintTitle" xml:space="preserve">
     <value>Progetto</value>
@@ -2677,6 +2773,98 @@
   </data>
   <data name="TutorialGotIt" xml:space="preserve">
     <value>Capito!</value>
+  </data>
+  <!-- Order Types -->
+  <data name="OrderTypeStandard" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="OrderTypeLarge" xml:space="preserve">
+    <value>Ordine Grande</value>
+  </data>
+  <data name="OrderTypeWeekly" xml:space="preserve">
+    <value>Contratto Settimanale</value>
+  </data>
+  <data name="OrderTypeCooperation" xml:space="preserve">
+    <value>Cooperazione</value>
+  </data>
+  <data name="OrderExpired" xml:space="preserve">
+    <value>Ordine scaduto!</value>
+  </data>
+  <data name="RegularCustomerBonus" xml:space="preserve">
+    <value>Bonus Cliente Abituale</value>
+  </data>
+  <data name="MarketRestricted" xml:space="preserve">
+    <value>Sciopero: Solo livelli fino a C disponibili!</value>
+  </data>
+
+  <!-- Phase 1: General + SaveGame -->
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="SaveErrorMessage" xml:space="preserve">
+    <value>Impossibile salvare la partita.</value>
+  </data>
+  <data name="LoadErrorMessage" xml:space="preserve">
+    <value>Impossibile caricare il salvataggio.</value>
+  </data>
+  <data name="DeleteSaveErrorMessage" xml:space="preserve">
+    <value>Impossibile eliminare il salvataggio.</value>
+  </data>
+  <data name="ImportErrorMessage" xml:space="preserve">
+    <value>Impossibile importare il salvataggio.</value>
+  </data>
+
+  <!-- Phase 3: Tutorial -->
+  <data name="TutorialSkip" xml:space="preserve">
+    <value>Salta</value>
+  </data>
+  <data name="TutorialNext" xml:space="preserve">
+    <value>Avanti</value>
+  </data>
+
+  <!-- Phase 5: Notifications -->
+  <data name="Notifications" xml:space="preserve">
+    <value>Notifiche</value>
+  </data>
+  <data name="ResearchDoneNotif" xml:space="preserve">
+    <value>Ricerca completata! Ritira i risultati.</value>
+  </data>
+  <data name="DeliveryWaitingNotif" xml:space="preserve">
+    <value>Un fornitore attende con una consegna!</value>
+  </data>
+  <data name="RushAvailableNotif" xml:space="preserve">
+    <value>Rush disponibile! Raddoppia i tuoi guadagni.</value>
+  </data>
+  <data name="DailyRewardNotif" xml:space="preserve">
+    <value>La tua ricompensa giornaliera ti aspetta!</value>
+  </data>
+
+  <!-- Phase 6: Leaderboard -->
+  <data name="Leaderboard" xml:space="preserve">
+    <value>Classifiche</value>
+  </data>
+  <data name="LeaderboardSignIn" xml:space="preserve">
+    <value>Accedi a Play Games per vedere le classifiche.</value>
+  </data>
+
+  <!-- Phase 7: Cloud Save -->
+  <data name="CloudSave" xml:space="preserve">
+    <value>Salvataggio cloud</value>
+  </data>
+  <data name="CloudSaveDesc" xml:space="preserve">
+    <value>Sincronizza i progressi tra dispositivi tramite Google Play Games.</value>
+  </data>
+  <data name="CloudSaveNewer" xml:space="preserve">
+    <value>Trovato salvataggio cloud più recente (Livello {0}). Usare il salvataggio cloud?</value>
+  </data>
+  <data name="UseCloudSave" xml:space="preserve">
+    <value>Usa cloud</value>
+  </data>
+  <data name="UseLocalSave" xml:space="preserve">
+    <value>Mantieni locale</value>
+  </data>
+  <data name="CloudSyncFailed" xml:space="preserve">
+    <value>Sincronizzazione fallita. Il salvataggio locale è al sicuro.</value>
   </data>
 
 </root>

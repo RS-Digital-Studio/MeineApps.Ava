@@ -4,7 +4,10 @@ using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Styling;
+using Avalonia.Threading;
+using HandwerkerImperium.Graphics;
 using HandwerkerImperium.ViewModels;
+using SkiaSharp;
 
 namespace HandwerkerImperium.Views;
 
@@ -12,6 +15,12 @@ public partial class MainView : UserControl
 {
     private MainViewModel? _vm;
     private string _lastActiveTab = "";
+
+    // Meister Hans Animation
+    private DispatcherTimer? _hansTimer;
+    private float _hansElapsed;
+    private bool _hansBlinking;
+    private float _nextBlinkTime = 3.5f;
 
     public MainView()
     {
@@ -27,6 +36,7 @@ public partial class MainView : UserControl
         {
             _vm.PropertyChanged -= OnVmPropertyChanged;
             _vm.CelebrationRequested -= OnCelebrationRequested;
+            StopHansAnimation();
         }
 
         _vm = DataContext as MainViewModel;
@@ -52,6 +62,15 @@ public partial class MainView : UserControl
                 _lastActiveTab = newTab;
                 FadeInContentPanel();
             }
+        }
+
+        // Meister Hans Animation starten/stoppen wenn Story-Dialog sichtbar wird
+        if (e.PropertyName == "IsStoryDialogVisible")
+        {
+            if (_vm?.IsStoryDialogVisible == true)
+                StartHansAnimation();
+            else
+                StopHansAnimation();
         }
     }
 
@@ -106,6 +125,68 @@ public partial class MainView : UserControl
     {
         CelebrationCanvas.ShowConfetti();
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Meister Hans SkiaSharp-Portrait
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void OnMeisterHansPaintSurface(object? sender, Avalonia.Labs.Controls.SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+
+        var bounds = canvas.LocalClipBounds;
+        var mood = _vm?.StoryMood ?? "happy";
+
+        MeisterHansRenderer.Render(canvas, bounds, mood, _hansElapsed, _hansBlinking);
+    }
+
+    private void StartHansAnimation()
+    {
+        _hansElapsed = 0;
+        _hansBlinking = false;
+        _nextBlinkTime = 3f + Random.Shared.NextSingle() * 1.5f;
+
+        _hansTimer ??= new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(50) // 20fps
+        };
+
+        _hansTimer.Tick -= OnHansTimerTick;
+        _hansTimer.Tick += OnHansTimerTick;
+        _hansTimer.Start();
+    }
+
+    private void StopHansAnimation()
+    {
+        _hansTimer?.Stop();
+    }
+
+    private void OnHansTimerTick(object? sender, EventArgs e)
+    {
+        _hansElapsed += 0.05f; // 50ms pro Tick
+
+        // Blinzel-Logik: Alle 3-4.5s für ~150ms blinzeln
+        if (_hansBlinking)
+        {
+            // Blinzel dauert 3 Frames (150ms)
+            if (_hansElapsed > _nextBlinkTime + 0.15f)
+            {
+                _hansBlinking = false;
+                _nextBlinkTime = _hansElapsed + 3f + Random.Shared.NextSingle() * 1.5f;
+            }
+        }
+        else if (_hansElapsed >= _nextBlinkTime)
+        {
+            _hansBlinking = true;
+        }
+
+        MeisterHansCanvas?.InvalidateSurface();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Dialog-Overlay Handler
+    // ═══════════════════════════════════════════════════════════════════════
 
     // Dialog-Overlay: Klick auf dunklen Hintergrund schließt den Dialog
     private void OnAlertOverlayPressed(object? sender, PointerPressedEventArgs e)

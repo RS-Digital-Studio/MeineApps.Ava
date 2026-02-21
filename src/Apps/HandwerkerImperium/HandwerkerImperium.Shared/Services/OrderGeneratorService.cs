@@ -113,7 +113,7 @@ public class OrderGeneratorService : IOrderGeneratorService
 
         // Reputation-Bonus: Gute Reputation senkt Standard-Wahrscheinlichkeit
         decimal reputationBonus = state.Reputation.OrderQualityBonus;
-        int adjustedRoll = (int)(roll - reputationBonus * 100);
+        int adjustedRoll = Math.Clamp((int)(roll - reputationBonus * 100), 0, 100);
 
         return playerLevel switch
         {

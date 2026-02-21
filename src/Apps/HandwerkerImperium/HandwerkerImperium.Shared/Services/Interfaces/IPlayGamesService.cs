@@ -1,7 +1,7 @@
 namespace HandwerkerImperium.Services.Interfaces;
 
 /// <summary>
-/// Google Play Games Services Integration (Leaderboard + Cloud Save).
+/// Google Play Games Services Integration (Leaderboard + Cloud Save + Gilden).
 /// </summary>
 public interface IPlayGamesService
 {
@@ -14,6 +14,11 @@ public interface IPlayGamesService
     /// Ob Cloud Save unterstützt wird (Android + angemeldet).
     /// </summary>
     bool SupportsCloudSave { get; }
+
+    /// <summary>
+    /// Spieler-Anzeigename (oder null wenn nicht angemeldet).
+    /// </summary>
+    string? PlayerDisplayName { get; }
 
     /// <summary>
     /// Bei Play Games anmelden.
@@ -39,4 +44,19 @@ public interface IPlayGamesService
     /// Spielstand in die Cloud speichern.
     /// </summary>
     Task<bool> SaveToCloudAsync(string jsonData, string description);
+
+    /// <summary>
+    /// Leaderboard-Einträge laden (für Gilden).
+    /// </summary>
+    Task<List<PlayGamesLeaderboardEntry>> LoadLeaderboardScoresAsync(string leaderboardId, int maxResults);
+}
+
+/// <summary>
+/// Eintrag aus einem Play Games Leaderboard.
+/// </summary>
+public class PlayGamesLeaderboardEntry
+{
+    public string PlayerName { get; set; } = "";
+    public long Score { get; set; }
+    public int Rank { get; set; }
 }

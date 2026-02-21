@@ -188,7 +188,7 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
                 break;
 
             case DailyChallengeType.EarnMoney:
-                challenge.TargetValue = (int)Math.Max(200, incomeBase * 0.5m);
+                challenge.TargetValue = (long)Math.Max(200, incomeBase * 0.5m);
                 challenge.MoneyReward = Math.Round(incomeBase * 0.6m, 0);
                 challenge.XpReward = 15 + level * 2;
                 break;
@@ -261,7 +261,7 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
     /// <summary>
     /// Aktualisiert den Fortschritt einer bestimmten Challenge-Art.
     /// </summary>
-    private void IncrementChallenge(DailyChallengeType type, int amount = 1)
+    private void IncrementChallenge(DailyChallengeType type, long amount = 1)
     {
         var challenges = _gameStateService.State.DailyChallengeState.Challenges;
         foreach (var challenge in challenges.Where(c => c.Type == type && !c.IsCompleted))
@@ -280,7 +280,7 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
     /// <summary>
     /// Setzt den Fortschritt einer Challenge auf den Maximalwert (fuer Score-basierte).
     /// </summary>
-    private void SetChallengeMax(DailyChallengeType type, int value)
+    private void SetChallengeMax(DailyChallengeType type, long value)
     {
         var challenges = _gameStateService.State.DailyChallengeState.Challenges;
         foreach (var challenge in challenges.Where(c => c.Type == type && !c.IsCompleted))
@@ -309,7 +309,7 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
         // Nur bei Geldeinnahmen (nicht Ausgaben)
         if (e.NewAmount > e.OldAmount)
         {
-            var earned = (int)Math.Round(e.NewAmount - e.OldAmount);
+            var earned = (long)Math.Min(Math.Round(e.NewAmount - e.OldAmount), long.MaxValue);
             IncrementChallenge(DailyChallengeType.EarnMoney, earned);
         }
     }

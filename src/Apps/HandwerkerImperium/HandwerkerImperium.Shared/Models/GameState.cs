@@ -230,6 +230,9 @@ public class GameState
     [JsonPropertyName("cloudSaveEnabled")]
     public bool CloudSaveEnabled { get; set; } = true;
 
+    [JsonPropertyName("lastCloudSaveTime")]
+    public DateTime LastCloudSaveTime { get; set; }
+
     [JsonPropertyName("language")]
     public string Language { get; set; } = "";
 
@@ -387,6 +390,159 @@ public class GameState
     public string? PendingStoryId { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // AUTOMATION (Welle 1)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("automation")]
+    public AutomationSettings Automation { get; set; } = new();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WEEKLY MISSIONS (Welle 1)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("weeklyMissionState")]
+    public WeeklyMissionState WeeklyMissionState { get; set; } = new();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WELCOME BACK (Welle 1)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("activeWelcomeBackOffer")]
+    public WelcomeBackOffer? ActiveWelcomeBackOffer { get; set; }
+
+    [JsonPropertyName("claimedStarterPack")]
+    public bool ClaimedStarterPack { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STREAK-ERWEITERUNG (Welle 1)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Streak-Wert vor dem letzten Unterbruch (für Streak-Rettung).
+    /// </summary>
+    [JsonPropertyName("streakBeforeBreak")]
+    public int StreakBeforeBreak { get; set; }
+
+    /// <summary>
+    /// Ob die Streak-Rettung bereits verwendet wurde (nur 1x pro Unterbrechung).
+    /// </summary>
+    [JsonPropertyName("streakRescueUsed")]
+    public bool StreakRescueUsed { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LUCKY SPIN (Welle 2)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("luckySpin")]
+    public LuckySpinState LuckySpin { get; set; } = new();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // EQUIPMENT (Welle 2)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("equipmentInventory")]
+    public List<Equipment> EquipmentInventory { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TOURNAMENTS (Welle 2)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("currentTournament")]
+    public Tournament? CurrentTournament { get; set; }
+
+    [JsonPropertyName("totalTournamentsPlayed")]
+    public int TotalTournamentsPlayed { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MANAGERS (Welle 3)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("managers")]
+    public List<Manager> Managers { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SEASONAL EVENTS (Welle 4)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("currentSeasonalEvent")]
+    public SeasonalEvent? CurrentSeasonalEvent { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BATTLE PASS (Welle 4)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("battlePass")]
+    public BattlePass BattlePass { get; set; } = new();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CONTEXTUAL OFFERS (Welle 5)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Level-Meilensteine bei denen bereits ein Angebot gezeigt wurde.
+    /// </summary>
+    [JsonPropertyName("claimedLevelOffers")]
+    public List<int> ClaimedLevelOffers { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GUILD (Welle 6)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("guild")]
+    public Guild? Guild { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // CRAFTING (Welle 7)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("craftingInventory")]
+    public Dictionary<string, int> CraftingInventory { get; set; } = new();
+
+    [JsonPropertyName("activeCraftingJobs")]
+    public List<CraftingJob> ActiveCraftingJobs { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // VIP (Welle 7)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("totalPurchaseAmount")]
+    public decimal TotalPurchaseAmount { get; set; }
+
+    [JsonPropertyName("vipLevel")]
+    public VipTier VipLevel { get; set; } = VipTier.None;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STARTER PACK (Welle 8)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("hasPurchasedStarterPack")]
+    public bool HasPurchasedStarterPack { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOSS ORDERS (Welle 8)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("lastBossOrderDate")]
+    public DateTime LastBossOrderDate { get; set; } = DateTime.MinValue;
+
+    [JsonPropertyName("bossOrdersCompleted")]
+    public int BossOrdersCompleted { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FRIENDS (Welle 8)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("friends")]
+    public List<Friend> Friends { get; set; } = [];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DAILY SHOP OFFER (Welle 8)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("dailyShopOffer")]
+    public ShopOffer? DailyShopOffer { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // UI/UX STATE
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -461,8 +617,8 @@ public class GameState
         get
         {
             decimal total = Workshops.Sum(w => w.GrossIncomePerSecond);
-            // Cap bei 20x für alte Spielstände die vor dem DoPrestige-Cap gespeichert wurden
-            decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 20.0m);
+            // Cap bei 50x für alte Spielstände die vor dem DoPrestige-Cap gespeichert wurden
+            decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 50.0m);
             return total * multiplier;
         }
     }
@@ -474,8 +630,9 @@ public class GameState
     public decimal TotalCostsPerSecond => Workshops.Sum(w => w.TotalCostsPerHour) / 3600m;
 
     /// <summary>
-    /// Net income per second (gross - costs).
-    /// Can be negative if costs exceed income!
+    /// Roher Netto-Einkommenswert (Brutto - Kosten) OHNE Research/Prestige/Building-Modifikatoren.
+    /// Die tatsächliche Berechnung mit allen Modifikatoren erfolgt im GameLoopService.
+    /// Nur für Display-Zwecke (Dashboard, DailyChallengeService).
     /// </summary>
     [JsonIgnore]
     public decimal NetIncomePerSecond => TotalIncomePerSecond - TotalCostsPerSecond;

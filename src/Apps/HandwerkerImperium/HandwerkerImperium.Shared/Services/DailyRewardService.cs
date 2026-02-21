@@ -89,6 +89,9 @@ public class DailyRewardService : IDailyRewardService
         // Check if streak was broken (missed more than 1 day)
         if (WasStreakBroken())
         {
+            // Alten Streak-Wert für Streak-Rettung speichern
+            state.StreakBeforeBreak = state.DailyRewardStreak;
+            state.StreakRescueUsed = false;
             state.DailyRewardStreak = 1;
         }
         else

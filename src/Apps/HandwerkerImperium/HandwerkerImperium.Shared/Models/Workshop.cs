@@ -34,6 +34,12 @@ public class Workshop
     public bool IsUnlocked { get; set; }
 
     /// <summary>
+    /// Gewählte Spezialisierung (ab Level 100, null = keine).
+    /// </summary>
+    [JsonPropertyName("specialization")]
+    public WorkshopSpecialization? WorkshopSpecialization { get; set; }
+
+    /// <summary>
     /// Maximales Workshop-Level.
     /// </summary>
     public const int MaxLevel = 1000;
@@ -154,8 +160,9 @@ public class Workshop
     public decimal TotalCostsPerHour => RentPerHour + MaterialCostPerHour + TotalWagesPerHour;
 
     /// <summary>
-    /// Net income per second (gross - costs/3600).
-    /// Can be negative!
+    /// Roher Netto-Einkommenswert OHNE Prestige-Multiplikator und Research-Boni.
+    /// Die tatsächliche Berechnung mit allen Modifikatoren erfolgt im GameLoopService.
+    /// Nur für Display-Zwecke (WorkshopView).
     /// </summary>
     [JsonIgnore]
     public decimal NetIncomePerSecond => GrossIncomePerSecond - TotalCostsPerHour / 3600m;

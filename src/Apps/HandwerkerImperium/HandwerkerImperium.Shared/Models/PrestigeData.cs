@@ -23,6 +23,18 @@ public class PrestigeData
     [JsonPropertyName("goldCount")]
     public int GoldCount { get; set; }
 
+    [JsonPropertyName("platinCount")]
+    public int PlatinCount { get; set; }
+
+    [JsonPropertyName("diamantCount")]
+    public int DiamantCount { get; set; }
+
+    [JsonPropertyName("meisterCount")]
+    public int MeisterCount { get; set; }
+
+    [JsonPropertyName("legendeCount")]
+    public int LegendeCount { get; set; }
+
     /// <summary>
     /// Spendable prestige points.
     /// </summary>
@@ -52,7 +64,8 @@ public class PrestigeData
     /// Total number of prestiges across all tiers.
     /// </summary>
     [JsonIgnore]
-    public int TotalPrestigeCount => BronzeCount + SilverCount + GoldCount;
+    public int TotalPrestigeCount => BronzeCount + SilverCount + GoldCount
+        + PlatinCount + DiamantCount + MeisterCount + LegendeCount;
 
     /// <summary>
     /// Calculates prestige points from total money earned.
@@ -76,6 +89,10 @@ public class PrestigeData
             PrestigeTier.Bronze => true,
             PrestigeTier.Silver => BronzeCount >= tier.GetRequiredPreviousTierCount(),
             PrestigeTier.Gold => SilverCount >= tier.GetRequiredPreviousTierCount(),
+            PrestigeTier.Platin => GoldCount >= tier.GetRequiredPreviousTierCount(),
+            PrestigeTier.Diamant => PlatinCount >= tier.GetRequiredPreviousTierCount(),
+            PrestigeTier.Meister => DiamantCount >= tier.GetRequiredPreviousTierCount(),
+            PrestigeTier.Legende => MeisterCount >= tier.GetRequiredPreviousTierCount(),
             _ => false
         };
     }
@@ -85,6 +102,10 @@ public class PrestigeData
     /// </summary>
     public PrestigeTier GetHighestAvailableTier(int playerLevel)
     {
+        if (CanPrestige(PrestigeTier.Legende, playerLevel)) return PrestigeTier.Legende;
+        if (CanPrestige(PrestigeTier.Meister, playerLevel)) return PrestigeTier.Meister;
+        if (CanPrestige(PrestigeTier.Diamant, playerLevel)) return PrestigeTier.Diamant;
+        if (CanPrestige(PrestigeTier.Platin, playerLevel)) return PrestigeTier.Platin;
         if (CanPrestige(PrestigeTier.Gold, playerLevel)) return PrestigeTier.Gold;
         if (CanPrestige(PrestigeTier.Silver, playerLevel)) return PrestigeTier.Silver;
         if (CanPrestige(PrestigeTier.Bronze, playerLevel)) return PrestigeTier.Bronze;

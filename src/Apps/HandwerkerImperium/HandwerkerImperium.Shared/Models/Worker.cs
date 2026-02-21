@@ -129,6 +129,12 @@ public class Worker
     [JsonPropertyName("isFemale")]
     public bool IsFemale { get; set; }
 
+    /// <summary>
+    /// Ausgerüstetes Equipment (null = nichts ausgerüstet).
+    /// </summary>
+    [JsonPropertyName("equippedItem")]
+    public Equipment? EquippedItem { get; set; }
+
     [JsonPropertyName("hiredAt")]
     public DateTime HiredAt { get; set; }
 
@@ -165,8 +171,9 @@ public class Worker
             decimal fatigueFactor = GetFatigueFactor();
             decimal specBonus = GetSpecializationBonus();
             decimal personalityMult = Personality.GetEfficiencyMultiplier();
+            decimal equipBonus = EquippedItem?.EfficiencyBonus ?? 0m;
 
-            return Math.Max(0m, baseEff * moodFactor * fatigueFactor * (1m + specBonus) * personalityMult);
+            return Math.Max(0m, baseEff * moodFactor * fatigueFactor * (1m + specBonus + equipBonus) * personalityMult);
         }
     }
 

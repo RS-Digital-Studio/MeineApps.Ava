@@ -63,7 +63,12 @@ public class StoryService : IStoryService
             if (chapter != null)
             {
                 if (chapter.MoneyReward > 0)
-                    _gameStateService.AddMoney(chapter.MoneyReward);
+                {
+                    // Geldbelohnung skaliert mit dem aktuellen Einkommen (~10 Min Einkommen als Minimum)
+                    var netIncomePerSecond = _gameStateService.State.NetIncomePerSecond;
+                    var scaledReward = Math.Max(chapter.MoneyReward, netIncomePerSecond * 600);
+                    _gameStateService.AddMoney(scaledReward);
+                }
                 if (chapter.GoldenScrewReward > 0)
                     _gameStateService.AddGoldenScrews(chapter.GoldenScrewReward);
                 if (chapter.XpReward > 0)

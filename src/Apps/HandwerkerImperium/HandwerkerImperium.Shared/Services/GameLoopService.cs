@@ -22,6 +22,12 @@ public class GameLoopService : IGameLoopService, IDisposable
     private readonly IPrestigeService? _prestigeService;
     private readonly IQuickJobService? _quickJobService;
     private readonly IDailyChallengeService? _dailyChallengeService;
+    private readonly IWeeklyMissionService? _weeklyMissionService;
+    private readonly IManagerService? _managerService;
+    private readonly IGuildService? _guildService;
+    private readonly ISeasonalEventService? _seasonalEventService;
+    private readonly IBattlePassService? _battlePassService;
+    private readonly ICraftingService? _craftingService;
     private DispatcherTimer? _timer;
     private DateTime _sessionStart;
     private bool _isPaused;
@@ -33,6 +39,13 @@ public class GameLoopService : IGameLoopService, IDisposable
     private const int EventCheckIntervalTicks = 300; // Check events every 5 minutes
     private const int DeliveryCheckIntervalTicks = 10; // Lieferung alle 10 Ticks prüfen
     private const int MasterToolCheckIntervalTicks = 120; // Meisterwerkzeuge alle 2 Minuten prüfen
+    private const int WeeklyMissionCheckIntervalTicks = 60; // Weekly Mission Reset alle 60 Ticks
+    private const int ManagerCheckIntervalTicks = 120; // Manager Unlock Check alle 2 Minuten
+    private const int GuildSimulateIntervalTicks = 300; // Gildenmitglieder-Simulation alle 5 Minuten
+    private const int SeasonalEventCheckIntervalTicks = 300; // Saisonales Event alle 5 Minuten prüfen
+    private const int BattlePassSeasonCheckIntervalTicks = 300; // Battle Pass Saison alle 5 Minuten prüfen
+    private const int AutomationCheckIntervalTicks = 5; // Automation alle 5 Ticks
+    private const int AutoAssignIntervalTicks = 60; // AutoAssign alle 60 Ticks
 
     public bool IsRunning => _timer?.IsEnabled ?? false;
     public TimeSpan SessionDuration => DateTime.UtcNow - _sessionStart;
@@ -47,7 +60,13 @@ public class GameLoopService : IGameLoopService, IDisposable
         IEventService? eventService = null,
         IPrestigeService? prestigeService = null,
         IQuickJobService? quickJobService = null,
-        IDailyChallengeService? dailyChallengeService = null)
+        IDailyChallengeService? dailyChallengeService = null,
+        IWeeklyMissionService? weeklyMissionService = null,
+        IManagerService? managerService = null,
+        IGuildService? guildService = null,
+        ISeasonalEventService? seasonalEventService = null,
+        IBattlePassService? battlePassService = null,
+        ICraftingService? craftingService = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
@@ -57,6 +76,12 @@ public class GameLoopService : IGameLoopService, IDisposable
         _prestigeService = prestigeService;
         _quickJobService = quickJobService;
         _dailyChallengeService = dailyChallengeService;
+        _weeklyMissionService = weeklyMissionService;
+        _managerService = managerService;
+        _guildService = guildService;
+        _seasonalEventService = seasonalEventService;
+        _battlePassService = battlePassService;
+        _craftingService = craftingService;
     }
 
     public void Start()
@@ -294,6 +319,51 @@ public class GameLoopService : IGameLoopService, IDisposable
             CheckMasterTools(state);
         }
 
+        // 9f. Crafting-Timer jedes Tick aktualisieren
+        _craftingService?.UpdateTimers();
+
+        // 9g. Weekly Mission Reset (alle 60 Ticks, Offset 15)
+        if (_tickCount % WeeklyMissionCheckIntervalTicks == 15)
+        {
+            _weeklyMissionService?.CheckAndResetIfNewWeek();
+        }
+
+        // 9h. Manager Unlock Check (alle 120 Ticks, Offset 60)
+        if (_tickCount % ManagerCheckIntervalTicks == 60)
+        {
+            _managerService?.CheckAndUnlockManagers();
+        }
+
+        // 9i. Gilden-Wochenziel prüfen (alle 300 Ticks, Offset 100)
+        if (_tickCount % GuildSimulateIntervalTicks == 100)
+        {
+            _guildService?.CheckWeeklyGoalCompletion();
+        }
+
+        // 9j. Saisonales Event prüfen (alle 300 Ticks, Offset 150)
+        if (_tickCount % SeasonalEventCheckIntervalTicks == 150)
+        {
+            _seasonalEventService?.CheckSeasonalEvent();
+        }
+
+        // 9k. Battle Pass Saison prüfen (alle 300 Ticks, Offset 200)
+        if (_tickCount % BattlePassSeasonCheckIntervalTicks == 200)
+        {
+            _battlePassService?.CheckNewSeason();
+        }
+
+        // 9l. Automation: AutoCollect + AutoAccept (alle 5 Ticks)
+        if (_tickCount % AutomationCheckIntervalTicks == 3)
+        {
+            ProcessAutomation(state);
+        }
+
+        // 9m. Automation: AutoAssign (alle 60 Ticks, Offset 30)
+        if (_tickCount % AutoAssignIntervalTicks == 30)
+        {
+            ProcessAutoAssign(state);
+        }
+
         // 9c. Reputation: Showroom-DailyReputationGain + Decay (einmal pro Tag, persistiert)
         if ((DateTime.UtcNow - state.LastReputationDecay).TotalHours >= 24)
         {
@@ -441,6 +511,91 @@ public class GameLoopService : IGameLoopService, IDisposable
                 bonus += item.Effect.DeliverySpeedBonus;
         }
         return bonus;
+    }
+
+    /// <summary>
+    /// Event wenn Automation eine Lieferung eingesammelt hat.
+    /// </summary>
+    public event EventHandler<SupplierDelivery>? AutoCollectedDelivery;
+
+    /// <summary>
+    /// Event wenn Automation einen Auftrag angenommen hat.
+    /// </summary>
+    public event EventHandler<Order>? AutoAcceptedOrder;
+
+    /// <summary>
+    /// Verarbeitet AutoCollect und AutoAccept Automation.
+    /// </summary>
+    private void ProcessAutomation(GameState state)
+    {
+        var auto = state.Automation;
+
+        // AutoCollect: Lieferung einsammeln wenn vorhanden
+        if (auto.AutoCollectDelivery && state.PlayerLevel >= 15 && state.PendingDelivery != null && !state.PendingDelivery.IsExpired)
+        {
+            var delivery = state.PendingDelivery;
+            state.PendingDelivery = null;
+            state.TotalDeliveriesClaimed++;
+
+            // Lieferungs-Effekt anwenden
+            switch (delivery.Type)
+            {
+                case DeliveryType.Money:
+                    _gameStateService.AddMoney(delivery.Amount);
+                    break;
+                case DeliveryType.GoldenScrews:
+                    _gameStateService.AddGoldenScrews((int)delivery.Amount);
+                    break;
+                case DeliveryType.Experience:
+                    _gameStateService.AddXp((int)delivery.Amount);
+                    break;
+                case DeliveryType.MoodBoost:
+                    foreach (var ws in state.Workshops)
+                    foreach (var w in ws.Workers)
+                        w.Mood = Math.Min(100m, w.Mood + delivery.Amount);
+                    break;
+                case DeliveryType.SpeedBoost:
+                    state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes((double)delivery.Amount);
+                    break;
+            }
+
+            AutoCollectedDelivery?.Invoke(this, delivery);
+        }
+
+        // AutoAccept: Besten Auftrag annehmen wenn kein aktiver vorhanden
+        if (auto.AutoAcceptOrder && state.PlayerLevel >= 25 && state.ActiveOrder == null && state.AvailableOrders.Count > 0)
+        {
+            // Besten Auftrag wählen (höchste Belohnung)
+            var bestOrder = state.AvailableOrders.OrderByDescending(o => o.BaseReward).First();
+            state.ActiveOrder = bestOrder;
+            state.AvailableOrders.Remove(bestOrder);
+
+            AutoAcceptedOrder?.Invoke(this, bestOrder);
+        }
+    }
+
+    /// <summary>
+    /// Verarbeitet AutoAssign: Weist idle Worker dem Workshop mit den meisten freien Plätzen zu.
+    /// </summary>
+    private void ProcessAutoAssign(GameState state)
+    {
+        if (!state.Automation.AutoAssignWorkers || state.PlayerLevel < 50)
+            return;
+
+        // Idle Worker finden (nicht zugewiesen zu einem Workshop)
+        foreach (var ws in state.Workshops)
+        {
+            if (ws.Workers.Count >= ws.MaxWorkers) continue;
+
+            // AutoAssign: Ruhende Worker mit niedriger Erschöpfung wieder arbeiten lassen
+            foreach (var worker in ws.Workers)
+            {
+                if (worker.IsResting && worker.Fatigue <= 20m)
+                {
+                    worker.IsResting = false;
+                }
+            }
+        }
     }
 
     /// <summary>

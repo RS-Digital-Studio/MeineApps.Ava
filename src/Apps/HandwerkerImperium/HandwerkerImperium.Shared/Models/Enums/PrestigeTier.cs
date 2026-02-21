@@ -15,8 +15,20 @@ public enum PrestigeTier
     /// <summary>Zweite Stufe, erfordert Level 100 + 3x Bronze</summary>
     Silver = 2,
 
-    /// <summary>Höchste Stufe, erfordert Level 250 + 3x Silver</summary>
-    Gold = 3
+    /// <summary>Dritte Stufe, erfordert Level 250 + 3x Silver</summary>
+    Gold = 3,
+
+    /// <summary>Vierte Stufe, erfordert Level 500 + 3x Gold</summary>
+    Platin = 4,
+
+    /// <summary>Fünfte Stufe, erfordert Level 750 + 3x Platin</summary>
+    Diamant = 5,
+
+    /// <summary>Sechste Stufe, erfordert Level 1000 + 3x Diamant</summary>
+    Meister = 6,
+
+    /// <summary>Höchste Stufe, erfordert Level 1200 + 3x Meister</summary>
+    Legende = 7
 }
 
 public static class PrestigeTierExtensions
@@ -29,6 +41,10 @@ public static class PrestigeTierExtensions
         PrestigeTier.Bronze => 30,
         PrestigeTier.Silver => 100,
         PrestigeTier.Gold => 250,
+        PrestigeTier.Platin => 500,
+        PrestigeTier.Diamant => 750,
+        PrestigeTier.Meister => 1000,
+        PrestigeTier.Legende => 1200,
         _ => int.MaxValue
     };
 
@@ -38,8 +54,12 @@ public static class PrestigeTierExtensions
     public static int GetRequiredPreviousTierCount(this PrestigeTier tier) => tier switch
     {
         PrestigeTier.Bronze => 0,
-        PrestigeTier.Silver => 3,  // 3x Bronze required
-        PrestigeTier.Gold => 3,    // 3x Silver required
+        PrestigeTier.Silver => 3,   // 3x Bronze
+        PrestigeTier.Gold => 3,     // 3x Silver
+        PrestigeTier.Platin => 3,   // 3x Gold
+        PrestigeTier.Diamant => 3,  // 3x Platin
+        PrestigeTier.Meister => 3,  // 3x Diamant
+        PrestigeTier.Legende => 3,  // 3x Meister
         _ => 0
     };
 
@@ -51,6 +71,10 @@ public static class PrestigeTierExtensions
         PrestigeTier.Bronze => 1.0m,
         PrestigeTier.Silver => 2.0m,
         PrestigeTier.Gold => 4.0m,
+        PrestigeTier.Platin => 8.0m,
+        PrestigeTier.Diamant => 16.0m,
+        PrestigeTier.Meister => 32.0m,
+        PrestigeTier.Legende => 64.0m,
         _ => 0m
     };
 
@@ -59,30 +83,47 @@ public static class PrestigeTierExtensions
     /// </summary>
     public static decimal GetPermanentMultiplierBonus(this PrestigeTier tier) => tier switch
     {
-        PrestigeTier.Bronze => 0.10m,  // +10% per Bronze prestige
-        PrestigeTier.Silver => 0.25m,  // +25% per Silver prestige
-        PrestigeTier.Gold => 0.50m,    // +50% per Gold prestige
+        PrestigeTier.Bronze => 0.10m,   // +10% pro Bronze
+        PrestigeTier.Silver => 0.25m,   // +25% pro Silver
+        PrestigeTier.Gold => 0.50m,     // +50% pro Gold
+        PrestigeTier.Platin => 1.00m,   // +100% pro Platin
+        PrestigeTier.Diamant => 2.00m,  // +200% pro Diamant
+        PrestigeTier.Meister => 4.00m,  // +400% pro Meister
+        PrestigeTier.Legende => 8.00m,  // +800% pro Legende
         _ => 0m
     };
 
     /// <summary>
-    /// What is preserved during prestige at this tier.
+    /// Was bei Prestige erhalten bleibt:
     /// Bronze: Achievements, Premium, Settings, PrestigeData, Tutorial
-    /// Silver: + Research stays
-    /// Gold: + Prestige-Shop items stay
+    /// Silver+: + Research bleibt
+    /// Gold+: + Prestige-Shop Items bleiben
+    /// Platin+: + MasterTools bleiben
+    /// Diamant+: + Gebäude (Level→1) + Equipment-Inventar
+    /// Meister+: + Manager (Level→1)
+    /// Legende: + 1 bester Worker pro Workshop
     /// </summary>
     public static bool KeepsResearch(this PrestigeTier tier) => tier >= PrestigeTier.Silver;
     public static bool KeepsShopItems(this PrestigeTier tier) => tier >= PrestigeTier.Gold;
+    public static bool KeepsMasterTools(this PrestigeTier tier) => tier >= PrestigeTier.Platin;
+    public static bool KeepsBuildings(this PrestigeTier tier) => tier >= PrestigeTier.Diamant;
+    public static bool KeepsEquipment(this PrestigeTier tier) => tier >= PrestigeTier.Diamant;
+    public static bool KeepsManagers(this PrestigeTier tier) => tier >= PrestigeTier.Meister;
+    public static bool KeepsBestWorkers(this PrestigeTier tier) => tier >= PrestigeTier.Legende;
 
     /// <summary>
     /// Color key for this tier.
     /// </summary>
     public static string GetColorKey(this PrestigeTier tier) => tier switch
     {
-        PrestigeTier.None => "#9E9E9E",    // Grey
-        PrestigeTier.Bronze => "#CD7F32",  // Bronze
-        PrestigeTier.Silver => "#C0C0C0",  // Silver
-        PrestigeTier.Gold => "#FFD700",    // Gold
+        PrestigeTier.None => "#9E9E9E",      // Grey
+        PrestigeTier.Bronze => "#CD7F32",    // Bronze
+        PrestigeTier.Silver => "#C0C0C0",    // Silver
+        PrestigeTier.Gold => "#FFD700",      // Gold
+        PrestigeTier.Platin => "#E5E4E2",    // Platin
+        PrestigeTier.Diamant => "#B9F2FF",   // Diamant (Hellblau)
+        PrestigeTier.Meister => "#FF4500",   // Meister (Orangerot)
+        PrestigeTier.Legende => "#FF69B4",   // Legende (Rainbow-Stellvertreter)
         _ => "#9E9E9E"
     };
 
@@ -95,6 +136,10 @@ public static class PrestigeTierExtensions
         PrestigeTier.Bronze => "\ud83e\udd49",  // Bronze medal
         PrestigeTier.Silver => "\ud83e\udd48",  // Silver medal
         PrestigeTier.Gold => "\ud83e\udd47",    // Gold medal
+        PrestigeTier.Platin => "\ud83d\udc8e",  // Gem
+        PrestigeTier.Diamant => "\u2b50",        // Star
+        PrestigeTier.Meister => "\ud83d\udd25",  // Fire
+        PrestigeTier.Legende => "\ud83c\udf1f",  // Glowing star
         _ => ""
     };
 

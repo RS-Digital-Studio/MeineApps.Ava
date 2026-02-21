@@ -160,6 +160,24 @@ public class Order
         }
     }
 
+    /// <summary>
+    /// Berechnet die geschätzte Belohnung unter Einbeziehung aller Multiplikatoren.
+    /// Geht von "Good"-Rating (100%) aus als Referenzwert.
+    /// </summary>
+    public decimal CalculateEstimatedReward()
+    {
+        return BaseReward * Difficulty.GetRewardMultiplier() * OrderType.GetRewardMultiplier();
+    }
+
+    /// <summary>
+    /// Berechnet die geschätzte XP-Belohnung unter Einbeziehung aller Multiplikatoren.
+    /// Geht von "Good"-Rating (100%) aus als Referenzwert.
+    /// </summary>
+    public int CalculateEstimatedXp()
+    {
+        return (int)(BaseXp * Difficulty.GetXpMultiplier() * OrderType.GetXpMultiplier());
+    }
+
     public void RecordTaskResult(MiniGameRating rating)
     {
         TaskResults.Add(rating);

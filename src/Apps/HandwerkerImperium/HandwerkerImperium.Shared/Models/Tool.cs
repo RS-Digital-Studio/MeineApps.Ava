@@ -11,7 +11,11 @@ public enum ToolType
     Saw,
     PipeWrench,
     Screwdriver,
-    Paintbrush
+    Paintbrush,
+    Hammer,
+    SpiritLevel,
+    Magnifier,
+    Compass
 }
 
 /// <summary>
@@ -89,6 +93,10 @@ public class Tool
         ToolType.PipeWrench => "ToolPipeWrench",
         ToolType.Screwdriver => "ToolScrewdriver",
         ToolType.Paintbrush => "ToolPaintbrush",
+        ToolType.Hammer => "ToolHammer",
+        ToolType.SpiritLevel => "ToolSpiritLevel",
+        ToolType.Magnifier => "ToolMagnifier",
+        ToolType.Compass => "ToolCompass",
         _ => "Unknown"
     };
 
@@ -99,6 +107,10 @@ public class Tool
         ToolType.PipeWrench => MiniGameType.PipePuzzle,
         ToolType.Screwdriver => MiniGameType.WiringGame,
         ToolType.Paintbrush => MiniGameType.PaintingGame,
+        ToolType.Hammer => MiniGameType.RoofTiling,
+        ToolType.SpiritLevel => MiniGameType.Blueprint,
+        ToolType.Magnifier => MiniGameType.Inspection,
+        ToolType.Compass => MiniGameType.DesignPuzzle,
         _ => MiniGameType.Sawing
     };
 
@@ -107,6 +119,10 @@ public class Tool
         new() { Type = ToolType.Saw },
         new() { Type = ToolType.PipeWrench },
         new() { Type = ToolType.Screwdriver },
-        new() { Type = ToolType.Paintbrush }
+        new() { Type = ToolType.Paintbrush },
+        new() { Type = ToolType.Hammer },
+        new() { Type = ToolType.SpiritLevel },
+        new() { Type = ToolType.Magnifier },
+        new() { Type = ToolType.Compass }
     ];
 }

@@ -42,18 +42,18 @@ public class QuickJobService : IQuickJobService
         };
     }
 
-    // Verfuegbare MiniGame-Typen fuer Quick Jobs (alle 8)
-    private static readonly MiniGameType[] AvailableMiniGames =
-    [
-        MiniGameType.Sawing,
-        MiniGameType.PipePuzzle,
-        MiniGameType.WiringGame,
-        MiniGameType.PaintingGame,
-        MiniGameType.RoofTiling,
-        MiniGameType.Blueprint,
-        MiniGameType.DesignPuzzle,
-        MiniGameType.Inspection
-    ];
+    // Workshop-spezifische MiniGame-Zuordnung (konsistent mit OrderGeneratorService)
+    private static readonly Dictionary<WorkshopType, MiniGameType[]> WorkshopMiniGameMap = new()
+    {
+        [WorkshopType.Carpenter]          = [MiniGameType.Sawing],
+        [WorkshopType.Plumber]            = [MiniGameType.PipePuzzle],
+        [WorkshopType.Electrician]        = [MiniGameType.WiringGame],
+        [WorkshopType.Painter]            = [MiniGameType.PaintingGame],
+        [WorkshopType.Roofer]             = [MiniGameType.RoofTiling],
+        [WorkshopType.Contractor]         = [MiniGameType.Blueprint, MiniGameType.Sawing],
+        [WorkshopType.Architect]          = [MiniGameType.DesignPuzzle, MiniGameType.Blueprint],
+        [WorkshopType.GeneralContractor]  = [MiniGameType.Inspection, MiniGameType.Sawing, MiniGameType.PipePuzzle, MiniGameType.RoofTiling, MiniGameType.DesignPuzzle]
+    };
 
     private static readonly string[] TitleKeys =
     [
@@ -136,7 +136,7 @@ public class QuickJobService : IQuickJobService
         for (int i = 0; i < count; i++)
         {
             var workshopType = unlockedTypes[Random.Shared.Next(unlockedTypes.Count)];
-            var miniGameType = AvailableMiniGames[Random.Shared.Next(AvailableMiniGames.Length)];
+            var miniGameType = GetMiniGameForWorkshop(workshopType);
             var titleKey = TitleKeys[Random.Shared.Next(TitleKeys.Length)];
 
             // Belohnung skaliert mit Level, Einkommen und Auftragstyp
@@ -188,7 +188,7 @@ public class QuickJobService : IQuickJobService
             for (int i = 0; i < missing; i++)
             {
                 var workshopType = unlockedTypes[Random.Shared.Next(unlockedTypes.Count)];
-                var miniGameType = AvailableMiniGames[Random.Shared.Next(AvailableMiniGames.Length)];
+                var miniGameType = GetMiniGameForWorkshop(workshopType);
                 var titleKey = TitleKeys[Random.Shared.Next(TitleKeys.Length)];
                 var (reward, xpReward) = CalculateQuickJobRewards(level, titleKey);
 
@@ -279,6 +279,16 @@ public class QuickJobService : IQuickJobService
         ResetDailyCounterIfNewDay();
         _gameStateService.State.QuickJobsCompletedToday++;
         QuickJobCompleted?.Invoke(this, job);
+    }
+
+    /// <summary>
+    /// Wählt ein passendes MiniGame für den Workshop-Typ (konsistent mit OrderGeneratorService).
+    /// </summary>
+    private static MiniGameType GetMiniGameForWorkshop(WorkshopType workshopType)
+    {
+        if (WorkshopMiniGameMap.TryGetValue(workshopType, out var games))
+            return games[Random.Shared.Next(games.Length)];
+        return MiniGameType.Sawing; // Fallback
     }
 
     /// <summary>

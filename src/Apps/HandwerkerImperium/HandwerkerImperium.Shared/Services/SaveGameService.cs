@@ -303,8 +303,25 @@ public class SaveGameService : ISaveGameService
         var validToolIds = MasterTool.GetAllDefinitions().Select(t => t.Id).ToHashSet();
         state.CollectedMasterTools.RemoveAll(id => !validToolIds.Contains(id));
         state.Tools ??= [];
+        // Tool-Migration: Fehlende ToolTypes ergänzen (z.B. nach Update von 4 auf 8 Tools)
+        var existingToolTypes = state.Tools.Select(t => t.Type).ToHashSet();
+        foreach (var defaultTool in Tool.CreateDefaults())
+        {
+            if (!existingToolTypes.Contains(defaultTool.Type))
+                state.Tools.Add(defaultTool);
+        }
         state.ViewedStoryIds ??= [];
         state.SeenMiniGameTutorials ??= [];
+
+        // Welle 1-8 Migrationen: Neue Properties null-safe initialisieren
+        state.LuckySpin ??= new LuckySpinState();
+        state.WeeklyMissionState ??= new WeeklyMissionState();
+        state.EquipmentInventory ??= [];
+        state.Managers ??= [];
+        state.CraftingInventory ??= new Dictionary<string, int>();
+        state.ActiveCraftingJobs ??= [];
+        state.Friends ??= [];
+        state.ClaimedLevelOffers ??= [];
 
         // Lieferant: Abgelaufene Lieferung entfernen
         if (state.PendingDelivery?.IsExpired == true)

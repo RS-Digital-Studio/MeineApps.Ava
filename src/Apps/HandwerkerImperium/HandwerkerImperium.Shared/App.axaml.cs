@@ -153,6 +153,19 @@ public partial class App : Application
         services.AddSingleton<IStoryService, StoryService>();
         services.AddSingleton<IReviewService, ReviewService>();
 
+        // Neue Feature-Services (Welle 1-8)
+        services.AddSingleton<IWeeklyMissionService, WeeklyMissionService>();
+        services.AddSingleton<IWelcomeBackService, WelcomeBackService>();
+        services.AddSingleton<ILuckySpinService, LuckySpinService>();
+        services.AddSingleton<IEquipmentService, EquipmentService>();
+        services.AddSingleton<IManagerService, ManagerService>();
+        services.AddSingleton<ITournamentService, TournamentService>();
+        services.AddSingleton<ISeasonalEventService, SeasonalEventService>();
+        services.AddSingleton<IBattlePassService, BattlePassService>();
+        services.AddSingleton<IGuildService, GuildService>();
+        services.AddSingleton<ICraftingService, CraftingService>();
+        services.AddSingleton<IFriendService, FriendService>();
+
         // ViewModels (Singleton because MainViewModel holds references to child VMs)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<AchievementsViewModel>();
@@ -173,5 +186,12 @@ public partial class App : Application
         services.AddSingleton<WorkerProfileViewModel>();
         services.AddSingleton<BuildingsViewModel>();
         services.AddSingleton<ResearchViewModel>();
+        services.AddSingleton<ManagerViewModel>();
+        services.AddSingleton<TournamentViewModel>();
+        services.AddSingleton<SeasonalEventViewModel>();
+        services.AddSingleton<BattlePassViewModel>();
+        services.AddSingleton<GuildViewModel>();
+        services.AddSingleton<CraftingViewModel>();
+        services.AddSingleton<LuckySpinViewModel>();
     }
 }

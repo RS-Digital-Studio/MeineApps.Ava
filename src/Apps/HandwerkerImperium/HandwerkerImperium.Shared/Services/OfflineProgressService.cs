@@ -90,7 +90,7 @@ public class OfflineProgressService : IOfflineProgressService
         decimal earnings = netPerSecond * (decimal)effectiveDuration.TotalSeconds;
 
         // Saisonaler Multiplikator
-        var month = state.LastPlayedAt.Month;
+        var month = DateTime.UtcNow.Month;
         decimal seasonalMultiplier = EventService.GetSeasonalMultiplier(month);
         earnings *= seasonalMultiplier;
 

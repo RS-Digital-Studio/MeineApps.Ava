@@ -28,10 +28,10 @@ public class DailyChallenge
     public DailyChallengeType Type { get; set; }
 
     [JsonPropertyName("targetValue")]
-    public int TargetValue { get; set; }
+    public long TargetValue { get; set; }
 
     [JsonPropertyName("currentValue")]
-    public int CurrentValue { get; set; }
+    public long CurrentValue { get; set; }
 
     [JsonPropertyName("moneyReward")]
     public decimal MoneyReward { get; set; }

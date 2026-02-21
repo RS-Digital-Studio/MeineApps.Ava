@@ -148,6 +148,20 @@ public class AchievementService : IAchievementService, IDisposable
                 "workers_10" or "workers_25"
                     => state.Workshops.Sum(w => w.Workers.Count),
 
+                // Buildings
+                "building_first"
+                    => state.Buildings.Count(b => b.IsBuilt) > 0 ? 1 : 0,
+                "building_all"
+                    => state.Buildings.Count(b => b.IsBuilt),
+                "building_max"
+                    => state.Buildings.Count > 0
+                        ? state.Buildings.Where(b => b.IsBuilt).DefaultIfEmpty().Max(b => b?.Level ?? 0)
+                        : 0,
+                "canteen_built"
+                    => state.Buildings.Any(b => b.Type == BuildingType.Canteen && b.IsBuilt) ? 1 : 0,
+                "training_center"
+                    => state.Buildings.Any(b => b.Type == BuildingType.TrainingCenter && b.IsBuilt) ? 1 : 0,
+
                 // Money (long statt int-Cast fuer grosse Betraege)
                 "money_1k" or "money_10k" or "money_100k" or "money_1m"
                 or "money_10m" or "money_100m" or "money_1b" or "money_10b"

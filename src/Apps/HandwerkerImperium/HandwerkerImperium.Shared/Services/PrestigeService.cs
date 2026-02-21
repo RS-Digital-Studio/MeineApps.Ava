@@ -253,8 +253,9 @@ public class PrestigeService : IPrestigeService
         state.Reputation = new CustomerReputation();
         state.LastReputationDecay = DateTime.UtcNow;
 
-        // === RESET: Buildings ===
-        state.Buildings.Clear();
+        // === RESET: Buildings (Diamant+ behält Gebäude, Level wird weiter unten auf 1 gesetzt) ===
+        if (!tier.KeepsBuildings())
+            state.Buildings.Clear();
 
         // === RESET: Research (Silver + Gold behalten Research!) ===
         if (!tier.KeepsResearch())
@@ -302,8 +303,92 @@ public class PrestigeService : IPrestigeService
         // === RESET: Story (pending Story leeren, viewed bleiben erhalten) ===
         state.PendingStoryId = null;
 
-        // === RESET: Meisterwerkzeuge (werden nach Prestige neu verdient) ===
-        state.CollectedMasterTools.Clear();
+        // === RESET: Meisterwerkzeuge (Platin+ behält sie) ===
+        if (!tier.KeepsMasterTools())
+            state.CollectedMasterTools.Clear();
+
+        // === RESET: Lucky Spin (immer zurücksetzen) ===
+        state.LuckySpin = new LuckySpinState();
+
+        // === RESET: Weekly Missions (immer zurücksetzen) ===
+        state.WeeklyMissionState = new WeeklyMissionState();
+
+        // === RESET: Welcome Back Offer (immer zurücksetzen) ===
+        state.ActiveWelcomeBackOffer = null;
+
+        // === RESET: Tournament (immer zurücksetzen) ===
+        state.CurrentTournament = null;
+
+        // === RESET: Crafting (immer zurücksetzen) ===
+        state.CraftingInventory.Clear();
+        state.ActiveCraftingJobs.Clear();
+
+        // === RESET: Daily Shop Offer (immer zurücksetzen) ===
+        state.DailyShopOffer = null;
+
+        // === RESET: Workshop-Spezialisierung (immer zurücksetzen) ===
+        foreach (var ws in state.Workshops)
+        {
+            ws.WorkshopSpecialization = null;
+        }
+
+        // === RESET: Guild-Beiträge (Mitgliedschaft bleibt) ===
+        if (state.Guild != null)
+        {
+            state.Guild.WeeklyProgress = 0;
+        }
+
+        // === BEDINGT: Equipment (Diamant+ behält es) ===
+        if (!tier.KeepsEquipment())
+        {
+            state.EquipmentInventory.Clear();
+            foreach (var ws in state.Workshops)
+            {
+                foreach (var worker in ws.Workers)
+                {
+                    worker.EquippedItem = null;
+                }
+            }
+        }
+
+        // === BEDINGT: Manager (Meister+ behält sie, Level→1) ===
+        if (!tier.KeepsManagers())
+        {
+            state.Managers.Clear();
+        }
+        else
+        {
+            // Manager behalten, aber Level auf 1 zurücksetzen
+            foreach (var mgr in state.Managers)
+            {
+                mgr.Level = 1;
+            }
+        }
+
+        // === BEDINGT: Legende behält 1 besten Worker pro Workshop ===
+        if (tier.KeepsBestWorkers())
+        {
+            // Pro Workshop nur den Worker mit der höchsten Efficiency behalten
+            foreach (var ws in state.Workshops)
+            {
+                if (ws.Workers.Count > 1)
+                {
+                    var bestWorker = ws.Workers.OrderByDescending(w => w.Efficiency).First();
+                    ws.Workers.Clear();
+                    ws.Workers.Add(bestWorker);
+                }
+            }
+        }
+
+        // === RESET: Gebäude (Diamant+ behält sie mit Level→1) ===
+        if (tier.KeepsBuildings())
+        {
+            foreach (var b in state.Buildings)
+            {
+                b.Level = 1;
+            }
+        }
+        // (Unterhalb von Diamant werden Buildings bereits oben via .Clear() zurückgesetzt)
 
         // === PRESERVED (nicht angefasst): ===
         // - state.Prestige (PrestigeData mit Punkten, Shop-Items, Tier-Counts)
@@ -314,6 +399,14 @@ public class PrestigeService : IPrestigeService
         // - state.TotalPlayTimeSeconds
         // - state.SoundEnabled, state.MusicEnabled, state.HapticsEnabled, state.Language
         // - state.CreatedAt
+        // - state.BattlePass (zeitbasiert + bezahlt)
+        // - state.CurrentSeasonalEvent (zeitbasiert)
+        // - state.ClaimedLevelOffers
+        // - state.HasPurchasedStarterPack
+        // - state.VipLevel, state.TotalPurchaseAmount
+        // - state.Friends
+        // - state.TotalTournamentsPlayed
+        // - state.StreakRescueUsed
 
         // Gold prestige preserves shop items (already in PrestigeData.PurchasedShopItems,
         // which is not touched by reset). Nothing extra needed here.

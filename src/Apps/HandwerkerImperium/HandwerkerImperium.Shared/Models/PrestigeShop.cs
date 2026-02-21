@@ -14,7 +14,7 @@ public static class PrestigeShop
                 Id = "pp_income_10",
                 NameKey = "PrestigeIncome10",
                 DescriptionKey = "PrestigeIncome10Desc",
-                Icon = "\ud83d\udcb0",
+                Icon = "Cash",
                 Cost = 5,
                 Effect = new PrestigeEffect { IncomeMultiplier = 0.10m }
             },
@@ -23,7 +23,7 @@ public static class PrestigeShop
                 Id = "pp_income_25",
                 NameKey = "PrestigeIncome25",
                 DescriptionKey = "PrestigeIncome25Desc",
-                Icon = "\ud83d\udcb0",
+                Icon = "Cash",
                 Cost = 15,
                 Effect = new PrestigeEffect { IncomeMultiplier = 0.25m }
             },
@@ -32,7 +32,7 @@ public static class PrestigeShop
                 Id = "pp_xp_15",
                 NameKey = "PrestigeXp15",
                 DescriptionKey = "PrestigeXp15Desc",
-                Icon = "\u2b50",
+                Icon = "Star",
                 Cost = 8,
                 Effect = new PrestigeEffect { XpMultiplier = 0.15m }
             },
@@ -41,7 +41,7 @@ public static class PrestigeShop
                 Id = "pp_xp_30",
                 NameKey = "PrestigeXp30",
                 DescriptionKey = "PrestigeXp30Desc",
-                Icon = "\u2b50",
+                Icon = "Star",
                 Cost = 20,
                 Effect = new PrestigeEffect { XpMultiplier = 0.30m }
             },
@@ -50,7 +50,7 @@ public static class PrestigeShop
                 Id = "pp_mood_slow",
                 NameKey = "PrestigeMoodSlow",
                 DescriptionKey = "PrestigeMoodSlowDesc",
-                Icon = "\ud83d\ude0a",
+                Icon = "EmoticonHappy",
                 Cost = 10,
                 Effect = new PrestigeEffect { MoodDecayReduction = 0.25m }
             },
@@ -59,7 +59,7 @@ public static class PrestigeShop
                 Id = "pp_cost_15",
                 NameKey = "PrestigeCost15",
                 DescriptionKey = "PrestigeCost15Desc",
-                Icon = "\ud83d\udcc9",
+                Icon = "TrendingDown",
                 Cost = 12,
                 Effect = new PrestigeEffect { CostReduction = 0.15m }
             },
@@ -68,7 +68,7 @@ public static class PrestigeShop
                 Id = "pp_start_money",
                 NameKey = "PrestigeStartMoney",
                 DescriptionKey = "PrestigeStartMoneyDesc",
-                Icon = "\ud83c\udfe6",
+                Icon = "Bank",
                 Cost = 6,
                 Effect = new PrestigeEffect { ExtraStartMoney = 5_000m }
             },
@@ -77,7 +77,7 @@ public static class PrestigeShop
                 Id = "pp_start_money_big",
                 NameKey = "PrestigeStartMoneyBig",
                 DescriptionKey = "PrestigeStartMoneyBigDesc",
-                Icon = "\ud83c\udfe6",
+                Icon = "Bank",
                 Cost = 18,
                 Effect = new PrestigeEffect { ExtraStartMoney = 50_000m }
             },
@@ -86,7 +86,7 @@ public static class PrestigeShop
                 Id = "pp_better_start_worker",
                 NameKey = "PrestigeBetterStartWorker",
                 DescriptionKey = "PrestigeBetterStartWorkerDesc",
-                Icon = "\ud83d\udc77",
+                Icon = "HardHat",
                 Cost = 10,
                 Effect = new PrestigeEffect { StartingWorkerTier = "D" }
             },
@@ -95,7 +95,7 @@ public static class PrestigeShop
                 Id = "pp_income_50",
                 NameKey = "PrestigeIncome50",
                 DescriptionKey = "PrestigeIncome50Desc",
-                Icon = "\ud83d\udc8e",
+                Icon = "DiamondStone",
                 Cost = 40,
                 Effect = new PrestigeEffect { IncomeMultiplier = 0.50m }
             },
@@ -106,7 +106,7 @@ public static class PrestigeShop
                 Id = "pp_rush_boost",
                 NameKey = "PrestigeRushBoost",
                 DescriptionKey = "PrestigeRushBoostDesc",
-                Icon = "⚡",
+                Icon = "LightningBolt",
                 Cost = 15,
                 Effect = new PrestigeEffect { RushMultiplierBonus = 0.50m }
             },
@@ -115,7 +115,7 @@ public static class PrestigeShop
                 Id = "pp_delivery_speed",
                 NameKey = "PrestigeDeliverySpeed",
                 DescriptionKey = "PrestigeDeliverySpeedDesc",
-                Icon = "🚚",
+                Icon = "TruckDelivery",
                 Cost = 12,
                 Effect = new PrestigeEffect { DeliverySpeedBonus = 0.30m }
             },
@@ -124,7 +124,7 @@ public static class PrestigeShop
                 Id = "pp_golden_screw_25",
                 NameKey = "PrestigeGoldenScrew25",
                 DescriptionKey = "PrestigeGoldenScrew25Desc",
-                Icon = "🔩",
+                Icon = "Screwdriver",
                 Cost = 25,
                 Effect = new PrestigeEffect { GoldenScrewBonus = 0.25m }
             },

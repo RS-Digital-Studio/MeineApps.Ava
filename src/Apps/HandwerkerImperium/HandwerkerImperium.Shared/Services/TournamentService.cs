@@ -15,11 +15,10 @@ public class TournamentService : ITournamentService
     private readonly IGameStateService _gameState;
     private readonly IPlayGamesService? _playGamesService;
 
-    /// <summary>
-    /// Leaderboard-ID für Turnier-Scores in Play Games.
-    /// Muss in der Google Play Console angelegt werden.
-    /// </summary>
-    private const string TournamentLeaderboardId = "TODO_TOURNAMENT_WEEKLY";
+    /// <summary>Leaderboard-IDs für Turnier-Scores in Play Games.</summary>
+    private const string LeaderboardWeeklyScore = "CgkloeDjOZMKEAIQFA";
+    private const string LeaderboardTournamentWins = "CgkloeDjOZMKEAIQFQ";
+    private const string LeaderboardHighScore = "CgkloeDjOZMKEAIQFg";
 
     /// <summary>Verfügbare MiniGame-Typen für Turniere (nur die tatsächlich spielbaren).</summary>
     private static readonly MiniGameType[] TournamentGameTypes =
@@ -134,9 +133,13 @@ public class TournamentService : ITournamentService
         _gameState.MarkDirty();
         TournamentUpdated?.Invoke();
 
-        // Score an Play Games senden (fire-and-forget)
+        // Scores an Play Games senden (fire-and-forget)
         if (_playGamesService?.IsSignedIn == true && tournament.TotalScore > 0)
-            _ = _playGamesService.SubmitScoreAsync(TournamentLeaderboardId, tournament.TotalScore);
+        {
+            _ = _playGamesService.SubmitScoreAsync(LeaderboardWeeklyScore, tournament.TotalScore);
+            _ = _playGamesService.SubmitScoreAsync(LeaderboardHighScore, tournament.BestScores.Count > 0 ? tournament.BestScores[0] : 0);
+            _ = _playGamesService.SubmitScoreAsync(LeaderboardTournamentWins, state.TotalTournamentsPlayed);
+        }
     }
 
     public (TournamentRewardTier tier, int screws, decimal money)? ClaimRewards()
@@ -184,7 +187,7 @@ public class TournamentService : ITournamentService
         {
             try
             {
-                var entries = await _playGamesService.LoadLeaderboardScoresAsync(TournamentLeaderboardId, 10);
+                var entries = await _playGamesService.LoadLeaderboardScoresAsync(LeaderboardWeeklyScore, 10);
 
                 if (entries.Count > 0)
                 {

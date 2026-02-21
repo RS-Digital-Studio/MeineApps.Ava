@@ -3,6 +3,7 @@ using System.Linq;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
@@ -168,7 +169,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _hasDailyChallenges;
 
     [ObservableProperty]
-    private bool _isChallengesExpanded = true;
+    private bool _isChallengesExpanded = false;
 
     [ObservableProperty]
     private bool _canClaimAllBonus;
@@ -183,7 +184,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _quickJobsExpandIconKind = "ChevronUp";
 
     [ObservableProperty]
-    private string _challengesExpandIconKind = "ChevronUp";
+    private string _challengesExpandIconKind = "ChevronDown";
 
     // ═══════════════════════════════════════════════════════════════════════
     // REPUTATION (Task #6)
@@ -223,6 +224,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _buildingsSummary = "";
 
     // ═══════════════════════════════════════════════════════════════════════
+    // FEATURE-BUTTON STATUS-TEXTE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private string _workersStatusText = "";
+
+    [ObservableProperty]
+    private string _researchStatusText = "";
+
+    [ObservableProperty]
+    private string _managerStatusText = "";
+
+    [ObservableProperty]
+    private string _tournamentStatusText = "";
+
+    [ObservableProperty]
+    private string _seasonalEventStatusText = "";
+
+    [ObservableProperty]
+    private string _battlePassStatusText = "";
+
+    [ObservableProperty]
+    private string _craftingStatusText = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
     // WEEKLY MISSIONS
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -242,10 +268,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _weeklyMissionResetDisplay = "";
 
     [ObservableProperty]
-    private bool _isWeeklyMissionsExpanded = true;
+    private bool _isWeeklyMissionsExpanded = false;
 
     [ObservableProperty]
-    private string _weeklyMissionsExpandIconKind = "ChevronUp";
+    private string _weeklyMissionsExpandIconKind = "ChevronDown";
 
     // ═══════════════════════════════════════════════════════════════════════
     // WELCOME BACK OFFER
@@ -536,14 +562,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // Celebration Event fuer Confetti-Overlay (Level-Up, Achievement, Prestige)
     public event Action? CelebrationRequested;
 
+    // Full-Screen Reward-Zeremonie (nur große Meilensteine)
+    public event Action<CeremonyType, string, string>? CeremonyRequested;
+
     /// <summary>Wird ausgelöst um einen Exit-Hinweis anzuzeigen (z.B. Toast "Nochmal drücken zum Beenden").</summary>
     public event Action<string>? ExitHintRequested;
 
     // Navigation button texts
-    public string NavHomeText => $"🏠\n{_localizationService.GetString("Home")}";
-    public string NavStatsText => $"📊\n{_localizationService.GetString("Stats")}";
-    public string NavShopText => $"🛒\n{_localizationService.GetString("Shop")}";
-    public string NavSettingsText => $"⚙️\n{_localizationService.GetString("Settings")}";
+    public string NavHomeText => _localizationService.GetString("Home") ?? "Home";
+    public string NavStatsText => _localizationService.GetString("Stats") ?? "Stats";
+    public string NavShopText => _localizationService.GetString("Shop") ?? "Shop";
+    public string NavSettingsText => _localizationService.GetString("Settings") ?? "Settings";
 
     // ═══════════════════════════════════════════════════════════════════════
     // AUTOMATION (Forwarding zu GameState.Automation)
@@ -684,10 +713,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
                                     !IsWiringGameActive && !IsPaintingGameActive &&
                                     !IsRoofTilingGameActive && !IsBlueprintGameActive &&
                                     !IsDesignPuzzleGameActive && !IsInspectionGameActive &&
-                                    !IsWorkerProfileActive && !IsBuildingsActive &&
-                                    !IsManagerActive && !IsTournamentActive &&
-                                    !IsSeasonalEventActive && !IsBattlePassActive &&
-                                    !IsGuildActive && !IsCraftingActive;
+                                    !IsWorkerProfileActive && !IsWorkerMarketActive &&
+                                    !IsResearchActive && !IsManagerActive &&
+                                    !IsTournamentActive && !IsSeasonalEventActive &&
+                                    !IsBattlePassActive && !IsCraftingActive;
 
     private void DeactivateAllTabs()
     {
@@ -869,6 +898,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         GuildViewModel = guildViewModel;
         CraftingViewModel = craftingViewModel;
         LuckySpinViewModel = luckySpinViewModel;
+        LuckySpinViewModel.NavigationRequested += _ => HideLuckySpin();
 
         // Wire up child VM navigation events
         ShopViewModel.NavigationRequested += OnChildNavigation;
@@ -1253,7 +1283,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                           && state.GoldenScrews >= 5;
         if (CanRescueStreak)
         {
-            var costText = _localizationService.GetString("StreakRescueCost") ?? "Rescue streak ({0} 🔩)";
+            var costText = _localizationService.GetString("StreakRescueCost") ?? "Rescue streak ({0})";
             StreakRescueText = string.Format(costText, 5);
         }
 
@@ -1305,7 +1335,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _weeklyMissionService.ClaimAllCompletedBonus();
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         CelebrationRequested?.Invoke();
-        FloatingTextRequested?.Invoke($"+50 🔩", "golden_screws");
+        FloatingTextRequested?.Invoke($"+50 GS", "golden_screws");
         RefreshWeeklyMissions();
     }
 
@@ -1338,7 +1368,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             // Belohnungs-Anzeige
             var rewardParts = new List<string>();
             if (mission.MoneyReward > 0)
-                rewardParts.Add($"{MoneyFormatter.FormatCompact(mission.MoneyReward)} €");
+                rewardParts.Add(MoneyFormatter.FormatCompact(mission.MoneyReward));
             if (mission.XpReward > 0)
                 rewardParts.Add($"{mission.XpReward} XP");
             if (mission.GoldenScrewReward > 0)
@@ -1803,6 +1833,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Gebäude-Zusammenfassung aktualisieren (Task #5)
         RefreshBuildingsSummary(state);
 
+        // Feature-Button Status-Texte aktualisieren
+        RefreshFeatureStatusTexts(state);
+
         // Reputation aktualisieren (Task #6)
         RefreshReputation(state);
 
@@ -1943,6 +1976,75 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var builtLabel = _localizationService.GetString("Built") ?? "gebaut";
         var buildingsLabel = _localizationService.GetString("Buildings") ?? "Gebäude";
         BuildingsSummary = $"{totalBuildings} {buildingsLabel}, {builtCount} {builtLabel}";
+    }
+
+    /// <summary>
+    /// Aktualisiert die Feature-Button Status-Texte.
+    /// </summary>
+    private void RefreshFeatureStatusTexts(GameState state)
+    {
+        // Arbeiter
+        var totalWorkers = state.Workshops.Sum(w => w.Workers.Count);
+        WorkersStatusText = string.Format(
+            _localizationService.GetString("WorkersStatus") ?? "{0} angestellt",
+            totalWorkers);
+
+        // Forschung
+        var completedResearch = state.Researches.Count(r => r.IsResearched);
+        if (!string.IsNullOrEmpty(state.ActiveResearchId))
+        {
+            var researchName = _localizationService.GetString($"Research_{state.ActiveResearchId}") ?? state.ActiveResearchId;
+            ResearchStatusText = string.Format(
+                _localizationService.GetString("ResearchActiveStatus") ?? "Erforscht: {0}",
+                researchName);
+        }
+        else
+        {
+            ResearchStatusText = string.Format(
+                _localizationService.GetString("ResearchStatus") ?? "{0}/45 erforscht",
+                completedResearch);
+        }
+
+        // Vorarbeiter
+        var activeManagers = state.Managers.Count(m => m.IsUnlocked);
+        ManagerStatusText = string.Format(
+            _localizationService.GetString("ManagerStatus") ?? "{0} aktiv",
+            activeManagers);
+
+        // Turnier
+        if (state.CurrentTournament != null)
+        {
+            var remainingEntries = state.CurrentTournament.FreeEntriesRemaining;
+            TournamentStatusText = string.Format(
+                _localizationService.GetString("TournamentStatus") ?? "{0} Versuche",
+                remainingEntries);
+        }
+        else
+        {
+            TournamentStatusText = "";
+        }
+
+        // Saison-Event
+        if (state.CurrentSeasonalEvent != null)
+        {
+            var seasonKey = state.CurrentSeasonalEvent.Season.ToString();
+            SeasonalEventStatusText = _localizationService.GetString(seasonKey) ?? seasonKey;
+        }
+        else
+        {
+            SeasonalEventStatusText = "";
+        }
+
+        // Saison-Pass
+        BattlePassStatusText = string.Format(
+            _localizationService.GetString("BattlePassStatus") ?? "Tier {0}/{1}",
+            state.BattlePass.CurrentTier, 30);
+
+        // Produktion
+        var activeCrafts = state.ActiveCraftingJobs.Count;
+        CraftingStatusText = string.Format(
+            _localizationService.GetString("CraftingStatus") ?? "{0} in Produktion",
+            activeCrafts);
     }
 
     /// <summary>
@@ -2244,6 +2346,30 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return _gameStateService.State;
     }
 
+    /// <summary>
+    /// Navigation zum Workshop-Detail direkt aus der City-Szene (Tap auf Gebäude).
+    /// Nur für freigeschaltete Workshops.
+    /// </summary>
+    public void NavigateToWorkshopFromCity(WorkshopType type)
+    {
+        WorkshopViewModel.SetWorkshopType(type);
+        DeactivateAllTabs();
+        IsWorkshopDetailActive = true;
+        NotifyTabBarVisibility();
+    }
+
+    /// <summary>
+    /// Gibt die lokalisierten Tab-Labels für die SkiaSharp Tab-Bar zurück.
+    /// </summary>
+    public string[] GetTabLabels() =>
+    [
+        _localizationService.GetString("Home") ?? "Home",
+        _localizationService.GetString("Buildings") ?? "Gebäude",
+        _localizationService.GetString("GuildTitle") ?? "Gilde",
+        _localizationService.GetString("Shop") ?? "Shop",
+        _localizationService.GetString("Settings") ?? "Einstellungen"
+    ];
+
     [RelayCommand]
     private async Task HireWorkerAsync(WorkshopDisplayModel workshop)
     {
@@ -2436,6 +2562,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         NotifyTabBarVisibility();
     }
 
+    [RelayCommand]
+    private void SelectGuildTab()
+    {
+        DeactivateAllTabs();
+        IsGuildActive = true;
+        GuildViewModel.RefreshGuild();
+        NotifyTabBarVisibility();
+    }
+
     #region Back-Navigation (Double-Back-to-Exit)
 
     private DateTime _lastBackPress = DateTime.MinValue;
@@ -2485,17 +2620,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return true;
         }
 
-        // 5. Sub-Tabs (Markt, Gebäude, Research, neue Feature-Views) → zurück zum Dashboard
-        if (IsWorkerMarketActive || IsBuildingsActive || IsResearchActive ||
+        // 5. Sub-Views (Feature-Views, von Dashboard aus erreichbar) → zurück zum Dashboard
+        if (IsWorkerMarketActive || IsResearchActive ||
             IsManagerActive || IsTournamentActive || IsSeasonalEventActive ||
-            IsBattlePassActive || IsGuildActive || IsCraftingActive)
+            IsBattlePassActive || IsCraftingActive)
         {
             SelectDashboardTab();
             return true;
         }
 
         // 6. Nicht-Dashboard-Tabs → zum Dashboard
-        if (IsShopActive || IsStatisticsActive || IsAchievementsActive || IsSettingsActive)
+        if (IsShopActive || IsStatisticsActive || IsAchievementsActive || IsSettingsActive ||
+            IsBuildingsActive || IsGuildActive)
         {
             SelectDashboardTab();
             return true;
@@ -2668,7 +2804,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             state.LastFreeRushUsed = DateTime.UtcNow;
             _gameStateService.MarkDirty();
             _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
-            FloatingTextRequested?.Invoke($"⚡ Rush 2x ({RushDurationHours}h)!", "Rush");
+            FloatingTextRequested?.Invoke($"Rush 2x ({RushDurationHours}h)!", "Rush");
             CelebrationRequested?.Invoke();
         }
         else if (_gameStateService.TrySpendGoldenScrews(RushCostScrews))
@@ -2677,7 +2813,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             state.RushBoostEndTime = DateTime.UtcNow.AddHours(RushDurationHours);
             _gameStateService.MarkDirty();
             _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
-            FloatingTextRequested?.Invoke($"⚡ Rush 2x ({RushDurationHours}h)!", "Rush");
+            FloatingTextRequested?.Invoke($"Rush 2x ({RushDurationHours}h)!", "Rush");
         }
         else
         {
@@ -2702,7 +2838,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}m"
                 : $"{remaining.Minutes}m {remaining.Seconds:D2}s";
             CanActivateRush = false;
-            RushButtonText = $"⚡ {RushTimeRemaining}";
+            RushButtonText = RushTimeRemaining;
         }
         else
         {
@@ -2710,7 +2846,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             CanActivateRush = true;
             RushButtonText = state.IsFreeRushAvailable
                 ? _localizationService.GetString("RushFreeActivation")
-                : $"⚡ Rush ({RushCostScrews} 🔩)";
+                : $"Rush ({RushCostScrews} GS)";
         }
     }
 
@@ -2740,7 +2876,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             case Models.Enums.DeliveryType.GoldenScrews:
                 _gameStateService.AddGoldenScrews((int)delivery.Amount);
-                FloatingTextRequested?.Invoke($"+{(int)delivery.Amount} 🔩", "screw");
+                FloatingTextRequested?.Invoke($"+{(int)delivery.Amount} GS", "screw");
                 break;
 
             case Models.Enums.DeliveryType.Experience:
@@ -2752,12 +2888,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 foreach (var ws in state.Workshops)
                 foreach (var worker in ws.Workers)
                     worker.Mood = Math.Min(100m, worker.Mood + delivery.Amount);
-                FloatingTextRequested?.Invoke($"😊 +{(int)delivery.Amount} Mood", "mood");
+                FloatingTextRequested?.Invoke($"+{(int)delivery.Amount} Mood", "mood");
                 break;
 
             case Models.Enums.DeliveryType.SpeedBoost:
                 state.SpeedBoostEndTime = DateTime.UtcNow.AddMinutes((double)delivery.Amount);
-                FloatingTextRequested?.Invoke($"⚡ 2x ({(int)delivery.Amount}min)", "speed");
+                FloatingTextRequested?.Invoke($"2x ({(int)delivery.Amount}min)", "speed");
                 break;
         }
 
@@ -2788,7 +2924,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         DeliveryAmountText = delivery.Type switch
         {
             Models.Enums.DeliveryType.Money => MoneyFormatter.FormatCompact(delivery.Amount),
-            Models.Enums.DeliveryType.GoldenScrews => $"{(int)delivery.Amount} 🔩",
+            Models.Enums.DeliveryType.GoldenScrews => $"{(int)delivery.Amount} GS",
             Models.Enums.DeliveryType.Experience => $"{(int)delivery.Amount} XP",
             Models.Enums.DeliveryType.MoodBoost => $"+{(int)delivery.Amount} Mood",
             Models.Enums.DeliveryType.SpeedBoost => $"{(int)delivery.Amount}min 2x",
@@ -3055,10 +3191,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
                 _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
                 CelebrationRequested?.Invoke();
+                CeremonyRequested?.Invoke(CeremonyType.LevelMilestone,
+                    $"Level {e.NewLevel}!", $"+{screws} Goldschrauben");
 
                 // FloatingText mit Level + Goldschrauben-Bonus
                 FloatingTextRequested?.Invoke(
-                    $"Level {e.NewLevel}! +{screws} 🔩", "level");
+                    $"Level {e.NewLevel}! +{screws} GS", "level");
                 break;
             }
         }
@@ -3125,8 +3263,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     _gameStateService.AddGoldenScrews(screws);
                     var workshopName = _localizationService.GetString(e.WorkshopType.GetLocalizationKey());
                     FloatingTextRequested?.Invoke(
-                        $"{workshopName} Lv.{e.NewLevel}! +{screws} 🔩", "level");
+                        $"{workshopName} Lv.{e.NewLevel}! +{screws} GS", "level");
                     CelebrationRequested?.Invoke();
+                    CeremonyRequested?.Invoke(CeremonyType.WorkshopMilestone,
+                        $"{workshopName} Lv.{e.NewLevel}!", $"+{screws} Goldschrauben");
                     _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
                     break;
                 }
@@ -3192,6 +3332,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (string.IsNullOrEmpty(name)) name = tool.Id;
             FloatingTextRequested?.Invoke($"{tool.Icon} {name}!", "MasterTool");
             CelebrationRequested?.Invoke();
+            CeremonyRequested?.Invoke(CeremonyType.MasterTool, name, $"+{(int)(tool.IncomeBonus * 100)}% Einkommen");
             _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
 
             MasterToolsCollected = _gameStateService.State.CollectedMasterTools.Count;
@@ -3204,7 +3345,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             UpdateDeliveryDisplay();
             FloatingTextRequested?.Invoke(
-                $"📦 {_localizationService.GetString("DeliveryArrived")}!", "Delivery");
+                $"{_localizationService.GetString("DeliveryArrived")}!", "Delivery");
         });
     }
 
@@ -3673,7 +3814,7 @@ public partial class WorkshopDisplayModel : ObservableObject
     /// </summary>
     public bool HasCosts { get; set; }
 
-    public string WorkerDisplay => $"👷×{WorkerCount}";
+    public string WorkerDisplay => $"{WorkerCount}x";
     public string IncomeDisplay => IncomePerSecond > 0 ? MoneyFormatter.FormatPerSecond(IncomePerSecond, 1) : "-";
     public string UpgradeCostDisplay => MoneyFormatter.FormatCompact(BulkUpgradeCost > 0 ? BulkUpgradeCost : UpgradeCost);
     public string HireCostDisplay => MoneyFormatter.FormatCompact(HireWorkerCost);

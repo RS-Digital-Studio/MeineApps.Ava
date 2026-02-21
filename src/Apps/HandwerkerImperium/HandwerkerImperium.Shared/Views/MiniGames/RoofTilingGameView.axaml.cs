@@ -14,6 +14,7 @@ public partial class RoofTilingGameView : UserControl
     private RoofTilingGameViewModel? _vm;
     private readonly RoofTilingRenderer _renderer = new();
     private DispatcherTimer? _renderTimer;
+    private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
 
     public RoofTilingGameView()
@@ -42,13 +43,13 @@ public partial class RoofTilingGameView : UserControl
         }
 
         // Canvas-Setup: PaintSurface + Touch-Events
-        var canvas = this.FindControl<SKCanvasView>("GameCanvas");
-        if (canvas != null)
+        _gameCanvas = this.FindControl<SKCanvasView>("GameCanvas");
+        if (_gameCanvas != null)
         {
-            canvas.PaintSurface -= OnPaintSurface;
-            canvas.PaintSurface += OnPaintSurface;
-            canvas.PointerPressed -= OnCanvasPointerPressed;
-            canvas.PointerPressed += OnCanvasPointerPressed;
+            _gameCanvas.PaintSurface -= OnPaintSurface;
+            _gameCanvas.PaintSurface += OnPaintSurface;
+            _gameCanvas.PointerPressed -= OnCanvasPointerPressed;
+            _gameCanvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
         }
         else
@@ -64,21 +65,18 @@ public partial class RoofTilingGameView : UserControl
     {
         StopRenderLoop();
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
-        _renderTimer.Tick += (_, _) =>
-        {
-            var canvas = this.FindControl<SKCanvasView>("GameCanvas");
-            canvas?.InvalidateSurface();
-        };
+        _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();
     }
 
     /// <summary>
-    /// Stoppt den Render-Loop.
+    /// Stoppt den Render-Loop und gibt Canvas-Referenz frei.
     /// </summary>
     private void StopRenderLoop()
     {
         _renderTimer?.Stop();
         _renderTimer = null;
+        _gameCanvas = null;
     }
 
     /// <summary>

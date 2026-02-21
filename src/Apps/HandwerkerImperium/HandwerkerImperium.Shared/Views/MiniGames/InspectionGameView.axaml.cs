@@ -17,6 +17,7 @@ public partial class InspectionGameView : UserControl
     private InspectionGameViewModel? _vm;
     private readonly InspectionGameRenderer _renderer = new();
     private DispatcherTimer? _renderTimer;
+    private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
 
@@ -40,13 +41,13 @@ public partial class InspectionGameView : UserControl
             _vm.GameCompleted += OnGameCompleted;
 
         // Canvas-Setup und Render-Loop starten
-        var canvas = this.FindControl<SKCanvasView>("GameCanvas");
-        if (canvas != null)
+        _gameCanvas = this.FindControl<SKCanvasView>("GameCanvas");
+        if (_gameCanvas != null)
         {
-            canvas.PaintSurface -= OnPaintSurface;
-            canvas.PaintSurface += OnPaintSurface;
-            canvas.PointerPressed -= OnCanvasPointerPressed;
-            canvas.PointerPressed += OnCanvasPointerPressed;
+            _gameCanvas.PaintSurface -= OnPaintSurface;
+            _gameCanvas.PaintSurface += OnPaintSurface;
+            _gameCanvas.PointerPressed -= OnCanvasPointerPressed;
+            _gameCanvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
         }
         else
@@ -62,21 +63,18 @@ public partial class InspectionGameView : UserControl
     {
         StopRenderLoop();
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
-        _renderTimer.Tick += (_, _) =>
-        {
-            var canvas = this.FindControl<SKCanvasView>("GameCanvas");
-            canvas?.InvalidateSurface();
-        };
+        _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();
     }
 
     /// <summary>
-    /// Stoppt den Render-Loop.
+    /// Stoppt den Render-Loop und gibt Canvas-Referenz frei.
     /// </summary>
     private void StopRenderLoop()
     {
         _renderTimer?.Stop();
         _renderTimer = null;
+        _gameCanvas = null;
     }
 
     /// <summary>
@@ -135,15 +133,12 @@ public partial class InspectionGameView : UserControl
     /// </summary>
     private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (_vm == null || !_vm.IsPlaying) return;
-
-        var canvas = this.FindControl<SKCanvasView>("GameCanvas");
-        if (canvas == null) return;
+        if (_vm == null || !_vm.IsPlaying || _gameCanvas == null) return;
 
         // Touch-Position in Skia-Koordinaten umrechnen (DPI-Skalierung)
-        var point = e.GetPosition(canvas);
-        float scaleX = _lastBounds.Width / (float)canvas.Bounds.Width;
-        float scaleY = _lastBounds.Height / (float)canvas.Bounds.Height;
+        var point = e.GetPosition(_gameCanvas);
+        float scaleX = _lastBounds.Width / (float)_gameCanvas.Bounds.Width;
+        float scaleY = _lastBounds.Height / (float)_gameCanvas.Bounds.Height;
         float touchX = (float)point.X * scaleX;
         float touchY = (float)point.Y * scaleY;
 

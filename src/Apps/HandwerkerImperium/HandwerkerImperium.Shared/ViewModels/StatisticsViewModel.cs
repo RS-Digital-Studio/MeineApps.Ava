@@ -343,13 +343,13 @@ public partial class StatisticsViewModel : ObservableObject
 
     private static string GetWorkshopIcon(WorkshopType type) => type switch
     {
-        WorkshopType.Carpenter => "🪚",
-        WorkshopType.Plumber => "🔧",
-        WorkshopType.Electrician => "⚡",
-        WorkshopType.Painter => "🎨",
-        WorkshopType.Roofer => "🏠",
-        WorkshopType.Contractor => "🏗️",
-        _ => "🔨"
+        WorkshopType.Carpenter => "Saw",
+        WorkshopType.Plumber => "Wrench",
+        WorkshopType.Electrician => "LightningBolt",
+        WorkshopType.Painter => "Palette",
+        WorkshopType.Roofer => "Home",
+        WorkshopType.Contractor => "Crane",
+        _ => "Hammer"
     };
 }
 

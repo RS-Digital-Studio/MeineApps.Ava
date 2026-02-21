@@ -38,11 +38,12 @@
                   CornerRadius="24"
                   Width="48" Height="48"
                   AutomationProperties.AutomationId="Workshop_Border_IconBg">
-            <TextBlock Text="{Binding WorkshopIcon}"
-                       FontSize="28"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       AutomationProperties.AutomationId="Workshop_Txt_Icon" />
+            <mi:MaterialIcon Kind="{Binding WorkshopIcon, Converter={StaticResource IconKindConverter}}"
+                             Width="28" Height="28"
+                             Foreground="{StaticResource CraftPrimaryBrush}"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             AutomationProperties.AutomationId="Workshop_Icon_Icon" />
           </Border>
           <TextBlock Text="{Binding WorkshopName}"
                      FontSize="20" FontWeight="Bold"

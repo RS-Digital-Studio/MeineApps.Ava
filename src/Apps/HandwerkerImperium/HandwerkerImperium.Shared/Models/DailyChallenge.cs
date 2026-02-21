@@ -71,6 +71,9 @@ public class DailyChallenge
 
     [JsonIgnore]
     public string RewardDisplay { get; set; } = string.Empty;
+
+    [JsonIgnore]
+    public bool HasGoldenScrewReward => GoldenScrewReward > 0;
 }
 
 /// <summary>

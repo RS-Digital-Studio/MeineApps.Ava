@@ -8,6 +8,8 @@
              xmlns:controls="using:MeineApps.UI.Controls"
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:views="using:HandwerkerImperium.Views"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerImperium.Views.DashboardView"
              x:DataType="vm:MainViewModel"
              AutomationProperties.AutomationId="Dashboard_Root">
@@ -59,6 +61,14 @@
         </Animation>
       </Style.Animations>
     </Style>
+    <!-- Game Juice: FadeIn auf Haupt-Content -->
+    <Style Selector="ScrollViewer#DashboardScrollViewer">
+      <Setter Property="(i:Interaction.Behaviors)">
+        <i:BehaviorCollection>
+          <behaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+        </i:BehaviorCollection>
+      </Setter>
+    </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Dashboard_Grid_Root">
@@ -72,8 +82,8 @@
             ClipToBounds="True"
             AutomationProperties.AutomationId="Dashboard_Border_Header">
       <Panel>
-        <!-- City-Skyline SkiaSharp Layer (unterste Schicht) -->
-        <skia:SKCanvasView x:Name="CityCanvas" MinHeight="140"
+        <!-- City-Skyline SkiaSharp Layer (unterste Schicht, 2.5D isometrisch) -->
+        <skia:SKCanvasView x:Name="CityCanvas" MinHeight="240"
                            AutomationProperties.AutomationId="Dashboard_Canvas_CitySkyline" />
 
         <!-- Gradient-Overlay (semi-transparent, damit City durchscheint) -->
@@ -81,8 +91,8 @@
                 AutomationProperties.AutomationId="Dashboard_Border_HeaderOverlay">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-              <GradientStop Color="#B0D97706" Offset="0" />
-              <GradientStop Color="#A092400E" Offset="0.7" />
+              <GradientStop Color="#50D97706" Offset="0" />
+              <GradientStop Color="#3092400E" Offset="0.7" />
               <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
             </LinearGradientBrush>
           </Border.Background>
@@ -231,8 +241,9 @@
             </LinearGradientBrush>
           </Border.Background>
           <Grid ColumnDefinitions="Auto,*,Auto">
-            <TextBlock Text="⚡" FontSize="20" VerticalAlignment="Center"
-                       AutomationProperties.AutomationId="Dashboard_Txt_RushIcon" />
+            <mi:MaterialIcon Kind="Flash" Width="20" Height="20" VerticalAlignment="Center"
+                               Foreground="White"
+                               AutomationProperties.AutomationId="Dashboard_Icon_RushFlash" />
             <TextBlock Grid.Column="1" Text="{Binding RushButtonText}"
                        FontSize="14" FontWeight="Bold" Foreground="White"
                        VerticalAlignment="Center" Margin="8,0"
@@ -252,7 +263,7 @@
                 CornerRadius="10" Padding="10,6" Margin="0,0,0,4"
                 AutomationProperties.AutomationId="Dashboard_Border_RushActive">
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <TextBlock Text="⚡" FontSize="16" />
+            <mi:MaterialIcon Kind="Flash" Width="16" Height="16" Foreground="#FFD700" />
             <TextBlock Text="{loc:Translate RushActive}" FontSize="13" FontWeight="Bold" Foreground="#FFD700"
                        AutomationProperties.AutomationId="Dashboard_Txt_RushActive" />
             <TextBlock Text="{Binding RushTimeRemaining}" FontSize="13" Foreground="#FFD700CC"
@@ -269,8 +280,10 @@
                 Margin="0,0,0,4"
                 AutomationProperties.AutomationId="Dashboard_Border_EventBanner">
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-            <TextBlock Text="{Binding ActiveEventIcon}" FontSize="20" VerticalAlignment="Center"
-                       AutomationProperties.AutomationId="Dashboard_Txt_EventIcon" />
+            <mi:MaterialIcon Kind="{Binding ActiveEventIcon, Converter={StaticResource IconKindConverter}}"
+                               Width="20" Height="20" VerticalAlignment="Center"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}"
+                               AutomationProperties.AutomationId="Dashboard_Icon_EventIcon" />
             <StackPanel Grid.Column="1" Spacing="2">
               <TextBlock Text="{Binding ActiveEventName}" FontSize="13" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
@@ -303,8 +316,10 @@
             </LinearGradientBrush>
           </Border.Background>
           <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-            <TextBlock Text="{Binding DeliveryIcon}" FontSize="20" VerticalAlignment="Center"
-                       AutomationProperties.AutomationId="Dashboard_Txt_DeliveryIcon" />
+            <mi:MaterialIcon Kind="{Binding DeliveryIcon, Converter={StaticResource IconKindConverter}}"
+                               Width="20" Height="20" VerticalAlignment="Center"
+                               Foreground="White"
+                               AutomationProperties.AutomationId="Dashboard_Icon_DeliveryIcon" />
             <StackPanel Grid.Column="1" Spacing="2">
               <TextBlock Text="{Binding DeliveryDescription}" FontSize="13" FontWeight="Bold"
                          Foreground="White"
@@ -479,12 +494,24 @@
                       <TextBlock Text="{Binding DisplayDescription}" FontSize="12"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
                                  AutomationProperties.AutomationId="Dashboard_Txt_ChallengeDescription" />
-                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="{Binding RewardDisplay}" FontSize="12"
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                  VerticalAlignment="Center">
+                        <TextBlock Text="{Binding MoneyReward, StringFormat='{}{0:N0} €'}" FontSize="12"
                                    Foreground="{DynamicResource SuccessBrush}"
-                                   VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_ChallengeReward" />
-                        <!-- Retry per Video-Ad (nur wenn nicht geschafft, noch nicht genutzt, Fortschritt > 0) -->
+                                   AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardMoney" />
+                        <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="{Binding XpReward, StringFormat='{}{0} XP'}" FontSize="12"
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardXp" />
+                        <!-- Goldschrauben mit Icon -->
+                        <StackPanel Orientation="Horizontal" Spacing="2"
+                                    IsVisible="{Binding HasGoldenScrewReward}">
+                          <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                          <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700" />
+                          <TextBlock Text="{Binding GoldenScrewReward}" FontSize="12" Foreground="#FFD700"
+                                     AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardGS" />
+                        </StackPanel>
+                        <!-- Retry per Video-Ad -->
                         <Button Classes="Text" Padding="2"
                                 IsVisible="{Binding CanRetryWithAd}"
                                 Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).RetryChallengeWithAdCommand}"
@@ -560,11 +587,24 @@
                       <TextBlock Text="{Binding DisplayDescription}" FontSize="12"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
                                  AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionDescription" />
-                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="{Binding RewardDisplay}" FontSize="12"
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                  VerticalAlignment="Center">
+                        <TextBlock Text="{Binding MoneyReward, StringFormat='{}{0:N0} €'}" FontSize="12"
                                    Foreground="{DynamicResource SuccessBrush}"
-                                   VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionReward" />
+                                   AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionRewardMoney" />
+                        <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="{Binding XpReward, StringFormat='{}{0} XP'}" FontSize="12"
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionRewardXp" />
+                        <!-- Goldschrauben mit Icon -->
+                        <StackPanel Orientation="Horizontal" Spacing="2"
+                                    IsVisible="{Binding HasGoldenScrewReward}">
+                          <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                          <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700" />
+                          <TextBlock Text="{Binding GoldenScrewReward}" FontSize="12" Foreground="#FFD700"
+                                     AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionRewardGS" />
+                        </StackPanel>
+                        <!-- Claim-Button -->
                         <Button Classes="Text" Padding="2"
                                 IsVisible="{Binding IsCompleted}"
                                 IsEnabled="{Binding !IsClaimed}"
@@ -723,299 +763,16 @@
           </StackPanel>
         </Border>
 
-        <ItemsControl ItemsSource="{Binding Workshops}"
-                      AutomationProperties.AutomationId="Dashboard_Items_Workshops">
-          <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
-              <UniformGrid Columns="2" />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="vm:WorkshopDisplayModel">
-              <Button Classes="Text" Margin="4" Padding="0" Height="NaN"
-                      HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
-                      Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).SelectWorkshopCommand}"
-                      CommandParameter="{Binding .}"
-                      AutomationProperties.AutomationId="Dashboard_Btn_WorkshopCard">
-                <Border CornerRadius="16" ClipToBounds="True"
-                        Background="{DynamicResource CardBrush}"
-                        BoxShadow="{Binding GlowShadow}"
-                        Classes.WorkshopCard="True"
-                        Classes.CanAfford="{Binding CanAffordUpgrade}"
-                        HorizontalAlignment="Stretch"
-                        AutomationProperties.AutomationId="Dashboard_Border_WorkshopCardOuter">
-                  <Border.Transitions>
-                    <Transitions>
-                      <DoubleTransition Property="Opacity" Duration="0:0:0.3" />
-                    </Transitions>
-                  </Border.Transitions>
-                  <!-- Row 0: SkiaSharp-Illustration, Row 1: Header, Row 2: Body, Row 3: Upgrade -->
-                  <Grid RowDefinitions="Auto,Auto,Auto,Auto">
-
-                    <!-- Row 0: SkiaSharp Workshop-Illustration -->
-                    <views:WorkshopIllustrationView Grid.Row="0" />
-
-                    <!-- Row 1: Kompakter Header mit Icon + Name + Level -->
-                    <Panel Grid.Row="1">
-                      <Border Background="{Binding Type, Converter={StaticResource WorkshopColor}}"
-                              Opacity="{Binding ColorIntensity}" />
-                      <Grid Margin="8,8,8,6" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
-                        <!-- Icon -->
-                        <Grid Width="28" Height="28">
-                          <Border CornerRadius="7"
-                                  Background="{Binding Type, Converter={StaticResource WorkshopColor}, ConverterParameter=bg}" />
-                          <mi:MaterialIcon Kind="{Binding IconKind}" Width="14" Height="14"
-                                           Foreground="{Binding Type, Converter={StaticResource WorkshopColor}}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                                           IsVisible="{Binding IsUnlocked}" />
-                          <!-- Gesperrt + nicht freischaltbar: Graues Schloss -->
-                          <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <mi:MaterialIcon.IsVisible>
-                              <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                <Binding Path="!IsUnlocked" />
-                                <Binding Path="!CanBuyUnlock" />
-                              </MultiBinding>
-                            </mi:MaterialIcon.IsVisible>
-                          </mi:MaterialIcon>
-                          <!-- Gesperrt + freischaltbar: Workshop-farbiges offenes Schloss -->
-                          <mi:MaterialIcon Kind="LockOpenVariant" Width="14" Height="14"
-                                           Foreground="{Binding Type, Converter={StaticResource WorkshopColor}}"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center">
-                            <mi:MaterialIcon.IsVisible>
-                              <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                <Binding Path="!IsUnlocked" />
-                                <Binding Path="CanBuyUnlock" />
-                              </MultiBinding>
-                            </mi:MaterialIcon.IsVisible>
-                          </mi:MaterialIcon>
-                        </Grid>
-                        <!-- Name -->
-                        <TextBlock Grid.Column="1"
-                                   Text="{Binding Name}"
-                                   FontSize="12" FontWeight="Bold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}"
-                                   TextTrimming="CharacterEllipsis"
-                                   VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_WorkshopName" />
-                        <!-- Level Badge -->
-                        <Border Grid.Column="2" CornerRadius="6" Background="Gold" Padding="4,2"
-                                IsVisible="{Binding IsUnlocked}"
-                                VerticalAlignment="Center"
-                                AutomationProperties.AutomationId="Dashboard_Border_WorkshopLevelBadge">
-                          <TextBlock Text="{Binding Level, StringFormat='Lv.{0}'}"
-                                     FontSize="9" FontWeight="Bold"
-                                     Foreground="#3D2B00"
-                                     AutomationProperties.AutomationId="Dashboard_Txt_WorkshopLevel" />
-                        </Border>
-                      </Grid>
-                    </Panel>
-
-                    <!-- Row 2: Body -->
-                    <StackPanel Grid.Row="2" Margin="8,4,8,6" Spacing="4">
-
-                      <!-- Freigeschaltet: Workers + Income + Progress -->
-                      <Grid ColumnDefinitions="*,Auto"
-                            IsVisible="{Binding IsUnlocked}">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                          <mi:MaterialIcon Kind="AccountHardHat" Width="13" Height="13"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"
-                                           AutomationProperties.AutomationId="Dashboard_Icon_WorkshopWorkers" />
-                          <TextBlock FontSize="11"
-                                     Foreground="{DynamicResource TextSecondaryBrush}"
-                                     AutomationProperties.AutomationId="Dashboard_Txt_WorkshopWorkerCount">
-                            <Run Text="{Binding WorkerCount}" />/<Run Text="{Binding MaxWorkers}" />
-                          </TextBlock>
-                        </StackPanel>
-                        <TextBlock Grid.Column="1" Text="{Binding IncomeDisplay}" FontSize="10"
-                                   FontWeight="SemiBold"
-                                   Foreground="{DynamicResource SuccessBrush}"
-                                   TextTrimming="CharacterEllipsis"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_WorkshopIncome" />
-                      </Grid>
-
-                      <!-- Netto-Einkommen (Task #13): Grün bei Gewinn -->
-                      <StackPanel Orientation="Horizontal" Spacing="2"
-                                  HorizontalAlignment="Right"
-                                  IsVisible="{Binding HasCosts}"
-                                  AutomationProperties.AutomationId="Dashboard_Panel_WorkshopNetIncome">
-                        <TextBlock Text="{loc:Translate NetIncome}" FontSize="8"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_WorkshopNetIncomeLabel" />
-                        <!-- Positiv: grün -->
-                        <TextBlock Text="{Binding NetIncomeDisplay}" FontSize="9"
-                                   Foreground="{DynamicResource SuccessBrush}"
-                                   IsVisible="{Binding !IsNetNegative}"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_WorkshopNetIncomePositive" />
-                        <!-- Negativ: rot -->
-                        <TextBlock Text="{Binding NetIncomeDisplay}" FontSize="9"
-                                   Foreground="{DynamicResource ErrorBrush}"
-                                   IsVisible="{Binding IsNetNegative}"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_WorkshopNetIncomeNegative" />
-                      </StackPanel>
-
-                      <!-- Animierte Level-ProgressBar (SkiaSharp) -->
-                      <skia:SKCanvasView Height="4"
-                                         IsVisible="{Binding IsUnlocked}"
-                                         PaintSurface="OnPaintWorkshopLevelProgress"
-                                         AutomationProperties.AutomationId="Dashboard_Canvas_WorkshopLevelProgress" />
-
-                      <!-- Milestone-Fortschritt -->
-                      <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding ShowMilestone}" Margin="0,2,0,0"
-                            AutomationProperties.AutomationId="Dashboard_Grid_WorkshopMilestone">
-                        <skia:SKCanvasView Height="3" Opacity="0.6"
-                                           PaintSurface="OnPaintMilestoneProgress"
-                                           AutomationProperties.AutomationId="Dashboard_Canvas_MilestoneProgress" />
-                        <TextBlock Grid.Column="1" Text="{Binding MilestoneDisplay}"
-                                   FontSize="8" Foreground="Gold" Margin="4,0,0,0"
-                                   VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_MilestoneDisplay" />
-                      </Grid>
-
-                      <!-- Gesperrt: Unlock-Info mit Level + Kosten -->
-                      <StackPanel IsVisible="{Binding !IsUnlocked}" Spacing="2" MinHeight="40"
-                                  AutomationProperties.AutomationId="Dashboard_Panel_WorkshopLocked">
-                        <!-- Nicht freischaltbar: Nur Level-Anforderung + Schloss -->
-                        <TextBlock Text="{Binding UnlockDisplay}"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   HorizontalAlignment="Center"
-                                   IsVisible="{Binding !CanBuyUnlock}"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_WorkshopUnlockRequirement" />
-                        <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20"
-                                         Foreground="{DynamicResource TextSecondaryBrush}"
-                                         Opacity="0.3"
-                                         HorizontalAlignment="Center"
-                                         IsVisible="{Binding !CanBuyUnlock}" />
-
-                        <!-- Freischaltbar + leistbar: Prominente Anzeige mit Kosten + offenes Schloss -->
-                        <StackPanel IsVisible="{Binding CanAffordUnlock}" Spacing="4"
-                                    HorizontalAlignment="Center"
-                                    AutomationProperties.AutomationId="Dashboard_Panel_WorkshopUnlockAffordable">
-                          <mi:MaterialIcon Kind="LockOpenVariant" Width="24" Height="24"
-                                           Foreground="{StaticResource CraftPrimaryBrush}"
-                                           HorizontalAlignment="Center"
-                                           AutomationProperties.AutomationId="Dashboard_Icon_WorkshopUnlockOpen" />
-                          <TextBlock Text="{Binding UnlockCostDisplay}"
-                                     FontSize="13" FontWeight="Bold"
-                                     Foreground="{StaticResource CraftPrimaryBrush}"
-                                     HorizontalAlignment="Center"
-                                     AutomationProperties.AutomationId="Dashboard_Txt_WorkshopUnlockCost" />
-                          <TextBlock Text="{loc:Translate TapToUnlock}"
-                                     FontSize="9"
-                                     Foreground="{DynamicResource TextSecondaryBrush}"
-                                     HorizontalAlignment="Center"
-                                     AutomationProperties.AutomationId="Dashboard_Txt_TapToUnlock" />
-                        </StackPanel>
-
-                        <!-- Freischaltbar aber zu teuer: Kosten in rot, Schloss halboffen -->
-                        <StackPanel Spacing="4" HorizontalAlignment="Center"
-                                    AutomationProperties.AutomationId="Dashboard_Panel_WorkshopUnlockTooExpensive">
-                          <StackPanel.IsVisible>
-                            <MultiBinding Converter="{x:Static BoolConverters.And}">
-                              <Binding Path="CanBuyUnlock" />
-                              <Binding Path="!CanAffordUnlock" />
-                            </MultiBinding>
-                          </StackPanel.IsVisible>
-                          <mi:MaterialIcon Kind="LockOpenVariant" Width="22" Height="22"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"
-                                           Opacity="0.6"
-                                           HorizontalAlignment="Center" />
-                          <TextBlock Text="{Binding UnlockCostDisplay}"
-                                     FontSize="12" FontWeight="SemiBold"
-                                     Foreground="{DynamicResource ErrorBrush}"
-                                     Opacity="0.8"
-                                     HorizontalAlignment="Center" />
-                          <TextBlock Text="{loc:Translate TapToUnlock}"
-                                     FontSize="9"
-                                     Foreground="{DynamicResource TextMutedBrush}"
-                                     HorizontalAlignment="Center" />
-                        </StackPanel>
-                      </StackPanel>
-
-                    </StackPanel>
-
-                    <!-- Row 3: Upgrade-Button (volle Breite, abgerundete untere Ecken) -->
-                    <Button Grid.Row="3" Classes="Primary UpgradeBtn"
-                            Padding="0,4" MinHeight="28"
-                            CornerRadius="0,0,16,16"
-                            Background="{Binding Type, Converter={StaticResource WorkshopColor}}"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            IsVisible="{Binding IsUnlocked}"
-                            IsEnabled="{Binding CanAffordUpgrade}"
-                            Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).UpgradeWorkshopCommand}"
-                            CommandParameter="{Binding .}"
-                            AutomationProperties.AutomationId="Dashboard_Btn_WorkshopUpgrade">
-                      <StackPanel Spacing="0" HorizontalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
-                          <mi:MaterialIcon Kind="ChevronUp" Width="14" Height="14" />
-                          <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12"
-                                     AutomationProperties.AutomationId="Dashboard_Txt_WorkshopUpgradeCost" />
-                        </StackPanel>
-                        <!-- Upgrade Income Preview (Task #10) -->
-                        <TextBlock Text="{Binding UpgradeIncomePreview}"
-                                   FontSize="9" Opacity="0.8"
-                                   HorizontalAlignment="Center"
-                                   IsVisible="{Binding UpgradeIncomePreview, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_WorkshopUpgradePreview" />
-                      </StackPanel>
-                    </Button>
-
-                  </Grid>
-                </Border>
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <!-- Workshop-Karten: Ein SKCanvasView rendert alle 8 Cards im Game-Stil (2x4 Grid) -->
+        <skia:SKCanvasView x:Name="WorkshopCardsCanvas"
+                           Height="800"
+                           PaintSurface="OnWorkshopCardsPaintSurface"
+                           PointerPressed="OnWorkshopCardsPointerPressed"
+                           PointerReleased="OnWorkshopCardsPointerReleased"
+                           AutomationProperties.AutomationId="Dashboard_Canvas_WorkshopCards" />
 
         <!-- ============================================================= -->
-        <!-- BUILDINGS BUTTON (Task #5)                                   -->
-        <!-- ============================================================= -->
-        <Button Classes="Text" HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Stretch"
-                Command="{Binding NavigateToBuildingsCommand}"
-                Padding="0" Margin="0,8,0,0"
-                AutomationProperties.AutomationId="Dashboard_Btn_Buildings">
-          <Border Classes="CardElevated" Padding="12,10"
-                  AutomationProperties.AutomationId="Dashboard_Border_Buildings">
-            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-              <Border CornerRadius="10"
-                      Width="44" Height="44">
-                <Border.Background>
-                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                    <GradientStop Color="#30D97706" Offset="0" />
-                    <GradientStop Color="#20FFD700" Offset="1" />
-                  </LinearGradientBrush>
-                </Border.Background>
-                <mi:MaterialIcon Kind="Domain" Width="26" Height="26"
-                                 Foreground="{StaticResource CraftPrimaryLightBrush}"
-                                 HorizontalAlignment="Center" VerticalAlignment="Center"
-                                 AutomationProperties.AutomationId="Dashboard_Icon_Buildings" />
-              </Border>
-              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                <TextBlock Text="{loc:Translate Buildings}"
-                           FontSize="15" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Dashboard_Txt_BuildingsTitle" />
-                <TextBlock Text="{Binding BuildingsSummary}"
-                           FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}"
-                           IsVisible="{Binding BuildingsSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                           AutomationProperties.AutomationId="Dashboard_Txt_BuildingsSummary" />
-              </StackPanel>
-              <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               VerticalAlignment="Center"
-                               AutomationProperties.AutomationId="Dashboard_Icon_BuildingsChevron" />
-            </Grid>
-          </Border>
-        </Button>
-
-        <!-- ============================================================= -->
-        <!-- NEUE FEATURES (6 Karten, 2 Spalten)                          -->
+        <!-- FEATURES (8 Karten, 2 Spalten, individuelle Farben + Status)  -->
         <!-- ============================================================= -->
         <TextBlock Text="{loc:Translate FeaturesTitle}"
                    FontSize="18" FontWeight="Bold"
@@ -1030,6 +787,76 @@
             </ItemsPanelTemplate>
           </ItemsControl.ItemsPanel>
 
+          <!-- Arbeiter -->
+          <Button Classes="Text" Margin="4" Padding="0"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                  HorizontalContentAlignment="Stretch"
+                  Command="{Binding SelectWorkerMarketTabCommand}"
+                  AutomationProperties.AutomationId="Dashboard_Btn_Workers">
+            <Border Classes="CardElevated" Padding="12,10"
+                    AutomationProperties.AutomationId="Dashboard_Border_Workers">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border CornerRadius="12" Width="48" Height="48">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#350E7490" Offset="0"/>
+                      <GradientStop Color="#1500BCD4" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="AccountHardHat" Width="28" Height="28"
+                                   Foreground="#0E7490"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   AutomationProperties.AutomationId="Dashboard_Icon_Workers" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate Workers}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_WorkersTitle" />
+                  <TextBlock Text="{Binding WorkersStatusText}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_WorkersStatus" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </Button>
+
+          <!-- Forschung -->
+          <Button Classes="Text" Margin="4" Padding="0"
+                  HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                  HorizontalContentAlignment="Stretch"
+                  Command="{Binding SelectResearchTabCommand}"
+                  AutomationProperties.AutomationId="Dashboard_Btn_Research">
+            <Border Classes="CardElevated" Padding="12,10"
+                    AutomationProperties.AutomationId="Dashboard_Border_Research">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border CornerRadius="12" Width="48" Height="48">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#35EA580C" Offset="0"/>
+                      <GradientStop Color="#15FF8A65" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="FlaskOutline" Width="28" Height="28"
+                                   Foreground="#EA580C"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   AutomationProperties.AutomationId="Dashboard_Icon_Research" />
+                </Border>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate Research}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_ResearchTitle" />
+                  <TextBlock Text="{Binding ResearchStatusText}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_ResearchStatus" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </Button>
+
           <!-- Vorarbeiter -->
           <Button Classes="Text" Margin="4" Padding="0"
                   HorizontalAlignment="Stretch" VerticalAlignment="Top"
@@ -1038,20 +865,30 @@
                   AutomationProperties.AutomationId="Dashboard_Btn_Manager">
             <Border Classes="CardElevated" Padding="12,10"
                     AutomationProperties.AutomationId="Dashboard_Border_Manager">
-              <StackPanel Spacing="6" HorizontalAlignment="Center">
-                <Border Background="#20D97706" CornerRadius="10"
-                        Width="44" Height="44" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="AccountGroup" Width="36" Height="36"
-                                   Foreground="{StaticResource CraftPrimaryBrush}"
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border CornerRadius="12" Width="48" Height="48">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#35D97706" Offset="0"/>
+                      <GradientStop Color="#15FFD700" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="AccountGroup" Width="28" Height="28"
+                                   Foreground="#D97706"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Manager" />
                 </Border>
-                <TextBlock Text="{loc:Translate ManagerTitle}"
-                           FontSize="13" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           HorizontalAlignment="Center"
-                           AutomationProperties.AutomationId="Dashboard_Txt_ManagerTitle" />
-              </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate ManagerTitle}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_ManagerTitle" />
+                  <TextBlock Text="{Binding ManagerStatusText}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_ManagerStatus" />
+                </StackPanel>
+              </Grid>
             </Border>
           </Button>
 
@@ -1063,20 +900,30 @@
                   AutomationProperties.AutomationId="Dashboard_Btn_Tournament">
             <Border Classes="CardElevated" Padding="12,10"
                     AutomationProperties.AutomationId="Dashboard_Border_Tournament">
-              <StackPanel Spacing="6" HorizontalAlignment="Center">
-                <Border Background="#20D97706" CornerRadius="10"
-                        Width="44" Height="44" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Trophy" Width="36" Height="36"
-                                   Foreground="{StaticResource CraftPrimaryBrush}"
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border CornerRadius="12" Width="48" Height="48">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#35DC2626" Offset="0"/>
+                      <GradientStop Color="#15FF5252" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="Trophy" Width="28" Height="28"
+                                   Foreground="#DC2626"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Tournament" />
                 </Border>
-                <TextBlock Text="{loc:Translate TournamentTitle}"
-                           FontSize="13" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           HorizontalAlignment="Center"
-                           AutomationProperties.AutomationId="Dashboard_Txt_TournamentTitle" />
-              </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate TournamentTitle}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_TournamentTitle" />
+                  <TextBlock Text="{Binding TournamentStatusText}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_TournamentStatus" />
+                </StackPanel>
+              </Grid>
             </Border>
           </Button>
 
@@ -1088,20 +935,30 @@
                   AutomationProperties.AutomationId="Dashboard_Btn_SeasonalEvent">
             <Border Classes="CardElevated" Padding="12,10"
                     AutomationProperties.AutomationId="Dashboard_Border_SeasonalEvent">
-              <StackPanel Spacing="6" HorizontalAlignment="Center">
-                <Border Background="#20D97706" CornerRadius="10"
-                        Width="44" Height="44" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="CalendarStar" Width="36" Height="36"
-                                   Foreground="{StaticResource CraftPrimaryBrush}"
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border CornerRadius="12" Width="48" Height="48">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#35059669" Offset="0"/>
+                      <GradientStop Color="#1534D399" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="CalendarStar" Width="28" Height="28"
+                                   Foreground="#059669"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_SeasonalEvent" />
                 </Border>
-                <TextBlock Text="{loc:Translate SeasonalEventTitle}"
-                           FontSize="13" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           HorizontalAlignment="Center"
-                           AutomationProperties.AutomationId="Dashboard_Txt_SeasonalEventTitle" />
-              </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate SeasonalEventTitle}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_SeasonalEventTitle" />
+                  <TextBlock Text="{Binding SeasonalEventStatusText}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_SeasonalEventStatus" />
+                </StackPanel>
+              </Grid>
             </Border>
           </Button>
 
@@ -1113,45 +970,30 @@
                   AutomationProperties.AutomationId="Dashboard_Btn_BattlePass">
             <Border Classes="CardElevated" Padding="12,10"
                     AutomationProperties.AutomationId="Dashboard_Border_BattlePass">
-              <StackPanel Spacing="6" HorizontalAlignment="Center">
-                <Border Background="#20D97706" CornerRadius="10"
-                        Width="44" Height="44" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="ShieldStar" Width="36" Height="36"
-                                   Foreground="{StaticResource CraftPrimaryBrush}"
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border CornerRadius="12" Width="48" Height="48">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#357C3AED" Offset="0"/>
+                      <GradientStop Color="#15A78BFA" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="ShieldStar" Width="28" Height="28"
+                                   Foreground="#7C3AED"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_BattlePass" />
                 </Border>
-                <TextBlock Text="{loc:Translate BattlePassTitle}"
-                           FontSize="13" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           HorizontalAlignment="Center"
-                           AutomationProperties.AutomationId="Dashboard_Txt_BattlePassTitle" />
-              </StackPanel>
-            </Border>
-          </Button>
-
-          <!-- Innung -->
-          <Button Classes="Text" Margin="4" Padding="0"
-                  HorizontalAlignment="Stretch" VerticalAlignment="Top"
-                  HorizontalContentAlignment="Stretch"
-                  Command="{Binding NavigateToGuildCommand}"
-                  AutomationProperties.AutomationId="Dashboard_Btn_Guild">
-            <Border Classes="CardElevated" Padding="12,10"
-                    AutomationProperties.AutomationId="Dashboard_Border_Guild">
-              <StackPanel Spacing="6" HorizontalAlignment="Center">
-                <Border Background="#20D97706" CornerRadius="10"
-                        Width="44" Height="44" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="AccountGroupOutline" Width="36" Height="36"
-                                   Foreground="{StaticResource CraftPrimaryBrush}"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Dashboard_Icon_Guild" />
-                </Border>
-                <TextBlock Text="{loc:Translate GuildTitle}"
-                           FontSize="13" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           HorizontalAlignment="Center"
-                           AutomationProperties.AutomationId="Dashboard_Txt_GuildTitle" />
-              </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate BattlePassTitle}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_BattlePassTitle" />
+                  <TextBlock Text="{Binding BattlePassStatusText}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_BattlePassStatus" />
+                </StackPanel>
+              </Grid>
             </Border>
           </Button>
 
@@ -1163,20 +1005,30 @@
                   AutomationProperties.AutomationId="Dashboard_Btn_Crafting">
             <Border Classes="CardElevated" Padding="12,10"
                     AutomationProperties.AutomationId="Dashboard_Border_Crafting">
-              <StackPanel Spacing="6" HorizontalAlignment="Center">
-                <Border Background="#20D97706" CornerRadius="10"
-                        Width="44" Height="44" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="Hammer" Width="36" Height="36"
-                                   Foreground="{StaticResource CraftPrimaryBrush}"
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border CornerRadius="12" Width="48" Height="48">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#35B45309" Offset="0"/>
+                      <GradientStop Color="#15FFA726" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="Hammer" Width="28" Height="28"
+                                   Foreground="#B45309"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Crafting" />
                 </Border>
-                <TextBlock Text="{loc:Translate CraftingTitle}"
-                           FontSize="13" FontWeight="SemiBold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           HorizontalAlignment="Center"
-                           AutomationProperties.AutomationId="Dashboard_Txt_CraftingTitle" />
-              </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <TextBlock Text="{loc:Translate CraftingTitle}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_CraftingTitle" />
+                  <TextBlock Text="{Binding CraftingStatusText}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Dashboard_Txt_CraftingStatus" />
+                </StackPanel>
+              </Grid>
             </Border>
           </Button>
 
@@ -1188,31 +1040,37 @@
                   AutomationProperties.AutomationId="Dashboard_Btn_LuckySpin">
             <Border Classes="CardElevated" Padding="12,10"
                     AutomationProperties.AutomationId="Dashboard_Border_LuckySpin">
-              <Grid>
-                <StackPanel Spacing="6" HorizontalAlignment="Center">
-                  <Border Background="#20FFD700" CornerRadius="10"
-                          Width="44" Height="44" HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="ChartDonut" Width="36" Height="36"
-                                     Foreground="#FFD700"
-                                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                                     AutomationProperties.AutomationId="Dashboard_Icon_LuckySpin" />
-                  </Border>
-                  <TextBlock Text="{loc:Translate LuckySpin}"
-                             FontSize="13" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             HorizontalAlignment="Center"
-                             AutomationProperties.AutomationId="Dashboard_Txt_LuckySpinTitle" />
-                </StackPanel>
-                <!-- Gratis-Spin Badge -->
-                <Border IsVisible="{Binding HasFreeSpin}"
-                        Background="#4CAF50" CornerRadius="8" Padding="4,1"
-                        HorizontalAlignment="Right" VerticalAlignment="Top"
-                        Margin="0,-2,-2,0"
-                        AutomationProperties.AutomationId="Dashboard_Border_FreeSpinBadge">
-                  <TextBlock Text="{loc:Translate LuckySpinFree}" FontSize="9" FontWeight="Bold"
-                             Foreground="White"
-                             AutomationProperties.AutomationId="Dashboard_Txt_FreeSpinBadge" />
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                <Border CornerRadius="12" Width="48" Height="48">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#35FFD700" Offset="0"/>
+                      <GradientStop Color="#15FFF176" Offset="1"/>
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="ChartDonut" Width="28" Height="28"
+                                   Foreground="#FFD700"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   AutomationProperties.AutomationId="Dashboard_Icon_LuckySpin" />
                 </Border>
+                <Grid Grid.Column="1">
+                  <StackPanel Spacing="2" VerticalAlignment="Center">
+                    <TextBlock Text="{loc:Translate LuckySpin}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Dashboard_Txt_LuckySpinTitle" />
+                  </StackPanel>
+                  <!-- Gratis-Spin Badge -->
+                  <Border IsVisible="{Binding HasFreeSpin}"
+                          Background="#4CAF50" CornerRadius="8" Padding="4,1"
+                          HorizontalAlignment="Right" VerticalAlignment="Top"
+                          Margin="0,-4,-4,0"
+                          AutomationProperties.AutomationId="Dashboard_Border_FreeSpinBadge">
+                    <TextBlock Text="{loc:Translate LuckySpinFree}" FontSize="9" FontWeight="Bold"
+                               Foreground="White"
+                               AutomationProperties.AutomationId="Dashboard_Txt_FreeSpinBadge" />
+                  </Border>
+                </Grid>
               </Grid>
             </Border>
           </Button>
@@ -1292,7 +1150,7 @@
                             VerticalAlignment="Center"
                             AutomationProperties.AutomationId="Dashboard_Border_RegularCustomerBadge">
                       <StackPanel Orientation="Horizontal" Spacing="2">
-                        <TextBlock Text="❤️" FontSize="9" />
+                        <mi:MaterialIcon Kind="Heart" Width="12" Height="12" Foreground="#FFD700" />
                         <TextBlock Text="{loc:Translate RegularCustomerBonus}"
                                    FontSize="9" Foreground="#FFD700" />
                       </StackPanel>
@@ -1315,8 +1173,10 @@
                           Margin="0,4,0,0"
                           AutomationProperties.AutomationId="Dashboard_Border_OrderTypeBadge">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <TextBlock Text="{Binding OrderTypeIcon}" FontSize="11"
-                                 AutomationProperties.AutomationId="Dashboard_Txt_OrderTypeIcon" />
+                      <mi:MaterialIcon Kind="{Binding OrderTypeIcon, Converter={StaticResource IconKindConverter}}"
+                                       Width="12" Height="12"
+                                       Foreground="White"
+                                       AutomationProperties.AutomationId="Dashboard_Icon_OrderTypeIcon" />
                       <TextBlock Text="{Binding DisplayOrderType}"
                                  FontSize="11" FontWeight="SemiBold"
                                  Foreground="White"

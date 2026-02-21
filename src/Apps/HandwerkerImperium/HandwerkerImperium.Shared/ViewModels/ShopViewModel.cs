@@ -144,7 +144,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "premium",
                 Name = _localizationService.GetString("ShopPremiumName"),
                 Description = _localizationService.GetString("ShopPremiumDesc"),
-                Icon = "⭐",
+                Icon = "Star",
                 Price = "4,99 €",
                 IsPremiumItem = true,
                 IsPurchased = state.IsPremium
@@ -154,7 +154,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "booster_2x_30min",
                 Name = _localizationService.GetString("ShopBooster30MinName"),
                 Description = _localizationService.GetString("ShopBooster30MinDesc"),
-                Icon = "🚀",
+                Icon = "RocketLaunch",
                 Price = _localizationService.GetString("WatchVideo"),
                 IsAdReward = true
             },
@@ -163,7 +163,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "booster_2x_2h",
                 Name = _localizationService.GetString("ShopBooster2hName"),
                 Description = _localizationService.GetString("ShopBooster2hDesc"),
-                Icon = "💎",
+                Icon = "DiamondStone",
                 Price = "1,99 €",
                 IsPremiumItem = true
             },
@@ -172,7 +172,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "instant_cash_small",
                 Name = _localizationService.GetString("ShopCashSmallName"),
                 Description = string.Format(_localizationService.GetString("ShopCashSmallDescScaled") ?? "{0}", MoneyFormatter.FormatCompact(GetInstantCashAmount("instant_cash_small"))),
-                Icon = "💰",
+                Icon = "Cash",
                 Price = _localizationService.GetString("WatchVideo"),
                 IsAdReward = true
             },
@@ -181,7 +181,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "instant_cash_large",
                 Name = _localizationService.GetString("ShopCashLargeName"),
                 Description = string.Format(_localizationService.GetString("ShopCashLargeDescScaled") ?? "{0}", MoneyFormatter.FormatCompact(GetInstantCashAmount("instant_cash_large"))),
-                Icon = "💵",
+                Icon = "CashMultiple",
                 Price = "0,99 €",
                 IsPremiumItem = true
             },
@@ -190,7 +190,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "instant_cash_huge",
                 Name = _localizationService.GetString("ShopCashHugeName"),
                 Description = string.Format(_localizationService.GetString("ShopCashHugeDesc") ?? "{0}", MoneyFormatter.FormatCompact(GetInstantCashAmount("instant_cash_huge"))),
-                Icon = "💎",
+                Icon = "DiamondStone",
                 Price = "2,49 €",
                 IsPremiumItem = true
             },
@@ -199,7 +199,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "instant_cash_mega",
                 Name = _localizationService.GetString("ShopCashMegaName"),
                 Description = string.Format(_localizationService.GetString("ShopCashMegaDesc") ?? "{0}", MoneyFormatter.FormatCompact(GetInstantCashAmount("instant_cash_mega"))),
-                Icon = "👑",
+                Icon = "Crown",
                 Price = "3,99 €",
                 IsPremiumItem = true
             },
@@ -208,7 +208,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "skip_time_1h",
                 Name = _localizationService.GetString("ShopSkipTimeName"),
                 Description = _localizationService.GetString("ShopSkipTimeDesc"),
-                Icon = "⏱️",
+                Icon = "TimerOutline",
                 Price = _localizationService.GetString("WatchVideo"),
                 IsAdReward = true
             },
@@ -218,7 +218,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "golden_screws_ad",
                 Name = _localizationService.GetString("ShopGoldenScrewsAdName"),
                 Description = _localizationService.GetString("ShopGoldenScrewsAdDesc"),
-                Icon = "🔩",
+                Icon = "Screwdriver",
                 Price = _localizationService.GetString("WatchVideo"),
                 IsAdReward = true
             },
@@ -228,7 +228,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "golden_screws_50",
                 Name = _localizationService.GetString("ShopGoldenScrews50Name"),
                 Description = _localizationService.GetString("ShopGoldenScrews50Desc"),
-                Icon = "🔩",
+                Icon = "Screwdriver",
                 Price = "0,99 €",
                 IsPremiumItem = true
             },
@@ -237,7 +237,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "golden_screws_150",
                 Name = _localizationService.GetString("ShopGoldenScrews150Name"),
                 Description = _localizationService.GetString("ShopGoldenScrews150Desc"),
-                Icon = "🔩",
+                Icon = "Screwdriver",
                 Price = "2,49 €",
                 IsPremiumItem = true
             },
@@ -246,7 +246,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 Id = "golden_screws_450",
                 Name = _localizationService.GetString("ShopGoldenScrews450Name"),
                 Description = _localizationService.GetString("ShopGoldenScrews450Desc"),
-                Icon = "🔩",
+                Icon = "Screwdriver",
                 Price = "4,99 €",
                 IsPremiumItem = true
             }

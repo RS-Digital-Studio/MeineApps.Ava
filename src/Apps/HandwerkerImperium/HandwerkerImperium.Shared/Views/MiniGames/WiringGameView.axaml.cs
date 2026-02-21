@@ -15,6 +15,7 @@ public partial class WiringGameView : UserControl
     private WiringGameViewModel? _vm;
     private readonly WiringGameRenderer _renderer = new();
     private DispatcherTimer? _renderTimer;
+    private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
 
@@ -38,13 +39,13 @@ public partial class WiringGameView : UserControl
             _vm.GameCompleted += OnGameCompleted;
 
         // Canvas-Setup: PaintSurface + Touch-Events + Render-Loop
-        var canvas = this.FindControl<SKCanvasView>("WiringCanvas");
-        if (canvas != null)
+        _gameCanvas = this.FindControl<SKCanvasView>("WiringCanvas");
+        if (_gameCanvas != null)
         {
-            canvas.PaintSurface -= OnPaintSurface;
-            canvas.PaintSurface += OnPaintSurface;
-            canvas.PointerPressed -= OnCanvasPointerPressed;
-            canvas.PointerPressed += OnCanvasPointerPressed;
+            _gameCanvas.PaintSurface -= OnPaintSurface;
+            _gameCanvas.PaintSurface += OnPaintSurface;
+            _gameCanvas.PointerPressed -= OnCanvasPointerPressed;
+            _gameCanvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
         }
         else
@@ -60,20 +61,18 @@ public partial class WiringGameView : UserControl
     {
         StopRenderLoop();
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
-        _renderTimer.Tick += (_, _) =>
-        {
-            this.FindControl<SKCanvasView>("WiringCanvas")?.InvalidateSurface();
-        };
+        _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();
     }
 
     /// <summary>
-    /// Stoppt den Render-Loop.
+    /// Stoppt den Render-Loop und gibt Canvas-Referenz frei.
     /// </summary>
     private void StopRenderLoop()
     {
         _renderTimer?.Stop();
         _renderTimer = null;
+        _gameCanvas = null;
     }
 
     /// <summary>
@@ -129,15 +128,12 @@ public partial class WiringGameView : UserControl
     /// </summary>
     private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (_vm == null || !_vm.IsPlaying || _vm.IsResultShown) return;
-
-        var canvasView = this.FindControl<SKCanvasView>("WiringCanvas");
-        if (canvasView == null) return;
+        if (_vm == null || !_vm.IsPlaying || _vm.IsResultShown || _gameCanvas == null) return;
 
         // Touch-Position in SkiaSharp-Koordinaten umrechnen
-        var pos = e.GetPosition(canvasView);
-        float scaleX = _lastBounds.Width / (float)canvasView.Bounds.Width;
-        float scaleY = _lastBounds.Height / (float)canvasView.Bounds.Height;
+        var pos = e.GetPosition(_gameCanvas);
+        float scaleX = _lastBounds.Width / (float)_gameCanvas.Bounds.Width;
+        float scaleY = _lastBounds.Height / (float)_gameCanvas.Bounds.Height;
         float touchX = (float)pos.X * scaleX;
         float touchY = (float)pos.Y * scaleY;
 

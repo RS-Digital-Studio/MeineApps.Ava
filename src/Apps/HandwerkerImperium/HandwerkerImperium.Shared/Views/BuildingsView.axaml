@@ -18,18 +18,9 @@
             Classes="CardElevated"
             Padding="16,12"
             CornerRadius="0,0,12,12">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <!-- Back Button -->
-        <Button Classes="Text"
-                AutomationProperties.AutomationId="Buildings_Btn_Back"
-                Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
-                           AutomationProperties.AutomationId="Buildings_Icon_Back" />
-        </Button>
-
-        <!-- Title (centered) -->
-        <StackPanel Grid.Column="1"
-                    AutomationProperties.AutomationId="Buildings_Panel_Title"
+      <Grid ColumnDefinitions="*,Auto">
+        <!-- Title -->
+        <StackPanel AutomationProperties.AutomationId="Buildings_Panel_Title"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
@@ -43,7 +34,7 @@
         </StackPanel>
 
         <!-- Balance -->
-        <Border Grid.Column="2"
+        <Border Grid.Column="1"
                 AutomationProperties.AutomationId="Buildings_Border_Balance"
                 Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="16"
@@ -87,11 +78,12 @@
                         CornerRadius="12"
                         Width="52" Height="52"
                         HorizontalAlignment="Center">
-                  <TextBlock Text="{Binding Icon}"
-                             AutomationProperties.AutomationId="Buildings_Txt_ItemIcon"
-                             FontSize="24"
-                             HorizontalAlignment="Center"
-                             VerticalAlignment="Center" />
+                  <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                   AutomationProperties.AutomationId="Buildings_Icon_ItemIcon"
+                                   Width="24" Height="24"
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
                 </Border>
 
                 <!-- Row 1: Name -->

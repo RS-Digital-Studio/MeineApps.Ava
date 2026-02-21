@@ -245,10 +245,10 @@ public partial class BattlePassViewModel : ObservableObject
     private static string GetRewardIcon(BattlePassReward? reward)
     {
         if (reward == null) return "";
-        if (reward.GoldenScrewReward > 0) return "⚙";
-        if (reward.MoneyReward > 0) return "💰";
-        if (reward.XpReward > 0) return "⭐";
-        return "🎁";
+        if (reward.GoldenScrewReward > 0) return "Cog";
+        if (reward.MoneyReward > 0) return "Cash";
+        if (reward.XpReward > 0) return "Star";
+        return "Gift";
     }
 }
 

@@ -2381,7 +2381,7 @@
     <value>Max</value>
   </data>
   <data name="RushFreeActivation" xml:space="preserve">
-    <value>⚡ Rush Gratuito!</value>
+    <value>Rush Gratuito!</value>
   </data>
   <data name="RushCostScrews" xml:space="preserve">
     <value>Rush costa {0} Viti Dorate</value>
@@ -3204,7 +3204,7 @@
     <value>Giro gratis!</value>
   </data>
   <data name="LuckySpinCost" xml:space="preserve">
-    <value>Girare ({0} 🔩)</value>
+    <value>Girare ({0})</value>
   </data>
   <data name="LuckySpinYourPrize" xml:space="preserve">
     <value>Il tuo premio:</value>
@@ -3275,4 +3275,25 @@
     <value>Funzionalità</value>
   </data>
 
+  <data name="WorkersStatus" xml:space="preserve">
+    <value>{0} assunti</value>
+  </data>
+  <data name="ResearchStatus" xml:space="preserve">
+    <value>{0}/45 ricercati</value>
+  </data>
+  <data name="ResearchActiveStatus" xml:space="preserve">
+    <value>Ricerca: {0}</value>
+  </data>
+  <data name="ManagerStatus" xml:space="preserve">
+    <value>{0} attivi</value>
+  </data>
+  <data name="TournamentStatus" xml:space="preserve">
+    <value>{0} tentativi</value>
+  </data>
+  <data name="BattlePassStatus" xml:space="preserve">
+    <value>Livello {0}/{1}</value>
+  </data>
+  <data name="CraftingStatus" xml:space="preserve">
+    <value>{0} in produzione</value>
+  </data>
 </root>

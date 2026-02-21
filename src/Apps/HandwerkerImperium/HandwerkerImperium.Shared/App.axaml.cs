@@ -7,6 +7,7 @@ using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Extensions;
 using MeineApps.Core.Premium.Ava.Services;
 using HandwerkerImperium.Resources.Strings;
+using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.Services.Interfaces;
 using HandwerkerImperium.ViewModels;
@@ -152,6 +153,9 @@ public partial class App : Application
         services.AddSingleton<IDailyChallengeService, DailyChallengeService>();
         services.AddSingleton<IStoryService, StoryService>();
         services.AddSingleton<IReviewService, ReviewService>();
+
+        // Visual Effects Engine
+        services.AddSingleton<GameJuiceEngine>();
 
         // Neue Feature-Services (Welle 1-8)
         services.AddSingleton<IWeeklyMissionService, WeeklyMissionService>();

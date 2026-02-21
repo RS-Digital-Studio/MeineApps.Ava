@@ -3,6 +3,7 @@
              xmlns:local="using:HandwerkerImperium"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:converters="using:MeineApps.Core.Ava.Converters"
+             xmlns:localConverters="using:HandwerkerImperium.Converters"
              x:Class="HandwerkerImperium.App">
 
   <!-- App-lokale Handwerker-Farbpalette -->
@@ -64,6 +65,9 @@
     <converters:BoolToBrushConverter x:Key="TrainingTypeTextConverter"
         TrueBrush="{StaticResource CraftPrimaryLightBrush}"
         FalseBrush="#94A3B8" />
+
+    <!-- Converter: String → MaterialIconKind (für Icon-Bindings in Shop, BattlePass, etc.) -->
+    <localConverters:StringToMaterialIconKindConverter x:Key="IconKindConverter" />
   </Application.Resources>
 
   <Application.Styles>
@@ -125,6 +129,19 @@
     </Style>
     <Style Selector="TextBlock.RatingMiss">
       <Setter Property="Foreground" Value="#EF4444" />
+    </Style>
+
+    <!-- TapScale-Effekt auf ALLEN Buttons (Game Juice Micro-Animation) -->
+    <Style Selector="Button">
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.95)" />
     </Style>
 
     <!-- Workshop-Karte: Subtiler Opacity-Puls wenn Upgrade leistbar -->

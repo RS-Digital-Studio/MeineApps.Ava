@@ -412,11 +412,12 @@
                               CornerRadius="8"
                               Width="40" Height="40"
                               VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Icon}"
-                                   AutomationProperties.AutomationId="Statistics_Txt_ShopItemIcon"
-                                   FontSize="20"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center" />
+                        <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                         AutomationProperties.AutomationId="Statistics_Icon_ShopItemIcon"
+                                         Width="20" Height="20"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center" />
                       </Border>
 
                       <!-- Name + Beschreibung -->
@@ -548,10 +549,11 @@
                           Margin="0,4">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
                       <!-- Icon -->
-                      <TextBlock Text="{Binding Icon}"
-                                 AutomationProperties.AutomationId="Statistics_Txt_WorkshopDetailIcon"
-                                 FontSize="20"
-                                 VerticalAlignment="Center" />
+                      <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                       AutomationProperties.AutomationId="Statistics_Icon_WorkshopDetailIcon"
+                                       Width="20" Height="20"
+                                       Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                       VerticalAlignment="Center" />
 
                       <!-- Name -->
                       <TextBlock Grid.Column="1"

@@ -570,9 +570,9 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
         ResultText = _localizationService.GetString(Result.GetLocalizationKey());
         ResultEmoji = Result switch
         {
-            MiniGameRating.Perfect => "⭐⭐⭐",
-            MiniGameRating.Good => "⭐⭐",
-            MiniGameRating.Ok => "⭐",
+            MiniGameRating.Perfect => "★★★",
+            MiniGameRating.Good => "★★",
+            MiniGameRating.Ok => "★",
             _ => "💨"
         };
 

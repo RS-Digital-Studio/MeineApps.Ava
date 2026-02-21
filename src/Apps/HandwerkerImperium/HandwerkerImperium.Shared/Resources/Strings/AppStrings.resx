@@ -2408,7 +2408,7 @@
   </data>
   <!-- Feierabend-Rush -->
   <data name="RushFreeActivation" xml:space="preserve">
-    <value>⚡ Free Rush!</value>
+    <value>Free Rush!</value>
   </data>
   <data name="RushCostScrews" xml:space="preserve">
     <value>Rush costs {0} Golden Screws</value>
@@ -3392,7 +3392,7 @@
     <value>Free spin!</value>
   </data>
   <data name="LuckySpinCost" xml:space="preserve">
-    <value>Spin ({0} 🔩)</value>
+    <value>Spin ({0})</value>
   </data>
   <data name="LuckySpinYourPrize" xml:space="preserve">
     <value>Your prize:</value>
@@ -3463,4 +3463,25 @@
     <value>Features</value>
   </data>
 
+  <data name="WorkersStatus" xml:space="preserve">
+    <value>{0} hired</value>
+  </data>
+  <data name="ResearchStatus" xml:space="preserve">
+    <value>{0}/45 researched</value>
+  </data>
+  <data name="ResearchActiveStatus" xml:space="preserve">
+    <value>Researching: {0}</value>
+  </data>
+  <data name="ManagerStatus" xml:space="preserve">
+    <value>{0} active</value>
+  </data>
+  <data name="TournamentStatus" xml:space="preserve">
+    <value>{0} attempts</value>
+  </data>
+  <data name="BattlePassStatus" xml:space="preserve">
+    <value>Tier {0}/{1}</value>
+  </data>
+  <data name="CraftingStatus" xml:space="preserve">
+    <value>{0} in production</value>
+  </data>
 </root>

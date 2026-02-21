@@ -174,7 +174,7 @@
                       IdSeed="{Binding Id}"
                       Tier="{Binding Tier}"
                       Mood="70"
-                      AvatarSize="40"
+                      AvatarSize="56"
                       IsFemale="{Binding IsFemale}"
                       VerticalAlignment="Center"
                       Margin="0,0,10,0" />
@@ -210,9 +210,10 @@
                               Orientation="Horizontal" Spacing="12">
                     <!-- Personality -->
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <TextBlock Text="{Binding PersonalityIcon}"
-                                 FontSize="14" VerticalAlignment="Center"
-                                 AutomationProperties.AutomationId="WorkerMarket_Txt_PersonalityIcon" />
+                      <mi:MaterialIcon Kind="{Binding PersonalityIcon, Converter={StaticResource IconKindConverter}}"
+                                       Width="14" Height="14" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       AutomationProperties.AutomationId="WorkerMarket_Icon_PersonalityIcon" />
                       <TextBlock Text="{Binding PersonalityDisplay}"
                                  FontSize="12"
                                  Foreground="{DynamicResource TextSecondaryBrush}"

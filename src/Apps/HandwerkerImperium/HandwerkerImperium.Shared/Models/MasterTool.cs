@@ -17,37 +17,37 @@ public static class MasterTool
     [
         // Common (4x, +2-3% Einkommen)
         new("mt_golden_hammer", "MasterToolGoldenHammer", "MasterToolGoldenHammerDesc",
-            "🔨", MasterToolRarity.Common, 0.02m),
+            "Hammer", MasterToolRarity.Common, 0.02m),
         new("mt_diamond_saw", "MasterToolDiamondSaw", "MasterToolDiamondSawDesc",
-            "🪚", MasterToolRarity.Common, 0.02m),
+            "Saw", MasterToolRarity.Common, 0.02m),
         new("mt_titanium_pliers", "MasterToolTitaniumPliers", "MasterToolTitaniumPliersDesc",
-            "🔧", MasterToolRarity.Common, 0.03m),
+            "Wrench", MasterToolRarity.Common, 0.03m),
         new("mt_brass_level", "MasterToolBrassLevel", "MasterToolBrassLevelDesc",
-            "📐", MasterToolRarity.Common, 0.03m),
+            "RulerSquare", MasterToolRarity.Common, 0.03m),
 
         // Uncommon (3x, +5% Einkommen)
         new("mt_silver_wrench", "MasterToolSilverWrench", "MasterToolSilverWrenchDesc",
-            "🔩", MasterToolRarity.Uncommon, 0.05m),
+            "Screwdriver", MasterToolRarity.Uncommon, 0.05m),
         new("mt_jade_brush", "MasterToolJadeBrush", "MasterToolJadeBrushDesc",
-            "🖌️", MasterToolRarity.Uncommon, 0.05m),
+            "Brush", MasterToolRarity.Uncommon, 0.05m),
         new("mt_crystal_chisel", "MasterToolCrystalChisel", "MasterToolCrystalChiselDesc",
-            "⛏️", MasterToolRarity.Uncommon, 0.05m),
+            "Pickaxe", MasterToolRarity.Uncommon, 0.05m),
 
         // Rare (2x, +7% Einkommen)
         new("mt_obsidian_drill", "MasterToolObsidianDrill", "MasterToolObsidianDrillDesc",
-            "🔩", MasterToolRarity.Rare, 0.07m),
+            "Drill", MasterToolRarity.Rare, 0.07m),
         new("mt_ruby_blade", "MasterToolRubyBlade", "MasterToolRubyBladeDesc",
-            "💎", MasterToolRarity.Rare, 0.07m),
+            "DiamondStone", MasterToolRarity.Rare, 0.07m),
 
         // Epic (2x, +10% Einkommen)
         new("mt_emerald_toolbox", "MasterToolEmeraldToolbox", "MasterToolEmeraldToolboxDesc",
-            "🧰", MasterToolRarity.Epic, 0.10m),
+            "Toolbox", MasterToolRarity.Epic, 0.10m),
         new("mt_dragon_anvil", "MasterToolDragonAnvil", "MasterToolDragonAnvilDesc",
-            "⚒️", MasterToolRarity.Epic, 0.10m),
+            "Anvil", MasterToolRarity.Epic, 0.10m),
 
         // Legendary (1x, +15% Einkommen)
         new("mt_master_crown", "MasterToolMasterCrown", "MasterToolMasterCrownDesc",
-            "👑", MasterToolRarity.Legendary, 0.15m),
+            "Crown", MasterToolRarity.Legendary, 0.15m),
     ];
 
     /// <summary>

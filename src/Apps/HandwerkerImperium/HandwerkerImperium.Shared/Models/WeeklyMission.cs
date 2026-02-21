@@ -60,6 +60,9 @@ public class WeeklyMission
 
     [JsonIgnore]
     public string ProgressDisplay { get; set; } = "";
+
+    [JsonIgnore]
+    public bool HasGoldenScrewReward => GoldenScrewReward > 0;
 }
 
 /// <summary>

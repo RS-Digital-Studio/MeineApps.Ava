@@ -254,7 +254,7 @@ public class DailyChallengeService : IDailyChallengeService, IDisposable
         };
 
         challenge.RewardDisplay = challenge.GoldenScrewReward > 0
-            ? $"{challenge.MoneyReward:N0} € + {challenge.XpReward} XP + {challenge.GoldenScrewReward} 🔩"
+            ? $"{challenge.MoneyReward:N0} € + {challenge.XpReward} XP + {challenge.GoldenScrewReward} GS"
             : $"{challenge.MoneyReward:N0} € + {challenge.XpReward} XP";
     }
 

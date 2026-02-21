@@ -53,61 +53,20 @@
       <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
     </Style>
 
-    <!-- Tab-Bar: Aktiver Tab bekommt Craft-Farbe -->
-    <Style Selector="StackPanel.TabActive mi|MaterialIcon">
-      <Setter Property="Foreground" Value="{StaticResource CraftPrimaryLightBrush}" />
-    </Style>
-    <Style Selector="StackPanel.TabActive TextBlock">
-      <Setter Property="Foreground" Value="{StaticResource CraftPrimaryLightBrush}" />
-    </Style>
   </UserControl.Styles>
 
   <Grid RowDefinitions="*,Auto,Auto" AutomationProperties.AutomationId="Main_Grid_Root">
 
     <!-- ============================================ -->
-    <!-- Hintergrund: Mehrschichtiger Gradient         -->
-    <!-- Basis + Primary-Schein oben + warmer Schein   -->
-    <!-- unten → tiefes, lebendiges Farbspiel          -->
+    <!-- Hintergrund: Animierter SkiaSharp-Background   -->
+    <!-- Pro Screen-Typ unterschiedliche Atmosphaere     -->
+    <!-- + Vignette-Overlay fuer Tiefe                   -->
     <!-- ============================================ -->
-    <Panel Grid.RowSpan="3" IsHitTestVisible="False" AutomationProperties.AutomationId="Main_Panel_Background">
-      <!-- Basis-Gradient (vertikal, dunkel → Surface → dunkel) -->
-      <Border>
-        <Border.Background>
-          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-            <GradientStop Color="{DynamicResource BackgroundColor}" Offset="0" />
-            <GradientStop Color="{DynamicResource SurfaceColor}" Offset="0.45" />
-            <GradientStop Color="{DynamicResource BackgroundColor}" Offset="1" />
-          </LinearGradientBrush>
-        </Border.Background>
-      </Border>
-      <!-- Oberer Akzent-Schein (Craft-Amber, links oben) -->
-      <Border Opacity="0.15">
-        <Border.Background>
-          <RadialGradientBrush Center="0.15,0.05" RadiusX="0.7" RadiusY="0.35">
-            <GradientStop Color="#D97706" Offset="0" />
-            <GradientStop Color="Transparent" Offset="1" />
-          </RadialGradientBrush>
-        </Border.Background>
-      </Border>
-      <!-- Unterer warmer Schein (Amber/Gold, rechts unten → Handwerker-Atmosphaere) -->
-      <Border Opacity="0.12">
-        <Border.Background>
-          <RadialGradientBrush Center="0.85,0.9" RadiusX="0.6" RadiusY="0.35">
-            <GradientStop Color="#F59E0B" Offset="0" />
-            <GradientStop Color="Transparent" Offset="1" />
-          </RadialGradientBrush>
-        </Border.Background>
-      </Border>
-      <!-- Mittig-rechts: Subtiler Holz/Sienna-Schein -->
-      <Border Opacity="0.08">
-        <Border.Background>
-          <RadialGradientBrush Center="0.9,0.4" RadiusX="0.4" RadiusY="0.3">
-            <GradientStop Color="#A0522D" Offset="0" />
-            <GradientStop Color="Transparent" Offset="1" />
-          </RadialGradientBrush>
-        </Border.Background>
-      </Border>
-    </Panel>
+    <skia:SKCanvasView x:Name="BackgroundCanvas"
+                        Grid.RowSpan="3"
+                        IsHitTestVisible="False"
+                        PaintSurface="OnBackgroundPaintSurface"
+                        AutomationProperties.AutomationId="Main_Canvas_Background" />
 
     <!-- ============================================ -->
     <!-- Row 0: Content Area (switches based on tab)  -->
@@ -222,142 +181,22 @@
             IsVisible="{Binding !IsTabBarVisible}"
             AutomationProperties.AutomationId="Main_Border_TabBarSpacer" />
 
-    <!-- Row 2: Floating Tab Bar (abgerundet, leichter Shadow) -->
-    <!-- ============================================ -->
-    <Border Grid.Row="2"
-            Background="{DynamicResource SurfaceBrush}"
-            Opacity="0.97"
-            CornerRadius="20"
-            Margin="12,0,12,8"
-            Padding="0,6,0,10"
-            BoxShadow="0 -2 12 0 #30000000"
-            IsVisible="{Binding IsTabBarVisible}"
-            AutomationProperties.AutomationId="Main_Border_TabBar">
-      <Grid ColumnDefinitions="*,*,*,*,*" AutomationProperties.AutomationId="Main_Grid_TabBar">
+    <!-- Row 2: Game-Style Tab Bar (SkiaSharp, Holz-Textur mit illustrierten Icons) -->
+    <skia:SKCanvasView x:Name="TabBarCanvas"
+                        Grid.Row="2"
+                        Height="68"
+                        Margin="12,0,12,8"
+                        IsVisible="{Binding IsTabBarVisible}"
+                        PaintSurface="OnTabBarPaintSurface"
+                        PointerPressed="OnTabBarPointerPressed"
+                        AutomationProperties.AutomationId="Main_Canvas_TabBar" />
 
-        <!-- Dashboard -->
-        <Button Grid.Column="0" Classes="Text"
-                Command="{Binding SelectDashboardTabCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                MinHeight="48"
-                AutomationProperties.AutomationId="Main_TabBtn_Dashboard">
-          <StackPanel Spacing="2" HorizontalAlignment="Center"
-                      Classes.TabActive="{Binding IsDashboardActive}">
-            <mi:MaterialIcon Kind="Home" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}"
-                             AutomationProperties.AutomationId="Main_Icon_TabDashboard" />
-            <TextBlock Text="{loc:Translate Home}"
-                       FontSize="9" HorizontalAlignment="Center"
-                       TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       AutomationProperties.AutomationId="Main_Txt_TabDashboard" />
-            <!-- Pill-Indikator (breiter, abgerundet) -->
-            <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
-                    Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsDashboardActive}"
-                    AutomationProperties.AutomationId="Main_Border_TabDashboardPill" />
-          </StackPanel>
-        </Button>
-
-        <!-- Workers -->
-        <Button Grid.Column="1" Classes="Text"
-                Command="{Binding SelectWorkerMarketTabCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                MinHeight="48"
-                AutomationProperties.AutomationId="Main_TabBtn_Workers">
-          <StackPanel Spacing="2" HorizontalAlignment="Center"
-                      Classes.TabActive="{Binding IsWorkerMarketActive}">
-            <mi:MaterialIcon Kind="AccountGroup" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}"
-                             AutomationProperties.AutomationId="Main_Icon_TabWorkers" />
-            <TextBlock Text="{loc:Translate Workers}"
-                       FontSize="9" HorizontalAlignment="Center"
-                       TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       AutomationProperties.AutomationId="Main_Txt_TabWorkers" />
-            <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
-                    Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsWorkerMarketActive}"
-                    AutomationProperties.AutomationId="Main_Border_TabWorkersPill" />
-          </StackPanel>
-        </Button>
-
-        <!-- Research -->
-        <Button Grid.Column="2" Classes="Text"
-                Command="{Binding SelectResearchTabCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                MinHeight="48"
-                AutomationProperties.AutomationId="Main_TabBtn_Research">
-          <StackPanel Spacing="2" HorizontalAlignment="Center"
-                      Classes.TabActive="{Binding IsResearchActive}">
-            <mi:MaterialIcon Kind="FlaskOutline" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}"
-                             AutomationProperties.AutomationId="Main_Icon_TabResearch" />
-            <TextBlock Text="{loc:Translate Research}"
-                       FontSize="9" HorizontalAlignment="Center"
-                       TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       AutomationProperties.AutomationId="Main_Txt_TabResearch" />
-            <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
-                    Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsResearchActive}"
-                    AutomationProperties.AutomationId="Main_Border_TabResearchPill" />
-          </StackPanel>
-        </Button>
-
-        <!-- Shop -->
-        <Button Grid.Column="3" Classes="Text"
-                Command="{Binding SelectShopTabCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                MinHeight="48"
-                AutomationProperties.AutomationId="Main_TabBtn_Shop">
-          <StackPanel Spacing="2" HorizontalAlignment="Center"
-                      Classes.TabActive="{Binding IsShopActive}">
-            <mi:MaterialIcon Kind="Cart" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}"
-                             AutomationProperties.AutomationId="Main_Icon_TabShop" />
-            <TextBlock Text="{loc:Translate Shop}"
-                       FontSize="9" HorizontalAlignment="Center"
-                       TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       AutomationProperties.AutomationId="Main_Txt_TabShop" />
-            <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
-                    Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsShopActive}"
-                    AutomationProperties.AutomationId="Main_Border_TabShopPill" />
-          </StackPanel>
-        </Button>
-
-        <!-- Settings -->
-        <Button Grid.Column="4" Classes="Text"
-                Command="{Binding SelectSettingsTabCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                MinHeight="48"
-                AutomationProperties.AutomationId="Main_TabBtn_Settings">
-          <StackPanel Spacing="2" HorizontalAlignment="Center"
-                      Classes.TabActive="{Binding IsSettingsActive}">
-            <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}"
-                             AutomationProperties.AutomationId="Main_Icon_TabSettings" />
-            <TextBlock Text="{loc:Translate Settings}"
-                       FontSize="9" HorizontalAlignment="Center"
-                       TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       AutomationProperties.AutomationId="Main_Txt_TabSettings" />
-            <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
-                    Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsSettingsActive}"
-                    AutomationProperties.AutomationId="Main_Border_TabSettingsPill" />
-          </StackPanel>
-        </Button>
-
-      </Grid>
-    </Border>
+    <!-- Screen-Transition Overlay (SkiaSharp, über Content, unter Dialogen) -->
+    <skia:SKCanvasView x:Name="TransitionCanvas"
+                        Grid.RowSpan="3"
+                        IsHitTestVisible="False"
+                        PaintSurface="OnTransitionPaintSurface"
+                        AutomationProperties.AutomationId="Main_Canvas_Transition" />
 
     <!-- ============================================ -->
     <!-- Dialog Overlays                              -->
@@ -746,10 +585,11 @@
           </Border>
 
           <!-- Icon (gross, zentriert) -->
-          <TextBlock Text="{Binding TutorialIcon}"
-                     FontSize="48"
-                     HorizontalAlignment="Center"
-                     AutomationProperties.AutomationId="Main_Txt_TutorialIcon" />
+          <mi:MaterialIcon Kind="{Binding TutorialIcon, Converter={StaticResource IconKindConverter}}"
+                           Width="48" Height="48"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           HorizontalAlignment="Center"
+                           AutomationProperties.AutomationId="Main_Icon_TutorialIcon" />
 
           <!-- Titel -->
           <TextBlock Text="{Binding TutorialTitle}"
@@ -1017,17 +857,22 @@
                                      IsHitTestVisible="False"
                                      AutomationProperties.AutomationId="Main_Img_CelebrationOverlay" />
 
-    <!-- Loading Overlay -->
-    <Border Grid.RowSpan="3"
-            Background="#CC000000"
-            IsVisible="{Binding IsLoading}"
-            AutomationProperties.AutomationId="Main_Overlay_Loading">
-      <ProgressBar IsIndeterminate="True"
-                   Width="48" Height="48"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   AutomationProperties.AutomationId="Main_Img_LoadingSpinner" />
-    </Border>
+    <!-- Full-Screen Reward-Zeremonie (Feuerwerk + Confetti + Text) -->
+    <skia:SKCanvasView x:Name="CeremonyCanvas"
+                       Grid.RowSpan="3"
+                       ZIndex="110"
+                       IsVisible="False"
+                       PaintSurface="OnCeremonyPaintSurface"
+                       PointerPressed="OnCeremonyTapped"
+                       AutomationProperties.AutomationId="Main_Canvas_Ceremony" />
+
+    <!-- Animierter Loading-Screen (Zahnräder + Fortschritt + Tipps) -->
+    <skia:SKCanvasView x:Name="LoadingCanvas"
+                       Grid.RowSpan="3"
+                       ZIndex="200"
+                       IsVisible="{Binding IsLoading}"
+                       PaintSurface="OnLoadingPaintSurface"
+                       AutomationProperties.AutomationId="Main_Canvas_Loading" />
 
   </Grid>
 

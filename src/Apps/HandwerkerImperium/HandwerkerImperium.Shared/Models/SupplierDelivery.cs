@@ -39,12 +39,12 @@ public class SupplierDelivery
     [JsonIgnore]
     public string Icon => Type switch
     {
-        DeliveryType.Money => "💰",
-        DeliveryType.GoldenScrews => "🔩",
-        DeliveryType.Experience => "⭐",
-        DeliveryType.MoodBoost => "😊",
-        DeliveryType.SpeedBoost => "⚡",
-        _ => "📦"
+        DeliveryType.Money => "Cash",
+        DeliveryType.GoldenScrews => "Screwdriver",
+        DeliveryType.Experience => "Star",
+        DeliveryType.MoodBoost => "EmoticonHappy",
+        DeliveryType.SpeedBoost => "LightningBolt",
+        _ => "PackageVariant"
     };
 
     /// <summary>

@@ -58,7 +58,7 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
     private string _gameTitle = "";
 
     [ObservableProperty]
-    private string _gameIcon = "\U0001FA9A";
+    private string _gameIcon = "Saw";
 
     [ObservableProperty]
     private string _actionButtonText = "";
@@ -311,11 +311,11 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
 
         (GameTitle, GameIcon, ActionButtonText, InstructionText) = GameType switch
         {
-            MiniGameType.Sawing => (L("SawingTitle"), "\U0001FA9A", L("SawNow"), L("StopInGreenZone")),
-            MiniGameType.Planing => (L("PlaningTitle"), "\U0001FAB5", L("PlaneNow"), L("StopForSmoothSurface")),
-            MiniGameType.TileLaying => (L("TileLayingTitle"), "\U0001F9F1", L("LayNow"), L("StopAtPerfectMoment")),
-            MiniGameType.Measuring => (L("MeasuringTitle"), "\U0001F4CF", L("MeasureNow"), L("StopAtRightLength")),
-            _ => (L("SawingTitle"), "\U0001FA9A", L("SawNow"), L("StopInGreenZone"))
+            MiniGameType.Sawing => (L("SawingTitle"), "Saw", L("SawNow"), L("StopInGreenZone")),
+            MiniGameType.Planing => (L("PlaningTitle"), "Axe", L("PlaneNow"), L("StopForSmoothSurface")),
+            MiniGameType.TileLaying => (L("TileLayingTitle"), "ViewDashboard", L("LayNow"), L("StopAtPerfectMoment")),
+            MiniGameType.Measuring => (L("MeasuringTitle"), "Ruler", L("MeasureNow"), L("StopAtRightLength")),
+            _ => (L("SawingTitle"), "Saw", L("SawNow"), L("StopInGreenZone"))
         };
     }
 
@@ -465,9 +465,9 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         ResultText = _localizationService.GetString(Result.GetLocalizationKey());
         ResultEmoji = Result switch
         {
-            MiniGameRating.Perfect => "⭐⭐⭐",
-            MiniGameRating.Good => "⭐⭐",
-            MiniGameRating.Ok => "⭐",
+            MiniGameRating.Perfect => "★★★",
+            MiniGameRating.Good => "★★",
+            MiniGameRating.Ok => "★",
             _ => "💨"
         };
 

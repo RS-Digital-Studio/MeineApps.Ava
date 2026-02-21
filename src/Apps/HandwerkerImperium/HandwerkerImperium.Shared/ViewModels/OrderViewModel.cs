@@ -43,10 +43,10 @@ public partial class OrderViewModel : ObservableObject
     private string _orderTitle = "";
 
     [ObservableProperty]
-    private string _customerIcon = "👷";
+    private string _customerIcon = "HardHat";
 
     [ObservableProperty]
-    private string _workshopIcon = "🔨";
+    private string _workshopIcon = "Hammer";
 
     [ObservableProperty]
     private string _workshopName = "";
@@ -247,20 +247,20 @@ public partial class OrderViewModel : ObservableObject
     private static string GetCustomerIcon(OrderDifficulty difficulty) => difficulty switch
     {
         OrderDifficulty.Easy => "👵",
-        OrderDifficulty.Medium => "👨‍💼",
-        OrderDifficulty.Hard => "🏢",
-        _ => "👷"
+        OrderDifficulty.Medium => "AccountTie",
+        OrderDifficulty.Hard => "OfficeBuildingOutline",
+        _ => "HardHat"
     };
 
     private static string GetWorkshopIcon(WorkshopType type) => type switch
     {
-        WorkshopType.Carpenter => "🪚",
-        WorkshopType.Plumber => "🔧",
-        WorkshopType.Electrician => "⚡",
-        WorkshopType.Painter => "🎨",
-        WorkshopType.Roofer => "🏠",
-        WorkshopType.Contractor => "🏗️",
-        _ => "🔨"
+        WorkshopType.Carpenter => "Saw",
+        WorkshopType.Plumber => "Wrench",
+        WorkshopType.Electrician => "LightningBolt",
+        WorkshopType.Painter => "Palette",
+        WorkshopType.Roofer => "Home",
+        WorkshopType.Contractor => "Crane",
+        _ => "Hammer"
     };
 
     private string GetWorkshopName(WorkshopType type) =>

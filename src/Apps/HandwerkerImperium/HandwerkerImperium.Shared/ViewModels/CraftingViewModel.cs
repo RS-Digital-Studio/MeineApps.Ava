@@ -325,20 +325,20 @@ public partial class CraftingViewModel : ObservableObject
 
     private static string GetProductIcon(string productId) => productId switch
     {
-        "plank" => "🪵",
-        "beam" => "🏗",
-        "pipe_section" => "🔧",
-        "wire_bundle" => "⚡",
-        "paint_can" => "🎨",
-        "tile_set" => "🧱",
-        "furniture" => "🪑",
-        "cabinet" => "🗄",
-        "pipe_system" => "🚿",
-        "wiring_harness" => "🔌",
-        "painted_surface" => "🖼",
-        "tiled_floor" => "🏠",
-        "luxury_kitchen" => "👑",
-        _ => "📦"
+        "plank" => "ForestOutline",
+        "beam" => "Crane",
+        "pipe_section" => "Wrench",
+        "wire_bundle" => "LightningBolt",
+        "paint_can" => "Palette",
+        "tile_set" => "Wall",
+        "furniture" => "SeatOutline",
+        "cabinet" => "CabinetOutline",
+        "pipe_system" => "ShowerHead",
+        "wiring_harness" => "PowerPlug",
+        "painted_surface" => "ImageOutline",
+        "tiled_floor" => "Home",
+        "luxury_kitchen" => "Crown",
+        _ => "PackageVariant"
     };
 
     private static string GetWorkshopIconKind(WorkshopType type) => type switch

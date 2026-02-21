@@ -137,11 +137,12 @@
                         <GradientStop Color="#92400E" Offset="1" />
                       </LinearGradientBrush>
                     </Border.Background>
-                    <TextBlock Text="{Binding Icon}"
-                               AutomationProperties.AutomationId="Shop_Txt_ItemIcon"
-                               FontSize="28"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center" />
+                    <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                     AutomationProperties.AutomationId="Shop_Icon_ItemIcon"
+                                     Width="28" Height="28"
+                                     Foreground="White"
+                                     HorizontalAlignment="Center"
+                                     VerticalAlignment="Center" />
                   </Border>
 
                   <!-- Info -->

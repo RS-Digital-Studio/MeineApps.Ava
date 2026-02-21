@@ -16,6 +16,7 @@ public partial class PaintingGameView : UserControl
     private PaintingGameViewModel? _vm;
     private readonly PaintingGameRenderer _renderer = new();
     private DispatcherTimer? _renderTimer;
+    private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
 
@@ -45,13 +46,13 @@ public partial class PaintingGameView : UserControl
         }
 
         // Canvas-Setup: PaintSurface + Touch-Handler + Render-Loop starten
-        var canvas = this.FindControl<SKCanvasView>("PaintCanvas");
-        if (canvas != null)
+        _gameCanvas = this.FindControl<SKCanvasView>("PaintCanvas");
+        if (_gameCanvas != null)
         {
-            canvas.PaintSurface -= OnPaintSurface;
-            canvas.PaintSurface += OnPaintSurface;
-            canvas.PointerPressed -= OnCanvasPointerPressed;
-            canvas.PointerPressed += OnCanvasPointerPressed;
+            _gameCanvas.PaintSurface -= OnPaintSurface;
+            _gameCanvas.PaintSurface += OnPaintSurface;
+            _gameCanvas.PointerPressed -= OnCanvasPointerPressed;
+            _gameCanvas.PointerPressed += OnCanvasPointerPressed;
             StartRenderLoop();
         }
         else
@@ -67,21 +68,18 @@ public partial class PaintingGameView : UserControl
     {
         StopRenderLoop();
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
-        _renderTimer.Tick += (_, _) =>
-        {
-            var canvas = this.FindControl<SKCanvasView>("PaintCanvas");
-            canvas?.InvalidateSurface();
-        };
+        _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();
     }
 
     /// <summary>
-    /// Stoppt den Render-Loop.
+    /// Stoppt den Render-Loop und gibt Canvas-Referenz frei.
     /// </summary>
     private void StopRenderLoop()
     {
         _renderTimer?.Stop();
         _renderTimer = null;
+        _gameCanvas = null;
     }
 
     /// <summary>
@@ -124,16 +122,13 @@ public partial class PaintingGameView : UserControl
     /// </summary>
     private void OnCanvasPointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (_vm == null || !_vm.IsPlaying || _vm.IsResultShown) return;
+        if (_vm == null || !_vm.IsPlaying || _vm.IsResultShown || _gameCanvas == null) return;
 
-        var canvasView = this.FindControl<SKCanvasView>("PaintCanvas");
-        if (canvasView == null) return;
-
-        var pos = e.GetPosition(canvasView);
+        var pos = e.GetPosition(_gameCanvas);
 
         // DPI-Skalierung: Render-Bounds (Pixel) / Control-Bounds (logische Einheiten)
-        float scaleX = _lastBounds.Width / (float)canvasView.Bounds.Width;
-        float scaleY = _lastBounds.Height / (float)canvasView.Bounds.Height;
+        float scaleX = _lastBounds.Width / (float)_gameCanvas.Bounds.Width;
+        float scaleY = _lastBounds.Height / (float)_gameCanvas.Bounds.Height;
 
         int cellIndex = _renderer.HitTest(_lastBounds, (float)pos.X * scaleX, (float)pos.Y * scaleY, _vm.GridSize);
         if (cellIndex >= 0 && cellIndex < _vm.Cells.Count)

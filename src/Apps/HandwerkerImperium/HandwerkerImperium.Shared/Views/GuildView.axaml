@@ -22,19 +22,10 @@
           <GradientStop Color="#451A03" Offset="1" />
         </LinearGradientBrush>
       </Border.Background>
-      <Grid ColumnDefinitions="Auto,*,Auto">
-
-        <!-- Zurueck-Button -->
-        <Button Classes="Text"
-                AutomationProperties.AutomationId="Guild_Btn_Back"
-                Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
-                           AutomationProperties.AutomationId="Guild_Icon_Back"
-                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
-        </Button>
+      <Grid ColumnDefinitions="*,Auto">
 
         <!-- Titel -->
-        <StackPanel Grid.Column="1"
+        <StackPanel
                     AutomationProperties.AutomationId="Guild_Panel_Title"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
@@ -50,7 +41,7 @@
         </StackPanel>
 
         <!-- Einkommens-Bonus Badge (nur wenn in Gilde) -->
-        <Border Grid.Column="2"
+        <Border Grid.Column="1"
                 AutomationProperties.AutomationId="Guild_Border_BonusBadge"
                 CornerRadius="8" Padding="8,4"
                 IsVisible="{Binding IsInGuild}">

@@ -273,7 +273,8 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
             WireColor.Green,
             WireColor.Yellow,
             WireColor.Orange,
-            WireColor.Purple
+            WireColor.Purple,
+            WireColor.Cyan
         ];
     }
 
@@ -631,7 +632,8 @@ public enum WireColor
     Green,
     Yellow,
     Orange,
-    Purple
+    Purple,
+    Cyan
 }
 
 /// <summary>
@@ -681,6 +683,7 @@ public partial class Wire : ObservableObject
         WireColor.Yellow => "#FFFF44",
         WireColor.Orange => "#FF8844",
         WireColor.Purple => "#AA44FF",
+        WireColor.Cyan => "#00BCD4",
         _ => "#888888"
     };
 
@@ -695,6 +698,7 @@ public partial class Wire : ObservableObject
         WireColor.Yellow => "🟡",
         WireColor.Orange => "🟠",
         WireColor.Purple => "🟣",
+        WireColor.Cyan => "🔷",
         _ => "⚪"
     };
 

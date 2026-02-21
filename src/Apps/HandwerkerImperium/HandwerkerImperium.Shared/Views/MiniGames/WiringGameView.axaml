@@ -7,36 +7,45 @@
              x:Class="HandwerkerImperium.Views.MiniGames.WiringGameView"
              x:DataType="vm:WiringGameViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
+  <Grid AutomationProperties.AutomationId="Wiring_Grid_Root"
+        RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Wiring_Border_Header"
             Classes="CardElevated"
             Padding="16,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Abbrechen -->
-        <Button Classes="Text"
+        <Button AutomationProperties.AutomationId="Wiring_Btn_Cancel"
+                Classes="Text"
                 Command="{Binding CancelCommand}">
-          <mi:MaterialIcon Kind="Close" Width="24" Height="24" />
+          <mi:MaterialIcon AutomationProperties.AutomationId="Wiring_Icon_Close"
+                           Kind="Close" Width="24" Height="24" />
         </Button>
 
         <!-- Titel -->
-        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center"
+                    AutomationProperties.AutomationId="Wiring_Panel_TitleGroup">
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="6">
-            <mi:MaterialIcon Kind="LightningBolt" Width="22" Height="22" />
-            <TextBlock Text="{loc:Translate WiringGame}"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Wiring_Icon_Title"
+                             Kind="LightningBolt" Width="22" Height="22" />
+            <TextBlock AutomationProperties.AutomationId="Wiring_Txt_Title"
+                       Text="{loc:Translate WiringGame}"
                        FontSize="18" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
-          <TextBlock Text="{Binding DifficultyStars}"
+          <TextBlock AutomationProperties.AutomationId="Wiring_Txt_DifficultyStars"
+                     Text="{Binding DifficultyStars}"
                      HorizontalAlignment="Center"
                      FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
-          <TextBlock Text="{Binding TaskProgressDisplay}"
+          <TextBlock AutomationProperties.AutomationId="Wiring_Txt_TaskProgress"
+                     Text="{Binding TaskProgressDisplay}"
                      HorizontalAlignment="Center"
                      FontSize="11" FontWeight="SemiBold"
                      Foreground="{StaticResource CraftPrimaryBrush}"
@@ -45,12 +54,15 @@
 
         <!-- Timer -->
         <Border Grid.Column="2"
+                AutomationProperties.AutomationId="Wiring_Border_Timer"
                 Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="8"
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="Clock" Width="16" Height="16" />
-            <TextBlock Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Wiring_Icon_Clock"
+                             Kind="Clock" Width="16" Height="16" />
+            <TextBlock AutomationProperties.AutomationId="Wiring_Txt_Timer"
+                       Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
@@ -61,21 +73,26 @@
     <!-- ================================================================= -->
     <!-- STATS (Anweisung + Fortschritt)                                   -->
     <!-- ================================================================= -->
-    <StackPanel Grid.Row="1" Margin="0,8">
-      <TextBlock Text="{loc:Translate SelectLeftThenRight}"
+    <StackPanel Grid.Row="1" Margin="0,8"
+                AutomationProperties.AutomationId="Wiring_Panel_Stats">
+      <TextBlock AutomationProperties.AutomationId="Wiring_Txt_Instruction"
+                 Text="{loc:Translate SelectLeftThenRight}"
                  FontSize="12"
                  Foreground="{DynamicResource TextSecondaryBrush}"
                  HorizontalAlignment="Center"
                  IsVisible="{Binding IsPlaying}" />
-      <StackPanel Orientation="Horizontal"
+      <StackPanel AutomationProperties.AutomationId="Wiring_Panel_Connected"
+                  Orientation="Horizontal"
                   HorizontalAlignment="Center"
                   Spacing="24"
                   IsVisible="{Binding IsPlaying}"
                   Margin="0,4">
         <StackPanel Orientation="Horizontal" Spacing="4">
-          <mi:MaterialIcon Kind="Check" Width="16" Height="16"
+          <mi:MaterialIcon AutomationProperties.AutomationId="Wiring_Icon_Check"
+                           Kind="Check" Width="16" Height="16"
                            Foreground="{DynamicResource SuccessBrush}" />
-          <TextBlock FontSize="12"
+          <TextBlock AutomationProperties.AutomationId="Wiring_Txt_ConnectedCount"
+                     FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}">
             <Run Text="{loc:Translate ConnectedLabel}" />
             <Run Text=" " />
@@ -88,38 +105,48 @@
     <!-- ================================================================= -->
     <!-- SKIA GAME AREA (SkiaSharp-Rendering ersetzt XAML-Borders)         -->
     <!-- ================================================================= -->
-    <Border Grid.Row="2" Background="{DynamicResource CardBrush}" CornerRadius="8" Margin="0,4" ClipToBounds="True">
-      <skia:SKCanvasView x:Name="WiringCanvas" MinHeight="250" />
+    <Border Grid.Row="2" AutomationProperties.AutomationId="Wiring_Border_GameArea"
+            Background="{DynamicResource CardBrush}" CornerRadius="8" Margin="0,4" ClipToBounds="True">
+      <skia:SKCanvasView x:Name="WiringCanvas"
+                         AutomationProperties.AutomationId="Wiring_Canvas_GameArea"
+                         MinHeight="250" />
     </Border>
 
     <!-- ================================================================= -->
     <!-- RESULT DISPLAY                                                    -->
     <!-- ================================================================= -->
     <Border x:Name="ResultBorder" Grid.Row="3"
+            AutomationProperties.AutomationId="Wiring_Border_Result"
             Classes="Card StatsCard"
             IsVisible="{Binding IsResultShown}"
             Padding="24"
             Margin="0,8">
-      <StackPanel Spacing="16" HorizontalAlignment="Center">
+      <StackPanel Spacing="16" HorizontalAlignment="Center"
+                  AutomationProperties.AutomationId="Wiring_Panel_Result">
         <!-- Emoji -->
-        <TextBlock Text="{Binding ResultEmoji}"
+        <TextBlock AutomationProperties.AutomationId="Wiring_Txt_ResultEmoji"
+                   Text="{Binding ResultEmoji}"
                    FontSize="48"
                    HorizontalAlignment="Center" />
 
         <!-- Sterne-Bewertung (staggered via Code-Behind) -->
-        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+        <StackPanel AutomationProperties.AutomationId="Wiring_Panel_Stars"
+                    Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
           <Panel x:Name="Star1Panel">
-            <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Wiring_Icon_Star1"
+                             Kind="Star" Width="32" Height="32"
                              Foreground="#FFD700"
                              Opacity="{Binding Star1Opacity}" />
           </Panel>
           <Panel x:Name="Star2Panel">
-            <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Wiring_Icon_Star2"
+                             Kind="Star" Width="32" Height="32"
                              Foreground="#FFD700"
                              Opacity="{Binding Star2Opacity}" />
           </Panel>
           <Panel x:Name="Star3Panel">
-            <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Wiring_Icon_Star3"
+                             Kind="Star" Width="32" Height="32"
                              Foreground="#FFD700"
                              Opacity="{Binding Star3Opacity}" />
           </Panel>
@@ -127,18 +154,22 @@
 
         <!-- Rating Text (Farbe per Code-Behind) -->
         <TextBlock x:Name="RatingText"
+                   AutomationProperties.AutomationId="Wiring_Txt_RatingText"
                    Text="{Binding ResultText}"
                    FontSize="24" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    HorizontalAlignment="Center" />
 
         <!-- Belohnungen -->
-        <StackPanel Orientation="Horizontal" Spacing="20"
+        <StackPanel AutomationProperties.AutomationId="Wiring_Panel_Rewards"
+                    Orientation="Horizontal" Spacing="20"
                     HorizontalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="CashMultiple" Width="20" Height="20"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Wiring_Icon_RewardMoney"
+                             Kind="CashMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
+                       AutomationProperties.AutomationId="Wiring_Txt_RewardMoney"
                        Text="{Binding RewardAmount, StringFormat='+{0:N0} &#x20AC;'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}"
@@ -146,9 +177,11 @@
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="Star" Width="20" Height="20"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Wiring_Icon_RewardXp"
+                             Kind="Star" Width="20" Height="20"
                              Foreground="Gold" />
             <TextBlock x:Name="RewardXpText"
+                       AutomationProperties.AutomationId="Wiring_Txt_RewardXp"
                        Text="{Binding XpAmount, StringFormat='+{0} XP'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="Gold"
@@ -159,18 +192,22 @@
     </Border>
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
-    <Border Grid.RowSpan="5" Background="#CC000000"
+    <Border AutomationProperties.AutomationId="Wiring_Border_Countdown"
+            Grid.RowSpan="5" Background="#CC000000"
             IsVisible="{Binding IsCountdownActive}">
-      <TextBlock Text="{Binding CountdownText}"
+      <TextBlock AutomationProperties.AutomationId="Wiring_Txt_Countdown"
+                 Text="{Binding CountdownText}"
                  FontSize="72" FontWeight="Bold"
                  Foreground="#FFD700"
                  HorizontalAlignment="Center" VerticalAlignment="Center" />
     </Border>
 
     <!-- Tutorial Overlay (beim ersten Spielstart) -->
-    <Border Grid.RowSpan="5" Background="#DD000000"
+    <Border AutomationProperties.AutomationId="Wiring_Border_TutorialOverlay"
+            Grid.RowSpan="5" Background="#DD000000"
             IsVisible="{Binding ShowTutorial}">
-      <Border Background="{DynamicResource CardBrush}"
+      <Border AutomationProperties.AutomationId="Wiring_Border_TutorialCard"
+              Background="{DynamicResource CardBrush}"
               CornerRadius="16"
               Padding="24"
               Margin="32"
@@ -178,17 +215,20 @@
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16">
-          <TextBlock Text="{Binding TutorialTitle}"
+          <TextBlock AutomationProperties.AutomationId="Wiring_Txt_TutorialTitle"
+                     Text="{Binding TutorialTitle}"
                      FontSize="22" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding TutorialText}"
+          <TextBlock AutomationProperties.AutomationId="Wiring_Txt_TutorialText"
+                     Text="{Binding TutorialText}"
                      FontSize="14"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      TextWrapping="Wrap"
                      TextAlignment="Center"
                      LineHeight="22" />
-          <Button Content="{loc:Translate TutorialGotIt}"
+          <Button AutomationProperties.AutomationId="Wiring_Btn_TutorialDismiss"
+                  Content="{loc:Translate TutorialGotIt}"
                   Classes="Primary"
                   Command="{Binding DismissTutorialCommand}"
                   HorizontalAlignment="Center"
@@ -201,11 +241,13 @@
     <!-- ================================================================= -->
     <!-- ACTION BUTTONS                                                    -->
     <!-- ================================================================= -->
-    <StackPanel Grid.Row="4" Spacing="16">
+    <StackPanel AutomationProperties.AutomationId="Wiring_Panel_Actions"
+                Grid.Row="4" Spacing="16">
 
       <!-- Start-Button (versteckt waehrend Spiel und nach Ergebnis) -->
       <Panel IsVisible="{Binding !IsResultShown}">
-        <Button Content="{loc:Translate StartGame}"
+        <Button AutomationProperties.AutomationId="Wiring_Btn_Start"
+                Content="{loc:Translate StartGame}"
                 Classes="Primary"
                 Command="{Binding StartGameCommand}"
                 IsVisible="{Binding !IsPlaying}"
@@ -214,7 +256,8 @@
       </Panel>
 
       <!-- Letzte Aufgabe: Ad + Weiter -->
-      <Grid ColumnDefinitions="*,*"
+      <Grid AutomationProperties.AutomationId="Wiring_Grid_LastTaskActions"
+            ColumnDefinitions="*,*"
             ColumnSpacing="12">
         <Grid.IsVisible>
           <MultiBinding Converter="{x:Static BoolConverters.And}">
@@ -223,25 +266,30 @@
           </MultiBinding>
         </Grid.IsVisible>
 
-        <Button Classes="Secondary"
+        <Button AutomationProperties.AutomationId="Wiring_Btn_WatchAd"
+                Classes="Secondary"
                 IsEnabled="{Binding CanWatchAd}"
                 Command="{Binding WatchAdCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center">
-          <TextBlock Text="{loc:Translate WatchAdForDouble}"
+          <TextBlock AutomationProperties.AutomationId="Wiring_Txt_WatchAd"
+                     Text="{loc:Translate WatchAdForDouble}"
                      TextTrimming="CharacterEllipsis" />
         </Button>
 
         <Button Grid.Column="1"
-                Content="{Binding ContinueButtonText}"
+                AutomationProperties.AutomationId="Wiring_Btn_Continue"
                 Classes="Primary"
                 Command="{Binding ContinueCommand}"
                 HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center" />
+                HorizontalContentAlignment="Center">
+          <TextBlock Text="{Binding ContinueButtonText}"
+                     TextTrimming="CharacterEllipsis" />
+        </Button>
       </Grid>
 
       <!-- Zwischen-Aufgabe: Nur Weiter-Button -->
-      <Button Content="{Binding ContinueButtonText}"
+      <Button AutomationProperties.AutomationId="Wiring_Btn_NextTask"
               Classes="Primary"
               Command="{Binding ContinueCommand}"
               HorizontalAlignment="Center"
@@ -252,6 +300,9 @@
             <Binding Path="!IsLastTask" />
           </MultiBinding>
         </Button.IsVisible>
+        <TextBlock Text="{Binding ContinueButtonText}"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="200" />
       </Button>
 
     </StackPanel>

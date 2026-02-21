@@ -15,8 +15,6 @@ namespace HandwerkerImperium.ViewModels;
 /// </summary>
 public partial class BlueprintGameViewModel : ObservableObject, IDisposable
 {
-    private static readonly Random _random = new();
-
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly IRewardedAdService _rewardedAdService;
@@ -25,9 +23,22 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private bool _isEnding;
 
-    // Bauschritt-Icons (Emojis)
+    // Bauschritt-Icons (Vektor-Identifikatoren für SkiaSharp-Rendering)
     private static readonly string[] StepIcons =
-        { "\U0001F3D7\uFE0F", "\U0001F9F1", "\U0001FAB5", "\u26A1", "\U0001F527", "\U0001FA9F", "\U0001F6AA", "\U0001F3A8", "\U0001F3E0", "\U0001F529", "\U0001F4D0", "\U0001FA9C" };
+    {
+        "foundation",   // Fundament
+        "walls",        // Mauern
+        "framework",    // Rahmenwerk
+        "electrics",    // Elektrik
+        "plumbing",     // Sanitär
+        "windows",      // Fenster
+        "doors",        // Türen
+        "painting",     // Malerei
+        "roof",         // Dach
+        "fittings",     // Beschläge
+        "measuring",    // Messen
+        "scaffolding"   // Gerüst
+    };
 
     // Lokalisierte Bauschritt-Labels (Keys)
     private static readonly string[] StepLabelKeys =
@@ -242,7 +253,7 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         };
 
         // Tool-Bonus: Wasserwaage gibt Extra-Sekunden
-        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Saw);
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.SpiritLevel);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
         CompletedSteps = 0;
         MistakeCount = 0;
@@ -265,7 +276,7 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         // Mischen
         for (int i = indices.Count - 1; i > 0; i--)
         {
-            int j = _random.Next(i + 1);
+            int j = Random.Shared.Next(i + 1);
             (indices[i], indices[j]) = (indices[j], indices[i]);
         }
 
@@ -286,7 +297,7 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         }
 
         // Positionen im Grid mischen (Nummern bleiben, aber physische Position variiert)
-        var shuffled = Steps.OrderBy(_ => _random.Next()).ToList();
+        var shuffled = Steps.OrderBy(_ => Random.Shared.Next()).ToList();
         Steps.Clear();
         foreach (var step in shuffled)
         {
@@ -658,7 +669,7 @@ public partial class BlueprintStep : ObservableObject
     private int _stepNumber; // Korrekte Reihenfolgenummer (1-basiert)
 
     [ObservableProperty]
-    private string _icon = ""; // Emoji-Icon
+    private string _icon = ""; // Vektor-Icon-Identifier
 
     [ObservableProperty]
     private bool _isRevealed; // Nummer sichtbar (Memorisierungsphase)

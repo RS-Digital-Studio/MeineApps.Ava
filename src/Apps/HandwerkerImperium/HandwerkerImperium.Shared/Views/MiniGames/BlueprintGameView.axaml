@@ -7,36 +7,45 @@
              x:Class="HandwerkerImperium.Views.MiniGames.BlueprintGameView"
              x:DataType="vm:BlueprintGameViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
+  <Grid AutomationProperties.AutomationId="Blueprint_Grid_Root"
+        RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
 
     <!-- ================================================================= -->
     <!-- HEADER (Row 0)                                                    -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Blueprint_Border_Header"
             Classes="CardElevated"
             Padding="16,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Abbrechen-Button -->
-        <Button Classes="Text"
+        <Button AutomationProperties.AutomationId="Blueprint_Btn_Cancel"
+                Classes="Text"
                 Command="{Binding CancelCommand}">
-          <mi:MaterialIcon Kind="Close" Width="24" Height="24" />
+          <mi:MaterialIcon AutomationProperties.AutomationId="Blueprint_Icon_Close"
+                           Kind="Close" Width="24" Height="24" />
         </Button>
 
         <!-- Titel -->
-        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center"
+                    AutomationProperties.AutomationId="Blueprint_Panel_TitleGroup">
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="6">
-            <mi:MaterialIcon Kind="FloorPlan" Width="22" Height="22" />
-            <TextBlock Text="{loc:Translate BlueprintGame}"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Blueprint_Icon_Title"
+                             Kind="FloorPlan" Width="22" Height="22" />
+            <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_Title"
+                       Text="{loc:Translate BlueprintGame}"
                        FontSize="18" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
-          <TextBlock Text="{Binding DifficultyStars}"
+          <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_DifficultyStars"
+                     Text="{Binding DifficultyStars}"
                      HorizontalAlignment="Center"
                      FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
-          <TextBlock Text="{Binding TaskProgressDisplay}"
+          <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_TaskProgress"
+                     Text="{Binding TaskProgressDisplay}"
                      HorizontalAlignment="Center"
                      FontSize="11" FontWeight="SemiBold"
                      Foreground="{StaticResource CraftPrimaryBrush}"
@@ -45,12 +54,15 @@
 
         <!-- Timer -->
         <Border Grid.Column="2"
+                AutomationProperties.AutomationId="Blueprint_Border_Timer"
                 Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="8"
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="Clock" Width="16" Height="16" />
-            <TextBlock Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Blueprint_Icon_Clock"
+                             Kind="Clock" Width="16" Height="16" />
+            <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_Timer"
+                       Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
@@ -61,10 +73,12 @@
     <!-- ================================================================= -->
     <!-- STATS (Row 1) - Anweisungen + Fortschritt/Fehler/Naechster       -->
     <!-- ================================================================= -->
-    <StackPanel Grid.Row="1" Spacing="8" Margin="0,8">
+    <StackPanel Grid.Row="1" Spacing="8" Margin="0,8"
+                AutomationProperties.AutomationId="Blueprint_Panel_Stats">
 
       <!-- Anweisungen: Vor dem Spiel -->
-      <TextBlock Text="{loc:Translate BlueprintInstructionBefore}"
+      <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_InstructionBefore"
+                 Text="{loc:Translate BlueprintInstructionBefore}"
                  FontSize="12"
                  Foreground="{DynamicResource TextSecondaryBrush}"
                  HorizontalAlignment="Center"
@@ -80,7 +94,8 @@
       </TextBlock>
 
       <!-- Anweisungen: Waehrend Memorisierung -->
-      <TextBlock Text="{loc:Translate BlueprintInstructionMemorize}"
+      <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_InstructionMemorize"
+                 Text="{loc:Translate BlueprintInstructionMemorize}"
                  FontSize="14" FontWeight="SemiBold"
                  Foreground="{StaticResource CraftPrimaryBrush}"
                  HorizontalAlignment="Center"
@@ -89,7 +104,8 @@
                  IsVisible="{Binding IsMemorizing}" />
 
       <!-- Anweisungen: Waehrend Spiel -->
-      <TextBlock Text="{loc:Translate BlueprintInstructionPlay}"
+      <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_InstructionPlay"
+                 Text="{loc:Translate BlueprintInstructionPlay}"
                  FontSize="12"
                  Foreground="{DynamicResource TextSecondaryBrush}"
                  HorizontalAlignment="Center"
@@ -98,16 +114,20 @@
                  IsVisible="{Binding IsPlaying}" />
 
       <!-- Fortschritt + Fehler + Naechster Schritt -->
-      <Grid ColumnDefinitions="*,Auto,*"
+      <Grid AutomationProperties.AutomationId="Blueprint_Grid_PlayStats"
+            ColumnDefinitions="*,Auto,*"
             IsVisible="{Binding IsPlaying}">
 
         <!-- Fortschritt links -->
-        <StackPanel Orientation="Horizontal" Spacing="4"
+        <StackPanel AutomationProperties.AutomationId="Blueprint_Panel_StepProgress"
+                    Orientation="Horizontal" Spacing="4"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
-          <mi:MaterialIcon Kind="CheckCircle" Width="16" Height="16"
+          <mi:MaterialIcon AutomationProperties.AutomationId="Blueprint_Icon_StepCheck"
+                           Kind="CheckCircle" Width="16" Height="16"
                            Foreground="{DynamicResource SuccessBrush}" />
-          <TextBlock FontSize="12"
+          <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_StepProgress"
+                     FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}">
             <Run Text="{Binding CompletedSteps}" />
             <Run Text="/" />
@@ -117,13 +137,16 @@
 
         <!-- Naechster Schritt mittig -->
         <Border Grid.Column="1"
+                AutomationProperties.AutomationId="Blueprint_Border_NextStep"
                 Background="{StaticResource CraftPrimaryBrush}"
                 CornerRadius="12"
                 Padding="12,4">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="ArrowRight" Width="16" Height="16"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Blueprint_Icon_NextStep"
+                             Kind="ArrowRight" Width="16" Height="16"
                              Foreground="White" />
-            <TextBlock FontSize="14" FontWeight="Bold"
+            <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_NextStep"
+                       FontSize="14" FontWeight="Bold"
                        Foreground="White">
               <Run Text="#" />
               <Run Text="{Binding NextExpectedStep}" />
@@ -133,12 +156,15 @@
 
         <!-- Fehler rechts -->
         <StackPanel Grid.Column="2"
+                    AutomationProperties.AutomationId="Blueprint_Panel_Mistakes"
                     Orientation="Horizontal" Spacing="4"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
-          <mi:MaterialIcon Kind="Close" Width="16" Height="16"
+          <mi:MaterialIcon AutomationProperties.AutomationId="Blueprint_Icon_Mistakes"
+                           Kind="Close" Width="16" Height="16"
                            Foreground="{DynamicResource ErrorBrush}" />
-          <TextBlock FontSize="12"
+          <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_MistakeCount"
+                     FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}">
             <Run Text="{loc:Translate MistakesLabel}" />
             <Run Text=" " />
@@ -151,50 +177,64 @@
     <!-- ================================================================= -->
     <!-- SKIA GAME AREA (Row 2) - Blaupausen-Grid                         -->
     <!-- ================================================================= -->
-    <Border Grid.Row="2" Background="{DynamicResource CardBrush}" CornerRadius="8" Margin="0,8" ClipToBounds="True">
-      <skia:SKCanvasView x:Name="GameCanvas" MinHeight="200" />
+    <Border Grid.Row="2" AutomationProperties.AutomationId="Blueprint_Border_GameArea"
+            Background="{DynamicResource CardBrush}" CornerRadius="8" Margin="0,8" ClipToBounds="True">
+      <skia:SKCanvasView x:Name="GameCanvas"
+                         AutomationProperties.AutomationId="Blueprint_Canvas_GameArea"
+                         MinHeight="200" />
     </Border>
 
     <!-- ================================================================= -->
     <!-- RESULT DISPLAY (Row 3)                                            -->
     <!-- ================================================================= -->
     <Border x:Name="ResultBorder" Grid.Row="3"
+            AutomationProperties.AutomationId="Blueprint_Border_Result"
             Classes="Card StatsCard"
             IsVisible="{Binding IsResultShown}"
             Padding="24">
-      <StackPanel Spacing="16" HorizontalAlignment="Center">
+      <StackPanel Spacing="16" HorizontalAlignment="Center"
+                  AutomationProperties.AutomationId="Blueprint_Panel_Result">
         <!-- Emoji -->
-        <TextBlock Text="{Binding ResultEmoji}"
+        <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_ResultEmoji"
+                   Text="{Binding ResultEmoji}"
                    FontSize="48"
                    HorizontalAlignment="Center" />
 
         <!-- Sterne-Bewertung (staggered via Code-Behind) -->
-        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-          <mi:MaterialIcon x:Name="Star1Panel" Kind="Star" Width="32" Height="32"
+        <StackPanel AutomationProperties.AutomationId="Blueprint_Panel_Stars"
+                    Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <mi:MaterialIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Blueprint_Icon_Star1"
+                           Kind="Star" Width="32" Height="32"
                            Foreground="#FFD700"
                            Opacity="{Binding Star1Opacity}" />
-          <mi:MaterialIcon x:Name="Star2Panel" Kind="Star" Width="32" Height="32"
+          <mi:MaterialIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Blueprint_Icon_Star2"
+                           Kind="Star" Width="32" Height="32"
                            Foreground="#FFD700"
                            Opacity="{Binding Star2Opacity}" />
-          <mi:MaterialIcon x:Name="Star3Panel" Kind="Star" Width="32" Height="32"
+          <mi:MaterialIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Blueprint_Icon_Star3"
+                           Kind="Star" Width="32" Height="32"
                            Foreground="#FFD700"
                            Opacity="{Binding Star3Opacity}" />
         </StackPanel>
 
         <!-- Rating Text (Farbe wird per Code-Behind gesetzt) -->
         <TextBlock x:Name="RatingText"
+                   AutomationProperties.AutomationId="Blueprint_Txt_RatingText"
                    Text="{Binding ResultText}"
                    FontSize="24" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    HorizontalAlignment="Center" />
 
         <!-- Belohnungen -->
-        <StackPanel Orientation="Horizontal" Spacing="20"
+        <StackPanel AutomationProperties.AutomationId="Blueprint_Panel_Rewards"
+                    Orientation="Horizontal" Spacing="20"
                     HorizontalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="CashMultiple" Width="20" Height="20"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Blueprint_Icon_RewardMoney"
+                             Kind="CashMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
+                       AutomationProperties.AutomationId="Blueprint_Txt_RewardMoney"
                        Text="{Binding RewardAmount, StringFormat='+{0:N0} &#x20AC;'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}"
@@ -202,9 +242,11 @@
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="Star" Width="20" Height="20"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Blueprint_Icon_RewardXp"
+                             Kind="Star" Width="20" Height="20"
                              Foreground="Gold" />
             <TextBlock x:Name="RewardXpText"
+                       AutomationProperties.AutomationId="Blueprint_Txt_RewardXp"
                        Text="{Binding XpAmount, StringFormat='+{0} XP'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="Gold"
@@ -215,18 +257,22 @@
     </Border>
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
-    <Border Grid.RowSpan="5" Background="#CC000000"
+    <Border AutomationProperties.AutomationId="Blueprint_Border_Countdown"
+            Grid.RowSpan="5" Background="#CC000000"
             IsVisible="{Binding IsCountdownActive}">
-      <TextBlock Text="{Binding CountdownText}"
+      <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_Countdown"
+                 Text="{Binding CountdownText}"
                  FontSize="72" FontWeight="Bold"
                  Foreground="#FFD700"
                  HorizontalAlignment="Center" VerticalAlignment="Center" />
     </Border>
 
     <!-- Tutorial Overlay (beim ersten Spielstart) -->
-    <Border Grid.RowSpan="5" Background="#DD000000"
+    <Border AutomationProperties.AutomationId="Blueprint_Border_TutorialOverlay"
+            Grid.RowSpan="5" Background="#DD000000"
             IsVisible="{Binding ShowTutorial}">
-      <Border Background="{DynamicResource CardBrush}"
+      <Border AutomationProperties.AutomationId="Blueprint_Border_TutorialCard"
+              Background="{DynamicResource CardBrush}"
               CornerRadius="16"
               Padding="24"
               Margin="32"
@@ -234,17 +280,20 @@
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16">
-          <TextBlock Text="{Binding TutorialTitle}"
+          <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_TutorialTitle"
+                     Text="{Binding TutorialTitle}"
                      FontSize="22" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding TutorialText}"
+          <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_TutorialText"
+                     Text="{Binding TutorialText}"
                      FontSize="14"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      TextWrapping="Wrap"
                      TextAlignment="Center"
                      LineHeight="22" />
-          <Button Content="{loc:Translate TutorialGotIt}"
+          <Button AutomationProperties.AutomationId="Blueprint_Btn_TutorialDismiss"
+                  Content="{loc:Translate TutorialGotIt}"
                   Classes="Primary"
                   Command="{Binding DismissTutorialCommand}"
                   HorizontalAlignment="Center"
@@ -257,7 +306,8 @@
     <!-- ================================================================= -->
     <!-- ACTION BUTTONS (Row 4)                                            -->
     <!-- ================================================================= -->
-    <StackPanel Grid.Row="4" Spacing="16">
+    <StackPanel AutomationProperties.AutomationId="Blueprint_Panel_Actions"
+                Grid.Row="4" Spacing="16">
 
       <!-- Start Button (versteckt waehrend Spiel, Memorisierung und nach Ergebnis) -->
       <Panel>
@@ -267,7 +317,8 @@
             <Binding Path="!IsMemorizing" />
           </MultiBinding>
         </Panel.IsVisible>
-        <Button Content="{loc:Translate Start}"
+        <Button AutomationProperties.AutomationId="Blueprint_Btn_Start"
+                Content="{loc:Translate Start}"
                 Classes="Primary"
                 Command="{Binding StartGameCommand}"
                 IsVisible="{Binding !IsPlaying}"
@@ -276,7 +327,8 @@
       </Panel>
 
       <!-- Letzte Aufgabe: Ad + Weiter -->
-      <Grid ColumnDefinitions="*,*"
+      <Grid AutomationProperties.AutomationId="Blueprint_Grid_LastTaskActions"
+            ColumnDefinitions="*,*"
             ColumnSpacing="12">
         <Grid.IsVisible>
           <MultiBinding Converter="{x:Static BoolConverters.And}">
@@ -285,25 +337,30 @@
           </MultiBinding>
         </Grid.IsVisible>
 
-        <Button Classes="Secondary"
+        <Button AutomationProperties.AutomationId="Blueprint_Btn_WatchAd"
+                Classes="Secondary"
                 IsEnabled="{Binding CanWatchAd}"
                 Command="{Binding WatchAdCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center">
-          <TextBlock Text="{loc:Translate WatchAdForDouble}"
+          <TextBlock AutomationProperties.AutomationId="Blueprint_Txt_WatchAd"
+                     Text="{loc:Translate WatchAdForDouble}"
                      TextTrimming="CharacterEllipsis" />
         </Button>
 
         <Button Grid.Column="1"
-                Content="{Binding ContinueButtonText}"
+                AutomationProperties.AutomationId="Blueprint_Btn_Continue"
                 Classes="Primary"
                 Command="{Binding ContinueCommand}"
                 HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center" />
+                HorizontalContentAlignment="Center">
+          <TextBlock Text="{Binding ContinueButtonText}"
+                     TextTrimming="CharacterEllipsis" />
+        </Button>
       </Grid>
 
       <!-- Zwischen-Aufgabe: Nur Weiter-Button -->
-      <Button Content="{Binding ContinueButtonText}"
+      <Button AutomationProperties.AutomationId="Blueprint_Btn_NextTask"
               Classes="Primary"
               Command="{Binding ContinueCommand}"
               HorizontalAlignment="Center"
@@ -314,6 +371,9 @@
             <Binding Path="!IsLastTask" />
           </MultiBinding>
         </Button.IsVisible>
+        <TextBlock Text="{Binding ContinueButtonText}"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="200" />
       </Button>
 
     </StackPanel>

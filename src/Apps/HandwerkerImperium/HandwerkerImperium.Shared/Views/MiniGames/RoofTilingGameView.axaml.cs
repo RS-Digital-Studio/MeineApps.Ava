@@ -20,6 +20,7 @@ public partial class RoofTilingGameView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        DetachedFromVisualTree += (_, _) => StopRenderLoop();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -211,6 +212,8 @@ public partial class RoofTilingGameView : UserControl
     /// </summary>
     private async void OnGameCompleted(object? sender, int rating)
     {
+        try
+        {
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             // 1. Rating-Text Farbe setzen
@@ -253,5 +256,10 @@ public partial class RoofTilingGameView : UserControl
                     xpText, $"+{_vm.XpAmount} XP");
             }
         });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameCompleted: {ex.Message}");
+        }
     }
 }

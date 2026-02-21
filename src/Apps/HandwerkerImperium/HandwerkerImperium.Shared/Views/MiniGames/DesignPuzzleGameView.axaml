@@ -7,36 +7,45 @@
              x:Class="HandwerkerImperium.Views.MiniGames.DesignPuzzleGameView"
              x:DataType="vm:DesignPuzzleGameViewModel">
 
-  <Grid RowDefinitions="Auto,*,Auto" Margin="10,20,10,20">
+  <Grid AutomationProperties.AutomationId="DesignPuzzle_Grid_Root"
+        RowDefinitions="Auto,*,Auto" Margin="10,20,10,20">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="DesignPuzzle_Border_Header"
             Classes="CardElevated"
             Padding="16,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Abbrechen-Button -->
-        <Button Classes="Text"
+        <Button AutomationProperties.AutomationId="DesignPuzzle_Btn_Cancel"
+                Classes="Text"
                 Command="{Binding CancelCommand}">
-          <mi:MaterialIcon Kind="Close" Width="24" Height="24" />
+          <mi:MaterialIcon AutomationProperties.AutomationId="DesignPuzzle_Icon_Close"
+                           Kind="Close" Width="24" Height="24" />
         </Button>
 
         <!-- Titel -->
-        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center"
+                    AutomationProperties.AutomationId="DesignPuzzle_Panel_TitleGroup">
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="6">
-            <mi:MaterialIcon Kind="HomeEdit" Width="22" Height="22" />
-            <TextBlock Text="{loc:Translate DesignPuzzleGame}"
+            <mi:MaterialIcon AutomationProperties.AutomationId="DesignPuzzle_Icon_Title"
+                             Kind="HomeEdit" Width="22" Height="22" />
+            <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_Title"
+                       Text="{loc:Translate DesignPuzzleGame}"
                        FontSize="18" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
-          <TextBlock Text="{Binding DifficultyStars}"
+          <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_DifficultyStars"
+                     Text="{Binding DifficultyStars}"
                      HorizontalAlignment="Center"
                      FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
-          <TextBlock Text="{Binding TaskProgressDisplay}"
+          <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_TaskProgress"
+                     Text="{Binding TaskProgressDisplay}"
                      HorizontalAlignment="Center"
                      FontSize="11" FontWeight="SemiBold"
                      Foreground="{StaticResource CraftPrimaryBrush}"
@@ -45,12 +54,15 @@
 
         <!-- Timer -->
         <Border Grid.Column="2"
+                AutomationProperties.AutomationId="DesignPuzzle_Border_Timer"
                 Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="8"
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="Clock" Width="16" Height="16" />
-            <TextBlock Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
+            <mi:MaterialIcon AutomationProperties.AutomationId="DesignPuzzle_Icon_Clock"
+                             Kind="Clock" Width="16" Height="16" />
+            <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_Timer"
+                       Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
@@ -64,33 +76,39 @@
     <ScrollViewer Grid.Row="1"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
-      <StackPanel Spacing="16" Margin="0,16,0,60">
+      <StackPanel Spacing="12" Margin="0,8,0,60">
 
         <!-- Anleitung -->
-        <TextBlock Text="{loc:Translate DesignPuzzleInstructions}"
+        <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_InstructionBefore"
+                   Text="{loc:Translate DesignPuzzleInstructions}"
                    FontSize="12"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    HorizontalAlignment="Center"
                    TextAlignment="Center"
                    IsVisible="{Binding !IsPlaying}" />
 
-        <TextBlock Text="{loc:Translate SelectRoomThenSlot}"
+        <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_InstructionPlaying"
+                   Text="{loc:Translate SelectRoomThenSlot}"
                    FontSize="12"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    HorizontalAlignment="Center"
                    IsVisible="{Binding IsPlaying}" />
 
         <!-- Fortschritt + Fehler -->
-        <Grid ColumnDefinitions="*,*"
+        <Grid AutomationProperties.AutomationId="DesignPuzzle_Grid_PlayStats"
+              ColumnDefinitions="*,*"
               IsVisible="{Binding IsPlaying}">
 
           <!-- Platziert -->
-          <StackPanel Orientation="Horizontal" Spacing="4"
+          <StackPanel AutomationProperties.AutomationId="DesignPuzzle_Panel_PlacedProgress"
+                      Orientation="Horizontal" Spacing="4"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="Check" Width="16" Height="16"
+            <mi:MaterialIcon AutomationProperties.AutomationId="DesignPuzzle_Icon_PlacedCheck"
+                             Kind="Check" Width="16" Height="16"
                              Foreground="{DynamicResource SuccessBrush}" />
-            <TextBlock FontSize="12"
+            <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_PlacedProgress"
+                       FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}">
               <Run Text="{Binding PlacedCount}" />
               <Run Text="/" />
@@ -100,12 +118,15 @@
 
           <!-- Fehler -->
           <StackPanel Grid.Column="1"
+                      AutomationProperties.AutomationId="DesignPuzzle_Panel_Mistakes"
                       Orientation="Horizontal" Spacing="4"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center">
-            <mi:MaterialIcon Kind="Close" Width="16" Height="16"
+            <mi:MaterialIcon AutomationProperties.AutomationId="DesignPuzzle_Icon_Mistakes"
+                             Kind="Close" Width="16" Height="16"
                              Foreground="{DynamicResource ErrorBrush}" />
-            <TextBlock FontSize="12"
+            <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_MistakeCount"
+                       FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}">
               <Run Text="{loc:Translate MistakesLabel}" />
               <Run Text=" " />
@@ -117,19 +138,23 @@
         <!-- ============================================================= -->
         <!-- GRUNDRISS (SkiaSharp Canvas)                                   -->
         <!-- ============================================================= -->
-        <Border Background="{DynamicResource CardBrush}" CornerRadius="8" ClipToBounds="True">
+        <Border AutomationProperties.AutomationId="DesignPuzzle_Border_GameArea"
+                Background="{DynamicResource CardBrush}" CornerRadius="8" ClipToBounds="True">
           <skia:SKCanvasView x:Name="FloorPlanCanvas"
-                             MinHeight="240" />
+                             AutomationProperties.AutomationId="DesignPuzzle_Canvas_GameArea"
+                             MinHeight="180" />
         </Border>
 
         <!-- ============================================================= -->
         <!-- RAUM-AUSWAHL (bleibt XAML - klickbare Karten)                 -->
         <!-- ============================================================= -->
-        <Border Classes="Card StatsCard" Padding="12"
+        <Border AutomationProperties.AutomationId="DesignPuzzle_Border_RoomSelection"
+                Classes="Card StatsCard" Padding="12"
                 IsVisible="{Binding !IsResultShown}">
           <StackPanel Spacing="8">
             <!-- Raum-Auswahl-Titel -->
-            <TextBlock Text="{loc:Translate AvailableRooms}"
+            <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_AvailableRooms"
+                       Text="{loc:Translate AvailableRooms}"
                        FontSize="14" FontWeight="SemiBold"
                        Foreground="{StaticResource CraftPrimaryBrush}"
                        HorizontalAlignment="Center" />
@@ -137,7 +162,8 @@
             <!-- Raum-Karten horizontal -->
             <ScrollViewer HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Disabled">
-              <ItemsControl ItemsSource="{Binding AvailableRooms}">
+              <ItemsControl AutomationProperties.AutomationId="DesignPuzzle_Items_Rooms"
+                            ItemsSource="{Binding AvailableRooms}">
                 <ItemsControl.ItemsPanel>
                   <ItemsPanelTemplate>
                     <WrapPanel Orientation="Horizontal"
@@ -146,31 +172,31 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:RoomCard">
-                    <Button Classes="Text" Padding="0" Margin="4"
+                    <Button Classes="Text" Padding="0" Margin="3"
                             Opacity="{Binding CardOpacity}"
                             IsEnabled="{Binding !IsUsed}"
                             Command="{Binding $parent[ItemsControl].((vm:DesignPuzzleGameViewModel)DataContext).SelectRoomCommand}"
                             CommandParameter="{Binding .}">
-                      <Border Width="72" Height="80"
-                              CornerRadius="8"
+                      <Border Width="78" Height="78"
+                              CornerRadius="10"
                               BorderThickness="2"
                               BorderBrush="{Binding SelectionBorderColor}"
                               Background="{DynamicResource SurfaceBrush}">
                         <StackPanel VerticalAlignment="Center"
                                     HorizontalAlignment="Center"
                                     Spacing="4">
-                          <!-- Raum-Emoji -->
-                          <TextBlock Text="{Binding Emoji}"
-                                     FontSize="28"
-                                     HorizontalAlignment="Center" />
+                          <!-- Raum-Icon (Material Icon) -->
+                          <mi:MaterialIcon Kind="{Binding IconKind}"
+                                           Width="30" Height="30"
+                                           Foreground="{Binding IconColor}" />
 
                           <!-- Raum-Name -->
                           <TextBlock Text="{Binding DisplayName}"
-                                     FontSize="9"
+                                     FontSize="10" FontWeight="SemiBold"
                                      Foreground="{DynamicResource TextSecondaryBrush}"
                                      HorizontalAlignment="Center"
                                      TextTrimming="CharacterEllipsis"
-                                     MaxWidth="66" />
+                                     MaxWidth="72" />
                         </StackPanel>
                       </Border>
                     </Button>
@@ -185,42 +211,53 @@
         <!-- ERGEBNIS-ANZEIGE                                               -->
         <!-- ============================================================= -->
         <Border x:Name="ResultBorder"
+                AutomationProperties.AutomationId="DesignPuzzle_Border_Result"
                 Classes="Card StatsCard"
                 IsVisible="{Binding IsResultShown}"
                 Padding="24">
-          <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <StackPanel Spacing="16" HorizontalAlignment="Center"
+                      AutomationProperties.AutomationId="DesignPuzzle_Panel_Result">
             <!-- Ergebnis-Emoji -->
-            <TextBlock Text="{Binding ResultEmoji}"
+            <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_ResultEmoji"
+                       Text="{Binding ResultEmoji}"
                        FontSize="48"
                        HorizontalAlignment="Center" />
 
             <!-- Sterne-Bewertung (staggered via Code-Behind) -->
-            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <mi:MaterialIcon x:Name="Star1Panel" Kind="Star" Width="32" Height="32"
+            <StackPanel AutomationProperties.AutomationId="DesignPuzzle_Panel_Stars"
+                        Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+              <mi:MaterialIcon x:Name="Star1Panel" AutomationProperties.AutomationId="DesignPuzzle_Icon_Star1"
+                               Kind="Star" Width="32" Height="32"
                                Foreground="#FFD700"
                                Opacity="{Binding Star1Opacity}" />
-              <mi:MaterialIcon x:Name="Star2Panel" Kind="Star" Width="32" Height="32"
+              <mi:MaterialIcon x:Name="Star2Panel" AutomationProperties.AutomationId="DesignPuzzle_Icon_Star2"
+                               Kind="Star" Width="32" Height="32"
                                Foreground="#FFD700"
                                Opacity="{Binding Star2Opacity}" />
-              <mi:MaterialIcon x:Name="Star3Panel" Kind="Star" Width="32" Height="32"
+              <mi:MaterialIcon x:Name="Star3Panel" AutomationProperties.AutomationId="DesignPuzzle_Icon_Star3"
+                               Kind="Star" Width="32" Height="32"
                                Foreground="#FFD700"
                                Opacity="{Binding Star3Opacity}" />
             </StackPanel>
 
             <!-- Bewertungstext -->
             <TextBlock x:Name="RatingText"
+                       AutomationProperties.AutomationId="DesignPuzzle_Txt_RatingText"
                        Text="{Binding ResultText}"
                        FontSize="24" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        HorizontalAlignment="Center" />
 
             <!-- Belohnungen -->
-            <StackPanel Orientation="Horizontal" Spacing="20"
+            <StackPanel AutomationProperties.AutomationId="DesignPuzzle_Panel_Rewards"
+                        Orientation="Horizontal" Spacing="20"
                         HorizontalAlignment="Center">
               <StackPanel Orientation="Horizontal" Spacing="4">
-                <mi:MaterialIcon Kind="CashMultiple" Width="20" Height="20"
+                <mi:MaterialIcon AutomationProperties.AutomationId="DesignPuzzle_Icon_RewardMoney"
+                                 Kind="CashMultiple" Width="20" Height="20"
                                  Foreground="{DynamicResource SuccessBrush}" />
                 <TextBlock x:Name="RewardMoneyText"
+                           AutomationProperties.AutomationId="DesignPuzzle_Txt_RewardMoney"
                            Text="{Binding RewardAmount, StringFormat='+{0:N0} &#x20AC;'}"
                            FontSize="14" FontWeight="Bold"
                            Foreground="{DynamicResource SuccessBrush}"
@@ -228,9 +265,11 @@
               </StackPanel>
 
               <StackPanel Orientation="Horizontal" Spacing="4">
-                <mi:MaterialIcon Kind="Star" Width="20" Height="20"
+                <mi:MaterialIcon AutomationProperties.AutomationId="DesignPuzzle_Icon_RewardXp"
+                                 Kind="Star" Width="20" Height="20"
                                  Foreground="Gold" />
                 <TextBlock x:Name="RewardXpText"
+                           AutomationProperties.AutomationId="DesignPuzzle_Txt_RewardXp"
                            Text="{Binding XpAmount, StringFormat='+{0} XP'}"
                            FontSize="14" FontWeight="Bold"
                            Foreground="Gold"
@@ -244,18 +283,22 @@
     </ScrollViewer>
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
-    <Border Grid.RowSpan="3" Background="#CC000000"
+    <Border AutomationProperties.AutomationId="DesignPuzzle_Border_Countdown"
+            Grid.RowSpan="3" Background="#CC000000"
             IsVisible="{Binding IsCountdownActive}">
-      <TextBlock Text="{Binding CountdownText}"
+      <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_Countdown"
+                 Text="{Binding CountdownText}"
                  FontSize="72" FontWeight="Bold"
                  Foreground="#FFD700"
                  HorizontalAlignment="Center" VerticalAlignment="Center" />
     </Border>
 
     <!-- Tutorial Overlay (beim ersten Spielstart) -->
-    <Border Grid.RowSpan="3" Background="#DD000000"
+    <Border AutomationProperties.AutomationId="DesignPuzzle_Border_TutorialOverlay"
+            Grid.RowSpan="3" Background="#DD000000"
             IsVisible="{Binding ShowTutorial}">
-      <Border Background="{DynamicResource CardBrush}"
+      <Border AutomationProperties.AutomationId="DesignPuzzle_Border_TutorialCard"
+              Background="{DynamicResource CardBrush}"
               CornerRadius="16"
               Padding="24"
               Margin="32"
@@ -263,17 +306,20 @@
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16">
-          <TextBlock Text="{Binding TutorialTitle}"
+          <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_TutorialTitle"
+                     Text="{Binding TutorialTitle}"
                      FontSize="22" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding TutorialText}"
+          <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_TutorialText"
+                     Text="{Binding TutorialText}"
                      FontSize="14"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      TextWrapping="Wrap"
                      TextAlignment="Center"
                      LineHeight="22" />
-          <Button Content="{loc:Translate TutorialGotIt}"
+          <Button AutomationProperties.AutomationId="DesignPuzzle_Btn_TutorialDismiss"
+                  Content="{loc:Translate TutorialGotIt}"
                   Classes="Primary"
                   Command="{Binding DismissTutorialCommand}"
                   HorizontalAlignment="Center"
@@ -286,11 +332,13 @@
     <!-- ================================================================= -->
     <!-- AKTIONS-BUTTONS                                                   -->
     <!-- ================================================================= -->
-    <StackPanel Grid.Row="2" Spacing="16">
+    <StackPanel AutomationProperties.AutomationId="DesignPuzzle_Panel_Actions"
+                Grid.Row="2" Spacing="16">
 
       <!-- Start-Button (versteckt waehrend Spiel und nach Ergebnis) -->
       <Panel IsVisible="{Binding !IsResultShown}">
-        <Button Content="{loc:Translate StartGame}"
+        <Button AutomationProperties.AutomationId="DesignPuzzle_Btn_Start"
+                Content="{loc:Translate StartGame}"
                 Classes="Primary"
                 Command="{Binding StartGameCommand}"
                 IsVisible="{Binding !IsPlaying}"
@@ -299,7 +347,8 @@
       </Panel>
 
       <!-- Letzte Aufgabe: Ad + Weiter -->
-      <Grid ColumnDefinitions="*,*"
+      <Grid AutomationProperties.AutomationId="DesignPuzzle_Grid_LastTaskActions"
+            ColumnDefinitions="*,*"
             ColumnSpacing="12">
         <Grid.IsVisible>
           <MultiBinding Converter="{x:Static BoolConverters.And}">
@@ -308,25 +357,30 @@
           </MultiBinding>
         </Grid.IsVisible>
 
-        <Button Classes="Secondary"
+        <Button AutomationProperties.AutomationId="DesignPuzzle_Btn_WatchAd"
+                Classes="Secondary"
                 IsEnabled="{Binding CanWatchAd}"
                 Command="{Binding WatchAdCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center">
-          <TextBlock Text="{loc:Translate WatchAdForDouble}"
+          <TextBlock AutomationProperties.AutomationId="DesignPuzzle_Txt_WatchAd"
+                     Text="{loc:Translate WatchAdForDouble}"
                      TextTrimming="CharacterEllipsis" />
         </Button>
 
         <Button Grid.Column="1"
-                Content="{Binding ContinueButtonText}"
+                AutomationProperties.AutomationId="DesignPuzzle_Btn_Continue"
                 Classes="Primary"
                 Command="{Binding ContinueCommand}"
                 HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center" />
+                HorizontalContentAlignment="Center">
+          <TextBlock Text="{Binding ContinueButtonText}"
+                     TextTrimming="CharacterEllipsis" />
+        </Button>
       </Grid>
 
       <!-- Zwischen-Aufgabe: Nur Weiter-Button -->
-      <Button Content="{Binding ContinueButtonText}"
+      <Button AutomationProperties.AutomationId="DesignPuzzle_Btn_NextTask"
               Classes="Primary"
               Command="{Binding ContinueCommand}"
               HorizontalAlignment="Center"
@@ -337,6 +391,9 @@
             <Binding Path="!IsLastTask" />
           </MultiBinding>
         </Button.IsVisible>
+        <TextBlock Text="{Binding ContinueButtonText}"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="200" />
       </Button>
 
     </StackPanel>

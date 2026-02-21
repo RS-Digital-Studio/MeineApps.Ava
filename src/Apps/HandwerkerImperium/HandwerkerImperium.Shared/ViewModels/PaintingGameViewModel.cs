@@ -15,8 +15,6 @@ namespace HandwerkerImperium.ViewModels;
 /// </summary>
 public partial class PaintingGameViewModel : ObservableObject, IDisposable
 {
-    private static readonly Random _random = new();
-
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly IRewardedAdService _rewardedAdService;
@@ -306,7 +304,7 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
         var pattern = new bool[GridSize, GridSize];
 
         // Generate different shapes based on difficulty
-        int shapeType = _random.Next(3);
+        int shapeType = Random.Shared.Next(3);
 
         switch (shapeType)
         {
@@ -326,10 +324,10 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
 
     private void GenerateRectangle(bool[,] pattern)
     {
-        int startRow = _random.Next(0, GridSize / 2);
-        int startCol = _random.Next(0, GridSize / 2);
-        int height = _random.Next(2, GridSize - startRow);
-        int width = _random.Next(2, GridSize - startCol);
+        int startRow = Random.Shared.Next(0, GridSize / 2);
+        int startCol = Random.Shared.Next(0, GridSize / 2);
+        int height = Random.Shared.Next(2, GridSize - startRow);
+        int width = Random.Shared.Next(2, GridSize - startCol);
 
         for (int r = startRow; r < startRow + height; r++)
         {
@@ -343,7 +341,7 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
     private void GenerateLShape(bool[,] pattern)
     {
         // Vertical part
-        int startCol = _random.Next(1, GridSize - 2);
+        int startCol = Random.Shared.Next(1, GridSize - 2);
         for (int r = 0; r < GridSize - 1; r++)
         {
             pattern[r, startCol] = true;
@@ -386,7 +384,7 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
             "#20B2AA"  // Light Sea Green
         };
 
-        return colors[_random.Next(colors.Length)];
+        return colors[Random.Shared.Next(colors.Length)];
     }
 
     [RelayCommand]
@@ -541,12 +539,13 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
         await _audioService.PlaySoundAsync(sound);
 
         // Belohnungen berechnen (Combo-Multiplikator anwenden)
+        var comboMult = ComboMultiplier;
         var order = _gameStateService.GetActiveOrder();
         if (order != null && IsLastTask)
         {
-            // Gesamt-Belohnung
-            RewardAmount = order.FinalReward;
-            XpAmount = order.FinalXp;
+            // Gesamt-Belohnung mit Combo-Multiplikator
+            RewardAmount = order.FinalReward * comboMult;
+            XpAmount = (int)(order.FinalXp * comboMult);
         }
         else if (order != null)
         {
@@ -554,17 +553,17 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
             int taskCount = Math.Max(1, order.Tasks.Count);
             decimal basePerTask = order.BaseReward / taskCount;
             RewardAmount = basePerTask * Result.GetRewardPercentage()
-                * order.Difficulty.GetRewardMultiplier() * order.OrderType.GetRewardMultiplier();
+                * order.Difficulty.GetRewardMultiplier() * order.OrderType.GetRewardMultiplier() * comboMult;
             int baseXpPerTask = order.BaseXp / taskCount;
             XpAmount = (int)(baseXpPerTask * Result.GetXpPercentage()
-                * order.Difficulty.GetXpMultiplier() * order.OrderType.GetXpMultiplier());
+                * order.Difficulty.GetXpMultiplier() * order.OrderType.GetXpMultiplier() * comboMult);
         }
         else
         {
-            // QuickJob: Belohnung aus aktivem QuickJob lesen
+            // QuickJob: Belohnung aus aktivem QuickJob lesen mit Combo-Multiplikator
             var quickJob = _gameStateService.State.ActiveQuickJob;
-            RewardAmount = quickJob?.Reward ?? 0;
-            XpAmount = quickJob?.XpReward ?? 0;
+            RewardAmount = (quickJob?.Reward ?? 0) * comboMult;
+            XpAmount = (int)((quickJob?.XpReward ?? 0) * comboMult);
         }
 
         // Set result display

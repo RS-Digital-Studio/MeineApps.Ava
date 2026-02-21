@@ -302,7 +302,7 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         // Initialize zones based on difficulty
         InitializeZones();
 
-        CheckAndShowTutorial(MiniGameType.Sawing);
+        CheckAndShowTutorial(GameType);
     }
 
     private void UpdateGameTypeVisuals()
@@ -603,9 +603,9 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         ShowTutorial = false;
         // Als gesehen markieren und speichern
         var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.Sawing))
+        if (!state.SeenMiniGameTutorials.Contains(GameType))
         {
-            state.SeenMiniGameTutorials.Add(MiniGameType.Sawing);
+            state.SeenMiniGameTutorials.Add(GameType);
             _gameStateService.MarkDirty();
         }
     }

@@ -15,8 +15,6 @@ namespace HandwerkerImperium.ViewModels;
 /// </summary>
 public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
 {
-    private static readonly Random _random = new();
-
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly IRewardedAdService _rewardedAdService;
@@ -254,8 +252,8 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
             _ => (4, 4, 50, 4, 0.40)
         };
 
-        // Tool-Bonus: Säge gibt Extra-Sekunden (Dachdecker nutzt Säge-Tool)
-        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Saw);
+        // Tool-Bonus: Hammer gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Hammer);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
         PlacedCount = 0;
         MistakeCount = 0;
@@ -293,14 +291,14 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
         for (int row = 0; row < GridRows; row++)
         {
             int startIdx = row * GridColumns;
-            int colIdx = _random.Next(GridColumns);
+            int colIdx = Random.Shared.Next(GridColumns);
             hintIndices.Add(startIdx + colIdx);
         }
 
         // Restliche Hints zufällig verteilen
         while (hintIndices.Count < hintCount)
         {
-            hintIndices.Add(_random.Next(totalTiles));
+            hintIndices.Add(Random.Shared.Next(totalTiles));
         }
 
         // Ziegel erstellen
@@ -338,7 +336,7 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
         var colors = TileColors.Take(colorCount).ToArray();
 
         // Verschiedene Muster-Typen zufällig wählen
-        int patternType = _random.Next(3);
+        int patternType = Random.Shared.Next(3);
 
         switch (patternType)
         {

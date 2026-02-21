@@ -23,6 +23,7 @@ public partial class PaintingGameView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        DetachedFromVisualTree += (_, _) => StopRenderLoop();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -184,6 +185,8 @@ public partial class PaintingGameView : UserControl
     /// </summary>
     private async void OnGameCompleted(object? sender, int starCount)
     {
+        try
+        {
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             // 1. Rating-Text einfaerben
@@ -226,5 +229,10 @@ public partial class PaintingGameView : UserControl
                     xpText, $"+{_vm.XpAmount} XP");
             }
         });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameCompleted: {ex.Message}");
+        }
     }
 }

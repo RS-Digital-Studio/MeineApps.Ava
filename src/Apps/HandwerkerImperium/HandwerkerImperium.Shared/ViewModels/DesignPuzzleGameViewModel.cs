@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
+using Material.Icons;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
 
@@ -23,17 +24,19 @@ public partial class DesignPuzzleGameViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private bool _isEnding;
 
-    // Raum-Definitionen: Id, Emoji, HintIcon, NameKey
-    private static readonly (string Id, string Emoji, string HintIcon, string NameKey)[] RoomDefs =
+    // Raum-Definitionen: Id, IconKind, IconColor, NameKey
+    private static readonly (string Id, MaterialIconKind IconKind, string IconColor, string NameKey)[] RoomDefs =
     {
-        ("kitchen", "\U0001F373", "\U0001F525", "RoomKitchen"),
-        ("bathroom", "\U0001F6BF", "\U0001F4A7", "RoomBathroom"),
-        ("bedroom", "\U0001F6CF\uFE0F", "\U0001F319", "RoomBedroom"),
-        ("living", "\U0001F6CB\uFE0F", "\U0001F4FA", "RoomLiving"),
-        ("office", "\U0001F4BB", "\U0001F4DD", "RoomOffice"),
-        ("garage", "\U0001F697", "\U0001F527", "RoomGarage"),
-        ("laundry", "\U0001F455", "\U0001F9FA", "RoomLaundry"),
-        ("dining", "\U0001F37D\uFE0F", "\U0001FA91", "RoomDining"),
+        ("kitchen", MaterialIconKind.Stove, "#FF6F00", "RoomKitchen"),
+        ("bathroom", MaterialIconKind.ShowerHead, "#0288D1", "RoomBathroom"),
+        ("bedroom", MaterialIconKind.Bed, "#7B1FA2", "RoomBedroom"),
+        ("living", MaterialIconKind.Sofa, "#2E7D32", "RoomLiving"),
+        ("office", MaterialIconKind.Laptop, "#455A64", "RoomOffice"),
+        ("garage", MaterialIconKind.Garage, "#795548", "RoomGarage"),
+        ("laundry", MaterialIconKind.WashingMachine, "#00838F", "RoomLaundry"),
+        ("dining", MaterialIconKind.SilverwareForkKnife, "#C62828", "RoomDining"),
+        ("hallway", MaterialIconKind.DoorOpen, "#5D4037", "RoomHallway"),
+        ("basement", MaterialIconKind.Stairs, "#37474F", "RoomBasement"),
     };
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -166,7 +169,8 @@ public partial class DesignPuzzleGameViewModel : ObservableObject, IDisposable
     public double GridWidth => Difficulty switch
     {
         OrderDifficulty.Easy => 2 * 84,
-        OrderDifficulty.Hard or OrderDifficulty.Expert => 4 * 84,
+        OrderDifficulty.Hard => 4 * 84,
+        OrderDifficulty.Expert => 5 * 84,
         _ => 3 * 84
     };
 
@@ -252,8 +256,8 @@ public partial class DesignPuzzleGameViewModel : ObservableObject, IDisposable
             _ => (6, 45)
         };
 
-        // Tool-Bonus: Pinsel gibt Extra-Sekunden (kein spezifisches DesignPuzzle-Tool, verwende Paintbrush)
-        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Paintbrush);
+        // Tool-Bonus: Zirkel gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Compass);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
         PlacedCount = 0;
         MistakeCount = 0;
@@ -275,7 +279,7 @@ public partial class DesignPuzzleGameViewModel : ObservableObject, IDisposable
             .Take(roomCount)
             .ToArray();
 
-        TotalSlots = roomCount;
+        TotalSlots = selectedRooms.Length;
 
         // Slots erstellen (in zufaelliger Reihenfolge fuer den Grundriss)
         var shuffledForSlots = selectedRooms.OrderBy(_ => random.Next()).ToArray();
@@ -284,7 +288,8 @@ public partial class DesignPuzzleGameViewModel : ObservableObject, IDisposable
             Slots.Add(new RoomSlot
             {
                 CorrectRoomId = room.Id,
-                HintIcon = room.HintIcon
+                HintColor = room.IconColor,
+                HintIconKind = room.IconKind
             });
         }
 
@@ -292,12 +297,14 @@ public partial class DesignPuzzleGameViewModel : ObservableObject, IDisposable
         var shuffledForCards = selectedRooms.OrderBy(_ => random.Next()).ToArray();
         foreach (var room in shuffledForCards)
         {
+            string displayName = _localizationService.GetString(room.NameKey) ?? room.NameKey;
             AvailableRooms.Add(new RoomCard
             {
                 RoomId = room.Id,
-                Emoji = room.Emoji,
+                IconKind = room.IconKind,
+                IconColor = room.IconColor,
                 NameKey = room.NameKey,
-                DisplayName = _localizationService.GetString(room.NameKey)
+                DisplayName = displayName
             });
         }
     }
@@ -390,7 +397,8 @@ public partial class DesignPuzzleGameViewModel : ObservableObject, IDisposable
             slot.IsCorrect = true;
             slot.HasError = false;
             slot.CurrentRoomId = room.RoomId;
-            slot.DisplayEmoji = room.Emoji;
+            slot.DisplayLabel = room.DisplayName;
+            slot.FilledColor = room.IconColor;
 
             room.IsUsed = true;
             room.IsSelected = false;
@@ -680,8 +688,13 @@ public partial class RoomSlot : ObservableObject
     [ObservableProperty]
     private string _currentRoomId = "";
 
+    /// <summary>Farbe als Hinweis welcher Raum hierhin gehoert.</summary>
     [ObservableProperty]
-    private string _hintIcon = "";
+    private string _hintColor = "#555555";
+
+    /// <summary>Icon-Typ als Hinweis (wird im Renderer als Farb-Akzent verwendet).</summary>
+    [ObservableProperty]
+    private MaterialIconKind _hintIconKind = MaterialIconKind.Home;
 
     [ObservableProperty]
     private bool _isFilled;
@@ -692,8 +705,13 @@ public partial class RoomSlot : ObservableObject
     [ObservableProperty]
     private bool _hasError;
 
+    /// <summary>Lokalisierter Raumname fuer gefuellte Slots.</summary>
     [ObservableProperty]
-    private string _displayEmoji = "";
+    private string _displayLabel = "";
+
+    /// <summary>Farbe des platzierten Raums.</summary>
+    [ObservableProperty]
+    private string _filledColor = "";
 
     // Berechnete Farben bei Zustandsaenderung aktualisieren
     partial void OnIsFilledChanged(bool value)
@@ -729,8 +747,13 @@ public partial class RoomCard : ObservableObject
     [ObservableProperty]
     private string _roomId = "";
 
+    /// <summary>Material Icon fuer den Raum.</summary>
     [ObservableProperty]
-    private string _emoji = "";
+    private MaterialIconKind _iconKind = MaterialIconKind.Home;
+
+    /// <summary>Farbe des Icons/Raums.</summary>
+    [ObservableProperty]
+    private string _iconColor = "#FFFFFF";
 
     [ObservableProperty]
     private string _nameKey = "";

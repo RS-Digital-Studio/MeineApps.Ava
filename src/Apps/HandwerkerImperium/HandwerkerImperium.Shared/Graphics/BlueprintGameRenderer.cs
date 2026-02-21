@@ -228,7 +228,7 @@ public class BlueprintGameRenderer
         // Rahmen basierend auf Zustand
         DrawTileBorder(canvas, rect, step, cornerRadius);
 
-        // Icon (Emoji oben in der Kachel)
+        // Icon (Vektor-Icon oben in der Kachel)
         DrawTileIcon(canvas, rect, step.Icon);
 
         // Nummer oder Fragezeichen (unten in der Kachel)
@@ -306,24 +306,393 @@ public class BlueprintGameRenderer
     }
 
     /// <summary>
-    /// Zeichnet das Emoji-Icon in der oberen Haelfte der Kachel.
+    /// Zeichnet ein Vektor-Icon in der oberen Haelfte der Kachel basierend auf dem Icon-Identifier.
     /// </summary>
-    private static void DrawTileIcon(SKCanvas canvas, SKRect rect, string icon)
+    private static void DrawTileIcon(SKCanvas canvas, SKRect rect, string iconId)
     {
-        if (string.IsNullOrEmpty(icon)) return;
+        if (string.IsNullOrEmpty(iconId)) return;
 
-        float fontSize = rect.Height * 0.35f;
-        using var iconPaint = new SKPaint
+        float iconSize = rect.Height * 0.32f;
+        float cx = rect.MidX;
+        float cy = rect.Top + rect.Height * 0.38f;
+
+        switch (iconId)
         {
-            TextSize = fontSize,
-            IsAntialias = true,
-            TextAlign = SKTextAlign.Center
+            case "foundation": DrawFoundationIcon(canvas, cx, cy, iconSize); break;
+            case "walls": DrawWallsIcon(canvas, cx, cy, iconSize); break;
+            case "framework": DrawFrameworkIcon(canvas, cx, cy, iconSize); break;
+            case "electrics": DrawElectricsIcon(canvas, cx, cy, iconSize); break;
+            case "plumbing": DrawPlumbingIcon(canvas, cx, cy, iconSize); break;
+            case "windows": DrawWindowsIcon(canvas, cx, cy, iconSize); break;
+            case "doors": DrawDoorsIcon(canvas, cx, cy, iconSize); break;
+            case "painting": DrawPaintingIcon(canvas, cx, cy, iconSize); break;
+            case "roof": DrawRoofIcon(canvas, cx, cy, iconSize); break;
+            case "fittings": DrawFittingsIcon(canvas, cx, cy, iconSize); break;
+            case "measuring": DrawMeasuringIcon(canvas, cx, cy, iconSize); break;
+            case "scaffolding": DrawScaffoldingIcon(canvas, cx, cy, iconSize); break;
+            default: DrawDefaultIcon(canvas, cx, cy, iconSize); break;
+        }
+    }
+
+    /// <summary>Fundament: Trapez mit horizontalen Streifen.</summary>
+    private static void DrawFoundationIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+
+        // Trapez-Fundament (unten breiter als oben)
+        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x90, 0xA4, 0xAE) };
+        using var path = new SKPath();
+        path.MoveTo(cx - half * 0.6f, cy - half);      // Oben links
+        path.LineTo(cx + half * 0.6f, cy - half);      // Oben rechts
+        path.LineTo(cx + half, cy + half);              // Unten rechts
+        path.LineTo(cx - half, cy + half);              // Unten links
+        path.Close();
+        canvas.DrawPath(path, fillPaint);
+
+        // 3 horizontale Streifen
+        using var linePaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0x60, 0x7D, 0x8B), StrokeWidth = 1.5f
+        };
+        for (int i = 0; i < 3; i++)
+        {
+            float yOff = cy - half + (i + 1) * (size / 4);
+            float ratio = (yOff - (cy - half)) / size; // 0..1 von oben nach unten
+            float w = half * (0.6f + 0.4f * ratio);    // Breite interpolieren
+            canvas.DrawLine(cx - w, yOff, cx + w, yOff, linePaint);
+        }
+    }
+
+    /// <summary>Mauern: 3x2 Ziegelsteinmuster.</summary>
+    private static void DrawWallsIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+        float brickW = size / 3;
+        float brickH = size / 2.5f;
+
+        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xE5, 0x73, 0x73) };
+        using var borderPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0xD4, 0xC5, 0xA9), StrokeWidth = 1.5f
         };
 
-        float x = rect.MidX;
-        float y = rect.Top + rect.Height * 0.42f;
+        // 2 Reihen Ziegel (versetzt)
+        for (int row = 0; row < 2; row++)
+        {
+            float y = cy - half + row * brickH;
+            float xOffset = (row % 2 == 1) ? brickW * 0.5f : 0;
+            for (int col = 0; col < 3; col++)
+            {
+                float x = cx - half + col * brickW + xOffset;
+                var r = SKRect.Create(x + 1, y + 1, brickW - 2, brickH - 2);
+                canvas.DrawRoundRect(r, 1, 1, fillPaint);
+                canvas.DrawRoundRect(r, 1, 1, borderPaint);
+            }
+        }
+    }
 
-        canvas.DrawText(icon, x, y, iconPaint);
+    /// <summary>Rahmenwerk: Holzrahmen als H-Form.</summary>
+    private static void DrawFrameworkIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+        using var paint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0xA1, 0x88, 0x7F), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+        };
+
+        // Zwei vertikale Balken
+        canvas.DrawLine(cx - half * 0.6f, cy - half, cx - half * 0.6f, cy + half, paint);
+        canvas.DrawLine(cx + half * 0.6f, cy - half, cx + half * 0.6f, cy + half, paint);
+
+        // Querbalken in der Mitte
+        canvas.DrawLine(cx - half * 0.6f, cy, cx + half * 0.6f, cy, paint);
+
+        // Diagonalstrebe
+        using var diagPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0x8D, 0x6E, 0x63), StrokeWidth = 2, StrokeCap = SKStrokeCap.Round
+        };
+        canvas.DrawLine(cx - half * 0.6f, cy - half, cx + half * 0.6f, cy, diagPaint);
+    }
+
+    /// <summary>Elektrik: Blitzsymbol (Zickzack).</summary>
+    private static void DrawElectricsIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+
+        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xFF, 0xD5, 0x4F) };
+        using var strokePaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0xFF, 0xA0, 0x00), StrokeWidth = 1.5f
+        };
+
+        using var path = new SKPath();
+        path.MoveTo(cx + half * 0.1f, cy - half);
+        path.LineTo(cx - half * 0.4f, cy - half * 0.05f);
+        path.LineTo(cx + half * 0.15f, cy + half * 0.05f);
+        path.LineTo(cx - half * 0.15f, cy + half);
+        path.LineTo(cx + half * 0.5f, cy - half * 0.15f);
+        path.LineTo(cx - half * 0.05f, cy - half * 0.1f);
+        path.Close();
+
+        canvas.DrawPath(path, fillPaint);
+        canvas.DrawPath(path, strokePaint);
+    }
+
+    /// <summary>Sanitaer: Schraubenschluessel.</summary>
+    private static void DrawPlumbingIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+
+        // Griff (vertikale Linie)
+        using var handlePaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+        };
+        canvas.DrawLine(cx, cy - half * 0.1f, cx, cy + half, handlePaint);
+
+        // Maulschlüssel-Kopf (U-Form)
+        using var headPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0xB0, 0xBE, 0xC5), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+        };
+        using var headPath = new SKPath();
+        headPath.MoveTo(cx - half * 0.5f, cy - half * 0.1f);
+        headPath.LineTo(cx - half * 0.5f, cy - half * 0.7f);
+        headPath.ArcTo(
+            SKRect.Create(cx - half * 0.5f, cy - half, half, half * 0.6f),
+            180, -180, false);
+        headPath.LineTo(cx + half * 0.5f, cy - half * 0.1f);
+        canvas.DrawPath(headPath, headPaint);
+    }
+
+    /// <summary>Fenster: Blaues Rechteck mit weissem Kreuzrahmen.</summary>
+    private static void DrawWindowsIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+        var r = SKRect.Create(cx - half * 0.8f, cy - half * 0.8f, size * 0.8f, size * 0.8f);
+
+        // Blaues Glas
+        using var glassPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x42, 0xA5, 0xF5) };
+        canvas.DrawRoundRect(r, 3, 3, glassPaint);
+
+        // Weisser Rahmen
+        using var framePaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = SKColors.White, StrokeWidth = 2
+        };
+        canvas.DrawRoundRect(r, 3, 3, framePaint);
+
+        // Kreuz
+        canvas.DrawLine(r.MidX, r.Top, r.MidX, r.Bottom, framePaint);
+        canvas.DrawLine(r.Left, r.MidY, r.Right, r.MidY, framePaint);
+    }
+
+    /// <summary>Tuer: Braunes Rechteck mit kleinem Griff-Kreis.</summary>
+    private static void DrawDoorsIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+        var r = SKRect.Create(cx - half * 0.6f, cy - half, size * 0.6f, size);
+
+        // Türblatt
+        using var doorPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x8D, 0x6E, 0x63) };
+        canvas.DrawRoundRect(r, 3, 3, doorPaint);
+
+        // Rahmen
+        using var framePaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0x6D, 0x4C, 0x41), StrokeWidth = 2
+        };
+        canvas.DrawRoundRect(r, 3, 3, framePaint);
+
+        // Türgriff (kleiner Kreis rechts)
+        using var knobPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xFF, 0xD5, 0x4F) };
+        canvas.DrawCircle(r.Right - half * 0.25f, r.MidY + half * 0.1f, half * 0.12f, knobPaint);
+    }
+
+    /// <summary>Malerei: Farbroller mit Stiel.</summary>
+    private static void DrawPaintingIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+
+        // Stiel (diagonal)
+        using var handlePaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0x9E, 0x9E, 0x9E), StrokeWidth = 2.5f, StrokeCap = SKStrokeCap.Round
+        };
+        canvas.DrawLine(cx + half * 0.1f, cy + half * 0.1f, cx + half * 0.1f, cy + half, handlePaint);
+
+        // Roller-Halterung
+        canvas.DrawLine(cx + half * 0.1f, cy + half * 0.1f, cx - half * 0.3f, cy - half * 0.1f, handlePaint);
+
+        // Farbroller (Rechteck)
+        using var rollerPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xEF, 0x6C, 0x00) };
+        var rollerRect = SKRect.Create(cx - half * 0.8f, cy - half * 0.6f, size * 0.7f, half * 0.6f);
+        canvas.DrawRoundRect(rollerRect, 4, 4, rollerPaint);
+
+        // Roller-Textur (helle Streifen)
+        using var texturePaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0xFF, 0x9E, 0x40, 0x80), StrokeWidth = 1
+        };
+        for (float lx = rollerRect.Left + 3; lx < rollerRect.Right - 2; lx += 4)
+        {
+            canvas.DrawLine(lx, rollerRect.Top + 2, lx, rollerRect.Bottom - 2, texturePaint);
+        }
+    }
+
+    /// <summary>Dach: Rotes Dreieck mit Schornstein.</summary>
+    private static void DrawRoofIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+
+        // Dach-Dreieck
+        using var roofPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xE5, 0x39, 0x35) };
+        using var path = new SKPath();
+        path.MoveTo(cx, cy - half);
+        path.LineTo(cx + half, cy + half * 0.5f);
+        path.LineTo(cx - half, cy + half * 0.5f);
+        path.Close();
+        canvas.DrawPath(path, roofPaint);
+
+        // Rand
+        using var borderPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0xC6, 0x28, 0x28), StrokeWidth = 1.5f
+        };
+        canvas.DrawPath(path, borderPaint);
+
+        // Schornstein (kleines Rechteck oben rechts)
+        using var chimneyPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x79, 0x55, 0x48) };
+        var chimneyRect = SKRect.Create(cx + half * 0.25f, cy - half * 0.7f, half * 0.25f, half * 0.55f);
+        canvas.DrawRect(chimneyRect, chimneyPaint);
+    }
+
+    /// <summary>Beschlaege: Schraube mit Kreuzschlitz.</summary>
+    private static void DrawFittingsIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+        float radius = half * 0.7f;
+
+        // Schraubenkopf (Kreis)
+        using var headPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xB0, 0xBE, 0xC5) };
+        canvas.DrawCircle(cx, cy, radius, headPaint);
+
+        // Rand
+        using var borderPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 2
+        };
+        canvas.DrawCircle(cx, cy, radius, borderPaint);
+
+        // Kreuzschlitz
+        using var slotPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0x54, 0x6E, 0x7A), StrokeWidth = 2, StrokeCap = SKStrokeCap.Round
+        };
+        float slotLen = radius * 0.6f;
+        canvas.DrawLine(cx - slotLen, cy, cx + slotLen, cy, slotPaint);
+        canvas.DrawLine(cx, cy - slotLen, cx, cy + slotLen, slotPaint);
+    }
+
+    /// <summary>Messen: Winkellineal (90°-Winkel mit Markierungen).</summary>
+    private static void DrawMeasuringIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+
+        using var rulerPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0xFF, 0xCA, 0x28), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+        };
+
+        // Vertikale Linie (links)
+        canvas.DrawLine(cx - half * 0.5f, cy - half, cx - half * 0.5f, cy + half * 0.5f, rulerPaint);
+        // Horizontale Linie (unten)
+        canvas.DrawLine(cx - half * 0.5f, cy + half * 0.5f, cx + half, cy + half * 0.5f, rulerPaint);
+
+        // Markierungen an der vertikalen Linie
+        using var markPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0xFF, 0xA0, 0x00), StrokeWidth = 1.5f
+        };
+        for (int i = 0; i < 4; i++)
+        {
+            float yMark = cy - half + (i + 1) * (size * 0.3f / 2);
+            float markLen = (i % 2 == 0) ? half * 0.3f : half * 0.2f;
+            canvas.DrawLine(cx - half * 0.5f, yMark, cx - half * 0.5f + markLen, yMark, markPaint);
+        }
+
+        // Markierungen an der horizontalen Linie
+        for (int i = 0; i < 4; i++)
+        {
+            float xMark = cx - half * 0.5f + (i + 1) * (size * 0.3f / 2);
+            float markLen = (i % 2 == 0) ? half * 0.3f : half * 0.2f;
+            canvas.DrawLine(xMark, cy + half * 0.5f, xMark, cy + half * 0.5f - markLen, markPaint);
+        }
+    }
+
+    /// <summary>Geruest: Leiter (2 vertikale + 3 horizontale Linien).</summary>
+    private static void DrawScaffoldingIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+
+        using var polePaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+        };
+
+        // Zwei vertikale Stangen
+        canvas.DrawLine(cx - half * 0.4f, cy - half, cx - half * 0.4f, cy + half, polePaint);
+        canvas.DrawLine(cx + half * 0.4f, cy - half, cx + half * 0.4f, cy + half, polePaint);
+
+        // 3 horizontale Sprossen
+        using var rungPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0x90, 0xA4, 0xAE), StrokeWidth = 2.5f, StrokeCap = SKStrokeCap.Round
+        };
+        for (int i = 0; i < 3; i++)
+        {
+            float yRung = cy - half * 0.6f + i * (size * 0.6f / 2);
+            canvas.DrawLine(cx - half * 0.4f, yRung, cx + half * 0.4f, yRung, rungPaint);
+        }
+    }
+
+    /// <summary>Fallback-Icon: Einfacher Kreis mit Fragezeichen.</summary>
+    private static void DrawDefaultIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float half = size / 2;
+
+        using var circlePaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Stroke,
+            Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80), StrokeWidth = 2
+        };
+        canvas.DrawCircle(cx, cy, half * 0.6f, circlePaint);
+
+        using var textPaint = new SKPaint
+        {
+            IsAntialias = true, TextSize = size * 0.5f,
+            Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80), TextAlign = SKTextAlign.Center
+        };
+        canvas.DrawText("?", cx, cy + size * 0.15f, textPaint);
     }
 
     /// <summary>

@@ -7,36 +7,45 @@
              x:Class="HandwerkerImperium.Views.MiniGames.InspectionGameView"
              x:DataType="vm:InspectionGameViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
+  <Grid AutomationProperties.AutomationId="Inspection_Grid_Root"
+        RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
 
     <!-- ================================================================= -->
     <!-- ROW 0: HEADER                                                     -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Inspection_Border_Header"
             Classes="CardElevated"
             Padding="16,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Cancel Button -->
-        <Button Classes="Text"
+        <Button AutomationProperties.AutomationId="Inspection_Btn_Cancel"
+                Classes="Text"
                 Command="{Binding CancelCommand}">
-          <mi:MaterialIcon Kind="Close" Width="24" Height="24" />
+          <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_Close"
+                           Kind="Close" Width="24" Height="24" />
         </Button>
 
         <!-- Titel -->
-        <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center"
+                    AutomationProperties.AutomationId="Inspection_Panel_TitleGroup">
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="6">
-            <mi:MaterialIcon Kind="ClipboardCheck" Width="22" Height="22" />
-            <TextBlock Text="{loc:Translate InspectionGame}"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_Title"
+                             Kind="ClipboardCheck" Width="22" Height="22" />
+            <TextBlock AutomationProperties.AutomationId="Inspection_Txt_Title"
+                       Text="{loc:Translate InspectionGame}"
                        FontSize="18" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
-          <TextBlock Text="{Binding DifficultyStars}"
+          <TextBlock AutomationProperties.AutomationId="Inspection_Txt_DifficultyStars"
+                     Text="{Binding DifficultyStars}"
                      HorizontalAlignment="Center"
                      FontSize="12"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
-          <TextBlock Text="{Binding TaskProgressDisplay}"
+          <TextBlock AutomationProperties.AutomationId="Inspection_Txt_TaskProgress"
+                     Text="{Binding TaskProgressDisplay}"
                      HorizontalAlignment="Center"
                      FontSize="11" FontWeight="SemiBold"
                      Foreground="{StaticResource CraftPrimaryBrush}"
@@ -45,12 +54,15 @@
 
         <!-- Timer -->
         <Border Grid.Column="2"
+                AutomationProperties.AutomationId="Inspection_Border_Timer"
                 Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="8"
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="Clock" Width="16" Height="16" />
-            <TextBlock Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_Clock"
+                             Kind="Clock" Width="16" Height="16" />
+            <TextBlock AutomationProperties.AutomationId="Inspection_Txt_Timer"
+                       Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
@@ -61,10 +73,12 @@
     <!-- ================================================================= -->
     <!-- ROW 1: STATS (Fortschrittsbalken + Fehlalarme)                    -->
     <!-- ================================================================= -->
-    <StackPanel Grid.Row="1" Spacing="6" Margin="0,8,0,0">
+    <StackPanel Grid.Row="1" Spacing="6" Margin="0,8,0,0"
+                AutomationProperties.AutomationId="Inspection_Panel_Stats">
 
       <!-- Anleitung (vor Spielstart) -->
-      <TextBlock Text="{loc:Translate InspectionInstruction}"
+      <TextBlock AutomationProperties.AutomationId="Inspection_Txt_InstructionBefore"
+                 Text="{loc:Translate InspectionInstruction}"
                  FontSize="12"
                  Foreground="{DynamicResource TextSecondaryBrush}"
                  HorizontalAlignment="Center"
@@ -73,22 +87,27 @@
                  IsVisible="{Binding !IsPlaying}" />
 
       <!-- Anleitung (waehrend Spiel) -->
-      <TextBlock Text="{loc:Translate TapToInspect}"
+      <TextBlock AutomationProperties.AutomationId="Inspection_Txt_InstructionPlaying"
+                 Text="{loc:Translate TapToInspect}"
                  FontSize="12"
                  Foreground="{DynamicResource TextSecondaryBrush}"
                  HorizontalAlignment="Center"
                  IsVisible="{Binding IsPlaying}" />
 
       <!-- Fortschrittsbalken -->
-      <Grid ColumnDefinitions="Auto,*,Auto"
+      <Grid AutomationProperties.AutomationId="Inspection_Grid_Progress"
+            ColumnDefinitions="Auto,*,Auto"
             IsVisible="{Binding IsPlaying}"
             Margin="0,0,0,2">
-        <mi:MaterialIcon Kind="MagnifyPlus" Width="20" Height="20" />
+        <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_InspectionProgress"
+                         Kind="MagnifyPlus" Width="20" Height="20" />
         <skia:SKCanvasView Grid.Column="1"
+                           AutomationProperties.AutomationId="Inspection_Canvas_ProgressBar"
                            Height="16"
                            Margin="12,0"
                            PaintSurface="OnPaintInspectionProgress" />
         <TextBlock Grid.Column="2" FontSize="12"
+                   AutomationProperties.AutomationId="Inspection_Txt_DefectProgress"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    VerticalAlignment="Center">
           <Run Text="{Binding FoundDefects}" />
@@ -98,12 +117,15 @@
       </Grid>
 
       <!-- Fehlalarme -->
-      <StackPanel Orientation="Horizontal" Spacing="4"
+      <StackPanel AutomationProperties.AutomationId="Inspection_Panel_FalseAlarms"
+                  Orientation="Horizontal" Spacing="4"
                   HorizontalAlignment="Center"
                   IsVisible="{Binding IsPlaying}">
-        <mi:MaterialIcon Kind="AlertCircle" Width="16" Height="16"
+        <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_FalseAlarm"
+                         Kind="AlertCircle" Width="16" Height="16"
                          Foreground="{DynamicResource ErrorBrush}" />
-        <TextBlock FontSize="12"
+        <TextBlock AutomationProperties.AutomationId="Inspection_Txt_FalseAlarmCount"
+                   FontSize="12"
                    Foreground="{DynamicResource TextSecondaryBrush}">
           <Run Text="{loc:Translate FalseAlarmsLabel}" />
           <Run Text=" " />
@@ -115,50 +137,64 @@
     <!-- ================================================================= -->
     <!-- ROW 2: SKIA GAME AREA                                            -->
     <!-- ================================================================= -->
-    <Border Grid.Row="2" Background="{DynamicResource CardBrush}" CornerRadius="8" Margin="0,8" ClipToBounds="True">
-      <skia:SKCanvasView x:Name="GameCanvas" MinHeight="240" />
+    <Border Grid.Row="2" AutomationProperties.AutomationId="Inspection_Border_GameArea"
+            Background="{DynamicResource CardBrush}" CornerRadius="8" Margin="0,8" ClipToBounds="True">
+      <skia:SKCanvasView x:Name="GameCanvas"
+                         AutomationProperties.AutomationId="Inspection_Canvas_GameArea"
+                         MinHeight="240" />
     </Border>
 
     <!-- ================================================================= -->
     <!-- ROW 3: RESULT DISPLAY                                            -->
     <!-- ================================================================= -->
     <Border x:Name="ResultBorder" Grid.Row="3"
+            AutomationProperties.AutomationId="Inspection_Border_Result"
             Classes="Card StatsCard"
             IsVisible="{Binding IsResultShown}"
             Padding="24">
-      <StackPanel Spacing="16" HorizontalAlignment="Center">
+      <StackPanel Spacing="16" HorizontalAlignment="Center"
+                  AutomationProperties.AutomationId="Inspection_Panel_Result">
         <!-- Emoji -->
-        <TextBlock Text="{Binding ResultEmoji}"
+        <TextBlock AutomationProperties.AutomationId="Inspection_Txt_ResultEmoji"
+                   Text="{Binding ResultEmoji}"
                    FontSize="48"
                    HorizontalAlignment="Center" />
 
         <!-- Sterne-Bewertung (staggered via Code-Behind) -->
-        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-          <mi:MaterialIcon x:Name="Star1Panel" Kind="Star" Width="32" Height="32"
+        <StackPanel AutomationProperties.AutomationId="Inspection_Panel_Stars"
+                    Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <mi:MaterialIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Inspection_Icon_Star1"
+                           Kind="Star" Width="32" Height="32"
                            Foreground="#FFD700"
                            Opacity="{Binding Star1Opacity}" />
-          <mi:MaterialIcon x:Name="Star2Panel" Kind="Star" Width="32" Height="32"
+          <mi:MaterialIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Inspection_Icon_Star2"
+                           Kind="Star" Width="32" Height="32"
                            Foreground="#FFD700"
                            Opacity="{Binding Star2Opacity}" />
-          <mi:MaterialIcon x:Name="Star3Panel" Kind="Star" Width="32" Height="32"
+          <mi:MaterialIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Inspection_Icon_Star3"
+                           Kind="Star" Width="32" Height="32"
                            Foreground="#FFD700"
                            Opacity="{Binding Star3Opacity}" />
         </StackPanel>
 
         <!-- Rating Text (Farbe wird per Code-Behind gesetzt) -->
         <TextBlock x:Name="RatingText"
+                   AutomationProperties.AutomationId="Inspection_Txt_RatingText"
                    Text="{Binding ResultText}"
                    FontSize="24" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    HorizontalAlignment="Center" />
 
         <!-- Belohnungen -->
-        <StackPanel Orientation="Horizontal" Spacing="20"
+        <StackPanel AutomationProperties.AutomationId="Inspection_Panel_Rewards"
+                    Orientation="Horizontal" Spacing="20"
                     HorizontalAlignment="Center">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="CashMultiple" Width="20" Height="20"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_RewardMoney"
+                             Kind="CashMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
+                       AutomationProperties.AutomationId="Inspection_Txt_RewardMoney"
                        Text="{Binding RewardAmount, StringFormat='+{0:N0} &#x20AC;'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}"
@@ -166,9 +202,11 @@
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="Star" Width="20" Height="20"
+            <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_RewardXp"
+                             Kind="Star" Width="20" Height="20"
                              Foreground="Gold" />
             <TextBlock x:Name="RewardXpText"
+                       AutomationProperties.AutomationId="Inspection_Txt_RewardXp"
                        Text="{Binding XpAmount, StringFormat='+{0} XP'}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="Gold"
@@ -180,10 +218,12 @@
 
     <!-- Countdown Overlay (3, 2, 1, Los!) -->
     <Border x:Name="CountdownOverlay"
+            AutomationProperties.AutomationId="Inspection_Border_Countdown"
             Grid.RowSpan="5"
             Background="#CC000000"
             IsVisible="{Binding IsCountdownActive}">
       <TextBlock x:Name="CountdownTextBlock"
+                 AutomationProperties.AutomationId="Inspection_Txt_Countdown"
                  Text="{Binding CountdownText}"
                  FontSize="72" FontWeight="Bold"
                  Foreground="#FFD700"
@@ -191,9 +231,11 @@
     </Border>
 
     <!-- Tutorial Overlay (beim ersten Spielstart) -->
-    <Border Grid.RowSpan="5" Background="#DD000000"
+    <Border AutomationProperties.AutomationId="Inspection_Border_TutorialOverlay"
+            Grid.RowSpan="5" Background="#DD000000"
             IsVisible="{Binding ShowTutorial}">
-      <Border Background="{DynamicResource CardBrush}"
+      <Border AutomationProperties.AutomationId="Inspection_Border_TutorialCard"
+              Background="{DynamicResource CardBrush}"
               CornerRadius="16"
               Padding="24"
               Margin="32"
@@ -201,17 +243,20 @@
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16">
-          <TextBlock Text="{Binding TutorialTitle}"
+          <TextBlock AutomationProperties.AutomationId="Inspection_Txt_TutorialTitle"
+                     Text="{Binding TutorialTitle}"
                      FontSize="22" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
-          <TextBlock Text="{Binding TutorialText}"
+          <TextBlock AutomationProperties.AutomationId="Inspection_Txt_TutorialText"
+                     Text="{Binding TutorialText}"
                      FontSize="14"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      TextWrapping="Wrap"
                      TextAlignment="Center"
                      LineHeight="22" />
-          <Button Content="{loc:Translate TutorialGotIt}"
+          <Button AutomationProperties.AutomationId="Inspection_Btn_TutorialDismiss"
+                  Content="{loc:Translate TutorialGotIt}"
                   Classes="Primary"
                   Command="{Binding DismissTutorialCommand}"
                   HorizontalAlignment="Center"
@@ -224,11 +269,13 @@
     <!-- ================================================================= -->
     <!-- ROW 4: ACTION BUTTONS                                            -->
     <!-- ================================================================= -->
-    <StackPanel Grid.Row="4" Spacing="16">
+    <StackPanel AutomationProperties.AutomationId="Inspection_Panel_Actions"
+                Grid.Row="4" Spacing="16">
 
       <!-- Start Button (versteckt waehrend Spiel und nach Ergebnis) -->
       <Panel IsVisible="{Binding !IsResultShown}">
-        <Button Content="{loc:Translate StartInspection}"
+        <Button AutomationProperties.AutomationId="Inspection_Btn_Start"
+                Content="{loc:Translate StartInspection}"
                 Classes="Primary"
                 Command="{Binding StartGameCommand}"
                 IsVisible="{Binding !IsPlaying}"
@@ -237,7 +284,8 @@
       </Panel>
 
       <!-- Letzte Aufgabe: Ad + Weiter -->
-      <Grid ColumnDefinitions="*,*"
+      <Grid AutomationProperties.AutomationId="Inspection_Grid_LastTaskActions"
+            ColumnDefinitions="*,*"
             ColumnSpacing="12">
         <Grid.IsVisible>
           <MultiBinding Converter="{x:Static BoolConverters.And}">
@@ -246,25 +294,30 @@
           </MultiBinding>
         </Grid.IsVisible>
 
-        <Button Classes="Secondary"
+        <Button AutomationProperties.AutomationId="Inspection_Btn_WatchAd"
+                Classes="Secondary"
                 IsEnabled="{Binding CanWatchAd}"
                 Command="{Binding WatchAdCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center">
-          <TextBlock Text="{loc:Translate WatchAdForDouble}"
+          <TextBlock AutomationProperties.AutomationId="Inspection_Txt_WatchAd"
+                     Text="{loc:Translate WatchAdForDouble}"
                      TextTrimming="CharacterEllipsis" />
         </Button>
 
         <Button Grid.Column="1"
-                Content="{Binding ContinueButtonText}"
+                AutomationProperties.AutomationId="Inspection_Btn_Continue"
                 Classes="Primary"
                 Command="{Binding ContinueCommand}"
                 HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center" />
+                HorizontalContentAlignment="Center">
+          <TextBlock Text="{Binding ContinueButtonText}"
+                     TextTrimming="CharacterEllipsis" />
+        </Button>
       </Grid>
 
       <!-- Zwischen-Aufgabe: Nur Weiter-Button -->
-      <Button Content="{Binding ContinueButtonText}"
+      <Button AutomationProperties.AutomationId="Inspection_Btn_NextTask"
               Classes="Primary"
               Command="{Binding ContinueCommand}"
               HorizontalAlignment="Center"
@@ -275,6 +328,9 @@
             <Binding Path="!IsLastTask" />
           </MultiBinding>
         </Button.IsVisible>
+        <TextBlock Text="{Binding ContinueButtonText}"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="200" />
       </Button>
 
     </StackPanel>

@@ -37,8 +37,9 @@ public class DesignPuzzleRenderer
     /// </summary>
     public struct RoomSlotData
     {
-        public string HintIcon;
-        public string DisplayEmoji;
+        public uint HintColor;       // Raum-Farbe als Hinweis (ARGB)
+        public string DisplayLabel;  // Lokalisierter Raumname (fuer gefuellte Slots)
+        public uint FilledColor;     // Farbe des platzierten Raums (ARGB)
         public uint BackgroundColor; // ARGB
         public uint BorderColor;     // ARGB
         public bool IsFilled;
@@ -360,7 +361,7 @@ public class DesignPuzzleRenderer
     }
 
     /// <summary>
-    /// Zeichnet einen leeren Slot mit gestricheltem Rahmen und Hint-Icon.
+    /// Zeichnet einen leeren Slot mit gestricheltem Rahmen und farbigem Hinweis.
     /// </summary>
     private void DrawEmptySlot(SKCanvas canvas, float x, float y, float w, float h, RoomSlotData slot)
     {
@@ -368,10 +369,25 @@ public class DesignPuzzleRenderer
         using var bgPaint = new SKPaint { Color = SlotFillEmpty, IsAntialias = false };
         canvas.DrawRect(x, y, w, h, bgPaint);
 
-        // Gestrichelter Rahmen
+        // Farbiger Hinweis-Streifen am oberen Rand (zeigt welcher Raum hierhin gehoert)
+        var hintColor = new SKColor(slot.HintColor);
+        using var hintBarPaint = new SKPaint { Color = hintColor.WithAlpha(120), IsAntialias = false };
+        canvas.DrawRect(x, y, w, 5, hintBarPaint);
+
+        // Farbiger Punkt in der Mitte als Hinweis
+        float pulse = (float)(0.5 + 0.3 * Math.Sin(_time * 2.5));
+        using var hintDotPaint = new SKPaint
+        {
+            Color = hintColor.WithAlpha((byte)(pulse * 100)),
+            IsAntialias = true
+        };
+        float dotRadius = Math.Min(w, h) * 0.15f;
+        canvas.DrawCircle(x + w / 2, y + h / 2, dotRadius, hintDotPaint);
+
+        // Gestrichelter Rahmen in Hint-Farbe
         using var borderPaint = new SKPaint
         {
-            Color = SlotBorderEmpty,
+            Color = hintColor.WithAlpha(100),
             IsAntialias = false,
             StrokeWidth = 2,
             Style = SKPaintStyle.Stroke,
@@ -379,49 +395,32 @@ public class DesignPuzzleRenderer
         };
         canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, borderPaint);
 
-        // Pulsierender Glow-Effekt auf leerem Slot (subtil)
-        float pulse = (float)(0.3 + 0.15 * Math.Sin(_time * 2));
-        using var glowPaint = new SKPaint
-        {
-            Color = BlueprintLineLight.WithAlpha((byte)(pulse * 60)),
-            IsAntialias = false
-        };
-        canvas.DrawRect(x + 2, y + 2, w - 4, h - 4, glowPaint);
-
-        // Hint-Icon (gross, transparent in der Mitte)
-        if (!string.IsNullOrEmpty(slot.HintIcon))
-        {
-            float emojiSize = Math.Min(w, h) * 0.45f;
-            using var hintFont = new SKFont(SKTypeface.Default, emojiSize);
-            using var hintPaint = new SKPaint { Color = HintTextColor.WithAlpha(80), IsAntialias = true };
-            float textWidth = hintFont.MeasureText(slot.HintIcon);
-            canvas.DrawText(slot.HintIcon, x + (w - textWidth) / 2, y + h / 2 + emojiSize / 3, SKTextAlign.Left, hintFont, hintPaint);
-        }
-
-        // "?" oben rechts
-        using var questionFont = new SKFont(SKTypeface.Default, Math.Min(w, h) * 0.22f);
-        using var questionPaint = new SKPaint { Color = QuestionMarkColor, IsAntialias = true };
-        canvas.DrawText("?", x + w - 16, y + 16, SKTextAlign.Center, questionFont, questionPaint);
+        // "?" unter dem Punkt
+        float qSize = Math.Min(w, h) * 0.2f;
+        using var questionFont = new SKFont(SKTypeface.Default, qSize);
+        using var questionPaint = new SKPaint { Color = hintColor.WithAlpha(140), IsAntialias = true };
+        canvas.DrawText("?", x + w / 2, y + h / 2 + dotRadius + qSize, SKTextAlign.Center, questionFont, questionPaint);
     }
 
     /// <summary>
-    /// Zeichnet einen gefuellten Slot mit Hintergrundfarbe und Emoji.
+    /// Zeichnet einen gefuellten Slot mit Raumfarbe und Name.
     /// </summary>
     private void DrawFilledSlot(SKCanvas canvas, float x, float y, float w, float h, RoomSlotData slot)
     {
-        // Hintergrundfarbe
-        using var bgPaint = new SKPaint { Color = new SKColor(slot.BackgroundColor), IsAntialias = false };
+        // Raum-Farbe als Hintergrund
+        var roomColor = slot.FilledColor != 0 ? new SKColor(slot.FilledColor) : new SKColor(slot.BackgroundColor);
+        using var bgPaint = new SKPaint { Color = roomColor, IsAntialias = false };
         canvas.DrawRect(x, y, w, h, bgPaint);
 
         // Hellerer Innenbereich (leichte Tiefe)
         using var innerPaint = new SKPaint
         {
-            Color = new SKColor(0xFF, 0xFF, 0xFF, 20),
+            Color = new SKColor(0xFF, 0xFF, 0xFF, 35),
             IsAntialias = false
         };
         canvas.DrawRect(x + 3, y + 3, w - 6, h - 6, innerPaint);
 
-        // Rahmen in Slot-Farbe (solide)
+        // Rahmen
         using var borderPaint = new SKPaint
         {
             Color = new SKColor(slot.BorderColor),
@@ -431,14 +430,17 @@ public class DesignPuzzleRenderer
         };
         canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, borderPaint);
 
-        // Emoji in der Mitte
-        if (!string.IsNullOrEmpty(slot.DisplayEmoji))
+        // Raumname in der Mitte
+        if (!string.IsNullOrEmpty(slot.DisplayLabel))
         {
-            float emojiSize = Math.Min(w, h) * 0.5f;
-            using var emojiFont = new SKFont(SKTypeface.Default, emojiSize);
-            using var emojiPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
-            float textWidth = emojiFont.MeasureText(slot.DisplayEmoji);
-            canvas.DrawText(slot.DisplayEmoji, x + (w - textWidth) / 2, y + h / 2 + emojiSize / 3, SKTextAlign.Left, emojiFont, emojiPaint);
+            // Schriftgroesse an Slot-Groesse und Textlaenge anpassen
+            float maxFontSize = Math.Min(w, h) * 0.22f;
+            float fontSize = Math.Min(maxFontSize, w * 0.8f / Math.Max(slot.DisplayLabel.Length * 0.55f, 1));
+            fontSize = Math.Max(fontSize, 8); // Minimum 8px
+
+            using var nameFont = new SKFont(SKTypeface.Default, fontSize) { Embolden = true };
+            using var namePaint = new SKPaint { Color = CheckmarkWhite, IsAntialias = true };
+            canvas.DrawText(slot.DisplayLabel, x + w / 2, y + h / 2 + fontSize / 3, SKTextAlign.Center, nameFont, namePaint);
         }
 
         // Korrekt-Haekchen unten rechts (gruener Kreis + weisses Haekchen)
@@ -449,30 +451,28 @@ public class DesignPuzzleRenderer
             float cy = y + h - checkSize - 4;
 
             // Gruener Kreis
-            using var checkBgPaint = new SKPaint { Color = CorrectGreen, IsAntialias = false };
+            using var checkBgPaint = new SKPaint { Color = CorrectGreen, IsAntialias = true };
             canvas.DrawCircle(cx + checkSize / 2, cy + checkSize / 2, checkSize / 2, checkBgPaint);
 
             // Weisses Haekchen (vereinfacht als 2 Linien)
             using var checkPaint = new SKPaint
             {
                 Color = CheckmarkWhite,
-                IsAntialias = false,
+                IsAntialias = true,
                 StrokeWidth = 2,
                 Style = SKPaintStyle.Stroke,
                 StrokeCap = SKStrokeCap.Round
             };
             float midX = cx + checkSize / 2;
             float midY = cy + checkSize / 2;
-            // Kurzer Strich nach links-unten
             canvas.DrawLine(midX - checkSize * 0.2f, midY, midX - checkSize * 0.05f, midY + checkSize * 0.2f, checkPaint);
-            // Langer Strich nach rechts-oben
             canvas.DrawLine(midX - checkSize * 0.05f, midY + checkSize * 0.2f, midX + checkSize * 0.25f, midY - checkSize * 0.15f, checkPaint);
 
-            // Subtiler Glow um den Haekchen-Kreis
+            // Subtiler Glow
             using var glowPaint = new SKPaint
             {
                 Color = CorrectGreen.WithAlpha(40),
-                IsAntialias = false
+                IsAntialias = true
             };
             canvas.DrawCircle(cx + checkSize / 2, cy + checkSize / 2, checkSize / 2 + 3, glowPaint);
         }
@@ -519,15 +519,10 @@ public class DesignPuzzleRenderer
         canvas.DrawLine(cx - xSize, cy - xSize, cx + xSize, cy + xSize, xPaint);
         canvas.DrawLine(cx + xSize, cy - xSize, cx - xSize, cy + xSize, xPaint);
 
-        // Hint-Icon (leicht sichtbar)
-        if (!string.IsNullOrEmpty(slot.HintIcon))
-        {
-            float emojiSize = Math.Min(w, h) * 0.35f;
-            using var hintFont = new SKFont(SKTypeface.Default, emojiSize);
-            using var hintPaint = new SKPaint { Color = HintTextColor.WithAlpha(40), IsAntialias = true };
-            float textWidth = hintFont.MeasureText(slot.HintIcon);
-            canvas.DrawText(slot.HintIcon, x + (w - textWidth) / 2, y + h / 2 + emojiSize / 3, SKTextAlign.Left, hintFont, hintPaint);
-        }
+        // Farbiger Hinweis-Streifen oben (dezent durch Flash sichtbar)
+        var hintColor = new SKColor(slot.HintColor);
+        using var hintBarPaint = new SKPaint { Color = hintColor.WithAlpha((byte)(40 * (1 - intensity))), IsAntialias = false };
+        canvas.DrawRect(x, y, w, 5, hintBarPaint);
     }
 
     /// <summary>

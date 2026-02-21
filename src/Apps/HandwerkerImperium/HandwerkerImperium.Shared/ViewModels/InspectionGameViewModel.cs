@@ -15,8 +15,6 @@ namespace HandwerkerImperium.ViewModels;
 /// </summary>
 public partial class InspectionGameViewModel : ObservableObject, IDisposable
 {
-    private static readonly Random _random = new();
-
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly IRewardedAdService _rewardedAdService;
@@ -25,10 +23,10 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private bool _isEnding;
 
-    // Korrekte Baustellen-Elemente
-    private static readonly string[] GoodIcons = { "\U0001F9F1", "\U0001FAB5", "\U0001F529", "\U0001FA9C", "\U0001F3D7\uFE0F", "\U0001F527", "\u2699\uFE0F", "\U0001FA63" };
-    // Fehlerhafte Elemente (mit visuellem Hinweis)
-    private static readonly string[] DefectIcons = { "\u26A0\uFE0F", "\U0001F6A7", "\U0001F4A5", "\U0001F525", "\u274C", "\u26D4", "\U0001F573\uFE0F", "\U0001F494" };
+    // Korrekte Baustellen-Elemente (gut → grün)
+    private static readonly string[] GoodIcons = { "brick", "wood", "bolt", "ladder", "crane", "wrench", "gear", "beam" };
+    // Fehlerhafte Elemente (Mängel → rot)
+    private static readonly string[] DefectIcons = { "warning", "barrier", "crack", "fire", "cross", "stop", "hole", "leak" };
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -249,7 +247,9 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
 
         OnPropertyChanged(nameof(GridWidth));
 
-        TimeRemaining = MaxTime;
+        // Tool-Bonus: Lupe gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Magnifier);
+        TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
         FoundDefects = 0;
         TotalDefects = defectCount;
         FalseAlarms = 0;
@@ -270,7 +270,7 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
         var defectPositions = new HashSet<int>();
         while (defectPositions.Count < defectCount && allIndices.Count > 0)
         {
-            int randIndex = _random.Next(allIndices.Count);
+            int randIndex = Random.Shared.Next(allIndices.Count);
             defectPositions.Add(allIndices[randIndex]);
             allIndices.RemoveAt(randIndex);
         }
@@ -285,8 +285,8 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
                 Column = i % _gridColumns,
                 HasDefect = hasDefect,
                 Icon = hasDefect
-                    ? DefectIcons[_random.Next(DefectIcons.Length)]
-                    : GoodIcons[_random.Next(GoodIcons.Length)]
+                    ? DefectIcons[Random.Shared.Next(DefectIcons.Length)]
+                    : GoodIcons[Random.Shared.Next(GoodIcons.Length)]
             });
         }
     }

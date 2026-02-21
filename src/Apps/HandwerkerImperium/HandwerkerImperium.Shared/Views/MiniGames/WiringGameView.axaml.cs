@@ -22,6 +22,7 @@ public partial class WiringGameView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        DetachedFromVisualTree += (_, _) => StopRenderLoop();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -161,6 +162,8 @@ public partial class WiringGameView : UserControl
     /// </summary>
     private async void OnGameCompleted(object? sender, int starCount)
     {
+        try
+        {
         await Dispatcher.UIThread.InvokeAsync(async () =>
         {
             // 1. Rating-Text einfaerben
@@ -203,5 +206,10 @@ public partial class WiringGameView : UserControl
                     xpText, $"+{_vm.XpAmount} XP");
             }
         });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameCompleted: {ex.Message}");
+        }
     }
 }

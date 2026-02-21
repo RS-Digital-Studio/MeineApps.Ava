@@ -21,6 +21,7 @@ public partial class SawingGameView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        DetachedFromVisualTree += (_, _) => StopRenderLoop();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -129,48 +130,55 @@ public partial class SawingGameView : UserControl
     /// </summary>
     private async void OnGameCompleted(object? sender, int starCount)
     {
-        await Dispatcher.UIThread.InvokeAsync(async () =>
+        try
         {
-            // 1. Rating-Text einfaerben
-            var ratingText = this.FindControl<TextBlock>("RatingText");
-            if (ratingText != null && _vm != null)
+            await Dispatcher.UIThread.InvokeAsync(async () =>
             {
-                var ratingKey = _vm.Result.GetLocalizationKey();
-                ratingText.Foreground = MiniGameEffectHelper.GetRatingBrush(ratingKey);
-            }
+                // 1. Rating-Text einfaerben
+                var ratingText = this.FindControl<TextBlock>("RatingText");
+                if (ratingText != null && _vm != null)
+                {
+                    var ratingKey = _vm.Result.GetLocalizationKey();
+                    ratingText.Foreground = MiniGameEffectHelper.GetRatingBrush(ratingKey);
+                }
 
-            // 2. Sterne staggered einblenden
-            var star1 = this.FindControl<MaterialIcon>("Star1Panel");
-            var star2 = this.FindControl<MaterialIcon>("Star2Panel");
-            var star3 = this.FindControl<MaterialIcon>("Star3Panel");
-            if (star1 != null && star2 != null && star3 != null)
-            {
-                await MiniGameEffectHelper.ShowStarsStaggeredAsync(star1, star2, star3, starCount);
-            }
+                // 2. Sterne staggered einblenden
+                var star1 = this.FindControl<MaterialIcon>("Star1Panel");
+                var star2 = this.FindControl<MaterialIcon>("Star2Panel");
+                var star3 = this.FindControl<MaterialIcon>("Star3Panel");
+                if (star1 != null && star2 != null && star3 != null)
+                {
+                    await MiniGameEffectHelper.ShowStarsStaggeredAsync(star1, star2, star3, starCount);
+                }
 
-            // 3. Result-Border pulsen
-            var resultBorder = this.FindControl<Border>("ResultBorder");
-            if (resultBorder != null)
-            {
-                await MiniGameEffectHelper.PulseResultBorderAsync(resultBorder, starCount);
-            }
+                // 3. Result-Border pulsen
+                var resultBorder = this.FindControl<Border>("ResultBorder");
+                if (resultBorder != null)
+                {
+                    await MiniGameEffectHelper.PulseResultBorderAsync(resultBorder, starCount);
+                }
 
-            // 4. Belohnungs-Texte animiert einblenden
-            var moneyText = this.FindControl<TextBlock>("RewardMoneyText");
-            var xpText = this.FindControl<TextBlock>("RewardXpText");
+                // 4. Belohnungs-Texte animiert einblenden
+                var moneyText = this.FindControl<TextBlock>("RewardMoneyText");
+                var xpText = this.FindControl<TextBlock>("RewardXpText");
 
-            if (moneyText != null && _vm != null)
-            {
-                await MiniGameEffectHelper.AnimateRewardTextAsync(
-                    moneyText, $"+{_vm.RewardAmount:N0} \u20ac");
-            }
+                if (moneyText != null && _vm != null)
+                {
+                    await MiniGameEffectHelper.AnimateRewardTextAsync(
+                        moneyText, $"+{_vm.RewardAmount:N0} \u20ac");
+                }
 
-            if (xpText != null && _vm != null)
-            {
-                await MiniGameEffectHelper.AnimateRewardTextAsync(
-                    xpText, $"+{_vm.XpAmount} XP");
-            }
-        });
+                if (xpText != null && _vm != null)
+                {
+                    await MiniGameEffectHelper.AnimateRewardTextAsync(
+                        xpText, $"+{_vm.XpAmount} XP");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameCompleted: {ex.Message}");
+        }
     }
 
     /// <summary>

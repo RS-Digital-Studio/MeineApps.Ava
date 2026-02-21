@@ -87,13 +87,22 @@ public class ResearchBranchBannerRenderer
         var rect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 8);
         canvas.DrawRoundRect(rect, _fill);
 
-        // Farbiger Gradient-Overlay (dezent)
-        _fill.Color = branchColor.WithAlpha(20);
+        // Farbiger Gradient-Overlay (lebhafter)
+        _fill.Color = branchColor.WithAlpha(35);
         canvas.DrawRoundRect(rect, _fill);
 
-        // Rahmen
-        _stroke.Color = branchColor.WithAlpha(60);
-        _stroke.StrokeWidth = 1;
+        // Subtiler horizontaler Gradient-Effekt
+        using var gradientShader = SKShader.CreateLinearGradient(
+            new SKPoint(x, y), new SKPoint(x + w, y + h),
+            [branchColor.WithAlpha(25), SKColors.Transparent],
+            SKShaderTileMode.Clamp);
+        _fill.Shader = gradientShader;
+        canvas.DrawRoundRect(rect, _fill);
+        _fill.Shader = null;
+
+        // Rahmen (stärker)
+        _stroke.Color = branchColor.WithAlpha(90);
+        _stroke.StrokeWidth = 1.5f;
         canvas.DrawRoundRect(rect, _stroke);
     }
 
@@ -122,8 +131,8 @@ public class ResearchBranchBannerRenderer
         _fill.Color = WoodDark;
         canvas.DrawRect(ambossCx - ambossW * 0.3f, groundY - ambossH * 0.5f, ambossW * 0.6f, ambossH * 0.5f, _fill);
 
-        // Hammer (animiert: leichte Rotation)
-        float hammerAngle = MathF.Sin(_time * 3f) * 0.15f;
+        // Hammer (animiert: lebhaftere Rotation)
+        float hammerAngle = MathF.Sin(_time * 4f) * 0.2f;
         canvas.Save();
         canvas.Translate(ambossCx + ambossW * 0.3f, groundY - ambossH * 1.2f);
         canvas.RotateDegrees(hammerAngle * 57.3f);
@@ -141,10 +150,10 @@ public class ResearchBranchBannerRenderer
         // Rotierendes Zahnrad (rechts oben)
         float gearCx = x + w * 0.82f;
         float gearCy = y + h * 0.28f;
-        DrawMiniGear(canvas, gearCx, gearCy, 8, _time * 1.2f, branchColor);
+        DrawMiniGear(canvas, gearCx, gearCy, 9, _time * 1.8f, branchColor);
 
         // Kleines Zahnrad (rechts unten, gegenläufig)
-        DrawMiniGear(canvas, gearCx + 10, gearCy + 10, 5, -_time * 1.8f, branchColor);
+        DrawMiniGear(canvas, gearCx + 11, gearCy + 11, 6, -_time * 2.5f, branchColor);
 
         // Funken-Partikel
         UpdateAndDrawParticles(canvas, ambossCx, groundY - ambossH, branchColor, deltaTime);
@@ -152,20 +161,20 @@ public class ResearchBranchBannerRenderer
 
     private static void DrawMiniGear(SKCanvas canvas, float cx, float cy, float radius, float angle, SKColor color)
     {
-        _fill.Color = color.WithAlpha(120);
+        _fill.Color = color.WithAlpha(160);
         canvas.DrawCircle(cx, cy, radius, _fill);
 
         _fill.Color = BgDark;
-        canvas.DrawCircle(cx, cy, radius * 0.35f, _fill);
+        canvas.DrawCircle(cx, cy, radius * 0.3f, _fill);
 
-        // 5 Zähne
-        _fill.Color = color.WithAlpha(120);
-        for (int i = 0; i < 5; i++)
+        // 6 Zähne
+        _fill.Color = color.WithAlpha(160);
+        for (int i = 0; i < 6; i++)
         {
-            float a = angle + i * MathF.Tau / 5;
+            float a = angle + i * MathF.Tau / 6;
             float tx = cx + MathF.Cos(a) * radius;
             float ty = cy + MathF.Sin(a) * radius;
-            canvas.DrawCircle(tx, ty, 2.5f, _fill);
+            canvas.DrawCircle(tx, ty, 3f, _fill);
         }
     }
 
@@ -212,8 +221,8 @@ public class ResearchBranchBannerRenderer
             canvas.DrawLine(paperX + 2, ly, paperX + 14, ly, _stroke);
         }
 
-        // Stift (animiert: schreibt hin und her)
-        float penOffset = MathF.Sin(_time * 2f) * 4;
+        // Stift (animiert: schreibt hin und her - schneller)
+        float penOffset = MathF.Sin(_time * 3f) * 5;
         float penX = cx - 2 + penOffset;
         float penY = groundY - deskH - h * 0.1f;
 
@@ -232,8 +241,8 @@ public class ResearchBranchBannerRenderer
 
         for (int i = 0; i < 3; i++)
         {
-            float barH = (8 + i * 5) * (0.7f + MathF.Sin(_time * 0.8f + i * 0.5f) * 0.3f);
-            _fill.Color = branchColor.WithAlpha((byte)(140 + i * 35));
+            float barH = (8 + i * 5) * (0.7f + MathF.Sin(_time * 1.2f + i * 0.5f) * 0.3f);
+            _fill.Color = branchColor.WithAlpha((byte)(160 + i * 30));
             canvas.DrawRect(chartX + i * (barW + 2), chartBottom - barH, barW, barH, _fill);
         }
     }
@@ -269,7 +278,7 @@ public class ResearchBranchBannerRenderer
         float waveX = cx + megaW + 5;
         for (int i = 0; i < 3; i++)
         {
-            float wavePhase = (_time * 1.5f + i * 0.7f) % 2.0f;
+            float wavePhase = (_time * 2.0f + i * 0.7f) % 2.0f;
             if (wavePhase > 1.5f) continue;
 
             float waveRadius = 8 + wavePhase * 14;
@@ -293,10 +302,10 @@ public class ResearchBranchBannerRenderer
         {
             // Wachsende Höhe mit Animation
             float targetH = 6 + i * 6;
-            float growFactor = Math.Clamp(MathF.Sin(_time * 0.5f + i * 0.3f) * 0.15f + 0.85f, 0.5f, 1.0f);
+            float growFactor = Math.Clamp(MathF.Sin(_time * 0.8f + i * 0.3f) * 0.2f + 0.85f, 0.5f, 1.0f);
             float barH = targetH * growFactor;
 
-            _fill.Color = branchColor.WithAlpha((byte)(100 + i * 35));
+            _fill.Color = branchColor.WithAlpha((byte)(130 + i * 30));
             canvas.DrawRect(chartX + i * (barW + 2), chartBottom - barH, barW, barH, _fill);
         }
 
@@ -325,27 +334,32 @@ public class ResearchBranchBannerRenderer
         _text.Color = new SKColor(0xA0, 0x90, 0x80);
         canvas.DrawText($"{researchedCount}/{totalCount}", x + 8, y + h * 0.6f, progressFont, _text);
 
-        // Mini-Fortschrittsbalken
+        // Fortschrittsbalken (breiter mit Gradient)
         float barX = x + 8;
         float barY = y + h * 0.7f;
         float barW = w - 24;
-        float barH = 4;
+        float barH = 6;
 
         // Hintergrund
         _fill.Color = new SKColor(0x20, 0x15, 0x12);
-        var bgRect = new SKRoundRect(new SKRect(barX, barY, barX + barW, barY + barH), 2);
+        var bgRect = new SKRoundRect(new SKRect(barX, barY, barX + barW, barY + barH), 3);
         canvas.DrawRoundRect(bgRect, _fill);
 
-        // Fortschritt
+        // Fortschritt mit Gradient
         if (totalCount > 0)
         {
             float progress = (float)researchedCount / totalCount;
             float fillW = barW * progress;
             if (fillW > 0)
             {
-                _fill.Color = branchColor;
-                var fillRect = new SKRoundRect(new SKRect(barX, barY, barX + fillW, barY + barH), 2);
-                canvas.DrawRoundRect(fillRect, _fill);
+                var fillRect = new SKRect(barX, barY, barX + fillW, barY + barH);
+                using var shader = SKShader.CreateLinearGradient(
+                    new SKPoint(barX, barY), new SKPoint(barX + fillW, barY),
+                    [branchColor.WithAlpha(180), branchColor],
+                    SKShaderTileMode.Clamp);
+                _fill.Shader = shader;
+                canvas.DrawRoundRect(new SKRoundRect(fillRect, 3), _fill);
+                _fill.Shader = null;
             }
         }
     }

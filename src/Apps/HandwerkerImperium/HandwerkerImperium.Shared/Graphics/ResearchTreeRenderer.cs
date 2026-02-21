@@ -36,10 +36,10 @@ public class ResearchTreeRenderer
     private float _time;
 
     // Layout
-    private const float NodeSize = 64;        // Icon-Größe
-    private const float RowHeight = 110;       // Vertikaler Abstand zwischen Zeilen
-    private const float ProgressBarHeight = 6; // Höhe des Fortschrittsbalkens unter jedem Icon
-    private const float TextHeight = 16;       // Höhe für Name + Prozent
+    private const float NodeSize = 72;        // Icon-Größe (72dp für bessere Touch-Targets)
+    private const float RowHeight = 120;       // Vertikaler Abstand zwischen Zeilen
+    private const float ProgressBarHeight = 8; // Höhe des Fortschrittsbalkens unter jedem Icon
+    private const float TextHeight = 18;       // Höhe für Name + Prozent
     private const float TopPadding = 30;
 
     // Linien-Partikel (fließen entlang erforschter Verbindungen)
@@ -235,31 +235,37 @@ public class ResearchTreeRenderer
 
         if (fromResearched && (toResearched || toCanStart))
         {
-            // Erforschte/verfügbare Verbindung: Branch-farbig, leuchtend
-            _stroke.Color = branchColor.WithAlpha(toResearched ? (byte)200 : (byte)140);
-            _stroke.StrokeWidth = 2.5f;
+            // Erforschte/verfügbare Verbindung: Branch-farbig, leuchtend mit Glow
+            // Glow-Linie dahinter (breitere, transparente Linie)
+            _stroke.Color = branchColor.WithAlpha(40);
+            _stroke.StrokeWidth = 6f;
             _stroke.PathEffect = null;
             canvas.DrawPath(path, _stroke);
 
+            // Hauptlinie
+            _stroke.Color = branchColor.WithAlpha(toResearched ? (byte)220 : (byte)160);
+            _stroke.StrokeWidth = 3f;
+            canvas.DrawPath(path, _stroke);
+
             // Pfeilspitze
-            DrawArrowHead(canvas, to.X, endY, branchColor.WithAlpha(200));
+            DrawArrowHead(canvas, to.X, endY, branchColor.WithAlpha(220));
         }
         else if (fromResearched && toLocked)
         {
             // Nächste gesperrt: Gestrichelt, pulsierend
-            _stroke.Color = branchColor.WithAlpha(80);
-            _stroke.StrokeWidth = 1.5f;
-            _stroke.PathEffect = SKPathEffect.CreateDash([6, 4], _time * 15 % 10);
+            _stroke.Color = branchColor.WithAlpha(100);
+            _stroke.StrokeWidth = 2f;
+            _stroke.PathEffect = SKPathEffect.CreateDash([8, 5], _time * 15 % 13);
             canvas.DrawPath(path, _stroke);
             _stroke.PathEffect = null;
 
-            DrawArrowHead(canvas, to.X, endY, branchColor.WithAlpha(80));
+            DrawArrowHead(canvas, to.X, endY, branchColor.WithAlpha(100));
         }
         else
         {
             // Beides gesperrt: Dünne graue Linie
             _stroke.Color = LineLocked;
-            _stroke.StrokeWidth = 1;
+            _stroke.StrokeWidth = 1.5f;
             _stroke.PathEffect = null;
             canvas.DrawPath(path, _stroke);
         }
@@ -267,7 +273,7 @@ public class ResearchTreeRenderer
 
     private static void DrawArrowHead(SKCanvas canvas, float x, float y, SKColor color)
     {
-        float size = 5;
+        float size = 6;
         _fill.Color = color;
         using var arrow = new SKPath();
         arrow.MoveTo(x, y);
@@ -287,6 +293,16 @@ public class ResearchTreeRenderer
         float cx = pos.X;
         float cy = pos.Y;
 
+        // Glow-Effekt für erforschte Nodes (Branch-farbig)
+        if (item.IsResearched)
+        {
+            float glowPulse = 0.7f + MathF.Sin(_time * 1.5f) * 0.3f;
+            _fill.Color = branchColor.WithAlpha((byte)(glowPulse * 30));
+            canvas.DrawCircle(cx, cy, NodeSize / 2 + 10, _fill);
+            _fill.Color = branchColor.WithAlpha((byte)(glowPulse * 15));
+            canvas.DrawCircle(cx, cy, NodeSize / 2 + 18, _fill);
+        }
+
         // Großes Icon
         ResearchIconRenderer.DrawIcon(canvas, cx, cy, NodeSize, item.Effect, branch,
             item.IsResearched, item.IsLocked);
@@ -305,18 +321,18 @@ public class ResearchTreeRenderer
         if (item.CanStart)
         {
             float pulse = 0.5f + MathF.Sin(_time * 3f) * 0.3f;
-            _stroke.Color = branchColor.WithAlpha((byte)(pulse * 150));
-            _stroke.StrokeWidth = 2;
-            canvas.DrawCircle(cx, cy, NodeSize / 2 + 5 + pulse * 3, _stroke);
+            _stroke.Color = branchColor.WithAlpha((byte)(pulse * 180));
+            _stroke.StrokeWidth = 2.5f;
+            canvas.DrawCircle(cx, cy, NodeSize / 2 + 6 + pulse * 4, _stroke);
         }
 
         // Aktiv: Pulsierender Ring
         if (item.IsActive)
         {
             float activePulse = 0.6f + MathF.Sin(_time * 4f) * 0.4f;
-            _stroke.Color = branchColor.WithAlpha((byte)(activePulse * 200));
-            _stroke.StrokeWidth = 2.5f;
-            canvas.DrawCircle(cx, cy, NodeSize / 2 + 3, _stroke);
+            _stroke.Color = branchColor.WithAlpha((byte)(activePulse * 220));
+            _stroke.StrokeWidth = 3f;
+            canvas.DrawCircle(cx, cy, NodeSize / 2 + 4, _stroke);
         }
     }
 
@@ -348,22 +364,31 @@ public class ResearchTreeRenderer
             barColor = branchColor;
         }
 
-        // Füllung
+        // Füllung mit Gradient
         float fillW = w * Math.Clamp(progress, 0, 1);
         if (fillW > 1)
         {
-            _fill.Color = barColor;
-            var fillRect = new SKRoundRect(new SKRect(x, y, x + fillW, y + h), 3);
-            canvas.DrawRoundRect(fillRect, _fill);
+            var fillRect = new SKRect(x, y, x + fillW, y + h);
+            using var shader = SKShader.CreateLinearGradient(
+                new SKPoint(x, y), new SKPoint(x + fillW, y),
+                [barColor.WithAlpha(180), barColor],
+                SKShaderTileMode.Clamp);
+            _fill.Shader = shader;
+            canvas.DrawRoundRect(new SKRoundRect(fillRect, 4), _fill);
+            _fill.Shader = null;
+
+            // Glanz-Highlight oben
+            _fill.Color = SKColors.White.WithAlpha(40);
+            canvas.DrawRect(x + 1, y, fillW - 2, h * 0.4f, _fill);
         }
 
         // Prozent-Text im Balken (wenn erforscht oder aktiv)
         if (item.IsResearched || item.IsActive)
         {
             string percentText = $"{(int)(progress * 100)}%";
-            using var font = new SKFont { Size = 8, Embolden = true };
-            _text.Color = SKColors.White.WithAlpha(200);
-            canvas.DrawText(percentText, x + w / 2, y + h - 0.5f, SKTextAlign.Center, font, _text);
+            using var font = new SKFont { Size = 9, Embolden = true };
+            _text.Color = SKColors.White.WithAlpha(220);
+            canvas.DrawText(percentText, x + w / 2, y + h - 1f, SKTextAlign.Center, font, _text);
         }
     }
 
@@ -371,7 +396,7 @@ public class ResearchTreeRenderer
         ResearchDisplayItem item, SKColor branchColor)
     {
         // Name
-        using var nameFont = new SKFont { Size = 10, Embolden = true };
+        using var nameFont = new SKFont { Size = 12, Embolden = true };
         _text.Color = item.IsLocked ? TextMuted : item.IsResearched ? branchColor : TextPrimary;
 
         // Text kürzen falls nötig
@@ -389,7 +414,7 @@ public class ResearchTreeRenderer
         // Kosten (wenn nicht erforscht und nicht gesperrt)
         if (!item.IsResearched && !item.IsLocked && !item.IsActive)
         {
-            using var costFont = new SKFont { Size = 8 };
+            using var costFont = new SKFont { Size = 10 };
             _text.Color = TextSecondary;
             canvas.DrawText($"\u20ac{item.CostDisplay}", cx, y + 19, SKTextAlign.Center, costFont, _text);
         }
@@ -468,13 +493,13 @@ public class ResearchTreeRenderer
             float px = CubicBezierX(p.StartX, p.StartX, p.EndX, p.EndX, t);
             float py = CubicBezierY(p.StartY, midY, midY, p.EndY, t);
 
-            byte alpha = (byte)(p.Life * 200);
+            byte alpha = (byte)(p.Life * 220);
             _fill.Color = branchColor.WithAlpha(alpha);
-            canvas.DrawCircle(px, py, 3 * p.Life, _fill);
+            canvas.DrawCircle(px, py, 4 * p.Life, _fill);
 
             // Glow
             _fill.Color = branchColor.WithAlpha((byte)(alpha / 3));
-            canvas.DrawCircle(px, py, 6 * p.Life, _fill);
+            canvas.DrawCircle(px, py, 8 * p.Life, _fill);
         }
     }
 

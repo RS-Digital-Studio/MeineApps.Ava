@@ -6,12 +6,13 @@
              x:Class="HandwerkerImperium.Views.ShopView"
              x:DataType="vm:ShopViewModel">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Shop_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- HEADER - Hero Banner                                              -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Shop_Border_Header"
             Padding="16,16"
             CornerRadius="0,0,12,12">
       <Border.Background>
@@ -23,44 +24,55 @@
       <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto" RowSpacing="8">
         <!-- Back Button -->
         <Button Classes="Text"
+                AutomationProperties.AutomationId="Shop_Btn_Back"
                 Command="{Binding GoBackCommand}">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           AutomationProperties.AutomationId="Shop_Icon_Back"
                            Foreground="White" />
         </Button>
 
         <!-- Title + Schrauben-Icon -->
         <StackPanel Grid.Column="1"
+                    AutomationProperties.AutomationId="Shop_Panel_TitleGroup"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="ScrewFlatTop" Width="32" Height="32"
+                           AutomationProperties.AutomationId="Shop_Icon_Title"
                            Foreground="{StaticResource CraftGoldBrush}" />
           <TextBlock Text="{loc:Translate Shop}"
+                     AutomationProperties.AutomationId="Shop_Txt_Title"
                      FontSize="22" FontWeight="Bold"
                      Foreground="White" />
         </StackPanel>
 
         <!-- Balance Badges -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                    AutomationProperties.AutomationId="Shop_Panel_BalanceBadges"
                     VerticalAlignment="Center">
           <!-- Goldschrauben-Badge -->
-          <Border CornerRadius="12" Padding="8,4">
+          <Border CornerRadius="12" Padding="8,4"
+                  AutomationProperties.AutomationId="Shop_Border_GoldenScrewsBadge">
             <Border.Background>
               <SolidColorBrush Color="Black" Opacity="0.25" />
             </Border.Background>
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700" />
+              <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700"
+                               AutomationProperties.AutomationId="Shop_Icon_GoldenScrews" />
               <TextBlock Text="{Binding GoldenScrewsBalance}" FontSize="14" FontWeight="Bold"
+                         AutomationProperties.AutomationId="Shop_Txt_GoldenScrewsBalance"
                          Foreground="#FFD700" />
             </StackPanel>
           </Border>
           <!-- Euro-Badge -->
-          <Border CornerRadius="12" Padding="8,4">
+          <Border CornerRadius="12" Padding="8,4"
+                  AutomationProperties.AutomationId="Shop_Border_EuroBadge">
             <Border.Background>
               <SolidColorBrush Color="Black" Opacity="0.25" />
             </Border.Background>
             <TextBlock Text="{Binding CurrentBalance}"
+                       AutomationProperties.AutomationId="Shop_Txt_EuroBalance"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}" />
           </Border>
@@ -71,11 +83,14 @@
     <!-- ================================================================= -->
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="16" Margin="16">
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  AutomationProperties.AutomationId="Shop_ScrollViewer_Content">
+      <StackPanel Spacing="16" Margin="16"
+                  AutomationProperties.AutomationId="Shop_Panel_Content">
 
         <!-- PREMIUM STATUS (if premium) -->
         <Border Classes="CardElevated"
+                AutomationProperties.AutomationId="Shop_Border_PremiumStatus"
                 IsVisible="{Binding IsPremium}"
                 Padding="16">
           <Border.Background>
@@ -88,12 +103,15 @@
                       Spacing="12"
                       HorizontalAlignment="Center">
             <mi:MaterialIcon Kind="Crown" Width="32" Height="32"
+                             AutomationProperties.AutomationId="Shop_Icon_PremiumCrown"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <StackPanel>
               <TextBlock Text="{loc:Translate YouArePremium}"
+                         AutomationProperties.AutomationId="Shop_Txt_PremiumTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate PremiumBenefits}"
+                         AutomationProperties.AutomationId="Shop_Txt_PremiumBenefits"
                          FontSize="12"
                          Foreground="#FFE0B2" />
             </StackPanel>
@@ -101,13 +119,16 @@
         </Border>
 
         <!-- SHOP ITEMS -->
-        <ItemsControl ItemsSource="{Binding ShopItems}">
+        <ItemsControl ItemsSource="{Binding ShopItems}"
+                      AutomationProperties.AutomationId="Shop_Items_ShopList">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:ShopItem">
-              <Border Classes="Card" Margin="0,4" Padding="16">
+              <Border Classes="Card" Margin="0,4" Padding="16"
+                      AutomationProperties.AutomationId="Shop_Border_ShopItemCard">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="16">
                   <!-- Icon mit Craft-Gradient Hintergrund -->
                   <Border CornerRadius="12"
+                          AutomationProperties.AutomationId="Shop_Border_ItemIconBg"
                           Width="60" Height="60"
                           VerticalAlignment="Center">
                     <Border.Background>
@@ -117,6 +138,7 @@
                       </LinearGradientBrush>
                     </Border.Background>
                     <TextBlock Text="{Binding Icon}"
+                               AutomationProperties.AutomationId="Shop_Txt_ItemIcon"
                                FontSize="28"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center" />
@@ -127,9 +149,11 @@
                               VerticalAlignment="Center"
                               Spacing="4">
                     <TextBlock Text="{Binding Name}"
+                               AutomationProperties.AutomationId="Shop_Txt_ItemName"
                                FontSize="16" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
                     <TextBlock Text="{Binding Description}"
+                               AutomationProperties.AutomationId="Shop_Txt_ItemDescription"
                                FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                TextWrapping="Wrap"
@@ -137,6 +161,7 @@
 
                     <!-- Ad Reward Badge -->
                     <Border CornerRadius="8"
+                            AutomationProperties.AutomationId="Shop_Border_AdRewardBadge"
                             Padding="8,4"
                             HorizontalAlignment="Left"
                             IsVisible="{Binding IsAdReward}">
@@ -145,8 +170,10 @@
                       </Border.Background>
                       <StackPanel Orientation="Horizontal" Spacing="4">
                         <mi:MaterialIcon Kind="Television" Width="10" Height="10"
+                                         AutomationProperties.AutomationId="Shop_Icon_AdReward"
                                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
                         <TextBlock Text="{loc:Translate WatchAdFree}"
+                                   AutomationProperties.AutomationId="Shop_Txt_AdRewardLabel"
                                    FontSize="10"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}" />
                       </StackPanel>
@@ -163,14 +190,17 @@
                                 HorizontalAlignment="Center"
                                 IsVisible="{Binding IsPurchased}">
                       <mi:MaterialIcon Kind="Check" Width="14" Height="14"
+                                       AutomationProperties.AutomationId="Shop_Icon_Purchased"
                                        Foreground="{DynamicResource SuccessBrush}" />
                       <TextBlock Text="{loc:Translate Purchased}"
+                                 AutomationProperties.AutomationId="Shop_Txt_Purchased"
                                  FontSize="12"
                                  Foreground="{DynamicResource SuccessBrush}" />
                     </StackPanel>
 
                     <!-- Buy Button -->
                     <Button Content="{Binding Price}"
+                            AutomationProperties.AutomationId="Shop_Btn_BuyItem"
                             Classes="Primary"
                             Padding="16,8"
                             FontSize="12"
@@ -186,24 +216,31 @@
         </ItemsControl>
 
         <!-- TOOLS SECTION -->
-        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,8">
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,8"
+                    AutomationProperties.AutomationId="Shop_Panel_ToolsSectionHeader">
           <Border CornerRadius="4" Padding="6,3"
+                  AutomationProperties.AutomationId="Shop_Border_ToolsIconBg"
                   Background="{StaticResource CraftPrimaryBrush}">
-            <mi:MaterialIcon Kind="Hammer" Width="14" Height="14" Foreground="White" />
+            <mi:MaterialIcon Kind="Hammer" Width="14" Height="14" Foreground="White"
+                             AutomationProperties.AutomationId="Shop_Icon_ToolsHeader" />
           </Border>
           <TextBlock Text="{loc:Translate Tools}"
+                     AutomationProperties.AutomationId="Shop_Txt_ToolsSectionTitle"
                      FontSize="18" FontWeight="Bold"
                      Foreground="{StaticResource CraftPrimaryLightBrush}"
                      VerticalAlignment="Center" />
         </StackPanel>
 
-        <ItemsControl ItemsSource="{Binding Tools}">
+        <ItemsControl ItemsSource="{Binding Tools}"
+                      AutomationProperties.AutomationId="Shop_Items_ToolsList">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:ToolDisplayItem">
-              <Border Classes="Card" Margin="0,4" Padding="12">
+              <Border Classes="Card" Margin="0,4" Padding="12"
+                      AutomationProperties.AutomationId="Shop_Border_ToolItemCard">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                   <!-- Icon mit Craft-Gradient -->
                   <Border CornerRadius="8" Width="48" Height="48"
+                          AutomationProperties.AutomationId="Shop_Border_ToolIconBg"
                           VerticalAlignment="Center">
                     <Border.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -212,6 +249,7 @@
                       </LinearGradientBrush>
                     </Border.Background>
                     <mi:MaterialIcon Kind="{Binding IconKind}" Width="24" Height="24"
+                                     AutomationProperties.AutomationId="Shop_Icon_ToolItem"
                                      Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
@@ -219,15 +257,19 @@
                   <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                       <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                                 AutomationProperties.AutomationId="Shop_Txt_ToolName"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
                       <TextBlock Text="{Binding LevelDisplay}" FontSize="12"
+                                 AutomationProperties.AutomationId="Shop_Txt_ToolLevel"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}" />
                     </StackPanel>
                     <TextBlock Text="{Binding EffectDescription}" FontSize="11"
+                               AutomationProperties.AutomationId="Shop_Txt_ToolEffect"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                   </StackPanel>
                   <!-- Upgrade Button (Goldschrauben) -->
                   <Button Grid.Column="2" Padding="12,8"
+                          AutomationProperties.AutomationId="Shop_Btn_UpgradeTool"
                           CornerRadius="8"
                           IsVisible="{Binding CanUpgrade}"
                           IsEnabled="{Binding CanAfford}"
@@ -240,13 +282,16 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700" />
+                      <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700"
+                                       AutomationProperties.AutomationId="Shop_Icon_UpgradeCost" />
                       <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold"
+                                 AutomationProperties.AutomationId="Shop_Txt_UpgradeCost"
                                  Foreground="White" />
                     </StackPanel>
                   </Button>
                   <!-- Max Level Badge -->
                   <mi:MaterialIcon Grid.Column="2" Kind="CheckCircle" Width="24" Height="24"
+                                   AutomationProperties.AutomationId="Shop_Icon_ToolMaxLevel"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    IsVisible="{Binding IsMaxLevel}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -256,24 +301,106 @@
           </ItemsControl.ItemTemplate>
         </ItemsControl>
 
+        <!-- EQUIPMENT SECTION -->
+        <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,8"
+                    IsVisible="{Binding HasEquipmentShop}"
+                    AutomationProperties.AutomationId="Shop_Panel_EquipmentSectionHeader">
+          <Border CornerRadius="4" Padding="6,3"
+                  AutomationProperties.AutomationId="Shop_Border_EquipmentIconBg"
+                  Background="#9C27B0">
+            <mi:MaterialIcon Kind="Shield" Width="14" Height="14" Foreground="White"
+                             AutomationProperties.AutomationId="Shop_Icon_EquipmentHeader" />
+          </Border>
+          <TextBlock Text="{loc:Translate EquipmentShop}"
+                     AutomationProperties.AutomationId="Shop_Txt_EquipmentSectionTitle"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+
+        <ItemsControl ItemsSource="{Binding EquipmentShopItems}"
+                      IsVisible="{Binding HasEquipmentShop}"
+                      AutomationProperties.AutomationId="Shop_Items_EquipmentList">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:EquipmentShopItem">
+              <Border Classes="Card" Margin="0,4" Padding="12"
+                      BorderThickness="2"
+                      BorderBrush="{Binding RarityColor}"
+                      AutomationProperties.AutomationId="Shop_Border_EquipmentItemCard">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                  <!-- Icon mit Seltenheits-Farbe -->
+                  <Border CornerRadius="8" Width="48" Height="48"
+                          AutomationProperties.AutomationId="Shop_Border_EquipmentIconBg2"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="{Binding RarityColor}" Opacity="0.2" />
+                    </Border.Background>
+                    <mi:MaterialIcon Kind="{Binding IconKind}" Width="24" Height="24"
+                                     AutomationProperties.AutomationId="Shop_Icon_EquipmentItem"
+                                     Foreground="{Binding RarityColor}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+
+                  <!-- Info -->
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                               AutomationProperties.AutomationId="Shop_Txt_EquipmentName"
+                               Foreground="{Binding RarityColor}" />
+                    <TextBlock Text="{Binding BonusDescription}" FontSize="11"
+                               AutomationProperties.AutomationId="Shop_Txt_EquipmentBonus"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+
+                  <!-- Kauf-Button (Goldschrauben) -->
+                  <Button Grid.Column="2" Padding="12,8"
+                          AutomationProperties.AutomationId="Shop_Btn_BuyEquipment"
+                          CornerRadius="8"
+                          IsEnabled="{Binding CanAfford}"
+                          Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).BuyEquipmentCommand}"
+                          CommandParameter="{Binding .}">
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                        <GradientStop Color="#D97706" Offset="0" />
+                        <GradientStop Color="#B45309" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700"
+                                       AutomationProperties.AutomationId="Shop_Icon_EquipmentCost" />
+                      <TextBlock Text="{Binding PriceDisplay}" FontSize="12" FontWeight="SemiBold"
+                                 AutomationProperties.AutomationId="Shop_Txt_EquipmentCost"
+                                 Foreground="White" />
+                    </StackPanel>
+                  </Button>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
         <!-- RESTORE PURCHASES -->
         <Button Content="{Binding RestorePurchasesText}"
+                AutomationProperties.AutomationId="Shop_Btn_RestorePurchases"
                 Classes="Secondary"
                 Command="{Binding RestorePurchasesCommand}"
                 HorizontalAlignment="Center"
                 Margin="0,16,0,0" />
 
         <!-- INFO -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Shop_Border_InfoCard">
           <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="InformationOutline" Width="14" Height="14"
+                               AutomationProperties.AutomationId="Shop_Icon_Info"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Notice}"
+                         AutomationProperties.AutomationId="Shop_Txt_NoticeTitle"
                          FontSize="14" FontWeight="Bold"
                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
             <TextBlock Text="{loc:Translate FairPlayInfo}"
+                       AutomationProperties.AutomationId="Shop_Txt_FairPlayInfo"
                        FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        TextWrapping="Wrap" />
@@ -281,7 +408,7 @@
         </Border>
 
         <!-- Bottom Spacer -->
-        <Border Height="60" />
+        <Border Height="80" AutomationProperties.AutomationId="Shop_Border_BottomSpacer" />
 
       </StackPanel>
     </ScrollViewer>

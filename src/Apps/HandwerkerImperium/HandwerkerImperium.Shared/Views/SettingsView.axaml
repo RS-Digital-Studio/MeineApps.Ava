@@ -4,141 +4,242 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
+             x:DataType="vm:SettingsViewModel"
+             AutomationProperties.AutomationId="Settings_Root">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Settings_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Settings_Border_Header"
             Classes="CardElevated"
             Padding="16,12"
             CornerRadius="0,0,12,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Back Button -->
         <Button Classes="Text"
+                AutomationProperties.AutomationId="Settings_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           AutomationProperties.AutomationId="Settings_Icon_Back" />
         </Button>
 
         <!-- Title (centered) -->
         <StackPanel Grid.Column="1"
+                    AutomationProperties.AutomationId="Settings_Panel_TitleGroup"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
+                           AutomationProperties.AutomationId="Settings_Icon_Title"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{loc:Translate Settings}"
+                     AutomationProperties.AutomationId="Settings_Txt_Title"
                      FontSize="22" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      Margin="0,4,0,4" />
         </StackPanel>
 
         <!-- Spacer for symmetry -->
-        <Border Grid.Column="2" Width="44" />
+        <Border Grid.Column="2" Width="44" AutomationProperties.AutomationId="Settings_Border_HeaderSpacer" />
       </Grid>
     </Border>
 
     <!-- ================================================================= -->
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12" Margin="16">
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  AutomationProperties.AutomationId="Settings_ScrollViewer_Content">
+      <StackPanel Spacing="12" Margin="16"
+                  AutomationProperties.AutomationId="Settings_Panel_Content">
 
         <!-- SOUND & VIBRATION -->
-        <Border Classes="SettingsCard">
+        <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_AudioCard">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="VolumeHigh" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               AutomationProperties.AutomationId="Settings_Icon_AudioHeader"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Audio}"
+                         AutomationProperties.AutomationId="Settings_Txt_AudioTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
             <!-- Sound Toggle -->
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_SoundRow">
               <mi:MaterialIcon Kind="VolumeHigh" Width="24" Height="24"
+                               AutomationProperties.AutomationId="Settings_Icon_Sound"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1"
                          Text="{loc:Translate Sound}"
+                         AutomationProperties.AutomationId="Settings_Txt_SoundLabel"
                          FontSize="14"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          Margin="12,0,0,0"
                          VerticalAlignment="Center" />
               <ToggleSwitch Grid.Column="2"
+                            AutomationProperties.AutomationId="Settings_Toggle_Sound"
                             IsChecked="{Binding SoundEnabled}"
                             OnContent="" OffContent="" />
             </Grid>
 
             <!-- Vibration Toggle -->
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_VibrationRow">
               <mi:MaterialIcon Kind="Vibrate" Width="24" Height="24"
+                               AutomationProperties.AutomationId="Settings_Icon_Vibration"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1"
                          Text="{loc:Translate Vibration}"
+                         AutomationProperties.AutomationId="Settings_Txt_VibrationLabel"
                          FontSize="14"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          Margin="12,0,0,0"
                          VerticalAlignment="Center" />
               <ToggleSwitch Grid.Column="2"
+                            AutomationProperties.AutomationId="Settings_Toggle_Vibration"
                             IsChecked="{Binding VibrationEnabled}"
                             OnContent="" OffContent="" />
             </Grid>
 
             <!-- Notifications Toggle -->
-            <Grid ColumnDefinitions="Auto,*,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_NotificationsRow">
               <mi:MaterialIcon Kind="Bell" Width="24" Height="24"
+                               AutomationProperties.AutomationId="Settings_Icon_Notifications"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Grid.Column="1"
                          Text="{loc:Translate Notifications}"
+                         AutomationProperties.AutomationId="Settings_Txt_NotificationsLabel"
                          FontSize="14"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          Margin="12,0,0,0"
                          VerticalAlignment="Center" />
               <ToggleSwitch Grid.Column="2"
+                            AutomationProperties.AutomationId="Settings_Toggle_Notifications"
                             IsChecked="{Binding NotificationsEnabled}"
                             OnContent="" OffContent="" />
             </Grid>
 
             <!-- Cloud Save Toggle (nur sichtbar wenn Play Games angemeldet) -->
             <Grid ColumnDefinitions="Auto,*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_CloudSaveRow"
                   IsVisible="{Binding IsPlayGamesSignedIn}">
               <mi:MaterialIcon Kind="CloudSync" Width="24" Height="24"
+                               AutomationProperties.AutomationId="Settings_Icon_CloudSave"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
                 <TextBlock Text="{loc:Translate CloudSave}"
+                           AutomationProperties.AutomationId="Settings_Txt_CloudSaveLabel"
                            FontSize="14"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <TextBlock Text="{loc:Translate CloudSaveDesc}"
+                           AutomationProperties.AutomationId="Settings_Txt_CloudSaveDesc"
                            FontSize="11"
                            Foreground="{DynamicResource TextMutedBrush}" />
               </StackPanel>
               <ToggleSwitch Grid.Column="2"
+                            AutomationProperties.AutomationId="Settings_Toggle_CloudSave"
                             IsChecked="{Binding CloudSaveEnabled}"
                             OnContent="" OffContent="" />
             </Grid>
           </StackPanel>
         </Border>
 
+        <!-- CLOUD SAVE -->
+        <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_CloudSaveActions">
+          <StackPanel Spacing="16">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="CloudSync" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Settings_Icon_CloudActions"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <TextBlock Text="{loc:Translate CloudSave}"
+                         AutomationProperties.AutomationId="Settings_Txt_CloudActionsTitle"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+
+            <!-- Anmelde-Status -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Kind="Account" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Settings_Icon_PlayGamesStatus"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Margin="8,0,0,0"
+                         Text="{Binding PlayGamesStatusText}"
+                         AutomationProperties.AutomationId="Settings_Txt_PlayGamesStatus"
+                         FontSize="14" VerticalAlignment="Center"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <Button Grid.Column="2" Classes="Primary"
+                      AutomationProperties.AutomationId="Settings_Btn_SignIn"
+                      Command="{Binding SignInPlayGamesCommand}"
+                      IsVisible="{Binding !IsPlayGamesSignedIn}"
+                      MinHeight="36" Padding="16,6">
+                <TextBlock Text="{loc:Translate SignIn}" FontSize="13" />
+              </Button>
+            </Grid>
+
+            <!-- Cloud Save / Restore Buttons -->
+            <StackPanel Spacing="8" IsEnabled="{Binding IsPlayGamesSignedIn}">
+              <Button Classes="Primary" HorizontalAlignment="Stretch"
+                      AutomationProperties.AutomationId="Settings_Btn_SaveToCloud"
+                      Command="{Binding SaveToCloudCommand}"
+                      HorizontalContentAlignment="Center"
+                      MinHeight="40">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="CloudUpload" Width="18" Height="18" />
+                  <TextBlock Text="{loc:Translate SaveToCloud}" FontSize="14" FontWeight="SemiBold" />
+                </StackPanel>
+              </Button>
+
+              <Button Classes="Outlined" HorizontalAlignment="Stretch"
+                      AutomationProperties.AutomationId="Settings_Btn_RestoreFromCloud"
+                      Command="{Binding RestoreFromCloudCommand}"
+                      HorizontalContentAlignment="Center"
+                      MinHeight="40">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="CloudDownload" Width="18" Height="18" />
+                  <TextBlock Text="{loc:Translate RestoreFromCloud}" FontSize="14" FontWeight="SemiBold" />
+                </StackPanel>
+              </Button>
+
+              <!-- Letzter Cloud-Save Zeitstempel -->
+              <TextBlock Text="{Binding LastCloudSaveText}"
+                         AutomationProperties.AutomationId="Settings_Txt_LastCloudSave"
+                         IsVisible="{Binding HasLastCloudSave}"
+                         FontSize="11" HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextMutedBrush}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
         <!-- LANGUAGE -->
-        <Border Classes="SettingsCard">
+        <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_LanguageCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Translate" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               AutomationProperties.AutomationId="Settings_Icon_LanguageHeader"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Language}"
+                         AutomationProperties.AutomationId="Settings_Txt_LanguageTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
             <ComboBox ItemsSource="{Binding Languages}"
+                      AutomationProperties.AutomationId="Settings_Combo_Language"
                       SelectedItem="{Binding SelectedLanguage}"
                       HorizontalAlignment="Stretch">
               <ComboBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:LanguageOption">
-                  <TextBlock Text="{Binding DisplayName}" />
+                  <TextBlock Text="{Binding DisplayName}"
+                             AutomationProperties.AutomationId="Settings_Txt_LanguageOption" />
                 </DataTemplate>
               </ComboBox.ItemTemplate>
             </ComboBox>
@@ -146,29 +247,36 @@
         </Border>
 
         <!-- PREMIUM -->
-        <Border Classes="SettingsCard">
+        <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_PremiumCard">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Settings_Icon_PremiumHeader"
                                Foreground="Gold" />
               <TextBlock Text="{loc:Translate Premium}"
+                         AutomationProperties.AutomationId="Settings_Txt_PremiumTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
             <!-- Premium Status -->
             <Grid ColumnDefinitions="*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_PremiumStatus"
                   IsVisible="{Binding IsPremium}">
               <TextBlock Text="{loc:Translate YouArePremium}"
+                         AutomationProperties.AutomationId="Settings_Txt_PremiumActive"
                          FontSize="14"
                          Foreground="Gold" />
               <mi:MaterialIcon Grid.Column="1"
+                               AutomationProperties.AutomationId="Settings_Icon_PremiumCheck"
                                Kind="Check" Width="24" Height="24"
                                Foreground="Gold" />
             </Grid>
 
             <!-- Buy Premium Button -->
             <Button Content="{loc:Translate RemoveAdsPrice}"
+                    AutomationProperties.AutomationId="Settings_Btn_BuyPremium"
                     Classes="Primary"
                     Command="{Binding BuyPremiumCommand}"
                     IsVisible="{Binding !IsPremium}"
@@ -176,26 +284,33 @@
                     HorizontalContentAlignment="Center" />
 
             <!-- Premium Benefits -->
-            <StackPanel Spacing="4" IsVisible="{Binding !IsPremium}">
-              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
+            <StackPanel Spacing="4" IsVisible="{Binding !IsPremium}"
+                        AutomationProperties.AutomationId="Settings_Panel_PremiumBenefits">
+              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                         AutomationProperties.AutomationId="Settings_Txt_BenefitNoAds">
                 <Run Text="* " /><Run Text="{loc:Translate PremiumBenefitNoAds}" />
               </TextBlock>
-              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
+              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                         AutomationProperties.AutomationId="Settings_Txt_BenefitIncome">
                 <Run Text="* " /><Run Text="{loc:Translate PremiumBenefitIncome}" />
               </TextBlock>
-              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
+              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                         AutomationProperties.AutomationId="Settings_Txt_BenefitGoldenScrews">
                 <Run Text="* " /><Run Text="{loc:Translate PremiumBenefitGoldenScrews}" />
               </TextBlock>
-              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
+              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                         AutomationProperties.AutomationId="Settings_Txt_BenefitOffline">
                 <Run Text="* " /><Run Text="{loc:Translate PremiumBenefitOffline}" />
               </TextBlock>
-              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}">
+              <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                         AutomationProperties.AutomationId="Settings_Txt_BenefitSupport">
                 <Run Text="* " /><Run Text="{loc:Translate PremiumBenefitSupport}" />
               </TextBlock>
             </StackPanel>
 
             <!-- Restore Purchases -->
             <Button Content="{loc:Translate RestorePurchases}"
+                    AutomationProperties.AutomationId="Settings_Btn_RestorePurchases"
                     Classes="Secondary"
                     Command="{Binding RestorePurchasesCommand}"
                     HorizontalAlignment="Left" />
@@ -204,19 +319,23 @@
 
         <!-- DATA (Danger Zone) -->
         <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_DataCard"
                 BorderBrush="{DynamicResource ErrorBrush}"
                 BorderThickness="2">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="AlertCircle" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Settings_Icon_DataWarning"
                                Foreground="{DynamicResource ErrorBrush}" />
               <TextBlock Text="{loc:Translate Data}"
+                         AutomationProperties.AutomationId="Settings_Txt_DataTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource ErrorBrush}" />
             </StackPanel>
 
             <!-- Reset Game -->
             <Button Content="{loc:Translate DeleteSaveGame}"
+                    AutomationProperties.AutomationId="Settings_Btn_ResetGame"
                     Classes="Primary"
                     Background="{DynamicResource ErrorBrush}"
                     Command="{Binding ResetGameCommand}"
@@ -224,6 +343,7 @@
                     HorizontalContentAlignment="Center" />
 
             <TextBlock Text="{loc:Translate WarningDataLoss}"
+                       AutomationProperties.AutomationId="Settings_Txt_DataLossWarning"
                        FontSize="12"
                        Foreground="{DynamicResource WarningBrush}"
                        HorizontalAlignment="Center" />
@@ -231,35 +351,43 @@
         </Border>
 
         <!-- ABOUT -->
-        <Border Classes="SettingsCard">
+        <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_AboutCard">
           <StackPanel Spacing="16">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20"
-                               Foreground="{DynamicResource PrimaryBrush}" />
+                               AutomationProperties.AutomationId="Settings_Icon_AboutHeader"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate About}"
+                         AutomationProperties.AutomationId="Settings_Txt_AboutTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
             <!-- Version -->
-            <Grid ColumnDefinitions="*,Auto">
+            <Grid ColumnDefinitions="*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_VersionRow">
               <TextBlock Text="{loc:Translate Version}"
+                         AutomationProperties.AutomationId="Settings_Txt_VersionLabel"
                          FontSize="14"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Grid.Column="1"
                          Text="{Binding AppVersion}"
+                         AutomationProperties.AutomationId="Settings_Txt_VersionValue"
                          FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
             </Grid>
 
             <!-- Links -->
             <Button Content="{loc:Translate PrivacyPolicy}"
+                    AutomationProperties.AutomationId="Settings_Btn_PrivacyPolicy"
                     Classes="Secondary"
                     Command="{Binding OpenPrivacyPolicyCommand}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center" />
 
             <Button Content="{loc:Translate SendFeedback}"
+                    AutomationProperties.AutomationId="Settings_Btn_SendFeedback"
                     Classes="Secondary"
                     Command="{Binding SendFeedbackCommand}"
                     HorizontalAlignment="Stretch"
@@ -267,10 +395,12 @@
 
             <!-- Credits -->
             <TextBlock Text="{loc:Translate DevelopedBy}"
+                       AutomationProperties.AutomationId="Settings_Txt_DevelopedBy"
                        FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
             <TextBlock FontSize="12"
+                       AutomationProperties.AutomationId="Settings_Txt_Copyright"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center">
               <Run Text="(c) 2026 " /><Run Text="{loc:Translate AllRightsReserved}" />
@@ -279,7 +409,7 @@
         </Border>
 
         <!-- Bottom Spacer -->
-        <Border Height="60" />
+        <Border Height="80" AutomationProperties.AutomationId="Settings_Border_BottomSpacer" />
 
       </StackPanel>
     </ScrollViewer>

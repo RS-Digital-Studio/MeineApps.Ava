@@ -8,14 +8,15 @@
              x:Class="HandwerkerImperium.Views.WorkerMarketView"
              x:DataType="vm:WorkerMarketViewModel">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="WorkerMarket_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
             Padding="16,12"
-            CornerRadius="0,0,12,12">
+            CornerRadius="0,0,12,12"
+            AutomationProperties.AutomationId="WorkerMarket_Border_Header">
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
           <GradientStop Color="#92400E" Offset="0" />
@@ -25,9 +26,11 @@
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Back Button -->
         <Button Classes="Text"
-                Command="{Binding GoBackCommand}">
+                Command="{Binding GoBackCommand}"
+                AutomationProperties.AutomationId="WorkerMarket_Btn_Back">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
-                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           AutomationProperties.AutomationId="WorkerMarket_Icon_Back" />
         </Button>
 
         <!-- Title (centered) -->
@@ -35,32 +38,41 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
-                    Spacing="8">
+                    Spacing="8"
+                    AutomationProperties.AutomationId="WorkerMarket_Panel_Title">
           <mi:MaterialIcon Kind="AccountGroup" Width="28" Height="28"
-                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           AutomationProperties.AutomationId="WorkerMarket_Icon_Title" />
           <TextBlock Text="{Binding Title}"
                      FontSize="20" FontWeight="Bold"
-                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     AutomationProperties.AutomationId="WorkerMarket_Txt_Title" />
         </StackPanel>
 
         <!-- Balance Badges -->
         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
-                    VerticalAlignment="Center">
+                    VerticalAlignment="Center"
+                    AutomationProperties.AutomationId="WorkerMarket_Panel_Balances">
           <!-- Goldschrauben-Badge -->
           <Border Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="8,4">
+                  CornerRadius="12" Padding="8,4"
+                  AutomationProperties.AutomationId="WorkerMarket_Border_ScrewsBadge">
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700" />
+              <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700"
+                               AutomationProperties.AutomationId="WorkerMarket_Icon_Screws" />
               <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="14" FontWeight="Bold"
-                         Foreground="#FFD700" />
+                         Foreground="#FFD700"
+                         AutomationProperties.AutomationId="WorkerMarket_Txt_Screws" />
             </StackPanel>
           </Border>
           <!-- Euro-Badge -->
           <Border Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="8,4">
+                  CornerRadius="12" Padding="8,4"
+                  AutomationProperties.AutomationId="WorkerMarket_Border_BalanceBadge">
             <TextBlock Text="{Binding CurrentBalance}"
                        FontSize="14" FontWeight="Bold"
-                       Foreground="{DynamicResource SuccessBrush}" />
+                       Foreground="{DynamicResource SuccessBrush}"
+                       AutomationProperties.AutomationId="WorkerMarket_Txt_Balance" />
           </Border>
         </StackPanel>
       </Grid>
@@ -73,15 +85,18 @@
       <StackPanel Spacing="16" Margin="16">
 
         <!-- ROTATION TIMER -->
-        <Border Classes="CardElevated" Padding="16">
+        <Border Classes="CardElevated" Padding="16"
+                AutomationProperties.AutomationId="WorkerMarket_Border_RotationTimer">
           <Grid ColumnDefinitions="*,Auto">
             <StackPanel Spacing="4">
               <TextBlock Text="{Binding NextRotationLabel}"
                          FontSize="14"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         AutomationProperties.AutomationId="WorkerMarket_Txt_RotationLabel" />
               <TextBlock Text="{Binding TimeUntilRotation}"
                          FontSize="24" FontWeight="Bold"
-                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                         Foreground="{StaticResource CraftPrimaryLightBrush}"
+                         AutomationProperties.AutomationId="WorkerMarket_Txt_Timer" />
             </StackPanel>
 
             <!-- Refresh Button: Gratis (1x pro Rotation) oder Video-Ad -->
@@ -89,16 +104,20 @@
                     Classes="Secondary"
                     Command="{Binding RefreshWithAdCommand}"
                     VerticalAlignment="Center"
-                    Padding="12,8">
+                    Padding="12,8"
+                    AutomationProperties.AutomationId="WorkerMarket_Btn_Refresh">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <!-- Gratis: Refresh-Icon grün -->
                 <mi:MaterialIcon Kind="Refresh" Width="18" Height="18"
                                  Foreground="{DynamicResource SuccessBrush}"
-                                 IsVisible="{Binding HasFreeRefresh}" />
+                                 IsVisible="{Binding HasFreeRefresh}"
+                                 AutomationProperties.AutomationId="WorkerMarket_Icon_FreeRefresh" />
                 <!-- Kostenpflichtig: Video-Icon -->
                 <mi:MaterialIcon Kind="Video" Width="18" Height="18"
-                                 IsVisible="{Binding !HasFreeRefresh}" />
-                <TextBlock Text="{Binding RefreshButtonText}" FontSize="13" />
+                                 IsVisible="{Binding !HasFreeRefresh}"
+                                 AutomationProperties.AutomationId="WorkerMarket_Icon_AdRefresh" />
+                <TextBlock Text="{Binding RefreshButtonText}" FontSize="13"
+                           AutomationProperties.AutomationId="WorkerMarket_Txt_RefreshButton" />
               </StackPanel>
             </Button>
           </Grid>
@@ -106,17 +125,20 @@
 
         <!-- KEINE FREIEN PLAETZE INFO (Warnung, blockiert nicht den Markt) -->
         <Border Classes="CardElevated" Padding="16,12"
-                IsVisible="{Binding !HasAvailableSlots}">
+                IsVisible="{Binding !HasAvailableSlots}"
+                AutomationProperties.AutomationId="WorkerMarket_Border_NoSlotsWarning">
           <StackPanel Spacing="10">
             <!-- Icon zentriert ueber dem Text -->
             <mi:MaterialIcon Kind="AlertCircleOutline" Width="24" Height="24"
                              Foreground="{DynamicResource WarningBrush}"
-                             HorizontalAlignment="Center" />
+                             HorizontalAlignment="Center"
+                             AutomationProperties.AutomationId="WorkerMarket_Icon_NoSlotsAlert" />
             <TextBlock Text="{Binding NoSlotsMessage}"
                        FontSize="13"
                        Foreground="{DynamicResource WarningBrush}"
                        TextWrapping="Wrap"
-                       TextAlignment="Center" />
+                       TextAlignment="Center"
+                       AutomationProperties.AutomationId="WorkerMarket_Txt_NoSlotsMessage" />
 
             <!-- Extra-Slot per Video-Ad Button -->
             <Button Classes="Secondary"
@@ -124,11 +146,14 @@
                     IsVisible="{Binding ShowExtraSlotButton}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    Padding="12,8">
+                    Padding="12,8"
+                    AutomationProperties.AutomationId="WorkerMarket_Btn_WatchAdExtraSlot">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="Video" Width="18" Height="18"
-                                 Foreground="{StaticResource CraftPrimaryLightBrush}" />
-                <TextBlock Text="{loc:Translate WatchAdForWorkerSlot}" FontSize="13" />
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                 AutomationProperties.AutomationId="WorkerMarket_Icon_AdExtraSlot" />
+                <TextBlock Text="{loc:Translate WatchAdForWorkerSlot}" FontSize="13"
+                           AutomationProperties.AutomationId="WorkerMarket_Txt_AdExtraSlot" />
               </StackPanel>
             </Button>
           </StackPanel>
@@ -138,7 +163,8 @@
         <ItemsControl ItemsSource="{Binding AvailableWorkers}">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:Worker">
-              <Border Classes="Card" Margin="0,0,0,12" Padding="16">
+              <Border Classes="Card" Margin="0,0,0,12" Padding="16"
+                      AutomationProperties.AutomationId="WorkerMarket_Border_WorkerCard">
                 <Grid RowDefinitions="Auto,Auto,Auto,Auto"
                       ColumnDefinitions="Auto,*,Auto"
                       RowSpacing="8">
@@ -158,13 +184,16 @@
                     <TextBlock Text="{Binding Name}"
                                FontSize="16" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}"
-                               VerticalAlignment="Center" />
+                               VerticalAlignment="Center"
+                               AutomationProperties.AutomationId="WorkerMarket_Txt_WorkerName" />
                     <Border Background="{StaticResource CraftPrimaryBrush}"
                             CornerRadius="4"
-                            Padding="8,2">
+                            Padding="8,2"
+                            AutomationProperties.AutomationId="WorkerMarket_Border_TierBadge">
                       <TextBlock Text="{Binding Tier}"
                                  FontSize="12" FontWeight="Bold"
-                                 Foreground="White" />
+                                 Foreground="White"
+                                 AutomationProperties.AutomationId="WorkerMarket_Txt_Tier" />
                     </Border>
                   </StackPanel>
 
@@ -173,7 +202,8 @@
                              Text="{Binding WagePerHour, StringFormat='{}{0:N0} €/h'}"
                              FontSize="13" FontWeight="SemiBold"
                              Foreground="{DynamicResource WarningBrush}"
-                             VerticalAlignment="Center" />
+                             VerticalAlignment="Center"
+                             AutomationProperties.AutomationId="WorkerMarket_Txt_Wage" />
 
                   <!-- Row 1: Personality + Talent Stars + Specialization -->
                   <StackPanel Grid.Row="1" Grid.ColumnSpan="3"
@@ -181,21 +211,26 @@
                     <!-- Personality -->
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <TextBlock Text="{Binding PersonalityIcon}"
-                                 FontSize="14" VerticalAlignment="Center" />
+                                 FontSize="14" VerticalAlignment="Center"
+                                 AutomationProperties.AutomationId="WorkerMarket_Txt_PersonalityIcon" />
                       <TextBlock Text="{Binding PersonalityDisplay}"
                                  FontSize="12"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
-                                 VerticalAlignment="Center" />
+                                 VerticalAlignment="Center"
+                                 AutomationProperties.AutomationId="WorkerMarket_Txt_Personality" />
                     </StackPanel>
 
                     <!-- Talent Stars -->
-                    <StackPanel Orientation="Horizontal" Spacing="2">
+                    <StackPanel Orientation="Horizontal" Spacing="2"
+                                AutomationProperties.AutomationId="WorkerMarket_Panel_Talent">
                       <mi:MaterialIcon Kind="Star" Width="14" Height="14"
-                                       Foreground="#FFC107" />
+                                       Foreground="#FFC107"
+                                       AutomationProperties.AutomationId="WorkerMarket_Icon_TalentStar" />
                       <TextBlock Text="{Binding Talent}"
                                  FontSize="12" FontWeight="SemiBold"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
-                                 VerticalAlignment="Center" />
+                                 VerticalAlignment="Center"
+                                 AutomationProperties.AutomationId="WorkerMarket_Txt_Talent" />
                     </StackPanel>
                   </StackPanel>
 
@@ -205,16 +240,19 @@
                     <TextBlock Text="{Binding SpecializationDisplay}"
                                FontSize="12"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               IsVisible="{Binding SpecializationDisplay, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                               IsVisible="{Binding SpecializationDisplay, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                               AutomationProperties.AutomationId="WorkerMarket_Txt_Specialization" />
                     <TextBlock FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}">
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               AutomationProperties.AutomationId="WorkerMarket_Txt_Efficiency">
                       <Run Text="{loc:Translate EfficiencyShort}" />
                       <Run Text="{Binding Efficiency, StringFormat='{}{0:P0}'}" FontWeight="SemiBold" />
                     </TextBlock>
                     <TextBlock Text="{Binding IncomeContributionDisplay}"
                                FontSize="12" FontWeight="SemiBold"
                                Foreground="{DynamicResource SuccessBrush}"
-                               IsVisible="{Binding IncomeContribution}" />
+                               IsVisible="{Binding IncomeContribution}"
+                               AutomationProperties.AutomationId="WorkerMarket_Txt_IncomeContribution" />
                   </StackPanel>
 
                   <!-- Row 3: Hire Button (disabled wenn keine Plaetze frei) -->
@@ -224,22 +262,28 @@
                           Padding="12,8"
                           IsEnabled="{Binding $parent[ItemsControl].((vm:WorkerMarketViewModel)DataContext).HasAvailableSlots}"
                           Command="{Binding $parent[ItemsControl].((vm:WorkerMarketViewModel)DataContext).HireWorkerCommand}"
-                          CommandParameter="{Binding .}">
+                          CommandParameter="{Binding .}"
+                          AutomationProperties.AutomationId="WorkerMarket_Btn_Hire">
                     <StackPanel Orientation="Horizontal"
                                 Spacing="6"
                                 HorizontalAlignment="Center">
-                      <mi:MaterialIcon Kind="AccountPlus" Width="16" Height="16" />
+                      <mi:MaterialIcon Kind="AccountPlus" Width="16" Height="16"
+                                       AutomationProperties.AutomationId="WorkerMarket_Icon_Hire" />
                       <TextBlock Text="{Binding HiringCost, StringFormat='{}{0:N0} €'}"
-                                 FontSize="13" FontWeight="SemiBold" />
+                                 FontSize="13" FontWeight="SemiBold"
+                                 AutomationProperties.AutomationId="WorkerMarket_Txt_HiringCost" />
                       <!-- Goldschrauben-Kosten (nur Tier A+S) -->
                       <StackPanel Orientation="Horizontal" Spacing="2"
-                                  IsVisible="{Binding HiringScrewCost}">
+                                  IsVisible="{Binding HiringScrewCost}"
+                                  AutomationProperties.AutomationId="WorkerMarket_Panel_ScrewCost">
                         <TextBlock Text="+" FontSize="13" FontWeight="SemiBold" />
                         <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
-                                         Foreground="#FFD700" />
+                                         Foreground="#FFD700"
+                                         AutomationProperties.AutomationId="WorkerMarket_Icon_ScrewCost" />
                         <TextBlock Text="{Binding HiringScrewCost}"
                                    FontSize="13" FontWeight="SemiBold"
-                                   Foreground="#FFD700" />
+                                   Foreground="#FFD700"
+                                   AutomationProperties.AutomationId="WorkerMarket_Txt_ScrewCost" />
                       </StackPanel>
                     </StackPanel>
                   </Button>
@@ -251,7 +295,7 @@
         </ItemsControl>
 
         <!-- Bottom Spacer -->
-        <Border Height="60" />
+        <Border Height="80" />
 
       </StackPanel>
     </ScrollViewer>
@@ -262,7 +306,8 @@
     <Border Grid.RowSpan="2"
             ZIndex="50"
             IsVisible="{Binding ShowWorkshopSelection}"
-            Background="#AA000000">
+            Background="#AA000000"
+            AutomationProperties.AutomationId="WorkerMarket_Border_OverlayBackdrop">
       <Border Background="{DynamicResource BackgroundBrush}"
               BorderBrush="{StaticResource CraftPrimaryBrush}"
               BorderThickness="2"
@@ -272,31 +317,40 @@
               CornerRadius="16"
               VerticalAlignment="Center"
               HorizontalAlignment="Center"
-              BoxShadow="0 8 24 0 #40000000">
+              BoxShadow="0 8 24 0 #40000000"
+              AutomationProperties.AutomationId="WorkerMarket_Border_WorkshopSelectionDialog">
         <StackPanel Spacing="16">
 
           <!-- Overlay-Titel -->
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                      AutomationProperties.AutomationId="WorkerMarket_Panel_OverlayTitle">
             <mi:MaterialIcon Kind="Factory" Width="24" Height="24"
-                             Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                             Foreground="{StaticResource CraftPrimaryLightBrush}"
+                             AutomationProperties.AutomationId="WorkerMarket_Icon_OverlayFactory" />
             <TextBlock Text="{Binding SelectWorkshopTitle}"
                        FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       AutomationProperties.AutomationId="WorkerMarket_Txt_OverlayTitle" />
           </StackPanel>
 
           <!-- Pendender Worker Info -->
           <Border Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="8" Padding="12,8">
+                  CornerRadius="8" Padding="12,8"
+                  AutomationProperties.AutomationId="WorkerMarket_Border_PendingWorker">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="AccountPlus" Width="18" Height="18"
-                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}"
+                               AutomationProperties.AutomationId="WorkerMarket_Icon_PendingWorker" />
               <TextBlock Text="{Binding PendingWorker.Name}"
                          FontSize="14" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="WorkerMarket_Txt_PendingWorkerName" />
               <Border Background="{StaticResource CraftPrimaryBrush}"
-                      CornerRadius="4" Padding="6,2">
+                      CornerRadius="4" Padding="6,2"
+                      AutomationProperties.AutomationId="WorkerMarket_Border_PendingTierBadge">
                 <TextBlock Text="{Binding PendingWorker.Tier}"
-                           FontSize="11" FontWeight="Bold" Foreground="White" />
+                           FontSize="11" FontWeight="Bold" Foreground="White"
+                           AutomationProperties.AutomationId="WorkerMarket_Txt_PendingTier" />
               </Border>
             </StackPanel>
           </Border>
@@ -312,20 +366,24 @@
                         Padding="16,14"
                         MinHeight="56"
                         Command="{Binding $parent[ItemsControl].((vm:WorkerMarketViewModel)DataContext).ConfirmWorkshopSelectionCommand}"
-                        CommandParameter="{Binding .}">
+                        CommandParameter="{Binding .}"
+                        AutomationProperties.AutomationId="WorkerMarket_Btn_SelectWorkshop">
                   <Grid ColumnDefinitions="*,Auto">
                     <StackPanel Spacing="4">
                       <TextBlock Text="{Binding Name}"
                                  FontSize="15" FontWeight="SemiBold"
-                                 Foreground="{DynamicResource TextPrimaryBrush}" />
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 AutomationProperties.AutomationId="WorkerMarket_Txt_WorkshopName" />
                       <TextBlock Text="{Binding WorkerInfo}"
                                  FontSize="13"
-                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 AutomationProperties.AutomationId="WorkerMarket_Txt_WorkshopWorkerInfo" />
                     </StackPanel>
                     <mi:MaterialIcon Grid.Column="1" Kind="ChevronRight"
                                      Width="24" Height="24"
                                      Foreground="{StaticResource CraftPrimaryLightBrush}"
-                                     VerticalAlignment="Center" />
+                                     VerticalAlignment="Center"
+                                     AutomationProperties.AutomationId="WorkerMarket_Icon_WorkshopChevron" />
                   </Grid>
                 </Button>
               </DataTemplate>
@@ -337,9 +395,11 @@
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
                   Command="{Binding CancelWorkshopSelectionCommand}"
-                  Padding="12,10">
+                  Padding="12,10"
+                  AutomationProperties.AutomationId="WorkerMarket_Btn_CancelSelection">
             <TextBlock Text="{Binding CancelText}"
-                       FontSize="14" />
+                       FontSize="14"
+                       AutomationProperties.AutomationId="WorkerMarket_Txt_Cancel" />
           </Button>
 
         </StackPanel>

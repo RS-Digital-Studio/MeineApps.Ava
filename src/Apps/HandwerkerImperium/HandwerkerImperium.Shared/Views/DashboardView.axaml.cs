@@ -403,6 +403,32 @@ public partial class DashboardView : UserControl
     }
 
     /// <summary>
+    /// Wöchentliche Missionen Fortschritt (Amber/Gold).
+    /// DataContext ist WeeklyMission (aus DataTemplate).
+    /// </summary>
+    private void OnPaintWeeklyMissionProgress(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+
+        if (sender is not SKCanvasView canvasView) return;
+        var dc = canvasView.DataContext;
+        if (dc == null) return;
+
+        // Progress-Property per Reflection (decimal → float)
+        var progressProp = dc.GetType().GetProperty("Progress");
+        if (progressProp == null) return;
+        var progress = (float)Convert.ToDouble(progressProp.GetValue(dc) ?? 0.0m);
+
+        MeineApps.UI.SkiaSharp.LinearProgressVisualization.Render(canvas, bounds,
+            progress,
+            new SKColor(0xD9, 0x77, 0x06), // Amber
+            new SKColor(0xFF, 0xD7, 0x00), // Gold
+            showText: false, glowEnabled: false);
+    }
+
+    /// <summary>
     /// Workshop-Level Fortschritt (Farbe abhängig vom Workshop-Typ).
     /// DataContext ist WorkshopDisplayModel (aus DataTemplate).
     /// </summary>

@@ -8,7 +8,8 @@
              xmlns:controls="using:MeineApps.UI.Controls"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MainView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             AutomationProperties.AutomationId="Main_Root">
 
   <UserControl.Styles>
     <!-- Bottom-Sheet Backdrop: Fade-In/Out -->
@@ -61,14 +62,14 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="*,Auto,Auto">
+  <Grid RowDefinitions="*,Auto,Auto" AutomationProperties.AutomationId="Main_Grid_Root">
 
     <!-- ============================================ -->
     <!-- Hintergrund: Mehrschichtiger Gradient         -->
     <!-- Basis + Primary-Schein oben + warmer Schein   -->
     <!-- unten → tiefes, lebendiges Farbspiel          -->
     <!-- ============================================ -->
-    <Panel Grid.RowSpan="3" IsHitTestVisible="False">
+    <Panel Grid.RowSpan="3" IsHitTestVisible="False" AutomationProperties.AutomationId="Main_Panel_Background">
       <!-- Basis-Gradient (vertikal, dunkel → Surface → dunkel) -->
       <Border>
         <Border.Background>
@@ -111,76 +112,115 @@
     <!-- ============================================ -->
     <!-- Row 0: Content Area (switches based on tab)  -->
     <!-- ============================================ -->
-    <Panel x:Name="ContentPanel" Grid.Row="0">
+    <Panel x:Name="ContentPanel" Grid.Row="0" AutomationProperties.AutomationId="Main_Panel_Content">
       <!-- Dashboard Tab (uses MainViewModel directly) -->
-      <views:DashboardView IsVisible="{Binding IsDashboardActive}" />
+      <views:DashboardView IsVisible="{Binding IsDashboardActive}" AutomationProperties.AutomationId="Main_View_Dashboard" />
 
       <!-- Shop Tab -->
       <views:ShopView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsShopActive}"
-                      DataContext="{Binding ShopViewModel}" />
+                      DataContext="{Binding ShopViewModel}"
+                      AutomationProperties.AutomationId="Main_View_Shop" />
 
       <!-- Statistics Tab -->
       <views:StatisticsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsStatisticsActive}"
-                            DataContext="{Binding StatisticsViewModel}" />
+                            DataContext="{Binding StatisticsViewModel}"
+                            AutomationProperties.AutomationId="Main_View_Statistics" />
 
       <!-- Achievements Tab -->
       <views:AchievementsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsAchievementsActive}"
-                              DataContext="{Binding AchievementsViewModel}" />
+                              DataContext="{Binding AchievementsViewModel}"
+                              AutomationProperties.AutomationId="Main_View_Achievements" />
 
       <!-- Settings Tab -->
       <views:SettingsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSettingsActive}"
-                          DataContext="{Binding SettingsViewModel}" />
+                          DataContext="{Binding SettingsViewModel}"
+                          AutomationProperties.AutomationId="Main_View_Settings" />
 
       <!-- Workshop Detail (overlay when selected) -->
       <views:WorkshopView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkshopDetailActive}"
-                          DataContext="{Binding WorkshopViewModel}" />
+                          DataContext="{Binding WorkshopViewModel}"
+                          AutomationProperties.AutomationId="Main_View_WorkshopDetail" />
 
       <!-- Order Detail (overlay when selected) -->
       <views:OrderView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsOrderDetailActive}"
-                       DataContext="{Binding OrderViewModel}" />
+                       DataContext="{Binding OrderViewModel}"
+                       AutomationProperties.AutomationId="Main_View_OrderDetail" />
 
       <!-- Worker Market (overlay when selected) -->
       <views:WorkerMarketView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkerMarketActive}"
-                              DataContext="{Binding WorkerMarketViewModel}" />
+                              DataContext="{Binding WorkerMarketViewModel}"
+                              AutomationProperties.AutomationId="Main_View_WorkerMarket" />
 
       <!-- Worker Profile → als Bottom-Sheet (siehe unten) -->
 
       <!-- Buildings (overlay when selected) -->
       <views:BuildingsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBuildingsActive}"
-                           DataContext="{Binding BuildingsViewModel}" />
+                           DataContext="{Binding BuildingsViewModel}"
+                           AutomationProperties.AutomationId="Main_View_Buildings" />
 
       <!-- Research (overlay when selected) -->
       <views:ResearchView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsResearchActive}"
-                          DataContext="{Binding ResearchViewModel}" />
+                          DataContext="{Binding ResearchViewModel}"
+                          AutomationProperties.AutomationId="Main_View_Research" />
+
+      <!-- Neue Feature-Views (Welle 1-8) -->
+      <views:ManagerView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsManagerActive}"
+                         DataContext="{Binding ManagerViewModel}"
+                         AutomationProperties.AutomationId="Main_View_Manager" />
+      <views:TournamentView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsTournamentActive}"
+                            DataContext="{Binding TournamentViewModel}"
+                            AutomationProperties.AutomationId="Main_View_Tournament" />
+      <views:SeasonalEventView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSeasonalEventActive}"
+                               DataContext="{Binding SeasonalEventViewModel}"
+                               AutomationProperties.AutomationId="Main_View_SeasonalEvent" />
+      <views:BattlePassView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBattlePassActive}"
+                            DataContext="{Binding BattlePassViewModel}"
+                            AutomationProperties.AutomationId="Main_View_BattlePass" />
+      <views:GuildView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildActive}"
+                       DataContext="{Binding GuildViewModel}"
+                       AutomationProperties.AutomationId="Main_View_Guild" />
+      <views:CraftingView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsCraftingActive}"
+                          DataContext="{Binding CraftingViewModel}"
+                          AutomationProperties.AutomationId="Main_View_Crafting" />
 
       <!-- MiniGame Views (overlay when active) -->
       <miniGames:SawingGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSawingGameActive}"
-                                DataContext="{Binding SawingGameViewModel}" />
+                                DataContext="{Binding SawingGameViewModel}"
+                                AutomationProperties.AutomationId="Main_View_SawingGame" />
       <miniGames:PipePuzzleView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsPipePuzzleActive}"
-                                DataContext="{Binding PipePuzzleViewModel}" />
+                                DataContext="{Binding PipePuzzleViewModel}"
+                                AutomationProperties.AutomationId="Main_View_PipePuzzle" />
       <miniGames:WiringGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWiringGameActive}"
-                                DataContext="{Binding WiringGameViewModel}" />
+                                DataContext="{Binding WiringGameViewModel}"
+                                AutomationProperties.AutomationId="Main_View_WiringGame" />
       <miniGames:PaintingGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsPaintingGameActive}"
-                                  DataContext="{Binding PaintingGameViewModel}" />
+                                  DataContext="{Binding PaintingGameViewModel}"
+                                  AutomationProperties.AutomationId="Main_View_PaintingGame" />
       <miniGames:RoofTilingGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsRoofTilingGameActive}"
-                                    DataContext="{Binding RoofTilingGameViewModel}" />
+                                    DataContext="{Binding RoofTilingGameViewModel}"
+                                    AutomationProperties.AutomationId="Main_View_RoofTilingGame" />
       <miniGames:BlueprintGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBlueprintGameActive}"
-                                   DataContext="{Binding BlueprintGameViewModel}" />
+                                   DataContext="{Binding BlueprintGameViewModel}"
+                                   AutomationProperties.AutomationId="Main_View_BlueprintGame" />
       <miniGames:DesignPuzzleGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsDesignPuzzleGameActive}"
-                                      DataContext="{Binding DesignPuzzleGameViewModel}" />
+                                      DataContext="{Binding DesignPuzzleGameViewModel}"
+                                      AutomationProperties.AutomationId="Main_View_DesignPuzzleGame" />
       <miniGames:InspectionGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsInspectionGameActive}"
-                                    DataContext="{Binding InspectionGameViewModel}" />
+                                    DataContext="{Binding InspectionGameViewModel}"
+                                    AutomationProperties.AutomationId="Main_View_InspectionGame" />
     </Panel>
 
     <!-- ============================================ -->
     <!-- Ad Banner Spacer (64dp fuer adaptive Banner) -->
     <Border Grid.Row="1" Height="64"
-            IsVisible="{Binding IsAdBannerVisible}" />
+            IsVisible="{Binding IsAdBannerVisible}"
+            AutomationProperties.AutomationId="Main_Border_AdSpacer" />
 
     <!-- Ersatz-Spacer wenn Tab-Bar versteckt (Overlay/MiniGame offen) -->
     <!-- Gleiche Hoehe wie Tab-Bar, damit Inhalt ueber der nativen Ad bleibt -->
     <Border Grid.Row="2" Height="68"
-            IsVisible="{Binding !IsTabBarVisible}" />
+            IsVisible="{Binding !IsTabBarVisible}"
+            AutomationProperties.AutomationId="Main_Border_TabBarSpacer" />
 
     <!-- Row 2: Floating Tab Bar (abgerundet, leichter Shadow) -->
     <!-- ============================================ -->
@@ -191,27 +231,32 @@
             Margin="12,0,12,8"
             Padding="0,6,0,10"
             BoxShadow="0 -2 12 0 #30000000"
-            IsVisible="{Binding IsTabBarVisible}">
-      <Grid ColumnDefinitions="*,*,*,*,*">
+            IsVisible="{Binding IsTabBarVisible}"
+            AutomationProperties.AutomationId="Main_Border_TabBar">
+      <Grid ColumnDefinitions="*,*,*,*,*" AutomationProperties.AutomationId="Main_Grid_TabBar">
 
         <!-- Dashboard -->
         <Button Grid.Column="0" Classes="Text"
                 Command="{Binding SelectDashboardTabCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                MinHeight="48">
+                MinHeight="48"
+                AutomationProperties.AutomationId="Main_TabBtn_Dashboard">
           <StackPanel Spacing="2" HorizontalAlignment="Center"
                       Classes.TabActive="{Binding IsDashboardActive}">
             <mi:MaterialIcon Kind="Home" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}" />
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             AutomationProperties.AutomationId="Main_Icon_TabDashboard" />
             <TextBlock Text="{loc:Translate Home}"
                        FontSize="9" HorizontalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}" />
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       AutomationProperties.AutomationId="Main_Txt_TabDashboard" />
             <!-- Pill-Indikator (breiter, abgerundet) -->
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
                     Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsDashboardActive}" />
+                    IsVisible="{Binding IsDashboardActive}"
+                    AutomationProperties.AutomationId="Main_Border_TabDashboardPill" />
           </StackPanel>
         </Button>
 
@@ -220,18 +265,22 @@
                 Command="{Binding SelectWorkerMarketTabCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                MinHeight="48">
+                MinHeight="48"
+                AutomationProperties.AutomationId="Main_TabBtn_Workers">
           <StackPanel Spacing="2" HorizontalAlignment="Center"
                       Classes.TabActive="{Binding IsWorkerMarketActive}">
             <mi:MaterialIcon Kind="AccountGroup" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}" />
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             AutomationProperties.AutomationId="Main_Icon_TabWorkers" />
             <TextBlock Text="{loc:Translate Workers}"
                        FontSize="9" HorizontalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}" />
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       AutomationProperties.AutomationId="Main_Txt_TabWorkers" />
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
                     Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsWorkerMarketActive}" />
+                    IsVisible="{Binding IsWorkerMarketActive}"
+                    AutomationProperties.AutomationId="Main_Border_TabWorkersPill" />
           </StackPanel>
         </Button>
 
@@ -240,18 +289,22 @@
                 Command="{Binding SelectResearchTabCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                MinHeight="48">
+                MinHeight="48"
+                AutomationProperties.AutomationId="Main_TabBtn_Research">
           <StackPanel Spacing="2" HorizontalAlignment="Center"
                       Classes.TabActive="{Binding IsResearchActive}">
             <mi:MaterialIcon Kind="FlaskOutline" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}" />
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             AutomationProperties.AutomationId="Main_Icon_TabResearch" />
             <TextBlock Text="{loc:Translate Research}"
                        FontSize="9" HorizontalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}" />
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       AutomationProperties.AutomationId="Main_Txt_TabResearch" />
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
                     Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsResearchActive}" />
+                    IsVisible="{Binding IsResearchActive}"
+                    AutomationProperties.AutomationId="Main_Border_TabResearchPill" />
           </StackPanel>
         </Button>
 
@@ -260,18 +313,22 @@
                 Command="{Binding SelectShopTabCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                MinHeight="48">
+                MinHeight="48"
+                AutomationProperties.AutomationId="Main_TabBtn_Shop">
           <StackPanel Spacing="2" HorizontalAlignment="Center"
                       Classes.TabActive="{Binding IsShopActive}">
             <mi:MaterialIcon Kind="Cart" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}" />
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             AutomationProperties.AutomationId="Main_Icon_TabShop" />
             <TextBlock Text="{loc:Translate Shop}"
                        FontSize="9" HorizontalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}" />
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       AutomationProperties.AutomationId="Main_Txt_TabShop" />
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
                     Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsShopActive}" />
+                    IsVisible="{Binding IsShopActive}"
+                    AutomationProperties.AutomationId="Main_Border_TabShopPill" />
           </StackPanel>
         </Button>
 
@@ -280,18 +337,22 @@
                 Command="{Binding SelectSettingsTabCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                MinHeight="48">
+                MinHeight="48"
+                AutomationProperties.AutomationId="Main_TabBtn_Settings">
           <StackPanel Spacing="2" HorizontalAlignment="Center"
                       Classes.TabActive="{Binding IsSettingsActive}">
             <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
-                             Foreground="{DynamicResource TextMutedBrush}" />
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             AutomationProperties.AutomationId="Main_Icon_TabSettings" />
             <TextBlock Text="{loc:Translate Settings}"
                        FontSize="9" HorizontalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextMutedBrush}" />
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       AutomationProperties.AutomationId="Main_Txt_TabSettings" />
             <Border Height="4" Width="24" CornerRadius="2" Margin="0,2,0,0"
                     Background="{StaticResource CraftPrimaryLightBrush}"
-                    IsVisible="{Binding IsSettingsActive}" />
+                    IsVisible="{Binding IsSettingsActive}"
+                    AutomationProperties.AutomationId="Main_Border_TabSettingsPill" />
           </StackPanel>
         </Button>
 
@@ -304,17 +365,20 @@
 
     <!-- Offline Earnings Dialog -->
     <Border Grid.RowSpan="3" Background="#AA000000"
-            IsVisible="{Binding IsOfflineEarningsDialogVisible}">
+            IsVisible="{Binding IsOfflineEarningsDialogVisible}"
+            AutomationProperties.AutomationId="Main_Overlay_OfflineEarnings">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
               MaxWidth="360"
               HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 8 24 0 #40000000">
+              BoxShadow="0 8 24 0 #40000000"
+              AutomationProperties.AutomationId="Main_Border_OfflineEarningsDialog">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
           <!-- Gruener Glow-Halo -->
           <Border Width="72" Height="72" CornerRadius="36"
                   HorizontalAlignment="Center"
-                  BoxShadow="0 0 20 0 #4022C55E">
+                  BoxShadow="0 0 20 0 #4022C55E"
+                  AutomationProperties.AutomationId="Main_Border_OfflineEarningsGlow">
             <Border.Background>
               <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
                 <GradientStop Color="#2022C55E" Offset="0" />
@@ -323,43 +387,54 @@
             </Border.Background>
             <mi:MaterialIcon Kind="CashMultiple" Width="40" Height="40"
                              Foreground="#22C55E"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             AutomationProperties.AutomationId="Main_Icon_OfflineEarningsCash" />
           </Border>
           <TextBlock Text="{loc:Translate WelcomeBack}"
                      FontSize="22" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_OfflineWelcomeBack" />
           <TextBlock Text="{loc:Translate WhileYouWereAway}"
                      FontSize="14" TextWrapping="Wrap"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_OfflineWhileAway" />
           <TextBlock Text="{Binding OfflineEarningsAmountText}"
                      FontSize="36" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="#22C55E" />
+                     Foreground="#22C55E"
+                     AutomationProperties.AutomationId="Main_Txt_OfflineEarningsAmount" />
           <!-- Neuer Rekord Badge -->
           <Border Background="#30FFD700" CornerRadius="12" Padding="12,4"
                   HorizontalAlignment="Center"
                   IsVisible="{Binding IsOfflineNewRecord}"
-                  BoxShadow="0 0 12 0 #40FFD700">
+                  BoxShadow="0 0 12 0 #40FFD700"
+                  AutomationProperties.AutomationId="Main_Border_OfflineNewRecord">
             <TextBlock Text="{loc:Translate NewRecord}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="#FFD700"
-                       HorizontalAlignment="Center" />
+                       HorizontalAlignment="Center"
+                       AutomationProperties.AutomationId="Main_Txt_OfflineNewRecord" />
           </Border>
           <TextBlock Text="{Binding OfflineEarningsDurationText}"
                      FontSize="12"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_OfflineDuration" />
           <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
             <Button Classes="Outlined" Content="{loc:Translate Collect}"
-                    Command="{Binding CollectOfflineEarningsNormalCommand}" MinWidth="100" />
+                    Command="{Binding CollectOfflineEarningsNormalCommand}" MinWidth="100"
+                    AutomationProperties.AutomationId="Main_Btn_OfflineCollect" />
             <Button Classes="Primary" MinWidth="140"
                     Background="{StaticResource CraftGoldBrush}"
-                    Command="{Binding CollectOfflineEarningsWithAdCommand}">
+                    Command="{Binding CollectOfflineEarningsWithAdCommand}"
+                    AutomationProperties.AutomationId="Main_Btn_OfflineDoubleWithAd">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="PlayCircle" Width="18" Height="18" />
-                <TextBlock Text="{loc:Translate DoubleWithAd}" VerticalAlignment="Center" />
+                <mi:MaterialIcon Kind="PlayCircle" Width="18" Height="18"
+                                 AutomationProperties.AutomationId="Main_Icon_OfflineAdPlay" />
+                <TextBlock Text="{loc:Translate DoubleWithAd}" VerticalAlignment="Center"
+                           AutomationProperties.AutomationId="Main_Txt_OfflineDoubleWithAd" />
               </StackPanel>
             </Button>
           </StackPanel>
@@ -367,67 +442,25 @@
       </Border>
     </Border>
 
-    <!-- Level Up Dialog -->
-    <Border Grid.RowSpan="3" Background="#AA000000"
-            IsVisible="{Binding IsLevelUpDialogVisible}">
-      <Border Background="{DynamicResource SurfaceBrush}"
-              CornerRadius="16" Padding="24"
-              MaxWidth="360"
-              HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 0 40 0 #40FFD700">
-        <StackPanel Spacing="16" HorizontalAlignment="Center">
-          <!-- Star-Icon mit Gold-Glow-Halo -->
-          <Border Width="80" Height="80" CornerRadius="40"
-                  HorizontalAlignment="Center"
-                  BoxShadow="0 0 24 0 #60FFD700">
-            <Border.Background>
-              <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
-                <GradientStop Color="#40FFD700" Offset="0" />
-                <GradientStop Color="Transparent" Offset="1" />
-              </RadialGradientBrush>
-            </Border.Background>
-            <mi:MaterialIcon Kind="Star" Width="48" Height="48"
-                             Foreground="#FFD700"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <TextBlock Text="{loc:Translate LevelUpTitle}"
-                     FontSize="20" FontWeight="Bold"
-                     HorizontalAlignment="Center"
-                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
-          <TextBlock FontSize="48" FontWeight="Bold" HorizontalAlignment="Center"
-                     Foreground="#FFD700">
-            <TextBlock.Text>
-              <MultiBinding StringFormat="Level {0}">
-                <Binding Path="LevelUpNewLevel" />
-              </MultiBinding>
-            </TextBlock.Text>
-          </TextBlock>
-          <TextBlock Text="{Binding LevelUpUnlockedText}"
-                     FontSize="14" TextWrapping="Wrap"
-                     HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextSecondaryBrush}"
-                     IsVisible="{Binding LevelUpUnlockedText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-          <Button Classes="Primary" Content="{loc:Translate OK}"
-                  Background="{StaticResource CraftPrimaryBrush}"
-                  Command="{Binding DismissLevelUpDialogCommand}"
-                  HorizontalAlignment="Center" MinWidth="140" />
-        </StackPanel>
-      </Border>
-    </Border>
+    <!-- Level-Up: Kein Dialog mehr, nur noch dezente Pulse-Animation
+         (IsLevelUpPulsing wird im Dashboard-Header genutzt) -->
 
     <!-- Daily Reward Dialog -->
     <Border Grid.RowSpan="3" Background="#AA000000"
-            IsVisible="{Binding IsDailyRewardDialogVisible}">
+            IsVisible="{Binding IsDailyRewardDialogVisible}"
+            AutomationProperties.AutomationId="Main_Overlay_DailyReward">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
               MaxWidth="360"
               HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 0 30 0 #40D97706">
+              BoxShadow="0 0 30 0 #40D97706"
+              AutomationProperties.AutomationId="Main_Border_DailyRewardDialog">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
           <!-- Gift-Icon mit CraftPrimary-Glow -->
           <Border Width="72" Height="72" CornerRadius="36"
                   HorizontalAlignment="Center"
-                  BoxShadow="0 0 20 0 #40D97706">
+                  BoxShadow="0 0 20 0 #40D97706"
+                  AutomationProperties.AutomationId="Main_Border_DailyRewardGlow">
             <Border.Background>
               <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
                 <GradientStop Color="#40D97706" Offset="0" />
@@ -436,14 +469,17 @@
             </Border.Background>
             <mi:MaterialIcon Kind="Gift" Width="40" Height="40"
                              Foreground="#D97706"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             AutomationProperties.AutomationId="Main_Icon_DailyRewardGift" />
           </Border>
           <TextBlock Text="{loc:Translate DailyReward}"
                      FontSize="22" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_DailyRewardTitle" />
           <!-- 7-Tage Streak Dots -->
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                      AutomationProperties.AutomationId="Main_Panel_DailyRewardStreak">
             <Border Width="12" Height="12" CornerRadius="6"
                     Background="{StaticResource CraftPrimaryBrush}"
                     BorderBrush="{StaticResource CraftPrimaryBrush}" BorderThickness="2" />
@@ -463,36 +499,182 @@
           <TextBlock Text="{Binding DailyRewardDayText}"
                      FontSize="16"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_DailyRewardDay" />
           <TextBlock Text="{Binding DailyRewardAmountText}"
                      FontSize="28" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_DailyRewardAmount" />
           <TextBlock Text="{Binding DailyRewardStreakText}"
                      FontSize="12"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_DailyRewardStreak" />
           <Button Classes="Primary" Content="{loc:Translate ClaimReward}"
                   Background="{StaticResource CraftPrimaryBrush}"
                   Command="{Binding ClaimDailyRewardCommand}"
-                  HorizontalAlignment="Center" MinWidth="160" />
+                  HorizontalAlignment="Center" MinWidth="160"
+                  AutomationProperties.AutomationId="Main_Btn_ClaimDailyReward" />
+
+          <!-- Streak-Rettung Button (nur sichtbar wenn Streak gebrochen) -->
+          <Border IsVisible="{Binding CanRescueStreak}"
+                  Background="#20FF5722" CornerRadius="12" Padding="12,8"
+                  AutomationProperties.AutomationId="Main_Border_StreakRescue">
+            <StackPanel Spacing="6">
+              <TextBlock Text="{Binding StreakRescueText}"
+                         FontSize="13" FontWeight="SemiBold"
+                         HorizontalAlignment="Center"
+                         Foreground="#FF5722"
+                         AutomationProperties.AutomationId="Main_Txt_StreakRescueWarning" />
+              <Button Classes="Primary" Background="#FF5722"
+                      Command="{Binding RescueStreakCommand}"
+                      HorizontalAlignment="Center" MinWidth="160"
+                      AutomationProperties.AutomationId="Main_Btn_RescueStreak">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="ShieldAlert" Width="16" Height="16" />
+                  <TextBlock Text="{loc:Translate RescueStreak}" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
         </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Welcome Back Offer Dialog -->
+    <Border Grid.RowSpan="3" Background="#AA000000"
+            IsVisible="{Binding IsWelcomeOfferVisible}"
+            AutomationProperties.AutomationId="Main_Overlay_WelcomeBack">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16" Padding="24"
+              MaxWidth="360"
+              HorizontalAlignment="Center" VerticalAlignment="Center"
+              BoxShadow="0 0 30 0 #404CAF50"
+              AutomationProperties.AutomationId="Main_Border_WelcomeBackDialog">
+        <StackPanel Spacing="16" HorizontalAlignment="Center">
+          <!-- Optionale Offline-Earnings Zeile (wenn gleichzeitig verdient) -->
+          <StackPanel IsVisible="{Binding HasOfflineEarningsInWelcome}" Spacing="4" Margin="0,0,0,8"
+                      AutomationProperties.AutomationId="Main_Panel_WelcomeOfflineEarnings">
+            <TextBlock Text="{loc:Translate OfflineEarnings}" FontSize="14" FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       AutomationProperties.AutomationId="Main_Txt_WelcomeOfflineLabel" />
+            <TextBlock Text="{Binding CombinedOfflineDisplay}" FontSize="18" FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       Foreground="#4CAF50"
+                       AutomationProperties.AutomationId="Main_Txt_WelcomeOfflineAmount" />
+          </StackPanel>
+          <!-- Geschenk-Icon mit grünem Glow -->
+          <Border Width="72" Height="72" CornerRadius="36"
+                  HorizontalAlignment="Center"
+                  BoxShadow="0 0 20 0 #404CAF50"
+                  AutomationProperties.AutomationId="Main_Border_WelcomeBackGlow">
+            <Border.Background>
+              <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+                <GradientStop Color="#404CAF50" Offset="0" />
+                <GradientStop Color="Transparent" Offset="1" />
+              </RadialGradientBrush>
+            </Border.Background>
+            <mi:MaterialIcon Kind="GiftOutline" Width="40" Height="40"
+                             Foreground="#4CAF50"
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             AutomationProperties.AutomationId="Main_Icon_WelcomeBackGift" />
+          </Border>
+          <TextBlock Text="{Binding WelcomeOfferTitle}"
+                     FontSize="22" FontWeight="Bold"
+                     HorizontalAlignment="Center"
+                     Foreground="#4CAF50"
+                     AutomationProperties.AutomationId="Main_Txt_WelcomeBackTitle" />
+          <TextBlock Text="{Binding WelcomeOfferDescription}"
+                     FontSize="14" TextWrapping="Wrap"
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_WelcomeBackDescription" />
+          <!-- Belohnungs-Anzeige -->
+          <Border Background="#204CAF50" CornerRadius="12" Padding="16,8"
+                  AutomationProperties.AutomationId="Main_Border_WelcomeBackRewards">
+            <StackPanel Spacing="8">
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                          IsVisible="{Binding WelcomeOfferMoneyReward, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <mi:MaterialIcon Kind="Cash" Width="20" Height="20" Foreground="#4CAF50" />
+                <TextBlock Text="{Binding WelcomeOfferMoneyReward}"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="#4CAF50"
+                           AutomationProperties.AutomationId="Main_Txt_WelcomeBackMoney" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                          IsVisible="{Binding WelcomeOfferScrewReward, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <mi:MaterialIcon Kind="Cog" Width="20" Height="20" Foreground="#FFD700" />
+                <TextBlock Text="{Binding WelcomeOfferScrewReward}"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="#FFD700"
+                           AutomationProperties.AutomationId="Main_Txt_WelcomeBackScrews" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <!-- Timer -->
+          <TextBlock Text="{Binding WelcomeOfferTimerDisplay}"
+                     FontSize="12"
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_WelcomeBackTimer" />
+          <!-- Buttons -->
+          <Grid ColumnDefinitions="*,12,*">
+            <Button Grid.Column="0" Classes="Primary" Background="#4CAF50"
+                    Command="{Binding ClaimWelcomeOfferCommand}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="Main_Btn_ClaimWelcomeOffer">
+              <TextBlock Text="{loc:Translate ClaimOffer}" FontSize="14" FontWeight="SemiBold" />
+            </Button>
+            <Button Grid.Column="2" Classes="Secondary"
+                    Command="{Binding DismissWelcomeOfferCommand}"
+                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="Main_Btn_DismissWelcomeOffer">
+              <TextBlock Text="{loc:Translate DismissOffer}" FontSize="14" />
+            </Button>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Lucky Spin Bottom-Sheet Overlay -->
+    <Border Grid.RowSpan="3"
+            Classes="SheetBackdrop"
+            Classes.Open="{Binding IsLuckySpinVisible}"
+            IsVisible="{Binding IsLuckySpinVisible}"
+            Background="#AA000000"
+            IsHitTestVisible="{Binding IsLuckySpinVisible}"
+            AutomationProperties.AutomationId="Main_Overlay_LuckySpin">
+      <Border Classes="BottomSheet"
+              Classes.Open="{Binding IsLuckySpinVisible}"
+              VerticalAlignment="Bottom"
+              Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="24,24,0,0"
+              Padding="20,16,20,24"
+              BoxShadow="0 -4 20 0 #40FFD700"
+              AutomationProperties.AutomationId="Main_Border_LuckySpinSheet">
+        <views:LuckySpinView DataContext="{Binding LuckySpinViewModel}"
+                              AutomationProperties.AutomationId="Main_View_LuckySpin" />
       </Border>
     </Border>
 
     <!-- Achievement Unlocked Dialog -->
     <Border Grid.RowSpan="3" Background="#AA000000"
-            IsVisible="{Binding IsAchievementDialogVisible}">
+            IsVisible="{Binding IsAchievementDialogVisible}"
+            AutomationProperties.AutomationId="Main_Overlay_Achievement">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
               MaxWidth="360"
               HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 0 40 0 #40FFD700">
+              BoxShadow="0 0 40 0 #40FFD700"
+              AutomationProperties.AutomationId="Main_Border_AchievementDialog">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
           <!-- Trophy mit Gold-Glow -->
           <Border Width="72" Height="72" CornerRadius="36"
                   HorizontalAlignment="Center"
-                  BoxShadow="0 0 24 0 #60FFD700">
+                  BoxShadow="0 0 24 0 #60FFD700"
+                  AutomationProperties.AutomationId="Main_Border_AchievementGlow">
             <Border.Background>
               <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
                 <GradientStop Color="#40FFD700" Offset="0" />
@@ -501,24 +683,29 @@
             </Border.Background>
             <mi:MaterialIcon Kind="Trophy" Width="40" Height="40"
                              Foreground="#FFD700"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                             HorizontalAlignment="Center" VerticalAlignment="Center"
+                             AutomationProperties.AutomationId="Main_Icon_AchievementTrophy" />
           </Border>
           <TextBlock Text="{loc:Translate AchievementUnlocked}"
                      FontSize="22" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="#FFD700" />
+                     Foreground="#FFD700"
+                     AutomationProperties.AutomationId="Main_Txt_AchievementUnlocked" />
           <TextBlock Text="{Binding AchievementName}"
                      FontSize="18" FontWeight="SemiBold"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_AchievementName" />
           <TextBlock Text="{Binding AchievementDescription}"
                      FontSize="14" TextWrapping="Wrap"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_AchievementDescription" />
           <Button Classes="Primary" Content="{loc:Translate OK}"
                   Background="{StaticResource CraftPrimaryBrush}"
                   Command="{Binding DismissAchievementDialogCommand}"
-                  HorizontalAlignment="Center" MinWidth="120" />
+                  HorizontalAlignment="Center" MinWidth="120"
+                  AutomationProperties.AutomationId="Main_Btn_AchievementDismiss" />
         </StackPanel>
       </Border>
     </Border>
@@ -531,7 +718,8 @@
             Classes.Open="{Binding IsTutorialVisible}"
             IsVisible="{Binding IsTutorialVisible}"
             Background="#AA000000"
-            IsHitTestVisible="{Binding IsTutorialVisible}">
+            IsHitTestVisible="{Binding IsTutorialVisible}"
+            AutomationProperties.AutomationId="Main_Overlay_Tutorial">
       <Border Classes="BottomSheet"
               Classes.Open="{Binding IsTutorialVisible}"
               VerticalAlignment="Center" HorizontalAlignment="Center"
@@ -540,24 +728,28 @@
               CornerRadius="24"
               Padding="24"
               BoxShadow="0 0 40 0 #40D97706"
-              Margin="16">
+              Margin="16"
+              AutomationProperties.AutomationId="Main_Border_TutorialSheet">
         <StackPanel Spacing="16">
 
           <!-- Schritt-Anzeige -->
           <Border Background="#20D97706"
                   CornerRadius="12"
                   Padding="10,4"
-                  HorizontalAlignment="Center">
+                  HorizontalAlignment="Center"
+                  AutomationProperties.AutomationId="Main_Border_TutorialStepBadge">
             <TextBlock Text="{Binding TutorialStepDisplay}"
                        FontSize="11" FontWeight="SemiBold"
                        Foreground="#D97706"
-                       HorizontalAlignment="Center" />
+                       HorizontalAlignment="Center"
+                       AutomationProperties.AutomationId="Main_Txt_TutorialStep" />
           </Border>
 
           <!-- Icon (gross, zentriert) -->
           <TextBlock Text="{Binding TutorialIcon}"
                      FontSize="48"
-                     HorizontalAlignment="Center" />
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Main_Txt_TutorialIcon" />
 
           <!-- Titel -->
           <TextBlock Text="{Binding TutorialTitle}"
@@ -565,7 +757,8 @@
                      Foreground="{StaticResource CraftPrimaryLightBrush}"
                      HorizontalAlignment="Center"
                      TextWrapping="Wrap"
-                     TextAlignment="Center" />
+                     TextAlignment="Center"
+                     AutomationProperties.AutomationId="Main_Txt_TutorialTitle" />
 
           <!-- Beschreibung -->
           <TextBlock Text="{Binding TutorialDescription}"
@@ -573,20 +766,23 @@
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      TextWrapping="Wrap"
                      TextAlignment="Center"
-                     LineHeight="22" />
+                     LineHeight="22"
+                     AutomationProperties.AutomationId="Main_Txt_TutorialDescription" />
 
           <!-- Buttons -->
-          <Grid ColumnDefinitions="*,12,*">
+          <Grid ColumnDefinitions="*,12,*" AutomationProperties.AutomationId="Main_Grid_TutorialButtons">
             <Button Grid.Column="0"
                     Content="{loc:Translate TutorialSkip}"
                     Classes="Outlined"
                     Command="{Binding TutorialSkipCommand}"
-                    HorizontalAlignment="Stretch" />
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.AutomationId="Main_Btn_TutorialSkip" />
             <Button Grid.Column="2"
                     Content="{loc:Translate TutorialNext}"
                     Classes="Primary"
                     Command="{Binding TutorialNextCommand}"
-                    HorizontalAlignment="Stretch" />
+                    HorizontalAlignment="Stretch"
+                    AutomationProperties.AutomationId="Main_Btn_TutorialNext" />
           </Grid>
 
         </StackPanel>
@@ -601,7 +797,8 @@
             Classes.Open="{Binding IsStoryDialogVisible}"
             IsVisible="{Binding IsStoryDialogVisible}"
             Background="#AA000000"
-            IsHitTestVisible="{Binding IsStoryDialogVisible}">
+            IsHitTestVisible="{Binding IsStoryDialogVisible}"
+            AutomationProperties.AutomationId="Main_Overlay_Story">
       <Border Classes="BottomSheet"
               Classes.Open="{Binding IsStoryDialogVisible}"
               VerticalAlignment="Center" HorizontalAlignment="Center"
@@ -610,32 +807,38 @@
               CornerRadius="24"
               Padding="20"
               BoxShadow="0 0 40 0 #40D97706"
-              Margin="16">
+              Margin="16"
+              AutomationProperties.AutomationId="Main_Border_StorySheet">
         <StackPanel Spacing="12">
 
           <!-- Kapitel-Badge -->
           <Border Background="#20D97706"
                   CornerRadius="12"
                   Padding="10,4"
-                  HorizontalAlignment="Center">
+                  HorizontalAlignment="Center"
+                  AutomationProperties.AutomationId="Main_Border_StoryChapterBadge">
             <TextBlock Text="{Binding StoryChapterBadge}"
                        FontSize="11" FontWeight="SemiBold"
                        Foreground="#D97706"
-                       HorizontalAlignment="Center" />
+                       HorizontalAlignment="Center"
+                       AutomationProperties.AutomationId="Main_Txt_StoryChapterBadge" />
           </Border>
 
           <!-- Meister Hans SkiaSharp-Portrait mit Sprechblasen-Zeiger -->
-          <Grid ColumnDefinitions="Auto,*" HorizontalAlignment="Center">
+          <Grid ColumnDefinitions="Auto,*" HorizontalAlignment="Center"
+                AutomationProperties.AutomationId="Main_Grid_StoryPortrait">
             <!-- Portrait -->
             <Border Grid.Column="0"
                     Width="120" Height="120"
                     CornerRadius="60"
                     Background="#15D97706"
                     BoxShadow="0 0 24 0 #30D97706"
-                    Margin="0,0,12,0">
+                    Margin="0,0,12,0"
+                    AutomationProperties.AutomationId="Main_Border_MeisterHansPortrait">
               <skia:SKCanvasView x:Name="MeisterHansCanvas"
                                  Width="120" Height="120"
-                                 PaintSurface="OnMeisterHansPaintSurface" />
+                                 PaintSurface="OnMeisterHansPaintSurface"
+                                 AutomationProperties.AutomationId="Main_Img_MeisterHansCanvas" />
             </Border>
 
             <!-- Sprechblase -->
@@ -643,20 +846,23 @@
                     Background="#10D97706"
                     CornerRadius="16"
                     Padding="14,10"
-                    MinHeight="80">
+                    MinHeight="80"
+                    AutomationProperties.AutomationId="Main_Border_StorySpeechBubble">
               <StackPanel Spacing="6">
                 <!-- Kapitel-Titel -->
                 <TextBlock Text="{Binding StoryTitle}"
                            FontSize="16" FontWeight="Bold"
                            Foreground="{StaticResource CraftPrimaryLightBrush}"
-                           TextWrapping="Wrap" />
+                           TextWrapping="Wrap"
+                           AutomationProperties.AutomationId="Main_Txt_StoryTitle" />
 
                 <!-- Dialog-Text -->
                 <TextBlock Text="{Binding StoryText}"
                            FontSize="13"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            TextWrapping="Wrap"
-                           LineHeight="20" />
+                           LineHeight="20"
+                           AutomationProperties.AutomationId="Main_Txt_StoryText" />
               </StackPanel>
             </Border>
           </Grid>
@@ -668,12 +874,15 @@
                   BorderBrush="#40FFD700"
                   BorderThickness="1.5"
                   BoxShadow="0 0 12 0 #20FFD700"
-                  IsVisible="{Binding StoryRewardText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                  IsVisible="{Binding StoryRewardText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                  AutomationProperties.AutomationId="Main_Border_StoryReward">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Gift" Width="20" Height="20" Foreground="Gold" />
+              <mi:MaterialIcon Kind="Gift" Width="20" Height="20" Foreground="Gold"
+                               AutomationProperties.AutomationId="Main_Icon_StoryRewardGift" />
               <TextBlock Text="{Binding StoryRewardText}"
                          FontSize="14" FontWeight="SemiBold"
-                         Foreground="Gold" />
+                         Foreground="Gold"
+                         AutomationProperties.AutomationId="Main_Txt_StoryReward" />
             </StackPanel>
           </Border>
 
@@ -683,7 +892,8 @@
                   Command="{Binding DismissStoryDialogCommand}"
                   HorizontalAlignment="Center"
                   MinWidth="160"
-                  Margin="0,4,0,0" />
+                  Margin="0,4,0,0"
+                  AutomationProperties.AutomationId="Main_Btn_StoryContinue" />
 
         </StackPanel>
       </Border>
@@ -692,25 +902,30 @@
     <!-- Generic Alert Dialog -->
     <Border Grid.RowSpan="3" Background="#AA000000"
             IsVisible="{Binding IsAlertDialogVisible}"
-            PointerPressed="OnAlertOverlayPressed">
+            PointerPressed="OnAlertOverlayPressed"
+            AutomationProperties.AutomationId="Main_Overlay_Alert">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="16" Padding="24"
               MaxWidth="340" MaxHeight="300"
               HorizontalAlignment="Center" VerticalAlignment="Center"
               BoxShadow="0 8 24 0 #40000000"
-              PointerPressed="OnDialogContentPressed">
+              PointerPressed="OnDialogContentPressed"
+              AutomationProperties.AutomationId="Main_Border_AlertDialog">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
           <TextBlock Text="{Binding AlertDialogTitle}"
                      FontSize="20" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_AlertTitle" />
           <TextBlock Text="{Binding AlertDialogMessage}"
                      FontSize="14" TextWrapping="Wrap"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_AlertMessage" />
           <Button Classes="Primary" Content="{Binding AlertDialogButtonText}"
                   Command="{Binding DismissAlertDialogCommand}"
-                  HorizontalAlignment="Center" MinWidth="120" />
+                  HorizontalAlignment="Center" MinWidth="120"
+                  AutomationProperties.AutomationId="Main_Btn_AlertDismiss" />
         </StackPanel>
       </Border>
     </Border>
@@ -719,7 +934,8 @@
     <Border Grid.RowSpan="3" Background="#AA000000"
             Classes="SheetBackdrop"
             Classes.Open="{Binding IsConfirmDialogVisible}"
-            PointerPressed="OnConfirmOverlayPressed">
+            PointerPressed="OnConfirmOverlayPressed"
+            AutomationProperties.AutomationId="Main_Overlay_Confirm">
       <Border Classes="ConfirmSheet"
               Classes.Open="{Binding IsConfirmDialogVisible}"
               Background="{DynamicResource SurfaceBrush}"
@@ -727,30 +943,37 @@
               Padding="24,12,24,24"
               VerticalAlignment="Bottom"
               BoxShadow="0 -4 16 0 #40000000"
-              PointerPressed="OnDialogContentPressed">
+              PointerPressed="OnDialogContentPressed"
+              AutomationProperties.AutomationId="Main_Border_ConfirmSheet">
         <StackPanel Spacing="16" HorizontalAlignment="Stretch">
           <!-- Drag Handle -->
           <Border Width="40" Height="4" CornerRadius="2"
                   Background="{DynamicResource TextMutedBrush}"
                   Opacity="0.4"
-                  HorizontalAlignment="Center" Margin="0,0,0,4" />
+                  HorizontalAlignment="Center" Margin="0,0,0,4"
+                  AutomationProperties.AutomationId="Main_Border_ConfirmDragHandle" />
           <TextBlock Text="{Binding ConfirmDialogTitle}"
                      FontSize="20" FontWeight="Bold"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource WarningBrush}" />
+                     Foreground="{DynamicResource WarningBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_ConfirmTitle" />
           <TextBlock Text="{Binding ConfirmDialogMessage}"
                      FontSize="14" TextWrapping="Wrap"
                      HorizontalAlignment="Center"
-                     Foreground="{DynamicResource TextSecondaryBrush}" />
-          <StackPanel Spacing="8" HorizontalAlignment="Stretch">
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_ConfirmMessage" />
+          <StackPanel Spacing="8" HorizontalAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_Panel_ConfirmButtons">
             <Button Classes="Primary" Content="{Binding ConfirmDialogAcceptText}"
                     Command="{Binding ConfirmDialogAcceptCommand}"
                     HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center" />
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="Main_Btn_ConfirmAccept" />
             <Button Classes="Secondary" Content="{Binding ConfirmDialogCancelText}"
                     Command="{Binding ConfirmDialogCancelCommand}"
                     HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center" />
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="Main_Btn_ConfirmCancel" />
           </StackPanel>
         </StackPanel>
       </Border>
@@ -760,7 +983,8 @@
     <Border Grid.RowSpan="3" Background="#AA000000"
             Classes="SheetBackdrop"
             Classes.Open="{Binding IsWorkerProfileActive}"
-            PointerPressed="OnWorkerProfileBackdropPressed">
+            PointerPressed="OnWorkerProfileBackdropPressed"
+            AutomationProperties.AutomationId="Main_Overlay_WorkerProfile">
       <Border Classes="BottomSheet"
               Classes.Open="{Binding IsWorkerProfileActive}"
               Background="{DynamicResource SurfaceBrush}"
@@ -768,17 +992,20 @@
               VerticalAlignment="Bottom"
               MaxHeight="600"
               BoxShadow="0 -4 16 0 #40000000"
-              PointerPressed="OnDialogContentPressed">
+              PointerPressed="OnDialogContentPressed"
+              AutomationProperties.AutomationId="Main_Border_WorkerProfileSheet">
         <Grid RowDefinitions="Auto,*">
           <!-- Drag Handle -->
           <Border Grid.Row="0"
                   Width="40" Height="4" CornerRadius="2"
                   Background="{DynamicResource TextMutedBrush}"
                   Opacity="0.4"
-                  HorizontalAlignment="Center" Margin="0,10,0,6" />
+                  HorizontalAlignment="Center" Margin="0,10,0,6"
+                  AutomationProperties.AutomationId="Main_Border_WorkerProfileDragHandle" />
           <!-- Worker Profile Content -->
           <views:WorkerProfileView Grid.Row="1"
-                                   DataContext="{Binding WorkerProfileViewModel}" />
+                                   DataContext="{Binding WorkerProfileViewModel}"
+                                   AutomationProperties.AutomationId="Main_View_WorkerProfile" />
         </Grid>
       </Border>
     </Border>
@@ -787,16 +1014,19 @@
     <controls:SkiaCelebrationOverlay x:Name="CelebrationCanvas"
                                      Grid.RowSpan="3"
                                      ZIndex="100"
-                                     IsHitTestVisible="False" />
+                                     IsHitTestVisible="False"
+                                     AutomationProperties.AutomationId="Main_Img_CelebrationOverlay" />
 
     <!-- Loading Overlay -->
     <Border Grid.RowSpan="3"
             Background="#CC000000"
-            IsVisible="{Binding IsLoading}">
+            IsVisible="{Binding IsLoading}"
+            AutomationProperties.AutomationId="Main_Overlay_Loading">
       <ProgressBar IsIndeterminate="True"
                    Width="48" Height="48"
                    HorizontalAlignment="Center"
-                   VerticalAlignment="Center" />
+                   VerticalAlignment="Center"
+                   AutomationProperties.AutomationId="Main_Img_LoadingSpinner" />
     </Border>
 
   </Grid>

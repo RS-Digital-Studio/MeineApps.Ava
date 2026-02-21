@@ -4,43 +4,53 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.BuildingsView"
-             x:DataType="vm:BuildingsViewModel">
+             x:DataType="vm:BuildingsViewModel"
+             AutomationProperties.AutomationId="Buildings_Root">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="Buildings_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Buildings_Border_Header"
             Classes="CardElevated"
             Padding="16,12"
             CornerRadius="0,0,12,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Back Button -->
         <Button Classes="Text"
+                AutomationProperties.AutomationId="Buildings_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           AutomationProperties.AutomationId="Buildings_Icon_Back" />
         </Button>
 
         <!-- Title (centered) -->
         <StackPanel Grid.Column="1"
+                    AutomationProperties.AutomationId="Buildings_Panel_Title"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="OfficeBuildingOutline" Width="28" Height="28"
+                           AutomationProperties.AutomationId="Buildings_Icon_Building"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{Binding Title}"
+                     AutomationProperties.AutomationId="Buildings_Txt_Title"
                      FontSize="20" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
 
         <!-- Balance -->
         <Border Grid.Column="2"
+                AutomationProperties.AutomationId="Buildings_Border_Balance"
                 Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="16"
                 Padding="12,6"
                 VerticalAlignment="Center">
           <TextBlock Text="{Binding CurrentBalance}"
+                     AutomationProperties.AutomationId="Buildings_Txt_Balance"
                      FontSize="14" FontWeight="Bold"
                      Foreground="{DynamicResource SuccessBrush}" />
         </Border>
@@ -50,8 +60,11 @@
     <!-- ================================================================= -->
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <ItemsControl ItemsSource="{Binding Buildings}" Margin="16">
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  AutomationProperties.AutomationId="Buildings_ScrollViewer_Content">
+      <StackPanel>
+      <ItemsControl ItemsSource="{Binding Buildings}" Margin="16"
+                    AutomationProperties.AutomationId="Buildings_Items_List">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <UniformGrid Columns="2" />
@@ -60,6 +73,7 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="vm:BuildingDisplayItem">
             <Border Classes="Card"
+                    AutomationProperties.AutomationId="Buildings_Border_Item"
                     Margin="4"
                     Padding="12"
                     Opacity="{Binding DisplayOpacity}">
@@ -69,10 +83,12 @@
 
                 <!-- Row 0: Icon -->
                 <Border Background="{DynamicResource SurfaceBrush}"
+                        AutomationProperties.AutomationId="Buildings_Border_ItemIcon"
                         CornerRadius="12"
                         Width="52" Height="52"
                         HorizontalAlignment="Center">
                   <TextBlock Text="{Binding Icon}"
+                             AutomationProperties.AutomationId="Buildings_Txt_ItemIcon"
                              FontSize="24"
                              HorizontalAlignment="Center"
                              VerticalAlignment="Center" />
@@ -80,6 +96,7 @@
 
                 <!-- Row 1: Name -->
                 <TextBlock Grid.Row="1"
+                           AutomationProperties.AutomationId="Buildings_Txt_ItemName"
                            Text="{Binding Name}"
                            FontSize="14" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
@@ -90,6 +107,7 @@
 
                 <!-- Row 2: Level Display -->
                 <TextBlock Grid.Row="2"
+                           AutomationProperties.AutomationId="Buildings_Txt_ItemLevel"
                            Text="{Binding LevelDisplay}"
                            FontSize="12"
                            Foreground="{StaticResource CraftPrimaryLightBrush}"
@@ -99,6 +117,7 @@
 
                 <!-- Row 3: Effect -->
                 <TextBlock Grid.Row="3"
+                           AutomationProperties.AutomationId="Buildings_Txt_ItemEffect"
                            Text="{Binding EffectDescription}"
                            FontSize="11"
                            Foreground="{DynamicResource TextSecondaryBrush}"
@@ -108,26 +127,32 @@
 
                 <!-- Row 4: Lock info (if locked) -->
                 <StackPanel Grid.Row="4"
+                            AutomationProperties.AutomationId="Buildings_Panel_ItemLocked"
                             Orientation="Horizontal"
                             Spacing="4"
                             HorizontalAlignment="Center"
                             IsVisible="{Binding IsLocked}">
                   <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                                   AutomationProperties.AutomationId="Buildings_Icon_ItemLock"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Text="{Binding UnlockLevel, StringFormat='Lv.{0}'}"
+                             AutomationProperties.AutomationId="Buildings_Txt_ItemUnlockLevel"
                              FontSize="11"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
 
                 <!-- Row 4: Max Level badge (if maxed) -->
                 <StackPanel Grid.Row="4"
+                            AutomationProperties.AutomationId="Buildings_Panel_ItemMaxLevel"
                             Orientation="Horizontal"
                             Spacing="4"
                             HorizontalAlignment="Center"
                             IsVisible="{Binding IsMaxLevel}">
                   <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                                   AutomationProperties.AutomationId="Buildings_Icon_ItemMaxCheck"
                                    Foreground="{DynamicResource SuccessBrush}" />
                   <TextBlock Text="{Binding CostDisplay}"
+                             AutomationProperties.AutomationId="Buildings_Txt_ItemMaxLabel"
                              FontSize="11"
                              Foreground="{DynamicResource SuccessBrush}" />
                 </StackPanel>
@@ -135,6 +160,7 @@
                 <!-- Row 5: Build Button (not built, not locked) -->
                 <Button Grid.Row="5"
                         Classes="Primary"
+                        AutomationProperties.AutomationId="Buildings_Btn_Build"
                         HorizontalAlignment="Stretch"
                         Padding="8,6"
                         IsVisible="{Binding !IsBuilt}"
@@ -144,14 +170,17 @@
                   <StackPanel Orientation="Horizontal"
                               Spacing="4"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="HammerWrench" Width="14" Height="14" />
-                    <TextBlock Text="{Binding CostDisplay}" FontSize="11" />
+                    <mi:MaterialIcon Kind="HammerWrench" Width="14" Height="14"
+                                     AutomationProperties.AutomationId="Buildings_Icon_Build" />
+                    <TextBlock Text="{Binding CostDisplay}" FontSize="11"
+                               AutomationProperties.AutomationId="Buildings_Txt_BuildCost" />
                   </StackPanel>
                 </Button>
 
                 <!-- Row 5: Upgrade Button (built, not max) -->
                 <Button Grid.Row="5"
                         Classes="Secondary"
+                        AutomationProperties.AutomationId="Buildings_Btn_Upgrade"
                         HorizontalAlignment="Stretch"
                         Padding="8,6"
                         IsVisible="{Binding IsBuilt}"
@@ -161,8 +190,10 @@
                   <StackPanel Orientation="Horizontal"
                               Spacing="4"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14" />
-                    <TextBlock Text="{Binding CostDisplay}" FontSize="11" />
+                    <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14"
+                                     AutomationProperties.AutomationId="Buildings_Icon_Upgrade" />
+                    <TextBlock Text="{Binding CostDisplay}" FontSize="11"
+                               AutomationProperties.AutomationId="Buildings_Txt_UpgradeCost" />
                   </StackPanel>
                 </Button>
 
@@ -171,6 +202,8 @@
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>
+      <Border Height="80" />
+      </StackPanel>
     </ScrollViewer>
 
   </Grid>

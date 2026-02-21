@@ -7,12 +7,14 @@
              x:Class="HandwerkerImperium.Views.AchievementsView"
              x:DataType="vm:AchievementsViewModel">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="Achievements_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Achievements_Border_Header"
             Padding="16,12"
             CornerRadius="0,0,12,12">
       <Border.Background>
@@ -25,19 +27,24 @@
 
         <!-- Back Button -->
         <Button Classes="Text"
+                AutomationProperties.AutomationId="Achievements_Btn_Back"
                 Command="{Binding GoBackCommand}">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           AutomationProperties.AutomationId="Achievements_Icon_Back"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
 
         <!-- Title -->
         <StackPanel Grid.Column="1"
+                    AutomationProperties.AutomationId="Achievements_Panel_Title"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="TrophyVariant" Width="28" Height="28"
+                           AutomationProperties.AutomationId="Achievements_Icon_Trophy"
                            Foreground="{StaticResource CraftGoldBrush}" />
           <TextBlock Text="{loc:Translate Achievements}"
+                     AutomationProperties.AutomationId="Achievements_Txt_Title"
                      FontSize="20" FontWeight="Bold"
                      Foreground="{StaticResource CraftPrimaryLightBrush}"
                      VerticalAlignment="Center" />
@@ -45,12 +52,14 @@
 
         <!-- Progress Badge -->
         <Border Grid.Column="2"
+                AutomationProperties.AutomationId="Achievements_Border_ProgressBadge"
                 CornerRadius="8"
                 Padding="12,6">
           <Border.Background>
             <SolidColorBrush Color="#D97706" Opacity="0.3" />
           </Border.Background>
           <TextBlock Text="{Binding ProgressText}"
+                     AutomationProperties.AutomationId="Achievements_Txt_ProgressBadge"
                      FontSize="14" FontWeight="Bold"
                      Foreground="{StaticResource CraftGoldBrush}" />
         </Border>
@@ -65,14 +74,18 @@
       <StackPanel Spacing="16" Margin="16">
 
         <!-- Overall Progress -->
-        <Border Classes="CardElevated" Padding="16">
+        <Border Classes="CardElevated" Padding="16"
+                AutomationProperties.AutomationId="Achievements_Border_OverallProgress">
           <StackPanel Spacing="8">
             <TextBlock Text="{loc:Translate AchievementProgress}"
+                       AutomationProperties.AutomationId="Achievements_Txt_OverallProgressTitle"
                        FontSize="18" FontWeight="Bold"
                        Foreground="{StaticResource CraftPrimaryLightBrush}" />
             <labs:SKCanvasView Height="12"
+                                 AutomationProperties.AutomationId="Achievements_Canvas_OverallProgress"
                                  PaintSurface="OnPaintOverallProgress" />
             <TextBlock Text="{Binding AchievementsCompletedText}"
+                       AutomationProperties.AutomationId="Achievements_Txt_CompletedCount"
                        FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
@@ -80,10 +93,12 @@
         </Border>
 
         <!-- Achievement List -->
-        <ItemsControl ItemsSource="{Binding Achievements}" Margin="0,0,0,60">
+        <ItemsControl ItemsSource="{Binding Achievements}" Margin="0,0,0,60"
+                      AutomationProperties.AutomationId="Achievements_Items_List">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="vm:AchievementDisplayModel">
               <Border Classes="Card"
+                      AutomationProperties.AutomationId="Achievements_Border_Item"
                       Padding="12"
                       Margin="0,0,0,12">
                 <Grid ColumnDefinitions="Auto,*,Auto"
@@ -93,11 +108,13 @@
 
                   <!-- Icon -->
                   <Border Grid.RowSpan="3"
+                          AutomationProperties.AutomationId="Achievements_Border_ItemIcon"
                           Background="{Binding IconBackground}"
                           CornerRadius="8"
                           Width="48" Height="48"
                           VerticalAlignment="Center">
                     <TextBlock Text="{Binding Icon}"
+                               AutomationProperties.AutomationId="Achievements_Txt_ItemIcon"
                                FontSize="24"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center" />
@@ -105,12 +122,14 @@
 
                   <!-- Title -->
                   <TextBlock Grid.Column="1"
+                             AutomationProperties.AutomationId="Achievements_Txt_ItemTitle"
                              Text="{Binding Title}"
                              FontSize="14" FontWeight="Bold"
                              Foreground="{Binding TitleColor}" />
 
                   <!-- Reward / Checkmark -->
                   <TextBlock Grid.Column="2"
+                             AutomationProperties.AutomationId="Achievements_Txt_ItemReward"
                              Text="{Binding RewardText}"
                              FontSize="12"
                              Foreground="{DynamicResource SuccessBrush}"
@@ -118,6 +137,7 @@
                              IsVisible="{Binding !IsUnlocked}" />
 
                   <mi:MaterialIcon Grid.Column="2"
+                                   AutomationProperties.AutomationId="Achievements_Icon_ItemCheck"
                                    Kind="Check" Width="20" Height="20"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    VerticalAlignment="Center"
@@ -125,19 +145,23 @@
 
                   <!-- Description -->
                   <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                             AutomationProperties.AutomationId="Achievements_Txt_ItemDescription"
                              Text="{Binding Description}"
                              FontSize="12"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
 
                   <!-- Progress Bar (if not unlocked) -->
                   <Grid Grid.Row="2" Grid.Column="1" Grid.ColumnSpan="2"
+                        AutomationProperties.AutomationId="Achievements_Grid_ItemProgress"
                         ColumnDefinitions="*,Auto,Auto"
                         ColumnSpacing="8"
                         IsVisible="{Binding !IsUnlocked}">
                     <labs:SKCanvasView Height="8"
+                                         AutomationProperties.AutomationId="Achievements_Canvas_ItemProgress"
                                          VerticalAlignment="Center"
                                          PaintSurface="OnPaintAchievementProgress" />
                     <TextBlock Grid.Column="1"
+                               AutomationProperties.AutomationId="Achievements_Txt_ItemProgress"
                                Text="{Binding ProgressText}"
                                FontSize="10"
                                Foreground="{DynamicResource TextSecondaryBrush}"
@@ -146,14 +170,17 @@
                     <!-- Ad-Boost Button (+20%) -->
                     <Button Grid.Column="2"
                             Classes="Text"
+                            AutomationProperties.AutomationId="Achievements_Btn_ItemBoost"
                             Padding="4,2"
                             IsVisible="{Binding CanBoost}"
                             Command="{Binding $parent[ItemsControl].((vm:AchievementsViewModel)DataContext).BoostAchievementCommand}"
                             CommandParameter="{Binding .}">
                       <StackPanel Orientation="Horizontal" Spacing="2">
                         <mi:MaterialIcon Kind="Video" Width="14" Height="14"
+                                         AutomationProperties.AutomationId="Achievements_Icon_ItemBoostAd"
                                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
                         <TextBlock Text="+20%"
+                                   AutomationProperties.AutomationId="Achievements_Txt_ItemBoostLabel"
                                    FontSize="10" FontWeight="SemiBold"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}" />
                       </StackPanel>

@@ -8,12 +8,13 @@
              x:Class="HandwerkerImperium.Views.WorkerProfileView"
              x:DataType="vm:WorkerProfileViewModel">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="WorkerProfile_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
-    <Border Grid.Row="0" Padding="16,4,16,12">
+    <Border Grid.Row="0" Padding="16,4,16,12"
+            AutomationProperties.AutomationId="WorkerProfile_Border_Header">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
         <!-- Avatar -->
         <controls:WorkerAvatarControl
@@ -29,16 +30,19 @@
                    Text="{Binding WorkerName}"
                    FontSize="20" FontWeight="Bold"
                    Foreground="{DynamicResource TextPrimaryBrush}"
-                   VerticalAlignment="Center" />
+                   VerticalAlignment="Center"
+                   AutomationProperties.AutomationId="WorkerProfile_Txt_Name" />
 
         <!-- Status Badge -->
         <Border Grid.Column="2"
                 Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="8"
-                Padding="12,6">
+                Padding="12,6"
+                AutomationProperties.AutomationId="WorkerProfile_Border_StatusBadge">
           <TextBlock Text="{Binding StatusDisplay}"
                      FontSize="13" FontWeight="SemiBold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     AutomationProperties.AutomationId="WorkerProfile_Txt_Status" />
         </Border>
       </Grid>
     </Border>
@@ -52,7 +56,8 @@
         <!-- ============================================================= -->
         <!-- WORKER INFO CARD                                              -->
         <!-- ============================================================= -->
-        <Border Classes="CardElevated" Padding="16">
+        <Border Classes="CardElevated" Padding="16"
+                AutomationProperties.AutomationId="WorkerProfile_Border_InfoCard">
           <StackPanel Spacing="12">
 
             <!-- Tier + Personality -->
@@ -60,18 +65,22 @@
               <StackPanel Spacing="4">
                 <TextBlock Text="{loc:Translate Tier}"
                            FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_TierLabel" />
                 <TextBlock Text="{Binding TierDisplay}"
                            FontSize="16" FontWeight="Bold"
-                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_TierValue" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="4">
                 <TextBlock Text="{loc:Translate Personality}"
                            FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_PersonalityLabel" />
                 <TextBlock Text="{Binding PersonalityDisplay}"
                            FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_PersonalityValue" />
               </StackPanel>
             </Grid>
 
@@ -80,18 +89,22 @@
               <StackPanel Spacing="4">
                 <TextBlock Text="{loc:Translate Specialization}"
                            FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_SpecializationLabel" />
                 <TextBlock Text="{Binding SpecializationDisplay}"
                            FontSize="14"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_SpecializationValue" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="4">
                 <TextBlock Text="{loc:Translate AssignedWorkshop}"
                            FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_WorkshopLabel" />
                 <TextBlock Text="{Binding AssignedWorkshopDisplay}"
                            FontSize="14"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_WorkshopValue" />
               </StackPanel>
             </Grid>
 
@@ -100,29 +113,35 @@
               <StackPanel Spacing="4">
                 <TextBlock Text="{loc:Translate Efficiency}"
                            FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_EfficiencyLabel" />
                 <TextBlock Text="{Binding EfficiencyDisplay}"
                            FontSize="18" FontWeight="Bold"
-                           Foreground="{DynamicResource SuccessBrush}" />
+                           Foreground="{DynamicResource SuccessBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_EfficiencyValue" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="4">
                 <TextBlock Text="{loc:Translate Income}"
                            FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_IncomeLabel" />
                 <TextBlock Text="{Binding IncomeContributionDisplay}"
                            FontSize="18" FontWeight="Bold"
-                           Foreground="{DynamicResource SuccessBrush}" />
+                           Foreground="{DynamicResource SuccessBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_IncomeValue" />
               </StackPanel>
             </Grid>
 
             <!-- Wage -->
-            <StackPanel Spacing="4">
+            <StackPanel Spacing="4" AutomationProperties.AutomationId="WorkerProfile_Panel_Wage">
               <TextBlock Text="{loc:Translate Wage}"
                          FontSize="12"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         AutomationProperties.AutomationId="WorkerProfile_Txt_WageLabel" />
               <TextBlock Text="{Binding WageDisplay}"
                          FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource WarningBrush}" />
+                         Foreground="{DynamicResource WarningBrush}"
+                         AutomationProperties.AutomationId="WorkerProfile_Txt_WageValue" />
             </StackPanel>
 
           </StackPanel>
@@ -131,65 +150,254 @@
         <!-- ============================================================= -->
         <!-- STIMMUNG / ERSCHÖPFUNG / ERFAHRUNG (kompakt in einer Card)  -->
         <!-- ============================================================= -->
-        <Border Classes="CardElevated" Padding="14,12">
+        <Border Classes="CardElevated" Padding="14,12"
+                AutomationProperties.AutomationId="WorkerProfile_Border_StatsCard">
           <StackPanel Spacing="10">
 
             <!-- Stimmung -->
-            <StackPanel Spacing="4">
+            <StackPanel Spacing="4" AutomationProperties.AutomationId="WorkerProfile_Panel_Mood">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="EmoticonHappy" Width="18" Height="18"
-                                   Foreground="{DynamicResource SuccessBrush}" />
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   AutomationProperties.AutomationId="WorkerProfile_Icon_Mood" />
                   <TextBlock Text="{loc:Translate Mood}"
                              FontSize="13" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_MoodLabel" />
                 </StackPanel>
                 <TextBlock Grid.Column="1"
                            Text="{Binding MoodDisplay}"
                            FontSize="13" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_MoodValue" />
               </Grid>
               <labs:SKCanvasView Height="10"
-                                   PaintSurface="OnPaintMoodProgress" />
+                                   PaintSurface="OnPaintMoodProgress"
+                                   AutomationProperties.AutomationId="WorkerProfile_Canvas_MoodProgress" />
             </StackPanel>
 
             <!-- Erschöpfung -->
-            <StackPanel Spacing="4">
+            <StackPanel Spacing="4" AutomationProperties.AutomationId="WorkerProfile_Panel_Fatigue">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="Sleep" Width="18" Height="18"
-                                   Foreground="{DynamicResource ErrorBrush}" />
+                                   Foreground="{DynamicResource ErrorBrush}"
+                                   AutomationProperties.AutomationId="WorkerProfile_Icon_Fatigue" />
                   <TextBlock Text="{loc:Translate Fatigue}"
                              FontSize="13" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_FatigueLabel" />
                 </StackPanel>
                 <TextBlock Grid.Column="1"
                            Text="{Binding FatigueDisplay}"
                            FontSize="13" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_FatigueValue" />
               </Grid>
               <labs:SKCanvasView Height="10"
-                                   PaintSurface="OnPaintFatigueProgress" />
+                                   PaintSurface="OnPaintFatigueProgress"
+                                   AutomationProperties.AutomationId="WorkerProfile_Canvas_FatigueProgress" />
             </StackPanel>
 
             <!-- Erfahrung -->
-            <StackPanel Spacing="4">
+            <StackPanel Spacing="4" AutomationProperties.AutomationId="WorkerProfile_Panel_Experience">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="TrendingUp" Width="18" Height="18"
-                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                   AutomationProperties.AutomationId="WorkerProfile_Icon_Experience" />
                   <TextBlock Text="{loc:Translate Experience}"
                              FontSize="13" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_ExperienceLabel" />
                 </StackPanel>
                 <TextBlock Grid.Column="1"
                            Text="{Binding XpProgress}"
                            FontSize="12"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_XpProgress" />
               </Grid>
               <labs:SKCanvasView Height="10"
-                                   PaintSurface="OnPaintXpProgress" />
+                                   PaintSurface="OnPaintXpProgress"
+                                   AutomationProperties.AutomationId="WorkerProfile_Canvas_XpProgress" />
             </StackPanel>
+
+          </StackPanel>
+        </Border>
+
+        <!-- ============================================================= -->
+        <!-- AUSRÜSTUNG                                                    -->
+        <!-- ============================================================= -->
+        <Border Classes="CardElevated" Padding="14,12"
+                AutomationProperties.AutomationId="WorkerProfile_Border_Equipment">
+          <StackPanel Spacing="10">
+            <!-- Titel -->
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        AutomationProperties.AutomationId="WorkerProfile_Panel_EquipmentHeader">
+              <mi:MaterialIcon Kind="Shield" Width="20" Height="20"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}"
+                               AutomationProperties.AutomationId="WorkerProfile_Icon_EquipmentTitle" />
+              <TextBlock Text="{loc:Translate EquipmentTitle}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="WorkerProfile_Txt_EquipmentTitle" />
+            </StackPanel>
+
+            <!-- 4 Equipment-Slots horizontal -->
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8"
+                  AutomationProperties.AutomationId="WorkerProfile_Grid_EquipmentSlots">
+
+              <!-- Helmet Slot -->
+              <Border Grid.Column="0" CornerRadius="10" Padding="6,8"
+                      MinHeight="90"
+                      BorderThickness="2"
+                      BorderBrush="{Binding EquippedHelmet.RarityColor, FallbackValue=#444444, TargetNullValue=#444444}"
+                      AutomationProperties.AutomationId="WorkerProfile_Border_SlotHelmet">
+                <Border.Background>
+                  <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
+                </Border.Background>
+                <StackPanel HorizontalAlignment="Center" Spacing="4">
+                  <mi:MaterialIcon Kind="HardHat" Width="24" Height="24"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{Binding EquippedHelmet.RarityColor, FallbackValue=#666666, TargetNullValue=#666666}"
+                                   AutomationProperties.AutomationId="WorkerProfile_Icon_SlotHelmet" />
+                  <TextBlock Text="{loc:Translate Helmet}"
+                             FontSize="10" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextAlignment="Center"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotHelmetLabel" />
+                  <!-- Name oder "Leer" -->
+                  <TextBlock FontSize="9" TextAlignment="Center"
+                             TextTrimming="CharacterEllipsis" MaxLines="1"
+                             IsVisible="{Binding EquippedHelmet, Converter={x:Static ObjectConverters.IsNotNull}}"
+                             Foreground="{Binding EquippedHelmet.RarityColor, FallbackValue=#9E9E9E}"
+                             Text="{Binding EquippedItemName}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotHelmetName" />
+                  <TextBlock Text="{loc:Translate EquipmentEmpty}"
+                             FontSize="9" TextAlignment="Center"
+                             IsVisible="{Binding EquippedHelmet, Converter={x:Static ObjectConverters.IsNull}}"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotHelmetEmpty" />
+                </StackPanel>
+              </Border>
+
+              <!-- Gloves Slot -->
+              <Border Grid.Column="1" CornerRadius="10" Padding="6,8"
+                      MinHeight="90"
+                      BorderThickness="2"
+                      BorderBrush="{Binding EquippedGloves.RarityColor, FallbackValue=#444444, TargetNullValue=#444444}"
+                      AutomationProperties.AutomationId="WorkerProfile_Border_SlotGloves">
+                <Border.Background>
+                  <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
+                </Border.Background>
+                <StackPanel HorizontalAlignment="Center" Spacing="4">
+                  <mi:MaterialIcon Kind="HandWave" Width="24" Height="24"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{Binding EquippedGloves.RarityColor, FallbackValue=#666666, TargetNullValue=#666666}"
+                                   AutomationProperties.AutomationId="WorkerProfile_Icon_SlotGloves" />
+                  <TextBlock Text="{loc:Translate Gloves}"
+                             FontSize="10" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextAlignment="Center"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotGlovesLabel" />
+                  <TextBlock FontSize="9" TextAlignment="Center"
+                             TextTrimming="CharacterEllipsis" MaxLines="1"
+                             IsVisible="{Binding EquippedGloves, Converter={x:Static ObjectConverters.IsNotNull}}"
+                             Foreground="{Binding EquippedGloves.RarityColor, FallbackValue=#9E9E9E}"
+                             Text="{Binding EquippedItemName}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotGlovesName" />
+                  <TextBlock Text="{loc:Translate EquipmentEmpty}"
+                             FontSize="9" TextAlignment="Center"
+                             IsVisible="{Binding EquippedGloves, Converter={x:Static ObjectConverters.IsNull}}"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotGlovesEmpty" />
+                </StackPanel>
+              </Border>
+
+              <!-- Boots Slot -->
+              <Border Grid.Column="2" CornerRadius="10" Padding="6,8"
+                      MinHeight="90"
+                      BorderThickness="2"
+                      BorderBrush="{Binding EquippedBoots.RarityColor, FallbackValue=#444444, TargetNullValue=#444444}"
+                      AutomationProperties.AutomationId="WorkerProfile_Border_SlotBoots">
+                <Border.Background>
+                  <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
+                </Border.Background>
+                <StackPanel HorizontalAlignment="Center" Spacing="4">
+                  <mi:MaterialIcon Kind="ShoeFormal" Width="24" Height="24"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{Binding EquippedBoots.RarityColor, FallbackValue=#666666, TargetNullValue=#666666}"
+                                   AutomationProperties.AutomationId="WorkerProfile_Icon_SlotBoots" />
+                  <TextBlock Text="{loc:Translate Boots}"
+                             FontSize="10" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextAlignment="Center"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBootsLabel" />
+                  <TextBlock FontSize="9" TextAlignment="Center"
+                             TextTrimming="CharacterEllipsis" MaxLines="1"
+                             IsVisible="{Binding EquippedBoots, Converter={x:Static ObjectConverters.IsNotNull}}"
+                             Foreground="{Binding EquippedBoots.RarityColor, FallbackValue=#9E9E9E}"
+                             Text="{Binding EquippedItemName}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBootsName" />
+                  <TextBlock Text="{loc:Translate EquipmentEmpty}"
+                             FontSize="9" TextAlignment="Center"
+                             IsVisible="{Binding EquippedBoots, Converter={x:Static ObjectConverters.IsNull}}"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBootsEmpty" />
+                </StackPanel>
+              </Border>
+
+              <!-- Belt Slot -->
+              <Border Grid.Column="3" CornerRadius="10" Padding="6,8"
+                      MinHeight="90"
+                      BorderThickness="2"
+                      BorderBrush="{Binding EquippedBelt.RarityColor, FallbackValue=#444444, TargetNullValue=#444444}"
+                      AutomationProperties.AutomationId="WorkerProfile_Border_SlotBelt">
+                <Border.Background>
+                  <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
+                </Border.Background>
+                <StackPanel HorizontalAlignment="Center" Spacing="4">
+                  <mi:MaterialIcon Kind="Wrench" Width="24" Height="24"
+                                   HorizontalAlignment="Center"
+                                   Foreground="{Binding EquippedBelt.RarityColor, FallbackValue=#666666, TargetNullValue=#666666}"
+                                   AutomationProperties.AutomationId="WorkerProfile_Icon_SlotBelt" />
+                  <TextBlock Text="{loc:Translate Belt}"
+                             FontSize="10" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextAlignment="Center"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBeltLabel" />
+                  <TextBlock FontSize="9" TextAlignment="Center"
+                             TextTrimming="CharacterEllipsis" MaxLines="1"
+                             IsVisible="{Binding EquippedBelt, Converter={x:Static ObjectConverters.IsNotNull}}"
+                             Foreground="{Binding EquippedBelt.RarityColor, FallbackValue=#9E9E9E}"
+                             Text="{Binding EquippedItemName}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBeltName" />
+                  <TextBlock Text="{loc:Translate EquipmentEmpty}"
+                             FontSize="9" TextAlignment="Center"
+                             IsVisible="{Binding EquippedBelt, Converter={x:Static ObjectConverters.IsNull}}"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBeltEmpty" />
+                </StackPanel>
+              </Border>
+            </Grid>
+
+            <!-- Unequip-Button (nur sichtbar wenn Equipment vorhanden) -->
+            <Button Classes="Secondary"
+                    Command="{Binding UnequipCommand}"
+                    IsVisible="{Binding HasEquipment}"
+                    HorizontalAlignment="Center"
+                    Padding="16,8"
+                    AutomationProperties.AutomationId="WorkerProfile_Btn_Unequip">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="ShieldRemove" Width="16" Height="16"
+                                 Foreground="{DynamicResource WarningBrush}"
+                                 AutomationProperties.AutomationId="WorkerProfile_Icon_Unequip" />
+                <TextBlock Text="{loc:Translate Unequip}" FontSize="12"
+                           Foreground="{DynamicResource WarningBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_Unequip" />
+              </StackPanel>
+            </Button>
 
           </StackPanel>
         </Border>
@@ -197,21 +405,26 @@
         <!-- ============================================================= -->
         <!-- ACTION BUTTONS                                                -->
         <!-- ============================================================= -->
-        <Border Classes="CardElevated" Padding="16">
+        <Border Classes="CardElevated" Padding="16"
+                AutomationProperties.AutomationId="WorkerProfile_Border_Actions">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate Actions}"
                        FontSize="16" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       AutomationProperties.AutomationId="WorkerProfile_Txt_ActionsTitle" />
 
             <!-- Training-Typ-Auswahl (3 Buttons mit Hervorhebung) -->
-            <StackPanel IsVisible="{Binding !IsTraining}" Spacing="8">
+            <StackPanel IsVisible="{Binding !IsTraining}" Spacing="8"
+                        AutomationProperties.AutomationId="WorkerProfile_Panel_TrainingSelection">
               <TextBlock Text="{loc:Translate Efficiency}"
                          FontSize="14" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="WorkerProfile_Txt_TrainingSectionTitle" />
               <TextBlock Text="{loc:Translate SelectTrainingType}"
                          FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}"
-                         Margin="0,-4,0,0" />
+                         Margin="0,-4,0,0"
+                         AutomationProperties.AutomationId="WorkerProfile_Txt_SelectTrainingHint" />
               <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
                 <!-- Effizienz -->
                 <Button Grid.Column="0"
@@ -219,7 +432,8 @@
                         CommandParameter="Efficiency"
                         IsEnabled="{Binding CanTrainEfficiency}"
                         HorizontalAlignment="Stretch" Padding="0"
-                        Background="Transparent" BorderThickness="0">
+                        Background="Transparent" BorderThickness="0"
+                        AutomationProperties.AutomationId="WorkerProfile_Btn_TrainEfficiency">
                   <Border CornerRadius="10" Padding="6,10"
                           BorderThickness="2"
                           BorderBrush="{Binding IsEfficiencySelected, Converter={StaticResource TrainingTypeBorderConverter}}"
@@ -227,7 +441,8 @@
                     <StackPanel HorizontalAlignment="Center" Spacing="4">
                       <mi:MaterialIcon Kind="Dumbbell" Width="24" Height="24"
                                        HorizontalAlignment="Center"
-                                       Foreground="{Binding IsEfficiencySelected, Converter={StaticResource TrainingTypeIconConverter}}" />
+                                       Foreground="{Binding IsEfficiencySelected, Converter={StaticResource TrainingTypeIconConverter}}"
+                                       AutomationProperties.AutomationId="WorkerProfile_Icon_TrainEfficiency" />
                       <TextBlock Text="{loc:Translate TrainingTypeEfficiency}"
                                  FontSize="11" FontWeight="SemiBold" TextAlignment="Center"
                                  TextTrimming="CharacterEllipsis"
@@ -241,7 +456,8 @@
                         CommandParameter="Endurance"
                         IsEnabled="{Binding CanTrainEndurance}"
                         HorizontalAlignment="Stretch" Padding="0"
-                        Background="Transparent" BorderThickness="0">
+                        Background="Transparent" BorderThickness="0"
+                        AutomationProperties.AutomationId="WorkerProfile_Btn_TrainEndurance">
                   <Border CornerRadius="10" Padding="6,10"
                           BorderThickness="2"
                           BorderBrush="{Binding IsEnduranceSelected, Converter={StaticResource TrainingTypeBorderConverter}}"
@@ -249,7 +465,8 @@
                     <StackPanel HorizontalAlignment="Center" Spacing="4">
                       <mi:MaterialIcon Kind="Run" Width="24" Height="24"
                                        HorizontalAlignment="Center"
-                                       Foreground="{Binding IsEnduranceSelected, Converter={StaticResource TrainingTypeIconConverter}}" />
+                                       Foreground="{Binding IsEnduranceSelected, Converter={StaticResource TrainingTypeIconConverter}}"
+                                       AutomationProperties.AutomationId="WorkerProfile_Icon_TrainEndurance" />
                       <TextBlock Text="{loc:Translate TrainingTypeEndurance}"
                                  FontSize="11" FontWeight="SemiBold" TextAlignment="Center"
                                  TextTrimming="CharacterEllipsis"
@@ -263,7 +480,8 @@
                         CommandParameter="Morale"
                         IsEnabled="{Binding CanTrainMorale}"
                         HorizontalAlignment="Stretch" Padding="0"
-                        Background="Transparent" BorderThickness="0">
+                        Background="Transparent" BorderThickness="0"
+                        AutomationProperties.AutomationId="WorkerProfile_Btn_TrainMorale">
                   <Border CornerRadius="10" Padding="6,10"
                           BorderThickness="2"
                           BorderBrush="{Binding IsMoraleSelected, Converter={StaticResource TrainingTypeBorderConverter}}"
@@ -271,7 +489,8 @@
                     <StackPanel HorizontalAlignment="Center" Spacing="4">
                       <mi:MaterialIcon Kind="EmoticonHappy" Width="24" Height="24"
                                        HorizontalAlignment="Center"
-                                       Foreground="{Binding IsMoraleSelected, Converter={StaticResource TrainingTypeIconConverter}}" />
+                                       Foreground="{Binding IsMoraleSelected, Converter={StaticResource TrainingTypeIconConverter}}"
+                                       AutomationProperties.AutomationId="WorkerProfile_Icon_TrainMorale" />
                       <TextBlock Text="{loc:Translate TrainingTypeMorale}"
                                  FontSize="11" FontWeight="SemiBold" TextAlignment="Center"
                                  TextTrimming="CharacterEllipsis"
@@ -283,12 +502,14 @@
 
               <!-- Beschreibung des ausgewählten Training-Typs -->
               <Border Background="{DynamicResource SurfaceBrush}"
-                      CornerRadius="8" Padding="12,8">
+                      CornerRadius="8" Padding="12,8"
+                      AutomationProperties.AutomationId="WorkerProfile_Border_TrainingDescription">
                 <TextBlock Text="{Binding SelectedTrainingDescription}"
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            TextWrapping="Wrap"
-                           TextAlignment="Center" />
+                           TextAlignment="Center"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_TrainingDescription" />
               </Border>
 
               <!-- Ausdauer + Stimmungs-Bonus-Anzeige -->
@@ -298,14 +519,16 @@
                              FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Text="{Binding EnduranceBonusDisplay}"
                              FontSize="12" FontWeight="SemiBold"
-                             Foreground="{DynamicResource SuccessBrush}" />
+                             Foreground="{DynamicResource SuccessBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_EnduranceBonus" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Spacing="2">
                   <TextBlock Text="{loc:Translate TrainingTypeMoraleDesc}"
                              FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Text="{Binding MoraleBonusDisplay}"
                              FontSize="12" FontWeight="SemiBold"
-                             Foreground="{DynamicResource SuccessBrush}" />
+                             Foreground="{DynamicResource SuccessBrush}"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_MoraleBonus" />
                 </StackPanel>
               </Grid>
             </StackPanel>
@@ -318,45 +541,57 @@
                         IsVisible="{Binding !IsTraining}"
                         IsEnabled="{Binding CanStartTraining}"
                         HorizontalAlignment="Stretch"
-                        Padding="12,10">
+                        Padding="12,10"
+                        AutomationProperties.AutomationId="WorkerProfile_Btn_StartTraining">
                   <StackPanel Orientation="Horizontal" Spacing="6"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="SchoolOutline" Width="18" Height="18" />
-                    <TextBlock Text="{loc:Translate Train}" FontSize="13" />
+                    <mi:MaterialIcon Kind="SchoolOutline" Width="18" Height="18"
+                                     AutomationProperties.AutomationId="WorkerProfile_Icon_Train" />
+                    <TextBlock Text="{loc:Translate Train}" FontSize="13"
+                               AutomationProperties.AutomationId="WorkerProfile_Txt_Train" />
                   </StackPanel>
                 </Button>
                 <Button Classes="Secondary"
                         Command="{Binding StopTrainingCommand}"
                         IsVisible="{Binding IsTraining}"
                         HorizontalAlignment="Stretch"
-                        Padding="12,10">
+                        Padding="12,10"
+                        AutomationProperties.AutomationId="WorkerProfile_Btn_StopTraining">
                   <StackPanel Orientation="Horizontal" Spacing="6"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
-                    <TextBlock Text="{loc:Translate StopTraining}" FontSize="13" />
+                    <mi:MaterialIcon Kind="Stop" Width="18" Height="18"
+                                     AutomationProperties.AutomationId="WorkerProfile_Icon_StopTraining" />
+                    <TextBlock Text="{loc:Translate StopTraining}" FontSize="13"
+                               AutomationProperties.AutomationId="WorkerProfile_Txt_StopTraining" />
                   </StackPanel>
                 </Button>
 
                 <!-- Training-Fortschritt (während Training aktiv) -->
-                <StackPanel IsVisible="{Binding IsTraining}" Margin="0,6,0,0" Spacing="4">
+                <StackPanel IsVisible="{Binding IsTraining}" Margin="0,6,0,0" Spacing="4"
+                            AutomationProperties.AutomationId="WorkerProfile_Panel_TrainingProgress">
                   <labs:SKCanvasView Height="10"
-                                     PaintSurface="OnPaintTrainingProgress" />
+                                     PaintSurface="OnPaintTrainingProgress"
+                                     AutomationProperties.AutomationId="WorkerProfile_Canvas_TrainingProgress" />
                   <TextBlock Text="{Binding TrainingProgressText}"
                              FontSize="11"
                              Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" />
+                             HorizontalAlignment="Center"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_TrainingProgress" />
                 </StackPanel>
 
                 <!-- Training-Info (vor Training) -->
-                <StackPanel IsVisible="{Binding ShowTrainingInfo}" Margin="0,4,0,0" Spacing="2">
+                <StackPanel IsVisible="{Binding ShowTrainingInfo}" Margin="0,4,0,0" Spacing="2"
+                            AutomationProperties.AutomationId="WorkerProfile_Panel_TrainingInfo">
                   <TextBlock Text="{Binding TrainingTimeDisplay}"
                              FontSize="11"
                              Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" />
+                             HorizontalAlignment="Center"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_TrainingTime" />
                   <TextBlock Text="{Binding TrainingCostDisplay}"
                              FontSize="11"
                              Foreground="{DynamicResource TextSecondaryBrush}"
-                             HorizontalAlignment="Center" />
+                             HorizontalAlignment="Center"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_TrainingCost" />
                 </StackPanel>
               </StackPanel>
 
@@ -367,22 +602,28 @@
                         IsVisible="{Binding !IsResting}"
                         IsEnabled="{Binding CanStartResting}"
                         HorizontalAlignment="Stretch"
-                        Padding="12,10">
+                        Padding="12,10"
+                        AutomationProperties.AutomationId="WorkerProfile_Btn_StartResting">
                   <StackPanel Orientation="Horizontal" Spacing="6"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="BedOutline" Width="18" Height="18" />
-                    <TextBlock Text="{loc:Translate Rest}" FontSize="13" />
+                    <mi:MaterialIcon Kind="BedOutline" Width="18" Height="18"
+                                     AutomationProperties.AutomationId="WorkerProfile_Icon_Rest" />
+                    <TextBlock Text="{loc:Translate Rest}" FontSize="13"
+                               AutomationProperties.AutomationId="WorkerProfile_Txt_Rest" />
                   </StackPanel>
                 </Button>
                 <Button Classes="Secondary"
                         Command="{Binding StopRestingCommand}"
                         IsVisible="{Binding IsResting}"
                         HorizontalAlignment="Stretch"
-                        Padding="12,10">
+                        Padding="12,10"
+                        AutomationProperties.AutomationId="WorkerProfile_Btn_StopResting">
                   <StackPanel Orientation="Horizontal" Spacing="6"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="Stop" Width="18" Height="18" />
-                    <TextBlock Text="{loc:Translate StopResting}" FontSize="13" />
+                    <mi:MaterialIcon Kind="Stop" Width="18" Height="18"
+                                     AutomationProperties.AutomationId="WorkerProfile_Icon_StopResting" />
+                    <TextBlock Text="{loc:Translate StopResting}" FontSize="13"
+                               AutomationProperties.AutomationId="WorkerProfile_Txt_StopResting" />
                   </StackPanel>
                 </Button>
                 <!-- Rest-Info -->
@@ -390,7 +631,8 @@
                            IsVisible="{Binding ShowRestInfo}"
                            FontSize="11" Margin="0,4,0,0"
                            Foreground="{DynamicResource TextSecondaryBrush}"
-                           HorizontalAlignment="Center" />
+                           HorizontalAlignment="Center"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_RestTime" />
               </StackPanel>
             </Grid>
 
@@ -399,29 +641,37 @@
                     Command="{Binding GiveBonusCommand}"
                     IsEnabled="{Binding CanGiveBonus}"
                     HorizontalAlignment="Stretch"
-                    Padding="12,10">
+                    Padding="12,10"
+                    AutomationProperties.AutomationId="WorkerProfile_Btn_GiveBonus">
               <StackPanel Orientation="Horizontal" Spacing="6"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="GiftOutline" Width="18" Height="18" />
-                <TextBlock Text="{loc:Translate GiveBonus}" FontSize="13" />
+                <mi:MaterialIcon Kind="GiftOutline" Width="18" Height="18"
+                                 AutomationProperties.AutomationId="WorkerProfile_Icon_GiveBonus" />
+                <TextBlock Text="{loc:Translate GiveBonus}" FontSize="13"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_GiveBonus" />
               </StackPanel>
             </Button>
 
             <!-- Transfer: Workshop-Auswahl + Versetzen-Button -->
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"
-                  IsVisible="{Binding HasAvailableWorkshops}">
+                  IsVisible="{Binding HasAvailableWorkshops}"
+                  AutomationProperties.AutomationId="WorkerProfile_Grid_Transfer">
               <ComboBox ItemsSource="{Binding AvailableWorkshops}"
                         SelectedItem="{Binding SelectedTransferWorkshop}"
                         DisplayMemberBinding="{Binding Name}"
                         HorizontalAlignment="Stretch"
-                        MinHeight="40" />
+                        MinHeight="40"
+                        AutomationProperties.AutomationId="WorkerProfile_Combo_TransferWorkshop" />
               <Button Grid.Column="1"
                       Classes="Secondary"
                       Command="{Binding TransferWorkerCommand}"
-                      Padding="12,10">
+                      Padding="12,10"
+                      AutomationProperties.AutomationId="WorkerProfile_Btn_Transfer">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="SwapHorizontal" Width="18" Height="18" />
-                  <TextBlock Text="{loc:Translate Transfer}" FontSize="13" />
+                  <mi:MaterialIcon Kind="SwapHorizontal" Width="18" Height="18"
+                                   AutomationProperties.AutomationId="WorkerProfile_Icon_Transfer" />
+                  <TextBlock Text="{loc:Translate Transfer}" FontSize="13"
+                             AutomationProperties.AutomationId="WorkerProfile_Txt_Transfer" />
                 </StackPanel>
               </Button>
             </Grid>
@@ -431,13 +681,16 @@
                     Command="{Binding FireWorkerCommand}"
                     HorizontalAlignment="Center"
                     Margin="0,8,0,0"
-                    Padding="16,8">
+                    Padding="16,8"
+                    AutomationProperties.AutomationId="WorkerProfile_Btn_Fire">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="AccountRemove" Width="18" Height="18"
-                                 Foreground="{DynamicResource ErrorBrush}" />
+                                 Foreground="{DynamicResource ErrorBrush}"
+                                 AutomationProperties.AutomationId="WorkerProfile_Icon_Fire" />
                 <TextBlock Text="{loc:Translate FireWorker}"
                            FontSize="13"
-                           Foreground="{DynamicResource ErrorBrush}" />
+                           Foreground="{DynamicResource ErrorBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_Fire" />
               </StackPanel>
             </Button>
 
@@ -445,7 +698,7 @@
         </Border>
 
         <!-- Bottom Spacer -->
-        <Border Height="60" />
+        <Border Height="80" />
 
       </StackPanel>
     </ScrollViewer>

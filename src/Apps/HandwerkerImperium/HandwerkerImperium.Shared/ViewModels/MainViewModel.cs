@@ -58,6 +58,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IPrestigeService _prestigeService;
     private readonly INotificationService? _notificationService;
     private readonly IPlayGamesService? _playGamesService;
+    private readonly IWeeklyMissionService _weeklyMissionService;
+    private readonly IWelcomeBackService _welcomeBackService;
+    private readonly ILuckySpinService _luckySpinService;
+    private readonly IEquipmentService _equipmentService;
     private bool _disposed;
     private decimal _pendingOfflineEarnings;
     private QuickJob? _activeQuickJob;
@@ -218,6 +222,108 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _buildingsSummary = "";
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // WEEKLY MISSIONS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private List<WeeklyMission> _weeklyMissions = [];
+
+    [ObservableProperty]
+    private bool _hasWeeklyMissions;
+
+    [ObservableProperty]
+    private bool _allWeeklyMissionsCompleted;
+
+    [ObservableProperty]
+    private bool _canClaimWeeklyBonus;
+
+    [ObservableProperty]
+    private string _weeklyMissionResetDisplay = "";
+
+    [ObservableProperty]
+    private bool _isWeeklyMissionsExpanded = true;
+
+    [ObservableProperty]
+    private string _weeklyMissionsExpandIconKind = "ChevronUp";
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WELCOME BACK OFFER
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private bool _isWelcomeOfferVisible;
+
+    [ObservableProperty]
+    private string _welcomeOfferTitle = "";
+
+    [ObservableProperty]
+    private string _welcomeOfferDescription = "";
+
+    [ObservableProperty]
+    private string _welcomeOfferMoneyReward = "";
+
+    [ObservableProperty]
+    private string _welcomeOfferScrewReward = "";
+
+    [ObservableProperty]
+    private string _welcomeOfferTimerDisplay = "";
+
+    /// <summary>
+    /// Ob im Welcome-Back-Dialog auch Offline-Earnings angezeigt werden sollen.
+    /// Wird gesetzt wenn sowohl ein Welcome-Angebot ALS AUCH Offline-Earnings vorliegen.
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasOfflineEarningsInWelcome;
+
+    /// <summary>
+    /// Formatierte Anzeige der Offline-Earnings im Welcome-Back-Dialog (z.B. "+1.5K").
+    /// </summary>
+    [ObservableProperty]
+    private string _combinedOfflineDisplay = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // KOMBINIERTER WELCOME-BACK-DIALOG (Offline + Welcome in einem)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private bool _isCombinedWelcomeDialogVisible;
+
+    [ObservableProperty]
+    private string _combinedOfflineEarnings = "";
+
+    [ObservableProperty]
+    private string _combinedOfferMoney = "";
+
+    [ObservableProperty]
+    private string _combinedOfferScrews = "";
+
+    [ObservableProperty]
+    private string _combinedOfflineDuration = "";
+
+    [ObservableProperty]
+    private string _combinedOfferTimer = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LUCKY SPIN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private bool _isLuckySpinVisible;
+
+    [ObservableProperty]
+    private bool _hasFreeSpin;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STREAK-RETTUNG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private bool _canRescueStreak;
+
+    [ObservableProperty]
+    private string _streakRescueText = "";
+
     // Bulk Buy Multiplikator (1, 10, 100, 0=Max)
     [ObservableProperty]
     private int _bulkBuyAmount = 1;
@@ -286,6 +392,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private bool _isLevelUpDialogVisible;
+
+    [ObservableProperty]
+    private bool _isLevelUpPulsing;
 
     [ObservableProperty]
     private int _levelUpNewLevel;
@@ -437,6 +546,58 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string NavSettingsText => $"⚙️\n{_localizationService.GetString("Settings")}";
 
     // ═══════════════════════════════════════════════════════════════════════
+    // AUTOMATION (Forwarding zu GameState.Automation)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Lieferungen automatisch einsammeln (ab Level 15).</summary>
+    public bool AutoCollectDelivery
+    {
+        get => _gameStateService.State.Automation.AutoCollectDelivery;
+        set
+        {
+            if (_gameStateService.State.Automation.AutoCollectDelivery == value) return;
+            _gameStateService.State.Automation.AutoCollectDelivery = value;
+            _gameStateService.MarkDirty();
+            _saveGameService.SaveAsync().FireAndForget();
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Besten Auftrag automatisch annehmen (ab Level 25).</summary>
+    public bool AutoAcceptOrder
+    {
+        get => _gameStateService.State.Automation.AutoAcceptOrder;
+        set
+        {
+            if (_gameStateService.State.Automation.AutoAcceptOrder == value) return;
+            _gameStateService.State.Automation.AutoAcceptOrder = value;
+            _gameStateService.MarkDirty();
+            _saveGameService.SaveAsync().FireAndForget();
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Daily Reward automatisch einlösen (nur Premium).</summary>
+    public bool AutoClaimDaily
+    {
+        get => _gameStateService.State.Automation.AutoClaimDaily;
+        set
+        {
+            if (_gameStateService.State.Automation.AutoClaimDaily == value) return;
+            _gameStateService.State.Automation.AutoClaimDaily = value;
+            _gameStateService.MarkDirty();
+            _saveGameService.SaveAsync().FireAndForget();
+            OnPropertyChanged();
+        }
+    }
+
+    // Level-Gates für Automatisierung
+    public bool IsAutoCollectUnlocked => _gameStateService.State.PlayerLevel >= 15;
+    public bool IsAutoAcceptUnlocked => _gameStateService.State.PlayerLevel >= 25;
+    public bool IsAutoAssignUnlocked => _gameStateService.State.PlayerLevel >= 50;
+    public bool IsAutoClaimUnlocked => _purchaseService.IsPremium;
+
+    // ═══════════════════════════════════════════════════════════════════════
     // TAB NAVIGATION STATE
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -497,6 +658,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isResearchActive;
 
+    [ObservableProperty]
+    private bool _isManagerActive;
+
+    [ObservableProperty]
+    private bool _isTournamentActive;
+
+    [ObservableProperty]
+    private bool _isSeasonalEventActive;
+
+    [ObservableProperty]
+    private bool _isBattlePassActive;
+
+    [ObservableProperty]
+    private bool _isGuildActive;
+
+    [ObservableProperty]
+    private bool _isCraftingActive;
+
     /// <summary>
     /// Whether the bottom tab bar should be visible (hidden during mini-games and detail views).
     /// </summary>
@@ -505,7 +684,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
                                     !IsWiringGameActive && !IsPaintingGameActive &&
                                     !IsRoofTilingGameActive && !IsBlueprintGameActive &&
                                     !IsDesignPuzzleGameActive && !IsInspectionGameActive &&
-                                    !IsWorkerProfileActive && !IsBuildingsActive;
+                                    !IsWorkerProfileActive && !IsBuildingsActive &&
+                                    !IsManagerActive && !IsTournamentActive &&
+                                    !IsSeasonalEventActive && !IsBattlePassActive &&
+                                    !IsGuildActive && !IsCraftingActive;
 
     private void DeactivateAllTabs()
     {
@@ -528,6 +710,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsWorkerProfileActive = false;
         IsBuildingsActive = false;
         IsResearchActive = false;
+        IsManagerActive = false;
+        IsTournamentActive = false;
+        IsSeasonalEventActive = false;
+        IsBattlePassActive = false;
+        IsGuildActive = false;
+        IsCraftingActive = false;
     }
 
     private void NotifyTabBarVisibility()
@@ -561,6 +749,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public WorkerProfileViewModel WorkerProfileViewModel { get; }
     public BuildingsViewModel BuildingsViewModel { get; }
     public ResearchViewModel ResearchViewModel { get; }
+    public ManagerViewModel ManagerViewModel { get; }
+    public TournamentViewModel TournamentViewModel { get; }
+    public SeasonalEventViewModel SeasonalEventViewModel { get; }
+    public BattlePassViewModel BattlePassViewModel { get; }
+    public GuildViewModel GuildViewModel { get; }
+    public CraftingViewModel CraftingViewModel { get; }
+    public LuckySpinViewModel LuckySpinViewModel { get; }
 
     public MainViewModel(
         IGameStateService gameStateService,
@@ -596,6 +791,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
         WorkerProfileViewModel workerProfileViewModel,
         BuildingsViewModel buildingsViewModel,
         ResearchViewModel researchViewModel,
+        ManagerViewModel managerViewModel,
+        TournamentViewModel tournamentViewModel,
+        SeasonalEventViewModel seasonalEventViewModel,
+        BattlePassViewModel battlePassViewModel,
+        GuildViewModel guildViewModel,
+        CraftingViewModel craftingViewModel,
+        IWeeklyMissionService weeklyMissionService,
+        IWelcomeBackService welcomeBackService,
+        ILuckySpinService luckySpinService,
+        IEquipmentService equipmentService,
+        LuckySpinViewModel luckySpinViewModel,
         IStoryService? storyService = null)
     {
         _gameStateService = gameStateService;
@@ -614,6 +820,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _rewardedAdService = rewardedAdService;
         _eventService = eventService;
         _storyService = storyService;
+        _weeklyMissionService = weeklyMissionService;
+        _welcomeBackService = welcomeBackService;
+        _luckySpinService = luckySpinService;
+        _equipmentService = equipmentService;
         _rewardedAdService.AdUnavailable += () => ShowAlertDialog(
             _localizationService.GetString("AdVideoNotAvailableTitle"),
             _localizationService.GetString("AdVideoNotAvailableMessage"),
@@ -652,6 +862,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         WorkerProfileViewModel = workerProfileViewModel;
         BuildingsViewModel = buildingsViewModel;
         ResearchViewModel = researchViewModel;
+        ManagerViewModel = managerViewModel;
+        TournamentViewModel = tournamentViewModel;
+        SeasonalEventViewModel = seasonalEventViewModel;
+        BattlePassViewModel = battlePassViewModel;
+        GuildViewModel = guildViewModel;
+        CraftingViewModel = craftingViewModel;
+        LuckySpinViewModel = luckySpinViewModel;
 
         // Wire up child VM navigation events
         ShopViewModel.NavigationRequested += OnChildNavigation;
@@ -668,6 +885,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         BlueprintGameViewModel.NavigationRequested += OnChildNavigation;
         DesignPuzzleGameViewModel.NavigationRequested += OnChildNavigation;
         InspectionGameViewModel.NavigationRequested += OnChildNavigation;
+        ManagerViewModel.NavigationRequested += OnChildNavigation;
+        TournamentViewModel.NavigationRequested += OnChildNavigation;
+        SeasonalEventViewModel.NavigationRequested += OnChildNavigation;
+        BattlePassViewModel.NavigationRequested += OnChildNavigation;
+        GuildViewModel.NavigationRequested += OnChildNavigation;
+        CraftingViewModel.NavigationRequested += OnChildNavigation;
 
         _workerMarketNavHandler = (_, route) => OnChildNavigation(route);
         _workerProfileNavHandler = (_, route) => OnChildNavigation(route);
@@ -688,12 +911,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ShopViewModel.ConfirmationRequested += _confirmHandler;
         OrderViewModel.ConfirmationRequested += _confirmHandler;
         StatisticsViewModel.AlertRequested += _alertHandler;
+        StatisticsViewModel.ShowPrestigeDialog += OnShowPrestigeDialog;
         WorkerMarketViewModel.AlertRequested += _alertHandler;
         WorkerProfileViewModel.AlertRequested += _alertHandler;
         WorkerProfileViewModel.ConfirmationRequested += _confirmHandler;
         BuildingsViewModel.AlertRequested += _alertHandler;
         ResearchViewModel.AlertRequested += _alertHandler;
         ResearchViewModel.ConfirmationRequested += _confirmHandler;
+        TournamentViewModel.AlertRequested += _alertHandler;
+        BattlePassViewModel.AlertRequested += _alertHandler;
 
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
@@ -718,6 +944,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _eventService.EventStarted += OnEventStarted;
         _eventService.EventEnded += OnEventEnded;
         _dailyChallengeService.ChallengeProgressChanged += OnChallengeProgressChanged;
+        _weeklyMissionService.MissionProgressChanged += OnWeeklyMissionProgressChanged;
+        _welcomeBackService.OfferGenerated += OnWelcomeOfferGenerated;
 
         // Tutorial verdrahten (optional, da ITutorialService als Singleton registriert)
         _tutorialService = App.Services?.GetService(typeof(ITutorialService)) as ITutorialService;
@@ -801,13 +1029,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _dailyChallengeService.CheckAndResetIfNewDay();
         RefreshChallenges();
 
+        // Weekly Missions initialisieren
+        _weeklyMissionService.CheckAndResetIfNewWeek();
+        RefreshWeeklyMissions();
+
+        // Lucky Spin Status
+        HasFreeSpin = _luckySpinService.HasFreeSpin;
+
         IsLoading = false;
 
-        // Check for offline progress
+        // Offline-Earnings berechnen (noch nicht anzeigen)
         CheckOfflineProgress();
 
         // Check for daily reward
         CheckDailyReward();
+
+        // Welcome-Back-Offer prüfen und ggf. mit Offline-Earnings kombinieren
+        _welcomeBackService.CheckAndGenerateOffer();
+        CheckCombinedWelcomeDialog();
 
         // Story-Kapitel prüfen (z.B. pending aus letzter Session oder Sofort-Freischaltung)
         CheckForNewStoryChapter();
@@ -899,10 +1138,91 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (IsOfflineNewRecord)
             _gameStateService.State.MaxOfflineEarnings = earnings;
 
-        IsOfflineEarningsDialogVisible = true;
+        // Dialog wird NICHT sofort angezeigt - CheckCombinedWelcomeDialog() entscheidet
+        // ob ein einzelner Offline-Dialog oder ein kombinierter Dialog gezeigt wird
 
         ShowOfflineEarnings?.Invoke(this, new OfflineEarningsEventArgs(
             earnings, effectiveDuration, wasCapped));
+    }
+
+    /// <summary>
+    /// Prüft ob Offline-Earnings UND Welcome-Back-Offer gleichzeitig vorliegen.
+    /// Wenn ja: Zeigt einen kombinierten Dialog statt zwei separate.
+    /// </summary>
+    private void CheckCombinedWelcomeDialog()
+    {
+        var hasOffline = _pendingOfflineEarnings > 0;
+        var offer = _gameStateService.State.ActiveWelcomeBackOffer;
+        var hasWelcome = offer != null && !offer.IsExpired;
+
+        if (hasOffline && hasWelcome)
+        {
+            // Kombinierter Dialog: Offline-Earnings + Welcome-Back in einem
+            CombinedOfflineEarnings = OfflineEarningsAmountText;
+            CombinedOfflineDuration = OfflineEarningsDurationText;
+            CombinedOfferMoney = MoneyFormatter.FormatCompact(offer!.MoneyReward);
+            CombinedOfferScrews = offer.GoldenScrewReward > 0 ? $"+{offer.GoldenScrewReward}" : "";
+
+            var remaining = offer.TimeRemaining;
+            CombinedOfferTimer = remaining.TotalHours >= 1
+                ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}m"
+                : $"{remaining.Minutes}m";
+
+            IsCombinedWelcomeDialogVisible = true;
+        }
+        else if (hasOffline)
+        {
+            // Nur Offline-Dialog
+            IsOfflineEarningsDialogVisible = true;
+        }
+        else if (hasWelcome)
+        {
+            // Nur Welcome-Back-Dialog (wird durch OnWelcomeOfferGenerated angezeigt)
+            OnWelcomeOfferGenerated();
+        }
+    }
+
+    /// <summary>
+    /// Sammelt alle Belohnungen aus dem kombinierten Welcome-Dialog ein (Offline + Welcome-Back).
+    /// </summary>
+    [RelayCommand]
+    private void CollectCombinedRewards()
+    {
+        // Offline-Earnings einsammeln
+        if (_pendingOfflineEarnings > 0)
+        {
+            _gameStateService.AddMoney(_pendingOfflineEarnings);
+            FloatingTextRequested?.Invoke($"+{MoneyFormatter.FormatCompact(_pendingOfflineEarnings)}", "money");
+            _pendingOfflineEarnings = 0;
+        }
+
+        // Welcome-Back-Offer einlösen
+        _welcomeBackService.ClaimOffer();
+
+        _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+        CelebrationRequested?.Invoke();
+
+        IsCombinedWelcomeDialogVisible = false;
+    }
+
+    /// <summary>
+    /// Schließt den kombinierten Dialog und sammelt nur die Offline-Earnings ein.
+    /// </summary>
+    [RelayCommand]
+    private void DismissCombinedDialog()
+    {
+        // Offline-Earnings trotzdem einsammeln (die hat der Spieler verdient)
+        if (_pendingOfflineEarnings > 0)
+        {
+            _gameStateService.AddMoney(_pendingOfflineEarnings);
+            FloatingTextRequested?.Invoke($"+{MoneyFormatter.FormatCompact(_pendingOfflineEarnings)}", "money");
+            _pendingOfflineEarnings = 0;
+        }
+
+        // Welcome-Back-Offer ablehnen
+        _welcomeBackService.DismissOffer();
+
+        IsCombinedWelcomeDialogVisible = false;
     }
 
     public void CollectOfflineEarnings(bool withAdBonus)
@@ -924,6 +1244,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void CheckDailyReward()
     {
         HasDailyReward = _dailyRewardService.IsRewardAvailable;
+
+        // Streak-Rettung prüfen: War der Streak unterbrochen und kann gerettet werden?
+        var state = _gameStateService.State;
+        CanRescueStreak = state.StreakBeforeBreak > 1
+                          && state.DailyRewardStreak <= 1
+                          && !state.StreakRescueUsed
+                          && state.GoldenScrews >= 5;
+        if (CanRescueStreak)
+        {
+            var costText = _localizationService.GetString("StreakRescueCost") ?? "Rescue streak ({0} 🔩)";
+            StreakRescueText = string.Format(costText, 5);
+        }
 
         if (HasDailyReward)
         {
@@ -953,6 +1285,190 @@ public partial class MainViewModel : ObservableObject, IDisposable
             HasDailyReward = false;
             IsDailyRewardDialogVisible = false;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WEEKLY MISSIONS COMMANDS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private void ClaimWeeklyMission(string missionId)
+    {
+        _weeklyMissionService.ClaimMission(missionId);
+        _audioService.PlaySoundAsync(GameSound.MoneyEarned).FireAndForget();
+        RefreshWeeklyMissions();
+    }
+
+    [RelayCommand]
+    private void ClaimAllWeeklyBonus()
+    {
+        _weeklyMissionService.ClaimAllCompletedBonus();
+        _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+        CelebrationRequested?.Invoke();
+        FloatingTextRequested?.Invoke($"+50 🔩", "golden_screws");
+        RefreshWeeklyMissions();
+    }
+
+    [RelayCommand]
+    private void ToggleWeeklyMissionsExpanded()
+    {
+        IsWeeklyMissionsExpanded = !IsWeeklyMissionsExpanded;
+        WeeklyMissionsExpandIconKind = IsWeeklyMissionsExpanded ? "ChevronUp" : "ChevronDown";
+    }
+
+    private void RefreshWeeklyMissions()
+    {
+        var state = _gameStateService.State.WeeklyMissionState;
+        if (state?.Missions == null || state.Missions.Count == 0)
+        {
+            HasWeeklyMissions = false;
+            return;
+        }
+
+        // Display-Properties befüllen (Lokalisierung + Formatierung)
+        foreach (var mission in state.Missions)
+        {
+            // Lokalisierte Beschreibung mit TargetValue
+            var descKey = $"WeeklyMission_{mission.Type}";
+            var descTemplate = _localizationService.GetString(descKey) ?? mission.Type.ToString();
+            mission.DisplayDescription = mission.Type == WeeklyMissionType.EarnMoney
+                ? string.Format(descTemplate, MoneyFormatter.FormatCompact(mission.TargetValue))
+                : string.Format(descTemplate, mission.TargetValue);
+
+            // Belohnungs-Anzeige
+            var rewardParts = new List<string>();
+            if (mission.MoneyReward > 0)
+                rewardParts.Add($"{MoneyFormatter.FormatCompact(mission.MoneyReward)} €");
+            if (mission.XpReward > 0)
+                rewardParts.Add($"{mission.XpReward} XP");
+            if (mission.GoldenScrewReward > 0)
+                rewardParts.Add($"{mission.GoldenScrewReward} GS");
+            mission.RewardDisplay = string.Join(" + ", rewardParts);
+
+            // Fortschritts-Anzeige
+            mission.ProgressDisplay = $"{mission.CurrentValue} / {mission.TargetValue}";
+        }
+
+        WeeklyMissions = new List<WeeklyMission>(state.Missions);
+        HasWeeklyMissions = true;
+        AllWeeklyMissionsCompleted = state.Missions.All(m => m.IsCompleted);
+        CanClaimWeeklyBonus = AllWeeklyMissionsCompleted && !state.AllCompletedBonusClaimed;
+
+        // Reset-Timer berechnen (nächster Montag)
+        var now = DateTime.UtcNow;
+        var daysUntilMonday = ((int)DayOfWeek.Monday - (int)now.DayOfWeek + 7) % 7;
+        if (daysUntilMonday == 0) daysUntilMonday = 7;
+        var resetLabel = _localizationService.GetString("WeeklyMissionReset") ?? "Resets in {0} days";
+        WeeklyMissionResetDisplay = string.Format(resetLabel, daysUntilMonday);
+    }
+
+    private void OnWeeklyMissionProgressChanged()
+    {
+        Dispatcher.UIThread.Post(RefreshWeeklyMissions);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WELCOME BACK OFFER COMMANDS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private void ClaimWelcomeOffer()
+    {
+        // Offline-Earnings miteinsammeln wenn im Dialog angezeigt
+        if (HasOfflineEarningsInWelcome && _pendingOfflineEarnings > 0)
+        {
+            _gameStateService.AddMoney(_pendingOfflineEarnings);
+            FloatingTextRequested?.Invoke($"+{MoneyFormatter.FormatCompact(_pendingOfflineEarnings)}", "money");
+            _pendingOfflineEarnings = 0;
+        }
+
+        _welcomeBackService.ClaimOffer();
+        HasOfflineEarningsInWelcome = false;
+        CombinedOfflineDisplay = "";
+        IsWelcomeOfferVisible = false;
+        _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+        CelebrationRequested?.Invoke();
+    }
+
+    [RelayCommand]
+    private void DismissWelcomeOffer()
+    {
+        _welcomeBackService.DismissOffer();
+        IsWelcomeOfferVisible = false;
+    }
+
+    private void OnWelcomeOfferGenerated()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var offer = _gameStateService.State.ActiveWelcomeBackOffer;
+            if (offer == null || offer.IsExpired) return;
+
+            WelcomeOfferTitle = _localizationService.GetString("WelcomeBackTitle") ?? "Welcome Back!";
+            WelcomeOfferDescription = offer.Type switch
+            {
+                WelcomeBackOfferType.Premium => _localizationService.GetString("WelcomeBackPremium") ?? "Premium welcome package!",
+                WelcomeBackOfferType.StarterPack => _localizationService.GetString("StarterPackTitle") ?? "Starter pack bonus!",
+                _ => _localizationService.GetString("WelcomeBackStandard") ?? "We missed you!"
+            };
+            WelcomeOfferMoneyReward = MoneyFormatter.FormatCompact(offer.MoneyReward);
+            WelcomeOfferScrewReward = offer.GoldenScrewReward > 0 ? $"+{offer.GoldenScrewReward}" : "";
+
+            var remaining = offer.TimeRemaining;
+            WelcomeOfferTimerDisplay = remaining.TotalHours >= 1
+                ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}m"
+                : $"{remaining.Minutes}m";
+
+            // Wenn Offline-Earnings vorhanden → im Welcome-Dialog mit anzeigen
+            HasOfflineEarningsInWelcome = _pendingOfflineEarnings > 0;
+            CombinedOfflineDisplay = HasOfflineEarningsInWelcome
+                ? $"+{MoneyFormatter.FormatCompact(_pendingOfflineEarnings)}"
+                : "";
+
+            IsWelcomeOfferVisible = true;
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // LUCKY SPIN COMMANDS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private void ShowLuckySpin()
+    {
+        LuckySpinViewModel.Refresh();
+        IsLuckySpinVisible = true;
+        _adService.HideBanner();
+    }
+
+    [RelayCommand]
+    private void HideLuckySpin()
+    {
+        IsLuckySpinVisible = false;
+        if (_adService.AdsEnabled && !_purchaseService.IsPremium)
+            _adService.ShowBanner();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // STREAK-RETTUNG COMMANDS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private void RescueStreak()
+    {
+        var state = _gameStateService.State;
+        if (state.GoldenScrews < 5) return;
+
+        _gameStateService.AddGoldenScrews(-5);
+        state.DailyRewardStreak = Math.Max(1, state.StreakBeforeBreak);
+        state.StreakRescueUsed = true;
+        _gameStateService.MarkDirty();
+
+        _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+        CanRescueStreak = false;
+
+        var rescuedMsg = _localizationService.GetString("StreakRescued") ?? "Streak rescued!";
+        FloatingTextRequested?.Invoke(rescuedMsg, "golden_screws");
     }
 
     [RelayCommand]
@@ -1028,10 +1544,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
             ? _localizationService.GetString("StoryTipFromHans") ?? "Tipp von Meister Hans"
             : $"Kap. {chapter.ChapterNumber}/25";
 
-        // Belohnungs-Text zusammenstellen
+        // Belohnungs-Text zusammenstellen (skalierte Geldbelohnung anzeigen)
         var rewards = new List<string>();
         if (chapter.MoneyReward > 0)
-            rewards.Add($"+{MoneyFormatter.FormatCompact(chapter.MoneyReward)}");
+        {
+            var netIncome = _gameStateService.State.NetIncomePerSecond;
+            var scaledReward = Math.Max(chapter.MoneyReward, netIncome * 600);
+            rewards.Add($"+{MoneyFormatter.FormatCompact(scaledReward)}");
+        }
         if (chapter.GoldenScrewReward > 0)
         {
             var screwsLabel = _localizationService.GetString("GoldenScrews") ?? "Goldschrauben";
@@ -1131,6 +1651,71 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return _confirmDialogTcs.Task;
     }
 
+    /// <summary>
+    /// Zeigt den Prestige-Bestätigungsdialog und führt bei Bestätigung Prestige durch.
+    /// Wird sowohl vom Dashboard-Banner als auch vom Statistik-Tab aufgerufen.
+    /// </summary>
+    private async Task ShowPrestigeConfirmationAsync()
+    {
+        var state = _gameStateService.State;
+        var highestTier = state.Prestige.GetHighestAvailableTier(state.PlayerLevel);
+
+        if (highestTier == PrestigeTier.None)
+        {
+            var minLevel = PrestigeTier.Bronze.GetRequiredLevel();
+            ShowAlertDialog(
+                _localizationService.GetString("PrestigeNotAvailable") ?? "Prestige nicht verfügbar",
+                string.Format(
+                    _localizationService.GetString("PrestigeNotAvailableDesc") ?? "Du benötigst Level {0} (aktuell Level {1})",
+                    minLevel, state.PlayerLevel),
+                "OK");
+            return;
+        }
+
+        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+        // Prestige-Info zusammenstellen
+        var tierName = _localizationService.GetString(highestTier.GetLocalizationKey()) ?? highestTier.ToString();
+        var potentialPoints = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
+        int tierPoints = (int)(potentialPoints * highestTier.GetPointMultiplier());
+
+        var keepInfo = "";
+        if (highestTier.KeepsResearch())
+            keepInfo += $"\n\u2713 {_localizationService.GetString("Research") ?? "Forschung"}";
+        if (highestTier.KeepsMasterTools())
+            keepInfo += $"\n\u2713 {_localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge"}";
+        if (highestTier.KeepsBuildings())
+            keepInfo += $"\n\u2713 {_localizationService.GetString("Buildings") ?? "Gebäude"}";
+        if (highestTier.KeepsManagers())
+            keepInfo += $"\n\u2713 {_localizationService.GetString("Managers") ?? "Vorarbeiter"}";
+
+        var message = $"{highestTier.GetIcon()} {tierName}\n"
+                    + $"+{tierPoints} PP | +{highestTier.GetPermanentMultiplierBonus():P0} {_localizationService.GetString("IncomeBonus") ?? "Einkommen"}\n\n"
+                    + (_localizationService.GetString("PrestigeWarning") ?? "Dein Fortschritt wird zurückgesetzt!")
+                    + (keepInfo.Length > 0 ? $"\n\n{_localizationService.GetString("PrestigeKeeps") ?? "Wird behalten:"}{keepInfo}" : "");
+
+        var confirmed = await ShowConfirmDialog(
+            _localizationService.GetString("Prestige") ?? "Prestige",
+            message,
+            _localizationService.GetString("PrestigeConfirm") ?? "Prestige durchführen",
+            _localizationService.GetString("Cancel") ?? "Abbrechen");
+
+        if (!confirmed) return;
+
+        var success = await _prestigeService.DoPrestige(highestTier);
+        if (success)
+        {
+            await _audioService.PlaySoundAsync(GameSound.LevelUp);
+
+            // UI komplett neu laden
+            SelectDashboardTab();
+            OnStateLoaded(this, EventArgs.Empty);
+
+            // Celebration
+            FloatingTextRequested?.Invoke($"{highestTier.GetIcon()} {tierName}!", "level");
+        }
+    }
+
     [RelayCommand]
     private void CollectOfflineEarningsNormal()
     {
@@ -1167,6 +1752,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Login-Streak aktualisieren
         OnPropertyChanged(nameof(LoginStreak));
         OnPropertyChanged(nameof(HasLoginStreak));
+
+        // Automation-Unlock-Properties aktualisieren (Level-abhängig, wichtig nach Init + Prestige)
+        OnPropertyChanged(nameof(IsAutoCollectUnlocked));
+        OnPropertyChanged(nameof(IsAutoAcceptUnlocked));
+        OnPropertyChanged(nameof(IsAutoAssignUnlocked));
+        OnPropertyChanged(nameof(IsAutoClaimUnlocked));
 
         // Rush/Delivery/MasterTools
         UpdateRushDisplay();
@@ -1720,13 +2311,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
         SelectBuildingsTab();
     }
 
+    [RelayCommand]
+    private void NavigateToManager() => OnChildNavigation("manager");
+
+    [RelayCommand]
+    private void NavigateToTournament() => OnChildNavigation("tournament");
+
+    [RelayCommand]
+    private void NavigateToSeasonalEvent() => OnChildNavigation("seasonal_event");
+
+    [RelayCommand]
+    private void NavigateToBattlePass() => OnChildNavigation("battle_pass");
+
+    [RelayCommand]
+    private void NavigateToGuild() => OnChildNavigation("guild");
+
+    [RelayCommand]
+    private void NavigateToCrafting() => OnChildNavigation("crafting");
+
     /// <summary>
     /// Navigiert zum Prestige (Statistik-Tab wo Prestige angezeigt wird).
     /// </summary>
     [RelayCommand]
-    private void NavigateToPrestige()
+    private async Task NavigateToPrestigeAsync()
     {
-        SelectStatisticsTab();
+        await ShowPrestigeConfirmationAsync();
     }
 
     /// <summary>
@@ -1839,7 +2448,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     /// </summary>
     public bool HandleBackPressed()
     {
-        // 1. Offene Dialoge schließen (höchste Priorität)
+        // 1. Offene Dialoge/Overlays schließen (höchste Priorität)
+        if (IsLuckySpinVisible) { HideLuckySpin(); return true; }
+        if (IsCombinedWelcomeDialogVisible) { DismissCombinedDialog(); return true; }
+        if (IsWelcomeOfferVisible) { DismissWelcomeOffer(); return true; }
         if (IsConfirmDialogVisible) { ConfirmDialogCancel(); return true; }
         if (IsAlertDialogVisible) { DismissAlertDialog(); return true; }
         if (IsAchievementDialogVisible) { DismissAchievementDialog(); return true; }
@@ -1873,8 +2485,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return true;
         }
 
-        // 5. Sub-Tabs (Markt, Gebäude, Research) → zurück zum Dashboard
-        if (IsWorkerMarketActive || IsBuildingsActive || IsResearchActive)
+        // 5. Sub-Tabs (Markt, Gebäude, Research, neue Feature-Views) → zurück zum Dashboard
+        if (IsWorkerMarketActive || IsBuildingsActive || IsResearchActive ||
+            IsManagerActive || IsTournamentActive || IsSeasonalEventActive ||
+            IsBattlePassActive || IsGuildActive || IsCraftingActive)
         {
             SelectDashboardTab();
             return true;
@@ -2287,6 +2901,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // Neue Feature-Views (Welle 1-8)
+        if (route is "manager" or "tournament" or "seasonal_event" or "battle_pass" or "guild" or "crafting")
+        {
+            DeactivateAllTabs();
+            switch (route)
+            {
+                case "manager": IsManagerActive = true; ManagerViewModel.RefreshManagers(); break;
+                case "tournament": IsTournamentActive = true; TournamentViewModel.RefreshTournament(); break;
+                case "seasonal_event": IsSeasonalEventActive = true; SeasonalEventViewModel.RefreshEvent(); break;
+                case "battle_pass": IsBattlePassActive = true; BattlePassViewModel.RefreshBattlePass(); break;
+                case "guild": IsGuildActive = true; GuildViewModel.RefreshGuild(); break;
+                case "crafting": IsCraftingActive = true; CraftingViewModel.RefreshCrafting(); break;
+            }
+            NotifyTabBarVisibility();
+            return;
+        }
+
         // "workers" = navigiere zum Arbeitermarkt (Bug 2: von WorkshopView aus)
         if (route == "workers")
         {
@@ -2392,42 +3023,44 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnLevelUp(object? sender, LevelUpEventArgs e)
     {
         PlayerLevel = e.NewLevel;
-        _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
+        OnPropertyChanged(nameof(LevelProgress));
 
         RefreshWorkshops();
 
-        // Milestone-Bonus prüfen
-        string milestoneText = "";
+        // Automation-Unlock-Properties aktualisieren (Level-Gates können sich ändern)
+        OnPropertyChanged(nameof(IsAutoCollectUnlocked));
+        OnPropertyChanged(nameof(IsAutoAcceptUnlocked));
+        OnPropertyChanged(nameof(IsAutoAssignUnlocked));
+
+        // Pulse-Animation bei JEDEM Level-Up (dezent, kein Dialog)
+        IsLevelUpPulsing = true;
+        var pulseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        pulseTimer.Tick += (_, _) =>
+        {
+            IsLevelUpPulsing = false;
+            pulseTimer.Stop();
+        };
+        pulseTimer.Start();
+
+        // Milestone-Bonus prüfen (10/25/50/100/250/500/1000)
+        bool isMilestone = false;
         foreach (var (level, screws) in _milestones)
         {
             if (e.NewLevel == level)
             {
+                isMilestone = true;
                 _gameStateService.AddGoldenScrews(screws);
-                milestoneText = $"\n🔩 +{screws} {_localizationService.GetString("GoldenScrews")}";
-                // Doppelte Celebration bei Milestone
+
+                // Sound + Celebration nur bei Milestones
+                _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
                 _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+                CelebrationRequested?.Invoke();
+
+                // FloatingText mit Level + Goldschrauben-Bonus
+                FloatingTextRequested?.Invoke(
+                    $"Level {e.NewLevel}! +{screws} 🔩", "level");
                 break;
             }
-        }
-
-        // Level-Up-Dialog anzeigen (nicht während Hold-to-Upgrade)
-        if (!IsHoldingUpgrade)
-        {
-            LevelUpNewLevel = e.NewLevel;
-            if (e.NewlyUnlockedWorkshops.Count > 0)
-            {
-                var names = e.NewlyUnlockedWorkshops
-                    .Select(w => _localizationService.GetString(w.GetLocalizationKey()));
-                LevelUpUnlockedText = string.Join(", ", names) + milestoneText;
-            }
-            else
-            {
-                LevelUpUnlockedText = milestoneText;
-            }
-            IsLevelUpDialogVisible = true;
-            CelebrationRequested?.Invoke();
-
-            ShowLevelUp?.Invoke(this, e);
         }
 
         // Story-Kapitel prüfen
@@ -2538,6 +3171,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnChallengeProgressChanged(object? sender, EventArgs e)
     {
         Dispatcher.UIThread.Post(RefreshChallenges);
+    }
+
+    private async void OnShowPrestigeDialog(object? sender, EventArgs e)
+    {
+        await ShowPrestigeConfirmationAsync();
     }
 
     private void OnMiniGameResultRecorded(object? sender, MiniGameResultRecordedEventArgs e)
@@ -2746,6 +3384,29 @@ public partial class MainViewModel : ObservableObject, IDisposable
             UpdateEventTimer();
         }
 
+        // Weekly Missions + Lucky Spin + Welcome Back periodisch aktualisieren (alle 10 Ticks)
+        if (_floatingTextCounter % 10 == 0)
+        {
+            HasFreeSpin = _luckySpinService.HasFreeSpin;
+
+            // Welcome Back Timer aktualisieren
+            if (IsWelcomeOfferVisible)
+            {
+                var offer = _gameStateService.State.ActiveWelcomeBackOffer;
+                if (offer == null || offer.IsExpired)
+                {
+                    IsWelcomeOfferVisible = false;
+                }
+                else
+                {
+                    var offerRemaining = offer.TimeRemaining;
+                    WelcomeOfferTimerDisplay = offerRemaining.TotalHours >= 1
+                        ? $"{(int)offerRemaining.TotalHours}h {offerRemaining.Minutes:D2}m"
+                        : $"{offerRemaining.Minutes}m";
+                }
+            }
+        }
+
         // Arbeitsmarkt Rotations-Timer jede Sekunde aktualisieren
         if (IsWorkerMarketActive)
         {
@@ -2901,6 +3562,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ShopViewModel.ConfirmationRequested -= _confirmHandler;
         OrderViewModel.ConfirmationRequested -= _confirmHandler;
         StatisticsViewModel.AlertRequested -= _alertHandler;
+        StatisticsViewModel.ShowPrestigeDialog -= OnShowPrestigeDialog;
         WorkerMarketViewModel.AlertRequested -= _alertHandler;
         WorkerProfileViewModel.AlertRequested -= _alertHandler;
         WorkerProfileViewModel.ConfirmationRequested -= _confirmHandler;
@@ -2926,6 +3588,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _eventService.EventStarted -= OnEventStarted;
         _eventService.EventEnded -= OnEventEnded;
         _dailyChallengeService.ChallengeProgressChanged -= OnChallengeProgressChanged;
+        _weeklyMissionService.MissionProgressChanged -= OnWeeklyMissionProgressChanged;
+        _welcomeBackService.OfferGenerated -= OnWelcomeOfferGenerated;
 
         if (_tutorialService != null)
         {

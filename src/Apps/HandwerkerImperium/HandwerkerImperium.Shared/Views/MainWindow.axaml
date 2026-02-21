@@ -3,15 +3,17 @@
         xmlns:views="using:HandwerkerImperium.Views"
         xmlns:splash="using:MeineApps.UI.Controls"
         x:Class="HandwerkerImperium.Views.MainWindow"
+        AutomationProperties.AutomationId="MW_Window_Root"
         Title="HandwerkerImperium"
         Icon="avares://HandwerkerImperium.Shared/Assets/icon.png"
         Width="420" Height="800"
         MinWidth="360" MinHeight="600"
         Background="{DynamicResource BackgroundBrush}">
 
-  <Panel>
-    <views:MainView />
-    <splash:SplashOverlay AppName="HandwerkerImperium"
+  <Panel AutomationProperties.AutomationId="MW_Panel_Root">
+    <views:MainView AutomationProperties.AutomationId="MW_View_Main" />
+    <splash:SplashOverlay AutomationProperties.AutomationId="MW_Ctrl_SplashOverlay"
+                          AppName="HandwerkerImperium"
                           IconSource="avares://HandwerkerImperium.Shared/Assets/icon.png" />
   </Panel>
 

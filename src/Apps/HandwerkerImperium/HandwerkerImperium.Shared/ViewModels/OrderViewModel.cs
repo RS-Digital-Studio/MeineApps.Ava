@@ -81,6 +81,9 @@ public partial class OrderViewModel : ObservableObject
     [ObservableProperty]
     private bool _canStart;
 
+    [ObservableProperty]
+    private bool _isCooperationOrder;
+
     /// <summary>
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
@@ -141,14 +144,9 @@ public partial class OrderViewModel : ObservableObject
         WorkshopIcon = GetWorkshopIcon(order.WorkshopType);
         WorkshopName = GetWorkshopName(order.WorkshopType);
 
-        // Korrekte Belohnungsanzeige inkl. OrderType (Rating=Good=100% als Referenz)
-        var displayReward = order.BaseReward * order.Difficulty.GetRewardMultiplier()
-            * order.OrderType.GetRewardMultiplier();
-        RewardText = $"~{FormatMoney(displayReward)}";
-
-        var displayXp = (int)(order.BaseXp * order.Difficulty.GetXpMultiplier()
-            * order.OrderType.GetXpMultiplier());
-        XpRewardText = $"~{displayXp} XP";
+        // Zentralisierte Belohnungsberechnung über Order-Methoden
+        RewardText = $"~{FormatMoney(order.CalculateEstimatedReward())}";
+        XpRewardText = $"~{order.CalculateEstimatedXp()} XP";
 
         RewardHintText = _localizationService.GetString("RewardDependsOnRating");
 
@@ -164,6 +162,7 @@ public partial class OrderViewModel : ObservableObject
         // State - order is "in progress" if we've started but not completed
         IsInProgress = order.CurrentTaskIndex > 0 && !order.IsCompleted;
         CanStart = order.CurrentTaskIndex == 0;
+        IsCooperationOrder = order.OrderType == OrderType.Cooperation;
     }
 
     // ═══════════════════════════════════════════════════════════════════════

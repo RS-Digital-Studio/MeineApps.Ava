@@ -167,6 +167,22 @@ public partial class WorkshopViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _canWatchSlotAd;
 
+    /// <summary>Idle Worker automatisch zuweisen (ab Level 50).</summary>
+    public bool AutoAssignWorkers
+    {
+        get => _gameStateService.State.Automation.AutoAssignWorkers;
+        set
+        {
+            if (_gameStateService.State.Automation.AutoAssignWorkers == value) return;
+            _gameStateService.State.Automation.AutoAssignWorkers = value;
+            _gameStateService.MarkDirty();
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Ob AutoAssign freigeschaltet ist (Level 50+).</summary>
+    public bool IsAutoAssignUnlocked => _gameStateService.State.PlayerLevel >= 50;
+
     /// <summary>
     /// Whether there are no workers in this workshop.
     /// </summary>

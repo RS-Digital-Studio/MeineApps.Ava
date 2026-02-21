@@ -7,7 +7,7 @@
              x:Class="HandwerkerImperium.Views.WorkshopView"
              x:DataType="vm:WorkshopViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,*">
+  <Grid RowDefinitions="Auto,Auto,*" AutomationProperties.AutomationId="Workshop_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
@@ -15,33 +15,40 @@
     <Border Grid.Row="0"
             Classes="CardElevated"
             Padding="16,12"
-            CornerRadius="0,0,12,12">
+            CornerRadius="0,0,12,12"
+            AutomationProperties.AutomationId="Workshop_Border_Header">
       <Grid ColumnDefinitions="Auto,*,Auto">
 
         <!-- Back Button -->
         <Button Classes="Text"
-                Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+                Command="{Binding GoBackCommand}"
+                AutomationProperties.AutomationId="Workshop_Btn_Back">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           AutomationProperties.AutomationId="Workshop_Icon_Back" />
         </Button>
 
         <!-- Workshop Title -->
         <StackPanel Grid.Column="1"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
-                    Spacing="12">
+                    Spacing="12"
+                    AutomationProperties.AutomationId="Workshop_Panel_Title">
           <Border Background="{StaticResource CraftPrimaryBrush}"
                   Opacity="0.15"
                   CornerRadius="24"
-                  Width="48" Height="48">
+                  Width="48" Height="48"
+                  AutomationProperties.AutomationId="Workshop_Border_IconBg">
             <TextBlock Text="{Binding WorkshopIcon}"
                        FontSize="28"
                        HorizontalAlignment="Center"
-                       VerticalAlignment="Center" />
+                       VerticalAlignment="Center"
+                       AutomationProperties.AutomationId="Workshop_Txt_Icon" />
           </Border>
           <TextBlock Text="{Binding WorkshopName}"
                      FontSize="20" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
-                     VerticalAlignment="Center" />
+                     VerticalAlignment="Center"
+                     AutomationProperties.AutomationId="Workshop_Txt_Name" />
         </StackPanel>
 
         <!-- Level Badge (animiert bei Upgrade) -->
@@ -50,10 +57,12 @@
                 Background="Gold"
                 CornerRadius="8"
                 Padding="12,6"
-                RenderTransformOrigin="0.5,0.5">
+                RenderTransformOrigin="0.5,0.5"
+                AutomationProperties.AutomationId="Workshop_Border_LevelBadge">
           <TextBlock Text="{Binding Level, StringFormat='Lvl {0}'}"
                      FontWeight="Bold"
-                     Foreground="{DynamicResource SurfaceBrush}" />
+                     Foreground="{DynamicResource SurfaceBrush}"
+                     AutomationProperties.AutomationId="Workshop_Txt_Level" />
         </Border>
 
       </Grid>
@@ -63,8 +72,10 @@
     <!-- WORKSHOP INTERIOR (SkiaSharp Animated Scene)                      -->
     <!-- ================================================================= -->
     <Border Grid.Row="1" Height="180" ClipToBounds="True" Margin="0,0,0,0"
-            CornerRadius="0" Background="{DynamicResource CardBrush}">
-      <skia:SKCanvasView x:Name="WorkshopCanvas" />
+            CornerRadius="0" Background="{DynamicResource CardBrush}"
+            AutomationProperties.AutomationId="Workshop_Border_InteriorScene">
+      <skia:SKCanvasView x:Name="WorkshopCanvas"
+                         AutomationProperties.AutomationId="Workshop_Canvas_Interior" />
     </Border>
 
     <!-- ================================================================= -->
@@ -74,20 +85,24 @@
       <StackPanel Spacing="20" Margin="16">
 
         <!-- Level Progress Card -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Workshop_Border_LevelProgress">
           <StackPanel Spacing="12">
             <TextBlock Text="{loc:Translate LevelProgress}"
                        FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       AutomationProperties.AutomationId="Workshop_Txt_LevelProgressTitle" />
 
             <Grid ColumnDefinitions="*,Auto">
               <skia:SKCanvasView Height="16"
-                                 PaintSurface="OnPaintWorkshopMainLevelProgress" />
+                                 PaintSurface="OnPaintWorkshopMainLevelProgress"
+                                 AutomationProperties.AutomationId="Workshop_Canvas_LevelProgress" />
               <TextBlock Grid.Column="1"
                          Text="{Binding LevelDisplay}"
                          FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}"
-                         Margin="8,0,0,0" />
+                         Margin="8,0,0,0"
+                         AutomationProperties.AutomationId="Workshop_Txt_LevelDisplay" />
             </Grid>
 
             <!-- Upgrade Button -->
@@ -96,10 +111,13 @@
                     IsEnabled="{Binding CanAffordUpgrade}"
                     IsVisible="{Binding CanUpgrade}"
                     HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center">
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="Workshop_Btn_Upgrade">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="ChevronUp" Width="18" Height="18" />
-                <TextBlock Text="{Binding UpgradeCostDisplay, StringFormat='Upgrade ({0})'}" />
+                <mi:MaterialIcon Kind="ChevronUp" Width="18" Height="18"
+                                 AutomationProperties.AutomationId="Workshop_Icon_Upgrade" />
+                <TextBlock Text="{Binding UpgradeCostDisplay, StringFormat='Upgrade ({0})'}"
+                           AutomationProperties.AutomationId="Workshop_Txt_UpgradeCost" />
               </StackPanel>
             </Button>
 
@@ -107,12 +125,14 @@
                        FontSize="12"
                        Foreground="Gold"
                        HorizontalAlignment="Center"
-                       IsVisible="{Binding !CanUpgrade}" />
+                       IsVisible="{Binding !CanUpgrade}"
+                       AutomationProperties.AutomationId="Workshop_Txt_MaxLevel" />
           </StackPanel>
         </Border>
 
         <!-- Income Stats Card -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Workshop_Border_IncomeStats">
           <StackPanel Spacing="14">
 
             <!-- Brutto + Netto nebeneinander -->
@@ -122,46 +142,56 @@
               <StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="CashMultiple" Width="16" Height="16"
-                                   Foreground="{DynamicResource SuccessBrush}" />
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   AutomationProperties.AutomationId="Workshop_Icon_GrossIncome" />
                   <TextBlock Text="{loc:Translate GrossIncome}"
                              FontSize="12"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Workshop_Txt_GrossIncomeLabel" />
                 </StackPanel>
                 <TextBlock Text="{Binding IncomeDisplay}"
                            FontSize="22" FontWeight="Bold"
-                           Foreground="{DynamicResource SuccessBrush}" />
+                           Foreground="{DynamicResource SuccessBrush}"
+                           AutomationProperties.AutomationId="Workshop_Txt_GrossIncomeValue" />
               </StackPanel>
 
               <!-- Nettoeinkommen + Trend -->
               <StackPanel Grid.Column="1">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="Finance" Width="16" Height="16"
-                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                   AutomationProperties.AutomationId="Workshop_Icon_NetIncome" />
                   <TextBlock Text="{loc:Translate NetIncome}"
                              FontSize="12"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Workshop_Txt_NetIncomeLabel" />
                   <!-- Trend-Indikator -->
                   <mi:MaterialIcon Kind="TrendingUp" Width="14" Height="14"
                                    Foreground="{DynamicResource SuccessBrush}"
-                                   IsVisible="{Binding HasTrendUp}" />
+                                   IsVisible="{Binding HasTrendUp}"
+                                   AutomationProperties.AutomationId="Workshop_Icon_TrendUp" />
                   <mi:MaterialIcon Kind="TrendingDown" Width="14" Height="14"
                                    Foreground="{DynamicResource ErrorBrush}"
-                                   IsVisible="{Binding HasTrendDown}" />
+                                   IsVisible="{Binding HasTrendDown}"
+                                   AutomationProperties.AutomationId="Workshop_Icon_TrendDown" />
                 </StackPanel>
                 <!-- Grün wenn positiv, Rot wenn negativ -->
                 <Panel>
                   <TextBlock Text="{Binding NetIncomeDisplay}"
                              FontSize="22" FontWeight="Bold"
                              Foreground="{DynamicResource SuccessBrush}"
-                             IsVisible="{Binding !IsNetNegative}" />
+                             IsVisible="{Binding !IsNetNegative}"
+                             AutomationProperties.AutomationId="Workshop_Txt_NetIncomePositive" />
                   <StackPanel Orientation="Horizontal"
-                              IsVisible="{Binding IsNetNegative}">
+                              IsVisible="{Binding IsNetNegative}"
+                              AutomationProperties.AutomationId="Workshop_Panel_NetNegative">
                     <TextBlock Text="-"
                                FontSize="22" FontWeight="Bold"
                                Foreground="{DynamicResource ErrorBrush}" />
                     <TextBlock Text="{Binding NetIncomeDisplay}"
                                FontSize="22" FontWeight="Bold"
-                               Foreground="{DynamicResource ErrorBrush}" />
+                               Foreground="{DynamicResource ErrorBrush}"
+                               AutomationProperties.AutomationId="Workshop_Txt_NetIncomeNegative" />
                   </StackPanel>
                 </Panel>
               </StackPanel>
@@ -171,42 +201,53 @@
             <!-- Laufende Kosten (aufgeschlüsselt) -->
             <Border Background="{DynamicResource SurfaceBrush}"
                     CornerRadius="8" Padding="12,8"
-                    IsVisible="{Binding HasCosts}">
+                    IsVisible="{Binding HasCosts}"
+                    AutomationProperties.AutomationId="Workshop_Border_RunningCosts">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="TrendingDown" Width="14" Height="14"
-                                   Foreground="{DynamicResource WarningBrush}" />
+                                   Foreground="{DynamicResource WarningBrush}"
+                                   AutomationProperties.AutomationId="Workshop_Icon_RunningCosts" />
                   <TextBlock Text="{loc:Translate RunningCosts}"
                              FontSize="12" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Workshop_Txt_RunningCostsLabel" />
                 </StackPanel>
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                   <!-- Miete -->
-                  <StackPanel>
+                  <StackPanel AutomationProperties.AutomationId="Workshop_Panel_Rent">
                     <TextBlock Text="{loc:Translate Rent}"
                                FontSize="11"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               AutomationProperties.AutomationId="Workshop_Txt_RentLabel" />
                     <TextBlock Text="{Binding RentDisplay}"
                                FontSize="13" FontWeight="SemiBold"
-                               Foreground="{DynamicResource WarningBrush}" />
+                               Foreground="{DynamicResource WarningBrush}"
+                               AutomationProperties.AutomationId="Workshop_Txt_RentValue" />
                   </StackPanel>
                   <!-- Material -->
-                  <StackPanel Grid.Column="1">
+                  <StackPanel Grid.Column="1"
+                              AutomationProperties.AutomationId="Workshop_Panel_MaterialCosts">
                     <TextBlock Text="{loc:Translate MaterialCosts}"
                                FontSize="11"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               AutomationProperties.AutomationId="Workshop_Txt_MaterialCostsLabel" />
                     <TextBlock Text="{Binding MaterialCostDisplay}"
                                FontSize="13" FontWeight="SemiBold"
-                               Foreground="{DynamicResource WarningBrush}" />
+                               Foreground="{DynamicResource WarningBrush}"
+                               AutomationProperties.AutomationId="Workshop_Txt_MaterialCostsValue" />
                   </StackPanel>
                   <!-- Löhne -->
-                  <StackPanel Grid.Column="2">
+                  <StackPanel Grid.Column="2"
+                              AutomationProperties.AutomationId="Workshop_Panel_Wages">
                     <TextBlock Text="{loc:Translate Wages}"
                                FontSize="11"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               AutomationProperties.AutomationId="Workshop_Txt_WagesLabel" />
                     <TextBlock Text="{Binding WagesDisplay}"
                                FontSize="13" FontWeight="SemiBold"
-                               Foreground="{DynamicResource WarningBrush}" />
+                               Foreground="{DynamicResource WarningBrush}"
+                               AutomationProperties.AutomationId="Workshop_Txt_WagesValue" />
                   </StackPanel>
                 </Grid>
               </StackPanel>
@@ -217,26 +258,32 @@
               <StackPanel>
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="ChartBar" Width="14" Height="14"
-                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                   AutomationProperties.AutomationId="Workshop_Icon_TotalEarned" />
                   <TextBlock Text="{loc:Translate TotalEarned}"
                              FontSize="11"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Workshop_Txt_TotalEarnedLabel" />
                 </StackPanel>
                 <TextBlock Text="{Binding TotalEarned, StringFormat='{}{0:N0} EUR'}"
                            FontSize="13" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="Workshop_Txt_TotalEarnedValue" />
               </StackPanel>
               <StackPanel Grid.Column="1">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="ClipboardCheck" Width="14" Height="14"
-                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                   AutomationProperties.AutomationId="Workshop_Icon_OrdersCompleted" />
                   <TextBlock Text="{loc:Translate OrdersCompleted}"
                              FontSize="11"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             AutomationProperties.AutomationId="Workshop_Txt_OrdersCompletedLabel" />
                 </StackPanel>
                 <TextBlock Text="{Binding OrdersCompleted}"
                            FontSize="13" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="Workshop_Txt_OrdersCompletedValue" />
               </StackPanel>
             </Grid>
 
@@ -244,22 +291,41 @@
         </Border>
 
         <!-- Workers Section Card -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Workshop_Border_Workers">
           <StackPanel Spacing="16">
 
             <Grid ColumnDefinitions="*,Auto">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="AccountHardHat" Width="20" Height="20"
-                                 Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                 AutomationProperties.AutomationId="Workshop_Icon_Workers" />
                 <TextBlock Text="{loc:Translate Workers}"
                            FontSize="18" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="Workshop_Txt_WorkersTitle" />
               </StackPanel>
               <TextBlock Grid.Column="1"
                          FontSize="14"
-                         Foreground="{DynamicResource TextPrimaryBrush}">
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="Workshop_Txt_WorkerCount">
                 <Run Text="{Binding WorkerCount}" /><Run Text="/" /><Run Text="{Binding MaxWorkers}" />
               </TextBlock>
+            </Grid>
+
+            <!-- AutoAssign Toggle (Lv50+) -->
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  IsEnabled="{Binding IsAutoAssignUnlocked}"
+                  AutomationProperties.AutomationId="Workshop_Grid_AutoAssign">
+              <mi:MaterialIcon Kind="RobotHappy" Width="18" Height="18"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <TextBlock Grid.Column="1" Margin="8,0,0,0"
+                         Text="{loc:Translate AutoAssignDesc}" FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch Grid.Column="2"
+                            IsChecked="{Binding AutoAssignWorkers}"
+                            OnContent="" OffContent="" />
             </Grid>
 
             <!-- Worker-Chips (2 Spalten, gleichmäßig) -->
@@ -275,12 +341,14 @@
                           HorizontalAlignment="Stretch"
                           HorizontalContentAlignment="Stretch"
                           Command="{Binding $parent[ItemsControl].((vm:WorkshopViewModel)DataContext).SelectWorkerCommand}"
-                          CommandParameter="{Binding Id}">
+                          CommandParameter="{Binding Id}"
+                          AutomationProperties.AutomationId="Workshop_Btn_WorkerChip">
                     <Border Background="{DynamicResource SurfaceBrush}"
                             CornerRadius="12"
                             Padding="10,6"
                             BorderThickness="1"
-                            BorderBrush="{DynamicResource CardBorderBrush}">
+                            BorderBrush="{DynamicResource CardBorderBrush}"
+                            AutomationProperties.AutomationId="Workshop_Border_WorkerChip">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
                         <!-- Tier-Farb-Punkt -->
                         <Border Width="10" Height="10" CornerRadius="5"
@@ -290,11 +358,13 @@
                                    FontSize="12"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis" />
+                                   TextTrimming="CharacterEllipsis"
+                                   AutomationProperties.AutomationId="Workshop_Txt_WorkerName" />
                         <TextBlock Grid.Column="2" Text="{Binding EffectiveEfficiency, StringFormat='({0:P0})'}"
                                    FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
-                                   VerticalAlignment="Center" />
+                                   VerticalAlignment="Center"
+                                   AutomationProperties.AutomationId="Workshop_Txt_WorkerEfficiency" />
                       </Grid>
                     </Border>
                   </Button>
@@ -307,17 +377,21 @@
                        FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center"
-                       IsVisible="{Binding HasNoWorkers}" />
+                       IsVisible="{Binding HasNoWorkers}"
+                       AutomationProperties.AutomationId="Workshop_Txt_NoWorkers" />
 
             <!-- Arbeiter einstellen Button → navigiert zum Arbeitermarkt -->
             <Button Classes="Primary"
                     Command="{Binding HireWorkerFromMarketCommand}"
                     IsVisible="{Binding CanHireWorker}"
                     HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center">
+                    HorizontalContentAlignment="Center"
+                    AutomationProperties.AutomationId="Workshop_Btn_HireWorker">
               <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="AccountPlus" Width="18" Height="18" />
-                <TextBlock Text="{loc:Translate HireWorker}" FontSize="14" />
+                <mi:MaterialIcon Kind="AccountPlus" Width="18" Height="18"
+                                 AutomationProperties.AutomationId="Workshop_Icon_HireWorker" />
+                <TextBlock Text="{loc:Translate HireWorker}" FontSize="14"
+                           AutomationProperties.AutomationId="Workshop_Txt_HireWorker" />
               </StackPanel>
             </Button>
 
@@ -326,18 +400,22 @@
               <TextBlock Text="{loc:Translate MaxWorkersReached}"
                          FontSize="12"
                          Foreground="{DynamicResource WarningBrush}"
-                         HorizontalAlignment="Center" />
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="Workshop_Txt_MaxWorkers" />
               <!-- Extra-Slot per Video-Ad -->
               <Button Classes="Secondary"
                       Command="{Binding WatchAdForExtraSlotCommand}"
                       IsVisible="{Binding CanWatchSlotAd}"
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Center"
-                      Padding="12,8">
+                      Padding="12,8"
+                      AutomationProperties.AutomationId="Workshop_Btn_WatchAdExtraSlot">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="Video" Width="18" Height="18"
-                                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
-                  <TextBlock Text="{loc:Translate WatchAdForWorkerSlot}" FontSize="13" />
+                                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                   AutomationProperties.AutomationId="Workshop_Icon_AdExtraSlot" />
+                  <TextBlock Text="{loc:Translate WatchAdForWorkerSlot}" FontSize="13"
+                             AutomationProperties.AutomationId="Workshop_Txt_AdExtraSlot" />
                 </StackPanel>
               </Button>
             </StackPanel>
@@ -347,23 +425,27 @@
 
         <!-- Ad Speedup Button (2h Produktionsertrag) -->
         <Border Classes="Card StatsCard"
-                IsVisible="{Binding CanWatchSpeedupAd}">
+                IsVisible="{Binding CanWatchSpeedupAd}"
+                AutomationProperties.AutomationId="Workshop_Border_AdSpeedup">
           <Button Classes="Secondary"
                   Command="{Binding WatchAdForSpeedupCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Padding="12,10">
+                  Padding="12,10"
+                  AutomationProperties.AutomationId="Workshop_Btn_WatchAdSpeedup">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Video" Width="20" Height="20"
-                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                               Foreground="{StaticResource CraftPrimaryLightBrush}"
+                               AutomationProperties.AutomationId="Workshop_Icon_AdSpeedup" />
               <TextBlock Text="{loc:Translate WatchAdForSpeedup}"
-                         FontSize="14" FontWeight="SemiBold" />
+                         FontSize="14" FontWeight="SemiBold"
+                         AutomationProperties.AutomationId="Workshop_Txt_AdSpeedup" />
             </StackPanel>
           </Button>
         </Border>
 
         <!-- Bottom Spacer -->
-        <Border Height="60" />
+        <Border Height="80" />
 
       </StackPanel>
     </ScrollViewer>

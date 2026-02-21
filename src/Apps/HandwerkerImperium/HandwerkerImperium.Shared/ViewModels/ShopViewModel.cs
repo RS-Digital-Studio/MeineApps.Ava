@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Helpers;
@@ -22,6 +23,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPurchaseService _purchaseService;
     private readonly ILocalizationService _localizationService;
+    private readonly IEquipmentService _equipmentService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -60,6 +62,18 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     private string _goldenScrewsBalance = "0";
 
     /// <summary>
+    /// Ausrüstungs-Shop-Angebote (3-4 zufällige Gegenstände).
+    /// </summary>
+    [ObservableProperty]
+    private ObservableCollection<EquipmentShopItem> _equipmentShopItems = [];
+
+    /// <summary>
+    /// Ob Equipment-Shop-Items vorhanden sind.
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasEquipmentShop;
+
+    /// <summary>
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
     public bool ShowAds => !IsPremium;
@@ -79,7 +93,8 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         ISaveGameService saveGameService,
         IRewardedAdService rewardedAdService,
         IPurchaseService purchaseService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IEquipmentService equipmentService)
     {
         _gameStateService = gameStateService;
         _audioService = audioService;
@@ -87,6 +102,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         _rewardedAdService = rewardedAdService;
         _purchaseService = purchaseService;
         _localizationService = localizationService;
+        _equipmentService = equipmentService;
 
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
@@ -97,6 +113,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
 
         LoadShopData();
         LoadTools();
+        LoadEquipmentShop();
     }
 
     private void OnPremiumStatusChanged(object? sender, EventArgs e)
@@ -282,6 +299,80 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         }
 
         Tools = toolItems;
+    }
+
+    /// <summary>
+    /// Lädt die Equipment-Shop-Rotation (3-4 zufällige Ausrüstungsgegenstände).
+    /// </summary>
+    public void LoadEquipmentShop()
+    {
+        var items = _equipmentService.GetShopItems();
+
+        var displayItems = new ObservableCollection<EquipmentShopItem>();
+        foreach (var eq in items)
+        {
+            var name = _localizationService.GetString(eq.NameKey) ?? eq.NameKey;
+            var iconKind = eq.Type switch
+            {
+                EquipmentType.Helmet => "HardHat",
+                EquipmentType.Gloves => "HandWave",
+                EquipmentType.Boots => "ShoeFormal",
+                EquipmentType.Belt => "Wrench",
+                _ => "Shield"
+            };
+
+            // Bonus-Beschreibung zusammensetzen
+            var bonusParts = new List<string>();
+            if (eq.EfficiencyBonus > 0)
+                bonusParts.Add($"+{eq.EfficiencyBonus * 100m:F0}% Eff.");
+            if (eq.FatigueReduction > 0)
+                bonusParts.Add($"-{eq.FatigueReduction * 100m:F0}% Erm.");
+            if (eq.MoodBonus > 0)
+                bonusParts.Add($"+{eq.MoodBonus * 100m:F0}% Stim.");
+            var bonusText = string.Join(", ", bonusParts);
+
+            displayItems.Add(new EquipmentShopItem
+            {
+                Equipment = eq,
+                Name = name,
+                IconKind = iconKind,
+                RarityColor = eq.RarityColor,
+                BonusDescription = bonusText,
+                PriceDisplay = eq.ShopPrice.ToString(),
+                CanAfford = _gameStateService.CanAffordGoldenScrews(eq.ShopPrice)
+            });
+        }
+
+        EquipmentShopItems = displayItems;
+        HasEquipmentShop = displayItems.Count > 0;
+    }
+
+    [RelayCommand]
+    private void BuyEquipment(EquipmentShopItem? item)
+    {
+        if (item?.Equipment == null) return;
+
+        if (!_gameStateService.CanAffordGoldenScrews(item.Equipment.ShopPrice))
+        {
+            ShowAlert(
+                _localizationService.GetString("NotEnoughScrews"),
+                string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), item.Equipment.ShopPrice),
+                "OK");
+            return;
+        }
+
+        _equipmentService.BuyEquipment(item.Equipment);
+
+        var name = _localizationService.GetString(item.Equipment.NameKey) ?? item.Equipment.NameKey;
+        ShowAlert(
+            _localizationService.GetString("EquipmentTitle"),
+            $"{name} ({_localizationService.GetString("EquipmentBonus")})",
+            _localizationService.GetString("Great"));
+
+        // Shop neu laden (Item entfernen, Balance aktualisieren)
+        GoldenScrewsBalance = _gameStateService.State.GoldenScrews.ToString("N0");
+        LoadEquipmentShop();
+        LoadTools(); // Für CanAfford-Aktualisierung
     }
 
     [RelayCommand]
@@ -628,4 +719,18 @@ public class ToolDisplayItem
     public string EffectDescription { get; set; } = string.Empty;
     public string IconKind { get; set; } = string.Empty;
     public bool IsMaxLevel { get; set; }
+}
+
+/// <summary>
+/// Display-Model für Ausrüstung im Shop.
+/// </summary>
+public class EquipmentShopItem
+{
+    public Equipment Equipment { get; set; } = null!;
+    public string Name { get; set; } = string.Empty;
+    public string IconKind { get; set; } = string.Empty;
+    public string RarityColor { get; set; } = "#9E9E9E";
+    public string BonusDescription { get; set; } = string.Empty;
+    public string PriceDisplay { get; set; } = "0";
+    public bool CanAfford { get; set; }
 }

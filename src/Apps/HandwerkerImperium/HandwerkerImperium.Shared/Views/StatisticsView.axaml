@@ -6,12 +6,14 @@
              x:Class="HandwerkerImperium.Views.StatisticsView"
              x:DataType="vm:StatisticsViewModel">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="Statistics_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Statistics_Border_Header"
             Padding="16,12"
             CornerRadius="0,0,12,12">
       <Border.Background>
@@ -23,27 +25,34 @@
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Back Button -->
         <Button Classes="Text"
+                AutomationProperties.AutomationId="Statistics_Btn_Back"
                 Command="{Binding GoBackCommand}">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           AutomationProperties.AutomationId="Statistics_Icon_Back"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
 
         <!-- Title (centered) -->
         <StackPanel Grid.Column="1"
+                    AutomationProperties.AutomationId="Statistics_Panel_Title"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="ChartBar" Width="28" Height="28"
+                           AutomationProperties.AutomationId="Statistics_Icon_ChartBar"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{loc:Translate Stats}"
+                     AutomationProperties.AutomationId="Statistics_Txt_Title"
                      FontSize="20" FontWeight="Bold"
                      Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </StackPanel>
 
         <!-- Refresh Button -->
         <Button Grid.Column="2" Classes="Text"
+                AutomationProperties.AutomationId="Statistics_Btn_Refresh"
                 Command="{Binding RefreshStatisticsCommand}">
           <mi:MaterialIcon Kind="Refresh" Width="24" Height="24"
+                           AutomationProperties.AutomationId="Statistics_Icon_Refresh"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
       </Grid>
@@ -57,23 +66,30 @@
 
         <!-- LEADERBOARD BUTTON (nur sichtbar wenn Play Games angemeldet) -->
         <Button Classes="Primary"
+                AutomationProperties.AutomationId="Statistics_Btn_Leaderboard"
                 Command="{Binding ShowLeaderboardsCommand}"
                 IsVisible="{Binding IsPlayGamesAvailable}"
                 HorizontalAlignment="Center"
                 Margin="0,0,0,8">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="Trophy" Width="20" Height="20" />
-            <TextBlock Text="{loc:Translate Leaderboard}" VerticalAlignment="Center" />
+            <mi:MaterialIcon Kind="Trophy" Width="20" Height="20"
+                             AutomationProperties.AutomationId="Statistics_Icon_Leaderboard" />
+            <TextBlock Text="{loc:Translate Leaderboard}" VerticalAlignment="Center"
+                       AutomationProperties.AutomationId="Statistics_Txt_Leaderboard" />
           </StackPanel>
         </Button>
 
         <!-- PLAYER OVERVIEW -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Statistics_Border_PlayerOverview">
           <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        AutomationProperties.AutomationId="Statistics_Panel_PlayerHeader">
               <mi:MaterialIcon Kind="AccountHardHat" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Statistics_Icon_Player"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Player}"
+                         AutomationProperties.AutomationId="Statistics_Txt_PlayerTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
@@ -81,55 +97,72 @@
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto"
                   ColumnSpacing="16" RowSpacing="8">
               <!-- Level -->
-              <StackPanel>
+              <StackPanel AutomationProperties.AutomationId="Statistics_Panel_Level">
                 <TextBlock Text="{loc:Translate Level}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_LevelLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding PlayerLevel}"
+                           AutomationProperties.AutomationId="Statistics_Txt_LevelValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="Gold" />
               </StackPanel>
 
               <!-- Total XP -->
-              <StackPanel Grid.Column="1">
+              <StackPanel Grid.Column="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_TotalXP">
                 <TextBlock Text="{loc:Translate TotalXP}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalXPLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TotalXp, StringFormat='{}{0:N0}'}"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalXPValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="Gold" />
               </StackPanel>
 
               <!-- Play Time -->
-              <StackPanel Grid.Row="1">
+              <StackPanel Grid.Row="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_PlayTime">
                 <TextBlock Text="{loc:Translate PlayTime}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_PlayTimeLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TotalPlayTime}"
+                           AutomationProperties.AutomationId="Statistics_Txt_PlayTimeValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
               <!-- Current Balance -->
-              <StackPanel Grid.Row="1" Grid.Column="1">
+              <StackPanel Grid.Row="1" Grid.Column="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_Balance">
                 <TextBlock Text="{loc:Translate Balance}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_BalanceLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding CurrentBalance}"
+                           AutomationProperties.AutomationId="Statistics_Txt_BalanceValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{DynamicResource SuccessBrush}" />
               </StackPanel>
 
               <!-- Total Earned -->
-              <StackPanel Grid.Row="2">
+              <StackPanel Grid.Row="2"
+                          AutomationProperties.AutomationId="Statistics_Panel_TotalEarned">
                 <TextBlock Text="{loc:Translate TotalEarned}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalEarnedLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TotalMoneyEarned}"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalEarnedValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{DynamicResource SuccessBrush}" />
               </StackPanel>
 
               <!-- Total Spent -->
-              <StackPanel Grid.Row="2" Grid.Column="1">
+              <StackPanel Grid.Row="2" Grid.Column="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_TotalSpent">
                 <TextBlock Text="{loc:Translate TotalSpent}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalSpentLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TotalMoneySpent}"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalSpentValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{DynamicResource WarningBrush}" />
               </StackPanel>
@@ -138,12 +171,16 @@
         </Border>
 
         <!-- ORDERS & MINIGAMES -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Statistics_Border_MiniGames">
           <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        AutomationProperties.AutomationId="Statistics_Panel_MiniGamesHeader">
               <mi:MaterialIcon Kind="GamepadVariant" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Statistics_Icon_MiniGames"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate MiniGames}"
+                         AutomationProperties.AutomationId="Statistics_Txt_MiniGamesTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
@@ -151,62 +188,81 @@
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto"
                   ColumnSpacing="16" RowSpacing="8">
               <!-- Orders Completed -->
-              <StackPanel>
+              <StackPanel AutomationProperties.AutomationId="Statistics_Panel_Orders">
                 <TextBlock Text="{loc:Translate Orders}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_OrdersLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TotalOrdersCompleted, StringFormat='{}{0:N0}'}"
+                           AutomationProperties.AutomationId="Statistics_Txt_OrdersValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
               <!-- Mini-Games Played -->
-              <StackPanel Grid.Column="1">
+              <StackPanel Grid.Column="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_GamesPlayed">
                 <TextBlock Text="{loc:Translate MiniGames}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_GamesPlayedLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TotalMiniGamesPlayed, StringFormat='{}{0:N0}'}"
+                           AutomationProperties.AutomationId="Statistics_Txt_GamesPlayedValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
               <!-- Perfect Ratings -->
-              <StackPanel Grid.Row="1">
+              <StackPanel Grid.Row="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_PerfectRatings">
                 <TextBlock Text="{loc:Translate Perfect}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_PerfectLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding PerfectRatings, StringFormat='{}{0:N0}'}"
+                           AutomationProperties.AutomationId="Statistics_Txt_PerfectValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </StackPanel>
 
               <!-- Perfect Rate -->
-              <StackPanel Grid.Row="1" Grid.Column="1">
+              <StackPanel Grid.Row="1" Grid.Column="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_PerfectRate">
                 <TextBlock Text="{loc:Translate PerfectRate}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_PerfectRateLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding PerfectRate, StringFormat='{}{0:F1}%'}"
+                           AutomationProperties.AutomationId="Statistics_Txt_PerfectRateValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </StackPanel>
 
               <!-- Current Streak -->
-              <StackPanel Grid.Row="2">
+              <StackPanel Grid.Row="2"
+                          AutomationProperties.AutomationId="Statistics_Panel_CurrentStreak">
                 <TextBlock Text="{loc:Translate CurrentStreak}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_CurrentStreakLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="Fire" Width="18" Height="18"
+                                   AutomationProperties.AutomationId="Statistics_Icon_Fire"
                                    Foreground="{DynamicResource WarningBrush}" />
                   <TextBlock Text="{Binding CurrentPerfectStreak}"
+                             AutomationProperties.AutomationId="Statistics_Txt_CurrentStreakValue"
                              FontSize="20" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
               </StackPanel>
 
               <!-- Best Streak -->
-              <StackPanel Grid.Row="2" Grid.Column="1">
+              <StackPanel Grid.Row="2" Grid.Column="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_BestStreak">
                 <TextBlock Text="{loc:Translate BestStreak}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_BestStreakLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="Star" Width="18" Height="18"
+                                   AutomationProperties.AutomationId="Statistics_Icon_Star"
                                    Foreground="Gold" />
                   <TextBlock Text="{Binding BestPerfectStreak}"
+                             AutomationProperties.AutomationId="Statistics_Txt_BestStreakValue"
                              FontSize="20" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
@@ -216,12 +272,16 @@
         </Border>
 
         <!-- PRESTIGE -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Statistics_Border_Prestige">
           <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        AutomationProperties.AutomationId="Statistics_Panel_PrestigeHeader">
               <mi:MaterialIcon Kind="Creation" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Statistics_Icon_Prestige"
                                Foreground="Gold" />
               <TextBlock Text="{loc:Translate Prestige}"
+                         AutomationProperties.AutomationId="Statistics_Txt_PrestigeTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
@@ -229,26 +289,33 @@
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
                   ColumnSpacing="16" RowSpacing="8">
               <!-- Prestige Level -->
-              <StackPanel>
+              <StackPanel AutomationProperties.AutomationId="Statistics_Panel_PrestigeLevel">
                 <TextBlock Text="{loc:Translate PrestigeLevel}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_PrestigeLevelLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding PrestigeLevel}"
+                           AutomationProperties.AutomationId="Statistics_Txt_PrestigeLevelValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="Gold" />
               </StackPanel>
 
               <!-- Multiplier -->
-              <StackPanel Grid.Column="1">
+              <StackPanel Grid.Column="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_IncomeBonus">
                 <TextBlock Text="{loc:Translate IncomeBonus}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_IncomeBonusLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding PrestigeMultiplier}"
+                           AutomationProperties.AutomationId="Statistics_Txt_IncomeBonusValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="Gold" />
               </StackPanel>
 
               <!-- Potential Bonus -->
-              <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
+              <StackPanel Grid.Row="1" Grid.ColumnSpan="2"
+                          AutomationProperties.AutomationId="Statistics_Panel_PotentialBonus">
                 <TextBlock FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_PotentialBonus"
                            Foreground="{DynamicResource TextSecondaryBrush}">
                   <Run Text="{loc:Translate NextPrestigeBonus}" />
                   <Run Text="{Binding PotentialBonus}"
@@ -260,6 +327,7 @@
 
             <!-- Prestige Button -->
             <Button Classes="Primary"
+                    AutomationProperties.AutomationId="Statistics_Btn_Prestige"
                     Background="{DynamicResource WarningBrush}"
                     Command="{Binding PrestigeCommand}"
                     IsEnabled="{Binding CanPrestige}"
@@ -267,14 +335,17 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Creation" Width="16" Height="16" />
+                <mi:MaterialIcon Kind="Creation" Width="16" Height="16"
+                                 AutomationProperties.AutomationId="Statistics_Icon_PrestigeBtn" />
                 <TextBlock Text="{loc:Translate Prestige}"
+                           AutomationProperties.AutomationId="Statistics_Txt_PrestigeBtnLabel"
                            FontSize="16" FontWeight="Bold" />
               </StackPanel>
             </Button>
 
             <!-- Requirement info when can't prestige -->
             <TextBlock Text="{Binding MinLevelRequiredText}"
+                       AutomationProperties.AutomationId="Statistics_Txt_PrestigeRequirement"
                        FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center"
@@ -283,20 +354,25 @@
         </Border>
 
         <!-- PRESTIGE SHOP -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Statistics_Border_PrestigeShop">
           <StackPanel Spacing="12">
             <!-- Header mit PP-Balance -->
             <Grid ColumnDefinitions="*,Auto">
-              <StackPanel Orientation="Horizontal" Spacing="8">
+              <StackPanel Orientation="Horizontal" Spacing="8"
+                          AutomationProperties.AutomationId="Statistics_Panel_ShopHeader">
                 <mi:MaterialIcon Kind="StorefrontOutline" Width="20" Height="20"
+                                 AutomationProperties.AutomationId="Statistics_Icon_Shop"
                                  Foreground="Gold" />
                 <TextBlock Text="{loc:Translate PrestigeShop}"
+                           AutomationProperties.AutomationId="Statistics_Txt_ShopTitle"
                            FontSize="18" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
               <!-- PP-Balance Badge -->
               <Border Grid.Column="1"
+                      AutomationProperties.AutomationId="Statistics_Border_PPBalance"
                       CornerRadius="8"
                       Padding="10,4">
                 <Border.Background>
@@ -304,11 +380,14 @@
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="Creation" Width="14" Height="14"
+                                   AutomationProperties.AutomationId="Statistics_Icon_PPCoin"
                                    Foreground="Gold" />
                   <TextBlock Text="{Binding PrestigePoints}"
+                             AutomationProperties.AutomationId="Statistics_Txt_PPValue"
                              FontSize="14" FontWeight="Bold"
                              Foreground="Gold" />
                   <TextBlock Text="PP" FontSize="12"
+                             AutomationProperties.AutomationId="Statistics_Txt_PPLabel"
                              Foreground="Gold" Opacity="0.7"
                              VerticalAlignment="Center" />
                 </StackPanel>
@@ -316,10 +395,12 @@
             </Grid>
 
             <!-- Shop Items -->
-            <ItemsControl ItemsSource="{Binding PrestigeShopItems}">
+            <ItemsControl ItemsSource="{Binding PrestigeShopItems}"
+                          AutomationProperties.AutomationId="Statistics_Items_ShopList">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:PrestigeShopItemDisplay">
                   <Border Background="{DynamicResource SurfaceBrush}"
+                          AutomationProperties.AutomationId="Statistics_Border_ShopItem"
                           CornerRadius="8"
                           Padding="12,8"
                           Margin="0,3"
@@ -327,10 +408,12 @@
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                       <!-- Icon -->
                       <Border Background="{Binding IconBackground}"
+                              AutomationProperties.AutomationId="Statistics_Border_ShopItemIcon"
                               CornerRadius="8"
                               Width="40" Height="40"
                               VerticalAlignment="Center">
                         <TextBlock Text="{Binding Icon}"
+                                   AutomationProperties.AutomationId="Statistics_Txt_ShopItemIcon"
                                    FontSize="20"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center" />
@@ -340,9 +423,11 @@
                       <StackPanel Grid.Column="1" Spacing="2"
                                   VerticalAlignment="Center">
                         <TextBlock Text="{Binding Name}"
+                                   AutomationProperties.AutomationId="Statistics_Txt_ShopItemName"
                                    FontSize="13" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="{Binding Description}"
+                                   AutomationProperties.AutomationId="Statistics_Txt_ShopItemDescription"
                                    FontSize="11"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" MaxLines="2" />
@@ -351,6 +436,7 @@
                       <!-- Kauf-Button oder Check -->
                       <Button Grid.Column="2"
                               Classes="Primary"
+                              AutomationProperties.AutomationId="Statistics_Btn_ShopItemBuy"
                               Padding="10,6"
                               MinWidth="60"
                               IsVisible="{Binding !IsPurchased}"
@@ -359,13 +445,16 @@
                               CommandParameter="{Binding .}"
                               VerticalAlignment="Center">
                         <StackPanel Orientation="Horizontal" Spacing="3">
-                          <mi:MaterialIcon Kind="Creation" Width="12" Height="12" />
+                          <mi:MaterialIcon Kind="Creation" Width="12" Height="12"
+                                           AutomationProperties.AutomationId="Statistics_Icon_ShopItemCost" />
                           <TextBlock Text="{Binding CostDisplay}"
+                                     AutomationProperties.AutomationId="Statistics_Txt_ShopItemCost"
                                      FontSize="11" FontWeight="Bold" />
                         </StackPanel>
                       </Button>
 
                       <mi:MaterialIcon Grid.Column="2"
+                                       AutomationProperties.AutomationId="Statistics_Icon_ShopItemPurchased"
                                        Kind="CheckCircle" Width="24" Height="24"
                                        Foreground="{DynamicResource SuccessBrush}"
                                        VerticalAlignment="Center"
@@ -379,40 +468,52 @@
         </Border>
 
         <!-- WORKSHOP SUMMARY -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Statistics_Border_WorkshopSummary">
           <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        AutomationProperties.AutomationId="Statistics_Panel_WorkshopSummaryHeader">
               <mi:MaterialIcon Kind="Factory" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Statistics_Icon_Factory"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Workshops}"
+                         AutomationProperties.AutomationId="Statistics_Txt_WorkshopSummaryTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
               <!-- Total Workshops -->
-              <StackPanel>
+              <StackPanel AutomationProperties.AutomationId="Statistics_Panel_TotalWorkshops">
                 <TextBlock Text="{loc:Translate Workshops}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalWorkshopsLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TotalWorkshops}"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalWorkshopsValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
               <!-- Total Workers -->
-              <StackPanel Grid.Column="1">
+              <StackPanel Grid.Column="1"
+                          AutomationProperties.AutomationId="Statistics_Panel_TotalWorkers">
                 <TextBlock Text="{loc:Translate Workers}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalWorkersLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TotalWorkers}"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalWorkersValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
               <!-- Income/s -->
-              <StackPanel Grid.Column="2">
+              <StackPanel Grid.Column="2"
+                          AutomationProperties.AutomationId="Statistics_Panel_TotalIncome">
                 <TextBlock Text="{loc:Translate Income}" FontSize="12"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalIncomeLabel"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding TotalIncomePerSecond}"
+                           AutomationProperties.AutomationId="Statistics_Txt_TotalIncomeValue"
                            FontSize="20" FontWeight="Bold"
                            Foreground="{DynamicResource SuccessBrush}" />
               </StackPanel>
@@ -422,31 +523,39 @@
 
         <!-- WORKSHOP DETAILS -->
         <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Statistics_Border_WorkshopDetails"
                 IsVisible="{Binding HasWorkshopStats}">
           <StackPanel Spacing="12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        AutomationProperties.AutomationId="Statistics_Panel_WorkshopDetailsHeader">
               <mi:MaterialIcon Kind="ClipboardList" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Statistics_Icon_ClipboardList"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate WorkshopDetails}"
+                         AutomationProperties.AutomationId="Statistics_Txt_WorkshopDetailsTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
-            <ItemsControl ItemsSource="{Binding WorkshopStats}">
+            <ItemsControl ItemsSource="{Binding WorkshopStats}"
+                          AutomationProperties.AutomationId="Statistics_Items_WorkshopDetails">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:WorkshopStatistic">
                   <Border Background="{DynamicResource SurfaceBrush}"
+                          AutomationProperties.AutomationId="Statistics_Border_WorkshopDetailItem"
                           CornerRadius="8"
                           Padding="12,8"
                           Margin="0,4">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="12">
                       <!-- Icon -->
                       <TextBlock Text="{Binding Icon}"
+                                 AutomationProperties.AutomationId="Statistics_Txt_WorkshopDetailIcon"
                                  FontSize="20"
                                  VerticalAlignment="Center" />
 
                       <!-- Name -->
                       <TextBlock Grid.Column="1"
+                                 AutomationProperties.AutomationId="Statistics_Txt_WorkshopDetailName"
                                  Text="{Binding Name}"
                                  FontSize="14"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
@@ -454,6 +563,7 @@
 
                       <!-- Level -->
                       <TextBlock Grid.Column="2"
+                                 AutomationProperties.AutomationId="Statistics_Txt_WorkshopDetailLevel"
                                  VerticalAlignment="Center">
                         <Run Text="Lv." FontSize="10"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -462,18 +572,22 @@
 
                       <!-- Workers -->
                       <StackPanel Grid.Column="3"
+                                  AutomationProperties.AutomationId="Statistics_Panel_WorkshopDetailWorkers"
                                   Orientation="Horizontal"
                                   Spacing="2"
                                   VerticalAlignment="Center">
                         <mi:MaterialIcon Kind="AccountHardHat" Width="14" Height="14"
+                                         AutomationProperties.AutomationId="Statistics_Icon_WorkshopDetailWorker"
                                          Foreground="{DynamicResource TextSecondaryBrush}" />
                         <TextBlock Text="{Binding Workers}"
+                                   AutomationProperties.AutomationId="Statistics_Txt_WorkshopDetailWorkers"
                                    FontSize="14"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                       </StackPanel>
 
                       <!-- Income -->
                       <TextBlock Grid.Column="4"
+                                 AutomationProperties.AutomationId="Statistics_Txt_WorkshopDetailIncome"
                                  Text="{Binding IncomePerSecond}"
                                  FontSize="12"
                                  Foreground="{DynamicResource SuccessBrush}"
@@ -487,7 +601,7 @@
         </Border>
 
         <!-- Bottom Spacer -->
-        <Border Height="60" />
+        <Border Height="80" />
 
       </StackPanel>
     </ScrollViewer>

@@ -19,6 +19,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ISaveGameService _saveGameService;
     private readonly IGameStateService _gameStateService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IPlayGamesService _playGamesService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -65,6 +66,35 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _appVersion = "1.0.0";
 
+    // Cloud Save
+    [ObservableProperty]
+    private string _playGamesStatusText = "";
+
+    [ObservableProperty]
+    private string _lastCloudSaveText = "";
+
+    [ObservableProperty]
+    private bool _hasLastCloudSave;
+
+    // Automatisierungs-Toggles
+    [ObservableProperty]
+    private bool _autoCollectDelivery;
+
+    [ObservableProperty]
+    private bool _autoAcceptOrder;
+
+    [ObservableProperty]
+    private bool _autoAssignWorkers;
+
+    [ObservableProperty]
+    private bool _autoClaimDaily;
+
+    // Level-Gates für Automatisierung
+    public bool IsAutoCollectUnlocked => _gameStateService.State.PlayerLevel >= 15;
+    public bool IsAutoAcceptUnlocked => _gameStateService.State.PlayerLevel >= 25;
+    public bool IsAutoAssignUnlocked => _gameStateService.State.PlayerLevel >= 50;
+    public bool IsAutoClaimUnlocked => _purchaseService.IsPremium;
+
     /// <summary>
     /// Indicates whether ads should be shown (not premium).
     /// </summary>
@@ -92,13 +122,15 @@ public partial class SettingsViewModel : ObservableObject
         ILocalizationService localizationService,
         ISaveGameService saveGameService,
         IGameStateService gameStateService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IPlayGamesService playGamesService)
     {
         _audioService = audioService;
         _localizationService = localizationService;
         _saveGameService = saveGameService;
         _gameStateService = gameStateService;
         _purchaseService = purchaseService;
+        _playGamesService = playGamesService;
 
         // Don't load settings here - GameState is not initialized yet.
         // MainViewModel.Initialize() will call ReloadSettings() after loading the save.
@@ -122,6 +154,19 @@ public partial class SettingsViewModel : ObservableObject
             VibrationEnabled = state.HapticsEnabled;
             NotificationsEnabled = state.NotificationsEnabled;
             CloudSaveEnabled = state.CloudSaveEnabled;
+
+            // Automatisierungs-Einstellungen laden
+            AutoCollectDelivery = state.Automation.AutoCollectDelivery;
+            AutoAcceptOrder = state.Automation.AutoAcceptOrder;
+            AutoAssignWorkers = state.Automation.AutoAssignWorkers;
+            AutoClaimDaily = state.Automation.AutoClaimDaily;
+
+            // Level-Gates aktualisieren
+            OnPropertyChanged(nameof(IsAutoCollectUnlocked));
+            OnPropertyChanged(nameof(IsAutoAcceptUnlocked));
+            OnPropertyChanged(nameof(IsAutoAssignUnlocked));
+            OnPropertyChanged(nameof(IsAutoClaimUnlocked));
+
             // Fallback auf aktuelle Sprache (Gerätesprache) statt Languages[0] (English)
             var langCode = !string.IsNullOrEmpty(state.Language) ? state.Language : _localizationService.CurrentLanguage;
             SelectedLanguage = Languages.FirstOrDefault(l => l.Code == langCode) ?? Languages[0];
@@ -131,10 +176,46 @@ public partial class SettingsViewModel : ObservableObject
             var assembly = System.Reflection.Assembly.GetEntryAssembly();
             var version = assembly?.GetName().Version;
             AppVersion = version != null ? $"{version.Major}.{version.Minor}.{version.Build}" : "1.0.0";
+
+            // Cloud Save Status initialisieren
+            RefreshPlayGamesStatus();
         }
         finally
         {
             _isInitializing = false;
+        }
+    }
+
+    /// <summary>
+    /// Aktualisiert den Play Games Anmelde-Status und Cloud-Save-Zeitstempel.
+    /// </summary>
+    private void RefreshPlayGamesStatus()
+    {
+        IsPlayGamesSignedIn = _playGamesService.IsSignedIn;
+
+        if (IsPlayGamesSignedIn)
+        {
+            var name = _playGamesService.PlayerDisplayName;
+            PlayGamesStatusText = !string.IsNullOrEmpty(name)
+                ? $"{_localizationService.GetString("SignedInAs")} {name}"
+                : _localizationService.GetString("SignedIn");
+        }
+        else
+        {
+            PlayGamesStatusText = _localizationService.GetString("NotSignedIn");
+        }
+
+        // Letzter Cloud-Save Zeitstempel
+        var state = _gameStateService.State;
+        if (state.LastCloudSaveTime != default)
+        {
+            HasLastCloudSave = true;
+            LastCloudSaveText = $"{_localizationService.GetString("LastCloudSave")}: {state.LastCloudSaveTime.ToLocalTime():dd.MM.yyyy HH:mm}";
+        }
+        else
+        {
+            HasLastCloudSave = false;
+            LastCloudSaveText = "";
         }
     }
 
@@ -179,6 +260,38 @@ public partial class SettingsViewModel : ObservableObject
         if (_isInitializing) return;
 
         _gameStateService.State.CloudSaveEnabled = value;
+        _gameStateService.MarkDirty();
+        _saveGameService.SaveAsync().FireAndForget();
+    }
+
+    partial void OnAutoCollectDeliveryChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _gameStateService.State.Automation.AutoCollectDelivery = value;
+        _gameStateService.MarkDirty();
+        _saveGameService.SaveAsync().FireAndForget();
+    }
+
+    partial void OnAutoAcceptOrderChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _gameStateService.State.Automation.AutoAcceptOrder = value;
+        _gameStateService.MarkDirty();
+        _saveGameService.SaveAsync().FireAndForget();
+    }
+
+    partial void OnAutoAssignWorkersChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _gameStateService.State.Automation.AutoAssignWorkers = value;
+        _gameStateService.MarkDirty();
+        _saveGameService.SaveAsync().FireAndForget();
+    }
+
+    partial void OnAutoClaimDailyChanged(bool value)
+    {
+        if (_isInitializing) return;
+        _gameStateService.State.Automation.AutoClaimDaily = value;
         _gameStateService.MarkDirty();
         _saveGameService.SaveAsync().FireAndForget();
     }
@@ -232,6 +345,129 @@ public partial class SettingsViewModel : ObservableObject
             _gameStateService.State.IsPremium = true;
             _gameStateService.MarkDirty();
             await _saveGameService.SaveAsync();
+        }
+    }
+
+    [RelayCommand]
+    private async Task SignInPlayGamesAsync()
+    {
+        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+        var success = await _playGamesService.SignInAsync();
+        RefreshPlayGamesStatus();
+
+        if (!success)
+        {
+            ShowAlert(
+                _localizationService.GetString("Error"),
+                _localizationService.GetString("SignInFailed"),
+                _localizationService.GetString("OK"));
+        }
+    }
+
+    [RelayCommand]
+    private async Task SaveToCloudAsync()
+    {
+        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+        if (!_playGamesService.IsSignedIn || !_playGamesService.SupportsCloudSave)
+        {
+            ShowAlert(
+                _localizationService.GetString("Error"),
+                _localizationService.GetString("CloudSaveNotAvailable"),
+                _localizationService.GetString("OK"));
+            return;
+        }
+
+        // Aktuellen Spielstand exportieren
+        var json = await _saveGameService.ExportSaveAsync();
+        if (string.IsNullOrEmpty(json))
+        {
+            ShowAlert(
+                _localizationService.GetString("Error"),
+                _localizationService.GetString("CloudSaveFailed"),
+                _localizationService.GetString("OK"));
+            return;
+        }
+
+        var description = $"Lv.{_gameStateService.State.PlayerLevel} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+        var success = await _playGamesService.SaveToCloudAsync(json, description);
+
+        if (success)
+        {
+            _gameStateService.State.LastCloudSaveTime = DateTime.UtcNow;
+            _gameStateService.MarkDirty();
+            await _saveGameService.SaveAsync();
+            RefreshPlayGamesStatus();
+
+            ShowAlert(
+                _localizationService.GetString("CloudSave"),
+                _localizationService.GetString("CloudSaveSuccess"),
+                _localizationService.GetString("OK"));
+        }
+        else
+        {
+            ShowAlert(
+                _localizationService.GetString("Error"),
+                _localizationService.GetString("CloudSaveFailed"),
+                _localizationService.GetString("OK"));
+        }
+    }
+
+    [RelayCommand]
+    private async Task RestoreFromCloudAsync()
+    {
+        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+        if (!_playGamesService.IsSignedIn || !_playGamesService.SupportsCloudSave)
+        {
+            ShowAlert(
+                _localizationService.GetString("Error"),
+                _localizationService.GetString("CloudSaveNotAvailable"),
+                _localizationService.GetString("OK"));
+            return;
+        }
+
+        // Bestätigungsdialog: Lokaler Spielstand wird überschrieben
+        bool confirmed = false;
+        if (ConfirmationRequested != null)
+        {
+            confirmed = await ConfirmationRequested.Invoke(
+                _localizationService.GetString("RestoreFromCloud"),
+                _localizationService.GetString("RestoreFromCloudConfirmation"),
+                _localizationService.GetString("YesRestore"),
+                _localizationService.GetString("Cancel"));
+        }
+
+        if (!confirmed) return;
+
+        var json = await _playGamesService.LoadCloudSaveAsync();
+        if (string.IsNullOrEmpty(json))
+        {
+            ShowAlert(
+                _localizationService.GetString("Error"),
+                _localizationService.GetString("CloudRestoreFailed"),
+                _localizationService.GetString("OK"));
+            return;
+        }
+
+        var success = await _saveGameService.ImportSaveAsync(json);
+        if (success)
+        {
+            ShowAlert(
+                _localizationService.GetString("CloudSave"),
+                _localizationService.GetString("CloudRestoreSuccess"),
+                _localizationService.GetString("OK"));
+
+            // Navigation zum Hauptmenü um neuen State zu laden
+            NavigationRequested?.Invoke("//main");
+        }
+        else
+        {
+            ShowAlert(
+                _localizationService.GetString("Error"),
+                _localizationService.GetString("CloudRestoreFailed"),
+                _localizationService.GetString("OK"));
         }
     }
 

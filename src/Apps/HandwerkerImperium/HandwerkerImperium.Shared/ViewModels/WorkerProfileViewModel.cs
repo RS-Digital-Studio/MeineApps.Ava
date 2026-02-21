@@ -19,6 +19,7 @@ public partial class WorkerProfileViewModel : ObservableObject
     private readonly IWorkerService _workerService;
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
+    private readonly IEquipmentService _equipmentService;
 
     private string? _workerId;
 
@@ -171,6 +172,37 @@ public partial class WorkerProfileViewModel : ObservableObject
     [ObservableProperty]
     private string _selectedTrainingDescription = string.Empty;
 
+    // Ausrüstungs-Slots
+    [ObservableProperty]
+    private Equipment? _equippedHelmet;
+
+    [ObservableProperty]
+    private Equipment? _equippedGloves;
+
+    [ObservableProperty]
+    private Equipment? _equippedBoots;
+
+    [ObservableProperty]
+    private Equipment? _equippedBelt;
+
+    /// <summary>
+    /// Ob der Arbeiter mindestens ein Equipment-Teil trägt.
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasEquipment;
+
+    /// <summary>
+    /// Lokalisierter Name des ausgerüsteten Items (oder leer).
+    /// </summary>
+    [ObservableProperty]
+    private string _equippedItemName = string.Empty;
+
+    /// <summary>
+    /// Bonus-Beschreibung des ausgerüsteten Items.
+    /// </summary>
+    [ObservableProperty]
+    private string _equippedItemBonusDisplay = string.Empty;
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -178,11 +210,13 @@ public partial class WorkerProfileViewModel : ObservableObject
     public WorkerProfileViewModel(
         IWorkerService workerService,
         IGameStateService gameStateService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IEquipmentService equipmentService)
     {
         _workerService = workerService;
         _gameStateService = gameStateService;
         _localizationService = localizationService;
+        _equipmentService = equipmentService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -368,6 +402,9 @@ public partial class WorkerProfileViewModel : ObservableObject
         {
             RestTimeDisplay = string.Empty;
         }
+
+        // Ausrüstungs-Slots aktualisieren
+        RefreshEquipmentSlots();
     }
 
     /// <summary>
@@ -563,6 +600,18 @@ public partial class WorkerProfileViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Entfernt die Ausrüstung des Arbeiters (zurück ins Inventar).
+    /// </summary>
+    [RelayCommand]
+    private void Unequip()
+    {
+        if (_workerId == null || Worker?.EquippedItem == null) return;
+
+        _equipmentService.UnequipItem(_workerId);
+        RefreshDisplayProperties();
+    }
+
     [RelayCommand]
     private void GoBack()
     {
@@ -572,6 +621,52 @@ public partial class WorkerProfileViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Aktualisiert die 4 Equipment-Slot-Properties basierend auf dem aktuellen Worker.
+    /// Da ein Worker nur 1 EquippedItem hat, wird dieses dem passenden Slot zugewiesen.
+    /// </summary>
+    private void RefreshEquipmentSlots()
+    {
+        if (Worker == null)
+        {
+            EquippedHelmet = null;
+            EquippedGloves = null;
+            EquippedBoots = null;
+            EquippedBelt = null;
+            HasEquipment = false;
+            EquippedItemName = string.Empty;
+            EquippedItemBonusDisplay = string.Empty;
+            return;
+        }
+
+        var item = Worker.EquippedItem;
+        EquippedHelmet = item?.Type == EquipmentType.Helmet ? item : null;
+        EquippedGloves = item?.Type == EquipmentType.Gloves ? item : null;
+        EquippedBoots = item?.Type == EquipmentType.Boots ? item : null;
+        EquippedBelt = item?.Type == EquipmentType.Belt ? item : null;
+        HasEquipment = item != null;
+
+        if (item != null)
+        {
+            EquippedItemName = _localizationService.GetString(item.NameKey) ?? item.NameKey;
+
+            // Bonus-Beschreibung zusammensetzen
+            var parts = new List<string>();
+            if (item.EfficiencyBonus > 0)
+                parts.Add($"+{item.EfficiencyBonus * 100m:F0}% Eff.");
+            if (item.FatigueReduction > 0)
+                parts.Add($"-{item.FatigueReduction * 100m:F0}% Erm.");
+            if (item.MoodBonus > 0)
+                parts.Add($"+{item.MoodBonus * 100m:F0}% Stim.");
+            EquippedItemBonusDisplay = string.Join(", ", parts);
+        }
+        else
+        {
+            EquippedItemName = string.Empty;
+            EquippedItemBonusDisplay = string.Empty;
+        }
+    }
 
     private void LoadAvailableWorkshops()
     {

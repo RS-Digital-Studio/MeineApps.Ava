@@ -5,56 +5,69 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:labs="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.OrderView"
-             x:DataType="vm:OrderViewModel">
+             x:DataType="vm:OrderViewModel"
+             AutomationProperties.AutomationId="Order_Root">
 
-  <Grid RowDefinitions="Auto,*">
+  <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Order_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- HEADER                                                            -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Order_Border_Header"
             Classes="CardElevated"
             Padding="16,12"
             CornerRadius="0,0,12,12">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Back Button -->
         <Button Classes="Text"
+                AutomationProperties.AutomationId="Order_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           AutomationProperties.AutomationId="Order_Icon_Back" />
         </Button>
 
         <!-- Title (centered) -->
         <StackPanel Grid.Column="1"
+                    AutomationProperties.AutomationId="Order_Panel_TitleGroup"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
           <mi:MaterialIcon Kind="ClipboardList" Width="22" Height="22"
+                           AutomationProperties.AutomationId="Order_Icon_Title"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{loc:Translate OrderDetails}"
+                     AutomationProperties.AutomationId="Order_Txt_Title"
                      FontSize="20" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
         </StackPanel>
 
         <!-- Spacer for symmetry -->
-        <Border Grid.Column="2" Width="44" />
+        <Border Grid.Column="2" Width="44" AutomationProperties.AutomationId="Order_Border_HeaderSpacer" />
       </Grid>
     </Border>
 
     <!-- ================================================================= -->
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="20" Margin="16">
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  AutomationProperties.AutomationId="Order_ScrollViewer_Content">
+      <StackPanel Spacing="20" Margin="16"
+                  AutomationProperties.AutomationId="Order_Panel_Content">
 
         <!-- ORDER INFO CARD -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Order_Border_InfoCard">
           <StackPanel Spacing="16">
             <!-- Customer & Title -->
-            <StackPanel Orientation="Horizontal" Spacing="16">
+            <StackPanel Orientation="Horizontal" Spacing="16"
+                        AutomationProperties.AutomationId="Order_Panel_CustomerInfo">
               <Border Background="{DynamicResource SurfaceBrush}"
+                      AutomationProperties.AutomationId="Order_Border_CustomerIconBg"
                       CornerRadius="16"
                       Width="80" Height="80">
                 <TextBlock Text="{Binding CustomerIcon}"
+                           AutomationProperties.AutomationId="Order_Txt_CustomerIcon"
                            FontSize="48"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center" />
@@ -62,19 +75,24 @@
 
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <TextBlock Text="{Binding OrderTitle}"
+                           AutomationProperties.AutomationId="Order_Txt_OrderTitle"
                            FontSize="18" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <TextBlock Text="{Binding WorkshopIcon}" FontSize="14" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding WorkshopIcon}" FontSize="14" VerticalAlignment="Center"
+                             AutomationProperties.AutomationId="Order_Txt_WorkshopIcon" />
                   <TextBlock Text="{Binding WorkshopName}"
+                             AutomationProperties.AutomationId="Order_Txt_WorkshopName"
                              FontSize="12"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
                 <Border Background="{DynamicResource SurfaceBrush}"
+                        AutomationProperties.AutomationId="Order_Border_DifficultyBadge"
                         CornerRadius="8"
                         Padding="8,4"
                         HorizontalAlignment="Left">
                   <TextBlock Text="{Binding DifficultyText}"
+                             AutomationProperties.AutomationId="Order_Txt_Difficulty"
                              FontSize="12" FontWeight="Bold"
                              Foreground="{Binding DifficultyColor}" />
                 </Border>
@@ -83,35 +101,56 @@
 
             <!-- Task Count Info -->
             <TextBlock FontSize="14"
+                       AutomationProperties.AutomationId="Order_Txt_TaskCount"
                        Foreground="{DynamicResource TextPrimaryBrush}">
               <Run Text="{Binding MiniGamesRequired}" FontWeight="Bold" />
               <Run Text=" " />
               <Run Text="{loc:Translate MiniGamesRequiredFormat}" />
             </TextBlock>
+
+            <!-- Cooperation-Order Hinweis -->
+            <StackPanel Orientation="Horizontal" Spacing="6"
+                        AutomationProperties.AutomationId="Order_Panel_CooperationHint"
+                        IsVisible="{Binding IsCooperationOrder}">
+              <mi:MaterialIcon Kind="Handshake" Width="16" Height="16"
+                               AutomationProperties.AutomationId="Order_Icon_CooperationHint"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Text="{loc:Translate CooperationOrderHint}"
+                         AutomationProperties.AutomationId="Order_Txt_CooperationHint"
+                         FontSize="12" FontStyle="Italic"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </StackPanel>
           </StackPanel>
         </Border>
 
         <!-- REWARDS CARD -->
-        <Border Classes="Card StatsCard">
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Order_Border_RewardsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Gift" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Order_Icon_RewardHeader"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{loc:Translate Reward}"
+                         AutomationProperties.AutomationId="Order_Txt_RewardTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="16"
+                  AutomationProperties.AutomationId="Order_Grid_RewardsRow">
               <!-- Money Reward -->
               <Border Background="{DynamicResource SurfaceBrush}"
+                      AutomationProperties.AutomationId="Order_Border_MoneyReward"
                       CornerRadius="12"
                       Padding="16">
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
                   <mi:MaterialIcon Kind="CashMultiple" Width="32" Height="32"
+                                   AutomationProperties.AutomationId="Order_Icon_MoneyReward"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    HorizontalAlignment="Center" />
                   <TextBlock Text="{Binding RewardText}"
+                             AutomationProperties.AutomationId="Order_Txt_RewardMoney"
                              FontSize="16" FontWeight="Bold"
                              Foreground="{DynamicResource SuccessBrush}"
                              HorizontalAlignment="Center" />
@@ -120,14 +159,17 @@
 
               <!-- XP Reward -->
               <Border Grid.Column="1"
+                      AutomationProperties.AutomationId="Order_Border_XpReward"
                       Background="{DynamicResource SurfaceBrush}"
                       CornerRadius="12"
                       Padding="16">
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
                   <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+                                   AutomationProperties.AutomationId="Order_Icon_XpReward"
                                    Foreground="Gold"
                                    HorizontalAlignment="Center" />
                   <TextBlock Text="{Binding XpRewardText}"
+                             AutomationProperties.AutomationId="Order_Txt_RewardXp"
                              FontSize="16" FontWeight="Bold"
                              Foreground="Gold"
                              HorizontalAlignment="Center" />
@@ -137,6 +179,7 @@
 
             <!-- Hinweis: Belohnung hängt von Bewertung ab -->
             <TextBlock Text="{Binding RewardHintText}"
+                       AutomationProperties.AutomationId="Order_Txt_RewardHint"
                        FontSize="11" FontStyle="Italic"
                        Foreground="{DynamicResource TextMutedBrush}"
                        HorizontalAlignment="Center"
@@ -146,21 +189,26 @@
 
         <!-- PROGRESS CARD (only when in progress) -->
         <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Order_Border_ProgressCard"
                 IsVisible="{Binding IsInProgress}">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="ChartBar" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Order_Icon_ProgressHeader"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{loc:Translate Progress}"
+                         AutomationProperties.AutomationId="Order_Txt_ProgressTitle"
                          FontSize="18" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
             <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="8">
               <TextBlock Text="{loc:Translate MiniGames}"
+                         AutomationProperties.AutomationId="Order_Txt_MiniGamesLabel"
                          FontSize="14"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Grid.Column="1" FontSize="14"
+                         AutomationProperties.AutomationId="Order_Txt_MiniGamesProgress"
                          Foreground="{DynamicResource TextPrimaryBrush}">
                 <Run Text="{Binding MiniGamesCompleted}" FontWeight="Bold" />
                 <Run Text=" / " />
@@ -168,6 +216,7 @@
               </TextBlock>
 
               <labs:SKCanvasView Grid.Row="1" Grid.ColumnSpan="2"
+                                   AutomationProperties.AutomationId="Order_Canvas_ProgressBar"
                                    Height="12"
                                    PaintSurface="OnPaintOrderProgress" />
             </Grid>
@@ -175,9 +224,11 @@
         </Border>
 
         <!-- ACTIONS -->
-        <StackPanel Spacing="12">
+        <StackPanel Spacing="12"
+                    AutomationProperties.AutomationId="Order_Panel_Actions">
           <!-- Start Button (when not started) -->
           <Button Content="{loc:Translate StartOrder}"
+                  AutomationProperties.AutomationId="Order_Btn_Start"
                   Classes="Primary"
                   Command="{Binding StartOrderCommand}"
                   IsVisible="{Binding CanStart}"
@@ -186,6 +237,7 @@
 
           <!-- Continue Button (when in progress) -->
           <Button Content="{loc:Translate ContinuePlaying}"
+                  AutomationProperties.AutomationId="Order_Btn_Continue"
                   Classes="Primary"
                   Command="{Binding ContinueOrderCommand}"
                   IsVisible="{Binding IsInProgress}"
@@ -194,6 +246,7 @@
 
           <!-- Cancel Button (when in progress) -->
           <Button Content="{loc:Translate CancelOrder}"
+                  AutomationProperties.AutomationId="Order_Btn_Cancel"
                   Classes="Secondary"
                   Command="{Binding CancelOrderCommand}"
                   IsVisible="{Binding IsInProgress}"
@@ -203,11 +256,14 @@
 
         <!-- TIP CARD -->
         <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Order_Border_TipCard"
                 IsVisible="{Binding CanStart}">
           <StackPanel Orientation="Horizontal" Spacing="12">
             <mi:MaterialIcon Kind="LightbulbOn" Width="24" Height="24"
+                             AutomationProperties.AutomationId="Order_Icon_Tip"
                              Foreground="{DynamicResource WarningBrush}" />
             <TextBlock Text="{loc:Translate OrderTip}"
+                       AutomationProperties.AutomationId="Order_Txt_Tip"
                        FontSize="12"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        TextWrapping="Wrap"
@@ -216,7 +272,7 @@
         </Border>
 
         <!-- Bottom Spacer -->
-        <Border Height="60" />
+        <Border Height="80" AutomationProperties.AutomationId="Order_Border_BottomSpacer" />
 
       </StackPanel>
     </ScrollViewer>

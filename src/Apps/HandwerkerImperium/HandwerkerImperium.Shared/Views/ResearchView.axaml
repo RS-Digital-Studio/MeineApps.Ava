@@ -7,20 +7,24 @@
              x:Class="HandwerkerImperium.Views.ResearchView"
              x:DataType="vm:ResearchViewModel">
 
-  <Grid RowDefinitions="Auto,Auto,Auto,*">
+  <Grid RowDefinitions="Auto,Auto,Auto,*"
+        AutomationProperties.AutomationId="Research_Grid_Root">
 
     <!-- ================================================================= -->
     <!-- ROW 0: HEADER mit SkiaSharp Forschungslabor-Hintergrund           -->
     <!-- ================================================================= -->
     <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Research_Border_Header"
             CornerRadius="0,0,12,12"
             ClipToBounds="True">
       <Panel>
         <!-- Forschungslabor SkiaSharp Layer (unterste Schicht) -->
-        <skia:SKCanvasView x:Name="ResearchCanvas" MinHeight="90" />
+        <skia:SKCanvasView x:Name="ResearchCanvas" MinHeight="90"
+                           AutomationProperties.AutomationId="Research_Canvas_Lab" />
 
         <!-- Gradient-Overlay (semi-transparent, damit Labor durchscheint) -->
-        <Border Padding="12,6">
+        <Border Padding="12,6"
+                AutomationProperties.AutomationId="Research_Border_HeaderOverlay">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
               <GradientStop Color="#B092400E" Offset="0" />
@@ -30,40 +34,52 @@
           <Grid ColumnDefinitions="Auto,*,Auto">
             <!-- Back Button -->
             <Button Classes="Text"
+                    AutomationProperties.AutomationId="Research_Btn_Back"
                     Command="{Binding GoBackCommand}">
               <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Research_Icon_Back"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </Button>
 
             <!-- Title (centered) -->
             <StackPanel Grid.Column="1"
+                        AutomationProperties.AutomationId="Research_Panel_Title"
                         Orientation="Horizontal"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"
                         Spacing="6">
               <mi:MaterialIcon Kind="FlaskOutline" Width="22" Height="22"
+                               AutomationProperties.AutomationId="Research_Icon_Flask"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{Binding Title}"
+                         AutomationProperties.AutomationId="Research_Txt_Title"
                          FontSize="16" FontWeight="Bold"
                          Foreground="{StaticResource CraftPrimaryLightBrush}" />
             </StackPanel>
 
             <!-- Balance Badges -->
             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6"
+                        AutomationProperties.AutomationId="Research_Panel_Badges"
                         VerticalAlignment="Center">
               <!-- Goldschrauben-Badge -->
               <Border Background="{DynamicResource SurfaceBrush}"
+                      AutomationProperties.AutomationId="Research_Border_ScrewBadge"
                       CornerRadius="10" Padding="6,3">
                 <StackPanel Orientation="Horizontal" Spacing="3">
-                  <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700" />
+                  <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
+                                   AutomationProperties.AutomationId="Research_Icon_Screw"
+                                   Foreground="#FFD700" />
                   <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="12" FontWeight="Bold"
+                             AutomationProperties.AutomationId="Research_Txt_ScrewCount"
                              Foreground="#FFD700" />
                 </StackPanel>
               </Border>
               <!-- Euro-Badge -->
               <Border Background="{DynamicResource SurfaceBrush}"
+                      AutomationProperties.AutomationId="Research_Border_EuroBadge"
                       CornerRadius="10" Padding="6,3">
                 <TextBlock Text="{Binding CurrentBalance}"
+                           AutomationProperties.AutomationId="Research_Txt_Balance"
                            FontSize="12" FontWeight="Bold"
                            Foreground="{DynamicResource SuccessBrush}" />
               </Border>
@@ -77,11 +93,13 @@
     <!-- ROW 1: ACTIVE RESEARCH BANNER (SkiaSharp + Overlay-Buttons)       -->
     <!-- ================================================================= -->
     <Panel Grid.Row="1"
+           AutomationProperties.AutomationId="Research_Panel_ActiveResearch"
            Margin="16,12,16,0"
            IsVisible="{Binding HasActiveResearch}">
 
       <!-- SkiaSharp Reagenzglas-Animation -->
-      <skia:SKCanvasView x:Name="ActiveResearchCanvas" MinHeight="100" />
+      <skia:SKCanvasView x:Name="ActiveResearchCanvas" MinHeight="100"
+                         AutomationProperties.AutomationId="Research_Canvas_ActiveResearch" />
 
       <!-- Overlay-Buttons (über der SkiaSharp-Grafik, rechts oben) -->
       <StackPanel HorizontalAlignment="Right"
@@ -90,9 +108,11 @@
                   Spacing="4">
         <!-- Cancel Button -->
         <Button Classes="Text"
+                AutomationProperties.AutomationId="Research_Btn_Cancel"
                 Command="{Binding CancelResearchCommand}"
                 Padding="6">
           <mi:MaterialIcon Kind="Close" Width="18" Height="18"
+                           AutomationProperties.AutomationId="Research_Icon_Cancel"
                            Foreground="{DynamicResource ErrorBrush}" />
         </Button>
       </StackPanel>
@@ -105,27 +125,34 @@
                   Spacing="6">
         <!-- Sofort-Fertigstellen Button (ab Level 8) -->
         <Button Classes="Secondary"
+                AutomationProperties.AutomationId="Research_Btn_InstantFinish"
                 Padding="10,6"
                 IsVisible="{Binding CanInstantFinish}"
                 Command="{Binding InstantFinishResearchCommand}">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="LightningBolt" Width="16" Height="16" />
+            <mi:MaterialIcon Kind="LightningBolt" Width="16" Height="16"
+                             AutomationProperties.AutomationId="Research_Icon_Lightning" />
             <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
+                             AutomationProperties.AutomationId="Research_Icon_InstantScrew"
                              Foreground="#FFD700" />
             <TextBlock Text="{Binding InstantFinishCost}"
+                       AutomationProperties.AutomationId="Research_Txt_InstantFinishCost"
                        FontSize="12" FontWeight="SemiBold"
                        Foreground="#FFD700" />
           </StackPanel>
         </Button>
         <!-- Gratis per Video-Ad fertigstellen -->
         <Button Classes="Secondary"
+                AutomationProperties.AutomationId="Research_Btn_WatchAd"
                 Padding="10,6"
                 IsVisible="{Binding CanWatchAdToFinish}"
                 Command="{Binding WatchAdToFinishResearchCommand}">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="Video" Width="16" Height="16"
+                             AutomationProperties.AutomationId="Research_Icon_AdVideo"
                              Foreground="{StaticResource CraftPrimaryLightBrush}" />
             <TextBlock Text="{loc:Translate WatchAdToFinishResearch}"
+                       AutomationProperties.AutomationId="Research_Txt_WatchAdLabel"
                        FontSize="12" FontWeight="SemiBold" />
           </StackPanel>
         </Button>
@@ -135,24 +162,29 @@
     <!-- ================================================================= -->
     <!-- ROW 2: TAB SELECTOR (SkiaSharp mit Touch-Overlay)                 -->
     <!-- ================================================================= -->
-    <Panel Grid.Row="2" Margin="16,8,16,0">
-      <skia:SKCanvasView x:Name="TabCanvas" Height="44" />
+    <Panel Grid.Row="2" Margin="16,8,16,0"
+           AutomationProperties.AutomationId="Research_Panel_TabSelector">
+      <skia:SKCanvasView x:Name="TabCanvas" Height="44"
+                         AutomationProperties.AutomationId="Research_Canvas_Tabs" />
 
       <!-- Unsichtbare Touch-Buttons über den Tabs -->
       <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4" Margin="4">
         <Button Grid.Column="0"
+                AutomationProperties.AutomationId="Research_Btn_TabTools"
                 HorizontalAlignment="Stretch"
                 Background="Transparent"
                 Foreground="Transparent"
                 Padding="0"
                 Command="{Binding SelectToolsBranchCommand}" />
         <Button Grid.Column="1"
+                AutomationProperties.AutomationId="Research_Btn_TabManagement"
                 HorizontalAlignment="Stretch"
                 Background="Transparent"
                 Foreground="Transparent"
                 Padding="0"
                 Command="{Binding SelectManagementBranchCommand}" />
         <Button Grid.Column="2"
+                AutomationProperties.AutomationId="Research_Btn_TabMarketing"
                 HorizontalAlignment="Stretch"
                 Background="Transparent"
                 Foreground="Transparent"
@@ -170,11 +202,13 @@
       <StackPanel Margin="16,0,16,0" Spacing="0">
 
         <!-- Branch-Banner (SkiaSharp animierte Szene) -->
-        <skia:SKCanvasView x:Name="BranchBannerCanvas" Height="60" Margin="0,8,0,8" />
+        <skia:SKCanvasView x:Name="BranchBannerCanvas" Height="60" Margin="0,8,0,8"
+                           AutomationProperties.AutomationId="Research_Canvas_BranchBanner" />
 
         <!-- Research Tree (SkiaSharp: Items + Verbindungslinien) -->
         <!-- Touch auf TreeCanvas → HitTest → Forschung starten per Tap auf Node -->
-        <skia:SKCanvasView x:Name="TreeCanvas" />
+        <skia:SKCanvasView x:Name="TreeCanvas"
+                           AutomationProperties.AutomationId="Research_Canvas_Tree" />
 
         <!-- Bottom Spacer -->
         <Border Height="80" />
@@ -186,6 +220,7 @@
     <!-- CELEBRATION OVERLAY (über allem, transparent wenn inaktiv)         -->
     <!-- ================================================================= -->
     <skia:SKCanvasView x:Name="CelebrationCanvas"
+                       AutomationProperties.AutomationId="Research_Canvas_Celebration"
                        Grid.RowSpan="4"
                        IsHitTestVisible="False" />
 

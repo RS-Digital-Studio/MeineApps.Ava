@@ -40,6 +40,9 @@ public class Level
     /// <summary>Ob dieses Level ein Boss-Level ist</summary>
     public bool IsBossLevel { get; set; }
 
+    /// <summary>Welcher Boss in diesem Level spawnt (null = kein Boss)</summary>
+    public BossType? BossKind { get; set; }
+
     /// <summary>Background music track</summary>
     public string MusicTrack { get; set; } = "gameplay";
 
@@ -64,7 +67,17 @@ public enum WorldMechanic
     /// <summary>Teleporter: Paare von Portalen (Welt 4: Sky)</summary>
     Teleporter,
     /// <summary>Lava-Risse: Periodisch tödliche Bodenplatten (Welt 5: Inferno)</summary>
-    LavaCrack
+    LavaCrack,
+    /// <summary>Fallende Decke: Zufällige Blöcke fallen nach 60s (Welt 6: Ruinen)</summary>
+    FallingCeiling,
+    /// <summary>Strömung: Langsamer in eine Richtung (Welt 7: Ozean)</summary>
+    Current,
+    /// <summary>Erdbeben: Blöcke verschieben sich alle 30s (Welt 8: Vulkan)</summary>
+    Earthquake,
+    /// <summary>Plattform-Lücken: Leere Zellen = Tod (Welt 9: Himmelsfestung)</summary>
+    PlatformGap,
+    /// <summary>Nebel: Eingeschränkte Sicht, 5-Zellen-Radius (Welt 10: Schattenwelt)</summary>
+    Fog
 }
 
 /// <summary>
@@ -81,6 +94,11 @@ public static class WorldMechanicExtensions
         WorldMechanic.Conveyor => 23,
         WorldMechanic.Teleporter => 33,
         WorldMechanic.LavaCrack => 42,
+        WorldMechanic.FallingCeiling => 51,
+        WorldMechanic.Current => 61,
+        WorldMechanic.Earthquake => 71,
+        WorldMechanic.PlatformGap => 81,
+        WorldMechanic.Fog => 91,
         _ => 1
     };
 }
@@ -105,7 +123,15 @@ public enum LevelLayout
     /// <summary>Diagonale Korridore</summary>
     Diagonal,
     /// <summary>Boss-Arena: Großer offener Raum mit wenigen Säulen</summary>
-    BossArena
+    BossArena,
+    /// <summary>Engere Gänge als Maze, mehr Sackgassen</summary>
+    Labyrinth,
+    /// <summary>Gespiegelt an X/Y-Achse, fair für alle Positionen</summary>
+    Symmetry,
+    /// <summary>4 Insel-Cluster mit schmalen Verbindungen</summary>
+    Islands,
+    /// <summary>Zufällig platzierte Wände (kein Pattern, hohe Varianz)</summary>
+    Chaos
 }
 
 /// <summary>

@@ -66,6 +66,52 @@ public class Cell
     /// <summary>Teleporter-Cooldown (verhindert Ping-Pong)</summary>
     public float TeleporterCooldown { get; set; }
 
+    // === Spezial-Bomben-Effekte ===
+
+    /// <summary>Ob die Zelle eingefroren ist (Eis-Bombe: verlangsamt Gegner/Spieler)</summary>
+    public bool IsFrozen { get; set; }
+
+    /// <summary>Verbleibende Frost-Dauer in Sekunden</summary>
+    public float FreezeTimer { get; set; }
+
+    /// <summary>Ob auf der Zelle Lava liegt (Feuer-Bombe: Schaden bei Betreten)</summary>
+    public bool IsLavaActive { get; set; }
+
+    /// <summary>Verbleibende Lava-Dauer in Sekunden</summary>
+    public float LavaTimer { get; set; }
+
+    // === Neue Bomben-Effekte (Phase 1) ===
+
+    /// <summary>Ob die Zelle von einer Rauchwolke bedeckt ist (Smoke-Bombe: verwirrt Gegner-AI)</summary>
+    public bool IsSmokeCloud { get; set; }
+
+    /// <summary>Verbleibende Rauch-Dauer in Sekunden</summary>
+    public float SmokeTimer { get; set; }
+
+    /// <summary>Ob die Zelle vergiftet ist (Poison-Bombe: Schaden bei Betreten)</summary>
+    public bool IsPoisoned { get; set; }
+
+    /// <summary>Verbleibende Gift-Dauer in Sekunden</summary>
+    public float PoisonTimer { get; set; }
+
+    /// <summary>Ob die Zelle ein Gravitationsfeld hat (Gravity-Bombe: zieht Gegner an)</summary>
+    public bool IsGravityWell { get; set; }
+
+    /// <summary>Verbleibende Gravitations-Dauer in Sekunden</summary>
+    public float GravityTimer { get; set; }
+
+    /// <summary>Ob die Zelle zeitverlangsamt ist (TimeWarp-Bombe: 50% Speed)</summary>
+    public bool IsTimeWarped { get; set; }
+
+    /// <summary>Verbleibende TimeWarp-Dauer in Sekunden</summary>
+    public float TimeWarpTimer { get; set; }
+
+    /// <summary>Ob die Zelle ein Schwarzes-Loch-Feld hat (BlackHole-Bombe: saugt Gegner an)</summary>
+    public bool IsBlackHole { get; set; }
+
+    /// <summary>Verbleibende Schwarzes-Loch-Dauer in Sekunden</summary>
+    public float BlackHoleTimer { get; set; }
+
     public Cell(int x, int y, CellType type = CellType.Empty)
     {
         X = x;
@@ -132,6 +178,20 @@ public class Cell
         TeleporterColorId = 0;
         LavaCrackTimer = 0;
         TeleporterCooldown = 0;
+        IsFrozen = false;
+        FreezeTimer = 0;
+        IsLavaActive = false;
+        LavaTimer = 0;
+        IsSmokeCloud = false;
+        SmokeTimer = 0;
+        IsPoisoned = false;
+        PoisonTimer = 0;
+        IsGravityWell = false;
+        GravityTimer = 0;
+        IsTimeWarped = false;
+        TimeWarpTimer = 0;
+        IsBlackHole = false;
+        BlackHoleTimer = 0;
     }
 }
 

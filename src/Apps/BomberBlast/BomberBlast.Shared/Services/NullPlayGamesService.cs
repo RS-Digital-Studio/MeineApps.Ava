@@ -19,4 +19,6 @@ public class NullPlayGamesService : IPlayGamesService
     public Task ShowAchievementsAsync() => Task.CompletedTask;
     public Task UnlockAchievementAsync(string achievementId) => Task.CompletedTask;
     public Task IncrementAchievementAsync(string achievementId, int steps) => Task.CompletedTask;
+    public Task<bool> SaveToCloudAsync(string jsonData) => Task.FromResult(false);
+    public Task<string?> LoadCloudSaveAsync() => Task.FromResult<string?>(null);
 }

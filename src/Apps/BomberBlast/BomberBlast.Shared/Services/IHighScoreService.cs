@@ -1,7 +1,7 @@
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Manages high scores for arcade mode
+/// Verwaltet die Bestenliste
 /// </summary>
 public interface IHighScoreService
 {

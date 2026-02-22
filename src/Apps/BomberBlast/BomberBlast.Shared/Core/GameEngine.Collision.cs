@@ -38,6 +38,14 @@ public partial class GameEngine
             if (!enemy.IsActive || enemy.IsDying)
                 continue;
 
+            // Unsichtbare Ghosts können den Spieler nicht berühren
+            if (enemy.IsInvisible)
+                continue;
+
+            // Getarnte Mimics sind inaktiv und harmlos
+            if (enemy.IsDisguised)
+                continue;
+
             if (_player.CollidesWith(enemy))
             {
                 if (!_player.IsInvincible && !_player.HasSpawnProtection)
@@ -59,6 +67,87 @@ public partial class GameEngine
                     {
                         KillPlayer();
                     }
+                }
+            }
+        }
+
+        // Spieler-Schaden durch Boss-Spezial-Angriff (AttackTargetCells)
+        if (!_player.IsDying && !_player.IsInvincible && !_player.HasSpawnProtection)
+        {
+            foreach (var enemy in _enemies)
+            {
+                if (enemy is not BossEnemy boss || !boss.IsActive || boss.IsDying)
+                    continue;
+
+                if (!boss.IsAttacking || boss.AttackTargetCells.Count == 0)
+                    continue;
+
+                // Spieler auf einer Angriffszelle?
+                foreach (var (ax, ay) in boss.AttackTargetCells)
+                {
+                    if (_player.GridX == ax && _player.GridY == ay)
+                    {
+                        if (_player.HasShield)
+                        {
+                            _player.HasShield = false;
+                            _particleSystem.Emit(_player.X, _player.Y, 16,
+                                new SKColor(255, 80, 0), 80f, 0.6f);
+                            _floatingText.Spawn(_player.X, _player.Y - 16,
+                                "SHIELD!", new SKColor(0, 229, 255), 16f, 1.2f);
+                            _soundManager.PlaySound(SoundManager.SFX_POWERUP);
+                            _player.ActivateInvincibility(0.5f);
+                        }
+                        else
+                        {
+                            KillPlayer();
+                        }
+                        break;
+                    }
+                }
+                if (_player.IsDying) break;
+            }
+        }
+
+        // Spieler-Schaden durch Spezial-Bomben-Lava (IsLavaActive auf Zelle)
+        if (!_player.IsDying && !_player.IsInvincible && !_player.HasSpawnProtection)
+        {
+            var playerCell = _grid.TryGetCell(_player.GridX, _player.GridY);
+            if (playerCell != null && playerCell.IsLavaActive && !_player.HasFlamepass)
+            {
+                if (_player.HasShield)
+                {
+                    _player.HasShield = false;
+                    _particleSystem.Emit(_player.X, _player.Y, 12,
+                        new SKColor(255, 80, 0), 60f, 0.5f);
+                    _floatingText.Spawn(_player.X, _player.Y - 16,
+                        "SHIELD!", new SKColor(0, 229, 255), 16f, 1.2f);
+                    _player.ActivateInvincibility(0.5f);
+                }
+                else
+                {
+                    KillPlayer();
+                }
+            }
+        }
+
+        // Spieler-Schaden durch Gift-Zellen (Poison-Bombe)
+        if (!_player.IsDying && !_player.IsInvincible && !_player.HasSpawnProtection)
+        {
+            var playerPoisonCell = _grid.TryGetCell(_player.GridX, _player.GridY);
+            if (playerPoisonCell != null && playerPoisonCell.IsPoisoned && !_player.HasFlamepass)
+            {
+                if (_player.HasShield)
+                {
+                    _player.HasShield = false;
+                    _particleSystem.Emit(_player.X, _player.Y, 12,
+                        new SKColor(0, 200, 0), 60f, 0.5f);
+                    _floatingText.Spawn(_player.X, _player.Y - 16,
+                        "SHIELD!", new SKColor(0, 229, 255), 16f, 1.2f);
+                    _player.ActivateInvincibility(0.5f);
+                }
+                else
+                {
+                    KillPlayer();
                 }
             }
         }
@@ -103,6 +192,13 @@ public partial class GameEngine
 
                 _soundManager.PlaySound(SoundManager.SFX_POWERUP);
                 OnScoreChanged?.Invoke(_player.Score);
+
+                // Wöchentliche Challenge: PowerUp-Collect tracken
+                _weeklyService.TrackProgress(WeeklyMissionType.CollectPowerUps);
+                _dailyMissionService.TrackProgress(WeeklyMissionType.CollectPowerUps);
+
+                // Sammlungs-Album: PowerUp als eingesammelt melden
+                _collectionService.RecordPowerUpCollected(powerUp.Type.ToString());
             }
         }
 
@@ -155,9 +251,60 @@ public partial class GameEngine
                     if (!enemy.IsActive || enemy.IsDying)
                         continue;
 
-                    if (enemy.GridX == cell.X && enemy.GridY == cell.Y)
+                    // Boss: Multi-Cell Kollision (OccupiesCell statt einzelner GridX/GridY)
+                    bool hitByExplosion;
+                    if (enemy is BossEnemy bossTarget)
+                        hitByExplosion = bossTarget.OccupiesCell(cell.X, cell.Y);
+                    else
+                        hitByExplosion = enemy.GridX == cell.X && enemy.GridY == cell.Y;
+
+                    if (hitByExplosion)
                     {
-                        KillEnemy(enemy);
+                        // Ghost: Unsichtbare Ghosts sind immun gegen Explosionen
+                        if (enemy.IsInvisible)
+                            continue;
+
+                        // Tanker/Boss: Multi-Hit - TakeDamage gibt true zurück wenn tot
+                        if (enemy.HitPoints > 1)
+                        {
+                            if (enemy.TakeDamage())
+                            {
+                                KillEnemy(enemy);
+                            }
+                            else
+                            {
+                                // Überlebt - visuelles Feedback
+                                var (hr, hg, hb) = enemy.Type.GetColor();
+                                _particleSystem.Emit(enemy.X, enemy.Y, 6, new SKColor(hr, hg, hb), 60f, 0.3f);
+
+                                // Boss: HP-Anzeige + stärkerer Shake
+                                if (enemy is BossEnemy bossHit)
+                                {
+                                    _floatingText.Spawn(enemy.X, enemy.Y - 16,
+                                        $"HIT! {bossHit.HitPoints}/{bossHit.MaxHitPoints}",
+                                        new SKColor(255, 100, 50), 16f, 1.2f);
+                                    _screenShake.Trigger(3f, 0.2f);
+
+                                    // Enrage-Warnung bei 50% HP
+                                    if (bossHit.IsEnraged && bossHit.HitPoints == bossHit.MaxHitPoints / 2)
+                                    {
+                                        _floatingText.Spawn(enemy.X, enemy.Y - 32,
+                                            "ENRAGED!", new SKColor(255, 0, 0), 18f, 1.5f);
+                                        _particleSystem.Emit(enemy.X, enemy.Y, 12,
+                                            new SKColor(255, 50, 0), 100f, 0.6f);
+                                    }
+                                }
+                                else
+                                {
+                                    _floatingText.Spawn(enemy.X, enemy.Y - 12, "HIT!", new SKColor(255, 200, 50), 14f, 1.0f);
+                                    _screenShake.Trigger(2f, 0.15f);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            KillEnemy(enemy);
+                        }
                     }
                 }
             }
@@ -193,10 +340,45 @@ public partial class GameEngine
     {
         enemy.Kill();
         _enemiesKilled++;
-        _player.Score += enemy.Points;
 
-        // Score-Popup über dem Gegner
-        _floatingText.Spawn(enemy.X, enemy.Y, $"+{enemy.Points}", new SKColor(255, 215, 0), 14f);
+        // Boss: Eigene Punkte statt EnemyType-Points
+        int points = enemy is BossEnemy bossKilled ? bossKilled.BossPoints : enemy.Points;
+        _player.Score += points;
+
+        // Boss-Tod: Extra Celebration
+        if (enemy is BossEnemy deadBoss)
+        {
+            _floatingText.Spawn(enemy.X, enemy.Y, $"BOSS DEFEATED! +{points}",
+                new SKColor(255, 215, 0), 20f, 2.0f);
+            _screenShake.Trigger(6f, 0.4f);
+            _particleSystem.EmitShaped(enemy.X, enemy.Y, 24, new SKColor(255, 215, 0),
+                ParticleShape.Circle, 140f, 1.0f, 3.5f, hasGlow: true);
+            _particleSystem.EmitExplosionSparks(enemy.X, enemy.Y, 16, new SKColor(255, 200, 50), 180f);
+            _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
+
+            // Achievement: Boss-Typ zu Bit-Flag konvertieren
+            var bossFlag = deadBoss.BossKind switch
+            {
+                BossType.StoneGolem => 1,
+                BossType.IceDragon => 2,
+                BossType.FireDemon => 4,
+                BossType.ShadowMaster => 8,
+                BossType.FinalBoss => 16,
+                _ => 0
+            };
+            _achievementService.OnBossDefeated(bossFlag);
+
+            // Liga-Punkte für Boss-Kill
+            _leagueService.AddPoints(25);
+
+            // Battle Pass XP für Boss-Kill
+            _battlePassService.AddXp(200, "boss_kill");
+        }
+        else
+        {
+            // Score-Popup über dem Gegner (normal)
+            _floatingText.Spawn(enemy.X, enemy.Y, $"+{points}", new SKColor(255, 215, 0), 14f);
+        }
 
         // Combo-System: Kills innerhalb des Zeitfensters zählen
         if (_comboTimer > 0)
@@ -229,6 +411,10 @@ public partial class GameEngine
 
             // Achievement: Combo-Schwellen prüfen
             _achievementService.OnComboReached(_comboCount);
+
+            // Wöchentliche Challenge: Combo tracken (ab x2)
+            _weeklyService.TrackProgress(WeeklyMissionType.AchieveCombo);
+            _dailyMissionService.TrackProgress(WeeklyMissionType.AchieveCombo);
         }
 
         // Game-Feel: Hit-Pause + Partikel bei Enemy-Kill
@@ -243,6 +429,29 @@ public partial class GameEngine
         // Achievement: Kumulative Kills aktualisieren
         _achievementService.OnEnemyKilled(_achievementService.TotalEnemyKills + 1);
 
+        // Sammlungs-Album: Gegner als gesichtet + besiegt melden
+        _collectionService.RecordEnemyEncounter(enemy.Type);
+        _collectionService.RecordEnemyDefeat(enemy.Type);
+        if (enemy is BossEnemy defeatedBoss)
+        {
+            float bossTime = _currentLevel?.TimeLimit - _timer.RemainingTime ?? 0f;
+            _collectionService.RecordBossDefeat(defeatedBoss.BossKind, bossTime);
+        }
+
+        // Wöchentliche Challenge: Enemy-Kill + ggf. Boss-Kill tracken
+        _weeklyService.TrackProgress(WeeklyMissionType.DefeatEnemies);
+        if (_isSurvivalMode)
+            _weeklyService.TrackProgress(WeeklyMissionType.SurvivalKills);
+        if (enemy is BossEnemy)
+            _weeklyService.TrackProgress(WeeklyMissionType.WinBossFights);
+
+        // Tägliche Mission: Enemy-Kill + ggf. Boss-Kill tracken
+        _dailyMissionService.TrackProgress(WeeklyMissionType.DefeatEnemies);
+        if (_isSurvivalMode)
+            _dailyMissionService.TrackProgress(WeeklyMissionType.SurvivalKills);
+        if (enemy is BossEnemy)
+            _dailyMissionService.TrackProgress(WeeklyMissionType.WinBossFights);
+
         // Slow-Motion bei letztem Kill oder hohem Combo (x4+)
         bool isLastEnemy = true;
         foreach (var e in _enemies)
@@ -256,6 +465,30 @@ public partial class GameEngine
         if ((isLastEnemy || _comboCount >= 4) && !_inputManager.ReducedEffects)
         {
             _slowMotionTimer = SLOW_MOTION_DURATION;
+        }
+
+        // Splitter-Logik: Beim Tod 2 Mini-Splitter spawnen
+        if (enemy.Type.SplitsOnDeath() && !enemy.IsMiniSplitter)
+        {
+            var offsets = new[] { (-1, 0), (1, 0), (0, -1), (0, 1) };
+            int spawned = 0;
+            foreach (var (ox, oy) in offsets)
+            {
+                if (spawned >= 2) break;
+                int nx = enemy.GridX + ox;
+                int ny = enemy.GridY + oy;
+                var splitCell = _grid.TryGetCell(nx, ny);
+                if (splitCell != null && splitCell.Type != CellType.Wall && splitCell.Type != CellType.Block && splitCell.Bomb == null)
+                {
+                    var mini = Enemy.CreateMiniSplitterAtGrid(nx, ny);
+                    _enemies.Add(mini);
+                    spawned++;
+
+                    // Spawn-Partikel
+                    var (sr, sg, sb) = EnemyType.Splitter.GetColor();
+                    _particleSystem.Emit(mini.X, mini.Y, 6, new SKColor(sr, sg, sb), 60f, 0.3f);
+                }
+            }
         }
 
         // Prüfen ob alle Gegner besiegt

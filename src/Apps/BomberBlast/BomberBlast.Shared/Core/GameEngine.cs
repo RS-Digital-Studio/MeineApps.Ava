@@ -2,6 +2,7 @@ using BomberBlast.AI;
 using BomberBlast.Graphics;
 using BomberBlast.Input;
 using BomberBlast.Models;
+using BomberBlast.Models.Dungeon;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
 using BomberBlast.Models.Levels;
@@ -39,6 +40,13 @@ public partial class GameEngine : IDisposable
     private readonly IAchievementService _achievementService;
     private readonly IDiscoveryService _discoveryService;
     private readonly IPlayGamesService _playGames;
+    private readonly IWeeklyChallengeService _weeklyService;
+    private readonly IDailyMissionService _dailyMissionService;
+    private readonly ICardService _cardService;
+    private readonly IDungeonService _dungeonService;
+    private readonly ICollectionService _collectionService;
+    private readonly ILeagueService _leagueService;
+    private readonly IBattlePassService _battlePassService;
 
     // Discovery-Hints (Erstentdeckung von PowerUps/Mechaniken)
     private readonly DiscoveryOverlay _discoveryOverlay;
@@ -59,11 +67,20 @@ public partial class GameEngine : IDisposable
     // Level info
     private Level? _currentLevel;
     private int _currentLevelNumber;
-    private bool _isArcadeMode;
     private bool _isDailyChallenge;
-    private int _arcadeWave;
+    private bool _isSurvivalMode;
+    private bool _isQuickPlayMode;
+    private int _quickPlayDifficulty;
+    private bool _isDungeonRun;
     private bool _levelCompleteHandled;
     private bool _continueUsed;
+
+    // Survival-Modus: Endloses Spawning mit steigender Schwierigkeit
+    private float _survivalSpawnTimer;
+    private float _survivalSpawnInterval = 5f;
+    private float _survivalTimeElapsed;
+    private const float SURVIVAL_MIN_SPAWN_INTERVAL = 0.8f;
+    private const float SURVIVAL_SPAWN_DECREASE = 0.12f; // Intervall schrumpft pro Spawn
 
     // Gecachte Mechanik-Zellen (vermeidet 150-Zellen-Grid-Scan pro Frame)
     private readonly List<Cell> _mechanicCells = new();
@@ -124,15 +141,51 @@ public partial class GameEngine : IDisposable
     private float _worldAnnouncementTimer;
     private string _worldAnnouncementText = "";
 
-    // Pontan-Strafe (gestaffeltes Spawning)
+    // Pontan-Strafe (gestaffeltes Spawning, nach Welt skaliert)
     private bool _pontanPunishmentActive;
     private int _pontanSpawned;
     private float _pontanSpawnTimer;
-    private const int PONTAN_MAX_COUNT = 3;
-    private const float PONTAN_SPAWN_INTERVAL = 5f; // Sekunden zwischen Spawns
+    private float _pontanInitialDelay; // Gnadenfrist vor erstem Spawn (welt-abhängig)
     private const float PONTAN_WARNING_TIME = 1.5f; // Sekunden Vorwarnung vor Spawn
     private const int PONTAN_MIN_DISTANCE = 5; // Mindestabstand zum Spieler
     private readonly Random _pontanRandom = new(); // Wiederverwendbar statt new Random() pro Aufruf
+
+    /// <summary>Maximale Pontan-Anzahl, skaliert nach Welt (Welt 1-2 weniger)</summary>
+    private int GetPontanMaxCount()
+    {
+        int world = (_currentLevelNumber - 1) / 10;
+        return world switch
+        {
+            0 => 1,  // Welt 1: Nur 1 Pontan
+            1 => 2,  // Welt 2: Max 2
+            _ => 3   // Welt 3+: Normal (3)
+        };
+    }
+
+    /// <summary>Spawn-Intervall zwischen Pontans, skaliert nach Welt (frühe Welten langsamer)</summary>
+    private float GetPontanSpawnInterval()
+    {
+        int world = (_currentLevelNumber - 1) / 10;
+        return world switch
+        {
+            0 => 8f,  // Welt 1: 8s zwischen Spawns (viel Zeit zum Reagieren)
+            1 => 6f,  // Welt 2: 6s
+            2 => 5f,  // Welt 3: 5s (Standard)
+            _ => 5f   // Welt 4+: 5s
+        };
+    }
+
+    /// <summary>Gnadenfrist nach Timer-Ablauf bevor erster Pontan spawnt</summary>
+    private float GetPontanInitialDelay()
+    {
+        int world = (_currentLevelNumber - 1) / 10;
+        return world switch
+        {
+            0 => 5f,  // Welt 1: 5s Gnadenfrist → Spieler kann noch reagieren
+            1 => 3f,  // Welt 2: 3s
+            _ => 0f   // Welt 3+: Sofort (wie bisher)
+        };
+    }
 
     // Pontan-Spawn-Warnung (vorberechnete Position)
     private float _pontanWarningX;
@@ -164,10 +217,14 @@ public partial class GameEngine : IDisposable
     public event Action<int>? OnScoreChanged;
     /// <summary>Coins verdient: (coinsEarned, totalScore, isLevelComplete)</summary>
     public event Action<int, int, bool>? OnCoinsEarned;
-    /// <summary>Arcade Wave-Milestone erreicht: (wave, bonusCoins)</summary>
-    public event Action<int, int>? OnWaveMilestone;
     /// <summary>Joystick-Richtungswechsel (für haptisches Feedback auf Android)</summary>
     public event Action? OnDirectionChanged;
+    /// <summary>Dungeon-Floor abgeschlossen (Belohnung)</summary>
+    public event Action<DungeonFloorReward>? OnDungeonFloorComplete;
+    /// <summary>Dungeon-Buff-Auswahl anzeigen</summary>
+    public event Action? OnDungeonBuffSelection;
+    /// <summary>Dungeon-Run beendet (Zusammenfassung)</summary>
+    public event Action<DungeonRunSummary>? OnDungeonRunEnd;
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES
@@ -177,14 +234,17 @@ public partial class GameEngine : IDisposable
     public int Score => _player?.Score ?? 0;
     public int Lives => _player?.Lives ?? 0;
     public int CurrentLevel => _currentLevelNumber;
-    public int ArcadeWave => _arcadeWave;
     public float RemainingTime => _timer?.RemainingTime ?? 0;
-    public bool IsArcadeMode => _isArcadeMode;
     public bool IsDailyChallenge => _isDailyChallenge;
+    public bool IsSurvivalMode => _isSurvivalMode;
+    public bool IsQuickPlayMode => _isQuickPlayMode;
+    public bool IsDungeonRun => _isDungeonRun;
+    public int SurvivalKills => _enemiesKilled;
+    public float SurvivalTimeElapsed => _survivalTimeElapsed;
     public bool IsCurrentScoreHighScore => _highScoreService.IsHighScore(Score);
 
     /// <summary>Ob Continue möglich ist (nur Story, nur 1x pro Level-Versuch)</summary>
-    public bool CanContinue => !_continueUsed && !_isArcadeMode && !_isDailyChallenge;
+    public bool CanContinue => !_continueUsed && !_isDailyChallenge && !_isSurvivalMode && !_isQuickPlayMode && !_isDungeonRun;
 
     /// <summary>Verschiebung nach unten für Banner-Ad oben (Proxy für GameRenderer)</summary>
     public float BannerTopOffset
@@ -237,6 +297,18 @@ public partial class GameEngine : IDisposable
             }
         }
 
+        // Karten-Slot im HUD per Tap auswählen
+        if (_state == GameState.Playing && _player?.EquippedCards.Count > 0)
+        {
+            int slotIndex = _renderer.HitTestCardSlot(x, y);
+            if (slotIndex >= 0 && slotIndex < _player.EquippedCards.Count)
+            {
+                // Gleicher Slot nochmal → zurück auf Normal (-1)
+                _player.ActiveCardSlot = _player.ActiveCardSlot == slotIndex ? -1 : slotIndex;
+                return;
+            }
+        }
+
         _inputManager.OnTouchStart(x, y, screenWidth, screenHeight, pointerId);
     }
 
@@ -251,6 +323,15 @@ public partial class GameEngine : IDisposable
 
     public void OnKeyUp(Avalonia.Input.Key key)
         => _inputManager.OnKeyUp(key);
+
+    public void OnGamepadButtonDown(Input.GamepadButton button)
+        => _inputManager.OnGamepadButtonDown(button);
+
+    public void OnGamepadButtonUp(Input.GamepadButton button)
+        => _inputManager.OnGamepadButtonUp(button);
+
+    public void SetAnalogStick(float x, float y)
+        => _inputManager.SetAnalogStick(x, y);
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -269,7 +350,13 @@ public partial class GameEngine : IDisposable
         ITutorialService tutorialService,
         IAchievementService achievementService,
         IDiscoveryService discoveryService,
-        IPlayGamesService playGames)
+        IPlayGamesService playGames, IWeeklyChallengeService weeklyService,
+        IDailyMissionService dailyMissionService,
+        ICardService cardService,
+        IDungeonService dungeonService,
+        ICollectionService collectionService,
+        ILeagueService leagueService,
+        IBattlePassService battlePassService)
     {
         _soundManager = soundManager;
         _progressService = progressService;
@@ -285,6 +372,13 @@ public partial class GameEngine : IDisposable
         _achievementService = achievementService;
         _discoveryService = discoveryService;
         _playGames = playGames;
+        _weeklyService = weeklyService;
+        _dailyMissionService = dailyMissionService;
+        _cardService = cardService;
+        _dungeonService = dungeonService;
+        _collectionService = collectionService;
+        _leagueService = leagueService;
+        _battlePassService = battlePassService;
         _tutorialOverlay = new TutorialOverlay(localizationService);
         _discoveryOverlay = new DiscoveryOverlay(localizationService);
         _grid = new GameGrid();
@@ -332,6 +426,49 @@ public partial class GameEngine : IDisposable
         OnCoinsEarned?.Invoke(coinsEarned, _player.Score, true);
     }
 
+    /// <summary>
+    /// Karten-Slot durchschalten: Normal → Slot 0 → Slot 1 → ... → Normal.
+    /// Überspringt Slots ohne verbleibende Uses. Fällt auf Normal zurück
+    /// wenn keine Karten mit Uses vorhanden sind.
+    /// </summary>
+    public void ToggleSpecialBomb()
+    {
+        if (_player == null) return;
+
+        var cards = _player.EquippedCards;
+        if (cards.Count == 0)
+        {
+            _player.ActiveCardSlot = -1;
+            return;
+        }
+
+        // Ab aktuellem Slot weitersuchen (Slot -1 = Normal, dann 0, 1, 2, 3, zurück zu -1)
+        int startSlot = _player.ActiveCardSlot;
+        int totalSlots = cards.Count;
+
+        for (int i = 0; i < totalSlots + 1; i++)
+        {
+            int nextSlot = startSlot + 1 + i;
+
+            // Über die Karten-Slots hinaus → zurück auf Normal (-1)
+            if (nextSlot >= totalSlots)
+            {
+                _player.ActiveCardSlot = -1;
+                return;
+            }
+
+            // Slot mit verbleibenden Uses gefunden
+            if (cards[nextSlot].HasUsesLeft)
+            {
+                _player.ActiveCardSlot = nextSlot;
+                return;
+            }
+        }
+
+        // Kein Slot mit Uses gefunden → Normal
+        _player.ActiveCardSlot = -1;
+    }
+
     /// <summary>Spiel nach Game Over fortsetzen (per Rewarded Ad)</summary>
     public void ContinueAfterGameOver()
     {
@@ -373,10 +510,11 @@ public partial class GameEngine : IDisposable
     {
         _renderer.Update(deltaTime);
 
-        // ReducedEffects: ScreenShake + Partikel deaktivieren
+        // ReducedEffects: ScreenShake, Partikel und atmosphärische Effekte deaktivieren
         bool reducedFx = _inputManager.ReducedEffects;
         _screenShake.Enabled = !reducedFx;
         _particleSystem.Enabled = !reducedFx;
+        _renderer.ReducedEffects = reducedFx;
 
         _screenShake.Update(deltaTime);
         _particleSystem.Update(deltaTime);
@@ -464,7 +602,9 @@ public partial class GameEngine : IDisposable
         UpdateBombs(deltaTime);
         UpdateExplosions(deltaTime);
         UpdateDestroyingBlocks(deltaTime);
+        UpdateSpecialBombEffects(deltaTime);
         UpdateEnemies(deltaTime);
+        UpdateBossAttacks(deltaTime);
         UpdatePowerUps(deltaTime);
         UpdateWorldMechanics(deltaTime);
         CheckCollisions();
@@ -473,6 +613,10 @@ public partial class GameEngine : IDisposable
         // Pontan-Strafe (gestaffeltes Spawning nach Timer-Ablauf)
         if (_pontanPunishmentActive)
             UpdatePontanPunishment(realDeltaTime);
+
+        // Survival-Modus: Kontinuierliches Gegner-Spawning
+        if (_isSurvivalMode)
+            UpdateSurvivalSpawning(realDeltaTime);
 
         // Welt-Ankündigungs-Timer aktualisieren
         if (_worldAnnouncementTimer > 0)
@@ -562,6 +706,7 @@ public partial class GameEngine : IDisposable
             if (_player.CanPlaceBomb())
             {
                 PlaceBomb();
+                InvalidateEnemyPaths();
             }
             _player.DiarrheaTimer = 0.5f;
         }
@@ -570,6 +715,8 @@ public partial class GameEngine : IDisposable
         if (_inputManager.BombPressed && _player.CanPlaceBomb())
         {
             PlaceBomb();
+            // Gegner-Pfade invalidieren → sofortige Neuberechnung (Bombe blockiert Weg)
+            InvalidateEnemyPaths();
             // Tutorial: Bomben-Schritt als abgeschlossen markieren
             _tutorialService.CheckStepCompletion(TutorialStepType.PlaceBomb);
         }
@@ -578,6 +725,7 @@ public partial class GameEngine : IDisposable
         if (_inputManager.DetonatePressed && _player.HasDetonator)
         {
             DetonateAllBombs();
+            _achievementService.OnDetonatorUsed();
         }
     }
 
@@ -626,26 +774,6 @@ public partial class GameEngine : IDisposable
                 _soundManager.PlaySound(SoundManager.SFX_GAME_OVER);
                 _soundManager.StopMusic();
 
-                // High Score speichern (Arcade)
-                if (_isArcadeMode)
-                {
-                    // Arcade-Score ans GPGS-Leaderboard senden (unabhaengig von Highscore)
-                    _ = _playGames.SubmitScoreAsync(PlayGamesIds.LeaderboardArcadeHighscore, _player.Score);
-
-                    if (_highScoreService.IsHighScore(_player.Score))
-                    {
-                        _highScoreService.AddScore("PLAYER", _player.Score, _arcadeWave);
-
-                        // Goldene Confetti-Partikel bei neuem Highscore
-                        _particleSystem.EmitShaped(_player.X, _player.Y, 20, new SKColor(255, 215, 0),
-                            ParticleShape.Circle, 140f, 1.0f, 3f, hasGlow: true);
-                        _particleSystem.EmitExplosionSparks(_player.X, _player.Y, 12, new SKColor(255, 200, 50), 160f);
-                        _floatingText.Spawn(_player.X, _player.Y - 30,
-                            _localizationService.GetString("NewHighScore") ?? "NEW HIGH SCORE!",
-                            new SKColor(255, 215, 0), 20f, 2.0f);
-                    }
-                }
-
                 // Trost-Coins (Level-Score ÷ 6, abgerundet)
                 int coins = (_player.Score - _scoreAtLevelStart) / 6;
                 if (_purchaseService.IsPremium)
@@ -653,6 +781,26 @@ public partial class GameEngine : IDisposable
                 if (coins > 0)
                 {
                     OnCoinsEarned?.Invoke(coins, _player.Score, false);
+                }
+
+                // Achievement: Survival-Runde beendet (überlebte Zeit + Kills tracken)
+                if (_isSurvivalMode)
+                {
+                    _achievementService.OnSurvivalComplete(_survivalTimeElapsed);
+                    _achievementService.OnSurvivalKillsReached(_enemiesKilled);
+
+                    // Battle Pass XP für Survival 60s+
+                    if (_survivalTimeElapsed >= 60f)
+                        _battlePassService.AddXp(100, "survival_60s");
+                }
+
+                // Dungeon-Run beenden bei Tod
+                if (_isDungeonRun)
+                {
+                    _achievementService.OnDungeonRunCompleted();
+                    var summary = _dungeonService.EndRun();
+                    _isDungeonRun = false;
+                    OnDungeonRunEnd?.Invoke(summary);
                 }
 
                 _achievementService.FlushIfDirty();
@@ -716,6 +864,21 @@ public partial class GameEngine : IDisposable
                 break;
             case WorldMechanic.LavaCrack:
                 UpdateLavaCrackMechanic(deltaTime);
+                break;
+            case WorldMechanic.FallingCeiling:
+                UpdateFallingCeilingMechanic(deltaTime);
+                break;
+            case WorldMechanic.Current:
+                UpdateCurrentMechanic(deltaTime);
+                break;
+            case WorldMechanic.Earthquake:
+                UpdateEarthquakeMechanic(deltaTime);
+                break;
+            case WorldMechanic.PlatformGap:
+                UpdatePlatformGapMechanic(deltaTime);
+                break;
+            case WorldMechanic.Fog:
+                // Fog hat keine Update-Logik, nur Render-Einschränkung
                 break;
         }
     }
@@ -903,6 +1066,119 @@ public partial class GameEngine : IDisposable
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // NEUE WELT-MECHANIKEN (FallingCeiling, Current, Earthquake, PlatformGap)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Fallende Decke: Nach 60s fallen zufällige leere Zellen als Blöcke herab, danach alle 15s
+    /// </summary>
+    private float _fallingCeilingTimer;
+    private void UpdateFallingCeilingMechanic(float deltaTime)
+    {
+        _fallingCeilingTimer += deltaTime;
+        if (_fallingCeilingTimer >= 60f)
+        {
+            _fallingCeilingTimer -= 15f; // Alle 15s danach wiederholen
+
+            // 2-3 zufällige leere Zellen werden zu Blöcken
+            int count = _pontanRandom.Next(2, 4);
+            for (int i = 0; i < count; i++)
+            {
+                int attempts = 20;
+                while (attempts-- > 0)
+                {
+                    int gx = _pontanRandom.Next(1, _grid.Width - 1);
+                    int gy = _pontanRandom.Next(1, _grid.Height - 1);
+                    var cell = _grid.TryGetCell(gx, gy);
+                    if (cell != null && cell.Type == CellType.Empty && cell.Bomb == null &&
+                        !(gx == _player.GridX && gy == _player.GridY))
+                    {
+                        cell.Type = CellType.Block;
+                        // Warn-Partikel am Aufschlagort
+                        float px = gx * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                        float py = gy * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                        _particleSystem.Emit(px, py, 8, new SKColor(139, 119, 101), 60f, 0.4f);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Strömung: Spieler wird langsam in eine Richtung geschoben (Ozean-Welt)
+    /// </summary>
+    private void UpdateCurrentMechanic(float deltaTime)
+    {
+        // Strömung nach rechts (langsamer als Conveyor)
+        float currentSpeed = 20f * deltaTime;
+        float newX = _player.X + currentSpeed;
+        float halfSize = GameGrid.CELL_SIZE * 0.35f;
+        if (CollisionHelper.CanMoveToPlayer(newX, _player.Y, halfSize, _grid, _player.HasWallpass, _player.HasBombpass))
+        {
+            _player.X = newX;
+        }
+    }
+
+    /// <summary>
+    /// Erdbeben: Alle 30s verschieben sich einige Blöcke zufällig + ScreenShake
+    /// </summary>
+    private float _earthquakeTimer;
+    private void UpdateEarthquakeMechanic(float deltaTime)
+    {
+        _earthquakeTimer += deltaTime;
+        if (_earthquakeTimer >= 30f)
+        {
+            _earthquakeTimer = 0;
+            _screenShake.Trigger(4f, 0.5f);
+
+            // 3-5 zufällige Blöcke verschieben
+            int count = _pontanRandom.Next(3, 6);
+            for (int i = 0; i < count; i++)
+            {
+                // Zufälligen Block finden
+                int attempts = 30;
+                while (attempts-- > 0)
+                {
+                    int gx = _pontanRandom.Next(1, _grid.Width - 1);
+                    int gy = _pontanRandom.Next(1, _grid.Height - 1);
+                    var cell = _grid.TryGetCell(gx, gy);
+                    if (cell?.Type != CellType.Block) continue;
+
+                    // Zufällige Richtung
+                    var dirs = new[] { (1, 0), (-1, 0), (0, 1), (0, -1) };
+                    var (dx, dy) = dirs[_pontanRandom.Next(dirs.Length)];
+                    int nx = gx + dx, ny = gy + dy;
+                    var target = _grid.TryGetCell(nx, ny);
+                    if (target != null && target.Type == CellType.Empty && target.Bomb == null &&
+                        !(nx == _player.GridX && ny == _player.GridY))
+                    {
+                        // Block verschieben, Hidden-Exit mitnehmen
+                        target.Type = CellType.Block;
+                        target.HasHiddenExit = cell.HasHiddenExit;
+                        cell.Type = CellType.Empty;
+                        cell.HasHiddenExit = false;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Plattform-Lücken: Spieler stirbt bei Betreten einer PlatformGap-Zelle
+    /// </summary>
+    private void UpdatePlatformGapMechanic(float deltaTime)
+    {
+        var cell = _grid.TryGetCell(_player.GridX, _player.GridY);
+        if (cell?.Type == CellType.PlatformGap && !_player.IsDying && !_player.IsInvincible && !_player.HasSpawnProtection)
+        {
+            KillPlayer();
+            _floatingText.Spawn(_player.X, _player.Y - 16, "FALL!", SKColors.Red, 16f, 1.5f);
+        }
+    }
+
     /// <summary>
     /// PowerUps die gerade eingesammelt werden: Timer runterzählen, bei 0 endgültig entfernen
     /// </summary>
@@ -927,6 +1203,23 @@ public partial class GameEngine : IDisposable
         _explosions.RemoveAll(e => e.IsMarkedForRemoval);
         _enemies.RemoveAll(e => e.IsMarkedForRemoval);
         _powerUps.RemoveAll(p => p.IsMarkedForRemoval);
+    }
+
+    /// <summary>
+    /// Alle Gegner-AI-Timer auf 0 setzen und Pfad-Cache leeren.
+    /// Erzwingt sofortige Neuberechnung bei nächstem Update (z.B. nach Block-Zerstörung).
+    /// </summary>
+    private void InvalidateEnemyPaths()
+    {
+        foreach (var enemy in _enemies)
+        {
+            if (!enemy.IsActive || enemy.IsDying)
+                continue;
+
+            enemy.AIDecisionTimer = 0;
+            enemy.Path.Clear();
+            enemy.TargetPosition = null;
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -957,6 +1250,310 @@ public partial class GameEngine : IDisposable
             return;
 
         _discoveryOverlay.Show(titleKey, descKey);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOSS-SPEZIAL-ANGRIFFE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Boss-Spezial-Angriffe: Telegraph → Angriff → Effekt.
+    /// Wird nach UpdateEnemies aufgerufen, damit BossEnemy.Update() bereits Timer aktualisiert hat.
+    /// </summary>
+    private void UpdateBossAttacks(float deltaTime)
+    {
+        foreach (var enemy in _enemies)
+        {
+            if (enemy is not BossEnemy boss || !boss.IsActive || boss.IsDying)
+                continue;
+
+            // Telegraph gerade gestartet (SpecialAttackTimer ist auf 0 gefallen → TelegraphTimer wurde gesetzt)
+            // AttackTargetCells berechnen wenn Telegraph beginnt und noch keine Zellen gesetzt sind
+            if (boss.IsTelegraphing && !boss.IsAttacking && boss.AttackTargetCells.Count == 0)
+            {
+                CalculateBossAttackTargets(boss);
+
+                // Leichter ScreenShake als Warnung
+                _screenShake.Trigger(1.5f, 0.2f);
+                _soundManager.PlaySound(SoundManager.SFX_TIME_WARNING);
+            }
+
+            // Angriff gerade gestartet (IsAttacking true, AttackDuration noch fast voll)
+            if (boss.IsAttacking && boss.AttackDuration > 1.4f)
+            {
+                ExecuteBossAttack(boss);
+            }
+        }
+    }
+
+    /// <summary>
+    /// AttackTargetCells für den Boss-Spezial-Angriff berechnen (Telegraph-Phase)
+    /// </summary>
+    private void CalculateBossAttackTargets(BossEnemy boss)
+    {
+        // FinalBoss rotiert durch alle 4 Angriffstypen
+        var attackType = boss.BossKind;
+        if (boss.BossKind == BossType.FinalBoss)
+        {
+            attackType = boss.AttackRotationIndex switch
+            {
+                0 => BossType.StoneGolem,
+                1 => BossType.IceDragon,
+                2 => BossType.FireDemon,
+                3 => BossType.ShadowMaster,
+                _ => BossType.StoneGolem
+            };
+        }
+
+        boss.AttackTargetCells.Clear();
+
+        switch (attackType)
+        {
+            case BossType.StoneGolem:
+                CalculateStoneGolemTargets(boss);
+                break;
+            case BossType.IceDragon:
+                CalculateIceDragonTargets(boss);
+                break;
+            case BossType.FireDemon:
+                CalculateFireDemonTargets(boss);
+                break;
+            case BossType.ShadowMaster:
+                // Teleport hat keine Ziel-Zellen (kein Schaden)
+                break;
+        }
+    }
+
+    /// <summary>
+    /// StoneGolem: 3-4 zufällige leere Zellen werden zu Blöcken
+    /// </summary>
+    private void CalculateStoneGolemTargets(BossEnemy boss)
+    {
+        int count = _pontanRandom.Next(3, 5);
+        int attempts = 40;
+        while (boss.AttackTargetCells.Count < count && attempts-- > 0)
+        {
+            int gx = _pontanRandom.Next(1, _grid.Width - 1);
+            int gy = _pontanRandom.Next(1, _grid.Height - 1);
+            var cell = _grid.TryGetCell(gx, gy);
+            if (cell != null && cell.Type == CellType.Empty && cell.Bomb == null &&
+                !boss.OccupiesCell(gx, gy))
+            {
+                boss.AttackTargetCells.Add((gx, gy));
+            }
+        }
+    }
+
+    /// <summary>
+    /// IceDragon: Zufällige horizontale Reihe wird eingefroren
+    /// </summary>
+    private void CalculateIceDragonTargets(BossEnemy boss)
+    {
+        // Zufällige Reihe (nicht die äußersten Ränder)
+        int row = _pontanRandom.Next(1, _grid.Height - 1);
+        for (int x = 1; x < _grid.Width - 1; x++)
+        {
+            var cell = _grid.TryGetCell(x, row);
+            if (cell != null && (cell.Type == CellType.Empty || cell.Type == CellType.Ice))
+            {
+                boss.AttackTargetCells.Add((x, row));
+            }
+        }
+    }
+
+    /// <summary>
+    /// FireDemon: Obere oder untere Hälfte des Bodens wird gefährlich
+    /// </summary>
+    private void CalculateFireDemonTargets(BossEnemy boss)
+    {
+        // Zufällig obere oder untere Hälfte
+        bool upperHalf = _pontanRandom.Next(2) == 0;
+        int startY = upperHalf ? 1 : _grid.Height / 2;
+        int endY = upperHalf ? _grid.Height / 2 : _grid.Height - 1;
+
+        for (int y = startY; y < endY; y++)
+        {
+            for (int x = 1; x < _grid.Width - 1; x++)
+            {
+                var cell = _grid.TryGetCell(x, y);
+                if (cell != null && cell.Type == CellType.Empty)
+                {
+                    boss.AttackTargetCells.Add((x, y));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Boss-Angriff ausführen (einmalig beim Wechsel von Telegraph → Angriff)
+    /// </summary>
+    private void ExecuteBossAttack(BossEnemy boss)
+    {
+        // Flag setzen damit Angriff nur einmal ausgeführt wird
+        // (AttackDuration sinkt unter 1.4f nach dem ersten Frame)
+
+        var attackType = boss.BossKind;
+        if (boss.BossKind == BossType.FinalBoss)
+        {
+            attackType = boss.AttackRotationIndex switch
+            {
+                0 => BossType.StoneGolem,
+                1 => BossType.IceDragon,
+                2 => BossType.FireDemon,
+                3 => BossType.ShadowMaster,
+                _ => BossType.StoneGolem
+            };
+        }
+
+        switch (attackType)
+        {
+            case BossType.StoneGolem:
+                ExecuteStoneGolemAttack(boss);
+                break;
+            case BossType.IceDragon:
+                ExecuteIceDragonAttack(boss);
+                break;
+            case BossType.FireDemon:
+                ExecuteFireDemonAttack(boss);
+                break;
+            case BossType.ShadowMaster:
+                ExecuteShadowMasterAttack(boss);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// StoneGolem-Angriff: Ziel-Zellen werden zu Blöcken (wie FallingCeiling)
+    /// </summary>
+    private void ExecuteStoneGolemAttack(BossEnemy boss)
+    {
+        foreach (var (gx, gy) in boss.AttackTargetCells)
+        {
+            var cell = _grid.TryGetCell(gx, gy);
+            if (cell != null && cell.Type == CellType.Empty && cell.Bomb == null)
+            {
+                cell.Type = CellType.Block;
+
+                // Aufschlag-Partikel
+                float px = gx * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                float py = gy * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                _particleSystem.Emit(px, py, 8, new SKColor(139, 119, 101), 80f, 0.5f);
+            }
+        }
+
+        _screenShake.Trigger(4f, 0.3f);
+        _floatingText.Spawn(boss.X, boss.Y - 24, "BLOCKREGEN!",
+            new SKColor(180, 140, 90), 18f, 1.5f);
+        _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
+    }
+
+    /// <summary>
+    /// IceDragon-Angriff: Reihe wird temporär zu Eis (3s Slow-Effekt für Spieler)
+    /// </summary>
+    private void ExecuteIceDragonAttack(BossEnemy boss)
+    {
+        foreach (var (gx, gy) in boss.AttackTargetCells)
+        {
+            var cell = _grid.TryGetCell(gx, gy);
+            if (cell != null && cell.Type == CellType.Empty)
+            {
+                // Temporär zu Eis umwandeln (Mechanik-Zellen cachen)
+                cell.Type = CellType.Ice;
+
+                float px = gx * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                float py = gy * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                _particleSystem.Emit(px, py, 4, new SKColor(100, 200, 255), 50f, 0.3f);
+            }
+        }
+
+        _screenShake.Trigger(3f, 0.2f);
+        _floatingText.Spawn(boss.X, boss.Y - 24, "EISATEM!",
+            new SKColor(100, 200, 255), 18f, 1.5f);
+        _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
+
+        // Eis nach 3s wieder entfernen (Timer-basiert via DispatcherTimer ist hier nicht ideal,
+        // stattdessen merken wir uns die Zellen und räumen sie im nächsten Frame-Zyklus auf)
+        _ = CleanupIceAfterDelay(boss.AttackTargetCells.ToList(), 3f);
+    }
+
+    /// <summary>
+    /// Eis-Zellen nach Verzögerung wieder zu Empty zurücksetzen
+    /// </summary>
+    private async Task CleanupIceAfterDelay(List<(int x, int y)> iceCells, float delaySec)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(delaySec));
+        foreach (var (gx, gy) in iceCells)
+        {
+            var cell = _grid.TryGetCell(gx, gy);
+            // Nur zurücksetzen wenn es noch Eis ist (könnte inzwischen gesprengt worden sein)
+            if (cell != null && cell.Type == CellType.Ice)
+            {
+                cell.Type = CellType.Empty;
+            }
+        }
+    }
+
+    /// <summary>
+    /// FireDemon-Angriff: Halber Boden wird Lava (Schaden über AttackTargetCells in CheckCollisions)
+    /// </summary>
+    private void ExecuteFireDemonAttack(BossEnemy boss)
+    {
+        foreach (var (gx, gy) in boss.AttackTargetCells)
+        {
+            float px = gx * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+            float py = gy * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+            _particleSystem.Emit(px, py, 2, new SKColor(255, 80, 0), 40f, 0.3f);
+        }
+
+        _screenShake.Trigger(4f, 0.3f);
+        _floatingText.Spawn(boss.X, boss.Y - 24, "LAVA-WELLE!",
+            new SKColor(255, 100, 0), 18f, 1.5f);
+        _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
+    }
+
+    /// <summary>
+    /// ShadowMaster-Angriff: Boss teleportiert sich zu zufälliger Position
+    /// </summary>
+    private void ExecuteShadowMasterAttack(BossEnemy boss)
+    {
+        // Partikel am alten Standort
+        _particleSystem.Emit(boss.X, boss.Y, 12, new SKColor(100, 0, 180), 80f, 0.5f);
+
+        // Zufällige neue Position suchen (mit genug Platz für BossSize)
+        int attempts = 30;
+        while (attempts-- > 0)
+        {
+            int gx = _pontanRandom.Next(2, _grid.Width - boss.BossSize - 1);
+            int gy = _pontanRandom.Next(2, _grid.Height - boss.BossSize - 1);
+
+            // Prüfen ob alle Zellen frei sind
+            bool canPlace = true;
+            for (int dy = 0; dy < boss.BossSize && canPlace; dy++)
+                for (int dx = 0; dx < boss.BossSize && canPlace; dx++)
+                {
+                    var cell = _grid.TryGetCell(gx + dx, gy + dy);
+                    if (cell == null || cell.Type == CellType.Wall || cell.Type == CellType.Block || cell.Bomb != null)
+                        canPlace = false;
+                }
+
+            // Nicht direkt auf den Spieler teleportieren
+            if (canPlace && Math.Abs(gx - _player.GridX) + Math.Abs(gy - _player.GridY) > 3)
+            {
+                float newX = gx * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE * boss.BossSize / 2f;
+                float newY = gy * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE * boss.BossSize / 2f;
+                boss.X = newX;
+                boss.Y = newY;
+
+                // Partikel am neuen Standort
+                _particleSystem.Emit(boss.X, boss.Y, 12, new SKColor(150, 0, 255), 80f, 0.5f);
+                break;
+            }
+        }
+
+        _screenShake.Trigger(5f, 0.3f);
+        _floatingText.Spawn(boss.X, boss.Y - 24, "TELEPORT!",
+            new SKColor(150, 0, 255), 18f, 1.5f);
+        _soundManager.PlaySound(SoundManager.SFX_ENEMY_DEATH);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

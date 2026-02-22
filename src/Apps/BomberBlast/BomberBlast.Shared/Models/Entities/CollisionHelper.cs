@@ -60,6 +60,8 @@ public static class CollisionHelper
     {
         return cell.Type == CellType.Wall ||
                (cell.Type == CellType.Block && !canPassWalls) ||
+               // PlatformGap-Zellen sind tödliche Lücken - Gegner ohne Wallpass meiden sie
+               (cell.Type == CellType.PlatformGap && !canPassWalls) ||
                cell.Bomb != null;
     }
 }

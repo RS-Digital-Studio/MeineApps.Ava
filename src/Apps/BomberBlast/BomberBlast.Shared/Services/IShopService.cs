@@ -31,8 +31,17 @@ public interface IShopService
     /// <summary>Ob Speed von Anfang an aktiv ist</summary>
     bool HasStartSpeed();
 
-    /// <summary>Start-Leben (Arcade: immer 1, Story: 3 + Upgrade-Level)</summary>
-    int GetStartLives(bool isArcade);
+    /// <summary>Start-Leben (3 + Upgrade-Level)</summary>
+    int GetStartLives();
+
+    /// <summary>Ob Eis-Bombe freigeschaltet ist</summary>
+    bool HasIceBomb();
+
+    /// <summary>Ob Feuer-Bombe freigeschaltet ist</summary>
+    bool HasFireBomb();
+
+    /// <summary>Ob Klebe-Bombe freigeschaltet ist</summary>
+    bool HasStickyBomb();
 
     /// <summary>Alle Upgrades zuruecksetzen</summary>
     void ResetUpgrades();

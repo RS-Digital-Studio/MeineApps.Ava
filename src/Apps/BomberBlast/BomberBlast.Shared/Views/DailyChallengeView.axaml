@@ -5,7 +5,8 @@
              x:Class="BomberBlast.Views.DailyChallengeView"
              x:DataType="vm:DailyChallengeViewModel">
 
-  <Panel Background="{DynamicResource BackgroundBrush}">
+  <Panel Background="{DynamicResource BackgroundBrush}"
+         AutomationProperties.AutomationId="DailyChallenge_Root">
     <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
 
     <Grid RowDefinitions="Auto,*,Auto" Margin="24,16,24,80">
@@ -15,7 +16,8 @@
         <Button Grid.Column="0" Classes="Secondary GameButton"
                 Command="{Binding BackCommand}"
                 Width="48" Height="48"
-                Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                AutomationProperties.AutomationId="DailyChallenge_BtnBack">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
         </Button>
@@ -25,7 +27,8 @@
                    FontSize="28" FontWeight="Bold"
                    Foreground="{DynamicResource AccentBrush}"
                    HorizontalAlignment="Center"
-                   VerticalAlignment="Center" />
+                   VerticalAlignment="Center"
+                   AutomationProperties.AutomationId="DailyChallenge_TxtTitle" />
       </Grid>
 
       <!-- Mitte: Stats in 2-Spalten-Layout -->
@@ -44,16 +47,19 @@
           <Border Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="16" Padding="20,16"
                   HorizontalAlignment="Stretch"
-                  MinWidth="200">
+                  MinWidth="200"
+                  AutomationProperties.AutomationId="DailyChallenge_BestScoreCard">
             <StackPanel Spacing="4" HorizontalAlignment="Center">
               <TextBlock Text="{Binding BestScoreLabel}"
                          FontSize="13"
                          Foreground="{DynamicResource TextMutedBrush}"
-                         HorizontalAlignment="Center" />
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="DailyChallenge_TxtBestScoreLabel" />
               <TextBlock Text="{Binding TodayBestScoreText}"
                          FontSize="36" FontWeight="Bold"
                          Foreground="#FFD700"
-                         HorizontalAlignment="Center" />
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="DailyChallenge_TxtBestScore" />
             </StackPanel>
           </Border>
 
@@ -61,7 +67,8 @@
           <Border Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="16,10"
                   HorizontalAlignment="Stretch"
-                  MinWidth="200">
+                  MinWidth="200"
+                  AutomationProperties.AutomationId="DailyChallenge_StreakBonusCard">
             <StackPanel Spacing="4" HorizontalAlignment="Center">
               <TextBlock Text="{Binding StreakBonusLabel}"
                          FontSize="13"
@@ -70,7 +77,8 @@
               <TextBlock Text="{Binding StreakBonusText}"
                          FontSize="20" FontWeight="SemiBold"
                          Foreground="{DynamicResource SuccessBrush}"
-                         HorizontalAlignment="Center" />
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="DailyChallenge_TxtStreakBonus" />
             </StackPanel>
           </Border>
 
@@ -78,14 +86,16 @@
           <Border Background="#40FF6B00"
                   CornerRadius="8" Padding="12,8"
                   IsVisible="{Binding IsCompletedToday}"
-                  HorizontalAlignment="Center">
+                  HorizontalAlignment="Center"
+                  AutomationProperties.AutomationId="DailyChallenge_CompletedBadge">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
                                Foreground="#FF6B00" />
               <TextBlock Text="{Binding CompletedTodayText}"
                          FontSize="13" FontWeight="SemiBold"
                          Foreground="#FF6B00"
-                         VerticalAlignment="Center" />
+                         VerticalAlignment="Center"
+                         AutomationProperties.AutomationId="DailyChallenge_TxtCompleted" />
             </StackPanel>
           </Border>
         </StackPanel>
@@ -100,7 +110,8 @@
           <!-- Streak -->
           <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="16,12"
-                  Margin="0,0,0,8" MinWidth="180">
+                  Margin="0,0,0,8" MinWidth="180"
+                  AutomationProperties.AutomationId="DailyChallenge_StreakCard">
             <Grid ColumnDefinitions="Auto,*">
               <mi:MaterialIcon Grid.Column="0" Kind="Fire" Width="28" Height="28"
                                Foreground="#FF6B00" Margin="0,0,12,0" />
@@ -110,7 +121,8 @@
                            Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding CurrentStreakText}"
                            FontSize="24" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="DailyChallenge_TxtStreak" />
               </StackPanel>
             </Grid>
           </Border>
@@ -118,7 +130,8 @@
           <!-- Längste Streak -->
           <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="16,12"
-                  Margin="0,0,0,8" MinWidth="180">
+                  Margin="0,0,0,8" MinWidth="180"
+                  AutomationProperties.AutomationId="DailyChallenge_LongestStreakCard">
             <Grid ColumnDefinitions="Auto,*">
               <mi:MaterialIcon Grid.Column="0" Kind="Trophy" Width="28" Height="28"
                                Foreground="#FFD700" Margin="0,0,12,0" />
@@ -128,7 +141,8 @@
                            Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding LongestStreakText}"
                            FontSize="24" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="DailyChallenge_TxtLongestStreak" />
               </StackPanel>
             </Grid>
           </Border>
@@ -136,7 +150,8 @@
           <!-- Gesamt abgeschlossen -->
           <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="16,12"
-                  MinWidth="180">
+                  MinWidth="180"
+                  AutomationProperties.AutomationId="DailyChallenge_TotalCard">
             <Grid ColumnDefinitions="Auto,*">
               <mi:MaterialIcon Grid.Column="0" Kind="CalendarCheck" Width="28" Height="28"
                                Foreground="{DynamicResource SecondaryBrush}" Margin="0,0,12,0" />
@@ -146,7 +161,8 @@
                            Foreground="{DynamicResource TextMutedBrush}" />
                 <TextBlock Text="{Binding TotalCompletedText}"
                            FontSize="24" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="DailyChallenge_TxtTotal" />
               </StackPanel>
             </Grid>
           </Border>
@@ -160,7 +176,8 @@
               HorizontalAlignment="Center"
               HorizontalContentAlignment="Center"
               Height="56" MinWidth="280"
-              Margin="0,16,0,0">
+              Margin="0,16,0,0"
+              AutomationProperties.AutomationId="DailyChallenge_BtnPlay">
         <StackPanel Orientation="Horizontal" Spacing="10">
           <mi:MaterialIcon Kind="Sword" Width="24" Height="24"
                            Foreground="{DynamicResource TextOnPrimaryBrush}" />

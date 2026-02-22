@@ -8,7 +8,7 @@
              x:DataType="vm:HelpViewModel">
 
   <!-- Gradient Background -->
-  <Panel>
+  <Panel AutomationProperties.AutomationId="Help_Root">
     <Border>
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -29,6 +29,7 @@
         <Grid ColumnDefinitions="Auto,*,Auto">
           <!-- Back Button -->
           <Button Classes="Text"
+                  AutomationProperties.AutomationId="Help_BtnBack"
                   Command="{Binding GoBackCommand}">
             <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
@@ -40,7 +41,8 @@
                       Spacing="8">
             <mi:MaterialIcon Kind="HelpCircleOutline" Width="24" Height="24"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
-            <TextBlock Text="{loc:Translate Help}"
+            <TextBlock AutomationProperties.AutomationId="Help_TxtTitle"
+                       Text="{loc:Translate Help}"
                        FontSize="20" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
@@ -60,32 +62,38 @@
           <Grid ColumnDefinitions="*,*">
 
             <!-- How to Play -->
-            <Border Grid.Column="0" Classes="Card StatsCard" Margin="0,0,6,0">
+            <Border Grid.Column="0" Classes="Card StatsCard" Margin="0,0,6,0"
+                    AutomationProperties.AutomationId="Help_HowToPlaySection">
               <StackPanel Spacing="8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="GamepadVariantOutline" Width="20" Height="20"
                                    Foreground="{DynamicResource PrimaryBrush}" />
-                  <TextBlock Text="{loc:Translate HowToPlay}"
+                  <TextBlock AutomationProperties.AutomationId="Help_TxtHowToPlayTitle"
+                             Text="{loc:Translate HowToPlay}"
                              FontSize="16" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
-                <TextBlock Text="{loc:Translate HowToPlayDesc}"
+                <TextBlock AutomationProperties.AutomationId="Help_TxtHowToPlayDesc"
+                           Text="{loc:Translate HowToPlayDesc}"
                            FontSize="13" TextWrapping="Wrap"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </Border>
 
             <!-- Controls -->
-            <Border Grid.Column="1" Classes="Card StatsCard" Margin="6,0,0,0">
+            <Border Grid.Column="1" Classes="Card StatsCard" Margin="6,0,0,0"
+                    AutomationProperties.AutomationId="Help_ControlsSection">
               <StackPanel Spacing="8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="Gamepad" Width="20" Height="20"
                                    Foreground="{DynamicResource PrimaryBrush}" />
-                  <TextBlock Text="{loc:Translate ControlsHelp}"
+                  <TextBlock AutomationProperties.AutomationId="Help_TxtControlsTitle"
+                             Text="{loc:Translate ControlsHelp}"
                              FontSize="16" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
-                <TextBlock Text="{loc:Translate ControlsHelpDesc}"
+                <TextBlock AutomationProperties.AutomationId="Help_TxtControlsDesc"
+                           Text="{loc:Translate ControlsHelpDesc}"
                            FontSize="13" TextWrapping="Wrap"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
@@ -94,12 +102,14 @@
           </Grid>
 
           <!-- Power-Ups -->
-          <Border Classes="Card StatsCard">
+          <Border Classes="Card StatsCard"
+                  AutomationProperties.AutomationId="Help_PowerUpsSection">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="StarCircleOutline" Width="20" Height="20"
                                  Foreground="Gold" />
-                <TextBlock Text="{loc:Translate PowerUps}"
+                <TextBlock AutomationProperties.AutomationId="Help_TxtPowerUpsTitle"
+                           Text="{loc:Translate PowerUps}"
                            FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
@@ -108,7 +118,7 @@
                 <!-- Bomb Up -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuBombUp" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuBombUp" AutomationProperties.AutomationId="Help_PuBombUp" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_BombUp}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -123,7 +133,7 @@
                 <!-- Fire -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuFire" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuFire" AutomationProperties.AutomationId="Help_PuFire" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_Fire}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -138,7 +148,7 @@
                 <!-- Speed -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuSpeed" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuSpeed" AutomationProperties.AutomationId="Help_PuSpeed" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_Speed}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -153,7 +163,7 @@
                 <!-- Wall Pass -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuWallpass" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuWallpass" AutomationProperties.AutomationId="Help_PuWallpass" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_Wallpass}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -168,7 +178,7 @@
                 <!-- Detonator -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuDetonator" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuDetonator" AutomationProperties.AutomationId="Help_PuDetonator" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_Detonator}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -183,7 +193,7 @@
                 <!-- Bomb Pass -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuBombpass" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuBombpass" AutomationProperties.AutomationId="Help_PuBombpass" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_Bombpass}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -198,7 +208,7 @@
                 <!-- Flame Pass -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuFlamepass" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuFlamepass" AutomationProperties.AutomationId="Help_PuFlamepass" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_Flamepass}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -213,7 +223,7 @@
                 <!-- Mystery -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuMystery" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuMystery" AutomationProperties.AutomationId="Help_PuMystery" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_Mystery}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -228,7 +238,7 @@
                 <!-- Kick -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuKick" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuKick" AutomationProperties.AutomationId="Help_PuKick" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_Kick}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -243,7 +253,7 @@
                 <!-- Line Bomb -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuLineBomb" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuLineBomb" AutomationProperties.AutomationId="Help_PuLineBomb" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_LineBomb}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -258,7 +268,7 @@
                 <!-- Power Bomb -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuPowerBomb" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuPowerBomb" AutomationProperties.AutomationId="Help_PuPowerBomb" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_PowerBomb}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -273,7 +283,7 @@
                 <!-- Skull -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="PuSkull" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="PuSkull" AutomationProperties.AutomationId="Help_PuSkull" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate PowerUp_Skull}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -290,12 +300,14 @@
           </Border>
 
           <!-- Enemies -->
-          <Border Classes="Card StatsCard">
+          <Border Classes="Card StatsCard"
+                  AutomationProperties.AutomationId="Help_EnemiesSection">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="Ghost" Width="20" Height="20"
                                  Foreground="{DynamicResource ErrorBrush}" />
-                <TextBlock Text="{loc:Translate Enemies}"
+                <TextBlock AutomationProperties.AutomationId="Help_TxtEnemiesTitle"
+                           Text="{loc:Translate Enemies}"
                            FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
@@ -304,7 +316,7 @@
                 <!-- Ballom -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="EnBallom" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="EnBallom" AutomationProperties.AutomationId="Help_EnBallom" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate Enemy_Ballom}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -319,7 +331,7 @@
                 <!-- Onil -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="EnOnil" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="EnOnil" AutomationProperties.AutomationId="Help_EnOnil" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate Enemy_Onil}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -334,7 +346,7 @@
                 <!-- Doll -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="EnDoll" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="EnDoll" AutomationProperties.AutomationId="Help_EnDoll" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate Enemy_Doll}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -349,7 +361,7 @@
                 <!-- Minvo -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="EnMinvo" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="EnMinvo" AutomationProperties.AutomationId="Help_EnMinvo" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate Enemy_Minvo}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -364,7 +376,7 @@
                 <!-- Kondoria -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="EnKondoria" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="EnKondoria" AutomationProperties.AutomationId="Help_EnKondoria" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate Enemy_Kondoria}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -379,7 +391,7 @@
                 <!-- Ovapi -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="EnOvapi" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="EnOvapi" AutomationProperties.AutomationId="Help_EnOvapi" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate Enemy_Ovapi}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -394,7 +406,7 @@
                 <!-- Pass -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="EnPass" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="EnPass" AutomationProperties.AutomationId="Help_EnPass" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate Enemy_Pass}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -409,7 +421,7 @@
                 <!-- Pontan -->
                 <Border Classes="CardElevated" Padding="8" CornerRadius="8" Width="280" Margin="4">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <skia:SKCanvasView x:Name="EnPontan" Width="32" Height="32" />
+                    <skia:SKCanvasView x:Name="EnPontan" AutomationProperties.AutomationId="Help_EnPontan" Width="32" Height="32" />
                     <StackPanel Spacing="2" VerticalAlignment="Center" MaxWidth="224">
                       <TextBlock Text="{loc:Translate Enemy_Pontan}"
                                  FontSize="13" FontWeight="SemiBold"
@@ -426,16 +438,19 @@
           </Border>
 
           <!-- Tips -->
-          <Border Classes="Card StatsCard">
+          <Border Classes="Card StatsCard"
+                  AutomationProperties.AutomationId="Help_TipsSection">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="LightbulbOnOutline" Width="20" Height="20"
                                  Foreground="{DynamicResource WarningBrush}" />
-                <TextBlock Text="{loc:Translate Tips}"
+                <TextBlock AutomationProperties.AutomationId="Help_TxtTipsTitle"
+                           Text="{loc:Translate Tips}"
                            FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
-              <TextBlock Text="{loc:Translate TipsDesc}"
+              <TextBlock AutomationProperties.AutomationId="Help_TxtTipsDesc"
+                         Text="{loc:Translate TipsDesc}"
                          FontSize="13" TextWrapping="Wrap"
                          LineHeight="20"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -444,6 +459,7 @@
 
           <!-- Tutorial wiederholen -->
           <Button Classes="Primary GameButton"
+                  AutomationProperties.AutomationId="Help_BtnReplayTutorial"
                   Command="{Binding ReplayTutorialCommand}"
                   HorizontalAlignment="Center"
                   Margin="0,8,0,0"

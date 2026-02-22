@@ -7,7 +7,7 @@
              x:DataType="vm:HighScoresViewModel">
 
   <!-- Gradient Background -->
-  <Panel>
+  <Panel AutomationProperties.AutomationId="HighScores_Root">
     <Border>
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -28,7 +28,8 @@
         <Grid ColumnDefinitions="Auto,*,Auto">
           <!-- Back Button -->
           <Button Classes="Text"
-                  Command="{Binding GoBackCommand}">
+                  Command="{Binding GoBackCommand}"
+                  AutomationProperties.AutomationId="HighScores_BtnBack">
             <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 
@@ -41,7 +42,8 @@
                              Foreground="{DynamicResource AccentBrush}" />
             <TextBlock Text="{loc:Translate HighScores}"
                        FontSize="20" FontWeight="Bold"
-                       Foreground="{DynamicResource AccentBrush}" />
+                       Foreground="{DynamicResource AccentBrush}"
+                       AutomationProperties.AutomationId="HighScores_TxtTitle" />
           </StackPanel>
 
           <!-- Spacer -->
@@ -56,7 +58,8 @@
         <Panel Margin="12,12,12,80">
           <!-- Scores List -->
           <ItemsControl ItemsSource="{Binding Scores}"
-                        IsVisible="{Binding HasScores}">
+                        IsVisible="{Binding HasScores}"
+                        AutomationProperties.AutomationId="HighScores_ScoreList">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:ScoreDisplayItem">
                 <Border Classes="Card" Margin="0,4">
@@ -95,7 +98,8 @@
           <!-- Empty State -->
           <StackPanel VerticalAlignment="Center"
                       HorizontalAlignment="Center"
-                      IsVisible="{Binding !HasScores}">
+                      IsVisible="{Binding !HasScores}"
+                      AutomationProperties.AutomationId="HighScores_EmptyState">
             <mi:MaterialIcon Kind="TrophyBroken" Width="64" Height="64"
                              Foreground="{DynamicResource TextMutedBrush}"
                              HorizontalAlignment="Center" />
@@ -103,12 +107,8 @@
                        FontSize="20"
                        Foreground="{DynamicResource TextMutedBrush}"
                        HorizontalAlignment="Center"
-                       Margin="0,12,0,0" />
-            <TextBlock Text="{loc:Translate PlayArcadeToScore}"
-                       FontSize="14"
-                       Foreground="{DynamicResource TextMutedBrush}"
-                       HorizontalAlignment="Center"
-                       Margin="0,4,0,0" />
+                       Margin="0,12,0,0"
+                       AutomationProperties.AutomationId="HighScores_TxtNoScores" />
           </StackPanel>
         </Panel>
       </ScrollViewer>

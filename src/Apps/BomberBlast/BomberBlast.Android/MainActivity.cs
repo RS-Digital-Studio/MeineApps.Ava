@@ -7,6 +7,7 @@ using Avalonia;
 using Avalonia.Android;
 using BomberBlast.Core;
 using BomberBlast.Droid;
+using BomberBlast.Input;
 using BomberBlast.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Services;
@@ -28,6 +29,7 @@ public class MainActivity : AvaloniaMainActivity<App>
     private AdMobHelper? _adMobHelper;
     private RewardedAdHelper? _rewardedAdHelper;
     private MainViewModel? _mainVm;
+    private GameViewModel? _gameVm;
 
     protected override AppBuilder CustomizeAppBuilder(AppBuilder builder)
     {
@@ -63,6 +65,7 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         // Back-Navigation: ViewModel holen + Toast-Event verdrahten
         _mainVm = App.Services.GetService<MainViewModel>();
+        _gameVm = App.Services.GetService<GameViewModel>();
         if (_mainVm != null)
         {
             _mainVm.ExitHintRequested += msg =>
@@ -171,6 +174,67 @@ public class MainActivity : AvaloniaMainActivity<App>
 #pragma warning restore CA1422
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GAMEPAD / CONTROLLER SUPPORT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Gamepad Face-Buttons abfangen (BUTTON_A/B/X/Y/START/SELECT).
+    /// Avalonia leitet diese nicht als Key-Events weiter, daher direkte Abfangung.
+    /// </summary>
+    public override bool DispatchKeyEvent(KeyEvent? e)
+    {
+        if (e != null && _mainVm?.IsGameActive == true && _gameVm != null)
+        {
+            var gamepadButton = MapKeyCodeToGamepadButton(e.KeyCode);
+            if (gamepadButton.HasValue)
+            {
+                if (e.Action == KeyEventActions.Down)
+                    _gameVm.OnGamepadButtonDown(gamepadButton.Value);
+                else if (e.Action == KeyEventActions.Up)
+                    _gameVm.OnGamepadButtonUp(gamepadButton.Value);
+                return true; // Konsumiert, nicht an Avalonia weiterleiten
+            }
+        }
+
+        return base.DispatchKeyEvent(e);
+    }
+
+    /// <summary>
+    /// Analog-Stick Werte abfangen (MotionEvent mit Joystick-Source).
+    /// </summary>
+    public override bool DispatchGenericMotionEvent(MotionEvent? e)
+    {
+        if (e != null && _mainVm?.IsGameActive == true && _gameVm != null &&
+            e.Action == MotionEventActions.Move &&
+            (e.Source & InputSourceType.Joystick) == InputSourceType.Joystick)
+        {
+            float x = e.GetAxisValue(Axis.X);
+            float y = e.GetAxisValue(Axis.Y);
+            _gameVm.SetAnalogStick(x, y);
+            return true;
+        }
+
+        return base.DispatchGenericMotionEvent(e);
+    }
+
+    /// <summary>
+    /// Android Keycode → GamepadButton Mapping.
+    /// Gibt null zurück wenn der Keycode kein Gamepad-Button ist.
+    /// </summary>
+    private static GamepadButton? MapKeyCodeToGamepadButton(Keycode keyCode) => keyCode switch
+    {
+        Keycode.ButtonA => GamepadButton.A,
+        Keycode.ButtonB => GamepadButton.B,
+        Keycode.ButtonX => GamepadButton.X,
+        Keycode.ButtonY => GamepadButton.Y,
+        Keycode.ButtonStart => GamepadButton.Start,
+        Keycode.ButtonSelect => GamepadButton.Select,
+        // Menu-Button als alternativer Start-Button (manche Controller)
+        Keycode.Menu => GamepadButton.Start,
+        _ => null
+    };
 
     protected override void OnDestroy()
     {

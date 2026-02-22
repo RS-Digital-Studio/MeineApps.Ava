@@ -110,6 +110,18 @@ public class GameGrid
             case LevelLayout.BossArena:
                 SetupBossArenaInterior();
                 break;
+            case LevelLayout.Labyrinth:
+                SetupLabyrinthInterior();
+                break;
+            case LevelLayout.Symmetry:
+                SetupSymmetryInterior();
+                break;
+            case LevelLayout.Islands:
+                SetupIslandsInterior();
+                break;
+            case LevelLayout.Chaos:
+                SetupChaosInterior();
+                break;
         }
     }
 
@@ -305,6 +317,139 @@ public class GameGrid
         _cells[9, 5].Type = CellType.Wall;
     }
 
+    /// <summary>Labyrinth: Engere Gänge als Maze, mehr Sackgassen</summary>
+    private void SetupLabyrinthInterior()
+    {
+        // Basis-Schachbrett
+        for (int x = 2; x < WIDTH - 1; x += 2)
+            for (int y = 2; y < HEIGHT - 1; y += 2)
+                _cells[x, y].Type = CellType.Wall;
+
+        // Zusätzliche Wände für Sackgassen und enge Gänge
+        // Horizontale Sackgassen
+        if (!IsPlayerSpawnArea(3, 2)) _cells[3, 2].Type = CellType.Wall;
+        if (!IsPlayerSpawnArea(5, 2)) _cells[5, 2].Type = CellType.Wall;
+        _cells[9, 2].Type = CellType.Wall;
+        _cells[11, 2].Type = CellType.Wall;
+
+        // Vertikale Engstellen
+        _cells[3, 5].Type = CellType.Wall;
+        _cells[5, 3].Type = CellType.Wall;
+        _cells[7, 5].Type = CellType.Wall;
+        _cells[9, 3].Type = CellType.Wall;
+        _cells[11, 5].Type = CellType.Wall;
+
+        // Sackgassen-Enden
+        _cells[5, 7].Type = CellType.Wall;
+        _cells[7, 7].Type = CellType.Wall;
+        _cells[9, 7].Type = CellType.Wall;
+        _cells[11, 7].Type = CellType.Wall;
+    }
+
+    /// <summary>Symmetrie: Gespiegelt an X/Y-Achse</summary>
+    private void SetupSymmetryInterior()
+    {
+        int midX = WIDTH / 2;
+        int midY = HEIGHT / 2;
+
+        // Linke Hälfte definieren, dann spiegeln
+        // L-förmige Strukturen
+        if (!IsPlayerSpawnArea(3, 2)) _cells[3, 2].Type = CellType.Wall;
+        if (!IsPlayerSpawnArea(3, 3)) _cells[3, 3].Type = CellType.Wall;
+        _cells[4, 3].Type = CellType.Wall;
+        _cells[5, 5].Type = CellType.Wall;
+        if (!IsPlayerSpawnArea(2, 4)) _cells[2, 4].Type = CellType.Wall;
+
+        // Spiegeln an X-Achse (rechte Hälfte)
+        for (int x = 1; x < midX; x++)
+        {
+            for (int y = 1; y < HEIGHT - 1; y++)
+            {
+                if (_cells[x, y].Type == CellType.Wall)
+                {
+                    int mirrorX = WIDTH - 1 - x;
+                    if (mirrorX > 0 && mirrorX < WIDTH - 1)
+                        _cells[mirrorX, y].Type = CellType.Wall;
+                }
+            }
+        }
+
+        // Spiegeln an Y-Achse (untere Hälfte)
+        for (int x = 1; x < WIDTH - 1; x++)
+        {
+            for (int y = 1; y < midY; y++)
+            {
+                if (_cells[x, y].Type == CellType.Wall)
+                {
+                    int mirrorY = HEIGHT - 1 - y;
+                    if (mirrorY > 0 && mirrorY < HEIGHT - 1)
+                        _cells[x, mirrorY].Type = CellType.Wall;
+                }
+            }
+        }
+
+        // Zentrale Säule
+        _cells[midX, midY].Type = CellType.Wall;
+    }
+
+    /// <summary>Inseln: 4 Insel-Cluster mit schmalen Verbindungen</summary>
+    private void SetupIslandsInterior()
+    {
+        // 4 Cluster-Zentren mit Wänden drumherum, verbunden durch 1-Zellen-Gänge
+        // Oben-Links Cluster
+        _cells[4, 3].Type = CellType.Wall;
+        _cells[4, 4].Type = CellType.Wall;
+        _cells[5, 3].Type = CellType.Wall;
+
+        // Oben-Rechts Cluster
+        _cells[10, 3].Type = CellType.Wall;
+        _cells[10, 4].Type = CellType.Wall;
+        _cells[9, 3].Type = CellType.Wall;
+
+        // Unten-Links Cluster
+        _cells[4, 6].Type = CellType.Wall;
+        _cells[4, 5].Type = CellType.Wall;
+        _cells[5, 6].Type = CellType.Wall;
+
+        // Unten-Rechts Cluster
+        _cells[10, 6].Type = CellType.Wall;
+        _cells[10, 5].Type = CellType.Wall;
+        _cells[9, 6].Type = CellType.Wall;
+
+        // Zentrale Verbindungswände (erzwingen schmale Gänge)
+        _cells[7, 2].Type = CellType.Wall;
+        _cells[7, 7].Type = CellType.Wall;
+        if (!IsPlayerSpawnArea(2, 5)) _cells[2, 5].Type = CellType.Wall;
+        _cells[12, 5].Type = CellType.Wall;
+    }
+
+    /// <summary>Chaos: Zufällig platzierte Wände (hohe Varianz)</summary>
+    private void SetupChaosInterior()
+    {
+        // Seed-basierter Zufall für reproduzierbare Chaos-Layouts
+        var random = new Random(42); // Fester Seed für Konsistenz
+
+        // 15-20 zufällige Wände platzieren
+        int wallCount = 15 + random.Next(6);
+        int placed = 0;
+
+        while (placed < wallCount)
+        {
+            int x = 2 + random.Next(WIDTH - 3);
+            int y = 2 + random.Next(HEIGHT - 3);
+
+            if (x <= 0 || x >= WIDTH - 1 || y <= 0 || y >= HEIGHT - 1)
+                continue;
+            if (IsPlayerSpawnArea(x, y))
+                continue;
+            if (_cells[x, y].Type != CellType.Empty)
+                continue;
+
+            _cells[x, y].Type = CellType.Wall;
+            placed++;
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // WELT-MECHANIK-ZELLEN PLATZIEREN
     // ═══════════════════════════════════════════════════════════════════════
@@ -328,6 +473,10 @@ public class GameGrid
             case WorldMechanic.LavaCrack:
                 PlaceLavaCrackCells(random);
                 break;
+            case WorldMechanic.PlatformGap:
+                PlacePlatformGapCells(random);
+                break;
+            // FallingCeiling, Current, Earthquake, Fog: Runtime-Mechaniken → keine Zellen nötig
         }
     }
 
@@ -450,6 +599,19 @@ public class GameGrid
             cell.Type = CellType.LavaCrack;
             // Zufälliger Timer-Offset, damit nicht alle gleichzeitig aktiv werden
             cell.LavaCrackTimer = random.NextSingle() * 4f;
+        }
+    }
+
+    /// <summary>Plattform-Lücken: 10-15% der leeren Zellen werden zu tödlichen Lücken</summary>
+    private void PlacePlatformGapCells(Random random)
+    {
+        var emptyCells = GetPlaceableMechanicCells();
+        int count = (int)(emptyCells.Count * (0.1f + random.NextSingle() * 0.05f));
+        ShuffleList(emptyCells, random);
+
+        for (int i = 0; i < count && i < emptyCells.Count; i++)
+        {
+            emptyCells[i].Type = CellType.PlatformGap;
         }
     }
 

@@ -22,7 +22,10 @@ public class PlayerUpgrades
         { UpgradeType.TimeBonus, 1 },
         { UpgradeType.ShieldStart, 1 },
         { UpgradeType.CoinBonus, 2 },
-        { UpgradeType.PowerUpLuck, 2 }
+        { UpgradeType.PowerUpLuck, 2 },
+        { UpgradeType.IceBomb, 1 },
+        { UpgradeType.FireBomb, 1 },
+        { UpgradeType.StickyBomb, 1 }
     };
 
     // Preise pro Level (Index 0 = Level 1, etc.) - ~50% reduziert fuer bessere Progression
@@ -36,7 +39,10 @@ public class PlayerUpgrades
         { UpgradeType.TimeBonus, [6000] },
         { UpgradeType.ShieldStart, [8000] },
         { UpgradeType.CoinBonus, [8000, 25000] },
-        { UpgradeType.PowerUpLuck, [5000, 15000] }
+        { UpgradeType.PowerUpLuck, [5000, 15000] },
+        { UpgradeType.IceBomb, [6000] },
+        { UpgradeType.FireBomb, [8000] },
+        { UpgradeType.StickyBomb, [10000] }
     };
 
     // Score-Multiplikatoren pro Level
@@ -115,11 +121,9 @@ public class PlayerUpgrades
         return GetLevel(UpgradeType.StartSpeed) >= 1;
     }
 
-    /// <summary>Start-Leben (Arcade: immer 1, Story: 3 + Upgrade-Level)</summary>
-    public int GetStartLives(bool isArcade)
+    /// <summary>Start-Leben (3 + Upgrade-Level)</summary>
+    public int GetStartLives()
     {
-        if (isArcade)
-            return 1;
         return 3 + GetLevel(UpgradeType.ExtraLives);
     }
 

@@ -48,7 +48,13 @@ public class ShopService : IShopService
             CreateItem(UpgradeType.CoinBonus, "UpgradeCoinBonus", "UpgradeCoinBonusDesc",
                 MaterialIconKind.CurrencyUsd, Color.Parse("#FFD700")),
             CreateItem(UpgradeType.PowerUpLuck, "UpgradePowerUpLuck", "UpgradePowerUpLuckDesc",
-                MaterialIconKind.Clover, Color.Parse("#4CAF50"))
+                MaterialIconKind.Clover, Color.Parse("#4CAF50")),
+            CreateItem(UpgradeType.IceBomb, "UpgradeIceBomb", "UpgradeIceBombDesc",
+                MaterialIconKind.Snowflake, Color.Parse("#00BFFF")),
+            CreateItem(UpgradeType.FireBomb, "UpgradeFireBomb", "UpgradeFireBombDesc",
+                MaterialIconKind.Fire, Color.Parse("#FF4500")),
+            CreateItem(UpgradeType.StickyBomb, "UpgradeStickyBomb", "UpgradeStickyBombDesc",
+                MaterialIconKind.Water, Color.Parse("#32CD32"))
         ];
     }
 
@@ -88,8 +94,18 @@ public class ShopService : IShopService
         if (!_coinService.TrySpendCoins(price))
             return false;
 
-        _upgrades.Upgrade(type);
-        Save();
+        // Upgrade + Save atomar: Bei Fehler Coins zurückerstatten
+        try
+        {
+            _upgrades.Upgrade(type);
+            Save();
+        }
+        catch
+        {
+            _coinService.AddCoins(price);
+            return false;
+        }
+
         return true;
     }
 
@@ -98,7 +114,11 @@ public class ShopService : IShopService
     public int GetStartBombs() => _upgrades.GetStartBombs();
     public int GetStartFire() => _upgrades.GetStartFire();
     public bool HasStartSpeed() => _upgrades.HasStartSpeed();
-    public int GetStartLives(bool isArcade) => _upgrades.GetStartLives(isArcade);
+    public int GetStartLives() => _upgrades.GetStartLives();
+
+    public bool HasIceBomb() => _upgrades.GetLevel(UpgradeType.IceBomb) >= 1;
+    public bool HasFireBomb() => _upgrades.GetLevel(UpgradeType.FireBomb) >= 1;
+    public bool HasStickyBomb() => _upgrades.GetLevel(UpgradeType.StickyBomb) >= 1;
 
     public void ResetUpgrades()
     {

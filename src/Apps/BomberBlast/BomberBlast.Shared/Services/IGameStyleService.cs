@@ -6,7 +6,8 @@ namespace BomberBlast.Services;
 public enum GameVisualStyle
 {
     Classic,
-    Neon
+    Neon,
+    Retro
 }
 
 /// <summary>

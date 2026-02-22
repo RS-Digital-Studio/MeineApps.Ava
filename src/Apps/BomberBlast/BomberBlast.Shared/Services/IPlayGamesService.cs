@@ -35,4 +35,17 @@ public interface IPlayGamesService
 
     /// <summary>Inkrementelles Achievement (z.B. "100 Gegner besiegt")</summary>
     Task IncrementAchievementAsync(string achievementId, int steps);
+
+    /// <summary>
+    /// Speicherdaten in die Cloud hochladen (Snapshots API oder Drive App Data).
+    /// </summary>
+    /// <param name="jsonData">JSON-String des CloudSaveData-Objekts</param>
+    /// <returns>true wenn erfolgreich gespeichert</returns>
+    Task<bool> SaveToCloudAsync(string jsonData);
+
+    /// <summary>
+    /// Speicherdaten aus der Cloud laden.
+    /// </summary>
+    /// <returns>JSON-String oder null wenn keine Daten vorhanden</returns>
+    Task<string?> LoadCloudSaveAsync();
 }

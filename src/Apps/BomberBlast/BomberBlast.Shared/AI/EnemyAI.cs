@@ -45,6 +45,23 @@ public class EnemyAI
         if (enemy.IsDying || !enemy.IsActive)
             return;
 
+        // Boss-Gegner haben eigene AI-Logik
+        if (enemy is BossEnemy boss)
+        {
+            UpdateBossAI(boss, player, deltaTime);
+            return;
+        }
+
+        // Smoke-Konfusion: Gegner auf Rauchzellen laufen zufällig (ignorieren Pathfinding)
+        var smokeCell = _grid.TryGetCell(enemy.GridX, enemy.GridY);
+        if (smokeCell != null && smokeCell.IsSmokeCloud)
+        {
+            // Zufällige Richtung wählen, ohne DangerZone zu berücksichtigen
+            enemy.MovementDirection = GetRandomValidDirection(enemy);
+            enemy.Move(deltaTime, _grid);
+            return;
+        }
+
         // Check if it's time for a new decision
         if (enemy.AIDecisionTimer > 0)
         {
@@ -243,18 +260,21 @@ public class EnemyAI
         // Check if next waypoint is safe
         if (dangerZone.Contains((nextWaypoint.x, nextWaypoint.y)))
         {
-            // Path compromised, clear it
+            // Pfad kompromittiert → sofort sichere Richtung wählen
             enemy.Path.Clear();
             enemy.TargetPosition = null;
-            return false;
+            enemy.MovementDirection = GetRandomSafeDirection(enemy, dangerZone);
+            return enemy.MovementDirection != Direction.None;
         }
 
         // Check if path is still valid (no new obstacles)
         if (!CanMoveInDirection(enemy, GetDirectionTo(enemy.GridX, enemy.GridY, nextWaypoint.x, nextWaypoint.y)))
         {
+            // Hindernis auf dem Weg → sofort Ausweichrichtung wählen
             enemy.Path.Clear();
             enemy.TargetPosition = null;
-            return false;
+            enemy.MovementDirection = GetRandomSafeDirection(enemy, dangerZone);
+            return enemy.MovementDirection != Direction.None;
         }
 
         enemy.MovementDirection = GetDirectionTo(enemy.GridX, enemy.GridY, nextWaypoint.x, nextWaypoint.y);
@@ -438,6 +458,10 @@ public class EnemyAI
         if (cell.Type == CellType.Block && !enemy.CanPassWalls)
             return false;
 
+        // PlatformGap-Zellen sind tödliche Lücken - Gegner meiden sie
+        if (cell.Type == CellType.PlatformGap && !enemy.CanPassWalls)
+            return false;
+
         if (cell.Bomb != null)
             return false;
 
@@ -460,5 +484,106 @@ public class EnemyAI
         }
 
         return Direction.None;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOSS-AI (einfacher als normale AI: Direkt auf Spieler zu)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Boss-AI: Langsame Verfolgung des Spielers, kein Pathfinding.
+    /// Während Telegraph/Angriff bleibt der Boss stehen.
+    /// </summary>
+    private void UpdateBossAI(BossEnemy boss, Player player, float deltaTime)
+    {
+        // Während Telegraph oder Angriff: Stehenbleiben
+        if (boss.IsTelegraphing || boss.IsAttacking)
+        {
+            boss.MovementDirection = Direction.None;
+            return;
+        }
+
+        // AI-Decision-Timer verwenden (wie bei normalen Gegnern)
+        float decisionInterval = boss.IsEnraged ? 0.5f : 1.0f;
+
+        if (boss.AIDecisionTimer > 0)
+        {
+            // Aktuelle Richtung beibehalten, Boss bewegt sich über MoveBoss()
+            return;
+        }
+
+        // Neuen Timer setzen
+        boss.AIDecisionTimer = decisionInterval * (0.8f + _random.NextSingle() * 0.4f);
+
+        // Richtung zum Spieler berechnen (kein A*-Pathfinding, nur Direktions-Check)
+        int dx = player.GridX - boss.GridX;
+        int dy = player.GridY - boss.GridY;
+
+        // Bevorzugte Richtung: Die Achse mit größerer Distanz
+        Direction primaryDir;
+        Direction secondaryDir;
+
+        if (Math.Abs(dx) >= Math.Abs(dy))
+        {
+            primaryDir = dx > 0 ? Direction.Right : (dx < 0 ? Direction.Left : Direction.None);
+            secondaryDir = dy > 0 ? Direction.Down : (dy < 0 ? Direction.Up : Direction.None);
+        }
+        else
+        {
+            primaryDir = dy > 0 ? Direction.Down : (dy < 0 ? Direction.Up : Direction.None);
+            secondaryDir = dx > 0 ? Direction.Right : (dx < 0 ? Direction.Left : Direction.None);
+        }
+
+        // Primäre Richtung versuchen (prüft ob Boss sich dort hin bewegen kann)
+        if (primaryDir != Direction.None && CanBossMoveInDirection(boss, primaryDir))
+        {
+            boss.MovementDirection = primaryDir;
+            return;
+        }
+
+        // Sekundäre Richtung versuchen
+        if (secondaryDir != Direction.None && CanBossMoveInDirection(boss, secondaryDir))
+        {
+            boss.MovementDirection = secondaryDir;
+            return;
+        }
+
+        // Fallback: Zufällige begehbare Richtung
+        _validDirections.Clear();
+        foreach (var dir in DirectionExtensions.GetCardinalDirections())
+        {
+            if (CanBossMoveInDirection(boss, dir))
+                _validDirections.Add(dir);
+        }
+
+        boss.MovementDirection = _validDirections.Count > 0
+            ? _validDirections[_random.Next(_validDirections.Count)]
+            : Direction.None;
+    }
+
+    /// <summary>
+    /// Prüft ob der Boss sich in eine Richtung bewegen kann (Multi-Cell Kollision)
+    /// </summary>
+    private bool CanBossMoveInDirection(BossEnemy boss, Direction direction)
+    {
+        int baseX = boss.GridX + direction.GetDeltaX();
+        int baseY = boss.GridY + direction.GetDeltaY();
+
+        // Alle Zellen prüfen die der Boss an der neuen Position belegen würde
+        for (int dy = 0; dy < boss.BossSize; dy++)
+        {
+            for (int dx = 0; dx < boss.BossSize; dx++)
+            {
+                int cx = baseX + dx;
+                int cy = baseY + dy;
+
+                var cell = _grid.TryGetCell(cx, cy);
+                if (cell == null) return false;
+                if (cell.Type == CellType.Wall || cell.Type == CellType.Block) return false;
+                if (cell.Bomb != null) return false;
+            }
+        }
+
+        return true;
     }
 }

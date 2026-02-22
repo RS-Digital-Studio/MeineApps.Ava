@@ -46,6 +46,6 @@ public enum AchievementCategory
     Combat,
     /// <summary>Geschick (Effizienz/Speed)</summary>
     Skill,
-    /// <summary>Arcade-Modus</summary>
-    Arcade
+    /// <summary>Herausforderungs-Modi (Survival, QuickPlay etc.)</summary>
+    Challenge
 }

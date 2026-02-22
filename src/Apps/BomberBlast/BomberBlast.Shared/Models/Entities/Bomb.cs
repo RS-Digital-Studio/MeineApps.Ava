@@ -1,6 +1,43 @@
 namespace BomberBlast.Models.Entities;
 
 /// <summary>
+/// Bomben-Typ (Normal oder Spezial)
+/// </summary>
+public enum BombType
+{
+    Normal,
+    /// <summary>Friert Gegner für 3s ein (Slow + blau)</summary>
+    Ice,
+    /// <summary>+2 Extra-Reichweite, Lava-Nachwirkung (3s Schaden)</summary>
+    Fire,
+    /// <summary>Klebt an Wänden/Gegnern, 5s Timer</summary>
+    Sticky,
+
+    // === Neue Bomben-Typen (Phase 1) ===
+
+    /// <summary>3x3 Nebelwolke, Gegner-AI läuft 4s zufällig (Rare)</summary>
+    Smoke,
+    /// <summary>Blitz springt zu 3 nächsten Gegnern, ignoriert Wände (Rare)</summary>
+    Lightning,
+    /// <summary>Zieht alle Gegner im 3-Zellen-Radius 1 Zelle zum Zentrum (Rare)</summary>
+    Gravity,
+    /// <summary>Gift-Zellen (3s), Gegner verlieren HP beim Betreten (Rare)</summary>
+    Poison,
+    /// <summary>Alles im Radius 5s auf 50% verlangsamt inkl. Bomben-Timer (Epic)</summary>
+    TimeWarp,
+    /// <summary>Explosion kopiert sich in Gegenrichtung, doppelte Reichweite (Epic)</summary>
+    Mirror,
+    /// <summary>Spiralförmige Explosion, trifft mehr Zellen als linear (Epic)</summary>
+    Vortex,
+    /// <summary>Explosion durchdringt 1 unzerstörbare Wand (Epic)</summary>
+    Phantom,
+    /// <summary>360-Grad Explosion (ALLE Zellen im Range), lässt PowerUp fallen (Legendary)</summary>
+    Nova,
+    /// <summary>Schwarzes Loch, saugt Gegner 3s ein, dann Explosion (Legendary)</summary>
+    BlackHole
+}
+
+/// <summary>
 /// Bomb entity that explodes after a timer
 /// </summary>
 public class Bomb : Entity
@@ -43,6 +80,9 @@ public class Bomb : Entity
     public int SlotsConsumed { get; set; } = 1;
     /// <summary>Kettenreaktions-Tiefe (0 = direkt platziert, 1+ = durch andere Bombe ausgelöst)</summary>
     public int ChainDepth { get; set; }
+
+    /// <summary>Spezial-Bomben-Typ (Normal = Standard)</summary>
+    public BombType Type { get; set; } = BombType.Normal;
 
     public override float AnimationSpeed => 4f;
 

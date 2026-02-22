@@ -19,6 +19,8 @@ public partial class GameOverViewModel : ObservableObject
     private readonly ICoinService _coinService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IProgressService _progressService;
+    private readonly IWeeklyChallengeService _weeklyService;
+    private readonly IDailyMissionService _dailyMissionService;
     private bool _coinsClaimed;
     private DispatcherTimer? _coinAnimTimer;
     private int _animatedCoins;
@@ -57,7 +59,7 @@ public partial class GameOverViewModel : ObservableObject
     private string _mode = "story";
 
     [ObservableProperty]
-    private bool _isArcadeMode;
+    private bool _isSurvivalMode;
 
     [ObservableProperty]
     private bool _isLevelComplete;
@@ -176,13 +178,17 @@ public partial class GameOverViewModel : ObservableObject
         ILocalizationService localizationService,
         ICoinService coinService,
         IRewardedAdService rewardedAdService,
-        IProgressService progressService)
+        IProgressService progressService,
+        IWeeklyChallengeService weeklyService,
+        IDailyMissionService dailyMissionService)
     {
         _purchaseService = purchaseService;
         _localizationService = localizationService;
         _coinService = coinService;
         _rewardedAdService = rewardedAdService;
         _progressService = progressService;
+        _weeklyService = weeklyService;
+        _dailyMissionService = dailyMissionService;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -194,20 +200,39 @@ public partial class GameOverViewModel : ObservableObject
     /// </summary>
     public void SetParameters(int score, int level, bool isHighScore, string mode,
         int coins, bool isLevelComplete, bool canContinue, int fails = 0,
-        int enemyKillPoints = 0, int timeBonus = 0, int efficiencyBonus = 0, float scoreMultiplier = 1f)
+        int enemyKillPoints = 0, int timeBonus = 0, int efficiencyBonus = 0, float scoreMultiplier = 1f,
+        int survivalKills = 0, float survivalTime = 0)
     {
+        // Timer defensiv stoppen bevor neuer State gesetzt wird
+        _coinAnimTimer?.Stop();
+
         Score = score;
         Level = level;
         IsHighScore = isHighScore;
         Mode = mode;
-        IsArcadeMode = mode == "arcade";
+        IsSurvivalMode = mode == "survival";
         IsLevelComplete = isLevelComplete;
         IsPremium = _purchaseService.IsPremium;
 
         ScoreText = score.ToString("N0");
-        LevelText = IsArcadeMode
-            ? string.Format(_localizationService.GetString("WaveOverlay"), level)
-            : string.Format(_localizationService.GetString("LevelFormat"), level);
+
+        // Survival: Kills + Zeit statt Level-Nummer
+        if (IsSurvivalMode)
+        {
+            int mins = (int)(survivalTime / 60);
+            int secs = (int)(survivalTime % 60);
+            SurvivalKills = survivalKills;
+            SurvivalTimeText = $"{mins}:{secs:D2}";
+            HasSurvivalStats = true;
+            LevelText = string.Format(
+                _localizationService.GetString("SurvivalKills") ?? "Kills: {0}",
+                survivalKills);
+        }
+        else
+        {
+            HasSurvivalStats = false;
+            LevelText = string.Format(_localizationService.GetString("LevelFormat"), level);
+        }
 
         // Coins (mit hochzählender Animation)
         CoinsEarned = coins;
@@ -223,7 +248,7 @@ public partial class GameOverViewModel : ObservableObject
 
         // Level-Skip: Ab 2 Fehlversuchen (Free: Rewarded Ad, Premium: 1x kostenlos pro Session)
         bool hasFreeSkip = _purchaseService.IsPremium && !_premiumSkipUsed;
-        CanSkipLevel = !isLevelComplete && !IsArcadeMode &&
+        CanSkipLevel = !isLevelComplete && !IsSurvivalMode &&
             (fails >= 2 && _rewardedAdService.IsAvailable || hasFreeSkip);
         SkipLevelText = hasFreeSkip
             ? _localizationService.GetString("SkipLevelFree") ?? "Level überspringen"
@@ -243,7 +268,7 @@ public partial class GameOverViewModel : ObservableObject
             : _localizationService.GetString("ContinueGame");
 
         // Score-Aufschlüsselung (nur bei Level-Complete)
-        HasSummary = isLevelComplete && !IsArcadeMode;
+        HasSummary = isLevelComplete;
         if (HasSummary)
         {
             EnemyKillPoints = enemyKillPoints;
@@ -296,6 +321,9 @@ public partial class GameOverViewModel : ObservableObject
     {
         if (HasDoubled || CoinsEarned <= 0) return;
 
+        // Sofort deaktivieren um Doppelklick während async-Gap zu verhindern
+        CanDoubleCoins = false;
+
         bool rewarded = await _rewardedAdService.ShowAdAsync("continue");
         if (rewarded)
         {
@@ -303,15 +331,19 @@ public partial class GameOverViewModel : ObservableObject
             CoinsEarnedText = $"+{CoinsEarned:N0}";
             FloatingTextRequested?.Invoke("x2!", "gold");
             HasDoubled = true;
-            CanDoubleCoins = false;
             DoubleCoinsButtonText = _localizationService.GetString("CoinsDoubled");
+        }
+        else
+        {
+            // Ad fehlgeschlagen → Button wieder aktivieren
+            CanDoubleCoins = _rewardedAdService.IsAvailable;
         }
     }
 
     [RelayCommand]
     private async Task ContinueGame()
     {
-        if (HasContinued || IsArcadeMode) return;
+        if (HasContinued || IsSurvivalMode) return;
 
         // Premium: Kostenloser Continue (kein Ad)
         if (_purchaseService.IsPremium)
@@ -331,7 +363,7 @@ public partial class GameOverViewModel : ObservableObject
     [RelayCommand]
     private async Task PaidContinueAsync()
     {
-        if (HasContinued || IsArcadeMode) return;
+        if (HasContinued || IsSurvivalMode) return;
 
         // Bestätigungsdialog vor Coin-Ausgabe
         if (ConfirmationRequested != null)
@@ -409,9 +441,9 @@ public partial class GameOverViewModel : ObservableObject
     {
         ClaimCoins();
 
-        if (IsArcadeMode)
+        if (IsSurvivalMode)
         {
-            NavigationRequested?.Invoke("//MainMenu/Game?mode=arcade");
+            NavigationRequested?.Invoke("//MainMenu/Game?mode=survival");
         }
         else
         {
@@ -426,6 +458,16 @@ public partial class GameOverViewModel : ObservableObject
         NavigationRequested?.Invoke("//MainMenu");
     }
 
+    // Survival-Statistiken
+    [ObservableProperty]
+    private int _survivalKills;
+
+    [ObservableProperty]
+    private string _survivalTimeText = "";
+
+    [ObservableProperty]
+    private bool _hasSurvivalStats;
+
     /// <summary>
     /// Verdiente Coins dem CoinService gutschreiben (nur einmal pro Session)
     /// </summary>
@@ -438,6 +480,10 @@ public partial class GameOverViewModel : ObservableObject
         {
             _coinService.AddCoins(CoinsEarned);
             _coinsClaimed = true;
+
+            // Wöchentliche Challenge: Coins-Verdienst tracken
+            _weeklyService.TrackProgress(Models.WeeklyMissionType.EarnCoins, CoinsEarned);
+            _dailyMissionService.TrackProgress(Models.WeeklyMissionType.EarnCoins, CoinsEarned);
         }
     }
 

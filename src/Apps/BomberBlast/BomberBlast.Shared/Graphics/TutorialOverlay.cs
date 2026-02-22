@@ -71,7 +71,7 @@ public class TutorialOverlay : IDisposable
     public void Render(SKCanvas canvas, float screenWidth, float screenHeight,
         TutorialStep step, float scale, float offsetX, float offsetY)
     {
-        _pulseTimer += 0.016f; // ~60fps
+        _pulseTimer = (_pulseTimer + 0.016f) % (MathF.PI * 2f); // ~60fps, Modulo verhindert Float-Precision-Verlust
 
         // Highlight-Bereich bestimmen
         var highlightRect = GetHighlightRect(step.Highlight, screenWidth, screenHeight, scale, offsetX, offsetY);

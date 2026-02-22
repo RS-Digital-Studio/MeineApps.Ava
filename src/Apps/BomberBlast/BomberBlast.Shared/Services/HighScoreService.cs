@@ -79,35 +79,12 @@ public class HighScoreService : IHighScoreService
             else
             {
                 _scores = new List<HighScoreEntry>();
-                AddDefaultScores();
             }
         }
         catch
         {
             _scores = new List<HighScoreEntry>();
-            AddDefaultScores();
         }
-    }
-
-    private void AddDefaultScores()
-    {
-        // Add some default scores for players to beat
-        var defaults = new[]
-        {
-            ("AAA", 50000, 10),
-            ("BBB", 40000, 8),
-            ("CCC", 30000, 6),
-            ("DDD", 20000, 5),
-            ("EEE", 10000, 3)
-        };
-
-        foreach (var (name, score, level) in defaults)
-        {
-            _scores.Add(new HighScoreEntry(name, score, level, DateTime.UtcNow.AddDays(-1)));
-        }
-
-        _scores = _scores.OrderByDescending(s => s.Score).ToList();
-        SaveScores();
     }
 
     private void SaveScores()

@@ -1,4 +1,5 @@
 using BomberBlast.Models;
+using BomberBlast.Models.Cosmetics;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
 using BomberBlast.Services;
@@ -9,7 +10,7 @@ namespace BomberBlast.Graphics;
 /// <summary>
 /// Renders the game using SkiaSharp with two visual styles (Classic HD / Neon)
 /// </summary>
-public class GameRenderer : IDisposable
+public partial class GameRenderer : IDisposable
 {
     private bool _disposed;
     private readonly IGameStyleService _styleService;
@@ -19,6 +20,14 @@ public class GameRenderer : IDisposable
     private float _scale = 1f;
     private float _offsetX, _offsetY;
     private float _hudX, _hudY, _hudWidth, _hudHeight;
+    private float _screenWidth, _screenHeight;
+
+    // Atmosphärische Subsysteme
+    private readonly DynamicLighting _dynamicLighting = new();
+    private readonly WeatherSystem _weatherSystem = new();
+    private readonly AmbientParticleSystem _ambientParticles = new();
+    private readonly ShaderEffects _shaderEffects = new();
+    private readonly TrailSystem _trailSystem = new();
 
     // HUD constants
     private const float HUD_LOGICAL_WIDTH = 120f;
@@ -26,6 +35,8 @@ public class GameRenderer : IDisposable
     // Combo-Daten (gesetzt von GameEngine vor jedem Render)
     public int ComboCount { get; set; }
     public float ComboTimer { get; set; }
+    public bool IsSurvivalMode { get; set; }
+    public int SurvivalKills { get; set; }
 
     /// <summary>
     /// Verschiebung nach unten fuer Banner-Ad oben (in Canvas-Einheiten).
@@ -33,11 +44,21 @@ public class GameRenderer : IDisposable
     /// </summary>
     public float BannerTopOffset { get; set; }
 
+    // ReducedEffects: Atmosphärische Systeme deaktivieren (Performance-Modus)
+    public bool ReducedEffects { get; set; }
+
     // Animation timing
     private float _globalTimer;
+    private float _lastDeltaTime;
+
+    // Nebel-Overlay (Welt 10: Schattenwelt)
+    private bool _fogEnabled;
 
     // Current palette (swapped on style change)
     private StylePalette _palette;
+
+    // Effektive Explosionsfarben (Skin-Override oder Palette)
+    private SKColor _explOuter, _explInner, _explCore;
 
     // ═══════════════════════════════════════════════════════════════════════
     // COLOR PALETTES
@@ -139,6 +160,49 @@ public class GameRenderer : IDisposable
         HudTimeWarning = new SKColor(255, 60, 60),
     };
 
+    private static readonly StylePalette RetroPalette = new()
+    {
+        Background = new SKColor(48, 56, 32),
+
+        FloorBase = new SKColor(156, 172, 112),
+        FloorAlt = new SKColor(140, 156, 100),
+        FloorLine = new SKColor(120, 136, 84),
+
+        WallBase = new SKColor(72, 80, 56),
+        WallHighlight = new SKColor(96, 108, 72),
+        WallShadow = new SKColor(48, 52, 36),
+        WallEdge = new SKColor(64, 72, 48),
+
+        BlockBase = new SKColor(168, 128, 72),
+        BlockMortar = new SKColor(192, 156, 96),
+        BlockHighlight = new SKColor(184, 144, 84),
+        BlockShadow = new SKColor(120, 88, 48),
+
+        ExitGlow = new SKColor(80, 200, 80),
+        ExitInner = new SKColor(40, 160, 60),
+
+        BombBody = new SKColor(32, 28, 24),
+        BombGlowColor = new SKColor(200, 80, 24),
+        BombFuse = new SKColor(192, 120, 40),
+        BombHighlight = new SKColor(160, 148, 120),
+
+        ExplosionOuter = new SKColor(216, 128, 32),
+        ExplosionInner = new SKColor(240, 192, 64),
+        ExplosionCore = new SKColor(248, 240, 200),
+
+        PlayerBody = new SKColor(224, 216, 192),
+        PlayerHelm = new SKColor(72, 120, 176),
+        PlayerAura = SKColor.Empty,
+
+        EnemyAura = SKColor.Empty,
+
+        HudBg = new SKColor(40, 48, 28, 235),
+        HudBorder = new SKColor(96, 108, 72),
+        HudText = new SKColor(224, 224, 200),
+        HudAccent = new SKColor(216, 192, 64),
+        HudTimeWarning = new SKColor(200, 48, 32),
+    };
+
     private static readonly StylePalette NeonPalette = new()
     {
         Background = new SKColor(12, 14, 22),
@@ -222,6 +286,31 @@ public class GameRenderer : IDisposable
                 WallMain = new(45, 40, 45), WallHighlight = new(70, 60, 65), WallShadow = new(25, 20, 25),
                 BlockMain = new(200, 100, 40), BlockMortar = new(230, 140, 60), BlockHighlight = new(220, 120, 50), BlockShadow = new(150, 65, 25),
                 Accent = new(240, 60, 40) },
+        // Welt 6: Ruinen (Sandstein/Antik)
+        new() { Floor1 = new(210, 195, 165), Floor2 = new(195, 180, 150), FloorLine = new(175, 160, 130),
+                WallMain = new(140, 120, 90), WallHighlight = new(180, 160, 120), WallShadow = new(100, 85, 60),
+                BlockMain = new(190, 160, 110), BlockMortar = new(210, 185, 140), BlockHighlight = new(200, 175, 130), BlockShadow = new(140, 115, 75),
+                Accent = new(210, 180, 100) },
+        // Welt 7: Ozean (Unterwasser/Blau)
+        new() { Floor1 = new(140, 180, 200), Floor2 = new(120, 165, 190), FloorLine = new(100, 145, 175),
+                WallMain = new(50, 80, 110), WallHighlight = new(80, 120, 160), WallShadow = new(30, 55, 80),
+                BlockMain = new(80, 140, 170), BlockMortar = new(110, 170, 200), BlockHighlight = new(100, 160, 190), BlockShadow = new(50, 100, 130),
+                Accent = new(0, 180, 220) },
+        // Welt 8: Vulkan (Dunkelrot/Lava)
+        new() { Floor1 = new(90, 50, 40), Floor2 = new(75, 40, 30), FloorLine = new(60, 30, 20),
+                WallMain = new(40, 30, 30), WallHighlight = new(65, 45, 40), WallShadow = new(20, 15, 15),
+                BlockMain = new(180, 80, 30), BlockMortar = new(220, 120, 40), BlockHighlight = new(200, 100, 35), BlockShadow = new(130, 55, 20),
+                Accent = new(255, 100, 20) },
+        // Welt 9: Himmelsfestung (Gold/Weiss)
+        new() { Floor1 = new(230, 225, 210), Floor2 = new(220, 215, 195), FloorLine = new(200, 190, 170),
+                WallMain = new(220, 200, 160), WallHighlight = new(245, 230, 190), WallShadow = new(180, 165, 130),
+                BlockMain = new(210, 190, 140), BlockMortar = new(235, 215, 170), BlockHighlight = new(225, 205, 155), BlockShadow = new(175, 155, 110),
+                Accent = new(255, 215, 0) },
+        // Welt 10: Schattenwelt (Schwarz/Violett)
+        new() { Floor1 = new(55, 40, 70), Floor2 = new(45, 30, 60), FloorLine = new(35, 20, 50),
+                WallMain = new(30, 20, 45), WallHighlight = new(60, 40, 80), WallShadow = new(15, 10, 25),
+                BlockMain = new(80, 50, 100), BlockMortar = new(110, 70, 130), BlockHighlight = new(95, 60, 115), BlockShadow = new(55, 35, 70),
+                Accent = new(180, 80, 255) },
     ];
 
     // Neon Welt-Paletten (dunkler, leuchtender)
@@ -252,6 +341,86 @@ public class GameRenderer : IDisposable
                 WallMain = new(50, 25, 25), WallHighlight = new(255, 40, 40, 120), WallShadow = new(28, 12, 12),
                 BlockMain = new(65, 30, 20), BlockMortar = new(255, 80, 0, 170), BlockHighlight = new(255, 60, 30, 100), BlockShadow = new(40, 18, 10),
                 Accent = new(255, 40, 40) },
+        // Welt 6: Ruinen (Neon-Gold)
+        new() { Floor1 = new(35, 30, 20), Floor2 = new(30, 25, 16), FloorLine = new(255, 200, 0, 50),
+                WallMain = new(50, 42, 28), WallHighlight = new(255, 200, 50, 120), WallShadow = new(28, 24, 14),
+                BlockMain = new(60, 48, 25), BlockMortar = new(255, 190, 40, 170), BlockHighlight = new(240, 180, 30, 100), BlockShadow = new(38, 30, 14),
+                Accent = new(255, 200, 0) },
+        // Welt 7: Ozean (Neon-Türkis)
+        new() { Floor1 = new(18, 32, 40), Floor2 = new(14, 28, 36), FloorLine = new(0, 200, 220, 50),
+                WallMain = new(25, 45, 55), WallHighlight = new(0, 220, 240, 120), WallShadow = new(12, 24, 32),
+                BlockMain = new(20, 50, 60), BlockMortar = new(0, 210, 230, 170), BlockHighlight = new(0, 190, 210, 100), BlockShadow = new(10, 32, 42),
+                Accent = new(0, 220, 240) },
+        // Welt 8: Vulkan (Neon-Orange)
+        new() { Floor1 = new(38, 16, 12), Floor2 = new(32, 12, 8), FloorLine = new(255, 120, 0, 50),
+                WallMain = new(48, 22, 16), WallHighlight = new(255, 120, 20, 120), WallShadow = new(26, 10, 6),
+                BlockMain = new(60, 28, 14), BlockMortar = new(255, 100, 0, 170), BlockHighlight = new(240, 90, 10, 100), BlockShadow = new(38, 16, 8),
+                Accent = new(255, 120, 0) },
+        // Welt 9: Himmelsfestung (Neon-Weiss/Gold)
+        new() { Floor1 = new(30, 28, 24), Floor2 = new(26, 24, 20), FloorLine = new(255, 240, 200, 50),
+                WallMain = new(45, 40, 32), WallHighlight = new(255, 240, 180, 120), WallShadow = new(22, 20, 16),
+                BlockMain = new(48, 42, 30), BlockMortar = new(255, 230, 160, 170), BlockHighlight = new(240, 220, 150, 100), BlockShadow = new(30, 26, 18),
+                Accent = new(255, 230, 100) },
+        // Welt 10: Schattenwelt (Neon-Violett)
+        new() { Floor1 = new(22, 14, 35), Floor2 = new(18, 10, 30), FloorLine = new(180, 0, 255, 50),
+                WallMain = new(30, 18, 48), WallHighlight = new(200, 40, 255, 120), WallShadow = new(14, 8, 25),
+                BlockMain = new(38, 22, 55), BlockMortar = new(180, 60, 255, 170), BlockHighlight = new(160, 40, 240, 100), BlockShadow = new(22, 12, 35),
+                Accent = new(200, 60, 255) },
+    ];
+
+    // Retro Welt-Paletten (gedämpfte Pixel-Art-Farben, Game-Boy-/8-Bit-Ästhetik)
+    private static readonly WorldPalette[] RetroWorldPalettes =
+    [
+        // Welt 1: Forest (Grün-Braun)
+        new() { Floor1 = new(144, 168, 104), Floor2 = new(128, 152, 88), FloorLine = new(108, 128, 72),
+                WallMain = new(72, 80, 56), WallHighlight = new(96, 108, 72), WallShadow = new(48, 52, 36),
+                BlockMain = new(136, 104, 56), BlockMortar = new(160, 128, 80), BlockHighlight = new(148, 116, 68), BlockShadow = new(96, 72, 40),
+                Accent = new(80, 176, 64) },
+        // Welt 2: Industrial (Grau-Blau)
+        new() { Floor1 = new(152, 152, 160), Floor2 = new(136, 136, 148), FloorLine = new(116, 116, 128),
+                WallMain = new(64, 72, 88), WallHighlight = new(88, 100, 120), WallShadow = new(40, 44, 56),
+                BlockMain = new(144, 108, 64), BlockMortar = new(168, 136, 88), BlockHighlight = new(156, 120, 76), BlockShadow = new(104, 76, 40),
+                Accent = new(80, 128, 184) },
+        // Welt 3: Cavern (Lila-Braun)
+        new() { Floor1 = new(152, 136, 164), Floor2 = new(136, 120, 148), FloorLine = new(116, 100, 128),
+                WallMain = new(56, 48, 72), WallHighlight = new(80, 68, 100), WallShadow = new(36, 28, 48),
+                BlockMain = new(120, 88, 136), BlockMortar = new(148, 116, 160), BlockHighlight = new(132, 100, 148), BlockShadow = new(84, 56, 100),
+                Accent = new(152, 88, 200) },
+        // Welt 4: Sky (Blassblau)
+        new() { Floor1 = new(168, 188, 200), Floor2 = new(152, 176, 192), FloorLine = new(132, 156, 172),
+                WallMain = new(184, 192, 200), WallHighlight = new(208, 216, 224), WallShadow = new(148, 156, 172),
+                BlockMain = new(128, 168, 188), BlockMortar = new(152, 188, 204), BlockHighlight = new(140, 180, 196), BlockShadow = new(92, 136, 160),
+                Accent = new(64, 168, 200) },
+        // Welt 5: Inferno (Dunkelrot)
+        new() { Floor1 = new(104, 60, 48), Floor2 = new(88, 48, 36), FloorLine = new(68, 36, 24),
+                WallMain = new(40, 36, 36), WallHighlight = new(60, 52, 52), WallShadow = new(24, 20, 20),
+                BlockMain = new(168, 88, 36), BlockMortar = new(196, 120, 52), BlockHighlight = new(184, 104, 44), BlockShadow = new(120, 56, 24),
+                Accent = new(200, 56, 32) },
+        // Welt 6: Ruinen (Sand)
+        new() { Floor1 = new(184, 168, 140), Floor2 = new(168, 152, 124), FloorLine = new(148, 132, 104),
+                WallMain = new(120, 100, 72), WallHighlight = new(152, 132, 100), WallShadow = new(84, 68, 48),
+                BlockMain = new(164, 136, 92), BlockMortar = new(184, 160, 120), BlockHighlight = new(176, 148, 108), BlockShadow = new(116, 96, 60),
+                Accent = new(184, 160, 80) },
+        // Welt 7: Ozean (Blaugrün)
+        new() { Floor1 = new(116, 152, 168), Floor2 = new(100, 136, 156), FloorLine = new(80, 116, 140),
+                WallMain = new(44, 68, 92), WallHighlight = new(68, 100, 132), WallShadow = new(28, 48, 68),
+                BlockMain = new(68, 120, 144), BlockMortar = new(92, 144, 168), BlockHighlight = new(80, 132, 156), BlockShadow = new(44, 84, 108),
+                Accent = new(48, 152, 184) },
+        // Welt 8: Vulkan (Dunkelorange)
+        new() { Floor1 = new(76, 44, 32), Floor2 = new(64, 36, 24), FloorLine = new(52, 28, 16),
+                WallMain = new(36, 28, 24), WallHighlight = new(56, 40, 32), WallShadow = new(20, 16, 12),
+                BlockMain = new(152, 72, 28), BlockMortar = new(184, 104, 36), BlockHighlight = new(168, 88, 32), BlockShadow = new(108, 48, 20),
+                Accent = new(216, 88, 24) },
+        // Welt 9: Himmelsfestung (Gold-Beige)
+        new() { Floor1 = new(200, 192, 176), Floor2 = new(188, 180, 160), FloorLine = new(168, 160, 140),
+                WallMain = new(188, 172, 136), WallHighlight = new(212, 200, 164), WallShadow = new(152, 140, 108),
+                BlockMain = new(180, 164, 120), BlockMortar = new(200, 188, 148), BlockHighlight = new(192, 176, 136), BlockShadow = new(148, 132, 92),
+                Accent = new(216, 184, 48) },
+        // Welt 10: Schattenwelt (Dunkelviolett)
+        new() { Floor1 = new(48, 36, 60), Floor2 = new(40, 28, 52), FloorLine = new(32, 20, 44),
+                WallMain = new(28, 20, 40), WallHighlight = new(52, 36, 68), WallShadow = new(16, 12, 24),
+                BlockMain = new(68, 44, 84), BlockMortar = new(92, 60, 108), BlockHighlight = new(80, 52, 96), BlockShadow = new(48, 32, 60),
+                Accent = new(152, 68, 216) },
     ];
 
     // Aktive Welt-Palette (wird bei Level-Wechsel gesetzt)
@@ -262,9 +431,23 @@ public class GameRenderer : IDisposable
     /// </summary>
     public void SetWorldTheme(int worldIndex)
     {
-        worldIndex = Math.Clamp(worldIndex, 0, 4);
-        var palettes = _styleService.CurrentStyle == GameVisualStyle.Neon ? NeonWorldPalettes : ClassicWorldPalettes;
+        var palettes = _styleService.CurrentStyle switch
+        {
+            GameVisualStyle.Neon => NeonWorldPalettes,
+            GameVisualStyle.Retro => RetroWorldPalettes,
+            _ => ClassicWorldPalettes
+        };
+        worldIndex = Math.Clamp(worldIndex, 0, palettes.Length - 1);
         _worldPalette = palettes[worldIndex];
+        _currentWorldIndex = worldIndex;
+
+        // Boden-Cache invalidieren (wird beim nächsten RenderGrid neu aufgebaut)
+        InvalidateFloorCache();
+
+        // Atmosphärische Subsysteme für neue Welt initialisieren
+        _weatherSystem.SetWorld(worldIndex, _screenWidth, _screenHeight);
+        _ambientParticles.SetWorld(worldIndex, _screenWidth, _screenHeight);
+        _shaderEffects.SetWorld(worldIndex);
 
         // Basis-Palette Farben mit Welt-Theme überschreiben
         _palette.FloorBase = _worldPalette.Floor1;
@@ -326,14 +509,52 @@ public class GameRenderer : IDisposable
     {
         _styleService = styleService;
         _customizationService = customizationService;
-        _palette = _styleService.CurrentStyle == GameVisualStyle.Neon ? NeonPalette : ClassicPalette;
+        _palette = GetPaletteForStyle(_styleService.CurrentStyle);
+        UpdateExplosionSkinColors();
+
+        // Kosmetik-Trail aus CustomizationService laden
+        _trailSystem.ActiveCosmeticTrail = _customizationService.ActiveTrail;
 
         _styleService.StyleChanged += OnStyleChanged;
     }
 
+    private static StylePalette GetPaletteForStyle(GameVisualStyle style) => style switch
+    {
+        GameVisualStyle.Neon => NeonPalette,
+        GameVisualStyle.Retro => RetroPalette,
+        _ => ClassicPalette
+    };
+
+    /// <summary>Explosionsfarben aus Skin oder Palette aktualisieren</summary>
+    private void UpdateExplosionSkinColors()
+    {
+        var eSkin = _customizationService.ExplosionSkin;
+        if (eSkin.Id == "expl_rainbow")
+        {
+            // Regenbogen: Farben rotieren per globalTimer
+            float hue = (_globalTimer * 60f) % 360f;
+            _explOuter = SKColor.FromHsl(hue, 90, 55);
+            _explInner = SKColor.FromHsl((hue + 120f) % 360f, 90, 70);
+            _explCore = SKColor.FromHsl((hue + 240f) % 360f, 80, 85);
+        }
+        else if (eSkin.Id != "expl_default")
+        {
+            _explOuter = eSkin.OuterColor;
+            _explInner = eSkin.InnerColor;
+            _explCore = eSkin.CoreColor;
+        }
+        else
+        {
+            _explOuter = _palette.ExplosionOuter;
+            _explInner = _palette.ExplosionInner;
+            _explCore = _palette.ExplosionCore;
+        }
+    }
+
     private void OnStyleChanged(GameVisualStyle style)
     {
-        _palette = style == GameVisualStyle.Neon ? NeonPalette : ClassicPalette;
+        _palette = GetPaletteForStyle(style);
+        UpdateExplosionSkinColors();
         // Invalidate cached HUD gradient
         _hudGradientShader?.Dispose();
         _hudGradientShader = null;
@@ -350,6 +571,9 @@ public class GameRenderer : IDisposable
     {
         if (screenWidth <= 0 || screenHeight <= 0 || gridPixelWidth <= 0 || gridPixelHeight <= 0)
             return;
+
+        _screenWidth = screenWidth;
+        _screenHeight = screenHeight;
 
         // Effektive Höhe: abzüglich Banner-Ad oben
         float effectiveHeight = screenHeight - BannerTopOffset;
@@ -382,7 +606,20 @@ public class GameRenderer : IDisposable
     public void Update(float deltaTime)
     {
         _globalTimer += deltaTime;
+        _lastDeltaTime = deltaTime;
+
+        if (!ReducedEffects)
+        {
+            _weatherSystem.Update(deltaTime, _globalTimer);
+            _ambientParticles.Update(deltaTime, _globalTimer);
+            _shaderEffects.Update(deltaTime);
+        }
     }
+
+    /// <summary>
+    /// Nebel-Overlay aktivieren/deaktivieren (Welt 10: Schattenwelt - eingeschränkte Sicht)
+    /// </summary>
+    public void SetFogEnabled(bool enabled) => _fogEnabled = enabled;
 
     // ═══════════════════════════════════════════════════════════════════════
     // MAIN RENDER
@@ -396,7 +633,26 @@ public class GameRenderer : IDisposable
         IEnumerable<Explosion> explosions, IEnumerable<PowerUp> powerUps,
         float remainingTime, int score, int lives, Cell? exitCell = null)
     {
-        canvas.Clear(_palette.Background);
+        // Rainbow-Explosion muss pro Frame aktualisiert werden
+        if (_customizationService.ExplosionSkin.Id == "expl_rainbow")
+            UpdateExplosionSkinColors();
+
+        // Hintergrund mit Welt-Gradient (statt canvas.Clear)
+        RenderBackground(canvas, _screenWidth, _screenHeight);
+
+        // Hintergrund-Elemente (Bäume, Zahnräder, Stalaktiten etc. am Rand)
+        if (!ReducedEffects)
+            RenderBackgroundElements(canvas, _screenWidth, _screenHeight);
+
+        // Ambient-Partikel (unter dem Grid, über dem Hintergrund)
+        if (!ReducedEffects)
+        {
+            canvas.Save();
+            canvas.Translate(_offsetX, _offsetY);
+            canvas.Scale(_scale);
+            _ambientParticles.Render(canvas, _globalTimer);
+            canvas.Restore();
+        }
 
         // Save canvas state and apply transform for game field
         canvas.Save();
@@ -404,9 +660,18 @@ public class GameRenderer : IDisposable
         canvas.Scale(_scale);
 
         RenderGrid(canvas, grid);
+        RenderSpecialBombCellEffects(canvas, grid);
         RenderAfterglow(canvas, grid);
         RenderDangerWarning(canvas, grid, bombs);
         RenderExit(canvas, grid, exitCell);
+
+        // Trail-System: Fußabdrücke, Geister-Spuren, Feuer-Trails, Kosmetik-Trails (auf dem Boden, unter Entities)
+        if (!ReducedEffects)
+        {
+            _trailSystem.ActiveCosmeticTrail = _customizationService.ActiveTrail;
+            _trailSystem.Update(_lastDeltaTime, player, enemies, _globalTimer);
+            _trailSystem.Render(canvas, _globalTimer);
+        }
 
         foreach (var powerUp in powerUps)
         {
@@ -427,1565 +692,63 @@ public class GameRenderer : IDisposable
         }
 
         foreach (var enemy in enemies)
-            RenderEnemy(canvas, enemy);
+            RenderEnemy(canvas, enemy, grid);
+
+        // Boss Angriffs-Warnung und HP-Balken (über den Gegnern, unter dem Spieler)
+        foreach (var enemy in enemies)
+        {
+            if (enemy is BossEnemy bossEnemy && !enemy.IsDying)
+            {
+                if (bossEnemy.IsTelegraphing || bossEnemy.IsAttacking)
+                    RenderBossAttackWarning(canvas, bossEnemy);
+                RenderBossHPBar(canvas, bossEnemy);
+            }
+        }
 
         if (player != null)
             RenderPlayer(canvas, player);
 
+        // Dynamische Beleuchtung (Lichtquellen aus Bomben, Explosionen, Lava etc.)
+        if (!ReducedEffects)
+        {
+            _dynamicLighting.Clear();
+            CollectLightSources(canvas, grid, bombs, explosions, enemies, powerUps, player, exitCell);
+            _dynamicLighting.Render(canvas);
+        }
+
+        // Wetter-Partikel (über dem Grid, unter HUD)
+        if (!ReducedEffects)
+            _weatherSystem.Render(canvas);
+
+        // Nebel-Overlay (Welt 10: Schattenwelt - eingeschränkte Sicht)
+        if (_fogEnabled && player != null)
+        {
+            RenderFogOverlay(canvas, grid, player.X, player.Y);
+        }
+
         canvas.Restore();
+
+        // Post-Processing: Color Grading, Water Ripples, Heat Shimmer, Damage Flash, Chromatic Aberration
+        if (!ReducedEffects)
+        {
+            if (player != null)
+            {
+                // Spieler-Hit erkennen (Invincibility-Flanke → Damage-Effekte)
+                _shaderEffects.CheckPlayerHit(player.IsInvincible);
+                // Spieler-Bildschirmposition für Water Ripples
+                _shaderEffects.UpdatePlayerScreenPos(
+                    player.X * _scale + _offsetX,
+                    player.Y * _scale + _offsetY);
+            }
+            _shaderEffects.RenderPostProcessing(canvas, _screenWidth, _screenHeight, _globalTimer);
+
+            // Vignette + Stimmungsbeleuchtung (über allem, unter HUD)
+            RenderVignette(canvas, _screenWidth, _screenHeight);
+            RenderMoodLighting(canvas, _screenWidth, _screenHeight);
+        }
 
         // Draw HUD (not scaled with game)
         RenderHUD(canvas, remainingTime, score, lives, player);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // GRID RENDERING
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void RenderGrid(SKCanvas canvas, GameGrid grid)
-    {
-        int cs = GameGrid.CELL_SIZE;
-        bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
-
-        for (int y = 0; y < grid.Height; y++)
-        {
-            for (int x = 0; x < grid.Width; x++)
-            {
-                var cell = grid[x, y];
-                float px = x * cs;
-                float py = y * cs;
-
-                // Floor tile
-                RenderFloorTile(canvas, px, py, cs, x, y, isNeon);
-
-                switch (cell.Type)
-                {
-                    case CellType.Wall:
-                        RenderWallTile(canvas, px, py, cs, isNeon);
-                        break;
-
-                    case CellType.Block:
-                        if (cell.IsDestroying)
-                            RenderBlockDestruction(canvas, px, py, cs, cell.DestructionProgress, isNeon);
-                        else
-                            RenderBlockTile(canvas, px, py, cs, x, isNeon);
-                        break;
-
-                    case CellType.Ice:
-                        RenderIceTile(canvas, px, py, cs, x, y, isNeon);
-                        break;
-
-                    case CellType.Conveyor:
-                        RenderConveyorTile(canvas, px, py, cs, cell, isNeon);
-                        break;
-
-                    case CellType.Teleporter:
-                        RenderTeleporterTile(canvas, px, py, cs, cell, isNeon);
-                        break;
-
-                    case CellType.LavaCrack:
-                        RenderLavaCrackTile(canvas, px, py, cs, cell, isNeon);
-                        break;
-                }
-            }
-        }
-    }
-
-    /// <summary>Nachglühen auf Zellen nach Explosionsende (warmer Schimmer + Glut-Glow)</summary>
-    private void RenderAfterglow(SKCanvas canvas, GameGrid grid)
-    {
-        int cs = GameGrid.CELL_SIZE;
-        for (int y = 0; y < grid.Height; y++)
-        {
-            for (int x = 0; x < grid.Width; x++)
-            {
-                var cell = grid[x, y];
-                if (cell.AfterglowTimer <= 0)
-                    continue;
-
-                float intensity = cell.AfterglowTimer / Models.Entities.Explosion.AFTERGLOW_DURATION;
-
-                // Basis-Glow (orange, weicher Rand)
-                byte alpha = (byte)(100 * intensity);
-                _fillPaint.Color = _palette.ExplosionOuter.WithAlpha(alpha);
-                _fillPaint.MaskFilter = _outerGlow;
-                canvas.DrawRect(x * cs - 1, y * cs - 1, cs + 2, cs + 2, _fillPaint);
-                _fillPaint.MaskFilter = null;
-
-                // Innerer heller Kern (verblasst schneller)
-                if (intensity > 0.4f)
-                {
-                    float coreAlpha = (intensity - 0.4f) / 0.6f;
-                    _fillPaint.Color = _palette.ExplosionInner.WithAlpha((byte)(40 * coreAlpha));
-                    canvas.DrawRect(x * cs + cs * 0.2f, y * cs + cs * 0.2f, cs * 0.6f, cs * 0.6f, _fillPaint);
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Gefahrenzone: Subtiler roter Boden-Schimmer bei Bomben kurz vor Explosion
-    /// </summary>
-    private void RenderDangerWarning(SKCanvas canvas, GameGrid grid, IEnumerable<Bomb> bombs)
-    {
-        int cs = GameGrid.CELL_SIZE;
-        bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
-
-        foreach (var bomb in bombs)
-        {
-            if (!bomb.IsActive || bomb.HasExploded) continue;
-            // Nur warnen wenn Zünder < 0.8s (und nicht bei manueller Detonation ohne ablaufenden Timer)
-            if (bomb.IsManualDetonation || bomb.FuseTimer > 0.8f) continue;
-
-            // Intensität steigt je näher an Explosion (0 bei 0.8s → 1 bei 0s)
-            float intensity = 1f - (bomb.FuseTimer / 0.8f);
-            // Pulsieren (schneller bei weniger Zeit)
-            float pulse = MathF.Sin(_globalTimer * (10f + intensity * 5f)) * 0.3f + 0.7f;
-            byte alpha = (byte)(50 * intensity * pulse);
-            if (alpha < 5) continue;
-
-            var warningColor = isNeon ? new SKColor(255, 40, 80, alpha) : new SKColor(255, 60, 30, alpha);
-
-            int centerX = bomb.GridX;
-            int centerY = bomb.GridY;
-            int range = bomb.Range;
-
-            // Zentrum markieren
-            _fillPaint.Color = warningColor;
-            _fillPaint.MaskFilter = null;
-            canvas.DrawRect(centerX * cs, centerY * cs, cs, cs, _fillPaint);
-
-            // 4 Richtungen (wie Explosion.CalculateSpread, aber read-only)
-            RenderDangerLine(canvas, grid, centerX, centerY, range, -1, 0, cs, warningColor);
-            RenderDangerLine(canvas, grid, centerX, centerY, range, 1, 0, cs, warningColor);
-            RenderDangerLine(canvas, grid, centerX, centerY, range, 0, -1, cs, warningColor);
-            RenderDangerLine(canvas, grid, centerX, centerY, range, 0, 1, cs, warningColor);
-        }
-    }
-
-    private void RenderDangerLine(SKCanvas canvas, GameGrid grid, int startX, int startY,
-        int range, int dx, int dy, int cs, SKColor color)
-    {
-        for (int i = 1; i <= range; i++)
-        {
-            int x = startX + dx * i;
-            int y = startY + dy * i;
-
-            var cell = grid.TryGetCell(x, y);
-            if (cell == null || cell.Type == CellType.Wall) break;
-
-            _fillPaint.Color = color;
-            _fillPaint.MaskFilter = null;
-            canvas.DrawRect(x * cs, y * cs, cs, cs, _fillPaint);
-
-            // Blöcke stoppen die Warnung (wie echte Explosionen)
-            if (cell.Type == CellType.Block) break;
-        }
-    }
-
-    private void RenderFloorTile(SKCanvas canvas, float px, float py, int cs, int gx, int gy, bool isNeon)
-    {
-        // Checkerboard pattern (two brightness levels)
-        bool alt = (gx + gy) % 2 == 0;
-        _fillPaint.Color = alt ? _palette.FloorBase : _palette.FloorAlt;
-        _fillPaint.MaskFilter = null;
-        canvas.DrawRect(px, py, cs, cs, _fillPaint);
-
-        // Grid lines
-        _strokePaint.Color = _palette.FloorLine;
-        _strokePaint.StrokeWidth = isNeon ? 0.5f : 1f;
-        _strokePaint.MaskFilter = null;
-        canvas.DrawLine(px, py, px + cs, py, _strokePaint);
-        canvas.DrawLine(px, py, px, py + cs, _strokePaint);
-    }
-
-    private void RenderWallTile(SKCanvas canvas, float px, float py, int cs, bool isNeon)
-    {
-        _fillPaint.MaskFilter = null;
-
-        if (isNeon)
-        {
-            // Dark steel block
-            _fillPaint.Color = _palette.WallBase;
-            canvas.DrawRect(px, py, cs, cs, _fillPaint);
-
-            // Neon edge glow (cyan border lines)
-            _strokePaint.Color = _palette.WallEdge;
-            _strokePaint.StrokeWidth = 1.5f;
-            _strokePaint.MaskFilter = _smallGlow;
-            canvas.DrawRect(px + 1, py + 1, cs - 2, cs - 2, _strokePaint);
-            _strokePaint.MaskFilter = null;
-        }
-        else
-        {
-            // 3D stone block
-            _fillPaint.Color = _palette.WallBase;
-            canvas.DrawRect(px, py, cs, cs, _fillPaint);
-
-            // Highlight (top + left edge)
-            _fillPaint.Color = _palette.WallHighlight;
-            canvas.DrawRect(px, py, cs, 3, _fillPaint);
-            canvas.DrawRect(px, py, 3, cs, _fillPaint);
-
-            // Shadow (bottom + right edge)
-            _fillPaint.Color = _palette.WallShadow;
-            canvas.DrawRect(px, py + cs - 3, cs, 3, _fillPaint);
-            canvas.DrawRect(px + cs - 3, py, 3, cs, _fillPaint);
-        }
-    }
-
-    private void RenderBlockTile(SKCanvas canvas, float px, float py, int cs, int gx, bool isNeon)
-    {
-        _fillPaint.MaskFilter = null;
-
-        if (isNeon)
-        {
-            // Dunkler Block mit sichtbarem Rand
-            _fillPaint.Color = _palette.BlockBase;
-            canvas.DrawRect(px + 1, py + 1, cs - 2, cs - 2, _fillPaint);
-
-            // Heller Rand oben/links fuer 3D-Effekt
-            _fillPaint.Color = _palette.BlockHighlight;
-            canvas.DrawRect(px + 1, py + 1, cs - 2, 2, _fillPaint);
-            canvas.DrawRect(px + 1, py + 1, 2, cs - 2, _fillPaint);
-
-            // Dunkler Rand unten/rechts
-            _fillPaint.Color = _palette.BlockShadow;
-            canvas.DrawRect(px + 1, py + cs - 3, cs - 2, 2, _fillPaint);
-            canvas.DrawRect(px + cs - 3, py + 1, 2, cs - 2, _fillPaint);
-
-            // Orange Glow-Riss-Muster
-            _strokePaint.Color = _palette.BlockMortar;
-            _strokePaint.StrokeWidth = 1.5f;
-            _strokePaint.MaskFilter = _smallGlow;
-
-            // Horizontaler Riss
-            canvas.DrawLine(px + 4, py + cs / 2f, px + cs - 4, py + cs / 2f, _strokePaint);
-            // Vertikaler Riss (versetzt pro Spalte)
-            float vx = (gx % 2 == 0) ? px + cs / 2f : px + cs / 3f;
-            canvas.DrawLine(vx, py + 4, vx, py + cs / 2f, _strokePaint);
-
-            // Zusaetzlicher diagonaler Riss fuer mehr Detail
-            float vx2 = (gx % 2 == 0) ? px + cs * 0.65f : px + cs * 0.6f;
-            canvas.DrawLine(vx2, py + cs / 2f + 2, vx2 - cs * 0.15f, py + cs - 4, _strokePaint);
-            _strokePaint.MaskFilter = null;
-        }
-        else
-        {
-            // 3D brick with mortar lines
-            _fillPaint.Color = _palette.BlockBase;
-            canvas.DrawRect(px + 2, py + 2, cs - 4, cs - 4, _fillPaint);
-
-            // Highlight (top-left)
-            _fillPaint.Color = _palette.BlockHighlight;
-            canvas.DrawRect(px + 2, py + 2, cs - 4, 2, _fillPaint);
-            canvas.DrawRect(px + 2, py + 2, 2, cs - 4, _fillPaint);
-
-            // Shadow (bottom-right)
-            _fillPaint.Color = _palette.BlockShadow;
-            canvas.DrawRect(px + 2, py + cs - 4, cs - 4, 2, _fillPaint);
-            canvas.DrawRect(px + cs - 4, py + 2, 2, cs - 4, _fillPaint);
-
-            // Mortar cross-lines
-            _strokePaint.Color = _palette.BlockMortar;
-            _strokePaint.StrokeWidth = 1f;
-            _strokePaint.MaskFilter = null;
-            canvas.DrawLine(px + 2, py + cs / 2f, px + cs - 2, py + cs / 2f, _strokePaint);
-            float vx = (gx % 2 == 0) ? px + cs / 2f : px + cs / 3f;
-            canvas.DrawLine(vx, py + 2, vx, py + cs / 2f, _strokePaint);
-        }
-    }
-
-    private void RenderBlockDestruction(SKCanvas canvas, float px, float py, int cs, float progress, bool isNeon)
-    {
-        byte alpha = (byte)(255 * (1 - progress));
-        float shrink = progress * cs * 0.3f;
-        _fillPaint.MaskFilter = null;
-        _fillPaint.Color = _palette.BlockBase.WithAlpha(alpha);
-        canvas.DrawRect(px + shrink, py + shrink, cs - shrink * 2, cs - shrink * 2, _fillPaint);
-
-        if (isNeon)
-        {
-            // Neon glow burst on destruction
-            _glowPaint.Color = _palette.BlockMortar.WithAlpha((byte)(alpha * 0.5f));
-            _glowPaint.MaskFilter = _mediumGlow;
-            canvas.DrawRect(px + shrink, py + shrink, cs - shrink * 2, cs - shrink * 2, _glowPaint);
-            _glowPaint.MaskFilter = null;
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // WELT-MECHANIK-TILES
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>Eis-Boden: Hellblauer reflektiver Glanz mit Schimmer-Animation</summary>
-    private void RenderIceTile(SKCanvas canvas, float px, float py, int cs, int gx, int gy, bool isNeon)
-    {
-        _fillPaint.MaskFilter = null;
-
-        // Basis-Eis-Farbe (Schachbrett-Variation)
-        bool alt = (gx + gy) % 2 == 0;
-        if (isNeon)
-        {
-            _fillPaint.Color = alt ? new SKColor(40, 60, 80) : new SKColor(35, 55, 75);
-            canvas.DrawRect(px, py, cs, cs, _fillPaint);
-
-            // Neon-Glow-Linien (Riss-Muster)
-            _strokePaint.Color = new SKColor(100, 200, 255, 80);
-            _strokePaint.StrokeWidth = 0.8f;
-            _strokePaint.MaskFilter = _smallGlow;
-            canvas.DrawLine(px + 3, py + cs * 0.3f, px + cs - 5, py + cs * 0.6f, _strokePaint);
-            canvas.DrawLine(px + cs * 0.4f, py + 2, px + cs * 0.7f, py + cs - 3, _strokePaint);
-            _strokePaint.MaskFilter = null;
-        }
-        else
-        {
-            _fillPaint.Color = alt ? new SKColor(180, 210, 235) : new SKColor(170, 200, 225);
-            canvas.DrawRect(px, py, cs, cs, _fillPaint);
-
-            // Riss-Linien
-            _strokePaint.Color = new SKColor(200, 230, 250, 120);
-            _strokePaint.StrokeWidth = 0.8f;
-            _strokePaint.MaskFilter = null;
-            canvas.DrawLine(px + 3, py + cs * 0.3f, px + cs - 5, py + cs * 0.6f, _strokePaint);
-            canvas.DrawLine(px + cs * 0.4f, py + 2, px + cs * 0.7f, py + cs - 3, _strokePaint);
-        }
-
-        // Wandernder Glanz-Highlight (Lichtreflexion)
-        float shimmerX = (MathF.Sin(_globalTimer * 1.5f + gx * 0.5f) * 0.5f + 0.5f) * cs;
-        float shimmerY = (MathF.Cos(_globalTimer * 1.2f + gy * 0.7f) * 0.5f + 0.5f) * cs;
-        byte shimmerAlpha = isNeon ? (byte)60 : (byte)90;
-        _fillPaint.Color = new SKColor(255, 255, 255, shimmerAlpha);
-        canvas.DrawCircle(px + shimmerX, py + shimmerY, cs * 0.15f, _fillPaint);
-
-        // Grid-Linie
-        _strokePaint.Color = isNeon ? new SKColor(80, 160, 220, 40) : new SKColor(150, 190, 215);
-        _strokePaint.StrokeWidth = 0.5f;
-        _strokePaint.MaskFilter = null;
-        canvas.DrawLine(px, py, px + cs, py, _strokePaint);
-        canvas.DrawLine(px, py, px, py + cs, _strokePaint);
-    }
-
-    /// <summary>Förderband: Animierte Pfeile in Förderrichtung</summary>
-    private void RenderConveyorTile(SKCanvas canvas, float px, float py, int cs, Cell cell, bool isNeon)
-    {
-        _fillPaint.MaskFilter = null;
-
-        // Basis (metallisch-grauer Boden)
-        if (isNeon)
-        {
-            _fillPaint.Color = new SKColor(45, 45, 55);
-            canvas.DrawRect(px, py, cs, cs, _fillPaint);
-        }
-        else
-        {
-            _fillPaint.Color = new SKColor(160, 165, 175);
-            canvas.DrawRect(px, py, cs, cs, _fillPaint);
-        }
-
-        // Seitenleisten (metallische Ränder)
-        bool horizontal = cell.ConveyorDirection is Models.Entities.Direction.Left or Models.Entities.Direction.Right;
-        _fillPaint.Color = isNeon ? new SKColor(60, 60, 75) : new SKColor(130, 135, 145);
-        if (horizontal)
-        {
-            canvas.DrawRect(px, py, cs, 3, _fillPaint);
-            canvas.DrawRect(px, py + cs - 3, cs, 3, _fillPaint);
-        }
-        else
-        {
-            canvas.DrawRect(px, py, 3, cs, _fillPaint);
-            canvas.DrawRect(px + cs - 3, py, 3, cs, _fillPaint);
-        }
-
-        // Animierte Pfeil-Chevrons (3 Stück, wandern in Förderrichtung)
-        float animOffset = (_globalTimer * 40f) % cs; // Pixel-Offset Animation
-
-        var arrowColor = isNeon ? new SKColor(255, 200, 0, 180) : new SKColor(220, 180, 40, 200);
-        _strokePaint.Color = arrowColor;
-        _strokePaint.StrokeWidth = 2f;
-        _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
-
-        float cx = px + cs / 2f;
-        float cy = py + cs / 2f;
-
-        for (int i = 0; i < 3; i++)
-        {
-            float offset = (i * cs / 3f + animOffset) % cs - cs / 2f;
-            float chevronSize = cs * 0.2f;
-
-            switch (cell.ConveyorDirection)
-            {
-                case Models.Entities.Direction.Right:
-                    canvas.DrawLine(cx + offset - chevronSize, cy - chevronSize, cx + offset, cy, _strokePaint);
-                    canvas.DrawLine(cx + offset, cy, cx + offset - chevronSize, cy + chevronSize, _strokePaint);
-                    break;
-                case Models.Entities.Direction.Left:
-                    canvas.DrawLine(cx - offset + chevronSize, cy - chevronSize, cx - offset, cy, _strokePaint);
-                    canvas.DrawLine(cx - offset, cy, cx - offset + chevronSize, cy + chevronSize, _strokePaint);
-                    break;
-                case Models.Entities.Direction.Down:
-                    canvas.DrawLine(cx - chevronSize, cy + offset - chevronSize, cx, cy + offset, _strokePaint);
-                    canvas.DrawLine(cx, cy + offset, cx + chevronSize, cy + offset - chevronSize, _strokePaint);
-                    break;
-                case Models.Entities.Direction.Up:
-                    canvas.DrawLine(cx - chevronSize, cy - offset + chevronSize, cx, cy - offset, _strokePaint);
-                    canvas.DrawLine(cx, cy - offset, cx + chevronSize, cy - offset + chevronSize, _strokePaint);
-                    break;
-            }
-        }
-        _strokePaint.MaskFilter = null;
-    }
-
-    /// <summary>Teleporter: Leuchtender pulsierender Ring mit Farb-ID</summary>
-    private void RenderTeleporterTile(SKCanvas canvas, float px, float py, int cs, Cell cell, bool isNeon)
-    {
-        _fillPaint.MaskFilter = null;
-
-        // Boden (Basis)
-        bool alt = (cell.X + cell.Y) % 2 == 0;
-        _fillPaint.Color = alt ? _palette.FloorBase : _palette.FloorAlt;
-        canvas.DrawRect(px, py, cs, cs, _fillPaint);
-
-        // Portal-Farbe basierend auf ColorId
-        SKColor portalColor = cell.TeleporterColorId switch
-        {
-            0 => new SKColor(50, 150, 255),  // Blau
-            1 => new SKColor(50, 255, 120),  // Grün
-            2 => new SKColor(255, 150, 50),  // Orange
-            _ => new SKColor(200, 100, 255)  // Lila
-        };
-
-        float cx = px + cs / 2f;
-        float cy = py + cs / 2f;
-        float pulse = MathF.Sin(_globalTimer * 4f + cell.X * 0.5f) * 0.15f + 0.85f;
-        float cooldownFade = cell.TeleporterCooldown > 0 ? 0.3f : 1f;
-
-        // Äußerer Glow
-        _glowPaint.Color = portalColor.WithAlpha((byte)(80 * pulse * cooldownFade));
-        _glowPaint.MaskFilter = _mediumGlow;
-        canvas.DrawCircle(cx, cy, cs * 0.45f, _glowPaint);
-        _glowPaint.MaskFilter = null;
-
-        // Rotierender Ring
-        float rotation = _globalTimer * 90f; // 90° pro Sekunde
-        canvas.Save();
-        canvas.Translate(cx, cy);
-        canvas.RotateDegrees(rotation);
-
-        // Ring zeichnen (4 Arcs)
-        _strokePaint.Color = portalColor.WithAlpha((byte)(220 * cooldownFade));
-        _strokePaint.StrokeWidth = 2.5f;
-        _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
-
-        float r = cs * 0.35f * pulse;
-        var arcRect = new SKRect(-r, -r, r, r);
-
-        // 3 Arcs für rotierenden Portal-Ring (wiederverwendeter _fusePath)
-        _fusePath.Reset();
-        _fusePath.AddArc(arcRect, 0, 80);
-        canvas.DrawPath(_fusePath, _strokePaint);
-        _fusePath.Reset();
-        _fusePath.AddArc(arcRect, 120, 80);
-        canvas.DrawPath(_fusePath, _strokePaint);
-        _fusePath.Reset();
-        _fusePath.AddArc(arcRect, 240, 80);
-        canvas.DrawPath(_fusePath, _strokePaint);
-        _strokePaint.MaskFilter = null;
-
-        canvas.Restore();
-
-        // Innerer Punkt (Kern des Portals)
-        _fillPaint.Color = portalColor.WithAlpha((byte)(180 * pulse * cooldownFade));
-        _fillPaint.MaskFilter = isNeon ? _smallGlow : null;
-        canvas.DrawCircle(cx, cy, cs * 0.1f, _fillPaint);
-        _fillPaint.MaskFilter = null;
-    }
-
-    /// <summary>Lava-Riss: Pulsierender roter Riss, gefährlich wenn aktiv</summary>
-    private void RenderLavaCrackTile(SKCanvas canvas, float px, float py, int cs, Cell cell, bool isNeon)
-    {
-        _fillPaint.MaskFilter = null;
-
-        // Boden (dunkler als normal, vulkanisch)
-        _fillPaint.Color = isNeon ? new SKColor(45, 20, 20) : new SKColor(100, 65, 55);
-        canvas.DrawRect(px, py, cs, cs, _fillPaint);
-
-        float cx = px + cs / 2f;
-        float cy = py + cs / 2f;
-
-        bool isActive = cell.IsLavaCrackActive;
-        float timerMod = cell.LavaCrackTimer % 4f;
-
-        // Riss-Muster (immer sichtbar, auch wenn inaktiv)
-        byte crackAlpha = isActive ? (byte)255 : (byte)100;
-        var crackColor = isActive
-            ? (isNeon ? new SKColor(255, 60, 0, crackAlpha) : new SKColor(255, 80, 20, crackAlpha))
-            : (isNeon ? new SKColor(200, 80, 40, crackAlpha) : new SKColor(180, 90, 50, crackAlpha));
-
-        _strokePaint.Color = crackColor;
-        _strokePaint.StrokeWidth = isActive ? 2.5f : 1.5f;
-        _strokePaint.MaskFilter = isActive && isNeon ? _smallGlow : null;
-
-        // Zickzack-Riss
-        _fusePath.Reset();
-        _fusePath.MoveTo(px + cs * 0.2f, py + 2);
-        _fusePath.LineTo(px + cs * 0.45f, py + cs * 0.35f);
-        _fusePath.LineTo(px + cs * 0.3f, py + cs * 0.5f);
-        _fusePath.LineTo(px + cs * 0.6f, py + cs * 0.65f);
-        _fusePath.LineTo(px + cs * 0.5f, py + cs - 2);
-        canvas.DrawPath(_fusePath, _strokePaint);
-
-        // Zweiter kleinerer Riss
-        _fusePath.Reset();
-        _fusePath.MoveTo(px + cs * 0.7f, py + 4);
-        _fusePath.LineTo(px + cs * 0.55f, py + cs * 0.4f);
-        _fusePath.LineTo(px + cs * 0.8f, py + cs * 0.7f);
-        canvas.DrawPath(_fusePath, _strokePaint);
-        _strokePaint.MaskFilter = null;
-
-        // Aktiver Zustand: Glühende Lava-Füllung
-        if (isActive)
-        {
-            float intensity = (timerMod - 2.5f) / 1.5f; // 0→1 während aktiver Phase
-            byte lavaAlpha = (byte)(120 + 80 * MathF.Sin(_globalTimer * 8f));
-
-            // Roter/orangener Glow über die ganze Zelle
-            _glowPaint.Color = isNeon
-                ? new SKColor(255, 40, 0, lavaAlpha)
-                : new SKColor(255, 100, 20, lavaAlpha);
-            _glowPaint.MaskFilter = _smallGlow;
-            canvas.DrawRect(px + 2, py + 2, cs - 4, cs - 4, _glowPaint);
-            _glowPaint.MaskFilter = null;
-
-            // Gefahren-Indikator: Pulsierendes X in der Mitte
-            _strokePaint.Color = new SKColor(255, 255, 200, (byte)(200 * intensity));
-            _strokePaint.StrokeWidth = 2f;
-            float xSize = cs * 0.15f;
-            canvas.DrawLine(cx - xSize, cy - xSize, cx + xSize, cy + xSize, _strokePaint);
-            canvas.DrawLine(cx + xSize, cy - xSize, cx - xSize, cy + xSize, _strokePaint);
-        }
-        else
-        {
-            // Inaktiv: Schwacher Warn-Glow wenn fast aktiv (timerMod > 2.0)
-            if (timerMod > 2.0f)
-            {
-                float warnIntensity = (timerMod - 2.0f) / 0.5f;
-                byte warnAlpha = (byte)(40 * warnIntensity);
-                _fillPaint.Color = isNeon
-                    ? new SKColor(255, 60, 0, warnAlpha)
-                    : new SKColor(255, 100, 20, warnAlpha);
-                canvas.DrawRect(px + 2, py + 2, cs - 4, cs - 4, _fillPaint);
-            }
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // EXIT
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void RenderExit(SKCanvas canvas, GameGrid grid, Cell? exitCell)
-    {
-        // Gecachte Exit-Zelle nutzen statt Grid-Iteration (150 Zellen pro Frame gespart)
-        if (exitCell == null || exitCell.Type != CellType.Exit)
-            return;
-
-        bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
-        float pulse = MathF.Sin(_globalTimer * 3) * 0.2f + 0.8f;
-
-        float px = exitCell.X * GameGrid.CELL_SIZE;
-        float py = exitCell.Y * GameGrid.CELL_SIZE;
-        int cs = GameGrid.CELL_SIZE;
-        float cx = px + cs / 2f;
-        float cy = py + cs / 2f;
-
-        if (isNeon)
-        {
-            // Neon green glow circle
-            _glowPaint.Color = _palette.ExitGlow.WithAlpha((byte)(120 * pulse));
-            _glowPaint.MaskFilter = _mediumGlow;
-            canvas.DrawCircle(cx, cy, cs * 0.45f, _glowPaint);
-
-            _fillPaint.Color = _palette.ExitInner.WithAlpha((byte)(255 * pulse));
-            _fillPaint.MaskFilter = null;
-            canvas.DrawCircle(cx, cy, cs * 0.3f, _fillPaint);
-            _glowPaint.MaskFilter = null;
-        }
-        else
-        {
-            // Classic green door with pulsing glow
-            _fillPaint.Color = _palette.ExitGlow.WithAlpha((byte)(80 * pulse));
-            _fillPaint.MaskFilter = null;
-            canvas.DrawRect(px + 2, py + 2, cs - 4, cs - 4, _fillPaint);
-
-            _fillPaint.Color = _palette.ExitInner;
-            canvas.DrawRect(px + 8, py + 6, 16, 20, _fillPaint);
-
-            // Door handle
-            _fillPaint.Color = _palette.ExitGlow;
-            canvas.DrawCircle(px + 20, py + 16, 2, _fillPaint);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // BOMB
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void RenderBomb(SKCanvas canvas, Bomb bomb)
-    {
-        float cs = GameGrid.CELL_SIZE;
-        bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
-
-        // Squash/Stretch: Platzierungs-Bounce in den ersten 0.3s
-        float age = Bomb.DEFAULT_FUSE_TIME - bomb.FuseTimer;
-        float birthScale = 1f;
-        if (age < 0.3f)
-        {
-            float t = age / 0.3f; // 0→1
-            // Bounce: schnell groß, dann einpendeln (overshoot + settle)
-            birthScale = 1f + MathF.Sin(t * MathF.PI) * 0.25f * (1f - t);
-        }
-
-        // Slide-Indikator: Leichtes Strecken in Gleitrichtung
-        float stretchX = 1f, stretchY = 1f;
-        if (bomb.IsSliding)
-        {
-            float stretch = 0.15f;
-            if (bomb.SlideDirection is Direction.Left or Direction.Right)
-            { stretchX = 1f + stretch; stretchY = 1f - stretch * 0.5f; }
-            else
-            { stretchY = 1f + stretch; stretchX = 1f - stretch * 0.5f; }
-        }
-
-        // Pulsation beschleunigt sich je näher die Explosion (4→12 Hz)
-        float fuseProgress = 1f - (bomb.FuseTimer / Bomb.DEFAULT_FUSE_TIME);
-        float pulseSpeed = 4f + fuseProgress * 8f;
-        float pulseAmount = 0.06f + fuseProgress * 0.04f;
-        float pulse = MathF.Sin(_globalTimer * pulseSpeed) * pulseAmount + (1f - pulseAmount);
-        float drawSize = cs * pulse * birthScale;
-
-        // Glow beschleunigt und intensiviert sich
-        float glowSpeed = 3f + fuseProgress * 6f;
-        float glowPulse = MathF.Sin(_globalTimer * glowSpeed) * 0.3f + 0.5f;
-        byte glowAlpha = (byte)(80 + fuseProgress * 80);
-        _glowPaint.Color = _palette.BombGlowColor.WithAlpha((byte)(glowAlpha * glowPulse));
-        _glowPaint.MaskFilter = _mediumGlow;
-        canvas.DrawCircle(bomb.X, bomb.Y, drawSize * 0.5f, _glowPaint);
-        _glowPaint.MaskFilter = null;
-
-        // Bomb body (glossy sphere mit Squash/Stretch)
-        float radius = drawSize * 0.38f;
-        _fillPaint.Color = _palette.BombBody;
-        _fillPaint.MaskFilter = null;
-        if (bomb.IsSliding)
-        {
-            canvas.DrawOval(bomb.X, bomb.Y, radius * stretchX, radius * stretchY, _fillPaint);
-        }
-        else
-        {
-            canvas.DrawCircle(bomb.X, bomb.Y, radius, _fillPaint);
-        }
-
-        // Gloss highlight (top-left)
-        _fillPaint.Color = _palette.BombHighlight.WithAlpha(120);
-        canvas.DrawCircle(bomb.X - radius * 0.3f, bomb.Y - radius * 0.3f, radius * 0.25f, _fillPaint);
-
-        // Fuse (wavy line upward)
-        _strokePaint.Color = bomb.IsAboutToExplode ? SKColors.Red : _palette.BombFuse;
-        _strokePaint.StrokeWidth = 2;
-        _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
-        _fusePath.Reset();
-        _fusePath.MoveTo(bomb.X, bomb.Y - radius);
-        _fusePath.QuadTo(bomb.X + 5, bomb.Y - radius - 8, bomb.X + 8, bomb.Y - radius - 4);
-        canvas.DrawPath(_fusePath, _strokePaint);
-        _strokePaint.MaskFilter = null;
-
-        // Spark at tip mit Glow-Halo
-        if (((int)(_globalTimer * 10) % 2) == 0)
-        {
-            // Äußerer Glow-Halo für den Funken
-            _glowPaint.Color = new SKColor(255, 180, 50, (byte)(60 + fuseProgress * 60));
-            _glowPaint.MaskFilter = _smallGlow;
-            canvas.DrawCircle(bomb.X + 8, bomb.Y - radius - 4, 5, _glowPaint);
-            _glowPaint.MaskFilter = null;
-
-            _fillPaint.Color = isNeon ? new SKColor(255, 200, 100) : SKColors.Yellow;
-            _fillPaint.MaskFilter = isNeon ? _smallGlow : null;
-            canvas.DrawCircle(bomb.X + 8, bomb.Y - radius - 4, 3, _fillPaint);
-            _fillPaint.MaskFilter = null;
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // EXPLOSION
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void RenderExplosion(SKCanvas canvas, Explosion explosion)
-    {
-        bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
-        float progress = 1f - (explosion.Timer / Explosion.DURATION); // 0→1
-        float alpha = 1f - progress * 0.3f;
-        float cs = GameGrid.CELL_SIZE;
-
-        // Shockwave-Ring (expandierender Kreis in den ersten 40%) - doppelter Ring
-        if (progress < 0.4f && explosion.SourceBomb != null)
-        {
-            float shockProgress = progress / 0.4f;
-            float maxRadius = explosion.SourceBomb.Range * cs;
-            float radius = shockProgress * maxRadius;
-            float shockAlpha = (1f - shockProgress) * 0.5f;
-
-            float centerX = explosion.X + cs / 2f;
-            float centerY = explosion.Y + cs / 2f;
-
-            // Äußerer Ring (breit, diffus)
-            _strokePaint.Color = _palette.ExplosionOuter.WithAlpha((byte)(120 * shockAlpha));
-            _strokePaint.StrokeWidth = 3f + (1f - shockProgress) * 3f;
-            _strokePaint.MaskFilter = _mediumGlow;
-            canvas.DrawCircle(centerX, centerY, radius, _strokePaint);
-
-            // Innerer Ring (dünn, hell)
-            _strokePaint.Color = _palette.ExplosionCore.WithAlpha((byte)(255 * shockAlpha));
-            _strokePaint.StrokeWidth = 1.5f + (1f - shockProgress) * 1.5f;
-            _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
-            canvas.DrawCircle(centerX, centerY, radius * 0.85f, _strokePaint);
-            _strokePaint.MaskFilter = null;
-        }
-
-        // Envelope berechnen (einmal für alle Arme)
-        float envelope = ExplosionShaders.CalculateEnvelope(progress, alpha);
-        if (envelope < 0.01f) return;
-
-        _fillPaint.MaskFilter = null; // Sauberer State
-
-        // Center-Punkt (Pixel-Mitte der Center-Zelle)
-        float cx = explosion.GridX * cs + cs / 2f;
-        float cy = explosion.GridY * cs + cs / 2f;
-
-        // Arm-Längen berechnen: Wie viele Zellen in jede Richtung?
-        int armLeft = 0, armRight = 0, armUp = 0, armDown = 0;
-        foreach (var cell in explosion.AffectedCells)
-        {
-            int relX = cell.X - explosion.GridX;
-            int relY = cell.Y - explosion.GridY;
-
-            if (relX < 0 && relY == 0) armLeft = Math.Max(armLeft, -relX);
-            if (relX > 0 && relY == 0) armRight = Math.Max(armRight, relX);
-            if (relY < 0 && relX == 0) armUp = Math.Max(armUp, -relY);
-            if (relY > 0 && relX == 0) armDown = Math.Max(armDown, relY);
-        }
-
-        // Arme als durchgehende Flammenstreifen rendern (keine Zell-Grenzen sichtbar)
-        if (armLeft > 0)
-            ExplosionShaders.DrawFlameArm(canvas, cx, cy, armLeft, -1, 0, cs,
-                _globalTimer, _palette.ExplosionOuter, _palette.ExplosionInner, _palette.ExplosionCore, envelope);
-        if (armRight > 0)
-            ExplosionShaders.DrawFlameArm(canvas, cx, cy, armRight, 1, 0, cs,
-                _globalTimer, _palette.ExplosionOuter, _palette.ExplosionInner, _palette.ExplosionCore, envelope);
-        if (armUp > 0)
-            ExplosionShaders.DrawFlameArm(canvas, cx, cy, armUp, 0, -1, cs,
-                _globalTimer, _palette.ExplosionOuter, _palette.ExplosionInner, _palette.ExplosionCore, envelope);
-        if (armDown > 0)
-            ExplosionShaders.DrawFlameArm(canvas, cx, cy, armDown, 0, 1, cs,
-                _globalTimer, _palette.ExplosionOuter, _palette.ExplosionInner, _palette.ExplosionCore, envelope);
-
-        // Center-Feuerball (über den Armen, damit er die Übergänge verdeckt)
-        ExplosionShaders.DrawCenterFire(canvas, cx, cy, cs,
-            _globalTimer, _palette.ExplosionOuter, _palette.ExplosionInner, _palette.ExplosionCore, envelope);
-
-        // Wärme-Distortion (Heat Haze) über dem gesamten Explosionsbereich
-        if (progress > 0.1f)
-        {
-            // Bounding-Box aller Explosions-Zellen berechnen
-            float minX = float.MaxValue, minY = float.MaxValue;
-            float maxX = float.MinValue, maxY = float.MinValue;
-            foreach (var cell in explosion.AffectedCells)
-            {
-                float px = cell.X * cs;
-                float py = cell.Y * cs;
-                if (px < minX) minX = px;
-                if (py < minY) minY = py;
-                if (px + cs > maxX) maxX = px + cs;
-                if (py + cs > maxY) maxY = py + cs;
-            }
-
-            // Heat Haze reicht über die Explosion hinaus (nach oben mehr)
-            float hazeExpand = cs * 0.5f;
-            var hazeRect = new SKRect(
-                minX - hazeExpand, minY - cs, // Mehr Platz nach oben (Hitze steigt auf)
-                maxX + hazeExpand, maxY + hazeExpand);
-
-            float hazeIntensity = alpha * (1f - progress * 0.5f);
-            ExplosionShaders.DrawHeatHaze(canvas, hazeRect, _globalTimer, hazeIntensity, _fillPaint);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // PLAYER
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void RenderPlayer(SKCanvas canvas, Player player)
-    {
-        float cs = GameGrid.CELL_SIZE;
-        bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
-
-        // Blink effect for invincibility / spawn protection
-        if ((player.IsInvincible || player.HasSpawnProtection) && ((int)(_globalTimer * 10) % 2) == 0)
-            return;
-
-        if (player.IsDying)
-        {
-            RenderPlayerDeath(canvas, player, cs);
-            return;
-        }
-
-        float bodyW = cs * 0.55f;
-        float bodyH = cs * 0.65f;
-
-        // Prozedurale Walk-Animation: Wippen wenn in Bewegung
-        float walkBob = 0f;
-        if (player.IsMoving)
-        {
-            walkBob = MathF.Sin(_globalTimer * 14f) * 1.5f;
-        }
-
-        float bx = player.X - bodyW / 2f;
-        float by = player.Y - bodyH / 2f + walkBob;
-
-        // Skin-Farben bestimmen
-        var skin = _customizationService.PlayerSkin;
-        var skinBody = skin.Id != "default" ? skin.PrimaryColor : _palette.PlayerBody;
-        var skinHelm = skin.Id != "default" ? skin.SecondaryColor : _palette.PlayerHelm;
-
-        // Skin-Glow oder Neon-Aura
-        if (skin.GlowColor.HasValue)
-        {
-            _glowPaint.Color = skin.GlowColor.Value;
-            _glowPaint.MaskFilter = _mediumGlow;
-            canvas.DrawRoundRect(bx - 3, by - 3, bodyW + 6, bodyH + 6, 8, 8, _glowPaint);
-            _glowPaint.MaskFilter = null;
-        }
-        else if (isNeon && _palette.PlayerAura.Alpha > 0)
-        {
-            _glowPaint.Color = _palette.PlayerAura;
-            _glowPaint.MaskFilter = _mediumGlow;
-            canvas.DrawRoundRect(bx - 3, by - 3, bodyW + 6, bodyH + 6, 8, 8, _glowPaint);
-            _glowPaint.MaskFilter = null;
-        }
-
-        // Schutzschild-Indikator: Cyan-Glow wenn aktiv
-        if (player.HasShield)
-        {
-            float shieldPulse = MathF.Sin(_globalTimer * 4f) * 0.2f + 0.8f;
-            _glowPaint.Color = new SKColor(0, 229, 255, (byte)(100 * shieldPulse));
-            _glowPaint.MaskFilter = _mediumGlow;
-            canvas.DrawCircle(player.X, player.Y + walkBob, cs * 0.55f, _glowPaint);
-            _glowPaint.MaskFilter = null;
-
-            // Innerer Ring
-            _strokePaint.Color = new SKColor(0, 229, 255, (byte)(180 * shieldPulse));
-            _strokePaint.StrokeWidth = 1.5f;
-            _strokePaint.MaskFilter = _smallGlow;
-            canvas.DrawCircle(player.X, player.Y + walkBob, cs * 0.5f, _strokePaint);
-            _strokePaint.MaskFilter = null;
-        }
-
-        // Curse-Indikator: Lila Schimmer wenn verflucht
-        if (player.IsCursed)
-        {
-            float cursePulse = MathF.Sin(_globalTimer * 8f) * 0.3f + 0.7f;
-            _glowPaint.Color = new SKColor(180, 0, 180, (byte)(140 * cursePulse));
-            _glowPaint.MaskFilter = _mediumGlow;
-            canvas.DrawRoundRect(bx - 4, by - 4, bodyW + 8, bodyH + 8, 10, 10, _glowPaint);
-            _glowPaint.MaskFilter = null;
-        }
-
-        // Body (rounded rect)
-        _fillPaint.Color = skinBody;
-        _fillPaint.MaskFilter = null;
-        canvas.DrawRoundRect(bx, by, bodyW, bodyH, 6, 6, _fillPaint);
-
-        // Helm/cap (semicircle on top)
-        _fillPaint.Color = skinHelm;
-        float helmR = bodyW * 0.45f;
-        canvas.DrawCircle(player.X, by + 2, helmR, _fillPaint);
-        // Cut off bottom half of helm circle by drawing body color rect over it
-        _fillPaint.Color = skinBody;
-        canvas.DrawRect(bx, by + 2, bodyW, helmR, _fillPaint);
-
-        // Eyes (white circles with pupils that follow facing direction)
-        float eyeY = player.Y - bodyH * 0.1f;
-        float eyeSpacing = bodyW * 0.22f;
-        float eyeR = 3.5f;
-        float pupilR = 1.8f;
-        float dx = player.FacingDirection.GetDeltaX() * 1.5f;
-        float dy = player.FacingDirection.GetDeltaY() * 1.5f;
-
-        // Eye whites
-        _fillPaint.Color = SKColors.White;
-        canvas.DrawCircle(player.X - eyeSpacing, eyeY, eyeR, _fillPaint);
-        canvas.DrawCircle(player.X + eyeSpacing, eyeY, eyeR, _fillPaint);
-
-        // Pupils
-        _fillPaint.Color = SKColors.Black;
-        canvas.DrawCircle(player.X - eyeSpacing + dx, eyeY + dy, pupilR, _fillPaint);
-        canvas.DrawCircle(player.X + eyeSpacing + dx, eyeY + dy, pupilR, _fillPaint);
-    }
-
-    private void RenderPlayerDeath(SKCanvas canvas, Player player, float cs)
-    {
-        float progress = player.DeathTimer / 1.5f;
-        byte alpha = (byte)(255 * (1 - progress));
-
-        _fillPaint.Color = SKColors.Red.WithAlpha(alpha);
-        _fillPaint.MaskFilter = null;
-
-        // Squash/Stretch: Erst nach oben strecken, dann breit zusammenfallen
-        float phase1 = Math.Min(progress / 0.3f, 1f); // Erste 30%: Strecken
-        float phase2 = progress > 0.3f ? (progress - 0.3f) / 0.7f : 0f; // Rest: Squash
-        float scaleX = 1f - phase1 * 0.3f + phase2 * 0.8f;
-        float scaleY = 1f + phase1 * 0.4f - phase2 * 0.6f;
-        float drawSize = cs * (1f + progress * 0.2f);
-        float rx = drawSize / 3 * scaleX;
-        float ry = drawSize / 3 * scaleY;
-        canvas.DrawOval(player.X, player.Y + phase2 * 6f, rx, ry, _fillPaint);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // ENEMY
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void RenderEnemy(SKCanvas canvas, Enemy enemy)
-    {
-        float cs = GameGrid.CELL_SIZE;
-        bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
-
-        if (enemy.IsDying)
-        {
-            RenderEnemyDeath(canvas, enemy, cs);
-            return;
-        }
-
-        var (r, g, b) = enemy.Type.GetColor();
-        var bodyColor = new SKColor(r, g, b);
-        float bodyW = cs * 0.6f;
-        float bodyH = cs * 0.65f;
-
-        // Wobble-Effekt: Leichtes Pulsieren wenn in Bewegung
-        float wobbleScale = 1f;
-        float wobbleY = 0f;
-        if (enemy.IsMoving)
-        {
-            wobbleScale = 1f + MathF.Sin(_globalTimer * 12f + enemy.X * 0.1f) * 0.04f;
-            wobbleY = MathF.Sin(_globalTimer * 10f + enemy.Y * 0.1f) * 1.2f;
-        }
-
-        float bx = enemy.X - bodyW * wobbleScale / 2f;
-        float by = enemy.Y - bodyH / 2f + wobbleY;
-
-        // Neon aura (in enemy's color)
-        if (isNeon)
-        {
-            _glowPaint.Color = new SKColor(r, g, b, 40);
-            _glowPaint.MaskFilter = _mediumGlow;
-            canvas.DrawOval(enemy.X, enemy.Y, bodyW * 0.55f, bodyH * 0.55f, _glowPaint);
-            _glowPaint.MaskFilter = null;
-        }
-
-        // Oval body (mit Wobble-Skalierung)
-        _fillPaint.Color = bodyColor;
-        _fillPaint.MaskFilter = null;
-        canvas.DrawOval(enemy.X, enemy.Y + wobbleY, bodyW * 0.45f * wobbleScale, bodyH * 0.45f, _fillPaint);
-
-        // Angry eyes (slightly angled/slanted)
-        float eyeY = enemy.Y - bodyH * 0.08f;
-        float eyeSpacing = bodyW * 0.2f;
-        float eyeR = 3f;
-        float pupilR = 1.5f;
-        float pdx = enemy.FacingDirection.GetDeltaX() * 1.5f;
-        float pdy = enemy.FacingDirection.GetDeltaY() * 1.5f;
-
-        // Eye whites
-        _fillPaint.Color = SKColors.White;
-        canvas.DrawCircle(enemy.X - eyeSpacing, eyeY, eyeR, _fillPaint);
-        canvas.DrawCircle(enemy.X + eyeSpacing, eyeY, eyeR, _fillPaint);
-
-        // Pupils (follow direction)
-        _fillPaint.Color = SKColors.Black;
-        canvas.DrawCircle(enemy.X - eyeSpacing + pdx, eyeY + pdy, pupilR, _fillPaint);
-        canvas.DrawCircle(enemy.X + eyeSpacing + pdx, eyeY + pdy, pupilR, _fillPaint);
-
-        // Angry eyebrow lines (small angled strokes above eyes)
-        _strokePaint.Color = new SKColor(40, 0, 0);
-        _strokePaint.StrokeWidth = 1.5f;
-        _strokePaint.MaskFilter = null;
-        float browY = eyeY - eyeR - 1.5f;
-        canvas.DrawLine(enemy.X - eyeSpacing - 2, browY - 1, enemy.X - eyeSpacing + 2, browY + 1, _strokePaint);
-        canvas.DrawLine(enemy.X + eyeSpacing + 2, browY - 1, enemy.X + eyeSpacing - 2, browY + 1, _strokePaint);
-
-        // Mouth (varies by enemy type)
-        float mouthY = enemy.Y + bodyH * 0.15f;
-        _strokePaint.Color = new SKColor(60, 0, 0);
-        _strokePaint.StrokeWidth = 1.2f;
-
-        if ((int)enemy.Type % 3 == 0)
-        {
-            // Toothy grin
-            canvas.DrawLine(enemy.X - 3, mouthY, enemy.X + 3, mouthY, _strokePaint);
-            _fillPaint.Color = SKColors.White;
-            canvas.DrawRect(enemy.X - 2, mouthY - 1, 1.5f, 2, _fillPaint);
-            canvas.DrawRect(enemy.X + 0.5f, mouthY - 1, 1.5f, 2, _fillPaint);
-        }
-        else if ((int)enemy.Type % 3 == 1)
-        {
-            // Frown
-            _fusePath.Reset();
-            _fusePath.MoveTo(enemy.X - 3, mouthY);
-            _fusePath.QuadTo(enemy.X, mouthY + 3, enemy.X + 3, mouthY);
-            canvas.DrawPath(_fusePath, _strokePaint);
-        }
-        else
-        {
-            // Simple line
-            canvas.DrawLine(enemy.X - 3, mouthY, enemy.X + 3, mouthY, _strokePaint);
-        }
-    }
-
-    private void RenderEnemyDeath(SKCanvas canvas, Enemy enemy, float cs)
-    {
-        float progress = enemy.DeathTimer / 0.8f;
-        byte alpha = (byte)(255 * (1 - progress));
-
-        var (r, g, b) = enemy.Type.GetColor();
-        _fillPaint.Color = new SKColor(r, g, b, alpha);
-        _fillPaint.MaskFilter = null;
-
-        // Squash/Stretch: Breiterer Squash der nach oben schießt, dann zusammenfällt
-        float squashX = 1f + progress * 0.6f; // Breiter werden
-        float squashY = 1f - progress * 0.4f; // Flacher werden
-        float drawSize = cs * (1 - progress * 0.3f);
-        float rx = drawSize / 3 * squashX;
-        float ry = drawSize / 3 * squashY;
-        canvas.DrawOval(enemy.X, enemy.Y + progress * 4f, rx, ry, _fillPaint);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // POWER-UP
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void RenderPowerUp(SKCanvas canvas, PowerUp powerUp)
-    {
-        float cs = GameGrid.CELL_SIZE;
-        bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
-
-        // Blinking when about to expire
-        if (powerUp.IsBlinking && !powerUp.IsBeingCollected && ((int)(_globalTimer * 8) % 2) == 0)
-            return;
-
-        // Einsammel-Animation: Shrink + Spin + Fade
-        float collectScale = 1f;
-        float collectRotation = 0f;
-        byte collectAlpha = 255;
-        if (powerUp.IsBeingCollected)
-        {
-            float progress = 1f - (powerUp.CollectTimer / PowerUp.COLLECT_DURATION); // 0→1
-            collectScale = 1f - progress; // 1→0
-            collectRotation = progress * 720f; // 2 volle Drehungen
-            collectAlpha = (byte)(255 * (1f - progress));
-        }
-
-        // Bobbing animation
-        float bob = MathF.Sin(_globalTimer * 3) * 2;
-        float px = powerUp.X;
-        float py = powerUp.Y + bob;
-
-        SKColor color = GetPowerUpColor(powerUp.Type);
-        float radius = cs * 0.35f * collectScale;
-
-        // Einsammel-Animation: Canvas transformieren
-        if (powerUp.IsBeingCollected)
-        {
-            canvas.Save();
-            canvas.Translate(px, py);
-            canvas.RotateDegrees(collectRotation);
-            canvas.Translate(-px, -py);
-        }
-
-        // Neon glow aura
-        if (isNeon)
-        {
-            _glowPaint.Color = color.WithAlpha(50);
-            _glowPaint.MaskFilter = _mediumGlow;
-            canvas.DrawCircle(px, py, radius + 3, _glowPaint);
-            _glowPaint.MaskFilter = null;
-        }
-
-        // Rounded background (mit Alpha bei Einsammel-Animation)
-        byte bgAlpha = powerUp.IsBeingCollected
-            ? (byte)(255 * Math.Clamp(powerUp.CollectTimer / PowerUp.COLLECT_DURATION, 0f, 1f))
-            : (byte)255;
-        _fillPaint.Color = color.WithAlpha(bgAlpha);
-        _fillPaint.MaskFilter = null;
-        canvas.DrawCircle(px, py, radius, _fillPaint);
-
-        // Icon/symbol (mit Alpha bei Einsammel-Animation)
-        byte iconAlpha = powerUp.IsBeingCollected
-            ? (byte)(255 * Math.Clamp(powerUp.CollectTimer / PowerUp.COLLECT_DURATION, 0f, 1f))
-            : (byte)255;
-        _fillPaint.Color = SKColors.White.WithAlpha(iconAlpha);
-        RenderPowerUpIcon(canvas, powerUp.Type, px, py, radius * 0.6f);
-
-        // Canvas-Transform wiederherstellen nach Einsammel-Animation
-        if (powerUp.IsBeingCollected)
-        {
-            canvas.Restore();
-        }
-    }
-
-    private void RenderPowerUpIcon(SKCanvas canvas, PowerUpType type, float cx, float cy, float size)
-    {
-        _strokePaint.Color = SKColors.White;
-        _strokePaint.StrokeWidth = 2f;
-        _strokePaint.MaskFilter = null;
-
-        switch (type)
-        {
-            case PowerUpType.BombUp:
-                // Small bomb circle
-                canvas.DrawCircle(cx, cy + 1, size * 0.5f, _fillPaint);
-                canvas.DrawLine(cx, cy - size * 0.3f, cx + size * 0.3f, cy - size * 0.6f, _strokePaint);
-                break;
-
-            case PowerUpType.Fire:
-                // Flame shape (triangle-ish)
-                _fusePath.Reset();
-                _fusePath.MoveTo(cx, cy - size * 0.7f);
-                _fusePath.LineTo(cx + size * 0.4f, cy + size * 0.5f);
-                _fusePath.LineTo(cx - size * 0.4f, cy + size * 0.5f);
-                _fusePath.Close();
-                canvas.DrawPath(_fusePath, _fillPaint);
-                break;
-
-            case PowerUpType.Speed:
-                // Arrow pointing right
-                _fusePath.Reset();
-                _fusePath.MoveTo(cx - size * 0.4f, cy - size * 0.3f);
-                _fusePath.LineTo(cx + size * 0.5f, cy);
-                _fusePath.LineTo(cx - size * 0.4f, cy + size * 0.3f);
-                _fusePath.Close();
-                canvas.DrawPath(_fusePath, _fillPaint);
-                break;
-
-            case PowerUpType.Wallpass:
-                // Ghost-like shape
-                canvas.DrawCircle(cx, cy - size * 0.15f, size * 0.35f, _fillPaint);
-                canvas.DrawRect(cx - size * 0.35f, cy, size * 0.7f, size * 0.3f, _fillPaint);
-                break;
-
-            case PowerUpType.Detonator:
-                // Lightning bolt
-                _fusePath.Reset();
-                _fusePath.MoveTo(cx + size * 0.15f, cy - size * 0.6f);
-                _fusePath.LineTo(cx - size * 0.2f, cy + size * 0.05f);
-                _fusePath.LineTo(cx + size * 0.1f, cy + size * 0.05f);
-                _fusePath.LineTo(cx - size * 0.15f, cy + size * 0.6f);
-                canvas.DrawPath(_fusePath, _strokePaint);
-                break;
-
-            case PowerUpType.Bombpass:
-                // Circle with arrow through it
-                _strokePaint.StrokeWidth = 1.5f;
-                canvas.DrawCircle(cx, cy, size * 0.4f, _strokePaint);
-                canvas.DrawLine(cx - size * 0.6f, cy, cx + size * 0.6f, cy, _strokePaint);
-                break;
-
-            case PowerUpType.Flamepass:
-                // Shield shape
-                _fusePath.Reset();
-                _fusePath.MoveTo(cx, cy - size * 0.5f);
-                _fusePath.LineTo(cx + size * 0.4f, cy - size * 0.2f);
-                _fusePath.LineTo(cx + size * 0.3f, cy + size * 0.4f);
-                _fusePath.LineTo(cx, cy + size * 0.6f);
-                _fusePath.LineTo(cx - size * 0.3f, cy + size * 0.4f);
-                _fusePath.LineTo(cx - size * 0.4f, cy - size * 0.2f);
-                _fusePath.Close();
-                canvas.DrawPath(_fusePath, _fillPaint);
-                break;
-
-            case PowerUpType.Mystery:
-                // Question mark
-                _textPaint.Color = SKColors.White;
-                canvas.DrawText("?", cx, cy + size * 0.25f, SKTextAlign.Center, _powerUpFont, _textPaint);
-                break;
-
-            case PowerUpType.Kick:
-                // Schuh/Boot-Form (Pfeil nach rechts)
-                _fusePath.Reset();
-                _fusePath.MoveTo(cx - size * 0.5f, cy - size * 0.3f);
-                _fusePath.LineTo(cx + size * 0.5f, cy);
-                _fusePath.LineTo(cx - size * 0.5f, cy + size * 0.3f);
-                _fusePath.Close();
-                canvas.DrawPath(_fusePath, _fillPaint);
-                // Kleiner Kreis (= Bombe)
-                canvas.DrawCircle(cx + size * 0.3f, cy - size * 0.4f, size * 0.2f, _fillPaint);
-                break;
-
-            case PowerUpType.LineBomb:
-                // Drei kleine Kreise in einer Reihe
-                canvas.DrawCircle(cx - size * 0.4f, cy, size * 0.2f, _fillPaint);
-                canvas.DrawCircle(cx, cy, size * 0.2f, _fillPaint);
-                canvas.DrawCircle(cx + size * 0.4f, cy, size * 0.2f, _fillPaint);
-                break;
-
-            case PowerUpType.PowerBomb:
-                // Großer Kreis mit Stern
-                canvas.DrawCircle(cx, cy, size * 0.4f, _fillPaint);
-                _strokePaint.Color = new SKColor(255, 255, 100);
-                _strokePaint.StrokeWidth = 2f;
-                _strokePaint.MaskFilter = null;
-                canvas.DrawLine(cx, cy - size * 0.3f, cx, cy + size * 0.3f, _strokePaint);
-                canvas.DrawLine(cx - size * 0.3f, cy, cx + size * 0.3f, cy, _strokePaint);
-                break;
-
-            case PowerUpType.Skull:
-                // Totenkopf (Kreis + Augenhöhlen + Kiefer)
-                canvas.DrawCircle(cx, cy - size * 0.1f, size * 0.4f, _fillPaint);
-                _fillPaint.Color = SKColors.Black;
-                canvas.DrawCircle(cx - size * 0.15f, cy - size * 0.15f, size * 0.12f, _fillPaint);
-                canvas.DrawCircle(cx + size * 0.15f, cy - size * 0.15f, size * 0.12f, _fillPaint);
-                canvas.DrawRect(cx - size * 0.2f, cy + size * 0.15f, size * 0.4f, size * 0.08f, _fillPaint);
-                _fillPaint.Color = SKColors.White;
-                break;
-
-            default:
-                _textPaint.Color = SKColors.White;
-                canvas.DrawText("?", cx, cy + size * 0.25f, SKTextAlign.Center, _powerUpFont, _textPaint);
-                break;
-        }
-    }
-
-    private static SKColor GetPowerUpColor(PowerUpType type) => type switch
-    {
-        PowerUpType.BombUp => new SKColor(80, 80, 240),
-        PowerUpType.Fire => new SKColor(240, 90, 40),
-        PowerUpType.Speed => new SKColor(60, 220, 80),
-        PowerUpType.Wallpass => new SKColor(150, 100, 50),
-        PowerUpType.Detonator => new SKColor(240, 40, 40),
-        PowerUpType.Bombpass => new SKColor(50, 50, 150),
-        PowerUpType.Flamepass => new SKColor(240, 190, 40),
-        PowerUpType.Mystery => new SKColor(180, 80, 240),
-        PowerUpType.Kick => new SKColor(255, 165, 0),
-        PowerUpType.LineBomb => new SKColor(0, 180, 255),
-        PowerUpType.PowerBomb => new SKColor(255, 50, 50),
-        PowerUpType.Skull => new SKColor(100, 0, 100),
-        _ => SKColors.White
-    };
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // HUD (right side panel)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void RenderHUD(SKCanvas canvas, float remainingTime, int score, int lives, Player? player)
-    {
-        bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
-        float x = _hudX;
-        float y = _hudY;
-        float w = _hudWidth;
-        float h = _hudHeight;
-
-        // Background panel
-        if (_hudGradientShader == null || Math.Abs(_lastHudShaderHeight - h) > 1f)
-        {
-            _hudGradientShader?.Dispose();
-            _hudGradientShader = SKShader.CreateLinearGradient(
-                new SKPoint(x, y),
-                new SKPoint(x, y + h),
-                new[] { _palette.HudBg, _palette.HudBg.WithAlpha(210) },
-                null, SKShaderTileMode.Clamp);
-            _lastHudShaderHeight = h;
-        }
-
-        _fillPaint.Shader = _hudGradientShader;
-        _fillPaint.MaskFilter = null;
-        canvas.DrawRect(x, y, w, h, _fillPaint);
-        _fillPaint.Shader = null;
-
-        // Left border line
-        _strokePaint.Color = _palette.HudBorder;
-        _strokePaint.StrokeWidth = isNeon ? 1.5f : 1f;
-        _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
-        canvas.DrawLine(x, y, x, y + h, _strokePaint);
-        _strokePaint.MaskFilter = null;
-
-        float cx = x + w / 2f;
-        float cy = y + 20;
-
-        // ── TIME ──
-        _textPaint.Color = _palette.HudText.WithAlpha(150);
-        _textPaint.MaskFilter = null;
-        canvas.DrawText("TIME", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
-        cy += 24;
-
-        bool timeWarning = remainingTime <= 30;
-        _textPaint.Color = timeWarning ? _palette.HudTimeWarning : _palette.HudText;
-        _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-        int timeInt = (int)remainingTime;
-        if (timeInt != _lastTimeValue)
-        {
-            _lastTimeValue = timeInt;
-            _lastTimeString = $"{timeInt:D3}";
-        }
-        canvas.DrawText(_lastTimeString, cx, cy, SKTextAlign.Center, _hudFontLarge, _textPaint);
-        _textPaint.MaskFilter = null;
-        cy += 32;
-
-        // Separator
-        _strokePaint.Color = _palette.HudBorder.WithAlpha(80);
-        _strokePaint.StrokeWidth = 1;
-        _strokePaint.MaskFilter = null;
-        canvas.DrawLine(x + 10, cy, x + w - 10, cy, _strokePaint);
-        cy += 16;
-
-        // ── SCORE ──
-        _textPaint.Color = _palette.HudText.WithAlpha(150);
-        canvas.DrawText("SCORE", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
-        cy += 22;
-
-        _textPaint.Color = _palette.HudAccent;
-        _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-        if (score != _lastScoreValue)
-        {
-            _lastScoreValue = score;
-            _lastScoreString = $"{score:D6}";
-        }
-        canvas.DrawText(_lastScoreString, cx, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
-        _textPaint.MaskFilter = null;
-        cy += 28;
-
-        // ── COMBO (nur wenn aktiv) ──
-        if (ComboCount >= 2)
-        {
-            cy += 4;
-            // Alpha-Fade bei ablaufendem Timer (sanftes Ausblenden statt abruptem Verschwinden)
-            float comboAlphaFactor = ComboTimer < 0.5f ? ComboTimer / 0.5f : 1f;
-
-            // Combo-Text (pulsierend, farbig nach Stärke)
-            float comboPulse = MathF.Sin(_globalTimer * 12f) * 0.15f;
-            float comboScale = 1f + comboPulse;
-            var comboColor = ComboCount >= 5
-                ? new SKColor(255, 50, 50)     // Rot ab x5 (MEGA)
-                : ComboCount >= 4
-                    ? new SKColor(255, 80, 30)  // Orange-Rot ab x4
-                    : new SKColor(255, 165, 0); // Orange x2-x3
-            comboColor = comboColor.WithAlpha((byte)(255 * comboAlphaFactor));
-
-            string comboStr = ComboCount >= 5 ? $"MEGA x{ComboCount}" : $"x{ComboCount}";
-            _textPaint.Color = comboColor;
-            _textPaint.MaskFilter = isNeon ? _hudTextGlow : SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
-            float originalFontSize = _hudFontMedium.Size;
-            _hudFontMedium.Size = originalFontSize * comboScale;
-            canvas.DrawText(comboStr, cx, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
-            _hudFontMedium.Size = originalFontSize;
-            _textPaint.MaskFilter = null;
-            cy += 16;
-
-            // Timer-Bar (schrumpft von voll nach leer)
-            float barW = w - 30;
-            float barH = 3f;
-            float barX = x + 15;
-            float timerFrac = Math.Clamp(ComboTimer / 2f, 0f, 1f); // 2s = COMBO_WINDOW
-
-            // Hintergrund (dunkel)
-            _fillPaint.Color = new SKColor(60, 60, 60, (byte)(255 * comboAlphaFactor));
-            _fillPaint.MaskFilter = null;
-            _fillPaint.Shader = null;
-            canvas.DrawRoundRect(barX, cy, barW, barH, 1.5f, 1.5f, _fillPaint);
-
-            // Füllstand (farbig)
-            _fillPaint.Color = comboColor.WithAlpha((byte)(200 * comboAlphaFactor));
-            canvas.DrawRoundRect(barX, cy, barW * timerFrac, barH, 1.5f, 1.5f, _fillPaint);
-            cy += 10;
-        }
-
-        // Separator
-        canvas.DrawLine(x + 10, cy, x + w - 10, cy, _strokePaint);
-        cy += 16;
-
-        // ── LIVES (heart icons) ──
-        _textPaint.Color = _palette.HudText.WithAlpha(150);
-        canvas.DrawText("LIVES", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
-        cy += 20;
-
-        float heartSize = 12;
-        float heartsWidth = lives * (heartSize + 4) - 4;
-        float heartStartX = cx - heartsWidth / 2f;
-
-        for (int i = 0; i < lives; i++)
-        {
-            float hx = heartStartX + i * (heartSize + 4) + heartSize / 2f;
-            RenderHeart(canvas, hx, cy, heartSize * 0.5f);
-        }
-        cy += heartSize + 16;
-
-        // Separator
-        canvas.DrawLine(x + 10, cy, x + w - 10, cy, _strokePaint);
-        cy += 16;
-
-        // ── BOMB/FIRE info ──
-        if (player != null)
-        {
-            _textPaint.Color = _palette.HudText.WithAlpha(150);
-            canvas.DrawText("BOMBS", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
-            cy += 20;
-
-            _textPaint.Color = _palette.HudText;
-            _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-            if (player.MaxBombs != _lastBombsValue)
-            {
-                _lastBombsValue = player.MaxBombs;
-                _lastBombsString = $"{player.MaxBombs}";
-            }
-            canvas.DrawText(_lastBombsString, cx - 20, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
-
-            _textPaint.Color = new SKColor(255, 120, 40);
-            if (player.FireRange != _lastFireValue)
-            {
-                _lastFireValue = player.FireRange;
-                _lastFireString = $"{player.FireRange}";
-            }
-            canvas.DrawText(_lastFireString, cx + 20, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
-            _textPaint.MaskFilter = null;
-
-            // Mini-Bomben-Icon unter der Zahl
-            RenderMiniBomb(canvas, cx - 20, cy + 10, 5f, isNeon);
-            // Mini-Flammen-Icon unter der Zahl
-            RenderMiniFlame(canvas, cx + 20, cy + 10, 5f, isNeon);
-            cy += 30;
-
-            // ── Active power-ups (stacked vertically, gepoolte Liste) ──
-            _activePowers.Clear();
-            if (player.SpeedLevel > 0)
-            {
-                string spdLabel = player.SpeedLevel > 1 ? $"SPD x{player.SpeedLevel}" : "SPD";
-                _activePowers.Add((spdLabel, new SKColor(60, 220, 80)));
-            }
-            if (player.HasWallpass) _activePowers.Add(("WLP", new SKColor(150, 100, 50)));
-            if (player.HasDetonator) _activePowers.Add(("DET", new SKColor(240, 40, 40)));
-            if (player.HasBombpass) _activePowers.Add(("BMP", new SKColor(50, 50, 150)));
-            if (player.HasFlamepass) _activePowers.Add(("FLP", new SKColor(240, 190, 40)));
-            if (player.HasShield) _activePowers.Add(("SHIELD", new SKColor(0, 229, 255)));
-            if (player.HasKick) _activePowers.Add(("KICK", new SKColor(255, 165, 0)));
-            if (player.HasLineBomb) _activePowers.Add(("LINE", new SKColor(0, 180, 255)));
-            if (player.HasPowerBomb) _activePowers.Add(("PWR", new SKColor(255, 50, 50)));
-            if (player.IsCursed)
-            {
-                string curseLabel = player.ActiveCurse switch
-                {
-                    CurseType.Diarrhea => "DIA",
-                    CurseType.Slow => "SLOW",
-                    CurseType.Constipation => "BLOCK",
-                    CurseType.ReverseControls => "REV",
-                    _ => "???"
-                };
-                _activePowers.Add(($"☠{curseLabel}:{(int)player.CurseTimer}", new SKColor(180, 0, 180)));
-            }
-            if (player.IsInvincible)
-            {
-                // INV-String nur bei Aenderung des Timer-Werts neu erstellen
-                int invTimer = (int)player.InvincibilityTimer;
-                if (invTimer != _lastInvTimerValue)
-                {
-                    _lastInvTimerValue = invTimer;
-                    _lastInvString = $"INV:{invTimer}";
-                }
-                _activePowers.Add((_lastInvString, new SKColor(180, 80, 240)));
-            }
-
-            if (_activePowers.Count > 0)
-            {
-                cy += 6;
-                canvas.DrawLine(x + 10, cy, x + w - 10, cy, _strokePaint);
-                cy += 14;
-
-                _textPaint.Color = _palette.HudText.WithAlpha(150);
-                canvas.DrawText("POWER", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
-                cy += 18;
-
-                foreach (var (label, color) in _activePowers)
-                {
-                    _textPaint.Color = color;
-                    _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-                    canvas.DrawText(label, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
-                    _textPaint.MaskFilter = null;
-                    cy += 16;
-                }
-            }
-        }
-    }
-
-    private void RenderHeart(SKCanvas canvas, float cx, float cy, float r)
-    {
-        _fillPaint.Color = new SKColor(240, 50, 60);
-        _fillPaint.MaskFilter = null;
-
-        // Simple heart: two circles + triangle
-        float d = r * 0.7f;
-        canvas.DrawCircle(cx - d * 0.5f, cy - d * 0.2f, d * 0.55f, _fillPaint);
-        canvas.DrawCircle(cx + d * 0.5f, cy - d * 0.2f, d * 0.55f, _fillPaint);
-
-        _fusePath.Reset();
-        _fusePath.MoveTo(cx - r, cy);
-        _fusePath.LineTo(cx, cy + r);
-        _fusePath.LineTo(cx + r, cy);
-        _fusePath.Close();
-        canvas.DrawPath(_fusePath, _fillPaint);
-    }
-
-    private void RenderMiniBomb(SKCanvas canvas, float cx, float cy, float r, bool isNeon)
-    {
-        // Bomben-Koerper (Kreis)
-        _fillPaint.Color = isNeon ? new SKColor(180, 180, 200) : new SKColor(50, 50, 60);
-        _fillPaint.MaskFilter = null;
-        canvas.DrawCircle(cx, cy, r, _fillPaint);
-
-        // Glanz-Highlight
-        _fillPaint.Color = isNeon ? new SKColor(220, 230, 255, 80) : new SKColor(120, 120, 140, 100);
-        canvas.DrawCircle(cx - r * 0.25f, cy - r * 0.3f, r * 0.35f, _fillPaint);
-
-        // Lunte (kurze Linie nach oben)
-        _strokePaint.Color = isNeon ? new SKColor(255, 160, 60) : new SKColor(160, 120, 60);
-        _strokePaint.StrokeWidth = 1.5f;
-        _strokePaint.MaskFilter = isNeon ? _hudTextGlow : null;
-        canvas.DrawLine(cx, cy - r, cx + r * 0.4f, cy - r * 1.6f, _strokePaint);
-
-        // Funken-Punkt
-        _fillPaint.Color = isNeon ? new SKColor(255, 200, 80) : new SKColor(255, 180, 40);
-        canvas.DrawCircle(cx + r * 0.4f, cy - r * 1.6f, 1.5f, _fillPaint);
-        _strokePaint.MaskFilter = null;
-    }
-
-    private void RenderMiniFlame(SKCanvas canvas, float cx, float cy, float r, bool isNeon)
-    {
-        // Aeussere Flamme (orange)
-        _fillPaint.Color = isNeon ? new SKColor(255, 130, 40) : new SKColor(255, 120, 30);
-        _fillPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-
-        _fusePath.Reset();
-        _fusePath.MoveTo(cx - r * 0.7f, cy + r);
-        _fusePath.QuadTo(cx - r, cy - r * 0.3f, cx, cy - r * 1.4f);
-        _fusePath.QuadTo(cx + r, cy - r * 0.3f, cx + r * 0.7f, cy + r);
-        _fusePath.Close();
-        canvas.DrawPath(_fusePath, _fillPaint);
-
-        // Innere Flamme (gelb)
-        _fillPaint.Color = isNeon ? new SKColor(255, 220, 80) : new SKColor(255, 200, 60);
-        _fillPaint.MaskFilter = null;
-
-        _fusePath.Reset();
-        _fusePath.MoveTo(cx - r * 0.35f, cy + r);
-        _fusePath.QuadTo(cx - r * 0.5f, cy, cx, cy - r * 0.6f);
-        _fusePath.QuadTo(cx + r * 0.5f, cy, cx + r * 0.35f, cy + r);
-        _fusePath.Close();
-        canvas.DrawPath(_fusePath, _fillPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -2034,5 +797,11 @@ public class GameRenderer : IDisposable
         _outerGlow.Dispose();
         _hudTextGlow.Dispose();
         _hudGradientShader?.Dispose();
+        _dynamicLighting.Dispose();
+        _weatherSystem.Dispose();
+        _ambientParticles.Dispose();
+        _shaderEffects.Dispose();
+        _trailSystem.Dispose();
+        _floorCacheBitmap?.Dispose();
     }
 }

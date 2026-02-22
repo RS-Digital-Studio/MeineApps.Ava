@@ -56,12 +56,6 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
-        internal static string ArcadeMode {
-            get {
-                return ResourceManager.GetString("ArcadeMode", resourceCulture);
-            }
-        }
-
         internal static string QuickPlay {
             get {
                 return ResourceManager.GetString("QuickPlay", resourceCulture);
@@ -215,12 +209,6 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
-        internal static string PlayArcadeToScore {
-            get {
-                return ResourceManager.GetString("PlayArcadeToScore", resourceCulture);
-            }
-        }
-
         internal static string WaveFormat {
             get {
                 return ResourceManager.GetString("WaveFormat", resourceCulture);
@@ -248,18 +236,6 @@ namespace BomberBlast.Resources.Strings {
         internal static string FinalScore {
             get {
                 return ResourceManager.GetString("FinalScore", resourceCulture);
-            }
-        }
-
-        internal static string WaveReached {
-            get {
-                return ResourceManager.GetString("WaveReached", resourceCulture);
-            }
-        }
-
-        internal static string WaveOverlay {
-            get {
-                return ResourceManager.GetString("WaveOverlay", resourceCulture);
             }
         }
 
@@ -1136,6 +1112,36 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        internal static string WorldRuins {
+            get {
+                return ResourceManager.GetString("WorldRuins", resourceCulture);
+            }
+        }
+
+        internal static string WorldOcean {
+            get {
+                return ResourceManager.GetString("WorldOcean", resourceCulture);
+            }
+        }
+
+        internal static string WorldVolcano {
+            get {
+                return ResourceManager.GetString("WorldVolcano", resourceCulture);
+            }
+        }
+
+        internal static string WorldSkyFortress {
+            get {
+                return ResourceManager.GetString("WorldSkyFortress", resourceCulture);
+            }
+        }
+
+        internal static string WorldShadowRealm {
+            get {
+                return ResourceManager.GetString("WorldShadowRealm", resourceCulture);
+            }
+        }
+
         // Rewarded Ads
         internal static string PowerUpBoost {
             get {
@@ -1321,9 +1327,9 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
-        internal static string CategoryArcade {
+        internal static string CategoryChallenge {
             get {
-                return ResourceManager.GetString("CategoryArcade", resourceCulture);
+                return ResourceManager.GetString("CategoryChallenge", resourceCulture);
             }
         }
 
@@ -1410,5 +1416,2684 @@ namespace BomberBlast.Resources.Strings {
                 return ResourceManager.GetString("ContinueFree", resourceCulture);
             }
         }
+
+        // Boss
+        internal static string BossStoneGolem {
+            get {
+                return ResourceManager.GetString("BossStoneGolem", resourceCulture);
+            }
+        }
+
+        internal static string BossIceDragon {
+            get {
+                return ResourceManager.GetString("BossIceDragon", resourceCulture);
+            }
+        }
+
+        internal static string BossFireDemon {
+            get {
+                return ResourceManager.GetString("BossFireDemon", resourceCulture);
+            }
+        }
+
+        internal static string BossShadowMaster {
+            get {
+                return ResourceManager.GetString("BossShadowMaster", resourceCulture);
+            }
+        }
+
+        internal static string BossFinalBoss {
+            get {
+                return ResourceManager.GetString("BossFinalBoss", resourceCulture);
+            }
+        }
+
+        internal static string BossAttackBlockRain {
+            get {
+                return ResourceManager.GetString("BossAttackBlockRain", resourceCulture);
+            }
+        }
+
+        internal static string BossAttackIceBreath {
+            get {
+                return ResourceManager.GetString("BossAttackIceBreath", resourceCulture);
+            }
+        }
+
+        internal static string BossAttackLavaWave {
+            get {
+                return ResourceManager.GetString("BossAttackLavaWave", resourceCulture);
+            }
+        }
+
+        internal static string BossAttackTeleport {
+            get {
+                return ResourceManager.GetString("BossAttackTeleport", resourceCulture);
+            }
+        }
+
+        internal static string BossFight {
+            get {
+                return ResourceManager.GetString("BossFight", resourceCulture);
+            }
+        }
+
+        // Special Bombs
+        internal static string UpgradeIceBomb {
+            get {
+                return ResourceManager.GetString("UpgradeIceBomb", resourceCulture);
+            }
+        }
+
+        internal static string UpgradeIceBombDesc {
+            get {
+                return ResourceManager.GetString("UpgradeIceBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string UpgradeFireBomb {
+            get {
+                return ResourceManager.GetString("UpgradeFireBomb", resourceCulture);
+            }
+        }
+
+        internal static string UpgradeFireBombDesc {
+            get {
+                return ResourceManager.GetString("UpgradeFireBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string UpgradeStickyBomb {
+            get {
+                return ResourceManager.GetString("UpgradeStickyBomb", resourceCulture);
+            }
+        }
+
+        internal static string UpgradeStickyBombDesc {
+            get {
+                return ResourceManager.GetString("UpgradeStickyBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string SpecialBombFrozen {
+            get {
+                return ResourceManager.GetString("SpecialBombFrozen", resourceCulture);
+            }
+        }
+
+        internal static string SpecialBombLava {
+            get {
+                return ResourceManager.GetString("SpecialBombLava", resourceCulture);
+            }
+        }
+
+        internal static string SpecialBombStuck {
+            get {
+                return ResourceManager.GetString("SpecialBombStuck", resourceCulture);
+            }
+        }
+
+        internal static string SpecialBombCount {
+            get {
+                return ResourceManager.GetString("SpecialBombCount", resourceCulture);
+            }
+        }
+
+        internal static string SpecialBombToggle {
+            get {
+                return ResourceManager.GetString("SpecialBombToggle", resourceCulture);
+            }
+        }
+
+        internal static string SpecialBombNone {
+            get {
+                return ResourceManager.GetString("SpecialBombNone", resourceCulture);
+            }
+        }
+
+        internal static string SurvivalMode {
+            get {
+                return ResourceManager.GetString("SurvivalMode", resourceCulture);
+            }
+        }
+
+        internal static string SurvivalKills {
+            get {
+                return ResourceManager.GetString("SurvivalKills", resourceCulture);
+            }
+        }
+
+        internal static string SurvivalKillsLabel {
+            get {
+                return ResourceManager.GetString("SurvivalKillsLabel", resourceCulture);
+            }
+        }
+
+        internal static string SurvivalTimeLabel {
+            get {
+                return ResourceManager.GetString("SurvivalTimeLabel", resourceCulture);
+            }
+        }
+
+        internal static string LuckySpinTitle {
+            get {
+                return ResourceManager.GetString("LuckySpinTitle", resourceCulture);
+            }
+        }
+
+        internal static string LuckySpinFree {
+            get {
+                return ResourceManager.GetString("LuckySpinFree", resourceCulture);
+            }
+        }
+
+        internal static string LuckySpinAd {
+            get {
+                return ResourceManager.GetString("LuckySpinAd", resourceCulture);
+            }
+        }
+
+        internal static string LuckySpinCollect {
+            get {
+                return ResourceManager.GetString("LuckySpinCollect", resourceCulture);
+            }
+        }
+
+        internal static string LuckySpinTotal {
+            get {
+                return ResourceManager.GetString("LuckySpinTotal", resourceCulture);
+            }
+        }
+
+        internal static string SpinReward50 {
+            get {
+                return ResourceManager.GetString("SpinReward50", resourceCulture);
+            }
+        }
+
+        internal static string SpinReward100 {
+            get {
+                return ResourceManager.GetString("SpinReward100", resourceCulture);
+            }
+        }
+
+        internal static string SpinReward250 {
+            get {
+                return ResourceManager.GetString("SpinReward250", resourceCulture);
+            }
+        }
+
+        internal static string SpinReward500 {
+            get {
+                return ResourceManager.GetString("SpinReward500", resourceCulture);
+            }
+        }
+
+        internal static string SpinReward5Gems {
+            get {
+                return ResourceManager.GetString("SpinReward5Gems", resourceCulture);
+            }
+        }
+
+        internal static string SpinReward750 {
+            get {
+                return ResourceManager.GetString("SpinReward750", resourceCulture);
+            }
+        }
+
+        internal static string SpinReward1500 {
+            get {
+                return ResourceManager.GetString("SpinReward1500", resourceCulture);
+            }
+        }
+
+        // Weekly Challenge
+        internal static string WeeklyChallengeTitle {
+            get {
+                return ResourceManager.GetString("WeeklyChallengeTitle", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyChallengeButton {
+            get {
+                return ResourceManager.GetString("WeeklyChallengeButton", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyChallengeNew {
+            get {
+                return ResourceManager.GetString("WeeklyChallengeNew", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyTotalWeeks {
+            get {
+                return ResourceManager.GetString("WeeklyTotalWeeks", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyBonusLabel {
+            get {
+                return ResourceManager.GetString("WeeklyBonusLabel", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyTimeRemaining {
+            get {
+                return ResourceManager.GetString("WeeklyTimeRemaining", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyCompleteLevels {
+            get {
+                return ResourceManager.GetString("WeeklyCompleteLevels", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyCompleteLevelsDesc {
+            get {
+                return ResourceManager.GetString("WeeklyCompleteLevelsDesc", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyDefeatEnemies {
+            get {
+                return ResourceManager.GetString("WeeklyDefeatEnemies", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyDefeatEnemiesDesc {
+            get {
+                return ResourceManager.GetString("WeeklyDefeatEnemiesDesc", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyCollectPowerUps {
+            get {
+                return ResourceManager.GetString("WeeklyCollectPowerUps", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyCollectPowerUpsDesc {
+            get {
+                return ResourceManager.GetString("WeeklyCollectPowerUpsDesc", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyEarnCoins {
+            get {
+                return ResourceManager.GetString("WeeklyEarnCoins", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyEarnCoinsDesc {
+            get {
+                return ResourceManager.GetString("WeeklyEarnCoinsDesc", resourceCulture);
+            }
+        }
+
+        internal static string WeeklySurvivalKills {
+            get {
+                return ResourceManager.GetString("WeeklySurvivalKills", resourceCulture);
+            }
+        }
+
+        internal static string WeeklySurvivalKillsDesc {
+            get {
+                return ResourceManager.GetString("WeeklySurvivalKillsDesc", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyUseSpecialBombs {
+            get {
+                return ResourceManager.GetString("WeeklyUseSpecialBombs", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyUseSpecialBombsDesc {
+            get {
+                return ResourceManager.GetString("WeeklyUseSpecialBombsDesc", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyAchieveCombo {
+            get {
+                return ResourceManager.GetString("WeeklyAchieveCombo", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyAchieveComboDesc {
+            get {
+                return ResourceManager.GetString("WeeklyAchieveComboDesc", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyWinBossFights {
+            get {
+                return ResourceManager.GetString("WeeklyWinBossFights", resourceCulture);
+            }
+        }
+
+        internal static string WeeklyWinBossFightsDesc {
+            get {
+                return ResourceManager.GetString("WeeklyWinBossFightsDesc", resourceCulture);
+            }
+        }
+
+        // Daily Missions
+        internal static string DailyMissionsTitle {
+            get {
+                return ResourceManager.GetString("DailyMissionsTitle", resourceCulture);
+            }
+        }
+
+        internal static string DailyMissionsCompleted {
+            get {
+                return ResourceManager.GetString("DailyMissionsCompleted", resourceCulture);
+            }
+        }
+
+        internal static string DailyBonusLabel {
+            get {
+                return ResourceManager.GetString("DailyBonusLabel", resourceCulture);
+            }
+        }
+
+        internal static string DailyTimeRemaining {
+            get {
+                return ResourceManager.GetString("DailyTimeRemaining", resourceCulture);
+            }
+        }
+
+        internal static string DailyCompleteLevels {
+            get {
+                return ResourceManager.GetString("DailyCompleteLevels", resourceCulture);
+            }
+        }
+
+        internal static string DailyCompleteLevelsDesc {
+            get {
+                return ResourceManager.GetString("DailyCompleteLevelsDesc", resourceCulture);
+            }
+        }
+
+        internal static string DailyDefeatEnemies {
+            get {
+                return ResourceManager.GetString("DailyDefeatEnemies", resourceCulture);
+            }
+        }
+
+        internal static string DailyDefeatEnemiesDesc {
+            get {
+                return ResourceManager.GetString("DailyDefeatEnemiesDesc", resourceCulture);
+            }
+        }
+
+        internal static string DailyCollectPowerUps {
+            get {
+                return ResourceManager.GetString("DailyCollectPowerUps", resourceCulture);
+            }
+        }
+
+        internal static string DailyCollectPowerUpsDesc {
+            get {
+                return ResourceManager.GetString("DailyCollectPowerUpsDesc", resourceCulture);
+            }
+        }
+
+        internal static string DailyEarnCoins {
+            get {
+                return ResourceManager.GetString("DailyEarnCoins", resourceCulture);
+            }
+        }
+
+        internal static string DailyEarnCoinsDesc {
+            get {
+                return ResourceManager.GetString("DailyEarnCoinsDesc", resourceCulture);
+            }
+        }
+
+        internal static string DailySurvivalKills {
+            get {
+                return ResourceManager.GetString("DailySurvivalKills", resourceCulture);
+            }
+        }
+
+        internal static string DailySurvivalKillsDesc {
+            get {
+                return ResourceManager.GetString("DailySurvivalKillsDesc", resourceCulture);
+            }
+        }
+
+        internal static string DailyUseSpecialBombs {
+            get {
+                return ResourceManager.GetString("DailyUseSpecialBombs", resourceCulture);
+            }
+        }
+
+        internal static string DailyUseSpecialBombsDesc {
+            get {
+                return ResourceManager.GetString("DailyUseSpecialBombsDesc", resourceCulture);
+            }
+        }
+
+        internal static string DailyAchieveCombo {
+            get {
+                return ResourceManager.GetString("DailyAchieveCombo", resourceCulture);
+            }
+        }
+
+        internal static string DailyAchieveComboDesc {
+            get {
+                return ResourceManager.GetString("DailyAchieveComboDesc", resourceCulture);
+            }
+        }
+
+        internal static string DailyWinBossFights {
+            get {
+                return ResourceManager.GetString("DailyWinBossFights", resourceCulture);
+            }
+        }
+
+        internal static string DailyWinBossFightsDesc {
+            get {
+                return ResourceManager.GetString("DailyWinBossFightsDesc", resourceCulture);
+            }
+        }
+
+        internal static string MissionsButton {
+            get {
+                return ResourceManager.GetString("MissionsButton", resourceCulture);
+            }
+        }
+
+        // Statistics
+        internal static string StatsTitle {
+            get {
+                return ResourceManager.GetString("StatsTitle", resourceCulture);
+            }
+        }
+
+        internal static string StatsProgress {
+            get {
+                return ResourceManager.GetString("StatsProgress", resourceCulture);
+            }
+        }
+
+        internal static string StatsCombat {
+            get {
+                return ResourceManager.GetString("StatsCombat", resourceCulture);
+            }
+        }
+
+        internal static string StatsChallenges {
+            get {
+                return ResourceManager.GetString("StatsChallenges", resourceCulture);
+            }
+        }
+
+        internal static string StatsEconomy {
+            get {
+                return ResourceManager.GetString("StatsEconomy", resourceCulture);
+            }
+        }
+
+        internal static string ProfileTitle {
+            get {
+                return ResourceManager.GetString("ProfileTitle", resourceCulture);
+            }
+        }
+
+        internal static string StatsDungeon {
+            get {
+                return ResourceManager.GetString("StatsDungeon", resourceCulture);
+            }
+        }
+
+        internal static string StatsDungeonRuns {
+            get {
+                return ResourceManager.GetString("StatsDungeonRuns", resourceCulture);
+            }
+        }
+
+        internal static string StatsDungeonBest {
+            get {
+                return ResourceManager.GetString("StatsDungeonBest", resourceCulture);
+            }
+        }
+
+        internal static string StatsDungeonCoins {
+            get {
+                return ResourceManager.GetString("StatsDungeonCoins", resourceCulture);
+            }
+        }
+
+        internal static string StatsLevelsCompleted {
+            get {
+                return ResourceManager.GetString("StatsLevelsCompleted", resourceCulture);
+            }
+        }
+
+        internal static string StatsTotalStars {
+            get {
+                return ResourceManager.GetString("StatsTotalStars", resourceCulture);
+            }
+        }
+
+        internal static string StatsStarsPercent {
+            get {
+                return ResourceManager.GetString("StatsStarsPercent", resourceCulture);
+            }
+        }
+
+        internal static string StatsTotalKills {
+            get {
+                return ResourceManager.GetString("StatsTotalKills", resourceCulture);
+            }
+        }
+
+        internal static string StatsBombsKicked {
+            get {
+                return ResourceManager.GetString("StatsBombsKicked", resourceCulture);
+            }
+        }
+
+        internal static string StatsPowerBombs {
+            get {
+                return ResourceManager.GetString("StatsPowerBombs", resourceCulture);
+            }
+        }
+
+        internal static string StatsDailyStreak {
+            get {
+                return ResourceManager.GetString("StatsDailyStreak", resourceCulture);
+            }
+        }
+
+        internal static string StatsLongestStreak {
+            get {
+                return ResourceManager.GetString("StatsLongestStreak", resourceCulture);
+            }
+        }
+
+        internal static string StatsDailyChallengesCompleted {
+            get {
+                return ResourceManager.GetString("StatsDailyChallengesCompleted", resourceCulture);
+            }
+        }
+
+        internal static string StatsWeeksCompleted {
+            get {
+                return ResourceManager.GetString("StatsWeeksCompleted", resourceCulture);
+            }
+        }
+
+        internal static string StatsDailyMissionDays {
+            get {
+                return ResourceManager.GetString("StatsDailyMissionDays", resourceCulture);
+            }
+        }
+
+        internal static string StatsCoinBalance {
+            get {
+                return ResourceManager.GetString("StatsCoinBalance", resourceCulture);
+            }
+        }
+
+        internal static string StatsTotalEarned {
+            get {
+                return ResourceManager.GetString("StatsTotalEarned", resourceCulture);
+            }
+        }
+
+        internal static string StatsAchievements {
+            get {
+                return ResourceManager.GetString("StatsAchievements", resourceCulture);
+            }
+        }
+
+        internal static string StatsTotalSpins {
+            get {
+                return ResourceManager.GetString("StatsTotalSpins", resourceCulture);
+            }
+        }
+
+        internal static string StatisticsButton {
+            get {
+                return ResourceManager.GetString("StatisticsButton", resourceCulture);
+            }
+        }
+
+        // Achievements
+        internal static string AchBossMaster {
+            get {
+                return ResourceManager.GetString("AchBossMaster", resourceCulture);
+            }
+        }
+
+        internal static string AchBossMasterDesc {
+            get {
+                return ResourceManager.GetString("AchBossMasterDesc", resourceCulture);
+            }
+        }
+
+        internal static string AchBossSlayer {
+            get {
+                return ResourceManager.GetString("AchBossSlayer", resourceCulture);
+            }
+        }
+
+        internal static string AchBossSlayerDesc {
+            get {
+                return ResourceManager.GetString("AchBossSlayerDesc", resourceCulture);
+            }
+        }
+
+        internal static string AchCombo7 {
+            get {
+                return ResourceManager.GetString("AchCombo7", resourceCulture);
+            }
+        }
+
+        internal static string AchCombo7Desc {
+            get {
+                return ResourceManager.GetString("AchCombo7Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchKills2500 {
+            get {
+                return ResourceManager.GetString("AchKills2500", resourceCulture);
+            }
+        }
+
+        internal static string AchKills2500Desc {
+            get {
+                return ResourceManager.GetString("AchKills2500Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchKills5000 {
+            get {
+                return ResourceManager.GetString("AchKills5000", resourceCulture);
+            }
+        }
+
+        internal static string AchKills5000Desc {
+            get {
+                return ResourceManager.GetString("AchKills5000Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchNoDamage5 {
+            get {
+                return ResourceManager.GetString("AchNoDamage5", resourceCulture);
+            }
+        }
+
+        internal static string AchNoDamage5Desc {
+            get {
+                return ResourceManager.GetString("AchNoDamage5Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchNoDamage10 {
+            get {
+                return ResourceManager.GetString("AchNoDamage10", resourceCulture);
+            }
+        }
+
+        internal static string AchNoDamage10Desc {
+            get {
+                return ResourceManager.GetString("AchNoDamage10Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchPerfectWorld1 {
+            get {
+                return ResourceManager.GetString("AchPerfectWorld1", resourceCulture);
+            }
+        }
+
+        internal static string AchPerfectWorld1Desc {
+            get {
+                return ResourceManager.GetString("AchPerfectWorld1Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchPerfectWorld5 {
+            get {
+                return ResourceManager.GetString("AchPerfectWorld5", resourceCulture);
+            }
+        }
+
+        internal static string AchPerfectWorld5Desc {
+            get {
+                return ResourceManager.GetString("AchPerfectWorld5Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchPerfectWorld10 {
+            get {
+                return ResourceManager.GetString("AchPerfectWorld10", resourceCulture);
+            }
+        }
+
+        internal static string AchPerfectWorld10Desc {
+            get {
+                return ResourceManager.GetString("AchPerfectWorld10Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchSpecialBomb50 {
+            get {
+                return ResourceManager.GetString("AchSpecialBomb50", resourceCulture);
+            }
+        }
+
+        internal static string AchSpecialBomb50Desc {
+            get {
+                return ResourceManager.GetString("AchSpecialBomb50Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchSpecialBomb100 {
+            get {
+                return ResourceManager.GetString("AchSpecialBomb100", resourceCulture);
+            }
+        }
+
+        internal static string AchSpecialBomb100Desc {
+            get {
+                return ResourceManager.GetString("AchSpecialBomb100Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchSpeedrun5 {
+            get {
+                return ResourceManager.GetString("AchSpeedrun5", resourceCulture);
+            }
+        }
+
+        internal static string AchSpeedrun5Desc {
+            get {
+                return ResourceManager.GetString("AchSpeedrun5Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchSpeedrun10 {
+            get {
+                return ResourceManager.GetString("AchSpeedrun10", resourceCulture);
+            }
+        }
+
+        internal static string AchSpeedrun10Desc {
+            get {
+                return ResourceManager.GetString("AchSpeedrun10Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchStars200 {
+            get {
+                return ResourceManager.GetString("AchStars200", resourceCulture);
+            }
+        }
+
+        internal static string AchStars200Desc {
+            get {
+                return ResourceManager.GetString("AchStars200Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchStars250 {
+            get {
+                return ResourceManager.GetString("AchStars250", resourceCulture);
+            }
+        }
+
+        internal static string AchStars250Desc {
+            get {
+                return ResourceManager.GetString("AchStars250Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchStars300 {
+            get {
+                return ResourceManager.GetString("AchStars300", resourceCulture);
+            }
+        }
+
+        internal static string AchStars300Desc {
+            get {
+                return ResourceManager.GetString("AchStars300Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchSurvival60 {
+            get {
+                return ResourceManager.GetString("AchSurvival60", resourceCulture);
+            }
+        }
+
+        internal static string AchSurvival60Desc {
+            get {
+                return ResourceManager.GetString("AchSurvival60Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchSurvival180 {
+            get {
+                return ResourceManager.GetString("AchSurvival180", resourceCulture);
+            }
+        }
+
+        internal static string AchSurvival180Desc {
+            get {
+                return ResourceManager.GetString("AchSurvival180Desc", resourceCulture);
+            }
+        }
+
+        internal static string AchWeeklyComplete10 {
+            get {
+                return ResourceManager.GetString("AchWeeklyComplete10", resourceCulture);
+            }
+        }
+
+        internal static string AchWeeklyComplete10Desc {
+            get {
+                return ResourceManager.GetString("AchWeeklyComplete10Desc", resourceCulture);
+            }
+        }
+
+        // Quick Play
+        internal static string QuickPlayTitle {
+            get {
+                return ResourceManager.GetString("QuickPlayTitle", resourceCulture);
+            }
+        }
+
+        internal static string QuickPlayDifficulty {
+            get {
+                return ResourceManager.GetString("QuickPlayDifficulty", resourceCulture);
+            }
+        }
+
+        internal static string QuickPlayWorldLevel {
+            get {
+                return ResourceManager.GetString("QuickPlayWorldLevel", resourceCulture);
+            }
+        }
+
+        internal static string QuickPlaySeed {
+            get {
+                return ResourceManager.GetString("QuickPlaySeed", resourceCulture);
+            }
+        }
+
+        internal static string QuickPlaySeedHint {
+            get {
+                return ResourceManager.GetString("QuickPlaySeedHint", resourceCulture);
+            }
+        }
+
+        internal static string QuickPlayNewSeed {
+            get {
+                return ResourceManager.GetString("QuickPlayNewSeed", resourceCulture);
+            }
+        }
+
+        internal static string QuickPlayPlay {
+            get {
+                return ResourceManager.GetString("QuickPlayPlay", resourceCulture);
+            }
+        }
+
+        internal static string QuickPlayEasyHard {
+            get {
+                return ResourceManager.GetString("QuickPlayEasyHard", resourceCulture);
+            }
+        }
+
+        // Gems & Rarity
+        internal static string Gems {
+            get {
+                return ResourceManager.GetString("Gems", resourceCulture);
+            }
+        }
+
+        internal static string RarityCommon {
+            get {
+                return ResourceManager.GetString("RarityCommon", resourceCulture);
+            }
+        }
+
+        internal static string RarityRare {
+            get {
+                return ResourceManager.GetString("RarityRare", resourceCulture);
+            }
+        }
+
+        internal static string RarityEpic {
+            get {
+                return ResourceManager.GetString("RarityEpic", resourceCulture);
+            }
+        }
+
+        internal static string RarityLegendary {
+            get {
+                return ResourceManager.GetString("RarityLegendary", resourceCulture);
+            }
+        }
+
+        // Neue Bomben-Typen
+        internal static string BombSmoke {
+            get {
+                return ResourceManager.GetString("BombSmoke", resourceCulture);
+            }
+        }
+
+        internal static string BombSmokeDesc {
+            get {
+                return ResourceManager.GetString("BombSmokeDesc", resourceCulture);
+            }
+        }
+
+        internal static string BombLightning {
+            get {
+                return ResourceManager.GetString("BombLightning", resourceCulture);
+            }
+        }
+
+        internal static string BombLightningDesc {
+            get {
+                return ResourceManager.GetString("BombLightningDesc", resourceCulture);
+            }
+        }
+
+        internal static string BombGravity {
+            get {
+                return ResourceManager.GetString("BombGravity", resourceCulture);
+            }
+        }
+
+        internal static string BombGravityDesc {
+            get {
+                return ResourceManager.GetString("BombGravityDesc", resourceCulture);
+            }
+        }
+
+        internal static string BombPoison {
+            get {
+                return ResourceManager.GetString("BombPoison", resourceCulture);
+            }
+        }
+
+        internal static string BombPoisonDesc {
+            get {
+                return ResourceManager.GetString("BombPoisonDesc", resourceCulture);
+            }
+        }
+
+        internal static string BombTimeWarp {
+            get {
+                return ResourceManager.GetString("BombTimeWarp", resourceCulture);
+            }
+        }
+
+        internal static string BombTimeWarpDesc {
+            get {
+                return ResourceManager.GetString("BombTimeWarpDesc", resourceCulture);
+            }
+        }
+
+        internal static string BombMirror {
+            get {
+                return ResourceManager.GetString("BombMirror", resourceCulture);
+            }
+        }
+
+        internal static string BombMirrorDesc {
+            get {
+                return ResourceManager.GetString("BombMirrorDesc", resourceCulture);
+            }
+        }
+
+        internal static string BombVortex {
+            get {
+                return ResourceManager.GetString("BombVortex", resourceCulture);
+            }
+        }
+
+        internal static string BombVortexDesc {
+            get {
+                return ResourceManager.GetString("BombVortexDesc", resourceCulture);
+            }
+        }
+
+        internal static string BombPhantom {
+            get {
+                return ResourceManager.GetString("BombPhantom", resourceCulture);
+            }
+        }
+
+        internal static string BombPhantomDesc {
+            get {
+                return ResourceManager.GetString("BombPhantomDesc", resourceCulture);
+            }
+        }
+
+        internal static string BombNova {
+            get {
+                return ResourceManager.GetString("BombNova", resourceCulture);
+            }
+        }
+
+        internal static string BombNovaDesc {
+            get {
+                return ResourceManager.GetString("BombNovaDesc", resourceCulture);
+            }
+        }
+
+        internal static string BombBlackHole {
+            get {
+                return ResourceManager.GetString("BombBlackHole", resourceCulture);
+            }
+        }
+
+        internal static string BombBlackHoleDesc {
+            get {
+                return ResourceManager.GetString("BombBlackHoleDesc", resourceCulture);
+            }
+        }
+
+        // Bomben-Effekt Floating-Texte
+        internal static string EffectSmoke {
+            get {
+                return ResourceManager.GetString("EffectSmoke", resourceCulture);
+            }
+        }
+
+        internal static string EffectLightning {
+            get {
+                return ResourceManager.GetString("EffectLightning", resourceCulture);
+            }
+        }
+
+        internal static string EffectGravity {
+            get {
+                return ResourceManager.GetString("EffectGravity", resourceCulture);
+            }
+        }
+
+        internal static string EffectPoison {
+            get {
+                return ResourceManager.GetString("EffectPoison", resourceCulture);
+            }
+        }
+
+        internal static string EffectTimeWarp {
+            get {
+                return ResourceManager.GetString("EffectTimeWarp", resourceCulture);
+            }
+        }
+
+        internal static string EffectMirror {
+            get {
+                return ResourceManager.GetString("EffectMirror", resourceCulture);
+            }
+        }
+
+        internal static string EffectVortex {
+            get {
+                return ResourceManager.GetString("EffectVortex", resourceCulture);
+            }
+        }
+
+        internal static string EffectPhantom {
+            get {
+                return ResourceManager.GetString("EffectPhantom", resourceCulture);
+            }
+        }
+
+        internal static string EffectNova {
+            get {
+                return ResourceManager.GetString("EffectNova", resourceCulture);
+            }
+        }
+
+        internal static string EffectBlackHole {
+            get {
+                return ResourceManager.GetString("EffectBlackHole", resourceCulture);
+            }
+        }
+
+        // Deck Builder
+        internal static string DeckTitle {
+            get {
+                return ResourceManager.GetString("DeckTitle", resourceCulture);
+            }
+        }
+
+        internal static string DeckSelectCardHint {
+            get {
+                return ResourceManager.GetString("DeckSelectCardHint", resourceCulture);
+            }
+        }
+
+        internal static string CardUses {
+            get {
+                return ResourceManager.GetString("CardUses", resourceCulture);
+            }
+        }
+
+        internal static string CardLevelBronze {
+            get {
+                return ResourceManager.GetString("CardLevelBronze", resourceCulture);
+            }
+        }
+
+        internal static string CardLevelSilver {
+            get {
+                return ResourceManager.GetString("CardLevelSilver", resourceCulture);
+            }
+        }
+
+        internal static string CardLevelGold {
+            get {
+                return ResourceManager.GetString("CardLevelGold", resourceCulture);
+            }
+        }
+
+        internal static string CardMaxLevel {
+            get {
+                return ResourceManager.GetString("CardMaxLevel", resourceCulture);
+            }
+        }
+
+        internal static string DeckButton {
+            get {
+                return ResourceManager.GetString("DeckButton", resourceCulture);
+            }
+        }
+
+        internal static string CardDropTitle {
+            get {
+                return ResourceManager.GetString("CardDropTitle", resourceCulture);
+            }
+        }
+
+        // Bomben-Karten-Namen
+        internal static string CardNormalBomb {
+            get {
+                return ResourceManager.GetString("CardNormalBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardIceBomb {
+            get {
+                return ResourceManager.GetString("CardIceBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardFireBomb {
+            get {
+                return ResourceManager.GetString("CardFireBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardStickyBomb {
+            get {
+                return ResourceManager.GetString("CardStickyBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardSmokeBomb {
+            get {
+                return ResourceManager.GetString("CardSmokeBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardLightningBomb {
+            get {
+                return ResourceManager.GetString("CardLightningBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardGravityBomb {
+            get {
+                return ResourceManager.GetString("CardGravityBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardPoisonBomb {
+            get {
+                return ResourceManager.GetString("CardPoisonBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardTimeWarpBomb {
+            get {
+                return ResourceManager.GetString("CardTimeWarpBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardMirrorBomb {
+            get {
+                return ResourceManager.GetString("CardMirrorBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardVortexBomb {
+            get {
+                return ResourceManager.GetString("CardVortexBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardPhantomBomb {
+            get {
+                return ResourceManager.GetString("CardPhantomBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardNovaBomb {
+            get {
+                return ResourceManager.GetString("CardNovaBomb", resourceCulture);
+            }
+        }
+
+        internal static string CardBlackHoleBomb {
+            get {
+                return ResourceManager.GetString("CardBlackHoleBomb", resourceCulture);
+            }
+        }
+
+        // Bomben-Karten-Beschreibungen
+        internal static string CardNormalBombDesc {
+            get {
+                return ResourceManager.GetString("CardNormalBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardIceBombDesc {
+            get {
+                return ResourceManager.GetString("CardIceBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardFireBombDesc {
+            get {
+                return ResourceManager.GetString("CardFireBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardStickyBombDesc {
+            get {
+                return ResourceManager.GetString("CardStickyBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardSmokeBombDesc {
+            get {
+                return ResourceManager.GetString("CardSmokeBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardLightningBombDesc {
+            get {
+                return ResourceManager.GetString("CardLightningBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardGravityBombDesc {
+            get {
+                return ResourceManager.GetString("CardGravityBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardPoisonBombDesc {
+            get {
+                return ResourceManager.GetString("CardPoisonBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardTimeWarpBombDesc {
+            get {
+                return ResourceManager.GetString("CardTimeWarpBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardMirrorBombDesc {
+            get {
+                return ResourceManager.GetString("CardMirrorBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardVortexBombDesc {
+            get {
+                return ResourceManager.GetString("CardVortexBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardPhantomBombDesc {
+            get {
+                return ResourceManager.GetString("CardPhantomBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardNovaBombDesc {
+            get {
+                return ResourceManager.GetString("CardNovaBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string CardBlackHoleBombDesc {
+            get {
+                return ResourceManager.GetString("CardBlackHoleBombDesc", resourceCulture);
+            }
+        }
+        internal static string BombSkinCelestial {
+            get {
+                return ResourceManager.GetString("BombSkinCelestial", resourceCulture);
+            }
+        }
+
+        internal static string BombSkinLava {
+            get {
+                return ResourceManager.GetString("BombSkinLava", resourceCulture);
+            }
+        }
+
+        internal static string BombSkinPlasma {
+            get {
+                return ResourceManager.GetString("BombSkinPlasma", resourceCulture);
+            }
+        }
+
+        internal static string BombSkinSkull {
+            get {
+                return ResourceManager.GetString("BombSkinSkull", resourceCulture);
+            }
+        }
+
+        internal static string BombSkinToxic {
+            get {
+                return ResourceManager.GetString("BombSkinToxic", resourceCulture);
+            }
+        }
+
+        internal static string BombSkinWatermelon {
+            get {
+                return ResourceManager.GetString("BombSkinWatermelon", resourceCulture);
+            }
+        }
+
+        internal static string ExplosionSkinCherryBlossom {
+            get {
+                return ResourceManager.GetString("ExplosionSkinCherryBlossom", resourceCulture);
+            }
+        }
+
+        internal static string ExplosionSkinElectric {
+            get {
+                return ResourceManager.GetString("ExplosionSkinElectric", resourceCulture);
+            }
+        }
+
+        internal static string ExplosionSkinFrost {
+            get {
+                return ResourceManager.GetString("ExplosionSkinFrost", resourceCulture);
+            }
+        }
+
+        internal static string ExplosionSkinGalaxy {
+            get {
+                return ResourceManager.GetString("ExplosionSkinGalaxy", resourceCulture);
+            }
+        }
+
+        internal static string ExplosionSkinLava {
+            get {
+                return ResourceManager.GetString("ExplosionSkinLava", resourceCulture);
+            }
+        }
+
+        internal static string ExplosionSkinNova {
+            get {
+                return ResourceManager.GetString("ExplosionSkinNova", resourceCulture);
+            }
+        }
+
+        internal static string ExplosionSkinPlasma {
+            get {
+                return ResourceManager.GetString("ExplosionSkinPlasma", resourceCulture);
+            }
+        }
+
+        internal static string ExplosionSkinToxic {
+            get {
+                return ResourceManager.GetString("ExplosionSkinToxic", resourceCulture);
+            }
+        }
+
+        internal static string ExplosionSkinVoid {
+            get {
+                return ResourceManager.GetString("ExplosionSkinVoid", resourceCulture);
+            }
+        }
+
+        internal static string FrameArcane {
+            get {
+                return ResourceManager.GetString("FrameArcane", resourceCulture);
+            }
+        }
+
+        internal static string FrameArcaneDesc {
+            get {
+                return ResourceManager.GetString("FrameArcaneDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameCrown {
+            get {
+                return ResourceManager.GetString("FrameCrown", resourceCulture);
+            }
+        }
+
+        internal static string FrameCrownDesc {
+            get {
+                return ResourceManager.GetString("FrameCrownDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameCrystal {
+            get {
+                return ResourceManager.GetString("FrameCrystal", resourceCulture);
+            }
+        }
+
+        internal static string FrameCrystalDesc {
+            get {
+                return ResourceManager.GetString("FrameCrystalDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameDotted {
+            get {
+                return ResourceManager.GetString("FrameDotted", resourceCulture);
+            }
+        }
+
+        internal static string FrameDottedDesc {
+            get {
+                return ResourceManager.GetString("FrameDottedDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameDragon {
+            get {
+                return ResourceManager.GetString("FrameDragon", resourceCulture);
+            }
+        }
+
+        internal static string FrameDragonDesc {
+            get {
+                return ResourceManager.GetString("FrameDragonDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameElectric {
+            get {
+                return ResourceManager.GetString("FrameElectric", resourceCulture);
+            }
+        }
+
+        internal static string FrameElectricDesc {
+            get {
+                return ResourceManager.GetString("FrameElectricDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameFire {
+            get {
+                return ResourceManager.GetString("FrameFire", resourceCulture);
+            }
+        }
+
+        internal static string FrameFireDesc {
+            get {
+                return ResourceManager.GetString("FrameFireDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameIce {
+            get {
+                return ResourceManager.GetString("FrameIce", resourceCulture);
+            }
+        }
+
+        internal static string FrameIceDesc {
+            get {
+                return ResourceManager.GetString("FrameIceDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameNature {
+            get {
+                return ResourceManager.GetString("FrameNature", resourceCulture);
+            }
+        }
+
+        internal static string FrameNatureDesc {
+            get {
+                return ResourceManager.GetString("FrameNatureDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameNone {
+            get {
+                return ResourceManager.GetString("FrameNone", resourceCulture);
+            }
+        }
+
+        internal static string FramePhoenix {
+            get {
+                return ResourceManager.GetString("FramePhoenix", resourceCulture);
+            }
+        }
+
+        internal static string FramePhoenixDesc {
+            get {
+                return ResourceManager.GetString("FramePhoenixDesc", resourceCulture);
+            }
+        }
+
+        internal static string FramePlasma {
+            get {
+                return ResourceManager.GetString("FramePlasma", resourceCulture);
+            }
+        }
+
+        internal static string FramePlasmaDesc {
+            get {
+                return ResourceManager.GetString("FramePlasmaDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameRounded {
+            get {
+                return ResourceManager.GetString("FrameRounded", resourceCulture);
+            }
+        }
+
+        internal static string FrameRoundedDesc {
+            get {
+                return ResourceManager.GetString("FrameRoundedDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameShadow {
+            get {
+                return ResourceManager.GetString("FrameShadow", resourceCulture);
+            }
+        }
+
+        internal static string FrameShadowDesc {
+            get {
+                return ResourceManager.GetString("FrameShadowDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameSimple {
+            get {
+                return ResourceManager.GetString("FrameSimple", resourceCulture);
+            }
+        }
+
+        internal static string FrameSimpleDesc {
+            get {
+                return ResourceManager.GetString("FrameSimpleDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameSquare {
+            get {
+                return ResourceManager.GetString("FrameSquare", resourceCulture);
+            }
+        }
+
+        internal static string FrameSquareDesc {
+            get {
+                return ResourceManager.GetString("FrameSquareDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameStellar {
+            get {
+                return ResourceManager.GetString("FrameStellar", resourceCulture);
+            }
+        }
+
+        internal static string FrameStellarDesc {
+            get {
+                return ResourceManager.GetString("FrameStellarDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameThin {
+            get {
+                return ResourceManager.GetString("FrameThin", resourceCulture);
+            }
+        }
+
+        internal static string FrameThinDesc {
+            get {
+                return ResourceManager.GetString("FrameThinDesc", resourceCulture);
+            }
+        }
+
+        internal static string FrameWater {
+            get {
+                return ResourceManager.GetString("FrameWater", resourceCulture);
+            }
+        }
+
+        internal static string FrameWaterDesc {
+            get {
+                return ResourceManager.GetString("FrameWaterDesc", resourceCulture);
+            }
+        }
+
+        internal static string SectionFrames {
+            get {
+                return ResourceManager.GetString("SectionFrames", resourceCulture);
+            }
+        }
+
+        internal static string SectionTrails {
+            get {
+                return ResourceManager.GetString("SectionTrails", resourceCulture);
+            }
+        }
+
+        internal static string SectionVictories {
+            get {
+                return ResourceManager.GetString("SectionVictories", resourceCulture);
+            }
+        }
+
+        internal static string SkinDragon {
+            get {
+                return ResourceManager.GetString("SkinDragon", resourceCulture);
+            }
+        }
+
+        internal static string SkinNinja {
+            get {
+                return ResourceManager.GetString("SkinNinja", resourceCulture);
+            }
+        }
+
+        internal static string SkinPirate {
+            get {
+                return ResourceManager.GetString("SkinPirate", resourceCulture);
+            }
+        }
+
+        internal static string SkinPixelRetro {
+            get {
+                return ResourceManager.GetString("SkinPixelRetro", resourceCulture);
+            }
+        }
+
+        internal static string SkinRobot {
+            get {
+                return ResourceManager.GetString("SkinRobot", resourceCulture);
+            }
+        }
+
+        internal static string TrailBubbles {
+            get {
+                return ResourceManager.GetString("TrailBubbles", resourceCulture);
+            }
+        }
+
+        internal static string TrailBubblesDesc {
+            get {
+                return ResourceManager.GetString("TrailBubblesDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailCrystal {
+            get {
+                return ResourceManager.GetString("TrailCrystal", resourceCulture);
+            }
+        }
+
+        internal static string TrailCrystalDesc {
+            get {
+                return ResourceManager.GetString("TrailCrystalDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailDust {
+            get {
+                return ResourceManager.GetString("TrailDust", resourceCulture);
+            }
+        }
+
+        internal static string TrailDustDesc {
+            get {
+                return ResourceManager.GetString("TrailDustDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailElectric {
+            get {
+                return ResourceManager.GetString("TrailElectric", resourceCulture);
+            }
+        }
+
+        internal static string TrailElectricDesc {
+            get {
+                return ResourceManager.GetString("TrailElectricDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailFlame {
+            get {
+                return ResourceManager.GetString("TrailFlame", resourceCulture);
+            }
+        }
+
+        internal static string TrailFlameDesc {
+            get {
+                return ResourceManager.GetString("TrailFlameDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailFootsteps {
+            get {
+                return ResourceManager.GetString("TrailFootsteps", resourceCulture);
+            }
+        }
+
+        internal static string TrailFootstepsDesc {
+            get {
+                return ResourceManager.GetString("TrailFootstepsDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailFrost {
+            get {
+                return ResourceManager.GetString("TrailFrost", resourceCulture);
+            }
+        }
+
+        internal static string TrailFrostDesc {
+            get {
+                return ResourceManager.GetString("TrailFrostDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailGoldenPath {
+            get {
+                return ResourceManager.GetString("TrailGoldenPath", resourceCulture);
+            }
+        }
+
+        internal static string TrailGoldenPathDesc {
+            get {
+                return ResourceManager.GetString("TrailGoldenPathDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailLeaves {
+            get {
+                return ResourceManager.GetString("TrailLeaves", resourceCulture);
+            }
+        }
+
+        internal static string TrailLeavesDesc {
+            get {
+                return ResourceManager.GetString("TrailLeavesDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailNone {
+            get {
+                return ResourceManager.GetString("TrailNone", resourceCulture);
+            }
+        }
+
+        internal static string TrailPhoenix {
+            get {
+                return ResourceManager.GetString("TrailPhoenix", resourceCulture);
+            }
+        }
+
+        internal static string TrailPhoenixDesc {
+            get {
+                return ResourceManager.GetString("TrailPhoenixDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailPlasma {
+            get {
+                return ResourceManager.GetString("TrailPlasma", resourceCulture);
+            }
+        }
+
+        internal static string TrailPlasmaDesc {
+            get {
+                return ResourceManager.GetString("TrailPlasmaDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailRainbow {
+            get {
+                return ResourceManager.GetString("TrailRainbow", resourceCulture);
+            }
+        }
+
+        internal static string TrailRainbowDesc {
+            get {
+                return ResourceManager.GetString("TrailRainbowDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailShadow {
+            get {
+                return ResourceManager.GetString("TrailShadow", resourceCulture);
+            }
+        }
+
+        internal static string TrailShadowDesc {
+            get {
+                return ResourceManager.GetString("TrailShadowDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailSmoke {
+            get {
+                return ResourceManager.GetString("TrailSmoke", resourceCulture);
+            }
+        }
+
+        internal static string TrailSmokeDesc {
+            get {
+                return ResourceManager.GetString("TrailSmokeDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailSparkle {
+            get {
+                return ResourceManager.GetString("TrailSparkle", resourceCulture);
+            }
+        }
+
+        internal static string TrailSparkleDesc {
+            get {
+                return ResourceManager.GetString("TrailSparkleDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailStardust {
+            get {
+                return ResourceManager.GetString("TrailStardust", resourceCulture);
+            }
+        }
+
+        internal static string TrailStardustDesc {
+            get {
+                return ResourceManager.GetString("TrailStardustDesc", resourceCulture);
+            }
+        }
+
+        internal static string TrailVoid {
+            get {
+                return ResourceManager.GetString("TrailVoid", resourceCulture);
+            }
+        }
+
+        internal static string TrailVoidDesc {
+            get {
+                return ResourceManager.GetString("TrailVoidDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryBackflip {
+            get {
+                return ResourceManager.GetString("VictoryBackflip", resourceCulture);
+            }
+        }
+
+        internal static string VictoryBackflipDesc {
+            get {
+                return ResourceManager.GetString("VictoryBackflipDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryBreakdance {
+            get {
+                return ResourceManager.GetString("VictoryBreakdance", resourceCulture);
+            }
+        }
+
+        internal static string VictoryBreakdanceDesc {
+            get {
+                return ResourceManager.GetString("VictoryBreakdanceDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryClap {
+            get {
+                return ResourceManager.GetString("VictoryClap", resourceCulture);
+            }
+        }
+
+        internal static string VictoryClapDesc {
+            get {
+                return ResourceManager.GetString("VictoryClapDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryDab {
+            get {
+                return ResourceManager.GetString("VictoryDab", resourceCulture);
+            }
+        }
+
+        internal static string VictoryDabDesc {
+            get {
+                return ResourceManager.GetString("VictoryDabDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryDance {
+            get {
+                return ResourceManager.GetString("VictoryDance", resourceCulture);
+            }
+        }
+
+        internal static string VictoryDanceDesc {
+            get {
+                return ResourceManager.GetString("VictoryDanceDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryDragonRoar {
+            get {
+                return ResourceManager.GetString("VictoryDragonRoar", resourceCulture);
+            }
+        }
+
+        internal static string VictoryDragonRoarDesc {
+            get {
+                return ResourceManager.GetString("VictoryDragonRoarDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryFireDance {
+            get {
+                return ResourceManager.GetString("VictoryFireDance", resourceCulture);
+            }
+        }
+
+        internal static string VictoryFireDanceDesc {
+            get {
+                return ResourceManager.GetString("VictoryFireDanceDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryFlex {
+            get {
+                return ResourceManager.GetString("VictoryFlex", resourceCulture);
+            }
+        }
+
+        internal static string VictoryFlexDesc {
+            get {
+                return ResourceManager.GetString("VictoryFlexDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryFrostAura {
+            get {
+                return ResourceManager.GetString("VictoryFrostAura", resourceCulture);
+            }
+        }
+
+        internal static string VictoryFrostAuraDesc {
+            get {
+                return ResourceManager.GetString("VictoryFrostAuraDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryGoldExplosion {
+            get {
+                return ResourceManager.GetString("VictoryGoldExplosion", resourceCulture);
+            }
+        }
+
+        internal static string VictoryGoldExplosionDesc {
+            get {
+                return ResourceManager.GetString("VictoryGoldExplosionDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryHeadbang {
+            get {
+                return ResourceManager.GetString("VictoryHeadbang", resourceCulture);
+            }
+        }
+
+        internal static string VictoryHeadbangDesc {
+            get {
+                return ResourceManager.GetString("VictoryHeadbangDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryJump {
+            get {
+                return ResourceManager.GetString("VictoryJump", resourceCulture);
+            }
+        }
+
+        internal static string VictoryJumpDesc {
+            get {
+                return ResourceManager.GetString("VictoryJumpDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryMoonwalk {
+            get {
+                return ResourceManager.GetString("VictoryMoonwalk", resourceCulture);
+            }
+        }
+
+        internal static string VictoryMoonwalkDesc {
+            get {
+                return ResourceManager.GetString("VictoryMoonwalkDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryNod {
+            get {
+                return ResourceManager.GetString("VictoryNod", resourceCulture);
+            }
+        }
+
+        internal static string VictoryNodDesc {
+            get {
+                return ResourceManager.GetString("VictoryNodDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryNone {
+            get {
+                return ResourceManager.GetString("VictoryNone", resourceCulture);
+            }
+        }
+
+        internal static string VictorySpin {
+            get {
+                return ResourceManager.GetString("VictorySpin", resourceCulture);
+            }
+        }
+
+        internal static string VictorySpinDesc {
+            get {
+                return ResourceManager.GetString("VictorySpinDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictorySuperNova {
+            get {
+                return ResourceManager.GetString("VictorySuperNova", resourceCulture);
+            }
+        }
+
+        internal static string VictorySuperNovaDesc {
+            get {
+                return ResourceManager.GetString("VictorySuperNovaDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryTornado {
+            get {
+                return ResourceManager.GetString("VictoryTornado", resourceCulture);
+            }
+        }
+
+        internal static string VictoryTornadoDesc {
+            get {
+                return ResourceManager.GetString("VictoryTornadoDesc", resourceCulture);
+            }
+        }
+
+        internal static string VictoryWave {
+            get {
+                return ResourceManager.GetString("VictoryWave", resourceCulture);
+            }
+        }
+
+        internal static string VictoryWaveDesc {
+            get {
+                return ResourceManager.GetString("VictoryWaveDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonTitle {
+            get {
+                return ResourceManager.GetString("DungeonTitle", resourceCulture);
+            }
+        }
+
+        internal static string DungeonButton {
+            get {
+                return ResourceManager.GetString("DungeonButton", resourceCulture);
+            }
+        }
+
+        internal static string DungeonStartFree {
+            get {
+                return ResourceManager.GetString("DungeonStartFree", resourceCulture);
+            }
+        }
+
+        internal static string DungeonStartCoins {
+            get {
+                return ResourceManager.GetString("DungeonStartCoins", resourceCulture);
+            }
+        }
+
+        internal static string DungeonStartGems {
+            get {
+                return ResourceManager.GetString("DungeonStartGems", resourceCulture);
+            }
+        }
+
+        internal static string DungeonStartAd {
+            get {
+                return ResourceManager.GetString("DungeonStartAd", resourceCulture);
+            }
+        }
+
+        internal static string DungeonFloor {
+            get {
+                return ResourceManager.GetString("DungeonFloor", resourceCulture);
+            }
+        }
+
+        internal static string DungeonLives {
+            get {
+                return ResourceManager.GetString("DungeonLives", resourceCulture);
+            }
+        }
+
+        internal static string DungeonTotalRuns {
+            get {
+                return ResourceManager.GetString("DungeonTotalRuns", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBestFloor {
+            get {
+                return ResourceManager.GetString("DungeonBestFloor", resourceCulture);
+            }
+        }
+
+        internal static string DungeonSummaryFloors {
+            get {
+                return ResourceManager.GetString("DungeonSummaryFloors", resourceCulture);
+            }
+        }
+
+        internal static string DungeonSummaryCoins {
+            get {
+                return ResourceManager.GetString("DungeonSummaryCoins", resourceCulture);
+            }
+        }
+
+        internal static string DungeonSummaryGems {
+            get {
+                return ResourceManager.GetString("DungeonSummaryGems", resourceCulture);
+            }
+        }
+
+        internal static string DungeonSummaryCards {
+            get {
+                return ResourceManager.GetString("DungeonSummaryCards", resourceCulture);
+            }
+        }
+
+        internal static string DungeonNewBest {
+            get {
+                return ResourceManager.GetString("DungeonNewBest", resourceCulture);
+            }
+        }
+
+        internal static string DungeonRunOver {
+            get {
+                return ResourceManager.GetString("DungeonRunOver", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffSelectTitle {
+            get {
+                return ResourceManager.GetString("DungeonBuffSelectTitle", resourceCulture);
+            }
+        }
+
+        internal static string DungeonContinue {
+            get {
+                return ResourceManager.GetString("DungeonContinue", resourceCulture);
+            }
+        }
+
+        internal static string DungeonRetry {
+            get {
+                return ResourceManager.GetString("DungeonRetry", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffExtraBomb {
+            get {
+                return ResourceManager.GetString("DungeonBuffExtraBomb", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffExtraBombDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffExtraBombDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffExtraFire {
+            get {
+                return ResourceManager.GetString("DungeonBuffExtraFire", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffExtraFireDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffExtraFireDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffSpeed {
+            get {
+                return ResourceManager.GetString("DungeonBuffSpeed", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffSpeedDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffSpeedDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffShield {
+            get {
+                return ResourceManager.GetString("DungeonBuffShield", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffShieldDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffShieldDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffCoins {
+            get {
+                return ResourceManager.GetString("DungeonBuffCoins", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffCoinsDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffCoinsDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffReload {
+            get {
+                return ResourceManager.GetString("DungeonBuffReload", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffReloadDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffReloadDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffSlow {
+            get {
+                return ResourceManager.GetString("DungeonBuffSlow", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffSlowDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffSlowDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffLife {
+            get {
+                return ResourceManager.GetString("DungeonBuffLife", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffLifeDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffLifeDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffFireImmunity {
+            get {
+                return ResourceManager.GetString("DungeonBuffFireImmunity", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffFireImmunityDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffFireImmunityDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffBlast {
+            get {
+                return ResourceManager.GetString("DungeonBuffBlast", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffBlastDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffBlastDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffBombTimer {
+            get {
+                return ResourceManager.GetString("DungeonBuffBombTimer", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffBombTimerDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffBombTimerDesc", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffMagnet {
+            get {
+                return ResourceManager.GetString("DungeonBuffMagnet", resourceCulture);
+            }
+        }
+
+        internal static string DungeonBuffMagnetDesc {
+            get {
+                return ResourceManager.GetString("DungeonBuffMagnetDesc", resourceCulture);
+            }
+        }
+
+        internal static string BattlePassTitle => ResourceManager.GetString("BattlePassTitle", resourceCulture)!;
+
+        internal static string BattlePassButton => ResourceManager.GetString("BattlePassButton", resourceCulture)!;
+
+        internal static string BattlePassTierLabel => ResourceManager.GetString("BattlePassTierLabel", resourceCulture)!;
+
+        internal static string BattlePassTierFormat => ResourceManager.GetString("BattlePassTierFormat", resourceCulture)!;
+
+        internal static string BattlePassSeason => ResourceManager.GetString("BattlePassSeason", resourceCulture)!;
+
+        internal static string BattlePassUpgrade => ResourceManager.GetString("BattlePassUpgrade", resourceCulture)!;
+
+        internal static string BattlePassMaxTier => ResourceManager.GetString("BattlePassMaxTier", resourceCulture)!;
+
+        internal static string BattlePassDayRemaining => ResourceManager.GetString("BattlePassDayRemaining", resourceCulture)!;
+
+        internal static string BattlePassDaysRemaining => ResourceManager.GetString("BattlePassDaysRemaining", resourceCulture)!;
+
+        internal static string BattlePassExpired => ResourceManager.GetString("BattlePassExpired", resourceCulture)!;
+
+        internal static string BattlePassClaim => ResourceManager.GetString("BattlePassClaim", resourceCulture)!;
+
+        internal static string BattlePassFreeTrack => ResourceManager.GetString("BattlePassFreeTrack", resourceCulture)!;
+
+        internal static string BattlePassPremiumTrack => ResourceManager.GetString("BattlePassPremiumTrack", resourceCulture)!;
+
+        internal static string BattlePassNewSeason => ResourceManager.GetString("BattlePassNewSeason", resourceCulture)!;
+
+        internal static string CardPack => ResourceManager.GetString("CardPack", resourceCulture)!;
+
+        internal static string CardPacks => ResourceManager.GetString("CardPacks", resourceCulture)!;
+
+        internal static string CollectionTitle => ResourceManager.GetString("CollectionTitle", resourceCulture)!;
+
+        internal static string CollectionButton => ResourceManager.GetString("CollectionButton", resourceCulture)!;
+
+        internal static string CollectionEnemies => ResourceManager.GetString("CollectionEnemies", resourceCulture)!;
+
+        internal static string CollectionBosses => ResourceManager.GetString("CollectionBosses", resourceCulture)!;
+
+        internal static string CollectionPowerUps => ResourceManager.GetString("CollectionPowerUps", resourceCulture)!;
+
+        internal static string CollectionCards => ResourceManager.GetString("CollectionCards", resourceCulture)!;
+
+        internal static string CollectionCosmetics => ResourceManager.GetString("CollectionCosmetics", resourceCulture)!;
+
+        internal static string CollectionOwned => ResourceManager.GetString("CollectionOwned", resourceCulture)!;
+
+        internal static string CollectionNotOwned => ResourceManager.GetString("CollectionNotOwned", resourceCulture)!;
+
+        internal static string CollectionClaimNow => ResourceManager.GetString("CollectionClaimNow", resourceCulture)!;
+
+        internal static string CollectionEncountered => ResourceManager.GetString("CollectionEncountered", resourceCulture)!;
+
+        internal static string CollectionDefeated => ResourceManager.GetString("CollectionDefeated", resourceCulture)!;
+
+        internal static string CollectionCollected => ResourceManager.GetString("CollectionCollected", resourceCulture)!;
+
+        internal static string EnemyBallomName => ResourceManager.GetString("EnemyBallomName", resourceCulture)!;
+
+        internal static string EnemyOnilName => ResourceManager.GetString("EnemyOnilName", resourceCulture)!;
+
+        internal static string EnemyDollName => ResourceManager.GetString("EnemyDollName", resourceCulture)!;
+
+        internal static string EnemyMinvoName => ResourceManager.GetString("EnemyMinvoName", resourceCulture)!;
+
+        internal static string EnemyOvapiName => ResourceManager.GetString("EnemyOvapiName", resourceCulture)!;
+
+        internal static string EnemyKondoriaName => ResourceManager.GetString("EnemyKondoriaName", resourceCulture)!;
+
+        internal static string EnemyPontanName => ResourceManager.GetString("EnemyPontanName", resourceCulture)!;
+
+        internal static string EnemyPassName => ResourceManager.GetString("EnemyPassName", resourceCulture)!;
+
+        internal static string EnemyTankerName => ResourceManager.GetString("EnemyTankerName", resourceCulture)!;
+
+        internal static string EnemyGhostName => ResourceManager.GetString("EnemyGhostName", resourceCulture)!;
+
+        internal static string EnemySplitterName => ResourceManager.GetString("EnemySplitterName", resourceCulture)!;
+
+        internal static string EnemyMimicName => ResourceManager.GetString("EnemyMimicName", resourceCulture)!;
+
+        internal static string EnemyBallomLore => ResourceManager.GetString("EnemyBallomLore", resourceCulture)!;
+
+        internal static string EnemyOnilLore => ResourceManager.GetString("EnemyOnilLore", resourceCulture)!;
+
+        internal static string EnemyDollLore => ResourceManager.GetString("EnemyDollLore", resourceCulture)!;
+
+        internal static string EnemyMinvoLore => ResourceManager.GetString("EnemyMinvoLore", resourceCulture)!;
+
+        internal static string EnemyOvapiLore => ResourceManager.GetString("EnemyOvapiLore", resourceCulture)!;
+
+        internal static string EnemyKondoriaLore => ResourceManager.GetString("EnemyKondoriaLore", resourceCulture)!;
+
+        internal static string EnemyPontanLore => ResourceManager.GetString("EnemyPontanLore", resourceCulture)!;
+
+        internal static string EnemyPassLore => ResourceManager.GetString("EnemyPassLore", resourceCulture)!;
+
+        internal static string EnemyTankerLore => ResourceManager.GetString("EnemyTankerLore", resourceCulture)!;
+
+        internal static string EnemyGhostLore => ResourceManager.GetString("EnemyGhostLore", resourceCulture)!;
+
+        internal static string EnemySplitterLore => ResourceManager.GetString("EnemySplitterLore", resourceCulture)!;
+
+        internal static string EnemyMimicLore => ResourceManager.GetString("EnemyMimicLore", resourceCulture)!;
+
+        internal static string BossStoneGolemLore => ResourceManager.GetString("BossStoneGolemLore", resourceCulture)!;
+
+        internal static string BossIceDragonLore => ResourceManager.GetString("BossIceDragonLore", resourceCulture)!;
+
+        internal static string BossFireDemonLore => ResourceManager.GetString("BossFireDemonLore", resourceCulture)!;
+
+        internal static string BossShadowMasterLore => ResourceManager.GetString("BossShadowMasterLore", resourceCulture)!;
+
+        internal static string BossFinalBossLore => ResourceManager.GetString("BossFinalBossLore", resourceCulture)!;
+
+        internal static string PowerUpbombupName => ResourceManager.GetString("PowerUpbombupName", resourceCulture)!;
+
+        internal static string PowerUpfireName => ResourceManager.GetString("PowerUpfireName", resourceCulture)!;
+
+        internal static string PowerUpspeedName => ResourceManager.GetString("PowerUpspeedName", resourceCulture)!;
+
+        internal static string PowerUpwallpassName => ResourceManager.GetString("PowerUpwallpassName", resourceCulture)!;
+
+        internal static string PowerUpdetonatorName => ResourceManager.GetString("PowerUpdetonatorName", resourceCulture)!;
+
+        internal static string PowerUpbombpassName => ResourceManager.GetString("PowerUpbombpassName", resourceCulture)!;
+
+        internal static string PowerUpflamepassName => ResourceManager.GetString("PowerUpflamepassName", resourceCulture)!;
+
+        internal static string PowerUpmysteryName => ResourceManager.GetString("PowerUpmysteryName", resourceCulture)!;
+
+        internal static string PowerUpkickName => ResourceManager.GetString("PowerUpkickName", resourceCulture)!;
+
+        internal static string PowerUplinebombName => ResourceManager.GetString("PowerUplinebombName", resourceCulture)!;
+
+        internal static string PowerUppowerbombName => ResourceManager.GetString("PowerUppowerbombName", resourceCulture)!;
+
+        internal static string PowerUpskullName => ResourceManager.GetString("PowerUpskullName", resourceCulture)!;
+
+        internal static string PowerUpbombupLore => ResourceManager.GetString("PowerUpbombupLore", resourceCulture)!;
+
+        internal static string PowerUpfireLore => ResourceManager.GetString("PowerUpfireLore", resourceCulture)!;
+
+        internal static string PowerUpspeedLore => ResourceManager.GetString("PowerUpspeedLore", resourceCulture)!;
+
+        internal static string PowerUpwallpassLore => ResourceManager.GetString("PowerUpwallpassLore", resourceCulture)!;
+
+        internal static string PowerUpdetonatorLore => ResourceManager.GetString("PowerUpdetonatorLore", resourceCulture)!;
+
+        internal static string PowerUpbombpassLore => ResourceManager.GetString("PowerUpbombpassLore", resourceCulture)!;
+
+        internal static string PowerUpflamepassLore => ResourceManager.GetString("PowerUpflamepassLore", resourceCulture)!;
+
+        internal static string PowerUpmysteryLore => ResourceManager.GetString("PowerUpmysteryLore", resourceCulture)!;
+
+        internal static string PowerUpkickLore => ResourceManager.GetString("PowerUpkickLore", resourceCulture)!;
+
+        internal static string PowerUplinebombLore => ResourceManager.GetString("PowerUplinebombLore", resourceCulture)!;
+
+        internal static string PowerUppowerbombLore => ResourceManager.GetString("PowerUppowerbombLore", resourceCulture)!;
+
+        internal static string PowerUpskullLore => ResourceManager.GetString("PowerUpskullLore", resourceCulture)!;
+
+        internal static string LeagueTitle => ResourceManager.GetString("LeagueTitle", resourceCulture)!;
+
+        internal static string LeagueButton => ResourceManager.GetString("LeagueButton", resourceCulture)!;
+
+        internal static string LeaguePlayerName => ResourceManager.GetString("LeaguePlayerName", resourceCulture)!;
+
+        internal static string LeaguePoints => ResourceManager.GetString("LeaguePoints", resourceCulture)!;
+
+        internal static string LeagueRank => ResourceManager.GetString("LeagueRank", resourceCulture)!;
+
+        internal static string LeagueNextTier => ResourceManager.GetString("LeagueNextTier", resourceCulture)!;
+
+        internal static string LeagueMaxTier => ResourceManager.GetString("LeagueMaxTier", resourceCulture)!;
+
+        internal static string LeagueSeasonEnded => ResourceManager.GetString("LeagueSeasonEnded", resourceCulture)!;
+
+        internal static string LeagueRewardCoins => ResourceManager.GetString("LeagueRewardCoins", resourceCulture)!;
+
+        internal static string LeagueRewardGems => ResourceManager.GetString("LeagueRewardGems", resourceCulture)!;
+
+        internal static string LeagueBronze => ResourceManager.GetString("LeagueBronze", resourceCulture)!;
+
+        internal static string LeagueSilver => ResourceManager.GetString("LeagueSilver", resourceCulture)!;
+
+        internal static string LeagueGold => ResourceManager.GetString("LeagueGold", resourceCulture)!;
+
+        internal static string LeaguePlatinum => ResourceManager.GetString("LeaguePlatinum", resourceCulture)!;
+
+        internal static string LeagueDiamond => ResourceManager.GetString("LeagueDiamond", resourceCulture)!;
+
+        internal static string LeagueStatSeasons => ResourceManager.GetString("LeagueStatSeasons", resourceCulture)!;
+
+        internal static string LeagueStatPromotions => ResourceManager.GetString("LeagueStatPromotions", resourceCulture)!;
+
+        internal static string LeagueStatBest => ResourceManager.GetString("LeagueStatBest", resourceCulture)!;
+
+        internal static string LeagueSeasonReward => ResourceManager.GetString("LeagueSeasonReward", resourceCulture)!;
+
+        internal static string LeagueClaimed => ResourceManager.GetString("LeagueClaimed", resourceCulture)!;
+
+        internal static string LeagueClaimNow => ResourceManager.GetString("LeagueClaimNow", resourceCulture)!;
+
+        internal static string LeaguePromotion => ResourceManager.GetString("LeaguePromotion", resourceCulture)!;
+
+        internal static string LeagueRelegation => ResourceManager.GetString("LeagueRelegation", resourceCulture)!;
+
+        internal static string LeagueSeason => ResourceManager.GetString("LeagueSeason", resourceCulture)!;
+
+        internal static string LeagueTop => ResourceManager.GetString("LeagueTop", resourceCulture)!;
+
+        internal static string CloudSaveTitle => ResourceManager.GetString("CloudSaveTitle", resourceCulture)!;
+
+        internal static string CloudSaveToggle => ResourceManager.GetString("CloudSaveToggle", resourceCulture)!;
+
+        internal static string CloudSaveDisabled => ResourceManager.GetString("CloudSaveDisabled", resourceCulture)!;
+
+        internal static string CloudSaveNeverSynced => ResourceManager.GetString("CloudSaveNeverSynced", resourceCulture)!;
+
+        internal static string CloudSaveJustNow => ResourceManager.GetString("CloudSaveJustNow", resourceCulture)!;
+
+        internal static string CloudSaveSyncing => ResourceManager.GetString("CloudSaveSyncing", resourceCulture)!;
+
+        internal static string CloudSaveLastSync => ResourceManager.GetString("CloudSaveLastSync", resourceCulture)!;
+
+        internal static string CloudSaveUploadSuccess => ResourceManager.GetString("CloudSaveUploadSuccess", resourceCulture)!;
+
+        internal static string CloudSaveDownloadSuccess => ResourceManager.GetString("CloudSaveDownloadSuccess", resourceCulture)!;
+
+        internal static string CloudSaveRestartHint => ResourceManager.GetString("CloudSaveRestartHint", resourceCulture)!;
+
+        internal static string CloudSaveError => ResourceManager.GetString("CloudSaveError", resourceCulture)!;
+
+        internal static string CloudSaveButton => ResourceManager.GetString("CloudSaveButton", resourceCulture)!;
+
+        internal static string DeckLabel => ResourceManager.GetString("DeckLabel", resourceCulture)!;
+
+        internal static string CardStrength => ResourceManager.GetString("CardStrength", resourceCulture)!;
+
+        internal static string CardDropSource => ResourceManager.GetString("CardDropSource", resourceCulture)!;
+
+        internal static string CardUpgradeLabel => ResourceManager.GetString("CardUpgradeLabel", resourceCulture)!;
+
+        internal static string CardNotOwned => ResourceManager.GetString("CardNotOwned", resourceCulture)!;
+
+        internal static string DropSourceLevel => ResourceManager.GetString("DropSourceLevel", resourceCulture)!;
+
+        internal static string DropSourceBoss => ResourceManager.GetString("DropSourceBoss", resourceCulture)!;
+
+        internal static string DropSourceDungeon => ResourceManager.GetString("DropSourceDungeon", resourceCulture)!;
+
     }
 }

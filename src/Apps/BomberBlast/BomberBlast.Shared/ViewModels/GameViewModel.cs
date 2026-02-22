@@ -32,8 +32,11 @@ public partial class GameViewModel : ObservableObject, IDisposable
 
     private string _mode = "story";
     private int _level = 1;
+    private int _difficulty = 5;
     private bool _continueMode;
     private string _boostType = "";
+    private int _dungeonFloor;
+    private int _dungeonSeed;
     private int _lastCoinsEarned;
     private bool _lastIsLevelComplete;
 
@@ -121,12 +124,15 @@ public partial class GameViewModel : ObservableObject, IDisposable
     /// Set the game mode and level parameters before starting.
     /// Resets initialization flag so the game engine reinitializes on next OnAppearingAsync.
     /// </summary>
-    public void SetParameters(string mode, int level, bool continueMode = false, string boostType = "")
+    public void SetParameters(string mode, int level, bool continueMode = false, string boostType = "", int difficulty = 5, int dungeonFloor = 0, int dungeonSeed = 0)
     {
         _mode = mode;
         _level = level;
+        _difficulty = difficulty;
         _continueMode = continueMode;
         _boostType = boostType;
+        _dungeonFloor = dungeonFloor;
+        _dungeonSeed = dungeonSeed;
         _isInitialized = false;
     }
 
@@ -214,8 +220,8 @@ public partial class GameViewModel : ObservableObject, IDisposable
 
         switch (_mode.ToLower())
         {
-            case "arcade":
-                await _gameEngine.StartArcadeModeAsync();
+            case "survival":
+                await _gameEngine.StartSurvivalModeAsync();
                 break;
 
             case "daily":
@@ -223,10 +229,11 @@ public partial class GameViewModel : ObservableObject, IDisposable
                 break;
 
             case "quick":
-                var random = new Random();
-                int maxLevel = Math.Max(_progressService.HighestCompletedLevel, 10);
-                int randomLevel = random.Next(1, maxLevel + 1);
-                await _gameEngine.StartStoryModeAsync(randomLevel);
+                await _gameEngine.StartQuickPlayModeAsync(_level, _difficulty);
+                break;
+
+            case "dungeon":
+                await _gameEngine.StartDungeonFloorAsync(_dungeonFloor, _dungeonSeed);
                 break;
 
             case "story":
@@ -358,6 +365,13 @@ public partial class GameViewModel : ObservableObject, IDisposable
             return;
         }
 
+        // T = Spezial-Bomben-Typ durchschalten
+        if (key == Key.T)
+        {
+            ToggleSpecialBomb();
+            return;
+        }
+
         if (_gameEngine.State == GameState.Playing)
         {
             _gameEngine.OnKeyDown(key);
@@ -370,6 +384,53 @@ public partial class GameViewModel : ObservableObject, IDisposable
     public void OnKeyUp(Key key)
     {
         _gameEngine.OnKeyUp(key);
+    }
+
+    /// <summary>
+    /// Gamepad Face-Button gedrückt. Start=Pause, Y=ToggleSpecialBomb, Rest an Engine.
+    /// </summary>
+    public void OnGamepadButtonDown(BomberBlast.Input.GamepadButton button)
+    {
+        // Start = Pause (analog zu Escape)
+        if (button == BomberBlast.Input.GamepadButton.Start)
+        {
+            if (IsPaused)
+                Resume();
+            else
+                Pause();
+            return;
+        }
+
+        // Y = Spezial-Bomben-Typ durchschalten (analog zu T)
+        if (button == BomberBlast.Input.GamepadButton.Y)
+        {
+            ToggleSpecialBomb();
+            return;
+        }
+
+        if (_gameEngine.State == GameState.Playing)
+        {
+            _gameEngine.OnGamepadButtonDown(button);
+        }
+    }
+
+    /// <summary>
+    /// Gamepad Face-Button losgelassen.
+    /// </summary>
+    public void OnGamepadButtonUp(BomberBlast.Input.GamepadButton button)
+    {
+        _gameEngine.OnGamepadButtonUp(button);
+    }
+
+    /// <summary>
+    /// Analog-Stick Werte setzen (-1.0 bis 1.0 pro Achse).
+    /// </summary>
+    public void SetAnalogStick(float x, float y)
+    {
+        if (_gameEngine.State == GameState.Playing)
+        {
+            _gameEngine.SetAnalogStick(x, y);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -409,6 +470,18 @@ public partial class GameViewModel : ObservableObject, IDisposable
         _gameEngine.Pause();
         IsPaused = false;
         NavigationRequested?.Invoke("Settings");
+    }
+
+    /// <summary>
+    /// Spezial-Bomben-Typ durchschalten (Normal → Ice → Fire → Sticky → Normal).
+    /// Nur verfügbare Typen werden angezeigt.
+    /// </summary>
+    public void ToggleSpecialBomb()
+    {
+        if (_gameEngine.State == GameState.Playing)
+        {
+            _gameEngine.ToggleSpecialBomb();
+        }
     }
 
     [RelayCommand]
@@ -452,9 +525,9 @@ public partial class GameViewModel : ObservableObject, IDisposable
     private async Task ProceedToNextLevel()
     {
         var score = _gameEngine.Score;
-        var level = _gameEngine.IsArcadeMode ? _gameEngine.ArcadeWave : _gameEngine.CurrentLevel;
+        var level = _gameEngine.CurrentLevel;
         var isHighScore = _gameEngine.IsCurrentScoreHighScore;
-        var mode = _gameEngine.IsDailyChallenge ? "daily" : _gameEngine.IsArcadeMode ? "arcade" : "story";
+        var mode = _gameEngine.IsSurvivalMode ? "survival" : _gameEngine.IsDailyChallenge ? "daily" : _gameEngine.IsQuickPlayMode ? "quick" : "story";
         var coins = _lastCoinsEarned;
 
         // Score-Aufschlüsselung aus GameEngine
@@ -463,14 +536,14 @@ public partial class GameViewModel : ObservableObject, IDisposable
         var effBonus = _gameEngine.LastEfficiencyBonus;
         var multiplier = _gameEngine.LastScoreMultiplier;
 
-        if (_gameEngine.CurrentLevel >= 50 && !_gameEngine.IsArcadeMode && !_gameEngine.IsDailyChallenge)
+        if (_gameEngine.CurrentLevel >= 100 && !_gameEngine.IsDailyChallenge && !_gameEngine.IsQuickPlayMode)
         {
-            // Alle 50 Level geschafft → Victory-Screen!
+            // Alle 100 Level geschafft → Victory-Screen!
             NavigationRequested?.Invoke($"Victory?score={score}&coins={coins}");
         }
-        else if (_gameEngine.IsDailyChallenge)
+        else if (_gameEngine.IsDailyChallenge || _gameEngine.IsQuickPlayMode)
         {
-            // Daily Challenge → Game Over Screen mit Level-Complete-Flag
+            // Daily Challenge / Quick Play → Game Over Screen mit Level-Complete-Flag (kein NextLevel)
             NavigationRequested?.Invoke(
                 $"GameOver?score={score}&level={level}&highscore={isHighScore}&mode={mode}" +
                 $"&coins={coins}&levelcomplete=true&cancontinue=false" +
@@ -517,15 +590,20 @@ public partial class GameViewModel : ObservableObject, IDisposable
                 if (ct.IsCancellationRequested || _disposed) return;
 
                 var score = _gameEngine.Score;
-                var level = _gameEngine.IsArcadeMode ? _gameEngine.ArcadeWave : _gameEngine.CurrentLevel;
+                var level = _gameEngine.CurrentLevel;
                 var isHighScore = _gameEngine.IsCurrentScoreHighScore;
-                var mode = _gameEngine.IsDailyChallenge ? "daily" : _gameEngine.IsArcadeMode ? "arcade" : "story";
+                var mode = _gameEngine.IsSurvivalMode ? "survival" : _gameEngine.IsDailyChallenge ? "daily" : _gameEngine.IsQuickPlayMode ? "quick" : "story";
                 var coins = _lastCoinsEarned;
                 var canContinue = _gameEngine.CanContinue;
 
+                // Survival: Kills und Zeit als Level-/Extra-Params übergeben
+                var survivalParams = _gameEngine.IsSurvivalMode
+                    ? $"&kills={_gameEngine.SurvivalKills}&survivaltime={_gameEngine.SurvivalTimeElapsed:F0}"
+                    : "";
+
                 NavigationRequested?.Invoke(
                     $"GameOver?score={score}&level={level}&highscore={isHighScore}&mode={mode}" +
-                    $"&coins={coins}&levelcomplete=false&cancontinue={canContinue}");
+                    $"&coins={coins}&levelcomplete=false&cancontinue={canContinue}{survivalParams}");
             });
         }
         catch (OperationCanceledException)

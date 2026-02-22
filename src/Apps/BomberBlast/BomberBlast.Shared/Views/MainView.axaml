@@ -26,73 +26,140 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid RowDefinitions="*,Auto">
+  <Grid AutomationProperties.AutomationId="MainView_Root" RowDefinitions="*,Auto">
     <!-- Row 0: Alle Page-Views -->
     <Panel Grid.Row="0">
       <!-- Main Menu -->
-      <Border Classes="PageView" x:Name="MainMenuBorder">
+      <Border Classes="PageView" x:Name="MainMenuBorder"
+              AutomationProperties.AutomationId="MainView_PageMainMenu">
         <views:MainMenuView DataContext="{Binding MenuVm}" />
       </Border>
 
       <!-- Game -->
-      <Border Classes="PageView" x:Name="GameBorder">
+      <Border Classes="PageView" x:Name="GameBorder"
+              AutomationProperties.AutomationId="MainView_PageGame">
         <views:GameView DataContext="{Binding GameVm}" />
       </Border>
 
       <!-- Level Select -->
-      <Border Classes="PageView" x:Name="LevelSelectBorder">
+      <Border Classes="PageView" x:Name="LevelSelectBorder"
+              AutomationProperties.AutomationId="MainView_PageLevelSelect">
         <views:LevelSelectView DataContext="{Binding LevelSelectVm}" />
       </Border>
 
       <!-- Settings -->
-      <Border Classes="PageView" x:Name="SettingsBorder">
+      <Border Classes="PageView" x:Name="SettingsBorder"
+              AutomationProperties.AutomationId="MainView_PageSettings">
         <views:SettingsView DataContext="{Binding SettingsVm}" />
       </Border>
 
       <!-- High Scores -->
-      <Border Classes="PageView" x:Name="HighScoresBorder">
+      <Border Classes="PageView" x:Name="HighScoresBorder"
+              AutomationProperties.AutomationId="MainView_PageHighScores">
         <views:HighScoresView DataContext="{Binding HighScoresVm}" />
       </Border>
 
       <!-- Game Over -->
-      <Border Classes="PageView" x:Name="GameOverBorder">
+      <Border Classes="PageView" x:Name="GameOverBorder"
+              AutomationProperties.AutomationId="MainView_PageGameOver">
         <views:GameOverView DataContext="{Binding GameOverVm}" />
       </Border>
 
       <!-- Help -->
-      <Border Classes="PageView" x:Name="HelpBorder">
+      <Border Classes="PageView" x:Name="HelpBorder"
+              AutomationProperties.AutomationId="MainView_PageHelp">
         <views:HelpView DataContext="{Binding HelpVm}" />
       </Border>
 
       <!-- Shop -->
-      <Border Classes="PageView" x:Name="ShopBorder">
+      <Border Classes="PageView" x:Name="ShopBorder"
+              AutomationProperties.AutomationId="MainView_PageShop">
         <views:ShopView DataContext="{Binding ShopVm}" />
       </Border>
 
       <!-- Achievements -->
-      <Border Classes="PageView" x:Name="AchievementsBorder">
+      <Border Classes="PageView" x:Name="AchievementsBorder"
+              AutomationProperties.AutomationId="MainView_PageAchievements">
         <views:AchievementsView DataContext="{Binding AchievementsVm}" />
       </Border>
 
       <!-- Daily Challenge -->
-      <Border Classes="PageView" x:Name="DailyChallengeBorder">
+      <Border Classes="PageView" x:Name="DailyChallengeBorder"
+              AutomationProperties.AutomationId="MainView_PageDailyChallenge">
         <views:DailyChallengeView DataContext="{Binding DailyChallengeVm}" />
       </Border>
 
       <!-- Victory (alle 50 Level geschafft) -->
-      <Border Classes="PageView" x:Name="VictoryBorder">
+      <Border Classes="PageView" x:Name="VictoryBorder"
+              AutomationProperties.AutomationId="MainView_PageVictory">
         <views:VictoryView DataContext="{Binding VictoryVm}" />
+      </Border>
+
+      <!-- Lucky Spin (Glücksrad) -->
+      <Border Classes="PageView" x:Name="LuckySpinBorder"
+              AutomationProperties.AutomationId="MainView_PageLuckySpin">
+        <views:LuckySpinView DataContext="{Binding LuckySpinVm}" />
+      </Border>
+
+      <!-- Weekly Challenge (Wöchentliche Herausforderungen) -->
+      <Border Classes="PageView" x:Name="WeeklyChallengeBorder"
+              AutomationProperties.AutomationId="MainView_PageWeeklyChallenge">
+        <views:WeeklyChallengeView DataContext="{Binding WeeklyChallengeVm}" />
+      </Border>
+
+      <!-- Statistics (Statistiken) -->
+      <Border Classes="PageView" x:Name="StatisticsBorder"
+              AutomationProperties.AutomationId="MainView_PageStatistics">
+        <views:StatisticsView DataContext="{Binding StatisticsVm}" />
+      </Border>
+
+      <!-- Quick Play (Zufalls-Level) -->
+      <Border Classes="PageView" x:Name="QuickPlayBorder"
+              AutomationProperties.AutomationId="MainView_PageQuickPlay">
+        <views:QuickPlayView DataContext="{Binding QuickPlayVm}" />
+      </Border>
+
+      <!-- Deck Builder (Karten-Sammlung) -->
+      <Border Classes="PageView" x:Name="DeckBorder"
+              AutomationProperties.AutomationId="MainView_PageDeck">
+        <views:DeckView DataContext="{Binding DeckVm}" />
+      </Border>
+
+      <!-- Dungeon Run (Roguelike-Modus) -->
+      <Border Classes="PageView" x:Name="DungeonBorder"
+              AutomationProperties.AutomationId="MainView_PageDungeon">
+        <views:DungeonView DataContext="{Binding DungeonVm}" />
+      </Border>
+
+      <!-- Battle Pass -->
+      <Border Classes="PageView" x:Name="BattlePassBorder"
+              AutomationProperties.AutomationId="MainView_PageBattlePass">
+        <views:BattlePassView DataContext="{Binding BattlePassVm}" />
+      </Border>
+
+      <!-- Sammlungs-Album -->
+      <Border Classes="PageView" x:Name="CollectionBorder"
+              AutomationProperties.AutomationId="MainView_PageCollection">
+        <views:CollectionView DataContext="{Binding CollectionVm}" />
+      </Border>
+
+      <!-- Liga -->
+      <Border Classes="PageView" x:Name="LeagueBorder"
+              AutomationProperties.AutomationId="MainView_PageLeague">
+        <views:LeagueView DataContext="{Binding LeagueVm}" />
       </Border>
     </Panel>
 
     <!-- Row 1: Ad-Banner Spacer (64dp fuer adaptive Banner, sichtbar wenn aktiv und nicht im Spiel) -->
     <Border Grid.Row="1" Height="64"
+            AutomationProperties.AutomationId="MainView_AdSpacer"
             IsVisible="{Binding IsAdBannerVisible}"
             Background="Transparent" />
 
     <!-- Dialog-Overlays + Game Juice: über beide Rows gespannt -->
     <!-- Alert Dialog Overlay -->
     <Border Grid.RowSpan="2" IsVisible="{Binding IsAlertDialogVisible}"
+            AutomationProperties.AutomationId="MainView_AlertOverlay"
             Background="#80000000" ZIndex="100"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -101,12 +168,15 @@
               BoxShadow="0 8 24 0 #40000000">
         <StackPanel Spacing="16">
           <TextBlock Text="{Binding AlertDialogTitle}"
+                     AutomationProperties.AutomationId="MainView_AlertTitle"
                      Classes="TitleMedium"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{Binding AlertDialogMessage}"
+                     AutomationProperties.AutomationId="MainView_AlertMessage"
                      TextWrapping="Wrap"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
           <Button Classes="Primary" HorizontalAlignment="Right"
+                  AutomationProperties.AutomationId="MainView_BtnAlertDismiss"
                   Content="{Binding AlertDialogButtonText}"
                   Command="{Binding DismissAlertCommand}" />
         </StackPanel>
@@ -115,6 +185,7 @@
 
     <!-- Confirm Dialog Overlay -->
     <Border Grid.RowSpan="2" IsVisible="{Binding IsConfirmDialogVisible}"
+            AutomationProperties.AutomationId="MainView_ConfirmOverlay"
             Background="#80000000" ZIndex="100"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
       <Border Background="{DynamicResource SurfaceBrush}"
@@ -123,16 +194,20 @@
               BoxShadow="0 8 24 0 #40000000">
         <StackPanel Spacing="16">
           <TextBlock Text="{Binding ConfirmDialogTitle}"
+                     AutomationProperties.AutomationId="MainView_ConfirmTitle"
                      Classes="TitleMedium"
                      Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{Binding ConfirmDialogMessage}"
+                     AutomationProperties.AutomationId="MainView_ConfirmMessage"
                      TextWrapping="Wrap"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
           <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
             <Button Classes="Secondary"
+                    AutomationProperties.AutomationId="MainView_BtnConfirmCancel"
                     Content="{Binding ConfirmDialogCancelText}"
                     Command="{Binding CancelConfirmCommand}" />
             <Button Classes="Danger"
+                    AutomationProperties.AutomationId="MainView_BtnConfirmAccept"
                     Content="{Binding ConfirmDialogAcceptText}"
                     Command="{Binding AcceptConfirmCommand}" />
           </StackPanel>
@@ -142,9 +217,11 @@
 
     <!-- Game Juice Overlays -->
     <controls:FloatingTextOverlay x:Name="FloatingTextCanvas"
+                                   AutomationProperties.AutomationId="MainView_FloatingText"
                                    Grid.RowSpan="2" ZIndex="15"
                                    IsHitTestVisible="False" />
     <controls:SkiaCelebrationOverlay x:Name="CelebrationCanvas"
+                                      AutomationProperties.AutomationId="MainView_Celebration"
                                       Grid.RowSpan="2" ZIndex="16"
                                       IsHitTestVisible="False" />
   </Grid>

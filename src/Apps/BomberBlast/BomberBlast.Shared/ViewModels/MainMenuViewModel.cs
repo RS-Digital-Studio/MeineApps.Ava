@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BomberBlast.Models;
@@ -9,18 +10,23 @@ using MeineApps.Core.Premium.Ava.Services;
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// ViewModel for the main menu page.
-/// Provides navigation commands for Story, Arcade, Quick Play, and other menu options.
+/// ViewModel für das Hauptmenü.
+/// Navigation zu Spielmodi, Meta-Features und Utility-Seiten.
 /// </summary>
 public partial class MainMenuViewModel : ObservableObject, IDisposable
 {
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;
     private readonly ICoinService _coinService;
+    private readonly IGemService _gemService;
     private readonly ILocalizationService _localizationService;
     private readonly IDailyRewardService _dailyRewardService;
     private readonly IReviewService _reviewService;
     private readonly IDailyChallengeService _dailyChallengeService;
+    private readonly IWeeklyChallengeService _weeklyChallengeService;
+    private readonly IDailyMissionService _dailyMissionService;
+    private readonly IBattlePassService _battlePassService;
+    private readonly ILeagueService _leagueService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -59,9 +65,16 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _totalEarnedText = "";
 
+    [ObservableProperty]
+    private string _gemsText = "0";
+
     /// <summary>Ob die heutige Daily Challenge noch nicht gespielt wurde</summary>
     [ObservableProperty]
     private bool _isDailyChallengeNew;
+
+    /// <summary>Ob es offene Missionen gibt (tägliche oder wöchentliche)</summary>
+    [ObservableProperty]
+    private bool _hasNewMissions;
 
     // Daily Reward Popup
     [ObservableProperty]
@@ -85,26 +98,46 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     public bool HasProgress => ShowContinueButton;
 
     public MainMenuViewModel(IProgressService progressService, IPurchaseService purchaseService, ICoinService coinService,
-        ILocalizationService localizationService, IDailyRewardService dailyRewardService, IReviewService reviewService,
-        IDailyChallengeService dailyChallengeService)
+        IGemService gemService, ILocalizationService localizationService, IDailyRewardService dailyRewardService,
+        IReviewService reviewService, IDailyChallengeService dailyChallengeService,
+        IWeeklyChallengeService weeklyChallengeService, IDailyMissionService dailyMissionService,
+        IBattlePassService battlePassService, ILeagueService leagueService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
         _coinService = coinService;
+        _gemService = gemService;
         _localizationService = localizationService;
         _dailyRewardService = dailyRewardService;
         _reviewService = reviewService;
         _dailyChallengeService = dailyChallengeService;
+        _weeklyChallengeService = weeklyChallengeService;
+        _dailyMissionService = dailyMissionService;
+        _battlePassService = battlePassService;
+        _leagueService = leagueService;
 
-        // Live-Update bei Coin-Änderungen (z.B. aus Shop, Rewarded Ads)
+        // Live-Update bei Coin-/Gem-Änderungen (z.B. aus Shop, Rewarded Ads)
         _coinService.BalanceChanged += OnBalanceChanged;
+        _gemService.BalanceChanged += OnBalanceChanged;
 
-        // Set version from assembly
-        var assembly = System.Reflection.Assembly.GetEntryAssembly();
-        var version = assembly?.GetName().Version;
-        VersionText = version != null
-            ? $"v{version.Major}.{version.Minor}.{version.Build} - RS-Digital"
-            : "v1.0.0 - RS-Digital";
+        // Version aus dem eigenen Assembly lesen (GetEntryAssembly() gibt null auf Android)
+        var assembly = typeof(MainMenuViewModel).Assembly;
+        var infoVersion = assembly.GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion;
+        if (infoVersion != null)
+        {
+            // InformationalVersion kann "+commitHash" enthalten → nur den Teil vor '+' nehmen
+            var plusIndex = infoVersion.IndexOf('+');
+            if (plusIndex > 0) infoVersion = infoVersion[..plusIndex];
+            VersionText = $"v{infoVersion} - RS-Digital";
+        }
+        else
+        {
+            var version = assembly.GetName().Version;
+            VersionText = version != null
+                ? $"v{version.Major}.{version.Minor}.{version.Build} - RS-Digital"
+                : "v2.0.7 - RS-Digital";
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -135,10 +168,12 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
 
         CoinBalance = _coinService.Balance;
         CoinsText = _coinService.Balance.ToString("N0");
+        GemsText = _gemService.Balance.ToString("N0");
         TotalEarnedText = string.Format(
             _localizationService.GetString("TotalEarned") ?? "Total: {0}",
             _coinService.TotalEarned.ToString("N0"));
         IsDailyChallengeNew = !_dailyChallengeService.IsCompletedToday;
+        HasNewMissions = !_weeklyChallengeService.IsAllComplete || !_dailyMissionService.IsAllComplete;
         OnPropertyChanged(nameof(HasProgress));
     }
 
@@ -149,7 +184,7 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     private void ShowRewardPopup()
     {
         RewardPopupTitle = _localizationService.GetString("DailyRewardTitle") ?? "Daily Bonus";
-        RewardClaimText = _localizationService.GetString("DailyRewardClaim") ?? "Claim";
+        RewardClaimText = _localizationService.GetString("DailyRewardCollect") ?? "Collect";
 
         RewardDays.Clear();
         var rewards = _dailyRewardService.GetRewards();
@@ -177,6 +212,10 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
         if (reward != null)
         {
             _coinService.AddCoins(reward.Coins);
+
+            // Battle Pass XP + Liga-Punkte für täglichen Login
+            _battlePassService.AddXp(BattlePassXpSources.DailyLogin, "daily_login");
+            _leagueService.AddPoints(5);
 
             var dayText = string.Format(
                 _localizationService.GetString("DailyRewardDay") ?? "Day {0}",
@@ -227,15 +266,15 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void ArcadeMode()
+    private void QuickPlay()
     {
-        NavigationRequested?.Invoke("Game?mode=arcade");
+        NavigationRequested?.Invoke("QuickPlay");
     }
 
     [RelayCommand]
-    private void QuickPlay()
+    private void SurvivalMode()
     {
-        NavigationRequested?.Invoke("Game?mode=quick");
+        NavigationRequested?.Invoke("Game?mode=survival");
     }
 
     [RelayCommand]
@@ -274,6 +313,42 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
         NavigationRequested?.Invoke("DailyChallenge");
     }
 
+    [RelayCommand]
+    private void LuckyWheel()
+    {
+        NavigationRequested?.Invoke("LuckySpin");
+    }
+
+    [RelayCommand]
+    private void WeeklyChallenge()
+    {
+        NavigationRequested?.Invoke("WeeklyChallenge");
+    }
+
+    [RelayCommand]
+    private void Statistics()
+    {
+        NavigationRequested?.Invoke("Statistics");
+    }
+
+    [RelayCommand]
+    private void Deck()
+    {
+        NavigationRequested?.Invoke("Deck");
+    }
+
+    [RelayCommand]
+    private void Dungeon() => NavigationRequested?.Invoke("Dungeon");
+
+    [RelayCommand]
+    private void BattlePass() => NavigationRequested?.Invoke("BattlePass");
+
+    [RelayCommand]
+    private void Collection() => NavigationRequested?.Invoke("Collection");
+
+    [RelayCommand]
+    private void League() => NavigationRequested?.Invoke("League");
+
     // ═══════════════════════════════════════════════════════════════════════
     // BALANCE CHANGED
     // ═══════════════════════════════════════════════════════════════════════
@@ -282,6 +357,7 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     {
         CoinBalance = _coinService.Balance;
         CoinsText = _coinService.Balance.ToString("N0");
+        GemsText = _gemService.Balance.ToString("N0");
         TotalEarnedText = string.Format(
             _localizationService.GetString("TotalEarned") ?? "Total: {0}",
             _coinService.TotalEarned.ToString("N0"));
@@ -294,5 +370,6 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _coinService.BalanceChanged -= OnBalanceChanged;
+        _gemService.BalanceChanged -= OnBalanceChanged;
     }
 }

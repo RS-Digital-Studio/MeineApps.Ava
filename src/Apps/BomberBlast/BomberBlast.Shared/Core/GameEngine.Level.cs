@@ -1,5 +1,6 @@
 using BomberBlast.Graphics;
 using BomberBlast.Models;
+using BomberBlast.Models.Dungeon;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
 using BomberBlast.Models.Levels;
@@ -18,8 +19,9 @@ public partial class GameEngine
     /// </summary>
     public async Task StartStoryModeAsync(int levelNumber)
     {
-        _isArcadeMode = false;
         _isDailyChallenge = false;
+        _isSurvivalMode = false;
+        _isQuickPlayMode = false;
         _currentLevelNumber = levelNumber;
         _currentLevel = LevelGenerator.GenerateLevel(levelNumber, _progressService.HighestCompletedLevel);
         _continueUsed = false;
@@ -47,31 +49,13 @@ public partial class GameEngine
     }
 
     /// <summary>
-    /// Arcade-Modus starten
-    /// </summary>
-    public async Task StartArcadeModeAsync()
-    {
-        _isArcadeMode = true;
-        _isDailyChallenge = false;
-        _arcadeWave = 1;
-        _currentLevelNumber = 1;
-        _currentLevel = LevelGenerator.GenerateArcadeLevel(1);
-        _continueUsed = false;
-
-        _player.ResetForNewGame();
-        ApplyUpgrades(); // GetStartLives(isArcade=true) gibt bereits 1 zurück
-        await LoadLevelAsync();
-
-        _soundManager.PlayMusic(SoundManager.MUSIC_GAMEPLAY);
-    }
-
-    /// <summary>
     /// Daily-Challenge-Modus starten (einmaliges Level pro Tag)
     /// </summary>
     public async Task StartDailyChallengeModeAsync(int seed)
     {
-        _isArcadeMode = false;
         _isDailyChallenge = true;
+        _isSurvivalMode = false;
+        _isQuickPlayMode = false;
         _currentLevelNumber = 99;
         _currentLevel = LevelGenerator.GenerateDailyChallengeLevel(seed);
         _continueUsed = false;
@@ -84,6 +68,130 @@ public partial class GameEngine
 
         _worldAnnouncementText = "DAILY CHALLENGE";
         _worldAnnouncementTimer = 2.5f;
+    }
+
+    /// <summary>
+    /// Quick-Play-Modus starten (einzelnes Level mit Seed + Schwierigkeit, kein Progress)
+    /// </summary>
+    public async Task StartQuickPlayModeAsync(int seed, int difficulty)
+    {
+        _isDailyChallenge = false;
+        _isSurvivalMode = false;
+        _isQuickPlayMode = true;
+        _quickPlayDifficulty = difficulty;
+        _currentLevelNumber = difficulty * 10; // Für Welt-Palette
+        _currentLevel = LevelGenerator.GenerateQuickPlayLevel(seed, difficulty);
+        _continueUsed = true; // Kein Continue im Quick-Play
+
+        _player.ResetForNewGame();
+        ApplyUpgrades();
+        await LoadLevelAsync();
+
+        _soundManager.PlayMusic(_currentLevel.MusicTrack == "boss"
+            ? SoundManager.MUSIC_BOSS
+            : SoundManager.MUSIC_GAMEPLAY);
+
+        _worldAnnouncementText = "QUICK PLAY";
+        _worldAnnouncementTimer = 2.0f;
+    }
+
+    /// <summary>
+    /// Survival-Modus starten (endlos, ohne Exit, Kill-basiertes Scoring)
+    /// </summary>
+    public async Task StartSurvivalModeAsync()
+    {
+        _isDailyChallenge = false;
+        _isSurvivalMode = true;
+        _isQuickPlayMode = false;
+        _currentLevelNumber = 1;
+        _currentLevel = LevelGenerator.GenerateSurvivalLevel();
+        _continueUsed = true; // Kein Continue im Survival
+
+        _survivalTimeElapsed = 0;
+        _survivalSpawnTimer = 4f; // Erster Spawn nach 4s
+        _survivalSpawnInterval = 4f;
+
+        _player.ResetForNewGame();
+        ApplyUpgrades();
+        _player.Lives = 1; // Nur 1 Leben im Survival (kein Shop-Bonus)
+
+        await LoadLevelAsync();
+
+        _soundManager.PlayMusic(SoundManager.MUSIC_GAMEPLAY);
+
+        _worldAnnouncementText = "SURVIVAL!";
+        _worldAnnouncementTimer = 2.5f;
+    }
+
+    /// <summary>
+    /// Dungeon-Floor starten (Roguelike-Modus)
+    /// </summary>
+    public async Task StartDungeonFloorAsync(int floor, int seed)
+    {
+        _isDailyChallenge = false;
+        _isSurvivalMode = false;
+        _isQuickPlayMode = false;
+        _isDungeonRun = true;
+        _currentLevelNumber = Math.Min(floor * 10, 100); // Floor → Schwierigkeit (World-Mapping)
+        _currentLevel = LevelGenerator.GenerateDungeonFloor(floor, seed);
+        _continueUsed = true; // Kein Continue im Dungeon
+
+        if (floor == 1)
+        {
+            _player.ResetForNewGame();
+            ApplyUpgrades();
+            // Dungeon-Buffs anwenden
+            ApplyDungeonBuffs();
+            _player.Lives = _dungeonService.RunState?.Lives ?? 1;
+        }
+        else
+        {
+            // Zwischen-Floors: HP behalten, Buffs anwenden
+            ApplyDungeonBuffs();
+            _player.Lives = _dungeonService.RunState?.Lives ?? 1;
+        }
+
+        await LoadLevelAsync();
+
+        var isBoss = DungeonBuffCatalog.IsBossFloor(floor);
+        _soundManager.PlayMusic(isBoss ? SoundManager.MUSIC_BOSS : SoundManager.MUSIC_GAMEPLAY);
+
+        _worldAnnouncementText = isBoss ? $"BOSS - FLOOR {floor}" : $"FLOOR {floor}";
+        _worldAnnouncementTimer = 2.5f;
+    }
+
+    /// <summary>
+    /// Wendet aktive Dungeon-Buffs auf den Spieler an
+    /// </summary>
+    private void ApplyDungeonBuffs()
+    {
+        var state = _dungeonService.RunState;
+        if (state?.ActiveBuffs == null) return;
+
+        foreach (var buff in state.ActiveBuffs)
+        {
+            switch (buff)
+            {
+                case DungeonBuffType.ExtraBomb:
+                    _player.MaxBombs++;
+                    break;
+                case DungeonBuffType.ExtraFire:
+                    _player.FireRange++;
+                    break;
+                case DungeonBuffType.SpeedBoost:
+                    _player.SpeedLevel = Math.Min(_player.SpeedLevel + 1, 3);
+                    break;
+                case DungeonBuffType.Shield:
+                    _player.HasShield = true;
+                    break;
+                case DungeonBuffType.FireImmunity:
+                    _player.HasFlamepass = true;
+                    break;
+                case DungeonBuffType.BlastRadius:
+                    _player.FireRange += 2;
+                    break;
+            }
+        }
     }
 
     /// <summary>
@@ -117,7 +225,10 @@ public partial class GameEngine
         _comboTimer = 0;
         _pontanPunishmentActive = false;
         _pontanSpawned = 0;
+        _pontanInitialDelay = 0;
         _defeatAllCooldown = 0;
+        _fallingCeilingTimer = 0;
+        _earthquakeTimer = 0;
 
         // Grid aufbauen
         _grid.Reset();
@@ -157,8 +268,9 @@ public partial class GameEngine
         // PowerUps in Blöcken platzieren
         PlacePowerUps(random);
 
-        // Exit unter einem Block platzieren
-        PlaceExit(random);
+        // Exit unter einem Block platzieren (nicht im Survival-Modus)
+        if (!_isSurvivalMode)
+            PlaceExit(random);
 
         // Gegner spawnen
         SpawnEnemies(random);
@@ -167,6 +279,9 @@ public partial class GameEngine
         int worldIndex = (_currentLevelNumber - 1) / 10;
         _renderer.SetWorldTheme(worldIndex);
 
+        // Nebel aktivieren fuer Schattenwelt (Welt 10)
+        _renderer.SetFogEnabled(_currentLevel.Mechanic == WorldMechanic.Fog);
+
         // Timer zurücksetzen
         _timer.Reset(_currentLevel.TimeLimit);
 
@@ -174,7 +289,7 @@ public partial class GameEngine
         _player.IsActive = true;
 
         // Tutorial starten bei Level 1 wenn noch nicht abgeschlossen
-        if (_currentLevelNumber == 1 && !_isArcadeMode && !_tutorialService.IsCompleted)
+        if (_currentLevelNumber == 1 && !_tutorialService.IsCompleted)
         {
             _tutorialService.Start();
             _tutorialWarningTimer = 0;
@@ -195,8 +310,21 @@ public partial class GameEngine
         _player.MaxBombs = _shopService.GetStartBombs();
         _player.FireRange = _shopService.GetStartFire();
         _player.HasSpeed = _shopService.HasStartSpeed();
-        _player.Lives = _shopService.GetStartLives(_isArcadeMode);
+        _player.Lives = _shopService.GetStartLives();
         _player.HasShield = _shopService.Upgrades.GetLevel(UpgradeType.ShieldStart) >= 1;
+
+        // Karten-Deck: Shop-Bomben migrieren (einmalig) und Deck laden
+        if (!_cardService.HasMigrated)
+        {
+            _cardService.MigrateFromShop(
+                _shopService.HasIceBomb(),
+                _shopService.HasFireBomb(),
+                _shopService.HasStickyBomb());
+        }
+
+        // Ausgerüstete Karten für dieses Level laden (mit frischen Uses pro Level)
+        _player.EquippedCards = _cardService.GetEquippedCardsForGameplay();
+        _player.ActiveCardSlot = -1; // Startet immer auf Normalbombe
     }
 
     private void PlacePowerUps(Random random)
@@ -256,8 +384,14 @@ public partial class GameEngine
             .Where(c => c.HiddenPowerUp == null)
             .ToList();
 
+        // Fallback: Wenn ALLE Blöcke ein HiddenPowerUp haben → alle Blöcke nehmen
+        // Exit hat Priorität über PowerUp (wird unten auf null gesetzt)
         if (blocks.Count == 0)
-            return;
+        {
+            blocks = _grid.GetCellsOfType(CellType.Block).ToList();
+            if (blocks.Count == 0)
+                return;
+        }
 
         Cell exitCell;
         if (_currentLevel?.ExitPosition != null)
@@ -345,11 +479,42 @@ public partial class GameEngine
                 _enemies.Add(enemy);
             }
         }
+
+        // Boss spawnen wenn Boss-Level
+        if (_currentLevel.BossKind.HasValue)
+        {
+            // Boss in der Arena-Mitte platzieren (weit vom Spieler)
+            int bossX = GameGrid.WIDTH / 2;
+            int bossY = GameGrid.HEIGHT / 2;
+
+            // Sicherstellen dass die Boss-Zellen frei sind (Blöcke entfernen)
+            var bossType = _currentLevel.BossKind.Value;
+            int bossSize = bossType == BossType.FinalBoss ? 3 : 2;
+            for (int dy = 0; dy < bossSize; dy++)
+            {
+                for (int dx = 0; dx < bossSize; dx++)
+                {
+                    var cell = _grid.TryGetCell(bossX + dx, bossY + dy);
+                    if (cell != null && cell.Type == CellType.Block)
+                    {
+                        cell.Type = CellType.Empty;
+                        cell.HasHiddenExit = false;
+                        cell.HiddenPowerUp = null;
+                    }
+                }
+            }
+
+            var boss = BossEnemy.CreateAtGrid(bossX, bossY, bossType);
+            _enemies.Add(boss);
+
+            // Sammlungs-Album: Boss als angetroffen melden
+            _collectionService.RecordBossEncounter(bossType);
+        }
     }
 
     private void CheckExitReveal()
     {
-        if (_exitRevealed)
+        if (_exitRevealed || _isSurvivalMode)
             return;
 
         // Manuelle Schleife statt LINQ (wird pro Enemy-Kill aufgerufen)
@@ -412,6 +577,18 @@ public partial class GameEngine
             }
         }
 
+        // Letzter Fallback: Beliebige begehbare Zelle (ignoriert Bombs/PowerUps)
+        if (bestCell == null)
+        {
+            for (int fx = 1; fx < GameGrid.WIDTH - 1 && bestCell == null; fx++)
+                for (int fy = 1; fy < GameGrid.HEIGHT - 1 && bestCell == null; fy++)
+                {
+                    var fc = _grid[fx, fy];
+                    if (fc.Type == CellType.Empty)
+                        bestCell = fc;
+                }
+        }
+
         if (bestCell != null)
         {
             bestCell.Type = CellType.Exit;
@@ -432,15 +609,173 @@ public partial class GameEngine
 
         foreach (var enemy in _enemies)
         {
+            // Mimic-Aktivierung VOR dem IsActive-Check (Mimics sind !IsActive bis aktiviert)
+            if (!enemy.IsDying && enemy.IsDisguised && enemy.Type == EnemyType.Mimic)
+            {
+                if (enemy.TryActivateMimic(_player.GridX, _player.GridY))
+                {
+                    // Aktivierungs-Effekt: Partikel + Warnung
+                    _particleSystem.Emit(enemy.X, enemy.Y, 10, new SKColor(255, 50, 50), 80f, 0.5f);
+                    _floatingText.Spawn(enemy.X, enemy.Y - 16, "MIMIC!", SKColors.Red, 16f, 1.5f);
+                    _soundManager.PlaySound(SoundManager.SFX_ENEMY_DEATH);
+                }
+                enemy.Update(deltaTime); // Getarnter Mimic braucht trotzdem Update (für Animation)
+                continue;
+            }
+
             if (!enemy.IsActive && !enemy.IsDying)
                 continue;
 
+            // Boss: Eigene Bewegungslogik + vereinfachte AI (Richtung zum Spieler)
+            if (enemy is BossEnemy boss)
+            {
+                if (boss.IsActive && !boss.IsDying)
+                {
+                    // Verlangsamung: Frost (50%), TimeWarp (50%), BlackHole (70%) - kumulativ
+                    float bossDt = deltaTime;
+                    var bossCell = _grid.TryGetCell(boss.GridX, boss.GridY);
+                    if (bossCell != null)
+                    {
+                        if (bossCell.IsFrozen) bossDt *= 0.5f;
+                        if (bossCell.IsTimeWarped) bossDt *= 0.5f;
+                        if (bossCell.IsBlackHole) bossDt *= 0.3f;
+                    }
+
+                    // Boss-AI: Bewegt sich auf den Spieler zu (vereinfacht, kein A*)
+                    UpdateBossAI(boss, bossDt);
+                    boss.MoveBoss(bossDt, _grid);
+                }
+                boss.Update(deltaTime);
+                continue;
+            }
+
             if (enemy.IsActive && !enemy.IsDying)
             {
-                _enemyAI.Update(enemy, _player, deltaTime);
+                // Verlangsamung: Frost (50%), TimeWarp (50%), BlackHole (70%) - kumulativ
+                float enemyDt = deltaTime;
+                var enemyCell = _grid.TryGetCell(enemy.GridX, enemy.GridY);
+                if (enemyCell != null)
+                {
+                    if (enemyCell.IsFrozen) enemyDt *= 0.5f;
+                    if (enemyCell.IsTimeWarped) enemyDt *= 0.5f;
+                    if (enemyCell.IsBlackHole) enemyDt *= 0.3f;
+                }
+
+                _enemyAI.Update(enemy, _player, enemyDt);
+
+                // Boss nutzt eigene Bewegungslogik (größere Kollisions-Box)
+                if (enemy is BossEnemy bossEnemy)
+                    bossEnemy.MoveBoss(enemyDt, _grid);
             }
 
             enemy.Update(deltaTime);
+        }
+    }
+
+    /// <summary>
+    /// Boss-AI: Vereinfachte Richtungswahl (bewegt sich auf Spieler zu, wechselt periodisch)
+    /// Kein A*-Pathfinding, da der Boss zu groß dafür ist.
+    /// </summary>
+    private void UpdateBossAI(BossEnemy boss, float deltaTime)
+    {
+        // Während Telegraph/Angriff steht der Boss still
+        if (boss.IsTelegraphing || boss.IsAttacking)
+        {
+            boss.MovementDirection = Direction.None;
+            return;
+        }
+
+        // AI-Entscheidung alle 0.8s (Enraged: 0.5s)
+        boss.AIDecisionTimer -= deltaTime;
+        if (boss.AIDecisionTimer > 0 && boss.MovementDirection != Direction.None)
+            return;
+
+        boss.AIDecisionTimer = boss.IsEnraged ? 0.5f : 0.8f;
+
+        // Richtung zum Spieler berechnen
+        float dx = _player.X - boss.X;
+        float dy = _player.Y - boss.Y;
+
+        // Bevorzugt die Achse mit größerer Distanz
+        Direction preferred;
+        if (MathF.Abs(dx) > MathF.Abs(dy))
+            preferred = dx > 0 ? Direction.Right : Direction.Left;
+        else
+            preferred = dy > 0 ? Direction.Down : Direction.Up;
+
+        // Zufällig: 70% bevorzugte Richtung, 30% zufällig (damit Boss nicht perfekt verfolgt)
+        if (_pontanRandom.NextDouble() < 0.3)
+        {
+            var dirs = new[] { Direction.Up, Direction.Down, Direction.Left, Direction.Right };
+            preferred = dirs[_pontanRandom.Next(dirs.Length)];
+        }
+
+        boss.MovementDirection = preferred;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SURVIVAL-MODUS: Kontinuierliches Gegner-Spawning
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Survival: Gegner spawnen in steigender Frequenz. Schwierigkeit nimmt mit der Zeit zu.
+    /// </summary>
+    private void UpdateSurvivalSpawning(float deltaTime)
+    {
+        _survivalTimeElapsed += deltaTime;
+        _survivalSpawnTimer -= deltaTime;
+
+        if (_survivalSpawnTimer > 0)
+            return;
+
+        // Gegner spawnen
+        SpawnSurvivalEnemy();
+
+        // Intervall verringern (wird schwerer über Zeit)
+        _survivalSpawnInterval = MathF.Max(SURVIVAL_MIN_SPAWN_INTERVAL,
+            _survivalSpawnInterval - SURVIVAL_SPAWN_DECREASE);
+        _survivalSpawnTimer = _survivalSpawnInterval;
+    }
+
+    /// <summary>
+    /// Einzelnen Gegner im Survival-Modus spawnen. Typ basierend auf überlebter Zeit.
+    /// </summary>
+    private void SpawnSurvivalEnemy()
+    {
+        // Gegner-Typ basierend auf Überlebenszeit wählen
+        EnemyType type;
+        if (_survivalTimeElapsed < 20)
+            type = EnemyType.Ballom;
+        else if (_survivalTimeElapsed < 45)
+            type = _pontanRandom.Next(3) switch { 0 => EnemyType.Onil, 1 => EnemyType.Doll, _ => EnemyType.Ballom };
+        else if (_survivalTimeElapsed < 90)
+            type = _pontanRandom.Next(4) switch { 0 => EnemyType.Onil, 1 => EnemyType.Doll, 2 => EnemyType.Minvo, _ => EnemyType.Doll };
+        else if (_survivalTimeElapsed < 150)
+            type = _pontanRandom.Next(5) switch { 0 => EnemyType.Minvo, 1 => EnemyType.Ovapi, 2 => EnemyType.Tanker, 3 => EnemyType.Doll, _ => EnemyType.Kondoria };
+        else
+            type = _pontanRandom.Next(6) switch { 0 => EnemyType.Ovapi, 1 => EnemyType.Tanker, 2 => EnemyType.Ghost, 3 => EnemyType.Pontan, 4 => EnemyType.Splitter, _ => EnemyType.Mimic };
+
+        // Spawn-Position finden (weit vom Spieler, auf leerer Zelle)
+        for (int attempts = 0; attempts < 40; attempts++)
+        {
+            int x = _pontanRandom.Next(2, GameGrid.WIDTH - 1);
+            int y = _pontanRandom.Next(2, GameGrid.HEIGHT - 1);
+
+            if (Math.Abs(x - _player.GridX) + Math.Abs(y - _player.GridY) < 4)
+                continue;
+
+            var cell = _grid.TryGetCell(x, y);
+            if (cell == null || cell.Type != CellType.Empty || cell.Bomb != null)
+                continue;
+
+            var enemy = Enemy.CreateAtGrid(x, y, type);
+            _enemies.Add(enemy);
+
+            // Spawn-Partikel
+            float spawnX = x * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+            float spawnY = y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+            _particleSystem.Emit(spawnX, spawnY, 6, new SKColor(255, 100, 50), 50f, 0.4f);
+            return;
         }
     }
 
@@ -466,15 +801,15 @@ public partial class GameEngine
         int timeBonusMultiplier = _shopService.GetTimeBonusMultiplier();
         int timeBonus = (int)_timer.RemainingTime * timeBonusMultiplier;
 
-        // Gestufter Effizienzbonus (skaliert nach Welt)
-        int world = (_currentLevelNumber - 1) / 10; // 0-4
+        // Gestufter Effizienzbonus (skaliert nach Welt, Welt 1-2 angehoben)
+        int world = (_currentLevelNumber - 1) / 10; // 0-9
         int efficiencyBonus = 0;
         if (_bombsUsed <= 5)
-            efficiencyBonus = world switch { 0 => 3000, 1 => 5000, 2 => 8000, 3 => 12000, _ => 15000 };
+            efficiencyBonus = world switch { 0 => 4000, 1 => 6000, 2 => 8000, 3 => 12000, _ => 15000 };
         else if (_bombsUsed <= 8)
-            efficiencyBonus = world switch { 0 => 2000, 1 => 3000, 2 => 5000, 3 => 8000, _ => 10000 };
+            efficiencyBonus = world switch { 0 => 2500, 1 => 4000, 2 => 5000, 3 => 8000, _ => 10000 };
         else if (_bombsUsed <= 12)
-            efficiencyBonus = world switch { 0 => 1000, 1 => 1500, 2 => 2500, 3 => 4000, _ => 5000 };
+            efficiencyBonus = world switch { 0 => 1500, 1 => 2000, 2 => 2500, 3 => 4000, _ => 5000 };
 
         // Score-Multiplikator NUR auf Level-Score anwenden (nicht den gesamten kumulierten Score)
         int levelScoreBeforeBonus = _player.Score - _scoreAtLevelStart;
@@ -506,10 +841,6 @@ public partial class GameEngine
             _particleSystem.EmitExplosionSparks(_player.X, _player.Y, 16, new SKColor(255, 200, 50), 180f);
         }
 
-        // Sterne-Anzeige: Arcade hat keine Sterne
-        if (_isArcadeMode)
-            _levelCompleteStars = 0;
-
         // Coins basierend auf Level-Score (nicht kumuliert, verhindert Inflation)
         int levelScore = _player.Score - _scoreAtLevelStart;
         int coins = levelScore / 3;
@@ -534,9 +865,45 @@ public partial class GameEngine
             _floatingText.Spawn(coinX, coinY, $"+{coins} Coins", new SKColor(255, 215, 0), 18f, 1.5f);
         }
 
+        // Dungeon-Floor abgeschlossen
+        if (_isDungeonRun)
+        {
+            var reward = _dungeonService.CompleteFloor();
+            OnDungeonFloorComplete?.Invoke(reward);
+
+            // Karten-Drop bei Dungeon-Floor
+            if (reward.CardDrop >= 0)
+            {
+                var dropType = (BombType)reward.CardDrop;
+                _cardService.AddCard(dropType);
+            }
+
+            // Battle Pass XP + Liga-Punkte für Dungeon-Floor
+            int floor = _dungeonService.RunState?.CurrentFloor ?? 1;
+            _battlePassService.AddXp(50, "dungeon_floor");
+            _leagueService.AddPoints(5);
+
+            // Achievement: Dungeon-Floor erreicht
+            _achievementService.OnDungeonFloorReached(floor);
+
+            // Mission-Tracking: Dungeon-Floor abgeschlossen (CollectCards wird in CardService.AddCard() getrackt)
+            _weeklyService.TrackProgress(WeeklyMissionType.CompleteDungeonFloors);
+            _dailyMissionService.TrackProgress(WeeklyMissionType.CompleteDungeonFloors);
+
+            if (floor % 5 == 0) // Boss-Floor
+            {
+                _battlePassService.AddXp(100, "dungeon_boss");
+                _leagueService.AddPoints(25);
+                _achievementService.OnDungeonBossDefeated();
+            }
+
+            return; // Kein Story-Progress im Dungeon
+        }
+
         // Achievements prüfen (G-R6-1)
         // Score + BestScore ZUERST speichern, damit GetLevelStars/GetTotalStars korrekt sind
-        if (!_isArcadeMode)
+        // Quick-Play: Kein Progress/Sterne/Achievements speichern (Spaß-Modus ohne Fortschritt)
+        if (!_isQuickPlayMode)
         {
             _progressService.SetLevelBestScore(_currentLevelNumber, _player.Score);
 
@@ -549,6 +916,60 @@ public partial class GameEngine
 
             // Stern-Fortschritt aktualisieren (jetzt mit aktuellem Score)
             _achievementService.OnStarsUpdated(_progressService.GetTotalStars());
+
+            // Achievement: Prüfe ob die Welt jetzt perfekt ist (alle 30 Sterne)
+            int currentWorld = (_currentLevelNumber - 1) / 10 + 1;
+            if (currentWorld == 1 || currentWorld == 5 || currentWorld == 10)
+            {
+                bool worldPerfect = true;
+                int startLevel = (currentWorld - 1) * 10 + 1;
+                for (int i = startLevel; i < startLevel + 10; i++)
+                {
+                    if (_progressService.GetLevelStars(i) < 3)
+                    {
+                        worldPerfect = false;
+                        break;
+                    }
+                }
+                if (worldPerfect)
+                    _achievementService.OnWorldPerfected(currentWorld);
+            }
+
+            // Wöchentliche Challenge: Level-Abschluss tracken
+            _weeklyService.TrackProgress(WeeklyMissionType.CompleteLevels);
+
+            // Tägliche Mission: Level-Abschluss tracken
+            _dailyMissionService.TrackProgress(WeeklyMissionType.CompleteLevels);
+
+            // Liga-Punkte vergeben
+            int leaguePoints = 10 + _currentLevelNumber / 10;
+            if (_currentLevelNumber % 10 == 0) leaguePoints += 20; // Boss-Bonus
+            _leagueService.AddPoints(leaguePoints);
+
+            // Battle Pass XP
+            _battlePassService.AddXp(100, "level_complete");
+            if (_currentLevelNumber % 10 == 0) // Boss-Level
+                _battlePassService.AddXp(200, "boss_kill");
+            if (stars == 3)
+                _battlePassService.AddXp(50, "three_stars");
+
+            // Daily Challenge: Extra XP + Liga-Punkte
+            if (_isDailyChallenge)
+            {
+                _battlePassService.AddXp(200, "daily_challenge");
+                _leagueService.AddPoints(20);
+            }
+        }
+
+        // Achievement: Quick-Play auf maximaler Schwierigkeit (10) abgeschlossen
+        if (_isQuickPlayMode && _quickPlayDifficulty >= 10)
+            _achievementService.OnQuickPlayMaxCompleted();
+
+        // Mission-Tracking: Quick-Play Runde abgeschlossen
+        if (_isQuickPlayMode)
+        {
+            _weeklyService.TrackProgress(WeeklyMissionType.PlayQuickPlay);
+            _dailyMissionService.TrackProgress(WeeklyMissionType.PlayQuickPlay);
         }
     }
 
@@ -561,7 +982,8 @@ public partial class GameEngine
             _levelCompleteHandled = true;
 
             // Fortschritt speichern (BestScore bereits in CompleteLevel() gesetzt)
-            if (!_isArcadeMode)
+            // Quick-Play: Kein Progress speichern
+            if (!_isQuickPlayMode)
             {
                 _progressService.CompleteLevel(_currentLevelNumber);
             }
@@ -582,11 +1004,8 @@ public partial class GameEngine
             // High Score speichern
             if (_highScoreService.IsHighScore(_player.Score))
             {
-                _highScoreService.AddScore("PLAYER", _player.Score, 50);
+                _highScoreService.AddScore("PLAYER", _player.Score, 100);
             }
-
-            // Story-Score ans GPGS-Leaderboard senden
-            _ = _playGames.SubmitScoreAsync(PlayGamesIds.LeaderboardArcadeHighscore, _player.Score);
 
             // Coins wurden bereits in CompleteLevel (Level 50) gutgeschrieben → kein Doppel-Credit
             OnVictory?.Invoke();
@@ -600,10 +1019,11 @@ public partial class GameEngine
 
     private void OnTimeExpired()
     {
-        // Gestaffeltes Pontan-Spawning starten (1 alle 3s statt alle 4 auf einmal)
+        // Gestaffeltes Pontan-Spawning starten (welt-abhängige Gnadenfrist + Intervall)
         _pontanPunishmentActive = true;
         _pontanSpawned = 0;
-        _pontanSpawnTimer = 0; // Ersten sofort spawnen
+        _pontanInitialDelay = GetPontanInitialDelay();
+        _pontanSpawnTimer = _pontanInitialDelay > 0 ? _pontanInitialDelay : 0; // Gnadenfrist oder sofort
     }
 
     /// <summary>
@@ -611,7 +1031,8 @@ public partial class GameEngine
     /// </summary>
     private void UpdatePontanPunishment(float deltaTime)
     {
-        if (!_pontanPunishmentActive || _pontanSpawned >= PONTAN_MAX_COUNT)
+        int maxCount = GetPontanMaxCount();
+        if (!_pontanPunishmentActive || _pontanSpawned >= maxCount)
         {
             _pontanPunishmentActive = false;
             _pontanWarningActive = false;
@@ -629,7 +1050,7 @@ public partial class GameEngine
         if (_pontanSpawnTimer > 0)
             return;
 
-        _pontanSpawnTimer = PONTAN_SPAWN_INTERVAL;
+        _pontanSpawnTimer = GetPontanSpawnInterval();
         _pontanWarningActive = false;
 
         // Pontan an der vorberechneten Position spawnen
@@ -716,51 +1137,28 @@ public partial class GameEngine
     /// </summary>
     public async Task NextLevelAsync()
     {
-        if (_isArcadeMode)
+        _currentLevelNumber++;
+        if (_currentLevelNumber > 50)
         {
-            _arcadeWave++;
-
-            // Wave-Milestone Bonus (Wave 5/10/15/20/25)
-            if (_arcadeWave % 5 == 0)
-            {
-                int bonusCoins = _arcadeWave * 100;
-                OnWaveMilestone?.Invoke(_arcadeWave, bonusCoins);
-            }
-
-            // Arcade-Achievement prüfen
-            _achievementService.OnArcadeWaveReached(_arcadeWave);
-
-            _currentLevel = LevelGenerator.GenerateArcadeLevel(_arcadeWave);
-
-            // Wave-Ankündigung bei Meilensteinen (5/10/15/20/25)
-            if (_arcadeWave % 5 == 0)
-            {
-                _worldAnnouncementText = $"WAVE {_arcadeWave}!";
-                _worldAnnouncementTimer = 2.0f;
-            }
+            _state = GameState.Victory;
+            _victoryTimer = 0;
+            _victoryHandled = false;
+            _timer.Pause();
+            _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
+            return;
         }
-        else
+        _currentLevel = LevelGenerator.GenerateLevel(_currentLevelNumber, _progressService.HighestCompletedLevel);
+
+        // Welt-Ankündigung bei neuem Welt-Start (Level 11, 21, 31, 41)
+        if ((_currentLevelNumber - 1) % 10 == 0)
         {
-            _currentLevelNumber++;
-            if (_currentLevelNumber > 50)
-            {
-                _state = GameState.Victory;
-                _victoryTimer = 0;
-                _victoryHandled = false;
-                _timer.Pause();
-                _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
-                return;
-            }
-            _currentLevel = LevelGenerator.GenerateLevel(_currentLevelNumber, _progressService.HighestCompletedLevel);
-
-            // Welt-Ankündigung bei neuem Welt-Start (Level 11, 21, 31, 41)
-            if ((_currentLevelNumber - 1) % 10 == 0)
-            {
-                int world = (_currentLevelNumber - 1) / 10 + 1;
-                _worldAnnouncementText = $"WORLD {world}";
-                _worldAnnouncementTimer = 2.0f;
-            }
+            int world = (_currentLevelNumber - 1) / 10 + 1;
+            _worldAnnouncementText = $"WORLD {world}";
+            _worldAnnouncementTimer = 2.0f;
         }
+
+        // Upgrades erneut anwenden (Leben, Schild, Spezial-Bomben zurücksetzen)
+        ApplyUpgrades();
 
         await LoadLevelAsync();
     }

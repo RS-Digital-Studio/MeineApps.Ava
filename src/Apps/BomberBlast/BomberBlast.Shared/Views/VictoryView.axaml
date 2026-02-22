@@ -2,11 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="BomberBlast.Views.VictoryView"
              x:DataType="vm:VictoryViewModel">
 
   <!-- Gradient Background -->
-  <Panel>
+  <Panel AutomationProperties.AutomationId="Victory_Root">
     <Border>
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -41,13 +42,15 @@
         <!-- Grosse Krone -->
         <mi:MaterialIcon Kind="Crown" Width="72" Height="72"
                          Foreground="#FFD700"
-                         HorizontalAlignment="Center" />
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="Victory_Crown" />
 
         <!-- Titel -->
         <TextBlock Text="{Binding TitleText}"
                    FontSize="42" FontWeight="ExtraBold"
                    Foreground="#FFD700"
-                   HorizontalAlignment="Center" />
+                   HorizontalAlignment="Center"
+                   AutomationProperties.AutomationId="Victory_TxtTitle" />
 
         <!-- Untertitel -->
         <TextBlock Text="{Binding SubtitleText}"
@@ -55,14 +58,16 @@
                    Foreground="#E0E0E0"
                    HorizontalAlignment="Center"
                    TextWrapping="Wrap"
-                   TextAlignment="Center" />
+                   TextAlignment="Center"
+                   AutomationProperties.AutomationId="Victory_TxtSubtitle" />
 
         <!-- Sterne-Anzeige -->
         <Border Background="#2A1A4A"
                 CornerRadius="12"
                 Padding="20,12"
                 HorizontalAlignment="Center"
-                BoxShadow="0 4 12 0 #40000000">
+                BoxShadow="0 4 12 0 #40000000"
+                AutomationProperties.AutomationId="Victory_StarsBadge">
           <StackPanel Spacing="8" HorizontalAlignment="Center">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Center">
@@ -71,7 +76,8 @@
               <TextBlock Text="{Binding StarsText}"
                          FontSize="22" FontWeight="Bold"
                          Foreground="#FFD700"
-                         VerticalAlignment="Center" />
+                         VerticalAlignment="Center"
+                         AutomationProperties.AutomationId="Victory_TxtStars" />
             </StackPanel>
           </StackPanel>
         </Border>
@@ -90,7 +96,8 @@
                    Foreground="#C0C0F0"
                    HorizontalAlignment="Center"
                    TextWrapping="Wrap"
-                   TextAlignment="Center" />
+                   TextAlignment="Center"
+                   AutomationProperties.AutomationId="Victory_TxtThanks" />
 
         <!-- Hauptmenue Button -->
         <Button Command="{Binding GoToMainMenuCommand}"
@@ -99,11 +106,12 @@
                 FontSize="20"
                 Height="56"
                 HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center">
+                HorizontalContentAlignment="Center"
+                AutomationProperties.AutomationId="Victory_BtnMainMenu">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Home" Width="24" Height="24"
                              Foreground="#1A0A2E" />
-            <TextBlock Text="Main Menu"
+            <TextBlock Text="{loc:Translate MainMenu}"
                        FontSize="20" FontWeight="Bold"
                        Foreground="#1A0A2E" />
           </StackPanel>
@@ -115,11 +123,12 @@
                 FontSize="18"
                 Height="48"
                 HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center">
+                HorizontalContentAlignment="Center"
+                AutomationProperties.AutomationId="Victory_BtnShop">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Cart" Width="20" Height="20"
                              Foreground="White" />
-            <TextBlock Text="Shop"
+            <TextBlock Text="{loc:Translate ShopTitle}"
                        FontSize="18"
                        Foreground="White" />
           </StackPanel>

@@ -42,6 +42,11 @@ public partial class App : Application
     /// </summary>
     public static Func<IServiceProvider, IPlayGamesService>? PlayGamesServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen ICloudSaveService (Android setzt CloudSaveService).
+    /// </summary>
+    public static Func<IServiceProvider, ICloudSaveService>? CloudSaveServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -53,6 +58,19 @@ public partial class App : Application
         var services = new ServiceCollection();
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
+
+        // Lazy-Injection: AchievementService in Services verdrahten (vermeidet zirkuläre DI)
+        var achievementService = Services.GetRequiredService<IAchievementService>();
+        (Services.GetRequiredService<IBattlePassService>() as BattlePassService)?.SetAchievementService(achievementService);
+        (Services.GetRequiredService<ICardService>() as CardService)?.SetAchievementService(achievementService);
+        (Services.GetRequiredService<ILeagueService>() as LeagueService)?.SetAchievementService(achievementService);
+        (Services.GetRequiredService<IDailyMissionService>() as DailyMissionService)?.SetAchievementService(achievementService);
+
+        // Lazy-Injection: Mission-Services in GemService + CardService verdrahten (Phase 9.4)
+        var weeklyService = Services.GetRequiredService<IWeeklyChallengeService>();
+        var dailyMissionService = Services.GetRequiredService<IDailyMissionService>();
+        (Services.GetRequiredService<IGemService>() as GemService)?.SetMissionServices(weeklyService, dailyMissionService);
+        (Services.GetRequiredService<ICardService>() as CardService)?.SetMissionServices(weeklyService, dailyMissionService);
 
         // Initialize localization
         var locService = Services.GetRequiredService<ILocalizationService>();
@@ -119,6 +137,7 @@ public partial class App : Application
             services.AddSingleton<ISoundService, NullSoundService>();
         services.AddSingleton<IGameStyleService, GameStyleService>();
         services.AddSingleton<ICoinService, CoinService>();
+        services.AddSingleton<IGemService, GemService>();
         services.AddSingleton<IShopService, ShopService>();
         services.AddSingleton<ITutorialService, TutorialService>();
         services.AddSingleton<IDailyRewardService, DailyRewardService>();
@@ -127,6 +146,22 @@ public partial class App : Application
         services.AddSingleton<IReviewService, ReviewService>();
         services.AddSingleton<IAchievementService, AchievementService>();
         services.AddSingleton<IDiscoveryService, DiscoveryService>();
+        services.AddSingleton<ILuckySpinService, LuckySpinService>();
+        services.AddSingleton<IWeeklyChallengeService, WeeklyChallengeService>();
+        services.AddSingleton<IDailyMissionService, DailyMissionService>();
+        services.AddSingleton<ICardService, CardService>();
+        services.AddSingleton<IDungeonService, DungeonService>();
+        services.AddSingleton<IBattlePassService, BattlePassService>();
+        services.AddSingleton<ICollectionService, CollectionService>();
+        services.AddSingleton<IFirebaseService, FirebaseService>();
+        services.AddSingleton<ILeagueService, LeagueService>();
+
+        // Cloud Save (Android-Override: Echte Google Drive Cloud Saves statt NullCloudSaveService)
+        if (CloudSaveServiceFactory != null)
+            services.AddSingleton<ICloudSaveService>(sp => CloudSaveServiceFactory!(sp));
+        else
+            services.AddSingleton<ICloudSaveService, NullCloudSaveService>();
+
         services.AddSingleton<SoundManager>();
         services.AddSingleton<InputManager>();
         services.AddSingleton<GameRenderer>();
@@ -146,5 +181,14 @@ public partial class App : Application
         services.AddSingleton<AchievementsViewModel>();
         services.AddSingleton<DailyChallengeViewModel>();
         services.AddSingleton<VictoryViewModel>();
+        services.AddSingleton<LuckySpinViewModel>();
+        services.AddSingleton<WeeklyChallengeViewModel>();
+        services.AddSingleton<StatisticsViewModel>();
+        services.AddSingleton<QuickPlayViewModel>();
+        services.AddSingleton<DeckViewModel>();
+        services.AddSingleton<DungeonViewModel>();
+        services.AddSingleton<BattlePassViewModel>();
+        services.AddSingleton<CollectionViewModel>();
+        services.AddSingleton<LeagueViewModel>();
     }
 }

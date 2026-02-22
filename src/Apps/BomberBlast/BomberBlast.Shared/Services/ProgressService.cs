@@ -13,7 +13,7 @@ public class ProgressService : IProgressService
     private ProgressData _data = new();
     private int? _totalStarsCache; // Invalidiert bei Score-Änderung
 
-    public int TotalLevels => 50;
+    public int TotalLevels => 100;
     public int HighestCompletedLevel => _data.HighestCompleted;
 
     public ProgressService(IPreferencesService preferences)
@@ -23,7 +23,7 @@ public class ProgressService : IProgressService
     }
 
     // Stern-Anforderungen pro Welt (Index = Welt-Nummer)
-    private static readonly int[] WorldStarsRequired = [0, 0, 10, 25, 45, 70];
+    private static readonly int[] WorldStarsRequired = [0, 0, 10, 25, 45, 70, 100, 135, 175, 220, 270];
 
     public bool IsLevelUnlocked(int level)
     {
@@ -117,11 +117,16 @@ public class ProgressService : IProgressService
         int world = GetWorldForLevel(level);
         int baseScore = world switch
         {
-            1 => 800 + level * 200,   // Welt 1: 1000-2800
-            2 => 1500 + level * 300,  // Welt 2: 4800-7500
-            3 => 2500 + level * 400,  // Welt 3: 10500-14500
-            4 => 4000 + level * 500,  // Welt 4: 19500-24500
-            _ => 6000 + level * 600   // Welt 5: 30600-36000
+            1 => 800 + level * 200,    // Welt 1: 1000-2800
+            2 => 1500 + level * 300,   // Welt 2: 4800-7500
+            3 => 2500 + level * 400,   // Welt 3: 10500-14500
+            4 => 4000 + level * 500,   // Welt 4: 19500-24500
+            5 => 6000 + level * 600,   // Welt 5: 30600-36000
+            6 => 7000 + level * 650,   // Welt 6: 40150-44500
+            7 => 8000 + level * 700,   // Welt 7: 50700-55000
+            8 => 9000 + level * 750,   // Welt 8: 62250-67500
+            9 => 10000 + level * 800,  // Welt 9: 74800-82000
+            _ => 12000 + level * 900   // Welt 10: 93900-102000
         };
 
         if (score >= baseScore * 3)
@@ -144,7 +149,12 @@ public class ProgressService : IProgressService
             2 => 1500 + level * 300,
             3 => 2500 + level * 400,
             4 => 4000 + level * 500,
-            _ => 6000 + level * 600
+            5 => 6000 + level * 600,
+            6 => 7000 + level * 650,
+            7 => 8000 + level * 700,
+            8 => 9000 + level * 750,
+            9 => 10000 + level * 800,
+            _ => 12000 + level * 900
         };
     }
 

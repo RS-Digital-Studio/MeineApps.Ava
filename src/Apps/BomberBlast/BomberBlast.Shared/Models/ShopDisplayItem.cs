@@ -31,6 +31,12 @@ public partial class ShopDisplayItem : ObservableObject
     /// <summary>Icon-Farbe</summary>
     public Color IconColor { get; init; } = Colors.White;
 
+    /// <summary>UpgradeType als int fuer ShopUpgradeIconCanvas-Binding</summary>
+    public int UpgradeTypeIndex => (int)Type;
+
+    /// <summary>IconColor als ARGB uint fuer ShopUpgradeIconCanvas-Binding</summary>
+    public uint IconColorArgb => IconColor.ToUInt32();
+
     /// <summary>Maximales Level</summary>
     public int MaxLevel { get; init; }
 

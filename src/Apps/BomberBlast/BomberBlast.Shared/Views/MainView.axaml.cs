@@ -22,6 +22,15 @@ public partial class MainView : UserControl
     private Border? _achievementsBorder;
     private Border? _dailyChallengeBorder;
     private Border? _victoryBorder;
+    private Border? _luckySpinBorder;
+    private Border? _weeklyChallengeBorder;
+    private Border? _statisticsBorder;
+    private Border? _quickPlayBorder;
+    private Border? _deckBorder;
+    private Border? _dungeonBorder;
+    private Border? _battlePassBorder;
+    private Border? _collectionBorder;
+    private Border? _leagueBorder;
 
     public MainView()
     {
@@ -45,6 +54,15 @@ public partial class MainView : UserControl
         _achievementsBorder = this.FindControl<Border>("AchievementsBorder");
         _dailyChallengeBorder = this.FindControl<Border>("DailyChallengeBorder");
         _victoryBorder = this.FindControl<Border>("VictoryBorder");
+        _luckySpinBorder = this.FindControl<Border>("LuckySpinBorder");
+        _weeklyChallengeBorder = this.FindControl<Border>("WeeklyChallengeBorder");
+        _statisticsBorder = this.FindControl<Border>("StatisticsBorder");
+        _quickPlayBorder = this.FindControl<Border>("QuickPlayBorder");
+        _deckBorder = this.FindControl<Border>("DeckBorder");
+        _dungeonBorder = this.FindControl<Border>("DungeonBorder");
+        _battlePassBorder = this.FindControl<Border>("BattlePassBorder");
+        _collectionBorder = this.FindControl<Border>("CollectionBorder");
+        _leagueBorder = this.FindControl<Border>("LeagueBorder");
 
         // Initial: MainMenu aktiv setzen
         UpdateActiveClasses();
@@ -99,6 +117,15 @@ public partial class MainView : UserControl
         SetActiveClass(_achievementsBorder, _vm.IsAchievementsActive);
         SetActiveClass(_dailyChallengeBorder, _vm.IsDailyChallengeActive);
         SetActiveClass(_victoryBorder, _vm.IsVictoryActive);
+        SetActiveClass(_luckySpinBorder, _vm.IsLuckySpinActive);
+        SetActiveClass(_weeklyChallengeBorder, _vm.IsWeeklyChallengeActive);
+        SetActiveClass(_statisticsBorder, _vm.IsStatisticsActive);
+        SetActiveClass(_quickPlayBorder, _vm.IsQuickPlayActive);
+        SetActiveClass(_deckBorder, _vm.IsDeckActive);
+        SetActiveClass(_dungeonBorder, _vm.IsDungeonActive);
+        SetActiveClass(_battlePassBorder, _vm.IsBattlePassActive);
+        SetActiveClass(_collectionBorder, _vm.IsCollectionActive);
+        SetActiveClass(_leagueBorder, _vm.IsLeagueActive);
     }
 
     private static void SetActiveClass(Border? border, bool isActive)
@@ -122,6 +149,7 @@ public partial class MainView : UserControl
         {
             "success" => Color.Parse("#22C55E"),
             "gold" => Color.Parse("#FFD700"),
+            "error" => Color.Parse("#EF4444"),
             _ => Color.Parse("#3B82F6")
         };
 

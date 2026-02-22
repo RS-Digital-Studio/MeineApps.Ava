@@ -62,9 +62,11 @@ public static class HudVisualization
         {
             float glowAlpha = Math.Max(0, 1f - _scoreAnimTime * 3f);
             _glowPaint.Color = new SKColor(0xFF, 0xD7, 0x00, (byte)(glowAlpha * 80));
+            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
             _scoreFont.Size = fontSize;
             canvas.DrawText(scoreStr, x, y, SKTextAlign.Left, _scoreFont, _glowPaint);
+            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = null;
         }
         else
@@ -127,9 +129,11 @@ public static class HudVisualization
             // Glow
             float glowAlpha = (0.5f + pulse * 0.5f) * pulseIntensity;
             _glowPaint.Color = timerColor.WithAlpha((byte)(glowAlpha * 100));
+            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
             _timerFont.Size = fontSize * scale;
             canvas.DrawText(timerStr, cx, y, SKTextAlign.Center, _timerFont, _glowPaint);
+            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = null;
 
             // Text mit Scale
@@ -163,8 +167,10 @@ public static class HudVisualization
 
         // Glow-Aura (pulsierend)
         _glowPaint.Color = color.WithAlpha((byte)(pulse * 50));
+        _glowPaint.MaskFilter?.Dispose();
         _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.4f);
         canvas.DrawCircle(cx, cy, r * 1.2f, _glowPaint);
+        _glowPaint.MaskFilter?.Dispose();
         _glowPaint.MaskFilter = null;
 
         // Icon-Hintergrund (Kreis)

@@ -3,14 +3,16 @@
         xmlns:views="using:BomberBlast.Views"
         xmlns:splash="using:MeineApps.UI.Controls"
         x:Class="BomberBlast.Views.MainWindow"
+        AutomationProperties.AutomationId="MainWindow"
         Title="BomberBlast"
         Icon="avares://BomberBlast.Shared/Assets/icon.png"
         Width="1280" Height="720"
         MinWidth="960" MinHeight="540">
 
   <Panel>
-    <views:MainView />
-    <splash:SplashOverlay AppName="BomberBlast"
+    <views:MainView AutomationProperties.AutomationId="MainWindow_MainView" />
+    <splash:SplashOverlay AutomationProperties.AutomationId="MainWindow_Splash"
+                          AppName="BomberBlast"
                           IconSource="avares://BomberBlast.Shared/Assets/icon.png" />
   </Panel>
 

@@ -43,6 +43,15 @@ public partial class MainViewModel : ObservableObject
     public AchievementsViewModel AchievementsVm { get; }
     public DailyChallengeViewModel DailyChallengeVm { get; }
     public VictoryViewModel VictoryVm { get; }
+    public LuckySpinViewModel LuckySpinVm { get; }
+    public WeeklyChallengeViewModel WeeklyChallengeVm { get; }
+    public StatisticsViewModel StatisticsVm { get; }
+    public QuickPlayViewModel QuickPlayVm { get; }
+    public DeckViewModel DeckVm { get; }
+    public DungeonViewModel DungeonVm { get; }
+    public BattlePassViewModel BattlePassVm { get; }
+    public CollectionViewModel CollectionVm { get; }
+    public LeagueViewModel LeagueVm { get; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -80,6 +89,33 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isVictoryActive;
+
+    [ObservableProperty]
+    private bool _isLuckySpinActive;
+
+    [ObservableProperty]
+    private bool _isWeeklyChallengeActive;
+
+    [ObservableProperty]
+    private bool _isStatisticsActive;
+
+    [ObservableProperty]
+    private bool _isQuickPlayActive;
+
+    [ObservableProperty]
+    private bool _isDeckActive;
+
+    [ObservableProperty]
+    private bool _isDungeonActive;
+
+    [ObservableProperty]
+    private bool _isBattlePassActive;
+
+    [ObservableProperty]
+    private bool _isCollectionActive;
+
+    [ObservableProperty]
+    private bool _isLeagueActive;
 
     /// <summary>
     /// Ad-Banner-Spacer: sichtbar in Menü-Views, versteckt im Game-View
@@ -130,6 +166,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IAchievementService _achievementService;
     private readonly ICoinService _coinService;
+    private readonly ICloudSaveService _cloudSaveService;
     private readonly SoundManager _soundManager;
 
     /// <summary>
@@ -159,12 +196,22 @@ public partial class MainViewModel : ObservableObject
         AchievementsViewModel achievementsVm,
         DailyChallengeViewModel dailyChallengeVm,
         VictoryViewModel victoryVm,
+        LuckySpinViewModel luckySpinVm,
+        WeeklyChallengeViewModel weeklyChallengeVm,
+        StatisticsViewModel statisticsVm,
+        QuickPlayViewModel quickPlayVm,
+        DeckViewModel deckVm,
+        DungeonViewModel dungeonVm,
+        BattlePassViewModel battlePassVm,
+        CollectionViewModel collectionVm,
+        LeagueViewModel leagueVm,
         ILocalizationService localization,
         IAdService adService,
         IPurchaseService purchaseService,
         IRewardedAdService rewardedAdService,
         IAchievementService achievementService,
         ICoinService coinService,
+        ICloudSaveService cloudSaveService,
         SoundManager soundManager)
     {
         MenuVm = menuVm;
@@ -179,11 +226,21 @@ public partial class MainViewModel : ObservableObject
         AchievementsVm = achievementsVm;
         DailyChallengeVm = dailyChallengeVm;
         VictoryVm = victoryVm;
+        LuckySpinVm = luckySpinVm;
+        WeeklyChallengeVm = weeklyChallengeVm;
+        StatisticsVm = statisticsVm;
+        QuickPlayVm = quickPlayVm;
+        DeckVm = deckVm;
+        DungeonVm = dungeonVm;
+        BattlePassVm = battlePassVm;
+        CollectionVm = collectionVm;
+        LeagueVm = leagueVm;
         _localizationService = localization;
         _adService = adService;
         _rewardedAdService = rewardedAdService;
         _achievementService = achievementService;
         _coinService = coinService;
+        _cloudSaveService = cloudSaveService;
         _soundManager = soundManager;
 
         // Game Juice Events weiterleiten
@@ -244,10 +301,54 @@ public partial class MainViewModel : ObservableObject
         WireNavigation(achievementsVm);
         WireNavigation(dailyChallengeVm);
         WireNavigation(victoryVm);
+        WireNavigation(luckySpinVm);
+        WireNavigation(weeklyChallengeVm);
+        WireNavigation(statisticsVm);
+        WireNavigation(quickPlayVm);
+        WireNavigation(deckVm);
+        WireNavigation(dungeonVm);
+        WireNavigation(battlePassVm);
+        WireNavigation(collectionVm);
+        WireNavigation(leagueVm);
+
+        // Lucky Spin Game Juice Events weiterleiten
+        LuckySpinVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        LuckySpinVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
 
         // Daily Challenge Game Juice Events weiterleiten
         DailyChallengeVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         DailyChallengeVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
+
+        // Weekly Challenge Game Juice Events weiterleiten
+        WeeklyChallengeVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        WeeklyChallengeVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
+
+        // Deck Game Juice Events weiterleiten
+        DeckVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        DeckVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
+
+        // Dungeon Game Juice Events weiterleiten
+        DungeonVm.FloatingTextRequested += (_, args) => FloatingTextRequested?.Invoke(args.text, args.type);
+        DungeonVm.CelebrationRequested += (_, _) => CelebrationRequested?.Invoke();
+
+        // Battle Pass Game Juice Events weiterleiten
+        BattlePassVm.FloatingTextRequested += (_, args) => FloatingTextRequested?.Invoke(args.text, args.type);
+        BattlePassVm.CelebrationRequested += (_, _) => CelebrationRequested?.Invoke();
+
+        // Battle Pass Premium-Kauf anfordern
+        BattlePassVm.PremiumPurchaseRequested += async () =>
+        {
+            // TODO Phase 9: IPurchaseService.PurchaseAsync("battle_pass_premium")
+            // Vorerst direkt aktivieren (Test-Modus)
+            BattlePassVm.OnPremiumPurchaseConfirmed();
+        };
+
+        // Dungeon Ad-Run: Rewarded Ad zeigen und bei Erfolg melden
+        DungeonVm.AdRunRequested += async () =>
+        {
+            var result = await _rewardedAdService.ShowAdAsync("dungeon_run");
+            if (result) DungeonVm.OnAdRunRewarded();
+        };
 
         // Wire up dialog events from SettingsVM + ShopVM
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
@@ -260,7 +361,16 @@ public partial class MainViewModel : ObservableObject
             // Child VMs re-read their localized texts on next OnAppearing
             MenuVm.OnAppearing();
             ShopVm.UpdateLocalizedTexts();
+            QuickPlayVm.UpdateLocalizedTexts();
+            DeckVm.UpdateLocalizedTexts();
+            DungeonVm.UpdateLocalizedTexts();
+            BattlePassVm.UpdateLocalizedTexts();
+            CollectionVm.UpdateLocalizedTexts();
+            LeagueVm.UpdateLocalizedTexts();
         };
+
+        // Cloud Save: Bei App-Start Cloud-Stand laden (fire-and-forget)
+        _ = _cloudSaveService.TryLoadFromCloudAsync();
 
         // Initialize menu
         menuVm.OnAppearing();
@@ -282,13 +392,13 @@ public partial class MainViewModel : ObservableObject
     /// <summary>
     /// Navigate to a specific view. Hides all others.
     /// Supports routes like "Game?mode=story&amp;level=5" and
-    /// compound routes like "//MainMenu/Game?mode=arcade".
+    /// compound routes like "//MainMenu/Game?mode=story".
     /// </summary>
     public async void NavigateTo(string route)
     {
         try
         {
-        // Handle compound routes (e.g., "//MainMenu/Game?mode=arcade")
+        // Handle compound routes (e.g., "//MainMenu/Game?mode=story")
         if (route.StartsWith("//"))
         {
             var withoutPrefix = route[2..];
@@ -334,8 +444,11 @@ public partial class MainViewModel : ObservableObject
                     var query = route[(route.IndexOf('?') + 1)..];
                     var mode = "quick";
                     var level = 1;
+                    var difficulty = 5;
                     var continueMode = false;
                     var boost = "";
+                    var floor = 0;
+                    var seed = 0;
                     foreach (var param in query.Split('&'))
                     {
                         var parts = param.Split('=');
@@ -343,11 +456,14 @@ public partial class MainViewModel : ObservableObject
                         {
                             if (parts[0] == "mode") mode = parts[1];
                             if (parts[0] == "level") int.TryParse(parts[1], out level);
+                            if (parts[0] == "difficulty") int.TryParse(parts[1], out difficulty);
                             if (parts[0] == "continue") bool.TryParse(parts[1], out continueMode);
                             if (parts[0] == "boost") boost = parts[1];
+                            if (parts[0] == "floor") int.TryParse(parts[1], out floor);
+                            if (parts[0] == "seed") int.TryParse(parts[1], out seed);
                         }
                     }
-                    GameVm.SetParameters(mode, level, continueMode, boost);
+                    GameVm.SetParameters(mode, level, continueMode, boost, difficulty, floor, seed);
                 }
                 // Start the game (initializes engine + starts 60fps loop)
                 await GameVm.OnAppearingAsync();
@@ -389,6 +505,8 @@ public partial class MainViewModel : ObservableObject
                     var timeBonus = 0;
                     var effBonus = 0;
                     var multiplier = 1f;
+                    var survivalKills = 0;
+                    var survivalTime = 0f;
                     foreach (var param in query.Split('&'))
                     {
                         var parts = param.Split('=');
@@ -407,6 +525,8 @@ public partial class MainViewModel : ObservableObject
                                 case "timebonus": int.TryParse(parts[1], out timeBonus); break;
                                 case "effbonus": int.TryParse(parts[1], out effBonus); break;
                                 case "multiplier": float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out multiplier); break;
+                                case "kills": int.TryParse(parts[1], out survivalKills); break;
+                                case "survivaltime": float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out survivalTime); break;
                             }
                         }
                     }
@@ -424,21 +544,12 @@ public partial class MainViewModel : ObservableObject
                     }
 
                     GameOverVm.SetParameters(score, level, isHighScore, mode, coins, levelComplete, canContinue, fails,
-                        enemyPts, timeBonus, effBonus, multiplier);
+                        enemyPts, timeBonus, effBonus, multiplier, survivalKills, survivalTime);
 
                     // Daily Challenge: Score melden + Streak-Bonus vergeben
                     if (mode == "daily" && score > 0)
                     {
                         DailyChallengeVm.SubmitScore(score);
-                    }
-
-                    // Arcade High Score → Gold Confetti + FloatingText
-                    if (isHighScore && mode == "arcade" && score > 0)
-                    {
-                        CelebrationRequested?.Invoke();
-                        FloatingTextRequested?.Invoke(
-                            _localizationService.GetString("NewHighScore") ?? "NEW HIGH SCORE!",
-                            "gold");
                     }
 
                     // Level Complete → Confetti + Floating Text
@@ -473,6 +584,60 @@ public partial class MainViewModel : ObservableObject
                 IsDailyChallengeActive = true;
                 IsAdBannerVisible = _adService.BannerVisible;
                 DailyChallengeVm.OnAppearing();
+                break;
+
+            case "LuckySpin":
+                IsLuckySpinActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                LuckySpinVm.OnAppearing();
+                break;
+
+            case "WeeklyChallenge":
+                IsWeeklyChallengeActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                WeeklyChallengeVm.OnAppearing();
+                break;
+
+            case "Statistics":
+                IsStatisticsActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                StatisticsVm.OnAppearing();
+                break;
+
+            case "QuickPlay":
+                IsQuickPlayActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                QuickPlayVm.OnAppearing();
+                break;
+
+            case "Deck":
+                IsDeckActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                DeckVm.OnAppearing();
+                break;
+
+            case "Dungeon":
+                IsDungeonActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                DungeonVm.OnAppearing();
+                break;
+
+            case "BattlePass":
+                IsBattlePassActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                BattlePassVm.OnAppearing();
+                break;
+
+            case "Collection":
+                IsCollectionActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                CollectionVm.OnAppearing();
+                break;
+
+            case "League":
+                IsLeagueActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                LeagueVm.OnAppearing();
                 break;
 
             case "Victory":
@@ -556,6 +721,15 @@ public partial class MainViewModel : ObservableObject
         IsAchievementsActive = false;
         IsDailyChallengeActive = false;
         IsVictoryActive = false;
+        IsLuckySpinActive = false;
+        IsWeeklyChallengeActive = false;
+        IsStatisticsActive = false;
+        IsQuickPlayActive = false;
+        IsDeckActive = false;
+        IsDungeonActive = false;
+        IsBattlePassActive = false;
+        IsCollectionActive = false;
+        IsLeagueActive = false;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -621,7 +795,7 @@ public partial class MainViewModel : ObservableObject
 
         // 5. Alle anderen Sub-Views → zurück zum Hauptmenü
         if (IsGameOverActive || IsLevelSelectActive || IsHighScoresActive ||
-            IsHelpActive || IsShopActive || IsAchievementsActive || IsDailyChallengeActive || IsVictoryActive)
+            IsHelpActive || IsShopActive || IsAchievementsActive || IsDailyChallengeActive || IsVictoryActive || IsLuckySpinActive || IsWeeklyChallengeActive || IsStatisticsActive || IsQuickPlayActive || IsDeckActive || IsDungeonActive || IsBattlePassActive || IsCollectionActive || IsLeagueActive)
         {
             HideAll();
             IsMainMenuActive = true;

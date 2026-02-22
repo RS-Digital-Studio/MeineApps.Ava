@@ -6,8 +6,9 @@ using SkiaSharp;
 namespace BomberBlast.Input;
 
 /// <summary>
-/// Verwaltet Input-Handler: Joystick (Android) + Keyboard (Desktop).
+/// Verwaltet Input-Handler: Joystick (Android) + Keyboard (Desktop) + Gamepad (Controller).
 /// Joystick hat zwei Modi: Floating (Standard) und Fixed (immer sichtbar).
+/// Auto-Switch: Touch→Joystick, WASD/Space/E→Keyboard, GamepadButton/AnalogStick→Gamepad.
 /// </summary>
 public class InputManager : IDisposable
 {
@@ -109,7 +110,8 @@ public class InputManager : IDisposable
         _handlers = new Dictionary<InputType, IInputHandler>
         {
             { InputType.FloatingJoystick, joystick },
-            { InputType.Keyboard, new KeyboardHandler() }
+            { InputType.Keyboard, new KeyboardHandler() },
+            { InputType.Gamepad, new GamepadHandler() }
         };
 
         LoadSettings();
@@ -130,7 +132,12 @@ public class InputManager : IDisposable
     {
         var savedType = _preferences.Get("InputType", (int)InputType.FloatingJoystick);
         // Migration: Alte Swipe(1)/DPad(2) Werte auf Joystick(0) zurücksetzen
-        _currentType = savedType == (int)InputType.Keyboard ? InputType.Keyboard : InputType.FloatingJoystick;
+        _currentType = savedType switch
+        {
+            (int)InputType.Keyboard => InputType.Keyboard,
+            (int)InputType.Gamepad => InputType.Gamepad,
+            _ => InputType.FloatingJoystick
+        };
 
         _joystickSize = (float)_preferences.Get("JoystickSize", 120.0);
         _joystickOpacity = (float)_preferences.Get("JoystickOpacity", 0.7);
@@ -182,6 +189,12 @@ public class InputManager : IDisposable
 
     public void OnTouchStart(float x, float y, float screenWidth, float screenHeight, long pointerId = 0)
     {
+        // Auto-Switch zu Joystick bei Touch-Input
+        if (_currentType != InputType.FloatingJoystick)
+        {
+            SetInputType(InputType.FloatingJoystick);
+        }
+
         _activeHandler.OnTouchStart(x, y, screenWidth, screenHeight, pointerId);
     }
 
@@ -212,31 +225,96 @@ public class InputManager : IDisposable
 
     /// <summary>
     /// Keyboard Key-Down an den Keyboard-Handler weiterleiten.
-    /// Wechselt automatisch zu Keyboard-Input beim ersten Tastendruck.
+    /// Nur WASD/Space/E/T auto-switcht zu Keyboard (klar keyboard-spezifisch).
+    /// Pfeiltasten werden an den aktiven Handler weitergeleitet (geteilt zwischen Keyboard + Gamepad D-Pad).
     /// </summary>
     public void OnKeyDown(Key key)
     {
-        // Auto-switch zu Keyboard beim ersten Tastendruck
-        if (_currentType != InputType.Keyboard)
+        // WASD/Space/E/T → eindeutig Keyboard, auto-switch
+        if (IsKeyboardSpecificKey(key))
         {
-            SetInputType(InputType.Keyboard);
+            if (_currentType != InputType.Keyboard)
+                SetInputType(InputType.Keyboard);
+
+            if (_handlers.TryGetValue(InputType.Keyboard, out var kbHandler))
+                ((KeyboardHandler)kbHandler).OnKeyDown(key);
+            return;
         }
 
-        if (_handlers.TryGetValue(InputType.Keyboard, out var handler))
+        // Pfeiltasten → an aktiven Handler weiterleiten (Keyboard oder Gamepad D-Pad)
+        if (key is Key.Up or Key.Down or Key.Left or Key.Right)
         {
-            ((KeyboardHandler)handler).OnKeyDown(key);
+            if (_currentType == InputType.Gamepad && _handlers.TryGetValue(InputType.Gamepad, out var gpHandler))
+                ((GamepadHandler)gpHandler).OnKeyDown(key);
+            else if (_handlers.TryGetValue(InputType.Keyboard, out var kbHandler2))
+            {
+                // Bei Pfeiltasten-Druck: Auto-Switch zu Keyboard wenn aktuell Joystick
+                if (_currentType == InputType.FloatingJoystick)
+                    SetInputType(InputType.Keyboard);
+                ((KeyboardHandler)kbHandler2).OnKeyDown(key);
+            }
         }
     }
 
     /// <summary>
-    /// Keyboard Key-Up an den Keyboard-Handler weiterleiten.
+    /// Keyboard Key-Up weiterleiten (an Keyboard und Gamepad, da Pfeiltasten geteilt sind).
     /// </summary>
     public void OnKeyUp(Key key)
     {
-        if (_handlers.TryGetValue(InputType.Keyboard, out var handler))
-        {
-            ((KeyboardHandler)handler).OnKeyUp(key);
-        }
+        // An beide Handler weiterleiten (sicher, da OnKeyUp nur entfernt)
+        if (_handlers.TryGetValue(InputType.Keyboard, out var kbHandler))
+            ((KeyboardHandler)kbHandler).OnKeyUp(key);
+
+        if (key is Key.Up or Key.Down or Key.Left or Key.Right &&
+            _handlers.TryGetValue(InputType.Gamepad, out var gpHandler))
+            ((GamepadHandler)gpHandler).OnKeyUp(key);
+    }
+
+    /// <summary>
+    /// Prüft ob ein Key eindeutig keyboard-spezifisch ist (WASD, Space, E, T).
+    /// Pfeiltasten sind NICHT keyboard-spezifisch (geteilt mit Gamepad D-Pad).
+    /// </summary>
+    private static bool IsKeyboardSpecificKey(Key key) =>
+        key is Key.W or Key.A or Key.S or Key.D or Key.Space or Key.E or Key.T;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GAMEPAD INPUT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Gamepad Face-Button gedrückt. Wechselt automatisch zu Gamepad-Input.
+    /// </summary>
+    public void OnGamepadButtonDown(GamepadButton button)
+    {
+        // Auto-Switch zu Gamepad bei Face-Button-Nutzung
+        if (_currentType != InputType.Gamepad)
+            SetInputType(InputType.Gamepad);
+
+        if (_handlers.TryGetValue(InputType.Gamepad, out var handler))
+            ((GamepadHandler)handler).OnButtonDown(button);
+    }
+
+    /// <summary>
+    /// Gamepad Face-Button losgelassen.
+    /// </summary>
+    public void OnGamepadButtonUp(GamepadButton button)
+    {
+        if (_handlers.TryGetValue(InputType.Gamepad, out var handler))
+            ((GamepadHandler)handler).OnButtonUp(button);
+    }
+
+    /// <summary>
+    /// Analog-Stick Werte setzen (-1.0 bis 1.0 pro Achse).
+    /// Auto-Switch zu Gamepad bei signifikanter Stick-Bewegung.
+    /// </summary>
+    public void SetAnalogStick(float x, float y)
+    {
+        // Auto-Switch zu Gamepad bei Analog-Stick-Nutzung (über Deadzone)
+        if (_currentType != InputType.Gamepad && (MathF.Abs(x) > 0.25f || MathF.Abs(y) > 0.25f))
+            SetInputType(InputType.Gamepad);
+
+        if (_handlers.TryGetValue(InputType.Gamepad, out var handler))
+            ((GamepadHandler)handler).SetAnalogStick(x, y);
     }
 
     /// <summary>

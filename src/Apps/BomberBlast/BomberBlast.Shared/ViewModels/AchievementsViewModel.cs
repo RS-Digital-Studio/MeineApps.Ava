@@ -90,7 +90,7 @@ public partial class AchievementsViewModel : ObservableObject
         AchievementCategory.Mastery => _localizationService.GetString("CategoryMastery") ?? "Mastery",
         AchievementCategory.Combat => _localizationService.GetString("CategoryCombat") ?? "Combat",
         AchievementCategory.Skill => _localizationService.GetString("CategorySkill") ?? "Skill",
-        AchievementCategory.Arcade => _localizationService.GetString("CategoryArcade") ?? "Arcade",
+        AchievementCategory.Challenge => _localizationService.GetString("CategoryChallenge") ?? "Challenge",
         _ => category.ToString()
     };
 
@@ -115,7 +115,7 @@ public class AchievementCategoryGroup
         1 => "#FFD700", // Mastery - Gold
         2 => "#F44336", // Combat - Rot
         3 => "#2196F3", // Skill - Blau
-        4 => "#FF9800", // Arcade - Orange
+        4 => "#FF9800", // Challenge - Orange
         _ => "#888888"
     };
 }

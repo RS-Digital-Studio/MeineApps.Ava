@@ -9,5 +9,8 @@ public enum InputType
     FloatingJoystick,
 
     /// <summary>Keyboard input (Arrow keys/WASD + Space)</summary>
-    Keyboard
+    Keyboard,
+
+    /// <summary>Gamepad/Controller (D-Pad, Analog-Stick, Face-Buttons)</summary>
+    Gamepad
 }

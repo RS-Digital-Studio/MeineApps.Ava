@@ -21,7 +21,7 @@ public static class AchievementIconRenderer
     private static readonly SKColor _masteryColor = new(0xFF, 0xD7, 0x00);   // Gold (Meisterschaft)
     private static readonly SKColor _combatColor = new(0xEF, 0x44, 0x44);    // Rot (Kampf)
     private static readonly SKColor _skillColor = new(0x38, 0xBD, 0xF8);     // Blau (Geschick)
-    private static readonly SKColor _arcadeColor = new(0xA7, 0x8B, 0xFA);    // Violett (Arcade)
+    private static readonly SKColor _challengeColor = new(0xA7, 0x8B, 0xFA);  // Violett (Herausforderung)
     private static readonly SKColor _lockedColor = new(0x55, 0x55, 0x55);    // Grau
 
     /// <summary>
@@ -31,7 +31,7 @@ public static class AchievementIconRenderer
     /// <param name="cx">Center X</param>
     /// <param name="cy">Center Y</param>
     /// <param name="size">Icon-Größe (Durchmesser)</param>
-    /// <param name="categoryIndex">Kategorie: 0=Progress, 1=Mastery, 2=Combat, 3=Skill, 4=Arcade</param>
+    /// <param name="categoryIndex">Kategorie: 0=Progress, 1=Mastery, 2=Combat, 3=Skill, 4=Challenge</param>
     /// <param name="isUnlocked">Ob freigeschaltet</param>
     /// <param name="progress">Fortschritt 0.0-1.0 (für Ring-Anzeige)</param>
     /// <param name="animTime">Animation für Glow</param>
@@ -197,7 +197,7 @@ public static class AchievementIconRenderer
             1 => _masteryColor,
             2 => _combatColor,
             3 => _skillColor,
-            4 => _arcadeColor,
+            4 => _challengeColor,
             _ => _progressColor
         };
     }

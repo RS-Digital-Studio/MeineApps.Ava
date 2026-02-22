@@ -27,5 +27,8 @@ public enum CellType
     Teleporter,
 
     /// <summary>Lava-Riss (Welt 5: Inferno) - pulsiert periodisch, tötet bei aktivem Zustand</summary>
-    LavaCrack
+    LavaCrack,
+
+    /// <summary>Plattform-Lücke (Welt 9: Himmelsfestung) - Betreten = Tod</summary>
+    PlatformGap
 }

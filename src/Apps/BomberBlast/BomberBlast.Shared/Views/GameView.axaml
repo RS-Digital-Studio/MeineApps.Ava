@@ -8,16 +8,17 @@
              x:DataType="vm:GameViewModel"
              Focusable="True">
 
-  <Panel>
+  <Panel AutomationProperties.AutomationId="Game_Root">
     <!-- SkiaSharp Game Canvas -->
     <Border Background="Black">
-      <skia:SKCanvasView x:Name="GameCanvas" />
+      <skia:SKCanvasView x:Name="GameCanvas" AutomationProperties.AutomationId="Game_Canvas" />
     </Border>
 
     <!-- Score Double Overlay (nach Level-Complete) -->
     <Border IsVisible="{Binding ShowScoreDoubleOverlay}"
             Background="#CC000000"
-            ZIndex="50">
+            ZIndex="50"
+            AutomationProperties.AutomationId="Game_ScoreDoubleOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="20"
               Padding="32,24"
@@ -34,19 +35,22 @@
                      FontSize="32"
                      FontWeight="Bold"
                      Foreground="{DynamicResource SuccessBrush}"
-                     HorizontalAlignment="Center" />
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Game_TxtLevelComplete" />
 
           <!-- Score -->
           <StackPanel Spacing="4" HorizontalAlignment="Center">
             <TextBlock Text="{loc:Translate Score}"
                        FontSize="14"
                        Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" />
+                       HorizontalAlignment="Center"
+                       AutomationProperties.AutomationId="Game_TxtScoreLabel" />
             <TextBlock Text="{Binding LevelCompleteScoreText}"
                        FontSize="36"
                        FontWeight="Bold"
                        Foreground="#FFD700"
-                       HorizontalAlignment="Center" />
+                       HorizontalAlignment="Center"
+                       AutomationProperties.AutomationId="Game_TxtScore" />
           </StackPanel>
 
           <!-- Verdoppeln-Frage -->
@@ -55,7 +59,8 @@
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      HorizontalAlignment="Center"
                      TextWrapping="Wrap"
-                     TextAlignment="Center" />
+                     TextAlignment="Center"
+                     AutomationProperties.AutomationId="Game_TxtScoreDoubleDesc" />
 
           <!-- Buttons -->
           <StackPanel Spacing="10">
@@ -67,7 +72,8 @@
                     Height="52"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    CornerRadius="12">
+                    CornerRadius="12"
+                    AutomationProperties.AutomationId="Game_BtnDoubleScore">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="Video" Width="20" Height="20"
                                  Foreground="White" />
@@ -83,7 +89,8 @@
                     Height="44"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    CornerRadius="10">
+                    CornerRadius="10"
+                    AutomationProperties.AutomationId="Game_BtnSkipDouble">
               <TextBlock Text="{loc:Translate ContinueWithout}"
                          FontSize="14"
                          Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -95,7 +102,8 @@
 
     <!-- Pause Overlay (triggered by Escape key) -->
     <Border IsVisible="{Binding IsPaused}"
-            Background="#CC000000">
+            Background="#CC000000"
+            AutomationProperties.AutomationId="Game_PauseOverlay">
       <Border Background="{DynamicResource SurfaceBrush}"
               CornerRadius="20"
               Padding="24"
@@ -109,7 +117,8 @@
                      FontSize="36"
                      FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
-                     HorizontalAlignment="Center" />
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Game_TxtPaused" />
 
           <!-- 2x2 Button Grid -->
           <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto">
@@ -121,7 +130,8 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Height="48"
-                    Margin="0,0,6,6" />
+                    Margin="0,0,6,6"
+                    AutomationProperties.AutomationId="Game_BtnResume" />
 
             <Button Grid.Row="0" Grid.Column="1"
                     Content="{loc:Translate RestartLevel}"
@@ -131,7 +141,8 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Height="48"
-                    Margin="6,0,0,6" />
+                    Margin="6,0,0,6"
+                    AutomationProperties.AutomationId="Game_BtnRestart" />
 
             <Button Grid.Row="1" Grid.Column="0"
                     Content="{loc:Translate Settings}"
@@ -140,7 +151,8 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Height="48"
-                    Margin="0,6,6,0" />
+                    Margin="0,6,6,0"
+                    AutomationProperties.AutomationId="Game_BtnPauseSettings" />
 
             <Button Grid.Row="1" Grid.Column="1"
                     Content="{loc:Translate QuitToMenu}"
@@ -150,7 +162,8 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Height="48"
-                    Margin="6,6,0,0" />
+                    Margin="6,6,0,0"
+                    AutomationProperties.AutomationId="Game_BtnQuitToMenu" />
           </Grid>
         </StackPanel>
       </Border>

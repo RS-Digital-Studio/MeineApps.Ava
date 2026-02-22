@@ -7,7 +7,7 @@
              x:DataType="vm:LevelSelectViewModel">
 
   <!-- Gradient Background -->
-  <Panel>
+  <Panel AutomationProperties.AutomationId="LevelSelect_Root">
     <Border>
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -28,6 +28,7 @@
         <Grid ColumnDefinitions="Auto,*,Auto">
           <!-- Zurueck-Button -->
           <Button Classes="Text"
+                  AutomationProperties.AutomationId="LevelSelect_BtnBack"
                   Command="{Binding GoBackCommand}">
             <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
@@ -39,20 +40,23 @@
                       Spacing="8">
             <mi:MaterialIcon Kind="ViewGrid" Width="24" Height="24"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
-            <TextBlock Text="{loc:Translate SelectLevel}"
+            <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtTitle"
+                       Text="{loc:Translate SelectLevel}"
                        FontSize="20" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
 
           <!-- Coin-Badge -->
           <Border Grid.Column="2"
+                  AutomationProperties.AutomationId="LevelSelect_CoinBadge"
                   Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="16"
                   Padding="12,6">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18"
                                Foreground="#FFD700" />
-              <TextBlock Text="{Binding CoinsText}"
+              <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtCoins"
+                         Text="{Binding CoinsText}"
                          FontSize="15" FontWeight="SemiBold"
                          Foreground="#FFD700"
                          VerticalAlignment="Center" />
@@ -63,9 +67,11 @@
 
       <!-- Welt-Sektionen -->
       <ScrollViewer Grid.Row="1"
+                    AutomationProperties.AutomationId="LevelSelect_Scroll"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
-        <ItemsControl ItemsSource="{Binding WorldGroups}" Margin="4,4,4,80">
+        <ItemsControl AutomationProperties.AutomationId="LevelSelect_WorldList"
+                      ItemsSource="{Binding WorldGroups}" Margin="4,4,4,80">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <StackPanel Spacing="6" />
@@ -194,13 +200,16 @@
 
       <!-- Footer: Fortschritt -->
       <Border Grid.Row="2"
+              AutomationProperties.AutomationId="LevelSelect_Footer"
               Background="{DynamicResource SurfaceBrush}"
               Padding="12,8">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
-          <TextBlock Text="{Binding ProgressText}"
+          <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtProgress"
+                     Text="{Binding ProgressText}"
                      FontSize="13"
                      Foreground="{DynamicResource TextSecondaryBrush}" />
-          <TextBlock Text="{Binding StarsText}"
+          <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtStars"
+                     Text="{Binding StarsText}"
                      FontSize="13"
                      Foreground="{DynamicResource AccentBrush}" />
         </StackPanel>
@@ -209,7 +218,8 @@
     </Grid>
 
     <!-- Power-Up Boost Overlay -->
-    <Border IsVisible="{Binding ShowBoostOverlay}"
+    <Border AutomationProperties.AutomationId="LevelSelect_BoostOverlay"
+            IsVisible="{Binding ShowBoostOverlay}"
             Background="#CC000000"
             ZIndex="50">
       <Border Background="{DynamicResource CardBrush}"
@@ -219,7 +229,8 @@
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16" HorizontalAlignment="Center">
-          <TextBlock Text="{Binding BoostTitleText}"
+          <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtBoostTitle"
+                     Text="{Binding BoostTitleText}"
                      FontSize="22" FontWeight="Bold"
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
@@ -233,12 +244,14 @@
                              Foreground="{DynamicResource AccentBrush}" />
           </Border>
 
-          <TextBlock Text="{Binding BoostPowerUpName}"
+          <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtBoostPowerUp"
+                     Text="{Binding BoostPowerUpName}"
                      FontSize="18" FontWeight="SemiBold"
                      Foreground="{DynamicResource AccentBrush}"
                      HorizontalAlignment="Center" />
 
-          <TextBlock Text="{Binding BoostDescText}"
+          <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtBoostDesc"
+                     Text="{Binding BoostDescText}"
                      FontSize="14"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      HorizontalAlignment="Center"
@@ -247,6 +260,7 @@
 
           <StackPanel Spacing="8">
             <Button Classes="Filled GameButton"
+                    AutomationProperties.AutomationId="LevelSelect_BtnAcceptBoost"
                     Command="{Binding AcceptBoostCommand}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
@@ -259,6 +273,7 @@
             </Button>
 
             <Button Classes="Text"
+                    AutomationProperties.AutomationId="LevelSelect_BtnDeclineBoost"
                     Command="{Binding DeclineBoostCommand}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"

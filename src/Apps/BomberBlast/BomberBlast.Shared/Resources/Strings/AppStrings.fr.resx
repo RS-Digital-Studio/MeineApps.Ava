@@ -26,10 +26,7 @@
   <data name="StoryMode" xml:space="preserve">
     <value>Mode Histoire</value>
   </data>
-  <data name="ArcadeMode" xml:space="preserve">
-    <value>Mode Arcade</value>
-  </data>
-  <data name="QuickPlay" xml:space="preserve">
+<data name="QuickPlay" xml:space="preserve">
     <value>Partie Rapide</value>
   </data>
   <data name="HighScores" xml:space="preserve">
@@ -110,9 +107,6 @@
   <data name="NoHighScoresYet" xml:space="preserve">
     <value>Pas encore de records !</value>
   </data>
-  <data name="PlayArcadeToScore" xml:space="preserve">
-    <value>Jouez en Mode Arcade pour marquer des points</value>
-  </data>
   <data name="WaveFormat" xml:space="preserve">
     <value>Vague {0}</value>
   </data>
@@ -127,12 +121,6 @@
   </data>
   <data name="FinalScore" xml:space="preserve">
     <value>Score final : {0}</value>
-  </data>
-  <data name="WaveReached" xml:space="preserve">
-    <value>Vague atteinte : {0}</value>
-  </data>
-  <data name="WaveOverlay" xml:space="preserve">
-    <value>VAGUE {0}</value>
   </data>
   <data name="StageOverlay" xml:space="preserve">
     <value>NIVEAU {0}</value>
@@ -520,6 +508,12 @@
   <data name="StyleNeonDesc" xml:space="preserve">
     <value>Effets lumineux cyberpunk</value>
   </data>
+  <data name="StyleRetro" xml:space="preserve">
+    <value>Retro</value>
+  </data>
+  <data name="StyleRetroDesc" xml:space="preserve">
+    <value>Style pixel art 8 bits</value>
+  </data>
   <!-- Input Controls -->
   <data name="InputFloatingJoystick" xml:space="preserve">
     <value>Joystick flottant</value>
@@ -625,6 +619,21 @@
   </data>
   <data name="WorldInferno" xml:space="preserve">
     <value>Enfer</value>
+  </data>
+  <data name="WorldRuins" xml:space="preserve">
+    <value>Ruines</value>
+  </data>
+  <data name="WorldOcean" xml:space="preserve">
+    <value>Océan</value>
+  </data>
+  <data name="WorldVolcano" xml:space="preserve">
+    <value>Volcan</value>
+  </data>
+  <data name="WorldSkyFortress" xml:space="preserve">
+    <value>Forteresse Céleste</value>
+  </data>
+  <data name="WorldShadowRealm" xml:space="preserve">
+    <value>Royaume des Ombres</value>
   </data>
 
   <!-- Rewarded Ads -->
@@ -744,7 +753,37 @@
     <value>Champion</value>
   </data>
   <data name="AchWorld5Desc" xml:space="preserve">
-    <value>Terminer les 50 niveaux</value>
+    <value>Terminer tous les niveaux du Monde 5</value>
+  </data>
+  <data name="AchWorld6" xml:space="preserve">
+    <value>Explorateur de Ruines</value>
+  </data>
+  <data name="AchWorld6Desc" xml:space="preserve">
+    <value>Terminer tous les niveaux du Monde 6</value>
+  </data>
+  <data name="AchWorld7" xml:space="preserve">
+    <value>Plongeur</value>
+  </data>
+  <data name="AchWorld7Desc" xml:space="preserve">
+    <value>Terminer tous les niveaux du Monde 7</value>
+  </data>
+  <data name="AchWorld8" xml:space="preserve">
+    <value>Survivant du Volcan</value>
+  </data>
+  <data name="AchWorld8Desc" xml:space="preserve">
+    <value>Terminer tous les niveaux du Monde 8</value>
+  </data>
+  <data name="AchWorld9" xml:space="preserve">
+    <value>Marcheur Céleste</value>
+  </data>
+  <data name="AchWorld9Desc" xml:space="preserve">
+    <value>Terminer tous les niveaux du Monde 9</value>
+  </data>
+  <data name="AchWorld10" xml:space="preserve">
+    <value>Maître des Ombres</value>
+  </data>
+  <data name="AchWorld10Desc" xml:space="preserve">
+    <value>Terminer les 100 niveaux</value>
   </data>
   <data name="AchStars50" xml:space="preserve">
     <value>Collectionneur</value>
@@ -799,18 +838,6 @@
   </data>
   <data name="AchSpeedrunDesc" xml:space="preserve">
     <value>Terminer un niveau avec 60+ secondes restantes</value>
-  </data>
-  <data name="AchArcade10" xml:space="preserve">
-    <value>Vétéran Arcade</value>
-  </data>
-  <data name="AchArcade10Desc" xml:space="preserve">
-    <value>Atteindre la vague 10 en mode Arcade</value>
-  </data>
-  <data name="AchArcade25" xml:space="preserve">
-    <value>Légende Arcade</value>
-  </data>
-  <data name="AchArcade25Desc" xml:space="preserve">
-    <value>Atteindre la vague 25 en mode Arcade</value>
   </data>
 
   <!-- Daily Reward -->
@@ -1198,8 +1225,8 @@
   <data name="CategorySkill" xml:space="preserve">
     <value>Habileté</value>
   </data>
-  <data name="CategoryArcade" xml:space="preserve">
-    <value>Arcade</value>
+  <data name="CategoryChallenge" xml:space="preserve">
+    <value>Défi</value>
   </data>
   <data name="ReducedEffects" xml:space="preserve">
     <value>Effets réduits</value>
@@ -1242,5 +1269,1555 @@
   </data>
   <data name="ContinueFree" xml:space="preserve">
     <value>Continuer</value>
+  </data>
+
+  <!-- Boss -->
+  <data name="BossStoneGolem" xml:space="preserve">
+    <value>Golem de Pierre</value>
+  </data>
+  <data name="BossIceDragon" xml:space="preserve">
+    <value>Dragon de Glace</value>
+  </data>
+  <data name="BossFireDemon" xml:space="preserve">
+    <value>Démon de Feu</value>
+  </data>
+  <data name="BossShadowMaster" xml:space="preserve">
+    <value>Maître des Ombres</value>
+  </data>
+  <data name="BossFinalBoss" xml:space="preserve">
+    <value>Boss Final</value>
+  </data>
+  <data name="BossAttackBlockRain" xml:space="preserve">
+    <value>PLUIE DE BLOCS !</value>
+  </data>
+  <data name="BossAttackIceBreath" xml:space="preserve">
+    <value>SOUFFLE GLACÉ !</value>
+  </data>
+  <data name="BossAttackLavaWave" xml:space="preserve">
+    <value>VAGUE DE LAVE !</value>
+  </data>
+  <data name="BossAttackTeleport" xml:space="preserve">
+    <value>TÉLÉPORTATION !</value>
+  </data>
+  <data name="BossFight" xml:space="preserve">
+    <value>COMBAT DE BOSS !</value>
+  </data>
+
+  <!-- Special Bombs -->
+  <data name="UpgradeIceBomb" xml:space="preserve">
+    <value>Bombe de Glace</value>
+  </data>
+  <data name="UpgradeIceBombDesc" xml:space="preserve">
+    <value>Gèle les ennemis 3s. 3 par niveau.</value>
+  </data>
+  <data name="UpgradeFireBomb" xml:space="preserve">
+    <value>Bombe de Feu</value>
+  </data>
+  <data name="UpgradeFireBombDesc" xml:space="preserve">
+    <value>Crée des zones de lave 3s. 3 par niveau.</value>
+  </data>
+  <data name="UpgradeStickyBomb" xml:space="preserve">
+    <value>Bombe Collante</value>
+  </data>
+  <data name="UpgradeStickyBombDesc" xml:space="preserve">
+    <value>Ralentit ennemis, enchaîne bombes. 3 par niveau.</value>
+  </data>
+  <data name="SpecialBombFrozen" xml:space="preserve">
+    <value>GELÉ !</value>
+  </data>
+  <data name="SpecialBombLava" xml:space="preserve">
+    <value>LAVE !</value>
+  </data>
+  <data name="SpecialBombStuck" xml:space="preserve">
+    <value>COLLÉ !</value>
+  </data>
+  <data name="SpecialBombCount" xml:space="preserve">
+    <value>Spécial : {0}</value>
+  </data>
+  <data name="SpecialBombToggle" xml:space="preserve">
+    <value>Bombe Spéciale</value>
+  </data>
+  <data name="SpecialBombNone" xml:space="preserve">
+    <value>Pas de bombes spéciales</value>
+  </data>
+  <data name="BombSkinDefault" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="BombSkinFire" xml:space="preserve">
+    <value>Feu</value>
+  </data>
+  <data name="BombSkinIce" xml:space="preserve">
+    <value>Glace</value>
+  </data>
+  <data name="BombSkinGold" xml:space="preserve">
+    <value>Or</value>
+  </data>
+  <data name="BombSkinNeon" xml:space="preserve">
+    <value>Néon</value>
+  </data>
+  <data name="BombSkinPixel" xml:space="preserve">
+    <value>Pixel</value>
+  </data>
+  <data name="BombSkinDiamond" xml:space="preserve">
+    <value>Diamant</value>
+  </data>
+  <data name="BombSkinPhantom" xml:space="preserve">
+    <value>Fantôme</value>
+  </data>
+  <data name="ExplosionSkinDefault" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="ExplosionSkinBlue" xml:space="preserve">
+    <value>Vague de Givre</value>
+  </data>
+  <data name="ExplosionSkinGreen" xml:space="preserve">
+    <value>Toxique</value>
+  </data>
+  <data name="ExplosionSkinPink" xml:space="preserve">
+    <value>Sakura</value>
+  </data>
+  <data name="ExplosionSkinShadow" xml:space="preserve">
+    <value>Ombre</value>
+  </data>
+  <data name="ExplosionSkinRainbow" xml:space="preserve">
+    <value>Arc-en-ciel</value>
+  </data>
+  <data name="SectionBombSkins" xml:space="preserve">
+    <value>Skins de Bombe</value>
+  </data>
+  <data name="SectionExplosionSkins" xml:space="preserve">
+    <value>Skins d'Explosion</value>
+  </data>
+  <data name="SkinCrimson" xml:space="preserve">
+    <value>Cramoisi</value>
+  </data>
+  <data name="SkinArctic" xml:space="preserve">
+    <value>Arctique</value>
+  </data>
+  <data name="SkinToxic" xml:space="preserve">
+    <value>Toxique</value>
+  </data>
+  <data name="SkinStealth" xml:space="preserve">
+    <value>Furtif</value>
+  </data>
+  <data name="SkinSunset" xml:space="preserve">
+    <value>Crépuscule</value>
+  </data>
+  <data name="SkinOcean" xml:space="preserve">
+    <value>Océan</value>
+  </data>
+  <data name="SkinCherry" xml:space="preserve">
+    <value>Cerisier</value>
+  </data>
+  <data name="SkinEmerald" xml:space="preserve">
+    <value>Émeraude</value>
+  </data>
+  <data name="SkinGalaxy" xml:space="preserve">
+    <value>Galaxie</value>
+  </data>
+  <data name="SkinInferno" xml:space="preserve">
+    <value>Inferno</value>
+  </data>
+  <!-- Survival Mode -->
+  <data name="SurvivalMode" xml:space="preserve">
+    <value>Survie</value>
+  </data>
+  <data name="SurvivalKills" xml:space="preserve">
+    <value>Kills : {0}</value>
+  </data>
+  <data name="SurvivalKillsLabel" xml:space="preserve">
+    <value>KILLS</value>
+  </data>
+  <data name="SurvivalTimeLabel" xml:space="preserve">
+    <value>TEMPS</value>
+  </data>
+  <!-- Lucky Spin -->
+  <data name="LuckySpinTitle" xml:space="preserve">
+    <value>Roue de la Chance</value>
+  </data>
+  <data name="LuckySpinFree" xml:space="preserve">
+    <value>Tour gratuit !</value>
+  </data>
+  <data name="LuckySpinAd" xml:space="preserve">
+    <value>Voir la pub</value>
+  </data>
+  <data name="LuckySpinCollect" xml:space="preserve">
+    <value>Collecter !</value>
+  </data>
+  <data name="LuckySpinTotal" xml:space="preserve">
+    <value>Total : {0} tours</value>
+  </data>
+  <data name="SpinReward50" xml:space="preserve">
+    <value>50 Coins</value>
+  </data>
+  <data name="SpinReward100" xml:space="preserve">
+    <value>100 Coins</value>
+  </data>
+  <data name="SpinReward250" xml:space="preserve">
+    <value>250 Coins</value>
+  </data>
+  <data name="SpinReward500" xml:space="preserve">
+    <value>500 Coins</value>
+  </data>
+  <data name="SpinReward5Gems" xml:space="preserve">
+    <value>5 Gemmes</value>
+  </data>
+  <data name="SpinReward750" xml:space="preserve">
+    <value>750 Coins</value>
+  </data>
+  <data name="SpinReward1500" xml:space="preserve">
+    <value>1 500 Coins - JACKPOT !</value>
+  </data>
+  <data name="WeeklyChallengeTitle" xml:space="preserve">
+    <value>Défis hebdomadaires</value>
+  </data>
+  <data name="WeeklyTotalWeeks" xml:space="preserve">
+    <value>Semaines terminées</value>
+  </data>
+  <data name="WeeklyBonusLabel" xml:space="preserve">
+    <value>Bonus complet</value>
+  </data>
+  <data name="WeeklyTimeRemaining" xml:space="preserve">
+    <value>Temps restant</value>
+  </data>
+  <data name="WeeklyCompleteLevels" xml:space="preserve">
+    <value>Terminer des niveaux</value>
+  </data>
+  <data name="WeeklyCompleteLevelsDesc" xml:space="preserve">
+    <value>Terminez {0} niveaux</value>
+  </data>
+  <data name="WeeklyDefeatEnemies" xml:space="preserve">
+    <value>Vaincre des ennemis</value>
+  </data>
+  <data name="WeeklyDefeatEnemiesDesc" xml:space="preserve">
+    <value>Vainquez {0} ennemis</value>
+  </data>
+  <data name="WeeklyCollectPowerUps" xml:space="preserve">
+    <value>Collecter des PowerUps</value>
+  </data>
+  <data name="WeeklyCollectPowerUpsDesc" xml:space="preserve">
+    <value>Collectez {0} PowerUps</value>
+  </data>
+  <data name="WeeklyEarnCoins" xml:space="preserve">
+    <value>Gagner des pièces</value>
+  </data>
+  <data name="WeeklyEarnCoinsDesc" xml:space="preserve">
+    <value>Gagnez {0} pièces</value>
+  </data>
+  <data name="WeeklySurvivalKills" xml:space="preserve">
+    <value>Kills en survie</value>
+  </data>
+  <data name="WeeklySurvivalKillsDesc" xml:space="preserve">
+    <value>Obtenez {0} kills en mode survie</value>
+  </data>
+  <data name="WeeklyUseSpecialBombs" xml:space="preserve">
+    <value>Utiliser des bombes spéciales</value>
+  </data>
+  <data name="WeeklyUseSpecialBombsDesc" xml:space="preserve">
+    <value>Utilisez {0} bombes spéciales</value>
+  </data>
+  <data name="WeeklyAchieveCombo" xml:space="preserve">
+    <value>Réaliser des combos</value>
+  </data>
+  <data name="WeeklyAchieveComboDesc" xml:space="preserve">
+    <value>Réalisez {0} combos (x2+)</value>
+  </data>
+  <data name="WeeklyWinBossFights" xml:space="preserve">
+    <value>Gagner des combats de boss</value>
+  </data>
+  <data name="WeeklyWinBossFightsDesc" xml:space="preserve">
+    <value>Gagnez {0} combats de boss</value>
+  </data>
+  <data name="WeeklyChallengeNew" xml:space="preserve">
+    <value>Nouveau !</value>
+  </data>
+  <data name="WeeklyChallengeButton" xml:space="preserve">
+    <value>Hebdomadaire</value>
+  </data>
+
+  <!-- Daily Missions -->
+  <data name="DailyMissionsTitle" xml:space="preserve">
+    <value>Missions Quotidiennes</value>
+  </data>
+  <data name="DailyMissionsCompleted" xml:space="preserve">
+    <value>Jours Complétés</value>
+  </data>
+  <data name="DailyBonusLabel" xml:space="preserve">
+    <value>Bonus Tout Complété</value>
+  </data>
+  <data name="DailyTimeRemaining" xml:space="preserve">
+    <value>Réinitialisation dans</value>
+  </data>
+  <data name="DailyCompleteLevels" xml:space="preserve">
+    <value>Terminer des Niveaux</value>
+  </data>
+  <data name="DailyCompleteLevelsDesc" xml:space="preserve">
+    <value>Termine {0} niveaux</value>
+  </data>
+  <data name="DailyDefeatEnemies" xml:space="preserve">
+    <value>Vaincre des Ennemis</value>
+  </data>
+  <data name="DailyDefeatEnemiesDesc" xml:space="preserve">
+    <value>Vaincs {0} ennemis</value>
+  </data>
+  <data name="DailyCollectPowerUps" xml:space="preserve">
+    <value>Collecter des Power-Ups</value>
+  </data>
+  <data name="DailyCollectPowerUpsDesc" xml:space="preserve">
+    <value>Collecte {0} power-ups</value>
+  </data>
+  <data name="DailyEarnCoins" xml:space="preserve">
+    <value>Gagner des Pièces</value>
+  </data>
+  <data name="DailyEarnCoinsDesc" xml:space="preserve">
+    <value>Gagne {0} pièces</value>
+  </data>
+  <data name="DailySurvivalKills" xml:space="preserve">
+    <value>Éliminations en Survie</value>
+  </data>
+  <data name="DailySurvivalKillsDesc" xml:space="preserve">
+    <value>Obtiens {0} éliminations en survie</value>
+  </data>
+  <data name="DailyUseSpecialBombs" xml:space="preserve">
+    <value>Utiliser des Bombes Spéciales</value>
+  </data>
+  <data name="DailyUseSpecialBombsDesc" xml:space="preserve">
+    <value>Utilise {0} bombes spéciales</value>
+  </data>
+  <data name="DailyAchieveCombo" xml:space="preserve">
+    <value>Réaliser des Combos</value>
+  </data>
+  <data name="DailyAchieveComboDesc" xml:space="preserve">
+    <value>Réalise {0} combos</value>
+  </data>
+  <data name="DailyWinBossFights" xml:space="preserve">
+    <value>Gagner un Combat de Boss</value>
+  </data>
+  <data name="DailyWinBossFightsDesc" xml:space="preserve">
+    <value>Gagne {0} combat de boss</value>
+  </data>
+  <data name="MissionsButton" xml:space="preserve">
+    <value>Missions</value>
+  </data>
+  <data name="StatsTitle" xml:space="preserve">
+    <value>Statistiques</value>
+  </data>
+  <data name="StatsProgress" xml:space="preserve">
+    <value>Progression</value>
+  </data>
+  <data name="StatsCombat" xml:space="preserve">
+    <value>Combat</value>
+  </data>
+  <data name="StatsChallenges" xml:space="preserve">
+    <value>Défis</value>
+  </data>
+  <data name="StatsEconomy" xml:space="preserve">
+    <value>Économie</value>
+  </data>
+  <data name="ProfileTitle" xml:space="preserve">
+    <value>Profil</value>
+  </data>
+  <data name="StatsDungeon" xml:space="preserve">
+    <value>Donjon</value>
+  </data>
+  <data name="StatsDungeonRuns" xml:space="preserve">
+    <value>Courses de Donjon</value>
+  </data>
+  <data name="StatsDungeonBest" xml:space="preserve">
+    <value>Meilleur Étage</value>
+  </data>
+  <data name="StatsDungeonCoins" xml:space="preserve">
+    <value>Pièces de Donjon</value>
+  </data>
+  <data name="StatsLevelsCompleted" xml:space="preserve">
+    <value>Niveaux terminés</value>
+  </data>
+  <data name="StatsTotalStars" xml:space="preserve">
+    <value>Étoiles collectées</value>
+  </data>
+  <data name="StatsStarsPercent" xml:space="preserve">
+    <value>Progression étoiles</value>
+  </data>
+  <data name="StatsTotalKills" xml:space="preserve">
+    <value>Ennemis vaincus</value>
+  </data>
+  <data name="StatsBombsKicked" xml:space="preserve">
+    <value>Bombes botées</value>
+  </data>
+  <data name="StatsPowerBombs" xml:space="preserve">
+    <value>Power Bombs utilisées</value>
+  </data>
+  <data name="StatsDailyStreak" xml:space="preserve">
+    <value>Série en cours</value>
+  </data>
+  <data name="StatsLongestStreak" xml:space="preserve">
+    <value>Plus longue série</value>
+  </data>
+  <data name="StatsDailyChallengesCompleted" xml:space="preserve">
+    <value>Défis quotidiens terminés</value>
+  </data>
+  <data name="StatsWeeksCompleted" xml:space="preserve">
+    <value>Missions hebdo terminées</value>
+  </data>
+  <data name="StatsDailyMissionDays" xml:space="preserve">
+    <value>Jours de missions quotidiennes</value>
+  </data>
+  <data name="StatsCoinBalance" xml:space="preserve">
+    <value>Pièces actuelles</value>
+  </data>
+  <data name="StatsTotalEarned" xml:space="preserve">
+    <value>Total gagné</value>
+  </data>
+  <data name="StatsAchievements" xml:space="preserve">
+    <value>Succès</value>
+  </data>
+  <data name="StatsTotalSpins" xml:space="preserve">
+    <value>Tours de la chance</value>
+  </data>
+  <data name="StatisticsButton" xml:space="preserve">
+    <value>Profil</value>
+  </data>
+
+  <!-- Achievements Phase 13: Progress -->
+  <data name="AchPerfectWorld1" xml:space="preserve">
+    <value>Monde 1 parfait</value>
+  </data>
+  <data name="AchPerfectWorld1Desc" xml:space="preserve">
+    <value>Collecte les 30 étoiles du Monde 1</value>
+  </data>
+  <data name="AchPerfectWorld5" xml:space="preserve">
+    <value>Monde 5 parfait</value>
+  </data>
+  <data name="AchPerfectWorld5Desc" xml:space="preserve">
+    <value>Collecte les 30 étoiles du Monde 5</value>
+  </data>
+  <data name="AchPerfectWorld10" xml:space="preserve">
+    <value>Monde 10 parfait</value>
+  </data>
+  <data name="AchPerfectWorld10Desc" xml:space="preserve">
+    <value>Collecte les 30 étoiles du Monde 10</value>
+  </data>
+  <data name="AchWeeklyComplete10" xml:space="preserve">
+    <value>Guerrier hebdomadaire</value>
+  </data>
+  <data name="AchWeeklyComplete10Desc" xml:space="preserve">
+    <value>Complète 10 défis hebdomadaires</value>
+  </data>
+
+  <!-- Achievements Phase 13: Mastery -->
+  <data name="AchStars200" xml:space="preserve">
+    <value>Collectionneur d'étoiles</value>
+  </data>
+  <data name="AchStars200Desc" xml:space="preserve">
+    <value>Collecte 200 étoiles</value>
+  </data>
+  <data name="AchStars250" xml:space="preserve">
+    <value>Accumulateur d'étoiles</value>
+  </data>
+  <data name="AchStars250Desc" xml:space="preserve">
+    <value>Collecte 250 étoiles</value>
+  </data>
+  <data name="AchStars300" xml:space="preserve">
+    <value>Perfectionniste</value>
+  </data>
+  <data name="AchStars300Desc" xml:space="preserve">
+    <value>Collecte les 300 étoiles</value>
+  </data>
+
+  <!-- Achievements Phase 13: Combat -->
+  <data name="AchKills2500" xml:space="preserve">
+    <value>Destructeur</value>
+  </data>
+  <data name="AchKills2500Desc" xml:space="preserve">
+    <value>Vaincs 2 500 ennemis</value>
+  </data>
+  <data name="AchKills5000" xml:space="preserve">
+    <value>Annihilateur</value>
+  </data>
+  <data name="AchKills5000Desc" xml:space="preserve">
+    <value>Vaincs 5 000 ennemis</value>
+  </data>
+  <data name="AchBossSlayer" xml:space="preserve">
+    <value>Tueur de boss</value>
+  </data>
+  <data name="AchBossSlayerDesc" xml:space="preserve">
+    <value>Vaincs ton premier boss</value>
+  </data>
+  <data name="AchBossMaster" xml:space="preserve">
+    <value>Maître des boss</value>
+  </data>
+  <data name="AchBossMasterDesc" xml:space="preserve">
+    <value>Vaincs les 5 types de boss</value>
+  </data>
+  <data name="AchSpecialBomb50" xml:space="preserve">
+    <value>Spécialiste</value>
+  </data>
+  <data name="AchSpecialBomb50Desc" xml:space="preserve">
+    <value>Utilise 50 bombes spéciales</value>
+  </data>
+  <data name="AchSpecialBomb100" xml:space="preserve">
+    <value>Expert en démolition</value>
+  </data>
+  <data name="AchSpecialBomb100Desc" xml:space="preserve">
+    <value>Utilise 100 bombes spéciales</value>
+  </data>
+
+  <!-- Achievements Phase 13: Skill -->
+  <data name="AchNoDamage5" xml:space="preserve">
+    <value>Intouchable</value>
+  </data>
+  <data name="AchNoDamage5Desc" xml:space="preserve">
+    <value>Complète 5 niveaux sans dégâts</value>
+  </data>
+  <data name="AchNoDamage10" xml:space="preserve">
+    <value>Fantôme</value>
+  </data>
+  <data name="AchNoDamage10Desc" xml:space="preserve">
+    <value>Complète 10 niveaux sans dégâts</value>
+  </data>
+  <data name="AchSpeedrun5" xml:space="preserve">
+    <value>Démon de vitesse</value>
+  </data>
+  <data name="AchSpeedrun5Desc" xml:space="preserve">
+    <value>Complète 5 niveaux en moins de 60 secondes</value>
+  </data>
+  <data name="AchSpeedrun10" xml:space="preserve">
+    <value>Maître du temps</value>
+  </data>
+  <data name="AchSpeedrun10Desc" xml:space="preserve">
+    <value>Complète 10 niveaux en moins de 60 secondes</value>
+  </data>
+  <data name="AchCombo7" xml:space="preserve">
+    <value>Roi du combo</value>
+  </data>
+  <data name="AchCombo7Desc" xml:space="preserve">
+    <value>Réalise un combo x7</value>
+  </data>
+
+<data name="AchSurvival60" xml:space="preserve">
+    <value>Survivant</value>
+  </data>
+  <data name="AchSurvival60Desc" xml:space="preserve">
+    <value>Survis 60 secondes en mode Survie</value>
+  </data>
+  <data name="AchSurvival180" xml:space="preserve">
+    <value>Immortel</value>
+  </data>
+  <data name="AchSurvival180Desc" xml:space="preserve">
+    <value>Survis 180 secondes en mode Survie</value>
+  </data>
+
+  <!-- Quick Play -->
+  <data name="QuickPlayTitle" xml:space="preserve">
+    <value>Jeu rapide</value>
+  </data>
+  <data name="QuickPlayDifficulty" xml:space="preserve">
+    <value>Difficulté</value>
+  </data>
+  <data name="QuickPlayWorldLevel" xml:space="preserve">
+    <value>Monde {0}</value>
+  </data>
+  <data name="QuickPlaySeed" xml:space="preserve">
+    <value>Graine</value>
+  </data>
+  <data name="QuickPlaySeedHint" xml:space="preserve">
+    <value>Partage la graine pour jouer le même niveau</value>
+  </data>
+  <data name="QuickPlayNewSeed" xml:space="preserve">
+    <value>Nouvelle graine</value>
+  </data>
+  <data name="QuickPlayPlay" xml:space="preserve">
+    <value>Jouer !</value>
+  </data>
+  <data name="QuickPlayEasyHard" xml:space="preserve">
+    <value>Facile / Difficile</value>
+  </data>
+
+  <!-- Gems -->
+  <data name="Gems" xml:space="preserve">
+    <value>Gemmes</value>
+  </data>
+
+  <!-- Rarity -->
+  <data name="RarityCommon" xml:space="preserve">
+    <value>Commun</value>
+  </data>
+  <data name="RarityRare" xml:space="preserve">
+    <value>Rare</value>
+  </data>
+  <data name="RarityEpic" xml:space="preserve">
+    <value>Épique</value>
+  </data>
+  <data name="RarityLegendary" xml:space="preserve">
+    <value>Légendaire</value>
+  </data>
+
+  <!-- New Bomb Types -->
+  <data name="BombSmoke" xml:space="preserve">
+    <value>Bombe fumigène</value>
+  </data>
+  <data name="BombSmokeDesc" xml:space="preserve">
+    <value>Crée un nuage de fumée qui désoriente les ennemis 4s</value>
+  </data>
+  <data name="BombLightning" xml:space="preserve">
+    <value>Bombe éclair</value>
+  </data>
+  <data name="BombLightningDesc" xml:space="preserve">
+    <value>La foudre frappe 3 ennemis proches à travers les murs</value>
+  </data>
+  <data name="BombGravity" xml:space="preserve">
+    <value>Bombe gravitationnelle</value>
+  </data>
+  <data name="BombGravityDesc" xml:space="preserve">
+    <value>Attire les ennemis vers le centre</value>
+  </data>
+  <data name="BombPoison" xml:space="preserve">
+    <value>Bombe empoisonnée</value>
+  </data>
+  <data name="BombPoisonDesc" xml:space="preserve">
+    <value>Crée des zones toxiques qui blessent les ennemis</value>
+  </data>
+  <data name="BombTimeWarp" xml:space="preserve">
+    <value>Bombe temporelle</value>
+  </data>
+  <data name="BombTimeWarpDesc" xml:space="preserve">
+    <value>Ralentit tout dans la zone pendant 5s</value>
+  </data>
+  <data name="BombMirror" xml:space="preserve">
+    <value>Bombe miroir</value>
+  </data>
+  <data name="BombMirrorDesc" xml:space="preserve">
+    <value>L'explosion se duplique avec double portée</value>
+  </data>
+  <data name="BombVortex" xml:space="preserve">
+    <value>Bombe vortex</value>
+  </data>
+  <data name="BombVortexDesc" xml:space="preserve">
+    <value>Explosion en spirale couvrant plus de cases</value>
+  </data>
+  <data name="BombPhantom" xml:space="preserve">
+    <value>Bombe fantôme</value>
+  </data>
+  <data name="BombPhantomDesc" xml:space="preserve">
+    <value>L'explosion traverse un mur indestructible</value>
+  </data>
+  <data name="BombNova" xml:space="preserve">
+    <value>Bombe nova</value>
+  </data>
+  <data name="BombNovaDesc" xml:space="preserve">
+    <value>Explosion à 360 degrés, lâche un power-up</value>
+  </data>
+  <data name="BombBlackHole" xml:space="preserve">
+    <value>Bombe trou noir</value>
+  </data>
+  <data name="BombBlackHoleDesc" xml:space="preserve">
+    <value>Aspire les ennemis pendant 3s, puis explose</value>
+  </data>
+
+  <!-- Bomb Effect Floating Texts -->
+  <data name="EffectSmoke" xml:space="preserve">
+    <value>FUMÉE !</value>
+  </data>
+  <data name="EffectLightning" xml:space="preserve">
+    <value>ÉCLAIR !</value>
+  </data>
+  <data name="EffectGravity" xml:space="preserve">
+    <value>ATTRACTION !</value>
+  </data>
+  <data name="EffectPoison" xml:space="preserve">
+    <value>POISON !</value>
+  </data>
+  <data name="EffectTimeWarp" xml:space="preserve">
+    <value>RALENTI !</value>
+  </data>
+  <data name="EffectMirror" xml:space="preserve">
+    <value>MIROIR !</value>
+  </data>
+  <data name="EffectVortex" xml:space="preserve">
+    <value>VORTEX !</value>
+  </data>
+  <data name="EffectPhantom" xml:space="preserve">
+    <value>PHASE !</value>
+  </data>
+  <data name="EffectNova" xml:space="preserve">
+    <value>NOVA !</value>
+  </data>
+  <data name="EffectBlackHole" xml:space="preserve">
+    <value>NÉANT !</value>
+  </data>
+
+  <!-- Deck Builder UI -->
+  <data name="DeckTitle" xml:space="preserve">
+    <value>Constructeur de Deck</value>
+  </data>
+  <data name="DeckSelectCardHint" xml:space="preserve">
+    <value>Sélectionnez une carte à gauche</value>
+  </data>
+  <data name="CardUses" xml:space="preserve">
+    <value>Utilisations</value>
+  </data>
+  <data name="CardLevelBronze" xml:space="preserve">
+    <value>Bronze</value>
+  </data>
+  <data name="CardLevelSilver" xml:space="preserve">
+    <value>Argent</value>
+  </data>
+  <data name="CardLevelGold" xml:space="preserve">
+    <value>Or</value>
+  </data>
+  <data name="CardMaxLevel" xml:space="preserve">
+    <value>Niveau max</value>
+  </data>
+  <data name="DeckButton" xml:space="preserve">
+    <value>Deck</value>
+  </data>
+  <data name="CardDropTitle" xml:space="preserve">
+    <value>Nouvelle carte !</value>
+  </data>
+
+  <!-- Bomben-Karten-Namen -->
+  <data name="CardNormalBomb" xml:space="preserve">
+    <value>Bombe normale</value>
+  </data>
+  <data name="CardIceBomb" xml:space="preserve">
+    <value>Bombe de glace</value>
+  </data>
+  <data name="CardFireBomb" xml:space="preserve">
+    <value>Bombe de feu</value>
+  </data>
+  <data name="CardStickyBomb" xml:space="preserve">
+    <value>Bombe collante</value>
+  </data>
+  <data name="CardSmokeBomb" xml:space="preserve">
+    <value>Bombe fumigène</value>
+  </data>
+  <data name="CardLightningBomb" xml:space="preserve">
+    <value>Bombe éclair</value>
+  </data>
+  <data name="CardGravityBomb" xml:space="preserve">
+    <value>Bombe gravitationnelle</value>
+  </data>
+  <data name="CardPoisonBomb" xml:space="preserve">
+    <value>Bombe empoisonnée</value>
+  </data>
+  <data name="CardTimeWarpBomb" xml:space="preserve">
+    <value>Bombe temporelle</value>
+  </data>
+  <data name="CardMirrorBomb" xml:space="preserve">
+    <value>Bombe miroir</value>
+  </data>
+  <data name="CardVortexBomb" xml:space="preserve">
+    <value>Bombe vortex</value>
+  </data>
+  <data name="CardPhantomBomb" xml:space="preserve">
+    <value>Bombe fantôme</value>
+  </data>
+  <data name="CardNovaBomb" xml:space="preserve">
+    <value>Bombe nova</value>
+  </data>
+  <data name="CardBlackHoleBomb" xml:space="preserve">
+    <value>Bombe trou noir</value>
+  </data>
+
+  <!-- Bomben-Karten-Beschreibungen -->
+  <data name="CardNormalBombDesc" xml:space="preserve">
+    <value>Bombe standard avec explosion basique</value>
+  </data>
+  <data name="CardIceBombDesc" xml:space="preserve">
+    <value>Gèle les ennemis dans la zone d'explosion 3s</value>
+  </data>
+  <data name="CardFireBombDesc" xml:space="preserve">
+    <value>Crée des cellules de lave qui infligent des dégâts continus</value>
+  </data>
+  <data name="CardStickyBombDesc" xml:space="preserve">
+    <value>Colle aux murs et déclenche des réactions en chaîne</value>
+  </data>
+  <data name="CardSmokeBombDesc" xml:space="preserve">
+    <value>Crée un nuage de fumée qui confond les ennemis 4s</value>
+  </data>
+  <data name="CardLightningBombDesc" xml:space="preserve">
+    <value>L'éclair saute aux 3 ennemis les plus proches, ignorant les murs</value>
+  </data>
+  <data name="CardGravityBombDesc" xml:space="preserve">
+    <value>Attire tous les ennemis dans un rayon de 3 cellules vers le centre</value>
+  </data>
+  <data name="CardPoisonBombDesc" xml:space="preserve">
+    <value>Crée des cellules empoisonnées qui blessent les ennemis qui entrent</value>
+  </data>
+  <data name="CardTimeWarpBombDesc" xml:space="preserve">
+    <value>Ralentit tout dans le rayon à 50% pendant 5s</value>
+  </data>
+  <data name="CardMirrorBombDesc" xml:space="preserve">
+    <value>L'explosion se reflète dans la direction opposée, doublant la portée</value>
+  </data>
+  <data name="CardVortexBombDesc" xml:space="preserve">
+    <value>L'explosion en spirale touche plus de cellules que la normale</value>
+  </data>
+  <data name="CardPhantomBombDesc" xml:space="preserve">
+    <value>L'explosion traverse un mur indestructible</value>
+  </data>
+  <data name="CardNovaBombDesc" xml:space="preserve">
+    <value>Explosion à 360 degrés touchant TOUTES les cellules dans la portée, lâche un PowerUp</value>
+  </data>
+  <data name="CardBlackHoleBombDesc" xml:space="preserve">
+    <value>Crée un trou noir qui aspire les ennemis 3s, puis explose</value>
+  </data>
+  <data name="SectionTrails" xml:space="preserve"><value>Traînées</value></data>
+  <data name="SectionVictories" xml:space="preserve"><value>Animations de victoire</value></data>
+  <data name="SectionFrames" xml:space="preserve"><value>Cadres de profil</value></data>
+  <data name="TrailNone" xml:space="preserve"><value>Aucun</value></data>
+  <data name="VictoryNone" xml:space="preserve"><value>Standard</value></data>
+  <data name="FrameNone" xml:space="preserve"><value>Aucun</value></data>
+  <data name="SkinNinja" xml:space="preserve"><value>Ninja</value></data>
+  <data name="SkinPirate" xml:space="preserve"><value>Pirate</value></data>
+  <data name="SkinRobot" xml:space="preserve"><value>Robot</value></data>
+  <data name="SkinPixelRetro" xml:space="preserve"><value>Pixel Rétro</value></data>
+  <data name="SkinDragon" xml:space="preserve"><value>Dragon</value></data>
+  <data name="BombSkinWatermelon" xml:space="preserve"><value>Pastèque</value></data>
+  <data name="BombSkinSkull" xml:space="preserve"><value>Crâne</value></data>
+  <data name="BombSkinToxic" xml:space="preserve"><value>Toxique</value></data>
+  <data name="BombSkinPlasma" xml:space="preserve"><value>Plasma</value></data>
+  <data name="BombSkinLava" xml:space="preserve"><value>Lave</value></data>
+  <data name="BombSkinCelestial" xml:space="preserve"><value>Céleste</value></data>
+  <data name="ExplosionSkinCherryBlossom" xml:space="preserve"><value>Fleur de cerisier</value></data>
+  <data name="ExplosionSkinElectric" xml:space="preserve"><value>Électrique</value></data>
+  <data name="ExplosionSkinToxic" xml:space="preserve"><value>Toxique</value></data>
+  <data name="ExplosionSkinPlasma" xml:space="preserve"><value>Plasma</value></data>
+  <data name="ExplosionSkinFrost" xml:space="preserve"><value>Givre</value></data>
+  <data name="ExplosionSkinLava" xml:space="preserve"><value>Lave</value></data>
+  <data name="ExplosionSkinGalaxy" xml:space="preserve"><value>Galaxie</value></data>
+  <data name="ExplosionSkinVoid" xml:space="preserve"><value>Néant</value></data>
+  <data name="ExplosionSkinNova" xml:space="preserve"><value>Nova</value></data>
+  <data name="TrailDust" xml:space="preserve"><value>Traînée de poussière</value></data>
+  <data name="TrailDustDesc" xml:space="preserve"><value>Laisse un nuage de poussière derrière toi</value></data>
+  <data name="TrailSmoke" xml:space="preserve"><value>Traînée de fumée</value></data>
+  <data name="TrailSmokeDesc" xml:space="preserve"><value>Des volutes de fumée suivent ton chemin</value></data>
+  <data name="TrailFootsteps" xml:space="preserve"><value>Empreintes</value></data>
+  <data name="TrailFootstepsDesc" xml:space="preserve"><value>Des empreintes classiques marquent ton chemin</value></data>
+  <data name="TrailSparkle" xml:space="preserve"><value>Traînée scintillante</value></data>
+  <data name="TrailSparkleDesc" xml:space="preserve"><value>Des étincelles scintillantes dans ton sillage</value></data>
+  <data name="TrailFlame" xml:space="preserve"><value>Traînée de flammes</value></data>
+  <data name="TrailFlameDesc" xml:space="preserve"><value>Des flammes ardentes suivent tes pas</value></data>
+  <data name="TrailFrost" xml:space="preserve"><value>Traînée de givre</value></data>
+  <data name="TrailFrostDesc" xml:space="preserve"><value>Des cristaux de glace se forment derrière toi</value></data>
+  <data name="TrailElectric" xml:space="preserve"><value>Traînée électrique</value></data>
+  <data name="TrailElectricDesc" xml:space="preserve"><value>Des étincelles électriques crépitantes sur ton chemin</value></data>
+  <data name="TrailLeaves" xml:space="preserve"><value>Traînée de feuilles</value></data>
+  <data name="TrailLeavesDesc" xml:space="preserve"><value>Des feuilles d'automne tourbillonnent derrière toi</value></data>
+  <data name="TrailBubbles" xml:space="preserve"><value>Traînée de bulles</value></data>
+  <data name="TrailBubblesDesc" xml:space="preserve"><value>Des bulles colorées s'élèvent</value></data>
+  <data name="TrailPlasma" xml:space="preserve"><value>Traînée de plasma</value></data>
+  <data name="TrailPlasmaDesc" xml:space="preserve"><value>Des orbes de plasma brillants pulsent derrière toi</value></data>
+  <data name="TrailRainbow" xml:space="preserve"><value>Traînée arc-en-ciel</value></data>
+  <data name="TrailRainbowDesc" xml:space="preserve"><value>Un arc-en-ciel fascinant suit ton chemin</value></data>
+  <data name="TrailShadow" xml:space="preserve"><value>Traînée d'ombre</value></data>
+  <data name="TrailShadowDesc" xml:space="preserve"><value>Des volutes sombres d'énergie ombreuse</value></data>
+  <data name="TrailCrystal" xml:space="preserve"><value>Traînée de cristal</value></data>
+  <data name="TrailCrystalDesc" xml:space="preserve"><value>Des fragments de cristal chatoyants</value></data>
+  <data name="TrailStardust" xml:space="preserve"><value>Poussière d'étoiles</value></data>
+  <data name="TrailStardustDesc" xml:space="preserve"><value>De la poussière d'étoiles cosmique scintille derrière toi</value></data>
+  <data name="TrailPhoenix" xml:space="preserve"><value>Traînée de phénix</value></data>
+  <data name="TrailPhoenixDesc" xml:space="preserve"><value>Plumes et feu de phénix légendaire</value></data>
+  <data name="TrailVoid" xml:space="preserve"><value>Traînée du néant</value></data>
+  <data name="TrailVoidDesc" xml:space="preserve"><value>De la matière noire du néant même</value></data>
+  <data name="TrailGoldenPath" xml:space="preserve"><value>Chemin doré</value></data>
+  <data name="TrailGoldenPathDesc" xml:space="preserve"><value>Un sentier doré scintillant de lumière</value></data>
+  <data name="VictoryWave" xml:space="preserve"><value>Salut</value></data>
+  <data name="VictoryWaveDesc" xml:space="preserve"><value>Un salut amical pour célébrer</value></data>
+  <data name="VictoryJump" xml:space="preserve"><value>Saut</value></data>
+  <data name="VictoryJumpDesc" xml:space="preserve"><value>Sauter de joie !</value></data>
+  <data name="VictoryClap" xml:space="preserve"><value>Applaudissement</value></data>
+  <data name="VictoryClapDesc" xml:space="preserve"><value>Applaudis ta propre victoire</value></data>
+  <data name="VictoryNod" xml:space="preserve"><value>Hochement</value></data>
+  <data name="VictoryNodDesc" xml:space="preserve"><value>Un hochement cool et confiant</value></data>
+  <data name="VictorySpin" xml:space="preserve"><value>Rotation</value></data>
+  <data name="VictorySpinDesc" xml:space="preserve"><value>Tourne sur toi-même pour célébrer</value></data>
+  <data name="VictoryDance" xml:space="preserve"><value>Danse</value></data>
+  <data name="VictoryDanceDesc" xml:space="preserve"><value>Montre tes meilleurs pas</value></data>
+  <data name="VictoryFlex" xml:space="preserve"><value>Flexion</value></data>
+  <data name="VictoryFlexDesc" xml:space="preserve"><value>Montre tes muscles</value></data>
+  <data name="VictoryBackflip" xml:space="preserve"><value>Salto arrière</value></data>
+  <data name="VictoryBackflipDesc" xml:space="preserve"><value>Un salto arrière impressionnant</value></data>
+  <data name="VictoryHeadbang" xml:space="preserve"><value>Headbang</value></data>
+  <data name="VictoryHeadbangDesc" xml:space="preserve"><value>Rock avec un headbang</value></data>
+  <data name="VictoryMoonwalk" xml:space="preserve"><value>Moonwalk</value></data>
+  <data name="VictoryMoonwalkDesc" xml:space="preserve"><value>Glisse en arrière avec style</value></data>
+  <data name="VictoryDab" xml:space="preserve"><value>Dab</value></data>
+  <data name="VictoryDabDesc" xml:space="preserve"><value>Frappe-les avec le dab</value></data>
+  <data name="VictoryBreakdance" xml:space="preserve"><value>Breakdance</value></data>
+  <data name="VictoryBreakdanceDesc" xml:space="preserve"><value>Mouvements de breakdance au sol</value></data>
+  <data name="VictoryTornado" xml:space="preserve"><value>Tornade</value></data>
+  <data name="VictoryTornadoDesc" xml:space="preserve"><value>Tourbillonne comme une tornade</value></data>
+  <data name="VictoryFireDance" xml:space="preserve"><value>Danse du feu</value></data>
+  <data name="VictoryFireDanceDesc" xml:space="preserve"><value>Danse entouré de flammes</value></data>
+  <data name="VictoryFrostAura" xml:space="preserve"><value>Aura glacée</value></data>
+  <data name="VictoryFrostAuraDesc" xml:space="preserve"><value>Émane une aura glacée de puissance</value></data>
+  <data name="VictoryDragonRoar" xml:space="preserve"><value>Rugissement de dragon</value></data>
+  <data name="VictoryDragonRoarDesc" xml:space="preserve"><value>Rugis avec la puissance d'un dragon</value></data>
+  <data name="VictorySuperNova" xml:space="preserve"><value>Supernova</value></data>
+  <data name="VictorySuperNovaDesc" xml:space="preserve"><value>Explose avec de l'énergie stellaire</value></data>
+  <data name="VictoryGoldExplosion" xml:space="preserve"><value>Explosion dorée</value></data>
+  <data name="VictoryGoldExplosionDesc" xml:space="preserve"><value>Une légendaire explosion dorée</value></data>
+  <data name="FrameSimple" xml:space="preserve"><value>Simple</value></data>
+  <data name="FrameSimpleDesc" xml:space="preserve"><value>Bordure propre et simple</value></data>
+  <data name="FrameRounded" xml:space="preserve"><value>Arrondi</value></data>
+  <data name="FrameRoundedDesc" xml:space="preserve"><value>Coins doux et arrondis</value></data>
+  <data name="FrameSquare" xml:space="preserve"><value>Carré</value></data>
+  <data name="FrameSquareDesc" xml:space="preserve"><value>Bordure carrée nette</value></data>
+  <data name="FrameDotted" xml:space="preserve"><value>Pointillé</value></data>
+  <data name="FrameDottedDesc" xml:space="preserve"><value>Bordure décorative en pointillés</value></data>
+  <data name="FrameThin" xml:space="preserve"><value>Fin</value></data>
+  <data name="FrameThinDesc" xml:space="preserve"><value>Bordure fine et élégante</value></data>
+  <data name="FrameFire" xml:space="preserve"><value>Feu</value></data>
+  <data name="FrameFireDesc" xml:space="preserve"><value>Bordure de feu ardent</value></data>
+  <data name="FrameIce" xml:space="preserve"><value>Glace</value></data>
+  <data name="FrameIceDesc" xml:space="preserve"><value>Bordure de cristal glacé</value></data>
+  <data name="FrameElectric" xml:space="preserve"><value>Électrique</value></data>
+  <data name="FrameElectricDesc" xml:space="preserve"><value>Bordure électrique crépitante</value></data>
+  <data name="FrameNature" xml:space="preserve"><value>Nature</value></data>
+  <data name="FrameNatureDesc" xml:space="preserve"><value>Lianes et feuilles en croissance</value></data>
+  <data name="FrameWater" xml:space="preserve"><value>Eau</value></data>
+  <data name="FrameWaterDesc" xml:space="preserve"><value>Bordure d'eau fluide</value></data>
+  <data name="FrameShadow" xml:space="preserve"><value>Ombre</value></data>
+  <data name="FrameShadowDesc" xml:space="preserve"><value>Bordure d'énergie sombre</value></data>
+  <data name="FrameCrystal" xml:space="preserve"><value>Cristal</value></data>
+  <data name="FrameCrystalDesc" xml:space="preserve"><value>Bordure de cristal étincelante</value></data>
+  <data name="FramePlasma" xml:space="preserve"><value>Plasma</value></data>
+  <data name="FramePlasmaDesc" xml:space="preserve"><value>Bordure d'énergie plasma</value></data>
+  <data name="FrameStellar" xml:space="preserve"><value>Stellaire</value></data>
+  <data name="FrameStellarDesc" xml:space="preserve"><value>Bordure cosmique étoilée</value></data>
+  <data name="FrameArcane" xml:space="preserve"><value>Arcane</value></data>
+  <data name="FrameArcaneDesc" xml:space="preserve"><value>Bordure de runes arcanes mystiques</value></data>
+  <data name="FrameDragon" xml:space="preserve"><value>Dragon</value></data>
+  <data name="FrameDragonDesc" xml:space="preserve"><value>Bordure féroce de dragon</value></data>
+  <data name="FramePhoenix" xml:space="preserve"><value>Phénix</value></data>
+  <data name="FramePhoenixDesc" xml:space="preserve"><value>Bordure de flammes de phénix</value></data>
+  <data name="FrameCrown" xml:space="preserve"><value>Couronne royale</value></data>
+  <data name="FrameCrownDesc" xml:space="preserve"><value>Une majestueuse bordure de couronne royale</value></data>
+  <!-- Dungeon Feature -->
+  <data name="DungeonTitle" xml:space="preserve"><value>Donjon</value></data>
+  <data name="DungeonButton" xml:space="preserve"><value>Donjon</value></data>
+  <data name="DungeonStartFree" xml:space="preserve"><value>Démarrer (Gratuit)</value></data>
+  <data name="DungeonStartCoins" xml:space="preserve"><value>{0} Pièces</value></data>
+  <data name="DungeonStartGems" xml:space="preserve"><value>{0} Gemmes</value></data>
+  <data name="DungeonStartAd" xml:space="preserve"><value>Regarder pub</value></data>
+  <data name="DungeonFloor" xml:space="preserve"><value>Étage {0}</value></data>
+  <data name="DungeonLives" xml:space="preserve"><value>Vies: {0}</value></data>
+  <data name="DungeonTotalRuns" xml:space="preserve"><value>Essais: {0}</value></data>
+  <data name="DungeonBestFloor" xml:space="preserve"><value>Meilleur étage: {0}</value></data>
+  <data name="DungeonSummaryFloors" xml:space="preserve"><value>Étages: {0}</value></data>
+  <data name="DungeonSummaryCoins" xml:space="preserve"><value>Pièces: {0}</value></data>
+  <data name="DungeonSummaryGems" xml:space="preserve"><value>Gemmes: {0}</value></data>
+  <data name="DungeonSummaryCards" xml:space="preserve"><value>Cartes: {0}</value></data>
+  <data name="DungeonNewBest" xml:space="preserve"><value>Nouveau record!</value></data>
+  <data name="DungeonRunOver" xml:space="preserve"><value>Fin du run</value></data>
+  <data name="DungeonBuffSelectTitle" xml:space="preserve"><value>Choisis un bonus</value></data>
+  <data name="DungeonContinue" xml:space="preserve"><value>Continuer</value></data>
+  <data name="DungeonRetry" xml:space="preserve"><value>Nouveau run</value></data>
+  <data name="DungeonBuffExtraBomb" xml:space="preserve"><value>Bombe extra</value></data>
+  <data name="DungeonBuffExtraBombDesc" xml:space="preserve"><value>+1 bombe par niveau</value></data>
+  <data name="DungeonBuffExtraFire" xml:space="preserve"><value>Feu extra</value></data>
+  <data name="DungeonBuffExtraFireDesc" xml:space="preserve"><value>+1 portée du feu</value></data>
+  <data name="DungeonBuffSpeed" xml:space="preserve"><value>Vitesse</value></data>
+  <data name="DungeonBuffSpeedDesc" xml:space="preserve"><value>+1 niveau de vitesse</value></data>
+  <data name="DungeonBuffShield" xml:space="preserve"><value>Bouclier</value></data>
+  <data name="DungeonBuffShieldDesc" xml:space="preserve"><value>Bloque 1 coup</value></data>
+  <data name="DungeonBuffCoins" xml:space="preserve"><value>Bonus pièces</value></data>
+  <data name="DungeonBuffCoinsDesc" xml:space="preserve"><value>+50% pièces</value></data>
+  <data name="DungeonBuffReload" xml:space="preserve"><value>Recharger bombes</value></data>
+  <data name="DungeonBuffReloadDesc" xml:space="preserve"><value>Recharger bombes spéciales</value></data>
+  <data name="DungeonBuffSlow" xml:space="preserve"><value>Ralentir ennemis</value></data>
+  <data name="DungeonBuffSlowDesc" xml:space="preserve"><value>Ennemis 20% plus lents</value></data>
+  <data name="DungeonBuffLife" xml:space="preserve"><value>Vie extra</value></data>
+  <data name="DungeonBuffLifeDesc" xml:space="preserve"><value>+1 vie pour ce run</value></data>
+  <data name="DungeonBuffFireImmunity" xml:space="preserve"><value>Immunité au feu</value></data>
+  <data name="DungeonBuffFireImmunityDesc" xml:space="preserve"><value>Marcher dans le feu</value></data>
+  <data name="DungeonBuffBlast" xml:space="preserve"><value>Rayon d'explosion</value></data>
+  <data name="DungeonBuffBlastDesc" xml:space="preserve"><value>+2 portée du feu</value></data>
+  <data name="DungeonBuffBombTimer" xml:space="preserve"><value>Mèche courte</value></data>
+  <data name="DungeonBuffBombTimerDesc" xml:space="preserve"><value>Bombes explosent plus vite</value></data>
+  <data name="DungeonBuffMagnet" xml:space="preserve"><value>Aimant bonus</value></data>
+  <data name="DungeonBuffMagnetDesc" xml:space="preserve"><value>Récupérer bonus proches</value></data>
+  <data name="BattlePassTitle" xml:space="preserve">
+    <value>Passe de Combat</value>
+  </data>
+  <data name="BattlePassButton" xml:space="preserve">
+    <value>Passe de Combat</value>
+  </data>
+  <data name="BattlePassTierLabel" xml:space="preserve">
+    <value>Niveau</value>
+  </data>
+  <data name="BattlePassTierFormat" xml:space="preserve">
+    <value>Niveau {0}/{1}</value>
+  </data>
+  <data name="BattlePassSeason" xml:space="preserve">
+    <value>Saison {0}</value>
+  </data>
+  <data name="BattlePassUpgrade" xml:space="preserve">
+    <value>Premium (2,99 EUR)</value>
+  </data>
+  <data name="BattlePassMaxTier" xml:space="preserve">
+    <value>MAX</value>
+  </data>
+  <data name="BattlePassDayRemaining" xml:space="preserve">
+    <value>{0} jour</value>
+  </data>
+  <data name="BattlePassDaysRemaining" xml:space="preserve">
+    <value>{0} jours</value>
+  </data>
+  <data name="BattlePassExpired" xml:space="preserve">
+    <value>Expire</value>
+  </data>
+  <data name="BattlePassClaim" xml:space="preserve">
+    <value>Réclamer</value>
+  </data>
+  <data name="BattlePassFreeTrack" xml:space="preserve">
+    <value>Gratuit</value>
+  </data>
+  <data name="BattlePassPremiumTrack" xml:space="preserve">
+    <value>Premium</value>
+  </data>
+  <data name="BattlePassNewSeason" xml:space="preserve">
+    <value>Nouvelle Saison!</value>
+  </data>
+  <data name="CardPack" xml:space="preserve">
+    <value>Pack de Cartes</value>
+  </data>
+  <data name="CardPacks" xml:space="preserve">
+    <value>Packs de Cartes</value>
+  </data>
+  <data name="CollectionTitle" xml:space="preserve">
+    <value>Collection</value>
+  </data>
+  <data name="CollectionButton" xml:space="preserve">
+    <value>Collection</value>
+  </data>
+  <data name="CollectionEnemies" xml:space="preserve">
+    <value>Ennemis</value>
+  </data>
+  <data name="CollectionBosses" xml:space="preserve">
+    <value>Boss</value>
+  </data>
+  <data name="CollectionPowerUps" xml:space="preserve">
+    <value>Bonus</value>
+  </data>
+  <data name="CollectionCards" xml:space="preserve">
+    <value>Cartes Bombe</value>
+  </data>
+  <data name="CollectionCosmetics" xml:space="preserve">
+    <value>Cosmétiques</value>
+  </data>
+  <data name="CollectionOwned" xml:space="preserve">
+    <value>Possédé</value>
+  </data>
+  <data name="CollectionNotOwned" xml:space="preserve">
+    <value>Inconnu</value>
+  </data>
+  <data name="CollectionClaimNow" xml:space="preserve">
+    <value>Réclamer</value>
+  </data>
+  <data name="CollectionEncountered" xml:space="preserve">
+    <value>Rencontres</value>
+  </data>
+  <data name="CollectionDefeated" xml:space="preserve">
+    <value>Vaincus</value>
+  </data>
+  <data name="CollectionCollected" xml:space="preserve">
+    <value>Collectés</value>
+  </data>
+  <data name="EnemyBallomName" xml:space="preserve">
+    <value>Ballom</value>
+  </data>
+  <data name="EnemyOnilName" xml:space="preserve">
+    <value>Onil</value>
+  </data>
+  <data name="EnemyDollName" xml:space="preserve">
+    <value>Doll</value>
+  </data>
+  <data name="EnemyMinvoName" xml:space="preserve">
+    <value>Minvo</value>
+  </data>
+  <data name="EnemyOvapiName" xml:space="preserve">
+    <value>Ovapi</value>
+  </data>
+  <data name="EnemyKondoriaName" xml:space="preserve">
+    <value>Kondoria</value>
+  </data>
+  <data name="EnemyPontanName" xml:space="preserve">
+    <value>Pontan</value>
+  </data>
+  <data name="EnemyPassName" xml:space="preserve">
+    <value>Pass</value>
+  </data>
+  <data name="EnemyTankerName" xml:space="preserve">
+    <value>Tank</value>
+  </data>
+  <data name="EnemyGhostName" xml:space="preserve">
+    <value>Fantôme</value>
+  </data>
+  <data name="EnemySplitterName" xml:space="preserve">
+    <value>Séparateur</value>
+  </data>
+  <data name="EnemyMimicName" xml:space="preserve">
+    <value>Mimique</value>
+  </data>
+  <data name="EnemyBallomLore" xml:space="preserve">
+    <value>L'ennemi le plus lent et le plus faible. Facile à esquiver mais peut te coincer dans des espaces étroits.</value>
+  </data>
+  <data name="EnemyOnilLore" xml:space="preserve">
+    <value>Un poursuiveur rapide qui change de direction de façon imprévisible. Attention aux virages soudains !</value>
+  </data>
+  <data name="EnemyDollLore" xml:space="preserve">
+    <value>Se déplace à travers les murs comme s'ils n'existaient pas. Nulle part n'est vraiment sûr !</value>
+  </data>
+  <data name="EnemyMinvoLore" xml:space="preserve">
+    <value>Rapide et agressif. Te poursuit sans relâche une fois repéré.</value>
+  </data>
+  <data name="EnemyOvapiLore" xml:space="preserve">
+    <value>Rusé et persistant. Peut trouver des raccourcis à travers le labyrinthe.</value>
+  </data>
+  <data name="EnemyKondoriaLore" xml:space="preserve">
+    <value>L'ennemi le plus retors. Passe à travers les murs et se déplace de façon erratique.</value>
+  </data>
+  <data name="EnemyPontanLore" xml:space="preserve">
+    <value>Apparaît quand le temps est écoulé. Extrêmement rapide et mortel - fuis !</value>
+  </data>
+  <data name="EnemyPassLore" xml:space="preserve">
+    <value>Une créature mystérieuse qui traverse tout. Immunisé contre les murs et les blocs.</value>
+  </data>
+  <data name="EnemyTankerLore" xml:space="preserve">
+    <value>Lourdement blindé ! Il faut deux coups pour le vaincre. Ne gaspille pas tes bombes.</value>
+  </data>
+  <data name="EnemyGhostLore" xml:space="preserve">
+    <value>Devient invisible périodiquement. Tu peux quand même être touché même quand tu ne le vois pas !</value>
+  </data>
+  <data name="EnemySplitterLore" xml:space="preserve">
+    <value>Se divise en deux ennemis plus petits quand détruit. Élimine vite les mini-séparateurs !</value>
+  </data>
+  <data name="EnemyMimicLore" xml:space="preserve">
+    <value>Déguisé en bloc destructible. T'embusque quand tu t'approches trop !</value>
+  </data>
+  <data name="BossStoneGolemLore" xml:space="preserve">
+    <value>Un gardien ancien fait de roche. Fait tomber des rochers d'en haut et devient plus rapide quand il est enragé.</value>
+  </data>
+  <data name="BossIceDragonLore" xml:space="preserve">
+    <value>Une terreur gelée au souffle glacial. Gèle des rangées entières et invoque des blizzards.</value>
+  </data>
+  <data name="BossFireDemonLore" xml:space="preserve">
+    <value>Un seigneur démon enveloppé de flammes. Transforme le sol en lave et frappe avec des vagues de feu.</value>
+  </data>
+  <data name="BossShadowMasterLore" xml:space="preserve">
+    <value>Maître des ténèbres et de la tromperie. Se téléporte derrière toi quand tu t'y attends le moins.</value>
+  </data>
+  <data name="BossFinalBossLore" xml:space="preserve">
+    <value>Le défi ultime. Commande tous les éléments et alterne entre tous les schémas d'attaque.</value>
+  </data>
+  <data name="PowerUpbombupName" xml:space="preserve">
+    <value>Bombe +</value>
+  </data>
+  <data name="PowerUpfireName" xml:space="preserve">
+    <value>Feu +</value>
+  </data>
+  <data name="PowerUpspeedName" xml:space="preserve">
+    <value>Vitesse +</value>
+  </data>
+  <data name="PowerUpwallpassName" xml:space="preserve">
+    <value>Passe-mur</value>
+  </data>
+  <data name="PowerUpdetonatorName" xml:space="preserve">
+    <value>Détonateur</value>
+  </data>
+  <data name="PowerUpbombpassName" xml:space="preserve">
+    <value>Passe-bombe</value>
+  </data>
+  <data name="PowerUpflamepassName" xml:space="preserve">
+    <value>Passe-flamme</value>
+  </data>
+  <data name="PowerUpmysteryName" xml:space="preserve">
+    <value>Mystère</value>
+  </data>
+  <data name="PowerUpkickName" xml:space="preserve">
+    <value>Coup de pied</value>
+  </data>
+  <data name="PowerUplinebombName" xml:space="preserve">
+    <value>Bombe en ligne</value>
+  </data>
+  <data name="PowerUppowerbombName" xml:space="preserve">
+    <value>Super bombe</value>
+  </data>
+  <data name="PowerUpskullName" xml:space="preserve">
+    <value>Crâne</value>
+  </data>
+  <data name="PowerUpbombupLore" xml:space="preserve">
+    <value>Place une bombe de plus à la fois. Empile jusqu'à 8 bombes !</value>
+  </data>
+  <data name="PowerUpfireLore" xml:space="preserve">
+    <value>Augmente la portée de l'explosion d'une case. Plus de portée, plus de destruction !</value>
+  </data>
+  <data name="PowerUpspeedLore" xml:space="preserve">
+    <value>Bouge plus vite ! Peut être empilé jusqu'à 3 fois.</value>
+  </data>
+  <data name="PowerUpwallpassLore" xml:space="preserve">
+    <value>Traverse les blocs destructibles librement. Une voie d'évasion sournoise !</value>
+  </data>
+  <data name="PowerUpdetonatorLore" xml:space="preserve">
+    <value>Fais exploser toutes tes bombes à volonté ! Parfait pour les pièges et les combos.</value>
+  </data>
+  <data name="PowerUpbombpassLore" xml:space="preserve">
+    <value>Marche en sécurité sur tes propres bombes. Fini de te bloquer !</value>
+  </data>
+  <data name="PowerUpflamepassLore" xml:space="preserve">
+    <value>Traverse les explosions sans dommage. Deviens immunisé contre ton propre feu !</value>
+  </data>
+  <data name="PowerUpmysteryLore" xml:space="preserve">
+    <value>Un bonus aléatoire ! Ça peut être n'importe quoi - la chance sera-t-elle de ton côté ?</value>
+  </data>
+  <data name="PowerUpkickLore" xml:space="preserve">
+    <value>Frappe les bombes pour les faire glisser. Parfait pour atteindre les ennemis éloignés !</value>
+  </data>
+  <data name="PowerUplinebombLore" xml:space="preserve">
+    <value>Place toutes tes bombes en ligne d'un coup ! Couverture maximale !</value>
+  </data>
+  <data name="PowerUppowerbombLore" xml:space="preserve">
+    <value>Une explosion massive qui couvre une zone énorme. Utilise tous les emplacements de bombes !</value>
+  </data>
+  <data name="PowerUpskullLore" xml:space="preserve">
+    <value>Maudit ! Donne un effet négatif aléatoire pendant 10 secondes. Évite-le si possible !</value>
+  </data>
+  <data name="LeagueTitle" xml:space="preserve">
+    <value>Ligue</value>
+  </data>
+  <data name="LeagueButton" xml:space="preserve">
+    <value>Ligue</value>
+  </data>
+  <data name="LeaguePlayerName" xml:space="preserve">
+    <value>Toi</value>
+  </data>
+  <data name="LeaguePoints" xml:space="preserve">
+    <value>Points</value>
+  </data>
+  <data name="LeagueRank" xml:space="preserve">
+    <value>Rang</value>
+  </data>
+  <data name="LeagueNextTier" xml:space="preserve">
+    <value>Ligue suivante</value>
+  </data>
+  <data name="LeagueMaxTier" xml:space="preserve">
+    <value>Ligue maximale!</value>
+  </data>
+  <data name="LeagueSeasonEnded" xml:space="preserve">
+    <value>Saison terminee!</value>
+  </data>
+  <data name="LeagueRewardCoins" xml:space="preserve">
+    <value>Pieces</value>
+  </data>
+  <data name="LeagueRewardGems" xml:space="preserve">
+    <value>Gemmes</value>
+  </data>
+  <data name="LeagueBronze" xml:space="preserve">
+    <value>Bronze</value>
+  </data>
+  <data name="LeagueSilver" xml:space="preserve">
+    <value>Argent</value>
+  </data>
+  <data name="LeagueGold" xml:space="preserve">
+    <value>Or</value>
+  </data>
+  <data name="LeaguePlatinum" xml:space="preserve">
+    <value>Platine</value>
+  </data>
+  <data name="LeagueDiamond" xml:space="preserve">
+    <value>Diamant</value>
+  </data>
+  <data name="LeagueStatSeasons" xml:space="preserve">
+    <value>Saisons</value>
+  </data>
+  <data name="LeagueStatPromotions" xml:space="preserve">
+    <value>Promotions</value>
+  </data>
+  <data name="LeagueStatBest" xml:space="preserve">
+    <value>Meilleur Score</value>
+  </data>
+  <data name="LeagueSeasonReward" xml:space="preserve">
+    <value>Recompense de Saison</value>
+  </data>
+  <data name="LeagueClaimed" xml:space="preserve">
+    <value>Reclame</value>
+  </data>
+  <data name="LeagueClaimNow" xml:space="preserve">
+    <value>Reclamer</value>
+  </data>
+  <data name="LeaguePromotion" xml:space="preserve">
+    <value>Promu!</value>
+  </data>
+  <data name="LeagueRelegation" xml:space="preserve">
+    <value>Relegue</value>
+  </data>
+  <data name="LeagueSeason" xml:space="preserve">
+    <value>Saison</value>
+  </data>
+  <data name="LeagueTop" xml:space="preserve">
+    <value>Top</value>
+  </data>
+
+  <!-- Cloud Save -->
+  <data name="CloudSaveTitle" xml:space="preserve">
+    <value>Sauvegarde cloud</value>
+  </data>
+  <data name="CloudSaveToggle" xml:space="preserve">
+    <value>Activer la sauvegarde cloud</value>
+  </data>
+  <data name="CloudSaveDisabled" xml:space="preserve">
+    <value>Désactivé</value>
+  </data>
+  <data name="CloudSaveNeverSynced" xml:space="preserve">
+    <value>Jamais synchronisé</value>
+  </data>
+  <data name="CloudSaveJustNow" xml:space="preserve">
+    <value>À l'instant</value>
+  </data>
+  <data name="CloudSaveSyncing" xml:space="preserve">
+    <value>Synchronisation...</value>
+  </data>
+  <data name="CloudSaveLastSync" xml:space="preserve">
+    <value>Dernière synchronisation</value>
+  </data>
+  <data name="CloudSaveUploadSuccess" xml:space="preserve">
+    <value>Données envoyées</value>
+  </data>
+  <data name="CloudSaveDownloadSuccess" xml:space="preserve">
+    <value>Données cloud chargées</value>
+  </data>
+  <data name="CloudSaveRestartHint" xml:space="preserve">
+    <value>Redémarrer l'app pour la cohérence</value>
+  </data>
+  <data name="CloudSaveError" xml:space="preserve">
+    <value>Synchronisation échouée</value>
+  </data>
+  <data name="CloudSaveButton" xml:space="preserve">
+    <value>Cloud</value>
+  </data>
+  <data name="CloudSaveSync" xml:space="preserve">
+    <value>Synchroniser</value>
+  </data>
+  <data name="CloudSaveDownload" xml:space="preserve">
+    <value>Télécharger</value>
+  </data>
+  <data name="CloudSaveLocationLocal" xml:space="preserve">
+    <value>Local uniquement</value>
+  </data>
+  <data name="CloudSaveLocationGPGS" xml:space="preserve">
+    <value>Google Play Games</value>
+  </data>
+  <data name="AchDungeonFloor10" xml:space="preserve">
+    <value>Plongeur des profondeurs</value>
+  </data>
+  <data name="AchDungeonFloor10Desc" xml:space="preserve">
+    <value>Atteins l'étage 10 en Dungeon Run</value>
+  </data>
+  <data name="AchDungeonRuns10" xml:space="preserve">
+    <value>Habitué du donjon</value>
+  </data>
+  <data name="AchDungeonRuns10Desc" xml:space="preserve">
+    <value>Termine 10 Dungeon Runs</value>
+  </data>
+  <data name="AchDungeonBoss" xml:space="preserve">
+    <value>Pourfendeur du donjon</value>
+  </data>
+  <data name="AchDungeonBossDesc" xml:space="preserve">
+    <value>Vaincs un boss du donjon</value>
+  </data>
+  <data name="AchCollector25" xml:space="preserve">
+    <value>Collectionneur débutant</value>
+  </data>
+  <data name="AchCollector25Desc" xml:space="preserve">
+    <value>Découvre 25% de la collection</value>
+  </data>
+  <data name="AchCollector50" xml:space="preserve">
+    <value>Collectionneur assidu</value>
+  </data>
+  <data name="AchCollector50Desc" xml:space="preserve">
+    <value>Découvre 50% de la collection</value>
+  </data>
+  <data name="AchCollector100" xml:space="preserve">
+    <value>Maître collectionneur</value>
+  </data>
+  <data name="AchCollector100Desc" xml:space="preserve">
+    <value>Complète toute la collection</value>
+  </data>
+  <data name="AchBpTier15" xml:space="preserve">
+    <value>Grimpeur du passe</value>
+  </data>
+  <data name="AchBpTier15Desc" xml:space="preserve">
+    <value>Atteins le palier 15 du Passe de Combat</value>
+  </data>
+  <data name="AchBpTier30" xml:space="preserve">
+    <value>Maître du passe</value>
+  </data>
+  <data name="AchBpTier30Desc" xml:space="preserve">
+    <value>Atteins le palier 30 du Passe de Combat</value>
+  </data>
+  <data name="AchCardGold" xml:space="preserve">
+    <value>Carte dorée</value>
+  </data>
+  <data name="AchCardGoldDesc" xml:space="preserve">
+    <value>Améliore une carte au niveau Or</value>
+  </data>
+  <data name="AchCards10" xml:space="preserve">
+    <value>Collectionneur de cartes</value>
+  </data>
+  <data name="AchCards10Desc" xml:space="preserve">
+    <value>Collecte 10 cartes différentes</value>
+  </data>
+  <data name="AchDailyMission50" xml:space="preserve">
+    <value>Vétéran des missions</value>
+  </data>
+  <data name="AchDailyMission50Desc" xml:space="preserve">
+    <value>Termine 50 missions quotidiennes</value>
+  </data>
+  <data name="AchLeagueGold" xml:space="preserve">
+    <value>Ligue d'Or</value>
+  </data>
+  <data name="AchLeagueGoldDesc" xml:space="preserve">
+    <value>Atteins la ligue d'Or</value>
+  </data>
+  <data name="AchLeagueDiamond" xml:space="preserve">
+    <value>Légende de Diamant</value>
+  </data>
+  <data name="AchLeagueDiamondDesc" xml:space="preserve">
+    <value>Atteins la ligue de Diamant</value>
+  </data>
+  <data name="AchLuckyJackpot" xml:space="preserve">
+    <value>Jackpot !</value>
+  </data>
+  <data name="AchLuckyJackpotDesc" xml:space="preserve">
+    <value>Remporte le jackpot de la Roue</value>
+  </data>
+  <data name="AchSurvival300" xml:space="preserve">
+    <value>Survivant</value>
+  </data>
+  <data name="AchSurvival300Desc" xml:space="preserve">
+    <value>Survis 5 minutes en mode Survie</value>
+  </data>
+  <data name="AchSurvivalKills50" xml:space="preserve">
+    <value>Chasseur de survie</value>
+  </data>
+  <data name="AchSurvivalKills50Desc" xml:space="preserve">
+    <value>Élimine 50 ennemis en une partie de Survie</value>
+  </data>
+  <data name="AchLineBombMaster" xml:space="preserve">
+    <value>Expert en ligne</value>
+  </data>
+  <data name="AchLineBombMasterDesc" xml:space="preserve">
+    <value>Utilise Line Bomb 25 fois</value>
+  </data>
+  <data name="AchDetonatorMaster" xml:space="preserve">
+    <value>Expert en détonation</value>
+  </data>
+  <data name="AchDetonatorMasterDesc" xml:space="preserve">
+    <value>Détone manuellement 50 fois</value>
+  </data>
+  <data name="AchQuickPlayMax" xml:space="preserve">
+    <value>Difficulté maximale</value>
+  </data>
+  <data name="AchQuickPlayMaxDesc" xml:space="preserve">
+    <value>Termine un Quick Play en difficulté 10</value>
+  </data>
+  <!-- Phase 9.4: Neue Missionstypen -->
+  <data name="WeeklyDungeonFloors" xml:space="preserve">
+    <value>Explorateur de Donjon</value>
+  </data>
+  <data name="WeeklyDungeonFloorsDesc" xml:space="preserve">
+    <value>Complète {0} étages de donjon</value>
+  </data>
+  <data name="WeeklyCollectCards" xml:space="preserve">
+    <value>Collectionneur de Cartes</value>
+  </data>
+  <data name="WeeklyCollectCardsDesc" xml:space="preserve">
+    <value>Collecte {0} cartes</value>
+  </data>
+  <data name="WeeklyEarnGems" xml:space="preserve">
+    <value>Chasseur de Gemmes</value>
+  </data>
+  <data name="WeeklyEarnGemsDesc" xml:space="preserve">
+    <value>Gagne {0} gemmes</value>
+  </data>
+  <data name="WeeklyPlayQuickPlay" xml:space="preserve">
+    <value>Joueur Rapide</value>
+  </data>
+  <data name="WeeklyPlayQuickPlayDesc" xml:space="preserve">
+    <value>Complète {0} parties rapides</value>
+  </data>
+  <data name="WeeklySpinWheel" xml:space="preserve">
+    <value>Tourneur Chanceux</value>
+  </data>
+  <data name="WeeklySpinWheelDesc" xml:space="preserve">
+    <value>Tourne la roue de la chance {0} fois</value>
+  </data>
+  <data name="WeeklyUpgradeCards" xml:space="preserve">
+    <value>Améliorateur de Cartes</value>
+  </data>
+  <data name="WeeklyUpgradeCardsDesc" xml:space="preserve">
+    <value>Améliore {0} cartes</value>
+  </data>
+  <data name="DailyDungeonFloors" xml:space="preserve">
+    <value>Plongeur de Donjon</value>
+  </data>
+  <data name="DailyDungeonFloorsDesc" xml:space="preserve">
+    <value>Complète {0} étages de donjon</value>
+  </data>
+  <data name="DailyCollectCards" xml:space="preserve">
+    <value>Chercheur de Cartes</value>
+  </data>
+  <data name="DailyCollectCardsDesc" xml:space="preserve">
+    <value>Collecte {0} cartes</value>
+  </data>
+  <data name="DailyEarnGems" xml:space="preserve">
+    <value>Chercheur de Gemmes</value>
+  </data>
+  <data name="DailyEarnGemsDesc" xml:space="preserve">
+    <value>Gagne {0} gemmes</value>
+  </data>
+  <data name="DailyPlayQuickPlay" xml:space="preserve">
+    <value>Tour Rapide</value>
+  </data>
+  <data name="DailyPlayQuickPlayDesc" xml:space="preserve">
+    <value>Complète {0} parties rapides</value>
+  </data>
+  <data name="DailySpinWheel" xml:space="preserve">
+    <value>Tente ta Chance</value>
+  </data>
+  <data name="DailySpinWheelDesc" xml:space="preserve">
+    <value>Tourne la roue de la chance {0} fois</value>
+  </data>
+  <data name="DailyUpgradeCards" xml:space="preserve">
+    <value>Renforceur de Cartes</value>
+  </data>
+  <data name="DailyUpgradeCardsDesc" xml:space="preserve">
+    <value>Améliore {0} cartes</value>
+  </data>
+  <data name="DeckLabel" xml:space="preserve">
+    <value>Deck</value>
+  </data>
+  <data name="CardStrength" xml:space="preserve">
+    <value>Puissance</value>
+  </data>
+  <data name="CardDropSource" xml:space="preserve">
+    <value>Sources</value>
+  </data>
+  <data name="CardUpgradeLabel" xml:space="preserve">
+    <value>Amélioration</value>
+  </data>
+  <data name="CardNotOwned" xml:space="preserve">
+    <value>Pas encore trouvée</value>
+  </data>
+  <data name="DropSourceLevel" xml:space="preserve">
+    <value>Niveau terminé</value>
+  </data>
+  <data name="DropSourceBoss" xml:space="preserve">
+    <value>Combat de boss</value>
+  </data>
+  <data name="DropSourceDungeon" xml:space="preserve">
+    <value>Donjon</value>
   </data>
 </root>

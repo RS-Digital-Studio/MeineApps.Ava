@@ -9,7 +9,7 @@ namespace BomberBlast.ViewModels;
 
 /// <summary>
 /// ViewModel for the high scores page.
-/// Displays the top 10 arcade mode scores.
+/// Zeigt die Top 10 Bestenlisten-Scores.
 /// </summary>
 public partial class HighScoresViewModel : ObservableObject
 {

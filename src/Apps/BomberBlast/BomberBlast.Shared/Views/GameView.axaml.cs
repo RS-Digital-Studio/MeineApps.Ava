@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
@@ -38,10 +39,11 @@ public partial class GameView : UserControl
     {
         StopRenderTimer();
 
-        // ViewModel-Event abmelden
+        // ViewModel-Events abmelden
         if (_subscribedVm != null)
         {
             _subscribedVm.InvalidateCanvasRequested -= OnInvalidateRequested;
+            _subscribedVm.PropertyChanged -= OnViewModelPropertyChanged;
             _subscribedVm = null;
         }
     }
@@ -54,6 +56,7 @@ public partial class GameView : UserControl
         if (_subscribedVm != null)
         {
             _subscribedVm.InvalidateCanvasRequested -= OnInvalidateRequested;
+            _subscribedVm.PropertyChanged -= OnViewModelPropertyChanged;
             _subscribedVm = null;
         }
 
@@ -62,6 +65,7 @@ public partial class GameView : UserControl
         {
             _subscribedVm = vm;
             vm.InvalidateCanvasRequested += OnInvalidateRequested;
+            vm.PropertyChanged += OnViewModelPropertyChanged;
         }
     }
 
@@ -70,6 +74,27 @@ public partial class GameView : UserControl
         // Initialen Frame rendern + Render-Timer starten
         GameCanvas.InvalidateSurface();
         StartRenderTimer();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // OVERLAY HIT-TEST STEUERUNG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Deaktiviert Hit-Testing auf dem GameCanvas wenn Pause- oder Score-Double-Overlay sichtbar ist,
+    /// damit Overlay-Buttons auf Android Touch-Events empfangen können.
+    /// </summary>
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is nameof(GameViewModel.IsPaused) or nameof(GameViewModel.ShowScoreDoubleOverlay))
+        {
+            UpdateCanvasHitTest();
+        }
+    }
+
+    private void UpdateCanvasHitTest()
+    {
+        GameCanvas.IsHitTestVisible = ViewModel is { IsPaused: false, ShowScoreDoubleOverlay: false };
     }
 
     // ═══════════════════════════════════════════════════════════════════════

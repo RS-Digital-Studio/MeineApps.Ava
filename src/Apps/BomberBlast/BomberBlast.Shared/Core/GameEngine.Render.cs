@@ -9,6 +9,28 @@ namespace BomberBlast.Core;
 public partial class GameEngine
 {
     /// <summary>
+    /// Welt-spezifische Iris-Wipe-Farbe (statt immer Schwarz).
+    /// </summary>
+    private SKColor GetIrisWipeColor()
+    {
+        int wi = Math.Clamp((_currentLevelNumber - 1) / 10, 0, 9);
+        return wi switch
+        {
+            0 => new SKColor(10, 30, 10),    // Forest: Dunkles Grün
+            1 => new SKColor(15, 20, 25),    // Industrial: Dunkles Stahlblau
+            2 => new SKColor(20, 10, 35),    // Cavern: Dunkles Violett
+            3 => new SKColor(10, 20, 40),    // Sky: Dunkles Blau
+            4 => new SKColor(40, 10, 5),     // Inferno: Dunkles Rot
+            5 => new SKColor(30, 22, 15),    // Ruins: Dunkles Braun
+            6 => new SKColor(5, 20, 35),     // Ocean: Dunkles Teal
+            7 => new SKColor(35, 15, 5),     // Volcano: Dunkles Orange
+            8 => new SKColor(35, 30, 10),    // SkyFortress: Dunkles Gold
+            9 => new SKColor(15, 5, 25),     // ShadowRealm: Dunkles Lila
+            _ => new SKColor(0, 0, 0)
+        };
+    }
+
+    /// <summary>
     /// Spiel rendern
     /// </summary>
     public void Render(SKCanvas canvas, float screenWidth, float screenHeight)
@@ -30,14 +52,19 @@ public partial class GameEngine
             canvas.Translate(_screenShake.OffsetX, _screenShake.OffsetY);
         }
 
-        // Combo-Daten an Renderer übergeben
+        // Combo-Daten + Survival-Daten an Renderer übergeben
         _renderer.ComboCount = _comboCount;
         _renderer.ComboTimer = _comboTimer;
+        _renderer.IsSurvivalMode = _isSurvivalMode;
+        _renderer.SurvivalKills = _enemiesKilled;
+
+        // Survival-Modus: Verstrichene Zeit anzeigen statt Countdown
+        float displayTime = _isSurvivalMode ? _survivalTimeElapsed : _timer.RemainingTime;
 
         // Spiel rendern (gecachte Exit-Zelle übergeben für Performance)
         _renderer.Render(canvas, _grid, _player,
             _enemies, _bombs, _explosions, _powerUps,
-            _timer.RemainingTime, _player.Score, _player.Lives, _exitCell);
+            displayTime, _player.Score, _player.Lives, _exitCell);
 
         // Partikel rendern (über dem Spielfeld, unter den Controls)
         if (_particleSystem.HasActiveParticles)
@@ -126,19 +153,20 @@ public partial class GameEngine
 
     private void RenderStartingOverlay(SKCanvas canvas, float screenWidth, float screenHeight)
     {
+        var irisColor = GetIrisWipeColor();
         float progress = _stateTimer / START_DELAY; // 0→1
 
-        // Iris-Wipe: Schwarzer Kreis öffnet sich vom Zentrum
+        // Iris-Wipe: Kreis öffnet sich vom Zentrum (welt-spezifische Farbe)
         float maxRadius = MathF.Sqrt(screenWidth * screenWidth + screenHeight * screenHeight) / 2f;
         float irisRadius = progress * maxRadius;
 
-        // Schwarze Maske mit kreisförmigem Ausschnitt (Iris-Wipe)
+        // Welt-farbige Maske mit kreisförmigem Ausschnitt (Iris-Wipe)
         canvas.Save();
         using var clipPath = new SKPath();
         clipPath.AddRect(new SKRect(0, 0, screenWidth, screenHeight));
         clipPath.AddCircle(screenWidth / 2f, screenHeight / 2f, irisRadius, SKPathDirection.CounterClockwise);
         canvas.ClipPath(clipPath);
-        _overlayBgPaint.Color = new SKColor(0, 0, 0, 255);
+        _overlayBgPaint.Color = new SKColor(irisColor.Red, irisColor.Green, irisColor.Blue, 255);
         canvas.DrawRect(0, 0, screenWidth, screenHeight, _overlayBgPaint);
         canvas.Restore();
 
@@ -156,16 +184,14 @@ public partial class GameEngine
 
         // Text-Overlay (halbtransparent, wird mit dem Iris-Wipe sichtbarer)
         byte textBgAlpha = (byte)(180 * (1f - progress * 0.5f));
-        _overlayBgPaint.Color = new SKColor(0, 0, 0, textBgAlpha);
+        _overlayBgPaint.Color = new SKColor(irisColor.Red, irisColor.Green, irisColor.Blue, textBgAlpha);
         canvas.DrawRect(screenWidth / 2 - 200, screenHeight / 2 - 60, 400, 160, _overlayBgPaint);
 
         _overlayFont.Size = 48;
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = _overlayGlowFilter;
 
-        string text = _isArcadeMode
-            ? string.Format(_localizationService.GetString("WaveOverlay"), _arcadeWave)
-            : string.Format(_localizationService.GetString("StageOverlay"), _currentLevelNumber);
+        string text = string.Format(_localizationService.GetString("StageOverlay"), _currentLevelNumber);
 
         canvas.DrawText(text, screenWidth / 2, screenHeight / 2, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
@@ -209,13 +235,17 @@ public partial class GameEngine
             clipPath.AddRect(new SKRect(0, 0, screenWidth, screenHeight));
             clipPath.AddCircle(screenWidth / 2f, screenHeight / 2f, Math.Max(irisRadius, 1), SKPathDirection.CounterClockwise);
             canvas.ClipPath(clipPath);
-            _overlayBgPaint.Color = new SKColor(0, 0, 0, 255);
+            var irisColor = GetIrisWipeColor();
+            _overlayBgPaint.Color = new SKColor(irisColor.Red, irisColor.Green, irisColor.Blue, 255);
             canvas.DrawRect(0, 0, screenWidth, screenHeight, _overlayBgPaint);
             canvas.Restore();
         }
 
         _overlayBgPaint.Color = new SKColor(0, 50, 0, 200);
         canvas.DrawRect(0, 0, screenWidth, screenHeight, _overlayBgPaint);
+
+        // Celebration-Confetti (fallende bunte Rechtecke)
+        RenderCelebrationParticles(canvas, screenWidth, screenHeight, _stateTimer, 25, false);
 
         _overlayFont.Size = 48;
         _overlayTextPaint.Color = SKColors.Green;
@@ -310,7 +340,12 @@ public partial class GameEngine
 
     private void RenderGameOverOverlay(SKCanvas canvas, float screenWidth, float screenHeight)
     {
-        _overlayBgPaint.Color = new SKColor(50, 0, 0, 220);
+        var irisColor = GetIrisWipeColor();
+        // Rot-Tönung beibehalten, aber leicht welt-gefärbt mischen
+        byte goR = (byte)Math.Min(255, 50 + irisColor.Red / 3);
+        byte goG = (byte)(irisColor.Green / 5);
+        byte goB = (byte)(irisColor.Blue / 5);
+        _overlayBgPaint.Color = new SKColor(goR, goG, goB, 220);
         canvas.DrawRect(0, 0, screenWidth, screenHeight, _overlayBgPaint);
 
         _overlayFont.Size = 64;
@@ -319,41 +354,28 @@ public partial class GameEngine
 
         canvas.DrawText(_localizationService.GetString("GameOver"), screenWidth / 2, screenHeight / 2 - 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
-        // Arcade High Score: Goldener pulsierender Text
-        if (_isArcadeMode && IsCurrentScoreHighScore && _player.Score > 0)
-        {
-            _overlayFont.Size = 28;
-            _overlayTextPaint.Color = new SKColor(255, 215, 0); // Gold
-            float pulse = 1f + MathF.Sin(_stateTimer * 6f) * 0.08f;
-            canvas.Save();
-            canvas.Translate(screenWidth / 2, screenHeight / 2 - 90);
-            canvas.Scale(pulse);
-            string highScoreText = _localizationService.GetString("NewHighScore") ?? "NEW HIGH SCORE!";
-            canvas.DrawText(highScoreText, 0, 0, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
-            canvas.Restore();
-        }
-
         _overlayTextPaint.Color = SKColors.White;
         _overlayTextPaint.MaskFilter = null;
         _overlayFont.Size = 32;
         canvas.DrawText(string.Format(_localizationService.GetString("FinalScore"), _player.Score), screenWidth / 2, screenHeight / 2 + 20, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
 
         _overlayFont.Size = 24;
-        if (_isArcadeMode)
-        {
-            canvas.DrawText(string.Format(_localizationService.GetString("WaveReached"), _arcadeWave), screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
-        }
-        else
-        {
-            canvas.DrawText(string.Format(_localizationService.GetString("LevelFormat"), _currentLevelNumber), screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
-        }
+        canvas.DrawText(string.Format(_localizationService.GetString("LevelFormat"), _currentLevelNumber), screenWidth / 2, screenHeight / 2 + 60, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
     }
 
     private void RenderVictoryOverlay(SKCanvas canvas, float screenWidth, float screenHeight)
     {
-        // Goldenes Overlay
-        _overlayBgPaint.Color = new SKColor(50, 40, 0, 220);
+        // Goldenes Overlay, leicht welt-gefärbt
+        var irisColor = GetIrisWipeColor();
+        byte vR = (byte)Math.Min(255, 50 + irisColor.Red / 2);
+        byte vG = (byte)Math.Min(255, 40 + irisColor.Green / 3);
+        byte vB = (byte)(irisColor.Blue / 4);
+        _overlayBgPaint.Color = new SKColor(vR, vG, vB, 220);
         canvas.DrawRect(0, 0, screenWidth, screenHeight, _overlayBgPaint);
+
+        // Feuerwerk-Bursts + goldene Glitzer-Partikel
+        RenderFireworkBursts(canvas, screenWidth, screenHeight, _stateTimer);
+        RenderCelebrationParticles(canvas, screenWidth, screenHeight, _stateTimer, 35, true);
 
         _overlayFont.Size = 56;
         _overlayTextPaint.Color = new SKColor(255, 215, 0); // Gold
@@ -375,6 +397,131 @@ public partial class GameEngine
         _overlayFont.Size = 32;
         canvas.DrawText(string.Format(_localizationService.GetString("FinalScore"), _player.Score),
             screenWidth / 2, screenHeight / 2 + 50, SKTextAlign.Center, _overlayFont, _overlayTextPaint);
+    }
+
+    /// <summary>
+    /// Deterministische Celebration-Partikel (Confetti + Funken).
+    /// Basiert auf _stateTimer, keine Heap-Allokationen pro Frame.
+    /// </summary>
+    private void RenderCelebrationParticles(SKCanvas canvas, float sw, float sh,
+        float timer, int count, bool isVictory)
+    {
+        // Confetti-Farben
+        ReadOnlySpan<uint> colors = stackalloc uint[]
+        {
+            0xFFFFD700, // Gold
+            0xFFFF4444, // Rot
+            0xFF44FF44, // Grün
+            0xFF4488FF, // Blau
+            0xFFFF44FF, // Magenta
+            0xFFFF8800, // Orange
+            0xFF00FFCC, // Cyan
+            0xFFFFFF44, // Gelb
+        };
+
+        for (int i = 0; i < count; i++)
+        {
+            // Deterministischer Pseudo-Random pro Partikel
+            int seed = i * 7919 + 1013;
+            float px = (seed % 1000) / 1000f; // 0-1 X-Position
+            float py = ((seed * 3 + 571) % 1000) / 1000f; // 0-1 Start-Y
+            float speed = 0.3f + ((seed * 7 + 233) % 600) / 1000f; // 0.3-0.9 Fallgeschwindigkeit
+            float drift = ((seed * 13 + 97) % 1000) / 1000f - 0.5f; // -0.5 bis 0.5 Seitendrift
+            float phase = ((seed * 17 + 443) % 1000) / 1000f * MathF.PI * 2f;
+            int colorIdx = (seed * 11 + 67) % colors.Length;
+            float size = 2f + ((seed * 23 + 311) % 400) / 100f; // 2-6
+
+            // Position über Zeit berechnen
+            float x = px * sw + MathF.Sin(timer * 2f + phase) * 20f * drift;
+            float y = py * sh + timer * speed * 100f; // Fallen
+
+            // Wrap: Unten raus → oben rein
+            y = y % (sh + 20f);
+
+            // Alpha: Erscheint nach gestaffeltem Delay
+            float delay = i * 0.05f;
+            float alpha = Math.Clamp((timer - delay) * 3f, 0f, 1f);
+            if (alpha <= 0) continue;
+
+            var color = new SKColor(colors[colorIdx]);
+
+            if (isVictory)
+            {
+                // Victory: Goldener Glitzer-Effekt
+                float sparkle = MathF.Abs(MathF.Sin(timer * 8f + phase));
+                byte a = (byte)(alpha * (150 + sparkle * 105));
+                _overlayTextPaint.Color = color.WithAlpha(a);
+                _overlayTextPaint.Style = SKPaintStyle.Fill;
+                _overlayTextPaint.MaskFilter = sparkle > 0.7f ? _overlayGlowFilter : null;
+                canvas.DrawCircle(x, y, size * (0.8f + sparkle * 0.4f), _overlayTextPaint);
+            }
+            else
+            {
+                // LevelComplete: Confetti-Rechtecke mit Rotation
+                float rotation = timer * (200f + i * 30f) + phase * 57.3f;
+                byte a = (byte)(alpha * 200);
+                _overlayTextPaint.Color = color.WithAlpha(a);
+                _overlayTextPaint.Style = SKPaintStyle.Fill;
+                _overlayTextPaint.MaskFilter = null;
+
+                canvas.Save();
+                canvas.Translate(x, y);
+                canvas.RotateDegrees(rotation);
+                canvas.DrawRect(-size, -size * 0.4f, size * 2f, size * 0.8f, _overlayTextPaint);
+                canvas.Restore();
+            }
+        }
+
+        _overlayTextPaint.Style = SKPaintStyle.StrokeAndFill;
+        _overlayTextPaint.MaskFilter = null;
+    }
+
+    /// <summary>
+    /// Feuerwerk-Burst (für Victory): Expandierende Kreise von Startposition.
+    /// </summary>
+    private void RenderFireworkBursts(SKCanvas canvas, float sw, float sh, float timer)
+    {
+        // 4 gestaffelte Feuerwerke an verschiedenen Positionen
+        for (int f = 0; f < 4; f++)
+        {
+            float delay = f * 0.7f + 0.3f;
+            float t = timer - delay;
+            if (t < 0 || t > 1.5f) continue;
+
+            float progress = t / 1.5f; // 0→1
+            float cx = sw * (0.2f + f * 0.2f);
+            float cy = sh * (0.25f + (f % 2) * 0.2f);
+
+            // 12 Strahlen pro Feuerwerk
+            for (int r = 0; r < 12; r++)
+            {
+                float angle = r * MathF.PI * 2f / 12f + f * 0.5f;
+                float radius = progress * 60f;
+                float px = cx + MathF.Cos(angle) * radius;
+                float py = cy + MathF.Sin(angle) * radius + progress * 15f; // Leichtes Sinken
+
+                byte alpha = (byte)((1f - progress) * 200);
+                if (alpha < 5) continue;
+
+                // Farbe pro Feuerwerk
+                uint baseColor = f switch
+                {
+                    0 => 0xFFFF4444,
+                    1 => 0xFFFFD700,
+                    2 => 0xFF44FF88,
+                    _ => 0xFF44AAFF,
+                };
+                _overlayTextPaint.Color = new SKColor(baseColor).WithAlpha(alpha);
+                _overlayTextPaint.Style = SKPaintStyle.Fill;
+                _overlayTextPaint.MaskFilter = _overlayGlowFilter;
+
+                float sparkSize = (1f - progress * 0.5f) * 3f;
+                canvas.DrawCircle(px, py, sparkSize, _overlayTextPaint);
+            }
+        }
+
+        _overlayTextPaint.MaskFilter = null;
+        _overlayTextPaint.Style = SKPaintStyle.StrokeAndFill;
     }
 
     private void RenderTimerWarning(SKCanvas canvas, float screenWidth, float screenHeight)

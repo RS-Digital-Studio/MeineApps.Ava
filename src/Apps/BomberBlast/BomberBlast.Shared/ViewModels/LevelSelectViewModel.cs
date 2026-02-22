@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 
 /// <summary>
 /// ViewModel fuer die Level-Auswahl.
-/// Zeigt 50 Level in 5 Welten mit Stern-basiertem World-Gating.
+/// Zeigt 100 Level in 10 Welten mit Stern-basiertem World-Gating.
 /// Power-Up Boost Overlay ab Level 20 (Rewarded Ad).
 /// Implementiert IDisposable fuer BalanceChanged-Unsubscription.
 /// </summary>
@@ -89,6 +89,11 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
         (MaterialIconKind.DiamondStone, "#6A1B9A", "#311B92", "#AB47BC", "WorldCavern"),
         (MaterialIconKind.Cloud,        "#0288D1", "#01579B", "#4FC3F7", "WorldSky"),
         (MaterialIconKind.Fire,         "#C62828", "#7F0000", "#EF5350", "WorldInferno"),
+        (MaterialIconKind.Pillar,       "#8D6E63", "#4E342E", "#BCAAA4", "WorldRuins"),
+        (MaterialIconKind.Waves,        "#0277BD", "#004C8C", "#4FC3F7", "WorldOcean"),
+        (MaterialIconKind.Terrain,      "#D84315", "#BF360C", "#FF7043", "WorldVolcano"),
+        (MaterialIconKind.WeatherSunny, "#FFD600", "#F9A825", "#FFEE58", "WorldSkyFortress"),
+        (MaterialIconKind.Ghost,        "#4A148C", "#1A237E", "#CE93D8", "WorldShadowRealm"),
     ];
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -130,7 +135,7 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
         // Neue Welt freigeschaltet erkennen → Confetti
         if (_previousTotalStars >= 0 && totalStars > _previousTotalStars)
         {
-            for (int w = 2; w <= 5; w++)
+            for (int w = 2; w <= 10; w++)
             {
                 int firstLevelOfWorld = ((w - 1) * 10) + 1;
                 int required = _progressService.GetWorldStarsRequired(firstLevelOfWorld);
@@ -143,7 +148,7 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
         }
         _previousTotalStars = totalStars;
 
-        for (int w = 1; w <= 5; w++)
+        for (int w = 1; w <= 10; w++)
         {
             int firstLevel = (w - 1) * 10 + 1;
             int starsRequired = _progressService.GetWorldStarsRequired(firstLevel);
@@ -404,7 +409,7 @@ public class LevelDisplayItem
     public string StarsDisplay => StarsText;
 
     /// <summary>
-    /// Welt-basierte Hintergrundfarbe (5 Welten, 5 Farben)
+    /// Welt-basierte Hintergrundfarbe (10 Welten, 10 Farben)
     /// </summary>
     public Color BackgroundColor
     {
@@ -413,27 +418,37 @@ public class LevelDisplayItem
             if (IsWorldLocked) return Color.Parse("#333333");
             if (!IsUnlocked) return Color.Parse("#444444");
 
-            // Welt-Farben: Forest, Industrial, Cavern, Sky, Inferno
-            int world = (LevelNumber - 1) / 10; // 0-4
+            // Welt-Farben: Forest, Industrial, Cavern, Sky, Inferno, Ruinen, Ozean, Vulkan, Himmelsfestung, Schattenwelt
+            int world = (LevelNumber - 1) / 10; // 0-9
             if (IsCompleted)
             {
                 return world switch
                 {
-                    0 => Color.Parse("#2E7D32"), // Forest - Dunkelgrün
-                    1 => Color.Parse("#37474F"), // Industrial - Stahlgrau
-                    2 => Color.Parse("#4A148C"), // Cavern - Dunkelviolett
-                    3 => Color.Parse("#0277BD"), // Sky - Dunkelcyan
-                    4 => Color.Parse("#B71C1C"), // Inferno - Dunkelrot
+                    0 => Color.Parse("#2E7D32"),  // Forest
+                    1 => Color.Parse("#37474F"),  // Industrial
+                    2 => Color.Parse("#4A148C"),  // Cavern
+                    3 => Color.Parse("#0277BD"),  // Sky
+                    4 => Color.Parse("#B71C1C"),  // Inferno
+                    5 => Color.Parse("#5D4037"),  // Ruinen
+                    6 => Color.Parse("#01579B"),  // Ozean
+                    7 => Color.Parse("#BF360C"),  // Vulkan
+                    8 => Color.Parse("#F57F17"),  // Himmelsfestung
+                    9 => Color.Parse("#311B92"),  // Schattenwelt
                     _ => Color.Parse("#2E7D32")
                 };
             }
             return world switch
             {
-                0 => Color.Parse("#388E3C"), // Forest - Grün
-                1 => Color.Parse("#546E7A"), // Industrial - Blaugrau
-                2 => Color.Parse("#6A1B9A"), // Cavern - Lila
-                3 => Color.Parse("#0288D1"), // Sky - Cyan
-                4 => Color.Parse("#C62828"), // Inferno - Rot
+                0 => Color.Parse("#388E3C"),
+                1 => Color.Parse("#546E7A"),
+                2 => Color.Parse("#6A1B9A"),
+                3 => Color.Parse("#0288D1"),
+                4 => Color.Parse("#C62828"),
+                5 => Color.Parse("#8D6E63"),  // Ruinen
+                6 => Color.Parse("#0277BD"),  // Ozean
+                7 => Color.Parse("#D84315"),  // Vulkan
+                8 => Color.Parse("#FFD600"),  // Himmelsfestung
+                9 => Color.Parse("#4A148C"),  // Schattenwelt
                 _ => Color.Parse("#1565C0")
             };
         }

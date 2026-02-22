@@ -8,7 +8,7 @@
              x:DataType="vm:GameOverViewModel">
 
   <!-- Gradient Background -->
-  <Panel>
+  <Panel AutomationProperties.AutomationId="GameOver_Root">
     <Border>
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -33,13 +33,15 @@
                     HorizontalAlignment="Center"
                     Spacing="12">
 
-          <TextBlock Text="{loc:Translate GameOver}"
+          <TextBlock AutomationProperties.AutomationId="GameOver_TxtGameOver"
+                     Text="{loc:Translate GameOver}"
                      FontSize="42"
                      FontWeight="Bold"
                      Foreground="{DynamicResource ErrorBrush}"
                      HorizontalAlignment="Center"
                      IsVisible="{Binding !IsLevelComplete}" />
-          <TextBlock Text="{loc:Translate LevelComplete}"
+          <TextBlock AutomationProperties.AutomationId="GameOver_TxtLevelComplete"
+                     Text="{loc:Translate LevelComplete}"
                      FontSize="42"
                      FontWeight="Bold"
                      Foreground="{DynamicResource SuccessBrush}"
@@ -47,7 +49,8 @@
                      IsVisible="{Binding IsLevelComplete}" />
 
           <!-- Motivationstext (kontextbezogen, nur bei Game Over) -->
-          <TextBlock Text="{Binding MotivationText}"
+          <TextBlock AutomationProperties.AutomationId="GameOver_TxtMotivation"
+                     Text="{Binding MotivationText}"
                      FontSize="14"
                      FontWeight="SemiBold"
                      Foreground="{DynamicResource TextSecondaryBrush}"
@@ -55,18 +58,60 @@
                      IsVisible="{Binding HasMotivation}" />
 
           <StackPanel Spacing="6">
-            <TextBlock Text="{Binding ScoreText}"
+            <TextBlock AutomationProperties.AutomationId="GameOver_TxtScore"
+                       Text="{Binding ScoreText}"
                        FontSize="28"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding LevelText}"
+            <TextBlock AutomationProperties.AutomationId="GameOver_TxtLevel"
+                       Text="{Binding LevelText}"
                        FontSize="18"
                        Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" />
+
+            <!-- Survival-Statistiken -->
+            <Border AutomationProperties.AutomationId="GameOver_SurvivalStats"
+                    IsVisible="{Binding HasSurvivalStats}"
+                    Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="8"
+                    Padding="12,6"
+                    HorizontalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="16">
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <TextBlock Text="{loc:Translate SurvivalKillsLabel}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" />
+                  <StackPanel Orientation="Horizontal" Spacing="4"
+                              HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="Skull" Width="16" Height="16"
+                                     Foreground="#FF4444" />
+                    <TextBlock Text="{Binding SurvivalKills}"
+                               FontSize="20" FontWeight="Bold"
+                               Foreground="#FF4444" />
+                  </StackPanel>
+                </StackPanel>
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <TextBlock Text="{loc:Translate SurvivalTimeLabel}"
+                             FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" />
+                  <StackPanel Orientation="Horizontal" Spacing="4"
+                              HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="Timer" Width="16" Height="16"
+                                     Foreground="{DynamicResource SecondaryBrush}" />
+                    <TextBlock Text="{Binding SurvivalTimeText}"
+                               FontSize="20" FontWeight="Bold"
+                               Foreground="{DynamicResource SecondaryBrush}" />
+                  </StackPanel>
+                </StackPanel>
+              </StackPanel>
+            </Border>
           </StackPanel>
 
           <!-- High Score Badge -->
-          <Border Background="{DynamicResource AccentBrush}"
+          <Border AutomationProperties.AutomationId="GameOver_HighScoreBadge"
+                  Background="{DynamicResource AccentBrush}"
                   CornerRadius="10"
                   Padding="12,6"
                   IsVisible="{Binding IsHighScore}"
@@ -82,7 +127,8 @@
           </Border>
 
           <!-- Score-Aufschlüsselung (nur bei Level-Complete) -->
-          <Border Background="{DynamicResource SurfaceBrush}"
+          <Border AutomationProperties.AutomationId="GameOver_Summary"
+                  Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="10"
                   Padding="14,8"
                   HorizontalAlignment="Center"
@@ -94,7 +140,8 @@
                 <TextBlock Text="{loc:Translate EnemyPoints}"
                            FontSize="14"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1"
+                <TextBlock AutomationProperties.AutomationId="GameOver_TxtEnemyPoints"
+                           Grid.Column="1"
                            Text="{Binding EnemyKillPointsText}"
                            FontSize="14" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -104,7 +151,8 @@
                 <TextBlock Text="{loc:Translate SummaryTimeBonus}"
                            FontSize="14"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1"
+                <TextBlock AutomationProperties.AutomationId="GameOver_TxtTimeBonus"
+                           Grid.Column="1"
                            Text="{Binding TimeBonusText}"
                            FontSize="14" FontWeight="Bold"
                            Foreground="#4CAF50" />
@@ -114,7 +162,8 @@
                 <TextBlock Text="{loc:Translate SummaryEfficiencyBonus}"
                            FontSize="14"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1"
+                <TextBlock AutomationProperties.AutomationId="GameOver_TxtEfficiency"
+                           Grid.Column="1"
                            Text="{Binding EfficiencyBonusText}"
                            FontSize="14" FontWeight="Bold"
                            Foreground="#FF9800" />
@@ -124,7 +173,8 @@
                 <TextBlock Text="{loc:Translate SummaryScoreMultiplier}"
                            FontSize="14"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBlock Grid.Column="1"
+                <TextBlock AutomationProperties.AutomationId="GameOver_TxtMultiplier"
+                           Grid.Column="1"
                            Text="{Binding ScoreMultiplierText}"
                            FontSize="14" FontWeight="Bold"
                            Foreground="#7B1FA2" />
@@ -133,7 +183,8 @@
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center" Margin="0,4,0,0">
                 <!-- Medaille (Gold/Silber/Bronze je nach Sternen) -->
-                <ctrl:MedalCanvas Width="36" Height="36"
+                <ctrl:MedalCanvas AutomationProperties.AutomationId="GameOver_Medal"
+                                  Width="36" Height="36"
                                   Stars="{Binding StarsEarned}"
                                   IsVisible="{Binding HasSummary}"
                                   VerticalAlignment="Center" />
@@ -154,14 +205,16 @@
                 </StackPanel>
               </StackPanel>
               <!-- Near-Miss Feedback -->
-              <TextBlock IsVisible="{Binding HasNearMiss}"
+              <TextBlock AutomationProperties.AutomationId="GameOver_TxtNearMiss"
+                         IsVisible="{Binding HasNearMiss}"
                          Text="{Binding NearMissText}"
                          FontSize="11" FontWeight="SemiBold"
                          Foreground="#FF9800"
                          TextWrapping="Wrap"
                          HorizontalAlignment="Center" />
               <!-- Premium Badge -->
-              <Border IsVisible="{Binding IsPremium}"
+              <Border AutomationProperties.AutomationId="GameOver_PremiumBadge"
+                      IsVisible="{Binding IsPremium}"
                       Background="#33FFD700"
                       CornerRadius="8"
                       Padding="10,4"
@@ -169,7 +222,7 @@
                       Margin="0,4,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <mi:MaterialIcon Kind="Crown" Width="16" Height="16" Foreground="#FFD700" />
-                  <TextBlock Text="Premium x2 Coins"
+                  <TextBlock Text="{loc:Translate PremiumFeatureDoubleCoins}"
                              FontSize="13" FontWeight="Bold"
                              Foreground="#FFD700" />
                 </StackPanel>
@@ -178,7 +231,8 @@
           </Border>
 
           <!-- Coins verdient -->
-          <Border Background="{DynamicResource SurfaceBrush}"
+          <Border AutomationProperties.AutomationId="GameOver_CoinsSection"
+                  Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="10"
                   Padding="16,10"
                   HorizontalAlignment="Center"
@@ -188,13 +242,15 @@
                           HorizontalAlignment="Center">
                 <mi:MaterialIcon Kind="CircleMultiple" Width="22" Height="22"
                                  Foreground="#FFD700" />
-                <TextBlock Text="{Binding CoinsEarnedText}"
+                <TextBlock AutomationProperties.AutomationId="GameOver_TxtCoinsEarned"
+                           Text="{Binding CoinsEarnedText}"
                            FontSize="22" FontWeight="Bold"
                            Foreground="#FFD700" />
               </StackPanel>
 
               <!-- Verdoppeln Button (Primary CTA: groß, Gold, pulsierend) -->
-              <Button IsVisible="{Binding CanDoubleCoins}"
+              <Button AutomationProperties.AutomationId="GameOver_BtnDoubleCoins"
+                      IsVisible="{Binding CanDoubleCoins}"
                       Command="{Binding DoubleCoinsCommand}"
                       HorizontalAlignment="Stretch"
                       HorizontalContentAlignment="Center"
@@ -216,7 +272,8 @@
               </Button>
 
               <!-- Verdoppelt-Anzeige -->
-              <TextBlock IsVisible="{Binding HasDoubled}"
+              <TextBlock AutomationProperties.AutomationId="GameOver_TxtDoubled"
+                         IsVisible="{Binding HasDoubled}"
                          Text="{Binding DoubleCoinsButtonText}"
                          FontSize="13"
                          Foreground="#4CAF50"
@@ -233,7 +290,8 @@
                     Margin="16,0">
 
           <!-- 1. Try Again = Primary CTA (immer sichtbar, groesster Button) -->
-          <Button Content="{loc:Translate TryAgain}"
+          <Button AutomationProperties.AutomationId="GameOver_BtnTryAgain"
+                  Content="{loc:Translate TryAgain}"
                   Classes="Primary GameButton"
                   Background="{DynamicResource SuccessBrush}"
                   Command="{Binding TryAgainCommand}"
@@ -243,7 +301,8 @@
                   HorizontalContentAlignment="Center" />
 
           <!-- 2. Continue via Ad (nur Story, 1x) -->
-          <Button IsVisible="{Binding CanContinue}"
+          <Button AutomationProperties.AutomationId="GameOver_BtnContinue"
+                  IsVisible="{Binding CanContinue}"
                   Command="{Binding ContinueGameCommand}"
                   Classes="Primary GameButton"
                   Background="#7B1FA2"
@@ -260,7 +319,8 @@
           </Button>
 
           <!-- 3. Paid Continue (199 Coins, Alternative zur Ad) -->
-          <Button IsVisible="{Binding CanPaidContinue}"
+          <Button AutomationProperties.AutomationId="GameOver_BtnPaidContinue"
+                  IsVisible="{Binding CanPaidContinue}"
                   Command="{Binding PaidContinueCommand}"
                   Classes="Primary GameButton"
                   Background="#FF8F00"
@@ -278,7 +338,8 @@
           </Button>
 
           <!-- 4. Level-Skip Button (nach 2x Game Over) -->
-          <Button IsVisible="{Binding CanSkipLevel}"
+          <Button AutomationProperties.AutomationId="GameOver_BtnSkipLevel"
+                  IsVisible="{Binding CanSkipLevel}"
                   Command="{Binding SkipLevelCommand}"
                   Classes="Primary GameButton"
                   Background="#FF9800"
@@ -303,11 +364,12 @@
           </Button>
 
           <!-- 5. Main Menu = Secondary (unten, dezenter) -->
-          <Button Content="{loc:Translate MainMenu}"
+          <Button AutomationProperties.AutomationId="GameOver_BtnMainMenu"
+                  Content="{loc:Translate MainMenu}"
                   Classes="Secondary GameButton"
                   Command="{Binding MainMenuCommand}"
                   FontSize="16"
-                  Height="42"
+                  Height="44"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center" />
         </StackPanel>

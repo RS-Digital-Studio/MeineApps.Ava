@@ -8,7 +8,7 @@
              x:DataType="vm:AchievementsViewModel">
 
   <!-- Gradient Background -->
-  <Panel>
+  <Panel AutomationProperties.AutomationId="Achievements_Root">
     <Border>
       <Border.Background>
         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -29,6 +29,7 @@
         <Grid ColumnDefinitions="Auto,*,Auto">
           <!-- Back Button -->
           <Button Classes="Text"
+                  AutomationProperties.AutomationId="Achievements_BtnBack"
                   Command="{Binding BackCommand}">
             <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
@@ -41,12 +42,14 @@
             <mi:MaterialIcon Kind="Trophy" Width="24" Height="24"
                              Foreground="{DynamicResource AccentBrush}" />
             <TextBlock Text="{Binding TitleText}"
+                       AutomationProperties.AutomationId="Achievements_TxtTitle"
                        FontSize="20" FontWeight="Bold"
                        Foreground="{DynamicResource AccentBrush}" />
           </StackPanel>
 
           <!-- Progress -->
           <TextBlock Grid.Column="2"
+                     AutomationProperties.AutomationId="Achievements_TxtProgress"
                      Text="{Binding ProgressText}"
                      FontSize="16" FontWeight="Bold"
                      Foreground="{DynamicResource TextSecondaryBrush}"
@@ -59,7 +62,8 @@
       <ScrollViewer Grid.Row="1"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
-        <ItemsControl ItemsSource="{Binding CategoryGroups}" Margin="12,8,12,80">
+        <ItemsControl AutomationProperties.AutomationId="Achievements_CategoryList"
+                      ItemsSource="{Binding CategoryGroups}" Margin="12,8,12,80">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate>
               <StackPanel Spacing="12" />

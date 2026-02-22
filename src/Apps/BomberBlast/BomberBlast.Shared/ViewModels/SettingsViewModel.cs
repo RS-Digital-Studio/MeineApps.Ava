@@ -1,3 +1,4 @@
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BomberBlast.Core;
@@ -21,6 +22,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IPurchaseService _purchaseService;
     private readonly IGameStyleService _gameStyleService;
     private readonly IPlayGamesService _playGames;
+    private readonly ICloudSaveService _cloudSaveService;
     private readonly InputManager _inputManager;
     private readonly SoundManager _soundManager;
 
@@ -111,6 +113,13 @@ public partial class SettingsViewModel : ObservableObject
         set { if (value) SelectStyle("Neon"); }
     }
 
+    /// <summary>Whether Retro style is selected.</summary>
+    public bool IsRetroSelected
+    {
+        get => _gameStyleService.CurrentStyle == GameVisualStyle.Retro;
+        set { if (value) SelectStyle("Retro"); }
+    }
+
     /// <summary>Localized label for visual style section.</summary>
     public string VisualStyleText => _localizationService.GetString("VisualStyle");
 
@@ -120,11 +129,17 @@ public partial class SettingsViewModel : ObservableObject
     /// <summary>Localized name for Neon style.</summary>
     public string NeonStyleName => _localizationService.GetString("StyleNeon");
 
+    /// <summary>Localized name for Retro style.</summary>
+    public string RetroStyleName => _localizationService.GetString("StyleRetro");
+
     /// <summary>Localized description for Classic style.</summary>
     public string ClassicStyleDesc => _localizationService.GetString("StyleClassicDesc");
 
     /// <summary>Localized description for Neon style.</summary>
     public string NeonStyleDesc => _localizationService.GetString("StyleNeonDesc");
+
+    /// <summary>Localized description for Retro style.</summary>
+    public string RetroStyleDesc => _localizationService.GetString("StyleRetroDesc");
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES - GOOGLE PLAY GAMES
@@ -140,11 +155,39 @@ public partial class SettingsViewModel : ObservableObject
     private string _playGamesPlayerName = "";
 
     // ═══════════════════════════════════════════════════════════════════════
+    // OBSERVABLE PROPERTIES - CLOUD SAVE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private bool _cloudSaveEnabled;
+
+    [ObservableProperty]
+    private bool _isCloudSyncing;
+
+    [ObservableProperty]
+    private string _cloudSyncStatus = "";
+
+    [ObservableProperty]
+    private string _cloudSaveLocation = "";
+
+    /// <summary>Lokalisierter Titel für Cloud Save Sektion.</summary>
+    public string CloudSaveTitle => _localizationService.GetString("CloudSaveTitle");
+
+    /// <summary>Lokalisierter Toggle-Text für Cloud Save.</summary>
+    public string CloudSaveToggleText => _localizationService.GetString("CloudSaveToggle");
+
+    /// <summary>Lokalisierter Sync-Button-Text.</summary>
+    public string CloudSaveSyncText => _localizationService.GetString("CloudSaveSync") ?? "Sync";
+
+    /// <summary>Lokalisierter Download-Button-Text.</summary>
+    public string CloudSaveDownloadText => _localizationService.GetString("CloudSaveDownload") ?? "Download";
+
+    // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES - LANGUAGE & PREMIUM
     // ═══════════════════════════════════════════════════════════════════════
 
     [ObservableProperty]
-    private string _selectedLanguage = "en";
+    private LanguageOption? _selectedLanguageOption;
 
     [ObservableProperty]
     private bool _isPremium;
@@ -183,6 +226,7 @@ public partial class SettingsViewModel : ObservableObject
         IPurchaseService purchaseService,
         IGameStyleService gameStyleService,
         IPlayGamesService playGames,
+        ICloudSaveService cloudSaveService,
         InputManager inputManager,
         SoundManager soundManager)
     {
@@ -192,6 +236,7 @@ public partial class SettingsViewModel : ObservableObject
         _purchaseService = purchaseService;
         _gameStyleService = gameStyleService;
         _playGames = playGames;
+        _cloudSaveService = cloudSaveService;
         _inputManager = inputManager;
         _soundManager = soundManager;
 
@@ -226,8 +271,9 @@ public partial class SettingsViewModel : ObservableObject
         MusicEnabled = _soundManager.MusicEnabled;
         MusicVolume = _soundManager.MusicVolume;
 
-        // Sprache
-        SelectedLanguage = _localizationService.CurrentLanguage;
+        // Sprache - LanguageOption-Objekt anhand des aktuellen Codes suchen
+        var currentLang = _localizationService.CurrentLanguage;
+        SelectedLanguageOption = Languages.FirstOrDefault(l => l.Code == currentLang) ?? Languages[0];
 
         // Premium
         IsPremium = _purchaseService.IsPremium;
@@ -246,6 +292,16 @@ public partial class SettingsViewModel : ObservableObject
         IsPremium = _purchaseService.IsPremium;
         IsPlayGamesSignedIn = _playGames.IsSignedIn;
         PlayGamesPlayerName = _playGames.PlayerName ?? "";
+
+        // Sprache erneut setzen (ComboBox zeigt sonst beim ersten Öffnen leer)
+        _isInitializing = true;
+        var currentLang = _localizationService.CurrentLanguage;
+        SelectedLanguageOption = Languages.FirstOrDefault(l => l.Code == currentLang) ?? Languages[0];
+        _isInitializing = false;
+
+        // Cloud Save Status aktualisieren
+        CloudSaveEnabled = _cloudSaveService.IsEnabled;
+        UpdateCloudSyncStatus();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -332,14 +388,12 @@ public partial class SettingsViewModel : ObservableObject
     // COMMANDS - LANGUAGE
     // ═══════════════════════════════════════════════════════════════════════
 
-    [RelayCommand]
-    private void SelectLanguage(string code)
+    partial void OnSelectedLanguageOptionChanged(LanguageOption? value)
     {
-        if (_isInitializing || string.IsNullOrEmpty(code))
+        if (_isInitializing || value == null)
             return;
 
-        SelectedLanguage = code;
-        _localizationService.SetLanguage(code);
+        _localizationService.SetLanguage(value.Code);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -357,6 +411,7 @@ public partial class SettingsViewModel : ObservableObject
             _gameStyleService.SetStyle(parsed);
             OnPropertyChanged(nameof(IsClassicSelected));
             OnPropertyChanged(nameof(IsNeonSelected));
+            OnPropertyChanged(nameof(IsRetroSelected));
         }
     }
 
@@ -523,6 +578,92 @@ public partial class SettingsViewModel : ObservableObject
     private async Task ShowGpgsAchievementsAsync()
     {
         await _playGames.ShowAchievementsAsync();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMMANDS - CLOUD SAVE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private void ToggleCloudSave()
+    {
+        CloudSaveEnabled = !CloudSaveEnabled;
+        _cloudSaveService.SetEnabled(CloudSaveEnabled);
+        UpdateCloudSyncStatus();
+    }
+
+    [RelayCommand]
+    private async Task SyncNow()
+    {
+        if (!_cloudSaveService.IsEnabled) return;
+        IsCloudSyncing = true;
+        try
+        {
+            await _cloudSaveService.ForceUploadAsync();
+            UpdateCloudSyncStatus();
+        }
+        finally
+        {
+            IsCloudSyncing = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DownloadFromCloud()
+    {
+        if (!_cloudSaveService.IsEnabled) return;
+        IsCloudSyncing = true;
+        try
+        {
+            var success = await _cloudSaveService.ForceDownloadAsync();
+            if (success)
+            {
+                AlertRequested?.Invoke(
+                    _localizationService.GetString("CloudSaveDownloadSuccess") ?? "Cloud-Daten geladen",
+                    _localizationService.GetString("CloudSaveRestartHint") ?? "App neu starten für volle Konsistenz",
+                    _localizationService.GetString("OK"));
+            }
+        }
+        finally
+        {
+            IsCloudSyncing = false;
+        }
+    }
+
+    private void UpdateCloudSyncStatus()
+    {
+        // Speicherort anzeigen
+        if (_playGames.IsSignedIn)
+            CloudSaveLocation = _localizationService.GetString("CloudSaveLocationGPGS") ?? "Google Play Games";
+        else
+            CloudSaveLocation = _localizationService.GetString("CloudSaveLocationLocal") ?? "Lokal";
+
+        if (!_cloudSaveService.IsEnabled)
+        {
+            CloudSyncStatus = _localizationService.GetString("CloudSaveDisabled") ?? "Deaktiviert";
+            return;
+        }
+
+        var lastSync = _cloudSaveService.LastSyncTimeUtc;
+        if (string.IsNullOrEmpty(lastSync))
+        {
+            CloudSyncStatus = _localizationService.GetString("CloudSaveNeverSynced") ?? "Noch nie synchronisiert";
+            return;
+        }
+
+        if (DateTime.TryParse(lastSync, System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.RoundtripKind, out var syncTime))
+        {
+            var ago = DateTime.UtcNow - syncTime;
+            if (ago.TotalMinutes < 1)
+                CloudSyncStatus = _localizationService.GetString("CloudSaveJustNow") ?? "Gerade eben";
+            else if (ago.TotalHours < 1)
+                CloudSyncStatus = $"{(int)ago.TotalMinutes} min";
+            else if (ago.TotalDays < 1)
+                CloudSyncStatus = $"{(int)ago.TotalHours}h";
+            else
+                CloudSyncStatus = $"{(int)ago.TotalDays}d";
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

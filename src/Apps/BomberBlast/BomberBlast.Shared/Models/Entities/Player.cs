@@ -1,3 +1,4 @@
+using BomberBlast.Models.Cards;
 using BomberBlast.Models.Grid;
 
 namespace BomberBlast.Models.Entities;
@@ -38,6 +39,28 @@ public class Player : Entity
     public bool HasKick { get; set; }
     public bool HasLineBomb { get; set; }
     public bool HasPowerBomb { get; set; }
+
+    // Spezial-Bomben (Shop-Upgrade, begrenzt pro Level)
+    /// <summary>Ob Eis-Bombe freigeschaltet ist (Shop-Upgrade)</summary>
+    public bool HasIceBomb { get; set; }
+    /// <summary>Ob Feuer-Bombe freigeschaltet ist (Shop-Upgrade)</summary>
+    public bool HasFireBomb { get; set; }
+    /// <summary>Ob Klebe-Bombe freigeschaltet ist (Shop-Upgrade)</summary>
+    public bool HasStickyBomb { get; set; }
+    /// <summary>Aktiver Spezial-Bomben-Typ (Normal = deaktiviert)</summary>
+    public BombType ActiveSpecialBombType { get; set; } = BombType.Normal;
+    /// <summary>Verbleibende Spezial-Bomben in diesem Level</summary>
+    public int SpecialBombCount { get; set; }
+
+    // Karten-Deck (Phase 2: Karten-System)
+    /// <summary>Ausgerüstete Karten für dieses Level (mit verbleibenden Uses)</summary>
+    public List<EquippedCard> EquippedCards { get; set; } = new();
+    /// <summary>Aktiver Karten-Slot (-1 = Normalbombe, 0-3 = Deck-Slot)</summary>
+    public int ActiveCardSlot { get; set; } = -1;
+    /// <summary>Aktive Karte im aktuellen Slot (null wenn Normal oder leer)</summary>
+    public EquippedCard? ActiveCard => ActiveCardSlot >= 0 && ActiveCardSlot < EquippedCards.Count
+        ? EquippedCards[ActiveCardSlot]
+        : null;
 
     // Skull/Curse-System
     public CurseType ActiveCurse { get; set; } = CurseType.None;
@@ -517,6 +540,11 @@ public class Player : Entity
         InvincibilityTimer = 0;
         ActiveCurse = CurseType.None;
         CurseTimer = 0;
+        ActiveSpecialBombType = BombType.Normal;
+        SpecialBombCount = 0;
+        ActiveCardSlot = -1;
+        // HasIceBomb/HasFireBomb/HasStickyBomb bleiben (permanent via Shop)
+        // EquippedCards bleiben (werden pro Level via ApplyUpgrades geladen)
 
         // Grant spawn protection
         HasSpawnProtection = true;
@@ -541,6 +569,13 @@ public class Player : Entity
         HasLineBomb = false;
         HasPowerBomb = false;
         HasShield = false;
+        HasIceBomb = false;
+        HasFireBomb = false;
+        HasStickyBomb = false;
+        ActiveSpecialBombType = BombType.Normal;
+        SpecialBombCount = 0;
+        EquippedCards.Clear();
+        ActiveCardSlot = -1;
         IsInvincible = false;
         InvincibilityTimer = 0;
         HasSpawnProtection = false;

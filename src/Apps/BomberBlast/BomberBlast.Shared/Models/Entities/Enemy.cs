@@ -66,6 +66,34 @@ public class Enemy : Entity
 
     private const float DEATH_ANIMATION_DURATION = 0.8f;
 
+    // Tanker: Mehrfach-Treffer
+    /// <summary>Verbleibende Trefferpunkte (Tanker braucht 2 Hits)</summary>
+    public int HitPoints { get; set; }
+
+    // Ghost: Unsichtbarkeit
+    /// <summary>Ob der Ghost gerade unsichtbar ist</summary>
+    public bool IsInvisible { get; private set; }
+    private float _visibilityTimer;
+    private const float GHOST_VISIBLE_TIME = 3f;
+    private const float GHOST_INVISIBLE_TIME = 2f;
+
+    // Mimic: Block-Tarnung
+    /// <summary>Ob der Mimic sich als Block tarnt (inaktiv)</summary>
+    public bool IsDisguised { get; set; }
+    /// <summary>Entfernung ab der Mimic aktiviert wird (in Zellen)</summary>
+    private const int MIMIC_ACTIVATION_DISTANCE = 3;
+
+    // Splitter: Mini-Variante
+    /// <summary>Ob dies ein Mini-Splitter ist (aus einem getöteten Splitter entstanden)</summary>
+    public bool IsMiniSplitter { get; init; }
+
+    // Spawn-Animation: 0.5s Portal-Effekt beim Erscheinen
+    /// <summary>Timer fuer Spawn-Animation (0.5→0, danach normal)</summary>
+    public float SpawnTimer { get; set; } = SPAWN_ANIMATION_DURATION;
+    /// <summary>Ob der Gegner noch in der Spawn-Animation ist</summary>
+    public bool IsSpawning => SpawnTimer > 0;
+    private const float SPAWN_ANIMATION_DURATION = 0.5f;
+
     // Collision box is slightly smaller for forgiving gameplay
     public override (float left, float top, float right, float bottom) BoundingBox
     {
@@ -83,7 +111,19 @@ public class Enemy : Entity
         Intelligence = type.GetIntelligence();
         CanPassWalls = type.CanPassWalls();
         Points = type.GetPoints();
+        HitPoints = type.GetHitPoints();
         LastGridPosition = (GridX, GridY);
+
+        // Mimic startet getarnt
+        if (type.CanDisguise())
+        {
+            IsDisguised = true;
+            IsActive = false; // Wird erst bei Spieler-Nähe aktiv
+        }
+
+        // Ghost startet sichtbar
+        if (type.HasInvisibility())
+            _visibilityTimer = GHOST_VISIBLE_TIME;
     }
 
     public override void Update(float deltaTime)
@@ -97,6 +137,29 @@ public class Enemy : Entity
             }
             return;
         }
+
+        // Spawn-Animation abbauen
+        if (SpawnTimer > 0)
+        {
+            SpawnTimer -= deltaTime;
+            if (SpawnTimer < 0) SpawnTimer = 0;
+            return; // Während Spawn keine Bewegung
+        }
+
+        // Ghost: Unsichtbarkeits-Zyklus
+        if (Type.HasInvisibility())
+        {
+            _visibilityTimer -= deltaTime;
+            if (_visibilityTimer <= 0)
+            {
+                IsInvisible = !IsInvisible;
+                _visibilityTimer = IsInvisible ? GHOST_INVISIBLE_TIME : GHOST_VISIBLE_TIME;
+            }
+        }
+
+        // Getarnte Mimics bewegen sich nicht
+        if (IsDisguised)
+            return;
 
         base.Update(deltaTime);
 
@@ -168,6 +231,25 @@ public class Enemy : Entity
     }
 
     /// <summary>
+    /// Schadenstreffer. Gibt true zurück wenn der Gegner stirbt.
+    /// Tanker brauchen 2 Hits.
+    /// </summary>
+    public bool TakeDamage()
+    {
+        if (IsDying) return false;
+
+        HitPoints--;
+        if (HitPoints <= 0)
+        {
+            Kill();
+            return true;
+        }
+
+        // Tanker überlebt - visuelles Feedback (kurzes Blinken)
+        return false;
+    }
+
+    /// <summary>
     /// Kill the enemy (starts death animation)
     /// </summary>
     public void Kill()
@@ -181,6 +263,24 @@ public class Enemy : Entity
         AnimationTimer = 0;
         IsActive = false;
         MovementDirection = Direction.None;
+    }
+
+    /// <summary>
+    /// Mimic aktivieren (Tarnung aufheben), wenn Spieler nahe
+    /// </summary>
+    public bool TryActivateMimic(int playerGridX, int playerGridY)
+    {
+        if (!IsDisguised || Type != EnemyType.Mimic)
+            return false;
+
+        int distance = Math.Abs(GridX - playerGridX) + Math.Abs(GridY - playerGridY);
+        if (distance <= MIMIC_ACTIVATION_DISTANCE)
+        {
+            IsDisguised = false;
+            IsActive = true;
+            return true;
+        }
+        return false;
     }
 
     protected override int GetAnimationFrameCount()
@@ -197,5 +297,15 @@ public class Enemy : Entity
         float x = gridX * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
         float y = gridY * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
         return new Enemy(x, y, type);
+    }
+
+    /// <summary>
+    /// Mini-Splitter erzeugen (aus einem getöteten Splitter, halbe Punkte, IsMiniSplitter=true)
+    /// </summary>
+    public static Enemy CreateMiniSplitterAtGrid(int gridX, int gridY)
+    {
+        float x = gridX * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+        float y = gridY * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+        return new Enemy(x, y, EnemyType.Splitter) { IsMiniSplitter = true };
     }
 }

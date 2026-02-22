@@ -30,5 +30,14 @@ public enum UpgradeType
     CoinBonus,
 
     /// <summary>Zusätzliche PowerUps pro Level (Max 2 Stufen)</summary>
-    PowerUpLuck
+    PowerUpLuck,
+
+    /// <summary>Eis-Bombe freischalten (friert Gegner ein, Max 1 Stufe)</summary>
+    IceBomb,
+
+    /// <summary>Feuer-Bombe freischalten (+2 Reichweite, Lava-Nachwirkung, Max 1 Stufe)</summary>
+    FireBomb,
+
+    /// <summary>Klebe-Bombe freischalten (klebt an Wänden, Max 1 Stufe)</summary>
+    StickyBomb
 }

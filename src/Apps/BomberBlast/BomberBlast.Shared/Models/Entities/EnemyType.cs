@@ -27,7 +27,19 @@ public enum EnemyType
     Pass,
 
     /// <summary>Very fast, high intelligence, walks through walls - most dangerous</summary>
-    Pontan
+    Pontan,
+
+    /// <summary>Langsam aber überlebt eine Explosion (2 Hits nötig)</summary>
+    Tanker,
+
+    /// <summary>Schnell, wird periodisch unsichtbar (3s sichtbar / 2s unsichtbar)</summary>
+    Ghost,
+
+    /// <summary>Normal, teilt sich bei Tod in 2 Mini-Splitter</summary>
+    Splitter,
+
+    /// <summary>Tarnt sich als Block, greift an wenn Spieler nahe</summary>
+    Mimic
 }
 
 public static class EnemyTypeExtensions
@@ -47,6 +59,10 @@ public static class EnemyTypeExtensions
             EnemyType.Ovapi => 35f,     // Slow
             EnemyType.Pass => 70f,      // Fast
             EnemyType.Pontan => 60f,    // Fast (Strafe, aber nicht unfair)
+            EnemyType.Tanker => 25f,    // Sehr langsam
+            EnemyType.Ghost => 40f,     // Mittel
+            EnemyType.Splitter => 50f,  // Schnell
+            EnemyType.Mimic => 55f,     // Schnell (nach Aktivierung)
             _ => 45f
         };
     }
@@ -66,6 +82,10 @@ public static class EnemyTypeExtensions
             EnemyType.Ovapi => EnemyIntelligence.Normal,
             EnemyType.Pass => EnemyIntelligence.High,
             EnemyType.Pontan => EnemyIntelligence.High,
+            EnemyType.Tanker => EnemyIntelligence.Normal,
+            EnemyType.Ghost => EnemyIntelligence.High,
+            EnemyType.Splitter => EnemyIntelligence.Normal,
+            EnemyType.Mimic => EnemyIntelligence.High,
             _ => EnemyIntelligence.Normal
         };
     }
@@ -80,6 +100,7 @@ public static class EnemyTypeExtensions
             EnemyType.Kondoria => true,
             EnemyType.Ovapi => true,
             EnemyType.Pontan => true,
+            EnemyType.Ghost => true, // Geht durch Wände
             _ => false
         };
     }
@@ -99,6 +120,10 @@ public static class EnemyTypeExtensions
             EnemyType.Ovapi => 2000,
             EnemyType.Pass => 4000,
             EnemyType.Pontan => 8000,
+            EnemyType.Tanker => 3000,
+            EnemyType.Ghost => 5000,
+            EnemyType.Splitter => 1500,
+            EnemyType.Mimic => 6000,
             _ => 100
         };
     }
@@ -126,8 +151,48 @@ public static class EnemyTypeExtensions
             EnemyType.Ovapi => (80, 255, 255),    // Bright cyan
             EnemyType.Pass => (255, 255, 80),     // Bright yellow
             EnemyType.Pontan => (255, 255, 255),  // White
+            EnemyType.Tanker => (100, 100, 120),   // Dunkelgrau/Stahl
+            EnemyType.Ghost => (180, 200, 255),     // Geisterhaft blau-weiss
+            EnemyType.Splitter => (255, 200, 0),    // Gelb-Orange
+            EnemyType.Mimic => (180, 120, 60),      // Braun (Block-ähnlich)
             _ => (180, 180, 180)
         };
+    }
+
+    /// <summary>
+    /// Anzahl der Treffer die nötig sind um diesen Gegner zu töten
+    /// </summary>
+    public static int GetHitPoints(this EnemyType type)
+    {
+        return type switch
+        {
+            EnemyType.Tanker => 2, // Überlebt 1 Explosion
+            _ => 1
+        };
+    }
+
+    /// <summary>
+    /// Ob dieser Gegner-Typ Mini-Gegner beim Tod spawnt
+    /// </summary>
+    public static bool SplitsOnDeath(this EnemyType type)
+    {
+        return type == EnemyType.Splitter;
+    }
+
+    /// <summary>
+    /// Ob dieser Gegner-Typ periodisch unsichtbar wird
+    /// </summary>
+    public static bool HasInvisibility(this EnemyType type)
+    {
+        return type == EnemyType.Ghost;
+    }
+
+    /// <summary>
+    /// Ob dieser Gegner-Typ sich als Block tarnen kann
+    /// </summary>
+    public static bool CanDisguise(this EnemyType type)
+    {
+        return type == EnemyType.Mimic;
     }
 }
 

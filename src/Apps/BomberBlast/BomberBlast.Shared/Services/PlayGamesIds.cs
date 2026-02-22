@@ -10,7 +10,6 @@ public static class PlayGamesIds
     // LEADERBOARDS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public const string LeaderboardArcadeHighscore = "CgkIjPLQuqUKEAIQGA";
     public const string LeaderboardTotalStars = "CgkIjPLQuqUKEAIQGQ";
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -54,10 +53,6 @@ public static class PlayGamesIds
             "combo3" => "CgkIjPLQuqUKEAIQDg",
             "combo5" => "CgkIjPLQuqUKEAIQEw",
             "curse_survivor" => "CgkIjPLQuqUKEAIQFw",
-
-            // Arcade
-            "arcade_10" => "CgkIjPLQuqUKEAIQFA",
-            "arcade_25" => "CgkIjPLQuqUKEAIQDw",
 
             _ => null
         };

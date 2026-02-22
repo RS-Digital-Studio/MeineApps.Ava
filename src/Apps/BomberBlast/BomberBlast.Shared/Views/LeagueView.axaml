@@ -1,0 +1,246 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:conv="using:BomberBlast.Converters"
+             x:Class="BomberBlast.Views.LeagueView"
+             x:DataType="vm:LeagueViewModel"
+             x:Name="League_Root">
+
+  <!-- Liga-System: Landscape 2-Spalten Layout mit Firebase Online-Rangliste -->
+  <Panel Background="{DynamicResource BackgroundBrush}"
+         AutomationProperties.AutomationId="League_Root">
+    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+
+    <Grid ColumnDefinitions="260,*" Margin="16,12,16,80">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           LINKE SPALTE (260px) - Liga-Info + Belohnungen + Stats
+           ═══════════════════════════════════════════════════════════ -->
+      <Grid Grid.Column="0" RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="0,0,12,0">
+
+        <!-- Header: Zurück + Titel + Online-Status -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
+          <Button Grid.Column="0" Classes="Secondary GameButton"
+                  Command="{Binding GoBackCommand}"
+                  Width="44" Height="44"
+                  Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                  AutomationProperties.AutomationId="League_BtnBack">
+            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="22" Height="22"
+                                        Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Button>
+          <TextBlock Grid.Column="1"
+                     Text="{Binding Title}"
+                     FontSize="22" FontWeight="Bold"
+                     Foreground="{DynamicResource AccentBrush}"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     AutomationProperties.AutomationId="League_TxtTitle" />
+          <!-- Online/Offline Indikator -->
+          <Panel Grid.Column="2" VerticalAlignment="Center">
+            <materialIcons:MaterialIcon Kind="CloudCheck" Width="18" Height="18"
+                                        Foreground="#22C55E"
+                                        IsVisible="{Binding IsOnline}" />
+            <materialIcons:MaterialIcon Kind="CloudOffOutline" Width="18" Height="18"
+                                        Foreground="#EF4444"
+                                        IsVisible="{Binding !IsOnline}" />
+          </Panel>
+        </Grid>
+
+        <!-- Liga-Tier Emblem -->
+        <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="12" Padding="16,12" Margin="0,0,0,12">
+          <StackPanel Spacing="8" HorizontalAlignment="Center">
+            <!-- Tier-Icon -->
+            <materialIcons:MaterialIcon
+                Kind="{Binding TierIconName, Converter={x:Static conv:StringToMaterialIconKindConverter.Instance}}"
+                Width="44" Height="44"
+                Foreground="{Binding TierColor}"
+                HorizontalAlignment="Center" />
+            <!-- Tier-Name -->
+            <TextBlock Text="{Binding TierName}"
+                       FontSize="20" FontWeight="Bold"
+                       Foreground="{Binding TierColor}"
+                       HorizontalAlignment="Center" />
+            <!-- Punkte -->
+            <TextBlock Text="{Binding PointsText}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center" />
+            <!-- Rang -->
+            <TextBlock Text="{Binding RankText}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource AccentBrush}"
+                       HorizontalAlignment="Center" />
+            <!-- Nächste Liga -->
+            <TextBlock Text="{Binding NextTierText}"
+                       FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Saison-Countdown -->
+        <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="10" Padding="12,8" Margin="0,0,0,12">
+          <StackPanel Spacing="4">
+            <TextBlock Text="{Binding SeasonCountdown}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="#FFD700" HorizontalAlignment="Center" />
+            <TextBlock FontSize="11"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center">
+              <TextBlock.Text>
+                <MultiBinding StringFormat="Saison {0}">
+                  <Binding Path="SeasonNumber" />
+                </MultiBinding>
+              </TextBlock.Text>
+            </TextBlock>
+          </StackPanel>
+        </Border>
+
+        <!-- Saison-Belohnung -->
+        <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="10" Padding="12,8" Margin="0,0,0,12">
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding RewardText}"
+                       FontSize="12" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextTrimming="CharacterEllipsis" />
+
+            <!-- Belohnung abholen -->
+            <Button Classes="Primary GameButton"
+                    IsVisible="{Binding CanClaimReward}"
+                    Command="{Binding ClaimRewardCommand}"
+                    Height="32" Padding="12,0" Background="#22C55E"
+                    HorizontalAlignment="Center">
+              <TextBlock Text="Abholen"
+                         FontSize="12" FontWeight="Bold" Foreground="#1A1A2A" />
+            </Button>
+            <!-- Bereits abgeholt -->
+            <StackPanel Orientation="Horizontal" Spacing="6"
+                        IsVisible="{Binding IsRewardClaimed}"
+                        HorizontalAlignment="Center">
+              <materialIcons:MaterialIcon Kind="CheckCircle"
+                                          Width="20" Height="20" Foreground="#22C55E" />
+              <TextBlock Text="Abgeholt"
+                         FontSize="12" Foreground="#22C55E" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Stats -->
+        <Border Grid.Row="4" Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="10" Padding="12,8" VerticalAlignment="Top">
+          <TextBlock Text="{Binding StatsText}"
+                     FontSize="10"
+                     Foreground="{DynamicResource TextMutedBrush}"
+                     TextWrapping="Wrap" />
+        </Border>
+      </Grid>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           RECHTE SPALTE (*) - Rangliste
+           ═══════════════════════════════════════════════════════════ -->
+      <Grid Grid.Column="1" RowDefinitions="Auto,*">
+
+        <!-- Rangliste Header + Refresh-Button -->
+        <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="10" Padding="12,8" Margin="0,0,0,8">
+          <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+            <TextBlock Grid.Column="0" Text="#"
+                       FontSize="14" FontWeight="Bold" Width="40"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+            <TextBlock Grid.Column="1" Text="Spieler"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Grid.Column="2" Text="Punkte"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBrush}"
+                       Margin="0,0,8,0" />
+            <!-- Refresh-Button -->
+            <Button Grid.Column="3" Classes="Secondary GameButton"
+                    Command="{Binding RefreshLeaderboardCommand}"
+                    Width="32" Height="32" Padding="0"
+                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                    AutomationProperties.AutomationId="League_BtnRefresh">
+              <materialIcons:MaterialIcon Kind="Refresh" Width="18" Height="18"
+                                          Foreground="{DynamicResource AccentBrush}" />
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- Lade-Indikator -->
+        <Border Grid.Row="1" IsVisible="{Binding IsLoading}"
+                HorizontalAlignment="Center" VerticalAlignment="Top"
+                Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="8" Padding="16,8" Margin="0,4,0,0" Opacity="0.9">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <materialIcons:MaterialIcon Kind="CloudSync" Width="16" Height="16"
+                                        Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="Lade Rangliste..." FontSize="12"
+                       Foreground="{DynamicResource TextMutedBrush}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Leaderboard-Liste -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+          <ItemsControl ItemsSource="{Binding LeaderboardEntries}"
+                        AutomationProperties.AutomationId="League_Leaderboard"
+                        Margin="0,0,0,8">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="3" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:LeagueDisplayEntry">
+                <Border CornerRadius="8" Padding="12,8">
+                  <Border.Background>
+                    <SolidColorBrush Color="#FFFFFF" Opacity="{Binding BackgroundOpacity}" />
+                  </Border.Background>
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Rang -->
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding RankText}"
+                               FontSize="13" FontWeight="Bold" Width="40"
+                               VerticalAlignment="Center">
+                      <TextBlock.Foreground>
+                        <SolidColorBrush Color="{Binding NameColor}" />
+                      </TextBlock.Foreground>
+                    </TextBlock>
+
+                    <!-- Name + Echtspieler-Indikator -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}"
+                                 FontSize="13" FontWeight="SemiBold"
+                                 TextTrimming="CharacterEllipsis">
+                        <TextBlock.Foreground>
+                          <SolidColorBrush Color="{Binding NameColor}" />
+                        </TextBlock.Foreground>
+                      </TextBlock>
+                      <!-- Online-Spieler-Indikator (kleiner Punkt) -->
+                      <Ellipse Width="6" Height="6"
+                               Fill="#00CED1" VerticalAlignment="Center"
+                               IsVisible="{Binding IsRealPlayer}"
+                               Opacity="0.7" />
+                    </StackPanel>
+
+                    <!-- Punkte -->
+                    <TextBlock Grid.Column="2"
+                               Text="{Binding PointsText}"
+                               FontSize="13" FontWeight="Bold"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource AccentBrush}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+    </Grid>
+  </Panel>
+
+</UserControl>

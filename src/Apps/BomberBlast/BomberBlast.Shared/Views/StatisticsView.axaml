@@ -1,0 +1,443 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="BomberBlast.Views.StatisticsView"
+             x:DataType="vm:StatisticsViewModel">
+
+  <Panel Background="{DynamicResource BackgroundBrush}"
+         AutomationProperties.AutomationId="Stats_Root">
+    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+
+    <Grid ColumnDefinitions="280,*" Margin="16,12,16,80">
+
+      <!-- ═══════════════════════════════════════════════════════════
+           LINKE SPALTE (280px) - Profil-Karte
+           ═══════════════════════════════════════════════════════════ -->
+      <Grid Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,12,0">
+
+        <!-- Zurück + Titel -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,12">
+          <Button Grid.Column="0" Classes="Secondary GameButton"
+                  Command="{Binding BackCommand}"
+                  Width="44" Height="44"
+                  Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Stats_BtnBack">
+            <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Button>
+          <TextBlock Grid.Column="1"
+                     Text="{Binding ProfileTitle}"
+                     FontSize="24" FontWeight="Bold"
+                     Foreground="{DynamicResource AccentBrush}"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"
+                     AutomationProperties.AutomationId="Stats_TxtTitle" />
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="10">
+
+            <!-- Profil-Karte (Bomber-Avatar + Rahmen + Liga) -->
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="16" Padding="16,20"
+                    BorderThickness="2">
+              <Border.BorderBrush>
+                <SolidColorBrush Color="{Binding FrameOuterColor}" />
+              </Border.BorderBrush>
+              <StackPanel Spacing="12" HorizontalAlignment="Center">
+
+                <!-- Avatar mit Rahmen -->
+                <Panel Width="80" Height="80" HorizontalAlignment="Center">
+                  <!-- Äußerer Rahmen-Ring -->
+                  <Border CornerRadius="40" Width="80" Height="80"
+                          BorderThickness="3" IsVisible="{Binding HasActiveFrame}">
+                    <Border.BorderBrush>
+                      <SolidColorBrush Color="{Binding FrameOuterColor}" />
+                    </Border.BorderBrush>
+                    <Border CornerRadius="37" BorderThickness="2">
+                      <Border.BorderBrush>
+                        <SolidColorBrush Color="{Binding FrameInnerColor}" />
+                      </Border.BorderBrush>
+                    </Border>
+                  </Border>
+                  <!-- Kein-Rahmen-Ring -->
+                  <Border CornerRadius="40" Width="80" Height="80"
+                          BorderThickness="2" IsVisible="{Binding !HasActiveFrame}"
+                          BorderBrush="{DynamicResource TextMutedBrush}" />
+                  <!-- Bomber-Icon -->
+                  <mi:MaterialIcon Kind="Bomb" Width="36" Height="36"
+                                   Foreground="{DynamicResource AccentBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Panel>
+
+                <!-- Spieler-Name -->
+                <TextBlock Text="{Binding PlayerName}"
+                           FontSize="20" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           HorizontalAlignment="Center" />
+
+                <!-- Rahmen-Name -->
+                <TextBlock Text="{Binding ActiveFrameName}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           HorizontalAlignment="Center" />
+
+                <!-- Liga-Badge -->
+                <Border CornerRadius="12" Padding="12,6"
+                        HorizontalAlignment="Center">
+                  <Border.Background>
+                    <SolidColorBrush Color="{Binding LeagueTierColor}" Opacity="0.15" />
+                  </Border.Background>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="Trophy" Width="18" Height="18">
+                      <mi:MaterialIcon.Foreground>
+                        <SolidColorBrush Color="{Binding LeagueTierColor}" />
+                      </mi:MaterialIcon.Foreground>
+                    </mi:MaterialIcon>
+                    <TextBlock FontSize="14" FontWeight="Bold">
+                      <TextBlock.Foreground>
+                        <SolidColorBrush Color="{Binding LeagueTierColor}" />
+                      </TextBlock.Foreground>
+                      <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0} {1}">
+                          <Binding Path="LeagueTierName" />
+                          <Binding Path="LeagueRankText" />
+                        </MultiBinding>
+                      </TextBlock.Text>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
+
+                <!-- Liga-Punkte + Saison -->
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <TextBlock FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center">
+                    <TextBlock.Text>
+                      <MultiBinding StringFormat="{}{0} Punkte">
+                        <Binding Path="LeaguePointsText" />
+                      </MultiBinding>
+                    </TextBlock.Text>
+                  </TextBlock>
+                  <TextBlock Text="{Binding LeagueSeasonText}"
+                             FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             HorizontalAlignment="Center" />
+                </StackPanel>
+              </StackPanel>
+            </Border>
+
+            <!-- Währungen -->
+            <Grid ColumnDefinitions="*,*">
+              <Border Grid.Column="0" Background="{DynamicResource SurfaceBrush}"
+                      CornerRadius="10" Padding="10,8" Margin="0,0,4,0">
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18" Foreground="#FFD700" />
+                  <TextBlock Text="{Binding CoinsText}" FontSize="15" FontWeight="Bold"
+                             Foreground="#FFD700" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
+              <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}"
+                      CornerRadius="10" Padding="10,8" Margin="4,0,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="DiamondStone" Width="16" Height="16" Foreground="#E040FB" />
+                  <TextBlock Text="{Binding GemsText}" FontSize="15" FontWeight="Bold"
+                             Foreground="#E040FB" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
+            </Grid>
+
+            <!-- Schnell-Übersicht: Achievements -->
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="10" Padding="12,8">
+              <StackPanel Spacing="6">
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <mi:MaterialIcon Grid.Column="0" Kind="Trophy" Width="16" Height="16"
+                                   Foreground="#FFD700" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="Achievements" FontSize="12"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             VerticalAlignment="Center" Margin="8,0,0,0" />
+                  <TextBlock Grid.Column="2" Text="{Binding AchievementProgressText}"
+                             FontSize="13" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+                <ProgressBar Value="{Binding AchievementProgressPercent}" Maximum="100"
+                             Foreground="#FFD700" Height="4" CornerRadius="2" />
+              </StackPanel>
+            </Border>
+
+            <!-- Schnell-Übersicht: Sterne + Karten + Dungeon -->
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="10" Padding="12,8">
+              <StackPanel Spacing="6">
+                <!-- Sterne -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <mi:MaterialIcon Grid.Column="0" Kind="Star" Width="16" Height="16"
+                                   Foreground="#FFC107" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{loc:Translate StatsTotalStars}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             VerticalAlignment="Center" Margin="8,0,0,0" />
+                  <TextBlock Grid.Column="2" Text="{Binding TotalStarsOverview}"
+                             FontSize="12" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+                <!-- Karten -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <mi:MaterialIcon Grid.Column="0" Kind="CardsPlaying" Width="16" Height="16"
+                                   Foreground="#2196F3" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{loc:Translate CollectionCards}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             VerticalAlignment="Center" Margin="8,0,0,0" />
+                  <TextBlock Grid.Column="2" Text="{Binding CardsOwnedText}"
+                             FontSize="12" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+                <!-- Dungeon -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <mi:MaterialIcon Grid.Column="0" Kind="Sword" Width="16" Height="16"
+                                   Foreground="#9C27B0" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{loc:Translate StatsDungeonBest}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}"
+                             VerticalAlignment="Center" Margin="8,0,0,0" />
+                  <TextBlock Grid.Column="2" Text="{Binding DungeonBestFloorText}"
+                             FontSize="12" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           RECHTE SPALTE (*) - Statistiken
+           ═══════════════════════════════════════════════════════════ -->
+      <Grid Grid.Column="1" RowDefinitions="Auto,*">
+
+        <!-- Statistik-Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
+          <mi:MaterialIcon Kind="ChartLine" Width="22" Height="22"
+                           Foreground="{DynamicResource AccentBrush}" />
+          <TextBlock Text="{Binding StatsTitle}"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!-- 2 Spalten für Stats -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*">
+
+          <!-- ═══ LINKE STATS-SPALTE ═══ -->
+          <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="0,0,8,60">
+
+              <!-- Kategorie: Fortschritt -->
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                <mi:MaterialIcon Kind="ChartLine" Width="16" Height="16" Foreground="#4CAF50" />
+                <TextBlock Text="{Binding ProgressLabel}" FontSize="14" FontWeight="Bold"
+                           Foreground="#4CAF50" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding LevelsCompletedLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding LevelsCompletedText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding TotalStarsLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding TotalStarsText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding StarsPercentLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding StarsPercentText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+
+              <Border Height="1" Background="{DynamicResource TextMutedBrush}" Opacity="0.15" Margin="0,6" />
+
+              <!-- Kategorie: Kampf -->
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                <mi:MaterialIcon Kind="Sword" Width="16" Height="16" Foreground="#F44336" />
+                <TextBlock Text="{Binding CombatLabel}" FontSize="14" FontWeight="Bold"
+                           Foreground="#F44336" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding TotalKillsLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding TotalKillsText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding BombsKickedLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding BombsKickedText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding PowerBombsLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding PowerBombsText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+
+              <Border Height="1" Background="{DynamicResource TextMutedBrush}" Opacity="0.15" Margin="0,6" />
+
+              <!-- Kategorie: Dungeon -->
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                <mi:MaterialIcon Kind="Sword" Width="16" Height="16" Foreground="#9C27B0" />
+                <TextBlock Text="{Binding DungeonLabel}" FontSize="14" FontWeight="Bold"
+                           Foreground="#9C27B0" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding DungeonRunsLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding DungeonRunsText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding DungeonBestLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding DungeonBestText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding DungeonCoinsLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding DungeonCoinsText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+
+            </StackPanel>
+          </ScrollViewer>
+
+          <!-- ═══ RECHTE STATS-SPALTE ═══ -->
+          <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="8,0,0,60">
+
+              <!-- Kategorie: Herausforderungen -->
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                <mi:MaterialIcon Kind="Target" Width="16" Height="16" Foreground="#FF9800" />
+                <TextBlock Text="{Binding ChallengesLabel}" FontSize="14" FontWeight="Bold"
+                           Foreground="#FF9800" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding DailyStreakLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding DailyStreakText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding LongestStreakLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding LongestStreakText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding DailyChallengesCompletedLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Text="{Binding DailyChallengesCompletedText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding WeeksCompletedLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Text="{Binding WeeksCompletedText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding DailyMissionDaysLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="1" Text="{Binding DailyMissionDaysText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+
+              <Border Height="1" Background="{DynamicResource TextMutedBrush}" Opacity="0.15" Margin="0,6" />
+
+              <!-- Kategorie: Wirtschaft -->
+              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                <mi:MaterialIcon Kind="CircleMultiple" Width="16" Height="16" Foreground="#FFD700" />
+                <TextBlock Text="{Binding EconomyLabel}" FontSize="14" FontWeight="Bold"
+                           Foreground="#FFD700" VerticalAlignment="Center" />
+              </StackPanel>
+
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding CoinBalanceLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding CoinBalanceText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding TotalEarnedLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding TotalEarnedText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding AchievementsLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding AchievementsText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+                <Grid ColumnDefinitions="*,Auto">
+                  <TextBlock Grid.Column="0" Text="{Binding TotalSpinsLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding TotalSpinsText}" FontSize="15" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </Grid>
+              </Border>
+
+            </StackPanel>
+          </ScrollViewer>
+
+        </Grid>
+      </Grid>
+    </Grid>
+  </Panel>
+
+</UserControl>

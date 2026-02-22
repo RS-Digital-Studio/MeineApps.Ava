@@ -1,0 +1,295 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="BomberBlast.Views.WeeklyChallengeView"
+             x:DataType="vm:WeeklyChallengeViewModel">
+
+  <Panel Background="{DynamicResource BackgroundBrush}"
+         AutomationProperties.AutomationId="Missions_Root">
+    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+
+    <Grid RowDefinitions="Auto,*" Margin="24,16,24,80">
+
+      <!-- Header: Zurück + Titel -->
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,12">
+        <Button Grid.Column="0" Classes="Secondary GameButton"
+                Command="{Binding BackCommand}"
+                Width="48" Height="48"
+                Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                AutomationProperties.AutomationId="Missions_BtnBack">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+        </Button>
+
+        <TextBlock Grid.Column="1"
+                   Text="{loc:Translate MissionsButton}"
+                   FontSize="26" FontWeight="Bold"
+                   Foreground="{DynamicResource AccentBrush}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   AutomationProperties.AutomationId="Missions_TxtTitle" />
+      </Grid>
+
+      <!-- Mitte: 2-Spalten Layout -->
+      <Grid Grid.Row="1" ColumnDefinitions="3*,2*">
+
+        <!-- Linke Spalte: Missions-Listen (Daily + Weekly) -->
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+          <StackPanel Margin="0,0,12,60">
+
+            <!-- ═══ DAILY MISSIONS ═══ -->
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8">
+              <mi:MaterialIcon Grid.Column="0" Kind="CalendarToday" Width="20" Height="20"
+                               Foreground="#FF9800" Margin="0,0,8,0" />
+              <TextBlock Grid.Column="1" Text="{Binding DailyTitle}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="#FF9800" VerticalAlignment="Center" />
+              <Border Grid.Column="2" Background="#FF9800" CornerRadius="10" Padding="8,3">
+                <TextBlock Text="{Binding DailyCompletedCountText}"
+                           FontSize="13" FontWeight="Bold" Foreground="White" />
+              </Border>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding DailyMissionItems}"
+                          AutomationProperties.AutomationId="Missions_DailyList">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:WeeklyMissionDisplayItem">
+                  <Border Background="{DynamicResource SurfaceBrush}"
+                          CornerRadius="12" Padding="14,10" Margin="0,0,0,6">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Grid.Column="0" Width="36" Height="36"
+                              CornerRadius="18" Margin="0,0,10,0"
+                              HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border.Background>
+                          <SolidColorBrush Color="{Binding AccentColor}" Opacity="0.2" />
+                        </Border.Background>
+                        <Panel>
+                          <mi:MaterialIcon Kind="CheckCircle" Width="22" Height="22"
+                                           Foreground="#22C55E" IsVisible="{Binding IsCompleted}" />
+                          <mi:MaterialIcon Kind="CircleOutline" Width="22" Height="22"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding IsNotCompleted}" />
+                        </Panel>
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding Description}" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                        <Grid Height="5" Margin="0,1,0,0">
+                          <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="3" Opacity="0.5" />
+                          <Border CornerRadius="3" HorizontalAlignment="Left" Background="#FF9800">
+                            <Border.Width>
+                              <MultiBinding StringFormat="{}{0}%">
+                                <Binding Path="ProgressBarWidth" />
+                              </MultiBinding>
+                            </Border.Width>
+                          </Border>
+                        </Grid>
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center"
+                                  Margin="10,0,0,0" HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding ProgressText}" FontSize="12" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Right" />
+                        <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Right">
+                          <mi:MaterialIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="#FFD700" />
+                          <TextBlock Text="{Binding RewardText}" FontSize="10" FontWeight="SemiBold" Foreground="#FFD700" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Separator -->
+            <Border Height="1" Background="{DynamicResource TextMutedBrush}" Opacity="0.2" Margin="0,8,0,8" />
+
+            <!-- ═══ WEEKLY MISSIONS ═══ -->
+            <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8">
+              <mi:MaterialIcon Grid.Column="0" Kind="CalendarWeek" Width="20" Height="20"
+                               Foreground="#00BCD4" Margin="0,0,8,0" />
+              <TextBlock Grid.Column="1" Text="{Binding WeeklyTitle}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="#00BCD4" VerticalAlignment="Center" />
+              <Border Grid.Column="2" Background="#00BCD4" CornerRadius="10" Padding="8,3">
+                <TextBlock Text="{Binding CompletedCountText}"
+                           FontSize="13" FontWeight="Bold" Foreground="White" />
+              </Border>
+            </Grid>
+
+            <ItemsControl ItemsSource="{Binding MissionItems}"
+                          AutomationProperties.AutomationId="Missions_WeeklyList">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:WeeklyMissionDisplayItem">
+                  <Border Background="{DynamicResource SurfaceBrush}"
+                          CornerRadius="12" Padding="14,10" Margin="0,0,0,6">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <Border Grid.Column="0" Width="36" Height="36"
+                              CornerRadius="18" Margin="0,0,10,0"
+                              HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Border.Background>
+                          <SolidColorBrush Color="{Binding AccentColor}" Opacity="0.2" />
+                        </Border.Background>
+                        <Panel>
+                          <mi:MaterialIcon Kind="CheckCircle" Width="22" Height="22"
+                                           Foreground="#22C55E" IsVisible="{Binding IsCompleted}" />
+                          <mi:MaterialIcon Kind="CircleOutline" Width="22" Height="22"
+                                           Foreground="{DynamicResource TextMutedBrush}"
+                                           IsVisible="{Binding IsNotCompleted}" />
+                        </Panel>
+                      </Border>
+                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Name}" FontSize="13" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding Description}" FontSize="10"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                        <Grid Height="5" Margin="0,1,0,0">
+                          <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="3" Opacity="0.5" />
+                          <Border CornerRadius="3" HorizontalAlignment="Left" Background="#00BCD4">
+                            <Border.Width>
+                              <MultiBinding StringFormat="{}{0}%">
+                                <Binding Path="ProgressBarWidth" />
+                              </MultiBinding>
+                            </Border.Width>
+                          </Border>
+                        </Grid>
+                      </StackPanel>
+                      <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center"
+                                  Margin="10,0,0,0" HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding ProgressText}" FontSize="12" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Right" />
+                        <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Right">
+                          <mi:MaterialIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="#FFD700" />
+                          <TextBlock Text="{Binding RewardText}" FontSize="10" FontWeight="SemiBold" Foreground="#FFD700" />
+                        </StackPanel>
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- Rechte Spalte: Stats + Bonus (scrollbar) -->
+        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="10" Margin="12,0,0,60">
+
+            <!-- ═══ DAILY STATS ═══ -->
+            <TextBlock Text="{Binding DailyTitle}" FontSize="14" FontWeight="Bold"
+                       Foreground="#FF9800" Margin="0,0,0,4" />
+
+            <!-- Daily: Verbleibende Zeit -->
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="ClockOutline" Width="22" Height="22"
+                                 Foreground="#FF9800" Margin="0,0,8,0" />
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="{Binding DailyTimeRemainingLabel}" FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding DailyTimeRemainingText}" FontSize="18" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <!-- Daily: Bonus -->
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Gift" Width="18" Height="18" Foreground="#FFD700" />
+                  <TextBlock Text="{Binding DailyBonusLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Text="{Binding DailyBonusText}" FontSize="16" FontWeight="Bold"
+                           Foreground="#FFD700" HorizontalAlignment="Center" />
+                <Button Classes="Primary GameButton"
+                        Command="{Binding ClaimDailyBonusCommand}"
+                        IsVisible="{Binding CanClaimDailyBonus}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Height="34" Background="#FF9800"
+                        AutomationProperties.AutomationId="Missions_BtnClaimDailyBonus">
+                  <TextBlock Text="{Binding DailyBonusLabel}" FontSize="12" FontWeight="Bold" Foreground="#1A1A2A" />
+                </Button>
+              </StackPanel>
+            </Border>
+
+            <!-- Daily: Abgeschlossene Tage -->
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="CalendarCheck" Width="22" Height="22"
+                                 Foreground="#FF9800" Margin="0,0,8,0" />
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="{Binding DailyTotalDaysLabel}" FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding DailyTotalDaysText}" FontSize="18" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <!-- Separator -->
+            <Border Height="1" Background="{DynamicResource TextMutedBrush}" Opacity="0.2" Margin="0,4,0,4" />
+
+            <!-- ═══ WEEKLY STATS ═══ -->
+            <TextBlock Text="{Binding WeeklyTitle}" FontSize="14" FontWeight="Bold"
+                       Foreground="#00BCD4" Margin="0,0,0,4" />
+
+            <!-- Weekly: Verbleibende Zeit -->
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="ClockOutline" Width="22" Height="22"
+                                 Foreground="#00BCD4" Margin="0,0,8,0" />
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="{Binding TimeRemainingLabel}" FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding TimeRemainingText}" FontSize="18" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Grid>
+            </Border>
+
+            <!-- Weekly: Bonus -->
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8">
+              <StackPanel Spacing="6">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Gift" Width="18" Height="18" Foreground="#FFD700" />
+                  <TextBlock Text="{Binding BonusLabel}" FontSize="11"
+                             Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
+                </StackPanel>
+                <TextBlock Text="{Binding BonusText}" FontSize="16" FontWeight="Bold"
+                           Foreground="#FFD700" HorizontalAlignment="Center" />
+                <Button Classes="Primary GameButton"
+                        Command="{Binding ClaimBonusCommand}"
+                        IsVisible="{Binding CanClaimBonus}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Height="34" Background="#00BCD4"
+                        AutomationProperties.AutomationId="Missions_BtnClaimWeeklyBonus">
+                  <TextBlock Text="{Binding BonusLabel}" FontSize="12" FontWeight="Bold" Foreground="#1A1A2A" />
+                </Button>
+              </StackPanel>
+            </Border>
+
+            <!-- Weekly: Abgeschlossene Wochen -->
+            <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8">
+              <Grid ColumnDefinitions="Auto,*">
+                <mi:MaterialIcon Grid.Column="0" Kind="CalendarCheck" Width="22" Height="22"
+                                 Foreground="#00BCD4" Margin="0,0,8,0" />
+                <StackPanel Grid.Column="1">
+                  <TextBlock Text="{Binding TotalWeeksLabel}" FontSize="10"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBlock Text="{Binding TotalWeeksText}" FontSize="18" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+                </StackPanel>
+              </Grid>
+            </Border>
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+    </Grid>
+  </Panel>
+
+</UserControl>

@@ -1,0 +1,319 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BomberBlast.Views.BattlePassView"
+             x:DataType="vm:BattlePassViewModel">
+
+  <!-- Gradient Background (wie DungeonView) -->
+  <Panel>
+    <Border>
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="{DynamicResource GradientStartColor}" Offset="0" />
+          <GradientStop Color="{DynamicResource GradientMidColor}" Offset="0.5" />
+          <GradientStop Color="{DynamicResource GradientEndColor}" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+    </Border>
+
+    <Grid RowDefinitions="Auto,*">
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           HEADER
+           ═══════════════════════════════════════════════════════════════ -->
+      <Border Grid.Row="0"
+              Classes="CardElevated"
+              Padding="16,12"
+              CornerRadius="0,0,12,12">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <!-- Zurueck-Button -->
+          <Button AutomationProperties.AutomationId="BP_BtnBack"
+                  Classes="Text"
+                  Command="{Binding BackCommand}">
+            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          </Button>
+
+          <!-- Titel (Schild-Icon + Text) -->
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      HorizontalAlignment="Center"
+                      Spacing="8">
+            <mi:MaterialIcon Kind="Shield" Width="24" Height="24"
+                             Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock AutomationProperties.AutomationId="BP_TxtTitle"
+                       Text="{Binding Title}"
+                       FontSize="22" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </StackPanel>
+
+          <!-- Saison-Anzeige -->
+          <Border Grid.Column="2"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12"
+                  Padding="10,5">
+            <TextBlock Text="{Binding SeasonNumberDisplay}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       VerticalAlignment="Center" />
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- ═══════════════════════════════════════════════════════════════
+           CONTENT: 2-Spalten Landscape-Layout
+           ═══════════════════════════════════════════════════════════════ -->
+      <Grid Grid.Row="1" ColumnDefinitions="220,*" Margin="16,12,16,80">
+
+        <!-- ═══════════════════════════════════════
+             LINKE SPALTE: Info-Panel
+             ═══════════════════════════════════════ -->
+        <Border Grid.Column="0"
+                Classes="CardElevated"
+                Padding="16"
+                CornerRadius="16"
+                Margin="0,0,8,0"
+                VerticalAlignment="Center">
+          <StackPanel Spacing="14">
+
+            <!-- Aktuelle Tier-Anzeige -->
+            <StackPanel HorizontalAlignment="Center" Spacing="2">
+              <TextBlock Text="{Binding TierLabel}"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding CurrentTierDisplay}"
+                         FontSize="40" FontWeight="Bold"
+                         Foreground="#FFD700"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- XP-Fortschrittsbalken -->
+            <StackPanel Spacing="4">
+              <Border Background="#20FFFFFF"
+                      CornerRadius="6"
+                      Height="12"
+                      Width="180"
+                      HorizontalAlignment="Center">
+                <Border Background="#FFD700"
+                        CornerRadius="6"
+                        HorizontalAlignment="Left"
+                        Width="{Binding XpBarWidth}"
+                        Height="12" />
+              </Border>
+              <TextBlock Text="{Binding XpProgressDisplay}"
+                         FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Countdown -->
+            <Border Background="#20FFFFFF" CornerRadius="10" Padding="10,6">
+              <StackPanel Orientation="Horizontal" Spacing="8"
+                          HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="Clock" Width="18" Height="18"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding SeasonTimeDisplay}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- Premium-Status ODER Upgrade-Button -->
+            <!-- Wenn Premium: goldener Badge -->
+            <Border Background="#30FFD700"
+                    CornerRadius="10"
+                    Padding="12,8"
+                    HorizontalAlignment="Stretch"
+                    IsVisible="{Binding IsPremiumPass}">
+              <StackPanel Orientation="Horizontal" Spacing="8"
+                          HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="Crown" Width="18" Height="18"
+                                 Foreground="#FFD700" />
+                <TextBlock Text="Premium"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="#FFD700"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- Wenn kein Premium: Upgrade-Button -->
+            <Button AutomationProperties.AutomationId="BP_BtnUpgrade"
+                    Classes="GameButton"
+                    Command="{Binding UpgradeToPremiumCommand}"
+                    IsVisible="{Binding !IsPremiumPass}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Padding="12,10"
+                    CornerRadius="10">
+              <Button.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                  <GradientStop Color="#FFD700" Offset="0" />
+                  <GradientStop Color="#FF8F00" Offset="1" />
+                </LinearGradientBrush>
+              </Button.Background>
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="Crown" Width="18" Height="18"
+                                 Foreground="White" />
+                <TextBlock Text="{Binding UpgradeButtonText}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="White"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+          </StackPanel>
+        </Border>
+
+        <!-- ═══════════════════════════════════════
+             RECHTE SPALTE: Tier-Track (horizontal scrollbar)
+             ═══════════════════════════════════════ -->
+        <ScrollViewer Grid.Column="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled"
+                      Margin="8,0,0,0">
+          <ItemsControl AutomationProperties.AutomationId="BP_TierList"
+                        ItemsSource="{Binding Tiers}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border CornerRadius="12"
+                        Padding="8"
+                        Margin="4"
+                        Width="110"
+                        Opacity="{Binding DisplayOpacity}"
+                        BoxShadow="0 2 6 0 #20000000">
+                  <Border.Background>
+                    <SolidColorBrush Color="{Binding TierBackground}" />
+                  </Border.Background>
+                  <Border.BorderBrush>
+                    <SolidColorBrush Color="{Binding TierBorderColor}" />
+                  </Border.BorderBrush>
+                  <Border.BorderThickness>
+                    <Thickness>1.5</Thickness>
+                  </Border.BorderThickness>
+
+                  <StackPanel Spacing="6">
+
+                    <!-- Tier-Nummer Badge -->
+                    <Border CornerRadius="8"
+                            Padding="6,3"
+                            HorizontalAlignment="Center">
+                      <Border.Background>
+                        <SolidColorBrush Color="{Binding TierBadgeColor}" />
+                      </Border.Background>
+                      <TextBlock Text="{Binding TierNumber}"
+                                 FontSize="13" FontWeight="Bold"
+                                 Foreground="White"
+                                 HorizontalAlignment="Center" />
+                    </Border>
+
+                    <!-- ────── Free-Reward Sektion ────── -->
+                    <Border Background="#10FFFFFF"
+                            CornerRadius="8"
+                            Padding="6"
+                            MinHeight="52">
+                      <StackPanel Spacing="3" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding FreeRewardText}"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   HorizontalAlignment="Center" />
+
+                        <!-- Claim-Button (wenn verfuegbar) -->
+                        <Button Command="{ReflectionBinding DataContext.ClaimFreeRewardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding TierIndex}"
+                                IsVisible="{Binding CanClaimFree}"
+                                Classes="GameButton"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="6,4"
+                                CornerRadius="6">
+                          <Button.Background>
+                            <SolidColorBrush Color="#4CAF50" />
+                          </Button.Background>
+                          <TextBlock Text="{Binding ClaimText}"
+                                     FontSize="11" FontWeight="Bold"
+                                     Foreground="White" />
+                        </Button>
+
+                        <!-- Haekchen wenn bereits beansprucht -->
+                        <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
+                                         Foreground="#4CAF50"
+                                         HorizontalAlignment="Center"
+                                         IsVisible="{Binding IsFreeClaimed}" />
+                      </StackPanel>
+                    </Border>
+
+                    <!-- Trennlinie -->
+                    <Border Height="1" Background="#30FFFFFF"
+                            Margin="4,0" />
+
+                    <!-- ────── Premium-Reward Sektion ────── -->
+                    <Border CornerRadius="8"
+                            Padding="6"
+                            MinHeight="52">
+                      <Border.Background>
+                        <SolidColorBrush Color="#FFD700" Opacity="0.06" />
+                      </Border.Background>
+                      <StackPanel Spacing="3" HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding PremiumRewardText}"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   Foreground="#FFD700"
+                                   TextAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   HorizontalAlignment="Center" />
+
+                        <!-- Claim-Button (Premium verfuegbar) -->
+                        <Button Command="{ReflectionBinding DataContext.ClaimPremiumRewardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding TierIndex}"
+                                IsVisible="{Binding CanClaimPremium}"
+                                Classes="GameButton"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                Padding="6,4"
+                                CornerRadius="6">
+                          <Button.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                              <GradientStop Color="#FFD700" Offset="0" />
+                              <GradientStop Color="#FF8F00" Offset="1" />
+                            </LinearGradientBrush>
+                          </Button.Background>
+                          <TextBlock Text="{Binding ClaimText}"
+                                     FontSize="11" FontWeight="Bold"
+                                     Foreground="White" />
+                        </Button>
+
+                        <!-- Haekchen wenn bereits beansprucht -->
+                        <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
+                                         Foreground="#FFD700"
+                                         HorizontalAlignment="Center"
+                                         IsVisible="{Binding IsPremiumClaimed}" />
+
+                        <!-- Schloss wenn kein Premium -->
+                        <mi:MaterialIcon Kind="Lock" Width="16" Height="16"
+                                         Foreground="#666666"
+                                         HorizontalAlignment="Center"
+                                         IsVisible="{Binding ShowPremiumLock}" />
+                      </StackPanel>
+                    </Border>
+
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+
+      </Grid>
+
+    </Grid>
+  </Panel>
+
+</UserControl>

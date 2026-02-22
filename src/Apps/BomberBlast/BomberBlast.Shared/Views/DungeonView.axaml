@@ -1,0 +1,354 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="BomberBlast.Views.DungeonView"
+             x:DataType="vm:DungeonViewModel">
+
+  <!-- Gradient Background -->
+  <Panel>
+    <Border>
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="{DynamicResource GradientStartColor}" Offset="0" />
+          <GradientStop Color="{DynamicResource GradientMidColor}" Offset="0.5" />
+          <GradientStop Color="{DynamicResource GradientEndColor}" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+    </Border>
+
+    <Grid RowDefinitions="Auto,*">
+
+      <!-- Header (immer sichtbar) -->
+      <Border Grid.Row="0"
+              Classes="CardElevated"
+              Padding="16,12"
+              CornerRadius="0,0,12,12">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <!-- Back Button -->
+          <Button AutomationProperties.AutomationId="Dungeon_BtnBack"
+                  Classes="Text"
+                  Command="{Binding BackCommand}">
+            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+          </Button>
+
+          <!-- Title -->
+          <StackPanel Grid.Column="1"
+                      Orientation="Horizontal"
+                      HorizontalAlignment="Center"
+                      Spacing="8">
+            <mi:MaterialIcon Kind="Sword" Width="24" Height="24"
+                             Foreground="{DynamicResource PrimaryBrush}" />
+            <TextBlock AutomationProperties.AutomationId="Dungeon_TxtTitle"
+                       Text="{Binding Title}"
+                       FontSize="22" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </StackPanel>
+
+          <!-- Floor-Anzeige (nur bei aktivem Run / Buff-Auswahl) -->
+          <StackPanel Grid.Column="2"
+                      Orientation="Horizontal"
+                      Spacing="6"
+                      VerticalAlignment="Center"
+                      IsVisible="{Binding IsBuffSelection}">
+            <mi:MaterialIcon Kind="Stairs" Width="20" Height="20"
+                             Foreground="{DynamicResource AccentBrush}" />
+            <TextBlock Text="{Binding CurrentFloorText}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </StackPanel>
+
+          <!-- Spacer wenn keine Floor-Anzeige -->
+          <Border Grid.Column="2" Width="44"
+                  IsVisible="{Binding !IsBuffSelection}" />
+        </Grid>
+      </Border>
+
+      <!-- ===================== PreRun-Bereich ===================== -->
+      <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="24,16"
+            IsVisible="{Binding IsPreRun}">
+
+        <!-- Linke Spalte: Stats -->
+        <Border Grid.Column="0" Classes="CardElevated"
+                Margin="0,0,8,0" Padding="20"
+                CornerRadius="16"
+                VerticalAlignment="Center">
+          <StackPanel Spacing="16">
+
+            <!-- TotalRuns -->
+            <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="Repeat" Width="22" Height="22"
+                                 Foreground="#4CAF50" />
+                <TextBlock Text="{Binding TotalRunsText}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- BestFloor -->
+            <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="Trophy" Width="22" Height="22"
+                                 Foreground="#FFD700" />
+                <TextBlock Text="{Binding BestFloorText}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+          </StackPanel>
+        </Border>
+
+        <!-- Rechte Spalte: Start-Buttons -->
+        <StackPanel Grid.Column="1" Spacing="10"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center">
+
+          <!-- Gratis starten -->
+          <Button AutomationProperties.AutomationId="Dungeon_BtnStartFree"
+                  Classes="Primary GameButton"
+                  Command="{Binding StartFreeRunCommand}"
+                  IsVisible="{Binding CanStartFree}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="16,14">
+            <StackPanel Orientation="Horizontal" Spacing="10"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Play" Width="24" Height="24" />
+              <TextBlock Text="{Binding StartButtonText}"
+                         FontSize="18" FontWeight="Bold"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- 500 Coins -->
+          <Button AutomationProperties.AutomationId="Dungeon_BtnStartCoins"
+                  Classes="Secondary GameButton"
+                  Command="{Binding StartCoinRunCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="14,12">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="CircleMultiple" Width="20" Height="20"
+                               Foreground="#FFD700" />
+              <TextBlock Text="{Binding CoinEntryText}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="#FFD700"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- 10 Gems -->
+          <Button AutomationProperties.AutomationId="Dungeon_BtnStartGems"
+                  Classes="Secondary GameButton"
+                  Command="{Binding StartGemRunCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="14,12">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="DiamondStone" Width="20" Height="20"
+                               Foreground="#00BCD4" />
+              <TextBlock Text="{Binding GemEntryText}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="#00BCD4"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- Werbung -->
+          <Button AutomationProperties.AutomationId="Dungeon_BtnStartAd"
+                  Classes="Secondary GameButton"
+                  Command="{Binding StartAdRunCommand}"
+                  IsVisible="{Binding CanStartAd}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="14,12">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Video" Width="20" Height="20"
+                               Foreground="#FF9800" />
+              <TextBlock Text="{Binding AdEntryText}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="#FF9800"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <!-- ===================== BuffSelection-Bereich ===================== -->
+      <StackPanel Grid.Row="1" Margin="24,16" Spacing="16"
+                  VerticalAlignment="Center"
+                  IsVisible="{Binding IsBuffSelection}">
+
+        <!-- Header -->
+        <TextBlock Text="{Binding CurrentFloorText}"
+                   FontSize="22" FontWeight="Bold"
+                   Foreground="{DynamicResource PrimaryBrush}"
+                   HorizontalAlignment="Center" />
+
+        <!-- 3 Buff-Karten -->
+        <ItemsControl AutomationProperties.AutomationId="Dungeon_BuffList"
+                      ItemsSource="{Binding BuffChoices}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel Orientation="Horizontal"
+                         HorizontalAlignment="Center" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Command="{ReflectionBinding DataContext.SelectBuffCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                      CommandParameter="{ReflectionBinding Type}"
+                      Classes="Text"
+                      Margin="6">
+                <Border Classes="CardElevated"
+                        CornerRadius="16" Padding="16"
+                        Width="200" MinHeight="140">
+                  <StackPanel Spacing="8" HorizontalAlignment="Center">
+                    <!-- Name -->
+                    <TextBlock Text="{Binding Name}"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center" />
+                    <!-- Description -->
+                    <TextBlock Text="{Binding Description}"
+                               FontSize="12"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center" />
+                    <!-- RarityText -->
+                    <TextBlock Text="{Binding RarityText}"
+                               FontSize="11" FontWeight="SemiBold"
+                               Foreground="{DynamicResource AccentBrush}"
+                               HorizontalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <!-- ===================== PostRun-Bereich ===================== -->
+      <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="24,16"
+            IsVisible="{Binding IsPostRun}">
+
+        <!-- Linke Spalte: Zusammenfassung -->
+        <Border Grid.Column="0" Classes="CardElevated"
+                Margin="0,0,8,0" Padding="20"
+                CornerRadius="16"
+                VerticalAlignment="Center">
+          <StackPanel Spacing="12">
+
+            <!-- Floors -->
+            <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="Stairs" Width="20" Height="20"
+                                 Foreground="#4CAF50" />
+                <TextBlock Text="{Binding SummaryFloorsText}"
+                           FontSize="15" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- Coins -->
+            <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="CircleMultiple" Width="20" Height="20"
+                                 Foreground="#FFD700" />
+                <TextBlock Text="{Binding SummaryCoinsText}"
+                           FontSize="15" FontWeight="Bold"
+                           Foreground="#FFD700"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- Gems -->
+            <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="DiamondStone" Width="20" Height="20"
+                                 Foreground="#00BCD4" />
+                <TextBlock Text="{Binding SummaryGemsText}"
+                           FontSize="15" FontWeight="Bold"
+                           Foreground="#00BCD4"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+            <!-- Karten -->
+            <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="Gift" Width="20" Height="20"
+                                 Foreground="#9C27B0" />
+                <TextBlock Text="{Binding SummaryCardsText}"
+                           FontSize="15" FontWeight="Bold"
+                           Foreground="#9C27B0"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
+          </StackPanel>
+        </Border>
+
+        <!-- Rechte Spalte: Neuer Rekord + Buttons -->
+        <StackPanel Grid.Column="1" Spacing="12"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Center">
+
+          <!-- Neuer Rekord (sichtbar wenn SummaryNewBestText nicht leer) -->
+          <TextBlock Text="{Binding SummaryNewBestText}"
+                     IsVisible="{Binding SummaryNewBestText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                     FontSize="24" FontWeight="Bold"
+                     Foreground="#FFD700"
+                     HorizontalAlignment="Center"
+                     Margin="0,0,0,8" />
+
+          <!-- Nochmal Button -->
+          <Button AutomationProperties.AutomationId="Dungeon_BtnContinue"
+                  Classes="Primary GameButton"
+                  Command="{Binding StartFreeRunCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="16,14"
+                  FontSize="18" FontWeight="Bold">
+            <StackPanel Orientation="Horizontal" Spacing="10"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Refresh" Width="24" Height="24" />
+              <TextBlock Text="{Binding StartButtonText}"
+                         FontSize="18" FontWeight="Bold"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- Zurueck Button -->
+          <Button AutomationProperties.AutomationId="Dungeon_BtnBack2"
+                  Classes="Secondary GameButton"
+                  Command="{Binding BackCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  Padding="14,12">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20" />
+              <TextBlock Text="&#x2190;"
+                         FontSize="16" FontWeight="SemiBold"
+                         VerticalAlignment="Center"
+                         IsVisible="False" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+
+    </Grid>
+  </Panel>
+
+</UserControl>

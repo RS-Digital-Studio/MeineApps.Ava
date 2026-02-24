@@ -66,6 +66,18 @@ public class OrderGeneratorService : IOrderGeneratorService
             new("order_house_build", "Build House", MiniGameType.Inspection, MiniGameType.Sawing, MiniGameType.PipePuzzle),
             new("order_commercial", "Commercial Build", MiniGameType.Inspection, MiniGameType.Blueprint, MiniGameType.WiringGame),
             new("order_luxury_villa", "Luxury Villa Project", MiniGameType.Inspection, MiniGameType.Inspection, MiniGameType.RoofTiling, MiniGameType.DesignPuzzle)
+        ],
+        [WorkshopType.MasterSmith] =
+        [
+            new("order_forge_blade", "Forge Blade", MiniGameType.ForgeGame),
+            new("order_master_tools", "Forge Master Tools", MiniGameType.ForgeGame, MiniGameType.ForgeGame),
+            new("order_forge_artifact", "Forge Artifact", MiniGameType.ForgeGame, MiniGameType.ForgeGame, MiniGameType.ForgeGame)
+        ],
+        [WorkshopType.InnovationLab] =
+        [
+            new("order_prototype", "Build Prototype", MiniGameType.InventGame),
+            new("order_invention", "Create Invention", MiniGameType.InventGame, MiniGameType.InventGame),
+            new("order_breakthrough", "Revolutionary Breakthrough", MiniGameType.InventGame, MiniGameType.InventGame, MiniGameType.InventGame)
         ]
     };
 
@@ -111,9 +123,10 @@ public class OrderGeneratorService : IOrderGeneratorService
         int unlockedWorkshops = state.Workshops.Count(w => state.IsWorkshopUnlocked(w.Type));
         int roll = Random.Shared.Next(100);
 
-        // Reputation-Bonus: Gute Reputation senkt Standard-Wahrscheinlichkeit
+        // Reputation-Bonus + Gilden-Forschung: Senkt Standard-Wahrscheinlichkeit
         decimal reputationBonus = state.Reputation.OrderQualityBonus;
-        int adjustedRoll = Math.Clamp((int)(roll - reputationBonus * 100), 0, 100);
+        decimal guildOrderQuality = state.GuildMembership?.ResearchOrderQualityBonus ?? 0m;
+        int adjustedRoll = Math.Clamp((int)(roll - (reputationBonus + guildOrderQuality) * 100), 0, 100);
 
         return playerLevel switch
         {
@@ -207,8 +220,18 @@ public class OrderGeneratorService : IOrderGeneratorService
         decimal taskMultiplier = taskCount * (1.0m + (taskCount - 1) * 0.15m);
         decimal baseReward = perTaskReward * taskMultiplier * workshopType.GetBaseIncomeMultiplier();
 
+        // Gilden-Forschung: Auftragsbelohnungen-Bonus (+30%)
+        var guildRewardBonus = state.GuildMembership?.ResearchRewardBonus ?? 0m;
+        if (guildRewardBonus > 0)
+            baseReward *= (1m + guildRewardBonus);
+
         // Calculate base XP (skaliert mit Aufgaben-Anzahl)
         int baseXp = 25 * workshopLevel * taskCount;
+
+        // Gilden-Forschung: XP-Bonus (+10%)
+        var guildXpBonus = state.GuildMembership?.ResearchXpBonus ?? 0m;
+        if (guildXpBonus > 0)
+            baseXp = (int)(baseXp * (1m + guildXpBonus));
 
         // Kundennamen generieren
         int nameSeed = (int)(DateTime.UtcNow.Ticks % int.MaxValue) ^ Random.Shared.Next();
@@ -268,7 +291,8 @@ public class OrderGeneratorService : IOrderGeneratorService
         int extraFromBuilding = office?.ExtraOrderSlots ?? 0;
         int extraFromResearch = _researchService?.GetTotalEffects()?.ExtraOrderSlots ?? 0;
         int extraFromReputation = state.Reputation.ExtraOrderSlots;
-        int totalCount = count + extraFromBuilding + extraFromResearch + extraFromReputation;
+        int extraFromGuildResearch = state.GuildMembership?.ResearchOrderSlotBonus ?? 0;
+        int totalCount = count + extraFromBuilding + extraFromResearch + extraFromReputation + extraFromGuildResearch;
 
         // Get all unlocked workshops
         var unlockedWorkshops = state.Workshops

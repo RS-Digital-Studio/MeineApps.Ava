@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:models="using:HandwerkerImperium.Models"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.GuildView"
@@ -64,69 +65,266 @@
       <StackPanel Spacing="16" Margin="16,16,16,80">
 
         <!-- ============================================================= -->
-        <!-- NICHT IN GILDE: Gilden-Auswahl                               -->
+        <!-- LOADING SPINNER                                               -->
+        <!-- ============================================================= -->
+        <StackPanel Spacing="8" HorizontalAlignment="Center"
+                    IsVisible="{Binding IsLoading}"
+                    Margin="0,40,0,0">
+          <mi:MaterialIcon Kind="Loading" Width="32" Height="32"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Translate Loading}"
+                     FontSize="14"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- ============================================================= -->
+        <!-- OFFLINE                                                       -->
+        <!-- ============================================================= -->
+        <StackPanel Spacing="12" HorizontalAlignment="Center"
+                    IsVisible="{Binding IsOffline}"
+                    Margin="0,40,0,0">
+          <mi:MaterialIcon Kind="CloudOff" Width="48" Height="48"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+          <TextBlock Text="{loc:Translate GuildOffline}"
+                     FontSize="16" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     HorizontalAlignment="Center"
+                     TextWrapping="Wrap" TextAlignment="Center" />
+          <Button Classes="Primary"
+                  HorizontalAlignment="Center"
+                  Command="{Binding RetryCommand}"
+                  Margin="0,8,0,0" Padding="16,8">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="Refresh" Width="16" Height="16" />
+              <TextBlock Text="{loc:Translate Retry}" FontSize="13" FontWeight="Bold" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+
+        <!-- ============================================================= -->
+        <!-- SPIELERNAME-DIALOG                                             -->
+        <!-- ============================================================= -->
+        <Border Classes="CardElevated"
+                IsVisible="{Binding IsNameDialogVisible}"
+                Padding="16" Margin="0,20,0,0">
+          <StackPanel Spacing="12">
+            <mi:MaterialIcon Kind="AccountEdit" Width="36" Height="36"
+                             Foreground="{StaticResource CraftPrimaryLightBrush}"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:Translate GuildEnterName}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center" />
+            <TextBlock Text="{loc:Translate GuildNameHint}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center" />
+            <TextBox Text="{Binding NameInput}"
+                     Watermark="{loc:Translate GuildNamePlaceholder}"
+                     MaxLength="20"
+                     HorizontalAlignment="Stretch" />
+            <Button Classes="Primary"
+                    HorizontalAlignment="Center"
+                    Command="{Binding ConfirmNameCommand}"
+                    Padding="24,8">
+              <TextBlock Text="OK" FontSize="14" FontWeight="Bold" />
+            </Button>
+          </StackPanel>
+        </Border>
+
+        <!-- ============================================================= -->
+        <!-- NICHT IN GILDE: Browse + Erstellen                            -->
         <!-- ============================================================= -->
         <StackPanel Spacing="12"
                     IsVisible="{Binding !IsInGuild}">
 
-          <!-- Verfuegbare Gilden -->
-          <ItemsControl ItemsSource="{Binding AvailableGuilds}"
-                        AutomationProperties.AutomationId="Guild_Items_Available">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="vm:GuildDisplayItem">
-                <Border Classes="Card"
-                        AutomationProperties.AutomationId="Guild_Border_AvailableItem"
-                        Padding="12" Margin="0,0,0,8">
-                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+          <!-- Sichtbar nur wenn nicht Loading, nicht Offline, nicht NameDialog, nicht CreateDialog -->
+          <StackPanel Spacing="12"
+                      IsVisible="{Binding !IsLoading}">
+            <StackPanel IsVisible="{Binding !IsOffline}">
+              <StackPanel IsVisible="{Binding !IsNameDialogVisible}">
+                <StackPanel IsVisible="{Binding !IsCreateDialogVisible}">
 
-                    <!-- Gilden-Icon -->
-                    <Border CornerRadius="12" Width="52" Height="52"
-                            AutomationProperties.AutomationId="Guild_Border_GuildIcon"
-                            VerticalAlignment="Center">
-                      <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                          <GradientStop Color="#D97706" Offset="0" />
-                          <GradientStop Color="#92400E" Offset="1" />
-                        </LinearGradientBrush>
-                      </Border.Background>
-                      <mi:MaterialIcon Kind="ShieldHome" Width="28" Height="28"
-                                       AutomationProperties.AutomationId="Guild_Icon_GuildShield"
-                                       Foreground="White"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
-
-                    <!-- Name + Beschreibung -->
-                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                      <TextBlock Text="{Binding GuildName}"
-                                 AutomationProperties.AutomationId="Guild_Txt_GuildName"
-                                 FontSize="15" FontWeight="Bold"
-                                 Foreground="{DynamicResource TextPrimaryBrush}" />
-                      <TextBlock Text="{Binding BonusDescription}"
-                                 AutomationProperties.AutomationId="Guild_Txt_GuildDesc"
-                                 FontSize="12"
-                                 Foreground="{DynamicResource TextSecondaryBrush}"
-                                 TextWrapping="Wrap" MaxLines="2" />
+                  <!-- Gilde gründen Button -->
+                  <Button Classes="Primary"
+                          HorizontalAlignment="Stretch"
+                          Command="{Binding ShowCreateDialogCommand}"
+                          Padding="16,12" Margin="0,0,0,8">
+                    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="Plus" Width="20" Height="20" />
+                      <TextBlock Text="{loc:Translate GuildCreate}"
+                                 FontSize="15" FontWeight="Bold" />
                     </StackPanel>
+                  </Button>
 
-                    <!-- Beitreten-Button -->
-                    <Button Grid.Column="2"
-                            Classes="Primary"
-                            AutomationProperties.AutomationId="Guild_Btn_Join"
-                            Padding="12,8"
-                            VerticalAlignment="Center"
-                            Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).JoinGuildCommand}"
-                            CommandParameter="{Binding .}">
-                      <TextBlock Text="{loc:Translate JoinGuild}"
-                                 AutomationProperties.AutomationId="Guild_Txt_JoinBtn"
-                                 FontSize="12" FontWeight="Bold" />
-                    </Button>
+                  <!-- Leere Liste -->
+                  <StackPanel Spacing="8" HorizontalAlignment="Center"
+                              IsVisible="{Binding HasNoGuilds}"
+                              Margin="0,20,0,0">
+                    <mi:MaterialIcon Kind="AccountGroupOutline" Width="40" Height="40"
+                                     Foreground="{DynamicResource TextSecondaryBrush}"
+                                     HorizontalAlignment="Center" />
+                    <TextBlock Text="{loc:Translate GuildBrowseEmpty}"
+                               FontSize="14"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"
+                               TextWrapping="Wrap" TextAlignment="Center" />
+                  </StackPanel>
 
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
+                  <!-- Verfügbare Gilden -->
+                  <ItemsControl ItemsSource="{Binding AvailableGuilds}"
+                                AutomationProperties.AutomationId="Guild_Items_Available">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="models:GuildListItem">
+                        <Border Classes="Card"
+                                Padding="12" Margin="0,0,0,8">
+                          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                            <!-- Gilden-Icon -->
+                            <Border CornerRadius="12" Width="52" Height="52"
+                                    VerticalAlignment="Center"
+                                    Background="{Binding Color, Converter={StaticResource ColorBrushConverter}}">
+                              <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                               Width="28" Height="28"
+                                               Foreground="White"
+                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+
+                            <!-- Name + Info -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                              <TextBlock Text="{Binding Name}"
+                                         FontSize="15" FontWeight="Bold"
+                                         Foreground="{DynamicResource TextPrimaryBrush}" />
+                              <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding Level, StringFormat='Lv.{0}'}"
+                                           FontSize="12"
+                                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                                <TextBlock Text="{Binding MemberCount, StringFormat='{}{0}/20'}"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                              </StackPanel>
+                            </StackPanel>
+
+                            <!-- Beitreten-Button -->
+                            <Button Grid.Column="2"
+                                    Classes="Primary"
+                                    Padding="12,8"
+                                    VerticalAlignment="Center"
+                                    Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).JoinGuildCommand}"
+                                    CommandParameter="{Binding .}">
+                              <TextBlock Text="{loc:Translate JoinGuild}"
+                                         FontSize="12" FontWeight="Bold" />
+                            </Button>
+
+                          </Grid>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+
+                </StackPanel>
+              </StackPanel>
+            </StackPanel>
+          </StackPanel>
         </StackPanel>
+
+        <!-- ============================================================= -->
+        <!-- GILDE ERSTELLEN (Content-Swap)                                -->
+        <!-- ============================================================= -->
+        <Border Classes="CardElevated"
+                IsVisible="{Binding IsCreateDialogVisible}"
+                Padding="16">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate GuildCreateTitle}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{StaticResource CraftPrimaryLightBrush}"
+                       HorizontalAlignment="Center" />
+
+            <!-- Name -->
+            <TextBox Text="{Binding CreateGuildName}"
+                     Watermark="{loc:Translate GuildNamePlaceholder}"
+                     MaxLength="24"
+                     HorizontalAlignment="Stretch" />
+
+            <!-- Vorschau: Zeigt wie die Gilde aussehen wird -->
+            <Border Width="64" Height="64" CornerRadius="16"
+                    HorizontalAlignment="Center" Margin="0,4,0,8"
+                    Background="{Binding SelectedColor, Converter={StaticResource ColorBrushConverter}}">
+              <mi:MaterialIcon Kind="{Binding SelectedIcon, Converter={StaticResource IconKindConverter}}"
+                               Width="32" Height="32" Foreground="White"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+
+            <!-- Icon-Auswahl -->
+            <TextBlock Text="{loc:Translate GuildSelectIcon}"
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <ItemsControl ItemsSource="{Binding AvailableIcons}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Button Padding="8" Margin="4"
+                          CornerRadius="8"
+                          Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).SelectIconCommand}"
+                          CommandParameter="{Binding .}">
+                    <mi:MaterialIcon Kind="{Binding ., Converter={StaticResource IconKindConverter}}"
+                                     Width="24" Height="24"
+                                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Farb-Auswahl -->
+            <TextBlock Text="{loc:Translate GuildSelectColor}"
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <ItemsControl ItemsSource="{Binding AvailableColors}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                  <Button Padding="0" Margin="4"
+                          Width="40" Height="40"
+                          CornerRadius="20"
+                          Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).SelectColorCommand}"
+                          CommandParameter="{Binding .}">
+                    <Border Width="36" Height="36" CornerRadius="18"
+                            Background="{Binding ., Converter={StaticResource ColorBrushConverter}}" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Buttons -->
+            <Grid ColumnDefinitions="*,16,*" Margin="0,8,0,0">
+              <Button Grid.Column="0" Classes="Secondary"
+                      HorizontalAlignment="Stretch"
+                      Command="{Binding CancelCreateCommand}">
+                <TextBlock Text="{loc:Translate Cancel}"
+                           FontSize="13" HorizontalAlignment="Center" />
+              </Button>
+              <Button Grid.Column="2" Classes="Primary"
+                      HorizontalAlignment="Stretch"
+                      Command="{Binding CreateGuildCommand}">
+                <TextBlock Text="{loc:Translate GuildCreate}"
+                           FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" />
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
 
         <!-- ============================================================= -->
         <!-- IN GILDE: Gilden-Details                                      -->
@@ -134,20 +332,16 @@
         <StackPanel Spacing="12"
                     IsVisible="{Binding IsInGuild}">
 
-          <!-- Gilden-Info -->
+          <!-- Gilden-Banner -->
           <Border Classes="CardElevated"
                   AutomationProperties.AutomationId="Guild_Border_CurrentGuild"
-                  Padding="16">
-            <Border.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Color="#92400E" Offset="0" />
-                <GradientStop Color="#D97706" Offset="1" />
-              </LinearGradientBrush>
-            </Border.Background>
+                  Padding="16"
+                  Background="{Binding CurrentGuildColor, Converter={StaticResource ColorBrushConverter}}">
             <StackPanel Spacing="8" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="ShieldHome" Width="40" Height="40"
+              <mi:MaterialIcon Kind="{Binding CurrentGuildIcon, Converter={StaticResource IconKindConverter}}"
+                               Width="40" Height="40"
                                AutomationProperties.AutomationId="Guild_Icon_CurrentGuild"
-                               Foreground="{StaticResource CraftGoldBrush}"
+                               Foreground="White"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding CurrentGuildName}"
                          AutomationProperties.AutomationId="Guild_Txt_CurrentGuildName"
@@ -159,6 +353,10 @@
                          FontSize="14"
                          Foreground="{StaticResource CraftGoldBrush}"
                          HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding IncomeBonusDetailDisplay}"
+                         FontSize="12"
+                         Foreground="#BBFFFFFF"
+                         HorizontalAlignment="Center" />
             </StackPanel>
           </Border>
 
@@ -168,19 +366,220 @@
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="FlagCheckered" Width="18" Height="18"
-                                 AutomationProperties.AutomationId="Guild_Icon_WeeklyGoal"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}" />
                 <TextBlock Text="{loc:Translate WeeklyGoal}"
-                           AutomationProperties.AutomationId="Guild_Txt_WeeklyGoalTitle"
                            FontSize="16" FontWeight="Bold"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </StackPanel>
 
               <TextBlock Text="{Binding GoalProgressDisplay}"
-                         AutomationProperties.AutomationId="Guild_Txt_GoalProgress"
                          FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          HorizontalAlignment="Center" />
+
+              <!-- Beitrag-Slider -->
+              <StackPanel Spacing="4" Margin="0,8,0,0">
+                <TextBlock Text="{Binding ContributionAmountDisplay}"
+                           FontSize="15" FontWeight="Bold"
+                           Foreground="{StaticResource CraftGoldBrush}"
+                           HorizontalAlignment="Center" />
+                <Slider Minimum="1" Maximum="100"
+                        Value="{Binding ContributionPercent}"
+                        TickFrequency="1" IsSnapToTickEnabled="True"
+                        Margin="0,4" />
+                <Grid ColumnDefinitions="*,*">
+                  <TextBlock Text="1%" FontSize="10"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                  <TextBlock Grid.Column="1" Text="100%"
+                             FontSize="10" HorizontalAlignment="Right"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </Grid>
+              </StackPanel>
+
+              <!-- Beitragen-Button -->
+              <Button Classes="Primary" HorizontalAlignment="Center"
+                      AutomationProperties.AutomationId="Guild_Btn_Contribute"
+                      Command="{Binding ContributeCommand}"
+                      Margin="0,6,0,0" Padding="16,8">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="HandCoin" Width="16" Height="16" />
+                  <TextBlock Text="{loc:Translate ContributeToGuild}"
+                             FontSize="13" FontWeight="Bold" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <!-- ============================================================= -->
+          <!-- GILDEN-FORSCHUNG                                              -->
+          <!-- ============================================================= -->
+          <Border Classes="Card StatsCard"
+                  IsVisible="{Binding HasGuildResearch}"
+                  AutomationProperties.AutomationId="Guild_Border_Research">
+            <StackPanel Spacing="8">
+
+              <!-- Header: Titel + Zusammenfassung -->
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+                <mi:MaterialIcon Kind="FlaskOutline" Width="20" Height="20"
+                                 Foreground="#EA580C" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="1"
+                           Text="{loc:Translate GuildResearchTitle}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="#EA580C" VerticalAlignment="Center" />
+                <Border Grid.Column="2" CornerRadius="10" Padding="8,3"
+                        Background="#30EA580C">
+                  <TextBlock Text="{Binding GuildResearchSummary}"
+                             FontSize="12" FontWeight="Bold"
+                             Foreground="#EA580C" />
+                </Border>
+              </Grid>
+
+              <!-- Max-Members Anzeige -->
+              <TextBlock Text="{Binding MaxMembersDisplay}"
+                         FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+
+              <!-- Forschungs-Items nach Kategorie gruppiert -->
+              <ItemsControl ItemsSource="{Binding GuildResearch}"
+                            AutomationProperties.AutomationId="Guild_Items_Research">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:GuildResearchDisplay">
+                    <Border Background="{DynamicResource SurfaceBrush}"
+                            CornerRadius="8" Padding="10,8" Margin="0,3"
+                            AutomationProperties.AutomationId="Guild_Border_ResearchItem">
+                      <!-- Farbiger linker Rand -->
+                      <Border.BorderBrush>
+                        <SolidColorBrush Color="{Binding CategoryColor}" />
+                      </Border.BorderBrush>
+                      <Border.BorderThickness>2,0,0,0</Border.BorderThickness>
+
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+
+                        <!-- Icon -->
+                        <Border Width="36" Height="36" CornerRadius="8"
+                                VerticalAlignment="Center">
+                          <Border.Background>
+                            <SolidColorBrush Color="{Binding CategoryColor}" Opacity="0.15" />
+                          </Border.Background>
+                          <!-- Abgeschlossen: Haken, Gesperrt: Schloss, Aktiv: Forschungs-Icon -->
+                          <Panel>
+                            <mi:MaterialIcon Kind="CheckCircle" Width="20" Height="20"
+                                             Foreground="#4CAF50"
+                                             IsVisible="{Binding IsCompleted}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <mi:MaterialIcon Kind="LockOutline" Width="20" Height="20"
+                                             Foreground="{DynamicResource TextSecondaryBrush}"
+                                             IsVisible="{Binding IsLocked}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                             Width="20" Height="20"
+                                             IsVisible="{Binding IsActive}"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center">
+                              <mi:MaterialIcon.Foreground>
+                                <SolidColorBrush Color="{Binding CategoryColor}" />
+                              </mi:MaterialIcon.Foreground>
+                            </mi:MaterialIcon>
+                          </Panel>
+                        </Border>
+
+                        <!-- Name + Beschreibung + Fortschritt -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                          <TextBlock Text="{Binding Name}"
+                                     FontSize="13" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource TextPrimaryBrush}"
+                                     TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding Description}"
+                                     FontSize="10"
+                                     Foreground="{DynamicResource TextSecondaryBrush}"
+                                     TextTrimming="CharacterEllipsis" />
+
+                          <!-- Fortschrittsbalken (nur bei aktiver Forschung) -->
+                          <ProgressBar IsVisible="{Binding IsActive}"
+                                       Minimum="0" Maximum="1"
+                                       Value="{Binding ProgressPercent}"
+                                       Height="6"
+                                       Foreground="{Binding CategoryColor, Converter={StaticResource ColorBrushConverter}}"
+                                       Background="{DynamicResource SurfaceVariantBrush}"
+                                       Margin="0,3,0,0" />
+                        </StackPanel>
+
+                        <!-- Beitragen-Button (nur aktiv) -->
+                        <Button Grid.Column="2"
+                                Classes="Primary" Padding="8,4"
+                                VerticalAlignment="Center"
+                                IsVisible="{Binding IsActive}"
+                                Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).ShowResearchContributeDialogCommand}"
+                                CommandParameter="{Binding .}">
+                          <mi:MaterialIcon Kind="HandCoin" Width="16" Height="16" />
+                        </Button>
+
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+            </StackPanel>
+          </Border>
+
+          <!-- ============================================================= -->
+          <!-- FORSCHUNGS-BEITRAG DIALOG (Overlay)                           -->
+          <!-- ============================================================= -->
+          <Border Classes="CardElevated"
+                  IsVisible="{Binding IsResearchContributeDialogVisible}"
+                  Padding="16"
+                  AutomationProperties.AutomationId="Guild_Border_ResearchContribute">
+            <StackPanel Spacing="10">
+              <mi:MaterialIcon Kind="FlaskOutline" Width="28" Height="28"
+                               Foreground="#EA580C"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding SelectedResearchName}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Text="{loc:Translate GuildResearchContributeAmount}"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" />
+
+              <!-- Betrag -->
+              <TextBlock Text="{Binding ResearchContributeDisplay}"
+                         FontSize="17" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         HorizontalAlignment="Center" />
+
+              <!-- Slider -->
+              <Slider Minimum="1" Maximum="100"
+                      Value="{Binding ResearchContributePercent}"
+                      TickFrequency="1" IsSnapToTickEnabled="True"
+                      Margin="0,4" />
+              <Grid ColumnDefinitions="*,*">
+                <TextBlock Text="1%" FontSize="10"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="100%"
+                           FontSize="10" HorizontalAlignment="Right"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </Grid>
+
+              <!-- Buttons -->
+              <Grid ColumnDefinitions="*,12,*" Margin="0,6,0,0">
+                <Button Grid.Column="0" Classes="Secondary"
+                        HorizontalAlignment="Stretch"
+                        Command="{Binding CancelResearchContributeCommand}">
+                  <TextBlock Text="{loc:Translate Cancel}"
+                             FontSize="13" HorizontalAlignment="Center" />
+                </Button>
+                <Button Grid.Column="2" Classes="Primary"
+                        HorizontalAlignment="Stretch"
+                        Command="{Binding ConfirmResearchContributeCommand}">
+                  <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="HandCoin" Width="14" Height="14" />
+                    <TextBlock Text="{loc:Translate GuildResearchContribute}"
+                               FontSize="13" FontWeight="Bold" />
+                  </StackPanel>
+                </Button>
+              </Grid>
             </StackPanel>
           </Border>
 
@@ -190,10 +589,8 @@
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <mi:MaterialIcon Kind="AccountGroup" Width="18" Height="18"
-                                 AutomationProperties.AutomationId="Guild_Icon_Members"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}" />
-                <TextBlock Text="{loc:Translate Members}"
-                           AutomationProperties.AutomationId="Guild_Txt_MembersHeader"
+                <TextBlock Text="{Binding MembersHeaderDisplay}"
                            FontSize="16" FontWeight="Bold"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
               </StackPanel>
@@ -203,25 +600,20 @@
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:GuildMemberDisplay">
                     <Border Background="{DynamicResource SurfaceBrush}"
-                            AutomationProperties.AutomationId="Guild_Border_MemberItem"
                             CornerRadius="6" Padding="10,6" Margin="0,2">
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
                         <mi:MaterialIcon Kind="AccountHardHat" Width="18" Height="18"
-                                         AutomationProperties.AutomationId="Guild_Icon_MemberAvatar"
                                          Foreground="{DynamicResource TextSecondaryBrush}"
                                          VerticalAlignment="Center" />
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Name}"
-                                     AutomationProperties.AutomationId="Guild_Txt_MemberName"
                                      FontSize="13" FontWeight="SemiBold"
                                      Foreground="{DynamicResource TextPrimaryBrush}" />
                           <TextBlock Text="{Binding RoleDisplay}"
-                                     AutomationProperties.AutomationId="Guild_Txt_MemberLevel"
                                      FontSize="11"
                                      Foreground="{DynamicResource TextSecondaryBrush}" />
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{Binding ContributionDisplay}"
-                                   AutomationProperties.AutomationId="Guild_Txt_MemberContribution"
                                    FontSize="12" FontWeight="SemiBold"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                                    VerticalAlignment="Center" />
@@ -240,10 +632,8 @@
                   Command="{Binding LeaveGuildCommand}"
                   Margin="0,8,0,0">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="ExitToApp" Width="16" Height="16"
-                               AutomationProperties.AutomationId="Guild_Icon_Leave" />
+              <mi:MaterialIcon Kind="ExitToApp" Width="16" Height="16" />
               <TextBlock Text="{loc:Translate LeaveGuild}"
-                         AutomationProperties.AutomationId="Guild_Txt_LeaveBtn"
                          FontSize="13" />
             </StackPanel>
           </Button>

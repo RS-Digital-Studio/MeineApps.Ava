@@ -476,7 +476,7 @@ public partial class WorkerProfileViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("TrainingFailed"),
                 _localizationService.GetString("TrainingFailedDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 
@@ -504,7 +504,7 @@ public partial class WorkerProfileViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("RestFailed"),
                 _localizationService.GetString("RestFailedDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 
@@ -551,7 +551,7 @@ public partial class WorkerProfileViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NotEnoughMoney"),
                 _localizationService.GetString("NotEnoughMoneyDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 
@@ -596,7 +596,7 @@ public partial class WorkerProfileViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("TransferFailed"),
                 _localizationService.GetString("TransferFailedDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 

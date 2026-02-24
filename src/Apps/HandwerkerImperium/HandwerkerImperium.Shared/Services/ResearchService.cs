@@ -107,8 +107,14 @@ public class ResearchService : IResearchService
         var active = GetActiveResearch();
         if (active == null) return;
 
+        // Gilden-Forschung: Beschleunigung (+20%)
+        var effectiveDuration = active.Duration;
+        var guildSpeedBonus = _gameState.State.GuildMembership?.ResearchSpeedBonus ?? 0m;
+        if (guildSpeedBonus > 0)
+            effectiveDuration = TimeSpan.FromSeconds(effectiveDuration.TotalSeconds / (double)(1m + guildSpeedBonus));
+
         // Check if completed
-        if (active.StartedAt != null && DateTime.UtcNow >= active.StartedAt.Value + active.Duration)
+        if (active.StartedAt != null && DateTime.UtcNow >= active.StartedAt.Value + effectiveDuration)
         {
             active.IsResearched = true;
             active.IsActive = false;

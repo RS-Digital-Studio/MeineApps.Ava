@@ -347,6 +347,21 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         HasEquipmentShop = displayItems.Count > 0;
     }
 
+    /// <summary>
+    /// Aktualisiert nur CanAfford auf bestehenden Equipment-Items,
+    /// ohne den Shop neu zu randomisieren.
+    /// </summary>
+    private void RefreshEquipmentCanAfford()
+    {
+        foreach (var item in EquipmentShopItems)
+        {
+            item.CanAfford = _gameStateService.CanAffordGoldenScrews(item.Equipment.ShopPrice);
+        }
+        // ObservableCollection Items haben kein INotifyPropertyChanged →
+        // Collection neu zuweisen damit UI aktualisiert
+        EquipmentShopItems = new ObservableCollection<EquipmentShopItem>(EquipmentShopItems);
+    }
+
     [RelayCommand]
     private void BuyEquipment(EquipmentShopItem? item)
     {
@@ -357,7 +372,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             ShowAlert(
                 _localizationService.GetString("NotEnoughScrews"),
                 string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), item.Equipment.ShopPrice),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -378,7 +393,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void UpgradeTool(ToolDisplayItem? item)
     {
-        if (item == null || !item.CanUpgrade || !item.CanAfford) return;
+        if (item == null || !item.CanUpgrade) return;
 
         var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == item.Type);
         if (tool == null) return;
@@ -388,7 +403,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             ShowAlert(
                 _localizationService.GetString("NotEnoughScrews"),
                 string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), tool.UpgradeCostScrews),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -400,7 +415,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         ShowAlert(
             _localizationService.GetString("ToolUpgrade") ?? "Upgrade",
             $"{name} → Lv. {tool.Level}",
-            "OK");
+            _localizationService.GetString("OK") ?? "OK");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -425,7 +440,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             ShowAlert(
                 _localizationService.GetString("AlreadyPurchased"),
                 _localizationService.GetString("AlreadyPurchasedDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -579,7 +594,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             ShowAlert(
                 _localizationService.GetString("NoPurchasesFound"),
                 _localizationService.GetString("NoPurchasesFoundDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 
@@ -671,6 +686,10 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     private void OnGoldenScrewsChanged(object? sender, GoldenScrewsChangedEventArgs e)
     {
         GoldenScrewsBalance = e.NewAmount.ToString("N0");
+        // CanAfford in Tools aktualisieren (neu generieren, da CanAfford statisch ist)
+        LoadTools();
+        // Equipment-Shop: Nur CanAfford aktualisieren, NICHT neu generieren
+        RefreshEquipmentCanAfford();
     }
 
     public void Dispose()

@@ -72,4 +72,22 @@ public class PrestigeEffect
     /// </summary>
     [JsonPropertyName("goldenScrewBonus")]
     public decimal GoldenScrewBonus { get; set; }
+
+    /// <summary>
+    /// Extra Offline-Stunden (z.B. 4 = +4h max. Offline-Berechnung).
+    /// </summary>
+    [JsonPropertyName("offlineHoursBonus")]
+    public int OfflineHoursBonus { get; set; }
+
+    /// <summary>
+    /// Extra QuickJob-Limit pro Tag (z.B. 10 = +10 QuickJobs/Tag).
+    /// </summary>
+    [JsonPropertyName("extraQuickJobLimit")]
+    public int ExtraQuickJobLimit { get; set; }
+
+    /// <summary>
+    /// Crafting-Geschwindigkeitsbonus (z.B. 0.25 = 25% schneller).
+    /// </summary>
+    [JsonPropertyName("craftingSpeedBonus")]
+    public decimal CraftingSpeedBonus { get; set; }
 }

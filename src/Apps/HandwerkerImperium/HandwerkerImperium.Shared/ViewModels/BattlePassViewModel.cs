@@ -182,7 +182,7 @@ public partial class BattlePassViewModel : ObservableObject
         var state = _gameStateService.State;
         decimal baseIncome = Math.Max(1m, state.TotalIncomePerSecond);
         var freeRewards = BattlePass.GenerateFreeRewards(baseIncome);
-        var premiumRewards = BattlePass.GeneratePremiumRewards(baseIncome);
+        var premiumRewards = BattlePass.GeneratePremiumRewards(baseIncome, bp.SeasonNumber);
 
         var items = new ObservableCollection<BattlePassTierDisplay>();
 

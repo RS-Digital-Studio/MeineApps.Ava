@@ -51,6 +51,44 @@ public class ResearchEffect
     [JsonPropertyName("levelResistanceBonus")]
     public decimal LevelResistanceBonus { get; set; }
 
+    // --- Endgame-Effekte (Level 16-20) ---
+
+    /// <summary>
+    /// Bonus-Ascension-Punkte bei Ascension (z.B. 0.15 = +15%).
+    /// </summary>
+    [JsonPropertyName("ascensionPointBonus")]
+    public decimal AscensionPointBonus { get; set; }
+
+    /// <summary>
+    /// Synergie-Bonus pro zusätzlichem aktivem Workshop (z.B. 0.02 = +2% pro Workshop).
+    /// </summary>
+    [JsonPropertyName("workshopSynergyBonus")]
+    public decimal WorkshopSynergyBonus { get; set; }
+
+    /// <summary>
+    /// Schaltet automatisches Worker-Training frei.
+    /// </summary>
+    [JsonPropertyName("unlocksAutoTraining")]
+    public bool UnlocksAutoTraining { get; set; }
+
+    /// <summary>
+    /// Schaltet Masseneinstellung frei (mehrere Worker gleichzeitig anstellen).
+    /// </summary>
+    [JsonPropertyName("unlocksMassHiring")]
+    public bool UnlocksMassHiring { get; set; }
+
+    /// <summary>
+    /// Bonus auf Reputations-Gewinn (z.B. 0.10 = +10%).
+    /// </summary>
+    [JsonPropertyName("reputationBonus")]
+    public decimal ReputationBonus { get; set; }
+
+    /// <summary>
+    /// Erhöhte Chance auf Premium-Auftragstypen (Large/Weekly/Cooperation).
+    /// </summary>
+    [JsonPropertyName("premiumOrderChance")]
+    public decimal PremiumOrderChance { get; set; }
+
     /// <summary>
     /// Combines two research effects additively.
     /// </summary>
@@ -70,7 +108,13 @@ public class ResearchEffect
             UnlocksHeadhunter = a.UnlocksHeadhunter || b.UnlocksHeadhunter,
             UnlocksSTierWorkers = a.UnlocksSTierWorkers || b.UnlocksSTierWorkers,
             UnlocksAutoAssign = a.UnlocksAutoAssign || b.UnlocksAutoAssign,
-            LevelResistanceBonus = a.LevelResistanceBonus + b.LevelResistanceBonus
+            LevelResistanceBonus = a.LevelResistanceBonus + b.LevelResistanceBonus,
+            AscensionPointBonus = a.AscensionPointBonus + b.AscensionPointBonus,
+            WorkshopSynergyBonus = a.WorkshopSynergyBonus + b.WorkshopSynergyBonus,
+            UnlocksAutoTraining = a.UnlocksAutoTraining || b.UnlocksAutoTraining,
+            UnlocksMassHiring = a.UnlocksMassHiring || b.UnlocksMassHiring,
+            ReputationBonus = a.ReputationBonus + b.ReputationBonus,
+            PremiumOrderChance = a.PremiumOrderChance + b.PremiumOrderChance
         };
     }
 }

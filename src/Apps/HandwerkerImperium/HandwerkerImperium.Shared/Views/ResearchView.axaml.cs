@@ -227,7 +227,8 @@ public partial class ResearchView : UserControl
             _vm.ActiveResearchTimeRemaining,
             (float)_vm.ActiveResearchProgress,
             branch,
-            delta);
+            delta,
+            _vm.ResearchRunningLabel);
     }
 
     /// <summary>

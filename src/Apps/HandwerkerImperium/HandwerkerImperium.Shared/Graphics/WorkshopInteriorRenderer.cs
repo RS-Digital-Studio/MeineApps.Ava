@@ -22,6 +22,8 @@ public class WorkshopInteriorRenderer
         { WorkshopType.Contractor,         (new SKColor(0xD2, 0xC4, 0xA0), new SKColor(0xC8, 0xB0, 0x90), new SKColor(0xB0, 0x9A, 0x78, 30)) },
         { WorkshopType.Architect,          (new SKColor(0xEE, 0xEE, 0xEE), new SKColor(0xD0, 0xD0, 0xD0), new SKColor(0xC0, 0xC0, 0xC0, 25)) },
         { WorkshopType.GeneralContractor,  (new SKColor(0xE8, 0xD8, 0xA0), new SKColor(0xC0, 0xA8, 0x70), new SKColor(0xA8, 0x90, 0x60, 30)) },
+        { WorkshopType.MasterSmith,         (new SKColor(0xD7, 0xC0, 0xA0), new SKColor(0xA8, 0x88, 0x60), new SKColor(0x90, 0x70, 0x48, 35)) },
+        { WorkshopType.InnovationLab,       (new SKColor(0xE0, 0xE0, 0xEA), new SKColor(0xC8, 0xC8, 0xD8), new SKColor(0xB0, 0xB0, 0xC8, 25)) },
     };
 
     /// <summary>
@@ -231,6 +233,92 @@ public class WorkshopInteriorRenderer
                 canvas.DrawRect(winX + bw * 4.5f, skyBase - skyH3, bw * 1.5f, skyH3 + (winY + winH - skyBase), detailPaint);
                 canvas.DrawRect(winX + bw * 6.5f, skyBase - skyH1 * 0.7f, bw, skyH1 * 0.7f + (winY + winH - skyBase), detailPaint);
                 break;
+
+            case WorkshopType.MasterSmith:
+                // Schmiedewerkzeuge an der Wand (Zange + Hammer + Amboss-Umriss)
+                detailPaint.Color = new SKColor(0x8D, 0x6E, 0x63, 22);
+                // Hammer-Silhouette
+                float hammerX = bounds.Left + bounds.Width * 0.15f;
+                float hammerY = bounds.Top + bounds.Height * 0.12f;
+                canvas.DrawRect(hammerX, hammerY, 14, 6, detailPaint); // Kopf
+                canvas.DrawRect(hammerX + 5, hammerY + 6, 4, 18, detailPaint); // Stiel
+                // Zange-Silhouette
+                float tongX = bounds.Left + bounds.Width * 0.7f;
+                float tongY = bounds.Top + bounds.Height * 0.1f;
+                detailPaint.StrokeWidth = 1.5f;
+                canvas.DrawLine(tongX, tongY, tongX + 4, tongY + 22, detailPaint);
+                canvas.DrawLine(tongX + 8, tongY, tongX + 4, tongY + 22, detailPaint);
+                // Zangenmaul
+                canvas.DrawLine(tongX - 2, tongY, tongX + 10, tongY, detailPaint);
+                // Amboss-Umriss (dezent, Mitte unten)
+                float anvilWX = bounds.Left + bounds.Width * 0.4f;
+                float anvilWY = bounds.Top + bounds.Height * 0.28f;
+                detailPaint.Color = new SKColor(0x70, 0x60, 0x50, 18);
+                canvas.DrawRect(anvilWX, anvilWY + 4, 20, 6, detailPaint); // Basis
+                canvas.DrawRect(anvilWX + 3, anvilWY, 14, 5, detailPaint); // Körper
+                // Funken-Muster (kleine Punkte)
+                detailPaint.Style = SKPaintStyle.Fill;
+                detailPaint.Color = new SKColor(0xFF, 0x8F, 0x00, 15);
+                canvas.DrawCircle(bounds.Left + bounds.Width * 0.3f, bounds.Top + bounds.Height * 0.2f, 2, detailPaint);
+                canvas.DrawCircle(bounds.Left + bounds.Width * 0.55f, bounds.Top + bounds.Height * 0.15f, 1.5f, detailPaint);
+                canvas.DrawCircle(bounds.Left + bounds.Width * 0.45f, bounds.Top + bounds.Height * 0.25f, 1.8f, detailPaint);
+                canvas.DrawCircle(bounds.Left + bounds.Width * 0.65f, bounds.Top + bounds.Height * 0.3f, 1.2f, detailPaint);
+                break;
+
+            case WorkshopType.InnovationLab:
+                // Reagenzgläser an der Wand (3 Stück)
+                detailPaint.Color = new SKColor(0x6A, 0x5A, 0xCD, 18);
+                float tubeStartX = bounds.Left + bounds.Width * 0.12f;
+                float tubeY = bounds.Top + bounds.Height * 0.1f;
+                for (int i = 0; i < 3; i++)
+                {
+                    float tx = tubeStartX + i * 14;
+                    // Röhrchen
+                    canvas.DrawLine(tx, tubeY, tx, tubeY + 20, detailPaint);
+                    canvas.DrawLine(tx + 4, tubeY, tx + 4, tubeY + 20, detailPaint);
+                    // Abgerundeter Boden
+                    canvas.DrawArc(new SKRect(tx - 0.5f, tubeY + 16, tx + 4.5f, tubeY + 22), 0, 180, false, detailPaint);
+                    // Flüssigkeitslevel (unterschiedlich hoch)
+                    detailPaint.Style = SKPaintStyle.Fill;
+                    detailPaint.Color = new SKColor(0x6A, 0x5A, 0xCD, (byte)(12 + i * 3));
+                    float liquidTop = tubeY + 8 + i * 4;
+                    canvas.DrawRect(tx + 0.5f, liquidTop, 3, tubeY + 19 - liquidTop, detailPaint);
+                    detailPaint.Style = SKPaintStyle.Stroke;
+                    detailPaint.Color = new SKColor(0x6A, 0x5A, 0xCD, 18);
+                }
+                // Molekül-Struktur (rechts, dezent)
+                float molX = bounds.Left + bounds.Width * 0.68f;
+                float molY = bounds.Top + bounds.Height * 0.15f;
+                detailPaint.Color = new SKColor(0x80, 0x80, 0xA0, 20);
+                detailPaint.StrokeWidth = 1f;
+                // Atome (Kreise)
+                canvas.DrawCircle(molX, molY, 4, detailPaint);
+                canvas.DrawCircle(molX + 16, molY + 5, 3, detailPaint);
+                canvas.DrawCircle(molX + 8, molY + 18, 3.5f, detailPaint);
+                canvas.DrawCircle(molX - 8, molY + 14, 2.5f, detailPaint);
+                // Bindungen (Linien)
+                canvas.DrawLine(molX + 4, molY + 1, molX + 13, molY + 3, detailPaint);
+                canvas.DrawLine(molX + 2, molY + 4, molX + 5, molY + 15, detailPaint);
+                canvas.DrawLine(molX + 14, molY + 8, molX + 10, molY + 15, detailPaint);
+                canvas.DrawLine(molX - 4, molY + 3, molX - 6, molY + 11, detailPaint);
+                // Zahnrad-Silhouette (klein, rechts unten)
+                float gearSilX = bounds.Left + bounds.Width * 0.82f;
+                float gearSilY = bounds.Top + bounds.Height * 0.28f;
+                float gearSilR = 8;
+                detailPaint.Color = new SKColor(0x80, 0x80, 0x90, 16);
+                canvas.DrawCircle(gearSilX, gearSilY, gearSilR, detailPaint);
+                canvas.DrawCircle(gearSilX, gearSilY, gearSilR * 0.4f, detailPaint);
+                for (int g = 0; g < 6; g++)
+                {
+                    float ga = g * MathF.PI / 3;
+                    canvas.DrawLine(
+                        gearSilX + MathF.Cos(ga) * gearSilR,
+                        gearSilY + MathF.Sin(ga) * gearSilR,
+                        gearSilX + MathF.Cos(ga) * (gearSilR + 3),
+                        gearSilY + MathF.Sin(ga) * (gearSilR + 3),
+                        detailPaint);
+                }
+                break;
         }
     }
 
@@ -310,6 +398,27 @@ public class WorkshopInteriorRenderer
                         canvas.DrawLine(x + offset, y, x + offset + 14, y, linePaint);
                     }
                 }
+                break;
+
+            case WorkshopType.MasterSmith:
+                // Dezente Steinplatten (wie Schmiedeboden)
+                linePaint.Color = new SKColor(0x70, 0x58, 0x40, 30);
+                for (float y = patternTop; y < bounds.Bottom; y += 16)
+                {
+                    canvas.DrawLine(bounds.Left, y, bounds.Right, y, linePaint);
+                    float rowOffset = ((int)(y / 16) % 2 == 0) ? 0 : 20;
+                    for (float x = bounds.Left + rowOffset; x < bounds.Right; x += 40)
+                        canvas.DrawLine(x, y, x, y + 16, linePaint);
+                }
+                break;
+
+            case WorkshopType.InnovationLab:
+                // Dezentes Kachel-Raster (Labor-Fliesen, feiner als Plumber)
+                linePaint.Color = new SKColor(0xA0, 0xA0, 0xB8, 22);
+                for (float y = patternTop; y < bounds.Bottom; y += 14)
+                    canvas.DrawLine(bounds.Left, y, bounds.Right, y, linePaint);
+                for (float x = bounds.Left + 14; x < bounds.Right; x += 14)
+                    canvas.DrawLine(x, patternTop, x, bounds.Bottom, linePaint);
                 break;
         }
     }

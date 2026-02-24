@@ -74,6 +74,12 @@ public class WorkshopSceneRenderer
             case WorkshopType.GeneralContractor:
                 DrawGeneralContractorScene(canvas, left, top, w, h, p, effectiveParticleRate, productCount, activeWorkers, level, workshop.Type, addWorkParticle, addCoinParticle);
                 break;
+            case WorkshopType.MasterSmith:
+                DrawMasterSmithScene(canvas, left, top, w, h, p, effectiveParticleRate, activeWorkers, level, workshop.Type, addWorkParticle, addCoinParticle);
+                break;
+            case WorkshopType.InnovationLab:
+                DrawInnovationLabScene(canvas, left, top, w, h, p, effectiveParticleRate, activeWorkers, level, workshop.Type, addWorkParticle, addCoinParticle);
+                break;
         }
 
         // Level-basierte Overlay-Effekte (nach der Szene gezeichnet)
@@ -208,6 +214,8 @@ public class WorkshopSceneRenderer
             WorkshopType.Contractor => new SKColor(0x61, 0x61, 0x61),      // Graue Arbeitskleidung
             WorkshopType.Architect => new SKColor(0xF5, 0xF5, 0xF5),       // Weisses Hemd
             WorkshopType.GeneralContractor => new SKColor(0x21, 0x21, 0x21), // Schwarzer Anzug
+            WorkshopType.MasterSmith => new SKColor(0x6D, 0x4C, 0x41),      // Braune Lederschürze
+            WorkshopType.InnovationLab => new SKColor(0xE0, 0xE0, 0xF0),    // Weißer Laborkittel
             _ => new SKColor(0x78, 0x78, 0x78)
         };
 
@@ -398,6 +406,28 @@ public class WorkshopSceneRenderer
                 canvas.DrawArc(new SKRect(x - headR * 0.9f, headCY - headR * 1.3f,
                     x + headR * 0.9f, headCY - headR * 0.2f), 180, 180, true, _fillPaint);
                 break;
+            case WorkshopType.MasterSmith:
+                // Schmied-Kappe (braune Lederkappe + Schweißband)
+                _fillPaint.Color = new SKColor(0x6D, 0x4C, 0x41);
+                canvas.DrawArc(new SKRect(x - headR - 1, headCY - headR - 2 * accScale,
+                    x + headR + 1, headCY + 1), 180, 180, true, _fillPaint);
+                // Schweißband (kupferfarben)
+                _fillPaint.Color = new SKColor(0xD4, 0xA3, 0x73);
+                canvas.DrawRect(x - headR - 2 * accScale, headCY - 1, (headR + 2 * accScale) * 2, 2 * accScale, _fillPaint);
+                break;
+            case WorkshopType.InnovationLab:
+                // Schutzbrille (violett getönt)
+                _strokePaint.Color = new SKColor(0x6A, 0x5A, 0xCD);
+                _strokePaint.StrokeWidth = 1.8f * accScale;
+                float labGlassR = 3.5f * accScale;
+                canvas.DrawCircle(x - 3 * scale, headCY, labGlassR, _strokePaint);
+                canvas.DrawCircle(x + 3 * scale, headCY, labGlassR, _strokePaint);
+                canvas.DrawLine(x - 3 * scale + labGlassR, headCY, x + 3 * scale - labGlassR, headCY, _strokePaint);
+                // Violetter Glasglanz
+                _fillPaint.Color = new SKColor(0x9C, 0x8A, 0xE7, 50);
+                canvas.DrawCircle(x - 3 * scale - 1, headCY - 1, labGlassR * 0.5f, _fillPaint);
+                canvas.DrawCircle(x + 3 * scale - 1, headCY - 1, labGlassR * 0.5f, _fillPaint);
+                break;
         }
     }
 
@@ -545,6 +575,20 @@ public class WorkshopSceneRenderer
                 _fillPaint.Color = new SKColor(0xFF, 0xD7, 0x00, 100);
                 canvas.DrawRect(cx - 8, bottom - 20, 6, 14, _fillPaint);
                 canvas.DrawRect(cx - 12, bottom - 6, 14, 4, _fillPaint);
+                break;
+            case WorkshopType.MasterSmith:
+                // Schmiedehammer liegt am Boden
+                _fillPaint.Color = new SKColor(0x90, 0x90, 0x90, 100);
+                canvas.DrawRect(cx - 8, bottom - 18, 16, 6, _fillPaint);
+                _fillPaint.Color = new SKColor(0x6D, 0x4C, 0x41, 100);
+                canvas.DrawRect(cx + 2, bottom - 14, 4, 18, _fillPaint);
+                break;
+            case WorkshopType.InnovationLab:
+                // Reagenzglas liegt am Boden
+                _fillPaint.Color = new SKColor(0x6A, 0x5A, 0xCD, 80);
+                canvas.DrawRect(cx - 15, bottom - 14, 30, 4, _fillPaint);
+                _fillPaint.Color = new SKColor(0x90, 0x90, 0x90, 100);
+                canvas.DrawRect(cx + 15, bottom - 18, 6, 8, _fillPaint);
                 break;
         }
     }
@@ -1776,6 +1820,313 @@ public class WorkshopSceneRenderer
             if (level >= 250) addCoinParticle(cx - 5, docY - 8);
             if (level >= 500) addCoinParticle(cx + 5, docY - 12);
         }
+    }
+
+    // ====================================================================
+    // Meisterschmiede: Amboss + Esse + Schmiedehammer + Funken
+    // ====================================================================
+    private void DrawMasterSmithScene(SKCanvas canvas, float left, float top, float w, float h,
+        float phase, int particleRate, int activeWorkers, int level, WorkshopType type,
+        Action<float, float, SKColor> addWorkParticle, Action<float, float> addCoinParticle)
+    {
+        float cx = left + w * 0.45f;
+        float cy = top + h * 0.48f;
+        var copperColor = new SKColor(0xD4, 0xA3, 0x73);
+
+        // --- Esse (links, Feuerstelle mit Glow) ---
+        float esseX = left + w * 0.08f;
+        float esseY = cy - h * 0.15f;
+        float esseW = w * 0.28f;
+        float esseH = h * 0.35f;
+
+        DrawShadow(canvas, esseX, esseY, esseW, esseH, _shadowMedium);
+        // Esse-Steinblock
+        _fillPaint.Color = new SKColor(0x5C, 0x3A, 0x21);
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(esseX, esseY, esseX + esseW, esseY + esseH), 4), _fillPaint);
+        // Esse-Öffnung
+        _fillPaint.Color = new SKColor(0x2A, 0x1A, 0x0A);
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(esseX + 4, esseY + 6, esseX + esseW - 4, esseY + esseH - 6), 3), _fillPaint);
+
+        // Feuer in der Esse (animiert)
+        float firePhase = PingPong(phase, 1.5f);
+        _fillPaint.Color = new SKColor(0xFF, 0x6B, 0x00, (byte)(180 + firePhase * 50));
+        using var firePath = new SKPath();
+        float fireCx = esseX + esseW / 2;
+        float fireBot = esseY + esseH - 10;
+        firePath.MoveTo(fireCx - 12, fireBot);
+        firePath.QuadTo(fireCx - 8, fireBot - 18 - firePhase * 8, fireCx, fireBot - 25 - firePhase * 10);
+        firePath.QuadTo(fireCx + 8, fireBot - 18 - firePhase * 6, fireCx + 12, fireBot);
+        firePath.Close();
+        canvas.DrawPath(firePath, _fillPaint);
+
+        // Innerer Feuerkern (gelb-weiß)
+        _fillPaint.Color = new SKColor(0xFF, 0xE0, 0x82, (byte)(150 + firePhase * 60));
+        using var innerFirePath = new SKPath();
+        innerFirePath.MoveTo(fireCx - 6, fireBot - 2);
+        innerFirePath.QuadTo(fireCx - 3, fireBot - 12 - firePhase * 5, fireCx, fireBot - 16 - firePhase * 6);
+        innerFirePath.QuadTo(fireCx + 3, fireBot - 12 - firePhase * 4, fireCx + 6, fireBot - 2);
+        innerFirePath.Close();
+        canvas.DrawPath(innerFirePath, _fillPaint);
+
+        // Feuer-Glow
+        DrawGlow(canvas, fireCx, fireBot - 12, 20 + firePhase * 8, new SKColor(0xFF, 0x6B, 0x00, 40), _glowMedium);
+
+        // Schornstein über der Esse
+        _fillPaint.Color = new SKColor(0x4A, 0x2E, 0x18);
+        canvas.DrawRect(fireCx - 5, esseY - 18, 10, 20, _fillPaint);
+        // Rauch-Andeutung
+        _fillPaint.Color = new SKColor(0x90, 0x90, 0x90, (byte)(20 + firePhase * 15));
+        canvas.DrawCircle(fireCx - 2, esseY - 22, 4, _fillPaint);
+        canvas.DrawCircle(fireCx + 1, esseY - 28, 3, _fillPaint);
+
+        // --- Amboss (Mitte, massiv) ---
+        float anvilX = cx;
+        float anvilY = cy + h * 0.05f;
+
+        DrawShadow(canvas, anvilX - 22, anvilY - 5, 44, 20, _shadowMedium);
+        // Amboss-Sockel
+        _fillPaint.Color = new SKColor(0x4A, 0x4A, 0x4A);
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(anvilX - 16, anvilY + 8, anvilX + 16, anvilY + 18), 2), _fillPaint);
+        // Amboss-Körper
+        _fillPaint.Color = new SKColor(0x78, 0x78, 0x78);
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(anvilX - 20, anvilY - 4, anvilX + 20, anvilY + 10), 3), _fillPaint);
+        // Amboss-Horn (rechts spitz)
+        using var hornPath = new SKPath();
+        hornPath.MoveTo(anvilX + 20, anvilY - 2);
+        hornPath.LineTo(anvilX + 35, anvilY + 3);
+        hornPath.LineTo(anvilX + 20, anvilY + 8);
+        hornPath.Close();
+        _fillPaint.Color = new SKColor(0x70, 0x70, 0x70);
+        canvas.DrawPath(hornPath, _fillPaint);
+        // Metallglanz-Streifen
+        _fillPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, 40);
+        canvas.DrawRect(anvilX - 18, anvilY - 3, 36, 2, _fillPaint);
+
+        // --- Glühendes Werkstück auf dem Amboss ---
+        float workPiece = PingPong(phase, 0.8f);
+        _fillPaint.Color = new SKColor(0xFF, 0x6B, 0x00, (byte)(160 + workPiece * 60));
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(anvilX - 10, anvilY - 6, anvilX + 12, anvilY - 1), 1), _fillPaint);
+        // Lv50+ Tool-Glow auf Werkstück
+        if (level >= 50)
+        {
+            DrawGlow(canvas, anvilX, anvilY - 4, 14, new SKColor(0xFF, 0xFF, 0xFF, 30), _glowSmall);
+        }
+
+        // --- Schmiedehammer (PingPong-Animation: schlägt auf Amboss) ---
+        float hammerAngle = PingPong(phase, 2.0f);
+        float hammerSwing = -45 + hammerAngle * 60; // -45° bis +15° Schwung
+
+        canvas.Save();
+        canvas.Translate(anvilX + 5, anvilY - 6);
+        canvas.RotateDegrees(hammerSwing);
+        // Stiel
+        _fillPaint.Color = new SKColor(0x8D, 0x6E, 0x63);
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(-2.5f, -40, 2.5f, 0), 1), _fillPaint);
+        // Hammerkopf
+        _fillPaint.Color = new SKColor(0x90, 0x90, 0x90);
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(-10, -44, 10, -34), 2), _fillPaint);
+        // Glanz
+        _fillPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, 50);
+        canvas.DrawRect(-8, -43, 16, 2, _fillPaint);
+        canvas.Restore();
+
+        // --- Funken-Partikel (beim Hammerschlag) ---
+        if (hammerAngle < 0.15f)
+        {
+            for (int p = 0; p < particleRate + 4; p++)
+                addWorkParticle(anvilX, anvilY - 8, new SKColor(0xFF, 0x8F, 0x00));
+        }
+
+        // --- Worker-Figur rechts vom Amboss ---
+        DrawStickFigure(canvas, anvilX + w * 0.25f, anvilY + 22, 0.9f,
+            copperColor, phase * 3, phase * 2, type);
+
+        // 4+ Worker: Zweiter Arbeiter an der Esse
+        if (activeWorkers >= 4)
+        {
+            DrawStickFigure(canvas, esseX + esseW + 5, esseY + esseH + 20, 0.8f,
+                new SKColor(0xA0, 0x7A, 0x50), phase * 1.8f, phase * 2.5f, type);
+        }
+
+        // Münz-Emission
+        TryEmitCoin(phase, activeWorkers, level, anvilX, anvilY - 20, addCoinParticle);
+    }
+
+    // ====================================================================
+    // Innovationslabor: Erfindung am Tisch + Zahnräder + Glühbirne + Dampf
+    // ====================================================================
+    private void DrawInnovationLabScene(SKCanvas canvas, float left, float top, float w, float h,
+        float phase, int particleRate, int activeWorkers, int level, WorkshopType type,
+        Action<float, float, SKColor> addWorkParticle, Action<float, float> addCoinParticle)
+    {
+        float cx = left + w * 0.45f;
+        float cy = top + h * 0.48f;
+        var violetColor = new SKColor(0x6A, 0x5A, 0xCD);
+
+        // --- Arbeitstisch (großer Labortisch) ---
+        float tableW = w * 0.6f;
+        float tableH = 12;
+        float tableX = left + (w - tableW) / 2;
+        float tableY = cy + h * 0.02f;
+
+        DrawShadow(canvas, tableX, tableY, tableW, tableH + h * 0.25f, _shadowMedium);
+        // Tischbeine (Metall)
+        _fillPaint.Color = new SKColor(0x70, 0x70, 0x70);
+        canvas.DrawRect(tableX + 10, tableY + tableH, 5, h * 0.25f, _fillPaint);
+        canvas.DrawRect(tableX + tableW - 15, tableY + tableH, 5, h * 0.25f, _fillPaint);
+        // Tischplatte (weiß/grau - Labor-Optik)
+        _fillPaint.Color = new SKColor(0xD0, 0xD0, 0xDA);
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(tableX, tableY, tableX + tableW, tableY + tableH), 2), _fillPaint);
+        // Highlight
+        _fillPaint.Color = new SKColor(0xE8, 0xE8, 0xF0);
+        canvas.DrawRect(tableX + 2, tableY + 1, tableW - 4, 3, _fillPaint);
+
+        // --- Erlenmeyer-Kolben auf Tisch (links) ---
+        float flaskX = tableX + tableW * 0.2f;
+        float flaskY = tableY - 2;
+
+        // Kolbenhals
+        _strokePaint.Color = new SKColor(0xB0, 0xD0, 0xF0, 0xD0);
+        _strokePaint.StrokeWidth = 2;
+        canvas.DrawLine(flaskX - 4, flaskY - 28, flaskX - 4, flaskY - 12, _strokePaint);
+        canvas.DrawLine(flaskX + 4, flaskY - 28, flaskX + 4, flaskY - 12, _strokePaint);
+        // Kolbenkörper
+        using var flaskPath = new SKPath();
+        flaskPath.MoveTo(flaskX - 4, flaskY - 12);
+        flaskPath.LineTo(flaskX - 14, flaskY);
+        flaskPath.LineTo(flaskX + 14, flaskY);
+        flaskPath.LineTo(flaskX + 4, flaskY - 12);
+        canvas.DrawPath(flaskPath, _strokePaint);
+        // Flüssigkeit
+        float bubblePhase = PingPong(phase, 1.2f);
+        _fillPaint.Color = violetColor.WithAlpha((byte)(100 + bubblePhase * 40));
+        using var liquidPath = new SKPath();
+        liquidPath.MoveTo(flaskX - 8, flaskY - 8);
+        liquidPath.LineTo(flaskX - 13, flaskY - 1);
+        liquidPath.LineTo(flaskX + 13, flaskY - 1);
+        liquidPath.LineTo(flaskX + 8, flaskY - 8);
+        liquidPath.Close();
+        canvas.DrawPath(liquidPath, _fillPaint);
+        // Blasen (animiert)
+        _fillPaint.Color = violetColor.WithAlpha(60);
+        float bub1Y = flaskY - 10 - bubblePhase * 12;
+        float bub2Y = flaskY - 6 - PingPong(phase + 0.5f, 1.0f) * 10;
+        canvas.DrawCircle(flaskX - 2, bub1Y, 2, _fillPaint);
+        canvas.DrawCircle(flaskX + 3, bub2Y, 1.5f, _fillPaint);
+        canvas.DrawCircle(flaskX - 1, bub2Y + 4, 1, _fillPaint);
+
+        // --- Rotierende Zahnräder (rechts oben) ---
+        float gearCx = left + w * 0.78f;
+        float gearCy = cy - h * 0.12f;
+        float gearR1 = 16;
+        float gearR2 = 10;
+        float gearAngle1 = phase * 1.5f;
+        float gearAngle2 = -phase * 1.5f * (gearR1 / gearR2); // Gegenläufig, korrekte Übersetzung
+
+        // Großes Zahnrad
+        _strokePaint.Color = new SKColor(0x80, 0x80, 0x90);
+        _strokePaint.StrokeWidth = 2;
+        canvas.DrawCircle(gearCx, gearCy, gearR1, _strokePaint);
+        canvas.DrawCircle(gearCx, gearCy, gearR1 * 0.45f, _strokePaint);
+        // Zähne
+        for (int t = 0; t < 8; t++)
+        {
+            float a = gearAngle1 + t * MathF.PI / 4;
+            canvas.DrawLine(
+                gearCx + MathF.Cos(a) * gearR1 * 0.85f,
+                gearCy + MathF.Sin(a) * gearR1 * 0.85f,
+                gearCx + MathF.Cos(a) * (gearR1 + 4),
+                gearCy + MathF.Sin(a) * (gearR1 + 4),
+                _strokePaint);
+        }
+
+        // Kleines Zahnrad (versetzt, gegenläufig)
+        float gear2Cx = gearCx + gearR1 + gearR2 - 4;
+        float gear2Cy = gearCy - gearR2 * 0.3f;
+        canvas.DrawCircle(gear2Cx, gear2Cy, gearR2, _strokePaint);
+        canvas.DrawCircle(gear2Cx, gear2Cy, gearR2 * 0.4f, _strokePaint);
+        for (int t = 0; t < 6; t++)
+        {
+            float a = gearAngle2 + t * MathF.PI / 3;
+            canvas.DrawLine(
+                gear2Cx + MathF.Cos(a) * gearR2 * 0.8f,
+                gear2Cy + MathF.Sin(a) * gearR2 * 0.8f,
+                gear2Cx + MathF.Cos(a) * (gearR2 + 3),
+                gear2Cy + MathF.Sin(a) * (gearR2 + 3),
+                _strokePaint);
+        }
+
+        // --- Leuchtende Glühbirne (oben Mitte) ---
+        float bulbCx = cx + w * 0.05f;
+        float bulbCy = top + h * 0.08f;
+        float bulbR = 10;
+        float bulbPulse = 0.6f + MathF.Sin(phase * 2.5f) * 0.4f;
+
+        // Glow um Birne
+        DrawGlow(canvas, bulbCx, bulbCy, bulbR * 2.5f, new SKColor(0xFF, 0xF1, 0x76, (byte)(20 + bulbPulse * 25)), _glowMedium);
+        // Glaskolben
+        _fillPaint.Color = new SKColor(0xFF, 0xF1, 0x76, (byte)(120 + bulbPulse * 80));
+        canvas.DrawCircle(bulbCx, bulbCy, bulbR, _fillPaint);
+        _strokePaint.Color = new SKColor(0xFF, 0xF1, 0x76, 0xC0);
+        _strokePaint.StrokeWidth = 1;
+        canvas.DrawCircle(bulbCx, bulbCy, bulbR, _strokePaint);
+        // Sockel
+        _fillPaint.Color = new SKColor(0x90, 0x90, 0x90);
+        canvas.DrawRect(bulbCx - 4, bulbCy + bulbR - 1, 8, 5, _fillPaint);
+        // Glühdraht
+        _strokePaint.Color = new SKColor(0xFF, 0xD5, 0x4F, 0xB0);
+        _strokePaint.StrokeWidth = 1;
+        canvas.DrawLine(bulbCx - 2, bulbCy + 2, bulbCx, bulbCy - 4, _strokePaint);
+        canvas.DrawLine(bulbCx, bulbCy - 4, bulbCx + 2, bulbCy + 2, _strokePaint);
+
+        // --- Erfindung/Prototyp auf dem Tisch (rechts) ---
+        float protoX = tableX + tableW * 0.6f;
+        float protoY = tableY - 18;
+
+        // Kleines Gerät (Box mit Antennen)
+        _fillPaint.Color = new SKColor(0x50, 0x50, 0x60);
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(protoX - 10, protoY, protoX + 10, protoY + 16), 2), _fillPaint);
+        // Bildschirm
+        _fillPaint.Color = violetColor.WithAlpha(80);
+        canvas.DrawRect(protoX - 7, protoY + 2, 14, 8, _fillPaint);
+        // Antenne
+        _strokePaint.Color = new SKColor(0xA0, 0xA0, 0xA0);
+        _strokePaint.StrokeWidth = 1;
+        canvas.DrawLine(protoX + 6, protoY, protoX + 10, protoY - 10, _strokePaint);
+        // Blinkende LED
+        _fillPaint.Color = new SKColor(0x00, 0xFF, 0x00, (byte)(80 + bulbPulse * 120));
+        canvas.DrawCircle(protoX - 5, protoY + 13, 1.5f, _fillPaint);
+
+        // --- Dampf/Rauch-Partikel aus Kolben ---
+        float steamPhase = (phase * 3) % MathF.Tau;
+        if (steamPhase > MathF.PI - 0.5f && steamPhase < MathF.PI + 0.5f)
+        {
+            for (int p = 0; p < particleRate + 2; p++)
+                addWorkParticle(flaskX, flaskY - 30, new SKColor(0x90, 0x90, 0xB0));
+        }
+
+        // --- Blaupause-Linien auf Tisch (dezent) ---
+        _strokePaint.Color = violetColor.WithAlpha(25);
+        _strokePaint.StrokeWidth = 0.5f;
+        float bpX = tableX + tableW * 0.35f;
+        float bpY = tableY - 1;
+        canvas.DrawRect(bpX, bpY - 12, 24, 12, _strokePaint);
+        canvas.DrawLine(bpX + 6, bpY - 12, bpX + 6, bpY, _strokePaint);
+        canvas.DrawLine(bpX, bpY - 6, bpX + 24, bpY - 6, _strokePaint);
+
+        // --- Worker-Figur links am Tisch ---
+        DrawStickFigure(canvas, tableX - 10, tableY + tableH + 20, 0.9f,
+            violetColor, phase * 1.5f, phase * 2, type);
+
+        // 4+ Worker: Zweiter Arbeiter an den Zahnrädern
+        if (activeWorkers >= 4)
+        {
+            DrawStickFigure(canvas, gearCx - 15, gearCy + 35, 0.8f,
+                new SKColor(0x8A, 0x7A, 0xBD), phase * 2, phase * 1.5f, type);
+        }
+
+        // Münz-Emission
+        TryEmitCoin(phase, activeWorkers, level, cx, tableY - 20, addCoinParticle);
     }
 
     /// <summary>

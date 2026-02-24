@@ -133,13 +133,13 @@ public static class PrestigeTierExtensions
     public static string GetIcon(this PrestigeTier tier) => tier switch
     {
         PrestigeTier.None => "",
-        PrestigeTier.Bronze => "\ud83e\udd49",  // Bronze medal
-        PrestigeTier.Silver => "\ud83e\udd48",  // Silver medal
-        PrestigeTier.Gold => "\ud83e\udd47",    // Gold medal
-        PrestigeTier.Platin => "\ud83d\udc8e",  // Gem
-        PrestigeTier.Diamant => "\u2b50",        // Star
-        PrestigeTier.Meister => "\ud83d\udd25",  // Fire
-        PrestigeTier.Legende => "\ud83c\udf1f",  // Glowing star
+        PrestigeTier.Bronze => "MedalOutline",
+        PrestigeTier.Silver => "Medal",
+        PrestigeTier.Gold => "TrophyAward",
+        PrestigeTier.Platin => "DiamondStone",
+        PrestigeTier.Diamant => "StarFourPoints",
+        PrestigeTier.Meister => "Fire",
+        PrestigeTier.Legende => "Crown",
         _ => ""
     };
 

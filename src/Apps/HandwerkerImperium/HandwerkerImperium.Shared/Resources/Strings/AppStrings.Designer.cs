@@ -1325,6 +1325,9 @@ namespace HandwerkerImperium.Resources.Strings {
         // Guild
         public static string Guild => ResourceManager.GetString("Guild", resourceCulture) ?? "";
         public static string GuildIncomeBonus => ResourceManager.GetString("GuildIncomeBonus", resourceCulture) ?? "";
+
+        // ContributeToGuild
+        public static string ContributeToGuild => ResourceManager.GetString("ContributeToGuild", resourceCulture) ?? "";
         public static string GuildMember => ResourceManager.GetString("GuildMember", resourceCulture) ?? "";
         public static string Members => ResourceManager.GetString("Members", resourceCulture) ?? "";
         public static string You => ResourceManager.GetString("You", resourceCulture) ?? "";
@@ -1338,6 +1341,7 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string LuckySpin => ResourceManager.GetString("LuckySpin", resourceCulture) ?? "";
         public static string LuckySpinFree => ResourceManager.GetString("LuckySpinFree", resourceCulture) ?? "";
         public static string LuckySpinCost => ResourceManager.GetString("LuckySpinCost", resourceCulture) ?? "";
+        public static string LuckySpinNextFree => ResourceManager.GetString("LuckySpinNextFree", resourceCulture) ?? "";
         public static string LuckySpinYourPrize => ResourceManager.GetString("LuckySpinYourPrize", resourceCulture) ?? "";
         public static string LuckySpinSpeedBoost => ResourceManager.GetString("LuckySpinSpeedBoost", resourceCulture) ?? "";
         public static string LuckySpinToolUpgrade => ResourceManager.GetString("LuckySpinToolUpgrade", resourceCulture) ?? "";
@@ -1369,5 +1373,225 @@ namespace HandwerkerImperium.Resources.Strings {
 
         // Features
         public static string FeaturesTitle => ResourceManager.GetString("FeaturesTitle", resourceCulture) ?? "";
+
+        // Gilden
+        public static string GuildWoodworkers => ResourceManager.GetString("GuildWoodworkers", resourceCulture) ?? "";
+        public static string GuildMetalworkers => ResourceManager.GetString("GuildMetalworkers", resourceCulture) ?? "";
+        public static string GuildElectricians => ResourceManager.GetString("GuildElectricians", resourceCulture) ?? "";
+        public static string GuildBuilders => ResourceManager.GetString("GuildBuilders", resourceCulture) ?? "";
+        public static string GuildDesigners => ResourceManager.GetString("GuildDesigners", resourceCulture) ?? "";
+        public static string JoinGuild => ResourceManager.GetString("JoinGuild", resourceCulture) ?? "";
+        public static string LeaveGuild => ResourceManager.GetString("LeaveGuild", resourceCulture) ?? "";
+        public static string WeeklyGoal => ResourceManager.GetString("WeeklyGoal", resourceCulture) ?? "";
+
+        // Multiplayer-Gilden (Firebase)
+        public static string GuildOffline => ResourceManager.GetString("GuildOffline", resourceCulture) ?? "";
+        public static string GuildCreateTitle => ResourceManager.GetString("GuildCreateTitle", resourceCulture) ?? "";
+        public static string GuildCreate => ResourceManager.GetString("GuildCreate", resourceCulture) ?? "";
+        public static string GuildNamePlaceholder => ResourceManager.GetString("GuildNamePlaceholder", resourceCulture) ?? "";
+        public static string GuildCreated => ResourceManager.GetString("GuildCreated", resourceCulture) ?? "";
+        public static string GuildJoined => ResourceManager.GetString("GuildJoined", resourceCulture) ?? "";
+        public static string GuildLeft => ResourceManager.GetString("GuildLeft", resourceCulture) ?? "";
+        public static string GuildFull => ResourceManager.GetString("GuildFull", resourceCulture) ?? "";
+        public static string GuildContributed => ResourceManager.GetString("GuildContributed", resourceCulture) ?? "";
+        public static string GuildAlreadyInGuild => ResourceManager.GetString("GuildAlreadyInGuild", resourceCulture) ?? "";
+        public static string GuildSelectIcon => ResourceManager.GetString("GuildSelectIcon", resourceCulture) ?? "";
+        public static string GuildSelectColor => ResourceManager.GetString("GuildSelectColor", resourceCulture) ?? "";
+        public static string GuildBrowseEmpty => ResourceManager.GetString("GuildBrowseEmpty", resourceCulture) ?? "";
+        public static string GuildLeaderRole => ResourceManager.GetString("GuildLeaderRole", resourceCulture) ?? "";
+        public static string GuildMemberRole => ResourceManager.GetString("GuildMemberRole", resourceCulture) ?? "";
+        public static string GuildEnterName => ResourceManager.GetString("GuildEnterName", resourceCulture) ?? "";
+        public static string GuildNameHint => ResourceManager.GetString("GuildNameHint", resourceCulture) ?? "";
+        public static string Retry => ResourceManager.GetString("Retry", resourceCulture) ?? "";
+        public static string Loading => ResourceManager.GetString("Loading", resourceCulture) ?? "";
+        public static string PrestigePassTitle => ResourceManager.GetString("PrestigePassTitle", resourceCulture) ?? "";
+        public static string PrestigePassDesc => ResourceManager.GetString("PrestigePassDesc", resourceCulture) ?? "";
+        public static string PrestigePassActive => ResourceManager.GetString("PrestigePassActive", resourceCulture) ?? "";
+        public static string PrestigePassBuy => ResourceManager.GetString("PrestigePassBuy", resourceCulture) ?? "";
+        public static string CityThemeDefault => ResourceManager.GetString("CityThemeDefault", resourceCulture) ?? "";
+        public static string CityThemeSunset => ResourceManager.GetString("CityThemeSunset", resourceCulture) ?? "";
+        public static string CityThemeArctic => ResourceManager.GetString("CityThemeArctic", resourceCulture) ?? "";
+        public static string CityThemeDesert => ResourceManager.GetString("CityThemeDesert", resourceCulture) ?? "";
+        public static string CityThemeNeon => ResourceManager.GetString("CityThemeNeon", resourceCulture) ?? "";
+        public static string CityThemeSpring => ResourceManager.GetString("CityThemeSpring", resourceCulture) ?? "";
+        public static string SkinCarpenterGold => ResourceManager.GetString("SkinCarpenterGold", resourceCulture) ?? "";
+        public static string SkinPlumberChrome => ResourceManager.GetString("SkinPlumberChrome", resourceCulture) ?? "";
+        public static string SkinElectricianNeon => ResourceManager.GetString("SkinElectricianNeon", resourceCulture) ?? "";
+        public static string SkinPainterRainbow => ResourceManager.GetString("SkinPainterRainbow", resourceCulture) ?? "";
+        public static string SkinRooferRuby => ResourceManager.GetString("SkinRooferRuby", resourceCulture) ?? "";
+        public static string SkinContractorObsidian => ResourceManager.GetString("SkinContractorObsidian", resourceCulture) ?? "";
+
+        // MasterSmith + InnovationLab Workshops
+        public static string MasterSmith => ResourceManager.GetString("MasterSmith", resourceCulture) ?? "Master Smith";
+
+        public static string InnovationLab => ResourceManager.GetString("InnovationLab", resourceCulture) ?? "Innovation Lab";
+
+        // ForgeGame MiniGame
+        public static string ForgeGameTitle => ResourceManager.GetString("ForgeGameTitle", resourceCulture) ?? "Forging";
+
+        public static string HammerNow => ResourceManager.GetString("HammerNow", resourceCulture) ?? "Strike!";
+
+        public static string HammerAtRightTemperature => ResourceManager.GetString("HammerAtRightTemperature", resourceCulture) ?? "Strike at the right temperature!";
+
+        public static string TutorialForgeGameTitle => ResourceManager.GetString("TutorialForgeGameTitle", resourceCulture) ?? "The Forge";
+
+        public static string TutorialForgeGameText => ResourceManager.GetString("TutorialForgeGameText", resourceCulture) ?? "";
+
+        // InventGame MiniGame
+        public static string InventGame => ResourceManager.GetString("InventGame", resourceCulture) ?? "Invention";
+
+        public static string InventInstructionBefore => ResourceManager.GetString("InventInstructionBefore", resourceCulture) ?? "";
+
+        public static string InventInstructionMemorize => ResourceManager.GetString("InventInstructionMemorize", resourceCulture) ?? "";
+
+        public static string InventInstructionPlay => ResourceManager.GetString("InventInstructionPlay", resourceCulture) ?? "";
+
+        public static string TutorialInventGameTitle => ResourceManager.GetString("TutorialInventGameTitle", resourceCulture) ?? "The Innovation Lab";
+
+        public static string TutorialInventGameText => ResourceManager.GetString("TutorialInventGameText", resourceCulture) ?? "";
+
+        // InventGame Teile
+        public static string InventPartGear => ResourceManager.GetString("InventPartGear", resourceCulture) ?? "Gear";
+
+        public static string InventPartPiston => ResourceManager.GetString("InventPartPiston", resourceCulture) ?? "Piston";
+
+        public static string InventPartWire => ResourceManager.GetString("InventPartWire", resourceCulture) ?? "Wire";
+
+        public static string InventPartBoard => ResourceManager.GetString("InventPartBoard", resourceCulture) ?? "Circuit Board";
+
+        public static string InventPartScrew => ResourceManager.GetString("InventPartScrew", resourceCulture) ?? "Screw";
+
+        public static string InventPartHousing => ResourceManager.GetString("InventPartHousing", resourceCulture) ?? "Housing";
+
+        public static string InventPartSpring => ResourceManager.GetString("InventPartSpring", resourceCulture) ?? "Spring";
+
+        public static string InventPartLens => ResourceManager.GetString("InventPartLens", resourceCulture) ?? "Lens";
+
+        public static string InventPartMotor => ResourceManager.GetString("InventPartMotor", resourceCulture) ?? "Motor";
+
+        public static string InventPartBattery => ResourceManager.GetString("InventPartBattery", resourceCulture) ?? "Battery";
+
+        public static string InventPartSwitch => ResourceManager.GetString("InventPartSwitch", resourceCulture) ?? "Switch";
+
+        public static string InventPartAntenna => ResourceManager.GetString("InventPartAntenna", resourceCulture) ?? "Antenna";
+
+        // MasterSmith + InnovationLab Orders
+        public static string order_forge_blade => ResourceManager.GetString("order_forge_blade", resourceCulture) ?? "";
+
+        public static string order_master_tools => ResourceManager.GetString("order_master_tools", resourceCulture) ?? "";
+
+        public static string order_forge_artifact => ResourceManager.GetString("order_forge_artifact", resourceCulture) ?? "";
+
+        public static string order_prototype => ResourceManager.GetString("order_prototype", resourceCulture) ?? "";
+
+        public static string order_invention => ResourceManager.GetString("order_invention", resourceCulture) ?? "";
+
+        public static string order_breakthrough => ResourceManager.GetString("order_breakthrough", resourceCulture) ?? "";
+
+        // Guild Research
+        public static string GuildResearchTitle => ResourceManager.GetString("GuildResearchTitle", resourceCulture) ?? "";
+
+        public static string GuildResearchContribute => ResourceManager.GetString("GuildResearchContribute", resourceCulture) ?? "";
+
+        public static string GuildResearchContributed => ResourceManager.GetString("GuildResearchContributed", resourceCulture) ?? "";
+
+        public static string GuildResearchCompleted => ResourceManager.GetString("GuildResearchCompleted", resourceCulture) ?? "";
+
+        public static string GuildResearchLocked => ResourceManager.GetString("GuildResearchLocked", resourceCulture) ?? "";
+
+        public static string GuildResearchContributeAmount => ResourceManager.GetString("GuildResearchContributeAmount", resourceCulture) ?? "";
+
+        public static string GuildResearchProgress => ResourceManager.GetString("GuildResearchProgress", resourceCulture) ?? "";
+
+        public static string GuildResearchSummary => ResourceManager.GetString("GuildResearchSummary", resourceCulture) ?? "";
+
+        // Guild Research Categories
+        public static string GuildResearchCatInfrastructure => ResourceManager.GetString("GuildResearchCatInfrastructure", resourceCulture) ?? "";
+
+        public static string GuildResearchCatEconomy => ResourceManager.GetString("GuildResearchCatEconomy", resourceCulture) ?? "";
+
+        public static string GuildResearchCatKnowledge => ResourceManager.GetString("GuildResearchCatKnowledge", resourceCulture) ?? "";
+
+        public static string GuildResearchCatLogistics => ResourceManager.GetString("GuildResearchCatLogistics", resourceCulture) ?? "";
+
+        public static string GuildResearchCatWorkforce => ResourceManager.GetString("GuildResearchCatWorkforce", resourceCulture) ?? "";
+
+        public static string GuildResearchCatMastery => ResourceManager.GetString("GuildResearchCatMastery", resourceCulture) ?? "";
+
+        // Guild Research Names
+        public static string GuildResearch_guild_expand_1 => ResourceManager.GetString("GuildResearch_guild_expand_1", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_expand_2 => ResourceManager.GetString("GuildResearch_guild_expand_2", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_expand_3 => ResourceManager.GetString("GuildResearch_guild_expand_3", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_income_1 => ResourceManager.GetString("GuildResearch_guild_income_1", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_income_2 => ResourceManager.GetString("GuildResearch_guild_income_2", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_income_3 => ResourceManager.GetString("GuildResearch_guild_income_3", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_income_4 => ResourceManager.GetString("GuildResearch_guild_income_4", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_knowledge_1 => ResourceManager.GetString("GuildResearch_guild_knowledge_1", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_knowledge_2 => ResourceManager.GetString("GuildResearch_guild_knowledge_2", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_knowledge_3 => ResourceManager.GetString("GuildResearch_guild_knowledge_3", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_logistics_1 => ResourceManager.GetString("GuildResearch_guild_logistics_1", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_logistics_2 => ResourceManager.GetString("GuildResearch_guild_logistics_2", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_logistics_3 => ResourceManager.GetString("GuildResearch_guild_logistics_3", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_workforce_1 => ResourceManager.GetString("GuildResearch_guild_workforce_1", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_workforce_2 => ResourceManager.GetString("GuildResearch_guild_workforce_2", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_workforce_3 => ResourceManager.GetString("GuildResearch_guild_workforce_3", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_mastery_1 => ResourceManager.GetString("GuildResearch_guild_mastery_1", resourceCulture) ?? "";
+
+        public static string GuildResearch_guild_mastery_2 => ResourceManager.GetString("GuildResearch_guild_mastery_2", resourceCulture) ?? "";
+
+        // Guild Research Descriptions
+        public static string GuildResearchDesc_guild_expand_1 => ResourceManager.GetString("GuildResearchDesc_guild_expand_1", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_expand_2 => ResourceManager.GetString("GuildResearchDesc_guild_expand_2", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_expand_3 => ResourceManager.GetString("GuildResearchDesc_guild_expand_3", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_income_1 => ResourceManager.GetString("GuildResearchDesc_guild_income_1", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_income_2 => ResourceManager.GetString("GuildResearchDesc_guild_income_2", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_income_3 => ResourceManager.GetString("GuildResearchDesc_guild_income_3", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_income_4 => ResourceManager.GetString("GuildResearchDesc_guild_income_4", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_knowledge_1 => ResourceManager.GetString("GuildResearchDesc_guild_knowledge_1", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_knowledge_2 => ResourceManager.GetString("GuildResearchDesc_guild_knowledge_2", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_knowledge_3 => ResourceManager.GetString("GuildResearchDesc_guild_knowledge_3", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_logistics_1 => ResourceManager.GetString("GuildResearchDesc_guild_logistics_1", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_logistics_2 => ResourceManager.GetString("GuildResearchDesc_guild_logistics_2", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_logistics_3 => ResourceManager.GetString("GuildResearchDesc_guild_logistics_3", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_workforce_1 => ResourceManager.GetString("GuildResearchDesc_guild_workforce_1", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_workforce_2 => ResourceManager.GetString("GuildResearchDesc_guild_workforce_2", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_workforce_3 => ResourceManager.GetString("GuildResearchDesc_guild_workforce_3", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_mastery_1 => ResourceManager.GetString("GuildResearchDesc_guild_mastery_1", resourceCulture) ?? "";
+
+        public static string GuildResearchDesc_guild_mastery_2 => ResourceManager.GetString("GuildResearchDesc_guild_mastery_2", resourceCulture) ?? "";
+
+        public static string MaxMembersLabel => ResourceManager.GetString("MaxMembersLabel", resourceCulture) ?? "";
     }
 }

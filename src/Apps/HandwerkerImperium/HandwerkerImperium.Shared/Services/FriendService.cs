@@ -1,29 +1,41 @@
+using System.Text.Json;
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Verwaltet simulierte Freunde mit täglichen Geschenken.
-/// 5 simulierte Freunde senden täglich Goldschrauben.
-/// Zurückschenken erhöht das Freundschafts-Level (max 5) und damit den Geschenk-Betrag.
+/// Verwaltet simulierte Freunde (lokal) + echte Firebase-Freunde.
+/// Simulierte Freunde: 5 NPCs mit täglichen Goldschrauben-Geschenken.
+/// Echte Freunde: Firebase-basiert über Gildenmitgliederliste, max 50.
 /// </summary>
 public class FriendService : IFriendService
 {
     private readonly IGameStateService _gameState;
+    private readonly IFirebaseService _firebase;
+    private readonly ISaveGameService _saveGame;
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    private const int MaxRealFriends = 50;
 
     public event Action? FriendsUpdated;
 
-    public FriendService(IGameStateService gameState)
+    public FriendService(IGameStateService gameState, IFirebaseService firebase, ISaveGameService saveGame)
     {
         _gameState = gameState;
+        _firebase = firebase;
+        _saveGame = saveGame;
     }
+
+    // --- Simulierte Freunde (offline, lokal) ---
 
     public void Initialize()
     {
         var state = _gameState.State;
-
-        // Freundes-Liste erstellen falls leer
         if (state.Friends.Count == 0)
         {
             state.Friends = Friend.CreateSimulatedFriends();
@@ -37,18 +49,10 @@ public class FriendService : IFriendService
         if (state.Friends.Count == 0) return;
 
         bool changed = false;
-
         foreach (var friend in state.Friends)
         {
-            // Simuliert: Freund sendet täglich ein Geschenk
-            // HasGiftAvailable prüft ob LastGiftSent.Date < heute
             if (friend.HasGiftAvailable)
-            {
-                // LastGiftSent auf gestern setzen, damit HasGiftAvailable = true bleibt
-                // (der Spieler muss das Geschenk erst abholen via ClaimGift)
-                // Geschenk ist verfügbar wenn LastGiftSent älter als heute ist
                 changed = true;
-            }
         }
 
         if (changed)
@@ -62,15 +66,9 @@ public class FriendService : IFriendService
     {
         var state = _gameState.State;
         var friend = state.Friends.FirstOrDefault(f => f.Id == friendId);
-        if (friend == null) return;
+        if (friend == null || !friend.HasGiftAvailable) return;
 
-        // Prüfen ob Geschenk verfügbar
-        if (!friend.HasGiftAvailable) return;
-
-        // Goldschrauben gutschreiben (basierend auf Freundschafts-Level)
         _gameState.AddGoldenScrews(friend.GiftAmount);
-
-        // Geschenk als abgeholt markieren
         friend.LastGiftSent = DateTime.UtcNow;
 
         _gameState.MarkDirty();
@@ -81,21 +79,192 @@ public class FriendService : IFriendService
     {
         var state = _gameState.State;
         var friend = state.Friends.FirstOrDefault(f => f.Id == friendId);
-        if (friend == null) return;
+        if (friend == null || friend.HasSentGiftToday) return;
 
-        // Bereits heute zurückgeschenkt?
-        if (friend.HasSentGiftToday) return;
-
-        // 1 Goldschraube kostet das Zurückschenken
         if (!_gameState.TrySpendGoldenScrews(1)) return;
 
         friend.LastGiftReceived = DateTime.UtcNow;
-
-        // Freundschafts-Level erhöhen (max 5)
         if (friend.FriendshipLevel < 5)
             friend.FriendshipLevel++;
 
         _gameState.MarkDirty();
         FriendsUpdated?.Invoke();
+    }
+
+    // --- Echte Firebase-Freunde ---
+
+    public async Task SendFriendRequestAsync(string targetUid, string targetName)
+    {
+        try
+        {
+            var uid = _firebase.Uid;
+            if (string.IsNullOrEmpty(uid) || uid == targetUid) return;
+
+            // Prüfe ob schon Freund
+            var existing = await _firebase.GetAsync<FirebaseFriend>($"friends/{uid}/{targetUid}");
+            if (existing != null) return;
+
+            // Spielername für die Anfrage
+            var playerName = _gameState.State.PlayerName ?? "Handwerker";
+
+            var request = new FriendRequest
+            {
+                Name = playerName,
+                Level = _gameState.State.PlayerLevel,
+                SentAt = DateTime.UtcNow.ToString("O")
+            };
+
+            await _firebase.SetAsync($"friend_requests/{targetUid}/{uid}", request);
+        }
+        catch
+        {
+            // Fire-and-forget
+        }
+    }
+
+    public async Task<List<FriendRequestDisplay>> GetPendingRequestsAsync()
+    {
+        var result = new List<FriendRequestDisplay>();
+
+        try
+        {
+            var uid = _firebase.Uid;
+            if (string.IsNullOrEmpty(uid)) return result;
+
+            var json = await _firebase.QueryAsync($"friend_requests/{uid}", "");
+            if (string.IsNullOrEmpty(json) || json == "null") return result;
+
+            var requests = JsonSerializer.Deserialize<Dictionary<string, FriendRequest>>(json, JsonOptions);
+            if (requests == null) return result;
+
+            foreach (var (fromUid, req) in requests)
+            {
+                result.Add(new FriendRequestDisplay
+                {
+                    Uid = fromUid,
+                    Name = req.Name,
+                    Level = req.Level,
+                    SentAt = req.SentAt
+                });
+            }
+        }
+        catch
+        {
+            // Fehler ignorieren
+        }
+
+        return result;
+    }
+
+    public async Task AcceptRequestAsync(string fromUid)
+    {
+        try
+        {
+            var uid = _firebase.Uid;
+            if (string.IsNullOrEmpty(uid)) return;
+
+            // Anfrage lesen für Name/Level
+            var request = await _firebase.GetAsync<FriendRequest>($"friend_requests/{uid}/{fromUid}");
+            if (request == null) return;
+
+            // Max-Freunde prüfen
+            var myFriends = await GetRealFriendsAsync();
+            if (myFriends.Count >= MaxRealFriends) return;
+
+            var now = DateTime.UtcNow.ToString("O");
+            var playerName = _gameState.State.PlayerName ?? "Handwerker";
+
+            // Beidseitige Freundschaft erstellen (3 Writes)
+            var myEntry = new FirebaseFriend
+            {
+                Name = request.Name,
+                Level = request.Level,
+                AddedAt = now
+            };
+            var theirEntry = new FirebaseFriend
+            {
+                Name = playerName,
+                Level = _gameState.State.PlayerLevel,
+                AddedAt = now
+            };
+
+            await _firebase.SetAsync($"friends/{uid}/{fromUid}", myEntry);
+            await _firebase.SetAsync($"friends/{fromUid}/{uid}", theirEntry);
+            await _firebase.DeleteAsync($"friend_requests/{uid}/{fromUid}");
+
+            FriendsUpdated?.Invoke();
+        }
+        catch
+        {
+            // Fehler ignorieren
+        }
+    }
+
+    public async Task DeclineRequestAsync(string fromUid)
+    {
+        try
+        {
+            var uid = _firebase.Uid;
+            if (string.IsNullOrEmpty(uid)) return;
+
+            await _firebase.DeleteAsync($"friend_requests/{uid}/{fromUid}");
+        }
+        catch
+        {
+            // Fehler ignorieren
+        }
+    }
+
+    public async Task<List<FriendDisplay>> GetRealFriendsAsync()
+    {
+        var result = new List<FriendDisplay>();
+
+        try
+        {
+            var uid = _firebase.Uid;
+            if (string.IsNullOrEmpty(uid)) return result;
+
+            var json = await _firebase.QueryAsync($"friends/{uid}", "");
+            if (string.IsNullOrEmpty(json) || json == "null") return result;
+
+            var friends = JsonSerializer.Deserialize<Dictionary<string, FirebaseFriend>>(json, JsonOptions);
+            if (friends == null) return result;
+
+            foreach (var (friendUid, friend) in friends)
+            {
+                result.Add(new FriendDisplay
+                {
+                    Uid = friendUid,
+                    Name = friend.Name,
+                    Level = friend.Level,
+                    AddedAt = friend.AddedAt
+                });
+            }
+        }
+        catch
+        {
+            // Fehler ignorieren
+        }
+
+        return result;
+    }
+
+    public async Task RemoveFriendAsync(string friendUid)
+    {
+        try
+        {
+            var uid = _firebase.Uid;
+            if (string.IsNullOrEmpty(uid)) return;
+
+            // Beidseitig entfernen
+            await _firebase.DeleteAsync($"friends/{uid}/{friendUid}");
+            await _firebase.DeleteAsync($"friends/{friendUid}/{uid}");
+
+            FriendsUpdated?.Invoke();
+        }
+        catch
+        {
+            // Fehler ignorieren
+        }
     }
 }

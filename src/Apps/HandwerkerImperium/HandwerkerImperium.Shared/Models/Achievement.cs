@@ -223,7 +223,46 @@ public static class Achievements
             new() { Id = "prestige_bronze", TitleKey = "AchPrestigeBronze", TitleFallback = "New Beginning", DescriptionKey = "AchPrestigeBronzeDesc", DescriptionFallback = "Complete your first Bronze prestige", Category = AchievementCategory.Prestige, Icon = "\ud83e\udd49", TargetValue = 1, MoneyReward = 10000, XpReward = 250, GoldenScrewReward = 20 },
             new() { Id = "prestige_silver", TitleKey = "AchPrestigeSilver", TitleFallback = "Experienced Master", DescriptionKey = "AchPrestigeSilverDesc", DescriptionFallback = "Complete your first Silver prestige", Category = AchievementCategory.Prestige, Icon = "\ud83e\udd48", TargetValue = 1, MoneyReward = 50000, XpReward = 750, GoldenScrewReward = 50 },
             new() { Id = "prestige_gold", TitleKey = "AchPrestigeGold", TitleFallback = "Golden Legend", DescriptionKey = "AchPrestigeGoldDesc", DescriptionFallback = "Complete your first Gold prestige", Category = AchievementCategory.Prestige, Icon = "\ud83e\udd47", TargetValue = 1, MoneyReward = 200000, XpReward = 1500, GoldenScrewReward = 100 },
-            new() { Id = "prestige_points_100", TitleKey = "AchPrestigePoints100", TitleFallback = "Point Collector", DescriptionKey = "AchPrestigePoints100Desc", DescriptionFallback = "Spend 100 prestige points in the shop", Category = AchievementCategory.Prestige, Icon = "\ud83d\udcab", TargetValue = 100, MoneyReward = 50000, XpReward = 500 }
+            new() { Id = "prestige_points_100", TitleKey = "AchPrestigePoints100", TitleFallback = "Point Collector", DescriptionKey = "AchPrestigePoints100Desc", DescriptionFallback = "Spend 100 prestige points in the shop", Category = AchievementCategory.Prestige, Icon = "\ud83d\udcab", TargetValue = 100, MoneyReward = 50000, XpReward = 500 },
+
+            // ═══════════════════════════════════════════════════════════════
+            // NEUE ACHIEVEMENTS (Phase 2.2 Endgame-Expansion)
+            // ═══════════════════════════════════════════════════════════════
+
+            // Prestige-Tier Achievements
+            new() { Id = "prestige_platin", TitleKey = "AchPrestigePlatin", TitleFallback = "Platinum Craftsman", DescriptionKey = "AchPrestigePlatinDesc", DescriptionFallback = "Complete your first Platinum prestige", Category = AchievementCategory.Prestige, Icon = "DiamondStone", TargetValue = 1, MoneyReward = 500_000, XpReward = 3000, GoldenScrewReward = 150 },
+            new() { Id = "prestige_diamant", TitleKey = "AchPrestigeDiamant", TitleFallback = "Diamond Dynasty", DescriptionKey = "AchPrestigeDiamantDesc", DescriptionFallback = "Complete your first Diamond prestige", Category = AchievementCategory.Prestige, Icon = "StarFourPoints", TargetValue = 1, MoneyReward = 2_000_000, XpReward = 5000, GoldenScrewReward = 250 },
+            new() { Id = "prestige_meister", TitleKey = "AchPrestigeMeister", TitleFallback = "Master of Masters", DescriptionKey = "AchPrestigeMeisterDesc", DescriptionFallback = "Complete your first Master prestige", Category = AchievementCategory.Prestige, Icon = "Fire", TargetValue = 1, MoneyReward = 10_000_000, XpReward = 10000, GoldenScrewReward = 500 },
+            new() { Id = "prestige_legende", TitleKey = "AchPrestigeLegende", TitleFallback = "Living Legend", DescriptionKey = "AchPrestigeLegendeDesc", DescriptionFallback = "Complete your first Legend prestige", Category = AchievementCategory.Prestige, Icon = "Crown", TargetValue = 1, MoneyReward = 50_000_000, XpReward = 25000, GoldenScrewReward = 1000 },
+
+            // MiniGame-Mastery
+            new() { Id = "perfect_100", TitleKey = "AchPerfect100", TitleFallback = "Perfection Master", DescriptionKey = "AchPerfect100Desc", DescriptionFallback = "Get 100 Perfect ratings", Category = AchievementCategory.MiniGames, Icon = "StarCircle", TargetValue = 100, MoneyReward = 50_000, XpReward = 1000, GoldenScrewReward = 30 },
+            new() { Id = "games_500", TitleKey = "AchGames500", TitleFallback = "Mini-Game Legend", DescriptionKey = "AchGames500Desc", DescriptionFallback = "Play 500 mini-games", Category = AchievementCategory.MiniGames, Icon = "ControllerClassic", TargetValue = 500, MoneyReward = 100_000, XpReward = 2000, GoldenScrewReward = 50 },
+            new() { Id = "all_minigames_perfect", TitleKey = "AchAllMiniGamesPerfect", TitleFallback = "Universal Talent", DescriptionKey = "AchAllMiniGamesPerfectDesc", DescriptionFallback = "Get a Perfect rating in all 8 mini-game types", Category = AchievementCategory.MiniGames, Icon = "CheckDecagram", TargetValue = 8, MoneyReward = 200_000, XpReward = 3000, GoldenScrewReward = 75 },
+
+            // Workshop-Endgame
+            new() { Id = "all_ws_level100", TitleKey = "AchAllWsLevel100", TitleFallback = "Full Power", DescriptionKey = "AchAllWsLevel100Desc", DescriptionFallback = "Upgrade all 8 workshops to level 100", Category = AchievementCategory.Workshops, Icon = "Factory", TargetValue = 8, MoneyReward = 5_000_000, XpReward = 5000, GoldenScrewReward = 100 },
+
+            // Gilden-Achievements
+            new() { Id = "guild_founder", TitleKey = "AchGuildFounder", TitleFallback = "Guild Founder", DescriptionKey = "AchGuildFounderDesc", DescriptionFallback = "Create a guild", Category = AchievementCategory.Guilds, Icon = "ShieldCrown", TargetValue = 1, MoneyReward = 10_000, XpReward = 250, GoldenScrewReward = 20 },
+            new() { Id = "guild_member", TitleKey = "AchGuildMember", TitleFallback = "Team Player", DescriptionKey = "AchGuildMemberDesc", DescriptionFallback = "Join or create a guild", Category = AchievementCategory.Guilds, Icon = "AccountGroup", TargetValue = 1, MoneyReward = 5_000, XpReward = 100 },
+            new() { Id = "guild_weekly_goal", TitleKey = "AchGuildWeeklyGoal", TitleFallback = "Team Effort", DescriptionKey = "AchGuildWeeklyGoalDesc", DescriptionFallback = "Complete a guild weekly goal", Category = AchievementCategory.Guilds, Icon = "TrophyVariant", TargetValue = 1, MoneyReward = 25_000, XpReward = 500, GoldenScrewReward = 25 },
+            new() { Id = "guild_level_10", TitleKey = "AchGuildLevel10", TitleFallback = "Legendary Guild", DescriptionKey = "AchGuildLevel10Desc", DescriptionFallback = "Reach guild level 10", Category = AchievementCategory.Guilds, Icon = "ShieldStar", TargetValue = 10, MoneyReward = 100_000, XpReward = 1500, GoldenScrewReward = 50 },
+
+            // Worker-Training
+            new() { Id = "workers_trained_50", TitleKey = "AchWorkersTrained50", TitleFallback = "Training Master", DescriptionKey = "AchWorkersTrained50Desc", DescriptionFallback = "Complete 50 worker training sessions", Category = AchievementCategory.Workers, Icon = "School", TargetValue = 50, MoneyReward = 50_000, XpReward = 750, GoldenScrewReward = 25 },
+
+            // Crafting-Achievements
+            new() { Id = "crafting_100", TitleKey = "AchCrafting100", TitleFallback = "Mass Producer", DescriptionKey = "AchCrafting100Desc", DescriptionFallback = "Craft 100 items", Category = AchievementCategory.Crafting, Icon = "Anvil", TargetValue = 100, MoneyReward = 100_000, XpReward = 1500, GoldenScrewReward = 30 },
+            new() { Id = "all_recipes", TitleKey = "AchAllRecipes", TitleFallback = "Recipe Master", DescriptionKey = "AchAllRecipesDesc", DescriptionFallback = "Craft all 13 recipes at least once", Category = AchievementCategory.Crafting, Icon = "BookOpen", TargetValue = 13, MoneyReward = 200_000, XpReward = 2500, GoldenScrewReward = 50 },
+
+            // Turnier-Achievements
+            new() { Id = "tournament_gold", TitleKey = "AchTournamentGold", TitleFallback = "Tournament Champion", DescriptionKey = "AchTournamentGoldDesc", DescriptionFallback = "Win a gold medal in a tournament", Category = AchievementCategory.Tournaments, Icon = "MedalOutline", TargetValue = 1, MoneyReward = 25_000, XpReward = 500, GoldenScrewReward = 20 },
+            new() { Id = "tournaments_10", TitleKey = "AchTournaments10", TitleFallback = "Serial Winner", DescriptionKey = "AchTournaments10Desc", DescriptionFallback = "Win 10 tournaments", Category = AchievementCategory.Tournaments, Icon = "TrophyAward", TargetValue = 10, MoneyReward = 100_000, XpReward = 2000, GoldenScrewReward = 50 },
+
+            // Sammler/Collection-Achievements
+            new() { Id = "all_mastertools", TitleKey = "AchAllMastertools", TitleFallback = "Tool Collector", DescriptionKey = "AchAllMastertoolsDesc", DescriptionFallback = "Collect all 12 master tools", Category = AchievementCategory.Collection, Icon = "Toolbox", TargetValue = 12, MoneyReward = 500_000, XpReward = 3000, GoldenScrewReward = 75 },
+            new() { Id = "equipment_all_rarities", TitleKey = "AchEquipmentAllRarities", TitleFallback = "Rarity Collector", DescriptionKey = "AchEquipmentAllRaritiesDesc", DescriptionFallback = "Collect equipment of all 4 rarity levels", Category = AchievementCategory.Collection, Icon = "DiamondOutline", TargetValue = 4, MoneyReward = 100_000, XpReward = 1500, GoldenScrewReward = 30 }
         ];
     }
 }

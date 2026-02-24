@@ -4,8 +4,8 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Verwaltet die Story-Kapitel von Meister Hans (25 Kapitel).
-/// Tutorial (1-5), Early Game (6-12), Mid Game (13-17), Prestige (18-21), Endgame (22-25).
+/// Verwaltet die Story-Kapitel von Meister Hans (35 Kapitel).
+/// Tutorial (1-5), Early Game (6-12), Mid Game (13-17), Prestige (18-21), Endgame (22-25), Endgame-Expansion (26-35).
 /// </summary>
 public class StoryService : IStoryService
 {
@@ -118,6 +118,10 @@ public class StoryService : IStoryService
         if (chapter.RequiredTotalOrders > 0 && state.TotalOrdersCompleted < chapter.RequiredTotalOrders)
             return false;
         if (chapter.RequiredPrestige > 0 && state.Prestige.TotalPrestigeCount < chapter.RequiredPrestige)
+            return false;
+        if (chapter.RequiredPrestigeTier > 0 && (int)state.Prestige.CurrentTier < chapter.RequiredPrestigeTier)
+            return false;
+        if (chapter.RequiredAscensionLevel > 0 && state.Ascension.AscensionLevel < chapter.RequiredAscensionLevel)
             return false;
         return true;
     }
@@ -518,6 +522,155 @@ public class StoryService : IStoryService
             MoneyReward = 10_000_000_000,
             GoldenScrewReward = 1_000,
             XpReward = 100_000,
+            Mood = "excited"
+        },
+
+        // ═══════════════════════════════════════════════════════════════
+        // ENDGAME-EXPANSION (Kapitel 26-35, Platin+ Prestige)
+        // ═══════════════════════════════════════════════════════════════
+
+        new()
+        {
+            Id = "endgame_platin",
+            ChapterNumber = 26,
+            TitleKey = "Story_Ch26_Title",
+            TextKey = "Story_Ch26_Text",
+            TitleFallback = "Der Platin-Handwerker",
+            TextFallback = "Platin! Da kenne ich nur eine Handvoll Leute in meinem ganzen Leben, die das geschafft haben. Deine Werkzeuge glänzen wie nie zuvor, und die bleiben dir jetzt – für immer. Das Handwerk hat dich verändert, Meister. Du bist nicht mehr der gleiche Mensch wie am Anfang.",
+            RequiredPrestigeTier = 4, // Platin
+            MoneyReward = 50_000_000,
+            GoldenScrewReward = 200,
+            XpReward = 50_000,
+            Mood = "proud"
+        },
+        new()
+        {
+            Id = "endgame_diamant_path",
+            ChapterNumber = 27,
+            TitleKey = "Story_Ch27_Title",
+            TextKey = "Story_Ch27_Text",
+            TitleFallback = "Auf dem Weg zum Diamant",
+            TextFallback = "Zwischen Platin und Diamant liegt ein Abgrund, Meister. Viele haben es versucht, wenige haben es geschafft. Du brauchst drei perfekte Platin-Durchläufe. Drei Mal alles aufgeben, drei Mal stärker zurückkommen. Bist du bereit für den härtesten Teil der Reise?",
+            RequiredPrestigeTier = 4,
+            RequiredPrestige = 7, // Mindestens 7 Gesamtprestiges
+            MoneyReward = 100_000_000,
+            GoldenScrewReward = 300,
+            XpReward = 75_000,
+            Mood = "concerned"
+        },
+        new()
+        {
+            Id = "endgame_diamant",
+            ChapterNumber = 28,
+            TitleKey = "Story_Ch28_Title",
+            TextKey = "Story_Ch28_Text",
+            TitleFallback = "Diamant-Dynastie",
+            TextFallback = "Diamant! Unzerstörbar, unvergänglich – wie dein Imperium. Deine Gebäude und Ausrüstung überstehen jetzt jeden Neuanfang. Das ist nicht mehr Handwerk, das ist Kunst. Die Leute sprechen in Ehrfurcht von dir, Meister.",
+            RequiredPrestigeTier = 5, // Diamant
+            MoneyReward = 500_000_000,
+            GoldenScrewReward = 500,
+            XpReward = 100_000,
+            Mood = "excited"
+        },
+        new()
+        {
+            Id = "endgame_meister_weg",
+            ChapterNumber = 29,
+            TitleKey = "Story_Ch29_Title",
+            TextKey = "Story_Ch29_Text",
+            TitleFallback = "Der Pfad des Meisters",
+            TextFallback = "Nur die Besten der Besten erreichen den Meister-Titel. Deine Manager bleiben dir treu, dein Wissen überdauert jeden Reset. Ich habe in 40 Jahren noch nie jemanden so weit kommen sehen. Du schreibst Geschichte!",
+            RequiredPrestigeTier = 5,
+            RequiredPrestige = 12,
+            MoneyReward = 1_000_000_000,
+            GoldenScrewReward = 750,
+            XpReward = 150_000,
+            Mood = "proud"
+        },
+        new()
+        {
+            Id = "endgame_meister",
+            ChapterNumber = 30,
+            TitleKey = "Story_Ch30_Title",
+            TextKey = "Story_Ch30_Text",
+            TitleFallback = "Meister der Meister",
+            TextFallback = "Du hast es geschafft. Meister. Das Feuer in deinen Augen brennt heller als jede Schmiede. Deine Vorarbeiter folgen dir durch dick und dünn. Jeder Neuanfang macht dich nur stärker. Es gibt nur noch einen Titel über dir...",
+            RequiredPrestigeTier = 6, // Meister
+            MoneyReward = 5_000_000_000,
+            GoldenScrewReward = 1_000,
+            XpReward = 200_000,
+            Mood = "excited"
+        },
+        new()
+        {
+            Id = "endgame_legende_weg",
+            ChapterNumber = 31,
+            TitleKey = "Story_Ch31_Title",
+            TextKey = "Story_Ch31_Text",
+            TitleFallback = "Auf dem Weg zur Legende",
+            TextFallback = "Die Legende. Der höchste Titel, den ein Handwerker je erreichen kann. Drei perfekte Meister-Durchläufe stehen zwischen dir und der Unsterblichkeit. Deine besten Arbeiter werden bei dir bleiben – ein letztes Zeichen deiner Größe.",
+            RequiredPrestigeTier = 6,
+            RequiredPrestige = 18,
+            MoneyReward = 10_000_000_000,
+            GoldenScrewReward = 1_500,
+            XpReward = 300_000,
+            Mood = "concerned"
+        },
+        new()
+        {
+            Id = "endgame_legende",
+            ChapterNumber = 32,
+            TitleKey = "Story_Ch32_Title",
+            TextKey = "Story_Ch32_Text",
+            TitleFallback = "Lebende Legende",
+            TextFallback = "LEGENDE! *wischt sich eine Träne ab* In all meinen Jahren... Du bist der erste. Der einzige. Dein Name wird in die Geschichtsbücher eingehen. Generationen von Handwerkern werden von dir sprechen. Ich bin... sprachlos. Und das passiert nicht oft!",
+            RequiredPrestigeTier = 7, // Legende
+            MoneyReward = 50_000_000_000,
+            GoldenScrewReward = 2_000,
+            XpReward = 500_000,
+            Mood = "excited"
+        },
+        new()
+        {
+            Id = "endgame_ascension_ready",
+            ChapterNumber = 33,
+            TitleKey = "Story_Ch33_Title",
+            TextKey = "Story_Ch33_Text",
+            TitleFallback = "Jenseits der Legende",
+            TextFallback = "Drei Legenden-Durchläufe. Du hast bewiesen, dass du über allem stehst. Aber was kommt danach? Ich habe von einem uralten Ritual gehört... die Ascension. Ein kompletter Neustart auf einer höheren Ebene. Nur für wahre Legenden. Bist du bereit, alles loszulassen?",
+            RequiredPrestigeTier = 7,
+            RequiredPrestige = 21,
+            MoneyReward = 100_000_000_000,
+            GoldenScrewReward = 3_000,
+            XpReward = 750_000,
+            Mood = "concerned"
+        },
+        new()
+        {
+            Id = "endgame_first_ascension",
+            ChapterNumber = 34,
+            TitleKey = "Story_Ch34_Title",
+            TextKey = "Story_Ch34_Text",
+            TitleFallback = "Der Aufstieg",
+            TextFallback = "Du hast die Ascension vollzogen! Alles zurückgelassen, um auf einer höheren Ebene neu zu beginnen. Deine Ascension-Perks sind mächtig – Startkapital, ewige Werkzeuge, schnellere Forschung. Jeder Durchlauf wird jetzt einfacher und befriedigender.",
+            RequiredAscensionLevel = 1,
+            MoneyReward = 500_000_000_000,
+            GoldenScrewReward = 5_000,
+            XpReward = 1_000_000,
+            Mood = "proud"
+        },
+        new()
+        {
+            Id = "endgame_transcendence",
+            ChapterNumber = 35,
+            TitleKey = "Story_Ch35_Title",
+            TextKey = "Story_Ch35_Text",
+            TitleFallback = "Transzendenz",
+            TextFallback = "Drei Ascensions. Du hast die Grenzen des Möglichen gesprengt. Du bist nicht mehr nur ein Handwerker – du bist eine Kraft der Natur. Dein Imperium ist unsterblich. Meister Hans verneigt sich zum letzten Mal. Diese Geschichte kennt kein Ende, nur neue Anfänge. Lebe wohl... und willkommen zurück, wann immer du willst.",
+            RequiredAscensionLevel = 3,
+            MoneyReward = 1_000_000_000_000,
+            GoldenScrewReward = 10_000,
+            XpReward = 2_000_000,
             Mood = "excited"
         }
     ];

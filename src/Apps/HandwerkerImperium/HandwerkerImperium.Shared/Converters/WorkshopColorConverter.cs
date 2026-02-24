@@ -24,7 +24,9 @@ public class WorkshopColorConverter : IValueConverter
         [WorkshopType.Roofer] = Color.Parse("#DC2626"),
         [WorkshopType.Contractor] = Color.Parse("#EA580C"),
         [WorkshopType.Architect] = Color.Parse("#78716C"),
-        [WorkshopType.GeneralContractor] = Color.Parse("#FFD700")
+        [WorkshopType.GeneralContractor] = Color.Parse("#FFD700"),
+        [WorkshopType.MasterSmith] = Color.Parse("#D4A373"),         // Kupfer-Orange (Schmiede)
+        [WorkshopType.InnovationLab] = Color.Parse("#6A5ACD")        // Violett (Innovation)
     };
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

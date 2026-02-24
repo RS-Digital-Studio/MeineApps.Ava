@@ -22,6 +22,9 @@ public static class Icons
     public const string Roofer = "\U000F06A1";         // home-city
     public const string Contractor = "\U000F0F8B";     // office-building
 
+    public const string Anvil = "\U000F089B";            // anvil (Amboss)
+    public const string FlaskOutline = "\U000F0093";     // flask-outline (Laborkolben)
+
     // Game & UI
     public const string Star = "\U000F04CE";
     public const string StarOutline = "\U000F04D2";

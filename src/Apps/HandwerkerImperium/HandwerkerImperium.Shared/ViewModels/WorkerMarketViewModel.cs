@@ -268,7 +268,7 @@ public partial class WorkerMarketViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("Info"),
                 _localizationService.GetString("WatchAdToRefresh"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 
@@ -302,7 +302,7 @@ public partial class WorkerMarketViewModel : ObservableObject
                 AlertRequested?.Invoke(
                     _localizationService.GetString("Info"),
                     _localizationService.GetString("MaxSlotReached"),
-                    "OK");
+                    _localizationService.GetString("OK") ?? "OK");
                 return;
             }
 
@@ -329,7 +329,7 @@ public partial class WorkerMarketViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NotEnoughMoney"),
                 string.Format(_localizationService.GetString("HiringCostFormat"), MoneyFormatter.Format(hiringCost, 0)),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -340,7 +340,7 @@ public partial class WorkerMarketViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NotEnoughScrews"),
                 string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), hiringScrewCost),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -354,7 +354,7 @@ public partial class WorkerMarketViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NoFreeSlot"),
                 _localizationService.GetString("NoFreeSlotDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -413,7 +413,7 @@ public partial class WorkerMarketViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NoFreeSlot"),
                 _localizationService.GetString("NoFreeSlotDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 

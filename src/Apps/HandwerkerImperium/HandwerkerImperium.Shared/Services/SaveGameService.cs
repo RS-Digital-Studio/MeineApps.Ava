@@ -240,9 +240,13 @@ public class SaveGameService : ISaveGameService
         if (state.Prestige.BronzeCount < 0) state.Prestige.BronzeCount = 0;
         if (state.Prestige.SilverCount < 0) state.Prestige.SilverCount = 0;
         if (state.Prestige.GoldCount < 0) state.Prestige.GoldCount = 0;
-        // PermanentMultiplier: Minimum 1.0 (kein Prestige), Maximum 20.0
+        if (state.Prestige.PlatinCount < 0) state.Prestige.PlatinCount = 0;
+        if (state.Prestige.DiamantCount < 0) state.Prestige.DiamantCount = 0;
+        if (state.Prestige.MeisterCount < 0) state.Prestige.MeisterCount = 0;
+        if (state.Prestige.LegendeCount < 0) state.Prestige.LegendeCount = 0;
+        // PermanentMultiplier: Minimum 1.0 (kein Prestige), Maximum 200.0
         if (state.Prestige.PermanentMultiplier < 1.0m) state.Prestige.PermanentMultiplier = 1.0m;
-        if (state.Prestige.PermanentMultiplier > 20.0m) state.Prestige.PermanentMultiplier = 20.0m;
+        if (state.Prestige.PermanentMultiplier > 200.0m) state.Prestige.PermanentMultiplier = 200.0m;
         state.Prestige.PurchasedShopItems ??= [];
         // Prestige-Shop-Items: Nur gültige IDs behalten (Exploit-Schutz)
         var validShopIds = PrestigeShop.GetAllItems().Select(i => i.Id).ToHashSet();
@@ -287,6 +291,9 @@ public class SaveGameService : ISaveGameService
         state.Researches ??= [];
         state.AvailableOrders ??= [];
 
+        // Research-Tree aus Template synchronisieren (fehlende Nodes ergänzen, DurationTicks/Effect aktualisieren)
+        SyncResearchTree(state);
+
         // Building-Levels validieren
         foreach (var building in state.Buildings)
         {
@@ -322,10 +329,83 @@ public class SaveGameService : ISaveGameService
         state.ActiveCraftingJobs ??= [];
         state.Friends ??= [];
         state.ClaimedLevelOffers ??= [];
+        state.CompletedRecipeIds ??= [];
+        state.PerfectMiniGameTypes ??= [];
+
+        // Ascension-Daten validieren
+        state.Ascension ??= new AscensionData();
+        state.Ascension.Perks ??= new Dictionary<string, int>();
+        if (state.Ascension.AscensionLevel < 0) state.Ascension.AscensionLevel = 0;
+        if (state.Ascension.AscensionPoints < 0) state.Ascension.AscensionPoints = 0;
+
+        if (state.TotalWorkersTrained < 0) state.TotalWorkersTrained = 0;
+        if (state.TotalItemsCrafted < 0) state.TotalItemsCrafted = 0;
+        if (state.TotalTournamentsWon < 0) state.TotalTournamentsWon = 0;
 
         // Lieferant: Abgelaufene Lieferung entfernen
         if (state.PendingDelivery?.IsExpired == true)
             state.PendingDelivery = null;
         if (state.TotalDeliveriesClaimed < 0) state.TotalDeliveriesClaimed = 0;
+    }
+
+    /// <summary>
+    /// Synchronisiert den Research-Tree aus dem Template.
+    /// Aktualisiert DurationTicks, Effect, Cost, Prerequisites bei bestehenden Nodes,
+    /// ergänzt fehlende Nodes (z.B. nach Update mit neuen Forschungen).
+    /// Validiert ActiveResearchId-Konsistenz.
+    /// </summary>
+    private static void SyncResearchTree(GameState state)
+    {
+        var template = ResearchTree.CreateAll();
+        var existingById = state.Researches.ToDictionary(r => r.Id, r => r);
+
+        foreach (var tmpl in template)
+        {
+            if (existingById.TryGetValue(tmpl.Id, out var existing))
+            {
+                // Template-Daten aktualisieren (Balance-Updates, Bug-Fixes)
+                existing.DurationTicks = tmpl.DurationTicks;
+                existing.Effect = tmpl.Effect;
+                existing.Cost = tmpl.Cost;
+                existing.Prerequisites = tmpl.Prerequisites;
+                existing.Branch = tmpl.Branch;
+                existing.Level = tmpl.Level;
+                existing.NameKey = tmpl.NameKey;
+                existing.DescriptionKey = tmpl.DescriptionKey;
+            }
+            else
+            {
+                // Fehlende Node ergänzen (neuer Content nach Update)
+                state.Researches.Add(tmpl);
+            }
+        }
+
+        // ActiveResearchId-Konsistenz prüfen
+        if (!string.IsNullOrEmpty(state.ActiveResearchId))
+        {
+            var active = state.Researches.FirstOrDefault(r => r.Id == state.ActiveResearchId);
+            if (active == null)
+            {
+                // Referenzierte Forschung existiert nicht → zurücksetzen
+                state.ActiveResearchId = null;
+            }
+            else if (!active.IsActive || active.StartedAt == null)
+            {
+                // Inkonsistenter Zustand: ActiveResearchId gesetzt aber Node nicht aktiv
+                state.ActiveResearchId = null;
+                active.IsActive = false;
+                active.StartedAt = null;
+            }
+        }
+
+        // Umgekehrt: Nodes die IsActive=true haben aber nicht ActiveResearchId sind → zurücksetzen
+        foreach (var research in state.Researches)
+        {
+            if (research.IsActive && research.Id != state.ActiveResearchId)
+            {
+                research.IsActive = false;
+                research.StartedAt = null;
+            }
+        }
     }
 }

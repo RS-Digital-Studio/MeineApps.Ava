@@ -110,7 +110,7 @@ public partial class TournamentViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("TournamentFull") ?? "Turnier",
                 _localizationService.GetString("TournamentNoEntries") ?? "Keine Teilnahmen mehr verfügbar.",
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -136,7 +136,7 @@ public partial class TournamentViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("TournamentReward") ?? "Turnier-Belohnung",
                 $"{tierName}: {screws} GS",
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
 
             RefreshTournament();
         }

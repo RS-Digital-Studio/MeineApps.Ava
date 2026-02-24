@@ -280,6 +280,10 @@ public class WorkerService : IWorkerService
         var trainingCenter = state.GetBuilding(BuildingType.TrainingCenter);
         decimal trainingMultiplier = trainingCenter?.TrainingSpeedMultiplier ?? 1m;
 
+        // Gilden-Forschung: Training-Geschwindigkeit (+25%)
+        if (state.GuildMembership?.ResearchTrainingSpeedBonus > 0)
+            trainingMultiplier *= (1m + state.GuildMembership.ResearchTrainingSpeedBonus);
+
         switch (worker.ActiveTrainingType)
         {
             case TrainingType.Efficiency:
@@ -365,6 +369,10 @@ public class WorkerService : IWorkerService
                 moodDecay *= (1m - reduction);
         }
 
+        // Gilden-Forschung: Ermüdungs-/Stimmungs-Reduktion (-20%)
+        if (state.GuildMembership?.ResearchFatigueReduction > 0)
+            moodDecay *= (1m - state.GuildMembership.ResearchFatigueReduction);
+
         // Canteen-Gebäude: Passive Stimmungs-Erholung auch beim Arbeiten
         var canteen = state.GetBuilding(BuildingType.Canteen);
         decimal passiveMoodRecovery = canteen?.MoodRecoveryPerHour ?? 0m;
@@ -375,8 +383,11 @@ public class WorkerService : IWorkerService
         else
             worker.Mood = Math.Min(100m, worker.Mood + Math.Abs(netMoodChange) * deltaHours);
 
-        // Fatigue increases while working
-        worker.Fatigue = Math.Min(100m, worker.Fatigue + worker.FatiguePerHour * deltaHours);
+        // Fatigue increases while working (mit Gilden-Forschung Reduktion)
+        var fatigueRate = worker.FatiguePerHour;
+        if (state.GuildMembership?.ResearchFatigueReduction > 0)
+            fatigueRate *= (1m - state.GuildMembership.ResearchFatigueReduction);
+        worker.Fatigue = Math.Min(100m, worker.Fatigue + fatigueRate * deltaHours);
 
         // Auto-Rest bei 100% Erschöpfung
         if (worker.Fatigue >= 100m)

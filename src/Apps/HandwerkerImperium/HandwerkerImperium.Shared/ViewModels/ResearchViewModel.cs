@@ -105,6 +105,9 @@ public partial class ResearchViewModel : ObservableObject
     [ObservableProperty]
     private ResearchBranch _selectedTab = ResearchBranch.Tools;
 
+    [ObservableProperty]
+    private string _researchRunningLabel = "Forschung l\u00e4uft...";
+
     // ═══════════════════════════════════════════════════════════════════════
     // COMPUTED PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -236,6 +239,7 @@ public partial class ResearchViewModel : ObservableObject
         ToolsBranchLabel = $"{ResearchBranch.Tools.GetIcon()} {_localizationService.GetString(ResearchBranch.Tools.GetLocalizationKey())}";
         ManagementBranchLabel = $"{ResearchBranch.Management.GetIcon()} {_localizationService.GetString(ResearchBranch.Management.GetLocalizationKey())}";
         MarketingBranchLabel = $"{ResearchBranch.Marketing.GetIcon()} {_localizationService.GetString(ResearchBranch.Marketing.GetLocalizationKey())}";
+        ResearchRunningLabel = _localizationService.GetString("ResearchRunning") ?? "Forschung l\u00e4uft...";
         LoadResearchTree();
     }
 
@@ -271,7 +275,7 @@ public partial class ResearchViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("ResearchInProgress"),
                 _localizationService.GetString("ResearchInProgressDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -290,7 +294,7 @@ public partial class ResearchViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("ResearchLocked"),
                 _localizationService.GetString("ResearchLockedDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -300,7 +304,7 @@ public partial class ResearchViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NotEnoughMoney"),
                 string.Format(_localizationService.GetString("ResearchCostFormat"), MoneyFormatter.Format(target.Cost, 0)),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -337,7 +341,7 @@ public partial class ResearchViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("ResearchFailed"),
                 _localizationService.GetString("ResearchFailedDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 
@@ -353,7 +357,7 @@ public partial class ResearchViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NotEnoughScrews"),
                 string.Format(_localizationService.GetString("NotEnoughScrewsDesc"), cost),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 

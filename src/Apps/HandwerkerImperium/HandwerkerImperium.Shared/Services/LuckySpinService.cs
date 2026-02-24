@@ -36,11 +36,30 @@ public class LuckySpinService : ILuckySpinService
 
     public bool HasFreeSpin => _gameStateService.State.LuckySpin.HasFreeSpin;
 
-    public int SpinCost => 5;
+    /// <summary>
+    /// Steigende Kosten: 5 → 8 → 12 → 18 → 25 → 35 → 50 (danach +20 pro Spin).
+    /// Reset bei Tageswechsel.
+    /// </summary>
+    private static readonly int[] SpinCostTiers = [5, 8, 12, 18, 25, 35, 50];
+
+    public int SpinCost
+    {
+        get
+        {
+            var spinState = _gameStateService.State.LuckySpin;
+            spinState.ResetDailyIfNeeded();
+            int paidSpins = spinState.PaidSpinsToday;
+            if (paidSpins < SpinCostTiers.Length)
+                return SpinCostTiers[paidSpins];
+            // Ab Tier 7+: 50 + 20 pro weiteren Spin
+            return 50 + (paidSpins - SpinCostTiers.Length + 1) * 20;
+        }
+    }
 
     public LuckySpinPrizeType Spin()
     {
         var spinState = _gameStateService.State.LuckySpin;
+        spinState.ResetDailyIfNeeded();
 
         if (HasFreeSpin)
         {
@@ -49,9 +68,13 @@ public class LuckySpinService : ILuckySpinService
         }
         else
         {
-            // Goldschrauben abziehen
+            // Goldschrauben abziehen (aktuelle Kosten)
             if (!_gameStateService.TrySpendGoldenScrews(SpinCost))
                 return LuckySpinPrizeType.MoneySmall; // Fallback wenn nicht genug
+
+            // Kostenpflichtige Spins heute zählen
+            spinState.PaidSpinsToday++;
+            spinState.LastPaidSpinDate = DateTime.UtcNow;
         }
 
         spinState.TotalSpins++;

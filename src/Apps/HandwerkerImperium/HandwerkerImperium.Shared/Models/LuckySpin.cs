@@ -60,6 +60,27 @@ public class LuckySpinState
     [JsonPropertyName("totalSpins")]
     public int TotalSpins { get; set; }
 
+    /// <summary>
+    /// Anzahl kostenpflichtiger Spins heute (für steigende Kosten).
+    /// </summary>
+    [JsonPropertyName("paidSpinsToday")]
+    public int PaidSpinsToday { get; set; }
+
+    /// <summary>
+    /// Datum des letzten kostenpflichtigen Spins (für Tages-Reset).
+    /// </summary>
+    [JsonPropertyName("lastPaidSpinDate")]
+    public DateTime LastPaidSpinDate { get; set; } = DateTime.MinValue;
+
     [JsonIgnore]
     public bool HasFreeSpin => LastFreeSpinDate.Date < DateTime.UtcNow.Date;
+
+    /// <summary>
+    /// Prüft ob PaidSpinsToday zurückgesetzt werden muss (neuer Tag).
+    /// </summary>
+    public void ResetDailyIfNeeded()
+    {
+        if (LastPaidSpinDate.Date < DateTime.UtcNow.Date)
+            PaidSpinsToday = 0;
+    }
 }

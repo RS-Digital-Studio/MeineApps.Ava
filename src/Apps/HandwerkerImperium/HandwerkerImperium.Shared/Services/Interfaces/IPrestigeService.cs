@@ -63,6 +63,12 @@ public interface IPrestigeService
     decimal GetXpMultiplier();
 
     /// <summary>
+    /// Prestige-Pass aktivieren (nach erfolgreichem IAP-Kauf).
+    /// Setzt IsPrestigePassActive auf true für den aktuellen Durchlauf.
+    /// </summary>
+    void ActivatePrestigePass();
+
+    /// <summary>
     /// Event fired when prestige is completed.
     /// </summary>
     event EventHandler? PrestigeCompleted;

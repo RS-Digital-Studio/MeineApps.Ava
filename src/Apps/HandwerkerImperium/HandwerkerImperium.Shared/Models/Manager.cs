@@ -56,7 +56,7 @@ public class Manager
     public int UpgradeCost => Level * 10;
 
     /// <summary>
-    /// Alle 12 Manager-Definitionen.
+    /// Alle 14 Manager-Definitionen.
     /// </summary>
     public static List<ManagerDefinition> GetAllDefinitions() =>
     [
@@ -68,6 +68,8 @@ public class Manager
         new("mgr_otto", "ManagerOtto", WorkshopType.Contractor, ManagerAbility.IncomeBoost, 80, 0, 0),
         new("mgr_anna", "ManagerAnna", WorkshopType.Architect, ManagerAbility.FatigueReduction, 0, 0, 25),
         new("mgr_max", "ManagerMax", WorkshopType.GeneralContractor, ManagerAbility.IncomeBoost, 100, 0, 0),
+        new("mgr_schmied", "ManagerSchmied", WorkshopType.MasterSmith, ManagerAbility.EfficiencyBoost, 120, 0, 0),
+        new("mgr_erfinder", "ManagerErfinder", WorkshopType.InnovationLab, ManagerAbility.IncomeBoost, 140, 0, 0),
         new("mgr_schmidt", "ManagerSchmidt", null, ManagerAbility.TrainingSpeedUp, 0, 1, 0),
         new("mgr_weber", "ManagerWeber", null, ManagerAbility.AutoCollectOrders, 0, 2, 0),
         new("mgr_mueller", "ManagerMueller", null, ManagerAbility.EfficiencyBoost, 0, 3, 0),

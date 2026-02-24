@@ -47,10 +47,18 @@ public class PrestigeService : IPrestigeService
         int basePoints = GetPrestigePoints(state.TotalMoneyEarned);
         int tierPoints = (int)(basePoints * tier.GetPointMultiplier());
 
+        // Prestige-Pass: +50% Bonus auf Prestige-Punkte
+        if (state.IsPrestigePassActive)
+            tierPoints = (int)(tierPoints * 1.5m);
+
+        // Gilden-Forschung: Prestige-Punkte-Bonus (+10%)
+        if (state.GuildMembership?.ResearchPrestigePointBonus > 0)
+            tierPoints = (int)(tierPoints * (1m + state.GuildMembership.ResearchPrestigePointBonus));
+
         prestige.PrestigePoints += tierPoints;
         prestige.TotalPrestigePoints += tierPoints;
 
-        // Tier-Zaehler erhoehen
+        // Tier-Zähler erhöhen
         switch (tier)
         {
             case PrestigeTier.Bronze:
@@ -61,6 +69,18 @@ public class PrestigeService : IPrestigeService
                 break;
             case PrestigeTier.Gold:
                 prestige.GoldCount++;
+                break;
+            case PrestigeTier.Platin:
+                prestige.PlatinCount++;
+                break;
+            case PrestigeTier.Diamant:
+                prestige.DiamantCount++;
+                break;
+            case PrestigeTier.Meister:
+                prestige.MeisterCount++;
+                break;
+            case PrestigeTier.Legende:
+                prestige.LegendeCount++;
                 break;
         }
 
@@ -84,6 +104,15 @@ public class PrestigeService : IPrestigeService
         PrestigeCompleted?.Invoke(this, EventArgs.Empty);
 
         return true;
+    }
+
+    /// <summary>
+    /// Prestige-Pass aktivieren (nach erfolgreichem IAP-Kauf).
+    /// Setzt IsPrestigePassActive auf den aktuellen Durchlauf.
+    /// </summary>
+    public void ActivatePrestigePass()
+    {
+        _gameStateService.State.IsPrestigePassActive = true;
     }
 
     public List<PrestigeShopItem> GetShopItems()
@@ -127,7 +156,7 @@ public class PrestigeService : IPrestigeService
     /// Maximaler Prestige-Multiplikator (nur Tier-Boni, nicht Shop-Income-Boni).
     /// Shop-Income-Boni werden separat im GameLoop/OfflineProgress angewendet.
     /// </summary>
-    private const decimal MaxPermanentMultiplier = 20.0m;
+    private const decimal MaxPermanentMultiplier = 200.0m;
 
     public decimal GetPermanentMultiplier()
     {
@@ -332,11 +361,7 @@ public class PrestigeService : IPrestigeService
             ws.WorkshopSpecialization = null;
         }
 
-        // === RESET: Guild-Beiträge (Mitgliedschaft bleibt) ===
-        if (state.Guild != null)
-        {
-            state.Guild.WeeklyProgress = 0;
-        }
+        // === Gilden-Mitgliedschaft bleibt bestehen (Firebase kümmert sich um Weekly-Reset) ===
 
         // === BEDINGT: Equipment (Diamant+ behält es) ===
         if (!tier.KeepsEquipment())
@@ -407,6 +432,9 @@ public class PrestigeService : IPrestigeService
         // - state.Friends
         // - state.TotalTournamentsPlayed
         // - state.StreakRescueUsed
+
+        // === RESET: Prestige-Pass (wird bei jedem Prestige verbraucht) ===
+        state.IsPrestigePassActive = false;
 
         // Gold prestige preserves shop items (already in PrestigeData.PurchasedShopItems,
         // which is not touched by reset). Nothing extra needed here.

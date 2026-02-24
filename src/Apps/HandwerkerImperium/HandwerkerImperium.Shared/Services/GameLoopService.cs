@@ -28,6 +28,9 @@ public class GameLoopService : IGameLoopService, IDisposable
     private readonly ISeasonalEventService? _seasonalEventService;
     private readonly IBattlePassService? _battlePassService;
     private readonly ICraftingService? _craftingService;
+    private readonly ILeaderboardService? _leaderboardService;
+    private readonly IBountyService? _bountyService;
+    private readonly IGuildWarService? _guildWarService;
     private DispatcherTimer? _timer;
     private DateTime _sessionStart;
     private bool _isPaused;
@@ -46,6 +49,9 @@ public class GameLoopService : IGameLoopService, IDisposable
     private const int BattlePassSeasonCheckIntervalTicks = 300; // Battle Pass Saison alle 5 Minuten prüfen
     private const int AutomationCheckIntervalTicks = 5; // Automation alle 5 Ticks
     private const int AutoAssignIntervalTicks = 60; // AutoAssign alle 60 Ticks
+    private const int LeaderboardSubmitIntervalTicks = 300; // Leaderboard-Score alle 5 Minuten submitten
+    private const int BountyCheckIntervalTicks = 120; // Bounty-Fortschritt alle 2 Minuten prüfen
+    private const int GuildWarCheckIntervalTicks = 300; // Guild-War alle 5 Minuten prüfen
 
     public bool IsRunning => _timer?.IsEnabled ?? false;
     public TimeSpan SessionDuration => DateTime.UtcNow - _sessionStart;
@@ -66,7 +72,10 @@ public class GameLoopService : IGameLoopService, IDisposable
         IGuildService? guildService = null,
         ISeasonalEventService? seasonalEventService = null,
         IBattlePassService? battlePassService = null,
-        ICraftingService? craftingService = null)
+        ICraftingService? craftingService = null,
+        ILeaderboardService? leaderboardService = null,
+        IBountyService? bountyService = null,
+        IGuildWarService? guildWarService = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
@@ -82,6 +91,9 @@ public class GameLoopService : IGameLoopService, IDisposable
         _seasonalEventService = seasonalEventService;
         _battlePassService = battlePassService;
         _craftingService = craftingService;
+        _leaderboardService = leaderboardService;
+        _bountyService = bountyService;
+        _guildWarService = guildWarService;
     }
 
     public void Start()
@@ -224,6 +236,28 @@ public class GameLoopService : IGameLoopService, IDisposable
         if (masterToolBonus > 0)
             grossIncome *= (1m + masterToolBonus);
 
+        // 3d. Gilden-Bonus: +1% pro Gilden-Level, max +20%
+        if (state.GuildMembership != null && state.GuildMembership.IncomeBonus > 0)
+            grossIncome *= (1m + state.GuildMembership.IncomeBonus);
+
+        // 3e. Gilden-Forschungs-Boni anwenden
+        if (state.GuildMembership != null)
+        {
+            var gm = state.GuildMembership;
+
+            // Einkommens-Bonus (+20% bei allen Forschungen)
+            if (gm.ResearchIncomeBonus > 0)
+                grossIncome *= (1m + gm.ResearchIncomeBonus);
+
+            // Kosten-Reduktion (-10%)
+            if (gm.ResearchCostReduction > 0)
+                costs *= (1m - Math.Min(gm.ResearchCostReduction, 0.50m));
+
+            // Effizienz-Bonus (+5%) - stackt mit Research-Effizienz
+            if (gm.ResearchEfficiencyBonus > 0)
+                grossIncome *= (1m + gm.ResearchEfficiencyBonus);
+        }
+
         // 4. Net earnings (can be negative!)
         decimal netEarnings = grossIncome - costs;
 
@@ -322,6 +356,15 @@ public class GameLoopService : IGameLoopService, IDisposable
         // 9f. Crafting-Timer jedes Tick aktualisieren
         _craftingService?.UpdateTimers();
 
+        // 9f2. MasterSmith: Passiv Crafting-Materialien produzieren (alle 60 Ticks = 1 Minute)
+        if (_tickCount % 60 == 45)
+        {
+            ProduceMasterSmithMaterials(state);
+        }
+
+        // 9f3. InnovationLab: Research-Geschwindigkeit verdoppeln (jedes Tick 1 Extra-Sekunde)
+        ApplyInnovationLabBonus(state);
+
         // 9g. Weekly Mission Reset (alle 60 Ticks, Offset 15)
         if (_tickCount % WeeklyMissionCheckIntervalTicks == 15)
         {
@@ -334,11 +377,7 @@ public class GameLoopService : IGameLoopService, IDisposable
             _managerService?.CheckAndUnlockManagers();
         }
 
-        // 9i. Gilden-Wochenziel prüfen (alle 300 Ticks, Offset 100)
-        if (_tickCount % GuildSimulateIntervalTicks == 100)
-        {
-            _guildService?.CheckWeeklyGoalCompletion();
-        }
+        // 9i. Gilden-Wochenziel: Firebase übernimmt Weekly-Reset bei RefreshGuildDetailsAsync()
 
         // 9j. Saisonales Event prüfen (alle 300 Ticks, Offset 150)
         if (_tickCount % SeasonalEventCheckIntervalTicks == 150)
@@ -363,6 +402,18 @@ public class GameLoopService : IGameLoopService, IDisposable
         {
             ProcessAutoAssign(state);
         }
+
+        // 9n. Leaderboard Score-Submit (alle 5 Minuten, Offset 180)
+        if (_tickCount % LeaderboardSubmitIntervalTicks == 180 && _leaderboardService != null)
+            _leaderboardService.SubmitScoresAsync().FireAndForget();
+
+        // 9o. Community-Bounty Prüfung (alle 2 Minuten, Offset 90)
+        if (_tickCount % BountyCheckIntervalTicks == 90 && _bountyService != null)
+            _bountyService.CheckAndFinalizeBountyAsync().FireAndForget();
+
+        // 9p. Guild-War Prüfung (alle 5 Minuten, Offset 240)
+        if (_tickCount % GuildWarCheckIntervalTicks == 240 && _guildWarService != null)
+            _guildWarService.CheckAndFinalizeWarAsync().FireAndForget();
 
         // 9c. Reputation: Showroom-DailyReputationGain + Decay (einmal pro Tag, persistiert)
         if ((DateTime.UtcNow - state.LastReputationDecay).TotalHours >= 24)
@@ -609,13 +660,68 @@ public class GameLoopService : IGameLoopService, IDisposable
         var extension = state.GetBuilding(BuildingType.WorkshopExtension);
         int buildingSlots = extension?.ExtraWorkerSlots ?? 0;
 
-        int totalExtra = researchSlots + buildingSlots;
+        // Gilden-Forschung: +1 Worker-Slot pro Workshop
+        int guildSlots = state.GuildMembership?.ResearchWorkerSlotBonus ?? 0;
+
+        int totalExtra = researchSlots + buildingSlots + guildSlots;
         decimal levelResistance = Math.Min(researchEffects?.LevelResistanceBonus ?? 0m, 0.50m);
 
         foreach (var ws in state.Workshops)
         {
             ws.ExtraWorkerSlots = totalExtra;
             ws.LevelResistanceBonus = levelResistance;
+        }
+    }
+
+    /// <summary>
+    /// MasterSmith-Spezialeffekt: Produziert passiv Crafting-Materialien wenn Workshop besetzt ist.
+    /// Generiert 1 zufälliges Tier-1-Produkt pro Minute pro arbeitendem Worker.
+    /// </summary>
+    private static void ProduceMasterSmithMaterials(GameState state)
+    {
+        var masterSmith = state.Workshops.FirstOrDefault(w => w.Type == WorkshopType.MasterSmith && w.IsUnlocked);
+        if (masterSmith == null) return;
+
+        int workingWorkers = masterSmith.Workers.Count(w => w.IsWorking);
+        if (workingWorkers <= 0) return;
+
+        // Tier-1-Crafting-Materialien die passiv produziert werden können
+        string[] tier1Products = ["planks", "pipes", "cables", "paint_mix", "roof_tiles"];
+
+        state.CraftingInventory ??= new Dictionary<string, int>();
+
+        for (int i = 0; i < workingWorkers; i++)
+        {
+            var product = tier1Products[Random.Shared.Next(tier1Products.Length)];
+            if (state.CraftingInventory.ContainsKey(product))
+                state.CraftingInventory[product]++;
+            else
+                state.CraftingInventory[product] = 1;
+        }
+
+        state.TotalItemsCrafted += workingWorkers;
+    }
+
+    /// <summary>
+    /// InnovationLab-Spezialeffekt: Verdoppelt Research-Geschwindigkeit wenn Workshop besetzt ist.
+    /// Schiebt die StartedAt-Zeit der aktiven Forschung pro Tick um 1 Extra-Sekunde nach vorne.
+    /// </summary>
+    private void ApplyInnovationLabBonus(GameState state)
+    {
+        if (_researchService == null) return;
+        if (string.IsNullOrEmpty(state.ActiveResearchId)) return;
+
+        var innovationLab = state.Workshops.FirstOrDefault(w => w.Type == WorkshopType.InnovationLab && w.IsUnlocked);
+        if (innovationLab == null) return;
+
+        int workingWorkers = innovationLab.Workers.Count(w => w.IsWorking);
+        if (workingWorkers <= 0) return;
+
+        // Aktive Forschung finden und StartedAt um 1 Sekunde zurücksetzen (= 2x Geschwindigkeit)
+        var activeResearch = state.Researches.FirstOrDefault(r => r.Id == state.ActiveResearchId && r.IsActive);
+        if (activeResearch?.StartedAt != null)
+        {
+            activeResearch.StartedAt = activeResearch.StartedAt.Value.AddSeconds(-1);
         }
     }
 

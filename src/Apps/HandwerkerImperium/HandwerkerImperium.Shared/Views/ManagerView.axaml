@@ -83,9 +83,9 @@
                     </Border.Background>
                     <Grid>
                       <!-- Schloss-Icon fuer gesperrte Manager -->
-                      <mi:MaterialIcon Kind="Lock" Width="24" Height="24"
+                      <mi:MaterialIcon Kind="LockOutline" Width="26" Height="26"
                                        AutomationProperties.AutomationId="Manager_Icon_ItemLock"
-                                       Foreground="White" Opacity="0.6"
+                                       Foreground="White" Opacity="0.7"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        IsVisible="{Binding !IsUnlocked}" />
                       <!-- Account-Icon fuer freigeschaltete Manager -->

@@ -301,7 +301,7 @@ public partial class StatisticsViewModel : ObservableObject
                 PrestigeTier.Bronze.GetRequiredLevel(),
                 state.PlayerLevel);
 
-            AlertRequested?.Invoke(title, message, "OK");
+            AlertRequested?.Invoke(title, message, _localizationService.GetString("OK") ?? "OK");
             return;
         }
 

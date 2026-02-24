@@ -21,7 +21,7 @@
             IdSeed="{Binding Worker.Id}"
             Tier="{Binding Worker.Tier}"
             Mood="{Binding Worker.Mood}"
-            AvatarSize="64"
+            AvatarSize="96"
             IsFemale="{Binding Worker.IsFemale}"
             VerticalAlignment="Center" />
 

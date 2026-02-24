@@ -149,7 +149,7 @@
                       <mi:MaterialIcon Kind="Crown" Width="12" Height="12"
                                        AutomationProperties.AutomationId="BattlePass_Icon_PremiumLabel"
                                        Foreground="{StaticResource CraftGoldBrush}" />
-                      <TextBlock Text="Premium"
+                      <TextBlock Text="{loc:Translate Premium}"
                                  AutomationProperties.AutomationId="BattlePass_Txt_PremiumLabel"
                                  FontSize="10"
                                  Foreground="{StaticResource CraftGoldBrush}" />

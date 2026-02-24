@@ -3,7 +3,8 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Models;
 
 /// <summary>
-/// Static definition of all 45 research nodes (3 branches x 15 levels).
+/// Statische Definition aller 60 Research-Nodes (3 Branches x 20 Level).
+/// Level 1-15: Basis-Forschungen. Level 16-20: Endgame-Forschungen (5B-100B Kosten, 96-168h).
 /// </summary>
 public static class ResearchTree
 {
@@ -63,6 +64,22 @@ public static class ResearchTree
                 new ResearchEffect { CostReduction = 0.15m }, ["tools_13"]),
             Create("tools_15", ResearchBranch.Tools, 15, "ResearchMasterCraftsman", 1_000_000_000m, TimeSpan.FromHours(72),
                 new ResearchEffect { EfficiencyBonus = 0.20m, MiniGameZoneBonus = 0.05m }, ["tools_13"]),
+
+            // === Endgame (Level 16-20) - Ascension-Boni + Workshop-Synergie ===
+            // Zeile 10: [16] zentriert - hängt von [14] UND [15] ab
+            Create("tools_16", ResearchBranch.Tools, 16, "ResearchDimensionalForge", 5_000_000_000m, TimeSpan.FromHours(96),
+                new ResearchEffect { EfficiencyBonus = 0.20m, CostReduction = 0.10m }, ["tools_14", "tools_15"]),
+            // Zeile 11: [17] [18] - beide hängen von [16] ab
+            Create("tools_17", ResearchBranch.Tools, 17, "ResearchAscensionCatalyst", 10_000_000_000m, TimeSpan.FromHours(108),
+                new ResearchEffect { AscensionPointBonus = 0.15m }, ["tools_16"]),
+            Create("tools_18", ResearchBranch.Tools, 18, "ResearchMolecularAssembly", 20_000_000_000m, TimeSpan.FromHours(120),
+                new ResearchEffect { EfficiencyBonus = 0.25m, MiniGameZoneBonus = 0.06m }, ["tools_16"]),
+            // Zeile 12: [19] zentriert - hängt von [17] UND [18] ab
+            Create("tools_19", ResearchBranch.Tools, 19, "ResearchWorkshopSynergy", 50_000_000_000m, TimeSpan.FromHours(144),
+                new ResearchEffect { WorkshopSynergyBonus = 0.02m }, ["tools_17", "tools_18"]),
+            // Zeile 13: [20] Krönungs-Node - hängt von [19] ab
+            Create("tools_20", ResearchBranch.Tools, 20, "ResearchEternalForge", 100_000_000_000m, TimeSpan.FromHours(168),
+                new ResearchEffect { EfficiencyBonus = 0.30m, AscensionPointBonus = 0.25m, MiniGameZoneBonus = 0.08m, WorkshopSynergyBonus = 0.03m }, ["tools_19"]),
         ];
     }
 
@@ -111,6 +128,22 @@ public static class ResearchTree
                 new ResearchEffect { WageReduction = 0.12m, LevelResistanceBonus = 0.10m }, ["mgmt_13"]),
             Create("mgmt_15", ResearchBranch.Management, 15, "ResearchMasterManager", 1_000_000_000m, TimeSpan.FromHours(72),
                 new ResearchEffect { ExtraWorkerSlots = 2, WageReduction = 0.15m, LevelResistanceBonus = 0.10m }, ["mgmt_13"]),
+
+            // === Endgame (Level 16-20) - Auto-Training + Masseneinstellung ===
+            // Zeile 10: [16] zentriert - hängt von [14] UND [15] ab
+            Create("mgmt_16", ResearchBranch.Management, 16, "ResearchTalentAcademy", 5_000_000_000m, TimeSpan.FromHours(96),
+                new ResearchEffect { WageReduction = 0.15m, ExtraWorkerSlots = 2 }, ["mgmt_14", "mgmt_15"]),
+            // Zeile 11: [17] [18] - beide hängen von [16] ab
+            Create("mgmt_17", ResearchBranch.Management, 17, "ResearchAutoTraining", 10_000_000_000m, TimeSpan.FromHours(108),
+                new ResearchEffect { UnlocksAutoTraining = true, TrainingSpeedMultiplier = 0.5m }, ["mgmt_16"]),
+            Create("mgmt_18", ResearchBranch.Management, 18, "ResearchMasterMentor", 20_000_000_000m, TimeSpan.FromHours(120),
+                new ResearchEffect { LevelResistanceBonus = 0.15m, TrainingSpeedMultiplier = 1.0m }, ["mgmt_16"]),
+            // Zeile 12: [19] zentriert - hängt von [17] UND [18] ab
+            Create("mgmt_19", ResearchBranch.Management, 19, "ResearchMassHiring", 50_000_000_000m, TimeSpan.FromHours(144),
+                new ResearchEffect { UnlocksMassHiring = true, ExtraWorkerSlots = 3 }, ["mgmt_17", "mgmt_18"]),
+            // Zeile 13: [20] Krönungs-Node - hängt von [19] ab
+            Create("mgmt_20", ResearchBranch.Management, 20, "ResearchLegendaryLeader", 100_000_000_000m, TimeSpan.FromHours(168),
+                new ResearchEffect { ExtraWorkerSlots = 3, WageReduction = 0.20m, TrainingSpeedMultiplier = 1.0m, LevelResistanceBonus = 0.15m }, ["mgmt_19"]),
         ];
     }
 
@@ -159,6 +192,22 @@ public static class ResearchTree
                 new ResearchEffect { ExtraOrderSlots = 2 }, ["mkt_13"]),
             Create("mkt_15", ResearchBranch.Marketing, 15, "ResearchMarketDomination", 1_000_000_000m, TimeSpan.FromHours(72),
                 new ResearchEffect { RewardMultiplier = 0.20m, ExtraOrderSlots = 2 }, ["mkt_13"]),
+
+            // === Endgame (Level 16-20) - Premium-Aufträge + Reputation ===
+            // Zeile 10: [16] zentriert - hängt von [14] UND [15] ab
+            Create("mkt_16", ResearchBranch.Marketing, 16, "ResearchImperialBrand", 5_000_000_000m, TimeSpan.FromHours(96),
+                new ResearchEffect { RewardMultiplier = 0.20m, ExtraOrderSlots = 2 }, ["mkt_14", "mkt_15"]),
+            // Zeile 11: [17] [18] - beide hängen von [16] ab
+            Create("mkt_17", ResearchBranch.Marketing, 17, "ResearchReputationEngine", 10_000_000_000m, TimeSpan.FromHours(108),
+                new ResearchEffect { ReputationBonus = 0.10m, RewardMultiplier = 0.10m }, ["mkt_16"]),
+            Create("mkt_18", ResearchBranch.Marketing, 18, "ResearchPremiumContracts", 20_000_000_000m, TimeSpan.FromHours(120),
+                new ResearchEffect { PremiumOrderChance = 0.15m, RewardMultiplier = 0.15m }, ["mkt_16"]),
+            // Zeile 12: [19] zentriert - hängt von [17] UND [18] ab
+            Create("mkt_19", ResearchBranch.Marketing, 19, "ResearchWorldRenown", 50_000_000_000m, TimeSpan.FromHours(144),
+                new ResearchEffect { ReputationBonus = 0.15m, PremiumOrderChance = 0.10m, ExtraOrderSlots = 3 }, ["mkt_17", "mkt_18"]),
+            // Zeile 13: [20] Krönungs-Node - hängt von [19] ab
+            Create("mkt_20", ResearchBranch.Marketing, 20, "ResearchEternalLegacy", 100_000_000_000m, TimeSpan.FromHours(168),
+                new ResearchEffect { RewardMultiplier = 0.30m, ExtraOrderSlots = 3, ReputationBonus = 0.20m, PremiumOrderChance = 0.15m }, ["mkt_19"]),
         ];
     }
 

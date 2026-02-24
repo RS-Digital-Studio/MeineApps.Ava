@@ -230,32 +230,33 @@
         <!-- ============================================================= -->
         <!-- RUSH BANNER                                                   -->
         <!-- ============================================================= -->
-        <Border IsVisible="{Binding CanActivateRush}"
-                CornerRadius="12" Padding="12,8"
+        <Button IsVisible="{Binding CanActivateRush}"
+                Command="{Binding ActivateRushCommand}"
+                Classes="Text" Padding="0" BorderThickness="0"
+                CornerRadius="12" Cursor="Hand"
                 Margin="0,0,0,4"
-                AutomationProperties.AutomationId="Dashboard_Border_RushBanner">
-          <Border.Background>
-            <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
-              <GradientStop Color="#D97706" Offset="0" />
-              <GradientStop Color="#FFD700" Offset="1" />
-            </LinearGradientBrush>
-          </Border.Background>
-          <Grid ColumnDefinitions="Auto,*,Auto">
-            <mi:MaterialIcon Kind="Flash" Width="20" Height="20" VerticalAlignment="Center"
-                               Foreground="White"
-                               AutomationProperties.AutomationId="Dashboard_Icon_RushFlash" />
-            <TextBlock Grid.Column="1" Text="{Binding RushButtonText}"
-                       FontSize="14" FontWeight="Bold" Foreground="White"
-                       VerticalAlignment="Center" Margin="8,0"
-                       AutomationProperties.AutomationId="Dashboard_Txt_RushText" />
-            <Button Grid.Column="2" Classes="Text" Padding="10,4"
-                    Background="#00000025" CornerRadius="8"
-                    Command="{Binding ActivateRushCommand}"
-                    AutomationProperties.AutomationId="Dashboard_Btn_ActivateRush">
-              <TextBlock Text="GO!" FontSize="13" FontWeight="Bold" Foreground="#3D1C00" />
-            </Button>
-          </Grid>
-        </Border>
+                AutomationProperties.AutomationId="Dashboard_Btn_RushBanner">
+          <Border CornerRadius="12" Padding="12,10">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                <GradientStop Color="#D97706" Offset="0" />
+                <GradientStop Color="#FFD700" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <mi:MaterialIcon Kind="Flash" Width="22" Height="22" VerticalAlignment="Center"
+                                 Foreground="White"
+                                 AutomationProperties.AutomationId="Dashboard_Icon_RushFlash" />
+              <TextBlock Grid.Column="1" Text="{Binding RushButtonText}"
+                         FontSize="15" FontWeight="Bold" Foreground="White"
+                         VerticalAlignment="Center" Margin="10,0"
+                         AutomationProperties.AutomationId="Dashboard_Txt_RushText" />
+              <Border Grid.Column="2" Background="#00000030" CornerRadius="8" Padding="12,4">
+                <TextBlock Text="GO!" FontSize="14" FontWeight="ExtraBold" Foreground="#3D1C00" />
+              </Border>
+            </Grid>
+          </Border>
+        </Button>
 
         <!-- Aktiver Rush-Indikator -->
         <Border IsVisible="{Binding IsRushActive}"
@@ -306,36 +307,38 @@
         <!-- ============================================================= -->
         <!-- LIEFERANT BANNER                                              -->
         <!-- ============================================================= -->
-        <Border IsVisible="{Binding HasPendingDelivery}"
-                CornerRadius="10" Padding="10,8" Margin="0,0,0,4"
-                AutomationProperties.AutomationId="Dashboard_Border_DeliveryBanner">
-          <Border.Background>
-            <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
-              <GradientStop Color="#065F46" Offset="0" />
-              <GradientStop Color="#10B981" Offset="1" />
-            </LinearGradientBrush>
-          </Border.Background>
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-            <mi:MaterialIcon Kind="{Binding DeliveryIcon, Converter={StaticResource IconKindConverter}}"
-                               Width="20" Height="20" VerticalAlignment="Center"
-                               Foreground="White"
-                               AutomationProperties.AutomationId="Dashboard_Icon_DeliveryIcon" />
-            <StackPanel Grid.Column="1" Spacing="2">
-              <TextBlock Text="{Binding DeliveryDescription}" FontSize="13" FontWeight="Bold"
-                         Foreground="White"
-                         AutomationProperties.AutomationId="Dashboard_Txt_DeliveryDescription" />
-              <TextBlock Text="{Binding DeliveryAmountText}" FontSize="11" Foreground="#FFFFFFCC"
-                         AutomationProperties.AutomationId="Dashboard_Txt_DeliveryAmount" />
-            </StackPanel>
-            <Button Grid.Column="2" Classes="Text" Padding="10,4"
-                    Background="#00000020" CornerRadius="8"
-                    Command="{Binding ClaimDeliveryCommand}"
-                    AutomationProperties.AutomationId="Dashboard_Btn_ClaimDelivery">
-              <mi:MaterialIcon Kind="PackageDown" Width="20" Height="20" Foreground="#1B3D2C"
-                               AutomationProperties.AutomationId="Dashboard_Icon_ClaimDelivery" />
-            </Button>
-          </Grid>
-        </Border>
+        <Button IsVisible="{Binding HasPendingDelivery}"
+                Command="{Binding ClaimDeliveryCommand}"
+                Classes="Text" Padding="0" BorderThickness="0"
+                CornerRadius="10" Cursor="Hand"
+                Margin="0,0,0,4"
+                AutomationProperties.AutomationId="Dashboard_Btn_DeliveryBanner">
+          <Border CornerRadius="10" Padding="10,8">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                <GradientStop Color="#065F46" Offset="0" />
+                <GradientStop Color="#10B981" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+              <mi:MaterialIcon Kind="{Binding DeliveryIcon, Converter={StaticResource IconKindConverter}}"
+                                 Width="20" Height="20" VerticalAlignment="Center"
+                                 Foreground="White"
+                                 AutomationProperties.AutomationId="Dashboard_Icon_DeliveryIcon" />
+              <StackPanel Grid.Column="1" Spacing="2">
+                <TextBlock Text="{Binding DeliveryDescription}" FontSize="13" FontWeight="Bold"
+                           Foreground="White"
+                           AutomationProperties.AutomationId="Dashboard_Txt_DeliveryDescription" />
+                <TextBlock Text="{Binding DeliveryAmountText}" FontSize="11" Foreground="#FFFFFFCC"
+                           AutomationProperties.AutomationId="Dashboard_Txt_DeliveryAmount" />
+              </StackPanel>
+              <Border Grid.Column="2" Background="#00000030" CornerRadius="8" Padding="10,4">
+                <mi:MaterialIcon Kind="PackageDown" Width="20" Height="20" Foreground="#1B3D2C"
+                                 AutomationProperties.AutomationId="Dashboard_Icon_ClaimDelivery" />
+              </Border>
+            </Grid>
+          </Border>
+        </Button>
 
         <!-- ============================================================= -->
         <!-- AUTOMATION TOGGLES (kompakt, inline)                        -->
@@ -791,32 +794,32 @@
           <Button Classes="Text" Margin="4" Padding="0"
                   HorizontalAlignment="Stretch" VerticalAlignment="Top"
                   HorizontalContentAlignment="Stretch"
-                  Command="{Binding SelectWorkerMarketTabCommand}"
-                  AutomationProperties.AutomationId="Dashboard_Btn_Workers">
+                  Command="{Binding NavigateToWorkerMarketCommand}"
+                  AutomationProperties.AutomationId="Dashboard_Btn_WorkerMarket">
             <Border Classes="CardElevated" Padding="12,10"
-                    AutomationProperties.AutomationId="Dashboard_Border_Workers">
+                    AutomationProperties.AutomationId="Dashboard_Border_WorkerMarket">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="10">
                 <Border CornerRadius="12" Width="48" Height="48">
                   <Border.Background>
                     <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
                       <GradientStop Color="#350E7490" Offset="0"/>
-                      <GradientStop Color="#1500BCD4" Offset="1"/>
+                      <GradientStop Color="#1514B8A6" Offset="1"/>
                     </LinearGradientBrush>
                   </Border.Background>
                   <mi:MaterialIcon Kind="AccountHardHat" Width="28" Height="28"
                                    Foreground="#0E7490"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Dashboard_Icon_Workers" />
+                                   AutomationProperties.AutomationId="Dashboard_Icon_WorkerMarket" />
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                   <TextBlock Text="{loc:Translate Workers}"
                              FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Dashboard_Txt_WorkersTitle" />
+                             AutomationProperties.AutomationId="Dashboard_Txt_WorkerMarketTitle" />
                   <TextBlock Text="{Binding WorkersStatusText}"
                              FontSize="11"
                              Foreground="{DynamicResource TextSecondaryBrush}"
-                             AutomationProperties.AutomationId="Dashboard_Txt_WorkersStatus" />
+                             AutomationProperties.AutomationId="Dashboard_Txt_WorkerMarketStatus" />
                 </StackPanel>
               </Grid>
             </Border>
@@ -826,7 +829,7 @@
           <Button Classes="Text" Margin="4" Padding="0"
                   HorizontalAlignment="Stretch" VerticalAlignment="Top"
                   HorizontalContentAlignment="Stretch"
-                  Command="{Binding SelectResearchTabCommand}"
+                  Command="{Binding NavigateToResearchCommand}"
                   AutomationProperties.AutomationId="Dashboard_Btn_Research">
             <Border Classes="CardElevated" Padding="12,10"
                     AutomationProperties.AutomationId="Dashboard_Border_Research">
@@ -844,7 +847,7 @@
                                    AutomationProperties.AutomationId="Dashboard_Icon_Research" />
                 </Border>
                 <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
-                  <TextBlock Text="{loc:Translate Research}"
+                  <TextBlock Text="{loc:Translate ResearchTitle}"
                              FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Dashboard_Txt_ResearchTitle" />

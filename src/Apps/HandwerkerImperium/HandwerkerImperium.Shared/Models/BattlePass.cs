@@ -84,6 +84,51 @@ public class BattlePass
     public bool IsSeasonExpired => (DateTime.UtcNow - SeasonStartDate).TotalDays > 30;
 
     /// <summary>
+    /// Saisonales Theme basierend auf der Saison-Nummer (zyklisch 0-3).
+    /// </summary>
+    [JsonIgnore]
+    public Season SeasonTheme => (SeasonNumber % 4) switch
+    {
+        0 => Season.Spring,
+        1 => Season.Summer,
+        2 => Season.Autumn,
+        3 => Season.Winter,
+        _ => Season.Spring
+    };
+
+    /// <summary>
+    /// Farbe des saisonalen Themes.
+    /// </summary>
+    [JsonIgnore]
+    public string SeasonThemeColor => SeasonTheme switch
+    {
+        Season.Spring => "#4CAF50",
+        Season.Summer => "#FF9800",
+        Season.Autumn => "#795548",
+        Season.Winter => "#2196F3",
+        _ => "#4CAF50"
+    };
+
+    /// <summary>
+    /// MaterialIconKind-String für das saisonale Theme-Icon.
+    /// </summary>
+    [JsonIgnore]
+    public string SeasonThemeIcon => SeasonTheme switch
+    {
+        Season.Spring => "Flower",
+        Season.Summer => "WhiteBalanceSunny",
+        Season.Autumn => "Leaf",
+        Season.Winter => "Snowflake",
+        _ => "Flower"
+    };
+
+    /// <summary>
+    /// Lokalisierungs-Key für die exklusive Capstone-Belohnung auf Tier 30.
+    /// </summary>
+    [JsonIgnore]
+    public string CapstoneRewardKey => $"BPCapstone{SeasonTheme}";
+
+    /// <summary>
     /// Fügt XP hinzu und prüft Tier-Aufstieg.
     /// </summary>
     public int AddXp(int amount)
@@ -130,23 +175,50 @@ public class BattlePass
 
     /// <summary>
     /// Generiert die Premium-Track-Belohnungen für alle 30 Tiers.
+    /// Tier 30 (Index 29) enthält einen exklusiven saisonalen Capstone-Reward mit 20 Goldschrauben.
     /// </summary>
-    public static List<BattlePassReward> GeneratePremiumRewards(decimal baseIncome)
+    public static List<BattlePassReward> GeneratePremiumRewards(decimal baseIncome, int seasonNumber = 1)
     {
         var rewards = new List<BattlePassReward>();
         decimal baseMoney = Math.Max(1000m, baseIncome * 120m);
 
         for (int i = 0; i < MaxTier; i++)
         {
-            rewards.Add(new BattlePassReward
+            // Tier 30 (Index 29): Exklusiver saisonaler Capstone-Reward
+            if (i == MaxTier - 1)
             {
-                Tier = i,
-                IsFree = false,
-                MoneyReward = baseMoney * (1 + i * 0.75m),
-                XpReward = 100 + i * 50,
-                GoldenScrewReward = (i + 1) % 3 == 0 ? 5 : 2,
-                DescriptionKey = $"BPPremium_{i}"
-            });
+                // Saison-Theme aus seasonNumber berechnen
+                var season = (seasonNumber % 4) switch
+                {
+                    0 => Season.Spring,
+                    1 => Season.Summer,
+                    2 => Season.Autumn,
+                    3 => Season.Winter,
+                    _ => Season.Spring
+                };
+
+                rewards.Add(new BattlePassReward
+                {
+                    Tier = i,
+                    IsFree = false,
+                    MoneyReward = baseMoney * (1 + i * 0.75m),
+                    XpReward = 100 + i * 50,
+                    GoldenScrewReward = 20,
+                    DescriptionKey = $"BPCapstone{season}"
+                });
+            }
+            else
+            {
+                rewards.Add(new BattlePassReward
+                {
+                    Tier = i,
+                    IsFree = false,
+                    MoneyReward = baseMoney * (1 + i * 0.75m),
+                    XpReward = 100 + i * 50,
+                    GoldenScrewReward = (i + 1) % 3 == 0 ? 5 : 2,
+                    DescriptionKey = $"BPPremium_{i}"
+                });
+            }
         }
         return rewards;
     }

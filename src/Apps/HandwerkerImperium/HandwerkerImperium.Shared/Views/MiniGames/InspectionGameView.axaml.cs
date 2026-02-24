@@ -61,7 +61,7 @@ public partial class InspectionGameView : UserControl
     /// </summary>
     private void StartRenderLoop()
     {
-        StopRenderLoop();
+        _renderTimer?.Stop();
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
         _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();

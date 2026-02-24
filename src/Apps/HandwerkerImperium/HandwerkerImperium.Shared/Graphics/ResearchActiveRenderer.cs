@@ -53,7 +53,8 @@ public class ResearchActiveRenderer
     /// <param name="branch">Branch der aktiven Forschung.</param>
     /// <param name="deltaTime">Zeitdelta in Sekunden.</param>
     public void Render(SKCanvas canvas, SKRect bounds, string researchName,
-        string timeRemaining, float progress, ResearchBranch branch, float deltaTime)
+        string timeRemaining, float progress, ResearchBranch branch, float deltaTime,
+        string? runningLabel = null)
     {
         _time += deltaTime;
 
@@ -76,7 +77,8 @@ public class ResearchActiveRenderer
         // Forschungsname + Countdown (rechts vom Glas)
         float infoX = glassX + glassW + 20;
         float infoW = w - (infoX - x) - 16;
-        DrawResearchInfo(canvas, infoX, y, infoW, h, researchName, timeRemaining, progress, branchColor);
+        DrawResearchInfo(canvas, infoX, y, infoW, h, researchName, timeRemaining, progress, branchColor,
+            runningLabel ?? "Forschung l\u00e4uft...");
 
         // Fortschrittsbalken (unten)
         float barY = y + h - 10;
@@ -260,12 +262,12 @@ public class ResearchActiveRenderer
     // ═══════════════════════════════════════════════════════════════════════
 
     private void DrawResearchInfo(SKCanvas canvas, float x, float y, float w, float h,
-        string name, string timeRemaining, float progress, SKColor branchColor)
+        string name, string timeRemaining, float progress, SKColor branchColor, string runningLabel)
     {
         // "Aktive Forschung" Label
         using var labelFont = new SKFont { Size = 10 };
         _textPaint.Color = TextDim;
-        canvas.DrawText("Forschung l\u00e4uft...", x, y + 16, labelFont, _textPaint);
+        canvas.DrawText(runningLabel, x, y + 16, labelFont, _textPaint);
 
         // Forschungsname
         using var nameFont = new SKFont { Size = 15, Embolden = true };

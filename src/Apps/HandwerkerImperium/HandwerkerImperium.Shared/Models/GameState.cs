@@ -204,6 +204,10 @@ public class GameState
     [JsonPropertyName("prestige")]
     public PrestigeData Prestige { get; set; } = new();
 
+    /// <summary>Ascension-Daten (Meta-Prestige).</summary>
+    [JsonPropertyName("ascension")]
+    public AscensionData Ascension { get; set; } = new();
+
     // Legacy fields for v1 save compatibility
     [JsonPropertyName("prestigeLevel")]
     public int PrestigeLevel { get; set; }
@@ -453,6 +457,26 @@ public class GameState
     [JsonPropertyName("totalTournamentsPlayed")]
     public int TotalTournamentsPlayed { get; set; }
 
+    /// <summary>Anzahl gewonnener Turniere (Gold-Platzierung).</summary>
+    [JsonPropertyName("totalTournamentsWon")]
+    public int TotalTournamentsWon { get; set; }
+
+    /// <summary>Anzahl trainierter Worker (Lifetime).</summary>
+    [JsonPropertyName("totalWorkersTrained")]
+    public int TotalWorkersTrained { get; set; }
+
+    /// <summary>Anzahl hergestellter Crafting-Items (Lifetime).</summary>
+    [JsonPropertyName("totalItemsCrafted")]
+    public int TotalItemsCrafted { get; set; }
+
+    /// <summary>Set der abgeschlossenen Crafting-Rezept-IDs.</summary>
+    [JsonPropertyName("completedRecipeIds")]
+    public List<string> CompletedRecipeIds { get; set; } = [];
+
+    /// <summary>Set der MiniGame-Typen mit mindestens einem Perfect Rating.</summary>
+    [JsonPropertyName("perfectMiniGameTypes")]
+    public List<string> PerfectMiniGameTypes { get; set; } = [];
+
     // ═══════════════════════════════════════════════════════════════════════
     // MANAGERS (Welle 3)
     // ═══════════════════════════════════════════════════════════════════════
@@ -474,6 +498,13 @@ public class GameState
     [JsonPropertyName("battlePass")]
     public BattlePass BattlePass { get; set; } = new();
 
+    /// <summary>
+    /// Ob der Prestige-Pass für den aktuellen Durchlauf aktiv ist.
+    /// Wird bei jedem Prestige zurückgesetzt.
+    /// </summary>
+    [JsonPropertyName("isPrestigePassActive")]
+    public bool IsPrestigePassActive { get; set; }
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONTEXTUAL OFFERS (Welle 5)
     // ═══════════════════════════════════════════════════════════════════════
@@ -488,8 +519,8 @@ public class GameState
     // GUILD (Welle 6)
     // ═══════════════════════════════════════════════════════════════════════
 
-    [JsonPropertyName("guild")]
-    public Guild? Guild { get; set; }
+    [JsonPropertyName("guildMembership")]
+    public GuildMembership? GuildMembership { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // CRAFTING (Welle 7)
@@ -535,12 +566,37 @@ public class GameState
     [JsonPropertyName("friends")]
     public List<Friend> Friends { get; set; } = [];
 
+    /// <summary>
+    /// Letztes Datum an dem ein Geschenk an einen echten Freund gesendet wurde (1x/Tag).
+    /// </summary>
+    [JsonPropertyName("lastGiftSentDate")]
+    public DateTime LastGiftSentDate { get; set; } = DateTime.MinValue;
+
+    /// <summary>
+    /// Spielername für Firebase-Profile (Gilden, Leaderboards, Chat).
+    /// </summary>
+    [JsonPropertyName("playerName")]
+    public string? PlayerName { get; set; }
+
     // ═══════════════════════════════════════════════════════════════════════
     // DAILY SHOP OFFER (Welle 8)
     // ═══════════════════════════════════════════════════════════════════════
 
     [JsonPropertyName("dailyShopOffer")]
     public ShopOffer? DailyShopOffer { get; set; }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COSMETICS (rein visuell, keine Gameplay-Auswirkungen)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [JsonPropertyName("unlockedCosmetics")]
+    public List<string> UnlockedCosmetics { get; set; } = ["ct_default"];
+
+    [JsonPropertyName("activeCityThemeId")]
+    public string ActiveCityThemeId { get; set; } = "ct_default";
+
+    [JsonPropertyName("activeWorkshopSkins")]
+    public Dictionary<string, string> ActiveWorkshopSkins { get; set; } = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // UI/UX STATE
@@ -617,8 +673,8 @@ public class GameState
         get
         {
             decimal total = Workshops.Sum(w => w.GrossIncomePerSecond);
-            // Cap bei 50x für alte Spielstände die vor dem DoPrestige-Cap gespeichert wurden
-            decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 50.0m);
+            // Cap bei 250x für alte Spielstände die vor dem DoPrestige-Cap gespeichert wurden
+            decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 250.0m);
             return total * multiplier;
         }
     }

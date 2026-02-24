@@ -50,6 +50,26 @@
       </StackPanel>
     </Border>
 
+    <!-- Countdown bis nächster Gratis-Spin -->
+    <Border IsVisible="{Binding ShowCountdown}"
+            Background="#20FFFFFF" CornerRadius="10" Padding="12,8"
+            HorizontalAlignment="Center"
+            AutomationProperties.AutomationId="LuckySpin_Border_Countdown">
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+        <mi:MaterialIcon Kind="TimerOutline" Width="18" Height="18"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+        <TextBlock Text="{loc:Translate LuckySpinNextFree}"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   VerticalAlignment="Center" />
+        <TextBlock Text="{Binding FreeSpinCountdown}"
+                   FontSize="14" FontWeight="Bold"
+                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                   VerticalAlignment="Center"
+                   AutomationProperties.AutomationId="LuckySpin_Txt_Countdown" />
+      </StackPanel>
+    </Border>
+
     <!-- Spin-Button -->
     <Button Classes="Primary"
             Background="#D97706"

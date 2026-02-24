@@ -1053,6 +1053,26 @@
   <data name="order_addition" xml:space="preserve">
     <value>Anbau errichten</value>
   </data>
+  <!-- Meisterschmiede-Aufträge -->
+  <data name="order_forge_blade" xml:space="preserve">
+    <value>Klinge schmieden</value>
+  </data>
+  <data name="order_master_tools" xml:space="preserve">
+    <value>Meisterwerkzeug schmieden</value>
+  </data>
+  <data name="order_forge_artifact" xml:space="preserve">
+    <value>Artefakt schmieden</value>
+  </data>
+  <!-- Innovationslabor-Aufträge -->
+  <data name="order_prototype" xml:space="preserve">
+    <value>Prototyp bauen</value>
+  </data>
+  <data name="order_invention" xml:space="preserve">
+    <value>Erfindung erstellen</value>
+  </data>
+  <data name="order_breakthrough" xml:space="preserve">
+    <value>Revolutionärer Durchbruch</value>
+  </data>
 
   <!-- Task Descriptions -->
   <data name="task_sawing" xml:space="preserve">
@@ -1089,6 +1109,12 @@
   </data>
   <data name="GeneralContractor" xml:space="preserve">
     <value>Generalunternehmer</value>
+  </data>
+  <data name="MasterSmith" xml:space="preserve">
+    <value>Meisterschmiede</value>
+  </data>
+  <data name="InnovationLab" xml:space="preserve">
+    <value>Innovationslabor</value>
   </data>
 
   <!-- Worker System -->
@@ -1931,6 +1957,102 @@
   <data name="ResearchMarketDominationDesc" xml:space="preserve">
     <value>+20% Belohnungen, +2 Auftragspl&#228;tze</value>
   </data>
+  <!-- Research: Advanced Tools Branch (Names) -->
+  <data name="ResearchDimensionalForge" xml:space="preserve">
+    <value>Dimensionsschmiede</value>
+  </data>
+  <data name="ResearchMolecularAssembly" xml:space="preserve">
+    <value>Molekulare Montage</value>
+  </data>
+  <data name="ResearchWorkshopSynergy" xml:space="preserve">
+    <value>Werkstatt-Synergie</value>
+  </data>
+  <data name="ResearchAscensionCatalyst" xml:space="preserve">
+    <value>Aufstiegs-Katalysator</value>
+  </data>
+  <data name="ResearchEternalForge" xml:space="preserve">
+    <value>Ewige Schmiede</value>
+  </data>
+  <!-- Research: Advanced Tools Branch (Descriptions) -->
+  <data name="ResearchDimensionalForgeDesc" xml:space="preserve">
+    <value>&#214;ffnet Portale zu exotischen Materialien. +20% Effizienz, -10% Kosten.</value>
+  </data>
+  <data name="ResearchMolecularAssemblyDesc" xml:space="preserve">
+    <value>Baut auf atomarer Ebene. +25% Effizienz, +6% MiniGame-Zonen.</value>
+  </data>
+  <data name="ResearchWorkshopSynergyDesc" xml:space="preserve">
+    <value>Werkst&#228;tten verst&#228;rken sich gegenseitig. +2% Einkommen pro aktiver Werkstatt.</value>
+  </data>
+  <data name="ResearchAscensionCatalystDesc" xml:space="preserve">
+    <value>Verst&#228;rkt Transzendenz-Energien. +15% Aufstiegspunkte.</value>
+  </data>
+  <data name="ResearchEternalForgeDesc" xml:space="preserve">
+    <value>Der ultimative Handwerks-Gipfel. Massive Effizienz-, Aufstiegs- und Synergie-Boni.</value>
+  </data>
+  <!-- Research: Advanced Management Branch (Names) -->
+  <data name="ResearchTalentAcademy" xml:space="preserve">
+    <value>Talentakademie</value>
+  </data>
+  <data name="ResearchAutoTraining" xml:space="preserve">
+    <value>Automatisches Training</value>
+  </data>
+  <data name="ResearchMasterMentor" xml:space="preserve">
+    <value>Meister-Mentor</value>
+  </data>
+  <data name="ResearchMassHiring" xml:space="preserve">
+    <value>Masseneinstellung</value>
+  </data>
+  <data name="ResearchLegendaryLeader" xml:space="preserve">
+    <value>Legend&#228;rer Anf&#252;hrer</value>
+  </data>
+  <!-- Research: Advanced Management Branch (Descriptions) -->
+  <data name="ResearchTalentAcademyDesc" xml:space="preserve">
+    <value>Elite-Ausbildungsinstitut. -15% L&#246;hne, +2 Arbeiterpl&#228;tze.</value>
+  </data>
+  <data name="ResearchAutoTrainingDesc" xml:space="preserve">
+    <value>Arbeiter trainieren sich selbst automatisch. Schaltet Auto-Training frei.</value>
+  </data>
+  <data name="ResearchMasterMentorDesc" xml:space="preserve">
+    <value>Legend&#228;re Ausbildungsweisheit. +15% Level-Resistenz, 2x Trainingsgeschwindigkeit.</value>
+  </data>
+  <data name="ResearchMassHiringDesc" xml:space="preserve">
+    <value>Rekrutiere ganze Teams auf einmal. Schaltet Masseneinstellung frei, +3 Arbeiterpl&#228;tze.</value>
+  </data>
+  <data name="ResearchLegendaryLeaderDesc" xml:space="preserve">
+    <value>Die ultimative Management-Meisterschaft. Riesige Arbeiter-, Lohn- und Trainings-Boni.</value>
+  </data>
+  <!-- Research: Advanced Marketing Branch (Names) -->
+  <data name="ResearchImperialBrand" xml:space="preserve">
+    <value>Imperiale Marke</value>
+  </data>
+  <data name="ResearchReputationEngine" xml:space="preserve">
+    <value>Reputations-Maschine</value>
+  </data>
+  <data name="ResearchPremiumContracts" xml:space="preserve">
+    <value>Premium-Vertr&#228;ge</value>
+  </data>
+  <data name="ResearchWorldRenown" xml:space="preserve">
+    <value>Weltruhm</value>
+  </data>
+  <data name="ResearchEternalLegacy" xml:space="preserve">
+    <value>Ewiges Verm&#228;chtnis</value>
+  </data>
+  <!-- Research: Advanced Marketing Branch (Descriptions) -->
+  <data name="ResearchImperialBrandDesc" xml:space="preserve">
+    <value>Dein Name gebietet Respekt. +20% Belohnungen, +2 Auftragspl&#228;tze.</value>
+  </data>
+  <data name="ResearchReputationEngineDesc" xml:space="preserve">
+    <value>Automatisierter Rufaufbau. +10% Reputationsgewinn, +10% Belohnungen.</value>
+  </data>
+  <data name="ResearchPremiumContractsDesc" xml:space="preserve">
+    <value>Ziehe wohlhabende Kunden an. +15% Premium-Auftragschance, +15% Belohnungen.</value>
+  </data>
+  <data name="ResearchWorldRenownDesc" xml:space="preserve">
+    <value>Weltweit bekannt. +15% Reputation, +10% Premium-Auftr&#228;ge, +3 Auftragspl&#228;tze.</value>
+  </data>
+  <data name="ResearchEternalLegacyDesc" xml:space="preserve">
+    <value>Dein Imperium &#252;berdauert die Zeit. Maximale Belohnungen, Auftr&#228;ge und Reputation.</value>
+  </data>
   <data name="QuickJobs" xml:space="preserve">
     <value>Schnell-Auftr&#228;ge</value>
   </data>
@@ -2664,6 +2786,81 @@
     <value>Inspektion starten</value>
   </data>
 
+  <!-- ForgeGame MiniGame (Meisterschmiede) -->
+  <data name="ForgeGameTitle" xml:space="preserve">
+    <value>Schmieden</value>
+  </data>
+  <data name="HammerNow" xml:space="preserve">
+    <value>Schlagen!</value>
+  </data>
+  <data name="HammerAtRightTemperature" xml:space="preserve">
+    <value>Schlage bei der richtigen Temperatur!</value>
+  </data>
+  <data name="TutorialForgeGameTitle" xml:space="preserve">
+    <value>Die Schmiede</value>
+  </data>
+  <data name="TutorialForgeGameText" xml:space="preserve">
+    <value>Erhitze das Metall und schlage auf den Amboss bei der richtigen Temperatur! Grüne Zone = Perfekt, Gelb = Gut. Zu heiß oder zu kalt senkt die Punktzahl.</value>
+  </data>
+
+  <!-- InventGame MiniGame (Innovationslabor) -->
+  <data name="InventGame" xml:space="preserve">
+    <value>Erfinden</value>
+  </data>
+  <data name="InventInstructionBefore" xml:space="preserve">
+    <value>Merke dir die Montagereihenfolge!</value>
+  </data>
+  <data name="InventInstructionMemorize" xml:space="preserve">
+    <value>Merke dir die Teile!</value>
+  </data>
+  <data name="InventInstructionPlay" xml:space="preserve">
+    <value>Montiere die Teile in der richtigen Reihenfolge!</value>
+  </data>
+  <data name="TutorialInventGameTitle" xml:space="preserve">
+    <value>Das Innovationslabor</value>
+  </data>
+  <data name="TutorialInventGameText" xml:space="preserve">
+    <value>Baue die Erfindung zusammen, indem du die Teile in der richtigen Reihenfolge platzierst! Merke dir die Abfolge, dann tippe die Teile von 1 bis N. Fehler kosten Zeit!</value>
+  </data>
+
+  <!-- InventGame Teile -->
+  <data name="InventPartGear" xml:space="preserve">
+    <value>Zahnrad</value>
+  </data>
+  <data name="InventPartPiston" xml:space="preserve">
+    <value>Kolben</value>
+  </data>
+  <data name="InventPartWire" xml:space="preserve">
+    <value>Kabel</value>
+  </data>
+  <data name="InventPartBoard" xml:space="preserve">
+    <value>Platine</value>
+  </data>
+  <data name="InventPartScrew" xml:space="preserve">
+    <value>Schraube</value>
+  </data>
+  <data name="InventPartHousing" xml:space="preserve">
+    <value>Gehäuse</value>
+  </data>
+  <data name="InventPartSpring" xml:space="preserve">
+    <value>Feder</value>
+  </data>
+  <data name="InventPartLens" xml:space="preserve">
+    <value>Linse</value>
+  </data>
+  <data name="InventPartMotor" xml:space="preserve">
+    <value>Motor</value>
+  </data>
+  <data name="InventPartBattery" xml:space="preserve">
+    <value>Batterie</value>
+  </data>
+  <data name="InventPartSwitch" xml:space="preserve">
+    <value>Schalter</value>
+  </data>
+  <data name="InventPartAntenna" xml:space="preserve">
+    <value>Antenne</value>
+  </data>
+
   <!-- Story-Kapitel (Meister Hans) - 25 Kapitel -->
   <data name="StoryTipFromHans" xml:space="preserve">
     <value>Tipp von Meister Hans</value>
@@ -2900,9 +3097,6 @@
   </data>
 
   <!-- Phase 1: General + SaveGame -->
-  <data name="OK" xml:space="preserve">
-    <value>OK</value>
-  </data>
   <data name="SaveErrorMessage" xml:space="preserve">
     <value>Spielstand konnte nicht gespeichert werden.</value>
   </data>
@@ -2942,12 +3136,6 @@
   </data>
 
   <!-- Phase 7: Cloud Save -->
-  <data name="CloudSave" xml:space="preserve">
-    <value>Cloud-Speicher</value>
-  </data>
-  <data name="CloudSaveDesc" xml:space="preserve">
-    <value>Fortschritt über Google Play Games geräteübergreifend synchronisieren.</value>
-  </data>
   <data name="CloudSaveNewer" xml:space="preserve">
     <value>Neuerer Cloud-Spielstand gefunden (Level {0}). Cloud-Spielstand verwenden?</value>
   </data>
@@ -3090,9 +3278,9 @@
     <value>Inspektion</value>
   </data>
 
-  <!-- BattlePass -->
+  <!-- SeasonPass -->
   <data name="BattlePass" xml:space="preserve">
-    <value>Battle Pass</value>
+    <value>Season-Pass</value>
   </data>
   <data name="PremiumPass" xml:space="preserve">
     <value>Premium Pass</value>
@@ -3121,6 +3309,9 @@
   </data>
   <data name="GuildIncomeBonus" xml:space="preserve">
     <value>Einkommens-Bonus</value>
+  </data>
+  <data name="ContributeToGuild" xml:space="preserve">
+    <value>Beitragen</value>
   </data>
   <data name="GuildMember" xml:space="preserve">
     <value>Mitglied</value>
@@ -3393,6 +3584,9 @@
   <data name="LuckySpinCost" xml:space="preserve">
     <value>Drehen ({0})</value>
   </data>
+  <data name="LuckySpinNextFree" xml:space="preserve">
+    <value>Nächster Gratis-Spin in:</value>
+  </data>
   <data name="LuckySpinYourPrize" xml:space="preserve">
     <value>Dein Gewinn:</value>
   </data>
@@ -3471,6 +3665,9 @@
   <data name="ResearchActiveStatus" xml:space="preserve">
     <value>Erforscht: {0}</value>
   </data>
+  <data name="ResearchRunning" xml:space="preserve">
+    <value>Forschung l&#228;uft...</value>
+  </data>
   <data name="ManagerStatus" xml:space="preserve">
     <value>{0} aktiv</value>
   </data>
@@ -3482,5 +3679,300 @@
   </data>
   <data name="CraftingStatus" xml:space="preserve">
     <value>{0} in Produktion</value>
+  </data>
+  <data name="GuildWoodworkers" xml:space="preserve">
+    <value>Tischler-Innung</value>
+  </data>
+  <data name="GuildMetalworkers" xml:space="preserve">
+    <value>Schlosser-Innung</value>
+  </data>
+  <data name="GuildElectricians" xml:space="preserve">
+    <value>Elektriker-Innung</value>
+  </data>
+  <data name="GuildBuilders" xml:space="preserve">
+    <value>Baumeister-Innung</value>
+  </data>
+  <data name="GuildDesigners" xml:space="preserve">
+    <value>Designer-Innung</value>
+  </data>
+  <data name="JoinGuild" xml:space="preserve">
+    <value>Beitreten</value>
+  </data>
+  <data name="LeaveGuild" xml:space="preserve">
+    <value>Innung verlassen</value>
+  </data>
+  <data name="WeeklyGoal" xml:space="preserve">
+    <value>Wochenziel</value>
+  </data>
+  <!-- Multiplayer-Gilden (Firebase) -->
+  <data name="GuildOffline" xml:space="preserve">
+    <value>Keine Internetverbindung. Gilden-Funktionen benötigen Online-Zugang.</value>
+  </data>
+  <data name="GuildCreateTitle" xml:space="preserve">
+    <value>Innung gründen</value>
+  </data>
+  <data name="GuildCreate" xml:space="preserve">
+    <value>Innung gründen</value>
+  </data>
+  <data name="GuildNamePlaceholder" xml:space="preserve">
+    <value>Gildenname</value>
+  </data>
+  <data name="GuildCreated" xml:space="preserve">
+    <value>Innung erfolgreich gegründet!</value>
+  </data>
+  <data name="GuildJoined" xml:space="preserve">
+    <value>Innung beigetreten!</value>
+  </data>
+  <data name="GuildLeft" xml:space="preserve">
+    <value>Innung verlassen.</value>
+  </data>
+  <data name="GuildFull" xml:space="preserve">
+    <value>Innung ist voll.</value>
+  </data>
+  <data name="GuildContributed" xml:space="preserve">
+    <value>{0} beigetragen!</value>
+  </data>
+  <data name="GuildAlreadyInGuild" xml:space="preserve">
+    <value>Du bist bereits in einer Innung.</value>
+  </data>
+  <data name="GuildSelectIcon" xml:space="preserve">
+    <value>Icon wählen</value>
+  </data>
+  <data name="GuildSelectColor" xml:space="preserve">
+    <value>Farbe wählen</value>
+  </data>
+  <data name="GuildBrowseEmpty" xml:space="preserve">
+    <value>Noch keine Innungen vorhanden. Gründe die erste!</value>
+  </data>
+  <data name="GuildLeaderRole" xml:space="preserve">
+    <value>Gründer</value>
+  </data>
+  <data name="GuildMemberRole" xml:space="preserve">
+    <value>Mitglied</value>
+  </data>
+  <data name="GuildEnterName" xml:space="preserve">
+    <value>Wähle deinen Spielernamen</value>
+  </data>
+  <data name="GuildNameHint" xml:space="preserve">
+    <value>Dieser Name ist für andere Spieler sichtbar.</value>
+  </data>
+  <data name="Retry" xml:space="preserve">
+    <value>Erneut versuchen</value>
+  </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Laden...</value>
+  </data>
+  <data name="BPCapstoneSpring" xml:space="preserve">
+    <value>Frühlingskrone</value>
+  </data>
+  <data name="BPCapstoneSummer" xml:space="preserve">
+    <value>Sommersonnen-Krone</value>
+  </data>
+  <data name="BPCapstoneAutumn" xml:space="preserve">
+    <value>Herbsternte-Krone</value>
+  </data>
+  <data name="BPCapstoneWinter" xml:space="preserve">
+    <value>Winterfrost-Krone</value>
+  </data>
+  <data name="PrestigePassTitle" xml:space="preserve">
+    <value>Prestige-Pass</value>
+  </data>
+  <data name="PrestigePassDesc" xml:space="preserve">
+    <value>+50% Prestige-Punkte in diesem Durchlauf</value>
+  </data>
+  <data name="PrestigePassActive" xml:space="preserve">
+    <value>Prestige-Pass aktiv</value>
+  </data>
+  <data name="PrestigePassBuy" xml:space="preserve">
+    <value>Prestige-Pass aktivieren</value>
+  </data>
+  <data name="CityThemeDefault" xml:space="preserve">
+    <value>Standard</value>
+  </data>
+  <data name="CityThemeSunset" xml:space="preserve">
+    <value>Sonnenuntergang</value>
+  </data>
+  <data name="CityThemeArctic" xml:space="preserve">
+    <value>Arktis</value>
+  </data>
+  <data name="CityThemeDesert" xml:space="preserve">
+    <value>Wüste</value>
+  </data>
+  <data name="CityThemeNeon" xml:space="preserve">
+    <value>Neon-Stadt</value>
+  </data>
+  <data name="CityThemeSpring" xml:space="preserve">
+    <value>Frühlingswiese</value>
+  </data>
+  <data name="SkinCarpenterGold" xml:space="preserve">
+    <value>Goldener Tischler</value>
+  </data>
+  <data name="SkinPlumberChrome" xml:space="preserve">
+    <value>Chrom-Sanitär</value>
+  </data>
+  <data name="SkinElectricianNeon" xml:space="preserve">
+    <value>Neon-Elektriker</value>
+  </data>
+  <data name="SkinPainterRainbow" xml:space="preserve">
+    <value>Regenbogen-Maler</value>
+  </data>
+  <data name="SkinRooferRuby" xml:space="preserve">
+    <value>Rubin-Dachdecker</value>
+  </data>
+  <data name="SkinContractorObsidian" xml:space="preserve">
+    <value>Obsidian-Bauunternehmer</value>
+  </data>
+  <data name="GuildResearchTitle" xml:space="preserve">
+    <value>Gilden-Forschung</value>
+  </data>
+  <data name="GuildResearchContribute" xml:space="preserve">
+    <value>Beitragen</value>
+  </data>
+  <data name="GuildResearchContributed" xml:space="preserve">
+    <value>€{0} beigetragen!</value>
+  </data>
+  <data name="GuildResearchCompleted" xml:space="preserve">
+    <value>Abgeschlossen</value>
+  </data>
+  <data name="GuildResearchLocked" xml:space="preserve">
+    <value>Gesperrt</value>
+  </data>
+  <data name="GuildResearchContributeAmount" xml:space="preserve">
+    <value>Wie viel möchtest du beitragen?</value>
+  </data>
+  <data name="GuildResearchProgress" xml:space="preserve">
+    <value>{0} / {1}</value>
+  </data>
+  <data name="GuildResearchSummary" xml:space="preserve">
+    <value>{0}/{1} erforscht</value>
+  </data>
+  <data name="GuildResearchCatInfrastructure" xml:space="preserve">
+    <value>Infrastruktur</value>
+  </data>
+  <data name="GuildResearchCatEconomy" xml:space="preserve">
+    <value>Wirtschaft</value>
+  </data>
+  <data name="GuildResearchCatKnowledge" xml:space="preserve">
+    <value>Wissen</value>
+  </data>
+  <data name="GuildResearchCatLogistics" xml:space="preserve">
+    <value>Logistik</value>
+  </data>
+  <data name="GuildResearchCatWorkforce" xml:space="preserve">
+    <value>Arbeitsmarkt</value>
+  </data>
+  <data name="GuildResearchCatMastery" xml:space="preserve">
+    <value>Meisterschaft</value>
+  </data>
+  <data name="GuildResearch_guild_expand_1" xml:space="preserve">
+    <value>Gildenerweiterung I</value>
+  </data>
+  <data name="GuildResearch_guild_expand_2" xml:space="preserve">
+    <value>Gildenerweiterung II</value>
+  </data>
+  <data name="GuildResearch_guild_expand_3" xml:space="preserve">
+    <value>Gildenerweiterung III</value>
+  </data>
+  <data name="GuildResearch_guild_income_1" xml:space="preserve">
+    <value>Handelsabkommen</value>
+  </data>
+  <data name="GuildResearch_guild_income_2" xml:space="preserve">
+    <value>Einkaufsgemeinschaft</value>
+  </data>
+  <data name="GuildResearch_guild_income_3" xml:space="preserve">
+    <value>Großhandel-Netzwerk</value>
+  </data>
+  <data name="GuildResearch_guild_income_4" xml:space="preserve">
+    <value>Wirtschaftsimperium</value>
+  </data>
+  <data name="GuildResearch_guild_knowledge_1" xml:space="preserve">
+    <value>Wissensteilung</value>
+  </data>
+  <data name="GuildResearch_guild_knowledge_2" xml:space="preserve">
+    <value>Gemeinsame Methoden</value>
+  </data>
+  <data name="GuildResearch_guild_knowledge_3" xml:space="preserve">
+    <value>Meisterschafts-Pakt</value>
+  </data>
+  <data name="GuildResearch_guild_logistics_1" xml:space="preserve">
+    <value>Auftragsflut</value>
+  </data>
+  <data name="GuildResearch_guild_logistics_2" xml:space="preserve">
+    <value>Großkunden-Netzwerk</value>
+  </data>
+  <data name="GuildResearch_guild_logistics_3" xml:space="preserve">
+    <value>Express-Service</value>
+  </data>
+  <data name="GuildResearch_guild_workforce_1" xml:space="preserve">
+    <value>Werkstatterweiterung</value>
+  </data>
+  <data name="GuildResearch_guild_workforce_2" xml:space="preserve">
+    <value>Ausbildungszentrum</value>
+  </data>
+  <data name="GuildResearch_guild_workforce_3" xml:space="preserve">
+    <value>Arbeitsschutzpakt</value>
+  </data>
+  <data name="GuildResearch_guild_mastery_1" xml:space="preserve">
+    <value>Schnellforschung</value>
+  </data>
+  <data name="GuildResearch_guild_mastery_2" xml:space="preserve">
+    <value>Prestige-Weisheit</value>
+  </data>
+  <data name="GuildResearchDesc_guild_expand_1" xml:space="preserve">
+    <value>Max. Mitglieder 20 → 25</value>
+  </data>
+  <data name="GuildResearchDesc_guild_expand_2" xml:space="preserve">
+    <value>Max. Mitglieder 25 → 30</value>
+  </data>
+  <data name="GuildResearchDesc_guild_expand_3" xml:space="preserve">
+    <value>Max. Mitglieder 30 → 40</value>
+  </data>
+  <data name="GuildResearchDesc_guild_income_1" xml:space="preserve">
+    <value>+5% Einkommen für alle</value>
+  </data>
+  <data name="GuildResearchDesc_guild_income_2" xml:space="preserve">
+    <value>-10% Kosten für alle</value>
+  </data>
+  <data name="GuildResearchDesc_guild_income_3" xml:space="preserve">
+    <value>+10% Auftragsbelohnungen</value>
+  </data>
+  <data name="GuildResearchDesc_guild_income_4" xml:space="preserve">
+    <value>+15% Einkommen für alle</value>
+  </data>
+  <data name="GuildResearchDesc_guild_knowledge_1" xml:space="preserve">
+    <value>+10% XP für alle</value>
+  </data>
+  <data name="GuildResearchDesc_guild_knowledge_2" xml:space="preserve">
+    <value>+5% Arbeiter-Effizienz</value>
+  </data>
+  <data name="GuildResearchDesc_guild_knowledge_3" xml:space="preserve">
+    <value>+15% MiniGame-Belohnungen</value>
+  </data>
+  <data name="GuildResearchDesc_guild_logistics_1" xml:space="preserve">
+    <value>+1 Auftragsslot für alle</value>
+  </data>
+  <data name="GuildResearchDesc_guild_logistics_2" xml:space="preserve">
+    <value>+15% Chance auf bessere Aufträge</value>
+  </data>
+  <data name="GuildResearchDesc_guild_logistics_3" xml:space="preserve">
+    <value>+20% Auftragsbelohnungen</value>
+  </data>
+  <data name="GuildResearchDesc_guild_workforce_1" xml:space="preserve">
+    <value>+1 Arbeiterslot pro Werkstatt</value>
+  </data>
+  <data name="GuildResearchDesc_guild_workforce_2" xml:space="preserve">
+    <value>+25% Training-Geschwindigkeit</value>
+  </data>
+  <data name="GuildResearchDesc_guild_workforce_3" xml:space="preserve">
+    <value>-20% Ermüdungs- und Stimmungsabbau</value>
+  </data>
+  <data name="GuildResearchDesc_guild_mastery_1" xml:space="preserve">
+    <value>+20% Forschungs-Geschwindigkeit</value>
+  </data>
+  <data name="GuildResearchDesc_guild_mastery_2" xml:space="preserve">
+    <value>+10% Prestige-Punkte</value>
+  </data>
+  <data name="MaxMembersLabel" xml:space="preserve">
+    <value>Max. Mitglieder</value>
   </data>
 </root>

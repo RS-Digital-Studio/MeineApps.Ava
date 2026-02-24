@@ -21,6 +21,7 @@ public partial class LuckySpinViewModel : ObservableObject
 
     // Animations-State
     private DispatcherTimer? _spinTimer;
+    private DispatcherTimer? _countdownTimer;
     private double _targetAngle;
     private double _totalRotation;
     private DateTime _spinStartTime;
@@ -75,6 +76,19 @@ public partial class LuckySpinViewModel : ObservableObject
     [ObservableProperty]
     private string _spinButtonText = "";
 
+    /// <summary>
+    /// Countdown bis zum nächsten Gratis-Spin (z.B. "12:34:56").
+    /// Nur sichtbar wenn kein Gratis-Spin verfügbar.
+    /// </summary>
+    [ObservableProperty]
+    private string _freeSpinCountdown = "";
+
+    /// <summary>
+    /// Ob der Countdown angezeigt werden soll.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showCountdown;
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
@@ -92,6 +106,7 @@ public partial class LuckySpinViewModel : ObservableObject
 
         UpdateLocalizedTexts();
         Refresh();
+        // Timer wird erst bei ShowLuckySpin() gestartet (Batterie-Schonung)
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -223,6 +238,57 @@ public partial class LuckySpinViewModel : ObservableObject
             : string.Format(
                 _localizationService.GetString("LuckySpinCost") ?? "Drehen ({0} \U0001f529)",
                 _luckySpinService.SpinCost);
+
+        // Countdown aktualisieren
+        UpdateCountdown();
+    }
+
+    /// <summary>
+    /// Startet den Countdown-Timer (1 Sekunde Intervall).
+    /// Wird beim Anzeigen des Glücksrads aufgerufen.
+    /// </summary>
+    public void StartCountdownTimer()
+    {
+        _countdownTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _countdownTimer.Tick += (_, _) => UpdateCountdown();
+        _countdownTimer.Start();
+    }
+
+    /// <summary>
+    /// Stoppt den Countdown-Timer.
+    /// </summary>
+    public void StopCountdownTimer()
+    {
+        _countdownTimer?.Stop();
+        _countdownTimer = null;
+    }
+
+    /// <summary>
+    /// Berechnet die verbleibende Zeit bis Mitternacht UTC.
+    /// </summary>
+    private void UpdateCountdown()
+    {
+        if (_luckySpinService.HasFreeSpin)
+        {
+            ShowCountdown = false;
+            FreeSpinCountdown = "";
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        var midnight = now.Date.AddDays(1);
+        var remaining = midnight - now;
+
+        if (remaining.TotalSeconds <= 0)
+        {
+            // Mitternacht erreicht → Gratis-Spin wieder verfügbar
+            ShowCountdown = false;
+            Refresh();
+            return;
+        }
+
+        ShowCountdown = true;
+        FreeSpinCountdown = $"{remaining.Hours:D2}:{remaining.Minutes:D2}:{remaining.Seconds:D2}";
     }
 
     /// <summary>

@@ -188,6 +188,45 @@ public class AchievementService : IAchievementService, IDisposable
                 "worker_legendary"
                     => state.Workshops.SelectMany(w => w.Workers).Any(w => w.Tier >= WorkerTier.Legendary) ? 1 : 0,
 
+                // === NEUE ACHIEVEMENTS (Phase 2.2) ===
+
+                // Prestige-Tier
+                "prestige_platin" => state.Prestige.PlatinCount,
+                "prestige_diamant" => state.Prestige.DiamantCount,
+                "prestige_meister" => state.Prestige.MeisterCount,
+                "prestige_legende" => state.Prestige.LegendeCount,
+
+                // MiniGame-Mastery
+                "perfect_100" => state.PerfectRatings,
+                "games_500" => state.TotalMiniGamesPlayed,
+                "all_minigames_perfect" => state.PerfectMiniGameTypes?.Count ?? 0,
+
+                // Workshop-Endgame: Alle Workshops mit Level >= 100
+                "all_ws_level100" => state.Workshops.Count(w => w.Level >= 100),
+
+                // Gilden
+                "guild_founder" => state.GuildMembership != null ? 1 : 0, // Vereinfacht: Mitgliedschaft = 1
+                "guild_member" => state.GuildMembership != null ? 1 : 0,
+                // Guild-Level als Proxy (steigt durch abgeschlossene Wochenziele)
+                "guild_weekly_goal" => state.GuildMembership?.GuildLevel > 1 ? 1 : 0,
+                "guild_level_10" => state.GuildMembership?.GuildLevel ?? 0,
+
+                // Worker-Training
+                "workers_trained_50" => state.TotalWorkersTrained,
+
+                // Crafting
+                "crafting_100" => state.TotalItemsCrafted,
+                "all_recipes" => state.CompletedRecipeIds?.Count ?? 0,
+
+                // Turniere
+                "tournament_gold" => state.TotalTournamentsWon > 0 ? 1 : 0,
+                "tournaments_10" => state.TotalTournamentsWon,
+
+                // Sammler/Collection
+                "all_mastertools" => state.CollectedMasterTools?.Count ?? 0,
+                "equipment_all_rarities" => state.EquipmentInventory
+                    .Select(e => e.Rarity).Distinct().Count(),
+
                 _ => achievement.CurrentValue
             };
         }

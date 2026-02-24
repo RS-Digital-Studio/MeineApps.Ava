@@ -705,6 +705,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isCraftingActive;
 
+    [ObservableProperty]
+    private bool _isForgeGameActive;
+
+    [ObservableProperty]
+    private bool _isInventGameActive;
+
     /// <summary>
     /// Whether the bottom tab bar should be visible (hidden during mini-games and detail views).
     /// </summary>
@@ -713,6 +719,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                                     !IsWiringGameActive && !IsPaintingGameActive &&
                                     !IsRoofTilingGameActive && !IsBlueprintGameActive &&
                                     !IsDesignPuzzleGameActive && !IsInspectionGameActive &&
+                                    !IsForgeGameActive && !IsInventGameActive &&
                                     !IsWorkerProfileActive && !IsWorkerMarketActive &&
                                     !IsResearchActive && !IsManagerActive &&
                                     !IsTournamentActive && !IsSeasonalEventActive &&
@@ -745,6 +752,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsBattlePassActive = false;
         IsGuildActive = false;
         IsCraftingActive = false;
+        IsForgeGameActive = false;
+        IsInventGameActive = false;
     }
 
     private void NotifyTabBarVisibility()
@@ -785,6 +794,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public GuildViewModel GuildViewModel { get; }
     public CraftingViewModel CraftingViewModel { get; }
     public LuckySpinViewModel LuckySpinViewModel { get; }
+    public ForgeGameViewModel ForgeGameViewModel { get; }
+    public InventGameViewModel InventGameViewModel { get; }
 
     public MainViewModel(
         IGameStateService gameStateService,
@@ -831,6 +842,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ILuckySpinService luckySpinService,
         IEquipmentService equipmentService,
         LuckySpinViewModel luckySpinViewModel,
+        ForgeGameViewModel forgeGameViewModel,
+        InventGameViewModel inventGameViewModel,
         IStoryService? storyService = null)
     {
         _gameStateService = gameStateService;
@@ -898,6 +911,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         GuildViewModel = guildViewModel;
         CraftingViewModel = craftingViewModel;
         LuckySpinViewModel = luckySpinViewModel;
+        ForgeGameViewModel = forgeGameViewModel;
+        InventGameViewModel = inventGameViewModel;
         LuckySpinViewModel.NavigationRequested += _ => HideLuckySpin();
 
         // Wire up child VM navigation events
@@ -915,6 +930,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         BlueprintGameViewModel.NavigationRequested += OnChildNavigation;
         DesignPuzzleGameViewModel.NavigationRequested += OnChildNavigation;
         InspectionGameViewModel.NavigationRequested += OnChildNavigation;
+        ForgeGameViewModel.NavigationRequested += OnChildNavigation;
+        InventGameViewModel.NavigationRequested += OnChildNavigation;
         ManagerViewModel.NavigationRequested += OnChildNavigation;
         TournamentViewModel.NavigationRequested += OnChildNavigation;
         SeasonalEventViewModel.NavigationRequested += OnChildNavigation;
@@ -1467,6 +1484,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void ShowLuckySpin()
     {
         LuckySpinViewModel.Refresh();
+        LuckySpinViewModel.StartCountdownTimer();
         IsLuckySpinVisible = true;
         _adService.HideBanner();
     }
@@ -1474,6 +1492,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void HideLuckySpin()
     {
+        LuckySpinViewModel.StopCountdownTimer();
         IsLuckySpinVisible = false;
         if (_adService.AdsEnabled && !_purchaseService.IsPremium)
             _adService.ShowBanner();
@@ -1698,7 +1717,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 string.Format(
                     _localizationService.GetString("PrestigeNotAvailableDesc") ?? "Du benötigst Level {0} (aktuell Level {1})",
                     minLevel, state.PlayerLevel),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
             return;
         }
 
@@ -2438,6 +2457,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void NavigateToWorkerMarket() => OnChildNavigation("workers");
+
+    [RelayCommand]
+    private void NavigateToResearch() => OnChildNavigation("research");
+
+    [RelayCommand]
     private void NavigateToManager() => OnChildNavigation("manager");
 
     [RelayCommand]
@@ -2597,7 +2622,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         // 2. MiniGame aktiv → zurück zum Dashboard
         if (IsSawingGameActive || IsPipePuzzleActive || IsWiringGameActive || IsPaintingGameActive ||
-            IsRoofTilingGameActive || IsBlueprintGameActive || IsDesignPuzzleGameActive || IsInspectionGameActive)
+            IsRoofTilingGameActive || IsBlueprintGameActive || IsDesignPuzzleGameActive || IsInspectionGameActive ||
+            IsForgeGameActive || IsInventGameActive)
         {
             SelectDashboardTab();
             return true;
@@ -3054,7 +3080,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        // "workers" = navigiere zum Arbeitermarkt (Bug 2: von WorkshopView aus)
+        // "research" = navigiere zum Forschungsbaum (von GuildView aus)
+        if (route == "research")
+        {
+            SelectResearchTab();
+            return;
+        }
+
+        // "workers" = navigiere zum Arbeitermarkt (von WorkshopView/GuildView aus)
         if (route == "workers")
         {
             SelectWorkerMarketTab();
@@ -3122,6 +3155,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
             case "minigame/inspection":
                 InspectionGameViewModel.SetOrderId(orderId);
                 IsInspectionGameActive = true;
+                break;
+            case "minigame/forge":
+                ForgeGameViewModel.SetOrderId(orderId);
+                IsForgeGameActive = true;
+                break;
+            case "minigame/invent":
+                InventGameViewModel.SetOrderId(orderId);
+                IsInventGameActive = true;
                 break;
         }
     }

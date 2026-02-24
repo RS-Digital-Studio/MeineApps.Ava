@@ -27,7 +27,9 @@ public static class CityBuildingShapes
         { WorkshopType.Roofer, new SKColor(0xDC, 0x26, 0x26) },
         { WorkshopType.Contractor, new SKColor(0xEA, 0x58, 0x0C) },
         { WorkshopType.Architect, new SKColor(0x78, 0x71, 0x6C) },
-        { WorkshopType.GeneralContractor, new SKColor(0xFF, 0xD7, 0x00) }
+        { WorkshopType.GeneralContractor, new SKColor(0xFF, 0xD7, 0x00) },
+        { WorkshopType.MasterSmith, new SKColor(0xD4, 0xA3, 0x73) },
+        { WorkshopType.InnovationLab, new SKColor(0x6A, 0x5A, 0xCD) }
     };
 
     // Gebäude-Farben
@@ -146,6 +148,8 @@ public static class CityBuildingShapes
             WorkshopType.Contractor => new SKColor(0x61, 0x61, 0x61),   // Grau
             WorkshopType.Architect => new SKColor(0xF5, 0xF5, 0xF5),    // Weiß (Hemd)
             WorkshopType.GeneralContractor => new SKColor(0x21, 0x21, 0x21), // Schwarz (Anzug)
+            WorkshopType.MasterSmith => new SKColor(0x6D, 0x4C, 0x41),       // Braune Lederschürze
+            WorkshopType.InnovationLab => new SKColor(0xE0, 0xE0, 0xF0),     // Weißer Laborkittel
             _ => new SKColor(0x80, 0x80, 0x80)
         };
 
@@ -162,6 +166,8 @@ public static class CityBuildingShapes
         {
             WorkshopType.Electrician => new SKColor(0xFD, 0xD8, 0x35),
             WorkshopType.Roofer => new SKColor(0xE6, 0x51, 0x00),
+            WorkshopType.MasterSmith => new SKColor(0xD4, 0xA3, 0x73),       // Kupfer-Kappe
+            WorkshopType.InnovationLab => new SKColor(0x6A, 0x5A, 0xCD),     // Violett-Brille
             _ => new SKColor(0xFF, 0xEB, 0x3B)
         };
         _fillPaint.Color = ApplyDim(helmColor, nightDim);
@@ -310,6 +316,44 @@ public static class CityBuildingShapes
                 _fillPaint.Color = ApplyDim(new SKColor(0xFF, 0xD7, 0x00), nightDim);
                 // Golddach-Akzent
                 canvas.DrawRect(x + 2, roofY - 1, width - 4, 2, _fillPaint);
+                break;
+
+            case WorkshopType.MasterSmith:
+                // Esse-Schornstein mit Rauch
+                _fillPaint.Color = ApplyDim(new SKColor(0x5C, 0x3A, 0x21), nightDim);
+                canvas.DrawRect(x + width * 0.65f, roofY - 14, 8, 14, _fillPaint);
+                // Schornsteinkopf
+                _fillPaint.Color = ApplyDim(new SKColor(0x4A, 0x2E, 0x18), nightDim);
+                canvas.DrawRect(x + width * 0.65f - 1, roofY - 14, 10, 3, _fillPaint);
+                // Rauch-Partikel (statisch angedeutet)
+                _fillPaint.Color = ApplyDim(new SKColor(0x90, 0x90, 0x90, 0x40), nightDim);
+                float smokeX = x + width * 0.69f;
+                canvas.DrawCircle(smokeX, roofY - 18, 3f, _fillPaint);
+                canvas.DrawCircle(smokeX + 2, roofY - 23, 2.5f, _fillPaint);
+                // Amboss-Silhouette auf dem Dach
+                _fillPaint.Color = ApplyDim(new SKColor(0xD4, 0xA3, 0x73, 0x60), nightDim);
+                canvas.DrawRect(x + width * 0.15f, roofY - 5, 12, 4, _fillPaint);
+                canvas.DrawRect(x + width * 0.17f, roofY - 8, 8, 4, _fillPaint);
+                break;
+
+            case WorkshopType.InnovationLab:
+                // Teleskop/Antenne
+                _strokePaint.Color = ApplyDim(new SKColor(0x90, 0x90, 0xA0), nightDim);
+                _strokePaint.StrokeWidth = 1.5f;
+                float antennaX = x + width * 0.75f;
+                canvas.DrawLine(antennaX, roofY - 2, antennaX, roofY - 16, _strokePaint);
+                // Antennenkopf (Schüssel)
+                canvas.DrawArc(new SKRect(antennaX - 4, roofY - 18, antennaX + 4, roofY - 14),
+                    200, 140, false, _strokePaint);
+                // Leuchtende Kuppel (Halbkreis, violett)
+                float domeAlpha = (byte)(0x60 + 0x30 * MathF.Sin(time * 2f));
+                _fillPaint.Color = ApplyDim(new SKColor(0x6A, 0x5A, 0xCD, (byte)domeAlpha), nightDim);
+                canvas.DrawArc(new SKRect(x + width * 0.2f, roofY - 8,
+                    x + width * 0.55f, roofY + 2), 180, 180, true, _fillPaint);
+                // Glow der Kuppel
+                _fillPaint.Color = ApplyDim(new SKColor(0x6A, 0x5A, 0xCD, 0x20), nightDim);
+                canvas.DrawArc(new SKRect(x + width * 0.15f, roofY - 10,
+                    x + width * 0.6f, roofY + 4), 180, 180, true, _fillPaint);
                 break;
         }
     }

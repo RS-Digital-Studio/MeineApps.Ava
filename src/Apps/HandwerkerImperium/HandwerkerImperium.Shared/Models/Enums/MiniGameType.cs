@@ -37,7 +37,13 @@ public enum MiniGameType
     DesignPuzzle = 9,
 
     /// <summary>Suchbild: Fehler auf der Baustelle finden</summary>
-    Inspection = 10
+    Inspection = 10,
+
+    /// <summary>Timing: Metall auf Amboss hämmern bei richtiger Temperatur</summary>
+    ForgeGame = 11,
+
+    /// <summary>Puzzle: Bauteile in richtiger Reihenfolge zusammensetzen</summary>
+    InventGame = 12
 }
 
 /// <summary>
@@ -61,6 +67,8 @@ public static class MiniGameTypeExtensions
         MiniGameType.Blueprint => "minigame/blueprint",
         MiniGameType.DesignPuzzle => "minigame/designpuzzle",
         MiniGameType.Inspection => "minigame/inspection",
+        MiniGameType.ForgeGame => "minigame/forge",
+        MiniGameType.InventGame => "minigame/invent",
         _ => "minigame/sawing"
     };
 
@@ -80,6 +88,8 @@ public static class MiniGameTypeExtensions
         MiniGameType.Blueprint => [WorkshopType.Contractor],
         MiniGameType.DesignPuzzle => [WorkshopType.Architect],
         MiniGameType.Inspection => [WorkshopType.GeneralContractor],
+        MiniGameType.ForgeGame => [WorkshopType.MasterSmith],
+        MiniGameType.InventGame => [WorkshopType.InnovationLab],
         _ => [WorkshopType.Carpenter]
     };
 
@@ -99,6 +109,8 @@ public static class MiniGameTypeExtensions
         MiniGameType.Blueprint => "Blueprint",
         MiniGameType.DesignPuzzle => "DesignPuzzle",
         MiniGameType.Inspection => "Inspection",
+        MiniGameType.ForgeGame => "ForgeGame",
+        MiniGameType.InventGame => "InventGame",
         _ => "Unknown"
     };
 }

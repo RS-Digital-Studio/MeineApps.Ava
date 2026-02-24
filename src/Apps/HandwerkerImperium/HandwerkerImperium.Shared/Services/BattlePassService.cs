@@ -55,7 +55,7 @@ public class BattlePassService : IBattlePassService
             if (!bp.IsPremium) return;
             if (bp.ClaimedPremiumTiers.Contains(tier)) return;
 
-            var rewards = BattlePass.GeneratePremiumRewards(_gameState.State.TotalIncomePerSecond);
+            var rewards = BattlePass.GeneratePremiumRewards(_gameState.State.TotalIncomePerSecond, bp.SeasonNumber);
             var reward = rewards.FirstOrDefault(r => r.Tier == tier);
             if (reward == null) return;
 
@@ -93,6 +93,11 @@ public class BattlePassService : IBattlePassService
         bp.ClaimedPremiumTiers.Clear();
         bp.IsPremium = false; // Premium muss pro Saison erneut gekauft werden
         bp.SeasonStartDate = DateTime.UtcNow;
+
+        // SeasonTheme wird automatisch aus SeasonNumber berechnet (SeasonNumber % 4)
+        // → Farbe, Icon und Capstone-Reward passen sich der neuen Saison an
+        System.Diagnostics.Debug.WriteLine(
+            $"[BattlePass] Neue Saison #{bp.SeasonNumber} gestartet: Theme={bp.SeasonTheme}, Farbe={bp.SeasonThemeColor}, Icon={bp.SeasonThemeIcon}");
 
         _gameState.MarkDirty();
         BattlePassUpdated?.Invoke();

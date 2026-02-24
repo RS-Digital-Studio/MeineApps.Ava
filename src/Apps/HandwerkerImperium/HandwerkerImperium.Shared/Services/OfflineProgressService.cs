@@ -68,6 +68,10 @@ public class OfflineProgressService : IOfflineProgressService
         if (masterToolBonus > 0)
             grossIncome *= (1m + masterToolBonus);
 
+        // Gilden-Bonus: +1% pro Gilden-Level, max +20%
+        if (state.GuildMembership != null && state.GuildMembership.IncomeBonus > 0)
+            grossIncome *= (1m + state.GuildMembership.IncomeBonus);
+
         // === Kosten berechnen (wie GameLoop) ===
         decimal costs = state.TotalCostsPerSecond;
 

@@ -28,7 +28,13 @@ public enum WorkshopType
     Architect = 6,
 
     /// <summary>General Contractor Plus - Full-service (Prestige 3 exclusive)</summary>
-    GeneralContractor = 7
+    GeneralContractor = 7,
+
+    /// <summary>Meisterschmiede - Schmiedekunst, Metallbearbeitung (Prestige 4 exclusive)</summary>
+    MasterSmith = 8,
+
+    /// <summary>Innovationslabor - Erfindungen, Prototypen (Prestige 5 exclusive)</summary>
+    InnovationLab = 9
 }
 
 /// <summary>
@@ -49,6 +55,8 @@ public static class WorkshopTypeExtensions
         WorkshopType.Contractor => 100,
         WorkshopType.Architect => 1,            // Ab Level 1 verfuegbar, braucht aber Prestige 1
         WorkshopType.GeneralContractor => 1,    // Ab Level 1 verfuegbar, braucht aber Prestige 3
+        WorkshopType.MasterSmith => 500,        // Endgame: Level 500 + Platin-Prestige
+        WorkshopType.InnovationLab => 750,      // Endgame: Level 750 + Diamant-Prestige
         _ => 1
     };
 
@@ -60,6 +68,8 @@ public static class WorkshopTypeExtensions
     {
         WorkshopType.Architect => 1,
         WorkshopType.GeneralContractor => 3,
+        WorkshopType.MasterSmith => 4,          // Platin-Prestige
+        WorkshopType.InnovationLab => 5,        // Diamant-Prestige
         _ => 0
     };
 
@@ -77,6 +87,8 @@ public static class WorkshopTypeExtensions
         WorkshopType.Contractor => 250_000_000m,
         WorkshopType.Architect => 2_500_000_000m,
         WorkshopType.GeneralContractor => 25_000_000_000m,
+        WorkshopType.MasterSmith => 5_000_000m,            // 5M - Platin-Prestige Endgame
+        WorkshopType.InnovationLab => 50_000_000m,         // 50M - Diamant-Prestige Endgame
         _ => 0m
     };
 
@@ -93,6 +105,8 @@ public static class WorkshopTypeExtensions
         WorkshopType.Contractor => "\ud83c\udfd7\ufe0f",
         WorkshopType.Architect => "\ud83d\udcd0",       // Triangular ruler
         WorkshopType.GeneralContractor => "\ud83c\udff0", // Castle
+        WorkshopType.MasterSmith => "Anvil",               // MaterialIcon
+        WorkshopType.InnovationLab => "LightbulbOnOutline", // MaterialIcon
         _ => "\ud83d\udd27"
     };
 
@@ -109,6 +123,8 @@ public static class WorkshopTypeExtensions
         WorkshopType.Contractor => "Contractor",
         WorkshopType.Architect => "Architect",
         WorkshopType.GeneralContractor => "GeneralContractor",
+        WorkshopType.MasterSmith => "MasterSmith",
+        WorkshopType.InnovationLab => "InnovationLab",
         _ => "Unknown"
     };
 
@@ -126,6 +142,8 @@ public static class WorkshopTypeExtensions
         WorkshopType.Contractor => 4.0m,
         WorkshopType.Architect => 5.0m,
         WorkshopType.GeneralContractor => 7.0m,
+        WorkshopType.MasterSmith => 3.0m,          // Endgame: moderater Multiplikator, Spezial: Crafting-Materialien
+        WorkshopType.InnovationLab => 5.0m,        // Endgame: hoher Multiplikator, Spezial: Research-Speed
         _ => 1.0m
     };
 

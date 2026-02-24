@@ -116,7 +116,7 @@ public partial class ManagerViewModel : ObservableObject
                 IsUnlocked = isUnlocked,
                 CanUpgrade = canUpgrade,
                 UpgradeCostDisplay = isUnlocked && !((manager?.IsMaxLevel) ?? false)
-                    ? $"{upgradeCost} GS"
+                    ? $"{upgradeCost}"
                     : "",
                 BonusDisplay = bonusDisplay
             });

@@ -15,7 +15,7 @@ public class Research
     public ResearchBranch Branch { get; set; }
 
     /// <summary>
-    /// Level within the branch (1-15).
+    /// Level innerhalb des Branch (1-20).
     /// </summary>
     [JsonPropertyName("level")]
     public int Level { get; set; }
@@ -80,6 +80,11 @@ public class Research
     [JsonIgnore]
     public int InstantFinishScrewCost => Level switch
     {
+        >= 20 => 500,
+        >= 19 => 400,
+        >= 18 => 320,
+        >= 17 => 260,
+        >= 16 => 220,
         >= 15 => 180,
         >= 14 => 150,
         >= 13 => 120,

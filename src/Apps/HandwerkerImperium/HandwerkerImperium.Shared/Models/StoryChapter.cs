@@ -31,6 +31,17 @@ public class StoryChapter
     public int RequiredTotalOrders { get; init; }
     public int RequiredPrestige { get; init; }
 
+    /// <summary>
+    /// Mindest-Prestige-Tier (z.B. 4 = Platin). 0 = keine Anforderung.
+    /// Prüft CurrentTier >= RequiredPrestigeTier.
+    /// </summary>
+    public int RequiredPrestigeTier { get; init; }
+
+    /// <summary>
+    /// Mindest-Ascension-Level. 0 = keine Anforderung.
+    /// </summary>
+    public int RequiredAscensionLevel { get; init; }
+
     // Belohnungen
     public decimal MoneyReward { get; init; }
     public int GoldenScrewReward { get; init; }

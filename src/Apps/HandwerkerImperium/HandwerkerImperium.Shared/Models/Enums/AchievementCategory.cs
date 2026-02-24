@@ -36,5 +36,17 @@ public enum AchievementCategory
     Reputation,
 
     /// <summary>Achievements related to prestige.</summary>
-    Prestige
+    Prestige,
+
+    /// <summary>Achievements related to guilds.</summary>
+    Guilds,
+
+    /// <summary>Achievements related to crafting.</summary>
+    Crafting,
+
+    /// <summary>Achievements related to tournaments.</summary>
+    Tournaments,
+
+    /// <summary>Achievements related to collection/equipment.</summary>
+    Collection
 }

@@ -166,9 +166,19 @@ public partial class App : Application
         services.AddSingleton<ITournamentService, TournamentService>();
         services.AddSingleton<ISeasonalEventService, SeasonalEventService>();
         services.AddSingleton<IBattlePassService, BattlePassService>();
+        services.AddSingleton<IFirebaseService, FirebaseService>();
         services.AddSingleton<IGuildService, GuildService>();
         services.AddSingleton<ICraftingService, CraftingService>();
         services.AddSingleton<IFriendService, FriendService>();
+
+        // Masterplan-Services (Phasen 2-6)
+        services.AddSingleton<ILeaderboardService, LeaderboardService>();
+        services.AddSingleton<IAscensionService, AscensionService>();
+        services.AddSingleton<IGuildWarService, GuildWarService>();
+        services.AddSingleton<IBountyService, BountyService>();
+        services.AddSingleton<IGiftService, GiftService>();
+        services.AddSingleton<IGuildChatService, GuildChatService>();
+        services.AddSingleton<ICosmeticService, CosmeticService>();
 
         // ViewModels (Singleton because MainViewModel holds references to child VMs)
         services.AddSingleton<MainViewModel>();
@@ -186,6 +196,8 @@ public partial class App : Application
         services.AddSingleton<BlueprintGameViewModel>();
         services.AddSingleton<DesignPuzzleGameViewModel>();
         services.AddSingleton<InspectionGameViewModel>();
+        services.AddSingleton<ForgeGameViewModel>();
+        services.AddSingleton<InventGameViewModel>();
         services.AddSingleton<WorkerMarketViewModel>();
         services.AddSingleton<WorkerProfileViewModel>();
         services.AddSingleton<BuildingsViewModel>();

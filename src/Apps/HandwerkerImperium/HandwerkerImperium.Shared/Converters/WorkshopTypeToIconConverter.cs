@@ -26,6 +26,8 @@ public class WorkshopTypeToIconConverter : IValueConverter
             WorkshopType.Contractor => Icons.Contractor,
             WorkshopType.Architect => Icons.RulerSquare,
             WorkshopType.GeneralContractor => Icons.Crown,
+            WorkshopType.MasterSmith => Icons.Anvil,
+            WorkshopType.InnovationLab => Icons.FlaskOutline,
             _ => Icons.Plumber
         };
     }

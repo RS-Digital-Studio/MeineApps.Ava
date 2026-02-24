@@ -68,6 +68,9 @@
 
     <!-- Converter: String → MaterialIconKind (für Icon-Bindings in Shop, BattlePass, etc.) -->
     <localConverters:StringToMaterialIconKindConverter x:Key="IconKindConverter" />
+
+    <!-- Converter: Hex-String → SolidColorBrush (für Gilden-Farben) -->
+    <localConverters:StringToColorBrushConverter x:Key="ColorBrushConverter" />
   </Application.Resources>
 
   <Application.Styles>

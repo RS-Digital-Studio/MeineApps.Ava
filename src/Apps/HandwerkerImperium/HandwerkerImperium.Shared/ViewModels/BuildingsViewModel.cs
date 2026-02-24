@@ -147,7 +147,7 @@ public partial class BuildingsViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NotEnoughMoney"),
                 _localizationService.GetString("NotEnoughMoneyDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 
@@ -172,7 +172,7 @@ public partial class BuildingsViewModel : ObservableObject
             AlertRequested?.Invoke(
                 _localizationService.GetString("NotEnoughMoney"),
                 _localizationService.GetString("NotEnoughMoneyDesc"),
-                "OK");
+                _localizationService.GetString("OK") ?? "OK");
         }
     }
 

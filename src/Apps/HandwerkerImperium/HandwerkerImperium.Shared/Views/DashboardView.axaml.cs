@@ -26,7 +26,6 @@ public partial class DashboardView : UserControl
     private readonly CityRenderer _cityRenderer = new();
     private readonly CityWeatherSystem _weatherSystem = new();
     private readonly AnimationManager _animationManager = new();
-    private readonly OdometerRenderer _odometerRenderer = new();
     private readonly CoinFlyAnimation _coinFlyAnimation = new();
     private GameJuiceEngine? _juiceEngine;
     private DispatcherTimer? _renderTimer;
@@ -98,9 +97,6 @@ public partial class DashboardView : UserControl
             // GameJuiceEngine aus DI holen
             _juiceEngine = App.Services.GetService(typeof(GameJuiceEngine)) as GameJuiceEngine;
             _juiceEngine?.SetVignette(0.25f); // Subtile Vignette für Tiefe
-
-            // Odometer mit aktuellem Geld-Wert initialisieren
-            _odometerRenderer.SetImmediate(vm.Money);
 
             // Wetter-System nach aktuellem Monat initialisieren
             _weatherSystem.SetWeatherByMonth();
@@ -512,16 +508,6 @@ public partial class DashboardView : UserControl
                 _weatherSystem.Update(deltaSeconds);
                 _weatherSystem.Render(canvas, bounds);
             }
-
-            // Odometer aktualisieren + rendern (oben rechts im Header)
-            _odometerRenderer.SetTarget(_vm.Money);
-            _odometerRenderer.Update(deltaSeconds);
-            var odometerBounds = new SKRect(
-                bounds.Right - bounds.Width * 0.55f,
-                bounds.Top + 6,
-                bounds.Right - 8,
-                bounds.Top + 36);
-            _odometerRenderer.Render(canvas, odometerBounds, alignment: 1f);
 
             // Gold-Shimmer auf Goldschrauben-Bereich (oben links)
             if (_vm.GoldenScrewsDisplay != "0")

@@ -27,7 +27,9 @@ public static class WorkshopCardRenderer
         [WorkshopType.Roofer] = new SKColor(0xDC, 0x26, 0x26),             // Rot
         [WorkshopType.Contractor] = new SKColor(0xEA, 0x58, 0x0C),         // Craft-Orange
         [WorkshopType.Architect] = new SKColor(0x78, 0x71, 0x6C),          // Stone-Grau
-        [WorkshopType.GeneralContractor] = new SKColor(0xFF, 0xD7, 0x00)   // Gold
+        [WorkshopType.GeneralContractor] = new SKColor(0xFF, 0xD7, 0x00),  // Gold
+        [WorkshopType.MasterSmith] = new SKColor(0xD4, 0xA3, 0x73),       // Kupfer-Orange
+        [WorkshopType.InnovationLab] = new SKColor(0x6A, 0x5A, 0xCD)      // Violett
     };
 
     // Gemeinsame Farben
@@ -104,6 +106,12 @@ public static class WorkshopCardRenderer
                     break;
                 case WorkshopType.GeneralContractor:
                     DrawGeneralContractorScene(canvas, cx, cy, w, h, color);
+                    break;
+                case WorkshopType.MasterSmith:
+                    DrawMasterSmithScene(canvas, cx, cy, w, h, color);
+                    break;
+                case WorkshopType.InnovationLab:
+                    DrawInnovationLabScene(canvas, cx, cy, w, h, color);
                     break;
             }
         }
@@ -687,5 +695,204 @@ public static class WorkshopCardRenderer
         // Edelstein
         _fill.Color = new SKColor(0xF4, 0x43, 0x36);
         canvas.DrawCircle(crownCx, crownCy + cs * 0.32f, cs * 0.08f, _fill);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MASTER SMITH: Amboss + Schmiedehammer + Esse/Feuer + Funken
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private static void DrawMasterSmithScene(SKCanvas canvas, float cx, float cy,
+        float w, float h, SKColor color)
+    {
+        float s = Math.Min(w, h) * 0.35f;
+
+        // Esse/Feuer (links)
+        _fill.Color = new SKColor(0x5C, 0x3A, 0x21);
+        canvas.DrawRoundRect(new SKRoundRect(
+            new SKRect(cx - s * 0.7f, cy - s * 0.15f, cx - s * 0.35f, cy + s * 0.3f), 3), _fill);
+        // Feuer in der Esse
+        _fill.Color = new SKColor(0xFF, 0x6B, 0x00, 0xD0);
+        using var firePath = new SKPath();
+        float fx = cx - s * 0.525f;
+        float fy = cy + s * 0.05f;
+        firePath.MoveTo(fx - s * 0.1f, fy + s * 0.15f);
+        firePath.QuadTo(fx - s * 0.06f, fy - s * 0.08f, fx, fy - s * 0.15f);
+        firePath.QuadTo(fx + s * 0.06f, fy - s * 0.08f, fx + s * 0.1f, fy + s * 0.15f);
+        firePath.Close();
+        canvas.DrawPath(firePath, _fill);
+        // Innerer Kern (heller)
+        _fill.Color = new SKColor(0xFF, 0xD5, 0x4F, 0xC0);
+        canvas.DrawOval(fx, fy, s * 0.05f, s * 0.08f, _fill);
+
+        // Amboss (Mitte)
+        _fill.Color = MetalDark;
+        // Amboss-Basis (breit)
+        canvas.DrawRoundRect(new SKRoundRect(
+            new SKRect(cx - s * 0.2f, cy + s * 0.12f, cx + s * 0.25f, cy + s * 0.3f), 2), _fill);
+        // Amboss-Körper (schmal, höher)
+        _fill.Color = MetalLight;
+        canvas.DrawRoundRect(new SKRoundRect(
+            new SKRect(cx - s * 0.12f, cy - s * 0.05f, cx + s * 0.17f, cy + s * 0.14f), 2), _fill);
+        // Amboss-Horn (rechts, spitz zulaufend)
+        using var hornPath = new SKPath();
+        hornPath.MoveTo(cx + s * 0.17f, cy - s * 0.02f);
+        hornPath.LineTo(cx + s * 0.35f, cy + s * 0.03f);
+        hornPath.LineTo(cx + s * 0.17f, cy + s * 0.08f);
+        hornPath.Close();
+        canvas.DrawPath(hornPath, _fill);
+        // Metallglanz auf Amboss
+        _fill.Color = new SKColor(0xFF, 0xFF, 0xFF, 0x30);
+        canvas.DrawRect(cx - s * 0.1f, cy - s * 0.04f, s * 0.2f, s * 0.03f, _fill);
+
+        // Schmiedehammer (darüber, leicht geneigt)
+        canvas.Save();
+        canvas.Translate(cx + s * 0.05f, cy - s * 0.25f);
+        canvas.RotateDegrees(-20);
+        // Stiel
+        _fill.Color = WoodDark;
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(-2, 0, 2, s * 0.35f), 1), _fill);
+        // Hammerkopf
+        _fill.Color = MetalLight;
+        canvas.DrawRoundRect(new SKRoundRect(new SKRect(-s * 0.1f, -s * 0.06f, s * 0.1f, s * 0.04f), 2), _fill);
+        // Glanz auf Hammerkopf
+        _fill.Color = new SKColor(0xFF, 0xFF, 0xFF, 0x40);
+        canvas.DrawRect(-s * 0.08f, -s * 0.05f, s * 0.16f, s * 0.02f, _fill);
+        canvas.Restore();
+
+        // Glühende Funken (kleine Punkte, verstreut)
+        _fill.Color = new SKColor(0xFF, 0x8F, 0x00, 0xB0);
+        float[] sparkX = [-0.15f, 0.1f, 0.25f, -0.05f, 0.35f, -0.25f];
+        float[] sparkY = [-0.35f, -0.42f, -0.3f, -0.45f, -0.15f, -0.2f];
+        for (int i = 0; i < sparkX.Length; i++)
+        {
+            _fill.Color = (i % 2 == 0)
+                ? new SKColor(0xFF, 0x8F, 0x00, (byte)(0x60 + i * 0x18))
+                : new SKColor(0xFF, 0xD5, 0x4F, (byte)(0x50 + i * 0x15));
+            canvas.DrawCircle(cx + s * sparkX[i], cy + s * sparkY[i], 1.2f + (i % 3) * 0.5f, _fill);
+        }
+
+        // Glühendes Werkstück auf dem Amboss
+        _fill.Color = new SKColor(0xFF, 0x6B, 0x00, 0xA0);
+        canvas.DrawRoundRect(new SKRoundRect(
+            new SKRect(cx - s * 0.06f, cy + s * 0.01f, cx + s * 0.12f, cy + s * 0.07f), 1), _fill);
+        // Heller Kern
+        _fill.Color = new SKColor(0xFF, 0xE0, 0x82, 0x90);
+        canvas.DrawRect(cx - s * 0.03f, cy + s * 0.03f, s * 0.1f, s * 0.02f, _fill);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // INNOVATION LAB: Reagenzglas + Zahnräder + Glühbirne + Blaupause
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private static void DrawInnovationLabScene(SKCanvas canvas, float cx, float cy,
+        float w, float h, SKColor color)
+    {
+        float s = Math.Min(w, h) * 0.35f;
+
+        // Blaupause-Linien im Hintergrund (dezent)
+        _stroke.Color = color.WithAlpha(25);
+        _stroke.StrokeWidth = 0.5f;
+        for (float gx = cx - s * 0.6f; gx <= cx + s * 0.6f; gx += s * 0.15f)
+            canvas.DrawLine(gx, cy - s * 0.4f, gx, cy + s * 0.45f, _stroke);
+        for (float gy = cy - s * 0.35f; gy <= cy + s * 0.4f; gy += s * 0.15f)
+            canvas.DrawLine(cx - s * 0.6f, gy, cx + s * 0.6f, gy, _stroke);
+
+        // Reagenzglas/Erlenmeyer-Kolben (links)
+        _stroke.Color = new SKColor(0xB0, 0xD0, 0xF0, 0xC0);
+        _stroke.StrokeWidth = 1.5f;
+        float flaskX = cx - s * 0.3f;
+        float flaskY = cy - s * 0.1f;
+        // Kolbenhals
+        canvas.DrawLine(flaskX - s * 0.03f, flaskY - s * 0.25f, flaskX - s * 0.03f, flaskY, _stroke);
+        canvas.DrawLine(flaskX + s * 0.03f, flaskY - s * 0.25f, flaskX + s * 0.03f, flaskY, _stroke);
+        // Kolbenkörper (breit)
+        using var flaskPath = new SKPath();
+        flaskPath.MoveTo(flaskX - s * 0.03f, flaskY);
+        flaskPath.LineTo(flaskX - s * 0.13f, flaskY + s * 0.2f);
+        flaskPath.LineTo(flaskX + s * 0.13f, flaskY + s * 0.2f);
+        flaskPath.LineTo(flaskX + s * 0.03f, flaskY);
+        canvas.DrawPath(flaskPath, _stroke);
+        // Flüssigkeit im Kolben
+        _fill.Color = color.WithAlpha(80);
+        using var liquidPath = new SKPath();
+        liquidPath.MoveTo(flaskX - s * 0.06f, flaskY + s * 0.08f);
+        liquidPath.LineTo(flaskX - s * 0.12f, flaskY + s * 0.19f);
+        liquidPath.LineTo(flaskX + s * 0.12f, flaskY + s * 0.19f);
+        liquidPath.LineTo(flaskX + s * 0.06f, flaskY + s * 0.08f);
+        liquidPath.Close();
+        canvas.DrawPath(liquidPath, _fill);
+        // Blasen
+        _fill.Color = color.WithAlpha(60);
+        canvas.DrawCircle(flaskX - s * 0.02f, flaskY + s * 0.12f, 1.5f, _fill);
+        canvas.DrawCircle(flaskX + s * 0.04f, flaskY + s * 0.15f, 1.0f, _fill);
+
+        // Zahnräder (rechts)
+        float gearCx = cx + s * 0.35f;
+        float gearCy = cy + s * 0.05f;
+        float gearR1 = s * 0.14f;
+        float gearR2 = s * 0.09f;
+
+        // Großes Zahnrad
+        _stroke.Color = color.WithAlpha(140);
+        _stroke.StrokeWidth = 1.5f;
+        canvas.DrawCircle(gearCx, gearCy, gearR1, _stroke);
+        canvas.DrawCircle(gearCx, gearCy, gearR1 * 0.5f, _stroke);
+        // Zähne (6 Stück)
+        for (int t = 0; t < 6; t++)
+        {
+            float a = t * MathF.PI / 3;
+            float ix = gearCx + MathF.Cos(a) * gearR1;
+            float iy = gearCy + MathF.Sin(a) * gearR1;
+            float ox = gearCx + MathF.Cos(a) * (gearR1 + s * 0.04f);
+            float oy = gearCy + MathF.Sin(a) * (gearR1 + s * 0.04f);
+            canvas.DrawLine(ix, iy, ox, oy, _stroke);
+        }
+
+        // Kleines Zahnrad (versetzt)
+        float gear2Cx = gearCx + gearR1 + gearR2 - s * 0.02f;
+        float gear2Cy = gearCy - gearR2 * 0.5f;
+        canvas.DrawCircle(gear2Cx, gear2Cy, gearR2, _stroke);
+        canvas.DrawCircle(gear2Cx, gear2Cy, gearR2 * 0.4f, _stroke);
+        for (int t = 0; t < 5; t++)
+        {
+            float a = t * MathF.PI * 2 / 5;
+            float ix = gear2Cx + MathF.Cos(a) * gearR2;
+            float iy = gear2Cy + MathF.Sin(a) * gearR2;
+            float ox = gear2Cx + MathF.Cos(a) * (gearR2 + s * 0.03f);
+            float oy = gear2Cy + MathF.Sin(a) * (gearR2 + s * 0.03f);
+            canvas.DrawLine(ix, iy, ox, oy, _stroke);
+        }
+
+        // Glühbirne (oben Mitte)
+        float bulbCx = cx + s * 0.05f;
+        float bulbCy = cy - s * 0.32f;
+        float bulbR = s * 0.1f;
+        // Glaskolben
+        _fill.Color = new SKColor(0xFF, 0xF1, 0x76, 0x60);
+        canvas.DrawCircle(bulbCx, bulbCy, bulbR, _fill);
+        _stroke.Color = new SKColor(0xFF, 0xF1, 0x76, 0xA0);
+        _stroke.StrokeWidth = 1;
+        canvas.DrawCircle(bulbCx, bulbCy, bulbR, _stroke);
+        // Sockel
+        _fill.Color = MetalLight.WithAlpha(180);
+        canvas.DrawRect(bulbCx - s * 0.04f, bulbCy + bulbR - 1, s * 0.08f, s * 0.06f, _fill);
+        // Glühdraht
+        _stroke.Color = new SKColor(0xFF, 0xD5, 0x4F, 0x90);
+        _stroke.StrokeWidth = 0.8f;
+        canvas.DrawLine(bulbCx - s * 0.02f, bulbCy + s * 0.02f, bulbCx, bulbCy - s * 0.04f, _stroke);
+        canvas.DrawLine(bulbCx, bulbCy - s * 0.04f, bulbCx + s * 0.02f, bulbCy + s * 0.02f, _stroke);
+
+        // Lichtschein um Glühbirne
+        _fill.Color = new SKColor(0xFF, 0xF1, 0x76, 0x15);
+        canvas.DrawCircle(bulbCx, bulbCy, bulbR * 2f, _fill);
+
+        // Prototyp-Skizze (unten rechts, kleine technische Zeichnung)
+        _stroke.Color = color.WithAlpha(50);
+        _stroke.StrokeWidth = 0.8f;
+        float skX = cx + s * 0.15f;
+        float skY = cy + s * 0.28f;
+        canvas.DrawRect(skX, skY, s * 0.2f, s * 0.12f, _stroke);
+        canvas.DrawLine(skX + s * 0.05f, skY, skX + s * 0.05f, skY + s * 0.12f, _stroke);
+        canvas.DrawLine(skX, skY + s * 0.06f, skX + s * 0.2f, skY + s * 0.06f, _stroke);
     }
 }

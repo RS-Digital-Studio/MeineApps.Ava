@@ -52,7 +52,9 @@ public class QuickJobService : IQuickJobService
         [WorkshopType.Roofer]             = [MiniGameType.RoofTiling],
         [WorkshopType.Contractor]         = [MiniGameType.Blueprint, MiniGameType.Sawing],
         [WorkshopType.Architect]          = [MiniGameType.DesignPuzzle, MiniGameType.Blueprint],
-        [WorkshopType.GeneralContractor]  = [MiniGameType.Inspection, MiniGameType.Sawing, MiniGameType.PipePuzzle, MiniGameType.RoofTiling, MiniGameType.DesignPuzzle]
+        [WorkshopType.GeneralContractor]  = [MiniGameType.Inspection, MiniGameType.Sawing, MiniGameType.PipePuzzle, MiniGameType.RoofTiling, MiniGameType.DesignPuzzle],
+        [WorkshopType.MasterSmith]        = [MiniGameType.ForgeGame],
+        [WorkshopType.InnovationLab]      = [MiniGameType.InventGame]
     };
 
     private static readonly string[] TitleKeys =

@@ -167,6 +167,12 @@
       <miniGames:InspectionGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsInspectionGameActive}"
                                     DataContext="{Binding InspectionGameViewModel}"
                                     AutomationProperties.AutomationId="Main_View_InspectionGame" />
+      <miniGames:ForgeGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsForgeGameActive}"
+                               DataContext="{Binding ForgeGameViewModel}"
+                               AutomationProperties.AutomationId="Main_View_ForgeGame" />
+      <miniGames:InventGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsInventGameActive}"
+                                DataContext="{Binding InventGameViewModel}"
+                                AutomationProperties.AutomationId="Main_View_InventGame" />
     </Panel>
 
     <!-- ============================================ -->

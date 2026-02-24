@@ -128,6 +128,71 @@ public static class PrestigeShop
                 Cost = 25,
                 Effect = new PrestigeEffect { GoldenScrewBonus = 0.25m }
             },
+
+            // === Endgame-Items (höhere Kosten) ===
+            new PrestigeShopItem
+            {
+                Id = "pp_income_100",
+                NameKey = "PrestigeIncome100",
+                DescriptionKey = "PrestigeIncome100Desc",
+                Icon = "CashMultiple",
+                Cost = 80,
+                Effect = new PrestigeEffect { IncomeMultiplier = 1.00m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_cost_30",
+                NameKey = "PrestigeCost30",
+                DescriptionKey = "PrestigeCost30Desc",
+                Icon = "TrendingDown",
+                Cost = 30,
+                Effect = new PrestigeEffect { CostReduction = 0.30m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_mood_immunity",
+                NameKey = "PrestigeMoodImmunity",
+                DescriptionKey = "PrestigeMoodImmunityDesc",
+                Icon = "ShieldHalfFull",
+                Cost = 25,
+                Effect = new PrestigeEffect { MoodDecayReduction = 0.50m }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_offline_hours",
+                NameKey = "PrestigeOfflineHours",
+                DescriptionKey = "PrestigeOfflineHoursDesc",
+                Icon = "ClockPlus",
+                Cost = 35,
+                Effect = new PrestigeEffect { OfflineHoursBonus = 4 }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_quickjob_limit",
+                NameKey = "PrestigeQuickJobLimit",
+                DescriptionKey = "PrestigeQuickJobLimitDesc",
+                Icon = "LightningBoltCircle",
+                Cost = 22,
+                Effect = new PrestigeEffect { ExtraQuickJobLimit = 10 }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_start_worker_b",
+                NameKey = "PrestigeStartWorkerB",
+                DescriptionKey = "PrestigeStartWorkerBDesc",
+                Icon = "AccountStar",
+                Cost = 30,
+                Effect = new PrestigeEffect { StartingWorkerTier = "B" }
+            },
+            new PrestigeShopItem
+            {
+                Id = "pp_crafting_speed",
+                NameKey = "PrestigeCraftingSpeed",
+                DescriptionKey = "PrestigeCraftingSpeedDesc",
+                Icon = "Hammer",
+                Cost = 18,
+                Effect = new PrestigeEffect { CraftingSpeedBonus = 0.25m }
+            },
         ];
     }
 }

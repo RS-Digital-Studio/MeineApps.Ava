@@ -10,8 +10,8 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 
 ## Haupt-Features
 
-- **8 Workshop-Typen** (Tischlerei, Malerei, Sanitär, Elektrik, Landschaftsbau, Renovierung, Architekt, Generalunternehmer)
-- **8 Mini-Games** (Sawing, Pipe Puzzle, Wiring, Painting, RoofTiling, Blueprint, DesignPuzzle, Inspection)
+- **10 Workshop-Typen** (Tischlerei, Malerei, Sanitär, Elektrik, Landschaftsbau, Renovierung, Architekt, Generalunternehmer, Meisterschmiede, Innovationslabor)
+- **10 Mini-Games** (Sawing, Pipe Puzzle, Wiring, Painting, RoofTiling, Blueprint, DesignPuzzle, Inspection, ForgeGame, InventGame)
 - **Worker-System** mit 10 Tiers (F/E/D/C/B/A/S/SS/SSS/Legendary)
 - **Goldschrauben-Economy** (Premium-Währung für Boosts/Unlock)
 - **Research Tree** (45 Upgrades in 3 Branches: Tools, Management, Marketing)
@@ -37,11 +37,11 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 - **Benachrichtigungen** (4 Typen: Forschung fertig, Lieferant wartet, Rush verfügbar, Daily Reward. Android: AlarmManager + BroadcastReceiver. Lokalisierte Nachrichten in 6 Sprachen via NotificationReceiver)
 - **Google Play Games** (Leaderboards: Spieler-Level + Gesamtverdienst, Score-Submit + UI-Anzeige. Cloud-Save: NICHT verfügbar (Snapshots-API fehlt im NuGet-Binding v121.0.0.2). PlayersClient/LoadTopScores ebenfalls nicht verfügbar → Stub-Implementierungen. Gilden-Leaderboards für 5 Innungen (Platzhalter-IDs))
 - **Audio + Haptik** (15 Sound-Effekte via SoundPool, 7 Vibrations-Muster. Android-spezifisch via Factory-Pattern)
-- **Vorarbeiter-System** (12 Manager mit einzigartigen Fähigkeiten, freischaltbar durch Level/Prestige, aufwertbar Lv.1-5)
+- **Vorarbeiter-System** (14 Manager mit einzigartigen Fähigkeiten, freischaltbar durch Level/Prestige, aufwertbar Lv.1-5)
 - **Turniere** (Wöchentliche MiniGame-Turniere mit 9 simulierten Gegnern, 3x/Tag gratis, Gold/Silber/Bronze-Rewards)
 - **Battle Pass** (30 Tiers mit Free/Premium-Track, XP durch Aufträge/MiniGames/Upgrades/Challenges, 30-Tage-Saisons)
 - **Saisonale Events** (4 Events/Jahr: Frühling/Sommer/Herbst/Winter mit Saisonwährung und Event-Shop)
-- **Gilden/Innungen** (5 Innungen mit echten Spielern via Play Games Leaderboards, wöchentlichen Zielen, Gilden-Level-Boni)
+- **Gilden/Innungen** (Echtes Multiplayer-Gildensystem via Firebase Realtime Database. Spieler erstellen/beitreten Gilden, gemeinsame Wochenziele, Gilden-Level-Boni, Gilden-Forschung (18 kollaborative Upgrades in 6 Kategorien). Firebase Anonymous Auth (Android + Desktop). Polling bei Tab-Wechsel, lokaler Cache für IncomeBonus + Research-Effekte)
 - **Crafting-System** (13 Rezepte in 3 Tiers, Zwischenprodukte zwischen Workshops, Inventar + Verkauf)
 - **Wöchentliche Missionen** (5 Missionen/Woche, höhere Ziele als Daily Challenges, 50 Goldschrauben Komplett-Bonus)
 - **Automatisierung** (Auto-Collect Lv15+, Auto-Accept Lv25+, Auto-Assign Lv50+, Auto-ClaimDaily Premium. Toggles auf Dashboard/WorkshopView, GameLoop-Integration alle 5/60 Ticks)
@@ -49,6 +49,7 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 - **Glücksrad** (Täglicher Gratis-Spin, 8 Preiskategorien, SkiaSharp-Renderer mit Spin-Animation)
 - **Ausrüstungs-System** (4 Typen x 4 Seltenheiten für Arbeiter, Drop nach MiniGames, Effizienz/Ermüdungs/Stimmungs-Boni)
 - **Streak-Rettung** (Verlorene Login-Streaks für 5 Goldschrauben rettbar)
+- **Prestige-Pass** (Optionaler IAP 2,99 EUR pro Prestige-Durchlauf: +50% Prestige-Punkte, wird bei Prestige-Reset verbraucht. GameState.IsPrestigePassActive, PrestigeService.ActivatePrestigePass())
 
 ## Premium & Ads
 
@@ -75,8 +76,9 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 - **Research-/Gebäude-Effekte** werden pro Tick angewendet (EfficiencyBonus, CostReduction, WageReduction, ExtraWorkerSlots)
 
 ### Workshop-Typen
-Enum: `Carpenter`, `Plumber`, `Electrician`, `Painter`, `Roofer`, `Contractor`, `Architect`, `GeneralContractor`
+Enum: `Carpenter`, `Plumber`, `Electrician`, `Painter`, `Roofer`, `Contractor`, `Architect`, `GeneralContractor`, `MasterSmith`, `InnovationLab`
 Jeder Typ hat: `BaseIncomeMultiplier`, `UnlockLevel`, `UnlockCost`, `RequiredPrestige`
+**Spezial-Effekte (Endgame)**: MasterSmith produziert passiv Crafting-Materialien (1 Tier-1 Produkt/Minute/Worker), InnovationLab verdoppelt Research-Geschwindigkeit (wenn besetzt)
 
 ### Worker-System
 10 Tiers via Enum: `F` (0.4x), `E` (0.65x), `D` (1.0x), `C` (1.5x), `B` (2.25x), `A` (3.35x), `S` (4.9x), `SS` (7.25x), `SSS` (11.25x), `Legendary` (17.5x)
@@ -116,6 +118,8 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 - **RoofTiling** (RoofTilingRenderer): Holz-Dachstuhl, 3D-Ziegel, versetzte Reihen
 - **DesignPuzzle** (DesignPuzzleRenderer): Architektenplan, gestrichelter Rand, Tür-Öffnungen
 - **Inspection** (InspectionGameRenderer): Beton-Baustelle, Defekt-Schimmern, Lupe-Deko
+- **ForgeGame** (ForgeGameRenderer): Amboss+Esse, Temperatur-Zonen, Hammer-Schlag-Timing, Funken-Partikel
+- **InventGame** (InventGameRenderer): Violettes Puzzle-Layout, 12 Bauteil-Icons, Memorize+Assemble-Phasen, Elektro-Funken
 
 ## App-spezifische Services
 
@@ -139,11 +143,12 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 | `AudioService` / `AndroidAudioService` | Sound-Effekte (SoundPool, 15 GameSounds) + Haptik (Vibrator, 7 VibrationType). Desktop-Stub / Android-Implementierung. Factory-Pattern in App.axaml.cs |
 | `NotificationService` / `AndroidNotificationService` | Lokale Push-Benachrichtigungen (4 Typen: Forschung fertig, Lieferant wartet, Rush verfügbar, Daily Reward). AlarmManager + BroadcastReceiver auf Android (NotificationReceiver in AndroidManifest.xml registriert). Lokalisierte Nachrichten (6 Sprachen). DateTime.UtcNow für Zeitplanung. In Einstellungen abschaltbar |
 | `PlayGamesService` / `AndroidPlayGamesService` | Google Play Games Integration: Sign-In (GamesSignInClient.IsAuthenticated), Score-Submit (LeaderboardsClient.SubmitScore), Leaderboard-UI (GetAllLeaderboardsIntent). Cloud-Save/PlayersClient/LoadTopScores NICHT verfügbar im NuGet v121.0.0.2 → Stub-Implementierungen (SupportsCloudSave=false). Desktop-Stub / Android-Implementierung. Factory-Pattern in App.axaml.cs |
-| `ManagerService` | 12 Vorarbeiter: Unlock-Prüfung (Level/Prestige), Upgrade (Lv.1-5, Goldschrauben), Workshop-Boni (Effizienz/Ermüdung/Stimmung/Einkommen) |
+| `ManagerService` | 14 Vorarbeiter: Unlock-Prüfung (Level/Prestige), Upgrade (Lv.1-5, Goldschrauben), Workshop-Boni (Effizienz/Ermüdung/Stimmung/Einkommen) |
 | `TournamentService` | Wöchentliche MiniGame-Turniere: 9 simulierte Gegner (Level-skaliert), Best-of-3 Score, 3 Entries/Tag, Gold/Silber/Bronze-Rewards |
 | `BattlePassService` | 30-Tier Battle Pass: Free/Premium Track, XP aus Events, Tier-Rewards, 30-Tage-Saisons |
 | `SeasonalEventService` | 4 saisonale Events/Jahr: Spezialaufträge, Saisonwährung, Event-Shop (8-10 Items) |
-| `GuildService` | 5 Innungen: Echte Spieler via Play Games Leaderboards, wöchentliche Ziele, Gilden-Level, Einkommens-Boni |
+| `GuildService` | Echtes Multiplayer-Gildensystem: Firebase REST API (IFirebaseService), Gilden erstellen/beitreten/verlassen, Wochenziele mit Beiträgen, Gilden-Level mit Einkommens-Boni, Gilden-Forschung (18 kollaborative Upgrades, 6 Kategorien, 14 Effekt-Typen), lokaler Cache (GuildMembership + Research-Effekte) |
+| `FirebaseService` | Firebase REST API Client: Anonymous Auth, Token-Refresh (55min), GET/SET/UPDATE/PUSH/DELETE, 5s Timeout, SemaphoreSlim Thread-Safety |
 | `CraftingService` | 13 Rezepte in 3 Tiers: Produktionsketten (Zwischenprodukte), Echtzeit-Timer, Inventar + Verkauf |
 | `WeeklyMissionService` | 5 Wochenmissionen: Montag-Reset, höhere Ziele als Daily, 50 Goldschrauben Komplett-Bonus |
 | `WelcomeBackService` | Welcome-Back-Angebote nach 24h+ Abwesenheit, Starter-Paket (einmalig), 24h Ablauf-Timer |
@@ -154,7 +159,7 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 
 | Feature | Implementierung |
 |---------|-----------------|
-| Workshop Cards | Farbiges BorderBrush nach Typ + SkiaSharp-Illustrationen (WorkshopCardRenderer) als Header auf jeder Dashboard-Karte (48dp, 8 thematische Szenen: Hobel+Holz, Rohre+Wasser, Kabel+Blitze, Farbroller+Palette, Dachziegel+Dachstuhl, Kran+Bauhelm, Zirkel+Bauplan, Gebäude+Krone). WorkshopIllustrationView (Custom SKCanvasView für DataTemplates) |
+| Workshop Cards | Farbiges BorderBrush nach Typ + SkiaSharp-Illustrationen (WorkshopCardRenderer) als Header auf jeder Dashboard-Karte (48dp, 10 thematische Szenen: Hobel+Holz, Rohre+Wasser, Kabel+Blitze, Farbroller+Palette, Dachziegel+Dachstuhl, Kran+Bauhelm, Zirkel+Bauplan, Gebäude+Krone, Amboss+Esse+Funken, Reagenzglas+Zahnräder+Glühbirne). WorkshopIllustrationView (Custom SKCanvasView für DataTemplates) |
 | Worker Avatars | WorkerAvatarControl (SKCanvasView) mit SkiaSharp Pixel-Art: 6 Hauttöne, 6 Haarfarben, 6 Kleidungsfarben, 3 Hut-Stile (Bauhelm/Mütze/Schutzhelm), Tier-Farbe+Sterne(S+), Mood-Gesichtsausdruck, Geschlecht (weiblich: schmalerer Kopf/langes Haar/Wimpern/vollere Lippen/Ohrringe/Wangenröte; männlich: kantiger Kiefer/Kurzhaar/Koteletten/Augenbrauen/Bart-Schatten). 5 Accessoire-Varianten (Brille/Schutzbrille/Pflaster/Bleistift/keine). Schulter-/Körperansatz mit Arbeitskleidung. **RarityFrameRenderer-Integration**: Tier→Rarity Mapping (F/E=Common grau, D/C=Uncommon grün-Puls, B/A=Rare blau-Glow, S/SS=Epic lila-Sparkle, SSS/Legendary=Rainbow-Shimmer). 20fps Animation-Timer für Uncommon+, gemeinsamer Stopwatch. 40dp in WorkerMarketView, 64dp in WorkerProfileView |
 | Meister Hans Portrait | MeisterHansRenderer (SkiaSharp): NPC-Portrait 120x120 im Story-Dialog. 4 Stimmungen (happy/proud/concerned/excited), Idle-Bobbing (Sinus), Blinzel-Animation (alle 3-4.5s für 150ms), gelber Schutzhelm, Bart+Schnurrbart, stimmungsabhängige Augen/Brauen/Mund/Deko-Elemente (Gold-Sterne bei proud, Ausrufezeichen bei excited, Schweißtropfen bei concerned). 20fps DispatcherTimer in MainView.axaml.cs |
 | Golden Screw Icon | Gold-Shimmer Animation (CSS scale+rotate Loop) |
@@ -174,7 +179,7 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 | Fenster-Blinken | Nachts (20-06 Uhr) blinken Fenster deterministisch (kein Random) |
 | MiniGame Result-Polish | Staggered Stars (200ms Delay), Rating-Farbe (Gold/Gruen/Orange/Rot), Border-Pulse, Reward-Text-Animation, Zone-Flash. MiniGameEffectHelper (wiederverwendbar) |
 | MiniGame Countdown | Overlay mit pulsierendem 3-2-1-GO! Text (Code-Behind Animation) |
-| Workshop-Animationen | 8 ikonische Szenen via `WorkshopSceneRenderer.cs` (IsAntialias=true, volle Canvas-Breite): Carpenter (Kreissäge+Brett mit Maserung+Astlöchern+Metallglanz-Sägeblatt+goldene Sägespäne), Plumber (Waschbecken mit Keramikglanz+Wasserhahn+Rohrschlüssel+Chrome-Highlights auf Rohren), Electrician (offener Sicherungskasten+Kabel+Strom-Pulse+cached LED-Glow+cached Pulse-Glow), Painter (Wand streichen+Farbroller+Leiter+Tropfen), Roofer (Hausdach mit Schornstein+Fenster mit Kreuzrahmen+Türgriff+verstärkte 3D-Ziegel+Hammer), Contractor (Backsteinmauer+Kelle mit Mörtelklecks+Metallglanz+Kran mit Seil-Textur+Detail-Haken), Architect (Blaupause+Grundriss progressiv gezeichnet+Bleistift+Lineal), GeneralContractor (Goldener Vertrag+roter Stempel-Abdruck+Münzen mit Prägung+Euro-Symbol+Glanz). DrawWorkerFigure mit Körper/Kleidung/Gesicht/Stiefeln (Carpenter=#8B6914 braune Schürze, Plumber=#1565C0 blaue Latzhose, Electrician=#FDD835 gelbe Weste, Painter=#E0E0E0 weiß+Flecken, Roofer=#E65100 orange, Contractor=#616161 grau, Architect=#F5F5F5 Hemd, GeneralContractor=#212121 Anzug+Krawatte), Hautfarbe #FFDAB9, Augen+Mund, 30% größere Accessoires (Helme/Kappen/Brillen/Krawatten/Berets). Drop-Shadows (3 gecachte MaskFilter), Tool-Glow (Säge=weiß, Wasser=blau, Hammer=Flash). PingPong-Animationen (sanftes Hin-und-Her statt hartem Reset). Level-basierte Visuals: Lv50+ Tool-Glow, Lv250+ 4 Gold-Sterne (8 Strahlen, pulsierender Kern), Lv500+ SkiaGlowEffect Premium-Aura (Alpha 80, breiter Puls), Lv1000 SkiaShimmerEffect Gold-Overlay. Münz-Emission skaliert mit Level (Lv250+ 2 Münzen, Lv500+ 3). Worker-Skalierung (0/1/2-3/4+), Extra-Effekte ab 4+ Workern. Hintergrund: `WorkshopInteriorRenderer.cs` mit Gradient+Boden-Pattern+Vignette-Beleuchtung (radialer Gradient)+Wand-Details (Werkzeug-Silhouetten/Rohre/Rahmen/Fenster, alpha 15-25). Ambient-Partikel: SkiaParticleManager(30) in WorkshopView mit typ-spezifischen Partikeln (Sägespäne/Wasserspritzer/Funken/Farbdunst/Staub/Gold-Glitzer) |
+| Workshop-Animationen | 10 ikonische Szenen via `WorkshopSceneRenderer.cs` (IsAntialias=true, volle Canvas-Breite): Carpenter (Kreissäge+Brett mit Maserung+Astlöchern+Metallglanz-Sägeblatt+goldene Sägespäne), Plumber (Waschbecken mit Keramikglanz+Wasserhahn+Rohrschlüssel+Chrome-Highlights auf Rohren), Electrician (offener Sicherungskasten+Kabel+Strom-Pulse+cached LED-Glow+cached Pulse-Glow), Painter (Wand streichen+Farbroller+Leiter+Tropfen), Roofer (Hausdach mit Schornstein+Fenster mit Kreuzrahmen+Türgriff+verstärkte 3D-Ziegel+Hammer), Contractor (Backsteinmauer+Kelle mit Mörtelklecks+Metallglanz+Kran mit Seil-Textur+Detail-Haken), Architect (Blaupause+Grundriss progressiv gezeichnet+Bleistift+Lineal), GeneralContractor (Goldener Vertrag+roter Stempel-Abdruck+Münzen mit Prägung+Euro-Symbol+Glanz). DrawWorkerFigure mit Körper/Kleidung/Gesicht/Stiefeln (Carpenter=#8B6914 braune Schürze, Plumber=#1565C0 blaue Latzhose, Electrician=#FDD835 gelbe Weste, Painter=#E0E0E0 weiß+Flecken, Roofer=#E65100 orange, Contractor=#616161 grau, Architect=#F5F5F5 Hemd, GeneralContractor=#212121 Anzug+Krawatte), Hautfarbe #FFDAB9, Augen+Mund, 30% größere Accessoires (Helme/Kappen/Brillen/Krawatten/Berets). Drop-Shadows (3 gecachte MaskFilter), Tool-Glow (Säge=weiß, Wasser=blau, Hammer=Flash). PingPong-Animationen (sanftes Hin-und-Her statt hartem Reset). Level-basierte Visuals: Lv50+ Tool-Glow, Lv250+ 4 Gold-Sterne (8 Strahlen, pulsierender Kern), Lv500+ SkiaGlowEffect Premium-Aura (Alpha 80, breiter Puls), Lv1000 SkiaShimmerEffect Gold-Overlay. Münz-Emission skaliert mit Level (Lv250+ 2 Münzen, Lv500+ 3). Worker-Skalierung (0/1/2-3/4+), Extra-Effekte ab 4+ Workern. Hintergrund: `WorkshopInteriorRenderer.cs` mit Gradient+Boden-Pattern+Vignette-Beleuchtung (radialer Gradient)+Wand-Details (Werkzeug-Silhouetten/Rohre/Rahmen/Fenster, alpha 15-25). Ambient-Partikel: SkiaParticleManager(30) in WorkshopView mit typ-spezifischen Partikeln (Sägespäne/Wasserspritzer/Funken/Farbdunst/Staub/Gold-Glitzer) |
 | Muenz-Partikel | 2-3 goldene Coin-Partikel im City-Header bei "money" FloatingText (via AnimationManager.AddCoinParticle) |
 | Money-Display Flash | Kurzer Opacity-Flash (400ms, 1.0→0.6→1.0) auf MoneyText bei Geld-Einnahmen |
 | Confetti bei Events | AddLevelUpConfetti im City-Header bei "level" und "golden_screws" FloatingText-Kategorien |
@@ -219,7 +224,7 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 
 - **Alle Buttons** (Primary/Secondary/Outlined) ueberschrieben via App.axaml Style-Overrides → immer Craft-Orange/Braun
 - **Keine `{DynamicResource PrimaryBrush}`** in Views → alles durch `{StaticResource CraftPrimaryBrush/LightBrush}` ersetzt
-- **Workshop-Farben**: Carpenter=#A0522D, Plumber=#0E7490(Teal), Electrician=#F97316(Orange), Painter=#EC4899, Roofer=#DC2626, Contractor=#EA580C, Architect=#78716C(Stone), GeneralContractor=#FFD700
+- **Workshop-Farben**: Carpenter=#A0522D, Plumber=#0E7490(Teal), Electrician=#F97316(Orange), Painter=#EC4899, Roofer=#DC2626, Contractor=#EA580C, Architect=#78716C(Stone), GeneralContractor=#FFD700, MasterSmith=#D4A373(Kupfer-Orange), InnovationLab=#6A5ACD(Violett)
 - **Tier-Farben**: F=Grau, E=Gruen, D=#0E7490(Teal), C=#B45309(DarkOrange), B=Amber, A=Rot, S=Gold
 - **Branch-Farben**: Tools=#EA580C, Management=#92400E(Braun), Marketing=#65A30D(Lime)
 
@@ -264,6 +269,45 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 - **TaxAudit** ("tax_10_percent"): 10% Steuer auf Brutto-Einkommen (dauerhaft während Event)
 - **WorkerStrike** ("mood_drop_all_20"): Alle Worker-Stimmungen -20 (einmalig bei Event-Start)
 - Event-ID-Tracking verhindert doppelte Anwendung einmaliger Effekte
+
+## Gilden-Forschungssystem
+
+Kollaboratives Forschungssystem für Gilden. Alle Mitglieder tragen Geld bei → gemeinsamer Fortschritt. Abgeschlossene Forschungen geben permanente Boni für alle Gildenmitglieder. Forschungen werden NICHT beim Weekly-Reset zurückgesetzt.
+
+### 18 Forschungen in 6 Kategorien
+
+| Kategorie | ID | Name (DE) | Kosten | Effekt |
+|-----------|-----|-----------|--------|--------|
+| Infrastruktur | guild_expand_1/2/3 | Gildenerweiterung I-III | 50M/500M/5B | Max. Mitglieder +5/+5/+10 (20→40) |
+| Wirtschaft | guild_income_1/2/3/4 | Handelsabkommen → Wirtschaftsimperium | 10M-10B | +5%/+15% Einkommen, -10% Kosten, +10% Auftragsbelohnungen |
+| Wissen | guild_knowledge_1/2/3 | Wissensteilung → Meisterschafts-Pakt | 25M-2.5B | +10% XP, +5% Worker-Effizienz, +15% MiniGame-Belohnungen |
+| Logistik | guild_logistics_1/2/3 | Auftragsflut → Express-Service | 75M-3B | +1 Auftragsslot, +15% Order-Qualität, +20% Auftragsbelohnungen |
+| Arbeitsmarkt | guild_workforce_1/2/3 | Werkstatterweiterung → Arbeitsschutzpakt | 150M-5B | +1 Worker-Slot, +25% Training-Speed, -20% Ermüdungs-/Stimmungs-Abbau |
+| Meisterschaft | guild_mastery_1/2 | Schnellforschung + Prestige-Weisheit | 500M/7.5B | +20% Forschungs-Speed, +10% Prestige-Punkte |
+
+**Gesamtkosten**: ~37,4 Mrd. EUR | **Linear pro Kategorie** (nächste erst nach vorheriger)
+
+### Firebase-Datenstruktur
+
+`/guild_research/{guildId}/{researchId}` → `{ progress: long, completed: bool, completedAt: string? }`
+
+### Effekt-Integration (14 Effekt-Typen)
+
+Effekte werden über `GuildMembership`-Properties gecacht und in folgenden Services angewendet:
+- **GameLoopService**: IncomeBonus, CostReduction, EfficiencyBonus, WorkerSlotBonus
+- **OrderGeneratorService**: OrderSlotBonus, OrderQualityBonus, RewardBonus, XpBonus
+- **WorkerService**: TrainingSpeedBonus, FatigueReduction
+- **ResearchService**: ResearchSpeedBonus
+- **PrestigeService**: PrestigePointBonus
+- **GuildService**: MaxMembersBonus (dynamisch: BaseMaxGuildMembers=20 + Expand-Boni)
+
+### Dateien
+
+- `Models/GuildResearch.cs` (NEU): GuildResearchCategory, GuildResearchEffectType, GuildResearchDefinition (GetAll()), GuildResearchState, GuildResearchDisplay, GuildResearchEffects
+- `Models/Guild.cs`: GuildMembership +14 ResearchXxx-Properties + ApplyResearchEffects()
+- `Services/GuildService.cs`: GetGuildResearchAsync(), ContributeToResearchAsync(), GetResearchEffects(), GetMaxMembers()
+- `ViewModels/GuildViewModel.cs`: GuildResearch, ContributeDialog, LoadGuildResearchAsync()
+- `Views/GuildView.axaml`: Forschungs-Sektion mit 6 Kategorie-Gruppen + Beitrags-Dialog-Overlay
 
 ## Feierabend-Rush
 
@@ -311,6 +355,9 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 
 ## Changelog Highlights
 
+- **v2.0.9 (23.02.2026)**: Gilden-Forschungssystem + Dashboard-Fix (5 Punkte): (1) Dashboard Feature-Buttons: "Arbeiter" + "Forschung" als neue Feature-Buttons auf dem Dashboard (NavigateToWorkerMarket/NavigateToResearch Commands in MainViewModel, AccountHardHat/#0E7490 + FlaskOutline/#EA580C Icons). (2) GuildResearch Model (NEU): 18 kollaborative Gilden-Forschungen in 6 Kategorien (Infrastructure/Economy/Knowledge/Logistics/Workforce/Mastery), GuildResearchDefinition.GetAll(), GuildResearchState (Firebase-Daten), GuildResearchDisplay (UI), GuildResearchEffects.Calculate() mit 14 Effekt-Typen. (3) GuildService erweitert: GetGuildResearchAsync() (Firebase GET + merge mit Definitionen), ContributeToResearchAsync() (Geld abziehen, Firebase atomic UPDATE, Completion-Check), GetResearchEffects() (gecacht), GetMaxMembers() (20 + Expand-Boni), RefreshResearchEffectsAsync(). GuildMembership +14 ResearchXxx-Properties + ApplyResearchEffects(). (4) Effekt-Integration in 5 Services: GameLoopService (IncomeBonus, CostReduction, EfficiencyBonus, WorkerSlotBonus), OrderGeneratorService (OrderSlotBonus, OrderQualityBonus, RewardBonus, XpBonus), WorkerService (TrainingSpeedBonus, FatigueReduction), ResearchService (ResearchSpeedBonus), PrestigeService (PrestigePointBonus). (5) UI: GuildViewModel mit Research-Collection + Beitrags-Dialog (Slider 1-100%), GuildView.axaml mit Forschungs-Sektion (6 Kategorie-Gruppen, farbige Borders, ProgressBar, Contribute-Button), 51 neue RESX-Keys in 6 Sprachen (18x Name + 18x Desc + Kategorie-Labels + UI-Strings).
+- **v2.0.9 (21.02.2026)**: Echtes Multiplayer-Gildensystem mit Firebase (7 Punkte): (1) Firebase-Infrastruktur: FirebaseService (REST API Client mit Anonymous Auth, Token-Refresh 55min, Auto-Retry bei 401, SemaphoreSlim Thread-Safety, 5s Timeout). 4 Firebase-Models (FirebaseAuthResponse, FirebaseTokenResponse, FirebaseGuildData, FirebaseGuildMember). IFirebaseService Interface. (2) Guild-Models komplett neu: Guild.cs ersetzt durch GuildMembership (lokaler Cache für IncomeBonus), GuildListItem (Browse-Liste), GuildDetailData (Detail-Ansicht mit Members), GuildMemberInfo. Alte GuildDefinition + statische GetAvailableGuilds() entfernt. (3) GuildService komplett neu: Firebase statt PlayGames. InitializeAsync, BrowseGuildsAsync, CreateGuildAsync, JoinGuildAsync (MaxMembers=20), LeaveGuildAsync, ContributeAsync (atomic increment), RefreshGuildDetailsAsync, CheckWeeklyResetAsync (Level-Up mit Goldschrauben, Goal-Skalierung). Spielername-Dialog beim ersten Besuch. (4) GameState: Guild?→GuildMembership? Migration. GameLoopService + OfflineProgressService auf GuildMembership umgestellt. PrestigeService: Guild-Reset entfernt (Firebase Weekly-Reset). (5) GuildViewModel komplett neu: 3 UI-Zustände (Offline/Nicht-in-Gilde/In-Gilde), Spielername-Dialog, Create-Dialog (Name+Icon+Farbe), Browse-Liste, Gilden-Detail mit Mitgliedern+Wochenziel+Beitragen, Gilde-verlassen. (6) GuildView.axaml komplett neu: Loading-Spinner, Offline-State, Name-Dialog, Create-Dialog (10 Icons, 8 Farben), Browse-ItemsControl, Detail-Ansicht mit Mitglieder-Liste. Content-Swap statt ZIndex-Overlay. (7) DI + Lokalisierung: IFirebaseService als Singleton in App.axaml.cs, 20 neue RESX-Keys in 6 Sprachen (GuildOffline, GuildCreate, GuildJoined, GuildLeft, GuildFull, etc.).
+- **v2.0.9 (21.02.2026)**: Bugfixes & Lokalisierung (7 Punkte): (1) Doppelte Geld-Anzeige: OdometerRenderer aus DashboardView.axaml.cs entfernt (XAML TextBlock reicht). (2) MiniGame Render-Loop Bug: StartRenderLoop() rief StopRenderLoop() auf, was _gameCanvas=null setzte → Timer-Lambda konnte InvalidateSurface() nie aufrufen. Fix in 6/8 MiniGame-Views (Sawing, Wiring, Painting, RoofTiling, DesignPuzzle, Inspection). (3) BattlePass→SeasonPass: RESX-Werte in allen 7 Dateien geändert. (4) Rush-Banner volle Breite: Gesamtes Banner als Button mit ActivateRushCommand statt kleinem GO-Button. (5) Gilden-System: IncomeBonus in GameLoopService + OfflineProgressService integriert, ContributeCommand + UI-Button, ContributeToGuild RESX-Key in 6 Sprachen. (6) Übersetzungen: "Premium" in BattlePassView lokalisiert, 27 hardcodierte "OK"-Strings in 8 ViewModels durch _localizationService.GetString("OK") ersetzt. (7) Build: 0 Fehler.
 - **v2.0.9 (21.02.2026)**: Visuelles Mega-Redesign Phasen 7-10 (5 Punkte): (1) Full-Screen Reward-Zeremonien: FireworksRenderer (400 Struct-Partikel, 3 Typen Rocket/Burst/Sparkle, 8 Farben) + RewardCeremonyRenderer (5 CeremonyTypes mit Backdrop/Confetti/Feuerwerk/Scale-In Kreis/Text-Animation, 4s Dauer, Tap-to-Dismiss). Trigger bei Level-Meilensteinen, Workshop-Meilensteinen und MasterTool-Unlock via CeremonyRequested Event. (2) Worker-Avatare vergrößert: WorkerMarketView 40→56dp, WorkerProfileView 64→96dp. Idle-Animationen: Atem-Oszillation (Sinus ±1.2dp, hash-versetzt) + Blinzeln (alle 3-5s für 150ms, Hautfarben-Overlay). 20fps Timer für alle Avatare >=56dp. (3) CityProgressionHelper: Dynamische Straßen-Progression (Schotter→Asphalt→Pflaster→Premium), Straßen-Dekorationen (Büsche/Bäume/Laternen/Bänke/Blumenbeete/Brunnen je nach WorldTier 2-7+), Kopfsteinpflaster-/Schotter-Textur, Bürgersteig ab Tier3, Lebhaftigkeits-Multiplikator auf Himmelsfarben. Integriert in CityRenderer (ersetzt alte DrawStreet). (4) Animierter Loading-Screen: LoadingScreenRenderer mit dunklem Gradient-Hintergrund, pulsierendem App-Titel, zwei gegenläufigen Zahnrädern (korrekte Übersetzung), Funken-Partikeln, indeterminiertem Gradient-Fortschrittsbalken, rotierenden Tipps (3s Crossfade). SKCanvasView mit ZIndex=200 in MainView. (5) Build: 0 Fehler.
 - **v2.0.9 (21.02.2026)**: Visuelles Mega-Redesign Lücken geschlossen (4 Punkte): (1) CityWeatherSystem in CityRenderer integriert: SetWeatherByMonth() beim ersten Render, Update()+Render() im Draw-Loop nach Gebäuden/vor Workshop-Partikeln. Saisonale Wetter-Effekte jetzt sichtbar in der City-Szene. (2) TapScale-Effekt auf ALLEN Buttons: Globale CSS-Styles in App.axaml (scale(0.95) bei :pressed, 80ms CubicEaseOut TransformOperationsTransition). Kein per-Button Behavior nötig. (3) CraftTextures in GameTabBarRenderer: DrawWoodBackground()+DrawWoodGrain() durch CraftTextures.DrawWoodGrain() ersetzt (reiche Sinus-Wellenlinien, Gradient, Astlöcher statt 4 flacher Streifen). (4) RarityFrameRenderer in WorkerAvatarControl: Tier→Rarity Mapping (F/E=Common, D/C=Uncommon, B/A=Rare, S/SS=Epic, SSS/Legendary=Legendary). Animierte Rahmen um Avatare (20fps DispatcherTimer für Uncommon+), gemeinsamer statischer Stopwatch.
 - **v2.0.9 (21.02.2026)**: Dashboard-Redesign, Tab-Umbau & Visual Polish (7 Punkte): (1) Tab-Bar Umbau: Workers-Tab→Buildings-Tab (Domain-Icon), Research-Tab→Guild-Tab (AccountGroupOutline-Icon). Workers+Research jetzt als Feature-Buttons auf Dashboard erreichbar. SelectGuildTabCommand neu, HandleBackPressed angepasst. (2) Dashboard Feature-Buttons Redesign: 8 Buttons (Workers, Research, Manager, Tournament, SeasonalEvent, BattlePass, Crafting, LuckySpin) mit individuellem Gradient-Icon-Container (48x48), Titel+Status-Text pro Feature. 7 neue StatusText-Properties in MainViewModel + RefreshFeatureStatusTexts(). (3) Bugfixes: Daily/Weekly Challenges standardmäßig eingeklappt (was: expanded), doppeltes €-Zeichen bei Weekly Missions entfernt, SawingGameViewModel Unicode-Emojis→MaterialIconKind-Strings. (4) Reward-Display: "GS"-Text durch ScrewFlatTop-MaterialIcon (#FFD700) in Daily Challenge + Weekly Mission DataTemplates ersetzt, HasGoldenScrewReward Property auf beiden Models. (5) BuildingsView+GuildView: Back-Buttons entfernt (sind jetzt Tabs), Grid-Spalten angepasst. (6) Research Visual Polish: NodeSize 64→72dp, RowHeight 110→120, ProgressBarHeight 6→8dp mit Gradient+Glanz, Verbindungslinien 2→3px mit Glow-Effekt, Pfeilspitzen größer, Labels 10→12dp, Kosten-Label 8→10dp, Flow-Partikel 3→4px, erforschte Nodes mit Branch-farbigem Glow-Ring, BranchBanner lebhaftere Farben+schnellere Animationen (Hammer 3→4Hz, Zahnräder 1.2→1.8x, Stift 2→3Hz, Schallwellen 1.5→2.0x). (7) 7 neue RESX-Keys in 6 Sprachen (WorkersStatus, ResearchStatus, ResearchActiveStatus, ManagerStatus, TournamentStatus, BattlePassStatus, CraftingStatus).

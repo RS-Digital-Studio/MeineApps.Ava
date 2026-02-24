@@ -337,6 +337,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Mono JIT Assertion `!ji->async` Crash | Profiled AOT (SDK-Default) kompiliert nur hot Methods, Rest fällt auf JIT zurück → JIT-Bug auf manchen Geräten (z.B. Huawei P30) | `AndroidEnableProfiledAot=false` in Directory.Build.targets → Full AOT (alle Methoden kompiliert, kein JIT). `UseInterpreter=true` geht NICHT zusammen mit AOT (XA0119) |
 | SKCanvasView updatet nicht | `InvalidateVisual()` verwendet | `InvalidateSurface()` verwenden |
 | SKCanvasView leer bei IsVisible-Toggle | `InvalidateSurface()` auf unsichtbare Canvas wird ignoriert | Nach Sichtbar-Werden erneut Daten setzen/Calculate() aufrufen, damit PropertyChanged → InvalidateSurface() feuert |
+| SKCanvasView Render-Loop tot nach StartRenderLoop() | `StartRenderLoop()` ruft `StopRenderLoop()` auf, das `_gameCanvas = null` setzt. Timer-Lambda captured `this._gameCanvas` → immer null | In `StartRenderLoop()` NUR `_renderTimer?.Stop()` aufrufen, NICHT `StopRenderLoop()` (das nullt die Canvas-Referenz) |
 | CSS translate() Exception | Fehlende px-Einheiten | `translate(0px, 400px)` statt `translate(0, 400)` |
 | AAPT2260 Fehler | grantUriPermissions ohne 's' | `android:grantUriPermissions="true"` (mit 's') |
 | ${applicationId} geht nicht | .NET Android kennt keine Gradle-Placeholder | Hardcodierte Package-Namen verwenden |

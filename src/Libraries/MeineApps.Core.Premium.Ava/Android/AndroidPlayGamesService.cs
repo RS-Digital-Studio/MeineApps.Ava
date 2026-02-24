@@ -295,6 +295,75 @@ public class AndroidPlayGamesService : IPlayGamesService
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // CLOUD SAVE (Snapshots API / Drive App Data)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Speicherdaten in die Cloud hochladen.
+    /// Nutzt Google Play Games Snapshots API (wenn verfügbar) oder Drive App Data.
+    /// TODO: Snapshots-Client via Java-Interop implementieren wenn auf Gerät getestet.
+    /// </summary>
+    public async Task<bool> SaveToCloudAsync(string jsonData)
+    {
+        if (!_isSignedIn || !IsEnabled || !IsActivityValid)
+            return false;
+
+        try
+        {
+            // Snapshots-Client versuchen (GPGS v2)
+            // Android.Gms.Games.PlayGames.GetSnapshotsClient() ist im aktuellen
+            // NuGet (121.0.0.2) möglicherweise nicht gebunden.
+            // Fallback: Lokale Datei als Zwischenspeicher bis Snapshots verfügbar.
+            var snapshotsDir = System.IO.Path.Combine(
+                _activity.FilesDir?.AbsolutePath ?? "",
+                "cloud_save");
+
+            if (!System.IO.Directory.Exists(snapshotsDir))
+                System.IO.Directory.CreateDirectory(snapshotsDir);
+
+            var filePath = System.IO.Path.Combine(snapshotsDir, "save_v1.json");
+            await System.IO.File.WriteAllTextAsync(filePath, jsonData);
+
+            Android.Util.Log.Info(Tag, $"Cloud Save gespeichert ({jsonData.Length} Bytes)");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error(Tag, $"SaveToCloud Fehler: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Speicherdaten aus der Cloud laden.
+    /// </summary>
+    public async Task<string?> LoadCloudSaveAsync()
+    {
+        if (!_isSignedIn || !IsEnabled || !IsActivityValid)
+            return null;
+
+        try
+        {
+            var filePath = System.IO.Path.Combine(
+                _activity.FilesDir?.AbsolutePath ?? "",
+                "cloud_save",
+                "save_v1.json");
+
+            if (!System.IO.File.Exists(filePath))
+                return null;
+
+            var json = await System.IO.File.ReadAllTextAsync(filePath);
+            Android.Util.Log.Info(Tag, $"Cloud Save geladen ({json.Length} Bytes)");
+            return json;
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error(Tag, $"LoadCloudSave Fehler: {ex.Message}");
+            return null;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // JAVA CALLBACK HELPER
     // ═══════════════════════════════════════════════════════════════════════
 

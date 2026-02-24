@@ -1,0 +1,291 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             x:Class="HandwerkerImperium.Views.MiniGames.ForgeGameView"
+             x:DataType="vm:ForgeGameViewModel">
+
+  <Grid AutomationProperties.AutomationId="Forge_Grid_Root"
+        RowDefinitions="Auto,*,Auto,Auto" Margin="10,20,10,20">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Forge_Border_Header"
+            Classes="CardElevated"
+            Padding="16,12">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Cancel Button -->
+        <Button AutomationProperties.AutomationId="Forge_Btn_Cancel"
+                Classes="Text"
+                Command="{Binding CancelCommand}">
+          <mi:MaterialIcon AutomationProperties.AutomationId="Forge_Icon_Close"
+                           Kind="Close" Width="24" Height="24" />
+        </Button>
+
+        <!-- Title -->
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center"
+                    AutomationProperties.AutomationId="Forge_Panel_TitleGroup">
+          <TextBlock AutomationProperties.AutomationId="Forge_Txt_Title"
+                     Text="{Binding GameTitle}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+          <TextBlock AutomationProperties.AutomationId="Forge_Txt_DifficultyStars"
+                     Text="{Binding DifficultyStars}"
+                     HorizontalAlignment="Center"
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock AutomationProperties.AutomationId="Forge_Txt_TaskProgress"
+                     Text="{Binding TaskProgressDisplay}"
+                     HorizontalAlignment="Center"
+                     FontSize="11" FontWeight="SemiBold"
+                     Foreground="{StaticResource CraftPrimaryBrush}"
+                     IsVisible="{Binding TaskProgressDisplay, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+          <!-- Schlag-Fortschritt -->
+          <TextBlock AutomationProperties.AutomationId="Forge_Txt_HitsProgress"
+                     Text="{Binding HitsProgressDisplay}"
+                     HorizontalAlignment="Center"
+                     FontSize="13" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     IsVisible="{Binding IsPlaying}" />
+        </StackPanel>
+
+        <!-- Difficulty -->
+        <TextBlock Grid.Column="2"
+                   AutomationProperties.AutomationId="Forge_Txt_Difficulty"
+                   Text="{Binding Difficulty}"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- SKIA GAME AREA                                                    -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="1" AutomationProperties.AutomationId="Forge_Border_GameArea"
+            Background="{DynamicResource CardBrush}" CornerRadius="8" Margin="0,12" ClipToBounds="True">
+      <Panel>
+        <!-- SkiaSharp Canvas fuer Amboss + Temperatur-Bar -->
+        <skia:SKCanvasView x:Name="GameCanvas"
+                           AutomationProperties.AutomationId="Forge_Canvas_GameArea"
+                           MinHeight="220" />
+        <!-- Anweisungstext ueber dem Canvas -->
+        <TextBlock AutomationProperties.AutomationId="Forge_Txt_Instruction"
+                   Text="{Binding InstructionText}"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Margin="0,8,0,0"
+                   IsVisible="{Binding IsPlaying}" />
+      </Panel>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- RESULT DISPLAY                                                    -->
+    <!-- ================================================================= -->
+    <Border x:Name="ResultBorder" Grid.Row="2"
+            AutomationProperties.AutomationId="Forge_Border_Result"
+            Classes="Card StatsCard"
+            IsVisible="{Binding IsResultShown}"
+            Padding="24">
+      <StackPanel Spacing="16" HorizontalAlignment="Center"
+                  AutomationProperties.AutomationId="Forge_Panel_Result">
+        <!-- Emoji -->
+        <TextBlock AutomationProperties.AutomationId="Forge_Txt_ResultEmoji"
+                   Text="{Binding ResultEmoji}"
+                   FontSize="48"
+                   HorizontalAlignment="Center" />
+
+        <!-- Sterne-Bewertung -->
+        <StackPanel AutomationProperties.AutomationId="Forge_Panel_Stars"
+                    Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <mi:MaterialIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Forge_Icon_Star1"
+                           Kind="Star" Width="32" Height="32"
+                           Foreground="#FFD700"
+                           Opacity="{Binding Star1Opacity}" />
+          <mi:MaterialIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Forge_Icon_Star2"
+                           Kind="Star" Width="32" Height="32"
+                           Foreground="#FFD700"
+                           Opacity="{Binding Star2Opacity}" />
+          <mi:MaterialIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Forge_Icon_Star3"
+                           Kind="Star" Width="32" Height="32"
+                           Foreground="#FFD700"
+                           Opacity="{Binding Star3Opacity}" />
+        </StackPanel>
+
+        <!-- Rating Text -->
+        <TextBlock x:Name="RatingText"
+                   AutomationProperties.AutomationId="Forge_Txt_RatingText"
+                   Text="{Binding ResultText}"
+                   FontSize="24" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center" />
+
+        <!-- Belohnungen -->
+        <StackPanel AutomationProperties.AutomationId="Forge_Panel_Rewards"
+                    Orientation="Horizontal" Spacing="20"
+                    HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon AutomationProperties.AutomationId="Forge_Icon_RewardMoney"
+                             Kind="CashMultiple" Width="20" Height="20"
+                             Foreground="{DynamicResource SuccessBrush}" />
+            <TextBlock x:Name="RewardMoneyText"
+                       AutomationProperties.AutomationId="Forge_Txt_RewardMoney"
+                       Text="{Binding RewardAmount, StringFormat='+{0:N0} &#x20AC;'}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SuccessBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon AutomationProperties.AutomationId="Forge_Icon_RewardXp"
+                             Kind="Star" Width="20" Height="20"
+                             Foreground="Gold" />
+            <TextBlock x:Name="RewardXpText"
+                       AutomationProperties.AutomationId="Forge_Txt_RewardXp"
+                       Text="{Binding XpAmount, StringFormat='+{0} XP'}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="Gold"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Countdown Overlay -->
+    <Border x:Name="CountdownOverlay"
+            AutomationProperties.AutomationId="Forge_Border_Countdown"
+            Grid.RowSpan="4"
+            Background="#CC000000"
+            IsVisible="{Binding IsCountdownActive}">
+      <TextBlock x:Name="CountdownTextBlock"
+                 AutomationProperties.AutomationId="Forge_Txt_Countdown"
+                 Text="{Binding CountdownText}"
+                 FontSize="72" FontWeight="Bold"
+                 Foreground="#FFD700"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Border>
+
+    <!-- Tutorial Overlay -->
+    <Border AutomationProperties.AutomationId="Forge_Border_TutorialOverlay"
+            Grid.RowSpan="4" Background="#DD000000"
+            IsVisible="{Binding ShowTutorial}">
+      <Border AutomationProperties.AutomationId="Forge_Border_TutorialCard"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="16"
+              Padding="24"
+              Margin="32"
+              MaxWidth="400"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock AutomationProperties.AutomationId="Forge_Txt_TutorialTitle"
+                     Text="{Binding TutorialTitle}"
+                     FontSize="22" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+          <TextBlock AutomationProperties.AutomationId="Forge_Txt_TutorialText"
+                     Text="{Binding TutorialText}"
+                     FontSize="14"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap"
+                     TextAlignment="Center"
+                     LineHeight="22" />
+          <Button AutomationProperties.AutomationId="Forge_Btn_TutorialDismiss"
+                  Content="{loc:Translate TutorialGotIt}"
+                  Classes="Primary"
+                  Command="{Binding DismissTutorialCommand}"
+                  HorizontalAlignment="Center"
+                  MinWidth="160"
+                  Margin="0,8,0,0" />
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- ACTION BUTTONS                                                    -->
+    <!-- ================================================================= -->
+    <StackPanel AutomationProperties.AutomationId="Forge_Panel_Actions"
+                Grid.Row="3" Spacing="16">
+
+      <!-- Start Button -->
+      <Panel IsVisible="{Binding !IsResultShown}">
+        <Button AutomationProperties.AutomationId="Forge_Btn_Start"
+                Content="{loc:Translate Start}"
+                Classes="Primary"
+                Command="{Binding StartGameCommand}"
+                IsVisible="{Binding !IsPlaying}"
+                HorizontalAlignment="Center"
+                MinWidth="200" />
+      </Panel>
+
+      <!-- Action Button (waehrend des Spiels) -->
+      <Button AutomationProperties.AutomationId="Forge_Btn_Action"
+              Content="{Binding ActionButtonText}"
+              Classes="Primary"
+              Command="{Binding HammerStrikeCommand}"
+              IsVisible="{Binding IsPlaying}"
+              HorizontalAlignment="Center"
+              MinWidth="250" />
+
+      <!-- Letzte Aufgabe: Ad + Weiter -->
+      <Grid AutomationProperties.AutomationId="Forge_Grid_LastTaskActions"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="12">
+        <Grid.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="IsResultShown" />
+            <Binding Path="IsLastTask" />
+          </MultiBinding>
+        </Grid.IsVisible>
+
+        <Button AutomationProperties.AutomationId="Forge_Btn_WatchAd"
+                Classes="Secondary"
+                IsEnabled="{Binding CanWatchAd}"
+                Command="{Binding WatchAdCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center">
+          <TextBlock AutomationProperties.AutomationId="Forge_Txt_WatchAd"
+                     Text="{loc:Translate WatchAdForDouble}"
+                     TextTrimming="CharacterEllipsis" />
+        </Button>
+
+        <Button Grid.Column="1"
+                AutomationProperties.AutomationId="Forge_Btn_Continue"
+                Classes="Primary"
+                Command="{Binding ContinueCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center">
+          <TextBlock Text="{Binding ContinueButtonText}"
+                     TextTrimming="CharacterEllipsis" />
+        </Button>
+      </Grid>
+
+      <!-- Zwischen-Aufgabe: Nur Weiter-Button -->
+      <Button AutomationProperties.AutomationId="Forge_Btn_NextTask"
+              Classes="Primary"
+              Command="{Binding ContinueCommand}"
+              HorizontalAlignment="Center"
+              MinWidth="200">
+        <Button.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="IsResultShown" />
+            <Binding Path="!IsLastTask" />
+          </MultiBinding>
+        </Button.IsVisible>
+        <TextBlock Text="{Binding ContinueButtonText}"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="200" />
+      </Button>
+
+    </StackPanel>
+
+  </Grid>
+
+</UserControl>

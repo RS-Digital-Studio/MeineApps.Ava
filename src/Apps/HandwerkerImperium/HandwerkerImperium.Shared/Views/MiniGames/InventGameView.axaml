@@ -1,0 +1,383 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             x:Class="HandwerkerImperium.Views.MiniGames.InventGameView"
+             x:DataType="vm:InventGameViewModel">
+
+  <Grid AutomationProperties.AutomationId="Invent_Grid_Root"
+        RowDefinitions="Auto,Auto,*,Auto,Auto" Margin="10,20,10,20">
+
+    <!-- ================================================================= -->
+    <!-- HEADER (Row 0)                                                    -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0"
+            AutomationProperties.AutomationId="Invent_Border_Header"
+            Classes="CardElevated"
+            Padding="16,12">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Abbrechen-Button -->
+        <Button AutomationProperties.AutomationId="Invent_Btn_Cancel"
+                Classes="Text"
+                Command="{Binding CancelCommand}">
+          <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_Close"
+                           Kind="Close" Width="24" Height="24" />
+        </Button>
+
+        <!-- Titel -->
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center"
+                    AutomationProperties.AutomationId="Invent_Panel_TitleGroup">
+          <StackPanel Orientation="Horizontal"
+                      HorizontalAlignment="Center"
+                      Spacing="6">
+            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_Title"
+                             Kind="Cog" Width="22" Height="22" />
+            <TextBlock AutomationProperties.AutomationId="Invent_Txt_Title"
+                       Text="{loc:Translate InventGame}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </StackPanel>
+          <TextBlock AutomationProperties.AutomationId="Invent_Txt_DifficultyStars"
+                     Text="{Binding DifficultyStars}"
+                     HorizontalAlignment="Center"
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+          <TextBlock AutomationProperties.AutomationId="Invent_Txt_TaskProgress"
+                     Text="{Binding TaskProgressDisplay}"
+                     HorizontalAlignment="Center"
+                     FontSize="11" FontWeight="SemiBold"
+                     Foreground="{StaticResource CraftPrimaryBrush}"
+                     IsVisible="{Binding TaskProgressDisplay, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+
+        <!-- Timer -->
+        <Border Grid.Column="2"
+                AutomationProperties.AutomationId="Invent_Border_Timer"
+                Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="8"
+                Padding="12,6">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_Clock"
+                             Kind="Clock" Width="16" Height="16" />
+            <TextBlock AutomationProperties.AutomationId="Invent_Txt_Timer"
+                       Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </StackPanel>
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- STATS (Row 1) - Anweisungen + Fortschritt/Fehler/Nächstes        -->
+    <!-- ================================================================= -->
+    <StackPanel Grid.Row="1" Spacing="8" Margin="0,8"
+                AutomationProperties.AutomationId="Invent_Panel_Stats">
+
+      <!-- Anweisungen: Vor dem Spiel -->
+      <TextBlock AutomationProperties.AutomationId="Invent_Txt_InstructionBefore"
+                 Text="{loc:Translate InventInstructionBefore}"
+                 FontSize="12"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 HorizontalAlignment="Center"
+                 TextWrapping="Wrap"
+                 TextAlignment="Center">
+        <TextBlock.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="!IsPlaying" />
+            <Binding Path="!IsMemorizing" />
+            <Binding Path="!IsResultShown" />
+          </MultiBinding>
+        </TextBlock.IsVisible>
+      </TextBlock>
+
+      <!-- Anweisungen: Während Memorisierung -->
+      <TextBlock AutomationProperties.AutomationId="Invent_Txt_InstructionMemorize"
+                 Text="{loc:Translate InventInstructionMemorize}"
+                 FontSize="14" FontWeight="SemiBold"
+                 Foreground="{StaticResource CraftPrimaryBrush}"
+                 HorizontalAlignment="Center"
+                 TextWrapping="Wrap"
+                 TextAlignment="Center"
+                 IsVisible="{Binding IsMemorizing}" />
+
+      <!-- Anweisungen: Während Spiel -->
+      <TextBlock AutomationProperties.AutomationId="Invent_Txt_InstructionPlay"
+                 Text="{loc:Translate InventInstructionPlay}"
+                 FontSize="12"
+                 Foreground="{DynamicResource TextSecondaryBrush}"
+                 HorizontalAlignment="Center"
+                 TextWrapping="Wrap"
+                 TextAlignment="Center"
+                 IsVisible="{Binding IsPlaying}" />
+
+      <!-- Fortschritt + Fehler + Nächstes Teil -->
+      <Grid AutomationProperties.AutomationId="Invent_Grid_PlayStats"
+            ColumnDefinitions="*,Auto,*"
+            IsVisible="{Binding IsPlaying}">
+
+        <!-- Fortschritt links -->
+        <StackPanel AutomationProperties.AutomationId="Invent_Panel_PartProgress"
+                    Orientation="Horizontal" Spacing="4"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+          <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_PartCheck"
+                           Kind="CheckCircle" Width="16" Height="16"
+                           Foreground="{DynamicResource SuccessBrush}" />
+          <TextBlock AutomationProperties.AutomationId="Invent_Txt_PartProgress"
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}">
+            <Run Text="{Binding CompletedParts}" />
+            <Run Text="/" />
+            <Run Text="{Binding TotalParts}" />
+          </TextBlock>
+        </StackPanel>
+
+        <!-- Nächstes Teil mittig -->
+        <Border Grid.Column="1"
+                AutomationProperties.AutomationId="Invent_Border_NextPart"
+                Background="{StaticResource CraftPrimaryBrush}"
+                CornerRadius="12"
+                Padding="12,4">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_NextPart"
+                             Kind="ArrowRight" Width="16" Height="16"
+                             Foreground="White" />
+            <TextBlock AutomationProperties.AutomationId="Invent_Txt_NextPart"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="White">
+              <Run Text="#" />
+              <Run Text="{Binding NextExpectedPart}" />
+            </TextBlock>
+          </StackPanel>
+        </Border>
+
+        <!-- Fehler rechts -->
+        <StackPanel Grid.Column="2"
+                    AutomationProperties.AutomationId="Invent_Panel_Mistakes"
+                    Orientation="Horizontal" Spacing="4"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+          <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_Mistakes"
+                           Kind="Close" Width="16" Height="16"
+                           Foreground="{DynamicResource ErrorBrush}" />
+          <TextBlock AutomationProperties.AutomationId="Invent_Txt_MistakeCount"
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}">
+            <Run Text="{loc:Translate MistakesLabel}" />
+            <Run Text=" " />
+            <Run Text="{Binding MistakeCount}" />
+          </TextBlock>
+        </StackPanel>
+      </Grid>
+    </StackPanel>
+
+    <!-- ================================================================= -->
+    <!-- SKIA GAME AREA (Row 2) - Erfinder-Puzzle-Grid                    -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="2" AutomationProperties.AutomationId="Invent_Border_GameArea"
+            Background="{DynamicResource CardBrush}" CornerRadius="8" Margin="0,8" ClipToBounds="True">
+      <skia:SKCanvasView x:Name="GameCanvas"
+                         AutomationProperties.AutomationId="Invent_Canvas_GameArea"
+                         MinHeight="200" />
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- RESULT DISPLAY (Row 3)                                            -->
+    <!-- ================================================================= -->
+    <Border x:Name="ResultBorder" Grid.Row="3"
+            AutomationProperties.AutomationId="Invent_Border_Result"
+            Classes="Card StatsCard"
+            IsVisible="{Binding IsResultShown}"
+            Padding="24">
+      <StackPanel Spacing="16" HorizontalAlignment="Center"
+                  AutomationProperties.AutomationId="Invent_Panel_Result">
+        <!-- Emoji -->
+        <TextBlock AutomationProperties.AutomationId="Invent_Txt_ResultEmoji"
+                   Text="{Binding ResultEmoji}"
+                   FontSize="48"
+                   HorizontalAlignment="Center" />
+
+        <!-- Sterne-Bewertung (staggered via Code-Behind) -->
+        <StackPanel AutomationProperties.AutomationId="Invent_Panel_Stars"
+                    Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <mi:MaterialIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Invent_Icon_Star1"
+                           Kind="Star" Width="32" Height="32"
+                           Foreground="#FFD700"
+                           Opacity="{Binding Star1Opacity}" />
+          <mi:MaterialIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Invent_Icon_Star2"
+                           Kind="Star" Width="32" Height="32"
+                           Foreground="#FFD700"
+                           Opacity="{Binding Star2Opacity}" />
+          <mi:MaterialIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Invent_Icon_Star3"
+                           Kind="Star" Width="32" Height="32"
+                           Foreground="#FFD700"
+                           Opacity="{Binding Star3Opacity}" />
+        </StackPanel>
+
+        <!-- Rating Text (Farbe wird per Code-Behind gesetzt) -->
+        <TextBlock x:Name="RatingText"
+                   AutomationProperties.AutomationId="Invent_Txt_RatingText"
+                   Text="{Binding ResultText}"
+                   FontSize="24" FontWeight="Bold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   HorizontalAlignment="Center" />
+
+        <!-- Belohnungen -->
+        <StackPanel AutomationProperties.AutomationId="Invent_Panel_Rewards"
+                    Orientation="Horizontal" Spacing="20"
+                    HorizontalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_RewardMoney"
+                             Kind="CashMultiple" Width="20" Height="20"
+                             Foreground="{DynamicResource SuccessBrush}" />
+            <TextBlock x:Name="RewardMoneyText"
+                       AutomationProperties.AutomationId="Invent_Txt_RewardMoney"
+                       Text="{Binding RewardAmount, StringFormat='+{0:N0} &#x20AC;'}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{DynamicResource SuccessBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_RewardXp"
+                             Kind="Star" Width="20" Height="20"
+                             Foreground="Gold" />
+            <TextBlock x:Name="RewardXpText"
+                       AutomationProperties.AutomationId="Invent_Txt_RewardXp"
+                       Text="{Binding XpAmount, StringFormat='+{0} XP'}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="Gold"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Countdown Overlay (3, 2, 1, Los!) -->
+    <Border AutomationProperties.AutomationId="Invent_Border_Countdown"
+            Grid.RowSpan="5" Background="#CC000000"
+            IsVisible="{Binding IsCountdownActive}">
+      <TextBlock AutomationProperties.AutomationId="Invent_Txt_Countdown"
+                 Text="{Binding CountdownText}"
+                 FontSize="72" FontWeight="Bold"
+                 Foreground="#BB86FC"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Border>
+
+    <!-- Tutorial Overlay (beim ersten Spielstart) -->
+    <Border AutomationProperties.AutomationId="Invent_Border_TutorialOverlay"
+            Grid.RowSpan="5" Background="#DD000000"
+            IsVisible="{Binding ShowTutorial}">
+      <Border AutomationProperties.AutomationId="Invent_Border_TutorialCard"
+              Background="{DynamicResource CardBrush}"
+              CornerRadius="16"
+              Padding="24"
+              Margin="32"
+              MaxWidth="400"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center">
+        <StackPanel Spacing="16">
+          <TextBlock AutomationProperties.AutomationId="Invent_Txt_TutorialTitle"
+                     Text="{Binding TutorialTitle}"
+                     FontSize="22" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+          <TextBlock AutomationProperties.AutomationId="Invent_Txt_TutorialText"
+                     Text="{Binding TutorialText}"
+                     FontSize="14"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     TextWrapping="Wrap"
+                     TextAlignment="Center"
+                     LineHeight="22" />
+          <Button AutomationProperties.AutomationId="Invent_Btn_TutorialDismiss"
+                  Content="{loc:Translate TutorialGotIt}"
+                  Classes="Primary"
+                  Command="{Binding DismissTutorialCommand}"
+                  HorizontalAlignment="Center"
+                  MinWidth="160"
+                  Margin="0,8,0,0" />
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- ACTION BUTTONS (Row 4)                                            -->
+    <!-- ================================================================= -->
+    <StackPanel AutomationProperties.AutomationId="Invent_Panel_Actions"
+                Grid.Row="4" Spacing="16">
+
+      <!-- Start Button (versteckt während Spiel, Memorisierung und nach Ergebnis) -->
+      <Panel>
+        <Panel.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="!IsResultShown" />
+            <Binding Path="!IsMemorizing" />
+          </MultiBinding>
+        </Panel.IsVisible>
+        <Button AutomationProperties.AutomationId="Invent_Btn_Start"
+                Content="{loc:Translate Start}"
+                Classes="Primary"
+                Command="{Binding StartGameCommand}"
+                IsVisible="{Binding !IsPlaying}"
+                HorizontalAlignment="Center"
+                MinWidth="200" />
+      </Panel>
+
+      <!-- Letzte Aufgabe: Ad + Weiter -->
+      <Grid AutomationProperties.AutomationId="Invent_Grid_LastTaskActions"
+            ColumnDefinitions="*,*"
+            ColumnSpacing="12">
+        <Grid.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="IsResultShown" />
+            <Binding Path="IsLastTask" />
+          </MultiBinding>
+        </Grid.IsVisible>
+
+        <Button AutomationProperties.AutomationId="Invent_Btn_WatchAd"
+                Classes="Secondary"
+                IsEnabled="{Binding CanWatchAd}"
+                Command="{Binding WatchAdCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center">
+          <TextBlock AutomationProperties.AutomationId="Invent_Txt_WatchAd"
+                     Text="{loc:Translate WatchAdForDouble}"
+                     TextTrimming="CharacterEllipsis" />
+        </Button>
+
+        <Button Grid.Column="1"
+                AutomationProperties.AutomationId="Invent_Btn_Continue"
+                Classes="Primary"
+                Command="{Binding ContinueCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center">
+          <TextBlock Text="{Binding ContinueButtonText}"
+                     TextTrimming="CharacterEllipsis" />
+        </Button>
+      </Grid>
+
+      <!-- Zwischen-Aufgabe: Nur Weiter-Button -->
+      <Button AutomationProperties.AutomationId="Invent_Btn_NextTask"
+              Classes="Primary"
+              Command="{Binding ContinueCommand}"
+              HorizontalAlignment="Center"
+              MinWidth="200">
+        <Button.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="IsResultShown" />
+            <Binding Path="!IsLastTask" />
+          </MultiBinding>
+        </Button.IsVisible>
+        <TextBlock Text="{Binding ContinueButtonText}"
+                   TextTrimming="CharacterEllipsis"
+                   MaxWidth="200" />
+      </Button>
+
+    </StackPanel>
+
+  </Grid>
+
+</UserControl>

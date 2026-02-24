@@ -332,6 +332,12 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private void Profile()
+    {
+        NavigationRequested?.Invoke("Profile");
+    }
+
+    [RelayCommand]
     private void Deck()
     {
         NavigationRequested?.Invoke("Deck");

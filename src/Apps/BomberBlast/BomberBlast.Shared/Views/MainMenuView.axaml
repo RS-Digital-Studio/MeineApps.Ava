@@ -3,19 +3,14 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
-             xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:models="using:BomberBlast.Models"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.MainMenuView"
              x:DataType="vm:MainMenuViewModel">
 
   <!-- Background -->
-  <Panel Background="{DynamicResource BackgroundBrush}"
-         AutomationProperties.AutomationId="MainMenu_Root">
-    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
-
-    <!-- Hintergrund-Partikel (SkiaSharp Canvas) -->
-    <skia:SKCanvasView x:Name="BgCanvas"
-                       AutomationProperties.AutomationId="MainMenu_BgCanvas" />
+  <Panel AutomationProperties.AutomationId="MainMenu_Root">
+    <controls:MenuBackgroundCanvas />
 
     <Grid RowDefinitions="*,Auto" Margin="24,12,24,80">
 
@@ -357,16 +352,16 @@
         <!-- Profil -->
         <Button Grid.Column="1"
                 Classes="Secondary GameButton"
-                Command="{Binding StatisticsCommand}"
+                Command="{Binding ProfileCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Margin="2,0,2,0"
                 Height="36"
-                AutomationProperties.AutomationId="MainMenu_BtnStatistics">
+                AutomationProperties.AutomationId="MainMenu_BtnProfile">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon Kind="AccountCircle" Width="14" Height="14"
                              Foreground="#00BCD4" />
-            <TextBlock Text="{loc:Translate StatisticsButton}"
+            <TextBlock Text="{loc:Translate ProfileTitle}"
                        FontSize="11"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>

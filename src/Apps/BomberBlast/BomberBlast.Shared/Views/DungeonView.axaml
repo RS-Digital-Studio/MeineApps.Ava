@@ -2,20 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.DungeonView"
              x:DataType="vm:DungeonViewModel">
 
-  <!-- Gradient Background -->
   <Panel>
-    <Border>
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="{DynamicResource GradientStartColor}" Offset="0" />
-          <GradientStop Color="{DynamicResource GradientMidColor}" Offset="0.5" />
-          <GradientStop Color="{DynamicResource GradientEndColor}" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
-    </Border>
+    <controls:MenuBackgroundCanvas />
 
     <Grid RowDefinitions="Auto,*">
 

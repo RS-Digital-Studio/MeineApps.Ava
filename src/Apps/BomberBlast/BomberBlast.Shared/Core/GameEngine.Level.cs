@@ -303,18 +303,33 @@ public partial class GameEngine
     }
 
     /// <summary>
-    /// Shop-Upgrades auf den Spieler anwenden
+    /// Shop-Upgrades auf den Spieler anwenden.
+    /// Im Dungeon: Nur Base-Stats (Shop-Bonuse gelten nicht, Dungeon-Buffs werden separat addiert).
+    /// In Story/Daily/QuickPlay/Survival: Volle Shop-Bonuse.
     /// </summary>
     private void ApplyUpgrades()
     {
-        _player.MaxBombs = _shopService.GetStartBombs();
-        _player.FireRange = _shopService.GetStartFire();
-        _player.HasSpeed = _shopService.HasStartSpeed();
-        _player.Lives = _shopService.GetStartLives();
-        _player.HasShield = _shopService.Upgrades.GetLevel(UpgradeType.ShieldStart) >= 1;
+        if (_isDungeonRun)
+        {
+            // Dungeon: Nur Base-Stats (Shop-Bonuse gelten nicht)
+            _player.MaxBombs = 1;
+            _player.FireRange = 1;
+            _player.HasSpeed = false;
+            _player.Lives = 1;
+            _player.HasShield = false;
+        }
+        else
+        {
+            // Story/Daily/QuickPlay/Survival: Shop-Bonuse anwenden
+            _player.MaxBombs = _shopService.GetStartBombs();
+            _player.FireRange = _shopService.GetStartFire();
+            _player.HasSpeed = _shopService.HasStartSpeed();
+            _player.Lives = _shopService.GetStartLives();
+            _player.HasShield = _shopService.Upgrades.GetLevel(UpgradeType.ShieldStart) >= 1;
+        }
 
-        // Karten-Deck: Shop-Bomben migrieren (einmalig) und Deck laden
-        if (!_cardService.HasMigrated)
+        // Karten-Deck laden (beide Modi - Karten sind separate Mechanik)
+        if (!_isDungeonRun && !_cardService.HasMigrated)
         {
             _cardService.MigrateFromShop(
                 _shopService.HasIceBomb(),

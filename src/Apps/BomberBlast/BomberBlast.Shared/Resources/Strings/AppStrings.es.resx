@@ -2820,4 +2820,40 @@
   <data name="DropSourceDungeon" xml:space="preserve">
     <value>Mazmorra</value>
   </data>
+  <data name="ProfileName" xml:space="preserve">
+    <value>Nombre del jugador</value>
+  </data>
+  <data name="ProfileNameHint" xml:space="preserve">
+    <value>Máx. 16 caracteres</value>
+  </data>
+  <data name="ProfileSave" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="ProfileSaved" xml:space="preserve">
+    <value>¡Guardado!</value>
+  </data>
+  <data name="ProfileStars" xml:space="preserve">
+    <value>Estrellas</value>
+  </data>
+  <data name="ProfileCoins" xml:space="preserve">
+    <value>Monedas</value>
+  </data>
+  <data name="ProfileGems" xml:space="preserve">
+    <value>Gemas</value>
+  </data>
+  <data name="ProfileLeague" xml:space="preserve">
+    <value>Liga</value>
+  </data>
+  <data name="ProfileAchievements" xml:space="preserve">
+    <value>Logros</value>
+  </data>
+  <data name="ProfileSkin" xml:space="preserve">
+    <value>Skin</value>
+  </data>
+  <data name="ProfileFrame" xml:space="preserve">
+    <value>Marco</value>
+  </data>
+  <data name="ProfileNoFrame" xml:space="preserve">
+    <value>Ninguno</value>
+  </data>
 </root>

@@ -4,8 +4,9 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Statische Render-Methoden für Gegner- und PowerUp-Icons in der HelpView.
+/// Statische Render-Methoden für Gegner-, Boss-, PowerUp- und Bomben-Icons.
 /// Gleiche Farben, Formen und Proportionen wie GameRenderer (ohne Animationen).
+/// Verwendet in HelpView, CollectionView und DeckView.
 /// </summary>
 public static class HelpIconRenderer
 {
@@ -665,5 +666,492 @@ public static class HelpIconRenderer
         PowerUpType.PowerBomb => new SKColor(255, 50, 50),
         PowerUpType.Skull => new SKColor(100, 0, 100),
         _ => SKColors.White
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOSS-ICONS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeichnet einen Boss (vereinfacht, ohne Animationen) für CollectionView.
+    /// 5 Boss-Typen mit einzigartigen Formen und Farben aus GameRenderer.Bosses.cs.
+    /// </summary>
+    public static void DrawBoss(SKCanvas canvas, float cx, float cy, float size, BossType type)
+    {
+        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
+        using var strokePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+        switch (type)
+        {
+            case BossType.StoneGolem: DrawStoneGolemIcon(canvas, cx, cy, size, fillPaint, strokePaint); break;
+            case BossType.IceDragon: DrawIceDragonIcon(canvas, cx, cy, size, fillPaint, strokePaint); break;
+            case BossType.FireDemon: DrawFireDemonIcon(canvas, cx, cy, size, fillPaint, strokePaint); break;
+            case BossType.ShadowMaster: DrawShadowMasterIcon(canvas, cx, cy, size, fillPaint, strokePaint); break;
+            case BossType.FinalBoss: DrawFinalBossIcon(canvas, cx, cy, size, fillPaint, strokePaint); break;
+        }
+    }
+
+    /// <summary>StoneGolem: Grauer Felsblock mit roten Augen, eckig, Risse</summary>
+    private static void DrawStoneGolemIcon(SKCanvas canvas, float cx, float cy, float s,
+        SKPaint fill, SKPaint stroke)
+    {
+        float w = s * 0.45f, h = s * 0.5f;
+
+        // Massiger Fels-Körper
+        fill.Color = new SKColor(120, 120, 130);
+        canvas.DrawRoundRect(cx - w, cy - h * 0.8f, w * 2, h * 1.6f, 5, 5, fill);
+
+        // Schulter-Blöcke (breiter als Körper)
+        fill.Color = new SKColor(100, 100, 110);
+        canvas.DrawRoundRect(cx - w * 1.2f, cy - h * 0.5f, w * 0.5f, h * 0.6f, 3, 3, fill);
+        canvas.DrawRoundRect(cx + w * 0.7f, cy - h * 0.5f, w * 0.5f, h * 0.6f, 3, 3, fill);
+
+        // Risse im Stein
+        stroke.Color = new SKColor(80, 80, 85);
+        stroke.StrokeWidth = 1f;
+        canvas.DrawLine(cx - w * 0.3f, cy - h * 0.4f, cx - w * 0.1f, cy + h * 0.2f, stroke);
+        canvas.DrawLine(cx + w * 0.2f, cy - h * 0.2f, cx + w * 0.4f, cy + h * 0.3f, stroke);
+
+        // Rote leuchtende Augen
+        fill.Color = new SKColor(255, 50, 20);
+        float eyeY = cy - h * 0.2f;
+        float eyeSp = w * 0.4f;
+        canvas.DrawOval(cx - eyeSp, eyeY, s * 0.08f, s * 0.05f, fill);
+        canvas.DrawOval(cx + eyeSp, eyeY, s * 0.08f, s * 0.05f, fill);
+        // Glühender Kern
+        fill.Color = new SKColor(255, 200, 100);
+        canvas.DrawCircle(cx - eyeSp, eyeY, s * 0.03f, fill);
+        canvas.DrawCircle(cx + eyeSp, eyeY, s * 0.03f, fill);
+    }
+
+    /// <summary>IceDragon: Hellblauer Drache mit Flügel-Andeutung, Eiskristall-Aura</summary>
+    private static void DrawIceDragonIcon(SKCanvas canvas, float cx, float cy, float s,
+        SKPaint fill, SKPaint stroke)
+    {
+        float r = s * 0.3f;
+
+        // Flügel-Andeutungen (Dreiecke hinter Körper)
+        fill.Color = new SKColor(100, 180, 255, 100);
+        using var wingL = new SKPath();
+        wingL.MoveTo(cx - r * 0.6f, cy - r * 0.2f);
+        wingL.LineTo(cx - r * 1.8f, cy - r * 1.2f);
+        wingL.LineTo(cx - r * 0.3f, cy + r * 0.3f);
+        wingL.Close();
+        canvas.DrawPath(wingL, fill);
+        using var wingR = new SKPath();
+        wingR.MoveTo(cx + r * 0.6f, cy - r * 0.2f);
+        wingR.LineTo(cx + r * 1.8f, cy - r * 1.2f);
+        wingR.LineTo(cx + r * 0.3f, cy + r * 0.3f);
+        wingR.Close();
+        canvas.DrawPath(wingR, fill);
+
+        // Ovaler Drachen-Körper
+        fill.Color = new SKColor(140, 210, 255);
+        canvas.DrawOval(cx, cy, r, r * 1.1f, fill);
+
+        // Bauch-Highlight
+        fill.Color = new SKColor(200, 235, 255, 100);
+        canvas.DrawOval(cx, cy + r * 0.2f, r * 0.5f, r * 0.5f, fill);
+
+        // Schnauze (schmaler unten)
+        fill.Color = new SKColor(120, 190, 240);
+        using var snout = new SKPath();
+        snout.MoveTo(cx - r * 0.3f, cy + r * 0.5f);
+        snout.LineTo(cx, cy + r * 1.2f);
+        snout.LineTo(cx + r * 0.3f, cy + r * 0.5f);
+        snout.Close();
+        canvas.DrawPath(snout, fill);
+
+        // Leuchtende Eisaugen
+        fill.Color = new SKColor(200, 240, 255);
+        float eyeY = cy - r * 0.2f;
+        float eyeSp = r * 0.4f;
+        canvas.DrawCircle(cx - eyeSp, eyeY, s * 0.07f, fill);
+        canvas.DrawCircle(cx + eyeSp, eyeY, s * 0.07f, fill);
+        fill.Color = new SKColor(0, 120, 200);
+        canvas.DrawCircle(cx - eyeSp, eyeY, s * 0.035f, fill);
+        canvas.DrawCircle(cx + eyeSp, eyeY, s * 0.035f, fill);
+    }
+
+    /// <summary>FireDemon: Roter Dämon mit Flammen-Aura, Hörner, glühende Augen</summary>
+    private static void DrawFireDemonIcon(SKCanvas canvas, float cx, float cy, float s,
+        SKPaint fill, SKPaint stroke)
+    {
+        float r = s * 0.32f;
+
+        // Flammen-Aura hinter dem Körper
+        fill.Color = new SKColor(255, 100, 20, 60);
+        for (int i = 0; i < 3; i++)
+        {
+            float flameH = r * (1.6f + i * 0.2f);
+            float flameW = r * (0.9f + i * 0.15f);
+            float offsetX = (i - 1) * r * 0.3f;
+            using var flame = new SKPath();
+            flame.MoveTo(cx + offsetX - flameW * 0.5f, cy + r * 0.4f);
+            flame.QuadTo(cx + offsetX, cy - flameH, cx + offsetX + flameW * 0.5f, cy + r * 0.4f);
+            flame.Close();
+            canvas.DrawPath(flame, fill);
+        }
+
+        // Hörner
+        fill.Color = new SKColor(180, 30, 0);
+        using var hL = new SKPath();
+        hL.MoveTo(cx - r * 0.4f, cy - r * 0.5f);
+        hL.LineTo(cx - r * 0.7f, cy - r * 1.2f);
+        hL.LineTo(cx - r * 0.15f, cy - r * 0.4f);
+        hL.Close();
+        canvas.DrawPath(hL, fill);
+        using var hR = new SKPath();
+        hR.MoveTo(cx + r * 0.4f, cy - r * 0.5f);
+        hR.LineTo(cx + r * 0.7f, cy - r * 1.2f);
+        hR.LineTo(cx + r * 0.15f, cy - r * 0.4f);
+        hR.Close();
+        canvas.DrawPath(hR, fill);
+
+        // Körper
+        fill.Color = new SKColor(200, 30, 0);
+        canvas.DrawOval(cx, cy, r, r * 1.1f, fill);
+
+        // Glühende Augen
+        fill.Color = new SKColor(255, 200, 50);
+        float eyeY = cy - r * 0.2f;
+        float eyeSp = r * 0.4f;
+        canvas.DrawCircle(cx - eyeSp, eyeY, s * 0.08f, fill);
+        canvas.DrawCircle(cx + eyeSp, eyeY, s * 0.08f, fill);
+        fill.Color = new SKColor(255, 50, 0);
+        canvas.DrawCircle(cx - eyeSp, eyeY, s * 0.04f, fill);
+        canvas.DrawCircle(cx + eyeSp, eyeY, s * 0.04f, fill);
+
+        // Breites Maul mit Fangzähnen
+        stroke.Color = new SKColor(120, 0, 0);
+        stroke.StrokeWidth = 1.2f;
+        float my = cy + r * 0.35f;
+        canvas.DrawLine(cx - r * 0.4f, my, cx + r * 0.4f, my, stroke);
+        fill.Color = SKColors.White;
+        canvas.DrawRect(cx - r * 0.25f, my - 1, s * 0.05f, s * 0.07f, fill);
+        canvas.DrawRect(cx + r * 0.15f, my - 1, s * 0.05f, s * 0.07f, fill);
+    }
+
+    /// <summary>ShadowMaster: Lila Kapuzen-Figur, mysteriöse leuchtende Augen, Schatten-Aura</summary>
+    private static void DrawShadowMasterIcon(SKCanvas canvas, float cx, float cy, float s,
+        SKPaint fill, SKPaint stroke)
+    {
+        float r = s * 0.35f;
+
+        // Schatten-Aura
+        fill.Color = new SKColor(100, 0, 180, 40);
+        canvas.DrawCircle(cx, cy, r * 1.4f, fill);
+
+        // Kapuzen-Robe (Tropfenform nach unten)
+        fill.Color = new SKColor(60, 20, 80);
+        using var robe = new SKPath();
+        robe.MoveTo(cx, cy - r * 1.1f);
+        robe.CubicTo(cx + r * 1.3f, cy - r * 0.3f, cx + r, cy + r * 0.8f, cx + r * 0.4f, cy + r);
+        robe.LineTo(cx - r * 0.4f, cy + r);
+        robe.CubicTo(cx - r, cy + r * 0.8f, cx - r * 1.3f, cy - r * 0.3f, cx, cy - r * 1.1f);
+        robe.Close();
+        canvas.DrawPath(robe, fill);
+
+        // Kapuzen-Öffnung (dunkler)
+        fill.Color = new SKColor(30, 5, 50);
+        canvas.DrawOval(cx, cy - r * 0.15f, r * 0.6f, r * 0.5f, fill);
+
+        // Leuchtende lila Augen in der Kapuze
+        fill.Color = new SKColor(200, 100, 255);
+        float eyeY = cy - r * 0.25f;
+        float eyeSp = r * 0.3f;
+        canvas.DrawCircle(cx - eyeSp, eyeY, s * 0.06f, fill);
+        canvas.DrawCircle(cx + eyeSp, eyeY, s * 0.06f, fill);
+        // Heller Kern
+        fill.Color = new SKColor(240, 200, 255);
+        canvas.DrawCircle(cx - eyeSp, eyeY, s * 0.025f, fill);
+        canvas.DrawCircle(cx + eyeSp, eyeY, s * 0.025f, fill);
+    }
+
+    /// <summary>FinalBoss: Schwarzer Panzer mit Goldkrone, alle Elemente vereint</summary>
+    private static void DrawFinalBossIcon(SKCanvas canvas, float cx, float cy, float s,
+        SKPaint fill, SKPaint stroke)
+    {
+        float w = s * 0.42f, h = s * 0.48f;
+
+        // Goldkrone oben
+        fill.Color = new SKColor(255, 215, 0);
+        using var crown = new SKPath();
+        float crownY = cy - h * 0.9f;
+        crown.MoveTo(cx - w * 0.6f, crownY + s * 0.12f);
+        crown.LineTo(cx - w * 0.6f, crownY);
+        crown.LineTo(cx - w * 0.3f, crownY + s * 0.06f);
+        crown.LineTo(cx, crownY - s * 0.04f);
+        crown.LineTo(cx + w * 0.3f, crownY + s * 0.06f);
+        crown.LineTo(cx + w * 0.6f, crownY);
+        crown.LineTo(cx + w * 0.6f, crownY + s * 0.12f);
+        crown.Close();
+        canvas.DrawPath(crown, fill);
+        // Kronjuwelen
+        fill.Color = new SKColor(255, 50, 50);
+        canvas.DrawCircle(cx, crownY + s * 0.03f, s * 0.03f, fill);
+        fill.Color = new SKColor(50, 100, 255);
+        canvas.DrawCircle(cx - w * 0.3f, crownY + s * 0.06f, s * 0.02f, fill);
+        canvas.DrawCircle(cx + w * 0.3f, crownY + s * 0.06f, s * 0.02f, fill);
+
+        // Massiver schwarzer Körper
+        fill.Color = new SKColor(30, 30, 40);
+        canvas.DrawRoundRect(cx - w, cy - h * 0.6f, w * 2, h * 1.4f, 6, 6, fill);
+
+        // Goldene Rüstungs-Details
+        stroke.Color = new SKColor(255, 200, 50);
+        stroke.StrokeWidth = 1.5f;
+        canvas.DrawLine(cx - w * 0.8f, cy - h * 0.2f, cx + w * 0.8f, cy - h * 0.2f, stroke);
+        canvas.DrawLine(cx - w * 0.7f, cy + h * 0.2f, cx + w * 0.7f, cy + h * 0.2f, stroke);
+
+        // Bedrohliche mehrfarbige Augen (Feuer+Eis → Orange+Cyan)
+        fill.Color = new SKColor(255, 150, 30);
+        float eyeY = cy - h * 0.35f;
+        float eyeSp = w * 0.45f;
+        canvas.DrawCircle(cx - eyeSp, eyeY, s * 0.075f, fill);
+        fill.Color = new SKColor(0, 200, 255);
+        canvas.DrawCircle(cx + eyeSp, eyeY, s * 0.075f, fill);
+        // Dunkle Pupillen
+        fill.Color = new SKColor(20, 10, 10);
+        canvas.DrawCircle(cx - eyeSp, eyeY, s * 0.035f, fill);
+        canvas.DrawCircle(cx + eyeSp, eyeY, s * 0.035f, fill);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BOMBEN-KARTEN-ICONS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeichnet eine Bomben-Karte (farbiger Bomben-Kreis + Typ-Symbol + Zündschnur).
+    /// Farben aus GameRenderer.Items.cs.
+    /// </summary>
+    public static void DrawBombCard(SKCanvas canvas, float cx, float cy, float size, BombType type)
+    {
+        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
+        using var strokePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+        var bodyColor = GetBombBodyColor(type);
+        float r = size * 0.3f;
+
+        // Bomben-Körper (farbiger Kreis)
+        fillPaint.Color = bodyColor;
+        canvas.DrawCircle(cx, cy + r * 0.1f, r, fillPaint);
+
+        // Highlight (heller Fleck oben-links)
+        fillPaint.Color = new SKColor(255, 255, 255, 60);
+        canvas.DrawCircle(cx - r * 0.25f, cy - r * 0.2f, r * 0.3f, fillPaint);
+
+        // Zündschnur
+        strokePaint.Color = new SKColor(180, 140, 80);
+        strokePaint.StrokeWidth = size * 0.04f;
+        float fuseBaseY = cy + r * 0.1f - r;
+        using var fusePath = new SKPath();
+        fusePath.MoveTo(cx, fuseBaseY);
+        fusePath.QuadTo(cx + r * 0.3f, fuseBaseY - r * 0.3f, cx + r * 0.15f, fuseBaseY - r * 0.5f);
+        canvas.DrawPath(fusePath, strokePaint);
+
+        // Funke an der Zündschnur-Spitze
+        fillPaint.Color = new SKColor(255, 200, 50);
+        canvas.DrawCircle(cx + r * 0.15f, fuseBaseY - r * 0.5f, size * 0.04f, fillPaint);
+        fillPaint.Color = new SKColor(255, 255, 200);
+        canvas.DrawCircle(cx + r * 0.15f, fuseBaseY - r * 0.5f, size * 0.02f, fillPaint);
+
+        // Typ-Symbol im Bomben-Kreis
+        DrawBombTypeSymbol(canvas, type, cx, cy + r * 0.1f, r * 0.55f, fillPaint, strokePaint);
+    }
+
+    /// <summary>Zeichnet das Typ-Symbol innerhalb des Bomben-Kreises</summary>
+    private static void DrawBombTypeSymbol(SKCanvas canvas, BombType type,
+        float cx, float cy, float size, SKPaint fill, SKPaint stroke)
+    {
+        fill.Color = new SKColor(255, 255, 255, 220);
+        stroke.Color = new SKColor(255, 255, 255, 220);
+        stroke.StrokeWidth = size * 0.15f;
+
+        switch (type)
+        {
+            case BombType.Normal:
+                // Stern-Symbol
+                canvas.DrawCircle(cx, cy, size * 0.3f, fill);
+                break;
+
+            case BombType.Ice:
+                // Schneeflocke (6 Linien)
+                for (int i = 0; i < 3; i++)
+                {
+                    float angle = i * MathF.PI / 3f;
+                    float dx = MathF.Cos(angle) * size * 0.6f;
+                    float dy = MathF.Sin(angle) * size * 0.6f;
+                    canvas.DrawLine(cx - dx, cy - dy, cx + dx, cy + dy, stroke);
+                }
+                break;
+
+            case BombType.Fire:
+                // Flamme (Dreieck)
+                using (var flame = new SKPath())
+                {
+                    flame.MoveTo(cx, cy - size * 0.6f);
+                    flame.LineTo(cx + size * 0.35f, cy + size * 0.4f);
+                    flame.LineTo(cx - size * 0.35f, cy + size * 0.4f);
+                    flame.Close();
+                    canvas.DrawPath(flame, fill);
+                }
+                break;
+
+            case BombType.Sticky:
+                // Tropfen
+                using (var drop = new SKPath())
+                {
+                    drop.MoveTo(cx, cy - size * 0.5f);
+                    drop.QuadTo(cx + size * 0.4f, cy, cx, cy + size * 0.4f);
+                    drop.QuadTo(cx - size * 0.4f, cy, cx, cy - size * 0.5f);
+                    drop.Close();
+                    canvas.DrawPath(drop, fill);
+                }
+                break;
+
+            case BombType.Smoke:
+                // Wolke (3 Kreise)
+                canvas.DrawCircle(cx - size * 0.2f, cy, size * 0.25f, fill);
+                canvas.DrawCircle(cx + size * 0.2f, cy, size * 0.25f, fill);
+                canvas.DrawCircle(cx, cy - size * 0.15f, size * 0.3f, fill);
+                break;
+
+            case BombType.Lightning:
+                // Blitz-Zickzack
+                using (var bolt = new SKPath())
+                {
+                    bolt.MoveTo(cx + size * 0.1f, cy - size * 0.55f);
+                    bolt.LineTo(cx - size * 0.15f, cy);
+                    bolt.LineTo(cx + size * 0.1f, cy);
+                    bolt.LineTo(cx - size * 0.1f, cy + size * 0.55f);
+                    canvas.DrawPath(bolt, stroke);
+                }
+                break;
+
+            case BombType.Gravity:
+                // Magnet-Symbol (U-Form)
+                stroke.StrokeWidth = size * 0.12f;
+                using (var magnet = new SKPath())
+                {
+                    magnet.MoveTo(cx - size * 0.35f, cy - size * 0.3f);
+                    magnet.LineTo(cx - size * 0.35f, cy + size * 0.1f);
+                    magnet.ArcTo(new SKRect(cx - size * 0.35f, cy - size * 0.1f, cx + size * 0.35f, cy + size * 0.5f),
+                        180, -180, false);
+                    magnet.LineTo(cx + size * 0.35f, cy - size * 0.3f);
+                    canvas.DrawPath(magnet, stroke);
+                }
+                break;
+
+            case BombType.Poison:
+                // Totenkopf (klein)
+                canvas.DrawCircle(cx, cy - size * 0.1f, size * 0.3f, fill);
+                fill.Color = GetBombBodyColor(type);
+                canvas.DrawCircle(cx - size * 0.12f, cy - size * 0.15f, size * 0.09f, fill);
+                canvas.DrawCircle(cx + size * 0.12f, cy - size * 0.15f, size * 0.09f, fill);
+                fill.Color = new SKColor(255, 255, 255, 220);
+                break;
+
+            case BombType.TimeWarp:
+                // Uhr-Symbol (Kreis + Zeiger)
+                stroke.StrokeWidth = size * 0.1f;
+                canvas.DrawCircle(cx, cy, size * 0.35f, stroke);
+                canvas.DrawLine(cx, cy, cx, cy - size * 0.25f, stroke);
+                canvas.DrawLine(cx, cy, cx + size * 0.18f, cy + size * 0.05f, stroke);
+                break;
+
+            case BombType.Mirror:
+                // Spiegel-Pfeile (links-rechts)
+                using (var arrL = new SKPath())
+                {
+                    arrL.MoveTo(cx - size * 0.1f, cy);
+                    arrL.LineTo(cx - size * 0.5f, cy);
+                    arrL.LineTo(cx - size * 0.3f, cy - size * 0.2f);
+                    arrL.MoveTo(cx - size * 0.5f, cy);
+                    arrL.LineTo(cx - size * 0.3f, cy + size * 0.2f);
+                    canvas.DrawPath(arrL, stroke);
+                }
+                using (var arrR = new SKPath())
+                {
+                    arrR.MoveTo(cx + size * 0.1f, cy);
+                    arrR.LineTo(cx + size * 0.5f, cy);
+                    arrR.LineTo(cx + size * 0.3f, cy - size * 0.2f);
+                    arrR.MoveTo(cx + size * 0.5f, cy);
+                    arrR.LineTo(cx + size * 0.3f, cy + size * 0.2f);
+                    canvas.DrawPath(arrR, stroke);
+                }
+                break;
+
+            case BombType.Vortex:
+                // Spirale
+                stroke.StrokeWidth = size * 0.1f;
+                using (var spiral = new SKPath())
+                {
+                    for (int i = 0; i < 20; i++)
+                    {
+                        float t = i / 20f * MathF.PI * 3f;
+                        float sr = size * 0.05f + size * 0.45f * (i / 20f);
+                        float sx = cx + MathF.Cos(t) * sr;
+                        float sy = cy + MathF.Sin(t) * sr;
+                        if (i == 0) spiral.MoveTo(sx, sy);
+                        else spiral.LineTo(sx, sy);
+                    }
+                    canvas.DrawPath(spiral, stroke);
+                }
+                break;
+
+            case BombType.Phantom:
+                // Geist-Symbol (transparenter Kreis mit Augen)
+                fill.Color = new SKColor(255, 255, 255, 150);
+                canvas.DrawCircle(cx, cy - size * 0.1f, size * 0.3f, fill);
+                canvas.DrawRect(cx - size * 0.3f, cy, size * 0.6f, size * 0.25f, fill);
+                fill.Color = GetBombBodyColor(type);
+                canvas.DrawCircle(cx - size * 0.12f, cy - size * 0.12f, size * 0.07f, fill);
+                canvas.DrawCircle(cx + size * 0.12f, cy - size * 0.12f, size * 0.07f, fill);
+                fill.Color = new SKColor(255, 255, 255, 220);
+                break;
+
+            case BombType.Nova:
+                // Stern (8 Strahlen)
+                for (int i = 0; i < 8; i++)
+                {
+                    float angle = i * MathF.PI / 4f;
+                    float dx = MathF.Cos(angle) * size * 0.5f;
+                    float dy = MathF.Sin(angle) * size * 0.5f;
+                    stroke.StrokeWidth = (i % 2 == 0) ? size * 0.12f : size * 0.08f;
+                    canvas.DrawLine(cx, cy, cx + dx, cy + dy, stroke);
+                }
+                canvas.DrawCircle(cx, cy, size * 0.15f, fill);
+                break;
+
+            case BombType.BlackHole:
+                // Schwarzes Loch (konzentrische Kreise, dunkler Kern)
+                fill.Color = new SKColor(100, 0, 200, 100);
+                canvas.DrawCircle(cx, cy, size * 0.5f, fill);
+                fill.Color = new SKColor(60, 0, 120, 150);
+                canvas.DrawCircle(cx, cy, size * 0.3f, fill);
+                fill.Color = new SKColor(20, 0, 40);
+                canvas.DrawCircle(cx, cy, size * 0.15f, fill);
+                break;
+        }
+    }
+
+    /// <summary>Farb-Mapping für Bomben-Körper (aus GameRenderer.Items.cs)</summary>
+    private static SKColor GetBombBodyColor(BombType type) => type switch
+    {
+        BombType.Ice => new SKColor(100, 200, 255),
+        BombType.Fire => new SKColor(200, 30, 0),
+        BombType.Sticky => new SKColor(50, 180, 50),
+        BombType.Smoke => new SKColor(140, 140, 140),
+        BombType.Lightning => new SKColor(255, 255, 100),
+        BombType.Gravity => new SKColor(150, 80, 220),
+        BombType.Poison => new SKColor(0, 180, 0),
+        BombType.TimeWarp => new SKColor(80, 130, 255),
+        BombType.Mirror => new SKColor(200, 200, 230),
+        BombType.Vortex => new SKColor(130, 0, 200),
+        BombType.Phantom => new SKColor(180, 200, 240),
+        BombType.Nova => new SKColor(255, 200, 0),
+        BombType.BlackHole => new SKColor(40, 0, 60),
+        _ => new SKColor(60, 60, 60) // Normal
     };
 }

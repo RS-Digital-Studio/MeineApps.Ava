@@ -3,12 +3,12 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.WeeklyChallengeView"
              x:DataType="vm:WeeklyChallengeViewModel">
 
-  <Panel Background="{DynamicResource BackgroundBrush}"
-         AutomationProperties.AutomationId="Missions_Root">
-    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+  <Panel AutomationProperties.AutomationId="Missions_Root">
+    <controls:MenuBackgroundCanvas />
 
     <Grid RowDefinitions="Auto,*" Margin="24,16,24,80">
 

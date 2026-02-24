@@ -241,7 +241,8 @@ public class CollectionService : ICollectionService
                 IsDiscovered = discovered,
                 TimesEncountered = stats?.TimesEncountered ?? 0,
                 TimesDefeated = stats?.TimesDefeated ?? 0,
-                IconName = GetEnemyIcon(type)
+                IconName = GetEnemyIcon(type),
+                EnemyType = type
             });
         }
         return entries;
@@ -265,7 +266,8 @@ public class CollectionService : ICollectionService
                 IsDiscovered = discovered,
                 TimesEncountered = stats?.TimesEncountered ?? 0,
                 TimesDefeated = stats?.TimesDefeated ?? 0,
-                IconName = GetBossIcon(type)
+                IconName = GetBossIcon(type),
+                BossType = type
             });
         }
         return entries;
@@ -293,7 +295,8 @@ public class CollectionService : ICollectionService
                 LoreKey = $"PowerUp{id.ToLowerInvariant()}Lore",
                 IsDiscovered = collected > 0,
                 TimesCollected = collected,
-                IconName = icons[i]
+                IconName = icons[i],
+                PowerUpType = (PowerUpType)i
             });
         }
         return entries;
@@ -313,7 +316,8 @@ public class CollectionService : ICollectionService
                 LoreKey = cardDef.DescriptionKey,
                 IsDiscovered = owned != null,
                 IsOwned = owned != null,
-                IconName = "CardsPlaying"
+                IconName = "CardsPlaying",
+                BombType = cardDef.BombType
             });
         }
         return entries;

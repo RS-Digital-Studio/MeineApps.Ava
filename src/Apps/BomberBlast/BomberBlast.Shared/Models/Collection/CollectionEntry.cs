@@ -1,3 +1,5 @@
+using BomberBlast.Models.Entities;
+
 namespace BomberBlast.Models.Collection;
 
 /// <summary>
@@ -51,6 +53,18 @@ public class CollectionEntry
 
     /// <summary>Material Icon Name für die Anzeige</summary>
     public string IconName { get; init; } = "HelpCircleOutline";
+
+    /// <summary>Gegner-Typ (nur bei Kategorie Enemies)</summary>
+    public EnemyType? EnemyType { get; init; }
+
+    /// <summary>Boss-Typ (nur bei Kategorie Bosses)</summary>
+    public BossType? BossType { get; init; }
+
+    /// <summary>PowerUp-Typ (nur bei Kategorie PowerUps)</summary>
+    public PowerUpType? PowerUpType { get; init; }
+
+    /// <summary>Bomben-Typ (nur bei Kategorie BombCards)</summary>
+    public BombType? BombType { get; init; }
 }
 
 /// <summary>

@@ -1,0 +1,186 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:controls="using:BomberBlast.Controls"
+             x:Class="BomberBlast.Views.ProfileView"
+             x:DataType="vm:ProfileViewModel">
+
+  <Panel AutomationProperties.AutomationId="Profile_Root">
+    <controls:MenuBackgroundCanvas />
+
+    <Grid ColumnDefinitions="280,*" Margin="16,12,16,80">
+
+      <!-- LINKE SPALTE: Spieler-Karte -->
+      <Grid Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,12,0">
+
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="0,0,0,12">
+          <Button Grid.Column="0" Classes="Secondary GameButton"
+                  Command="{Binding GoBackCommand}"
+                  Width="44" Height="44" Padding="0"
+                  HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+            <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Button>
+          <TextBlock Grid.Column="1"
+                     Text="{Binding TitleText}"
+                     FontSize="22" FontWeight="Bold"
+                     Foreground="{DynamicResource AccentBrush}"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Grid>
+
+        <!-- Spieler-Karte -->
+        <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="16" Padding="20" VerticalAlignment="Top">
+          <StackPanel Spacing="16" HorizontalAlignment="Center">
+
+            <!-- Spieler-Avatar (grosses Account-Icon mit Skin-Farbe) -->
+            <Border Width="80" Height="80" CornerRadius="40"
+                    HorizontalAlignment="Center">
+              <Border.Background>
+                <SolidColorBrush Color="{Binding ActiveSkinColor}" Opacity="0.2" />
+              </Border.Background>
+              <mi:MaterialIcon Kind="AccountCircle" Width="56" Height="56"
+                               HorizontalAlignment="Center" VerticalAlignment="Center">
+                <mi:MaterialIcon.Foreground>
+                  <SolidColorBrush Color="{Binding ActiveSkinColor}" />
+                </mi:MaterialIcon.Foreground>
+              </mi:MaterialIcon>
+            </Border>
+
+            <!-- Name-Input -->
+            <StackPanel Spacing="6">
+              <TextBox Text="{Binding PlayerName, Mode=TwoWay}"
+                       MaxLength="16"
+                       Watermark="{Binding NameHintText}"
+                       FontSize="16" FontWeight="SemiBold"
+                       HorizontalAlignment="Stretch" />
+              <TextBlock Text="{Binding NameHintText}"
+                         FontSize="10"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+              <Button Classes="Primary GameButton"
+                      Command="{Binding SaveNameCommand}"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      Height="38">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" Foreground="White" />
+                  <TextBlock Text="{Binding SaveButtonText}" Foreground="White" FontSize="13" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+
+            <!-- Skin + Frame Info -->
+            <Grid ColumnDefinitions="*,*" Margin="0,8,0,0">
+              <StackPanel Grid.Column="0" HorizontalAlignment="Center" Spacing="2">
+                <TextBlock Text="{Binding SkinLabel}" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding ActiveSkinName}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
+                <TextBlock Text="{Binding FrameLabel}" FontSize="10"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding ActiveFrameName}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <!-- RECHTE SPALTE: Stats-Grid -->
+      <StackPanel Grid.Column="1" Spacing="10" VerticalAlignment="Center">
+
+        <!-- Stats-Karten: 2x3 Grid -->
+        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" Margin="0,0,0,0">
+
+          <!-- Sterne -->
+          <Border Grid.Row="0" Grid.Column="0" Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12" Padding="14,12" Margin="0,0,6,6">
+            <StackPanel HorizontalAlignment="Center" Spacing="6">
+              <mi:MaterialIcon Kind="Star" Width="28" Height="28" Foreground="#FFD700"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding StarsText}" FontSize="20" FontWeight="Bold"
+                         Foreground="#FFD700" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding StarsLabel}" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Coins -->
+          <Border Grid.Row="0" Grid.Column="1" Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12" Padding="14,12" Margin="3,0,3,6">
+            <StackPanel HorizontalAlignment="Center" Spacing="6">
+              <mi:MaterialIcon Kind="CircleMultiple" Width="28" Height="28" Foreground="#FFD700"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding CoinsText}" FontSize="20" FontWeight="Bold"
+                         Foreground="#FFD700" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding CoinsLabel}" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Gems -->
+          <Border Grid.Row="0" Grid.Column="2" Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12" Padding="14,12" Margin="6,0,0,6">
+            <StackPanel HorizontalAlignment="Center" Spacing="6">
+              <mi:MaterialIcon Kind="DiamondStone" Width="28" Height="28" Foreground="#E040FB"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding GemsText}" FontSize="20" FontWeight="Bold"
+                         Foreground="#E040FB" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding GemsLabel}" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Liga -->
+          <Border Grid.Row="1" Grid.Column="0" Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12" Padding="14,12" Margin="0,0,6,0">
+            <StackPanel HorizontalAlignment="Center" Spacing="6">
+              <mi:MaterialIcon Kind="Trophy" Width="28" Height="28" Foreground="#00CED1"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding LeagueText}" FontSize="16" FontWeight="Bold"
+                         HorizontalAlignment="Center">
+                <TextBlock.Foreground>
+                  <SolidColorBrush Color="{Binding LeagueColor}" />
+                </TextBlock.Foreground>
+              </TextBlock>
+              <TextBlock Text="{Binding LeagueLabel}" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Achievements -->
+          <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                  Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="12" Padding="14,12" Margin="3,0,0,0">
+            <StackPanel HorizontalAlignment="Center" Spacing="6">
+              <mi:MaterialIcon Kind="Medal" Width="28" Height="28" Foreground="#FFD700"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding AchievementsText}" FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center" />
+              <ProgressBar Value="{Binding AchievementPercent}" Maximum="100"
+                           Foreground="#FFD700" Height="6" CornerRadius="3"
+                           HorizontalAlignment="Stretch" Margin="10,0" />
+              <TextBlock Text="{Binding AchievementsLabel}" FontSize="11"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+        </Grid>
+      </StackPanel>
+    </Grid>
+  </Panel>
+</UserControl>

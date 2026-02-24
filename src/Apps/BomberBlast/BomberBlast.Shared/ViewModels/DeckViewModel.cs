@@ -152,19 +152,19 @@ public partial class DeckViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void EquipToSlot(string slotIndexStr)
+    private void EquipToSlot(int slotIndex)
     {
         if (SelectedCard == null || !SelectedCard.IsOwned) return;
-        if (!int.TryParse(slotIndexStr, out int slotIndex)) return;
+        if (slotIndex < 0 || slotIndex >= CardCatalog.MaxDeckSlots) return;
 
         _cardService.EquipCard(SelectedCard.BombType, slotIndex);
         RefreshAll();
     }
 
     [RelayCommand]
-    private void UnequipSlot(string slotIndexStr)
+    private void UnequipSlot(int slotIndex)
     {
-        if (!int.TryParse(slotIndexStr, out int slotIndex)) return;
+        if (slotIndex < 0 || slotIndex >= CardCatalog.MaxDeckSlots) return;
 
         _cardService.UnequipSlot(slotIndex);
         RefreshAll();

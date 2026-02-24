@@ -3,12 +3,12 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.StatisticsView"
              x:DataType="vm:StatisticsViewModel">
 
-  <Panel Background="{DynamicResource BackgroundBrush}"
-         AutomationProperties.AutomationId="Stats_Root">
-    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+  <Panel AutomationProperties.AutomationId="Stats_Root">
+    <controls:MenuBackgroundCanvas />
 
     <Grid ColumnDefinitions="280,*" Margin="16,12,16,80">
 

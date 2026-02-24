@@ -4,12 +4,12 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.LuckySpinView"
              x:DataType="vm:LuckySpinViewModel">
 
-  <Panel Background="{DynamicResource BackgroundBrush}"
-         AutomationProperties.AutomationId="LuckySpin_Root">
-    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+  <Panel AutomationProperties.AutomationId="LuckySpin_Root">
+    <controls:MenuBackgroundCanvas />
 
     <Grid ColumnDefinitions="*,Auto" Margin="24,16,24,16">
 

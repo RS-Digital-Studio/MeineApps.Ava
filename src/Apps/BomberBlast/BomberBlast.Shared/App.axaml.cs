@@ -190,5 +190,6 @@ public partial class App : Application
         services.AddSingleton<BattlePassViewModel>();
         services.AddSingleton<CollectionViewModel>();
         services.AddSingleton<LeagueViewModel>();
+        services.AddSingleton<ProfileViewModel>();
     }
 }

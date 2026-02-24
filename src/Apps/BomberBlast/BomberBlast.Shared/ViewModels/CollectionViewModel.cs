@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BomberBlast.Models.Collection;
+using BomberBlast.Models.Entities;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
 
@@ -50,6 +51,9 @@ public partial class CollectionViewModel : ObservableObject
     private int _totalProgressPercent;
 
     [ObservableProperty]
+    private int _categoryProgressPercent;
+
+    [ObservableProperty]
     private CollectionEntry? _selectedEntry;
 
     [ObservableProperty]
@@ -66,6 +70,12 @@ public partial class CollectionViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _hasDetailStats;
+
+    [ObservableProperty]
+    private string _detailBadgeColor = "#2196F3";
+
+    [ObservableProperty]
+    private string _detailIconName = "";
 
     // Kategorie-Tab visueller Status (aktiver Tab hervorgehoben)
     [ObservableProperty]
@@ -225,12 +235,17 @@ public partial class CollectionViewModel : ObservableObject
             {
                 Id = entry.Id,
                 Name = "???",
-                IconName = "HelpCircleOutline",
+                IconName = "LockOutline",
                 IsDiscovered = false,
                 StatText = "???",
                 BadgeText = "",
                 BadgeColor = "#808080",
-                Entry = entry
+                Entry = entry,
+                Category = category,
+                EnemyType = entry.EnemyType,
+                BossType = entry.BossType,
+                PowerUpType = entry.PowerUpType,
+                BombType = entry.BombType
             };
         }
 
@@ -247,7 +262,12 @@ public partial class CollectionViewModel : ObservableObject
             StatText = statText,
             BadgeText = badgeText,
             BadgeColor = badgeColor,
-            Entry = entry
+            Entry = entry,
+            Category = category,
+            EnemyType = entry.EnemyType,
+            BossType = entry.BossType,
+            PowerUpType = entry.PowerUpType,
+            BombType = entry.BombType
         };
     }
 
@@ -270,15 +290,27 @@ public partial class CollectionViewModel : ObservableObject
 
     private (string Text, string Color) GetBadgeInfo(CollectionEntry entry, CollectionCategory category)
     {
+        // Kategorie-spezifische Farben für entdeckte Items
         if (category is CollectionCategory.BombCards or CollectionCategory.Cosmetics)
         {
             if (entry.IsOwned)
                 return (_localizationService.GetString("CollectionOwned") ?? "Besessen", "#4CAF50");
-            return (_localizationService.GetString("CollectionNotOwned") ?? "-", "#2196F3");
+            return (_localizationService.GetString("CollectionNotOwned") ?? "-", GetCategoryColor(category));
         }
 
-        return ("", "#2196F3");
+        return ("", GetCategoryColor(category));
     }
+
+    /// <summary>Gibt die kategorie-spezifische Akzentfarbe zurück</summary>
+    private static string GetCategoryColor(CollectionCategory category) => category switch
+    {
+        CollectionCategory.Enemies => "#F44336",   // Rot
+        CollectionCategory.Bosses => "#FFD700",    // Gold
+        CollectionCategory.PowerUps => "#4CAF50",  // Grün
+        CollectionCategory.BombCards => "#2196F3",  // Blau
+        CollectionCategory.Cosmetics => "#9C27B0", // Lila
+        _ => "#2196F3"
+    };
 
     // ═══════════════════════════════════════════════════════════════════════
     // FORTSCHRITT
@@ -294,6 +326,7 @@ public partial class CollectionViewModel : ObservableObject
         var total = _collectionService.GetTotalCount(category);
         var categoryPercent = _collectionService.GetCategoryProgressPercent(category);
 
+        CategoryProgressPercent = categoryPercent;
         ProgressText = $"{discovered}/{total} ({categoryPercent}%)";
 
         TotalProgressPercent = _collectionService.GetTotalProgressPercent();
@@ -314,6 +347,11 @@ public partial class CollectionViewModel : ObservableObject
             if (ms.GemReward > 0)
                 rewardParts.Add($"{ms.GemReward} Gems");
 
+            // Fortschritt zum Meilenstein berechnen (0-100%)
+            var milestoneProgress = ms.PercentRequired > 0
+                ? Math.Min(100, TotalProgressPercent * 100 / ms.PercentRequired)
+                : 100;
+
             Milestones.Add(new MilestoneDisplayItem
             {
                 PercentRequired = ms.PercentRequired,
@@ -323,7 +361,8 @@ public partial class CollectionViewModel : ObservableObject
                 IsClaimed = ms.IsClaimed,
                 IsReached = ms.IsReached,
                 CanClaim = ms.IsReached && !ms.IsClaimed,
-                IsLocked = !ms.IsReached && !ms.IsClaimed
+                IsLocked = !ms.IsReached && !ms.IsClaimed,
+                MilestoneProgressPercent = milestoneProgress
             });
         }
     }
@@ -359,6 +398,8 @@ public partial class CollectionViewModel : ObservableObject
         DetailLore = _localizationService.GetString(item.Entry?.LoreKey ?? "") ?? "";
         DetailStats = BuildDetailStats(item);
         HasDetailStats = !string.IsNullOrEmpty(DetailStats);
+        DetailBadgeColor = item.BadgeColor;
+        DetailIconName = item.IconName;
         ShowDetail = true;
     }
 
@@ -456,12 +497,24 @@ public class CollectionDisplayItem
 {
     public string Id { get; init; } = "";
     public string Name { get; init; } = "";
-    public string IconName { get; init; } = "HelpCircleOutline";
+    public string IconName { get; init; } = "LockOutline";
     public bool IsDiscovered { get; init; }
     public string StatText { get; init; } = "";
     public string BadgeText { get; init; } = "";
     public string BadgeColor { get; init; } = "#808080";
     public CollectionEntry? Entry { get; init; }
+
+    /// <summary>Kategorie für SkiaSharp-Rendering</summary>
+    public CollectionCategory Category { get; init; }
+
+    /// <summary>Typ-Enums für SkiaSharp-Icons (aus CollectionEntry durchgereicht)</summary>
+    public EnemyType? EnemyType { get; init; }
+    public BossType? BossType { get; init; }
+    public PowerUpType? PowerUpType { get; init; }
+    public BombType? BombType { get; init; }
+
+    /// <summary>True wenn SkiaSharp-Icon verwendet werden soll (alles außer Kosmetik)</summary>
+    public bool IsSkiaIcon => Category != CollectionCategory.Cosmetics;
 }
 
 /// <summary>Anzeige-Item für die Meilenstein-Liste</summary>
@@ -475,4 +528,6 @@ public class MilestoneDisplayItem
     public bool IsReached { get; init; }
     public bool CanClaim { get; init; }
     public bool IsLocked { get; init; }
+    /// <summary>Fortschritt zum Erreichen dieses Meilensteins (0-100%)</summary>
+    public int MilestoneProgressPercent { get; init; }
 }

@@ -3,14 +3,15 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:conv="using:BomberBlast.Converters"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:controls="using:BomberBlast.Controls"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="BomberBlast.Views.DeckView"
              x:DataType="vm:DeckViewModel"
              x:Name="Deck_Root">
 
   <!-- Deck-Builder: Premium Landscape 2-Spalten Layout -->
-  <Panel Background="{DynamicResource BackgroundBrush}"
-         AutomationProperties.AutomationId="Deck_Root">
-    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+  <Panel AutomationProperties.AutomationId="Deck_Root">
+    <controls:MenuBackgroundCanvas />
 
     <Grid ColumnDefinitions="*,260" Margin="16,12,16,80">
 
@@ -122,20 +123,16 @@
                         </Border>
                       </Grid>
 
-                      <!-- Mitte: Bomben-Icon -->
+                      <!-- Mitte: Bomben-Icon (SkiaSharp für besessene, Lock für gesperrte) -->
                       <Panel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                         <!-- Gesperrtes Icon -->
                         <mi:MaterialIcon Kind="Lock" Width="28" Height="28"
                                          Foreground="{DynamicResource TextMutedBrush}"
                                          IsVisible="{Binding !IsOwned}" />
-                        <!-- Bomben-Icon -->
-                        <mi:MaterialIcon Kind="{Binding IconName, Converter={x:Static conv:StringToMaterialIconKindConverter.Instance}}"
-                                         Width="30" Height="30"
-                                         IsVisible="{Binding IsOwned}">
-                          <mi:MaterialIcon.Foreground>
-                            <SolidColorBrush Color="{Binding RarityGlowHex}" />
-                          </mi:MaterialIcon.Foreground>
-                        </mi:MaterialIcon>
+                        <!-- SkiaSharp Bomben-Icon -->
+                        <skia:SKCanvasView Width="30" Height="30"
+                                           IsVisible="{Binding IsOwned}"
+                                           Tag="{Binding}" PaintSurface="OnDeckCardPaint" />
                       </Panel>
 
                       <!-- Name -->
@@ -224,16 +221,12 @@
                                      Foreground="{DynamicResource TextSecondaryBrush}" />
                         </Border>
 
-                        <!-- Icon (wenn belegt) -->
-                        <mi:MaterialIcon Grid.Column="1"
-                                         Kind="{Binding IconName, Converter={x:Static conv:StringToMaterialIconKindConverter.Instance}}"
-                                         Width="16" Height="16"
-                                         IsVisible="{Binding !IsEmpty}"
-                                         Margin="0,0,6,0" VerticalAlignment="Center">
-                          <mi:MaterialIcon.Foreground>
-                            <SolidColorBrush Color="{Binding RarityColorHex}" />
-                          </mi:MaterialIcon.Foreground>
-                        </mi:MaterialIcon>
+                        <!-- Icon (wenn belegt) - SkiaSharp Bomben-Icon -->
+                        <skia:SKCanvasView Grid.Column="1"
+                                           Width="16" Height="16"
+                                           IsVisible="{Binding !IsEmpty}"
+                                           Margin="0,0,6,0" VerticalAlignment="Center"
+                                           Tag="{Binding}" PaintSurface="OnDeckSlotPaint" />
 
                         <!-- Karten-Info oder "Leer" -->
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
@@ -277,14 +270,11 @@
 
               <!-- Name + Schließen-Button -->
               <Grid ColumnDefinitions="Auto,*,Auto">
-                <!-- Icon -->
-                <mi:MaterialIcon Grid.Column="0"
-                                 Kind="{Binding SelectedCardIconName, Converter={x:Static conv:StringToMaterialIconKindConverter.Instance}}"
-                                 Width="24" Height="24" Margin="0,0,8,0">
-                  <mi:MaterialIcon.Foreground>
-                    <SolidColorBrush Color="{Binding SelectedCardRarityColor}" />
-                  </mi:MaterialIcon.Foreground>
-                </mi:MaterialIcon>
+                <!-- SkiaSharp Bomben-Icon -->
+                <skia:SKCanvasView Grid.Column="0"
+                                   Width="24" Height="24" Margin="0,0,8,0"
+                                   IsVisible="{Binding HasSelectedCard}"
+                                   PaintSurface="OnDeckDetailPaint" />
                 <!-- Name -->
                 <TextBlock Grid.Column="1"
                            Text="{Binding SelectedCardName}"

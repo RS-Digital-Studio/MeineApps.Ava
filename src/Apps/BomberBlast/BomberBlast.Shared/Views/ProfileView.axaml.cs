@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace BomberBlast.Views;
 
-public partial class MainMenuView : UserControl
+public partial class ProfileView : UserControl
 {
-    public MainMenuView()
+    public ProfileView()
     {
         InitializeComponent();
     }

@@ -3,14 +3,14 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:conv="using:BomberBlast.Converters"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.LeagueView"
              x:DataType="vm:LeagueViewModel"
              x:Name="League_Root">
 
   <!-- Liga-System: Landscape 2-Spalten Layout mit Firebase Online-Rangliste -->
-  <Panel Background="{DynamicResource BackgroundBrush}"
-         AutomationProperties.AutomationId="League_Root">
-    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+  <Panel AutomationProperties.AutomationId="League_Root">
+    <controls:MenuBackgroundCanvas />
 
     <Grid ColumnDefinitions="260,*" Margin="16,12,16,80">
 

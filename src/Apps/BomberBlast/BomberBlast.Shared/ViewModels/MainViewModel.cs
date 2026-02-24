@@ -52,6 +52,7 @@ public partial class MainViewModel : ObservableObject
     public BattlePassViewModel BattlePassVm { get; }
     public CollectionViewModel CollectionVm { get; }
     public LeagueViewModel LeagueVm { get; }
+    public ProfileViewModel ProfileVm { get; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -116,6 +117,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isLeagueActive;
+
+    [ObservableProperty]
+    private bool _isProfileActive;
 
     /// <summary>
     /// Ad-Banner-Spacer: sichtbar in Menü-Views, versteckt im Game-View
@@ -205,6 +209,7 @@ public partial class MainViewModel : ObservableObject
         BattlePassViewModel battlePassVm,
         CollectionViewModel collectionVm,
         LeagueViewModel leagueVm,
+        ProfileViewModel profileVm,
         ILocalizationService localization,
         IAdService adService,
         IPurchaseService purchaseService,
@@ -235,6 +240,7 @@ public partial class MainViewModel : ObservableObject
         BattlePassVm = battlePassVm;
         CollectionVm = collectionVm;
         LeagueVm = leagueVm;
+        ProfileVm = profileVm;
         _localizationService = localization;
         _adService = adService;
         _rewardedAdService = rewardedAdService;
@@ -310,6 +316,7 @@ public partial class MainViewModel : ObservableObject
         WireNavigation(battlePassVm);
         WireNavigation(collectionVm);
         WireNavigation(leagueVm);
+        WireNavigation(profileVm);
 
         // Lucky Spin Game Juice Events weiterleiten
         LuckySpinVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
@@ -334,6 +341,9 @@ public partial class MainViewModel : ObservableObject
         // Battle Pass Game Juice Events weiterleiten
         BattlePassVm.FloatingTextRequested += (_, args) => FloatingTextRequested?.Invoke(args.text, args.type);
         BattlePassVm.CelebrationRequested += (_, _) => CelebrationRequested?.Invoke();
+
+        // Profile Game Juice Events weiterleiten
+        ProfileVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
 
         // Battle Pass Premium-Kauf anfordern
         BattlePassVm.PremiumPurchaseRequested += async () =>
@@ -367,6 +377,7 @@ public partial class MainViewModel : ObservableObject
             BattlePassVm.UpdateLocalizedTexts();
             CollectionVm.UpdateLocalizedTexts();
             LeagueVm.UpdateLocalizedTexts();
+            ProfileVm.UpdateLocalizedTexts();
         };
 
         // Cloud Save: Bei App-Start Cloud-Stand laden (fire-and-forget)
@@ -640,6 +651,12 @@ public partial class MainViewModel : ObservableObject
                 LeagueVm.OnAppearing();
                 break;
 
+            case "Profile":
+                IsProfileActive = true;
+                IsAdBannerVisible = _adService.BannerVisible;
+                ProfileVm.OnAppearing();
+                break;
+
             case "Victory":
                 IsVictoryActive = true;
                 IsAdBannerVisible = _adService.BannerVisible;
@@ -730,6 +747,7 @@ public partial class MainViewModel : ObservableObject
         IsBattlePassActive = false;
         IsCollectionActive = false;
         IsLeagueActive = false;
+        IsProfileActive = false;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -795,7 +813,7 @@ public partial class MainViewModel : ObservableObject
 
         // 5. Alle anderen Sub-Views → zurück zum Hauptmenü
         if (IsGameOverActive || IsLevelSelectActive || IsHighScoresActive ||
-            IsHelpActive || IsShopActive || IsAchievementsActive || IsDailyChallengeActive || IsVictoryActive || IsLuckySpinActive || IsWeeklyChallengeActive || IsStatisticsActive || IsQuickPlayActive || IsDeckActive || IsDungeonActive || IsBattlePassActive || IsCollectionActive || IsLeagueActive)
+            IsHelpActive || IsShopActive || IsAchievementsActive || IsDailyChallengeActive || IsVictoryActive || IsLuckySpinActive || IsWeeklyChallengeActive || IsStatisticsActive || IsQuickPlayActive || IsDeckActive || IsDungeonActive || IsBattlePassActive || IsCollectionActive || IsLeagueActive || IsProfileActive)
         {
             HideAll();
             IsMainMenuActive = true;

@@ -3,14 +3,15 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:conv="using:BomberBlast.Converters"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:controls="using:BomberBlast.Controls"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="BomberBlast.Views.CollectionView"
              x:DataType="vm:CollectionViewModel"
              x:Name="Collection_Root">
 
   <!-- Sammlungs-Album: Landscape 2-Spalten Layout -->
-  <Panel Background="{DynamicResource BackgroundBrush}"
-         AutomationProperties.AutomationId="Collection_Root">
-    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+  <Panel AutomationProperties.AutomationId="Collection_Root">
+    <controls:MenuBackgroundCanvas />
 
     <Grid ColumnDefinitions="260,*" Margin="16,12,16,80">
 
@@ -150,47 +151,53 @@
               <DataTemplate x:DataType="vm:MilestoneDisplayItem">
                 <Border Background="{DynamicResource SurfaceBrush}"
                         CornerRadius="8" Padding="10,8">
-                  <Grid ColumnDefinitions="Auto,*,Auto">
-                    <!-- Prozent-Label -->
-                    <Border Grid.Column="0" CornerRadius="6" Padding="8,4"
-                            Margin="0,0,8,0" VerticalAlignment="Center">
-                      <Border.Background>
-                        <SolidColorBrush Color="#FFD700" Opacity="0.15" />
-                      </Border.Background>
-                      <TextBlock Text="{Binding PercentLabel}"
-                                 FontSize="13" FontWeight="Bold" Foreground="#FFD700" />
-                    </Border>
+                  <StackPanel Spacing="4">
+                    <Grid ColumnDefinitions="Auto,*,Auto">
+                      <!-- Prozent-Label -->
+                      <Border Grid.Column="0" CornerRadius="6" Padding="8,4"
+                              Margin="0,0,8,0" VerticalAlignment="Center">
+                        <Border.Background>
+                          <SolidColorBrush Color="#FFD700" Opacity="0.15" />
+                        </Border.Background>
+                        <TextBlock Text="{Binding PercentLabel}"
+                                   FontSize="13" FontWeight="Bold" Foreground="#FFD700" />
+                      </Border>
 
-                    <!-- Belohnungstext -->
-                    <TextBlock Grid.Column="1"
-                               Text="{Binding RewardText}"
-                               FontSize="12" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               TextTrimming="CharacterEllipsis"
-                               VerticalAlignment="Center" />
+                      <!-- Belohnungstext -->
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding RewardText}"
+                                 FontSize="12" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 TextTrimming="CharacterEllipsis"
+                                 VerticalAlignment="Center" />
 
-                    <!-- Status: Claim / Claimed / Locked -->
-                    <Panel Grid.Column="2" VerticalAlignment="Center" Margin="6,0,0,0">
-                      <!-- Einfordern-Button -->
-                      <Button Classes="Primary GameButton"
-                              IsVisible="{Binding CanClaim}"
-                              Command="{Binding #Collection_Root.DataContext.ClaimMilestoneCommand}"
-                              CommandParameter="{Binding}"
-                              Height="30" Padding="10,0" Background="#22C55E">
-                        <TextBlock Text="{Binding ClaimText}"
-                                   FontSize="11" FontWeight="Bold" Foreground="#1A1A2A" />
-                      </Button>
-                      <!-- Eingefordert -->
-                      <materialIcons:MaterialIcon Kind="CheckCircle"
-                                                  Width="24" Height="24" Foreground="#22C55E"
-                                                  IsVisible="{Binding IsClaimed}" />
-                      <!-- Gesperrt -->
-                      <materialIcons:MaterialIcon Kind="Lock"
-                                                  Width="20" Height="20"
-                                                  Foreground="{DynamicResource TextMutedBrush}"
-                                                  IsVisible="{Binding IsLocked}" />
-                    </Panel>
-                  </Grid>
+                      <!-- Status: Claim / Claimed / Locked -->
+                      <Panel Grid.Column="2" VerticalAlignment="Center" Margin="6,0,0,0">
+                        <!-- Einfordern-Button -->
+                        <Button Classes="Primary GameButton"
+                                IsVisible="{Binding CanClaim}"
+                                Command="{Binding #Collection_Root.DataContext.ClaimMilestoneCommand}"
+                                CommandParameter="{Binding}"
+                                Height="30" Padding="10,0" Background="#22C55E">
+                          <TextBlock Text="{Binding ClaimText}"
+                                     FontSize="11" FontWeight="Bold" Foreground="#1A1A2A" />
+                        </Button>
+                        <!-- Eingefordert -->
+                        <materialIcons:MaterialIcon Kind="CheckCircle"
+                                                    Width="24" Height="24" Foreground="#22C55E"
+                                                    IsVisible="{Binding IsClaimed}" />
+                        <!-- Gesperrt -->
+                        <materialIcons:MaterialIcon Kind="Lock"
+                                                    Width="20" Height="20"
+                                                    Foreground="{DynamicResource TextMutedBrush}"
+                                                    IsVisible="{Binding IsLocked}" />
+                      </Panel>
+                    </Grid>
+                    <!-- Meilenstein-Fortschrittsbalken -->
+                    <ProgressBar Value="{Binding MilestoneProgressPercent}" Maximum="100"
+                                 Foreground="#FFD700" Height="3" CornerRadius="2"
+                                 IsVisible="{Binding IsLocked}" />
+                  </StackPanel>
                 </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
@@ -203,19 +210,24 @@
            ═══════════════════════════════════════════════════════════ -->
       <Grid Grid.Column="1" RowDefinitions="Auto,*">
 
-        <!-- Kategorie-Header -->
+        <!-- Kategorie-Header mit Fortschrittsbalken -->
         <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="10" Padding="12,8" Margin="0,0,0,8">
-          <Grid ColumnDefinitions="*,Auto">
-            <TextBlock Grid.Column="0"
-                       Text="{Binding SelectedCategoryName}"
-                       FontSize="16" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
-            <TextBlock Grid.Column="1"
-                       Text="{Binding ProgressText}"
-                       FontSize="14" FontWeight="SemiBold"
-                       Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
-          </Grid>
+          <StackPanel Spacing="6">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0"
+                         Text="{Binding SelectedCategoryName}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+              <TextBlock Grid.Column="1"
+                         Text="{Binding ProgressText}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource AccentBrush}" VerticalAlignment="Center" />
+            </Grid>
+            <!-- Kategorie-Fortschrittsbalken -->
+            <ProgressBar Value="{Binding CategoryProgressPercent}" Maximum="100"
+                         Foreground="{DynamicResource AccentBrush}" Height="4" CornerRadius="2" />
+          </StackPanel>
         </Border>
 
         <!-- Items + Detail -->
@@ -237,31 +249,38 @@
                           IsEnabled="{Binding IsDiscovered}"
                           Command="{Binding #Collection_Root.DataContext.SelectItemCommand}"
                           CommandParameter="{Binding}">
-                    <Border Width="80" Height="90" CornerRadius="8" Padding="6"
-                            BorderThickness="2"
+                    <Border Width="100" Height="115" CornerRadius="10" Padding="6"
+                            BorderThickness="3"
                             Opacity="{Binding IsDiscovered, Converter={x:Static conv:BoolToOpacityConverter.Instance}}">
                       <Border.Background>
-                        <SolidColorBrush Color="#FFFFFF" Opacity="0.08" />
+                        <SolidColorBrush Color="{Binding IsDiscovered, Converter={x:Static conv:BoolToCardBackgroundConverter.Instance}}" Opacity="0.10" />
                       </Border.Background>
                       <Border.BorderBrush>
                         <SolidColorBrush Color="{Binding BadgeColor}" />
                       </Border.BorderBrush>
                       <Grid RowDefinitions="*,Auto,Auto">
-                        <!-- Icon -->
-                        <materialIcons:MaterialIcon Grid.Row="0"
-                                                    Kind="{Binding IconName, Converter={x:Static conv:StringToMaterialIconKindConverter.Instance}}"
-                                                    Width="28" Height="28"
-                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                    Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <!-- Icon: SkiaSharp für Gegner/Bosse/PowerUps/Bomben, MaterialIcon für Kosmetik/Gesperrt -->
+                        <Panel Grid.Row="0" Width="34" Height="34"
+                               HorizontalAlignment="Center" VerticalAlignment="Center">
+                          <!-- SkiaSharp-Icon (entdeckte Nicht-Kosmetik) -->
+                          <skia:SKCanvasView Width="34" Height="34"
+                              IsVisible="{Binding IsSkiaIcon}"
+                              Tag="{Binding}" PaintSurface="OnCollectionItemPaint" />
+                          <!-- MaterialIcon Fallback (Kosmetik + nicht-entdeckte Items) -->
+                          <materialIcons:MaterialIcon Width="34" Height="34"
+                              IsVisible="{Binding !IsSkiaIcon}"
+                              Kind="{Binding IconName, Converter={x:Static conv:StringToMaterialIconKindConverter.Instance}}"
+                              Foreground="{Binding BadgeColor, Converter={x:Static conv:StringToColorBrushConverter.Instance}}" />
+                        </Panel>
 
                         <!-- Name -->
                         <TextBlock Grid.Row="1"
                                    Text="{Binding Name}"
-                                   FontSize="10" FontWeight="SemiBold"
+                                   FontSize="11" FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextPrimaryBrush}"
                                    TextTrimming="CharacterEllipsis"
                                    TextAlignment="Center" MaxLines="1"
-                                   HorizontalAlignment="Center" Margin="0,2,0,0" />
+                                   HorizontalAlignment="Center" Margin="0,3,0,0" />
 
                         <!-- Stat-Text -->
                         <TextBlock Grid.Row="2"
@@ -278,13 +297,15 @@
             </ItemsControl>
           </ScrollViewer>
 
-          <!-- Detail-Panel (Overlay, unten) -->
+          <!-- Detail-Panel (Overlay, unten) mit farbigem Rand -->
           <Border IsVisible="{Binding ShowDetail}"
                   Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="16"
+                  CornerRadius="12" Padding="0"
                   Margin="20" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
-                  BoxShadow="0 -4 16 0 #40000000">
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+                  BoxShadow="0 -4 16 0 #40000000"
+                  BorderThickness="2"
+                  BorderBrush="{Binding DetailBadgeColor, Converter={x:Static conv:StringToColorBrushConverter.Instance}}">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="16">
               <!-- Schließen-Button -->
               <Button Grid.Row="0" Classes="Text"
                       Command="{Binding CloseDetailCommand}"
@@ -293,12 +314,26 @@
                                             Foreground="{DynamicResource TextMutedBrush}" />
               </Button>
 
-              <!-- Name -->
-              <TextBlock Grid.Row="1"
-                         Text="{Binding DetailName}"
-                         FontSize="18" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}"
-                         Margin="0,0,0,6" />
+              <!-- Icon + Name -->
+              <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,0,0,6">
+                <Border Width="40" Height="40" CornerRadius="8"
+                        VerticalAlignment="Center">
+                  <Border.Background>
+                    <SolidColorBrush Color="{Binding DetailBadgeColor}" Opacity="0.15" />
+                  </Border.Background>
+                  <Panel>
+                    <!-- SkiaSharp Detail-Icon -->
+                    <skia:SKCanvasView Width="36" Height="36"
+                        IsVisible="{Binding ShowDetail}"
+                        Tag="{Binding SelectedEntry}"
+                        PaintSurface="OnCollectionDetailPaint" />
+                  </Panel>
+                </Border>
+                <TextBlock Text="{Binding DetailName}"
+                           FontSize="18" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
 
               <!-- Lore-Text -->
               <TextBlock Grid.Row="2"

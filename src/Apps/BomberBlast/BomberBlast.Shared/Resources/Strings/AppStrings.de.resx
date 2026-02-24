@@ -3170,4 +3170,40 @@
   <data name="DropSourceDungeon" xml:space="preserve">
     <value>Dungeon</value>
   </data>
+  <data name="ProfileName" xml:space="preserve">
+    <value>Spielername</value>
+  </data>
+  <data name="ProfileNameHint" xml:space="preserve">
+    <value>Max. 16 Zeichen</value>
+  </data>
+  <data name="ProfileSave" xml:space="preserve">
+    <value>Speichern</value>
+  </data>
+  <data name="ProfileSaved" xml:space="preserve">
+    <value>Gespeichert!</value>
+  </data>
+  <data name="ProfileStars" xml:space="preserve">
+    <value>Sterne</value>
+  </data>
+  <data name="ProfileCoins" xml:space="preserve">
+    <value>Münzen</value>
+  </data>
+  <data name="ProfileGems" xml:space="preserve">
+    <value>Edelsteine</value>
+  </data>
+  <data name="ProfileLeague" xml:space="preserve">
+    <value>Liga</value>
+  </data>
+  <data name="ProfileAchievements" xml:space="preserve">
+    <value>Erfolge</value>
+  </data>
+  <data name="ProfileSkin" xml:space="preserve">
+    <value>Skin</value>
+  </data>
+  <data name="ProfileFrame" xml:space="preserve">
+    <value>Rahmen</value>
+  </data>
+  <data name="ProfileNoFrame" xml:space="preserve">
+    <value>Kein</value>
+  </data>
 </root>

@@ -148,6 +148,12 @@
               AutomationProperties.AutomationId="MainView_PageLeague">
         <views:LeagueView DataContext="{Binding LeagueVm}" />
       </Border>
+
+      <!-- Profil -->
+      <Border Classes="PageView" x:Name="ProfileBorder"
+              AutomationProperties.AutomationId="MainView_PageProfile">
+        <views:ProfileView DataContext="{Binding ProfileVm}" />
+      </Border>
     </Panel>
 
     <!-- Row 1: Ad-Banner Spacer (64dp fuer adaptive Banner, sichtbar wenn aktiv und nicht im Spiel) -->

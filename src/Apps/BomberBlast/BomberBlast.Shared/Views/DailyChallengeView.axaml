@@ -2,12 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.DailyChallengeView"
              x:DataType="vm:DailyChallengeViewModel">
 
-  <Panel Background="{DynamicResource BackgroundBrush}"
-         AutomationProperties.AutomationId="DailyChallenge_Root">
-    <Border Background="{DynamicResource SurfaceBrush}" Opacity="0.3" />
+  <Panel AutomationProperties.AutomationId="DailyChallenge_Root">
+    <controls:MenuBackgroundCanvas />
 
     <Grid RowDefinitions="Auto,*,Auto" Margin="24,16,24,80">
 

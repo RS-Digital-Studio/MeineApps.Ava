@@ -36,7 +36,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - 12 Textur-Funktionen: DrawGrassBlades, DrawCracks, DrawSandGrain, DrawBrickPattern, DrawWoodGrain, DrawIceCrystals, DrawMossPatches, DrawMetalRivets, DrawCoralGrowth, DrawEmberCracks, DrawMarbleVeins, DrawCloudWisps
 - Verwendet in GameRenderer.Grid.cs für 10 Welt-spezifische Boden/Wand/Block-Texturen
 
-### SkiaSharp Zusatz-Visualisierungen (13 Renderer)
+### SkiaSharp Zusatz-Visualisierungen (14 Renderer)
 | Renderer | Beschreibung |
 |----------|-------------|
 | GameRenderer | Haupt-Spiel-Rendering (Grid, Entities, Explosions, HUD, Boss-Rendering mit HP-Bar + Attack-Telegraph) |
@@ -45,13 +45,14 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | ScreenShake | Explosions-Shake (3px) + Player-Death-Shake (5px) |
 | GameFloatingTextSystem | Score-Popups, Combo-Text, PowerUp-Text (Struct-Pool 20 max) |
 | TutorialOverlay | 4-Rechteck-Dimming + Text-Bubble + Highlight |
-| HelpIconRenderer | Statische Enemy/PowerUp Icons für HelpView |
+| HelpIconRenderer | Statische Enemy/Boss/PowerUp/BombCard Icons für HelpView, CollectionView, DeckView. DrawEnemy (12 Typen), DrawBoss (5 Typen), DrawPowerUp (12 Typen), DrawBombCard (14 Typen mit Farben aus GameRenderer.Items.cs) |
 | HudVisualization | Animierter Score-Counter (Ziffern rollen hoch) + pulsierender Timer (<30s) + PowerUp-Icons mit Glow |
 | LevelSelectVisualization | Level-Thumbnails mit 10 Welt-Farben + Welt-spezifische Mini-Muster + Gold-Shimmer Sterne + Lock-Overlay |
 | AchievementIconRenderer | 5 Kategorie-Farben, Trophy bei freigeschaltet, Schloss+Fortschrittsring bei gesperrt |
 | GameOverVisualization | Großer Score mit Glow + Score-Breakdown Balken + Medaillen (Gold/Silber/Bronze) + Coin-Counter |
 | DiscoveryOverlay | Erstentdeckungs-Hint (Gold-Rahmen, NEU!-Badge, Titel+Beschreibung, Fade-In+Scale-Bounce, Auto-Dismiss 5s) |
 | ShopIconRenderer | 12 prozedurale Shop-Upgrade-Icons (Bombe/Flamme/Blitz/Herz/Stern/Uhr/Schild/Münzen/Kleeblatt/Eis/Feuer/Schleim), gepoolte SKPaint |
+| MenuBackgroundRenderer | Animierter Menü-Hintergrund: Gradient (#2D2D48→#293A56), Grid-Linien (48px), 8 Bomben-Silhouetten, 25 Funken-Partikel, 6 Flammen-Wisps, struct-basiert, gepoolte SKPaint. Aufgehellte Palette (Grid α20, Spark α80, Flammen α50) |
 
 ### Input-Handler (3x)
 - **FloatingJoystick**: Touch-basiert, zwei Modi: Floating (erscheint wo getippt, Standard) + Fixed (immer sichtbar unten links). Bomb-Button weiter in die Spielfläche gerückt (80px/60px Offset statt 30px/20px)
@@ -86,6 +87,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **ShieldStart**: Spieler startet mit Schutzschild (absorbiert 1 Gegnerkontakt, Cyan-Glow)
 - **CoinBonus**: +25%/+50% extra Coins pro Level
 - **PowerUpLuck**: 1/2 zusaetzliche zufaellige PowerUps pro Level
+- **Dungeon-Trennung**: Shop-Upgrades gelten NUR in Story/Daily/QuickPlay/Survival. Im Dungeon: Base-Stats (1 Bombe, 1 Feuer, kein Speed/Shield), dann Dungeon-Buffs addiert. Karten-Deck wird in beiden Modi geladen.
 
 ### Level-Gating (ProgressService)
 - 100 Story-Level in 10 Welten (World 1-10 a 10 Level)
@@ -157,7 +159,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Touch-Koordinaten**: Proportionale Skalierung (Render-Bounds / Control-Bounds Ratio) fuer DPI-korrektes Mapping
 - **Invalidierung**: IMMER `InvalidateSurface()` (InvalidateVisual feuert NICHT PaintSurface bei SKCanvasView)
 - **Keyboard Input**: Window-Level KeyDown/KeyUp in MainWindow.axaml.cs → GameViewModel
-- **DI**: 21 ViewModels (alle Singleton), 26 Services, GameEngine + GameRenderer in App.axaml.cs (GameRenderer + IAchievementService + IDiscoveryService + IPlayGamesService + IWeeklyChallengeService + IDailyMissionService + ICardService + IDungeonService + ILeagueService per DI in GameEngine injiziert). IFirebaseService als Singleton registriert (LeagueService nimmt es per Constructor). Lazy-Injection: 4 Services (BattlePass, Card, League, DailyMission) erhalten IAchievementService via SetAchievementService() nach ServiceProvider-Build
+- **DI**: 22 ViewModels (alle Singleton), 26 Services, GameEngine + GameRenderer in App.axaml.cs (GameRenderer + IAchievementService + IDiscoveryService + IPlayGamesService + IWeeklyChallengeService + IDailyMissionService + ICardService + IDungeonService + ILeagueService per DI in GameEngine injiziert). IFirebaseService als Singleton registriert (LeagueService nimmt es per Constructor). Lazy-Injection: 4 Services (BattlePass, Card, League, DailyMission) erhalten IAchievementService via SetAchievementService() nach ServiceProvider-Build. Lazy-Injection: GemService + CardService erhalten IWeeklyChallengeService + IDailyMissionService via SetMissionServices()
 - **GameEngine Partial Classes**: GameEngine.cs (Kern), .Collision.cs, .Explosion.cs, .Level.cs, .Render.cs
 - **12 PowerUp-Typen**: BombUp, Fire, Speed, Wallpass, Detonator, Bombpass, Flamepass, Mystery, Kick, LineBomb, PowerBomb, Skull
 - **PowerUp-Freischaltung**: Level-basiert via `GetUnlockLevel()` Extension. Story-Mode filtert gesperrte PowerUps. DailyChallenge: Alle verfügbar
@@ -170,6 +172,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **AI Danger-Zone**: Einmal pro Frame vorberechnet, iterative Kettenreaktions-Erkennung (max 5 Durchläufe)
 - **Achievements**: IAchievementService in GameEngine injiziert, automatische Prüfung bei Level-Complete/Kill/Wave/Stars
 - **ExplosionCell**: Struct statt Class (weniger Heap-Allokationen)
+- **CollectionView/DeckView SkiaSharp-Icons**: Echte Gegner/Boss/PowerUp/Bomben-Grafiken statt generischer MaterialIcons. SKCanvasView in AXAML mit PaintSurface-Handler im Code-Behind. CollectionEntry hat optionale Typ-Enums (EnemyType?, BossType?, PowerUpType?, BombType?) die in CollectionService Build-Methoden gesetzt und über CollectionDisplayItem durchgereicht werden. Kosmetik nutzt weiter MaterialIcons
 - **GetTotalStars**: Gecacht in ProgressService, invalidiert bei Score-Änderung
 - **Score-Multiplikator**: Nur auf Level-Score angewendet (nicht kumulierten Gesamt-Score)
 - **Timer**: Läuft in Echtzeit (`realDeltaTime`), nicht durch Slow-Motion beeinflusst
@@ -240,7 +243,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Shop-Kauf-Feedback**: PurchaseSucceeded → Confetti + FloatingText, InsufficientFunds → roter FloatingText
 - **Achievement-Toast**: AchievementUnlocked Event → goldener FloatingText "Achievement: [Name]!"
 - **Coin-Counter-Animation**: GameOverView zählt Coins von 0 hoch (~30 Frames, DispatcherTimer)
-- **MainMenu-Hintergrund**: SKCanvasView Partikelsystem (25 farbige Punkte, langsam aufsteigend, ~30fps)
+- **Menü-Hintergründe**: MenuBackgroundCanvas (wiederverwendbar, ~30fps) mit Bomberman-thematischem Hintergrund (Gradient, Grid, Bomben-Silhouetten, Funken-Partikel, Flammen-Wisps) in 12 Menü-Views
 - **LevelSelect Welt-Farben**: Level-Buttons farblich nach Welt unterschieden (Forest grün, Industrial grau, etc.)
 - **Tutorial-Replay**: "Tutorial wiederholen" Button in HelpView (ITutorialService.Reset + Level 1 starten)
 
@@ -632,8 +635,34 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
   - DeckViewModel: card_upgrade
   - LeagueViewModel: league_season_reward
 
+### Animierter Menü-Hintergrund (MenuBackgroundCanvas)
+- **MenuBackgroundRenderer** (`Graphics/MenuBackgroundRenderer.cs`): Statischer Renderer mit 5 Schichten (Gradient, Grid, Bomben-Silhouetten, Funken, Flammen)
+  - Struct-basierte Partikel: BombSilhouette (8), SparkParticle (25), FlameWisp (6)
+  - Gepoolte SKPaint/SKMaskFilter, keine per-Frame Allokationen
+  - Deterministisch via `Initialize(int seed)`, Gradient #1A1A2E→#16213E
+- **MenuBackgroundCanvas** (`Controls/MenuBackgroundCanvas.cs`): Wiederverwendbares UserControl (SKCanvasView + DispatcherTimer ~30fps)
+  - Auto-Start/Stop via AttachedToVisualTree/DetachedFromVisualTree
+  - IsHitTestVisible=false (reiner Hintergrund), `canvas.LocalClipBounds` für DPI-korrekte Bounds
+- **12 Views mit animiertem Hintergrund**: MainMenuView, CollectionView, DeckView, LeagueView, DailyChallengeView, WeeklyChallengeView, LuckySpinView, StatisticsView, BattlePassView, DungeonView, QuickPlayView, HighScoresView
+  - Ersetzt flache `SurfaceBrush Opacity=0.3` Hintergründe durch `<controls:MenuBackgroundCanvas />`
+
+### Profil-Seite
+- **ProfileViewModel** (`ViewModels/ProfileViewModel.cs`): 7 injizierte Services (ILeagueService, ICustomizationService, IProgressService, ICoinService, IGemService, IAchievementService, ILocalizationService)
+  - PlayerName editierbar (max 16 Zeichen, LeagueService.SetPlayerName)
+  - Aktiver Skin (Name, Farbe aus SkinDefinition.PrimaryColor) + Frame
+  - Stats: Sterne, Coins, Gems, Liga-Tier mit Farbe, Achievement-Prozent
+  - Commands: GoBack, SaveName
+- **ProfileView** (`Views/ProfileView.axaml`): Landscape 2-Spalten (links 280px Spieler-Karte mit Avatar/Name/Save, rechts 2x3 Stats-Grid)
+  - MenuBackgroundCanvas als Hintergrund
+- **Navigation**: MainMenu → Profile → ".." (zurück), Statistik-Button durch Profil-Button ersetzt (AccountCircle Icon)
+- **MainViewModel**: ProfileVm Property, IsProfileActive, case "Profile" in NavigateTo, HandleBackPressed
+- **MainView**: ProfileBorder mit CSS-Klassen-Transition
+- **RESX-Keys**: 12 Keys in 6 Sprachen (ProfileName/Hint/Save/Saved/Stars/Coins/Gems/League/Achievements/Skin/Frame/NoFrame)
+- **DI**: ProfileViewModel als Singleton registriert (22 VMs total)
+
 ## Changelog Highlights
 
+- **23.02.2026 (23)**: Menü-Hintergründe + Sammlung + Profil + Deck-Fix: (1) Deck-View Crash gefixt: EquipToSlot/UnequipSlot Signatur von string→int (XAML übergibt Int via CommandParameter). (2) MenuBackgroundRenderer + MenuBackgroundCanvas erstellt: Animierter Bomberman-Hintergrund (Gradient, Grid, 8 Bomben-Silhouetten, 25 Funken, 6 Flammen-Wisps), struct-basiert, ~30fps. (3) Animierten Hintergrund in 12 Views eingebaut (MainMenu, Collection, Deck, League, DailyChallenge, WeeklyChallenge, LuckySpin, Statistics, BattlePass, Dungeon, QuickPlay, HighScores). MainMenuView alte Partikel-Code (~125 Zeilen) entfernt. (4) CollectionView visuell aufgewertet: Karten 80x90→100x115px, Raritäts-Border mit Glow (Enemies=#F44336, Bosses=#FFD700, PowerUps=#4CAF50, Cards=#2196F3, Cosmetics=#9C27B0), LockOutline statt HelpCircleOutline für nicht-entdeckte Items, Kategorie-Header mit ProgressBar, Meilenstein-Fortschrittsbalken, erweitertes Detail-Panel mit farbigem Border. 2 neue Converter: StringToColorBrushConverter, BoolToCardBackgroundConverter. CategoryProgressPercent + MilestoneProgressPercent Properties. (5) ProfileView + ProfileViewModel erstellt: Spielername editieren (max 16 Zeichen, LeagueService), Stats-Übersicht (Sterne/Coins/Gems/Liga/Achievements), Skin/Frame-Anzeige. Landscape 2-Spalten Layout. MainMenu Statistik→Profil-Button umgestellt. 12 neue RESX-Keys in 6 Sprachen. DI: ProfileViewModel registriert (22 VMs, 26 Services).
 - **22.02.2026 (22)**: Liga-System auf Firebase umgebaut: (1) IFirebaseService/FirebaseService erstellt (Anonymous Auth + REST API CRUD, identisches Pattern wie HandwerkerImperium). (2) Firebase-Models (FirebaseAuthResponse, FirebaseTokenResponse, FirebaseLeagueEntry) in Models/Firebase/. (3) ILeagueService komplett überarbeitet: +IsOnline, +IsLoading, +PlayerName, +SetPlayerName(), +RefreshLeaderboardAsync(), +InitializeOnlineAsync(), +LeaderboardUpdated Event, LeagueLeaderboardEntry +IsRealPlayer. (4) LeagueService komplett neugeschrieben: Local-First mit Firebase-Sync, deterministische Saisons (Epoche 24.02.2026), NPC-Backfill auf 20 Einträge, Debounced Firebase-Push (3s), Firebase-Pfad `league/s{saison}/{tier}/{uid}`. (5) LeagueViewModel erweitert: IsLoading/IsOnline/PlayerName Properties, RefreshLeaderboardCommand (async), Firebase-Init in OnAppearing. (6) LeagueView.axaml: Online/Offline-Indikator (CloudCheck grün/CloudOffOutline rot), Refresh-Button, Lade-Indikator, Echtpsieler-Cyan-Punkt. (7) App.axaml.cs: IFirebaseService als Singleton registriert. Firebase-Projekt bomberblast-league (europe-west1) konfiguriert.
 - **22.02.2026 (21)**: Deck-Builder UI+Mechanik Redesign: DeckView komplett überarbeitet nach HandwerkerImperium-Muster. (1) Crash-Fix: ReflectionBinding `$parent[ItemsControl]` → `#Deck_Root.DataContext` Pattern (identisch CollectionView-Fix). (2) Alle 13 Karten sichtbar (nicht nur besessene): Unbesessene als gesperrt mit Lock-Icon + "???" Name + Drop-Quellen-Info. (3) BombType→MaterialIcon-Mapping: 13 individuelle Icons (Snowflake, Fire, Water, WeatherFog, LightningBolt, Magnet, Skull, ClockFast, FlipHorizontal, Tornado, Ghost, Flare, CircleSlice8). (4) Premium-Karten-Design: 100x120px Tiles, Raritäts-Border + Glow-Icon-Farbe, Level-Farben (Bronze/Silber/Gold), Upgrade-Badge (grün) + Equipped-Badge (blau). (5) Sammlungs-Fortschrittsbalken im Header. (6) Erweitertes Detail-Panel (260px): Rarität-Badge, Stärke-Multiplikator (1.0x/1.2x/1.4x), Upgrade-Fortschrittsbalken, Fundorte je Rarität (Level 60%/Boss/Dungeon). (7) Sortierung Legendary→Common. (8) 8 neue RESX-Keys in 6 Sprachen (DeckLabel, CardStrength, CardDropSource, CardUpgradeLabel, CardNotOwned, DropSourceLevel, DropSourceBoss, DropSourceDungeon).
 - **21.02.2026 (20)**: Arcade-Modus komplett entfernt: `_isArcadeMode`, `_arcadeWave`, `ArcadeWave`, `IsArcadeMode`, `StartArcadeModeAsync()`, `OnArcadeWaveReached()`, `HighestArcadeWave` entfernt. `GetStartLives()` Parameter `isArcade` entfernt. `PlayGamesIds.LeaderboardArcadeHighscore` entfernt. `IBattlePassService.ArcadeWave10Plus` XP-Quelle entfernt. LevelGenerator: `GenerateArcadeLevel()`, `ConfigureArcadeEnemies()`, `ConfigureArcadePowerUps()` entfernt. 4 Arcade-Achievements entfernt (arcade_10/25/50/100), Achievement-Anzahl 70→66. `AchievementCategory.Arcade` → `AchievementCategory.Challenge` umbenannt (Survival-Achievements). MainMenu: Arcade-Button + HighScores-Button entfernt, jetzt 2-Spalten Layout (Survival + QuickPlay). Utility-Bar: 6→5 Spalten (ohne HighScores). HighScoresView: PlayArcadeToScore entfernt. StatisticsView: HighestWave-Anzeige entfernt. GameOverViewModel: IsArcadeMode Property entfernt.

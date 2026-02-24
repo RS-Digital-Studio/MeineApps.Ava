@@ -31,6 +31,7 @@ public partial class MainView : UserControl
     private Border? _battlePassBorder;
     private Border? _collectionBorder;
     private Border? _leagueBorder;
+    private Border? _profileBorder;
 
     public MainView()
     {
@@ -63,6 +64,7 @@ public partial class MainView : UserControl
         _battlePassBorder = this.FindControl<Border>("BattlePassBorder");
         _collectionBorder = this.FindControl<Border>("CollectionBorder");
         _leagueBorder = this.FindControl<Border>("LeagueBorder");
+        _profileBorder = this.FindControl<Border>("ProfileBorder");
 
         // Initial: MainMenu aktiv setzen
         UpdateActiveClasses();
@@ -126,6 +128,7 @@ public partial class MainView : UserControl
         SetActiveClass(_battlePassBorder, _vm.IsBattlePassActive);
         SetActiveClass(_collectionBorder, _vm.IsCollectionActive);
         SetActiveClass(_leagueBorder, _vm.IsLeagueActive);
+        SetActiveClass(_profileBorder, _vm.IsProfileActive);
     }
 
     private static void SetActiveClass(Border? border, bool isActive)

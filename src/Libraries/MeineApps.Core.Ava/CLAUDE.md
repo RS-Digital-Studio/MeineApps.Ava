@@ -26,7 +26,8 @@ MeineApps.Core.Ava/
 │   ├── BoolConverters.cs
 │   ├── StringConverters.cs
 │   ├── NumberConverters.cs
-│   └── DateTimeConverters.cs
+│   ├── DateTimeConverters.cs
+│   └── ColorConverters.cs
 └── Behaviors/
     ├── TapScaleBehavior.cs
     └── FadeInBehavior.cs
@@ -114,6 +115,7 @@ var val = _prefs.Get<string>("key", "default");
 - `DateTimeFormatConverter` - DateTime → "dd.MM.yyyy"
 - `RelativeTimeConverter` - DateTime → "2 hours ago"
 - `StringTruncateConverter` - "Long text..." → "Long..."
+- `StringToColorBrushConverter` - "#RRGGBB" → SolidColorBrush (Gray Fallback, statische `Instance` Property)
 
 ## Behaviors
 

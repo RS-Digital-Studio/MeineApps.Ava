@@ -14,6 +14,11 @@
     <Setter Property="Cursor" Value="Hand" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
+    <!-- Initialer RenderTransform: TransformOperationsTransition braucht einen definierten
+         Ausgangswert, sonst crasht Avalonia auf manchen Android-Geräten bei OnAttachedToLogicalTree
+         (null → scale(0.98) Transition verursacht JavaProxyThrowable) -->
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="RenderTransform" Value="scale(1)" />
     <Setter Property="Transitions">
       <Transitions>
         <BrushTransition Property="Background" Duration="0:0:0.15" />

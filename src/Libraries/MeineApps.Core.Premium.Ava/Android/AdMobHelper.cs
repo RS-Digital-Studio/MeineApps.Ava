@@ -170,8 +170,12 @@ public sealed class AdMobHelper : IDisposable
             // Banner sofort laden - AdMob SDK handhabt Consent-Status intern
             _adView.LoadAd(new AdRequest.Builder().Build());
 
-            // Notify ad service that banner is visible
-            _adService.ShowBanner();
+            // Banner-Sichtbarkeit dem aktuellen Service-Zustand anpassen
+            // (App kann HideBanner() vor AttachToActivity gerufen haben, z.B. MainMenu ohne Banner)
+            if (_adService.BannerVisible)
+                _adView.Visibility = ViewStates.Visible;
+            else
+                _adView.Visibility = ViewStates.Gone;
         }
         catch (Exception ex)
         {

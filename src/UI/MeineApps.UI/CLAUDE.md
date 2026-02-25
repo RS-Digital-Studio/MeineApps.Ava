@@ -56,7 +56,10 @@ MeineApps.UI/
 │   └── Shaders/
 │       ├── SkiaShimmerEffect.cs     # GPU-Shimmer (SkSL)
 │       ├── SkiaGlowEffect.cs        # GPU-Glow (SkSL)
-│       └── SkiaWaveEffect.cs        # GPU-Wellen (SkSL)
+│       ├── SkiaWaveEffect.cs        # GPU-Wellen (SkSL)
+│       ├── SkiaFireEffect.cs        # GPU-Feuer/Flammen (SkSL)
+│       ├── SkiaHeatShimmerEffect.cs # GPU-Hitze-Flimmern (SkSL)
+│       └── SkiaElectricArcEffect.cs # GPU-Lichtbogen/Blitz (SkSL)
 └── Styles/
     ├── ButtonStyles.axaml
     ├── TextStyles.axaml
@@ -729,4 +732,59 @@ SkiaWaveEffect.DrawWaterFill(canvas, bounds, time, fillLevel: 0.65f);
 
 // Dekorative Hintergrundwellen
 SkiaWaveEffect.DrawBackgroundWaves(canvas, bounds, time, color1, color2);
+```
+
+### SkiaFireEffect.cs
+
+Realistischer Feuer-/Flammen-Effekt mit mehrschichtigem Hash-Rauschen und Farbverlauf. Für Schmiedefeuer, Öfen, Lagerfeuer.
+
+```csharp
+// Flammen mit konfigurierbarer Intensität und Farben
+SkiaFireEffect.DrawFlames(canvas, bounds, time, intensity: 0.8f);
+
+// Glühende Kohlen/Glut mit Riss-Muster
+SkiaFireEffect.DrawEmbers(canvas, emberBounds, time, intensity: 0.7f);
+
+// Preset: Meisterschmied-Esse (intensiv, weiß-gelbe Spitzen + Glut)
+SkiaFireEffect.DrawForgeFlame(canvas, bounds, time);
+
+// Preset: Ruhiges Lagerfeuer (orange Spitzen, niedrigere Intensität)
+SkiaFireEffect.DrawCampfire(canvas, bounds, time);
+```
+
+### SkiaHeatShimmerEffect.cs
+
+Atmosphärische Hitze-Verzerrung und Wärmeschleier für Schmieden, heiße Oberflächen, Öfen.
+
+```csharp
+// Hitze-Flimmer-Effekt (UV-Displacement nahe Hitzequelle)
+SkiaHeatShimmerEffect.DrawHeatShimmer(canvas, bounds, time,
+    sourceX: 0.5f, sourceY: 0.8f, intensity: 0.6f, distortion: 0.02f);
+
+// Horizontale Hitze-Schlieren (Hintergrund-Overlay)
+SkiaHeatShimmerEffect.DrawHeatHaze(canvas, bounds, time,
+    hazeColor: new SKColor(0xFF, 0x8C, 0x00, 120), waveCount: 6, speed: 1.0f);
+
+// Presets
+SkiaHeatShimmerEffect.DrawForgeHeat(canvas, bounds, time);  // Intensive Schmiede-Hitze
+SkiaHeatShimmerEffect.DrawSoftHeat(canvas, bounds, time);   // Sanftes Wärme-Flimmern
+```
+
+### SkiaElectricArcEffect.cs
+
+Elektrische Lichtbögen/Blitze zwischen zwei Punkten mit Glow, Flicker und Verzweigungen. Für Elektriker-Werkstatt, InnovationLab, Tesla-Coil.
+
+```csharp
+// Elektrischer Lichtbogen zwischen zwei Punkten (normalisierte Koordinaten 0-1)
+SkiaElectricArcEffect.DrawArc(canvas, bounds, time,
+    startX: 0.2f, startY: 0.5f, endX: 0.8f, endY: 0.5f,
+    arcColor: new SKColor(0x44, 0xBB, 0xFF), intensity: 0.8f);
+
+// Energie-Puls entlang eines horizontalen Pfades (Kabel-Energiefluss)
+SkiaElectricArcEffect.DrawEnergyPulse(canvas, bounds, time,
+    pulseColor: new SKColor(0x22, 0xD3, 0xEE), speed: 1.5f, trailLength: 0.2f);
+
+// Presets
+SkiaElectricArcEffect.DrawLightning(canvas, bounds, time);   // Heller weisser Blitz
+SkiaElectricArcEffect.DrawTeslaCoil(canvas, bounds, time);   // Blau-violetter Tesla-Bogen
 ```

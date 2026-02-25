@@ -79,6 +79,11 @@ public static class AdConfig
         public const string RewardedPowerUp = "ca-app-pub-2588160251469436/8246016321";
         public const string RewardedScoreDouble = "ca-app-pub-2588160251469436/6242669514";
         public const string RewardedRevival = "ca-app-pub-2588160251469436/2795298966";
+        public const string RewardedExtraDailySpin = "ca-app-pub-2588160251469436/4271299647";
+        public const string RewardedCoinMultiplier = "ca-app-pub-2588160251469436/2746464989";
+        public const string RewardedFreeShopUpgrade = "ca-app-pub-2588160251469436/2958217975";
+        public const string RewardedDungeonExtraBuff = "ca-app-pub-2588160251469436/3717454234";
+        public const string RewardedGemBonus = "ca-app-pub-2588160251469436/1171181949";
     }
 
     public static class HandwerkerImperium
@@ -135,6 +140,11 @@ public static class AdConfig
             ("BomberBlast", "power_up") => BomberBlast.RewardedPowerUp,
             ("BomberBlast", "score_double") => BomberBlast.RewardedScoreDouble,
             ("BomberBlast", "revival") => BomberBlast.RewardedRevival,
+            ("BomberBlast", "extra_daily_spin") => BomberBlast.RewardedExtraDailySpin,
+            ("BomberBlast", "coin_multiplier") => BomberBlast.RewardedCoinMultiplier,
+            ("BomberBlast", "free_shop_upgrade") => BomberBlast.RewardedFreeShopUpgrade,
+            ("BomberBlast", "dungeon_extra_buff") => BomberBlast.RewardedDungeonExtraBuff,
+            ("BomberBlast", "gem_bonus") => BomberBlast.RewardedGemBonus,
             ("BomberBlast", _) => BomberBlast.RewardedContinue,
 
             // FinanzRechner
@@ -174,6 +184,8 @@ public static class AdConfig
             ("HandwerkerImperium", "research_speedup") => HandwerkerImperium.RewardedResearchSpeedup,
             ("HandwerkerImperium", "daily_challenge_retry") => HandwerkerImperium.RewardedDailyChallengeRetry,
             ("HandwerkerImperium", "achievement_boost") => HandwerkerImperium.RewardedAchievementBoost,
+            // TODO: Eigene Ad-Unit-ID im AdMob-Dashboard erstellen und hier ersetzen
+            ("HandwerkerImperium", "offline_double") => HandwerkerImperium.RewardedGoldenScrews,
             ("HandwerkerImperium", _) => HandwerkerImperium.RewardedGoldenScrews,
 
             _ => ""

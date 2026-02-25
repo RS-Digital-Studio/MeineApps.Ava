@@ -57,6 +57,28 @@ public class GameState
     public int TotalGoldenScrewsSpent { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // PREMIUM AD-REWARDS & COOLDOWNS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Anzahl der heute genutzten Premium-Ad-Rewards (max 3/Tag ohne Video).
+    /// </summary>
+    [JsonPropertyName("premiumAdRewardsUsedToday")]
+    public int PremiumAdRewardsUsedToday { get; set; }
+
+    /// <summary>
+    /// Letzter Reset-Zeitpunkt der Premium-Ad-Rewards (Tages-Reset).
+    /// </summary>
+    [JsonPropertyName("lastPremiumAdRewardReset")]
+    public DateTime LastPremiumAdRewardReset { get; set; } = DateTime.MinValue;
+
+    /// <summary>
+    /// Letzte Einlösung eines Shop-Ad-Rewards (3h Cooldown für Free-User).
+    /// </summary>
+    [JsonPropertyName("lastShopAdRewardTime")]
+    public DateTime LastShopAdRewardTime { get; set; } = DateTime.MinValue;
+
+    // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOPS
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -663,8 +685,13 @@ public class GameState
         }
     }
 
+    // Gecachte Einkommens-/Kosten-Werte (vermeidet LINQ .Sum() pro Tick)
+    [JsonIgnore] private decimal _cachedIncome;
+    [JsonIgnore] private decimal _cachedCosts;
+    [JsonIgnore] private bool _incomeCacheDirty = true;
+
     /// <summary>
-    /// Brutto-Einkommen pro Sekunde aus allen Workshops (mit Prestige-Multiplikator, gekappt bei 20x).
+    /// Brutto-Einkommen pro Sekunde aus allen Workshops (mit Prestige-Multiplikator, gekappt bei 250x).
     /// Shop-Income-Boni werden separat im GameLoop angewendet.
     /// </summary>
     [JsonIgnore]
@@ -672,10 +699,8 @@ public class GameState
     {
         get
         {
-            decimal total = Workshops.Sum(w => w.GrossIncomePerSecond);
-            // Cap bei 250x für alte Spielstände die vor dem DoPrestige-Cap gespeichert wurden
-            decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 250.0m);
-            return total * multiplier;
+            if (_incomeCacheDirty) RecalculateIncomeCache();
+            return _cachedIncome;
         }
     }
 
@@ -683,7 +708,35 @@ public class GameState
     /// Total running costs per second from all workshops.
     /// </summary>
     [JsonIgnore]
-    public decimal TotalCostsPerSecond => Workshops.Sum(w => w.TotalCostsPerHour) / 3600m;
+    public decimal TotalCostsPerSecond
+    {
+        get
+        {
+            if (_incomeCacheDirty) RecalculateIncomeCache();
+            return _cachedCosts;
+        }
+    }
+
+    /// <summary>
+    /// Invalidiert den Einkommens-/Kosten-Cache.
+    /// Aufrufen bei: Workshop-Level-Up, Worker-Aenderung, Research-Abschluss.
+    /// </summary>
+    public void InvalidateIncomeCache() => _incomeCacheDirty = true;
+
+    private void RecalculateIncomeCache()
+    {
+        decimal totalIncome = 0m;
+        decimal totalCosts = 0m;
+        for (int i = 0; i < Workshops.Count; i++)
+        {
+            totalIncome += Workshops[i].GrossIncomePerSecond;
+            totalCosts += Workshops[i].TotalCostsPerHour;
+        }
+        decimal multiplier = Math.Min(Prestige.PermanentMultiplier, 250.0m);
+        _cachedIncome = totalIncome * multiplier;
+        _cachedCosts = totalCosts / 3600m;
+        _incomeCacheDirty = false;
+    }
 
     /// <summary>
     /// Roher Netto-Einkommenswert (Brutto - Kosten) OHNE Research/Prestige/Building-Modifikatoren.
@@ -770,11 +823,37 @@ public class GameState
     }
 
     /// <summary>
+    /// Gecachtes Dictionary für Building-Lookups (vermeidet FirstOrDefault pro Tick).
+    /// </summary>
+    [JsonIgnore]
+    private Dictionary<BuildingType, Building>? _buildingCache;
+
+    /// <summary>
     /// Gets a building by type, returns null if not built.
+    /// Nutzt Dictionary-Cache statt FirstOrDefault.
     /// </summary>
     public Building? GetBuilding(BuildingType type)
     {
-        return Buildings.FirstOrDefault(b => b.Type == type && b.IsBuilt);
+        if (_buildingCache == null)
+            RebuildBuildingCache();
+
+        return _buildingCache!.GetValueOrDefault(type);
+    }
+
+    /// <summary>
+    /// Cache invalidieren nach Gebäude-Kauf/Upgrade.
+    /// </summary>
+    public void InvalidateBuildingCache() => _buildingCache = null;
+
+    private void RebuildBuildingCache()
+    {
+        _buildingCache = new Dictionary<BuildingType, Building>();
+        for (int i = 0; i < Buildings.Count; i++)
+        {
+            var b = Buildings[i];
+            if (b.IsBuilt)
+                _buildingCache[b.Type] = b;
+        }
     }
 
     /// <summary>

@@ -7,6 +7,8 @@ namespace HandwerkerImperium.Services;
 public class ResearchService : IResearchService
 {
     private readonly IGameStateService _gameState;
+    private ResearchEffect? _cachedEffects;
+    private bool _effectsDirty = true;
 
     public event EventHandler<Research>? ResearchCompleted;
 
@@ -55,6 +57,7 @@ public class ResearchService : IResearchService
         }
 
         state.ActiveResearchId = null;
+        _effectsDirty = true;
         return true;
     }
 
@@ -75,11 +78,17 @@ public class ResearchService : IResearchService
 
     public ResearchEffect GetTotalEffects()
     {
+        if (!_effectsDirty && _cachedEffects != null)
+            return _cachedEffects;
+
         var total = new ResearchEffect();
-        foreach (var research in _gameState.State.Researches.Where(r => r.IsResearched))
+        foreach (var research in _gameState.State.Researches)
         {
-            total = ResearchEffect.Combine(total, research.Effect);
+            if (research.IsResearched)
+                total = ResearchEffect.Combine(total, research.Effect);
         }
+        _cachedEffects = total;
+        _effectsDirty = false;
         return total;
     }
 
@@ -97,6 +106,7 @@ public class ResearchService : IResearchService
         active.IsActive = false;
         active.CompletedAt = DateTime.UtcNow;
         _gameState.State.ActiveResearchId = null;
+        _effectsDirty = true;
 
         ResearchCompleted?.Invoke(this, active);
         return true;
@@ -120,6 +130,7 @@ public class ResearchService : IResearchService
             active.IsActive = false;
             active.CompletedAt = DateTime.UtcNow;
             _gameState.State.ActiveResearchId = null;
+            _effectsDirty = true;
 
             ResearchCompleted?.Invoke(this, active);
         }

@@ -22,6 +22,7 @@ public partial class StatisticsViewModel : ObservableObject
     private readonly ILocalizationService _localizationService;
     private readonly IPurchaseService _purchaseService;
     private readonly IPlayGamesService? _playGamesService;
+    private readonly IGameLoopService _gameLoopService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -139,6 +140,38 @@ public partial class StatisticsViewModel : ObservableObject
     private bool _isPlayGamesAvailable;
 
     // ═══════════════════════════════════════════════════════════════════════
+    // PRESTIGE PASS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Ob der Prestige-Pass für den aktuellen Durchlauf aktiv ist.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isPrestigePassActive;
+
+    /// <summary>
+    /// Ob der Prestige-Pass kaufbar ist (nicht bereits aktiv).
+    /// </summary>
+    [ObservableProperty]
+    private bool _canBuyPrestigePass;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PRESTIGE KEEP/LOSE ÜBERSICHT
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Liste der Dinge die bei Prestige erhalten bleiben (+ Prefix).
+    /// </summary>
+    [ObservableProperty]
+    private string _prestigeKeepList = "";
+
+    /// <summary>
+    /// Liste der Dinge die bei Prestige verloren gehen (- Prefix).
+    /// </summary>
+    [ObservableProperty]
+    private string _prestigeLoseList = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
     // PRESTIGE SHOP
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -157,13 +190,15 @@ public partial class StatisticsViewModel : ObservableObject
         IPrestigeService prestigeService,
         IAudioService audioService,
         ILocalizationService localizationService,
-        IPurchaseService purchaseService)
+        IPurchaseService purchaseService,
+        IGameLoopService gameLoopService)
     {
         _gameStateService = gameStateService;
         _prestigeService = prestigeService;
         _audioService = audioService;
         _localizationService = localizationService;
         _purchaseService = purchaseService;
+        _gameLoopService = gameLoopService;
         _playGamesService = App.Services?.GetService(typeof(IPlayGamesService)) as IPlayGamesService;
 
         LoadStatistics();
@@ -212,6 +247,10 @@ public partial class StatisticsViewModel : ObservableObject
         // Play Games Verfügbarkeit prüfen
         IsPlayGamesAvailable = _playGamesService?.IsSignedIn ?? false;
 
+        // Prestige-Pass Status
+        IsPrestigePassActive = state.IsPrestigePassActive;
+        CanBuyPrestigePass = !state.IsPrestigePassActive;
+
         WorkshopStats = state.Workshops
             .OrderBy(w => w.Type.GetUnlockLevel())
             .Select(w => new WorkshopStatistic
@@ -223,6 +262,9 @@ public partial class StatisticsViewModel : ObservableObject
                 IncomePerSecond = FormatMoneyPerSecond(w.IncomePerSecond)
             })
             .ToList();
+
+        // Prestige-Übersicht (Keep/Lose) aufbauen
+        BuildPrestigeOverview(highestTier);
 
         // Prestige-Shop laden
         RefreshPrestigeShop();
@@ -270,6 +312,28 @@ public partial class StatisticsViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private async Task BuyPrestigePassAsync()
+    {
+        if (_gameStateService.State.IsPrestigePassActive) return;
+
+        // Echten IAP-Kauf durchführen (2,99 EUR)
+        var success = await _purchaseService.PurchaseConsumableAsync("prestige_pass");
+        if (!success) return;
+
+        _prestigeService.ActivatePrestigePass();
+        _gameStateService.MarkDirty();
+        await _audioService.PlaySoundAsync(GameSound.LevelUp);
+
+        IsPrestigePassActive = true;
+        CanBuyPrestigePass = false;
+
+        AlertRequested?.Invoke(
+            _localizationService.GetString("PrestigePassTitle") ?? "Prestige-Pass",
+            _localizationService.GetString("PrestigePassActive") ?? "Prestige-Pass aktiviert! +50% Prestige-Punkte beim nächsten Prestige.",
+            _localizationService.GetString("Great") ?? "Super!");
+    }
+
+    [RelayCommand]
     private async Task BuyPrestigeItemAsync(PrestigeShopItemDisplay? item)
     {
         if (item == null || item.IsPurchased || !item.CanAfford) return;
@@ -277,6 +341,7 @@ public partial class StatisticsViewModel : ObservableObject
         var success = _prestigeService.BuyShopItem(item.Id);
         if (success)
         {
+            _gameLoopService.InvalidatePrestigeEffects();
             await _audioService.PlaySoundAsync(GameSound.Upgrade);
             RefreshPrestigeShop();
         }
@@ -318,6 +383,59 @@ public partial class StatisticsViewModel : ObservableObject
     {
         await _audioService.PlaySoundAsync(GameSound.LevelUp);
         LoadStatistics();
+    }
+
+    /// <summary>
+    /// Baut die Keep/Lose-Listen basierend auf dem aktuellen Prestige-Tier auf.
+    /// Zeigt dem Spieler transparent was bei einem Prestige erhalten bleibt und was verloren geht.
+    /// </summary>
+    private void BuildPrestigeOverview(PrestigeTier tier)
+    {
+        // Basis: Was immer erhalten bleibt
+        var keep = new List<string>
+        {
+            _localizationService.GetString("Achievements") ?? "Achievements",
+            _localizationService.GetString("PrestigePointsShort") ?? "Prestige-Punkte",
+            _localizationService.GetString("Settings") ?? "Einstellungen",
+        };
+
+        // Tier-spezifische Bewahrungen (progressive Bewahrung)
+        if (tier.KeepsResearch())
+            keep.Add(_localizationService.GetString("Research") ?? "Forschung");
+        if (tier.KeepsShopItems())
+            keep.Add(_localizationService.GetString("PrestigeShop") ?? "Prestige-Shop");
+        if (tier.KeepsMasterTools())
+            keep.Add(_localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge");
+        if (tier.KeepsBuildings())
+            keep.Add(_localizationService.GetString("Buildings") ?? "Gebäude");
+        if (tier.KeepsEquipment())
+            keep.Add(_localizationService.GetString("Equipment") ?? "Ausrüstung");
+        if (tier.KeepsManagers())
+            keep.Add(_localizationService.GetString("Managers") ?? "Vorarbeiter");
+        if (tier.KeepsBestWorkers())
+            keep.Add(_localizationService.GetString("BestWorkers") ?? "Beste Arbeiter");
+
+        // Was verloren geht (inverse der Bewahrung)
+        var lose = new List<string>
+        {
+            _localizationService.GetString("WorkshopsTab") ?? "Werkstätten",
+            _localizationService.GetString("Workers") ?? "Arbeiter",
+            _localizationService.GetString("Money") ?? "Geld",
+        };
+
+        if (!tier.KeepsResearch())
+            lose.Add(_localizationService.GetString("Research") ?? "Forschung");
+        if (!tier.KeepsMasterTools())
+            lose.Add(_localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge");
+        if (!tier.KeepsBuildings())
+            lose.Add(_localizationService.GetString("Buildings") ?? "Gebäude");
+        if (!tier.KeepsEquipment())
+            lose.Add(_localizationService.GetString("Equipment") ?? "Ausrüstung");
+        if (!tier.KeepsManagers())
+            lose.Add(_localizationService.GetString("Managers") ?? "Vorarbeiter");
+
+        PrestigeKeepList = string.Join("\n", keep.Select(k => $"+ {k}"));
+        PrestigeLoseList = string.Join("\n", lose.Select(l => $"\u2212 {l}"));
     }
 
     // ═══════════════════════════════════════════════════════════════════════

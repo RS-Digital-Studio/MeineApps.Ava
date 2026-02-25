@@ -38,13 +38,17 @@ public class GameLoopService : IGameLoopService, IDisposable
     private int _tickCount;
     private string? _lastAppliedSpecialEffectId; // Verhindert doppelte Anwendung von SpecialEffects
 
+    // Gecachte Workshop-Referenzen (vermeidet FirstOrDefault pro Tick)
+    private Workshop? _cachedMasterSmith;
+    private Workshop? _cachedInnovationLab;
+    private bool _workshopCacheDirty = true;
+
     private const int AutoSaveIntervalTicks = 30;
     private const int EventCheckIntervalTicks = 300; // Check events every 5 minutes
     private const int DeliveryCheckIntervalTicks = 10; // Lieferung alle 10 Ticks prüfen
     private const int MasterToolCheckIntervalTicks = 120; // Meisterwerkzeuge alle 2 Minuten prüfen
     private const int WeeklyMissionCheckIntervalTicks = 60; // Weekly Mission Reset alle 60 Ticks
     private const int ManagerCheckIntervalTicks = 120; // Manager Unlock Check alle 2 Minuten
-    private const int GuildSimulateIntervalTicks = 300; // Gildenmitglieder-Simulation alle 5 Minuten
     private const int SeasonalEventCheckIntervalTicks = 300; // Saisonales Event alle 5 Minuten prüfen
     private const int BattlePassSeasonCheckIntervalTicks = 300; // Battle Pass Saison alle 5 Minuten prüfen
     private const int AutomationCheckIntervalTicks = 5; // Automation alle 5 Ticks
@@ -52,9 +56,34 @@ public class GameLoopService : IGameLoopService, IDisposable
     private const int LeaderboardSubmitIntervalTicks = 300; // Leaderboard-Score alle 5 Minuten submitten
     private const int BountyCheckIntervalTicks = 120; // Bounty-Fortschritt alle 2 Minuten prüfen
     private const int GuildWarCheckIntervalTicks = 300; // Guild-War alle 5 Minuten prüfen
+    private const int QuickJobCheckIntervalTicks = 60; // QuickJob Rotation + Deadline-Check alle 60 Ticks
+
+    // Tier-1-Crafting-Materialien für MasterSmith (static readonly, keine Allokation pro Aufruf)
+    private static readonly string[] Tier1CraftingProducts = ["planks", "pipes", "cables", "paint_mix", "roof_tiles"];
 
     public bool IsRunning => _timer?.IsEnabled ?? false;
     public TimeSpan SessionDuration => DateTime.UtcNow - _sessionStart;
+
+    /// <summary>
+    /// Workshop-Cache invalidieren (z.B. nach Workshop-Kauf).
+    /// </summary>
+    public void InvalidateWorkshopCache() => _workshopCacheDirty = true;
+
+    private void RefreshWorkshopCacheIfNeeded(GameState state)
+    {
+        if (!_workshopCacheDirty) return;
+        _cachedMasterSmith = null;
+        _cachedInnovationLab = null;
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            var ws = state.Workshops[i];
+            if (ws.Type == WorkshopType.MasterSmith && ws.IsUnlocked)
+                _cachedMasterSmith = ws;
+            else if (ws.Type == WorkshopType.InnovationLab && ws.IsUnlocked)
+                _cachedInnovationLab = ws;
+        }
+        _workshopCacheDirty = false;
+    }
 
     public event EventHandler<GameTickEventArgs>? OnTick;
 
@@ -136,6 +165,10 @@ public class GameLoopService : IGameLoopService, IDisposable
         // Bisherige aktive Session-Zeit akkumulieren
         _gameStateService.State.TotalPlayTimeSeconds += (long)(DateTime.UtcNow - _sessionStart).TotalSeconds;
         _gameStateService.State.LastPlayedAt = DateTime.UtcNow;
+
+        // Session-Start auf jetzt setzen, damit Stop() danach nicht die gleiche Zeitspanne nochmal zählt
+        _sessionStart = DateTime.UtcNow;
+
         _saveGameService.SaveAsync().FireAndForget();
     }
 
@@ -153,16 +186,29 @@ public class GameLoopService : IGameLoopService, IDisposable
             return;
 
         var state = _gameStateService.State;
+        var now = DateTime.UtcNow;
+
+        // Caches aktualisieren
+        RefreshWorkshopCacheIfNeeded(state);
+        RefreshPrestigeEffectsIfNeeded(state);
 
         // 0. Research- und Gebäude-Effekte sammeln
         var researchEffects = _researchService?.GetTotalEffects();
         UpdateExtraWorkerSlots(state, researchEffects);
 
+        // 0b. Prestige-Shop Upgrade-Discount auf alle Workshops setzen
+        // (muss pro Tick laufen, da neue Workshops jederzeit hinzukommen können)
+        if (_cachedPrestigeUpgradeDiscount > 0)
+        {
+            for (int i = 0; i < state.Workshops.Count; i++)
+                state.Workshops[i].UpgradeDiscount = _cachedPrestigeUpgradeDiscount;
+        }
+
         // 1. Brutto-Einkommen berechnen (inkl. Research-Effizienz-Bonus, gekappt bei +50%)
         decimal grossIncome = state.TotalIncomePerSecond;
 
-        // Prestige-Shop Income-Boni anwenden (pp_income_10/25/50)
-        decimal shopIncomeBonus = GetPrestigeIncomeBonus(state);
+        // Prestige-Shop Income-Boni anwenden (gecacht)
+        decimal shopIncomeBonus = _cachedPrestigeIncomeBonus;
         if (shopIncomeBonus > 0)
             grossIncome *= (1m + shopIncomeBonus);
 
@@ -258,6 +304,16 @@ public class GameLoopService : IGameLoopService, IDisposable
                 grossIncome *= (1m + gm.ResearchEfficiencyBonus);
         }
 
+        // 3f. Hard-Cap: Gesamt-Einkommens-Multiplikator auf +200% begrenzen (3.0x)
+        // Betrifft: Prestige-Shop, Meisterwerkzeuge, Gilden-Boni, Research-Effizienz
+        // baseIncome ist state.TotalIncomePerSecond (enthält bereits Prestige-PermanentMultiplier)
+        if (state.TotalIncomePerSecond > 0)
+        {
+            decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
+            if (effectiveMultiplier > 3.0m)
+                grossIncome = state.TotalIncomePerSecond * 3.0m;
+        }
+
         // 4. Net earnings (can be negative!)
         decimal netEarnings = grossIncome - costs;
 
@@ -271,9 +327,8 @@ public class GameLoopService : IGameLoopService, IDisposable
         if (state.IsRushBoostActive && netEarnings > 0)
         {
             decimal rushMultiplier = 2m;
-            // Prestige-Shop Rush-Verstärker
-            var rushBonus = GetPrestigeRushBonus(state);
-            if (rushBonus > 0) rushMultiplier += rushBonus;
+            // Prestige-Shop Rush-Verstärker (gecacht)
+            if (_cachedPrestigeRushBonus > 0) rushMultiplier += _cachedPrestigeRushBonus;
             netEarnings *= rushMultiplier;
         }
 
@@ -301,8 +356,10 @@ public class GameLoopService : IGameLoopService, IDisposable
             if (ws.GrossIncomePerSecond > 0)
             {
                 ws.TotalEarned += ws.GrossIncomePerSecond;
-                foreach (var worker in ws.Workers.Where(w => w.IsWorking))
+                for (int wi = 0; wi < ws.Workers.Count; wi++)
                 {
+                    var worker = ws.Workers[wi];
+                    if (!worker.IsWorking) continue;
                     // LevelFitFactor berücksichtigen (Workshop-Level-Malus für niedrige Tiers)
                     worker.TotalEarned += ws.BaseIncomePerWorker * worker.EffectiveEfficiency * ws.GetWorkerLevelFitFactor(worker);
                 }
@@ -322,8 +379,8 @@ public class GameLoopService : IGameLoopService, IDisposable
             _eventService?.CheckForNewEvent();
         }
 
-        // 9b. Quick Job Rotation + Daily Challenge Reset + Deadline-Check (alle 60 Ticks = 1 Minute)
-        if (_tickCount % 60 == 0)
+        // 9b. Quick Job Rotation + Daily Challenge Reset + Deadline-Check
+        if (_tickCount % QuickJobCheckIntervalTicks == 0)
         {
             _quickJobService?.RotateIfNeeded();
             _dailyChallengeService?.CheckAndResetIfNewDay();
@@ -344,7 +401,7 @@ public class GameLoopService : IGameLoopService, IDisposable
         // 9d. Lieferant: Prüfen ob neue Lieferung generiert werden soll
         if (_tickCount % DeliveryCheckIntervalTicks == 0)
         {
-            CheckAndGenerateDelivery(state);
+            CheckAndGenerateDelivery(state, now);
         }
 
         // 9e. Meisterwerkzeuge: Prüfen ob neue Tools freigeschaltet werden
@@ -416,9 +473,9 @@ public class GameLoopService : IGameLoopService, IDisposable
             _guildWarService.CheckAndFinalizeWarAsync().FireAndForget();
 
         // 9c. Reputation: Showroom-DailyReputationGain + Decay (einmal pro Tag, persistiert)
-        if ((DateTime.UtcNow - state.LastReputationDecay).TotalHours >= 24)
+        if ((now - state.LastReputationDecay).TotalHours >= 24)
         {
-            state.LastReputationDecay = DateTime.UtcNow;
+            state.LastReputationDecay = now;
 
             // Showroom-Gebäude: Passive Reputation-Steigerung
             var showroom = state.GetBuilding(BuildingType.Showroom);
@@ -433,7 +490,7 @@ public class GameLoopService : IGameLoopService, IDisposable
         }
 
         // 10. Update last played time
-        state.LastPlayedAt = DateTime.UtcNow;
+        state.LastPlayedAt = now;
 
         // 11. Auto-save periodically
         if (_tickCount % AutoSaveIntervalTicks == 0)
@@ -467,7 +524,7 @@ public class GameLoopService : IGameLoopService, IDisposable
     /// Prüft ob neue Lieferung generiert werden soll.
     /// Intervall: 2-5 Minuten (reduziert durch Prestige-Shop-Bonus).
     /// </summary>
-    private void CheckAndGenerateDelivery(GameState state)
+    private void CheckAndGenerateDelivery(GameState state, DateTime now)
     {
         // Lieferung nur wenn keine wartet und Intervall abgelaufen
         if (state.PendingDelivery != null)
@@ -478,19 +535,19 @@ public class GameLoopService : IGameLoopService, IDisposable
             return;
         }
 
-        if (DateTime.UtcNow < state.NextDeliveryTime)
+        if (now < state.NextDeliveryTime)
             return;
 
         // Neue Lieferung generieren
         var delivery = SupplierDelivery.GenerateRandom(state);
         state.PendingDelivery = delivery;
 
-        // Nächstes Intervall: 2-5 Minuten (Prestige-Bonus reduziert)
+        // Nächstes Intervall: 2-5 Minuten (Prestige-Bonus reduziert, gecacht)
         int baseIntervalSec = Random.Shared.Next(120, 300);
-        decimal deliveryBonus = GetPrestigeDeliveryBonus(state);
+        decimal deliveryBonus = _cachedPrestigeDeliveryBonus;
         if (deliveryBonus > 0)
             baseIntervalSec = (int)(baseIntervalSec * (1m - Math.Min(deliveryBonus, 0.50m)));
-        state.NextDeliveryTime = DateTime.UtcNow.AddSeconds(baseIntervalSec);
+        state.NextDeliveryTime = now.AddSeconds(baseIntervalSec);
 
         DeliveryArrived?.Invoke(this, delivery);
     }
@@ -513,55 +570,49 @@ public class GameLoopService : IGameLoopService, IDisposable
         }
     }
 
-    /// <summary>
-    /// Berechnet Income-Multiplikator-Bonus aus gekauften Prestige-Shop-Items.
-    /// </summary>
-    private static decimal GetPrestigeIncomeBonus(GameState state)
-    {
-        var purchased = state.Prestige.PurchasedShopItems;
-        if (purchased.Count == 0) return 0m;
-
-        decimal bonus = 0m;
-        foreach (var item in PrestigeShop.GetAllItems())
-        {
-            if (purchased.Contains(item.Id) && item.Effect.IncomeMultiplier > 0)
-                bonus += item.Effect.IncomeMultiplier;
-        }
-        return bonus;
-    }
+    // Gecachte Prestige-Shop-Effekte (werden nur bei Kauf invalidiert)
+    private bool _prestigeEffectsDirty = true;
+    private decimal _cachedPrestigeIncomeBonus;
+    private decimal _cachedPrestigeRushBonus;
+    private decimal _cachedPrestigeDeliveryBonus;
+    private decimal _cachedPrestigeUpgradeDiscount;
 
     /// <summary>
-    /// Berechnet Rush-Multiplikator-Bonus aus gekauften Prestige-Shop-Items.
+    /// Prestige-Effekt-Cache invalidieren (nach Prestige-Shop-Kauf oder Prestige-Reset).
     /// </summary>
-    private static decimal GetPrestigeRushBonus(GameState state)
-    {
-        var purchased = state.Prestige.PurchasedShopItems;
-        if (purchased.Count == 0) return 0m;
-
-        decimal bonus = 0m;
-        foreach (var item in PrestigeShop.GetAllItems())
-        {
-            if (purchased.Contains(item.Id) && item.Effect.RushMultiplierBonus > 0)
-                bonus += item.Effect.RushMultiplierBonus;
-        }
-        return bonus;
-    }
+    public void InvalidatePrestigeEffects() => _prestigeEffectsDirty = true;
 
     /// <summary>
-    /// Berechnet Lieferant-Speed-Bonus aus gekauften Prestige-Shop-Items.
+    /// Berechnet alle 3 Prestige-Shop-Boni in einem einzigen Durchlauf und cacht sie.
     /// </summary>
-    private static decimal GetPrestigeDeliveryBonus(GameState state)
+    private void RefreshPrestigeEffectsIfNeeded(GameState state)
     {
-        var purchased = state.Prestige.PurchasedShopItems;
-        if (purchased.Count == 0) return 0m;
+        if (!_prestigeEffectsDirty) return;
+        _prestigeEffectsDirty = false;
 
-        decimal bonus = 0m;
-        foreach (var item in PrestigeShop.GetAllItems())
+        _cachedPrestigeIncomeBonus = 0m;
+        _cachedPrestigeRushBonus = 0m;
+        _cachedPrestigeDeliveryBonus = 0m;
+        _cachedPrestigeUpgradeDiscount = 0m;
+
+        var purchased = state.Prestige.PurchasedShopItems;
+        if (purchased.Count == 0) return;
+
+        var allItems = PrestigeShop.GetAllItems();
+        for (int i = 0; i < allItems.Count; i++)
         {
-            if (purchased.Contains(item.Id) && item.Effect.DeliverySpeedBonus > 0)
-                bonus += item.Effect.DeliverySpeedBonus;
+            var item = allItems[i];
+            if (!purchased.Contains(item.Id)) continue;
+
+            if (item.Effect.IncomeMultiplier > 0)
+                _cachedPrestigeIncomeBonus += item.Effect.IncomeMultiplier;
+            if (item.Effect.RushMultiplierBonus > 0)
+                _cachedPrestigeRushBonus += item.Effect.RushMultiplierBonus;
+            if (item.Effect.DeliverySpeedBonus > 0)
+                _cachedPrestigeDeliveryBonus += item.Effect.DeliverySpeedBonus;
+            if (item.Effect.UpgradeDiscount > 0)
+                _cachedPrestigeUpgradeDiscount += item.Effect.UpgradeDiscount;
         }
-        return bonus;
     }
 
     /// <summary>
@@ -616,12 +667,21 @@ public class GameLoopService : IGameLoopService, IDisposable
         // AutoAccept: Besten Auftrag annehmen wenn kein aktiver vorhanden
         if (auto.AutoAcceptOrder && state.PlayerLevel >= 25 && state.ActiveOrder == null && state.AvailableOrders.Count > 0)
         {
-            // Besten Auftrag wählen (höchste Belohnung)
-            var bestOrder = state.AvailableOrders.OrderByDescending(o => o.BaseReward).First();
-            state.ActiveOrder = bestOrder;
-            state.AvailableOrders.Remove(bestOrder);
+            // Besten Auftrag wählen (höchste Belohnung) - ohne LINQ um Allokationen zu vermeiden
+            Order? bestOrder = null;
+            for (int i = 0; i < state.AvailableOrders.Count; i++)
+            {
+                var order = state.AvailableOrders[i];
+                if (bestOrder == null || order.BaseReward > bestOrder.BaseReward)
+                    bestOrder = order;
+            }
 
-            AutoAcceptedOrder?.Invoke(this, bestOrder);
+            if (bestOrder != null)
+            {
+                state.ActiveOrder = bestOrder;
+                state.AvailableOrders.Remove(bestOrder);
+                AutoAcceptedOrder?.Invoke(this, bestOrder);
+            }
         }
     }
 
@@ -677,22 +737,21 @@ public class GameLoopService : IGameLoopService, IDisposable
     /// MasterSmith-Spezialeffekt: Produziert passiv Crafting-Materialien wenn Workshop besetzt ist.
     /// Generiert 1 zufälliges Tier-1-Produkt pro Minute pro arbeitendem Worker.
     /// </summary>
-    private static void ProduceMasterSmithMaterials(GameState state)
+    private void ProduceMasterSmithMaterials(GameState state)
     {
-        var masterSmith = state.Workshops.FirstOrDefault(w => w.Type == WorkshopType.MasterSmith && w.IsUnlocked);
+        var masterSmith = _cachedMasterSmith;
         if (masterSmith == null) return;
 
-        int workingWorkers = masterSmith.Workers.Count(w => w.IsWorking);
+        int workingWorkers = 0;
+        for (int w = 0; w < masterSmith.Workers.Count; w++)
+            if (masterSmith.Workers[w].IsWorking) workingWorkers++;
         if (workingWorkers <= 0) return;
-
-        // Tier-1-Crafting-Materialien die passiv produziert werden können
-        string[] tier1Products = ["planks", "pipes", "cables", "paint_mix", "roof_tiles"];
 
         state.CraftingInventory ??= new Dictionary<string, int>();
 
         for (int i = 0; i < workingWorkers; i++)
         {
-            var product = tier1Products[Random.Shared.Next(tier1Products.Length)];
+            var product = Tier1CraftingProducts[Random.Shared.Next(Tier1CraftingProducts.Length)];
             if (state.CraftingInventory.ContainsKey(product))
                 state.CraftingInventory[product]++;
             else
@@ -711,14 +770,16 @@ public class GameLoopService : IGameLoopService, IDisposable
         if (_researchService == null) return;
         if (string.IsNullOrEmpty(state.ActiveResearchId)) return;
 
-        var innovationLab = state.Workshops.FirstOrDefault(w => w.Type == WorkshopType.InnovationLab && w.IsUnlocked);
+        var innovationLab = _cachedInnovationLab;
         if (innovationLab == null) return;
 
-        int workingWorkers = innovationLab.Workers.Count(w => w.IsWorking);
+        int workingWorkers = 0;
+        for (int w = 0; w < innovationLab.Workers.Count; w++)
+            if (innovationLab.Workers[w].IsWorking) workingWorkers++;
         if (workingWorkers <= 0) return;
 
-        // Aktive Forschung finden und StartedAt um 1 Sekunde zurücksetzen (= 2x Geschwindigkeit)
-        var activeResearch = state.Researches.FirstOrDefault(r => r.Id == state.ActiveResearchId && r.IsActive);
+        // Aktive Forschung über ResearchService holen (cached intern)
+        var activeResearch = _researchService.GetActiveResearch();
         if (activeResearch?.StartedAt != null)
         {
             activeResearch.StartedAt = activeResearch.StartedAt.Value.AddSeconds(-1);

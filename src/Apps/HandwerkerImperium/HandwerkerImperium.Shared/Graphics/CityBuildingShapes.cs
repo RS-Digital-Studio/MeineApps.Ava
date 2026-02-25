@@ -45,6 +45,12 @@ public static class CityBuildingShapes
     };
 
     /// <summary>
+    /// Workshop-Farbe für externe Nutzung (z.B. Fahnen, Spotlight).
+    /// </summary>
+    public static SKColor GetWorkshopColor(WorkshopType type)
+        => FrontColors.GetValueOrDefault(type, new SKColor(0x80, 0x80, 0x80));
+
+    /// <summary>
     /// Berechnet die Gebäude-Höhe basierend auf Level (dp).
     /// Lv1=30, Lv100=55, Lv500=75, Lv1000+=90.
     /// </summary>
@@ -364,6 +370,7 @@ public static class CityBuildingShapes
     private static void DrawWindows(SKCanvas canvas, float x, float y,
         float width, float height, float nightDim, int seedBase, float time)
     {
+        // Lokalzeit für visuelle Darstellung (Fenster-Beleuchtung nachts)
         int hour = DateTime.Now.Hour;
         bool isNight = hour >= 20 || hour < 6;
 
@@ -386,17 +393,27 @@ public static class CityBuildingShapes
 
                 if (wy + winSize > y + height - 12) continue;
 
-                int windowIdx = seedBase * 4 + row * 2 + col;
+                // Primzahl-basierter Hash für gut verteilte, deterministische Flicker-Phasen
+                int windowIdx = seedBase * 73 + col * 37 + row * 19;
                 bool lit = isNight && IsWindowLitStatic(windowIdx, time);
 
                 if (isNight && lit)
                 {
-                    // Fenster-Glow nachts
+                    // Warmer radialer Glow der aus dem Fenster strahlt
+                    float glowRadius = winSize * 1.8f;
+                    float centerWx = wx + winSize / 2f;
+                    float centerWy = wy + winSize / 2f;
+                    using var glowShader = SKShader.CreateRadialGradient(
+                        new SKPoint(centerWx, centerWy), glowRadius,
+                        [new SKColor(0xFF, 0xE0, 0x82, 0x50), new SKColor(0xFF, 0xA5, 0x00, 0x00)],
+                        [0f, 1f], SKShaderTileMode.Clamp);
+                    _windowPaint.Shader = glowShader;
+                    canvas.DrawCircle(centerWx, centerWy, glowRadius, _windowPaint);
+                    _windowPaint.Shader = null;
+
+                    // Heller Fensterkern
                     _windowPaint.Color = windowLitColor;
                     canvas.DrawRect(wx, wy, winSize, winSize, _windowPaint);
-                    // Subtiler Glow
-                    _windowPaint.Color = new SKColor(0xFF, 0xF1, 0x76, 0x30);
-                    canvas.DrawRect(wx - 1, wy - 1, winSize + 2, winSize + 2, _windowPaint);
                 }
                 else
                 {
@@ -561,11 +578,14 @@ public static class CityBuildingShapes
     }
 
     /// <summary>
-    /// Deterministisches Fenster-Blinken (kein Random, zeit-basiert).
+    /// Deterministisches Fenster-Blinken nachts (kein Random, Sin-basiert).
+    /// Jedes Fenster hat eine eigene Phase, ~65% der Zeit beleuchtet.
+    /// Erzeugt natürliches, versetztes Flackern ohne Random.
     /// </summary>
     private static bool IsWindowLitStatic(int windowIdx, float time)
     {
-        float freq = 0.5f + (windowIdx % 4) * 0.3f;
-        return ((int)(time * freq + windowIdx * 3.7f) % 3) != 0;
+        // Hash aus buildingIndex (in seedBase codiert) + Fenster-Index für deterministische Phase
+        float flickerPhase = (windowIdx % 100) / 100f * MathF.PI * 2;
+        return MathF.Sin(time * 0.3f + flickerPhase) > -0.3f; // ~65% der Zeit an
     }
 }

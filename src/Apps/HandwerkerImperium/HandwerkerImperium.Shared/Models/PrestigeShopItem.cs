@@ -90,4 +90,10 @@ public class PrestigeEffect
     /// </summary>
     [JsonPropertyName("craftingSpeedBonus")]
     public decimal CraftingSpeedBonus { get; set; }
+
+    /// <summary>
+    /// Rabatt auf Workshop-Upgrade-Kosten (z.B. 0.15 = -15%).
+    /// </summary>
+    [JsonPropertyName("upgradeDiscount")]
+    public decimal UpgradeDiscount { get; set; }
 }

@@ -39,6 +39,7 @@ public class BuildingService : IBuildingService
             state.Buildings.Add(building);
         }
 
+        state.InvalidateBuildingCache();
         return true;
     }
 
@@ -52,6 +53,7 @@ public class BuildingService : IBuildingService
 
         _gameState.TrySpendMoney(cost);
         building.Level++;
+        _gameState.State.InvalidateBuildingCache();
         return true;
     }
 

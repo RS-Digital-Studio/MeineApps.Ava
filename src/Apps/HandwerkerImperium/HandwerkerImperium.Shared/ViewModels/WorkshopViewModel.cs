@@ -181,7 +181,7 @@ public partial class WorkshopViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>Ob AutoAssign freigeschaltet ist (Level 50+).</summary>
-    public bool IsAutoAssignUnlocked => _gameStateService.State.PlayerLevel >= 50;
+    public bool IsAutoAssignUnlocked => _gameStateService.IsAutoAssignUnlocked;
 
     /// <summary>
     /// Whether there are no workers in this workshop.

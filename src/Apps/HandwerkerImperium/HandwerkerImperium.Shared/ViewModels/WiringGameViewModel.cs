@@ -688,19 +688,9 @@ public partial class Wire : ObservableObject
     };
 
     /// <summary>
-    /// Gets the emoji representation.
+    /// Gibt die Anzeige-Farbe als Hex-String zurück (für XAML-Fallback).
     /// </summary>
-    public string Emoji => WireColor switch
-    {
-        WireColor.Red => "🔴",
-        WireColor.Blue => "🔵",
-        WireColor.Green => "🟢",
-        WireColor.Yellow => "🟡",
-        WireColor.Orange => "🟠",
-        WireColor.Purple => "🟣",
-        WireColor.Cyan => "🔷",
-        _ => "⚪"
-    };
+    public string DisplayColor => ColorHex;
 
     /// <summary>
     /// Background color based on wire state (selected, connected, error).

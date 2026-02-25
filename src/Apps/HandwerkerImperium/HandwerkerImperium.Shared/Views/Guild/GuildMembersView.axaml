@@ -1,0 +1,98 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Guild.GuildMembersView"
+             x:DataType="vm:GuildViewModel">
+
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="GuildMembers_Grid_Root">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0" Padding="16,12" CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#92400E" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+        <!-- Zurück -->
+        <Button Grid.Column="0" Classes="Text" Padding="4"
+                Command="{Binding NavigateBackCommand}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+        </Button>
+        <!-- Titel -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="AccountGroup" Width="24" Height="24"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          <TextBlock Text="{Binding MembersHeaderDisplay}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+        <!-- Einladen-Button -->
+        <Button Grid.Column="2" Classes="Text" Padding="4"
+                Command="{Binding NavigateToInviteCommand}">
+          <mi:MaterialIcon Kind="AccountPlus" Width="22" Height="22"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- CONTENT                                                           -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="8" Margin="16,12,16,80">
+
+        <!-- Mitglieder-Liste -->
+        <ItemsControl ItemsSource="{Binding Members}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:GuildMemberDisplay">
+              <Border Background="{DynamicResource SurfaceBrush}"
+                      CornerRadius="8" Padding="12,8" Margin="0,2">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                  <!-- Avatar-Platzhalter -->
+                  <Border Width="40" Height="40" CornerRadius="20"
+                          Background="{StaticResource CraftSecondaryBrush}"
+                          VerticalAlignment="Center">
+                    <mi:MaterialIcon Kind="AccountHardHat" Width="22" Height="22"
+                                     Foreground="White"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+
+                  <!-- Name + Rolle -->
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Name}"
+                               FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock Text="{Binding RoleDisplay}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                  </StackPanel>
+
+                  <!-- Beitrag -->
+                  <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="1"
+                              HorizontalAlignment="Right">
+                    <TextBlock Text="{Binding ContributionDisplay}"
+                               FontSize="13" FontWeight="Bold"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}"
+                               HorizontalAlignment="Right" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

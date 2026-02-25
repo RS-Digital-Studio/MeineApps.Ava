@@ -1262,6 +1262,8 @@ namespace HandwerkerImperium.Resources.Strings {
 
         public static string NoOrdersAvailable => ResourceManager.GetString("NoOrdersAvailable", resourceCulture) ?? "";
 
+        public static string NoWorkersAvailable => ResourceManager.GetString("NoWorkersAvailable", resourceCulture) ?? "";
+
         public static string OrdersComingSoon => ResourceManager.GetString("OrdersComingSoon", resourceCulture) ?? "";
 
         public static string AllQuickJobsDone => ResourceManager.GetString("AllQuickJobsDone", resourceCulture) ?? "";
@@ -1382,6 +1384,10 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string GuildDesigners => ResourceManager.GetString("GuildDesigners", resourceCulture) ?? "";
         public static string JoinGuild => ResourceManager.GetString("JoinGuild", resourceCulture) ?? "";
         public static string LeaveGuild => ResourceManager.GetString("LeaveGuild", resourceCulture) ?? "";
+        public static string LeaveGuildTitle => ResourceManager.GetString("LeaveGuildTitle", resourceCulture) ?? "";
+        public static string LeaveGuildConfirm => ResourceManager.GetString("LeaveGuildConfirm", resourceCulture) ?? "";
+        public static string Leave => ResourceManager.GetString("Leave", resourceCulture) ?? "";
+        public static string PrestigeCompleted => ResourceManager.GetString("PrestigeCompleted", resourceCulture) ?? "";
         public static string WeeklyGoal => ResourceManager.GetString("WeeklyGoal", resourceCulture) ?? "";
 
         // Multiplayer-Gilden (Firebase)

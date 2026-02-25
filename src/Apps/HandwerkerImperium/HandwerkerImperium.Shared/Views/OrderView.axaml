@@ -169,12 +169,12 @@
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
                   <mi:MaterialIcon Kind="Star" Width="32" Height="32"
                                    AutomationProperties.AutomationId="Order_Icon_XpReward"
-                                   Foreground="Gold"
+                                   Foreground="{StaticResource CraftGoldBrush}"
                                    HorizontalAlignment="Center" />
                   <TextBlock Text="{Binding XpRewardText}"
                              AutomationProperties.AutomationId="Order_Txt_RewardXp"
                              FontSize="16" FontWeight="Bold"
-                             Foreground="Gold"
+                             Foreground="{StaticResource CraftGoldBrush}"
                              HorizontalAlignment="Center" />
                 </StackPanel>
               </Border>

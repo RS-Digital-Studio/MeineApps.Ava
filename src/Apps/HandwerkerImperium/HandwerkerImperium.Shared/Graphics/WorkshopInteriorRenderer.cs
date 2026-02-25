@@ -26,10 +26,25 @@ public class WorkshopInteriorRenderer
         { WorkshopType.InnovationLab,       (new SKColor(0xE0, 0xE0, 0xEA), new SKColor(0xC8, 0xC8, 0xD8), new SKColor(0xB0, 0xB0, 0xC8, 25)) },
     };
 
+    // Workshop-Typ-spezifische Lichtfarben (für dynamische Beleuchtung)
+    private static readonly Dictionary<WorkshopType, SKColor> LightColors = new()
+    {
+        { WorkshopType.Carpenter,          new SKColor(0xFF, 0xD7, 0x00) },  // Warmes Amber
+        { WorkshopType.Plumber,            new SKColor(0xB0, 0xD4, 0xF1) },  // Kühles Blau-Weiß
+        { WorkshopType.Electrician,        new SKColor(0xFF, 0xF5, 0x90) },  // Helles Gelb
+        { WorkshopType.Painter,            new SKColor(0xFF, 0xF0, 0xE0) },  // Neutrales Warmweiß
+        { WorkshopType.Roofer,             new SKColor(0xFF, 0xCC, 0x80) },  // Warmes Orange
+        { WorkshopType.Contractor,         new SKColor(0xFF, 0xE0, 0x82) },  // Warmes Gelb
+        { WorkshopType.Architect,          new SKColor(0xE8, 0xEA, 0xF0) },  // Kühles Weiß
+        { WorkshopType.GeneralContractor,  new SKColor(0xFF, 0xD7, 0x00) },  // Reiches Gold
+        { WorkshopType.MasterSmith,        new SKColor(0xFF, 0x8F, 0x00) },  // Tiefer Amber (Essen-Glut)
+        { WorkshopType.InnovationLab,      new SKColor(0xB3, 0xA0, 0xFF) },  // Kühles Blau-Violett
+    };
+
     /// <summary>
-    /// Rendert den dezenten Hintergrund eines Workshops.
+    /// Rendert den dezenten Hintergrund eines Workshops mit dynamischer Beleuchtung.
     /// </summary>
-    public void Render(SKCanvas canvas, SKRect bounds, Workshop workshop)
+    public void Render(SKCanvas canvas, SKRect bounds, Workshop workshop, float time)
     {
         var colors = WorkshopColors.GetValueOrDefault(workshop.Type,
             (new SKColor(0xD7, 0xCC, 0xB7), new SKColor(0xBC, 0xAA, 0x84), new SKColor(0xA6, 0x93, 0x72, 35)));
@@ -53,20 +68,42 @@ public class WorkshopInteriorRenderer
         // Dezentes Boden-Pattern (nur untere 25%, sehr subtil)
         DrawSubtleFloorPattern(canvas, bounds, workshop.Type, colors.Item3);
 
-        // Vignette-Beleuchtung: Fokus auf Mitte, Ränder dunkler
-        DrawVignette(canvas, bounds);
+        // Dynamische Beleuchtung (Spotlight + Hängelampe + warme Vignette)
+        DrawDynamicLighting(canvas, bounds, workshop.Type, time);
     }
 
     // =================================================================
-    // Vignette-Beleuchtung (Phase 6)
+    // Dynamische Beleuchtung (ersetzt statische Vignette)
     // =================================================================
 
-    private static void DrawVignette(SKCanvas canvas, SKRect bounds)
+    private void DrawDynamicLighting(SKCanvas canvas, SKRect bounds, WorkshopType type, float time)
+    {
+        var lightColor = LightColors.GetValueOrDefault(type, new SKColor(0xFF, 0xD7, 0x00));
+
+        // 1. Warme Vignette (Ränder dunkel-warm statt kalt-schwarz)
+        DrawWarmVignette(canvas, bounds, lightColor);
+
+        // 2. Dynamischer Spotlight (wandernder Lichtkreis über Arbeitsfläche)
+        DrawSpotlight(canvas, bounds, lightColor, time);
+
+        // 3. Hängelampe an der Decke mit Glow-Puls
+        DrawHangingLamp(canvas, bounds, lightColor, time);
+    }
+
+    /// <summary>
+    /// Warme Vignette: Ränder mit warmem Dunkel statt kaltem Schwarz.
+    /// Subtiler Warm-Tint im Zentrum für Werkstatt-Atmosphäre.
+    /// </summary>
+    private static void DrawWarmVignette(SKCanvas canvas, SKRect bounds, SKColor lightColor)
     {
         float cx = bounds.MidX;
         float cy = bounds.MidY;
-        // Radius = Diagonale * 0.7 → deckt Ecken ab
         float radius = MathF.Sqrt(bounds.Width * bounds.Width + bounds.Height * bounds.Height) * 0.55f;
+
+        // Warme Randfarbe: Lichtfarbe stark abgedunkelt
+        byte edgeR = (byte)(lightColor.Red / 8);
+        byte edgeG = (byte)(lightColor.Green / 10);
+        byte edgeB = (byte)(lightColor.Blue / 12);
 
         using var vignettePaint = new SKPaint
         {
@@ -76,15 +113,157 @@ public class WorkshopInteriorRenderer
                 radius,
                 new[]
                 {
-                    SKColors.Transparent,           // Mitte: hell
-                    SKColors.Transparent,           // Innerer Bereich: noch hell
-                    new SKColor(0, 0, 0, 25),       // Übergang
-                    new SKColor(0, 0, 0, 45),       // Ränder: dezent dunkler
+                    new SKColor(lightColor.Red, lightColor.Green, lightColor.Blue, 8),  // Zentrum: subtiler Warm-Tint
+                    SKColors.Transparent,                                                 // Innerer Ring: neutral
+                    new SKColor(edgeR, edgeG, edgeB, 30),                                // Übergang: warm-dunkel
+                    new SKColor(edgeR, edgeG, edgeB, 55),                                // Rand: warm-dunkel
                 },
-                new float[] { 0f, 0.4f, 0.75f, 1.0f },
+                new float[] { 0f, 0.3f, 0.7f, 1.0f },
                 SKShaderTileMode.Clamp)
         };
         canvas.DrawRect(bounds, vignettePaint);
+    }
+
+    /// <summary>
+    /// Dynamischer Spotlight: Warmer Lichtkreis der sich langsam über die
+    /// Arbeitsfläche bewegt (Sinus X/Y, ~0.2Hz = 5s Periode).
+    /// </summary>
+    private static void DrawSpotlight(SKCanvas canvas, SKRect bounds, SKColor lightColor, float time)
+    {
+        // Spotlight-Position: Langsame Sinus-Bewegung (~0.2Hz)
+        float spotX = bounds.MidX + MathF.Sin(time * 0.4f * MathF.PI) * bounds.Width * 0.15f;
+        float spotY = bounds.Top + bounds.Height * 0.45f + MathF.Cos(time * 0.3f * MathF.PI) * bounds.Height * 0.08f;
+
+        // Spotlight-Radius: ~45% der kleineren Dimension
+        float spotRadius = MathF.Min(bounds.Width, bounds.Height) * 0.45f;
+
+        using var spotPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Shader = SKShader.CreateRadialGradient(
+                new SKPoint(spotX, spotY),
+                spotRadius,
+                new[]
+                {
+                    new SKColor(lightColor.Red, lightColor.Green, lightColor.Blue, 22),  // Zentrum: warmes Licht
+                    new SKColor(lightColor.Red, lightColor.Green, lightColor.Blue, 10),  // Halbradius: gedämpft
+                    SKColors.Transparent                                                   // Rand: unsichtbar
+                },
+                new float[] { 0f, 0.5f, 1.0f },
+                SKShaderTileMode.Clamp)
+        };
+        canvas.DrawRect(bounds, spotPaint);
+    }
+
+    /// <summary>
+    /// Hängelampe: Kabel von der Decke + Lampenschirm (Trapez) + Glühbirne mit pulsierendem Glow.
+    /// </summary>
+    private static void DrawHangingLamp(SKCanvas canvas, SKRect bounds, SKColor lightColor, float time)
+    {
+        float lampX = bounds.MidX;
+        float cableTop = bounds.Top + 2;
+        float cableLen = bounds.Height * 0.12f;
+        float lampY = cableTop + cableLen;
+
+        // Glow-Puls: ~1.5Hz sanfte Intensitäts-Schwankung
+        float glowPulse = 0.6f + 0.4f * MathF.Sin(time * 3f * MathF.PI);
+        byte glowAlpha = (byte)(18 * glowPulse);
+
+        // --- Glow hinter der Lampe (zuerst zeichnen, liegt dahinter) ---
+        float glowRadius = bounds.Width * 0.25f * (0.85f + 0.15f * glowPulse);
+        using var glowPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Shader = SKShader.CreateRadialGradient(
+                new SKPoint(lampX, lampY + 4),
+                glowRadius,
+                new[]
+                {
+                    new SKColor(lightColor.Red, lightColor.Green, lightColor.Blue, glowAlpha),
+                    SKColors.Transparent
+                },
+                new float[] { 0f, 1.0f },
+                SKShaderTileMode.Clamp)
+        };
+        canvas.DrawRect(bounds, glowPaint);
+
+        // --- Kabel ---
+        using var cablePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = new SKColor(0x50, 0x45, 0x38, 45),
+            StrokeWidth = 1.2f,
+            Style = SKPaintStyle.Stroke
+        };
+        canvas.DrawLine(lampX, cableTop, lampX, lampY, cablePaint);
+
+        // --- Lampenschirm (Trapez: oben schmal, unten breit) ---
+        float shadeW = 16;
+        float shadeH = 6;
+        float shadeTopW = 8;
+        using var shadePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = new SKColor(0x6D, 0x5C, 0x48, 50),
+            Style = SKPaintStyle.Fill
+        };
+        using var shadePath = new SKPath();
+        shadePath.MoveTo(lampX - shadeTopW / 2, lampY);
+        shadePath.LineTo(lampX + shadeTopW / 2, lampY);
+        shadePath.LineTo(lampX + shadeW / 2, lampY + shadeH);
+        shadePath.LineTo(lampX - shadeW / 2, lampY + shadeH);
+        shadePath.Close();
+        canvas.DrawPath(shadePath, shadePaint);
+
+        // Lampenschirm-Rand (subtiler Highlight oben)
+        using var shadeEdgePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = new SKColor(0x90, 0x80, 0x68, 35),
+            StrokeWidth = 0.8f,
+            Style = SKPaintStyle.Stroke
+        };
+        canvas.DrawLine(lampX - shadeTopW / 2, lampY, lampX + shadeTopW / 2, lampY, shadeEdgePaint);
+
+        // --- Glühbirne ---
+        float bulbY = lampY + shadeH + 2;
+        float bulbR = 2.5f;
+        byte bulbAlpha = (byte)(60 + (int)(40 * glowPulse));
+        using var bulbPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = new SKColor(lightColor.Red, lightColor.Green, lightColor.Blue, bulbAlpha),
+            Style = SKPaintStyle.Fill
+        };
+        canvas.DrawCircle(lampX, bulbY, bulbR, bulbPaint);
+
+        // Heller Kern der Glühbirne
+        byte coreAlpha = (byte)(40 * glowPulse);
+        using var corePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = new SKColor(0xFF, 0xFF, 0xFF, coreAlpha),
+            Style = SKPaintStyle.Fill
+        };
+        canvas.DrawCircle(lampX, bulbY, bulbR * 0.5f, corePaint);
+
+        // --- Lichtkegel unter der Lampe (kegelförmiger Lichtstrahl) ---
+        float coneBottom = lampY + shadeH + bounds.Height * 0.25f;
+        float coneBottomW = shadeW * 2.5f;
+        byte coneAlpha = (byte)(10 * glowPulse);
+        using var conePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = new SKColor(lightColor.Red, lightColor.Green, lightColor.Blue, coneAlpha),
+            Style = SKPaintStyle.Fill
+        };
+        using var conePath = new SKPath();
+        conePath.MoveTo(lampX - shadeW / 2, lampY + shadeH);
+        conePath.LineTo(lampX + shadeW / 2, lampY + shadeH);
+        conePath.LineTo(lampX + coneBottomW / 2, coneBottom);
+        conePath.LineTo(lampX - coneBottomW / 2, coneBottom);
+        conePath.Close();
+        canvas.DrawPath(conePath, conePaint);
     }
 
     // =================================================================

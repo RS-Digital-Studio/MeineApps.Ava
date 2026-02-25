@@ -164,46 +164,45 @@ public class GameBackgroundRenderer
     }
 
     /// <summary>
-    /// Buildings: Blaupausen-Raster auf dunklem Hintergrund.
+    /// Buildings: Warme Steinmauer-Atmosphäre mit Ziegel-Raster.
     /// </summary>
     private void RenderBuildings(SKCanvas canvas, SKRect bounds, float time)
     {
-        // Dunkler Blueprint-Hintergrund
+        // Warmer dunkler Steinmauer-Gradient
         DrawVerticalGradient(canvas, bounds,
-            new SKColor(0x0D, 0x1B, 0x2A),
-            new SKColor(0x11, 0x20, 0x30));
+            new SKColor(0x1C, 0x14, 0x0E),
+            new SKColor(0x2A, 0x1F, 0x14),
+            new SKColor(0x15, 0x10, 0x0A));
 
-        // Feines Raster (20dp Abstand)
-        _gridPaint.Color = new SKColor(0x1E, 0x3A, 0x5F, 30);
+        // Horizontale Fugenlinien (Ziegel-Optik, 24dp Abstand)
+        _gridPaint.Color = new SKColor(0x3D, 0x2B, 0x1C, 25);
         _gridPaint.StrokeWidth = 0.5f;
-        float gridSize = 20f;
+        float rowHeight = 24f;
 
-        for (float x = bounds.Left; x < bounds.Right; x += gridSize)
-            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, _gridPaint);
-        for (float y = bounds.Top; y < bounds.Bottom; y += gridSize)
+        for (float y = bounds.Top; y < bounds.Bottom; y += rowHeight)
             canvas.DrawLine(bounds.Left, y, bounds.Right, y, _gridPaint);
 
-        // Grobes Raster (80dp Abstand)
-        _gridPaint.Color = new SKColor(0x1E, 0x3A, 0x5F, 60);
-        _gridPaint.StrokeWidth = 1f;
-        float coarseGrid = 80f;
-
-        for (float x = bounds.Left; x < bounds.Right; x += coarseGrid)
-            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, _gridPaint);
-        for (float y = bounds.Top; y < bounds.Bottom; y += coarseGrid)
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, _gridPaint);
-
-        // Massmarkierungen am groben Raster
-        _gridPaint.Color = new SKColor(0x1E, 0x3A, 0x5F, 45);
-        _gridPaint.StrokeWidth = 0.5f;
-        for (float x = bounds.Left; x < bounds.Right; x += coarseGrid)
+        // Versetzte vertikale Fugen (Ziegel-Verband)
+        _gridPaint.Color = new SKColor(0x3D, 0x2B, 0x1C, 18);
+        float brickW = 48f;
+        int row = 0;
+        for (float y = bounds.Top; y < bounds.Bottom; y += rowHeight)
         {
-            canvas.DrawLine(x, bounds.Top, x, bounds.Top + 6f, _gridPaint);
-            canvas.DrawLine(x, bounds.Bottom - 6f, x, bounds.Bottom, _gridPaint);
+            float offset = (row % 2) * brickW * 0.5f;
+            for (float x = bounds.Left + offset; x < bounds.Right; x += brickW)
+                canvas.DrawLine(x, y, x, y + rowHeight, _gridPaint);
+            row++;
         }
 
-        // Partikel (Blaupausen-Staub)
-        RenderParticles(canvas, new SKColor(0x64, 0xB5, 0xF6, 30));
+        // 4 Gebäude-Silhouetten (subtil)
+        _silhouettePaint.Color = new SKColor(0xD9, 0x77, 0x06, 10); // CraftPrimary, sehr subtil
+        DrawBuildingSilhouette(canvas, bounds.Left + bounds.Width * 0.15f, bounds.Top + bounds.Height * 0.3f, 36f);
+        DrawBuildingSilhouette(canvas, bounds.Left + bounds.Width * 0.55f, bounds.Top + bounds.Height * 0.5f, 30f);
+        DrawBuildingSilhouette(canvas, bounds.Left + bounds.Width * 0.8f, bounds.Top + bounds.Height * 0.25f, 34f);
+        DrawBuildingSilhouette(canvas, bounds.Left + bounds.Width * 0.35f, bounds.Top + bounds.Height * 0.75f, 28f);
+
+        // Partikel (warmer Staub)
+        RenderParticles(canvas, new SKColor(0xD4, 0xA5, 0x74, 25));
     }
 
     /// <summary>
@@ -323,41 +322,40 @@ public class GameBackgroundRenderer
     }
 
     /// <summary>
-    /// Research: Dunkles Blau + Netzlinien + Dampf-Partikel.
+    /// Research: Warme Werkstatt-Atmosphäre mit Holzmaserung + Zahnrad-Silhouetten.
     /// </summary>
     private void RenderResearch(SKCanvas canvas, SKRect bounds, float time)
     {
-        // Dunkler Blau-Gradient
+        // Warmer Nussholz-Gradient (passend zum ResearchBackgroundRenderer)
         DrawVerticalGradient(canvas, bounds,
-            new SKColor(0x0A, 0x14, 0x28),
-            new SKColor(0x12, 0x1C, 0x35),
-            new SKColor(0x06, 0x0E, 0x1A));
+            new SKColor(0x1C, 0x14, 0x0E),
+            new SKColor(0x24, 0x18, 0x0F),
+            new SKColor(0x12, 0x0D, 0x08));
 
-        // Diagonale Netzlinien (futuristische Labor-Atmosphaere)
-        _gridPaint.Color = new SKColor(0x1A, 0x3A, 0x6A, 20);
-        _gridPaint.StrokeWidth = 0.5f;
-        float spacing = 40f;
-
-        // Diagonal links-oben -> rechts-unten
-        for (float offset = -bounds.Height; offset < bounds.Width + bounds.Height; offset += spacing)
+        // Holzmaserung-Linien (10 wellenförmige Linien)
+        _gridPaint.Color = new SKColor(0x3A, 0x28, 0x18, 20);
+        _gridPaint.StrokeWidth = 1f;
+        for (int i = 0; i < 10; i++)
         {
-            canvas.DrawLine(
-                bounds.Left + offset, bounds.Top,
-                bounds.Left + offset - bounds.Height, bounds.Bottom,
-                _gridPaint);
+            float yBase = bounds.Top + bounds.Height * (0.08f + i * 0.09f);
+            using var path = new SKPath();
+            path.MoveTo(bounds.Left, yBase);
+            for (float x = bounds.Left; x < bounds.Right; x += 20f)
+            {
+                float wave = MathF.Sin(x * 0.015f + i * 0.8f) * 4f;
+                path.LineTo(x, yBase + wave);
+            }
+            canvas.DrawPath(path, _gridPaint);
         }
 
-        // Diagonal rechts-oben -> links-unten
-        for (float offset = -bounds.Height; offset < bounds.Width + bounds.Height; offset += spacing)
-        {
-            canvas.DrawLine(
-                bounds.Left + offset, bounds.Top,
-                bounds.Left + offset + bounds.Height, bounds.Bottom,
-                _gridPaint);
-        }
+        // 3 Zahnrad-Silhouetten (subtil, langsam rotierend)
+        _silhouettePaint.Color = new SKColor(0xEA, 0x58, 0x0C, 8); // CraftPrimary, sehr subtil
+        DrawGearSilhouette(canvas, bounds.Left + bounds.Width * 0.2f, bounds.Top + bounds.Height * 0.35f, 32f, time * 0.3f);
+        DrawGearSilhouette(canvas, bounds.Left + bounds.Width * 0.7f, bounds.Top + bounds.Height * 0.55f, 28f, -time * 0.25f);
+        DrawGearSilhouette(canvas, bounds.Left + bounds.Width * 0.45f, bounds.Top + bounds.Height * 0.8f, 24f, time * 0.35f);
 
-        // Partikel (aufsteigender Dampf)
-        RenderParticles(canvas, new SKColor(0x80, 0xC0, 0xFF, 30));
+        // Partikel (warmer aufsteigender Dampf)
+        RenderParticles(canvas, new SKColor(0xD4, 0xA5, 0x74, 25));
     }
 
     /// <summary>
@@ -532,7 +530,7 @@ public class GameBackgroundRenderer
                 break;
 
             case GameScreenType.Buildings:
-                // Blaupausen-Staub: Langsam schwebend
+                // Warmer Staub: Langsam schwebend
                 p.X = bounds.Left + Random.Shared.NextSingle() * bounds.Width;
                 p.Y = bounds.Top + Random.Shared.NextSingle() * bounds.Height;
                 p.VelocityX = -3f + Random.Shared.NextSingle() * 6f;
@@ -563,7 +561,7 @@ public class GameBackgroundRenderer
                 break;
 
             case GameScreenType.Research:
-                // Dampf: Von Mitte-unten aufsteigend
+                // Warmer Dampf: Von Mitte-unten aufsteigend
                 p.X = bounds.MidX + (-30f + Random.Shared.NextSingle() * 60f);
                 p.Y = bounds.Bottom - 20f;
                 p.VelocityX = -3f + Random.Shared.NextSingle() * 6f;
@@ -718,6 +716,80 @@ public class GameBackgroundRenderer
         // Griffe (2 kleine Kreise)
         canvas.DrawCircle(x - 2f, y + h * 0.4f, 1.5f, _silhouettePaint);
         canvas.DrawCircle(x + 2f, y + h * 0.4f, 1.5f, _silhouettePaint);
+    }
+
+    /// <summary>
+    /// Zeichnet eine Gebäude-Silhouette (Haus mit Dach + Schornstein).
+    /// </summary>
+    private void DrawBuildingSilhouette(SKCanvas canvas, float x, float y, float size)
+    {
+        using var path = new SKPath();
+        float halfW = size * 0.4f;
+        float bodyH = size * 0.5f;
+        float roofH = size * 0.35f;
+
+        // Dach (Dreieck)
+        path.MoveTo(x - halfW - 4f, y);
+        path.LineTo(x, y - roofH);
+        path.LineTo(x + halfW + 4f, y);
+
+        // Körper (Rechteck)
+        path.LineTo(x + halfW, y);
+        path.LineTo(x + halfW, y + bodyH);
+        path.LineTo(x - halfW, y + bodyH);
+        path.LineTo(x - halfW, y);
+        path.Close();
+
+        canvas.DrawPath(path, _silhouettePaint);
+
+        // Schornstein
+        canvas.DrawRect(x + halfW * 0.3f, y - roofH * 0.8f, size * 0.1f, roofH * 0.5f, _silhouettePaint);
+
+        // Tür
+        canvas.DrawRect(x - size * 0.07f, y + bodyH * 0.4f, size * 0.14f, bodyH * 0.6f, _silhouettePaint);
+    }
+
+    /// <summary>
+    /// Zeichnet eine rotierende Zahnrad-Silhouette.
+    /// </summary>
+    private void DrawGearSilhouette(SKCanvas canvas, float x, float y, float size, float rotation)
+    {
+        int teeth = 8;
+        float innerR = size * 0.35f;
+        float outerR = size * 0.5f;
+
+        using var path = new SKPath();
+        for (int i = 0; i < teeth; i++)
+        {
+            float angle1 = rotation + i * MathF.Tau / teeth;
+            float angle2 = rotation + (i + 0.35f) * MathF.Tau / teeth;
+            float angle3 = rotation + (i + 0.5f) * MathF.Tau / teeth;
+            float angle4 = rotation + (i + 0.85f) * MathF.Tau / teeth;
+
+            float ix1 = x + innerR * MathF.Cos(angle1);
+            float iy1 = y + innerR * MathF.Sin(angle1);
+            float ox1 = x + outerR * MathF.Cos(angle2);
+            float oy1 = y + outerR * MathF.Sin(angle2);
+            float ox2 = x + outerR * MathF.Cos(angle3);
+            float oy2 = y + outerR * MathF.Sin(angle3);
+            float ix2 = x + innerR * MathF.Cos(angle4);
+            float iy2 = y + innerR * MathF.Sin(angle4);
+
+            if (i == 0)
+                path.MoveTo(ix1, iy1);
+            else
+                path.LineTo(ix1, iy1);
+
+            path.LineTo(ox1, oy1);
+            path.LineTo(ox2, oy2);
+            path.LineTo(ix2, iy2);
+        }
+        path.Close();
+
+        canvas.DrawPath(path, _silhouettePaint);
+
+        // Zentrales Loch
+        canvas.DrawCircle(x, y, innerR * 0.4f, _silhouettePaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

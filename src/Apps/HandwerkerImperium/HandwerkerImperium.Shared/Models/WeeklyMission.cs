@@ -19,7 +19,7 @@ public enum WeeklyMissionType
 /// <summary>
 /// Eine einzelne wöchentliche Mission.
 /// </summary>
-public class WeeklyMission
+public class WeeklyMission : IProgressProvider
 {
     [JsonPropertyName("id")]
     public string Id { get; set; } = "";

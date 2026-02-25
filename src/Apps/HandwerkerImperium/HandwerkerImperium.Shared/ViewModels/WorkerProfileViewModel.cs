@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Helpers;
@@ -39,6 +40,11 @@ public partial class WorkerProfileViewModel : ObservableObject
     /// Parameters: title, message, acceptText, cancelText. Returns bool.
     /// </summary>
     public event Func<string, string, string, string, Task<bool>>? ConfirmationRequested;
+
+    /// <summary>
+    /// Event für kurze FloatingText-Benachrichtigungen. Parameters: text, category.
+    /// </summary>
+    public event Action<string, string>? FloatingTextRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -202,6 +208,26 @@ public partial class WorkerProfileViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     private string _equippedItemBonusDisplay = string.Empty;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WORKER-UNDO (5s Rückgängig nach Entlassung)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private Worker? _pendingFireWorker;
+    private WorkshopType? _pendingFireWorkshop;
+    private DispatcherTimer? _undoTimer;
+
+    /// <summary>
+    /// True wenn ein Worker gerade gefeuert wurde und noch rückgängig gemacht werden kann.
+    /// </summary>
+    [ObservableProperty]
+    private bool _showUndoFireWorker;
+
+    /// <summary>
+    /// Anzeige-Text für die Undo-Leiste (z.B. "Max entlassen - Rückgängig?").
+    /// </summary>
+    [ObservableProperty]
+    private string _undoFireWorkerText = "";
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -473,10 +499,9 @@ public partial class WorkerProfileViewModel : ObservableObject
         }
         else
         {
-            AlertRequested?.Invoke(
-                _localizationService.GetString("TrainingFailed"),
-                _localizationService.GetString("TrainingFailedDesc"),
-                _localizationService.GetString("OK") ?? "OK");
+            FloatingTextRequested?.Invoke(
+                _localizationService.GetString("TrainingFailed") ?? "Training fehlgeschlagen",
+                "error");
         }
     }
 
@@ -501,10 +526,9 @@ public partial class WorkerProfileViewModel : ObservableObject
         }
         else
         {
-            AlertRequested?.Invoke(
-                _localizationService.GetString("RestFailed"),
-                _localizationService.GetString("RestFailedDesc"),
-                _localizationService.GetString("OK") ?? "OK");
+            FloatingTextRequested?.Invoke(
+                _localizationService.GetString("RestFailed") ?? "Ruhe fehlgeschlagen",
+                "error");
         }
     }
 
@@ -572,11 +596,66 @@ public partial class WorkerProfileViewModel : ObservableObject
 
         if (!confirm) return;
 
+        // Worker-Daten vor dem Feuern merken (für Undo)
+        var firedWorker = Worker;
+        var firedWorkshop = Worker.AssignedWorkshop;
+
         bool success = _workerService.FireWorker(_workerId);
-        if (success)
+        if (success && firedWorkshop != null)
         {
+            // Undo-Mechanismus starten: 5 Sekunden zum Rückgängigmachen
+            _pendingFireWorker = firedWorker;
+            _pendingFireWorkshop = firedWorkshop.Value;
+
+            ShowUndoFireWorker = true;
+            UndoFireWorkerText = string.Format(
+                _localizationService.GetString("WorkerFiredUndo") ?? "{0} entlassen \u2212 Rückgängig?",
+                firedWorker.Name ?? $"Tier-{firedWorker.Tier}");
+
+            _undoTimer?.Stop();
+            _undoTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            _undoTimer.Tick += (_, _) =>
+            {
+                ConfirmFireWorker();
+                _undoTimer?.Stop();
+            };
+            _undoTimer.Start();
+
+            // Zurück navigieren (Undo-Leiste wird im Parent-View angezeigt)
             NavigationRequested?.Invoke(this, "..");
         }
+        else if (success)
+        {
+            // Kein Workshop bekannt → kein Undo möglich
+            NavigationRequested?.Invoke(this, "..");
+        }
+    }
+
+    /// <summary>
+    /// Macht die letzte Worker-Entlassung rückgängig (innerhalb von 5 Sekunden).
+    /// </summary>
+    [RelayCommand]
+    private void UndoFireWorker()
+    {
+        if (_pendingFireWorker == null || _pendingFireWorkshop == null) return;
+        _undoTimer?.Stop();
+
+        // Worker zurück in Workshop
+        _workerService.ReinstateWorker(_pendingFireWorker, _pendingFireWorkshop.Value);
+
+        _pendingFireWorker = null;
+        _pendingFireWorkshop = null;
+        ShowUndoFireWorker = false;
+    }
+
+    /// <summary>
+    /// Bestätigt die Entlassung nach Ablauf des Undo-Timers.
+    /// </summary>
+    private void ConfirmFireWorker()
+    {
+        _pendingFireWorker = null;
+        _pendingFireWorkshop = null;
+        ShowUndoFireWorker = false;
     }
 
     [RelayCommand]

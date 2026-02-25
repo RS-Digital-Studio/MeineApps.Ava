@@ -19,7 +19,7 @@ public enum DailyChallengeType
 /// <summary>
 /// Eine einzelne taegliche Herausforderung mit Fortschritt und Belohnung.
 /// </summary>
-public class DailyChallenge
+public class DailyChallenge : IProgressProvider
 {
     [JsonPropertyName("id")]
     public string Id { get; set; } = Guid.NewGuid().ToString();

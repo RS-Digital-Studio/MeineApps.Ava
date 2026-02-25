@@ -50,6 +50,7 @@ public class CityWeatherSystem
     /// </summary>
     public void SetWeatherByMonth()
     {
+        // Lokalzeit für visuelle Darstellung (Jahreszeit)
         int month = DateTime.Now.Month;
         _currentWeather = month switch
         {

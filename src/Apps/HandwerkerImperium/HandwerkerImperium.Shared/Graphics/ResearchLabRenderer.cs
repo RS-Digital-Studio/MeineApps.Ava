@@ -6,6 +6,7 @@ namespace HandwerkerImperium.Graphics;
 /// Rendert ein Forschungslabor/Werkstatt-Szene als SkiaSharp-Header.
 /// Warme Braun-Töne mit Craft-Orange Akzenten, animierte Elemente:
 /// Dampf aus Kolben, rotierende Zahnräder, blinkende Glühbirne, Funkenpartikel.
+/// SKPaint-Objekte werden gecacht um Allokationen pro Frame zu vermeiden.
 /// </summary>
 public class ResearchLabRenderer
 {
@@ -16,7 +17,10 @@ public class ResearchLabRenderer
     private readonly List<SparkParticle> _sparks = [];
     private float _sparkTimer;
 
-    // Farb-Palette
+    // ═══════════════════════════════════════════════════════════════════════
+    // FARB-PALETTE
+    // ═══════════════════════════════════════════════════════════════════════
+
     private static readonly SKColor WallColor = new(0x3E, 0x27, 0x23);         // Dunkles Braun (Wand)
     private static readonly SKColor WallLightColor = new(0x5D, 0x40, 0x37);    // Helleres Braun (Akzent)
     private static readonly SKColor FloorColor = new(0x4E, 0x34, 0x2E);        // Boden
@@ -34,6 +38,83 @@ public class ResearchLabRenderer
     private static readonly SKColor BulbGlow = new(0xFF, 0xEB, 0x3B);          // Glühbirnen-Licht
     private static readonly SKColor BlueprintColor = new(0x1A, 0x23, 0x7E, 0x60); // Blaupause
     private static readonly SKColor SteamColor = new(0xB0, 0xBE, 0xC5);       // Dampf
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GECACHTE PAINTS - STATISCH (feste Farben, unveränderlich)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Hintergrund
+    private static readonly SKPaint PaintWall = new() { Color = WallColor, IsAntialias = false };
+    private static readonly SKPaint PaintStripe = new() { Color = WallLightColor, IsAntialias = false };
+    private static readonly SKPaint PaintFloor = new() { Color = FloorColor, IsAntialias = false };
+    private static readonly SKPaint PaintFloorLine = new() { Color = new SKColor(0x33, 0x1E, 0x1A), IsAntialias = false, StrokeWidth = 2 };
+    private static readonly SKPaint PaintBoard = new() { Color = new SKColor(0x44, 0x2C, 0x25), IsAntialias = false, StrokeWidth = 1 };
+
+    // Bücherregal
+    private static readonly SKPaint PaintShelf = new() { Color = ShelfColor, IsAntialias = false };
+    private static readonly SKPaint PaintShelfSupport = new() { Color = new SKColor(0x4E, 0x34, 0x2E), IsAntialias = false };
+    private static readonly SKPaint PaintBookRed = new() { Color = BookRed, IsAntialias = false };
+    private static readonly SKPaint PaintBookBrown = new() { Color = BookBrown, IsAntialias = false };
+    private static readonly SKPaint PaintBookGreen = new() { Color = BookGreen, IsAntialias = false };
+    private static readonly SKPaint PaintBookNavy = new() { Color = new SKColor(0x1A, 0x23, 0x7E), IsAntialias = false };
+
+    // Tisch
+    private static readonly SKPaint PaintTableTop = new() { Color = TableTopColor, IsAntialias = false };
+    private static readonly SKPaint PaintTableEdge = new() { Color = TableColor, IsAntialias = false };
+    private static readonly SKPaint PaintTableLeg = new() { Color = TableColor, IsAntialias = false };
+
+    // Glaskolben (feste Alpha-Werte)
+    private static readonly SKPaint PaintFlaskBody = new() { Color = FlaskGreen.WithAlpha(0xB0), IsAntialias = false };
+    private static readonly SKPaint PaintFlaskNeck = new() { Color = FlaskGreen.WithAlpha(0x90), IsAntialias = false };
+    private static readonly SKPaint PaintFlaskLiquid = new() { Color = FlaskGreen.WithAlpha(0xD0), IsAntialias = false };
+    private static readonly SKPaint PaintSmallFlask = new() { Color = FlaskBlue.WithAlpha(0xA0), IsAntialias = false };
+    private static readonly SKPaint PaintSmallFlaskNeck = new() { Color = FlaskBlue.WithAlpha(0x80), IsAntialias = false };
+    private static readonly SKPaint PaintTinyFlask = new() { Color = FlaskAmber.WithAlpha(0xB0), IsAntialias = false };
+    private static readonly SKPaint PaintFlaskShine = new() { Color = new SKColor(0xFF, 0xFF, 0xFF, 0x40), IsAntialias = false };
+
+    // Blaupausen
+    private static readonly SKPaint PaintBlueprint = new() { Color = new SKColor(0xE8, 0xEA, 0xED, 0xD0), IsAntialias = false };
+    private static readonly SKPaint PaintBlueprintLine = new() { Color = BlueprintColor, IsAntialias = false, StrokeWidth = 1 };
+    private static readonly SKPaint PaintStamp = new() { Color = new SKColor(0xC6, 0x28, 0x28, 0x80), IsAntialias = false };
+
+    // Werkzeuge
+    private static readonly SKPaint PaintHammerHandle = new() { Color = new SKColor(0x8D, 0x6E, 0x63), IsAntialias = false };
+    private static readonly SKPaint PaintHammerHead = new() { Color = new SKColor(0x60, 0x60, 0x60), IsAntialias = false };
+    private static readonly SKPaint PaintScrewdriverGrip = new() { Color = CraftOrange, IsAntialias = false };
+    private static readonly SKPaint PaintScrewdriverBlade = new() { Color = new SKColor(0x90, 0x90, 0x90), IsAntialias = false };
+
+    // Zahnräder
+    private static readonly SKPaint PaintGear = new() { Color = GearColor, IsAntialias = false, Style = SKPaintStyle.Fill };
+    private static readonly SKPaint PaintGearHole = new() { Color = WallColor, IsAntialias = false, Style = SKPaintStyle.Fill };
+    private static readonly SKPaint PaintGearTooth = new() { Color = GearColor, IsAntialias = false };
+    private static readonly SKPaint PaintGearSpoke = new() { Color = new SKColor(0x60, 0x70, 0x78), IsAntialias = false, StrokeWidth = 2 };
+
+    // Glühbirne (statische Teile)
+    private static readonly SKPaint PaintWire = new() { Color = new SKColor(0x40, 0x40, 0x40), IsAntialias = false, StrokeWidth = 2 };
+    private static readonly SKPaint PaintSocket = new() { Color = new SKColor(0x60, 0x60, 0x60), IsAntialias = false };
+
+    // Fortschrittsbalken (statische Teile)
+    private static readonly SKPaint PaintProgressBg = new() { Color = new SKColor(0x20, 0x15, 0x12), IsAntialias = false };
+    private static readonly SKPaint PaintProgressFill = new() { Color = CraftOrange, IsAntialias = false };
+    private static readonly SKPaint PaintProgressBorder = new() { Color = new SKColor(0x6D, 0x4C, 0x41), IsAntialias = false, Style = SKPaintStyle.Stroke, StrokeWidth = 1 };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GECACHTE PAINTS - DYNAMISCH (Farbe wird pro Frame mutiert)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Glühbirne (animierte Alpha-Werte)
+    private readonly SKPaint _bulbGlowPaint = new() { IsAntialias = false };
+    private readonly SKPaint _bulbCorePaint = new() { IsAntialias = false };
+    private readonly SKPaint _bulbBodyPaint = new() { IsAntialias = false };
+
+    // Dampf (variables Alpha pro Partikel)
+    private readonly SKPaint _steamPaint = new() { IsAntialias = false };
+
+    // Funken (variable Farbe + Alpha pro Partikel)
+    private readonly SKPaint _sparkPaint = new() { IsAntialias = false };
+
+    // Fortschrittsbalken Glow (animiertes Alpha)
+    private readonly SKPaint _progressGlowPaint = new() { IsAntialias = false };
 
     /// <summary>
     /// Rendert die Forschungslabor-Szene.
@@ -102,40 +183,25 @@ public class ResearchLabRenderer
     private static void DrawBackground(SKCanvas canvas, float left, float top, float w, float h)
     {
         // Oberer Wand-Bereich (dunkel, leicht bläulich)
-        using var wallPaint = new SKPaint { Color = WallColor, IsAntialias = false };
-        canvas.DrawRect(left, top, w, h, wallPaint);
+        canvas.DrawRect(left, top, w, h, PaintWall);
 
         // Horizontale Holzleisten-Akzente (3 Streifen)
-        using var stripePaint = new SKPaint { Color = WallLightColor, IsAntialias = false };
         float stripeH = 3;
-        canvas.DrawRect(left, top + h * 0.15f, w, stripeH, stripePaint);
-        canvas.DrawRect(left, top + h * 0.35f, w, stripeH, stripePaint);
-        canvas.DrawRect(left, top + h * 0.55f, w, stripeH, stripePaint);
+        canvas.DrawRect(left, top + h * 0.15f, w, stripeH, PaintStripe);
+        canvas.DrawRect(left, top + h * 0.35f, w, stripeH, PaintStripe);
+        canvas.DrawRect(left, top + h * 0.55f, w, stripeH, PaintStripe);
 
         // Boden (untere 30%)
         float floorY = top + h * 0.70f;
-        using var floorPaint = new SKPaint { Color = FloorColor, IsAntialias = false };
-        canvas.DrawRect(left, floorY, w, h * 0.30f, floorPaint);
+        canvas.DrawRect(left, floorY, w, h * 0.30f, PaintFloor);
 
-        // Boden-Linie (Übergang Wand → Boden)
-        using var floorLinePaint = new SKPaint
-        {
-            Color = new SKColor(0x33, 0x1E, 0x1A),
-            IsAntialias = false,
-            StrokeWidth = 2
-        };
-        canvas.DrawLine(left, floorY, left + w, floorY, floorLinePaint);
+        // Boden-Linie (Übergang Wand -> Boden)
+        canvas.DrawLine(left, floorY, left + w, floorY, PaintFloorLine);
 
         // Dielenmuster im Boden
-        using var boardPaint = new SKPaint
-        {
-            Color = new SKColor(0x44, 0x2C, 0x25),
-            IsAntialias = false,
-            StrokeWidth = 1
-        };
         for (float x = left; x < left + w; x += 40)
         {
-            canvas.DrawLine(x, floorY, x, top + h, boardPaint);
+            canvas.DrawLine(x, floorY, x, top + h, PaintBoard);
         }
     }
 
@@ -148,37 +214,31 @@ public class ResearchLabRenderer
         float shelfW = w * 0.15f;
 
         // Regal-Bretter (2 Stück)
-        using var shelfPaint = new SKPaint { Color = ShelfColor, IsAntialias = false };
-
         float shelf1Y = top + h * 0.25f;
         float shelf2Y = top + h * 0.48f;
         float shelfThick = 4;
 
-        canvas.DrawRect(shelfX, shelf1Y, shelfW, shelfThick, shelfPaint);
-        canvas.DrawRect(shelfX, shelf2Y, shelfW, shelfThick, shelfPaint);
+        canvas.DrawRect(shelfX, shelf1Y, shelfW, shelfThick, PaintShelf);
+        canvas.DrawRect(shelfX, shelf2Y, shelfW, shelfThick, PaintShelf);
 
         // Regal-Stützen
-        using var supportPaint = new SKPaint { Color = new SKColor(0x4E, 0x34, 0x2E), IsAntialias = false };
-        canvas.DrawRect(shelfX, shelf1Y, 3, shelf2Y - shelf1Y + shelfThick, supportPaint);
-        canvas.DrawRect(shelfX + shelfW - 3, shelf1Y, 3, shelf2Y - shelf1Y + shelfThick, supportPaint);
+        canvas.DrawRect(shelfX, shelf1Y, 3, shelf2Y - shelf1Y + shelfThick, PaintShelfSupport);
+        canvas.DrawRect(shelfX + shelfW - 3, shelf1Y, 3, shelf2Y - shelf1Y + shelfThick, PaintShelfSupport);
 
-        // Bücher auf dem oberen Regal
-        SKColor[] bookColors = [BookRed, BookBrown, BookGreen, new SKColor(0x1A, 0x23, 0x7E), BookRed];
+        // Bücher auf dem oberen Regal (gecachte Paints pro Buchfarbe)
+        SKPaint[] bookPaints = [PaintBookRed, PaintBookBrown, PaintBookGreen, PaintBookNavy, PaintBookRed];
         float bookX = shelfX + 3;
         for (int i = 0; i < 5; i++)
         {
             float bookW = shelfW / 6.5f;
             float bookH = 12 + (i % 3) * 4;
-            using var bookPaint = new SKPaint { Color = bookColors[i], IsAntialias = false };
-            canvas.DrawRect(bookX, shelf1Y - bookH, bookW, bookH, bookPaint);
+            canvas.DrawRect(bookX, shelf1Y - bookH, bookW, bookH, bookPaints[i]);
             bookX += bookW + 1;
         }
 
         // Bücher auf dem unteren Regal (liegend)
-        using var book1Paint = new SKPaint { Color = BookBrown, IsAntialias = false };
-        canvas.DrawRect(shelfX + 4, shelf2Y - 5, shelfW * 0.5f, 5, book1Paint);
-        using var book2Paint = new SKPaint { Color = new SKColor(0x1A, 0x23, 0x7E), IsAntialias = false };
-        canvas.DrawRect(shelfX + 4, shelf2Y - 9, shelfW * 0.45f, 4, book2Paint);
+        canvas.DrawRect(shelfX + 4, shelf2Y - 5, shelfW * 0.5f, 5, PaintBookBrown);
+        canvas.DrawRect(shelfX + 4, shelf2Y - 9, shelfW * 0.45f, 4, PaintBookNavy);
     }
 
     /// <summary>
@@ -193,23 +253,21 @@ public class ResearchLabRenderer
         float legH = h * 0.12f;
 
         // Tischplatte (obere Fläche - heller)
-        using var topPaint = new SKPaint { Color = TableTopColor, IsAntialias = false };
-        canvas.DrawRect(tableX, tableY, tableW, tableH, topPaint);
+        canvas.DrawRect(tableX, tableY, tableW, tableH, PaintTableTop);
 
         // Tischkante (Schatten)
-        using var edgePaint = new SKPaint { Color = TableColor, IsAntialias = false };
-        canvas.DrawRect(tableX, tableY + tableH, tableW, 3, edgePaint);
+        canvas.DrawRect(tableX, tableY + tableH, tableW, 3, PaintTableEdge);
 
         // Tischbeine
-        using var legPaint = new SKPaint { Color = TableColor, IsAntialias = false };
         float legW = 6;
-        canvas.DrawRect(tableX + 8, tableY + tableH + 3, legW, legH, legPaint);
-        canvas.DrawRect(tableX + tableW - 14, tableY + tableH + 3, legW, legH, legPaint);
+        canvas.DrawRect(tableX + 8, tableY + tableH + 3, legW, legH, PaintTableLeg);
+        canvas.DrawRect(tableX + tableW - 14, tableY + tableH + 3, legW, legH, PaintTableLeg);
     }
 
     /// <summary>
     /// Zeichnet Glaskolben und Fläschchen auf dem Tisch.
     /// Der große Kolben dampft (Animation in DrawSteam).
+    /// Alle Kolben-Paints haben feste Alpha-Werte und sind statisch gecacht.
     /// </summary>
     private void DrawFlasks(SKCanvas canvas, float left, float top, float w, float h)
     {
@@ -222,36 +280,29 @@ public class ResearchLabRenderer
         float bigFlaskH = 24;
 
         // Glaskolben-Körper
-        using var flaskPaint = new SKPaint { Color = FlaskGreen.WithAlpha(0xB0), IsAntialias = false };
-        canvas.DrawRect(bigFlaskX, bigFlaskBottom - bigFlaskH, bigFlaskW, bigFlaskH, flaskPaint);
+        canvas.DrawRect(bigFlaskX, bigFlaskBottom - bigFlaskH, bigFlaskW, bigFlaskH, PaintFlaskBody);
 
         // Hals (schmaler oben)
-        using var neckPaint = new SKPaint { Color = FlaskGreen.WithAlpha(0x90), IsAntialias = false };
-        canvas.DrawRect(bigFlaskX + 5, bigFlaskBottom - bigFlaskH - 8, 6, 8, neckPaint);
+        canvas.DrawRect(bigFlaskX + 5, bigFlaskBottom - bigFlaskH - 8, 6, 8, PaintFlaskNeck);
 
-        // Flüssigkeitslevel (pulsierende Füllhöhe)
+        // Flüssigkeitslevel (pulsierende Füllhöhe - nur Position animiert, Paint bleibt gleich)
         float fillPulse = 0.6f + MathF.Sin(_time * 1.5f) * 0.1f;
         float fillH = bigFlaskH * fillPulse;
-        using var liquidPaint = new SKPaint { Color = FlaskGreen.WithAlpha(0xD0), IsAntialias = false };
-        canvas.DrawRect(bigFlaskX + 1, bigFlaskBottom - fillH, bigFlaskW - 2, fillH - 1, liquidPaint);
+        canvas.DrawRect(bigFlaskX + 1, bigFlaskBottom - fillH, bigFlaskW - 2, fillH - 1, PaintFlaskLiquid);
 
         // Kleiner Kolben blau (rechts davon)
         float smallFlaskX = left + w * 0.48f;
         float smallFlaskH = 16;
-        using var smallFlaskPaint = new SKPaint { Color = FlaskBlue.WithAlpha(0xA0), IsAntialias = false };
-        canvas.DrawRect(smallFlaskX, bigFlaskBottom - smallFlaskH, 10, smallFlaskH, smallFlaskPaint);
-        using var smallNeckPaint = new SKPaint { Color = FlaskBlue.WithAlpha(0x80), IsAntialias = false };
-        canvas.DrawRect(smallFlaskX + 3, bigFlaskBottom - smallFlaskH - 5, 4, 5, smallNeckPaint);
+        canvas.DrawRect(smallFlaskX, bigFlaskBottom - smallFlaskH, 10, smallFlaskH, PaintSmallFlask);
+        canvas.DrawRect(smallFlaskX + 3, bigFlaskBottom - smallFlaskH - 5, 4, 5, PaintSmallFlaskNeck);
 
         // Kleines Fläschchen bernstein (ganz rechts)
         float tinyFlaskX = left + w * 0.55f;
         float tinyFlaskH = 12;
-        using var tinyPaint = new SKPaint { Color = FlaskAmber.WithAlpha(0xB0), IsAntialias = false };
-        canvas.DrawRect(tinyFlaskX, bigFlaskBottom - tinyFlaskH, 8, tinyFlaskH, tinyPaint);
+        canvas.DrawRect(tinyFlaskX, bigFlaskBottom - tinyFlaskH, 8, tinyFlaskH, PaintTinyFlask);
 
         // Glanzlicht auf Kolben (kleine weiße Linie)
-        using var shinePaint = new SKPaint { Color = new SKColor(0xFF, 0xFF, 0xFF, 0x40), IsAntialias = false };
-        canvas.DrawRect(bigFlaskX + 2, bigFlaskBottom - bigFlaskH + 2, 2, bigFlaskH - 6, shinePaint);
+        canvas.DrawRect(bigFlaskX + 2, bigFlaskBottom - bigFlaskH + 2, 2, bigFlaskH - 6, PaintFlaskShine);
     }
 
     /// <summary>
@@ -266,24 +317,16 @@ public class ResearchLabRenderer
         float bpW = w * 0.14f;
         float bpH = 18;
 
-        using var bpPaint = new SKPaint { Color = new SKColor(0xE8, 0xEA, 0xED, 0xD0), IsAntialias = false };
-        canvas.DrawRect(bpX, tableY - bpH, bpW, bpH, bpPaint);
+        canvas.DrawRect(bpX, tableY - bpH, bpW, bpH, PaintBlueprint);
 
         // Linien auf der Blaupause
-        using var linePaint = new SKPaint
-        {
-            Color = BlueprintColor,
-            IsAntialias = false,
-            StrokeWidth = 1
-        };
         for (float y = tableY - bpH + 4; y < tableY - 3; y += 4)
         {
-            canvas.DrawLine(bpX + 3, y, bpX + bpW - 3, y, linePaint);
+            canvas.DrawLine(bpX + 3, y, bpX + bpW - 3, y, PaintBlueprintLine);
         }
 
         // Kleiner roter "Stempel" Punkt
-        using var stampPaint = new SKPaint { Color = new SKColor(0xC6, 0x28, 0x28, 0x80), IsAntialias = false };
-        canvas.DrawCircle(bpX + bpW - 6, tableY - 5, 3, stampPaint);
+        canvas.DrawCircle(bpX + bpW - 6, tableY - 5, 3, PaintStamp);
     }
 
     /// <summary>
@@ -296,18 +339,14 @@ public class ResearchLabRenderer
         // Hammer (links auf dem Tisch)
         float hammerX = left + w * 0.25f;
         // Stiel
-        using var stiellPaint = new SKPaint { Color = new SKColor(0x8D, 0x6E, 0x63), IsAntialias = false };
-        canvas.DrawRect(hammerX, tableY - 14, 3, 14, stiellPaint);
+        canvas.DrawRect(hammerX, tableY - 14, 3, 14, PaintHammerHandle);
         // Kopf
-        using var kopfPaint = new SKPaint { Color = new SKColor(0x60, 0x60, 0x60), IsAntialias = false };
-        canvas.DrawRect(hammerX - 4, tableY - 16, 11, 5, kopfPaint);
+        canvas.DrawRect(hammerX - 4, tableY - 16, 11, 5, PaintHammerHead);
 
         // Schraubendreher (rechts auf dem Tisch, liegend)
         float sdX = left + w * 0.68f;
-        using var sdGriffPaint = new SKPaint { Color = CraftOrange, IsAntialias = false };
-        canvas.DrawRect(sdX, tableY - 4, 12, 4, sdGriffPaint);
-        using var sdKlingePaint = new SKPaint { Color = new SKColor(0x90, 0x90, 0x90), IsAntialias = false };
-        canvas.DrawRect(sdX + 12, tableY - 3, 10, 2, sdKlingePaint);
+        canvas.DrawRect(sdX, tableY - 4, 12, 4, PaintScrewdriverGrip);
+        canvas.DrawRect(sdX + 12, tableY - 3, 10, 2, PaintScrewdriverBlade);
     }
 
     /// <summary>
@@ -333,19 +372,17 @@ public class ResearchLabRenderer
 
     /// <summary>
     /// Zeichnet ein einzelnes Zahnrad mit Zähnen.
+    /// Nutzt statisch gecachte Paints (Farben ändern sich nie).
     /// </summary>
     private static void DrawSingleGear(SKCanvas canvas, float cx, float cy, float radius, float angle, int teeth)
     {
         // Äußerer Ring
-        using var gearPaint = new SKPaint { Color = GearColor, IsAntialias = false, Style = SKPaintStyle.Fill };
-        canvas.DrawCircle(cx, cy, radius, gearPaint);
+        canvas.DrawCircle(cx, cy, radius, PaintGear);
 
         // Innerer Kreis (Loch)
-        using var holePaint = new SKPaint { Color = WallColor, IsAntialias = false, Style = SKPaintStyle.Fill };
-        canvas.DrawCircle(cx, cy, radius * 0.35f, holePaint);
+        canvas.DrawCircle(cx, cy, radius * 0.35f, PaintGearHole);
 
         // Zähne
-        using var toothPaint = new SKPaint { Color = GearColor, IsAntialias = false };
         float toothLen = radius * 0.35f;
         float toothW = 4;
         for (int i = 0; i < teeth; i++)
@@ -365,16 +402,10 @@ public class ResearchLabRenderer
             path.LineTo(tx + dx - perpX, ty + dy - perpY);
             path.LineTo(tx - perpX, ty - perpY);
             path.Close();
-            canvas.DrawPath(path, toothPaint);
+            canvas.DrawPath(path, PaintGearTooth);
         }
 
         // Speichen (Kreuz im Inneren)
-        using var spokePaint = new SKPaint
-        {
-            Color = new SKColor(0x60, 0x70, 0x78),
-            IsAntialias = false,
-            StrokeWidth = 2
-        };
         for (int i = 0; i < 4; i++)
         {
             float a = angle + i * (MathF.PI / 2);
@@ -383,13 +414,14 @@ public class ResearchLabRenderer
             canvas.DrawLine(
                 cx + MathF.Cos(a) * innerR, cy + MathF.Sin(a) * innerR,
                 cx + MathF.Cos(a) * outerR, cy + MathF.Sin(a) * outerR,
-                spokePaint);
+                PaintGearSpoke);
         }
     }
 
     /// <summary>
     /// Zeichnet eine animierte Glühbirne an der Decke (oben Mitte).
     /// Blinkt sanft auf und ab, heller bei aktiver Forschung.
+    /// Dynamische Paints werden in-place mutiert (nur Color-Property ändern).
     /// </summary>
     private void DrawLightBulb(SKCanvas canvas, float left, float top, float w, float h)
     {
@@ -397,49 +429,31 @@ public class ResearchLabRenderer
         float bulbY = top + h * 0.06f;
 
         // Kabel von der Decke
-        using var wirePaint = new SKPaint
-        {
-            Color = new SKColor(0x40, 0x40, 0x40),
-            IsAntialias = false,
-            StrokeWidth = 2
-        };
-        canvas.DrawLine(bulbX, top, bulbX, bulbY, wirePaint);
+        canvas.DrawLine(bulbX, top, bulbX, bulbY, PaintWire);
 
         // Fassung
-        using var socketPaint = new SKPaint { Color = new SKColor(0x60, 0x60, 0x60), IsAntialias = false };
-        canvas.DrawRect(bulbX - 4, bulbY, 8, 5, socketPaint);
+        canvas.DrawRect(bulbX - 4, bulbY, 8, 5, PaintSocket);
 
         // Glühbirne (pulsierendes Leuchten)
         float glowIntensity = 0.6f + MathF.Sin(_time * 2.5f) * 0.4f;
         byte glowAlpha = (byte)(glowIntensity * 200);
 
-        // Glow-Kreis (größer, transparent)
-        using var glowPaint = new SKPaint
-        {
-            Color = BulbGlow.WithAlpha((byte)(glowAlpha / 3)),
-            IsAntialias = false
-        };
-        canvas.DrawCircle(bulbX, bulbY + 11, 12, glowPaint);
+        // Glow-Kreis (größer, transparent) - Farbe in-place mutieren
+        _bulbGlowPaint.Color = BulbGlow.WithAlpha((byte)(glowAlpha / 3));
+        canvas.DrawCircle(bulbX, bulbY + 11, 12, _bulbGlowPaint);
 
         // Birne selbst
-        using var bulbPaint = new SKPaint
-        {
-            Color = BulbGlow.WithAlpha(glowAlpha),
-            IsAntialias = false
-        };
-        canvas.DrawCircle(bulbX, bulbY + 11, 6, bulbPaint);
+        _bulbBodyPaint.Color = BulbGlow.WithAlpha(glowAlpha);
+        canvas.DrawCircle(bulbX, bulbY + 11, 6, _bulbBodyPaint);
 
         // Weißer Kern
-        using var corePaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0xFF, 0xFF, (byte)(glowIntensity * 160)),
-            IsAntialias = false
-        };
-        canvas.DrawCircle(bulbX, bulbY + 10, 3, corePaint);
+        _bulbCorePaint.Color = new SKColor(0xFF, 0xFF, 0xFF, (byte)(glowIntensity * 160));
+        canvas.DrawCircle(bulbX, bulbY + 10, 3, _bulbCorePaint);
     }
 
     /// <summary>
     /// Zeichnet aufsteigenden Dampf aus dem großen Glaskolben.
+    /// Wiederverwendet einen einzelnen Paint pro Partikel (Farbe wird in-place gesetzt).
     /// </summary>
     private void DrawSteam(SKCanvas canvas, float left, float top, float w, float h)
     {
@@ -458,18 +472,16 @@ public class ResearchLabRenderer
             byte alpha = (byte)((1.0f - progress) * 100);
             float size = 3 + progress * 5;
 
-            using var steamPaint = new SKPaint
-            {
-                Color = SteamColor.WithAlpha(alpha),
-                IsAntialias = false
-            };
-            canvas.DrawCircle(steamX, steamY, size, steamPaint);
+            // Farbe in-place auf gecachtem Paint mutieren
+            _steamPaint.Color = SteamColor.WithAlpha(alpha);
+            canvas.DrawCircle(steamX, steamY, size, _steamPaint);
         }
     }
 
     /// <summary>
     /// Aktualisiert und zeichnet Funkenpartikel bei aktiver Forschung.
     /// Funken entstehen am Tisch und fliegen nach oben/seitlich.
+    /// Wiederverwendet einen einzelnen Paint für alle Partikel.
     /// </summary>
     private void UpdateAndDrawSparks(SKCanvas canvas, float left, float top, float w, float h, float deltaTime)
     {
@@ -508,16 +520,12 @@ public class ResearchLabRenderer
                 continue;
             }
 
-            // Farbe: Orange → Gelb → verblassend
+            // Farbe: Orange -> Gelb -> verblassend (in-place mutieren)
             byte alpha = (byte)(spark.Life * 255);
             byte red = 0xFF;
             byte green = (byte)(0x8B + (1.0f - spark.Life) * 0x74);
-            using var sparkPaint = new SKPaint
-            {
-                Color = new SKColor(red, green, 0x00, alpha),
-                IsAntialias = false
-            };
-            canvas.DrawCircle(spark.X, spark.Y, spark.Size * spark.Life, sparkPaint);
+            _sparkPaint.Color = new SKColor(red, green, 0x00, alpha);
+            canvas.DrawCircle(spark.X, spark.Y, spark.Size * spark.Life, _sparkPaint);
         }
 
         // Partikel-Limit (Performance)
@@ -527,6 +535,7 @@ public class ResearchLabRenderer
 
     /// <summary>
     /// Zeichnet einen glühenden Fortschrittsbalken am unteren Rand.
+    /// Statische Paints für Hintergrund/Füllung/Rahmen, dynamischer Paint für Glow.
     /// </summary>
     private void DrawProgressBar(SKCanvas canvas, float left, float top, float w, float h, float progress)
     {
@@ -536,37 +545,24 @@ public class ResearchLabRenderer
         float barH = 6;
 
         // Hintergrund
-        using var bgPaint = new SKPaint { Color = new SKColor(0x20, 0x15, 0x12), IsAntialias = false };
-        canvas.DrawRect(barX, barY, barW, barH, bgPaint);
+        canvas.DrawRect(barX, barY, barW, barH, PaintProgressBg);
 
         // Fortschritt (Craft-Orange)
         float fillW = barW * Math.Clamp(progress, 0, 1);
         if (fillW > 0)
         {
-            using var fillPaint = new SKPaint { Color = CraftOrange, IsAntialias = false };
-            canvas.DrawRect(barX, barY, fillW, barH, fillPaint);
+            canvas.DrawRect(barX, barY, fillW, barH, PaintProgressFill);
 
-            // Glow-Effekt am Ende des Balkens
+            // Glow-Effekt am Ende des Balkens (dynamisches Alpha)
             float glowPulse = 0.5f + MathF.Sin(_time * 4f) * 0.5f;
             byte glowAlpha = (byte)(glowPulse * 120);
-            using var glowPaint = new SKPaint
-            {
-                Color = CraftOrange.WithAlpha(glowAlpha),
-                IsAntialias = false
-            };
+            _progressGlowPaint.Color = CraftOrange.WithAlpha(glowAlpha);
             float glowX = barX + fillW - 4;
-            canvas.DrawRect(glowX, barY - 2, 8, barH + 4, glowPaint);
+            canvas.DrawRect(glowX, barY - 2, 8, barH + 4, _progressGlowPaint);
         }
 
         // Rahmen
-        using var borderPaint = new SKPaint
-        {
-            Color = new SKColor(0x6D, 0x4C, 0x41),
-            IsAntialias = false,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1
-        };
-        canvas.DrawRect(barX, barY, barW, barH, borderPaint);
+        canvas.DrawRect(barX, barY, barW, barH, PaintProgressBorder);
     }
 
     /// <summary>

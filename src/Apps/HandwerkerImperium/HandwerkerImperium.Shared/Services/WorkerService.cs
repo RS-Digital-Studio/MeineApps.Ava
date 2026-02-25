@@ -51,6 +51,7 @@ public class WorkerService : IWorkerService
             state.WorkerMarket?.RemoveWorker(worker.Id);
 
             state.TotalWorkersHired++;
+            state.InvalidateIncomeCache();
             return true;
         }
     }
@@ -67,10 +68,31 @@ public class WorkerService : IWorkerService
                 {
                     ws.Workers.Remove(worker);
                     state.TotalWorkersFired++;
+                    state.InvalidateIncomeCache();
                     return true;
                 }
             }
             return false;
+        }
+    }
+
+    public bool ReinstateWorker(Worker worker, WorkshopType workshop)
+    {
+        lock (_lock)
+        {
+            var state = _gameState.State;
+            var ws = state.GetOrCreateWorkshop(workshop);
+
+            // Prüfe ob noch Platz im Workshop (MaxWorkers)
+            if (ws.Workers.Count >= ws.MaxWorkers) return false;
+
+            worker.AssignedWorkshop = workshop;
+            ws.Workers.Add(worker);
+
+            // Zähler rückgängig machen
+            if (state.TotalWorkersFired > 0) state.TotalWorkersFired--;
+            state.InvalidateIncomeCache();
+            return true;
         }
     }
 
@@ -106,6 +128,7 @@ public class WorkerService : IWorkerService
                 worker.Mood = Math.Max(0m, worker.Mood - 5m);
 
             targetWs.Workers.Add(worker);
+            state.InvalidateIncomeCache();
             return true;
         }
     }
@@ -450,14 +473,6 @@ public class WorkerService : IWorkerService
             state.WorkerMarket.GeneratePool(state.PlayerLevel, state.Prestige?.TotalPrestigeCount ?? 0);
             state.WorkerMarket.FreeRefreshUsedThisRotation = freeRefreshUsed;
             return state.WorkerMarket;
-        }
-    }
-
-    public List<Worker> GetAllWorkers()
-    {
-        lock (_lock)
-        {
-            return _gameState.State.Workshops.SelectMany(w => w.Workers).ToList();
         }
     }
 

@@ -1,0 +1,94 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Dashboard.AutomationPanel"
+             x:DataType="vm:MainViewModel">
+
+        <Border Classes="Card" Padding="10,8" Margin="0,0,0,4"
+                AutomationProperties.AutomationId="Dashboard_Border_Automation">
+          <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+
+            <!-- AutoCollect (Lv15+) -->
+            <Border Grid.Column="0" CornerRadius="8" Padding="6,4"
+                    Background="{DynamicResource SurfaceBrush}"
+                    IsEnabled="{Binding IsAutoCollectUnlocked}"
+                    AutomationProperties.AutomationId="Dashboard_Border_AutoCollect">
+              <StackPanel Spacing="2" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="PackageDown" Width="16" Height="16"
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                 HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Translate AutoCollectDesc}" FontSize="9"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="80" />
+                <ToggleSwitch IsChecked="{Binding AutoCollectDelivery}"
+                              OnContent="" OffContent=""
+                              HorizontalAlignment="Center"
+                              Margin="0,-4,0,-4" />
+                <TextBlock Text="{loc:Translate AutoCollectLocked}"
+                           FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="80"
+                           IsVisible="{Binding !IsAutoCollectUnlocked}"
+                           Margin="0,-4,0,0" />
+              </StackPanel>
+            </Border>
+
+            <!-- AutoAccept (Lv25+) -->
+            <Border Grid.Column="1" CornerRadius="8" Padding="6,4"
+                    Background="{DynamicResource SurfaceBrush}"
+                    IsEnabled="{Binding IsAutoAcceptUnlocked}"
+                    AutomationProperties.AutomationId="Dashboard_Border_AutoAccept">
+              <StackPanel Spacing="2" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="FileDocumentCheck" Width="16" Height="16"
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                 HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Translate AutoAcceptDesc}" FontSize="9"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="80" />
+                <ToggleSwitch IsChecked="{Binding AutoAcceptOrder}"
+                              OnContent="" OffContent=""
+                              HorizontalAlignment="Center"
+                              Margin="0,-4,0,-4" />
+                <TextBlock Text="{loc:Translate AutoAcceptLocked}"
+                           FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="80"
+                           IsVisible="{Binding !IsAutoAcceptUnlocked}"
+                           Margin="0,-4,0,0" />
+              </StackPanel>
+            </Border>
+
+            <!-- AutoClaimDaily (Premium) -->
+            <Border Grid.Column="2" CornerRadius="8" Padding="6,4"
+                    Background="{DynamicResource SurfaceBrush}"
+                    IsEnabled="{Binding IsAutoClaimUnlocked}"
+                    AutomationProperties.AutomationId="Dashboard_Border_AutoClaimDaily">
+              <StackPanel Spacing="2" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="Gift" Width="16" Height="16"
+                                 Foreground="{StaticResource CraftGoldBrush}"
+                                 HorizontalAlignment="Center" />
+                <TextBlock Text="{loc:Translate AutoClaimDailyDesc}" FontSize="9"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="80" />
+                <ToggleSwitch IsChecked="{Binding AutoClaimDaily}"
+                              OnContent="" OffContent=""
+                              HorizontalAlignment="Center"
+                              Margin="0,-4,0,-4" />
+                <TextBlock Text="{loc:Translate AutoClaimDailyLocked}"
+                           FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                           TextAlignment="Center" TextWrapping="Wrap"
+                           MaxWidth="80"
+                           IsVisible="{Binding !IsAutoClaimUnlocked}"
+                           Margin="0,-4,0,0" />
+              </StackPanel>
+            </Border>
+
+          </Grid>
+        </Border>
+
+</UserControl>

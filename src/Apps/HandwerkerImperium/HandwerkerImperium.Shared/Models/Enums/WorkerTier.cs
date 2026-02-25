@@ -159,6 +159,19 @@ public static class WorkerTierExtensions
     };
 
     /// <summary>
+    /// Workshop-Einkommens-Aura-Bonus für hochrangige Worker.
+    /// S-Tier und höher geben einen passiven Bonus auf das gesamte Workshop-Einkommen.
+    /// </summary>
+    public static decimal GetAuraBonus(this WorkerTier tier) => tier switch
+    {
+        WorkerTier.S => 0.05m,         // +5%
+        WorkerTier.SS => 0.08m,        // +8%
+        WorkerTier.SSS => 0.12m,       // +12%
+        WorkerTier.Legendary => 0.20m, // +20%
+        _ => 0m
+    };
+
+    /// <summary>
     /// Localization key for tier name.
     /// </summary>
     public static string GetLocalizationKey(this WorkerTier tier) => $"Tier{tier}";

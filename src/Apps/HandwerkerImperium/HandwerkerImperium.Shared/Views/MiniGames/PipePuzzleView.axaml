@@ -149,19 +149,19 @@
           <Panel x:Name="Star1Panel">
             <mi:MaterialIcon AutomationProperties.AutomationId="Pipe_Icon_Star1"
                              Kind="Star" Width="32" Height="32"
-                             Foreground="#FFD700"
+                             Foreground="{StaticResource CraftGoldBrush}"
                              Opacity="{Binding Star1Opacity}" />
           </Panel>
           <Panel x:Name="Star2Panel">
             <mi:MaterialIcon AutomationProperties.AutomationId="Pipe_Icon_Star2"
                              Kind="Star" Width="32" Height="32"
-                             Foreground="#FFD700"
+                             Foreground="{StaticResource CraftGoldBrush}"
                              Opacity="{Binding Star2Opacity}" />
           </Panel>
           <Panel x:Name="Star3Panel">
             <mi:MaterialIcon AutomationProperties.AutomationId="Pipe_Icon_Star3"
                              Kind="Star" Width="32" Height="32"
-                             Foreground="#FFD700"
+                             Foreground="{StaticResource CraftGoldBrush}"
                              Opacity="{Binding Star3Opacity}" />
           </Panel>
         </StackPanel>
@@ -207,12 +207,12 @@
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon AutomationProperties.AutomationId="Pipe_Icon_RewardXp"
                              Kind="Star" Width="20" Height="20"
-                             Foreground="Gold" />
+                             Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock x:Name="RewardXpText"
                        AutomationProperties.AutomationId="Pipe_Txt_RewardXp"
                        Text="{Binding XpAmount, StringFormat='+{0} XP'}"
                        FontSize="14" FontWeight="Bold"
-                       Foreground="Gold"
+                       Foreground="{StaticResource CraftGoldBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
         </StackPanel>
@@ -226,7 +226,7 @@
       <TextBlock AutomationProperties.AutomationId="Pipe_Txt_Countdown"
                  Text="{Binding CountdownText}"
                  FontSize="72" FontWeight="Bold"
-                 Foreground="#FFD700"
+                 Foreground="{StaticResource CraftGoldBrush}"
                  HorizontalAlignment="Center" VerticalAlignment="Center" />
     </Border>
 

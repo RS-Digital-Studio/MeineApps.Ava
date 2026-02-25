@@ -42,10 +42,16 @@ public partial class BattlePassViewModel : ObservableObject
     private int _currentTier;
 
     /// <summary>
-    /// Aktuelle Tier-Anzeige (z.B. "Tier 5/30").
+    /// Aktuelle Tier-Anzeige (z.B. "Tier 5/30" oder "Stufe 5/30").
     /// </summary>
     [ObservableProperty]
     private string _currentTierDisplay = "";
+
+    /// <summary>
+    /// Lokalisierte Tier-Badge-Anzeige (z.B. "Stufe 5" oder "Tier 5").
+    /// </summary>
+    [ObservableProperty]
+    private string _tierBadgeDisplay = "";
 
     /// <summary>
     /// Breite des XP-Fortschrittsbalkens (gebunden an Border.Width).
@@ -109,14 +115,18 @@ public partial class BattlePassViewModel : ObservableObject
     {
         if (tierDisplay == null) return;
 
-        _battlePassService.ClaimReward(tierDisplay.TierNumber, tierDisplay.IsPremiumLocked);
+        // Free-Track immer claimen, Premium-Track nur wenn Premium aktiv
+        _battlePassService.ClaimReward(tierDisplay.TierNumber, false);
+        if (!tierDisplay.IsPremiumLocked)
+            _battlePassService.ClaimReward(tierDisplay.TierNumber, true);
+
         RefreshBattlePass();
     }
 
     [RelayCommand]
-    private void UpgradeToPremium()
+    private async Task UpgradeToPremiumAsync()
     {
-        _battlePassService.UpgradeToPremium();
+        await _battlePassService.UpgradeToPremiumAsync();
         RefreshBattlePass();
     }
 
@@ -139,7 +149,9 @@ public partial class BattlePassViewModel : ObservableObject
         var bp = state.BattlePass;
 
         CurrentTier = bp.CurrentTier;
-        CurrentTierDisplay = $"Tier {bp.CurrentTier}/{BattlePass.MaxTier}";
+        var tierLabel = _localizationService.GetString("BattlePassTier") ?? "Tier";
+        CurrentTierDisplay = $"{tierLabel} {bp.CurrentTier}/{BattlePass.MaxTier}";
+        TierBadgeDisplay = $"{tierLabel} {bp.CurrentTier}";
         XpProgress = bp.TierProgress;
         XpProgressDisplay = $"{bp.CurrentXp} / {bp.XpForNextTier} XP";
 
@@ -149,8 +161,10 @@ public partial class BattlePassViewModel : ObservableObject
         IsPremiumPass = bp.IsPremium;
         SeasonNumber = bp.SeasonNumber;
 
-        // Premium-Upgrade-Preis
-        UpgradePriceDisplay = $"50 GS → {(_localizationService.GetString("PremiumPass") ?? "Premium Pass")}";
+        // Premium-Upgrade-Preis (IAP 2,99 EUR)
+        UpgradePriceDisplay = bp.IsPremium
+            ? _localizationService.GetString("AlreadyPurchased") ?? "Bereits gekauft"
+            : $"2,99 € → {(_localizationService.GetString("PremiumPass") ?? "Premium Pass")}";
 
         // Verbleibende Zeit
         int daysLeft = bp.DaysRemaining;

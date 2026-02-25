@@ -57,4 +57,21 @@ public interface IGuildService
 
     /// <summary>Berechnet max. Gilden-Mitglieder (20 + Forschungs-Boni).</summary>
     int GetMaxMembers();
+
+    // ── Einladungs-System ──
+
+    /// <summary>Gibt den Einladungs-Code der aktuellen Gilde zurück (erstellt einen bei Bedarf).</summary>
+    Task<string?> GetOrCreateInviteCodeAsync();
+
+    /// <summary>Tritt einer Gilde per Einladungs-Code bei.</summary>
+    Task<bool> JoinByInviteCodeAsync(string code);
+
+    /// <summary>Lädt verfügbare Spieler ohne Gilde (max 50, nach Aktivität sortiert).</summary>
+    Task<List<AvailablePlayerInfo>> BrowseAvailablePlayersAsync();
+
+    /// <summary>Registriert den Spieler als verfügbar (wenn gildelos).</summary>
+    Task RegisterAsAvailableAsync();
+
+    /// <summary>Entfernt die Verfügbarkeits-Registrierung (wenn Gilde beigetreten).</summary>
+    Task UnregisterAvailableAsync();
 }

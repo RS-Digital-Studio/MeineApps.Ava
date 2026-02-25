@@ -1,0 +1,109 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:models="using:HandwerkerImperium.Models"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             x:Class="HandwerkerImperium.Views.Dashboard.WeeklyMissionSection"
+             x:DataType="vm:MainViewModel">
+
+        <Border Classes="CardElevated" Padding="12" IsVisible="{Binding HasWeeklyMissions}"
+                AutomationProperties.AutomationId="Dashboard_Border_WeeklyMissions">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+              <mi:MaterialIcon Kind="ClipboardList" Width="20" Height="20"
+                               Foreground="{StaticResource CraftPrimaryBrush}"
+                               AutomationProperties.AutomationId="Dashboard_Icon_WeeklyMissions" />
+              <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                <TextBlock Text="{loc:Translate WeeklyMissionsTitle}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionsTitle" />
+                <TextBlock Text="{Binding WeeklyMissionResetDisplay}" FontSize="10"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionsReset" />
+              </StackPanel>
+              <Button Grid.Column="2" Classes="Text" Padding="4"
+                      Command="{Binding ToggleWeeklyMissionsExpandedCommand}"
+                      AutomationProperties.AutomationId="Dashboard_Btn_ToggleWeeklyMissions">
+                <mi:MaterialIcon Kind="{Binding WeeklyMissionsExpandIconKind}" Width="20" Height="20" />
+              </Button>
+            </Grid>
+            <ItemsControl ItemsSource="{Binding WeeklyMissions}"
+                          IsVisible="{Binding IsWeeklyMissionsExpanded}"
+                          AutomationProperties.AutomationId="Dashboard_Items_WeeklyMissions">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:WeeklyMission">
+                  <Border Margin="0,4" Padding="8" CornerRadius="8"
+                          Background="{DynamicResource SurfaceBrush}"
+                          AutomationProperties.AutomationId="Dashboard_Border_WeeklyMissionItem">
+                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="4">
+                      <TextBlock Text="{Binding DisplayDescription}" FontSize="12"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionDescription" />
+                      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
+                                  VerticalAlignment="Center">
+                        <TextBlock Text="{Binding MoneyReward, StringFormat='{}{0:N0} €'}" FontSize="12"
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionRewardMoney" />
+                        <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="{Binding XpReward, StringFormat='{}{0} XP'}" FontSize="12"
+                                   Foreground="{DynamicResource SuccessBrush}"
+                                   AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionRewardXp" />
+                        <!-- Goldschrauben mit Icon -->
+                        <StackPanel Orientation="Horizontal" Spacing="2"
+                                    IsVisible="{Binding HasGoldenScrewReward}">
+                          <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                          <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+                          <TextBlock Text="{Binding GoldenScrewReward}" FontSize="12" Foreground="{StaticResource CraftGoldBrush}"
+                                     AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionRewardGS" />
+                        </StackPanel>
+                        <!-- Claim-Button -->
+                        <Button Classes="Text" Padding="8,6" MinHeight="36" MinWidth="36"
+                                IsVisible="{Binding IsCompleted}"
+                                IsEnabled="{Binding !IsClaimed}"
+                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).ClaimWeeklyMissionCommand}"
+                                CommandParameter="{Binding Id}"
+                                AutomationProperties.AutomationId="Dashboard_Btn_ClaimWeeklyMission">
+                          <mi:MaterialIcon Kind="Gift" Width="16" Height="16"
+                                           Foreground="{StaticResource CraftPrimaryBrush}" />
+                        </Button>
+                      </StackPanel>
+                      <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                        <skia:SKCanvasView Height="6"
+                                           PaintSurface="OnPaintWeeklyMissionProgress"
+                                           AutomationProperties.AutomationId="Dashboard_Canvas_WeeklyMissionProgress" />
+                        <TextBlock Grid.Column="1" FontSize="10"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   AutomationProperties.AutomationId="Dashboard_Txt_WeeklyMissionProgress">
+                          <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0}/{1}">
+                              <Binding Path="CurrentValue" />
+                              <Binding Path="TargetValue" />
+                            </MultiBinding>
+                          </TextBlock.Text>
+                        </TextBlock>
+                      </Grid>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Classes="Secondary" HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    IsVisible="{Binding AllWeeklyMissionsCompleted}"
+                    Command="{Binding ClaimAllWeeklyBonusCommand}"
+                    AutomationProperties.AutomationId="Dashboard_Btn_ClaimAllWeeklyBonus">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="Gift" Width="16" Height="16"
+                                 AutomationProperties.AutomationId="Dashboard_Icon_ClaimAllWeeklyBonus" />
+                <TextBlock Text="{loc:Translate ClaimWeeklyBonus}" FontSize="13"
+                           AutomationProperties.AutomationId="Dashboard_Txt_ClaimAllWeeklyBonus" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+
+</UserControl>

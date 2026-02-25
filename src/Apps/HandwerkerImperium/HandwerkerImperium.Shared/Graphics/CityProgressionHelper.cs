@@ -255,6 +255,38 @@ public static class CityProgressionHelper
         // Lampe selbst (heller Punkt)
         _lanternGlowPaint.Color = new SKColor(0xFF, 0xF1, 0xB8, (byte)(Math.Min(pulseAlpha + 0.2f, 1f) * 255));
         canvas.DrawCircle(x, y - 14.5f, 1.5f, _lanternGlowPaint);
+
+        // Cone-förmiger Lichtkegel nach unten (nachts)
+        if (isNight)
+        {
+            byte coneAlpha = (byte)(pulseAlpha * 40);
+            using var conePath = new SKPath();
+            conePath.MoveTo(x - 2, y - 14);
+            conePath.LineTo(x - 8, y);
+            conePath.LineTo(x + 8, y);
+            conePath.LineTo(x + 2, y - 14);
+            conePath.Close();
+
+            using var coneShader = SKShader.CreateLinearGradient(
+                new SKPoint(x, y - 14), new SKPoint(x, y),
+                [new SKColor(0xFF, 0xE0, 0x82, coneAlpha), new SKColor(0xFF, 0xE0, 0x82, 0x00)],
+                [0f, 1f], SKShaderTileMode.Clamp);
+            _lanternGlowPaint.Shader = coneShader;
+            canvas.DrawPath(conePath, _lanternGlowPaint);
+            _lanternGlowPaint.Shader = null;
+
+            // 2-3 Insekten die um die Laterne kreisen
+            for (int insect = 0; insect < 3; insect++)
+            {
+                float angle = time * (2f + insect * 0.7f) + insect * 2.1f;
+                float radius = 3.5f + MathF.Sin(time * 1.5f + insect) * 1.5f;
+                float ix = x + MathF.Cos(angle) * radius;
+                float iy = y - 14.5f + MathF.Sin(angle) * radius * 0.6f;
+                byte insectAlpha = (byte)(120 + MathF.Sin(time * 8f + insect * 3f) * 60);
+                _lanternGlowPaint.Color = new SKColor(0xFF, 0xF5, 0xC0, insectAlpha);
+                canvas.DrawCircle(ix, iy, 0.6f, _lanternGlowPaint);
+            }
+        }
     }
 
     private static void DrawBench(SKCanvas canvas, float x, float y, float nightDim)

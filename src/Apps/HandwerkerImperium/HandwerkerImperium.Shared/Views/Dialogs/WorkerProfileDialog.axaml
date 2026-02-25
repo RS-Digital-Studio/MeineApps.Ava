@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:views="using:HandwerkerImperium.Views"
+             x:Class="HandwerkerImperium.Views.Dialogs.WorkerProfileDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Worker Profile Bottom-Sheet -->
+  <Border Background="{StaticResource DialogOverlayBrush}"
+          Classes="SheetBackdrop"
+          Classes.Open="{Binding IsWorkerProfileActive}"
+          PointerPressed="OnWorkerProfileBackdropPressed"
+          AutomationProperties.AutomationId="Main_Overlay_WorkerProfile">
+    <Border Classes="BottomSheet"
+            Classes.Open="{Binding IsWorkerProfileActive}"
+            Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="20,20,0,0"
+            VerticalAlignment="Bottom"
+            MaxHeight="600"
+            BoxShadow="0 -4 16 0 #40000000"
+            PointerPressed="OnDialogContentPressed"
+            AutomationProperties.AutomationId="Main_Border_WorkerProfileSheet">
+      <Grid RowDefinitions="Auto,*">
+        <!-- Drag Handle -->
+        <Border Grid.Row="0"
+                Width="40" Height="4" CornerRadius="2"
+                Background="{DynamicResource TextMutedBrush}"
+                Opacity="0.4"
+                HorizontalAlignment="Center" Margin="0,10,0,6"
+                AutomationProperties.AutomationId="Main_Border_WorkerProfileDragHandle" />
+        <!-- Worker Profile Content -->
+        <views:WorkerProfileView Grid.Row="1"
+                                 DataContext="{Binding WorkerProfileViewModel}"
+                                 AutomationProperties.AutomationId="Main_View_WorkerProfile" />
+      </Grid>
+    </Border>
+  </Border>
+
+</UserControl>

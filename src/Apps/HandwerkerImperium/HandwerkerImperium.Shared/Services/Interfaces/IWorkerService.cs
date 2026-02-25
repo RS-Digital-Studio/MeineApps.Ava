@@ -21,6 +21,12 @@ public interface IWorkerService
     bool FireWorker(string workerId);
 
     /// <summary>
+    /// Stellt einen gefeuerten Worker wieder ein (Undo-Funktion).
+    /// Worker wird zurück in seinen vorherigen Workshop eingefügt.
+    /// </summary>
+    bool ReinstateWorker(Worker worker, WorkshopType workshop);
+
+    /// <summary>
     /// Transfers a worker to a different workshop.
     /// </summary>
     bool TransferWorker(string workerId, WorkshopType targetWorkshop);
@@ -64,11 +70,6 @@ public interface IWorkerService
     /// Forces a market refresh (e.g., via rewarded video).
     /// </summary>
     WorkerMarketPool RefreshMarket();
-
-    /// <summary>
-    /// Gets all workers across all workshops.
-    /// </summary>
-    List<Worker> GetAllWorkers();
 
     /// <summary>
     /// Gets a specific worker by ID.

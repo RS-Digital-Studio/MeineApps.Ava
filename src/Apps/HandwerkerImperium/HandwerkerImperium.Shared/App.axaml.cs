@@ -91,7 +91,7 @@ public partial class App : Application
         }
 
         // Initialize game state, orders, offline progress, daily rewards
-        mainVm.Initialize();
+        mainVm.InitTask = mainVm.InitializeAsync();
 
         base.OnFrameworkInitializationCompleted();
     }

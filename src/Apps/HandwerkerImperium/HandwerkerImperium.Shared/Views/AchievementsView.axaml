@@ -92,10 +92,29 @@
           </StackPanel>
         </Border>
 
-        <!-- Achievement List -->
-        <ItemsControl ItemsSource="{Binding Achievements}" Margin="0,0,0,60"
-                      AutomationProperties.AutomationId="Achievements_Items_List">
-          <ItemsControl.ItemTemplate>
+        <!-- Achievement List (virtualisiert) -->
+        <ListBox ItemsSource="{Binding Achievements}" Margin="0,0,0,60"
+                 AutomationProperties.AutomationId="Achievements_Items_List"
+                 Background="Transparent" BorderThickness="0">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="Margin" Value="0" />
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+            <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:AchievementDisplayModel">
               <Border Classes="Card"
                       AutomationProperties.AutomationId="Achievements_Border_Item"
@@ -172,9 +191,9 @@
                     <Button Grid.Column="2"
                             Classes="Text"
                             AutomationProperties.AutomationId="Achievements_Btn_ItemBoost"
-                            Padding="4,2"
+                            MinHeight="44" Padding="12,8"
                             IsVisible="{Binding CanBoost}"
-                            Command="{Binding $parent[ItemsControl].((vm:AchievementsViewModel)DataContext).BoostAchievementCommand}"
+                            Command="{Binding $parent[ListBox].((vm:AchievementsViewModel)DataContext).BoostAchievementCommand}"
                             CommandParameter="{Binding .}">
                       <StackPanel Orientation="Horizontal" Spacing="2">
                         <mi:MaterialIcon Kind="Video" Width="14" Height="14"
@@ -191,8 +210,8 @@
                 </Grid>
               </Border>
             </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+          </ListBox.ItemTemplate>
+        </ListBox>
 
       </StackPanel>
     </ScrollViewer>

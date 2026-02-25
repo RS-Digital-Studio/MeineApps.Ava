@@ -582,6 +582,9 @@
   <data name="PrestigeConfirm" xml:space="preserve">
     <value>Prestigiar ahora</value>
   </data>
+  <data name="PrestigeCompleted" xml:space="preserve">
+    <value>¡Prestigio!</value>
+  </data>
   <data name="CloudSave" xml:space="preserve">
     <value>Guardado en la nube</value>
   </data>
@@ -641,9 +644,6 @@
   </data>
   <data name="GuildWeeklyGoal" xml:space="preserve">
     <value>Objetivo semanal</value>
-  </data>
-  <data name="GuildMembers" xml:space="preserve">
-    <value>Miembros</value>
   </data>
   <data name="Restore" xml:space="preserve">
     <value>Restaurar</value>
@@ -3053,6 +3053,9 @@
   <data name="NoOrdersAvailable" xml:space="preserve">
     <value>No hay pedidos disponibles</value>
   </data>
+  <data name="NoWorkersAvailable" xml:space="preserve">
+    <value>No hay trabajadores disponibles ahora</value>
+  </data>
   <data name="OrdersComingSoon" xml:space="preserve">
     <value>Nuevos pedidos aparecerán pronto</value>
   </data>
@@ -3412,6 +3415,15 @@
   <data name="LeaveGuild" xml:space="preserve">
     <value>Abandonar gremio</value>
   </data>
+  <data name="LeaveGuildTitle" xml:space="preserve">
+    <value>Dejar gremio</value>
+  </data>
+  <data name="LeaveGuildConfirm" xml:space="preserve">
+    <value>¿Realmente quieres irte del gremio?</value>
+  </data>
+  <data name="Leave" xml:space="preserve">
+    <value>Dejar</value>
+  </data>
   <data name="WeeklyGoal" xml:space="preserve">
     <value>Objetivo semanal</value>
   </data>
@@ -3495,7 +3507,7 @@
     <value>Pase de Prestigio activo</value>
   </data>
   <data name="PrestigePassBuy" xml:space="preserve">
-    <value>Activar Pase de Prestigio</value>
+    <value>2,99 €</value>
   </data>
   <data name="CityThemeDefault" xml:space="preserve">
     <value>Predeterminado</value>
@@ -3783,5 +3795,182 @@
   </data>
   <data name="MaxMembersLabel" xml:space="preserve">
     <value>Miembros Máx.</value>
+  </data>
+  <!-- Loading Tips -->
+  <data name="LoadingTip1" xml:space="preserve">
+    <value>Consejo: ¡Mantén pulsado el botón de mejora para subir rápido!</value>
+  </data>
+  <data name="LoadingTip2" xml:space="preserve">
+    <value>Consejo: ¡Los trabajadores de nivel superior ganan mucho más!</value>
+  </data>
+  <data name="LoadingTip3" xml:space="preserve">
+    <value>Consejo: ¡Visita diariamente para recompensas de inicio!</value>
+  </data>
+  <data name="LoadingTip4" xml:space="preserve">
+    <value>Consejo: ¡El prestigio desbloquea nuevos bonos y talleres!</value>
+  </data>
+  <data name="LoadingTip5" xml:space="preserve">
+    <value>Consejo: ¡Una reputación superior a 70 trae pedidos extra!</value>
+  </data>
+  <data name="LoadingTip6" xml:space="preserve">
+    <value>Consejo: ¡Las herramientas maestras dan bonos permanentes!</value>
+  </data>
+  <!-- BattlePass Tier -->
+  <data name="BattlePassTier" xml:space="preserve">
+    <value>Nivel</value>
+  </data>
+  <!-- Rush GO -->
+  <data name="RushGo" xml:space="preserve">
+    <value>¡YA!</value>
+  </data>
+  <data name="ActiveBonuses" xml:space="preserve">
+    <value>Bonos Activos</value>
+  </data>
+  <data name="GuildInviteTitle" xml:space="preserve">
+    <value>Invitar Miembros</value>
+  </data>
+  <data name="InviteCode" xml:space="preserve">
+    <value>Código de Invitación</value>
+  </data>
+  <data name="ShareCode" xml:space="preserve">
+    <value>Compartir Código</value>
+  </data>
+  <data name="EnterCode" xml:space="preserve">
+    <value>Introducir Código</value>
+  </data>
+  <data name="JoinByCode" xml:space="preserve">
+    <value>Unirse</value>
+  </data>
+  <data name="AvailablePlayers" xml:space="preserve">
+    <value>Jugadores Disponibles</value>
+  </data>
+  <data name="NoPlayersAvailable" xml:space="preserve">
+    <value>No hay jugadores disponibles</value>
+  </data>
+  <data name="InviteSent" xml:space="preserve">
+    <value>Invitación enviada</value>
+  </data>
+  <data name="CodeCopied" xml:space="preserve">
+    <value>Código copiado</value>
+  </data>
+  <data name="GuildCodeInvalid" xml:space="preserve">
+    <value>Código inválido</value>
+  </data>
+  <data name="Today" xml:space="preserve">
+    <value>Hoy</value>
+  </data>
+  <data name="Yesterday" xml:space="preserve">
+    <value>Ayer</value>
+  </data>
+  <data name="DaysAgo" xml:space="preserve">
+    <value>hace {0} días</value>
+  </data>
+  <data name="InvitedBadge" xml:space="preserve">
+    <value>Invitado</value>
+  </data>
+  <data name="WorkerQuitRisk" xml:space="preserve">
+    <value>¡{0} trabajadores en riesgo de renunciar!</value>
+  </data>
+  <data name="WorkerUnhappy" xml:space="preserve">
+    <value>{0} trabajadores insatisfechos</value>
+  </data>
+  <data name="WorkerTired" xml:space="preserve">
+    <value>{0} trabajadores agotados</value>
+  </data>
+  <data name="WorkerFiredUndo" xml:space="preserve">
+    <value>{0} despedido - ¿Deshacer?</value>
+  </data>
+  <data name="Undo" xml:space="preserve">
+    <value>Deshacer</value>
+  </data>
+  <data name="PrestigeLoses" xml:space="preserve">
+    <value>Se pierde:</value>
+  </data>
+  <data name="PrestigePointsShort" xml:space="preserve">
+    <value>Puntos de Prestigio</value>
+  </data>
+  <data name="BestWorkers" xml:space="preserve">
+    <value>Mejores Trabajadores</value>
+  </data>
+  <data name="Equipment" xml:space="preserve">
+    <value>Equipamiento</value>
+  </data>
+  <data name="GuildOfflineHint" xml:space="preserve">
+    <value>Sin conexión a internet. Las funciones de gremio requieren una conexión activa para sincronizar con otros jugadores.</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="InvitePlayer" xml:space="preserve">
+    <value>Invitar jugador</value>
+  </data>
+  <data name="TournamentSignInHint" xml:space="preserve">
+    <value>Inicia sesión en Play Games</value>
+  </data>
+  <data name="ActiveCrafting" xml:space="preserve">
+    <value>Fabricación activa</value>
+  </data>
+  <data name="EventShop" xml:space="preserve">
+    <value>Tienda del evento</value>
+  </data>
+  <data name="FreeReward" xml:space="preserve">
+    <value>Recompensa gratis</value>
+  </data>
+  <data name="Inventory" xml:space="preserve">
+    <value>Inventario</value>
+  </data>
+  <data name="OfflineEarnings" xml:space="preserve">
+    <value>Ganancias offline</value>
+  </data>
+  <data name="PremiumActive" xml:space="preserve">
+    <value>Premium activo</value>
+  </data>
+  <data name="Recipes" xml:space="preserve">
+    <value>Recetas</value>
+  </data>
+  <data name="ResearchTitle" xml:space="preserve">
+    <value>Investigación</value>
+  </data>
+  <data name="Sell" xml:space="preserve">
+    <value>Vender</value>
+  </data>
+  <data name="StartCrafting" xml:space="preserve">
+    <value>Iniciar fabricación</value>
+  </data>
+  <data name="UpgradePremium" xml:space="preserve">
+    <value>Mejorar a Premium</value>
+  </data>
+  <data name="PremiumDailyLimitTitle" xml:space="preserve">
+    <value>Límite diario</value>
+  </data>
+  <data name="PremiumDailyLimitMessage" xml:space="preserve">
+    <value>Recompensas premium agotadas hoy. ¡Vuelve mañana!</value>
+  </data>
+  <data name="PremiumFreeRewardsLeft" xml:space="preserve">
+    <value>{0} recompensas gratis hoy</value>
+  </data>
+  <data name="AdCooldownTitle" xml:space="preserve">
+    <value>Tiempo de espera activo</value>
+  </data>
+  <data name="AdCooldownMessage" xml:space="preserve">
+    <value>Próximo vídeo en {0}h {1}min</value>
+  </data>
+  <data name="PrestigeUpgradeDiscount" xml:space="preserve">
+    <value>Descuento de mejora</value>
+  </data>
+  <data name="PrestigeUpgradeDiscountDesc" xml:space="preserve">
+    <value>-15% costes de mejora del taller</value>
+  </data>
+  <data name="WorkerAuraBonus" xml:space="preserve">
+    <value>Bono de aura: +{0}%</value>
+  </data>
+  <data name="UndoFireWorker" xml:space="preserve">
+    <value>Deshacer</value>
+  </data>
+  <data name="PrestigeKeep" xml:space="preserve">
+    <value>Conservas</value>
+  </data>
+  <data name="PrestigeLose" xml:space="preserve">
+    <value>Pierdes</value>
   </data>
 </root>

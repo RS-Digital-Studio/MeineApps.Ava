@@ -17,6 +17,7 @@ namespace HandwerkerImperium.ViewModels;
 public partial class ShopViewModel : ObservableObject, IDisposable
 {
     private bool _disposed;
+    private bool _isBusy;
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly ISaveGameService _saveGameService;
@@ -81,7 +82,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     /// <summary>
     /// Localized text for restore purchases button.
     /// </summary>
-    public string RestorePurchasesText => $"🔄 {_localizationService.GetString("RestorePurchases")}";
+    public string RestorePurchasesText => _localizationService.GetString("RestorePurchases") ?? "Käufe wiederherstellen";
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -432,7 +433,10 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     private async Task PurchaseItemAsync(ShopItem? item)
     {
         if (item == null) return;
-
+        if (_isBusy) return;
+        _isBusy = true;
+        try
+        {
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
         if (item.IsPurchased)
@@ -446,10 +450,53 @@ public partial class ShopViewModel : ObservableObject, IDisposable
 
         if (item.IsAdReward)
         {
+            if (_purchaseService.IsPremium)
+            {
+                // Premium: 3x pro Tag gratis (kein Video)
+                var state = _gameStateService.State;
+                // Tages-Reset prüfen
+                if (state.LastPremiumAdRewardReset.Date < DateTime.UtcNow.Date)
+                {
+                    state.PremiumAdRewardsUsedToday = 0;
+                    state.LastPremiumAdRewardReset = DateTime.UtcNow;
+                }
+
+                if (state.PremiumAdRewardsUsedToday >= 3)
+                {
+                    ShowAlert(
+                        _localizationService.GetString("PremiumDailyLimitTitle") ?? "Tageslimit",
+                        _localizationService.GetString("PremiumDailyLimitMessage") ?? "Premium-Belohnungen für heute aufgebraucht.",
+                        _localizationService.GetString("OK") ?? "OK");
+                    return;
+                }
+
+                state.PremiumAdRewardsUsedToday++;
+                _gameStateService.MarkDirty();
+                await ApplyReward(item);
+                return;
+            }
+
+            // Free-User: Cooldown prüfen (1x, dann 3h Cooldown)
+            var gameState = _gameStateService.State;
+            var cooldownEnd = gameState.LastShopAdRewardTime.AddHours(3);
+            if (DateTime.UtcNow < cooldownEnd)
+            {
+                var remaining = cooldownEnd - DateTime.UtcNow;
+                ShowAlert(
+                    _localizationService.GetString("AdCooldownTitle") ?? "Wartezeit aktiv",
+                    string.Format(
+                        _localizationService.GetString("AdCooldownMessage") ?? "Nächstes Video in {0}h {1}min",
+                        (int)remaining.TotalHours, remaining.Minutes),
+                    _localizationService.GetString("OK") ?? "OK");
+                return;
+            }
+
             if (!_rewardedAdService.IsAvailable)
             {
-                // Premium users don't need ads
-                await ApplyReward(item);
+                ShowAlert(
+                    _localizationService.GetString("AdVideoNotAvailableTitle") ?? "Video nicht verfügbar",
+                    _localizationService.GetString("AdVideoNotAvailableMessage") ?? "Bitte versuche es später.",
+                    _localizationService.GetString("OK") ?? "OK");
                 return;
             }
 
@@ -472,6 +519,8 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 bool success = await _rewardedAdService.ShowAdAsync("golden_screws");
                 if (success)
                 {
+                    gameState.LastShopAdRewardTime = DateTime.UtcNow;
+                    _gameStateService.MarkDirty();
                     await ApplyReward(item);
                 }
             }
@@ -569,32 +618,46 @@ public partial class ShopViewModel : ObservableObject, IDisposable
                 }
             }
         }
+        }
+        finally
+        {
+            _isBusy = false;
+        }
     }
 
     [RelayCommand]
     private async Task RestorePurchasesAsync()
     {
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-
-        bool restored = await _purchaseService.RestorePurchasesAsync();
-
-        if (restored)
+        if (_isBusy) return;
+        _isBusy = true;
+        try
         {
-            _gameStateService.State.IsPremium = _purchaseService.IsPremium;
-            await _saveGameService.SaveAsync();
-            await _audioService.PlaySoundAsync(GameSound.LevelUp);
-            ShowAlert(
-                _localizationService.GetString("PurchasesRestored"),
-                _localizationService.GetString("PurchasesRestoredDesc"),
-                _localizationService.GetString("Great"));
-            LoadShopData();
+            await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+            bool restored = await _purchaseService.RestorePurchasesAsync();
+
+            if (restored)
+            {
+                _gameStateService.State.IsPremium = _purchaseService.IsPremium;
+                await _saveGameService.SaveAsync();
+                await _audioService.PlaySoundAsync(GameSound.LevelUp);
+                ShowAlert(
+                    _localizationService.GetString("PurchasesRestored"),
+                    _localizationService.GetString("PurchasesRestoredDesc"),
+                    _localizationService.GetString("Great"));
+                LoadShopData();
+            }
+            else
+            {
+                ShowAlert(
+                    _localizationService.GetString("NoPurchasesFound"),
+                    _localizationService.GetString("NoPurchasesFoundDesc"),
+                    _localizationService.GetString("OK") ?? "OK");
+            }
         }
-        else
+        finally
         {
-            ShowAlert(
-                _localizationService.GetString("NoPurchasesFound"),
-                _localizationService.GetString("NoPurchasesFoundDesc"),
-                _localizationService.GetString("OK") ?? "OK");
+            _isBusy = false;
         }
     }
 

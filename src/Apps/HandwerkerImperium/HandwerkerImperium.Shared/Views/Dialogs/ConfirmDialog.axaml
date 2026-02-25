@@ -1,0 +1,56 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             x:Class="HandwerkerImperium.Views.Dialogs.ConfirmDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Generic Confirm Dialog (Bottom-Sheet Style) -->
+  <Border Background="{StaticResource DialogOverlayBrush}"
+          Classes="SheetBackdrop"
+          Classes.Open="{Binding IsConfirmDialogVisible}"
+          PointerPressed="OnConfirmOverlayPressed"
+          AutomationProperties.AutomationId="Main_Overlay_Confirm">
+    <Border Classes="ConfirmSheet"
+            Classes.Open="{Binding IsConfirmDialogVisible}"
+            Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="20,20,0,0"
+            Padding="24,12,24,24"
+            VerticalAlignment="Bottom"
+            BoxShadow="0 -4 16 0 #40000000"
+            PointerPressed="OnDialogContentPressed"
+            AutomationProperties.AutomationId="Main_Border_ConfirmSheet">
+      <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+        <!-- Drag Handle -->
+        <Border Width="40" Height="4" CornerRadius="2"
+                Background="{DynamicResource TextMutedBrush}"
+                Opacity="0.4"
+                HorizontalAlignment="Center" Margin="0,0,0,4"
+                AutomationProperties.AutomationId="Main_Border_ConfirmDragHandle" />
+        <TextBlock Text="{Binding ConfirmDialogTitle}"
+                   FontSize="20" FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource WarningBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_ConfirmTitle" />
+        <TextBlock Text="{Binding ConfirmDialogMessage}"
+                   FontSize="14" TextWrapping="Wrap"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_ConfirmMessage" />
+        <StackPanel Spacing="8" HorizontalAlignment="Stretch"
+                    AutomationProperties.AutomationId="Main_Panel_ConfirmButtons">
+          <Button Classes="Primary" Content="{Binding ConfirmDialogAcceptText}"
+                  Command="{Binding ConfirmDialogAcceptCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Main_Btn_ConfirmAccept" />
+          <Button Classes="Secondary" Content="{Binding ConfirmDialogCancelText}"
+                  Command="{Binding ConfirmDialogCancelCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Main_Btn_ConfirmCancel" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Border>
+
+</UserControl>

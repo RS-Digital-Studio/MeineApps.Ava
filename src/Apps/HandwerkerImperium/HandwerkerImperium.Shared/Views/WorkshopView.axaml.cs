@@ -85,8 +85,8 @@ public partial class WorkshopView : UserControl
         var workshop = _workshopVm?.GetWorkshopForRendering();
         if (workshop != null)
         {
-            // Dezenter Hintergrund (mit Vignette + Wand-Details)
-            _interiorRenderer.Render(canvas, bounds, workshop);
+            // Dezenter Hintergrund (mit dynamischer Beleuchtung + Wand-Details)
+            _interiorRenderer.Render(canvas, bounds, workshop, _workerAnimPhase);
 
             // Aktive Worker zählen (nicht ruhend, nicht trainierend)
             int activeWorkers = workshop.Workers.Count(w => !w.IsResting && !w.IsTraining);

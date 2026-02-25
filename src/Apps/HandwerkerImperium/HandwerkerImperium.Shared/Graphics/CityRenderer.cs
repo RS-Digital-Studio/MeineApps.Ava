@@ -36,6 +36,9 @@ public class CityRenderer
     private readonly SKPaint _decoStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private readonly SKPaint _starPaint = new() { IsAntialias = true };
 
+    // Gecachter PathEffect für gestricheltes Outline (statt pro Frame neu erstellen)
+    private static readonly SKPathEffect _dashedEffect = SKPathEffect.CreateDash([4, 4], 0);
+
     // Parallax-Scroll-Offset (wird extern gesetzt, z.B. vom ScrollViewer)
     public float ScrollOffset { get; set; }
 
@@ -78,6 +81,10 @@ public class CityRenderer
         // Boden + Straße (mit Progression)
         float groundY = bounds.Top + bounds.Height * 0.52f;
         DrawGround(canvas, bounds, groundY, nightDim, state);
+
+        // Wolken-Schatten auf dem Boden (dunkle Ovale die mit Wolken wandern)
+        DrawCloudShadows(canvas, bounds, groundY, nightDim);
+
         float streetY = groundY + 6;
         CityProgressionHelper.DrawProgressiveStreet(canvas, bounds, streetY, 12, worldTier, nightDim, _time);
 
@@ -98,6 +105,9 @@ public class CityRenderer
         // Wetter-Overlay (Regen, Schnee, Blätter, Sonnenstrahlen)
         _weatherSystem.Render(canvas, bounds);
 
+        // Boden-Wetter-Effekte (Pfützen, Schnee-Haufen, liegende Blätter)
+        DrawGroundWeatherEffects(canvas, bounds, streetY, nightDim);
+
         // Workshop-Partikel (Rauch, Funken etc. - über den Gebäuden)
         DrawWorkshopParticles(canvas, bounds, state, workshopRowBottom, nightDim);
     }
@@ -107,10 +117,14 @@ public class CityRenderer
     // ═════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Himmel mit Tag/Nacht-Gradient (Layer 1, statisch).
+    /// Himmel mit Tag/Nacht-Gradient + Sonnenauf-/Untergang (Layer 1).
     /// </summary>
     private void DrawSkyLayer(SKCanvas canvas, SKRect bounds, float nightDim)
     {
+        int hour = DateTime.Now.Hour;
+        int minute = DateTime.Now.Minute;
+        float hourF = hour + minute / 60f;
+
         // Tages-Gradient: Lebhaftere Farben bei höheren Leveln
         var topColor = CityBuildingShapes.ApplyDim(new SKColor(0x5B, 0xA3, 0xD9), nightDim);
         var bottomColor = CityBuildingShapes.ApplyDim(new SKColor(0xB0, 0xD4, 0xF1), nightDim);
@@ -120,11 +134,37 @@ public class CityRenderer
         using var shader = SKShader.CreateLinearGradient(
             new SKPoint(bounds.Left, bounds.Top),
             new SKPoint(bounds.Left, bounds.Top + bounds.Height * 0.55f),
-            new[] { topColor, bottomColor },
+            [topColor, bottomColor],
             null, SKShaderTileMode.Clamp);
         _skyPaint.Shader = shader;
         canvas.DrawRect(bounds, _skyPaint);
         _skyPaint.Shader = null;
+
+        // Sonnenaufgang (6-8h) / Sonnenuntergang (18-20h) Overlay
+        float sunsetAlpha = 0;
+        if (hourF >= 6f && hourF < 8f)
+            sunsetAlpha = 1f - Math.Abs(hourF - 7f); // Peak bei 7h
+        else if (hourF >= 18f && hourF < 20f)
+            sunsetAlpha = 1f - Math.Abs(hourF - 19f); // Peak bei 19h
+
+        if (sunsetAlpha > 0.05f)
+        {
+            sunsetAlpha = Math.Clamp(sunsetAlpha, 0, 1);
+            byte alpha = (byte)(sunsetAlpha * 50);
+            using var sunsetShader = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.Left, bounds.Top + bounds.Height * 0.2f),
+                new SKPoint(bounds.Left, bounds.Top + bounds.Height * 0.55f),
+                [
+                    new SKColor(0xFF, 0x6B, 0x6B, (byte)(alpha * 0.6f)),
+                    new SKColor(0xFF, 0x9E, 0x40, alpha),
+                    new SKColor(0xFF, 0xD7, 0x00, (byte)(alpha * 0.4f))
+                ],
+                [0f, 0.5f, 1f],
+                SKShaderTileMode.Clamp);
+            _skyPaint.Shader = sunsetShader;
+            canvas.DrawRect(bounds, _skyPaint);
+            _skyPaint.Shader = null;
+        }
     }
 
     /// <summary>
@@ -266,6 +306,36 @@ public class CityRenderer
         }
     }
 
+    /// <summary>
+    /// Wolken-Schatten auf dem Boden (dunkle Ovale die mit den Wolken wandern).
+    /// </summary>
+    private void DrawCloudShadows(SKCanvas canvas, SKRect bounds, float groundY, float nightDim)
+    {
+        // Nur tagsüber sichtbar (Schatten brauchen Sonne)
+        if (nightDim < 0.6f) return;
+
+        float[] speeds = { 8f, 12f, 6f, 15f };
+        float[] widths = { 40f, 30f, 50f, 25f };
+        float[] offsets = { 0f, 0.25f, 0.55f, 0.8f };
+        float parallaxOffset = ScrollOffset * 0.3f;
+
+        byte shadowAlpha = (byte)(15 * nightDim);
+
+        for (int i = 0; i < 4; i++)
+        {
+            float cloudX = ((offsets[i] * bounds.Width + _time * speeds[i] + parallaxOffset)
+                % (bounds.Width + widths[i] * 2)) - widths[i];
+            float w = widths[i];
+
+            // Schatten auf dem Boden (leicht versetzt, breiter, flacher)
+            _cloudPaint.Color = new SKColor(0x00, 0x00, 0x00, shadowAlpha);
+            canvas.DrawOval(cloudX + w * 0.5f, groundY + 4, w * 0.6f, 3, _cloudPaint);
+        }
+
+        // Wolkenfarbe wiederherstellen (wird danach in DrawClouds benutzt)
+        _cloudPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0xFF, 0xFF, 0xFF, 0xA0), nightDim);
+    }
+
     // ═════════════════════════════════════════════════════════════════
     // BODEN + STRASSE
     // ═════════════════════════════════════════════════════════════════
@@ -309,6 +379,19 @@ public class CityRenderer
         float gap = 5;
         float buildingWidth = Math.Max(22, (totalWidth - (count - 1) * gap) / count);
 
+        // Höchstes Level finden für Spotlight
+        int highestLevel = 0;
+        int highestIdx = -1;
+        for (int i = 0; i < count; i++)
+        {
+            var ws = state.Workshops.FirstOrDefault(w => w.Type == allTypes[i]);
+            if (ws != null && state.IsWorkshopUnlocked(allTypes[i]) && ws.Level > highestLevel)
+            {
+                highestLevel = ws.Level;
+                highestIdx = i;
+            }
+        }
+
         float x = bounds.Left + 8;
         for (int i = 0; i < count; i++)
         {
@@ -322,10 +405,36 @@ public class CityRenderer
                 float height = CityBuildingShapes.GetBuildingHeight(level);
                 float buildingTop = rowBottom - height;
 
+                // Spotlight auf höchstes Gebäude (warmer Lichtkreis)
+                if (i == highestIdx)
+                {
+                    float spotPulse = 0.8f + MathF.Sin(_time * 1.5f) * 0.15f;
+                    _particlePaint.Color = new SKColor(0xFF, 0xD7, 0x00, (byte)(12 * spotPulse));
+                    canvas.DrawCircle(x + buildingWidth / 2, buildingTop + height * 0.4f,
+                        buildingWidth * 1.2f, _particlePaint);
+                }
+
                 // Isometrisches Workshop-Gebäude
                 CityBuildingShapes.DrawIsometricWorkshop(
                     canvas, x, buildingTop, buildingWidth, height,
                     type, level, nightDim, _time);
+
+                // Kleine farbige Fahne am Gebäude (Workshop-Farbe)
+                DrawWorkshopFlag(canvas, x + buildingWidth - 3, buildingTop + 2, type, nightDim);
+
+                // Aufsteigende Gold-Münzen bei hohem Level (Lv100+)
+                if (level >= 100 && MathF.Sin(_time * 0.7f + i * 2.3f) > 0.85f)
+                {
+                    float coinPhase = (_time * 0.5f + i * 1.7f) % 2f;
+                    if (coinPhase < 1.5f)
+                    {
+                        float coinY = buildingTop + height * 0.3f - coinPhase * 8;
+                        byte coinAlpha = (byte)(180 * (1 - coinPhase / 1.5f));
+                        _particlePaint.Color = new SKColor(0xFF, 0xD7, 0x00, coinAlpha);
+                        canvas.DrawCircle(x + buildingWidth * 0.5f + MathF.Sin(coinPhase * 3) * 3,
+                            coinY, 2, _particlePaint);
+                    }
+                }
 
                 // Mini-Arbeiter vor dem Workshop (1-3 je nach Worker-Anzahl)
                 int workerCount = workshop.Workers?.Count(w => !w.IsResting) ?? 0;
@@ -388,7 +497,7 @@ public class CityRenderer
                 var outlineColor = CityBuildingShapes.ApplyDim(new SKColor(0x60, 0x60, 0x60), nightDim);
                 _decoStrokePaint.Color = outlineColor;
                 _decoStrokePaint.StrokeWidth = 1;
-                _decoStrokePaint.PathEffect = SKPathEffect.CreateDash(new float[] { 4, 4 }, 0);
+                _decoStrokePaint.PathEffect = _dashedEffect;
                 canvas.DrawRoundRect(x, rowTop, buildingWidth, 18, 2, 2, _decoStrokePaint);
                 _decoStrokePaint.PathEffect = null;
             }
@@ -402,42 +511,117 @@ public class CityRenderer
     // ═════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Animierter Lieferwagen der alle ~10s über die Straße fährt.
+    /// 2 Lieferwagen (Hin- und Gegenrichtung) + 2-3 Fußgänger.
     /// </summary>
     private void DrawDeliveryVan(SKCanvas canvas, SKRect bounds, float streetY, float nightDim)
     {
-        float cycleDuration = 10f;
-        float vanPhase = (_time % cycleDuration) / cycleDuration;
+        // Lieferwagen 1: links→rechts (10s Zyklus)
+        DrawSingleVan(canvas, bounds, streetY, nightDim, 10f, 0f, false);
+        // Lieferwagen 2: rechts→links (14s Zyklus, versetzt)
+        DrawSingleVan(canvas, bounds, streetY, nightDim, 14f, 5f, true);
 
-        // Nur sichtbar in Phase 0.3-0.9 (60% der Zeit fährt er durch)
+        // 2-3 Fußgänger auf dem Bürgersteig
+        DrawPedestrians(canvas, bounds, streetY, nightDim);
+    }
+
+    private void DrawSingleVan(SKCanvas canvas, SKRect bounds, float streetY,
+        float nightDim, float cycleDuration, float offset, bool reversed)
+    {
+        float vanPhase = ((_time + offset) % cycleDuration) / cycleDuration;
         if (vanPhase < 0.3f || vanPhase > 0.9f) return;
 
-        float drivePhase = (vanPhase - 0.3f) / 0.6f; // 0→1
+        float drivePhase = (vanPhase - 0.3f) / 0.6f;
+        if (reversed) drivePhase = 1 - drivePhase;
+
         float vanX = bounds.Left - 30 + drivePhase * (bounds.Width + 60);
-        float vanY = streetY + 1;
+        float vanY = reversed ? streetY + 5 : streetY + 1;
         float vanW = 24f;
         float vanH = 10f;
 
         // Karosserie
-        _vanPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0xE8, 0xE8, 0xE8), nightDim);
+        var bodyColor = reversed ? new SKColor(0xEA, 0x58, 0x0C) : new SKColor(0xE8, 0xE8, 0xE8);
+        _vanPaint.Color = CityBuildingShapes.ApplyDim(bodyColor, nightDim);
         canvas.DrawRoundRect(vanX, vanY, vanW, vanH, 2, 2, _vanPaint);
 
-        // Fahrerkabine (vorne)
+        // Fahrerkabine
+        float cabX = reversed ? vanX : vanX + vanW * 0.7f;
         _vanPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0xD0, 0xD0, 0xD0), nightDim);
-        canvas.DrawRoundRect(vanX + vanW * 0.7f, vanY + 1, vanW * 0.25f, vanH - 2, 1.5f, 1.5f, _vanPaint);
+        canvas.DrawRoundRect(cabX, vanY + 1, vanW * 0.25f, vanH - 2, 1.5f, 1.5f, _vanPaint);
 
         // Windschutzscheibe
+        float windX = reversed ? vanX + 2 : vanX + vanW * 0.73f;
         _vanPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x90, 0xCA, 0xF9), nightDim);
-        canvas.DrawRect(vanX + vanW * 0.73f, vanY + 2, vanW * 0.18f, vanH * 0.35f, _vanPaint);
+        canvas.DrawRect(windX, vanY + 2, vanW * 0.18f, vanH * 0.35f, _vanPaint);
 
         // Räder
         _vanPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x33, 0x33, 0x33), nightDim);
         canvas.DrawCircle(vanX + vanW * 0.2f, vanY + vanH, 2.5f, _vanPaint);
         canvas.DrawCircle(vanX + vanW * 0.75f, vanY + vanH, 2.5f, _vanPaint);
-        // Felgen
         _vanPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0xA0, 0xA0, 0xA0), nightDim);
         canvas.DrawCircle(vanX + vanW * 0.2f, vanY + vanH, 1.2f, _vanPaint);
         canvas.DrawCircle(vanX + vanW * 0.75f, vanY + vanH, 1.2f, _vanPaint);
+    }
+
+    /// <summary>
+    /// 3 Fußgänger auf dem Bürgersteig (hin und her laufend).
+    /// </summary>
+    private void DrawPedestrians(SKCanvas canvas, SKRect bounds, float streetY, float nightDim)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            float speed = 8f + i * 3f;
+            float offset = i * bounds.Width * 0.3f + 20;
+            float cycleLen = bounds.Width * 1.4f;
+            float pos = ((_time * speed + offset) % cycleLen);
+            bool goingRight = pos < cycleLen / 2;
+            float pedestrianX = goingRight
+                ? bounds.Left + pos * 2 / cycleLen * bounds.Width
+                : bounds.Left + (1 - (pos - cycleLen / 2) * 2 / cycleLen) * bounds.Width;
+            float pedestrianY = streetY - 2;
+
+            // Mini-Figur (5dp hoch)
+            byte headAlpha = (byte)(nightDim * 200);
+            // Kopf
+            _particlePaint.Color = new SKColor(0xFF, 0xDA, 0xB9, headAlpha);
+            canvas.DrawCircle(pedestrianX, pedestrianY - 4, 1.5f, _particlePaint);
+            // Körper (verschiedene Farben)
+            var bodyColors = new SKColor[]
+            {
+                new(0x42, 0xA5, 0xF5), new(0xEF, 0x53, 0x50), new(0x66, 0xBB, 0x6A)
+            };
+            _particlePaint.Color = CityBuildingShapes.ApplyDim(bodyColors[i], nightDim);
+            canvas.DrawRect(pedestrianX - 1, pedestrianY - 2.5f, 2, 3, _particlePaint);
+            // Beine (animiert)
+            float legPhase = MathF.Sin(_time * 6f + i * 2f) * 1.5f;
+            _particlePaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x44, 0x44, 0x44), nightDim);
+            canvas.DrawLine(pedestrianX - 0.5f, pedestrianY + 0.5f,
+                pedestrianX - 0.5f + legPhase * 0.3f, pedestrianY + 2.5f, _particlePaint);
+            canvas.DrawLine(pedestrianX + 0.5f, pedestrianY + 0.5f,
+                pedestrianX + 0.5f - legPhase * 0.3f, pedestrianY + 2.5f, _particlePaint);
+        }
+    }
+
+    /// <summary>
+    /// Kleine farbige Fahne am Workshop-Gebäude.
+    /// </summary>
+    private void DrawWorkshopFlag(SKCanvas canvas, float x, float y, WorkshopType type, float nightDim)
+    {
+        var flagColor = CityBuildingShapes.GetWorkshopColor(type);
+        flagColor = CityBuildingShapes.ApplyDim(flagColor, nightDim);
+
+        // Stange
+        _particlePaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x60, 0x60, 0x60), nightDim);
+        canvas.DrawRect(x, y, 0.8f, 8, _particlePaint);
+
+        // Fahne (weht im Wind)
+        float wave = MathF.Sin(_time * 2.5f) * 1.5f;
+        _particlePaint.Color = flagColor;
+        using var flagPath = new SKPath();
+        flagPath.MoveTo(x + 1, y);
+        flagPath.LineTo(x + 6 + wave, y + 1.5f);
+        flagPath.LineTo(x + 1, y + 4);
+        flagPath.Close();
+        canvas.DrawPath(flagPath, _particlePaint);
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -511,11 +695,11 @@ public class CityRenderer
     }
 
     /// <summary>
-    /// Rauchpartikel (3 Partikel, steigen auf und verblassen).
+    /// Rauchpartikel (5 Partikel, steigen auf und verblassen).
     /// </summary>
     private void DrawSmoke(SKCanvas canvas, float smokeX, float startY, float nightDim)
     {
-        for (int p = 0; p < 3; p++)
+        for (int p = 0; p < 5; p++)
         {
             float phase = (_time * 0.8f + p * 1.2f) % 3.0f;
             if (phase > 2.0f) continue;
@@ -536,7 +720,7 @@ public class CityRenderer
     /// </summary>
     private void DrawWaterDrops(SKCanvas canvas, float cx, float startY, float nightDim)
     {
-        for (int p = 0; p < 2; p++)
+        for (int p = 0; p < 4; p++)
         {
             float phase = (_time * 1.2f + p * 1.5f) % 2.5f;
             if (phase > 1.5f) continue;
@@ -555,7 +739,7 @@ public class CityRenderer
     /// </summary>
     private void DrawSparks(SKCanvas canvas, float cx, float cy)
     {
-        for (int p = 0; p < 3; p++)
+        for (int p = 0; p < 5; p++)
         {
             float phase = (_time * 2f + p * 0.8f) % 1.5f;
             if (phase > 0.5f) continue;
@@ -575,7 +759,7 @@ public class CityRenderer
     /// </summary>
     private void DrawDust(SKCanvas canvas, float cx, float startY, float nightDim)
     {
-        for (int p = 0; p < 2; p++)
+        for (int p = 0; p < 4; p++)
         {
             float phase = (_time * 0.5f + p * 1.8f) % 3.0f;
             if (phase > 1.5f) continue;
@@ -595,7 +779,7 @@ public class CityRenderer
     /// </summary>
     private void DrawPaperShreds(SKCanvas canvas, float cx, float startY, float nightDim)
     {
-        for (int p = 0; p < 2; p++)
+        for (int p = 0; p < 4; p++)
         {
             float phase = (_time * 0.4f + p * 2.2f) % 4.0f;
             if (phase > 2.0f) continue;
@@ -620,7 +804,7 @@ public class CityRenderer
     /// </summary>
     private void DrawGoldSparkle(SKCanvas canvas, float cx, float startY, float width)
     {
-        for (int p = 0; p < 4; p++)
+        for (int p = 0; p < 6; p++)
         {
             float phase = (_time * 1.5f + p * 0.7f) % 2.0f;
             if (phase > 0.8f) continue;
@@ -638,6 +822,74 @@ public class CityRenderer
             // Stern-Form (4 Strahlen)
             canvas.DrawLine(px - size, py, px + size, py, _particlePaint);
             canvas.DrawLine(px, py - size, px, py + size, _particlePaint);
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    // BODEN-WETTER-EFFEKTE
+    // ═════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Statische Wetter-Effekte am Boden (Pfützen bei Regen, liegende Blätter im Herbst).
+    /// </summary>
+    private void DrawGroundWeatherEffects(SKCanvas canvas, SKRect bounds, float streetY, float nightDim)
+    {
+        var weather = _weatherSystem.CurrentWeather;
+
+        switch (weather)
+        {
+            case CityWeatherSystem.WeatherType.Rain:
+                // Pfützen auf der Straße (kleine blaue Ovale mit Tropfen-Splash)
+                for (int i = 0; i < 6; i++)
+                {
+                    uint hash = (uint)(i * 4273 + 1931);
+                    float px = bounds.Left + (hash % 1000) / 1000f * bounds.Width;
+                    hash = hash * 1664525 + 1013904223;
+                    float pw = 5 + (hash % 100) / 100f * 8;
+
+                    _particlePaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x60, 0x90, 0xC0, 0x30), nightDim);
+                    canvas.DrawOval(px, streetY + 5, pw, 1.5f, _particlePaint);
+
+                    // Tropfen-Splash (kleiner Kreis der pulsiert)
+                    float splashPhase = (_time * 2f + i * 1.3f) % 2f;
+                    if (splashPhase < 0.5f)
+                    {
+                        float splashR = splashPhase * 6;
+                        byte splashAlpha = (byte)((1 - splashPhase * 2) * 50);
+                        _particlePaint.Color = new SKColor(0x80, 0xB0, 0xE0, splashAlpha);
+                        _particlePaint.Style = SKPaintStyle.Stroke;
+                        _particlePaint.StrokeWidth = 0.5f;
+                        canvas.DrawCircle(px, streetY + 5, splashR, _particlePaint);
+                        _particlePaint.Style = SKPaintStyle.Fill;
+                    }
+                }
+                break;
+
+            case CityWeatherSystem.WeatherType.Leaves:
+                // Blätter die auf dem Boden liegen (statisch, nicht fallend)
+                SKColor[] groundLeafColors =
+                [
+                    new(0xFF, 0x8C, 0x00), new(0xCD, 0x53, 0x1B),
+                    new(0xD4, 0xA0, 0x17), new(0x8B, 0x45, 0x13)
+                ];
+                for (int i = 0; i < 10; i++)
+                {
+                    uint hash = (uint)(i * 6091 + 2383);
+                    float lx = bounds.Left + (hash % 1000) / 1000f * bounds.Width;
+                    hash = hash * 1664525 + 1013904223;
+                    float ly = streetY + 2 + (hash % 100) / 100f * 8;
+                    hash = hash * 1664525 + 1013904223;
+                    float rot = (hash % 360);
+
+                    _particlePaint.Color = CityBuildingShapes.ApplyDim(
+                        groundLeafColors[i % groundLeafColors.Length].WithAlpha(0x80), nightDim);
+                    canvas.Save();
+                    canvas.Translate(lx, ly);
+                    canvas.RotateDegrees(rot);
+                    canvas.DrawOval(0, 0, 2.5f, 1.2f, _particlePaint);
+                    canvas.Restore();
+                }
+                break;
         }
     }
 
@@ -665,6 +917,7 @@ public class CityRenderer
     /// </summary>
     private static float GetNightDimFactor()
     {
+        // Lokalzeit für visuelle Darstellung (Tag/Nacht-Zyklus)
         int hour = DateTime.Now.Hour;
         if (hour >= 8 && hour < 18) return 1.0f;
         if (hour >= 20 || hour < 6) return 0.6f;

@@ -2,13 +2,12 @@ namespace HandwerkerImperium.Models;
 
 /// <summary>
 /// Static definition of all prestige shop items.
+/// Gecachte Liste - wird nur einmal erstellt.
 /// </summary>
 public static class PrestigeShop
 {
-    public static List<PrestigeShopItem> GetAllItems()
-    {
-        return
-        [
+    private static readonly List<PrestigeShopItem> _allItems =
+    [
             new PrestigeShopItem
             {
                 Id = "pp_income_10",
@@ -129,6 +128,16 @@ public static class PrestigeShop
                 Effect = new PrestigeEffect { GoldenScrewBonus = 0.25m }
             },
 
+            new PrestigeShopItem
+            {
+                Id = "pp_upgrade_discount",
+                NameKey = "PrestigeUpgradeDiscount",
+                DescriptionKey = "PrestigeUpgradeDiscountDesc",
+                Icon = "ArrowDown",
+                Cost = 50,
+                Effect = new PrestigeEffect { UpgradeDiscount = 0.15m }
+            },
+
             // === Endgame-Items (höhere Kosten) ===
             new PrestigeShopItem
             {
@@ -193,6 +202,11 @@ public static class PrestigeShop
                 Cost = 18,
                 Effect = new PrestigeEffect { CraftingSpeedBonus = 0.25m }
             },
-        ];
-    }
+    ];
+
+    /// <summary>
+    /// Gibt die gecachte Liste aller Prestige-Shop-Items zurück.
+    /// Keine Heap-Allokation bei jedem Aufruf.
+    /// </summary>
+    public static IReadOnlyList<PrestigeShopItem> GetAllItems() => _allItems;
 }

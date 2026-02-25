@@ -100,7 +100,10 @@ public class WorkerAvatarRenderer
             DrawHair(canvas, hash, scale, isFemale);
             DrawHat(canvas, tier, hash, scale);
             DrawEyes(canvas, hash, moodBucket, scale, isFemale);
+            DrawNose(canvas, hash, scale);
             DrawMouth(canvas, moodBucket, scale, isFemale);
+            DrawCheekBlush(canvas, scale, isFemale);
+            DrawChinShadow(canvas, hash, scale);
             DrawAccessories(canvas, hash, scale, isFemale);
         }
 
@@ -336,6 +339,15 @@ public class WorkerAvatarRenderer
                 break;
         }
 
+        // Helm-Glanz (nur bei scale >= 2)
+        if (scale >= 2)
+        {
+            var highlightColor = new SKColor(0xFF, 0xFF, 0xFF, 45);
+            using var glossPaint = new SKPaint { Color = highlightColor, IsAntialias = true };
+            // Glanz-Streifen auf dem Helm (schraeg, oben)
+            canvas.DrawRect(10 * scale, 8 * scale, 8 * scale, 2 * scale, glossPaint);
+        }
+
         // S+ Tiers: Stern-Markierung auf dem Helm
         if (tier >= WorkerTier.S)
         {
@@ -376,24 +388,75 @@ public class WorkerAvatarRenderer
             switch (mood)
             {
                 case MoodBucket.High:
-                    canvas.DrawCircle(leftEyeX, eyeY, dotSize, eyePaint);
-                    canvas.DrawCircle(rightEyeX, eyeY, dotSize, eyePaint);
-                    // Weiblich: Augenschimmer (weisser Glanzpunkt)
-                    if (isFemale)
+                    if (scale >= 2)
                     {
-                        using var shinePaint = new SKPaint { Color = new SKColor(0xFF, 0xFF, 0xFF, 180), IsAntialias = false };
-                        float shineSize = 0.8f * scale;
-                        canvas.DrawCircle(leftEyeX + 0.5f * scale, eyeY - 0.5f * scale, shineSize, shinePaint);
-                        canvas.DrawCircle(rightEyeX + 0.5f * scale, eyeY - 0.5f * scale, shineSize, shinePaint);
+                        // Augenweiß (ovaler Hintergrund)
+                        using var highWhitePaint = new SKPaint { Color = new SKColor(0xF0, 0xF0, 0xF0), IsAntialias = true };
+                        float highWhiteRx = dotSize * 1.3f;
+                        float highWhiteRy = dotSize * 1.1f;
+                        canvas.DrawOval(leftEyeX, eyeY, highWhiteRx, highWhiteRy, highWhitePaint);
+                        canvas.DrawOval(rightEyeX, eyeY, highWhiteRx, highWhiteRy, highWhitePaint);
+
+                        // Pupille (kleiner als vorher)
+                        eyePaint.Color = eyeColor;
+                        float highPupilSize = dotSize * 0.7f;
+                        canvas.DrawCircle(leftEyeX, eyeY, highPupilSize, eyePaint);
+                        canvas.DrawCircle(rightEyeX, eyeY, highPupilSize, eyePaint);
+
+                        // Weißer Glanzpunkt (oben-rechts der Pupille)
+                        using var highHlPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
+                        float highHlSize = scale * 0.6f;
+                        canvas.DrawCircle(leftEyeX + 0.7f * scale, eyeY - 0.6f * scale, highHlSize, highHlPaint);
+                        canvas.DrawCircle(rightEyeX + 0.7f * scale, eyeY - 0.6f * scale, highHlSize, highHlPaint);
+                    }
+                    else
+                    {
+                        // Pixel-Art bei 32px
+                        canvas.DrawCircle(leftEyeX, eyeY, dotSize, eyePaint);
+                        canvas.DrawCircle(rightEyeX, eyeY, dotSize, eyePaint);
                     }
                     break;
 
                 case MoodBucket.Mid:
-                    canvas.DrawCircle(leftEyeX, eyeY, dotSize * 1.1f, eyePaint);
-                    canvas.DrawCircle(rightEyeX, eyeY, dotSize * 1.1f, eyePaint);
+                    if (scale >= 2)
+                    {
+                        // Augenweiß (ovaler Hintergrund)
+                        using var midWhitePaint = new SKPaint { Color = new SKColor(0xF0, 0xF0, 0xF0), IsAntialias = true };
+                        float midWhiteRx = dotSize * 1.3f * 1.1f;
+                        float midWhiteRy = dotSize * 1.1f * 1.1f;
+                        canvas.DrawOval(leftEyeX, eyeY, midWhiteRx, midWhiteRy, midWhitePaint);
+                        canvas.DrawOval(rightEyeX, eyeY, midWhiteRx, midWhiteRy, midWhitePaint);
+
+                        // Pupille (kleiner als vorher)
+                        eyePaint.Color = eyeColor;
+                        float midPupilSize = dotSize * 1.1f * 0.7f;
+                        canvas.DrawCircle(leftEyeX, eyeY, midPupilSize, eyePaint);
+                        canvas.DrawCircle(rightEyeX, eyeY, midPupilSize, eyePaint);
+
+                        // Weißer Glanzpunkt (oben-rechts der Pupille)
+                        using var midHlPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
+                        float midHlSize = scale * 0.6f;
+                        canvas.DrawCircle(leftEyeX + 0.7f * scale, eyeY - 0.6f * scale, midHlSize, midHlPaint);
+                        canvas.DrawCircle(rightEyeX + 0.7f * scale, eyeY - 0.6f * scale, midHlSize, midHlPaint);
+                    }
+                    else
+                    {
+                        // Pixel-Art bei 32px
+                        canvas.DrawCircle(leftEyeX, eyeY, dotSize * 1.1f, eyePaint);
+                        canvas.DrawCircle(rightEyeX, eyeY, dotSize * 1.1f, eyePaint);
+                    }
                     break;
 
                 case MoodBucket.Low:
+                    if (scale >= 2)
+                    {
+                        // Augenweiß vor den traurigen Dreiecken
+                        using var lowWhitePaint = new SKPaint { Color = new SKColor(0xF0, 0xF0, 0xF0), IsAntialias = true };
+                        float lowWhiteRx = dotSize * 1.3f;
+                        float lowWhiteRy = dotSize * 1.1f;
+                        canvas.DrawOval(leftEyeX, eyeY, lowWhiteRx, lowWhiteRy, lowWhitePaint);
+                        canvas.DrawOval(rightEyeX, eyeY, lowWhiteRx, lowWhiteRy, lowWhitePaint);
+                    }
                     DrawSadEye(canvas, leftEyeX, eyeY, dotSize, eyePaint);
                     DrawSadEye(canvas, rightEyeX, eyeY, dotSize, eyePaint);
                     break;
@@ -440,6 +503,23 @@ public class WorkerAvatarRenderer
         path.LineTo(cx, cy + size);
         path.Close();
         canvas.DrawPath(path, paint);
+    }
+
+    /// <summary>
+    /// Zeichnet eine dezente Nase (nur bei scale >= 2, also 64px+).
+    /// </summary>
+    private static void DrawNose(SKCanvas canvas, int hash, float scale)
+    {
+        if (scale < 2) return;
+
+        int skinIndex = Math.Abs(hash) % SkinTones.Length;
+        var noseColor = DarkenColor(SkinTones[skinIndex], 0.12f);
+
+        using var nosePaint = new SKPaint { Color = noseColor, IsAntialias = true };
+        float cx = 16 * scale;
+        float noseY = 20 * scale;
+
+        canvas.DrawOval(cx, noseY, 1.8f * scale, 1.2f * scale, nosePaint);
     }
 
     private static void DrawMouth(SKCanvas canvas, MoodBucket mood, float scale, bool isFemale = false)
@@ -520,6 +600,41 @@ public class WorkerAvatarRenderer
                     break;
             }
         }
+    }
+
+    /// <summary>
+    /// Zeichnet dezente Wangenroete (nur bei scale >= 2).
+    /// Weiblich: staerkere Roete, maennlich: subtiler.
+    /// </summary>
+    private static void DrawCheekBlush(SKCanvas canvas, float scale, bool isFemale)
+    {
+        if (scale < 2) return;
+
+        byte alpha = isFemale ? (byte)50 : (byte)30;
+        using var blushPaint = new SKPaint { Color = new SKColor(0xFF, 0x99, 0x99, alpha), IsAntialias = true };
+        float cx = 16 * scale;
+        float cheekY = 21 * scale;
+        float radius = isFemale ? 2.5f * scale : 2 * scale;
+
+        canvas.DrawCircle(cx - 6 * scale, cheekY, radius, blushPaint);
+        canvas.DrawCircle(cx + 6 * scale, cheekY, radius, blushPaint);
+    }
+
+    /// <summary>
+    /// Zeichnet einen Kinn-Schatten (nur bei scale >= 3, also 96px+).
+    /// </summary>
+    private static void DrawChinShadow(SKCanvas canvas, int hash, float scale)
+    {
+        if (scale < 3) return;
+
+        int skinIndex = Math.Abs(hash) % SkinTones.Length;
+        var shadowColor = DarkenColor(SkinTones[skinIndex], 0.2f).WithAlpha(60);
+
+        using var shadowPaint = new SKPaint { Color = shadowColor, IsAntialias = true };
+        float cx = 16 * scale;
+        float chinY = 26 * scale;
+
+        canvas.DrawOval(cx, chinY, 7 * scale, 2.5f * scale, shadowPaint);
     }
 
     /// <summary>

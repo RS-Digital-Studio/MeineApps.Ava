@@ -103,14 +103,15 @@ public class BattlePassService : IBattlePassService
         BattlePassUpdated?.Invoke();
     }
 
-    public void UpgradeToPremium()
+    public async Task UpgradeToPremiumAsync()
     {
         var bp = _gameState.State.BattlePass;
         if (bp.IsPremium) return;
 
-        // In Produktion über IPurchaseService:
-        // var success = await _purchaseService.PurchaseConsumableAsync("battle_pass_season");
-        // Für jetzt direkt setzen (wird später durch echten Kauf ersetzt)
+        // Echten IAP-Kauf durchführen
+        var success = await _purchaseService.PurchaseConsumableAsync("battle_pass_season");
+        if (!success) return;
+
         bp.IsPremium = true;
 
         _gameState.MarkDirty();

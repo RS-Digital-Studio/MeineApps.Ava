@@ -1,0 +1,131 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             x:Class="HandwerkerImperium.Views.Guild.GuildResearchView"
+             x:DataType="vm:GuildViewModel">
+
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="GuildResearch_Grid_Root">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0" Padding="16,12" CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#92400E" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+        <!-- Zurück -->
+        <Button Grid.Column="0" Classes="Text" Padding="4"
+                Command="{Binding NavigateBackCommand}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+        </Button>
+        <!-- Titel -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="FlaskOutline" Width="24" Height="24" Foreground="{StaticResource CraftPrimaryBrush}" />
+          <TextBlock Text="{loc:Translate GuildResearchTitle}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+        <!-- Zusammenfassung -->
+        <Border Grid.Column="2" CornerRadius="10" Padding="8,3"
+                Background="#30EA580C">
+          <TextBlock Text="{Binding GuildResearchSummary}"
+                     FontSize="12" FontWeight="Bold" Foreground="{StaticResource CraftPrimaryBrush}" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- CONTENT: SkiaSharp-Forschungsbaum + Beitragsdialog                -->
+    <!-- ================================================================= -->
+    <Grid Grid.Row="1">
+
+      <!-- Forschungsbaum mit Header als SkiaSharp-Canvas in ScrollViewer -->
+      <ScrollViewer x:Name="TreeScrollViewer"
+                    VerticalScrollBarVisibility="Auto"
+                    HorizontalScrollBarVisibility="Disabled">
+        <StackPanel>
+          <!-- Gildenhalle Header-Szene (animiert) -->
+          <skia:SKCanvasView x:Name="HeaderCanvas"
+                             Height="120"
+                             PaintSurface="OnHeaderPaintSurface"
+                             HorizontalAlignment="Stretch" />
+          <!-- Forschungsbaum (MinHeight nötig, da StackPanel sonst 0-Höhe ergibt → PaintSurface feuert nie) -->
+          <skia:SKCanvasView x:Name="TreeCanvas"
+                             MinHeight="1500"
+                             PaintSurface="OnTreePaintSurface"
+                             PointerPressed="OnTreePointerPressed"
+                             HorizontalAlignment="Stretch" />
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Forschungs-Beitrag Dialog (Overlay über Canvas) -->
+      <Border IsVisible="{Binding IsResearchContributeDialogVisible}"
+              Background="#AA000000"
+              HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              PointerPressed="OnDialogBackdropPressed">
+        <Border Classes="CardElevated"
+                VerticalAlignment="Center" HorizontalAlignment="Center"
+                MinWidth="280" MaxWidth="360"
+                Margin="24" Padding="16">
+          <StackPanel Spacing="10">
+            <mi:MaterialIcon Kind="FlaskOutline" Width="28" Height="28"
+                             Foreground="{StaticResource CraftPrimaryBrush}" HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding SelectedResearchName}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center" />
+            <TextBlock Text="{loc:Translate GuildResearchContributeAmount}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding ResearchContributeDisplay}"
+                       FontSize="17" FontWeight="Bold"
+                       Foreground="{StaticResource CraftGoldBrush}"
+                       HorizontalAlignment="Center" />
+            <Slider Minimum="1" Maximum="100"
+                    Value="{Binding ResearchContributePercent}"
+                    TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,4" />
+            <Grid ColumnDefinitions="*,*">
+              <TextBlock Text="1%" FontSize="10"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="100%" FontSize="10"
+                         HorizontalAlignment="Right"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+            </Grid>
+            <Grid ColumnDefinitions="*,12,*" Margin="0,6,0,0">
+              <Button Grid.Column="0" Classes="Secondary"
+                      HorizontalAlignment="Stretch"
+                      Command="{Binding CancelResearchContributeCommand}">
+                <TextBlock Text="{loc:Translate Cancel}"
+                           FontSize="13" HorizontalAlignment="Center" />
+              </Button>
+              <Button Grid.Column="2" Classes="Primary"
+                      HorizontalAlignment="Stretch"
+                      Command="{Binding ConfirmResearchContributeCommand}">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="HandCoin" Width="14" Height="14" />
+                  <TextBlock Text="{loc:Translate GuildResearchContribute}"
+                             FontSize="13" FontWeight="Bold" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+      </Border>
+
+    </Grid>
+
+  </Grid>
+
+</UserControl>

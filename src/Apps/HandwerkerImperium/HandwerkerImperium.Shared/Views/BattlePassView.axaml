@@ -57,7 +57,7 @@
             <Border.Background>
               <SolidColorBrush Color="#D97706" Opacity="0.3" />
             </Border.Background>
-            <TextBlock Text="{Binding CurrentTier, StringFormat='Tier {0}'}"
+            <TextBlock Text="{Binding TierBadgeDisplay}"
                        AutomationProperties.AutomationId="BattlePass_Txt_TierBadge"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{StaticResource CraftGoldBrush}" />
@@ -92,13 +92,34 @@
     <!-- ================================================================= -->
     <!-- CONTENT - Tier-Liste                                              -->
     <!-- ================================================================= -->
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="12" Margin="16,16,16,80">
+    <StackPanel Grid.Row="1" Spacing="12" Margin="16,16,16,0">
 
-        <!-- Tier-Liste -->
-        <ItemsControl ItemsSource="{Binding Tiers}"
-                      AutomationProperties.AutomationId="BattlePass_Items_Tiers">
-          <ItemsControl.ItemTemplate>
+        <!-- Tier-Liste (virtualisiert, ListBox statt ItemsControl+ScrollViewer) -->
+        <ListBox ItemsSource="{Binding Tiers}"
+                 AutomationProperties.AutomationId="BattlePass_Items_Tiers"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <!-- Kein Auswahl-Highlight -->
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="Margin" Value="0" />
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+            <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+              <Setter Property="Background" Value="Transparent" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:BattlePassTierDisplay">
               <Border AutomationProperties.AutomationId="BattlePass_Border_Tier"
                       CornerRadius="8"
@@ -170,10 +191,10 @@
                   <Button Grid.Column="3"
                           Classes="Primary"
                           AutomationProperties.AutomationId="BattlePass_Btn_ClaimTier"
-                          Padding="10,6"
+                          MinHeight="44" Padding="12,8"
                           VerticalAlignment="Center"
                           IsVisible="{Binding CanClaim}"
-                          Command="{Binding $parent[ItemsControl].((vm:BattlePassViewModel)DataContext).ClaimTierCommand}"
+                          Command="{Binding $parent[ListBox].((vm:BattlePassViewModel)DataContext).ClaimTierCommand}"
                           CommandParameter="{Binding .}">
                     <mi:MaterialIcon Kind="GiftOpen" Width="16" Height="16"
                                      AutomationProperties.AutomationId="BattlePass_Icon_ClaimTier" />
@@ -182,8 +203,8 @@
                 </Grid>
               </Border>
             </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+          </ListBox.ItemTemplate>
+        </ListBox>
 
         <!-- Premium-Upgrade Button -->
         <Button Classes="Primary"
@@ -201,7 +222,7 @@
           </Button.Background>
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
-                             Foreground="#FFD700"
+                             Foreground="{StaticResource CraftGoldBrush}"
                              AutomationProperties.AutomationId="BattlePass_Icon_UpgradeCrown" />
             <TextBlock Text="{loc:Translate UpgradePremium}"
                        AutomationProperties.AutomationId="BattlePass_Txt_UpgradeBtn"
@@ -235,7 +256,6 @@
         <Border Height="80" AutomationProperties.AutomationId="BattlePass_Border_BottomSpacer" />
 
       </StackPanel>
-    </ScrollViewer>
 
   </Grid>
 

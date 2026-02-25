@@ -1,0 +1,60 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Dialogs.AchievementDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Achievement Unlocked Dialog -->
+  <Border Background="{StaticResource DialogOverlayBrush}"
+          IsVisible="{Binding IsAchievementDialogVisible}"
+          AutomationProperties.AutomationId="Main_Overlay_Achievement">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16" Padding="24"
+            MaxWidth="360"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 0 40 0 #40FFD700"
+            AutomationProperties.AutomationId="Main_Border_AchievementDialog">
+      <StackPanel Spacing="16" HorizontalAlignment="Center">
+        <!-- Trophy mit Gold-Glow -->
+        <Border Width="72" Height="72" CornerRadius="36"
+                HorizontalAlignment="Center"
+                BoxShadow="0 0 24 0 #60FFD700"
+                AutomationProperties.AutomationId="Main_Border_AchievementGlow">
+          <Border.Background>
+            <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+              <GradientStop Color="#40FFD700" Offset="0" />
+              <GradientStop Color="Transparent" Offset="1" />
+            </RadialGradientBrush>
+          </Border.Background>
+          <mi:MaterialIcon Kind="Trophy" Width="40" Height="40"
+                           Foreground="{StaticResource CraftGoldBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           AutomationProperties.AutomationId="Main_Icon_AchievementTrophy" />
+        </Border>
+        <TextBlock Text="{loc:Translate AchievementUnlocked}"
+                   FontSize="22" FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="{StaticResource CraftGoldBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_AchievementUnlocked" />
+        <TextBlock Text="{Binding AchievementName}"
+                   FontSize="18" FontWeight="SemiBold"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_AchievementName" />
+        <TextBlock Text="{Binding AchievementDescription}"
+                   FontSize="14" TextWrapping="Wrap"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_AchievementDescription" />
+        <Button Classes="Primary" Content="{loc:Translate OK}"
+                Background="{StaticResource CraftPrimaryBrush}"
+                Command="{Binding DismissAchievementDialogCommand}"
+                HorizontalAlignment="Center" MinWidth="120"
+                AutomationProperties.AutomationId="Main_Btn_AchievementDismiss" />
+      </StackPanel>
+    </Border>
+  </Border>
+
+</UserControl>

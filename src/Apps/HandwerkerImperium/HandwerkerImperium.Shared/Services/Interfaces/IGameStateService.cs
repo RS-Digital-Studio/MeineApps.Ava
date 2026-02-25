@@ -21,6 +21,19 @@ public interface IGameStateService
     bool IsInitialized { get; }
 
     // ===================================================================
+    // AUTOMATION LEVEL-GATES
+    // ===================================================================
+
+    /// <summary>Auto-Collect freigeschaltet ab Level 15.</summary>
+    bool IsAutoCollectUnlocked { get; }
+
+    /// <summary>Auto-Accept freigeschaltet ab Level 25.</summary>
+    bool IsAutoAcceptUnlocked { get; }
+
+    /// <summary>Auto-Assign freigeschaltet ab Level 50.</summary>
+    bool IsAutoAssignUnlocked { get; }
+
+    // ===================================================================
     // EVENTS
     // ===================================================================
 

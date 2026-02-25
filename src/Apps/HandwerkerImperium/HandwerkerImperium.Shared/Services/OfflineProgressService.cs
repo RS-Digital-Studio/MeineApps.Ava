@@ -72,6 +72,15 @@ public class OfflineProgressService : IOfflineProgressService
         if (state.GuildMembership != null && state.GuildMembership.IncomeBonus > 0)
             grossIncome *= (1m + state.GuildMembership.IncomeBonus);
 
+        // Hard-Cap: Gesamt-Einkommens-Multiplikator auf +200% begrenzen (3.0x)
+        // Analog zum GameLoopService
+        if (state.TotalIncomePerSecond > 0)
+        {
+            decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
+            if (effectiveMultiplier > 3.0m)
+                grossIncome = state.TotalIncomePerSecond * 3.0m;
+        }
+
         // === Kosten berechnen (wie GameLoop) ===
         decimal costs = state.TotalCostsPerSecond;
 

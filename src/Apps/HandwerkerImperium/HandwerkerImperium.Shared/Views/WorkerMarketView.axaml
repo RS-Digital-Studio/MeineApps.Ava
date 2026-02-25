@@ -58,10 +58,10 @@
                   CornerRadius="12" Padding="8,4"
                   AutomationProperties.AutomationId="WorkerMarket_Border_ScrewsBadge">
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="#FFD700"
+              <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}"
                                AutomationProperties.AutomationId="WorkerMarket_Icon_Screws" />
               <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="14" FontWeight="Bold"
-                         Foreground="#FFD700"
+                         Foreground="{StaticResource CraftGoldBrush}"
                          AutomationProperties.AutomationId="WorkerMarket_Txt_Screws" />
             </StackPanel>
           </Border>
@@ -81,7 +81,8 @@
     <!-- ================================================================= -->
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  IsVisible="{Binding !ShowWorkshopSelection}">
       <StackPanel Spacing="16" Margin="16">
 
         <!-- ROTATION TIMER -->
@@ -159,6 +160,18 @@
           </StackPanel>
         </Border>
 
+        <!-- Empty State: Keine Arbeiter verfügbar -->
+        <StackPanel IsVisible="{Binding HasNoAvailableWorkers}" Spacing="8"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,24"
+                    AutomationProperties.AutomationId="WorkerMarket_Panel_EmptyState">
+          <mi:MaterialIcon Kind="AccountSearch" Width="48" Height="48"
+                           Foreground="{DynamicResource TextMutedBrush}" HorizontalAlignment="Center"
+                           AutomationProperties.AutomationId="WorkerMarket_Icon_EmptyState" />
+          <TextBlock Text="{loc:Translate NoWorkersAvailable}" FontSize="14"
+                     Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="WorkerMarket_Txt_EmptyState" />
+        </StackPanel>
+
         <!-- WORKER CARDS (immer sichtbar, Hire-Button disabled wenn keine Plaetze) -->
         <ItemsControl ItemsSource="{Binding AvailableWorkers}">
           <ItemsControl.ItemTemplate>
@@ -185,6 +198,7 @@
                                FontSize="16" FontWeight="Bold"
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis"
                                AutomationProperties.AutomationId="WorkerMarket_Txt_WorkerName" />
                     <Border Background="{StaticResource CraftPrimaryBrush}"
                             CornerRadius="4"
@@ -225,7 +239,7 @@
                     <StackPanel Orientation="Horizontal" Spacing="2"
                                 AutomationProperties.AutomationId="WorkerMarket_Panel_Talent">
                       <mi:MaterialIcon Kind="Star" Width="14" Height="14"
-                                       Foreground="#FFC107"
+                                       Foreground="{StaticResource CraftGoldBrush}"
                                        AutomationProperties.AutomationId="WorkerMarket_Icon_TalentStar" />
                       <TextBlock Text="{Binding Talent}"
                                  FontSize="12" FontWeight="SemiBold"
@@ -279,11 +293,11 @@
                                   AutomationProperties.AutomationId="WorkerMarket_Panel_ScrewCost">
                         <TextBlock Text="+" FontSize="13" FontWeight="SemiBold" />
                         <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
-                                         Foreground="#FFD700"
+                                         Foreground="{StaticResource CraftGoldBrush}"
                                          AutomationProperties.AutomationId="WorkerMarket_Icon_ScrewCost" />
                         <TextBlock Text="{Binding HiringScrewCost}"
                                    FontSize="13" FontWeight="SemiBold"
-                                   Foreground="#FFD700"
+                                   Foreground="{StaticResource CraftGoldBrush}"
                                    AutomationProperties.AutomationId="WorkerMarket_Txt_ScrewCost" />
                       </StackPanel>
                     </StackPanel>
@@ -305,9 +319,8 @@
     <!-- WORKSHOP-AUSWAHL OVERLAY (Bug 3: Spieler waehlt Workshop)        -->
     <!-- ================================================================= -->
     <Border Grid.RowSpan="2"
-            ZIndex="50"
             IsVisible="{Binding ShowWorkshopSelection}"
-            Background="#AA000000"
+            Background="{StaticResource DialogOverlayBrush}"
             AutomationProperties.AutomationId="WorkerMarket_Border_OverlayBackdrop">
       <Border Background="{DynamicResource BackgroundBrush}"
               BorderBrush="{StaticResource CraftPrimaryBrush}"

@@ -21,6 +21,7 @@ public partial class WorkerMarketViewModel : ObservableObject
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
     private readonly IRewardedAdService _rewardedAdService;
+    private bool _isBusy;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -78,6 +79,11 @@ public partial class WorkerMarketViewModel : ObservableObject
 
     [ObservableProperty]
     private string _noSlotsMessage = string.Empty;
+
+    /// <summary>
+    /// Ob keine Arbeiter im Markt verfügbar sind (für Empty-State-Anzeige).
+    /// </summary>
+    public bool HasNoAvailableWorkers => AvailableWorkers == null || AvailableWorkers.Count == 0;
 
     /// <summary>
     /// Ob es volle Workshops gibt, denen ein Extra-Slot per Ad hinzugefuegt werden kann.
@@ -195,6 +201,7 @@ public partial class WorkerMarketViewModel : ObservableObject
             .ThenByDescending(w => w.Efficiency)
             .ToList();
         AvailableWorkers = workers;
+        OnPropertyChanged(nameof(HasNoAvailableWorkers));
 
         if (!HasAvailableSlots)
         {
@@ -246,29 +253,38 @@ public partial class WorkerMarketViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshWithAdAsync()
     {
-        var market = _workerService.GetWorkerMarket();
+        if (_isBusy) return;
+        _isBusy = true;
+        try
+        {
+            var market = _workerService.GetWorkerMarket();
 
-        // Gratis-Refresh verfügbar? Direkt aktualisieren ohne Ad
-        if (!market.FreeRefreshUsedThisRotation)
-        {
-            market.FreeRefreshUsedThisRotation = true;
-            _gameStateService.MarkDirty();
-            DoRefreshMarket();
-            return;
-        }
+            // Gratis-Refresh verfügbar? Direkt aktualisieren ohne Ad
+            if (!market.FreeRefreshUsedThisRotation)
+            {
+                market.FreeRefreshUsedThisRotation = true;
+                _gameStateService.MarkDirty();
+                DoRefreshMarket();
+                return;
+            }
 
-        // Sonst: Video-Werbung anzeigen
-        var adWatched = await _rewardedAdService.ShowAdAsync("market_refresh");
-        if (adWatched)
-        {
-            DoRefreshMarket();
+            // Sonst: Video-Werbung anzeigen
+            var adWatched = await _rewardedAdService.ShowAdAsync("market_refresh");
+            if (adWatched)
+            {
+                DoRefreshMarket();
+            }
+            else
+            {
+                AlertRequested?.Invoke(
+                    _localizationService.GetString("Info"),
+                    _localizationService.GetString("WatchAdToRefresh"),
+                    _localizationService.GetString("OK") ?? "OK");
+            }
         }
-        else
+        finally
         {
-            AlertRequested?.Invoke(
-                _localizationService.GetString("Info"),
-                _localizationService.GetString("WatchAdToRefresh"),
-                _localizationService.GetString("OK") ?? "OK");
+            _isBusy = false;
         }
     }
 
@@ -286,34 +302,43 @@ public partial class WorkerMarketViewModel : ObservableObject
     [RelayCommand]
     private async Task WatchAdForWorkerSlotAsync()
     {
-        // Erste volle Workshop finden
-        var fullWorkshop = _gameStateService.State.Workshops
-            .FirstOrDefault(w => _gameStateService.State.IsWorkshopUnlocked(w.Type) &&
-                                 w.Workers.Count >= w.MaxWorkers);
-
-        if (fullWorkshop == null) return;
-
-        var success = await _rewardedAdService.ShowAdAsync("worker_hire_bonus");
-        if (success)
+        if (_isBusy) return;
+        _isBusy = true;
+        try
         {
-            // Cap bei MaxAdBonusWorkerSlots pro Workshop (Exploit-Schutz)
-            if (fullWorkshop.AdBonusWorkerSlots >= Workshop.MaxAdBonusWorkerSlots)
+            // Erste volle Workshop finden
+            var fullWorkshop = _gameStateService.State.Workshops
+                .FirstOrDefault(w => _gameStateService.State.IsWorkshopUnlocked(w.Type) &&
+                                     w.Workers.Count >= w.MaxWorkers);
+
+            if (fullWorkshop == null) return;
+
+            var success = await _rewardedAdService.ShowAdAsync("worker_hire_bonus");
+            if (success)
             {
+                // Cap bei MaxAdBonusWorkerSlots pro Workshop (Exploit-Schutz)
+                if (fullWorkshop.AdBonusWorkerSlots >= Workshop.MaxAdBonusWorkerSlots)
+                {
+                    AlertRequested?.Invoke(
+                        _localizationService.GetString("Info"),
+                        _localizationService.GetString("MaxSlotReached"),
+                        _localizationService.GetString("OK") ?? "OK");
+                    return;
+                }
+
+                fullWorkshop.AdBonusWorkerSlots += 1;
+                _gameStateService.MarkDirty();
+                LoadMarket();
+
                 AlertRequested?.Invoke(
-                    _localizationService.GetString("Info"),
-                    _localizationService.GetString("MaxSlotReached"),
-                    _localizationService.GetString("OK") ?? "OK");
-                return;
+                    _localizationService.GetString("WorkerSlotBonusDesc"),
+                    _localizationService.GetString(fullWorkshop.Type.GetLocalizationKey()),
+                    _localizationService.GetString("Great"));
             }
-
-            fullWorkshop.AdBonusWorkerSlots += 1;
-            _gameStateService.MarkDirty();
-            LoadMarket();
-
-            AlertRequested?.Invoke(
-                _localizationService.GetString("WorkerSlotBonusDesc"),
-                _localizationService.GetString(fullWorkshop.Type.GetLocalizationKey()),
-                _localizationService.GetString("Great"));
+        }
+        finally
+        {
+            _isBusy = false;
         }
     }
 
@@ -321,6 +346,7 @@ public partial class WorkerMarketViewModel : ObservableObject
     private void HireWorker(Worker? worker)
     {
         if (worker == null) return;
+        if (_isBusy) return;
 
         var hiringCost = worker.HiringCost;
 
@@ -383,6 +409,7 @@ public partial class WorkerMarketViewModel : ObservableObject
             // Worker aus Markt-Liste entfernen
             var updated = AvailableWorkers.Where(w => w.Id != worker.Id).ToList();
             AvailableWorkers = updated;
+            OnPropertyChanged(nameof(HasNoAvailableWorkers));
             SelectedWorker = null;
             CurrentBalance = MoneyFormatter.Format(_gameStateService.State.Money, 2);
             GoldenScrewsDisplay = _gameStateService.State.GoldenScrews.ToString("N0");

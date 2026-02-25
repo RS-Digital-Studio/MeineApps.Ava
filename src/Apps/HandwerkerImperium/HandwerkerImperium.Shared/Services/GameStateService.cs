@@ -17,6 +17,11 @@ public class GameStateService : IGameStateService
     public GameState State => _state;
     public bool IsInitialized { get; private set; }
 
+    // Automation Level-Gates (zentral, vermeidet Duplikation in ViewModels)
+    public bool IsAutoCollectUnlocked => _state.PlayerLevel >= 15;
+    public bool IsAutoAcceptUnlocked => _state.PlayerLevel >= 25;
+    public bool IsAutoAssignUnlocked => _state.PlayerLevel >= 50;
+
     // Events
     public event EventHandler<MoneyChangedEventArgs>? MoneyChanged;
     public event EventHandler<LevelUpEventArgs>? LevelUp;
@@ -254,6 +259,7 @@ public class GameStateService : IGameStateService
             oldLevel = workshop.Level;
             workshop.Level++;
             newLevel = workshop.Level;
+            _state.InvalidateIncomeCache();
         }
 
         MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(_state.Money + cost, _state.Money));
@@ -306,6 +312,7 @@ public class GameStateService : IGameStateService
             }
 
             newLevel = workshop.Level;
+            _state.InvalidateIncomeCache();
         }
 
         if (upgraded > 0)
@@ -340,6 +347,7 @@ public class GameStateService : IGameStateService
             worker = Worker.CreateRandom();
             workshop.Workers.Add(worker);
             workerCount = workshop.Workers.Count;
+            _state.InvalidateIncomeCache();
         }
 
         MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(_state.Money + cost, _state.Money));
@@ -380,6 +388,7 @@ public class GameStateService : IGameStateService
 
             var workshop = _state.GetOrCreateWorkshop(type);
             workshop.IsUnlocked = true;
+            _state.InvalidateIncomeCache();
         }
 
         if (cost > 0)

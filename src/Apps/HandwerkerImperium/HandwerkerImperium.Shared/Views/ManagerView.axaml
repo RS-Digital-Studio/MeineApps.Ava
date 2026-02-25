@@ -138,7 +138,7 @@
                           CommandParameter="{Binding Id}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14" />
-                      <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="#FFD700" />
+                      <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="{StaticResource CraftGoldBrush}" />
                       <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold" />
                     </StackPanel>
                   </Button>

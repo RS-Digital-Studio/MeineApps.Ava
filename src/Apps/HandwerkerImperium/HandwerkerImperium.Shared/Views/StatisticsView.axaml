@@ -104,7 +104,7 @@
                 <TextBlock Text="{Binding PlayerLevel}"
                            AutomationProperties.AutomationId="Statistics_Txt_LevelValue"
                            FontSize="20" FontWeight="Bold"
-                           Foreground="Gold" />
+                           Foreground="{StaticResource CraftGoldBrush}" />
               </StackPanel>
 
               <!-- Total XP -->
@@ -116,7 +116,7 @@
                 <TextBlock Text="{Binding TotalXp, StringFormat='{}{0:N0}'}"
                            AutomationProperties.AutomationId="Statistics_Txt_TotalXPValue"
                            FontSize="20" FontWeight="Bold"
-                           Foreground="Gold" />
+                           Foreground="{StaticResource CraftGoldBrush}" />
               </StackPanel>
 
               <!-- Play Time -->
@@ -260,7 +260,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="Star" Width="18" Height="18"
                                    AutomationProperties.AutomationId="Statistics_Icon_Star"
-                                   Foreground="Gold" />
+                                   Foreground="{StaticResource CraftGoldBrush}" />
                   <TextBlock Text="{Binding BestPerfectStreak}"
                              AutomationProperties.AutomationId="Statistics_Txt_BestStreakValue"
                              FontSize="20" FontWeight="Bold"
@@ -279,7 +279,7 @@
                         AutomationProperties.AutomationId="Statistics_Panel_PrestigeHeader">
               <mi:MaterialIcon Kind="Creation" Width="20" Height="20"
                                AutomationProperties.AutomationId="Statistics_Icon_Prestige"
-                               Foreground="Gold" />
+                               Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate Prestige}"
                          AutomationProperties.AutomationId="Statistics_Txt_PrestigeTitle"
                          FontSize="18" FontWeight="Bold"
@@ -296,7 +296,7 @@
                 <TextBlock Text="{Binding PrestigeLevel}"
                            AutomationProperties.AutomationId="Statistics_Txt_PrestigeLevelValue"
                            FontSize="20" FontWeight="Bold"
-                           Foreground="Gold" />
+                           Foreground="{StaticResource CraftGoldBrush}" />
               </StackPanel>
 
               <!-- Multiplier -->
@@ -308,7 +308,7 @@
                 <TextBlock Text="{Binding PrestigeMultiplier}"
                            AutomationProperties.AutomationId="Statistics_Txt_IncomeBonusValue"
                            FontSize="20" FontWeight="Bold"
-                           Foreground="Gold" />
+                           Foreground="{StaticResource CraftGoldBrush}" />
               </StackPanel>
 
               <!-- Potential Bonus -->
@@ -324,6 +324,70 @@
                 </TextBlock>
               </StackPanel>
             </Grid>
+
+            <!-- Prestige Keep/Lose Übersicht -->
+            <StackPanel IsVisible="{Binding CanPrestige}" Margin="0,8,0,0" Spacing="4"
+                        AutomationProperties.AutomationId="Statistics_Panel_PrestigeOverview">
+              <TextBlock Text="{Binding PrestigeKeepList}"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         FontSize="11"
+                         AutomationProperties.AutomationId="Statistics_Txt_PrestigeKeep" />
+              <TextBlock Text="{Binding PrestigeLoseList}"
+                         Foreground="#FF5722"
+                         FontSize="11"
+                         AutomationProperties.AutomationId="Statistics_Txt_PrestigeLose" />
+            </StackPanel>
+
+            <!-- Prestige-Pass Kauf (2,99 EUR, pro Prestige-Durchlauf) -->
+            <Border Margin="0,8,0,0" CornerRadius="8" Padding="12,8"
+                    IsVisible="{Binding CanBuyPrestigePass}"
+                    AutomationProperties.AutomationId="Statistics_Border_PrestigePass">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#30FFD700" Offset="0" />
+                  <GradientStop Color="#10FFD700" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+                <mi:MaterialIcon Kind="ShieldStar" Width="28" Height="28"
+                                 Grid.RowSpan="2" VerticalAlignment="Center"
+                                 AutomationProperties.AutomationId="Statistics_Icon_PrestigePass"
+                                 Foreground="{StaticResource CraftGoldBrush}" Margin="0,0,10,0" />
+                <TextBlock Grid.Column="1" Text="{loc:Translate PrestigePassTitle}"
+                           AutomationProperties.AutomationId="Statistics_Txt_PrestigePassTitle"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+                <TextBlock Grid.Column="1" Grid.Row="1" Text="{loc:Translate PrestigePassDesc}"
+                           AutomationProperties.AutomationId="Statistics_Txt_PrestigePassDesc"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <Button Grid.Column="2" Grid.RowSpan="2" Classes="Primary"
+                        AutomationProperties.AutomationId="Statistics_Btn_BuyPrestigePass"
+                        Command="{Binding BuyPrestigePassCommand}"
+                        VerticalAlignment="Center"
+                        MinHeight="36" Padding="12,6">
+                  <TextBlock Text="{loc:Translate PrestigePassBuy}"
+                             AutomationProperties.AutomationId="Statistics_Txt_PrestigePassPrice"
+                             FontSize="13" FontWeight="Bold" />
+                </Button>
+              </Grid>
+            </Border>
+
+            <!-- Prestige-Pass aktiv Banner -->
+            <Border Margin="0,8,0,0" CornerRadius="8" Padding="10,6"
+                    IsVisible="{Binding IsPrestigePassActive}"
+                    Background="#20FFD700"
+                    AutomationProperties.AutomationId="Statistics_Border_PrestigePassActive">
+              <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="ShieldCheck" Width="18" Height="18"
+                                 AutomationProperties.AutomationId="Statistics_Icon_PrestigePassActive"
+                                 Foreground="{StaticResource CraftGoldBrush}" />
+                <TextBlock Text="{loc:Translate PrestigePassActive}"
+                           AutomationProperties.AutomationId="Statistics_Txt_PrestigePassActive"
+                           FontSize="12" FontWeight="SemiBold"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+              </StackPanel>
+            </Border>
 
             <!-- Prestige Button -->
             <Button Classes="Primary"
@@ -363,7 +427,7 @@
                           AutomationProperties.AutomationId="Statistics_Panel_ShopHeader">
                 <mi:MaterialIcon Kind="StorefrontOutline" Width="20" Height="20"
                                  AutomationProperties.AutomationId="Statistics_Icon_Shop"
-                                 Foreground="Gold" />
+                                 Foreground="{StaticResource CraftGoldBrush}" />
                 <TextBlock Text="{loc:Translate PrestigeShop}"
                            AutomationProperties.AutomationId="Statistics_Txt_ShopTitle"
                            FontSize="18" FontWeight="Bold"
@@ -381,14 +445,14 @@
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="Creation" Width="14" Height="14"
                                    AutomationProperties.AutomationId="Statistics_Icon_PPCoin"
-                                   Foreground="Gold" />
+                                   Foreground="{StaticResource CraftGoldBrush}" />
                   <TextBlock Text="{Binding PrestigePoints}"
                              AutomationProperties.AutomationId="Statistics_Txt_PPValue"
                              FontSize="14" FontWeight="Bold"
-                             Foreground="Gold" />
+                             Foreground="{StaticResource CraftGoldBrush}" />
                   <TextBlock Text="PP" FontSize="12"
                              AutomationProperties.AutomationId="Statistics_Txt_PPLabel"
-                             Foreground="Gold" Opacity="0.7"
+                             Foreground="{StaticResource CraftGoldBrush}" Opacity="0.7"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Border>

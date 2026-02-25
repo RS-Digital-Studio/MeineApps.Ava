@@ -47,6 +47,10 @@ public class PrestigeService : IPrestigeService
         int basePoints = GetPrestigePoints(state.TotalMoneyEarned);
         int tierPoints = (int)(basePoints * tier.GetPointMultiplier());
 
+        // Bronze: Mindestens 5 PP (damit sich erster Prestige lohnt)
+        if (tier == PrestigeTier.Bronze && tierPoints < 5)
+            tierPoints = 5;
+
         // Prestige-Pass: +50% Bonus auf Prestige-Punkte
         if (state.IsPrestigePassActive)
             tierPoints = (int)(tierPoints * 1.5m);
@@ -115,7 +119,7 @@ public class PrestigeService : IPrestigeService
         _gameStateService.State.IsPrestigePassActive = true;
     }
 
-    public List<PrestigeShopItem> GetShopItems()
+    public IReadOnlyList<PrestigeShopItem> GetShopItems()
     {
         var allItems = PrestigeShop.GetAllItems();
         var purchased = _gameStateService.State.Prestige.PurchasedShopItems;

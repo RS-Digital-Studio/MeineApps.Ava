@@ -1,0 +1,105 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Dialogs.WelcomeBackOfferDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Welcome Back Offer Dialog -->
+  <Border Background="{StaticResource DialogOverlayBrush}"
+          IsVisible="{Binding IsWelcomeOfferVisible}"
+          AutomationProperties.AutomationId="Main_Overlay_WelcomeBack">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16" Padding="24"
+            MaxWidth="360"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 0 30 0 #404CAF50"
+            AutomationProperties.AutomationId="Main_Border_WelcomeBackDialog">
+      <StackPanel Spacing="16" HorizontalAlignment="Center">
+        <!-- Optionale Offline-Earnings Zeile (wenn gleichzeitig verdient) -->
+        <StackPanel IsVisible="{Binding HasOfflineEarningsInWelcome}" Spacing="4" Margin="0,0,0,8"
+                    AutomationProperties.AutomationId="Main_Panel_WelcomeOfflineEarnings">
+          <TextBlock Text="{loc:Translate OfflineEarnings}" FontSize="14" FontWeight="SemiBold"
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_WelcomeOfflineLabel" />
+          <TextBlock Text="{Binding CombinedOfflineDisplay}" FontSize="18" FontWeight="Bold"
+                     HorizontalAlignment="Center"
+                     Foreground="{StaticResource SuccessGreenBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_WelcomeOfflineAmount" />
+        </StackPanel>
+        <!-- Geschenk-Icon mit grünem Glow -->
+        <Border Width="72" Height="72" CornerRadius="36"
+                HorizontalAlignment="Center"
+                BoxShadow="0 0 20 0 #404CAF50"
+                AutomationProperties.AutomationId="Main_Border_WelcomeBackGlow">
+          <Border.Background>
+            <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+              <GradientStop Color="#404CAF50" Offset="0" />
+              <GradientStop Color="Transparent" Offset="1" />
+            </RadialGradientBrush>
+          </Border.Background>
+          <mi:MaterialIcon Kind="GiftOutline" Width="40" Height="40"
+                           Foreground="{StaticResource SuccessGreenBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           AutomationProperties.AutomationId="Main_Icon_WelcomeBackGift" />
+        </Border>
+        <TextBlock Text="{Binding WelcomeOfferTitle}"
+                   FontSize="22" FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="{StaticResource SuccessGreenBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_WelcomeBackTitle" />
+        <TextBlock Text="{Binding WelcomeOfferDescription}"
+                   FontSize="14" TextWrapping="Wrap"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_WelcomeBackDescription" />
+        <!-- Belohnungs-Anzeige -->
+        <Border Background="#204CAF50" CornerRadius="12" Padding="16,8"
+                AutomationProperties.AutomationId="Main_Border_WelcomeBackRewards">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                        IsVisible="{Binding WelcomeOfferMoneyReward, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <mi:MaterialIcon Kind="Cash" Width="20" Height="20" Foreground="{StaticResource SuccessGreenBrush}" />
+              <TextBlock Text="{Binding WelcomeOfferMoneyReward}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{StaticResource SuccessGreenBrush}"
+                         AutomationProperties.AutomationId="Main_Txt_WelcomeBackMoney" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                        IsVisible="{Binding WelcomeOfferScrewReward, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <mi:MaterialIcon Kind="Cog" Width="20" Height="20" Foreground="{StaticResource CraftGoldBrush}" />
+              <TextBlock Text="{Binding WelcomeOfferScrewReward}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         AutomationProperties.AutomationId="Main_Txt_WelcomeBackScrews" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+        <!-- Timer -->
+        <TextBlock Text="{Binding WelcomeOfferTimerDisplay}"
+                   FontSize="12"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextMutedBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_WelcomeBackTimer" />
+        <!-- Buttons -->
+        <Grid ColumnDefinitions="*,12,*">
+          <Button Grid.Column="0" Classes="Primary" Background="{StaticResource SuccessGreenBrush}"
+                  Command="{Binding ClaimWelcomeOfferCommand}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Main_Btn_ClaimWelcomeOffer">
+            <TextBlock Text="{loc:Translate ClaimOffer}" FontSize="14" FontWeight="SemiBold" />
+          </Button>
+          <Button Grid.Column="2" Classes="Secondary"
+                  Command="{Binding DismissWelcomeOfferCommand}"
+                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Main_Btn_DismissWelcomeOffer">
+            <TextBlock Text="{loc:Translate DismissOffer}" FontSize="14" />
+          </Button>
+        </Grid>
+      </StackPanel>
+    </Border>
+  </Border>
+
+</UserControl>

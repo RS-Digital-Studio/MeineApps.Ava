@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Dialogs.AlertDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Generic Alert Dialog -->
+  <Border Background="{StaticResource DialogOverlayBrush}"
+          IsVisible="{Binding IsAlertDialogVisible}"
+          PointerPressed="OnAlertOverlayPressed"
+          AutomationProperties.AutomationId="Main_Overlay_Alert">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16" Padding="24"
+            MaxWidth="340" MaxHeight="300"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 8 24 0 #40000000"
+            PointerPressed="OnDialogContentPressed"
+            AutomationProperties.AutomationId="Main_Border_AlertDialog">
+      <StackPanel Spacing="16" HorizontalAlignment="Center">
+        <TextBlock Text="{Binding AlertDialogTitle}"
+                   FontSize="20" FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_AlertTitle" />
+        <TextBlock Text="{Binding AlertDialogMessage}"
+                   FontSize="14" TextWrapping="Wrap"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_AlertMessage" />
+        <Button Classes="Primary" Content="{Binding AlertDialogButtonText}"
+                Command="{Binding DismissAlertDialogCommand}"
+                HorizontalAlignment="Center" MinWidth="120"
+                AutomationProperties.AutomationId="Main_Btn_AlertDismiss" />
+      </StackPanel>
+    </Border>
+  </Border>
+
+</UserControl>

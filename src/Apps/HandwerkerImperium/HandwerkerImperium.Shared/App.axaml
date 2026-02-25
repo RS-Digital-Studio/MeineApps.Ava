@@ -52,6 +52,46 @@
     <SolidColorBrush x:Key="BranchManagementBrush" Color="#92400E" />
     <SolidColorBrush x:Key="BranchMarketingBrush" Color="#65A30D" />
 
+    <!-- Feature-Farben -->
+    <Color x:Key="TournamentColor">#DC2626</Color>
+    <Color x:Key="SeasonalEventColor">#059669</Color>
+    <Color x:Key="BattlePassColor">#7C3AED</Color>
+    <Color x:Key="SuccessGreenColor">#4CAF50</Color>
+    <SolidColorBrush x:Key="TournamentBrush" Color="{StaticResource TournamentColor}" />
+    <SolidColorBrush x:Key="SeasonalEventBrush" Color="{StaticResource SeasonalEventColor}" />
+    <SolidColorBrush x:Key="BattlePassBrush" Color="{StaticResource BattlePassColor}" />
+    <SolidColorBrush x:Key="SuccessGreenBrush" Color="{StaticResource SuccessGreenColor}" />
+
+    <!-- MasterSmith + InnovationLab (fehlen in Workshop-Farben) -->
+    <Color x:Key="MasterSmithColor">#B91C1C</Color>
+    <Color x:Key="InnovationLabColor">#6D28D9</Color>
+    <SolidColorBrush x:Key="MasterSmithBrush" Color="{StaticResource MasterSmithColor}" />
+    <SolidColorBrush x:Key="InnovationLabBrush" Color="{StaticResource InnovationLabColor}" />
+
+    <!-- Overlay/Dialog-Farben -->
+    <SolidColorBrush x:Key="DialogOverlayBrush" Color="#AA000000" />
+    <SolidColorBrush x:Key="RewardOverlayBrush" Color="#CC000000" />
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- Warme Handwerker-Hintergrundfarben (überschreiben kaltes Midnight-Theme) -->
+    <!-- Holz/Werkstatt-Atmosphäre statt kaltem Blau-Slate -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <Color x:Key="BackgroundColor">#14100C</Color>
+    <Color x:Key="SurfaceColor">#1C1610</Color>
+    <Color x:Key="CardColor">#2A2218</Color>
+    <Color x:Key="CardHoverColor">#32281C</Color>
+    <Color x:Key="BorderColor">#4A3C2E</Color>
+    <Color x:Key="BorderSubtleColor">#3A2E22</Color>
+    <Color x:Key="GradientStartColor">#1C1610</Color>
+    <Color x:Key="GradientMidColor">#14100C</Color>
+    <Color x:Key="GradientEndColor">#1A1408</Color>
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#14100C" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#1C1610" />
+    <SolidColorBrush x:Key="CardBrush" Color="#2A2218" />
+    <SolidColorBrush x:Key="CardHoverBrush" Color="#32281C" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#4A3C2E" />
+    <SolidColorBrush x:Key="BorderSubtleBrush" Color="#3A2E22" />
+
     <!-- Training-Typ-Auswahl Converter (ausgewählt vs. nicht ausgewählt) -->
     <converters:BoolToBrushConverter x:Key="TrainingTypeBorderConverter"
         TrueBrush="{StaticResource CraftPrimaryLightBrush}"
@@ -70,7 +110,7 @@
     <localConverters:StringToMaterialIconKindConverter x:Key="IconKindConverter" />
 
     <!-- Converter: Hex-String → SolidColorBrush (für Gilden-Farben) -->
-    <localConverters:StringToColorBrushConverter x:Key="ColorBrushConverter" />
+    <converters:StringToColorBrushConverter x:Key="ColorBrushConverter" />
   </Application.Resources>
 
   <Application.Styles>

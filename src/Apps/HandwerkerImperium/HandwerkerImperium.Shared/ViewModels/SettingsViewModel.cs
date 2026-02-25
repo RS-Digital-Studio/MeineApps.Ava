@@ -89,10 +89,10 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _autoClaimDaily;
 
-    // Level-Gates für Automatisierung
-    public bool IsAutoCollectUnlocked => _gameStateService.State.PlayerLevel >= 15;
-    public bool IsAutoAcceptUnlocked => _gameStateService.State.PlayerLevel >= 25;
-    public bool IsAutoAssignUnlocked => _gameStateService.State.PlayerLevel >= 50;
+    // Level-Gates für Automatisierung (delegiert an GameStateService)
+    public bool IsAutoCollectUnlocked => _gameStateService.IsAutoCollectUnlocked;
+    public bool IsAutoAcceptUnlocked => _gameStateService.IsAutoAcceptUnlocked;
+    public bool IsAutoAssignUnlocked => _gameStateService.IsAutoAssignUnlocked;
     public bool IsAutoClaimUnlocked => _purchaseService.IsPremium;
 
     /// <summary>
@@ -116,6 +116,7 @@ public partial class SettingsViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     private bool _isInitializing;
+    private bool _isBusy;
 
     public SettingsViewModel(
         IAudioService audioService,
@@ -133,7 +134,7 @@ public partial class SettingsViewModel : ObservableObject
         _playGamesService = playGamesService;
 
         // Don't load settings here - GameState is not initialized yet.
-        // MainViewModel.Initialize() will call ReloadSettings() after loading the save.
+        // MainViewModel.InitializeAsync() will call ReloadSettings() after loading the save.
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -319,155 +320,200 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task BuyPremiumAsync()
     {
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-
-        var success = await _purchaseService.PurchaseRemoveAdsAsync();
-        IsPremium = _purchaseService.IsPremium;
-
-        if (IsPremium)
+        if (_isBusy) return;
+        _isBusy = true;
+        try
         {
-            _gameStateService.State.IsPremium = true;
-            _gameStateService.MarkDirty();
-            await _saveGameService.SaveAsync();
+            await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+            var success = await _purchaseService.PurchaseRemoveAdsAsync();
+            IsPremium = _purchaseService.IsPremium;
+
+            if (IsPremium)
+            {
+                _gameStateService.State.IsPremium = true;
+                _gameStateService.MarkDirty();
+                await _saveGameService.SaveAsync();
+            }
+        }
+        finally
+        {
+            _isBusy = false;
         }
     }
 
     [RelayCommand]
     private async Task RestorePurchasesAsync()
     {
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-
-        await _purchaseService.RestorePurchasesAsync();
-        IsPremium = _purchaseService.IsPremium;
-
-        if (IsPremium)
+        if (_isBusy) return;
+        _isBusy = true;
+        try
         {
-            _gameStateService.State.IsPremium = true;
-            _gameStateService.MarkDirty();
-            await _saveGameService.SaveAsync();
+            await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+            await _purchaseService.RestorePurchasesAsync();
+            IsPremium = _purchaseService.IsPremium;
+
+            if (IsPremium)
+            {
+                _gameStateService.State.IsPremium = true;
+                _gameStateService.MarkDirty();
+                await _saveGameService.SaveAsync();
+            }
+        }
+        finally
+        {
+            _isBusy = false;
         }
     }
 
     [RelayCommand]
     private async Task SignInPlayGamesAsync()
     {
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-
-        var success = await _playGamesService.SignInAsync();
-        RefreshPlayGamesStatus();
-
-        if (!success)
+        if (_isBusy) return;
+        _isBusy = true;
+        try
         {
-            ShowAlert(
-                _localizationService.GetString("Error"),
-                _localizationService.GetString("SignInFailed"),
-                _localizationService.GetString("OK"));
+            await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+            var success = await _playGamesService.SignInAsync();
+            RefreshPlayGamesStatus();
+
+            if (!success)
+            {
+                ShowAlert(
+                    _localizationService.GetString("Error"),
+                    _localizationService.GetString("SignInFailed"),
+                    _localizationService.GetString("OK"));
+            }
+        }
+        finally
+        {
+            _isBusy = false;
         }
     }
 
     [RelayCommand]
     private async Task SaveToCloudAsync()
     {
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-
-        if (!_playGamesService.IsSignedIn || !_playGamesService.SupportsCloudSave)
+        if (_isBusy) return;
+        _isBusy = true;
+        try
         {
-            ShowAlert(
-                _localizationService.GetString("Error"),
-                _localizationService.GetString("CloudSaveNotAvailable"),
-                _localizationService.GetString("OK"));
-            return;
+            await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+            if (!_playGamesService.IsSignedIn || !_playGamesService.SupportsCloudSave)
+            {
+                ShowAlert(
+                    _localizationService.GetString("Error"),
+                    _localizationService.GetString("CloudSaveNotAvailable"),
+                    _localizationService.GetString("OK"));
+                return;
+            }
+
+            // Aktuellen Spielstand exportieren
+            var json = await _saveGameService.ExportSaveAsync();
+            if (string.IsNullOrEmpty(json))
+            {
+                ShowAlert(
+                    _localizationService.GetString("Error"),
+                    _localizationService.GetString("CloudSaveFailed"),
+                    _localizationService.GetString("OK"));
+                return;
+            }
+
+            var description = $"Lv.{_gameStateService.State.PlayerLevel} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+            var success = await _playGamesService.SaveToCloudAsync(json, description);
+
+            if (success)
+            {
+                _gameStateService.State.LastCloudSaveTime = DateTime.UtcNow;
+                _gameStateService.MarkDirty();
+                await _saveGameService.SaveAsync();
+                RefreshPlayGamesStatus();
+
+                ShowAlert(
+                    _localizationService.GetString("CloudSave"),
+                    _localizationService.GetString("CloudSaveSuccess"),
+                    _localizationService.GetString("OK"));
+            }
+            else
+            {
+                ShowAlert(
+                    _localizationService.GetString("Error"),
+                    _localizationService.GetString("CloudSaveFailed"),
+                    _localizationService.GetString("OK"));
+            }
         }
-
-        // Aktuellen Spielstand exportieren
-        var json = await _saveGameService.ExportSaveAsync();
-        if (string.IsNullOrEmpty(json))
+        finally
         {
-            ShowAlert(
-                _localizationService.GetString("Error"),
-                _localizationService.GetString("CloudSaveFailed"),
-                _localizationService.GetString("OK"));
-            return;
-        }
-
-        var description = $"Lv.{_gameStateService.State.PlayerLevel} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
-        var success = await _playGamesService.SaveToCloudAsync(json, description);
-
-        if (success)
-        {
-            _gameStateService.State.LastCloudSaveTime = DateTime.UtcNow;
-            _gameStateService.MarkDirty();
-            await _saveGameService.SaveAsync();
-            RefreshPlayGamesStatus();
-
-            ShowAlert(
-                _localizationService.GetString("CloudSave"),
-                _localizationService.GetString("CloudSaveSuccess"),
-                _localizationService.GetString("OK"));
-        }
-        else
-        {
-            ShowAlert(
-                _localizationService.GetString("Error"),
-                _localizationService.GetString("CloudSaveFailed"),
-                _localizationService.GetString("OK"));
+            _isBusy = false;
         }
     }
 
     [RelayCommand]
     private async Task RestoreFromCloudAsync()
     {
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-
-        if (!_playGamesService.IsSignedIn || !_playGamesService.SupportsCloudSave)
+        if (_isBusy) return;
+        _isBusy = true;
+        try
         {
-            ShowAlert(
-                _localizationService.GetString("Error"),
-                _localizationService.GetString("CloudSaveNotAvailable"),
-                _localizationService.GetString("OK"));
-            return;
+            await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+            if (!_playGamesService.IsSignedIn || !_playGamesService.SupportsCloudSave)
+            {
+                ShowAlert(
+                    _localizationService.GetString("Error"),
+                    _localizationService.GetString("CloudSaveNotAvailable"),
+                    _localizationService.GetString("OK"));
+                return;
+            }
+
+            // Bestätigungsdialog: Lokaler Spielstand wird überschrieben
+            bool confirmed = false;
+            if (ConfirmationRequested != null)
+            {
+                confirmed = await ConfirmationRequested.Invoke(
+                    _localizationService.GetString("RestoreFromCloud"),
+                    _localizationService.GetString("RestoreFromCloudConfirmation"),
+                    _localizationService.GetString("YesRestore"),
+                    _localizationService.GetString("Cancel"));
+            }
+
+            if (!confirmed) return;
+
+            var json = await _playGamesService.LoadCloudSaveAsync();
+            if (string.IsNullOrEmpty(json))
+            {
+                ShowAlert(
+                    _localizationService.GetString("Error"),
+                    _localizationService.GetString("CloudRestoreFailed"),
+                    _localizationService.GetString("OK"));
+                return;
+            }
+
+            var success = await _saveGameService.ImportSaveAsync(json);
+            if (success)
+            {
+                ShowAlert(
+                    _localizationService.GetString("CloudSave"),
+                    _localizationService.GetString("CloudRestoreSuccess"),
+                    _localizationService.GetString("OK"));
+
+                // Navigation zum Hauptmenü um neuen State zu laden
+                NavigationRequested?.Invoke("//main");
+            }
+            else
+            {
+                ShowAlert(
+                    _localizationService.GetString("Error"),
+                    _localizationService.GetString("CloudRestoreFailed"),
+                    _localizationService.GetString("OK"));
+            }
         }
-
-        // Bestätigungsdialog: Lokaler Spielstand wird überschrieben
-        bool confirmed = false;
-        if (ConfirmationRequested != null)
+        finally
         {
-            confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("RestoreFromCloud"),
-                _localizationService.GetString("RestoreFromCloudConfirmation"),
-                _localizationService.GetString("YesRestore"),
-                _localizationService.GetString("Cancel"));
-        }
-
-        if (!confirmed) return;
-
-        var json = await _playGamesService.LoadCloudSaveAsync();
-        if (string.IsNullOrEmpty(json))
-        {
-            ShowAlert(
-                _localizationService.GetString("Error"),
-                _localizationService.GetString("CloudRestoreFailed"),
-                _localizationService.GetString("OK"));
-            return;
-        }
-
-        var success = await _saveGameService.ImportSaveAsync(json);
-        if (success)
-        {
-            ShowAlert(
-                _localizationService.GetString("CloudSave"),
-                _localizationService.GetString("CloudRestoreSuccess"),
-                _localizationService.GetString("OK"));
-
-            // Navigation zum Hauptmenü um neuen State zu laden
-            NavigationRequested?.Invoke("//main");
-        }
-        else
-        {
-            ShowAlert(
-                _localizationService.GetString("Error"),
-                _localizationService.GetString("CloudRestoreFailed"),
-                _localizationService.GetString("OK"));
+            _isBusy = false;
         }
     }
 

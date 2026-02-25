@@ -68,10 +68,10 @@
                 <StackPanel Orientation="Horizontal" Spacing="3">
                   <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
                                    AutomationProperties.AutomationId="Research_Icon_Screw"
-                                   Foreground="#FFD700" />
+                                   Foreground="{StaticResource CraftGoldBrush}" />
                   <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="12" FontWeight="Bold"
                              AutomationProperties.AutomationId="Research_Txt_ScrewCount"
-                             Foreground="#FFD700" />
+                             Foreground="{StaticResource CraftGoldBrush}" />
                 </StackPanel>
               </Border>
               <!-- Euro-Badge -->
@@ -134,11 +134,11 @@
                              AutomationProperties.AutomationId="Research_Icon_Lightning" />
             <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14"
                              AutomationProperties.AutomationId="Research_Icon_InstantScrew"
-                             Foreground="#FFD700" />
+                             Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock Text="{Binding InstantFinishCost}"
                        AutomationProperties.AutomationId="Research_Txt_InstantFinishCost"
                        FontSize="12" FontWeight="SemiBold"
-                       Foreground="#FFD700" />
+                       Foreground="{StaticResource CraftGoldBrush}" />
           </StackPanel>
         </Button>
         <!-- Gratis per Video-Ad fertigstellen -->
@@ -202,13 +202,19 @@
       <StackPanel Margin="16,0,16,0" Spacing="0">
 
         <!-- Branch-Banner (SkiaSharp animierte Szene) -->
-        <skia:SKCanvasView x:Name="BranchBannerCanvas" Height="60" Margin="0,8,0,8"
+        <skia:SKCanvasView x:Name="BranchBannerCanvas" Height="80" Margin="0,8,0,8"
                            AutomationProperties.AutomationId="Research_Canvas_BranchBanner" />
 
-        <!-- Research Tree (SkiaSharp: Items + Verbindungslinien) -->
-        <!-- Touch auf TreeCanvas → HitTest → Forschung starten per Tap auf Node -->
-        <skia:SKCanvasView x:Name="TreeCanvas"
-                           AutomationProperties.AutomationId="Research_Canvas_Tree" />
+        <!-- Research Tree mit Blaupause-Hintergrund -->
+        <Panel>
+          <!-- Blaupause-Hintergrund (unterste Schicht) -->
+          <skia:SKCanvasView x:Name="TreeBackgroundCanvas"
+                             AutomationProperties.AutomationId="Research_Canvas_TreeBg" />
+          <!-- Research Tree (SkiaSharp: Items + Verbindungslinien) -->
+          <!-- Touch auf TreeCanvas → HitTest → Forschung starten per Tap auf Node -->
+          <skia:SKCanvasView x:Name="TreeCanvas"
+                             AutomationProperties.AutomationId="Research_Canvas_Tree" />
+        </Panel>
 
         <!-- Bottom Spacer -->
         <Border Height="80" />

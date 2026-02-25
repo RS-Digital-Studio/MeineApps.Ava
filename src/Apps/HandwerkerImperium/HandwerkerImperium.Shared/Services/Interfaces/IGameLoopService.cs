@@ -53,4 +53,14 @@ public interface IGameLoopService
     /// Event für neue Lieferungen.
     /// </summary>
     event EventHandler<SupplierDelivery>? DeliveryArrived;
+
+    /// <summary>
+    /// Workshop-Cache invalidieren (z.B. nach Workshop-Kauf).
+    /// </summary>
+    void InvalidateWorkshopCache();
+
+    /// <summary>
+    /// Prestige-Effekt-Cache invalidieren (nach Prestige-Shop-Kauf oder Prestige-Reset).
+    /// </summary>
+    void InvalidatePrestigeEffects();
 }

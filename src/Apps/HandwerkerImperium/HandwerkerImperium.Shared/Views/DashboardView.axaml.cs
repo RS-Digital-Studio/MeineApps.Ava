@@ -19,7 +19,6 @@ namespace HandwerkerImperium.Views;
 public partial class DashboardView : UserControl
 {
     private MainViewModel? _vm;
-    private readonly Random _random = new();
     private TranslateTransform? _headerTranslate;
 
     // City-Skyline Rendering
@@ -94,8 +93,8 @@ public partial class DashboardView : UserControl
             _vm.FloatingTextRequested += OnFloatingTextRequested;
             _vm.FloatingTextRequested += OnFloatingTextForParticles;
 
-            // GameJuiceEngine aus DI holen
-            _juiceEngine = App.Services.GetService(typeof(GameJuiceEngine)) as GameJuiceEngine;
+            // GameJuiceEngine über MainViewModel (kein Service Locator)
+            _juiceEngine = vm.GameJuiceEngine;
             _juiceEngine?.SetVignette(0.25f); // Subtile Vignette für Tiefe
 
             // Wetter-System nach aktuellem Monat initialisieren
@@ -140,7 +139,7 @@ public partial class DashboardView : UserControl
         // X-Position: zufaellig im sichtbaren Bereich (20-80% der Breite)
         var canvasWidth = FloatingTextCanvas.Bounds.Width;
         if (canvasWidth < 10) canvasWidth = 300; // Fallback
-        var x = canvasWidth * (0.2 + _random.NextDouble() * 0.6);
+        var x = canvasWidth * (0.2 + Random.Shared.NextDouble() * 0.6);
 
         // Y-Position: ~40% der Hoehe (Mitte-oben)
         var canvasHeight = FloatingTextCanvas.Bounds.Height;
@@ -172,14 +171,14 @@ public partial class DashboardView : UserControl
                 for (int i = 0; i < 3; i++)
                 {
                     _animationManager.AddCoinParticle(
-                        centerX + _random.Next(-30, 30),
-                        topY + _random.Next(-5, 10));
+                        centerX + Random.Shared.Next(-30, 30),
+                        topY + Random.Shared.Next(-5, 10));
                 }
 
-                // CoinFly: Münzen fliegen zum Geld-Odometer (oben rechts)
+                // CoinFly: Münzen fliegen zum MoneyText (oben links)
                 _coinFlyAnimation.Start(
                     centerX, topY,
-                    (float)bounds.Width - 60, 20,
+                    60, 20,
                     count: 6, coinSize: 6f);
             }
 
@@ -608,57 +607,8 @@ public partial class DashboardView : UserControl
             showText: false, glowEnabled: true);
     }
 
-    /// <summary>
-    /// Tages-Challenge Fortschritt (CraftPrimary orange).
-    /// DataContext ist DailyChallenge (aus DataTemplate).
-    /// </summary>
-    private void OnPaintChallengeProgress(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-        var bounds = canvas.LocalClipBounds;
-
-        if (sender is not SKCanvasView canvasView) return;
-        var dc = canvasView.DataContext;
-        if (dc == null) return;
-
-        // Progress-Property per Reflection
-        var progressProp = dc.GetType().GetProperty("Progress");
-        if (progressProp == null) return;
-        var progress = (float)(double)(progressProp.GetValue(dc) ?? 0.0);
-
-        MeineApps.UI.SkiaSharp.LinearProgressVisualization.Render(canvas, bounds,
-            progress,
-            new SKColor(0xD9, 0x77, 0x06), // CraftPrimary
-            new SKColor(0xF5, 0x9E, 0x0B), // CraftPrimaryLight
-            showText: false, glowEnabled: false);
-    }
-
-    /// <summary>
-    /// Wöchentliche Missionen Fortschritt (Amber/Gold).
-    /// DataContext ist WeeklyMission (aus DataTemplate).
-    /// </summary>
-    private void OnPaintWeeklyMissionProgress(object? sender, SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-        var bounds = canvas.LocalClipBounds;
-
-        if (sender is not SKCanvasView canvasView) return;
-        var dc = canvasView.DataContext;
-        if (dc == null) return;
-
-        // Progress-Property per Reflection (decimal → float)
-        var progressProp = dc.GetType().GetProperty("Progress");
-        if (progressProp == null) return;
-        var progress = (float)Convert.ToDouble(progressProp.GetValue(dc) ?? 0.0m);
-
-        MeineApps.UI.SkiaSharp.LinearProgressVisualization.Render(canvas, bounds,
-            progress,
-            new SKColor(0xD9, 0x77, 0x06), // Amber
-            new SKColor(0xFF, 0xD7, 0x00), // Gold
-            showText: false, glowEnabled: false);
-    }
+    // OnPaintChallengeProgress → Views/Dashboard/DailyChallengeSection.axaml.cs
+    // OnPaintWeeklyMissionProgress → Views/Dashboard/WeeklyMissionSection.axaml.cs
 
     // Workshop-Level- und Milestone-ProgressBars werden jetzt direkt
     // im WorkshopGameCardRenderer gezeichnet (kein separater Handler nötig).

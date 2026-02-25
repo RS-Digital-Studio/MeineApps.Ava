@@ -90,6 +90,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // Gespeicherte Delegate-Referenzen fuer Alert/Confirmation Events (fuer Dispose-Unsubscribe)
     private readonly Action<string, string, string> _alertHandler;
     private readonly Func<string, string, string, string, Task<bool>> _confirmHandler;
+    private Action? _guildCelebrationHandler;
+    private readonly Action<string, string> _workerProfileFloatingTextHandler;
+
+    // Gespeicherte Delegate-Referenzen fuer Lambda-Subscriptions (fuer Dispose-Unsubscribe)
+    private readonly Action _adUnavailableHandler;
+    private readonly Action<string, string> _saveGameErrorHandler;
+    private readonly EventHandler _adsStateChangedHandler;
+    private readonly Action<string> _luckySpinNavHandler;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS FOR NAVIGATION AND DIALOGS
@@ -118,6 +126,36 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _incomeDisplay = "0 €/s";
+
+    /// <summary>
+    /// Netto-Einkommen (Brutto - Kosten) formatiert für Dashboard-Anzeige.
+    /// </summary>
+    [ObservableProperty]
+    private string _netIncomeHeaderDisplay = "";
+
+    /// <summary>
+    /// True wenn Netto-Einkommen negativ ist (für rote Farbe im Dashboard-Header).
+    /// </summary>
+    [ObservableProperty]
+    private bool _isNetIncomeNegative;
+
+    /// <summary>
+    /// Farbe des Netto-Einkommens: Rot bei Verlust, halbtransparentes Weiß bei Gewinn.
+    /// </summary>
+    [ObservableProperty]
+    private string _netIncomeColor = "#FFFFFFAA";
+
+    /// <summary>
+    /// Worker-Warnungstext (erschöpfte/unzufriedene/kündigungsgefährdete Arbeiter).
+    /// </summary>
+    [ObservableProperty]
+    private string _workerWarningText = "";
+
+    /// <summary>
+    /// True wenn mindestens ein Worker erschöpft oder unzufrieden ist.
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasWorkerWarning;
 
     [ObservableProperty]
     private int _playerLevel = 1;
@@ -620,10 +658,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    // Level-Gates für Automatisierung
-    public bool IsAutoCollectUnlocked => _gameStateService.State.PlayerLevel >= 15;
-    public bool IsAutoAcceptUnlocked => _gameStateService.State.PlayerLevel >= 25;
-    public bool IsAutoAssignUnlocked => _gameStateService.State.PlayerLevel >= 50;
+    // Level-Gates für Automatisierung (delegiert an GameStateService)
+    public bool IsAutoCollectUnlocked => _gameStateService.IsAutoCollectUnlocked;
+    public bool IsAutoAcceptUnlocked => _gameStateService.IsAutoAcceptUnlocked;
+    public bool IsAutoAssignUnlocked => _gameStateService.IsAutoAssignUnlocked;
     public bool IsAutoClaimUnlocked => _purchaseService.IsPremium;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -703,6 +741,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isGuildActive;
 
     [ObservableProperty]
+    private bool _isGuildResearchActive;
+
+    [ObservableProperty]
+    private bool _isGuildMembersActive;
+
+    [ObservableProperty]
+    private bool _isGuildInviteActive;
+
+    [ObservableProperty]
     private bool _isCraftingActive;
 
     [ObservableProperty]
@@ -723,7 +770,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
                                     !IsWorkerProfileActive && !IsWorkerMarketActive &&
                                     !IsResearchActive && !IsManagerActive &&
                                     !IsTournamentActive && !IsSeasonalEventActive &&
-                                    !IsBattlePassActive && !IsCraftingActive;
+                                    !IsBattlePassActive && !IsCraftingActive &&
+                                    !IsGuildResearchActive && !IsGuildMembersActive &&
+                                    !IsGuildInviteActive;
 
     private void DeactivateAllTabs()
     {
@@ -751,6 +800,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsSeasonalEventActive = false;
         IsBattlePassActive = false;
         IsGuildActive = false;
+        IsGuildResearchActive = false;
+        IsGuildMembersActive = false;
+        IsGuildInviteActive = false;
         IsCraftingActive = false;
         IsForgeGameActive = false;
         IsInventGameActive = false;
@@ -796,6 +848,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public LuckySpinViewModel LuckySpinViewModel { get; }
     public ForgeGameViewModel ForgeGameViewModel { get; }
     public InventGameViewModel InventGameViewModel { get; }
+
+    /// <summary>
+    /// Zentrale Effekt-Engine (Singleton aus DI). Wird von DashboardView direkt genutzt.
+    /// </summary>
+    public GameJuiceEngine GameJuiceEngine { get; }
 
     public MainViewModel(
         IGameStateService gameStateService,
@@ -844,6 +901,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         LuckySpinViewModel luckySpinViewModel,
         ForgeGameViewModel forgeGameViewModel,
         InventGameViewModel inventGameViewModel,
+        GameJuiceEngine gameJuiceEngine,
         IStoryService? storyService = null)
     {
         _gameStateService = gameStateService;
@@ -866,20 +924,26 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _welcomeBackService = welcomeBackService;
         _luckySpinService = luckySpinService;
         _equipmentService = equipmentService;
-        _rewardedAdService.AdUnavailable += () => ShowAlertDialog(
+        GameJuiceEngine = gameJuiceEngine;
+
+        // Delegate-Felder zuweisen (statt anonymer Lambdas, damit Dispose() abmelden kann)
+        _adUnavailableHandler = () => ShowAlertDialog(
             _localizationService.GetString("AdVideoNotAvailableTitle"),
             _localizationService.GetString("AdVideoNotAvailableMessage"),
             _localizationService.GetString("OK"));
+        _rewardedAdService.AdUnavailable += _adUnavailableHandler;
 
         // SaveGame-Fehler an den Benutzer weiterleiten
-        _saveGameService.ErrorOccurred += (titleKey, msgKey) =>
+        _saveGameErrorHandler = (titleKey, msgKey) =>
             Dispatcher.UIThread.Post(() => ShowAlertDialog(
                 _localizationService.GetString(titleKey),
                 _localizationService.GetString(msgKey),
                 _localizationService.GetString("OK")));
+        _saveGameService.ErrorOccurred += _saveGameErrorHandler;
 
+        _adsStateChangedHandler = (_, _) => IsAdBannerVisible = _adService.BannerVisible;
         IsAdBannerVisible = _adService.BannerVisible;
-        _adService.AdsStateChanged += (_, _) => IsAdBannerVisible = _adService.BannerVisible;
+        _adService.AdsStateChanged += _adsStateChangedHandler;
 
         // Banner beim Start anzeigen (fuer Desktop + Fallback falls AdMobHelper fehlschlaegt)
         if (_adService.AdsEnabled && !_purchaseService.IsPremium)
@@ -913,7 +977,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         LuckySpinViewModel = luckySpinViewModel;
         ForgeGameViewModel = forgeGameViewModel;
         InventGameViewModel = inventGameViewModel;
-        LuckySpinViewModel.NavigationRequested += _ => HideLuckySpin();
+        // Delegate-Feld zuweisen (statt anonymem Lambda)
+        _luckySpinNavHandler = _ => HideLuckySpin();
+        LuckySpinViewModel.NavigationRequested += _luckySpinNavHandler;
 
         // Wire up child VM navigation events
         ShopViewModel.NavigationRequested += OnChildNavigation;
@@ -951,6 +1017,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Wire up child VM alert/confirmation events (gespeicherte Delegates fuer Dispose-Unsubscribe)
         _alertHandler = (t, m, b) => ShowAlertDialog(t, m, b);
         _confirmHandler = (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
+        _guildCelebrationHandler = () => CelebrationRequested?.Invoke();
+        _workerProfileFloatingTextHandler = (text, cat) => FloatingTextRequested?.Invoke(text, cat);
 
         SettingsViewModel.AlertRequested += _alertHandler;
         SettingsViewModel.ConfirmationRequested += _confirmHandler;
@@ -962,11 +1030,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
         WorkerMarketViewModel.AlertRequested += _alertHandler;
         WorkerProfileViewModel.AlertRequested += _alertHandler;
         WorkerProfileViewModel.ConfirmationRequested += _confirmHandler;
+        WorkerProfileViewModel.FloatingTextRequested += _workerProfileFloatingTextHandler;
         BuildingsViewModel.AlertRequested += _alertHandler;
         ResearchViewModel.AlertRequested += _alertHandler;
         ResearchViewModel.ConfirmationRequested += _confirmHandler;
         TournamentViewModel.AlertRequested += _alertHandler;
         BattlePassViewModel.AlertRequested += _alertHandler;
+        GuildViewModel.ConfirmationRequested += _confirmHandler;
+        GuildViewModel.CelebrationRequested += _guildCelebrationHandler;
 
         // Subscribe to premium status changes
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
@@ -1017,7 +1088,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // INITIALIZATION
     // ═══════════════════════════════════════════════════════════════════════
 
-    public async void Initialize()
+    /// <summary>
+    /// Task-Referenz für InitializeAsync, damit Fire-and-Forget Race Conditions vermieden werden.
+    /// </summary>
+    public Task? InitTask { get; set; }
+
+    public async Task InitializeAsync()
     {
         try
         {
@@ -1508,7 +1584,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var state = _gameStateService.State;
         if (state.GoldenScrews < 5) return;
 
-        _gameStateService.AddGoldenScrews(-5);
+        _gameStateService.TrySpendGoldenScrews(5);
         state.DailyRewardStreak = Math.Max(1, state.StreakBeforeBreak);
         state.StreakRescueUsed = true;
         _gameStateService.MarkDirty();
@@ -1754,6 +1830,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var success = await _prestigeService.DoPrestige(highestTier);
         if (success)
         {
+            // Prestige-Effekt-Cache invalidieren (Shop-Items zurückgesetzt)
+            _gameLoopService.InvalidatePrestigeEffects();
+
             await _audioService.PlaySoundAsync(GameSound.LevelUp);
 
             // UI komplett neu laden
@@ -1792,6 +1871,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         MoneyDisplay = FormatMoney(state.Money);
         IncomePerSecond = state.NetIncomePerSecond;
         IncomeDisplay = $"{FormatMoney(state.NetIncomePerSecond)}/s";
+        UpdateNetIncomeHeader(state);
+        UpdateWorkerWarning(state);
         PlayerLevel = state.PlayerLevel;
         CurrentXp = state.CurrentXp;
         XpForNextLevel = state.XpForNextLevel;
@@ -2383,10 +2464,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string[] GetTabLabels() =>
     [
         _localizationService.GetString("Home") ?? "Home",
-        _localizationService.GetString("Buildings") ?? "Gebäude",
-        _localizationService.GetString("GuildTitle") ?? "Gilde",
+        _localizationService.GetString("Buildings") ?? "Buildings",
+        _localizationService.GetString("GuildTitle") ?? "Guild",
         _localizationService.GetString("Shop") ?? "Shop",
-        _localizationService.GetString("Settings") ?? "Einstellungen"
+        _localizationService.GetString("Settings") ?? "Settings"
+    ];
+
+    /// <summary>
+    /// Gibt die lokalisierten Loading-Tipps für den Ladebildschirm zurück.
+    /// </summary>
+    public string[] GetLoadingTips() =>
+    [
+        _localizationService.GetString("LoadingTip1") ?? "Tip: Hold the upgrade button for rapid leveling!",
+        _localizationService.GetString("LoadingTip2") ?? "Tip: Higher worker tiers earn significantly more!",
+        _localizationService.GetString("LoadingTip3") ?? "Tip: Visit daily for login rewards!",
+        _localizationService.GetString("LoadingTip4") ?? "Tip: Prestige unlocks new bonuses and workshops!",
+        _localizationService.GetString("LoadingTip5") ?? "Tip: Reputation above 70 brings extra orders!",
+        _localizationService.GetString("LoadingTip6") ?? "Tip: Master tools give permanent income bonuses!"
     ];
 
     [RelayCommand]
@@ -2643,6 +2737,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (IsWorkshopDetailActive || IsOrderDetailActive)
         {
             SelectDashboardTab();
+            return true;
+        }
+
+        // 5a. Guild-Sub-Seiten → zurück zum Guild-Hub
+        if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive)
+        {
+            SelectGuildTab();
             return true;
         }
 
@@ -3022,6 +3123,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 RefreshQuickJobs();
             }
 
+            // Gilden-Sub-Seiten → zurück zum Guild-Hub
+            if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive)
+            {
+                SelectGuildTab();
+                return;
+            }
+
             SelectDashboardTab();
             RefreshFromState();
             return;
@@ -3075,6 +3183,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 case "battle_pass": IsBattlePassActive = true; BattlePassViewModel.RefreshBattlePass(); break;
                 case "guild": IsGuildActive = true; GuildViewModel.RefreshGuild(); break;
                 case "crafting": IsCraftingActive = true; CraftingViewModel.RefreshCrafting(); break;
+            }
+            NotifyTabBarVisibility();
+            return;
+        }
+
+        // Gilden-Sub-Seiten (von GuildView-Hub aus)
+        if (route is "guild_research" or "guild_members" or "guild_invite")
+        {
+            DeactivateAllTabs();
+            switch (route)
+            {
+                case "guild_research": IsGuildResearchActive = true; break;
+                case "guild_members": IsGuildMembersActive = true; break;
+                case "guild_invite": IsGuildInviteActive = true; break;
             }
             NotifyTabBarVisibility();
             return;
@@ -3219,6 +3341,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         };
         pulseTimer.Start();
 
+        // Sound + FloatingText bei jedem Level-Up
+        _audioService.PlaySoundAsync(GameSound.ButtonTap).FireAndForget();
+        FloatingTextRequested?.Invoke($"Level {e.NewLevel}!", "level");
+
         // Milestone-Bonus prüfen (10/25/50/100/250/500/1000)
         bool isMilestone = false;
         foreach (var (level, screws) in _milestones)
@@ -3257,6 +3383,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnPrestigeCompleted(object? sender, EventArgs e)
     {
         var prestigeCount = _gameStateService.State.Prestige.TotalPrestigeCount;
+
+        // Zeremonie: Feuerwerk + Confetti + Sound
+        CelebrationRequested?.Invoke();
+        var tierName = _localizationService.GetString("PrestigeCompleted") ?? "Prestige!";
+        CeremonyRequested?.Invoke(CeremonyType.Prestige, tierName, $"#{prestigeCount}");
+        _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
+        FloatingTextRequested?.Invoke($"Prestige #{prestigeCount}!", "level");
+
         _reviewService?.OnMilestone("prestige", prestigeCount);
         CheckReviewPrompt();
     }
@@ -3505,11 +3639,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OnGameTick(object? sender, GameTickEventArgs e)
     {
         // Nur updaten wenn sich der Wert geaendert hat (vermeidet unnoetige UI-Updates)
-        var newIncome = _gameStateService.State.NetIncomePerSecond;
+        var state = _gameStateService.State;
+        var newIncome = state.NetIncomePerSecond;
         if (newIncome != IncomePerSecond)
         {
             IncomePerSecond = newIncome;
             IncomeDisplay = $"{FormatMoney(IncomePerSecond)}/s";
+            UpdateNetIncomeHeader(state);
         }
 
         // FloatingText: Nur alle 3 Ticks anzeigen, nur wenn Income > 0 und Dashboard aktiv
@@ -3557,7 +3693,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
             RefreshChallenges();
 
             // Reputation + Prestige-Banner periodisch aktualisieren (Task #6, #14)
-            var state = _gameStateService.State;
             RefreshReputation(state);
             RefreshPrestigeBanner(state);
         }
@@ -3566,15 +3701,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
             UpdateEventTimer();
         }
 
-        // Weekly Missions + Lucky Spin + Welcome Back periodisch aktualisieren (alle 10 Ticks)
+        // Weekly Missions + Lucky Spin + Welcome Back + Worker-Warnung periodisch aktualisieren (alle 10 Ticks)
         if (_floatingTextCounter % 10 == 0)
         {
             HasFreeSpin = _luckySpinService.HasFreeSpin;
 
+            // Worker-Warnung aktualisieren (Fatigue/Mood-Checks)
+            UpdateWorkerWarning(state);
+
             // Welcome Back Timer aktualisieren
             if (IsWelcomeOfferVisible)
             {
-                var offer = _gameStateService.State.ActiveWelcomeBackOffer;
+                var offer = state.ActiveWelcomeBackOffer;
                 if (offer == null || offer.IsExpired)
                 {
                     IsWelcomeOfferVisible = false;
@@ -3607,6 +3745,59 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     private static string FormatMoney(decimal amount) => MoneyFormatter.FormatCompact(amount);
+
+    /// <summary>
+    /// Aktualisiert die Netto-Einkommen-Anzeige im Dashboard-Header.
+    /// Zeigt Brutto minus Kosten mit Farbindikator (rot wenn negativ).
+    /// </summary>
+    private void UpdateNetIncomeHeader(GameState state)
+    {
+        var netIncome = state.TotalIncomePerSecond - state.TotalCostsPerSecond;
+        IsNetIncomeNegative = netIncome < 0;
+        NetIncomeColor = netIncome < 0 ? "#FF5722" : "#FFFFFFAA";
+
+        var netLabel = _localizationService.GetString("NetIncome") ?? "Netto";
+        NetIncomeHeaderDisplay = $"{netLabel}: {MoneyFormatter.FormatPerSecond(netIncome, 1)}";
+    }
+
+    /// <summary>
+    /// Prüft alle Worker auf Erschöpfung (Fatigue>80), Unzufriedenheit (Mood kleiner 30) und Kündigungsrisiko (Mood kleiner 15).
+    /// Zeigt die dringendste Warnung im Dashboard-Banner.
+    /// </summary>
+    private void UpdateWorkerWarning(GameState state)
+    {
+        int tiredCount = 0, unhappyCount = 0, quitRisk = 0;
+        foreach (var ws in state.Workshops)
+        {
+            foreach (var w in ws.Workers)
+            {
+                if (w.Fatigue > 80) tiredCount++;
+                if (w.Mood < 30) unhappyCount++;
+                if (w.Mood < 15) quitRisk++;
+            }
+        }
+
+        HasWorkerWarning = tiredCount > 0 || unhappyCount > 0;
+
+        if (quitRisk > 0)
+        {
+            WorkerWarningText = string.Format(
+                _localizationService.GetString("WorkerQuitRisk") ?? "{0} Arbeiter drohen zu kündigen!",
+                quitRisk);
+        }
+        else if (unhappyCount > 0)
+        {
+            WorkerWarningText = string.Format(
+                _localizationService.GetString("WorkerUnhappy") ?? "{0} Arbeiter unzufrieden",
+                unhappyCount);
+        }
+        else if (tiredCount > 0)
+        {
+            WorkerWarningText = string.Format(
+                _localizationService.GetString("WorkerTired") ?? "{0} Arbeiter erschöpft",
+                tiredCount);
+        }
+    }
 
     /// <summary>
     /// Animierter Geld-Counter: Setzt neuen Zielwert und startet Interpolation.
@@ -3732,6 +3923,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
         BlueprintGameViewModel.NavigationRequested -= OnChildNavigation;
         DesignPuzzleGameViewModel.NavigationRequested -= OnChildNavigation;
         InspectionGameViewModel.NavigationRequested -= OnChildNavigation;
+        ForgeGameViewModel.NavigationRequested -= OnChildNavigation;
+        InventGameViewModel.NavigationRequested -= OnChildNavigation;
+        ManagerViewModel.NavigationRequested -= OnChildNavigation;
+        TournamentViewModel.NavigationRequested -= OnChildNavigation;
+        SeasonalEventViewModel.NavigationRequested -= OnChildNavigation;
+        BattlePassViewModel.NavigationRequested -= OnChildNavigation;
+        GuildViewModel.NavigationRequested -= OnChildNavigation;
+        CraftingViewModel.NavigationRequested -= OnChildNavigation;
+        LuckySpinViewModel.NavigationRequested -= _luckySpinNavHandler;
         WorkerMarketViewModel.NavigationRequested -= _workerMarketNavHandler;
         WorkerProfileViewModel.NavigationRequested -= _workerProfileNavHandler;
         BuildingsViewModel.NavigationRequested -= _buildingsNavHandler;
@@ -3748,9 +3948,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
         WorkerMarketViewModel.AlertRequested -= _alertHandler;
         WorkerProfileViewModel.AlertRequested -= _alertHandler;
         WorkerProfileViewModel.ConfirmationRequested -= _confirmHandler;
+        WorkerProfileViewModel.FloatingTextRequested -= _workerProfileFloatingTextHandler;
         BuildingsViewModel.AlertRequested -= _alertHandler;
         ResearchViewModel.AlertRequested -= _alertHandler;
         ResearchViewModel.ConfirmationRequested -= _confirmHandler;
+        TournamentViewModel.AlertRequested -= _alertHandler;
+        BattlePassViewModel.AlertRequested -= _alertHandler;
+        GuildViewModel.ConfirmationRequested -= _confirmHandler;
+        GuildViewModel.CelebrationRequested -= _guildCelebrationHandler;
+
+        // Lambda-basierte Service-Subscriptions abmelden
+        _rewardedAdService.AdUnavailable -= _adUnavailableHandler;
+        _saveGameService.ErrorOccurred -= _saveGameErrorHandler;
+        _adService.AdsStateChanged -= _adsStateChangedHandler;
 
         _gameStateService.MoneyChanged -= OnMoneyChanged;
         _gameStateService.GoldenScrewsChanged -= OnGoldenScrewsChanged;

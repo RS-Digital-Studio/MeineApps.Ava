@@ -31,7 +31,8 @@ public class AchievementService : IAchievementService, IDisposable
         _gameStateService.MoneyChanged += OnMoneyChanged;
     }
 
-    public int UnlockedCount => _achievements.Count(a => a.IsUnlocked);
+    private int _unlockedCount;
+    public int UnlockedCount => _unlockedCount;
     public int TotalCount => _achievements.Count;
 
     public List<Achievement> GetAllAchievements()
@@ -105,12 +106,14 @@ public class AchievementService : IAchievementService, IDisposable
     private void LoadFromGameState()
     {
         var unlockedIds = _gameStateService.State.UnlockedAchievements ?? [];
+        _unlockedCount = 0;
 
         foreach (var achievement in _achievements)
         {
             if (unlockedIds.Contains(achievement.Id))
             {
                 achievement.IsUnlocked = true;
+                _unlockedCount++;
             }
         }
 
@@ -120,6 +123,49 @@ public class AchievementService : IAchievementService, IDisposable
     private void UpdateProgress()
     {
         var state = _gameStateService.State;
+
+        // Vorab-Berechnung aller abgeleiteten Werte (vermeidet LINQ-Kaskaden im switch)
+        int maxWsLevel = 0, totalWorkers = 0, wsLevel100Count = 0;
+        int builtCount = 0, maxBldLevel = 0;
+        bool hasCanteen = false, hasTraining = false;
+        bool hasSS = false, hasSSS = false, hasLegendary = false;
+
+        for (int i = 0; i < state.Workshops.Count; i++)
+        {
+            var ws = state.Workshops[i];
+            if (ws.Level > maxWsLevel) maxWsLevel = ws.Level;
+            if (ws.Level >= 100) wsLevel100Count++;
+            totalWorkers += ws.Workers.Count;
+            for (int w = 0; w < ws.Workers.Count; w++)
+            {
+                var tier = ws.Workers[w].Tier;
+                if (tier >= WorkerTier.Legendary) hasLegendary = true;
+                else if (tier >= WorkerTier.SSS) hasSSS = true;
+                else if (tier >= WorkerTier.SS) hasSS = true;
+            }
+        }
+        // SS/SSS implizieren niedrigere Tiers
+        if (hasLegendary) { hasSSS = true; hasSS = true; }
+        else if (hasSSS) hasSS = true;
+
+        for (int i = 0; i < state.Buildings.Count; i++)
+        {
+            var bld = state.Buildings[i];
+            if (bld.IsBuilt)
+            {
+                builtCount++;
+                if (bld.Level > maxBldLevel) maxBldLevel = bld.Level;
+                if (bld.Type == BuildingType.Canteen) hasCanteen = true;
+                if (bld.Type == BuildingType.TrainingCenter) hasTraining = true;
+            }
+        }
+
+        // Equipment-Raritäten zählen (HashSet vermeiden, 4 Raritäten → Bitflags)
+        int rarityFlags = 0;
+        for (int i = 0; i < state.EquipmentInventory.Count; i++)
+            rarityFlags |= 1 << (int)state.EquipmentInventory[i].Rarity;
+        int distinctRarities = 0;
+        for (int b = rarityFlags; b != 0; b &= b - 1) distinctRarities++;
 
         foreach (var achievement in _achievements)
         {
@@ -137,32 +183,30 @@ public class AchievementService : IAchievementService, IDisposable
                 "games_100"
                     => state.TotalMiniGamesPlayed,
 
-                // Workshops
+                // Workshops (vorab berechnet)
                 "workshop_level10" or "workshop_level25" or "workshop_level50"
                 or "workshop_level100" or "workshop_level250" or "workshop_level500" or "workshop_level1000"
-                    => state.Workshops.Count > 0 ? state.Workshops.Max(w => w.Level) : 0,
+                    => maxWsLevel,
                 "all_workshops"
                     => state.UnlockedWorkshopTypes.Count,
                 "worker_first"
-                    => state.Workshops.Sum(w => w.Workers.Count) > 0 ? 1 : 0,
+                    => totalWorkers > 0 ? 1 : 0,
                 "workers_10" or "workers_25"
-                    => state.Workshops.Sum(w => w.Workers.Count),
+                    => totalWorkers,
 
-                // Buildings
+                // Buildings (vorab berechnet)
                 "building_first"
-                    => state.Buildings.Count(b => b.IsBuilt) > 0 ? 1 : 0,
+                    => builtCount > 0 ? 1 : 0,
                 "building_all"
-                    => state.Buildings.Count(b => b.IsBuilt),
+                    => builtCount,
                 "building_max"
-                    => state.Buildings.Count > 0
-                        ? state.Buildings.Where(b => b.IsBuilt).DefaultIfEmpty().Max(b => b?.Level ?? 0)
-                        : 0,
+                    => maxBldLevel,
                 "canteen_built"
-                    => state.Buildings.Any(b => b.Type == BuildingType.Canteen && b.IsBuilt) ? 1 : 0,
+                    => hasCanteen ? 1 : 0,
                 "training_center"
-                    => state.Buildings.Any(b => b.Type == BuildingType.TrainingCenter && b.IsBuilt) ? 1 : 0,
+                    => hasTraining ? 1 : 0,
 
-                // Money (long statt int-Cast fuer grosse Betraege)
+                // Money (long statt int-Cast für große Beträge)
                 "money_1k" or "money_10k" or "money_100k" or "money_1m"
                 or "money_10m" or "money_100m" or "money_1b" or "money_10b"
                     => (long)Math.Min(state.TotalMoneyEarned, long.MaxValue),
@@ -180,13 +224,10 @@ public class AchievementService : IAchievementService, IDisposable
                 "prestige_1"
                     => state.Prestige.TotalPrestigeCount,
 
-                // Worker-Tier Achievements: Prüft ob ein Worker des entsprechenden Tiers existiert
-                "worker_ss_tier"
-                    => state.Workshops.SelectMany(w => w.Workers).Any(w => w.Tier >= WorkerTier.SS) ? 1 : 0,
-                "worker_sss_tier"
-                    => state.Workshops.SelectMany(w => w.Workers).Any(w => w.Tier >= WorkerTier.SSS) ? 1 : 0,
-                "worker_legendary"
-                    => state.Workshops.SelectMany(w => w.Workers).Any(w => w.Tier >= WorkerTier.Legendary) ? 1 : 0,
+                // Worker-Tier Achievements (vorab berechnet)
+                "worker_ss_tier" => hasSS ? 1 : 0,
+                "worker_sss_tier" => hasSSS ? 1 : 0,
+                "worker_legendary" => hasLegendary ? 1 : 0,
 
                 // === NEUE ACHIEVEMENTS (Phase 2.2) ===
 
@@ -201,13 +242,12 @@ public class AchievementService : IAchievementService, IDisposable
                 "games_500" => state.TotalMiniGamesPlayed,
                 "all_minigames_perfect" => state.PerfectMiniGameTypes?.Count ?? 0,
 
-                // Workshop-Endgame: Alle Workshops mit Level >= 100
-                "all_ws_level100" => state.Workshops.Count(w => w.Level >= 100),
+                // Workshop-Endgame (vorab berechnet)
+                "all_ws_level100" => wsLevel100Count,
 
                 // Gilden
-                "guild_founder" => state.GuildMembership != null ? 1 : 0, // Vereinfacht: Mitgliedschaft = 1
+                "guild_founder" => state.GuildMembership != null ? 1 : 0,
                 "guild_member" => state.GuildMembership != null ? 1 : 0,
-                // Guild-Level als Proxy (steigt durch abgeschlossene Wochenziele)
                 "guild_weekly_goal" => state.GuildMembership?.GuildLevel > 1 ? 1 : 0,
                 "guild_level_10" => state.GuildMembership?.GuildLevel ?? 0,
 
@@ -224,8 +264,7 @@ public class AchievementService : IAchievementService, IDisposable
 
                 // Sammler/Collection
                 "all_mastertools" => state.CollectedMasterTools?.Count ?? 0,
-                "equipment_all_rarities" => state.EquipmentInventory
-                    .Select(e => e.Rarity).Distinct().Count(),
+                "equipment_all_rarities" => distinctRarities,
 
                 _ => achievement.CurrentValue
             };
@@ -236,6 +275,7 @@ public class AchievementService : IAchievementService, IDisposable
     {
         if (achievement.IsUnlocked) return;
 
+        _unlockedCount++;
         achievement.IsUnlocked = true;
         achievement.UnlockedAt = DateTime.UtcNow;
         achievement.CurrentValue = achievement.TargetValue;

@@ -117,7 +117,9 @@
                            TextAlignment="Center"
                            MaxLines="3" />
 
-                <!-- Row 4: Lock info (if locked) -->
+                <!-- Row 4: Lock info ODER Max Level badge (gegenseitig exklusiv via IsVisible).
+                     Beide teilen Grid.Row="4" absichtlich - IsLocked und IsMaxLevel
+                     schließen sich gegenseitig aus, daher kein Layout-Konflikt. -->
                 <StackPanel Grid.Row="4"
                             AutomationProperties.AutomationId="Buildings_Panel_ItemLocked"
                             Orientation="Horizontal"
@@ -133,7 +135,7 @@
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
 
-                <!-- Row 4: Max Level badge (if maxed) -->
+                <!-- Row 4: Max Level badge (gegenseitig exklusiv mit Lock info oben) -->
                 <StackPanel Grid.Row="4"
                             AutomationProperties.AutomationId="Buildings_Panel_ItemMaxLevel"
                             Orientation="Horizontal"

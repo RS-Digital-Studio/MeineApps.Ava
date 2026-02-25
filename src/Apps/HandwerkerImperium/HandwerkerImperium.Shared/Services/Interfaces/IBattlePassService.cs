@@ -17,6 +17,6 @@ public interface IBattlePassService
     /// <summary>Prüft ob eine neue Saison beginnen sollte (alle 30 Tage).</summary>
     void CheckNewSeason();
 
-    /// <summary>Schaltet den Premium-Track frei.</summary>
-    void UpgradeToPremium();
+    /// <summary>Schaltet den Premium-Track per IAP frei.</summary>
+    Task UpgradeToPremiumAsync();
 }

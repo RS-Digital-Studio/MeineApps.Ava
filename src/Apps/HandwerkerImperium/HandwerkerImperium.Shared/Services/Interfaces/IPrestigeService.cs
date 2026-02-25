@@ -33,7 +33,7 @@ public interface IPrestigeService
     /// <summary>
     /// Returns all prestige shop items with their purchase state.
     /// </summary>
-    List<PrestigeShopItem> GetShopItems();
+    IReadOnlyList<PrestigeShopItem> GetShopItems();
 
     /// <summary>
     /// Buys a prestige shop item by ID. Deducts prestige points.

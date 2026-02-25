@@ -16,11 +16,6 @@ public partial class MainView : UserControl
     private MainViewModel? _vm;
     private string _lastActiveTab = "";
 
-    // Meister Hans Animation
-    private float _hansElapsed;
-    private bool _hansBlinking;
-    private float _nextBlinkTime = 3.5f;
-
     // SkiaSharp Tab-Bar + Screen-Transitions + Background (Phase 3+4)
     private readonly GameTabBarRenderer _tabBarRenderer = new();
     private readonly ScreenTransitionRenderer _transitionRenderer = new();
@@ -39,7 +34,7 @@ public partial class MainView : UserControl
     private SKRect _lastTabBarBounds;
     private SKRect _lastBackgroundBounds;
     private GameScreenType _currentScreenType = GameScreenType.Dashboard;
-    private string[] _tabLabels = ["Home", "Gebäude", "Gilde", "Shop", "Einstellungen"];
+    private string[] _tabLabels = ["Home", "Buildings", "Guild", "Shop", "Settings"];
 
     public MainView()
     {
@@ -125,11 +120,10 @@ public partial class MainView : UserControl
             LoadingCanvas?.InvalidateSurface();
         }
 
-        // Meister Hans aktualisieren (nur wenn Story-Dialog sichtbar)
+        // Meister Hans aktualisieren (delegiert an StoryDialog UserControl)
         if (_vm?.IsStoryDialogVisible == true)
         {
-            UpdateHansAnimation();
-            MeisterHansCanvas?.InvalidateSurface();
+            StoryDialogControl?.UpdateHansAnimation();
         }
     }
 
@@ -156,7 +150,8 @@ public partial class MainView : UserControl
         if (_vm == null) return GameScreenType.Dashboard;
         if (_vm.IsDashboardActive) return GameScreenType.Dashboard;
         if (_vm.IsBuildingsActive) return GameScreenType.Buildings;
-        if (_vm.IsGuildActive) return GameScreenType.Guild;
+        if (_vm.IsGuildActive || _vm.IsGuildResearchActive || _vm.IsGuildMembersActive || _vm.IsGuildInviteActive)
+            return GameScreenType.Guild;
         if (_vm.IsShopActive) return GameScreenType.Shop;
         if (_vm.IsSettingsActive) return GameScreenType.Settings;
         if (_vm.IsWorkerMarketActive) return GameScreenType.Workers;
@@ -270,7 +265,7 @@ public partial class MainView : UserControl
     /// </summary>
     private void RefreshTabLabels()
     {
-        _tabLabels = _vm?.GetTabLabels() ?? ["Home", "Gebäude", "Gilde", "Shop", "Einstellungen"];
+        _tabLabels = _vm?.GetTabLabels() ?? ["Home", "Buildings", "Guild", "Shop", "Settings"];
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -282,7 +277,8 @@ public partial class MainView : UserControl
         // Tab-Wechsel erkennen und Fade-Animation + Hintergrund-Wechsel auslösen
         if (e.PropertyName is "IsDashboardActive" or "IsShopActive" or "IsStatisticsActive"
             or "IsAchievementsActive" or "IsSettingsActive" or "IsWorkerMarketActive"
-            or "IsResearchActive" or "IsBuildingsActive" or "IsGuildActive")
+            or "IsResearchActive" or "IsBuildingsActive" or "IsGuildActive"
+            or "IsGuildResearchActive" or "IsGuildMembersActive" or "IsGuildInviteActive")
         {
             // Hintergrund-Typ aktualisieren
             _currentScreenType = GetCurrentScreenType();
@@ -296,16 +292,7 @@ public partial class MainView : UserControl
             }
         }
 
-        // Meister Hans Animation: Reset bei Story-Dialog-Öffnung
-        if (e.PropertyName == "IsStoryDialogVisible")
-        {
-            if (_vm?.IsStoryDialogVisible == true)
-            {
-                _hansElapsed = 0;
-                _hansBlinking = false;
-                _nextBlinkTime = 3f + Random.Shared.NextSingle() * 1.5f;
-            }
-        }
+        // Hinweis: Hans-Animation wird jetzt direkt im StoryDialog UserControl verwaltet
     }
 
     private string GetActiveTab()
@@ -385,43 +372,6 @@ public partial class MainView : UserControl
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Meister Hans SkiaSharp-Portrait
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void OnMeisterHansPaintSurface(object? sender, Avalonia.Labs.Controls.SKPaintSurfaceEventArgs e)
-    {
-        var canvas = e.Surface.Canvas;
-        canvas.Clear(SKColors.Transparent);
-
-        var bounds = canvas.LocalClipBounds;
-        var mood = _vm?.StoryMood ?? "happy";
-
-        MeisterHansRenderer.Render(canvas, bounds, mood, _hansElapsed, _hansBlinking);
-    }
-
-    /// <summary>
-    /// Aktualisiert die Hans-Blinzel-Animation (wird vom Render-Timer aufgerufen).
-    /// </summary>
-    private void UpdateHansAnimation()
-    {
-        _hansElapsed += 0.05f; // 50ms pro Tick
-
-        // Blinzel-Logik: Alle 3-4.5s für ~150ms blinzeln
-        if (_hansBlinking)
-        {
-            if (_hansElapsed > _nextBlinkTime + 0.15f)
-            {
-                _hansBlinking = false;
-                _nextBlinkTime = _hansElapsed + 3f + Random.Shared.NextSingle() * 1.5f;
-            }
-        }
-        else if (_hansElapsed >= _nextBlinkTime)
-        {
-            _hansBlinking = true;
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
     // Loading-Screen (Phase 10)
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -430,16 +380,16 @@ public partial class MainView : UserControl
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
 
-        // Tipps einmalig setzen
+        // Lokalisierte Tipps einmalig vom ViewModel holen
         if (!_loadingTipsInitialized)
         {
-            _loadingRenderer.SetTips([
-                "Tipp: Halte den Upgrade-Button gedrückt für schnelles Leveln!",
-                "Tipp: Höhere Worker-Tiers verdienen deutlich mehr!",
-                "Tipp: Schau täglich vorbei für Login-Belohnungen!",
-                "Tipp: Prestige schaltet neue Boni und Workshops frei!",
-                "Tipp: Reputation über 70 bringt Extra-Aufträge!",
-                "Tipp: Meisterwerkzeuge geben permanente Einkommens-Boni!"
+            _loadingRenderer.SetTips(_vm?.GetLoadingTips() ?? [
+                "Tip: Hold the upgrade button for rapid leveling!",
+                "Tip: Higher worker tiers earn significantly more!",
+                "Tip: Visit daily for login rewards!",
+                "Tip: Prestige unlocks new bonuses and workshops!",
+                "Tip: Reputation above 70 brings extra orders!",
+                "Tip: Master tools give permanent income bonuses!"
             ]);
             _loadingTipsInitialized = true;
         }
@@ -448,33 +398,4 @@ public partial class MainView : UserControl
         _loadingRenderer.Render(canvas, bounds, _renderTime);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Dialog-Overlay Handler
-    // ═══════════════════════════════════════════════════════════════════════
-
-    // Dialog-Overlay: Klick auf dunklen Hintergrund schließt den Dialog
-    private void OnAlertOverlayPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-            vm.DismissAlertDialogCommand.Execute(null);
-    }
-
-    private void OnConfirmOverlayPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-            vm.ConfirmDialogCancelCommand.Execute(null);
-    }
-
-    // Worker-Profile Bottom-Sheet: Backdrop-Klick schließt das Sheet
-    private void OnWorkerProfileBackdropPressed(object? sender, PointerPressedEventArgs e)
-    {
-        if (DataContext is MainViewModel vm)
-            vm.HandleBackPressed();
-    }
-
-    // Klick auf Dialog-Inhalt: Event nicht zum Overlay durchbubblen lassen
-    private void OnDialogContentPressed(object? sender, PointerPressedEventArgs e)
-    {
-        e.Handled = true;
-    }
 }

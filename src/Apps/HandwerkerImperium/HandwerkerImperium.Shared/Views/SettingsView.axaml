@@ -179,7 +179,7 @@
                       AutomationProperties.AutomationId="Settings_Btn_SignIn"
                       Command="{Binding SignInPlayGamesCommand}"
                       IsVisible="{Binding !IsPlayGamesSignedIn}"
-                      MinHeight="36" Padding="16,6">
+                      MinHeight="44" Padding="16,8">
                 <TextBlock Text="{loc:Translate SignIn}" FontSize="13" />
               </Button>
             </Grid>
@@ -190,7 +190,7 @@
                       AutomationProperties.AutomationId="Settings_Btn_SaveToCloud"
                       Command="{Binding SaveToCloudCommand}"
                       HorizontalContentAlignment="Center"
-                      MinHeight="40">
+                      MinHeight="44">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="CloudUpload" Width="18" Height="18" />
                   <TextBlock Text="{loc:Translate SaveToCloud}" FontSize="14" FontWeight="SemiBold" />
@@ -201,7 +201,7 @@
                       AutomationProperties.AutomationId="Settings_Btn_RestoreFromCloud"
                       Command="{Binding RestoreFromCloudCommand}"
                       HorizontalContentAlignment="Center"
-                      MinHeight="40">
+                      MinHeight="44">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon Kind="CloudDownload" Width="18" Height="18" />
                   <TextBlock Text="{loc:Translate RestoreFromCloud}" FontSize="14" FontWeight="SemiBold" />
@@ -253,7 +253,7 @@
             <StackPanel Orientation="Horizontal" Spacing="8">
               <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
                                AutomationProperties.AutomationId="Settings_Icon_PremiumHeader"
-                               Foreground="Gold" />
+                               Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate Premium}"
                          AutomationProperties.AutomationId="Settings_Txt_PremiumTitle"
                          FontSize="18" FontWeight="Bold"
@@ -267,11 +267,11 @@
               <TextBlock Text="{loc:Translate YouArePremium}"
                          AutomationProperties.AutomationId="Settings_Txt_PremiumActive"
                          FontSize="14"
-                         Foreground="Gold" />
+                         Foreground="{StaticResource CraftGoldBrush}" />
               <mi:MaterialIcon Grid.Column="1"
                                AutomationProperties.AutomationId="Settings_Icon_PremiumCheck"
                                Kind="Check" Width="24" Height="24"
-                               Foreground="Gold" />
+                               Foreground="{StaticResource CraftGoldBrush}" />
             </Grid>
 
             <!-- Buy Premium Button -->

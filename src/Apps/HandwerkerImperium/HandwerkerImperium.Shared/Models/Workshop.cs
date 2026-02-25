@@ -84,6 +84,13 @@ public class Workshop
     public decimal LevelResistanceBonus { get; set; }
 
     /// <summary>
+    /// Upgrade-Kosten-Rabatt aus Prestige-Shop (0.0-1.0). Wird extern gesetzt.
+    /// z.B. 0.15 = -15% auf Upgrade-Kosten.
+    /// </summary>
+    [JsonIgnore]
+    public decimal UpgradeDiscount { get; set; }
+
+    /// <summary>
     /// Base income per worker per second at current level.
     /// Formel: 1 * 1.025^(Level-1) * TypeMultiplier
     /// Moderat-exponentiell, skaliert sicher bis Level 1000.
@@ -100,7 +107,8 @@ public class Workshop
 
     /// <summary>
     /// Total gross income per second from all workers.
-    /// Berücksichtigt den Level-Anforderungsmalus pro Worker (höhere Tiers sind resistenter).
+    /// Berücksichtigt den Level-Anforderungsmalus pro Worker (höhere Tiers sind resistenter)
+    /// und Worker-Aura-Bonus (S-Tier+ geben passiven Einkommens-Bonus).
     /// </summary>
     [JsonIgnore]
     public decimal GrossIncomePerSecond
@@ -108,7 +116,17 @@ public class Workshop
         get
         {
             if (Workers.Count == 0) return 0;
-            return Workers.Sum(w => BaseIncomePerWorker * w.EffectiveEfficiency * GetWorkerLevelFitFactor(w));
+            decimal baseIncome = Workers.Sum(w => BaseIncomePerWorker * w.EffectiveEfficiency * GetWorkerLevelFitFactor(w));
+
+            // Worker-Aura: S-Tier+ Worker geben passiven Einkommens-Bonus
+            decimal auraBonus = 0m;
+            for (int i = 0; i < Workers.Count; i++)
+                auraBonus += Workers[i].Tier.GetAuraBonus();
+
+            if (auraBonus > 0)
+                baseIncome *= (1m + auraBonus);
+
+            return baseIncome;
         }
     }
 
@@ -175,7 +193,7 @@ public class Workshop
 
     /// <summary>
     /// Kosten fuer Upgrade auf naechstes Level.
-    /// Formel: 200 * 1.035^(Level-1)
+    /// Formel: 200 * 1.035^(Level-1), reduziert durch Prestige-Shop UpgradeDiscount.
     /// Moderat-exponentiell, skaliert sicher bis Level 1000.
     /// </summary>
     [JsonIgnore]
@@ -184,24 +202,31 @@ public class Workshop
         get
         {
             if (Level >= MaxLevel) return 0;
-            if (Level == 1) return 100m; // Erstes Upgrade guenstig
-            return 200m * (decimal)Math.Pow(1.035, Level - 1);
+            decimal baseCost = Level == 1 ? 100m : 200m * (decimal)Math.Pow(1.035, Level - 1);
+
+            // Prestige-Shop Upgrade-Rabatt anwenden
+            if (UpgradeDiscount > 0)
+                baseCost *= (1m - Math.Min(UpgradeDiscount, 0.50m));
+
+            return baseCost;
         }
     }
 
     /// <summary>
     /// Berechnet die Gesamtkosten fuer N Upgrades ab dem aktuellen Level.
-    /// Beruecksichtigt die exponentielle Kostensteigerung pro Level.
+    /// Beruecksichtigt die exponentielle Kostensteigerung pro Level und Prestige-Shop-Rabatt.
     /// </summary>
     public decimal GetBulkUpgradeCost(int count)
     {
         if (count <= 0 || Level >= MaxLevel) return 0;
         decimal total = 0;
+        decimal discountFactor = UpgradeDiscount > 0 ? (1m - Math.Min(UpgradeDiscount, 0.50m)) : 1m;
         int maxUpgrades = Math.Min(count, MaxLevel - Level);
         for (int i = 0; i < maxUpgrades; i++)
         {
             int lvl = Level + i;
-            total += lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.035, lvl - 1);
+            decimal cost = lvl == 1 ? 100m : 200m * (decimal)Math.Pow(1.035, lvl - 1);
+            total += cost * discountFactor;
         }
         return total;
     }

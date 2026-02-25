@@ -13,14 +13,14 @@
     <!-- Header -->
     <Grid ColumnDefinitions="Auto,*,Auto">
       <mi:MaterialIcon Kind="ChartDonut" Width="24" Height="24"
-                       Foreground="#FFD700"
+                       Foreground="{StaticResource CraftGoldBrush}"
                        AutomationProperties.AutomationId="LuckySpin_Icon_Title" />
       <TextBlock Grid.Column="1" Text="{Binding Title}"
                  FontSize="22" FontWeight="Bold"
                  Foreground="{DynamicResource TextPrimaryBrush}"
                  Margin="10,0,0,0" VerticalAlignment="Center"
                  AutomationProperties.AutomationId="LuckySpin_Txt_Title" />
-      <Button Grid.Column="2" Classes="Text" Padding="4"
+      <Button Grid.Column="2" Classes="Text" MinHeight="44" Padding="12,8"
               Command="{Binding GoBackCommand}"
               AutomationProperties.AutomationId="LuckySpin_Btn_Close">
         <mi:MaterialIcon Kind="Close" Width="24" Height="24" />
@@ -45,7 +45,7 @@
         <TextBlock Text="{Binding LastPrizeDisplay}"
                    FontSize="24" FontWeight="Bold"
                    HorizontalAlignment="Center"
-                   Foreground="#FFD700"
+                   Foreground="{StaticResource CraftGoldBrush}"
                    AutomationProperties.AutomationId="LuckySpin_Txt_PrizeValue" />
       </StackPanel>
     </Border>

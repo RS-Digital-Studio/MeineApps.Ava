@@ -1,0 +1,106 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Dialogs.DailyRewardDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Daily Reward Dialog -->
+  <Border Background="{StaticResource DialogOverlayBrush}"
+          IsVisible="{Binding IsDailyRewardDialogVisible}"
+          AutomationProperties.AutomationId="Main_Overlay_DailyReward">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16" Padding="24"
+            MaxWidth="360"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 0 30 0 #40D97706"
+            AutomationProperties.AutomationId="Main_Border_DailyRewardDialog">
+      <StackPanel Spacing="16" HorizontalAlignment="Center">
+        <!-- Gift-Icon mit CraftPrimary-Glow -->
+        <Border Width="72" Height="72" CornerRadius="36"
+                HorizontalAlignment="Center"
+                BoxShadow="0 0 20 0 #40D97706"
+                AutomationProperties.AutomationId="Main_Border_DailyRewardGlow">
+          <Border.Background>
+            <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+              <GradientStop Color="#40D97706" Offset="0" />
+              <GradientStop Color="Transparent" Offset="1" />
+            </RadialGradientBrush>
+          </Border.Background>
+          <mi:MaterialIcon Kind="Gift" Width="40" Height="40"
+                           Foreground="{StaticResource CraftPrimaryBrush}"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           AutomationProperties.AutomationId="Main_Icon_DailyRewardGift" />
+        </Border>
+        <TextBlock Text="{loc:Translate DailyReward}"
+                   FontSize="22" FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_DailyRewardTitle" />
+        <!-- 7-Tage Streak Dots -->
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
+                    AutomationProperties.AutomationId="Main_Panel_DailyRewardStreak">
+          <Border Width="12" Height="12" CornerRadius="6"
+                  Background="{StaticResource CraftPrimaryBrush}"
+                  BorderBrush="{StaticResource CraftPrimaryBrush}" BorderThickness="2" />
+          <Border Width="12" Height="12" CornerRadius="6"
+                  BorderBrush="{StaticResource CraftPrimaryBrush}" BorderThickness="2" />
+          <Border Width="12" Height="12" CornerRadius="6"
+                  BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="2" />
+          <Border Width="12" Height="12" CornerRadius="6"
+                  BorderBrush="{StaticResource CraftPrimaryBrush}" BorderThickness="2" />
+          <Border Width="12" Height="12" CornerRadius="6"
+                  BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="2" />
+          <Border Width="12" Height="12" CornerRadius="6"
+                  BorderBrush="{StaticResource CraftPrimaryBrush}" BorderThickness="2" />
+          <Border Width="12" Height="12" CornerRadius="6"
+                  BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="2" />
+        </StackPanel>
+        <TextBlock Text="{Binding DailyRewardDayText}"
+                   FontSize="16"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_DailyRewardDay" />
+        <TextBlock Text="{Binding DailyRewardAmountText}"
+                   FontSize="28" FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_DailyRewardAmount" />
+        <TextBlock Text="{Binding DailyRewardStreakText}"
+                   FontSize="12"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_DailyRewardStreak" />
+        <Button Classes="Primary" Content="{loc:Translate ClaimReward}"
+                Background="{StaticResource CraftPrimaryBrush}"
+                Command="{Binding ClaimDailyRewardCommand}"
+                HorizontalAlignment="Center" MinWidth="160"
+                AutomationProperties.AutomationId="Main_Btn_ClaimDailyReward" />
+
+        <!-- Streak-Rettung Button (nur sichtbar wenn Streak gebrochen) -->
+        <Border IsVisible="{Binding CanRescueStreak}"
+                Background="#20FF5722" CornerRadius="12" Padding="12,8"
+                AutomationProperties.AutomationId="Main_Border_StreakRescue">
+          <StackPanel Spacing="6">
+            <TextBlock Text="{Binding StreakRescueText}"
+                       FontSize="13" FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       Foreground="#FF5722"
+                       AutomationProperties.AutomationId="Main_Txt_StreakRescueWarning" />
+            <Button Classes="Primary" Background="#FF5722"
+                    Command="{Binding RescueStreakCommand}"
+                    HorizontalAlignment="Center" MinWidth="160"
+                    AutomationProperties.AutomationId="Main_Btn_RescueStreak">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="ShieldAlert" Width="16" Height="16" />
+                <TextBlock Text="{loc:Translate RescueStreak}" FontSize="13" />
+              </StackPanel>
+            </Button>
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Border>
+  </Border>
+
+</UserControl>

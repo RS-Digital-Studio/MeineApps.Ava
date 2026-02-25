@@ -48,6 +48,19 @@ public class LuckySpinWheelRenderer
     private const int SegmentCount = 8;
     private const float SweepAngle = 360f / SegmentCount; // 45° pro Segment
 
+    // Gecachte MaskFilter (statt pro Frame neu erstellen)
+    private static readonly SKMaskFilter _blurShadow12 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 12);
+    private static readonly SKMaskFilter _blurGlow10 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 10);
+    private static readonly SKMaskFilter _blurGlow6 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6);
+    private static readonly SKMaskFilter _blurGlow4 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
+    private static readonly SKMaskFilter _blurSmall2 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2);
+    private static readonly SKMaskFilter _blurSmall1_5 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.5f);
+    private static readonly SKMaskFilter _blurShadow3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
+
+    // Gecachte Paints für häufig verwendete Schatten/Glow (nur Farbe wird pro Aufruf geändert)
+    private static readonly SKPaint _shadowPaint = new() { IsAntialias = true, MaskFilter = _blurSmall2 };
+    private static readonly SKPaint _glintPaint = new() { IsAntialias = true, MaskFilter = _blurSmall1_5 };
+
     /// <summary>
     /// Rendert das Glücksrad auf den Canvas.
     /// </summary>
@@ -103,13 +116,13 @@ public class LuckySpinWheelRenderer
     /// </summary>
     private static void DrawWheelShadow(SKCanvas canvas, float cx, float cy, float radius)
     {
-        using var shadowPaint = new SKPaint
+        using var paint = new SKPaint
         {
             IsAntialias = true,
             Color = new SKColor(0x00, 0x00, 0x00, 60),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 12)
+            MaskFilter = _blurShadow12
         };
-        canvas.DrawCircle(cx + 4, cy + 6, radius + 4, shadowPaint);
+        canvas.DrawCircle(cx + 4, cy + 6, radius + 4, paint);
     }
 
     /// <summary>
@@ -239,7 +252,7 @@ public class LuckySpinWheelRenderer
             IsAntialias = true,
             Style = SKPaintStyle.Fill,
             Color = SegmentColors[segmentIndex].WithAlpha(100),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 10)
+            MaskFilter = _blurGlow10
         };
         using var glowPath = new SKPath();
         glowPath.MoveTo(cx, cy);
@@ -253,7 +266,7 @@ public class LuckySpinWheelRenderer
             IsAntialias = true,
             Style = SKPaintStyle.Fill,
             Color = SKColors.White.WithAlpha(80),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6)
+            MaskFilter = _blurGlow6
         };
         canvas.DrawPath(glowPath, innerGlowPaint);
 
@@ -264,7 +277,7 @@ public class LuckySpinWheelRenderer
             Style = SKPaintStyle.Stroke,
             StrokeWidth = 4,
             Color = SKColors.White.WithAlpha(180),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
+            MaskFilter = _blurGlow4
         };
         canvas.DrawPath(glowPath, borderGlow);
     }
@@ -315,28 +328,24 @@ public class LuckySpinWheelRenderer
     /// </summary>
     private static void DrawMoneyIcon(SKCanvas canvas, float cx, float cy, float size, int amount)
     {
-        // Glow-Halo bei amount=3 (MoneyLarge)
+        // Glow-Halo bei amount=3 (MoneyLarge) - dynamischer Blur-Radius, daher using
         if (amount == 3)
         {
+            using var glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.25f);
             using var glowPaint = new SKPaint
             {
                 IsAntialias = true,
                 Color = new SKColor(0xFF, 0xD7, 0x00, 80),
-                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.25f)
+                MaskFilter = glowFilter
             };
             canvas.DrawCircle(cx, cy, size * 0.9f, glowPaint);
         }
 
         float coinRadius = size * (0.55f + amount * 0.08f);
 
-        // Schatten
-        using var shadowPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = new SKColor(0x00, 0x00, 0x00, 100),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2)
-        };
-        canvas.DrawCircle(cx + 1, cy + 1, coinRadius, shadowPaint);
+        // Schatten (gecachter MaskFilter)
+        _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
+        canvas.DrawCircle(cx + 1, cy + 1, coinRadius, _shadowPaint);
 
         // Münzkörper (goldener Gradient)
         using var coinPaint = new SKPaint
@@ -389,15 +398,10 @@ public class LuckySpinWheelRenderer
         textPaint.MeasureText(euroText, ref textBounds);
         canvas.DrawText(euroText, cx, cy + textBounds.Height * 0.35f, textPaint);
 
-        // Glanz-Highlight oben links
-        using var glintPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = SKColors.White.WithAlpha(90),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.5f)
-        };
+        // Glanz-Highlight oben links (gecachter MaskFilter)
+        _glintPaint.Color = SKColors.White.WithAlpha(90);
         canvas.DrawCircle(cx - coinRadius * 0.3f, cy - coinRadius * 0.3f,
-            coinRadius * 0.22f, glintPaint);
+            coinRadius * 0.22f, _glintPaint);
     }
 
     /// <summary>
@@ -408,15 +412,10 @@ public class LuckySpinWheelRenderer
         float outerR = size * 0.75f;
         float innerR = outerR * 0.42f;
 
-        // Schatten
-        using var shadowPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = new SKColor(0x00, 0x00, 0x00, 100),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2)
-        };
+        // Schatten (gecachter MaskFilter)
+        _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
         using var starPath = CreateStarPath(cx + 1, cy + 1, outerR, innerR, 5);
-        canvas.DrawPath(starPath, shadowPaint);
+        canvas.DrawPath(starPath, _shadowPaint);
 
         // Stern-Körper (weiß mit leichtem Blau-Gradient)
         using var starFill = new SKPaint
@@ -466,15 +465,10 @@ public class LuckySpinWheelRenderer
         float slotW = size * 0.12f;
         float slotH = size * 0.75f;
 
-        // Schatten
-        using var shadowPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = new SKColor(0x00, 0x00, 0x00, 100),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2)
-        };
+        // Schatten (gecachter MaskFilter)
+        _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
         using var hexShadow = CreateHexPath(cx + 1, cy + 1, hexR);
-        canvas.DrawPath(hexShadow, shadowPaint);
+        canvas.DrawPath(hexShadow, _shadowPaint);
 
         // Sechskant-Körper (goldener Gradient)
         using var hexPaint = new SKPaint
@@ -513,14 +507,9 @@ public class LuckySpinWheelRenderer
         // Horizontaler Schlitz
         canvas.DrawRect(cx - slotH / 2, cy - slotW / 2, slotH, slotW, slotPaint);
 
-        // Glanz
-        using var glintPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = SKColors.White.WithAlpha(70),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 1.5f)
-        };
-        canvas.DrawCircle(cx - hexR * 0.25f, cy - hexR * 0.3f, hexR * 0.2f, glintPaint);
+        // Glanz (gecachter MaskFilter)
+        _glintPaint.Color = SKColors.White.WithAlpha(70);
+        canvas.DrawCircle(cx - hexR * 0.25f, cy - hexR * 0.3f, hexR * 0.2f, _glintPaint);
     }
 
     /// <summary>
@@ -540,16 +529,11 @@ public class LuckySpinWheelRenderer
         boltPath.LineTo(cx + s * 0.05f, cy - s * 0.05f);   // Knick rechts
         boltPath.Close();
 
-        // Schatten
-        using var shadowPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = new SKColor(0x00, 0x00, 0x00, 100),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2)
-        };
+        // Schatten (gecachter MaskFilter)
+        _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
         canvas.Save();
         canvas.Translate(1, 1);
-        canvas.DrawPath(boltPath, shadowPaint);
+        canvas.DrawPath(boltPath, _shadowPaint);
         canvas.Restore();
 
         // Blitz-Füllung (weiß-gelber Gradient)
@@ -577,12 +561,13 @@ public class LuckySpinWheelRenderer
         };
         canvas.DrawPath(boltPath, boltBorder);
 
-        // Kleiner Glow in der Mitte
+        // Kleiner Glow in der Mitte (dynamischer Blur-Radius, daher using)
+        using var glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.12f);
         using var glowPaint = new SKPaint
         {
             IsAntialias = true,
             Color = SKColors.White.WithAlpha(100),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.12f)
+            MaskFilter = glowFilter
         };
         canvas.DrawCircle(cx, cy, s * 0.15f, glowPaint);
     }
@@ -595,13 +580,10 @@ public class LuckySpinWheelRenderer
         float s = size * 0.7f;
         float thick = s * 0.16f;
 
-        // Schatten
-        using var shadowPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = new SKColor(0x00, 0x00, 0x00, 100),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2)
-        };
+        // Schatten (gecachter MaskFilter, nur Farbe setzen)
+        _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
+        // shadowPaint-Referenz für lokale Verwendung
+        var shadowPaint = _shadowPaint;
 
         // Werkzeug-Paint (weiß)
         using var toolPaint = new SKPaint
@@ -756,16 +738,11 @@ public class LuckySpinWheelRenderer
         crownPath.LineTo(cx + w, baseY);
         crownPath.Close();
 
-        // Schatten
-        using var shadowPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = new SKColor(0x00, 0x00, 0x00, 100),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2)
-        };
+        // Schatten (gecachter MaskFilter)
+        _shadowPaint.Color = new SKColor(0x00, 0x00, 0x00, 100);
         canvas.Save();
         canvas.Translate(1, 1);
-        canvas.DrawPath(crownPath, shadowPaint);
+        canvas.DrawPath(crownPath, _shadowPaint);
         canvas.Restore();
 
         // Kronen-Füllung (Gold-Gradient)
@@ -833,12 +810,12 @@ public class LuckySpinWheelRenderer
     {
         float hubRadius = radius * 0.15f;
 
-        // Schatten der Nabe
+        // Schatten der Nabe (gecachter MaskFilter)
         using var hubShadow = new SKPaint
         {
             IsAntialias = true,
             Color = new SKColor(0x00, 0x00, 0x00, 70),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
+            MaskFilter = _blurGlow4
         };
         canvas.DrawCircle(cx + 2, cy + 2, hubRadius, hubShadow);
 
@@ -866,15 +843,10 @@ public class LuckySpinWheelRenderer
         };
         canvas.DrawCircle(cx, cy, hubRadius, hubRingPaint);
 
-        // Innerer Glanz-Punkt
+        // Innerer Glanz-Punkt (gecachter MaskFilter)
         float glintRadius = hubRadius * 0.3f;
-        using var glintPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Color = SKColors.White.WithAlpha(60),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2)
-        };
-        canvas.DrawCircle(cx - hubRadius * 0.2f, cy - hubRadius * 0.25f, glintRadius, glintPaint);
+        _shadowPaint.Color = SKColors.White.WithAlpha(60);
+        canvas.DrawCircle(cx - hubRadius * 0.2f, cy - hubRadius * 0.25f, glintRadius, _shadowPaint);
 
         // Kleiner Schraub-Punkt in der Mitte
         using var screwPaint = new SKPaint
@@ -892,12 +864,12 @@ public class LuckySpinWheelRenderer
     {
         float halfWidth = height * 0.55f;
 
-        // Zeiger-Schatten
+        // Zeiger-Schatten (gecachter MaskFilter)
         using var shadowPaint = new SKPaint
         {
             IsAntialias = true,
             Color = new SKColor(0x00, 0x00, 0x00, 80),
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
+            MaskFilter = _blurShadow3
         };
         using var shadowPath = new SKPath();
         shadowPath.MoveTo(cx + 2, topY + height + 4);          // Spitze unten (versetzt)

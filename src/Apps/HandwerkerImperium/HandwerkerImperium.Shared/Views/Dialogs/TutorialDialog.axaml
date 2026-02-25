@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Dialogs.TutorialDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Tutorial Overlay (8 Schritte, Bottom-Sheet-Stil) -->
+  <Border Classes="SheetBackdrop"
+          Classes.Open="{Binding IsTutorialVisible}"
+          IsVisible="{Binding IsTutorialVisible}"
+          Background="{StaticResource DialogOverlayBrush}"
+          IsHitTestVisible="{Binding IsTutorialVisible}"
+          AutomationProperties.AutomationId="Main_Overlay_Tutorial">
+    <Border Classes="BottomSheet"
+            Classes.Open="{Binding IsTutorialVisible}"
+            VerticalAlignment="Center" HorizontalAlignment="Center"
+            MaxWidth="380"
+            Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="24"
+            Padding="24"
+            BoxShadow="0 0 40 0 #40D97706"
+            Margin="16"
+            AutomationProperties.AutomationId="Main_Border_TutorialSheet">
+      <StackPanel Spacing="16">
+
+        <!-- Schritt-Anzeige -->
+        <Border Background="#20D97706"
+                CornerRadius="12"
+                Padding="10,4"
+                HorizontalAlignment="Center"
+                AutomationProperties.AutomationId="Main_Border_TutorialStepBadge">
+          <TextBlock Text="{Binding TutorialStepDisplay}"
+                     FontSize="11" FontWeight="SemiBold"
+                     Foreground="{StaticResource CraftPrimaryBrush}"
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Main_Txt_TutorialStep" />
+        </Border>
+
+        <!-- Icon (groß, zentriert) -->
+        <mi:MaterialIcon Kind="{Binding TutorialIcon, Converter={StaticResource IconKindConverter}}"
+                         Width="48" Height="48"
+                         Foreground="{StaticResource CraftPrimaryLightBrush}"
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="Main_Icon_TutorialIcon" />
+
+        <!-- Titel -->
+        <TextBlock Text="{Binding TutorialTitle}"
+                   FontSize="20" FontWeight="Bold"
+                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                   HorizontalAlignment="Center"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   AutomationProperties.AutomationId="Main_Txt_TutorialTitle" />
+
+        <!-- Beschreibung -->
+        <TextBlock Text="{Binding TutorialDescription}"
+                   FontSize="14"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   LineHeight="22"
+                   AutomationProperties.AutomationId="Main_Txt_TutorialDescription" />
+
+        <!-- Buttons -->
+        <Grid ColumnDefinitions="*,12,*" AutomationProperties.AutomationId="Main_Grid_TutorialButtons">
+          <Button Grid.Column="0"
+                  Content="{loc:Translate TutorialSkip}"
+                  Classes="Outlined"
+                  Command="{Binding TutorialSkipCommand}"
+                  HorizontalAlignment="Stretch"
+                  AutomationProperties.AutomationId="Main_Btn_TutorialSkip" />
+          <Button Grid.Column="2"
+                  Content="{loc:Translate TutorialNext}"
+                  Classes="Primary"
+                  Command="{Binding TutorialNextCommand}"
+                  HorizontalAlignment="Stretch"
+                  AutomationProperties.AutomationId="Main_Btn_TutorialNext" />
+        </Grid>
+
+      </StackPanel>
+    </Border>
+  </Border>
+
+</UserControl>

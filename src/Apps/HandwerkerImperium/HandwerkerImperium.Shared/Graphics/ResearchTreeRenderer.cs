@@ -47,16 +47,24 @@ public class ResearchTreeRenderer
     private float _particleTimer;
 
     // Farben
-    private static readonly SKColor LineLocked = new(0x3A, 0x2C, 0x24);
+    private static readonly SKColor LineLocked = new(0x6A, 0x58, 0x48);
     private static readonly SKColor TextPrimary = new(0xF5, 0xF0, 0xEB);
     private static readonly SKColor TextSecondary = new(0xA0, 0x90, 0x80);
-    private static readonly SKColor TextMuted = new(0x5A, 0x4A, 0x40);
-    private static readonly SKColor ProgressBg = new(0x20, 0x15, 0x12);
+    private static readonly SKColor TextMuted = new(0x8A, 0x78, 0x68);
+    private static readonly SKColor ProgressBg = new(0x38, 0x2C, 0x22);
 
     // Gecachte Paints
     private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _text = new() { IsAntialias = true };
+
+    // Gecachter MaskFilter + Paint für Gold-Glow auf verfügbaren Nodes (statt pro Node neu erstellen)
+    private static readonly SKMaskFilter _glowMaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
+    private static readonly SKPaint _glowPaint = new()
+    {
+        IsAntialias = true,
+        MaskFilter = _glowMaskFilter
+    };
 
     /// <summary>
     /// Berechnet die Gesamthöhe des Baums.
@@ -238,13 +246,13 @@ public class ResearchTreeRenderer
             // Erforschte/verfügbare Verbindung: Branch-farbig, leuchtend mit Glow
             // Glow-Linie dahinter (breitere, transparente Linie)
             _stroke.Color = branchColor.WithAlpha(40);
-            _stroke.StrokeWidth = 6f;
+            _stroke.StrokeWidth = 9f;
             _stroke.PathEffect = null;
             canvas.DrawPath(path, _stroke);
 
             // Hauptlinie
             _stroke.Color = branchColor.WithAlpha(toResearched ? (byte)220 : (byte)160);
-            _stroke.StrokeWidth = 3f;
+            _stroke.StrokeWidth = 5f;
             canvas.DrawPath(path, _stroke);
 
             // Pfeilspitze
@@ -254,8 +262,10 @@ public class ResearchTreeRenderer
         {
             // Nächste gesperrt: Gestrichelt, pulsierend
             _stroke.Color = branchColor.WithAlpha(100);
-            _stroke.StrokeWidth = 2f;
-            _stroke.PathEffect = SKPathEffect.CreateDash([8, 5], _time * 15 % 13);
+            _stroke.StrokeWidth = 4f;
+            // PathEffect mit dynamischem Phase-Offset (wird sofort nach Verwendung disposed)
+            using var dashEffect = SKPathEffect.CreateDash([8, 5], _time * 15 % 13);
+            _stroke.PathEffect = dashEffect;
             canvas.DrawPath(path, _stroke);
             _stroke.PathEffect = null;
 
@@ -263,9 +273,9 @@ public class ResearchTreeRenderer
         }
         else
         {
-            // Beides gesperrt: Dünne graue Linie
+            // Beides gesperrt: Sichtbare graue Linie
             _stroke.Color = LineLocked;
-            _stroke.StrokeWidth = 1.5f;
+            _stroke.StrokeWidth = 4f;
             _stroke.PathEffect = null;
             canvas.DrawPath(path, _stroke);
         }
@@ -273,7 +283,7 @@ public class ResearchTreeRenderer
 
     private static void DrawArrowHead(SKCanvas canvas, float x, float y, SKColor color)
     {
-        float size = 6;
+        float size = 8;
         _fill.Color = color;
         using var arrow = new SKPath();
         arrow.MoveTo(x, y);
@@ -303,6 +313,17 @@ public class ResearchTreeRenderer
             canvas.DrawCircle(cx, cy, NodeSize / 2 + 18, _fill);
         }
 
+        // Gepunkteter Rahmen für gesperrte Nodes (sichtbar statt unsichtbar)
+        if (item.IsLocked)
+        {
+            _stroke.Color = LineLocked.WithAlpha(128);
+            _stroke.StrokeWidth = 2f;
+            using var dotEffect = SKPathEffect.CreateDash([4, 4], _time * 5 % 8);
+            _stroke.PathEffect = dotEffect;
+            canvas.DrawCircle(cx, cy, NodeSize / 2 + 3, _stroke);
+            _stroke.PathEffect = null;
+        }
+
         // Großes Icon
         ResearchIconRenderer.DrawIcon(canvas, cx, cy, NodeSize, item.Effect, branch,
             item.IsResearched, item.IsLocked);
@@ -316,6 +337,15 @@ public class ResearchTreeRenderer
         // Name + Prozent/Status (unter dem Balken)
         float textY = barY + ProgressBarHeight + 3;
         DrawNodeLabel(canvas, cx, textY, item, branchColor);
+
+        // Gold-Glow für verfügbare Items (genug Geld + Voraussetzungen)
+        if (item.CanStart && !item.IsResearched)
+        {
+            float glow = 0.5f + 0.3f * MathF.Sin(_time * 3f);
+            // Gecachten Glow-Paint verwenden (nur Farbe ändern, MaskFilter ist statisch)
+            _glowPaint.Color = new SKColor(0xFF, 0xD7, 0x00, (byte)(glow * 80));
+            canvas.DrawCircle(cx, cy, NodeSize / 2 + 4, _glowPaint);
+        }
 
         // "Startbereit"-Puls-Animation
         if (item.CanStart)
@@ -396,7 +426,7 @@ public class ResearchTreeRenderer
         ResearchDisplayItem item, SKColor branchColor)
     {
         // Name
-        using var nameFont = new SKFont { Size = 12, Embolden = true };
+        using var nameFont = new SKFont { Size = 14, Embolden = true };
         _text.Color = item.IsLocked ? TextMuted : item.IsResearched ? branchColor : TextPrimary;
 
         // Text kürzen falls nötig
@@ -414,7 +444,7 @@ public class ResearchTreeRenderer
         // Kosten (wenn nicht erforscht und nicht gesperrt)
         if (!item.IsResearched && !item.IsLocked && !item.IsActive)
         {
-            using var costFont = new SKFont { Size = 10 };
+            using var costFont = new SKFont { Size = 12 };
             _text.Color = TextSecondary;
             canvas.DrawText($"\u20ac{item.CostDisplay}", cx, y + 19, SKTextAlign.Center, costFont, _text);
         }
@@ -495,11 +525,11 @@ public class ResearchTreeRenderer
 
             byte alpha = (byte)(p.Life * 220);
             _fill.Color = branchColor.WithAlpha(alpha);
-            canvas.DrawCircle(px, py, 4 * p.Life, _fill);
+            canvas.DrawCircle(px, py, 5 * p.Life, _fill);
 
             // Glow
             _fill.Color = branchColor.WithAlpha((byte)(alpha / 3));
-            canvas.DrawCircle(px, py, 8 * p.Life, _fill);
+            canvas.DrawCircle(px, py, 10 * p.Life, _fill);
         }
     }
 

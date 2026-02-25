@@ -1,0 +1,117 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             x:Class="HandwerkerImperium.Views.Dialogs.StoryDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Story Dialog (Meister Hans NPC) - 25 Kapitel mit SkiaSharp-Portrait -->
+  <Border Classes="SheetBackdrop"
+          Classes.Open="{Binding IsStoryDialogVisible}"
+          IsVisible="{Binding IsStoryDialogVisible}"
+          Background="{StaticResource DialogOverlayBrush}"
+          IsHitTestVisible="{Binding IsStoryDialogVisible}"
+          AutomationProperties.AutomationId="Main_Overlay_Story">
+    <Border Classes="BottomSheet"
+            Classes.Open="{Binding IsStoryDialogVisible}"
+            VerticalAlignment="Center" HorizontalAlignment="Center"
+            MaxWidth="400"
+            Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="24"
+            Padding="20"
+            BoxShadow="0 0 40 0 #40D97706"
+            Margin="16"
+            AutomationProperties.AutomationId="Main_Border_StorySheet">
+      <StackPanel Spacing="12">
+
+        <!-- Kapitel-Badge -->
+        <Border Background="#20D97706"
+                CornerRadius="12"
+                Padding="10,4"
+                HorizontalAlignment="Center"
+                AutomationProperties.AutomationId="Main_Border_StoryChapterBadge">
+          <TextBlock Text="{Binding StoryChapterBadge}"
+                     FontSize="11" FontWeight="SemiBold"
+                     Foreground="{StaticResource CraftPrimaryBrush}"
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Main_Txt_StoryChapterBadge" />
+        </Border>
+
+        <!-- Meister Hans SkiaSharp-Portrait mit Sprechblasen-Zeiger -->
+        <Grid ColumnDefinitions="Auto,*" HorizontalAlignment="Center"
+              AutomationProperties.AutomationId="Main_Grid_StoryPortrait">
+          <!-- Portrait -->
+          <Border Grid.Column="0"
+                  Width="120" Height="120"
+                  CornerRadius="60"
+                  Background="#15D97706"
+                  BoxShadow="0 0 24 0 #30D97706"
+                  Margin="0,0,12,0"
+                  AutomationProperties.AutomationId="Main_Border_MeisterHansPortrait">
+            <skia:SKCanvasView x:Name="MeisterHansCanvas"
+                               Width="120" Height="120"
+                               PaintSurface="OnMeisterHansPaintSurface"
+                               AutomationProperties.AutomationId="Main_Img_MeisterHansCanvas" />
+          </Border>
+
+          <!-- Sprechblase -->
+          <Border Grid.Column="1"
+                  Background="#10D97706"
+                  CornerRadius="16"
+                  Padding="14,10"
+                  MinHeight="80"
+                  AutomationProperties.AutomationId="Main_Border_StorySpeechBubble">
+            <StackPanel Spacing="6">
+              <!-- Kapitel-Titel -->
+              <TextBlock Text="{Binding StoryTitle}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{StaticResource CraftPrimaryLightBrush}"
+                         TextWrapping="Wrap"
+                         AutomationProperties.AutomationId="Main_Txt_StoryTitle" />
+
+              <!-- Dialog-Text -->
+              <TextBlock Text="{Binding StoryText}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         TextWrapping="Wrap"
+                         LineHeight="20"
+                         AutomationProperties.AutomationId="Main_Txt_StoryText" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <!-- Belohnungen mit Gold-Shimmer-Rand -->
+        <Border Background="#15FFD700"
+                CornerRadius="12"
+                Padding="12,8"
+                BorderBrush="#40FFD700"
+                BorderThickness="1.5"
+                BoxShadow="0 0 12 0 #20FFD700"
+                IsVisible="{Binding StoryRewardText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                AutomationProperties.AutomationId="Main_Border_StoryReward">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="Gift" Width="20" Height="20" Foreground="{StaticResource CraftGoldBrush}"
+                             AutomationProperties.AutomationId="Main_Icon_StoryRewardGift" />
+            <TextBlock Text="{Binding StoryRewardText}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{StaticResource CraftGoldBrush}"
+                       AutomationProperties.AutomationId="Main_Txt_StoryReward" />
+          </StackPanel>
+        </Border>
+
+        <!-- Weiter-Button -->
+        <Button Content="{loc:Translate Continue}"
+                Classes="Primary"
+                Command="{Binding DismissStoryDialogCommand}"
+                HorizontalAlignment="Center"
+                MinWidth="160"
+                Margin="0,4,0,0"
+                AutomationProperties.AutomationId="Main_Btn_StoryContinue" />
+
+      </StackPanel>
+    </Border>
+  </Border>
+
+</UserControl>

@@ -124,7 +124,7 @@
 
             <TextBlock Text="{loc:Translate MaxLevelReached}"
                        FontSize="12"
-                       Foreground="Gold"
+                       Foreground="{StaticResource CraftGoldBrush}"
                        HorizontalAlignment="Center"
                        IsVisible="{Binding !CanUpgrade}"
                        AutomationProperties.AutomationId="Workshop_Txt_MaxLevel" />
@@ -338,7 +338,7 @@
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                  <Button Classes="Text" Padding="0" Margin="3"
+                  <Button Classes="Text" Padding="8,4" Margin="3"
                           HorizontalAlignment="Stretch"
                           HorizontalContentAlignment="Stretch"
                           Command="{Binding $parent[ItemsControl].((vm:WorkshopViewModel)DataContext).SelectWorkerCommand}"

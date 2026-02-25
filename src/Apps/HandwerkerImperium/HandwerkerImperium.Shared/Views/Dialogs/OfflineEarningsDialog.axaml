@@ -1,0 +1,88 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Dialogs.OfflineEarningsDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Offline Earnings Dialog -->
+  <Border Background="{StaticResource DialogOverlayBrush}"
+          IsVisible="{Binding IsOfflineEarningsDialogVisible}"
+          AutomationProperties.AutomationId="Main_Overlay_OfflineEarnings">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16" Padding="24"
+            MaxWidth="360"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 8 24 0 #40000000"
+            AutomationProperties.AutomationId="Main_Border_OfflineEarningsDialog">
+      <StackPanel Spacing="16" HorizontalAlignment="Center">
+        <!-- Grüner Glow-Halo -->
+        <Border Width="72" Height="72" CornerRadius="36"
+                HorizontalAlignment="Center"
+                BoxShadow="0 0 20 0 #4022C55E"
+                AutomationProperties.AutomationId="Main_Border_OfflineEarningsGlow">
+          <Border.Background>
+            <RadialGradientBrush Center="0.5,0.5" RadiusX="0.5" RadiusY="0.5">
+              <GradientStop Color="#2022C55E" Offset="0" />
+              <GradientStop Color="Transparent" Offset="1" />
+            </RadialGradientBrush>
+          </Border.Background>
+          <mi:MaterialIcon Kind="CashMultiple" Width="40" Height="40"
+                           Foreground="#22C55E"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           AutomationProperties.AutomationId="Main_Icon_OfflineEarningsCash" />
+        </Border>
+        <TextBlock Text="{loc:Translate WelcomeBack}"
+                   FontSize="22" FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_OfflineWelcomeBack" />
+        <TextBlock Text="{loc:Translate WhileYouWereAway}"
+                   FontSize="14" TextWrapping="Wrap"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_OfflineWhileAway" />
+        <TextBlock Text="{Binding OfflineEarningsAmountText}"
+                   FontSize="36" FontWeight="Bold"
+                   HorizontalAlignment="Center"
+                   Foreground="#22C55E"
+                   AutomationProperties.AutomationId="Main_Txt_OfflineEarningsAmount" />
+        <!-- Neuer Rekord Badge -->
+        <Border Background="#30FFD700" CornerRadius="12" Padding="12,4"
+                HorizontalAlignment="Center"
+                IsVisible="{Binding IsOfflineNewRecord}"
+                BoxShadow="0 0 12 0 #40FFD700"
+                AutomationProperties.AutomationId="Main_Border_OfflineNewRecord">
+          <TextBlock Text="{loc:Translate NewRecord}"
+                     FontSize="14" FontWeight="Bold"
+                     Foreground="{StaticResource CraftGoldBrush}"
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Main_Txt_OfflineNewRecord" />
+        </Border>
+        <TextBlock Text="{Binding OfflineEarningsDurationText}"
+                   FontSize="12"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   AutomationProperties.AutomationId="Main_Txt_OfflineDuration" />
+        <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Center">
+          <Button Classes="Outlined" Content="{loc:Translate Collect}"
+                  Command="{Binding CollectOfflineEarningsNormalCommand}" MinWidth="100"
+                  AutomationProperties.AutomationId="Main_Btn_OfflineCollect" />
+          <Button Classes="Primary" MinWidth="140"
+                  Background="{StaticResource CraftGoldBrush}"
+                  Command="{Binding CollectOfflineEarningsWithAdCommand}"
+                  AutomationProperties.AutomationId="Main_Btn_OfflineDoubleWithAd">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="PlayCircle" Width="18" Height="18"
+                               AutomationProperties.AutomationId="Main_Icon_OfflineAdPlay" />
+              <TextBlock Text="{loc:Translate DoubleWithAd}" VerticalAlignment="Center"
+                         AutomationProperties.AutomationId="Main_Txt_OfflineDoubleWithAd" />
+            </StackPanel>
+          </Button>
+        </StackPanel>
+      </StackPanel>
+    </Border>
+  </Border>
+
+</UserControl>

@@ -91,8 +91,8 @@ Alle 8 Apps im geschlossenen Test, warten auf 12 Tester fuer Produktion.
 | FinanzRechner | v2.0.4 | Banner + Rewarded | 3,99 remove_ads |
 | FitnessRechner | v2.0.4 | Banner + Rewarded | 3,99 remove_ads |
 | WorkTimePro | v2.0.4 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime |
-| HandwerkerImperium | v2.0.8 | Banner + Rewarded | 4,99 Premium |
-| BomberBlast | v2.0.7 | Banner + Rewarded | 1,99 remove_ads |
+| HandwerkerImperium | v2.0.10 | Banner + Rewarded | 4,99 Premium |
+| BomberBlast | v2.0.11 | Banner + Rewarded | 1,99 remove_ads |
 
 ---
 
@@ -362,6 +362,8 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | DonutChart-Segment unsichtbar bei 100% | SkiaSharp `ArcTo` bei 360° erzeugt leeren Path (Start=Ende) | Bei `sweepAngle >= 359°` in zwei 180°-Hälften aufteilen |
 | ZIndex-Overlay Touch geht durch (Android) | Avalonia `ZIndex` auf Grid-Kindern funktioniert NICHT für Hit-Testing auf Android - Touch-Events gehen durch Overlay hindurch | Content-Swap statt Overlay: Normalen Content per `IsVisible=false` verstecken, Overlay-Content als Ersatz anzeigen. KEIN ZIndex verwenden für interaktive Overlays |
 | Assembly-Version 1.0.0 (Default) | Shared-Projekt hat keine `<Version>` Property → Assembly-Version ist 1.0.0.0 | `<Version>X.Y.Z</Version>` in Shared .csproj setzen wenn Assembly-Version zur Laufzeit ausgelesen wird |
+| Button.OnAttachedToLogicalTree Crash (Android) | `TransformOperationsTransition` für `RenderTransform` ohne initialen `RenderTransform`-Wert → Transition von null→scale() crasht auf manchen GPU-Treibern | IMMER `RenderTransform="scale(1)"` + `RenderTransformOrigin="50%,50%"` setzen wenn `TransformOperationsTransition Property="RenderTransform"` verwendet wird. Fix in ButtonStyles.axaml |
+| CommandParameter string→int Crash | XAML `CommandParameter="0"` ist IMMER `string`. `RelayCommand<int>` wirft `ArgumentException` in `CanExecute()` bei View-Attach | Methoden von `int` auf `string` ändern + `int.TryParse()` intern. Oder `<sys:Int32>0</sys:Int32>` im XAML. Betroffen: Alle hardcodierten CommandParameter-Werte |
 
 ---
 

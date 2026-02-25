@@ -14,7 +14,7 @@ namespace BomberBlast.ViewModels;
 /// Verwaltet Input-Modus, Sound-Lautstärke, Sprache und Premium-Status.
 /// Persistiert alle Einstellungen via InputManager und SoundManager.
 /// </summary>
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ObservableObject, INavigable
 {
     private readonly IProgressService _progressService;
     private readonly IHighScoreService _highScoreService;
@@ -35,7 +35,7 @@ public partial class SettingsViewModel : ObservableObject
     /// <summary>
     /// Event to request navigation. Parameter is the route string.
     /// </summary>
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
 
     /// <summary>
     /// Event to show an alert dialog. Parameters: title, message, buttonText.
@@ -196,6 +196,9 @@ public partial class SettingsViewModel : ObservableObject
     private bool _isBuyingPremium;
 
     [ObservableProperty]
+    private string _restoreButtonText = "";
+
+    [ObservableProperty]
     private string _versionText = "BomberBlast v1.0.0";
 
     [ObservableProperty]
@@ -209,10 +212,10 @@ public partial class SettingsViewModel : ObservableObject
     [
         new("Deutsch", "de"),
         new("English", "en"),
-        new("Espanol", "es"),
-        new("Francais", "fr"),
+        new("Español", "es"),
+        new("Français", "fr"),
         new("Italiano", "it"),
-        new("Portugues", "pt")
+        new("Português", "pt")
     ];
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -246,7 +249,7 @@ public partial class SettingsViewModel : ObservableObject
         VersionText = version != null
             ? $"BomberBlast v{version.Major}.{version.Minor}.{version.Build}"
             : "BomberBlast v1.0.0";
-        CopyrightText = $"\u00a9 {DateTime.Now.Year} RS-Digital";
+        CopyrightText = $"\u00a9 {DateTime.UtcNow.Year} RS-Digital";
 
         LoadSettings();
         _isInitializing = false;
@@ -290,6 +293,10 @@ public partial class SettingsViewModel : ObservableObject
     public void OnAppearing()
     {
         IsPremium = _purchaseService.IsPremium;
+        // Restore-Button: Bei Premium "Kauf validieren", sonst "Wiederherstellen"
+        RestoreButtonText = IsPremium
+            ? (_localizationService.GetString("ValidatePurchase") ?? "Validate Purchase")
+            : (_localizationService.GetString("RestorePurchases") ?? "Restore Purchases");
         IsPlayGamesSignedIn = _playGames.IsSignedIn;
         PlayGamesPlayerName = _playGames.PlayerName ?? "";
 
@@ -619,8 +626,8 @@ public partial class SettingsViewModel : ObservableObject
             if (success)
             {
                 AlertRequested?.Invoke(
-                    _localizationService.GetString("CloudSaveDownloadSuccess") ?? "Cloud-Daten geladen",
-                    _localizationService.GetString("CloudSaveRestartHint") ?? "App neu starten für volle Konsistenz",
+                    _localizationService.GetString("CloudSaveDownloadSuccess") ?? "Cloud data loaded",
+                    _localizationService.GetString("CloudSaveRestartHint") ?? "Restart app for full consistency",
                     _localizationService.GetString("OK"));
             }
         }
@@ -636,18 +643,18 @@ public partial class SettingsViewModel : ObservableObject
         if (_playGames.IsSignedIn)
             CloudSaveLocation = _localizationService.GetString("CloudSaveLocationGPGS") ?? "Google Play Games";
         else
-            CloudSaveLocation = _localizationService.GetString("CloudSaveLocationLocal") ?? "Lokal";
+            CloudSaveLocation = _localizationService.GetString("CloudSaveLocationLocal") ?? "Local";
 
         if (!_cloudSaveService.IsEnabled)
         {
-            CloudSyncStatus = _localizationService.GetString("CloudSaveDisabled") ?? "Deaktiviert";
+            CloudSyncStatus = _localizationService.GetString("CloudSaveDisabled") ?? "Disabled";
             return;
         }
 
         var lastSync = _cloudSaveService.LastSyncTimeUtc;
         if (string.IsNullOrEmpty(lastSync))
         {
-            CloudSyncStatus = _localizationService.GetString("CloudSaveNeverSynced") ?? "Noch nie synchronisiert";
+            CloudSyncStatus = _localizationService.GetString("CloudSaveNeverSynced") ?? "Never synced";
             return;
         }
 
@@ -656,7 +663,7 @@ public partial class SettingsViewModel : ObservableObject
         {
             var ago = DateTime.UtcNow - syncTime;
             if (ago.TotalMinutes < 1)
-                CloudSyncStatus = _localizationService.GetString("CloudSaveJustNow") ?? "Gerade eben";
+                CloudSyncStatus = _localizationService.GetString("CloudSaveJustNow") ?? "Just now";
             else if (ago.TotalHours < 1)
                 CloudSyncStatus = $"{(int)ago.TotalMinutes} min";
             else if (ago.TotalDays < 1)
@@ -680,7 +687,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     // ═══════════════════════════════════════════════════════════════════════

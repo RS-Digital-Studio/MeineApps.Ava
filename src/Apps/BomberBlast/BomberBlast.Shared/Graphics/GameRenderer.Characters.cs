@@ -21,8 +21,16 @@ public partial class GameRenderer
         bool isNeon = _styleService.CurrentStyle == GameVisualStyle.Neon;
 
         // Blink-Effekt bei Unverwundbarkeit / Spawn-Schutz
-        if ((player.IsInvincible || player.HasSpawnProtection) && ((int)(_globalTimer * 10) % 2) == 0)
-            return;
+        // Schnelleres Blinken in den letzten 0.5s als visuelles Feedback fuer auslaufenden Schutz
+        if (player.IsInvincible || player.HasSpawnProtection)
+        {
+            float remainingTimer = player.IsInvincible
+                ? player.InvincibilityTimer
+                : player.SpawnProtectionTimer;
+            float blinkRate = remainingTimer <= 0.5f ? 20f : 10f;
+            if (((int)(_globalTimer * blinkRate) % 2) == 0)
+                return;
+        }
 
         if (player.IsDying)
         {

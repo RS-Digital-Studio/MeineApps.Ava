@@ -56,7 +56,7 @@ public static class GameOverVisualization
     /// <param name="isHighScore">Ob neuer Highscore</param>
     /// <param name="animTime">Animations-Zeit für Glow</param>
     public static void DrawBigScore(SKCanvas canvas, float cx, float y,
-        int score, bool isHighScore, float animTime)
+        int score, bool isHighScore, float animTime, string? newHighScoreText = null)
     {
         string scoreStr = score.ToString("N0");
 
@@ -70,10 +70,11 @@ public static class GameOverVisualization
             canvas.DrawText(scoreStr, cx, y, SKTextAlign.Center, _scoreFont, _glowPaint);
             _glowPaint.MaskFilter = null;
 
-            // "NEW HIGH SCORE!" darüber
+            // Lokalisierter "NEW HIGH SCORE!" Text darüber
+            string highScoreLabel = newHighScoreText ?? "NEW HIGH SCORE!";
             _textPaint.Color = _gold.WithAlpha((byte)(180 + pulse * 75));
             _labelFont.Size = 12f;
-            canvas.DrawText("NEW HIGH SCORE!", cx, y - 36f,
+            canvas.DrawText(highScoreLabel, cx, y - 36f,
                 SKTextAlign.Center, _labelFont, _textPaint);
         }
 

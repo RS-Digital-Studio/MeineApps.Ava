@@ -634,10 +634,9 @@
 
                 <!-- Restore Purchases -->
                 <Button AutomationProperties.AutomationId="Settings_BtnRestore"
-                        Content="{loc:Translate RestorePurchases}"
+                        Content="{Binding RestoreButtonText}"
                         Classes="Secondary"
                         Command="{Binding RestorePurchasesCommand}"
-                        IsVisible="{Binding !IsPremium}"
                         HorizontalAlignment="Left" />
               </StackPanel>
             </Border>

@@ -7,7 +7,7 @@
 Bomberman-Klon mit SkiaSharp Rendering, AI Pathfinding und mehreren Input-Methoden.
 Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/Cyberpunk.
 
-**Version:** 2.0.7 (VersionCode 17) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
+**Version:** 2.0.11 (VersionCode 21) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
 
 ## Haupt-Features
 
@@ -52,7 +52,8 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | GameOverVisualization | Großer Score mit Glow + Score-Breakdown Balken + Medaillen (Gold/Silber/Bronze) + Coin-Counter |
 | DiscoveryOverlay | Erstentdeckungs-Hint (Gold-Rahmen, NEU!-Badge, Titel+Beschreibung, Fade-In+Scale-Bounce, Auto-Dismiss 5s) |
 | ShopIconRenderer | 12 prozedurale Shop-Upgrade-Icons (Bombe/Flamme/Blitz/Herz/Stern/Uhr/Schild/Münzen/Kleeblatt/Eis/Feuer/Schleim), gepoolte SKPaint |
-| MenuBackgroundRenderer | Animierter Menü-Hintergrund: Gradient (#2D2D48→#293A56), Grid-Linien (48px), 8 Bomben-Silhouetten, 25 Funken-Partikel, 6 Flammen-Wisps, struct-basiert, gepoolte SKPaint. Aufgehellte Palette (Grid α20, Spark α80, Flammen α50) |
+| MenuBackgroundRenderer | Animierter Menü-Hintergrund mit 7 Themes (BackgroundTheme Enum): Default (Bomben+Funken+Flammen), Dungeon (Fackeln+Fledermäuse+Steine), Shop (Münzen+Shimmer+Gems), League (Trophäen+Sterne+Podest), BattlePass (XP-Orbs+Streifen+Badges), Victory (Confetti+Fireworks+Gold), LuckySpin (Regenbogen+Glitzer+Lichtstreifen). Max 60 Partikel/Theme, struct-basiert, gepoolte SKPaint |
+| DungeonMapRenderer | Dungeon Node-Map (Slay the Spire-inspiriert): 10 Reihen × 2-3 Nodes, farbige Kreise (30px) mit Raum-Typ-Icons, Verbindungslinien (gestrichelt/durchgezogen/gold), Modifikator-Badges, Pulsierender Glow-Ring für aktuellen Node, vertikaler Scroll |
 
 ### Input-Handler (3x)
 - **FloatingJoystick**: Touch-basiert, zwei Modi: Floating (erscheint wo getippt, Standard) + Fixed (immer sichtbar unten links). Bomb-Button weiter in die Spielfläche gerückt (80px/60px Offset statt 30px/20px)
@@ -136,8 +137,9 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | IGemService | Gem-Balance (zweite Währung), AddGems, TrySpendGems |
 | IShopService | PlayerUpgrades Persistenz, Preise, Kauf-Logik |
 | ITutorialService | 6-Schritte Tutorial fuer Level 1 (Move, Bomb, Hide, PowerUp, DefeatEnemies, Exit) |
-| IDailyRewardService | 7-Tage Daily Login Bonus (500-5000 Coins, Tag 5 Extra-Leben) |
-| ICustomizationService | Spieler/Gegner-Skins (Default, Gold, Neon, Cyber, Retro) |
+| IDailyRewardService | 7-Tage Daily Login Bonus (500-5000 Coins, Tag 5 Extra-Leben) + Comeback-Bonus (>3 Tage inaktiv → 2000 Coins + 5 Gems) |
+| IStarterPackService | Einmaliges Starterpaket nach Level 5: 5000 Coins + 20 Gems + 3 Rare-Karten (Coin-Kauf 4999) |
+| ICustomizationService | Spieler/Gegner-Skins (Default, Gold, Neon, Cyber, Retro + 3 Gem-Skins: Crystal/Shadow/Phoenix), TryPurchasePlayerSkinWithGems() |
 | IReviewService | In-App Review nach Level 3-5, 14-Tage Cooldown |
 | IAchievementService | 66 Achievements in 5 Kategorien (Progress, Mastery, Combat, Skill, Challenge), JSON-Persistenz |
 | IDiscoveryService | Erstentdeckungs-Tracking (PowerUps/Mechaniken), Preferences-basiert |
@@ -146,20 +148,22 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | ILuckySpinService | Glücksrad: 8 gewichtete Segmente, 1x gratis/Tag, JSON-Persistenz |
 | IWeeklyChallengeService | Wöchentliche Missionen: 5/Woche aus 8er-Pool, Montag-Reset, JSON-Persistenz |
 | IDailyMissionService | Tägliche Missionen: 3/Tag aus 8er-Pool, Mitternacht-UTC-Reset, JSON-Persistenz |
-| ICardService | Karten-System: 14 Bomben-Karten mit Raritäten, Deck (4 Slots), Upgrade (Bronze→Silber→Gold), Drops nach Level-Complete |
-| IDungeonService | Dungeon-Run Roguelike-Modus: Run-State, Floor-Belohnungen, 12 Buffs, Statistiken, JSON-Persistenz |
+| ICardService | Karten-System: 14 Bomben-Karten mit Raritäten, Deck (4+1 Slots, 5. Slot für 20 Gems freischaltbar), Upgrade (Bronze→Silber→Gold), Drops nach Level-Complete |
+| IDungeonService | Dungeon-Run Roguelike-Modus: Run-State, Floor-Belohnungen, 16 Buffs (12+4 Legendary), Raum-Typen, Modifikatoren, Node-Map, Ascension, Synergies, DungeonCoins, JSON-Persistenz |
+| IDungeonUpgradeService | 8 permanente Dungeon-Upgrades (DungeonCoins-Währung): StartBombs/Fire/Speed, ExtraBuffChoice, BossGoldBonus, Shield, CardDropBoost, ReviveCostReduction |
 | ICollectionService | Sammlungs-Album: Gegner/Bosse/PowerUp-Tracking (Encounter/Defeat), Meilenstein-Belohnungen, aggregiert Card+Customization |
 | IFirebaseService | Firebase REST API Client: Anonymous Auth + Realtime Database CRUD, plattformübergreifend via HttpClient |
 | ILeagueService | Liga-System: 5 Tiers (Bronze→Diamant), 14-Tage-Saisons, Firebase Online-Rangliste + NPC-Backfill, Punkte/Rangliste/Auf-Abstieg |
 | ICloudSaveService | Cloud Save: Local-First Sync, 35 Persistenz-Keys, Debounce 5s, Konflikt-Resolution (TotalStars→Wealth→Cards→Timestamp) |
+| IRotatingDealsService | Rotierende Angebote: 3 tägliche + 1 wöchentliches Deal mit 20-50% Rabatt, Seeded Random per Datum, JSON-Persistenz |
 
 ## Architektur-Entscheidungen
 
-- **Game Loop**: DispatcherTimer (16ms) in GameView → InvalidateSurface() → OnPaintSurface → GameEngine.Update + Render
+- **Game Loop**: DispatcherTimer (16ms) in GameView → InvalidateSurface() → OnPaintSurface → GameEngine.Update + Render. MAX_DELTA_TIME = 0.05f (50ms Cap, verhindert Physik-Sprünge bei Lag-Spikes)
 - **Touch-Koordinaten**: Proportionale Skalierung (Render-Bounds / Control-Bounds Ratio) fuer DPI-korrektes Mapping
 - **Invalidierung**: IMMER `InvalidateSurface()` (InvalidateVisual feuert NICHT PaintSurface bei SKCanvasView)
 - **Keyboard Input**: Window-Level KeyDown/KeyUp in MainWindow.axaml.cs → GameViewModel
-- **DI**: 22 ViewModels (alle Singleton), 26 Services, GameEngine + GameRenderer in App.axaml.cs (GameRenderer + IAchievementService + IDiscoveryService + IPlayGamesService + IWeeklyChallengeService + IDailyMissionService + ICardService + IDungeonService + ILeagueService per DI in GameEngine injiziert). IFirebaseService als Singleton registriert (LeagueService nimmt es per Constructor). Lazy-Injection: 4 Services (BattlePass, Card, League, DailyMission) erhalten IAchievementService via SetAchievementService() nach ServiceProvider-Build. Lazy-Injection: GemService + CardService erhalten IWeeklyChallengeService + IDailyMissionService via SetMissionServices()
+- **DI**: 23 ViewModels (alle Singleton), 29 Services, GameEngine + GameRenderer in App.axaml.cs (GameRenderer + IAchievementService + IDiscoveryService + IPlayGamesService + IWeeklyChallengeService + IDailyMissionService + ICardService + IDungeonService + IDungeonUpgradeService + ILeagueService per DI in GameEngine injiziert). IFirebaseService als Singleton registriert (LeagueService nimmt es per Constructor). Lazy-Injection: 4 Services (BattlePass, Card, League, DailyMission) erhalten IAchievementService via SetAchievementService() nach ServiceProvider-Build. Lazy-Injection: GemService + CardService erhalten IWeeklyChallengeService + IDailyMissionService via SetMissionServices(). Lazy-Injection: CustomizationService erhält IGemService via SetGemService() für Gem-Skin-Käufe
 - **GameEngine Partial Classes**: GameEngine.cs (Kern), .Collision.cs, .Explosion.cs, .Level.cs, .Render.cs
 - **12 PowerUp-Typen**: BombUp, Fire, Speed, Wallpass, Detonator, Bombpass, Flamepass, Mystery, Kick, LineBomb, PowerBomb, Skull
 - **PowerUp-Freischaltung**: Level-basiert via `GetUnlockLevel()` Extension. Story-Mode filtert gesperrte PowerUps. DailyChallenge: Alle verfügbar
@@ -172,6 +176,9 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **AI Danger-Zone**: Einmal pro Frame vorberechnet, iterative Kettenreaktions-Erkennung (max 5 Durchläufe)
 - **Achievements**: IAchievementService in GameEngine injiziert, automatische Prüfung bei Level-Complete/Kill/Wave/Stars
 - **ExplosionCell**: Struct statt Class (weniger Heap-Allokationen)
+- **Dirty-Lists**: `_destroyingCells`, `_afterglowCells`, `_specialEffectCells` ersetzen 3x volle 150-Zellen Grid-Iteration pro Frame. Zellen werden bei Explosion/Effekt-Start registriert, bei Ablauf via Rückwärts-Iteration entfernt. Reduziert Update-Aufwand von O(150) auf O(aktive Zellen)
+- **Achievement Dictionary-Lookup**: `_achievementLookup` Dictionary<string,Achievement> für O(1) TryUnlock/UpdateProgress statt O(n) List.Find
+- **CollectionService Debounce-Save**: `_isDirty` Flag + 5s Debounce-Intervall statt sofortigem Save bei jedem Record-Aufruf. FlushIfDirty() bei GameOver/LevelComplete
 - **CollectionView/DeckView SkiaSharp-Icons**: Echte Gegner/Boss/PowerUp/Bomben-Grafiken statt generischer MaterialIcons. SKCanvasView in AXAML mit PaintSurface-Handler im Code-Behind. CollectionEntry hat optionale Typ-Enums (EnemyType?, BossType?, PowerUpType?, BombType?) die in CollectionService Build-Methoden gesetzt und über CollectionDisplayItem durchgereicht werden. Kosmetik nutzt weiter MaterialIcons
 - **GetTotalStars**: Gecacht in ProgressService, invalidiert bei Score-Änderung
 - **Score-Multiplikator**: Nur auf Level-Score angewendet (nicht kumulierten Gesamt-Score)
@@ -210,7 +217,8 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 - **FloatingText (UI)**: "x2!" (gold) bei Coins-Verdopplung, "LevelComplete" (gruen) - View-Overlays
 - **In-Game FloatingText**: `Graphics/GameFloatingTextSystem.cs` - Struct-Pool (20 max), Score-Popups (+100, +400), Combo-Text (x2!, MEGA x5!), PowerUp-Collect-Text (+SPEED, +FIRE, +KICK, +LINE, +POWER, CURSED!)
-- **Combo-System**: Kills innerhalb 2s-Fenster → Combo-Bonus (x2: +200, x3: +500, x4: +1000, x5+: +2000) mit farbigem Floating Text
+- **Combo-System**: Kills innerhalb 2s-Fenster → Combo-Bonus (x2: +200, x3: +500, x4: +1000, x5+: +2000) mit farbigem Floating Text. Chain-Kill-Bonus: 1.5x Multiplikator bei 3+ Combo (Kettenreaktion), "CHAIN x{N}!" goldener Text
+- **Haptic-Feedback**: `_vibration.VibrateLight()` bei PowerUp-Einsammlung (GameEngine.Collision.cs)
 - **Timer-Warnung**: Pulsierender roter Bildschirmrand unter 30s, Intensitaet steigt mit sinkender Zeit
 - **Danger Telegraphing**: Rote pulsierende Warnzonen auf Zellen im Explosionsradius aktiver Bomben (Zuendschnur < 0.8s), Intensitaet steigt mit sinkender Zuendzeit
 - **Celebration**: Confetti bei Welt-Freischaltung
@@ -402,7 +410,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
   - SoundPool fuer SFX (12 Sounds: explosion, place_bomb, fuse, powerup, player_death, enemy_death, exit_appear, level_complete, game_over, time_warning, menu_select, menu_confirm)
   - MediaPlayer fuer Musik (4 Tracks: menu, gameplay, boss, victory)
   - Assets in `Assets/Sounds/` (.ogg + .wav, versucht beide Formate)
-- **SoundManager** (`Core/SoundManager.cs`): Wraps ISoundService mit Lautstaerke-/Enable-Settings, Crossfade-Logik (Update() Methode, Fade-Out/Fade-In bei Track-Wechsel)
+- **SoundManager** (`Core/SoundManager.cs`): Wraps ISoundService mit Lautstaerke-/Enable-Settings, Crossfade-Logik (Update() Methode, Fade-Out/Fade-In bei Track-Wechsel). `PlayBombExplosion(BombType)`: Spezial-Bomben-Sound-Differenzierung via Layering (Basis-Explosion + sekundärer SFX je nach Bomben-Kategorie: Ice/Gravity/TimeWarp→PowerUp-Layer, Fire/Nova/Vortex→doppelte Explosion, Lightning/Mirror→Fuse-Layer, BlackHole→TimeWarning-Layer)
 - **ISoundService.SetMusicVolume(float)**: Für Crossfade-Steuerung (AndroidSoundService: MediaPlayer.SetVolume)
 - **SoundServiceFactory** in App.axaml.cs (analog RewardedAdServiceFactory)
 - **Sound-Assets**: CC0 Lizenz, Juhani Junkala (OpenGameArt.org), ~8.5 MB gesamt
@@ -432,7 +440,8 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Zeitfenster**: 2 Sekunden zwischen Kills
 - **Tracking**: `_comboCount` + `_comboTimer` in GameEngine
 - **Bonus-Punkte**: x2→+200, x3→+500, x4→+1000, x5+→+2000
-- **Visuell**: Farbiger Floating Text (Orange x2-x3, Rot ab x4, "MEGA" ab x5)
+- **Chain-Kill-Bonus**: Bei `_comboCount >= 3` (Kettenreaktion wahrscheinlich) → 1.5x Multiplikator auf Combo-Bonus
+- **Visuell**: Farbiger Floating Text (Orange x2-x3, Rot ab x4, "MEGA" ab x5). Chain-Kills: "CHAIN x{N}!" in Gold (#FFC800)
 
 ### Slow-Motion
 - **Trigger**: Letzter Gegner getötet ODER Combo x4+
@@ -522,37 +531,46 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **CardCatalog** (`Models/Cards/CardCatalog.cs`): Statisches All-Array mit 14 Karten-Definitionen (BombType, NameKey, DescKey, Rarity, UsesPerLevel)
 - **OwnedCard** (`Models/Cards/OwnedCard.cs`): Count (Duplikate), Level, BombType
 - **BombCard** (`Models/Cards/BombCard.cs`): BombType, Rarity, Level, UsesPerLevel, UpgradeCost (UpgradeDuplicatesRequired + UpgradeCoinCost)
-- **ICardService/CardService** (`Services/`): OwnedCards Dictionary, EquippedSlots (int[4]), AddCard, UpgradeCard, EquipCard, UnequipSlot, GetDropForLevel (gewichteter Random: 60% Common, 25% Rare, 12% Epic, 3% Legendary)
-- **Persistenz**: IPreferencesService JSON, Key "CardCollection"
-- **Deck**: Max 4 Karten ausgeruestet, ActiveCardSlot im Gameplay per HUD-Tap wechselbar
-- **HUD-Integration**: 4 Mini-Karten-Slots rechts im HUD (unter bestehendem Side-Panel), aktiver Slot hervorgehoben, verbleibende Uses als Zahl
+- **ICardService/CardService** (`Services/`): OwnedCards Dictionary, EquippedSlots (int[4+1]), AddCard, UpgradeCard, EquipCard, UnequipSlot, GetDropForLevel (gewichteter Random: 60% Common, 25% Rare, 12% Epic, 3% Legendary), TryUnlockSlot5(IGemService), IsSlot5Unlocked
+- **Persistenz**: IPreferencesService JSON, Key "CardCollection", CardCollectionData mit Slot5Unlocked Flag
+- **Deck**: 4 Basis-Slots + 1 freischaltbarer Slot (20 Gems), ActiveCardSlot im Gameplay per HUD-Tap wechselbar
+- **HUD-Integration**: Max 5 Mini-Karten-Slots rechts im HUD (unter bestehendem Side-Panel), aktiver Slot hervorgehoben, verbleibende Uses als Zahl
 - **Input**: Tap auf HUD-Slot wechselt ActiveCardSlot, Slot -1 = Normal-Bombe
 - **GameEngine**: PlaceBomb() liest aus aktivem Card-Slot (Player.EquippedCards + ActiveCardSlot), Karten-Drop bei Level-Complete via ICardService.GetDropForLevel()
 - **Karten-Upgrade**: Duplikate + Coins → nächste Stufe (Common: 3+500/5+2000, Rare: 3+1500/5+5000, Epic: 2+3000/4+10000, Legendary: 2+5000/3+20000)
 - **DeckViewModel** (`ViewModels/DeckViewModel.cs`): Zeigt ALLE 13 Karten (besessene + nicht-besessene als gesperrt), sortiert Legendary→Common. BombType→MaterialIcon-Mapping (Ice=Snowflake, Fire=Fire, Sticky=Water, Smoke=WeatherFog, Lightning=LightningBolt, Gravity=Magnet, Poison=Skull, TimeWarp=ClockFast, Mirror=FlipHorizontal, Vortex=Tornado, Phantom=Ghost, Nova=Flare, BlackHole=CircleSlice8). Detail-Panel: Stärke-Multiplikator (1.0x/1.2x/1.4x), Upgrade-Fortschrittsbalken, Drop-Quellen je Rarität (Level/Boss/Dungeon mit Prozent). CardDisplayItem + DeckSlotItem mit IconName, LevelColorHex (Bronze/Silber/Gold), CardOpacity, ShowUpgradeBadge, ShowEquippedBadge
-- **DeckView** (`Views/DeckView.axaml`): Landscape 2-Spalten (Karten-Grid links als WrapPanel 100x120px Karten mit Bomben-Icon + Raritäts-Border + Level-Farbe + Badges, Deck-Slots + Detail-Panel rechts 260px). Fix: `#Deck_Root.DataContext.Command` statt `$parent[ItemsControl]` ReflectionBinding (Crash-Fix). Sammlungs-Fortschrittsbalken im Header. Detail zeigt: Icon + Name + Rarität-Badge + Beschreibung + Level/Stärke + Einsätze + Upgrade-Fortschritt + 4 Equip-Buttons + Fundorte. Nicht-besessene Karten: Locked-Info mit Beschreibung + Fundorte
+- **DeckView** (`Views/DeckView.axaml`): Landscape 2-Spalten (Karten-Grid links als WrapPanel 100x120px Karten mit Bomben-Icon + Raritäts-Border + Level-Farbe + Badges, Deck-Slots + Detail-Panel rechts 260px). Fix: `#Deck_Root.DataContext.Command` statt `$parent[ItemsControl]` ReflectionBinding (Crash-Fix). Sammlungs-Fortschrittsbalken im Header. Detail zeigt: Icon + Name + Rarität-Badge + Beschreibung + Level/Stärke + Einsätze + Upgrade-Fortschritt + 5 Equip-Buttons (5. nur bei freigeschaltetem Slot) + Fundorte. Nicht-besessene Karten: Locked-Info mit Beschreibung + Fundorte
 - **MainMenu**: Deck-Button (CardsPlaying Icon, blau #1565C0)
 - **Navigation**: MainMenu → Deck → ".." (zurück), DeckVm.FloatingTextRequested/CelebrationRequested
 - **RESX-Keys**: 45 Keys in 6 Sprachen (37 original + 8 neue: DeckLabel, CardStrength, CardDropSource, CardUpgradeLabel, CardNotOwned, DropSourceLevel, DropSourceBoss, DropSourceDungeon)
 
-### Dungeon Run / Roguelike-Modus (Phase 4 Feature-Expansion)
+### Dungeon Run / Roguelike-Modus (Phase 4 Feature-Expansion + Dungeon-Erweiterung)
 - **Roguelike-Modus**: 1 Leben, steigende Schwierigkeit Floor für Floor, Buff-Auswahl, Boss alle 5 Floors
 - **Run-Ablauf**: Floor 1-4 normal, Floor 5 Mini-Boss, Floor 6-9 härter, Floor 10 End-Boss mit Truhe, ab Floor 11 +50% Skalierung
 - **Eintritt**: 1x/Tag gratis, 500 Coins, 10 Gems, oder Rewarded Ad (1x/Tag)
-- **12 Dungeon-Buffs**: 5 Common (ExtraBomb, ExtraFire, SpeedBoost, CoinBonus, BombTimer), 5 Rare (Shield, ReloadSpecialBombs, EnemySlow, BlastRadius, PowerUpMagnet), 2 Epic (ExtraLife, FireImmunity)
-- **Buff-Auswahl**: Nach Floor 2/4/5/7/9 - 3 zufällige Buffs gewichtet per Rarität, seeded Random (RunSeed + Floor*100)
-- **Belohnungen**: Floor 1-4 (200-500 Coins, 30-45% Karten-Drop), Floor 5 Boss (800 Coins, 5 Gems, 100% Rare), Floor 6-9 (600-1000, 50-70%), Floor 10 Boss (2000+3000 Truhe, 15 Gems, 100% Epic)
-- **DungeonRunState** (`Models/Dungeon/DungeonRunState.cs`): CurrentFloor, Lives, ActiveBuffs, CollectedCoins/Gems/CardDrops, IsActive, RunSeed, LastFreeRunDate/LastAdRunDate
-- **DungeonStats**: TotalRuns, BestFloor, TotalCoinsEarned/GemsEarned/CardsEarned
-- **DungeonBuffCatalog** (`Models/Dungeon/DungeonBuff.cs`): 12 Buff-Definitionen mit Type, NameKey, DescKey, IconName, Rarity, Weight
-- **IDungeonService/DungeonService** (`Services/`): StartRun, CompleteFloor, GenerateBuffChoices, ApplyBuff, EndRun, JSON-Persistenz (Keys: "DungeonRunData", "DungeonStatsData")
-- **GameEngine**: `_isDungeonRun` Flag, `StartDungeonFloorAsync(floor, seed)`, `ApplyDungeonBuffs()`, Dungeon-Events (OnDungeonFloorComplete, OnDungeonBuffSelection, OnDungeonRunEnd)
-- **LevelGenerator**: `GenerateDungeonFloor(floor, seed)` mit Chunk-Templates, skalierbarer Schwierigkeit, Gegner-Pool nach Floor
-- **DungeonViewModel** (`ViewModels/DungeonViewModel.cs`): 3 States (PreRun/BuffSelection/PostRun), 6 Commands, AdRunRequested + StartDungeonFloorRequested Events
-- **DungeonView** (`Views/DungeonView.axaml`): Landscape 2-Spalten (Stats + Start links, Buff-Karten / Zusammenfassung rechts)
+- **16 Dungeon-Buffs**: 5 Common (ExtraBomb, ExtraFire, SpeedBoost, CoinBonus, BombTimer), 5 Rare (Shield, ReloadSpecialBombs, EnemySlow, BlastRadius, PowerUpMagnet), 2 Epic (ExtraLife, FireImmunity), **4 Legendary** (Berserker +2B/+2F/-1Life, TimeFreeze 3s-Freeze, GoldRush 3x-Coins, Phantom Durch-Wände 5s/30s-CD)
+- **Buff-Auswahl**: Nach Floor 2/4/5/7/9 - 3 zufällige Buffs gewichtet per Rarität (Common W10, Rare W6, Epic W3, Legendary W3-4), seeded Random (RunSeed + Floor*100)
+- **Buff-Reroll**: 1x/Run kostenlos, weitere für 5 Gems (`DungeonRunState.FreeRerollsUsed`)
+- **5 Synergies**: Bombardier (ExtraBomb+ExtraFire→+1 beides), Blitzkrieg (Speed+BombTimer→-0.5s Timer), Festung (Shield+ExtraLife→Shield-Regen 20s), Midas (CoinBonus+GoldRush→Gegner droppen Coins), Elementar (EnemySlow+FireImmunity→Lava verlangsamt Gegner)
+- **Belohnungen**: Floor 1-4 (200-500 Coins + 10-30 DungeonCoins, 30-45% Karten-Drop), Floor 5 Boss (800 Coins + 50 DC, 5 Gems, 100% Rare), Floor 6-9 (600-1000 + 10-30 DC, 50-70%), Floor 10 Boss (2000+3000 Truhe + 100 DC, 15 Gems, 100% Epic)
+- **5 Raum-Typen** (`Models/Dungeon/DungeonRoomType.cs`): Normal (W40), Elite (+50% Belohnungen, W20), Treasure (wenig Gegner, viele PowerUps, W15), Challenge (Spezial-Bedingung, W15), Rest (Kein Kampf, Heilung+Buff, W10 max 1/5 Floors)
+- **8 Floor-Modifikatoren** (`Models/Dungeon/DungeonFloorModifier.cs`): Ab Floor 3, 30% Chance (LavaBorders, Darkness, DoubleSpawns, FastBombs, BigExplosions, CursedFloor, Regeneration, Wealthy)
+- **Node-Map** (Slay the Spire-inspiriert): 10 Reihen × 2-3 Nodes, Spieler wählt Pfad, Floor 5+10 = Boss (1 Node). `DungeonMapNode` Model, `DungeonMapRenderer` (SkiaSharp), `DungeonService.GenerateMap(seed)`
+- **8 Permanente Upgrades** (`IDungeonUpgradeService`): Mit DungeonCoins gekauft (50-300 DC). StartingBombs/Fire/Speed, ExtraBuffChoice (4 statt 3), BossGoldBonus (+25/50%), StartingShield, CardDropBoost (+15/30%), ReviveCostReduction (10 statt 15 Gems)
+- **Ascension-System** (6 Stufen 0-5): Nach Floor 10 Clear → nächste Stufe. Stufe 1: +20% Gegner, +25% Coins. Stufe 5 Nightmare: Alles kombiniert, +150% Coins, exklusive Krone
+- **DungeonRunState** (`Models/Dungeon/DungeonRunState.cs`): CurrentFloor, Lives, ActiveBuffs, CollectedCoins/Gems/CardDrops, IsActive, RunSeed, LastFreeRunDate/LastAdRunDate, CurrentRoomType, CurrentModifier, MapData, FreeRerollsUsed
+- **DungeonStats**: TotalRuns, BestFloor, TotalCoinsEarned/GemsEarned/CardsEarned, DungeonCoins, AscensionLevel, HighestAscension
+- **DungeonBuffCatalog** (`Models/Dungeon/DungeonBuff.cs`): 16 Buff-Definitionen mit Type, NameKey, DescKey, IconName, Rarity, Weight
+- **IDungeonService/DungeonService** (`Services/`): StartRun, CompleteFloor, GenerateBuffChoices, ApplyBuff, EndRun, RerollBuffs, GenerateRoomType, GenerateFloorModifier, GenerateMap, SelectNode, GetActiveSynergies, JSON-Persistenz (Keys: "DungeonRunData", "DungeonStatsData", "DungeonUpgradeData")
+- **IDungeonUpgradeService/DungeonUpgradeService** (`Services/`): GetAll, GetLevel, CanBuy, TryBuy, GetEffectValue - 8 permanente Upgrades, JSON-Persistenz (Key: "DungeonUpgradeData")
+- **GameEngine**: `_isDungeonRun` Flag, `StartDungeonFloorAsync(floor, seed)`, `ApplyDungeonBuffs()` (inkl. permanente Upgrades), `ApplyDungeonFloorModifier()`, `_phantomWalkActive` Flag + Timer, Dungeon-Events (OnDungeonFloorComplete, OnDungeonBuffSelection, OnDungeonRunEnd). Übergibt `IsDungeonRun` + `DungeonActiveBuffs` an GameRenderer vor jedem Frame
+- **HUD**: Dungeon-Buffs als farbige Mini-Icons (20x20px), Synergy-Badge (goldener Rahmen), Modifikator-Badge (farbig), Phantom-CD-Anzeige, Raum-Typ-Indikator
+- **LevelGenerator**: `GenerateDungeonFloor(floor, seed)` mit Chunk-Templates, RoomType-Anpassungen (Elite: +2 Gegner, Treasure: 6-8 PowerUps, Challenge: SpeedRun/NoPowerUps/DoubleEnemies, Rest: leer)
+- **DungeonViewModel** (`ViewModels/DungeonViewModel.cs`): 3 States (PreRun/BuffSelection/PostRun), Commands (Start/Select/Buff/Reroll/BuyUpgrade/SelectNode), MapNodes + UpgradeItems Collections, ActiveSynergies, AscensionLevel
+- **DungeonView** (`Views/DungeonView.axaml`): Landscape 2-Spalten (Stats+Upgrades+Map links, Buff-Karten/Zusammenfassung rechts), Buff-Karten mit gestaffelter Einblend-Animation + Rarität-Glow
 - **MainMenu**: Dungeon-Button (Sword Icon, dunkelviolett #4A148C, Highlight #E040FB)
-- **Navigation**: MainMenu → Dungeon → Game?mode=dungeon&floor=X&seed=Y → Buff-Auswahl/Nächster Floor → GameOver
-- **RESX-Keys**: 43 Keys in 6 Sprachen (Dungeon-UI + 12 Buff-Namen + 12 Buff-Beschreibungen)
+- **Navigation**: MainMenu → Dungeon → Map-Node wählen → Game?mode=dungeon&floor=X&seed=Y → Buff-Auswahl/Nächster Floor → GameOver
+- **RESX-Keys**: 96 Keys in 6 Sprachen (43 original + 53 neue: 17 Upgrades, 8 Legendary Buffs, 4 Room Types, 7 Modifiers, 12 Synergies+Reroll, 2 Ascension, 1 DungeonCoins)
 
 ### Sammlungs-Album (Phase 6 Feature-Expansion)
 - **Enzyklopädie**: Alle 12 Gegner, 5 Bosse, 12 PowerUps, 14 Bomben-Karten, Kosmetik - als sammelbare Einträge
@@ -635,16 +653,29 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
   - DeckViewModel: card_upgrade
   - LeagueViewModel: league_season_reward
 
-### Animierter Menü-Hintergrund (MenuBackgroundCanvas)
-- **MenuBackgroundRenderer** (`Graphics/MenuBackgroundRenderer.cs`): Statischer Renderer mit 5 Schichten (Gradient, Grid, Bomben-Silhouetten, Funken, Flammen)
-  - Struct-basierte Partikel: BombSilhouette (8), SparkParticle (25), FlameWisp (6)
-  - Gepoolte SKPaint/SKMaskFilter, keine per-Frame Allokationen
-  - Deterministisch via `Initialize(int seed)`, Gradient #1A1A2E→#16213E
+### Animierter Menü-Hintergrund (MenuBackgroundCanvas) mit Theme-System
+- **MenuBackgroundRenderer** (`Graphics/MenuBackgroundRenderer.cs`): Theme-basierter Renderer mit `BackgroundTheme` Enum (7 Themes)
+  - `Initialize(int seed, BackgroundTheme theme)` + `Render(canvas, w, h, time)`
+  - Struct-basierte Partikel pro Theme (max 60), gepoolte SKPaint (max 8/Theme), <2ms Renderzeit bei 30fps
+  - **Default** (MainMenu, Settings, Help, HighScores etc.): Bomben-Silhouetten (8) + Funken (25) + Flammen-Wisps (6), Gradient #1A1A2E→#16213E
+  - **Dungeon**: Violett/Dunkel (#1A0A2E→#0D0D1A), 4 Fackeln (orange Flacker) + 6 Fledermäuse (Sinus-Flug) + 8 fallende Steinbrocken
+  - **Shop**: Gold-Gradient (#1A1A00→#2D2D00), 12 schwebende Münzen (rotierend) + 15 Shimmer-Punkte (Gold-Glitter) + 3 Gem-Silhouetten (Cyan)
+  - **League**: Cyan/Teal (#0A1A2E→#0D2D3A), 6 Trophäen-Silhouetten (aufsteigend) + 20 Sterne-Funken + 4 Podest-Lichtstreifen
+  - **BattlePass**: Lila/Orange (#1A0A2E→#2E1A0A), 15 XP-Orbs (aufsteigend) + 8 Streifen-Fragmente (diagonal) + 6 Tier-Badge-Silhouetten
+  - **Victory**: Gold-Explosion (#2E1A00→#1A0A00), 30 Confetti (6 Farben, fallend+drehend) + 8 Firework-Bursts (zyklisch) + 12 Gold-Funken
+  - **LuckySpin**: Regenbogen (#0A0A2E→#1A0A2E), 20 Regenbogen-Punkte (Orbit-Rotation) + 10 Glitzer-Sterne (Blink) + 4 Rad-Lichtstreifen
 - **MenuBackgroundCanvas** (`Controls/MenuBackgroundCanvas.cs`): Wiederverwendbares UserControl (SKCanvasView + DispatcherTimer ~30fps)
+  - `BackgroundTheme` StyledProperty → View setzt Theme in XAML: `<controls:MenuBackgroundCanvas Theme="Dungeon" />`
   - Auto-Start/Stop via AttachedToVisualTree/DetachedFromVisualTree
   - IsHitTestVisible=false (reiner Hintergrund), `canvas.LocalClipBounds` für DPI-korrekte Bounds
-- **12 Views mit animiertem Hintergrund**: MainMenuView, CollectionView, DeckView, LeagueView, DailyChallengeView, WeeklyChallengeView, LuckySpinView, StatisticsView, BattlePassView, DungeonView, QuickPlayView, HighScoresView
-  - Ersetzt flache `SurfaceBrush Opacity=0.3` Hintergründe durch `<controls:MenuBackgroundCanvas />`
+- **15 Views mit thematischem Hintergrund**:
+  - Default: MainMenuView, CollectionView, DeckView, DailyChallengeView, WeeklyChallengeView, StatisticsView, HighScoresView, QuickPlayView, ProfileView
+  - Dungeon: DungeonView
+  - Shop: ShopView
+  - League: LeagueView
+  - BattlePass: BattlePassView
+  - Victory: VictoryView (ersetzt XAML-Gradient)
+  - LuckySpin: LuckySpinView
 
 ### Profil-Seite
 - **ProfileViewModel** (`ViewModels/ProfileViewModel.cs`): 7 injizierte Services (ILeagueService, ICustomizationService, IProgressService, ICoinService, IGemService, IAchievementService, ILocalizationService)
@@ -660,10 +691,70 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **RESX-Keys**: 12 Keys in 6 Sprachen (ProfileName/Hint/Save/Saved/Stars/Coins/Gems/League/Achievements/Skin/Frame/NoFrame)
 - **DI**: ProfileViewModel als Singleton registriert (22 VMs total)
 
+### Starter Pack (Feature 65)
+- **Einmaliges Angebot**: 5000 Coins + 20 Gems + 3 Rare-Karten, verfügbar ab Level 5
+- **IStarterPackService/StarterPackService** (`Services/`): IsAvailable, IsAlreadyPurchased, CheckEligibility, MarkAsPurchased
+- **Persistenz**: IPreferencesService JSON, Key "StarterPackData"
+- **Kauf**: Coin-basiert (4999 Coins) als Fallback, in MainMenuViewModel integriert
+- **MainMenu**: `IsStarterPackAvailable` Property, `BuyStarterPackCommand`
+- **RESX-Keys**: 3 Keys in 6 Sprachen (StarterPackTitle/Desc/Purchased)
+
+### Comeback-Mechanik (Feature 68)
+- **>3 Tage inaktiv → 2000 Coins + 5 Gems Bonus**
+- **IDailyRewardService erweitert**: `CheckComebackBonus()` + `UpdateLastActivity()`
+- **Tracking**: "LastActivityDate" in DailyRewardData, "ComebackClaimed" Flag
+- **MainMenuViewModel**: Prüft Comeback in OnAppearing(), vergibt Belohnung mit FloatingText + Celebration
+- **RESX-Keys**: 2 Keys in 6 Sprachen (ComebackTitle/ComebackBonus)
+
+### Battle Pass XP-Boost (Feature 69)
+- **2x XP für 20 Gems, 24h Dauer**
+- **IBattlePassService erweitert**: `IsXpBoostActive`, `XpBoostExpiresAt`, `ActivateXpBoost()`
+- **BattlePassData**: Neues Feld `XpBoostExpiresAt` (ISO 8601 UTC)
+- **BattlePassService.AddXp()**: `if (IsXpBoostActive) amount *= 2`
+- **BattlePassViewModel**: `ActivateXpBoostCommand`, `IsXpBoostActive`, `XpBoostTimeText`, `XpBoostButtonText`
+- **RESX-Keys**: 4 Keys in 6 Sprachen (XpBoostTitle/Active/Price + ShopNotEnoughGems)
+
+### Rotating Deals (Feature 66)
+- **3 tägliche + 1 wöchentliches Angebot**: 20-50% Rabatt, Seeded Random per DayId/ISO-Kalenderwoche
+- **RotatingDeal Model** (`Models/RotatingDeal.cs`): Id, TitleKey, OriginalPrice, DiscountedPrice, DiscountPercent, Currency, RewardType, RewardAmount, IsClaimed, DescriptionKey
+- **4 Daily-Deal-Typen**: CoinPack (200-1000C, 20-40% Rabatt), GemPack (5-15 Gems), CardPack (1-3 Karten), UpgradeDiscount (500-3000C)
+- **4 Weekly-Deal-Typen**: MegaCoinPack (2000-5000C, 30-50% Rabatt), MegaGemPack (20-50 Gems), RareCardBundle (2-4 Karten), PremiumBundle (1500C + 10 Gems)
+- **IRotatingDealsService/RotatingDealsService** (`Services/`): GetTodaysDeals(), GetWeeklyDeal(), ClaimDeal(), JSON-Persistenz (Key: "RotatingDealsData"), ClaimedDealIds Cleanup
+- **ShopViewModel**: DailyDeals + WeeklyDeal ObservableProperties, BuyDealCommand, RefreshDailyDeals()
+- **RESX-Keys**: 12 Deal-Keys in 6 Sprachen (DailyDealsTitle/WeeklyDealTitle/DealDiscount/DealClaimed + 8 Deal-Typ-Namen)
+
+### Gem-Only Cosmetics (Feature 67)
+- **3 exklusive Gem-Skins**: Crystal (50 Gems, Epic, #00BCD4), Shadow (100 Gems, Legendary, #4A148C), Phoenix (200 Gems, Legendary, #FF6D00)
+- **SkinDefinition erweitert**: Neues `GemPrice` Property (int, default 0), 3 neue Skins in PlayerSkins.All mit GlowColor
+- **ICustomizationService erweitert**: `TryPurchasePlayerSkinWithGems(string skinId)`
+- **CustomizationService**: `_gemService` Feld + `SetGemService()` Lazy-Injection, Gem-Kauf via TrySpendGems
+- **ShopViewModel**: GemSkinItems Sektion, BuyGemSkinCommand, SelectGemSkinCommand, RefreshGemSkinItems()
+- **RESX-Keys**: 4 Keys in 6 Sprachen (GemSkinsTitle, SkinCrystal, SkinShadow, SkinPhoenix)
+
+### Extended Gem-Sinks (Feature 70)
+- **Karten für Gems kaufen** (DeckViewModel): Rare 15 Gems, Epic 30 Gems, Legendary 75 Gems. BuyCardForGemsCommand, GetGemPriceForRarity(), UpdateGemBuyState()
+- **Extra Spin für Gems** (LuckySpinViewModel): Bereits implementiert als BuySpinWithGems (GEM_SPIN_COST=3)
+- **Dungeon-Wiederbelebung für Gems** (DungeonViewModel): 15 Gems, ReviveForGemsCommand, setzt Lives=1 bei Tod. OnDungeonPlayerDied(), CanReviveForGems Property
+- **5. Deck-Slot für 20 Gems** (DeckViewModel+CardService): CardCatalog.MaxDeckSlots=5, DefaultDeckSlots=4, Slot5UnlockCost=20. ICardService.IsSlot5Unlocked + TryUnlockSlot5(IGemService). CardCollectionData.Slot5Unlocked Flag (JSON-persistiert). DeckViewModel: UnlockSlot5Command, IsSlot5Unlocked/CanUnlockSlot5/UnlockSlot5Text Properties. DeckView: Unlock-Button unter Deck-Slots (Cyan #00BCD4), 5. Equip-Button im Detail. HUD MAX_CARD_SLOTS auf 5 erhöht. Gem-Badge im Deck-Header
+- **Rewarded Ad Cooldown 60s** (RewardedAdCooldownTracker): Statische Klasse für globalen 60s Cooldown zwischen Rewarded Ads. Integriert in alle 12 Ad-Placements über 8 ViewModels (GameOver, Game, Victory, LevelSelect, LuckySpin, Dungeon, Main, Shop). CanShowAd check vor Button-Aktivierung, RecordAdShown() nach erfolgreicher Ad
+- **RESX-Keys**: 7 Keys in 6 Sprachen (BuyCardGems, ExtraSpinGems, DungeonReviveGems, DungeonRevived, InsufficientGems, DeckUnlockSlot5, DeckSlot5Unlocked)
+
 ## Changelog Highlights
 
+- **24.02.2026 (35)**: **Dungeon-Erweiterung + Visuelle Aufwertung** (Phasen A1-A3, B1-B7, C): (1) **Theme-System** (A1): MenuBackgroundRenderer mit 7 BackgroundTheme-Varianten (Default/Dungeon/Shop/League/BattlePass/Victory/LuckySpin), je max 60 struct-basierte Partikel, MenuBackgroundCanvas.Theme StyledProperty, 15 Views mit thematischem Hintergrund. (2) **VictoryView Victory-Theme** (A2): XAML-Gradient durch Victory-Theme ersetzt (Confetti+Fireworks+Gold-Funken). (3) **Buff-Animationen** (A3): Gestaffelte Einblend-Animation (3 Karten, 200ms delay) + Rarität-Glow-Pulsation in DungeonView. (4) **Permanente Upgrades** (B1): IDungeonUpgradeService mit 8 Upgrades (50-300 DungeonCoins), DungeonCoins als dungeon-spezifische Währung (10-100 DC/Floor). (5) **4 Legendary Buffs** (B2): Berserker/TimeFreeze/GoldRush/Phantom mit Weight 3-4. (6) **Buff-Reroll + 5 Synergies** (B5): 1x gratis Reroll, 5 Gem-Rerolls, 5 Buff-Kombinationen (Bombardier/Blitzkrieg/Festung/Midas/Elementar). (7) **5 Raum-Typen** (B3): Normal/Elite/Treasure/Challenge/Rest mit gewichteter Zufallsauswahl. (8) **8 Floor-Modifikatoren** (B4): Ab Floor 3 30% Chance (LavaBorders/Darkness/DoubleSpawns/FastBombs/BigExplosions/CursedFloor/Regeneration/Wealthy). (9) **Dungeon Node-Map** (B6): Slay the Spire-inspirierte 10×3 Map mit DungeonMapRenderer (SkiaSharp), Pfad-Auswahl, Raum-Typ-Icons, Modifikator-Badges. (10) **Ascension 0-5** (B7): Eskalierende Schwierigkeit + Belohnungen nach Floor 10 Clear. (11) **53 neue RESX-Keys** (C): Alle 6 Sprachen + Designer.cs. Build 0 Fehler, AppChecker 105 PASS / 0 FAIL. 7 neue Dateien (DungeonUpgrade.cs, IDungeonUpgradeService.cs, DungeonUpgradeService.cs, DungeonRoomType.cs, DungeonFloorModifier.cs, DungeonMapNode.cs, DungeonMapRenderer.cs).
+- **24.02.2026 (34)**: **Komplett-Audit abgeschlossen** (88 Findings, 10 Phasen): Build 0 Fehler, AppChecker 105 PASS / 0 FAIL. Designer.cs synchronisiert (755→1111 Properties). Alle deutschen Fallback-Strings auf EN normalisiert. 1111 RESX-Keys in 6 Sprachen vollständig.
+- **24.02.2026 (33)**: Lokalisierung Phase 4 (Findings 27-35): (1) **HUD-Labels lokalisiert** (Finding 27): 8 gecachte Strings für Kills/Time/Score/Lives/Bombs/Speed/Power/Deck. (2) **NewHighScore lokalisiert** (Finding 28). (3) **GameEngine-Strings lokalisiert** (Finding 30): BossFight/World/DailyChallenge/QuickPlay/Survival/DefeatAll/BossHit/Enraged/EnemyHit/Cursed. (4) **Designer.cs Sync** (Finding 35): 356 fehlende Properties hinzugefügt (755→1111). (5) **Deutsche Fallbacks→EN** (Finding 33): ~30 StatisticsVM Fallbacks auf EN normalisiert.
+- **24.02.2026 (32)**: Critical Fixes Phase 1-3 (Findings 1-8, 16-26): (1) **Ice-Cleanup Thread-Race** (Finding 1): async Task.Delay→Frame-basierter Timer mit _pendingIceCleanups. (2) **GameEngine Dispose Guard** (Finding 2): _disposed Flag. (3) **Victory Level 50→100** (Finding 4). (4) **Poison periodisch** (Finding 5): _poisonDamageTimer 2s Cooldown statt sofortigem Kill. (5) **Score-Verdopplung** (Finding 6): Nur Level-Anteil verdoppelt. (6) **SlowMotion-Schwelle** (Finding 7): Nur bei ≥4 Gegnern oder Boss/Survival. (7) **Random-Fix** (Finding 8): new Random()→_pontanRandom. (8) **CTS Dispose** (Finding 16): LeagueService+CloudSaveService. (9) **IDisposable** (Finding 17-18): FirebaseService+ShaderEffects. (10) **Event-Abmeldung** (Finding 19-20): InputManager+MainView. (11) **Leere catch→Logger** (Finding 21): 15+ Stellen. (12) **Fire-and-Forget Error-Handling** (Finding 22-23). (13) **Trace statt Debug** (Finding 24): AppLogger. (14) **DateTime.UtcNow** (Finding 26). (15) **Sprachnamen-Akzente** (Finding 34): Español/Français/Português.
+- **24.02.2026 (31)**: Monetarisierungs-Fixes (Findings 58+64): (1) **5. Deck-Slot für 20 Gems** (Finding 58): CardCatalog.MaxDeckSlots 4→5, DefaultDeckSlots=4, Slot5UnlockCost=20. ICardService + CardService: IsSlot5Unlocked Property, TryUnlockSlot5(IGemService) Methode, CardCollectionData.Slot5Unlocked Persistenz. DeckViewModel: UnlockSlot5Command, IsSlot5Unlocked/CanUnlockSlot5/UnlockSlot5Text Properties, 5. Equip-Button im Detail-Panel. DeckView: Unlock-Button unter Deck-Slots (Cyan, LockOpenVariant Icon), Gem-Badge im Header. HUD MAX_CARD_SLOTS 4→5. DeckSlotItem.IsLocked Property. (2) **60s Rewarded Ad Cooldown** (Finding 64): RewardedAdCooldownTracker.cs (statische Klasse, CooldownSeconds=60, RecordAdShown/CanShowAd/IsOnCooldown/RemainingSeconds). Integriert in 12 Ad-Placements über 8 ViewModels: GameOverVM (continue/coin_multiplier/revival/level_skip), GameVM (score_double), VictoryVM (gem_bonus), LevelSelectVM (power_up), LuckySpinVM (lucky_spin/extra_daily_spin), DungeonVM (dungeon_extra_buff), MainVM (dungeon_run), ShopVM (free_shop_upgrade). 2 neue RESX-Keys in 6 Sprachen (DeckUnlockSlot5, DeckSlot5Unlocked).
+- **24.02.2026 (30)**: Features 66/67/70 (Rotating Deals, Gem-Skins, Gem-Sinks): (1) **Rotating Deals** (Feature 66): RotatingDeal Model + IRotatingDealsService/RotatingDealsService (3 tägliche + 1 wöchentliches Angebot, Seeded Random per DayId/ISO-Kalenderwoche, 20-50% Rabatt, 4+4 Deal-Typen, ClaimDeal mit Payment+Reward, JSON-Persistenz). ShopViewModel: DailyDeals/WeeklyDeal Properties + BuyDealCommand + RefreshDailyDeals(). (2) **Gem-Only Cosmetics** (Feature 67): 3 neue Gem-exklusive Spieler-Skins (Crystal 50G Epic #00BCD4, Shadow 100G Legendary #4A148C, Phoenix 200G Legendary #FF6D00) in SkinDefinition.PlayerSkins.All. GemPrice Property auf SkinDefinition. ICustomizationService + CustomizationService: TryPurchasePlayerSkinWithGems + SetGemService Lazy-Injection. ShopViewModel: GemSkinItems Sektion + BuyGemSkinCommand + SelectGemSkinCommand. (3) **Extended Gem-Sinks** (Feature 70): DeckViewModel: BuyCardForGemsCommand (Rare 15, Epic 30, Legendary 75 Gems). DungeonViewModel: ReviveForGemsCommand (15 Gems, Lives=1). LuckySpinVM: Bereits vorhanden (BuySpinWithGems 3 Gems). App.axaml.cs: IRotatingDealsService DI + CustomizationService.SetGemService() Lazy-Injection. 21 neue RESX-Keys in 6 Sprachen.
+- **24.02.2026 (29)**: Performance-Optimierungen (Findings 9-15): (1) **LINQ-Elimination PlaceExit/PlacePowerUps** (Finding 9): `.Where().ToList()` durch wiederverwendbares `_blockCells` List-Feld ersetzt (0 Allokationen/Frame). (2) **Enemy-Position-Cache** (Finding 10): HashSet `_enemyPositionCache` in `UpdateBombSlide()` statt foreach über alle Gegner (O(1) statt O(n) Lookup pro sliding Bomb). (3) **Corner-Check Array-Elimination** (Finding 11): `cornersX`/`cornersY` float[4] Arrays durch 4 direkte Variablen ersetzt (8 weniger Heap-Allokationen pro Kollisions-Check). (4) **Dirty-Lists statt Grid-Iteration** (Finding 12): 3 neue Listen `_destroyingCells`, `_afterglowCells`, `_specialEffectCells` ersetzen 3x volle 150-Zellen Grid-Iteration pro Frame. Alle 10 HandleXxxExplosion-Methoden registrieren betroffene Zellen in den Dirty-Lists. `UpdateDestroyingBlocks()`, `UpdateAfterglowCells()`, `UpdateSpecialBombEffects()` iterieren nur noch aktive Zellen mit Rückwärts-Iteration + RemoveAt. (5) **Object Pooling** (Finding 13): Bewusst nicht implementiert - Bomb/Explosion haben readonly Constructor-Parameter, Allokationsdruck gering (1-5/Frame). (6) **CollectionService Debounce-Save** (Finding 14): `_isDirty` + 5s Debounce statt sofortigem Save bei jedem RecordXxx()-Aufruf. `MarkDirty()` + `FlushIfDirty()` Pattern (analog AchievementService). GameTrackingService.FlushIfDirty() ruft auch Collection.FlushIfDirty(). (7) **Achievement Dictionary-Lookup** (Finding 15): `Dictionary<string, Achievement> _achievementLookup` statt `List.Find()` - O(1) statt O(n) bei TryUnlock(), UpdateProgress(), ApplyProgress(). + Build-Fixes: MainViewModel LogWarning Signatur, AchievementsVM EmptyStateText, CollectionVM EmptyItemsText Properties.
+- **24.02.2026 (28)**: UI/UX-Fixes (Findings 47-50): (1) **ShopView Template-Deduplizierung** (Finding 47): 6 identische inline Skin-DataTemplates durch 1 gemeinsames `SkinItemTemplate` in UserControl.Resources ersetzt. SkinDisplayItem.PreviewIconKind (MaterialIconKind) steuert das Kategorie-Icon im Gradient-Kreis. ShopView von ~1036 auf ~690 Zeilen reduziert. (2) **Empty States** (Finding 48): AchievementsView zeigt TrophyBroken-Icon + Text wenn CategoryGroups leer. CollectionView zeigt BookOpenBlankVariant-Icon + Text wenn Items leer. ScrollViewer nur sichtbar bei vorhandenen Daten. (3) **MainMenuView FontSize** (Finding 49): TotalEarnedText + VersionText FontSize 10→12 (bessere Lesbarkeit). (4) **Invincibility Blink-Feedback** (Finding 50): Schnelleres Blinken (20Hz statt 10Hz) in den letzten 0.5s von Unverwundbarkeit/Spawn-Schutz. Korrekter Timer je Zustand (InvincibilityTimer vs SpawnProtectionTimer).
+- **24.02.2026 (27)**: Game Design Verbesserungen (Findings 51-55): (1) **Haptic bei PowerUp** (Finding 51): `_vibration.VibrateLight()` nach PowerUp-Einsammlung in GameEngine.Collision.cs. (2) **Chain-Kill-Bonus** (Finding 52): 1.5x Combo-Bonus-Multiplikator bei `_comboCount >= 3` (Kettenreaktionen), "CHAIN x{N}!" goldener Floating Text (#FFC800), Tracking via `_tracking.OnComboReached()`. (3) **Dungeon-Buffs im HUD** (Finding 53): Aktive Dungeon-Buffs als farbige Mini-Icons (20x20px, Buchstaben-Kürzel) im Side-Panel unter DECK-Sektion. `IsDungeonRun` + `DungeonActiveBuffs` Properties in GameRenderer, Daten-Übergabe in GameEngine.Render.cs, RenderDungeonBuffIcons() + GetDungeonBuffInfo() in GameRenderer.HUD.cs. (4) **MAX_DELTA_TIME reduziert** (Finding 54): 0.1f→0.05f in GameViewModel.cs (50ms Cap statt 100ms, verhindert Physik-Sprünge bei Lag-Spikes). (5) **Spezial-Bomben-Sound** (Finding 55): PlayBombExplosion(BombType) in SoundManager.cs mit Sound-Layering (Basis-Explosion + sekundärer SFX je Kategorie: Ice/Gravity/TimeWarp→PowerUp, Fire/Nova/Vortex→doppelte Explosion, Lightning/Mirror→Fuse, BlackHole→TimeWarning). TriggerExplosion() in GameEngine.Explosion.cs nutzt neue Methode für nicht-normale Bomben.
+- **24.02.2026 (26)**: Bug-Fixes (4 Bugs aus Game-Studio-Analyse): (1) **CustomizationService Premium-Check** (HOCH): IPurchaseService als Dependency hinzugefügt, IsPlayerSkinOwned/IsBombSkinOwned/IsExplosionSkinOwned prüfen jetzt _purchaseService.IsPremium für Premium-Only Skins mit CoinPrice=0 (vorher: immer true → Premium-Skins ohne Premium nutzbar). (2) **SpawnEnemies Retry-Loop** (MITTEL): Fallback-Position bei leerer validPositions-Liste nutzt jetzt 40 Versuche statt 1 (Gegner wurden stillschweigend übersprungen bei ungültiger Position). (3) **ShopVM OnBalanceChanged Performance** (MITTEL): 6 unnötige ObservableCollection-Rebuilds bei Balance-Änderung entfernt (SkinDisplayItem.CanBuy hängt nicht vom Balance ab, Rebuild nur bei Kauf/Auswahl). (4) **DeckView/CollectionView responsive Spaltenbreiten** (NIEDRIG): Feste 260px durch proportionale Spalten ersetzt (DeckView: `*,260`→`1.5*,*`, CollectionView: `260,*`→`*,1.5*`).
+- **24.02.2026 (25)**: UI/UX-Optimierung (6 Phasen, 26 Verbesserungen): **Phase 1 Sicherheit**: (1) GemShopViewModel: ConfirmationRequested Event + Bestätigungsdialog vor IAP-Kauf. (2) GameOverViewModel: Bestätigungsdialog vor Level-Skip (Premium + Free). (3) ShopViewModel: Detailliertes Fehler-Feedback bei fehlgeschlagenem Kauf ("Benötigt X, du hast Y"), FloatingTextRequested Event, FreeUpgradeReady FloatingText nach Ad. (4) LuckySpinViewModel: FloatingText "Ad nicht verfügbar" bei Ad-Fehler. (5) VictoryViewModel: CelebrationRequested in OnAppearing. (6) DungeonViewModel: FloatingText bei nicht-verfügbarer Ad. (7) SettingsView: Restore-Button immer sichtbar, RestoreButtonText wechselt zwischen "Wiederherstellen"/"Validieren" je nach IsPremium. (8) MainViewModel: GemShopVm.ConfirmationRequested + ShopVm.FloatingTextRequested verdrahtet. **Phase 2 Touch-Targets**: (9) MainMenuView: ColumnDefinitions `*,1.5*,1.5*`→`*,1.2*,1.2*`, Gem-Badge Padding 14,6→16,8 + Icon 18→20, Story Mode Height 50→56, alle 5 Utility-Buttons Height 36→44 + FontSize 11→12 + Icons 14→16. (10) GameOverView: Score-Sektion in ScrollViewer gewrappt (Overflow-Schutz). (11) HelpView: PowerUp/Enemy Icons 32→48px. (12) CollectionView/DeckView: Item-Padding erhöht. **Phase 3 Margins**: (13) GemShopView Bottom-Margin 12→80. (14) WeeklyChallengeView doppeltes Margin bereinigt. **Phase 4 Visuell**: (15) GameOverView: PaidContinue Background→#FFD700 (Gold). (16) VictoryView: Crown-Icon Puls-Animation (Opacity 1.0→0.7→1.0, 2s loop), Danke-Text FontSize 20→24 + FontWeight SemiBold + TextPrimaryBrush. (17) HighScoresView: Trophy-Icons für Top 3 (Gold/Silber/Bronze) + IsRank1/2/3/IsRankOther Properties. (18) LevelSelectView: Lock-Overlay #80000000→#60000000. (19) BattlePassView: Scroll-Hinweis-Gradient am rechten Rand. (20) AchievementsView: Kategorie-Streifen 4→8px. (21) DailyChallengeView: CompletedToday Badge #40→#60 Opacity. **Phase 5 Animationen**: (22) MainMenuView: Daily Reward Popup Opacity-Transition 250ms. (23) ProfileView: Save-Button nur bei Namensänderung aktiv (IsNameChanged Property). **Phase 6 Polish**: (24) QuickPlayViewModel: Seed als 6-stelliger Hex-String statt Dezimal. 8 neue RESX-Keys in 6 Sprachen (PurchaseFailedDetail, SkipLevelConfirm/Message, AdUnavailable, ValidatePurchase, FreeUpgradeReady, GemPurchaseConfirm).
 - **23.02.2026 (23)**: Menü-Hintergründe + Sammlung + Profil + Deck-Fix: (1) Deck-View Crash gefixt: EquipToSlot/UnequipSlot Signatur von string→int (XAML übergibt Int via CommandParameter). (2) MenuBackgroundRenderer + MenuBackgroundCanvas erstellt: Animierter Bomberman-Hintergrund (Gradient, Grid, 8 Bomben-Silhouetten, 25 Funken, 6 Flammen-Wisps), struct-basiert, ~30fps. (3) Animierten Hintergrund in 12 Views eingebaut (MainMenu, Collection, Deck, League, DailyChallenge, WeeklyChallenge, LuckySpin, Statistics, BattlePass, Dungeon, QuickPlay, HighScores). MainMenuView alte Partikel-Code (~125 Zeilen) entfernt. (4) CollectionView visuell aufgewertet: Karten 80x90→100x115px, Raritäts-Border mit Glow (Enemies=#F44336, Bosses=#FFD700, PowerUps=#4CAF50, Cards=#2196F3, Cosmetics=#9C27B0), LockOutline statt HelpCircleOutline für nicht-entdeckte Items, Kategorie-Header mit ProgressBar, Meilenstein-Fortschrittsbalken, erweitertes Detail-Panel mit farbigem Border. 2 neue Converter: StringToColorBrushConverter, BoolToCardBackgroundConverter. CategoryProgressPercent + MilestoneProgressPercent Properties. (5) ProfileView + ProfileViewModel erstellt: Spielername editieren (max 16 Zeichen, LeagueService), Stats-Übersicht (Sterne/Coins/Gems/Liga/Achievements), Skin/Frame-Anzeige. Landscape 2-Spalten Layout. MainMenu Statistik→Profil-Button umgestellt. 12 neue RESX-Keys in 6 Sprachen. DI: ProfileViewModel registriert (22 VMs, 26 Services).
 - **22.02.2026 (22)**: Liga-System auf Firebase umgebaut: (1) IFirebaseService/FirebaseService erstellt (Anonymous Auth + REST API CRUD, identisches Pattern wie HandwerkerImperium). (2) Firebase-Models (FirebaseAuthResponse, FirebaseTokenResponse, FirebaseLeagueEntry) in Models/Firebase/. (3) ILeagueService komplett überarbeitet: +IsOnline, +IsLoading, +PlayerName, +SetPlayerName(), +RefreshLeaderboardAsync(), +InitializeOnlineAsync(), +LeaderboardUpdated Event, LeagueLeaderboardEntry +IsRealPlayer. (4) LeagueService komplett neugeschrieben: Local-First mit Firebase-Sync, deterministische Saisons (Epoche 24.02.2026), NPC-Backfill auf 20 Einträge, Debounced Firebase-Push (3s), Firebase-Pfad `league/s{saison}/{tier}/{uid}`. (5) LeagueViewModel erweitert: IsLoading/IsOnline/PlayerName Properties, RefreshLeaderboardCommand (async), Firebase-Init in OnAppearing. (6) LeagueView.axaml: Online/Offline-Indikator (CloudCheck grün/CloudOffOutline rot), Refresh-Button, Lade-Indikator, Echtpsieler-Cyan-Punkt. (7) App.axaml.cs: IFirebaseService als Singleton registriert. Firebase-Projekt bomberblast-league (europe-west1) konfiguriert.
+- **24.02.2026 (24)**: Gem-IAP-Shop: GemShopViewModel + GemShopView (Landscape 2-Spalten: Gem-Balance links, 3 Kauf-Pakete rechts). 3 Gem-Pakete via IPurchaseService.PurchaseConsumableAsync (gem_pack_small 100 Gems/0,99EUR, gem_pack_medium 500 Gems/3,99EUR, gem_pack_large 1500 Gems/7,99EUR). GemPackageItem Model-Klasse. MainMenuView Gem-Badge als tappbarer Button (GoToGemShopCommand). GoGemShop NavigationRequest Record. MainViewModel erweitert (GemShopVm Property, IsGemShopActive, Navigation/HideAll/HandleBackPressed). MainView GemShopBorder + CSS-Klassen-Toggle. DI: GemShopViewModel als Singleton registriert (23 VMs). 8 neue RESX-Keys in 6 Sprachen (GemShopTitle/Description, GemPackSmall/Medium/Large, GemPackPopular/BestValue, GemPurchaseSuccess).
 - **22.02.2026 (21)**: Deck-Builder UI+Mechanik Redesign: DeckView komplett überarbeitet nach HandwerkerImperium-Muster. (1) Crash-Fix: ReflectionBinding `$parent[ItemsControl]` → `#Deck_Root.DataContext` Pattern (identisch CollectionView-Fix). (2) Alle 13 Karten sichtbar (nicht nur besessene): Unbesessene als gesperrt mit Lock-Icon + "???" Name + Drop-Quellen-Info. (3) BombType→MaterialIcon-Mapping: 13 individuelle Icons (Snowflake, Fire, Water, WeatherFog, LightningBolt, Magnet, Skull, ClockFast, FlipHorizontal, Tornado, Ghost, Flare, CircleSlice8). (4) Premium-Karten-Design: 100x120px Tiles, Raritäts-Border + Glow-Icon-Farbe, Level-Farben (Bronze/Silber/Gold), Upgrade-Badge (grün) + Equipped-Badge (blau). (5) Sammlungs-Fortschrittsbalken im Header. (6) Erweitertes Detail-Panel (260px): Rarität-Badge, Stärke-Multiplikator (1.0x/1.2x/1.4x), Upgrade-Fortschrittsbalken, Fundorte je Rarität (Level 60%/Boss/Dungeon). (7) Sortierung Legendary→Common. (8) 8 neue RESX-Keys in 6 Sprachen (DeckLabel, CardStrength, CardDropSource, CardUpgradeLabel, CardNotOwned, DropSourceLevel, DropSourceBoss, DropSourceDungeon).
 - **21.02.2026 (20)**: Arcade-Modus komplett entfernt: `_isArcadeMode`, `_arcadeWave`, `ArcadeWave`, `IsArcadeMode`, `StartArcadeModeAsync()`, `OnArcadeWaveReached()`, `HighestArcadeWave` entfernt. `GetStartLives()` Parameter `isArcade` entfernt. `PlayGamesIds.LeaderboardArcadeHighscore` entfernt. `IBattlePassService.ArcadeWave10Plus` XP-Quelle entfernt. LevelGenerator: `GenerateArcadeLevel()`, `ConfigureArcadeEnemies()`, `ConfigureArcadePowerUps()` entfernt. 4 Arcade-Achievements entfernt (arcade_10/25/50/100), Achievement-Anzahl 70→66. `AchievementCategory.Arcade` → `AchievementCategory.Challenge` umbenannt (Survival-Achievements). MainMenu: Arcade-Button + HighScores-Button entfernt, jetzt 2-Spalten Layout (Survival + QuickPlay). Utility-Bar: 6→5 Spalten (ohne HighScores). HighScoresView: PlayArcadeToScore entfernt. StatisticsView: HighestWave-Anzeige entfernt. GameOverViewModel: IsArcadeMode Property entfernt.
 - **21.02.2026 (19)**: Phase 9.3 Feature-Expansion (Achievement-Erweiterung 50→70): 20 neue Achievements in 5 neuen Bereichen (Dungeon, Karten, Liga, Daily Missions, Cross-Feature). 10 neue AchievementData Tracking-Felder (TotalDailyMissions, BestDungeonFloor, TotalDungeonRuns, HighestBattlePassTier, TotalUniqueCards, HighestLeagueTier, BestSurvivalKills, TotalLineBombs, TotalDetonations, LuckyJackpots). 14 neue IAchievementService-Methoden implementiert. Lazy-Injection Pattern: 4 Services (BattlePass, Card, League, DailyMission) erhalten IAchievementService via SetAchievementService() nach ServiceProvider-Build. Hooks in GameEngine (5 Stellen: LineBomb, Detonator, Survival-Kills, Dungeon-Floor/Boss/Run, QuickPlay-Max), Services (4 Services: BattlePass Tier-Up, Card-Collection, League-Promotion, Daily-Mission-Complete), ViewModels (2: LuckySpinVM Jackpot, CollectionVM Progress). ApplyProgress() um 5 neue Tracking-Felder erweitert. 40 neue RESX-Keys in 6 Sprachen (20x Name + 20x Desc).

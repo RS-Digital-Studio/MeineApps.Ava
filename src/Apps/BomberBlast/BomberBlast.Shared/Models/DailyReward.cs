@@ -14,6 +14,9 @@ public class DailyReward
     /// <summary>Bonus-Extra-Leben (nur Tag 5)</summary>
     public int ExtraLives { get; init; }
 
+    /// <summary>Gem-Belohnung (nur Tag 7)</summary>
+    public int Gems { get; init; }
+
     /// <summary>Ob der Bonus bereits abgeholt wurde</summary>
     public bool IsClaimed { get; set; }
 

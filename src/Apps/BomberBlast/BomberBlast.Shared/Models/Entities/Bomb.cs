@@ -162,6 +162,14 @@ public class Bomb : Entity
         Y = GridY * Grid.GameGrid.CELL_SIZE + Grid.GameGrid.CELL_SIZE / 2f;
     }
 
+    /// <summary>
+    /// Reduziert die Zündschnur-Zeit (z.B. durch Dungeon-Synergien)
+    /// </summary>
+    public void ReduceFuse(float amount)
+    {
+        FuseTimer = MathF.Max(0.5f, FuseTimer - amount);
+    }
+
     protected override int GetAnimationFrameCount() => 4;
 
     /// <summary>

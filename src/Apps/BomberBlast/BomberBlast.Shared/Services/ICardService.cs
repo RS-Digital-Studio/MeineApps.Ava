@@ -12,7 +12,7 @@ public interface ICardService
     /// <summary>Alle besessenen Karten</summary>
     IReadOnlyList<OwnedCard> OwnedCards { get; }
 
-    /// <summary>Ausgerüstete Deck-Slots (max 4, kann leer sein)</summary>
+    /// <summary>Ausgerüstete Deck-Slots (max 5, kann leer sein)</summary>
     IReadOnlyList<BombType> EquippedSlots { get; }
 
     /// <summary>Prüft ob der Spieler eine bestimmte Karte besitzt</summary>
@@ -27,7 +27,7 @@ public interface ICardService
     /// <summary>Karte upgraden (Bronze→Silber→Gold). Gibt true zurück bei Erfolg</summary>
     bool TryUpgradeCard(BombType type);
 
-    /// <summary>Karte in einen Deck-Slot ausrüsten (0-3)</summary>
+    /// <summary>Karte in einen Deck-Slot ausrüsten (0-4)</summary>
     void EquipCard(BombType type, int slotIndex);
 
     /// <summary>Karte aus einem Deck-Slot entfernen</summary>
@@ -47,4 +47,16 @@ public interface ICardService
 
     /// <summary>Wird ausgelöst wenn sich Sammlung oder Deck ändert</summary>
     event EventHandler? CollectionChanged;
+
+    /// <summary>Lazy-Injection: IAchievementService nach DI-Build setzen (zirkuläre Abhängigkeit)</summary>
+    void SetAchievementService(IAchievementService achievementService);
+
+    /// <summary>Lazy-Injection: Mission-Services nach DI-Build setzen (Phase 9.4)</summary>
+    void SetMissionServices(IWeeklyChallengeService weeklyService, IDailyMissionService dailyMissionService);
+
+    /// <summary>Ob der 5. Deck-Slot freigeschaltet ist</summary>
+    bool IsSlot5Unlocked { get; }
+
+    /// <summary>5. Deck-Slot für Gems freischalten. Gibt true zurück bei Erfolg</summary>
+    bool TryUnlockSlot5(IGemService gemService);
 }

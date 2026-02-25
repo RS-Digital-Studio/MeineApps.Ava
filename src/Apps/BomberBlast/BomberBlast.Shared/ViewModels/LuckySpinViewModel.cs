@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Glücksrad (Lucky Spin).
 /// 9 Segmente (Coins + Gems), 1x gratis pro Tag, Extra-Spins per Rewarded Ad.
 /// </summary>
-public partial class LuckySpinViewModel : ObservableObject
+public partial class LuckySpinViewModel : ObservableObject, INavigable, IGameJuiceEmitter
 {
     private readonly ILuckySpinService _spinService;
     private readonly ICoinService _coinService;
@@ -23,7 +23,7 @@ public partial class LuckySpinViewModel : ObservableObject
     private readonly IWeeklyChallengeService _weeklyService;
     private readonly IDailyMissionService _dailyMissionService;
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
 
@@ -66,6 +66,17 @@ public partial class LuckySpinViewModel : ObservableObject
     /// <summary>Ob der Spin-Button aktiv ist</summary>
     [ObservableProperty]
     private bool _canSpin = true;
+
+    /// <summary>Ob ein Extra-Spin per Werbung verfügbar ist (nach Gratis-Spin verbraucht)</summary>
+    [ObservableProperty]
+    private bool _canWatchAdForSpin;
+
+    /// <summary>Ob ein Extra-Spin per Gems kaufbar ist (3 Gems)</summary>
+    [ObservableProperty]
+    private bool _canBuySpinWithGems;
+
+    /// <summary>Gem-Preis für einen Extra-Spin</summary>
+    private const int GEM_SPIN_COST = 3;
 
     // Spin-Animations-State
     private float _spinSpeed;
@@ -110,6 +121,8 @@ public partial class LuckySpinViewModel : ObservableObject
     public void OnAppearing()
     {
         IsFreeSpinAvailable = _spinService.IsFreeSpinAvailable;
+        CanWatchAdForSpin = !IsFreeSpinAvailable && _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+        CanBuySpinWithGems = !IsFreeSpinAvailable && _gemService.CanAfford(GEM_SPIN_COST);
         ShowResult = false;
         ResultText = "";
         UpdateCoinsText();
@@ -141,6 +154,7 @@ public partial class LuckySpinViewModel : ObservableObject
             var result = await _rewardedAdService.ShowAdAsync("lucky_spin");
             if (result)
             {
+                RewardedAdCooldownTracker.RecordAdShown();
                 StartSpin();
             }
             else
@@ -150,10 +164,57 @@ public partial class LuckySpinViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Extra-Spin per Rewarded Ad (nach verbrauchtem Gratis-Spin verfügbar).
+    /// Nutzt ein eigenes Placement für besseres Ad-Tracking.
+    /// </summary>
+    [RelayCommand]
+    private async Task WatchAdForExtraSpin()
+    {
+        if (IsSpinning || !CanWatchAdForSpin) return;
+
+        CanWatchAdForSpin = false;
+        var success = await _rewardedAdService.ShowAdAsync("extra_daily_spin");
+        if (success)
+        {
+            RewardedAdCooldownTracker.RecordAdShown();
+            StartSpin();
+        }
+        else
+        {
+            // Ad fehlgeschlagen → wieder aktivieren falls Service verfügbar
+            CanWatchAdForSpin = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+            FloatingTextRequested?.Invoke(
+                _localizationService.GetString("AdUnavailable") ?? "Ad not available",
+                "warning");
+        }
+    }
+
+    /// <summary>
+    /// Extra-Spin für 3 Gems kaufen (Gem-Sink, jederzeit verfügbar wenn genug Gems).
+    /// </summary>
+    [RelayCommand]
+    private void BuySpinWithGems()
+    {
+        if (IsSpinning || !CanBuySpinWithGems) return;
+
+        if (!_gemService.TrySpendGems(GEM_SPIN_COST))
+        {
+            FloatingTextRequested?.Invoke(
+                _localizationService.GetString("InsufficientGems") ?? "Not enough Gems",
+                "warning");
+            return;
+        }
+
+        FloatingTextRequested?.Invoke($"-{GEM_SPIN_COST} Gems", "cyan");
+        CanBuySpinWithGems = false;
+        StartSpin();
+    }
+
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     [RelayCommand]
@@ -191,6 +252,11 @@ public partial class LuckySpinViewModel : ObservableObject
 
         ShowResult = false;
         IsFreeSpinAvailable = _spinService.IsFreeSpinAvailable;
+
+        // Nach dem Einsammeln: Extra-Spin per Ad oder Gems anbieten
+        CanWatchAdForSpin = !IsFreeSpinAvailable && _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+        CanBuySpinWithGems = !IsFreeSpinAvailable && _gemService.CanAfford(GEM_SPIN_COST);
+
         UpdateSpinButton();
         UpdateCoinsText();
         TotalSpinsText = string.Format(
@@ -309,8 +375,10 @@ public partial class LuckySpinViewModel : ObservableObject
         }
         else
         {
+            // Ad-Spin nur möglich wenn kein Cooldown aktiv
+            bool adReady = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
             SpinButtonText = _localizationService.GetString("LuckySpinAd") ?? "Watch Ad";
-            CanSpin = true;
+            CanSpin = adReady;
         }
     }
 }

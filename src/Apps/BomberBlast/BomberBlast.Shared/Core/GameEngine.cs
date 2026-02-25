@@ -25,6 +25,9 @@ namespace BomberBlast.Core;
 /// </summary>
 public partial class GameEngine : IDisposable
 {
+    // Event-Handler (als Feld für Dispose-Abmeldung)
+    private readonly Action _directionChangedHandler;
+
     // Dependencies
     private readonly SoundManager _soundManager;
     private readonly IProgressService _progressService;
@@ -37,19 +40,16 @@ public partial class GameEngine : IDisposable
     private readonly GameRenderer _renderer;
     private readonly ITutorialService _tutorialService;
     private readonly TutorialOverlay _tutorialOverlay;
-    private readonly IAchievementService _achievementService;
     private readonly IDiscoveryService _discoveryService;
-    private readonly IPlayGamesService _playGames;
-    private readonly IWeeklyChallengeService _weeklyService;
-    private readonly IDailyMissionService _dailyMissionService;
-    private readonly ICardService _cardService;
     private readonly IDungeonService _dungeonService;
-    private readonly ICollectionService _collectionService;
-    private readonly ILeagueService _leagueService;
-    private readonly IBattlePassService _battlePassService;
+    private readonly IDungeonUpgradeService _dungeonUpgradeService;
+    private readonly IGameTrackingService _tracking;
+    private readonly IVibrationService _vibration;
 
     // Discovery-Hints (Erstentdeckung von PowerUps/Mechaniken)
     private readonly DiscoveryOverlay _discoveryOverlay;
+
+    private bool _disposed;
 
     // Game state
     private GameState _state = GameState.Menu;
@@ -75,6 +75,28 @@ public partial class GameEngine : IDisposable
     private bool _levelCompleteHandled;
     private bool _continueUsed;
 
+    // Dungeon Legendäre Buffs
+    private float _timeFreezeTimer;       // TimeFreeze: Alle Gegner eingefroren (3s bei Floor-Start)
+    private bool _phantomWalkAvailable;    // Phantom: Buff aktiv im Run
+    private bool _phantomWalkActive;       // Phantom: Gerade durch Wände laufend
+    private float _phantomWalkTimer;       // Phantom: Verbleibende Dauer (5s)
+    private float _phantomCooldownTimer;   // Phantom: Cooldown bis nächste Aktivierung (30s)
+    private bool _playerHadWallpassBeforePhantom; // Merkt ob Spieler echtes Wallpass hatte
+
+    // Dungeon-Synergien (B5)
+    private bool _synergyBombardierActive;  // ExtraBomb+ExtraFire: +1 je
+    private bool _synergyBlitzkriegActive;  // SpeedBoost+BombTimer: -0.5s Zünd
+    private bool _synergyFortressActive;    // Shield+ExtraLife: Shield-Regen 20s
+    private float _fortressRegenTimer;      // Verstrichene Zeit ohne Schaden
+    private bool _synergyMidasActive;       // CoinBonus+GoldRush: Coins bei Kill
+    private bool _synergyElementalActive;   // EnemySlow+FireImmunity: Lava→Slow
+    private float _dungeonBombFuseReduction;// Kumulative Zündschnur-Reduktion (BombTimer + Blitzkrieg)
+    private bool _dungeonEnemySlowActive;   // EnemySlow Buff: 20% langsamere Gegner
+
+    // Floor-Modifikatoren (B4)
+    private DungeonFloorModifier _dungeonFloorModifier; // Aktiver Modifikator auf diesem Floor
+    private float _dungeonModifierRegenTimer;           // Timer für Regeneration-Modifikator (Shield nach 15s)
+
     // Survival-Modus: Endloses Spawning mit steigender Schwierigkeit
     private float _survivalSpawnTimer;
     private float _survivalSpawnInterval = 5f;
@@ -84,6 +106,20 @@ public partial class GameEngine : IDisposable
 
     // Gecachte Mechanik-Zellen (vermeidet 150-Zellen-Grid-Scan pro Frame)
     private readonly List<Cell> _mechanicCells = new();
+
+    // Wiederverwendbare Liste für Block-Zellen (vermeidet LINQ .ToList() Allokation in PlacePowerUps/PlaceExit)
+    private readonly List<Cell> _blockCells = new();
+
+    // Dirty-Listen für geänderte Zellen (vermeidet 3x komplette Grid-Iteration pro Frame)
+    private readonly List<Cell> _destroyingCells = new();
+    private readonly List<Cell> _afterglowCells = new();
+    private readonly List<Cell> _specialEffectCells = new();
+
+    // Gegner-Positions-Cache für Bomben-Slide-Kollision (HashSet für schnellen Contains-Check)
+    private readonly HashSet<(int x, int y)> _enemyPositionHashSet = new();
+
+    // Ausstehende Eis-Cleanups (Frame-basiert statt Task.Delay → Thread-Race vermeiden)
+    private readonly List<(List<(int x, int y)> cells, float timer)> _pendingIceCleanups = new();
 
     // Statistics
     private int _bombsUsed;
@@ -124,6 +160,22 @@ public partial class GameEngine : IDisposable
 
     // "DEFEAT ALL!" Cooldown (verhindert Spam bei jedem Frame)
     private float _defeatAllCooldown;
+
+    /// <summary>
+    /// Schutzschild absorbiert 1 Treffer: Partikel-Burst, "SHIELD!" Text, kurze Unverwundbarkeit.
+    /// </summary>
+    private void AbsorbShield(SKColor particleColor, int particleCount = 16, float spread = 80f, bool playSound = true)
+    {
+        _player.HasShield = false;
+        _fortressRegenTimer = 0; // Festungs-Synergy: Timer bei Schaden zurücksetzen
+        _dungeonModifierRegenTimer = 0; // Regen-Modifikator: Timer bei Schaden zurücksetzen
+        _particleSystem.Emit(_player.X, _player.Y, particleCount, particleColor, spread, particleCount >= 16 ? 0.6f : 0.5f);
+        _floatingText.Spawn(_player.X, _player.Y - 16, "SHIELD!", new SKColor(0, 229, 255), 16f, 1.2f);
+        if (playSound)
+            _soundManager.PlaySound(SoundManager.SFX_POWERUP);
+        _player.ActivateInvincibility(0.5f);
+        _vibration.VibrateMedium();
+    }
 
     // Slow-Motion bei letztem Kill / hohem Combo
     private float _slowMotionTimer;
@@ -239,8 +291,27 @@ public partial class GameEngine : IDisposable
     public bool IsSurvivalMode => _isSurvivalMode;
     public bool IsQuickPlayMode => _isQuickPlayMode;
     public bool IsDungeonRun => _isDungeonRun;
+    public bool IsTimeFreezeActive => _timeFreezeTimer > 0;
+    public float TimeFreezeTimer => _timeFreezeTimer;
+    public bool IsPhantomAvailable => _phantomWalkAvailable;
+    public bool IsPhantomActive => _phantomWalkActive;
+    public float PhantomWalkTimer => _phantomWalkTimer;
+    public float PhantomCooldownTimer => _phantomCooldownTimer;
+    public bool CanActivatePhantom => _phantomWalkAvailable && !_phantomWalkActive && _phantomCooldownTimer <= 0;
     public int SurvivalKills => _enemiesKilled;
     public float SurvivalTimeElapsed => _survivalTimeElapsed;
+
+    /// <summary>Verbleibende aktive Gegner (für HUD-Anzeige)</summary>
+    public int EnemiesRemaining
+    {
+        get
+        {
+            int count = 0;
+            foreach (var e in _enemies)
+                if (e.IsActive && !e.IsDying) count++;
+            return count;
+        }
+    }
     public bool IsCurrentScoreHighScore => _highScoreService.IsHighScore(Score);
 
     /// <summary>Ob Continue möglich ist (nur Story, nur 1x pro Level-Versuch)</summary>
@@ -348,15 +419,11 @@ public partial class GameEngine : IDisposable
         IPurchaseService purchaseService,
         GameRenderer renderer,
         ITutorialService tutorialService,
-        IAchievementService achievementService,
         IDiscoveryService discoveryService,
-        IPlayGamesService playGames, IWeeklyChallengeService weeklyService,
-        IDailyMissionService dailyMissionService,
-        ICardService cardService,
         IDungeonService dungeonService,
-        ICollectionService collectionService,
-        ILeagueService leagueService,
-        IBattlePassService battlePassService)
+        IDungeonUpgradeService dungeonUpgradeService,
+        IGameTrackingService tracking,
+        IVibrationService vibrationService)
     {
         _soundManager = soundManager;
         _progressService = progressService;
@@ -369,16 +436,11 @@ public partial class GameEngine : IDisposable
 
         _renderer = renderer;
         _tutorialService = tutorialService;
-        _achievementService = achievementService;
         _discoveryService = discoveryService;
-        _playGames = playGames;
-        _weeklyService = weeklyService;
-        _dailyMissionService = dailyMissionService;
-        _cardService = cardService;
         _dungeonService = dungeonService;
-        _collectionService = collectionService;
-        _leagueService = leagueService;
-        _battlePassService = battlePassService;
+        _dungeonUpgradeService = dungeonUpgradeService;
+        _tracking = tracking;
+        _vibration = vibrationService;
         _tutorialOverlay = new TutorialOverlay(localizationService);
         _discoveryOverlay = new DiscoveryOverlay(localizationService);
         _grid = new GameGrid();
@@ -391,7 +453,8 @@ public partial class GameEngine : IDisposable
         _timer.OnExpired += OnTimeExpired;
 
         // Haptisches Feedback bei Richtungswechsel weiterleiten
-        _inputManager.DirectionChanged += () => OnDirectionChanged?.Invoke();
+        _directionChangedHandler = () => OnDirectionChanged?.Invoke();
+        _inputManager.DirectionChanged += _directionChangedHandler;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -416,14 +479,14 @@ public partial class GameEngine : IDisposable
         }
     }
 
-    /// <summary>Score verdoppeln (nach Level-Complete Rewarded Ad)</summary>
+    /// <summary>Score verdoppeln (nach Level-Complete Rewarded Ad) - nur Level-Anteil verdoppeln</summary>
     public void DoubleScore()
     {
-        int scoreBefore = _player.Score;
-        _player.Score = (int)Math.Min((long)_player.Score * 2, int.MaxValue);
-        int coinsEarned = _player.Score - scoreBefore;
+        int levelScore = _player.Score - _scoreAtLevelStart;
+        if (levelScore <= 0) return;
+        _player.Score = (int)Math.Min((long)_player.Score + levelScore, int.MaxValue);
         OnScoreChanged?.Invoke(_player.Score);
-        OnCoinsEarned?.Invoke(coinsEarned, _player.Score, true);
+        OnCoinsEarned?.Invoke(levelScore, _player.Score, true);
     }
 
     /// <summary>
@@ -467,6 +530,23 @@ public partial class GameEngine : IDisposable
 
         // Kein Slot mit Uses gefunden → Normal
         _player.ActiveCardSlot = -1;
+    }
+
+    /// <summary>
+    /// Aktiviert Phantom-Walk (Dungeon Legendary-Buff): 5s durch Wände laufen, 30s Cooldown.
+    /// </summary>
+    public void ActivatePhantomWalk()
+    {
+        if (!CanActivatePhantom || _state != GameState.Playing) return;
+
+        _playerHadWallpassBeforePhantom = _player.HasWallpass;
+        _phantomWalkActive = true;
+        _phantomWalkTimer = 5f;
+        _player.HasWallpass = true;
+
+        _floatingText.Spawn(_player.X, _player.Y - 16, "PHANTOM!",
+            new SKColor(160, 32, 240), 14f, 1.0f);
+        _soundManager.PlaySound(SoundManager.SFX_POWERUP);
     }
 
     /// <summary>Spiel nach Game Over fortsetzen (per Rewarded Ad)</summary>
@@ -597,16 +677,87 @@ public partial class GameEngine : IDisposable
         // Timer + Combo laufen in Echtzeit (nicht durch Slow-Motion beeinflusst)
         _timer.Update(realDeltaTime);
 
+        // Gegner-Positions-Cache einmal pro Frame aufbauen (für Bomben-Slide-Kollision)
+        _enemyPositionHashSet.Clear();
+        foreach (var enemy in _enemies)
+        {
+            if (enemy.IsActive && !enemy.IsDying)
+                _enemyPositionHashSet.Add((enemy.GridX, enemy.GridY));
+        }
+
+        // Dungeon TimeFreeze: Gegner eingefroren
+        if (_timeFreezeTimer > 0)
+            _timeFreezeTimer -= realDeltaTime;
+
+        // Dungeon Phantom-Walk Timer aktualisieren
+        if (_phantomWalkActive)
+        {
+            _phantomWalkTimer -= realDeltaTime;
+            if (_phantomWalkTimer <= 0)
+            {
+                _phantomWalkActive = false;
+                _phantomCooldownTimer = 30f;
+                // Wallpass nur zurücksetzen wenn Spieler es nicht unabhängig hat
+                if (!_playerHadWallpassBeforePhantom)
+                    _player.HasWallpass = false;
+            }
+        }
+        else if (_phantomCooldownTimer > 0)
+        {
+            _phantomCooldownTimer -= realDeltaTime;
+        }
+
         UpdatePlayer(deltaTime);
         _inputManager.Update(deltaTime);
         UpdateBombs(deltaTime);
         UpdateExplosions(deltaTime);
         UpdateDestroyingBlocks(deltaTime);
         UpdateSpecialBombEffects(deltaTime);
-        UpdateEnemies(deltaTime);
+        UpdatePendingIceCleanups(realDeltaTime);
+
+        // Gegner nur bewegen wenn nicht durch TimeFreeze eingefroren
+        if (_timeFreezeTimer <= 0)
+            UpdateEnemies(deltaTime);
+
         UpdateBossAttacks(deltaTime);
         UpdatePowerUps(deltaTime);
         UpdateWorldMechanics(deltaTime);
+
+        // Poison-Schaden-Cooldown dekrementieren (Echtzeit)
+        if (_poisonDamageTimer > 0)
+            _poisonDamageTimer -= realDeltaTime;
+
+        // Festungs-Synergy: Shield regeneriert nach 20s ohne Schaden
+        if (_synergyFortressActive && _isDungeonRun && !_player.HasShield && !_player.IsDying)
+        {
+            _fortressRegenTimer += realDeltaTime;
+            if (_fortressRegenTimer >= 20f)
+            {
+                _player.HasShield = true;
+                _fortressRegenTimer = 0;
+                _floatingText.Spawn(_player.X, _player.Y - 16, "SHIELD!",
+                    new SKColor(0, 229, 255), 14f, 1.0f);
+                _particleSystem.Emit(_player.X, _player.Y, 8,
+                    new SKColor(0, 229, 255), 60f, 0.5f);
+            }
+        }
+
+        // Floor-Modifikator Regeneration: Shield nach 15s ohne Schaden
+        if (_dungeonFloorModifier == DungeonFloorModifier.Regeneration && _isDungeonRun
+            && !_player.HasShield && !_player.IsDying)
+        {
+            _dungeonModifierRegenTimer += realDeltaTime;
+            if (_dungeonModifierRegenTimer >= 15f)
+            {
+                _player.HasShield = true;
+                _dungeonModifierRegenTimer = 0;
+                _floatingText.Spawn(_player.X, _player.Y - 16, "REGEN!",
+                    new SKColor(76, 175, 80), 14f, 1.0f);
+                _particleSystem.Emit(_player.X, _player.Y, 8,
+                    new SKColor(76, 175, 80), 60f, 0.5f);
+            }
+        }
+
         CheckCollisions();
         CleanupEntities();
 
@@ -685,7 +836,7 @@ public partial class GameEngine : IDisposable
         _player.Update(deltaTime);
         if (curseBeforeUpdate != CurseType.None && !_player.IsCursed)
         {
-            _achievementService.OnCurseSurvived(curseBeforeUpdate);
+            _tracking.OnCurseSurvived(curseBeforeUpdate);
         }
 
         // Kick-Mechanik: Wenn Spieler auf eine Bombe läuft und Kick hat
@@ -725,7 +876,7 @@ public partial class GameEngine : IDisposable
         if (_inputManager.DetonatePressed && _player.HasDetonator)
         {
             DetonateAllBombs();
-            _achievementService.OnDetonatorUsed();
+            _tracking.OnDetonatorUsed();
         }
     }
 
@@ -749,7 +900,7 @@ public partial class GameEngine : IDisposable
         _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB); // Kick-Sound (kann später eigenen bekommen)
 
         // Achievement: Bomben-Kick zählen
-        _achievementService.OnBombKicked();
+        _tracking.OnBombKicked();
     }
 
     private void UpdatePlayerDied(float deltaTime)
@@ -783,27 +934,20 @@ public partial class GameEngine : IDisposable
                     OnCoinsEarned?.Invoke(coins, _player.Score, false);
                 }
 
-                // Achievement: Survival-Runde beendet (überlebte Zeit + Kills tracken)
+                // Survival-Runde beendet (Achievement + BattlePass)
                 if (_isSurvivalMode)
-                {
-                    _achievementService.OnSurvivalComplete(_survivalTimeElapsed);
-                    _achievementService.OnSurvivalKillsReached(_enemiesKilled);
-
-                    // Battle Pass XP für Survival 60s+
-                    if (_survivalTimeElapsed >= 60f)
-                        _battlePassService.AddXp(100, "survival_60s");
-                }
+                    _tracking.OnSurvivalEnded(_survivalTimeElapsed, _enemiesKilled);
 
                 // Dungeon-Run beenden bei Tod
                 if (_isDungeonRun)
                 {
-                    _achievementService.OnDungeonRunCompleted();
+                    _tracking.OnDungeonRunCompleted();
                     var summary = _dungeonService.EndRun();
                     _isDungeonRun = false;
                     OnDungeonRunEnd?.Invoke(summary);
                 }
 
-                _achievementService.FlushIfDirty();
+                _tracking.FlushIfDirty();
                 OnGameOver?.Invoke();
             }
             else
@@ -833,6 +977,13 @@ public partial class GameEngine : IDisposable
         foreach (var explosion in _explosions)
         {
             explosion.ClearFromGrid(_grid);
+            // Afterglow-Zellen registrieren
+            foreach (var eCell in explosion.AffectedCells)
+            {
+                var gc = _grid.TryGetCell(eCell.X, eCell.Y);
+                if (gc != null && gc.AfterglowTimer > 0)
+                    _afterglowCells.Add(gc);
+            }
         }
         _explosions.Clear();
 
@@ -1036,12 +1187,7 @@ public partial class GameEngine : IDisposable
                     {
                         if (_player.HasShield)
                         {
-                            _player.HasShield = false;
-                            _particleSystem.Emit(_player.X, _player.Y, 12,
-                                new SkiaSharp.SKColor(255, 80, 0), 60f, 0.5f);
-                            _floatingText.Spawn(_player.X, _player.Y - 16,
-                                "SHIELD!", new SkiaSharp.SKColor(0, 229, 255), 16f, 1.2f);
-                            _player.ActivateInvincibility(0.5f);
+                            AbsorbShield(new SKColor(255, 80, 0), particleCount: 12, spread: 60f, playSound: false);
                         }
                         else
                         {
@@ -1471,26 +1617,8 @@ public partial class GameEngine : IDisposable
             new SKColor(100, 200, 255), 18f, 1.5f);
         _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
 
-        // Eis nach 3s wieder entfernen (Timer-basiert via DispatcherTimer ist hier nicht ideal,
-        // stattdessen merken wir uns die Zellen und räumen sie im nächsten Frame-Zyklus auf)
-        _ = CleanupIceAfterDelay(boss.AttackTargetCells.ToList(), 3f);
-    }
-
-    /// <summary>
-    /// Eis-Zellen nach Verzögerung wieder zu Empty zurücksetzen
-    /// </summary>
-    private async Task CleanupIceAfterDelay(List<(int x, int y)> iceCells, float delaySec)
-    {
-        await Task.Delay(TimeSpan.FromSeconds(delaySec));
-        foreach (var (gx, gy) in iceCells)
-        {
-            var cell = _grid.TryGetCell(gx, gy);
-            // Nur zurücksetzen wenn es noch Eis ist (könnte inzwischen gesprengt worden sein)
-            if (cell != null && cell.Type == CellType.Ice)
-            {
-                cell.Type = CellType.Empty;
-            }
-        }
+        // Eis nach 3s wieder entfernen (Frame-basierter Timer statt Task.Delay → Thread-sicher)
+        _pendingIceCleanups.Add((boss.AttackTargetCells.ToList(), 3f));
     }
 
     /// <summary>
@@ -1557,13 +1685,49 @@ public partial class GameEngine : IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // ICE CLEANUP (Frame-basiert statt Task.Delay)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Ausstehende Eis-Cleanups pro Frame aktualisieren (Timer dekrementieren, bei 0 → CellType.Empty)
+    /// </summary>
+    private void UpdatePendingIceCleanups(float deltaTime)
+    {
+        for (int i = _pendingIceCleanups.Count - 1; i >= 0; i--)
+        {
+            var (cells, timer) = _pendingIceCleanups[i];
+            timer -= deltaTime;
+
+            if (timer <= 0)
+            {
+                // Eis-Zellen zurücksetzen
+                foreach (var (gx, gy) in cells)
+                {
+                    var cell = _grid.TryGetCell(gx, gy);
+                    if (cell != null && cell.Type == CellType.Ice)
+                        cell.Type = CellType.Empty;
+                }
+                _pendingIceCleanups.RemoveAt(i);
+            }
+            else
+            {
+                _pendingIceCleanups[i] = (cells, timer);
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // DISPOSE
     // ═══════════════════════════════════════════════════════════════════════
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         _timer.OnWarning -= OnTimeWarning;
         _timer.OnExpired -= OnTimeExpired;
+        _inputManager.DirectionChanged -= _directionChangedHandler;
 
         _overlayBgPaint.Dispose();
         _overlayTextPaint.Dispose();

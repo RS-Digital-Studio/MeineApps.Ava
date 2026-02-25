@@ -45,6 +45,9 @@ public interface ICollectionService
     /// <summary>Meilenstein beanspruchen (gibt Coins/Gems)</summary>
     bool TryClaimMilestone(int percentRequired);
 
+    /// <summary>Erzwingt Speichern wenn Dirty-Flag gesetzt (z.B. am Level-Ende)</summary>
+    void FlushIfDirty();
+
     /// <summary>Wird ausgelöst wenn sich Daten ändern (Encounter, Defeat, etc.)</summary>
     event EventHandler? CollectionChanged;
 }

@@ -42,6 +42,7 @@ public class DailyRewardService : IDailyRewardService
                 Day = day,
                 Coins = DayCoins[i],
                 ExtraLives = day == 5 ? 1 : 0,
+                Gems = day == 7 ? 10 : 0, // Tag 7: +10 Gems Bonus
                 IsClaimed = day < _data.CurrentDay || (day == _data.CurrentDay && IsClaimedToday()),
                 IsCurrentDay = day == _data.CurrentDay && !IsClaimedToday(),
                 IsPast = day < _data.CurrentDay
@@ -64,6 +65,7 @@ public class DailyRewardService : IDailyRewardService
             Day = _data.CurrentDay,
             Coins = DayCoins[dayIndex],
             ExtraLives = _data.CurrentDay == 5 ? 1 : 0,
+            Gems = _data.CurrentDay == 7 ? 10 : 0, // Tag 7: +10 Gems Bonus
             IsClaimed = true,
             IsCurrentDay = false
         };
@@ -158,10 +160,55 @@ public class DailyRewardService : IDailyRewardService
         }
     }
 
+    // === Comeback-Mechanik ===
+
+    public (int coins, int gems)? CheckComebackBonus()
+    {
+        if (_data.ComebackClaimed)
+            return null;
+
+        if (string.IsNullOrEmpty(_data.LastActivityDate))
+            return null;
+
+        try
+        {
+            var lastActivity = DateTime.Parse(_data.LastActivityDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+            var daysSinceActivity = (DateTime.UtcNow.Date - lastActivity.Date).Days;
+
+            // >3 Tage inaktiv → Comeback-Bonus
+            if (daysSinceActivity > 3)
+            {
+                _data.ComebackClaimed = true;
+                Save();
+                return (2000, 5);
+            }
+        }
+        catch
+        {
+            // Parse-Fehler → kein Bonus
+        }
+
+        return null;
+    }
+
+    public void UpdateLastActivity()
+    {
+        // Comeback-Flag zurücksetzen wenn Spieler aktiv wird (für nächstes Comeback)
+        if (_data.ComebackClaimed)
+        {
+            _data.ComebackClaimed = false;
+        }
+
+        _data.LastActivityDate = DateTime.UtcNow.ToString("O");
+        Save();
+    }
+
     private class DailyRewardData
     {
         public int CurrentDay { get; set; } = 1;
         public int Streak { get; set; }
         public string? LastClaimDate { get; set; }
+        public string? LastActivityDate { get; set; }
+        public bool ComebackClaimed { get; set; }
     }
 }

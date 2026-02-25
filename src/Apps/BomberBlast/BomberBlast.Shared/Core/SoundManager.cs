@@ -136,6 +136,52 @@ public class SoundManager : IDisposable
     }
 
     /// <summary>
+    /// Spezial-Bomben-Explosion: Spielt den Basis-Explosionssound
+    /// plus einen sekundären SFX-Layer je nach BombType.
+    /// TODO: Echte Pitch-Variation wenn ISoundService um PlaySound(key, volume, pitch) erweitert wird
+    /// </summary>
+    public void PlayBombExplosion(BomberBlast.Models.Entities.BombType bombType)
+    {
+        if (!_sfxEnabled)
+            return;
+
+        // Basis-Explosionssound für alle Bomben
+        _soundService.PlaySound(SFX_EXPLOSION, _sfxVolume);
+
+        // Sekundärer Sound-Layer für akustische Unterscheidung
+        // Nutzt vorhandene SFX mit angepasster Lautstärke als Layering-Effekt
+        switch (bombType)
+        {
+            case BomberBlast.Models.Entities.BombType.Ice:
+            case BomberBlast.Models.Entities.BombType.Gravity:
+            case BomberBlast.Models.Entities.BombType.TimeWarp:
+                // Kältere/mysteriöse Bomben: PowerUp-Sound (sanfter, höher) als Layer
+                _soundService.PlaySound(SFX_POWERUP, _sfxVolume * 0.4f);
+                break;
+
+            case BomberBlast.Models.Entities.BombType.Fire:
+            case BomberBlast.Models.Entities.BombType.Nova:
+            case BomberBlast.Models.Entities.BombType.Vortex:
+                // Aggressive Bomben: Zweiter Explosions-Sound (voller, lauter)
+                _soundService.PlaySound(SFX_EXPLOSION, _sfxVolume * 0.5f);
+                break;
+
+            case BomberBlast.Models.Entities.BombType.Lightning:
+            case BomberBlast.Models.Entities.BombType.Mirror:
+                // Elektrische/magische Bomben: Fuse-Sound (knisternd) als Layer
+                _soundService.PlaySound(SFX_FUSE, _sfxVolume * 0.5f);
+                break;
+
+            case BomberBlast.Models.Entities.BombType.BlackHole:
+                // Schwarzes Loch: Tiefer, dramatisch - Time-Warning (dumpf) als Layer
+                _soundService.PlaySound(SFX_TIME_WARNING, _sfxVolume * 0.3f);
+                break;
+
+            // Normal, Sticky, Smoke, Poison, Phantom: Nur Basis-Explosion
+        }
+    }
+
+    /// <summary>
     /// Crossfade-Timer aktualisieren (pro Frame aufrufen)
     /// </summary>
     public void Update(float deltaTime)

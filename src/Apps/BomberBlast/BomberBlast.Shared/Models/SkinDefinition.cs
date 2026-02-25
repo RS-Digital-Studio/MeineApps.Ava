@@ -19,6 +19,9 @@ public class SkinDefinition
     /// <summary>Coin-Preis (0 = kostenlos/Standard oder Premium-Only)</summary>
     public int CoinPrice { get; init; }
 
+    /// <summary>Gem-Preis (0 = nicht mit Gems kaufbar). Wenn > 0, wird mit Gems statt Coins bezahlt</summary>
+    public int GemPrice { get; init; }
+
     /// <summary>Raritätsstufe</summary>
     public Rarity Rarity { get; init; }
 
@@ -252,11 +255,46 @@ public static class PlayerSkins
         GlowColor = new SKColor(255, 100, 20, 80)
     };
 
+    // Gem-exklusive Skins
+    public static readonly SkinDefinition Crystal = new()
+    {
+        Id = "crystal",
+        NameKey = "SkinCrystal",
+        Rarity = Rarity.Epic,
+        GemPrice = 50,
+        PrimaryColor = new SKColor(0, 188, 212), // #00BCD4 Hellblau
+        SecondaryColor = new SKColor(0, 131, 148),
+        GlowColor = new SKColor(0, 229, 255, 70)
+    };
+
+    public static readonly SkinDefinition Shadow = new()
+    {
+        Id = "shadow",
+        NameKey = "SkinShadow",
+        Rarity = Rarity.Legendary,
+        GemPrice = 100,
+        PrimaryColor = new SKColor(74, 20, 140), // #4A148C Dunkelviolett
+        SecondaryColor = new SKColor(130, 60, 200),
+        GlowColor = new SKColor(130, 60, 200, 80)
+    };
+
+    public static readonly SkinDefinition Phoenix = new()
+    {
+        Id = "phoenix",
+        NameKey = "SkinPhoenix",
+        Rarity = Rarity.Legendary,
+        GemPrice = 200,
+        PrimaryColor = new SKColor(255, 109, 0), // #FF6D00 Feuer-Orange
+        SecondaryColor = new SKColor(255, 200, 50),
+        GlowColor = new SKColor(255, 160, 0, 90)
+    };
+
     public static readonly SkinDefinition[] All =
         [Default, Crimson, Arctic, Stealth,
          Toxic, Ocean, Sunset, Cherry, Emerald, Ninja, Pirate,
          Galaxy, Neon, Cyber, Retro, Robot, PixelRetro,
-         Gold, Inferno, Dragon];
+         Gold, Inferno, Dragon,
+         Crystal, Shadow, Phoenix];
 }
 
 /// <summary>

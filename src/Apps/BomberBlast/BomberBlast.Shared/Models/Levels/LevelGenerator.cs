@@ -1,3 +1,4 @@
+using BomberBlast.Models.Dungeon;
 using BomberBlast.Models.Entities;
 
 namespace BomberBlast.Models.Levels;
@@ -703,7 +704,10 @@ public static class LevelGenerator
     /// Generiert einen Dungeon-Floor mit steigender Schwierigkeit.
     /// Floor 5/10/15/... = Boss-Floors.
     /// </summary>
-    public static Level GenerateDungeonFloor(int floor, int seed)
+    public static Level GenerateDungeonFloor(int floor, int seed,
+        DungeonRoomType roomType = DungeonRoomType.Normal,
+        DungeonChallengeMode challengeMode = DungeonChallengeMode.SpeedRun,
+        DungeonFloorModifier modifier = DungeonFloorModifier.None)
     {
         var rng = new Random(seed + floor * 1000);
 
@@ -711,15 +715,41 @@ public static class LevelGenerator
         bool isMiniBoss = floor % 10 == 5;
         bool isEndBoss = floor % 10 == 0;
 
+        // Rest-Raum: Leerer Raum mit 3 PowerUps, kein Exit nötig
+        if (roomType == DungeonRoomType.Rest)
+        {
+            var restLevel = new Level
+            {
+                Number = floor,
+                Name = $"Floor {floor} - Rest",
+                TimeLimit = 999,
+                Seed = seed + floor * 1000,
+                BlockDensity = 0.1f,
+                Layout = LevelLayout.Arena,
+                Mechanic = WorldMechanic.None,
+                MusicTrack = "gameplay"
+            };
+            restLevel.PowerUps.AddRange(new[]
+            {
+                new PowerUpPlacement { Type = PowerUpType.BombUp },
+                new PowerUpPlacement { Type = PowerUpType.Fire },
+                new PowerUpPlacement { Type = PowerUpType.Speed }
+            });
+            return restLevel;
+        }
+
         // Schwierigkeits-Skalierung: Floor 1 = leicht, Floor 10 = hart, ab 11 noch härter
         float difficultyScale = Math.Min(floor / 10f, 1f);
-        float bonusScale = floor > 10 ? 1f + (floor - 10) * 0.05f : 1f;
 
         // Block-Dichte steigt mit Floor
         float blockDensity = 0.3f + difficultyScale * 0.2f;
 
         // Timer kürzer bei höheren Floors
         int timeLimit = Math.Max(90, 180 - floor * 8);
+
+        // Challenge-Raum: SpeedRun-Modus → nur 60s
+        if (roomType == DungeonRoomType.Challenge && challengeMode == DungeonChallengeMode.SpeedRun)
+            timeLimit = 60;
 
         // Layout-Pattern basierend auf Floor
         var patterns = new[] { LevelLayout.Classic, LevelLayout.Cross, LevelLayout.Arena, LevelLayout.Maze, LevelLayout.TwoRooms };
@@ -728,6 +758,31 @@ public static class LevelGenerator
         // Gegner-Pool basierend auf Floor
         var enemyPool = GetDungeonEnemyPool(floor);
         int enemyCount = isBoss ? 2 : Math.Min(3 + floor / 2, 8);
+
+        // Raum-Typ-Modifikationen für Gegner
+        if (roomType == DungeonRoomType.Elite)
+        {
+            enemyCount += 2; // Elite: +2 Gegner
+            // Stärkere Gegner-Typen bevorzugen (Pool um 2 Floors hochschieben)
+            enemyPool = GetDungeonEnemyPool(Math.Min(floor + 2, 20));
+        }
+        else if (roomType == DungeonRoomType.Treasure)
+        {
+            enemyCount = 2; // Treasure: Wenig Gegner
+        }
+        else if (roomType == DungeonRoomType.Challenge
+                 && challengeMode == DungeonChallengeMode.DoubleEnemies)
+        {
+            enemyCount *= 2;
+        }
+
+        // Modifikator: DoubleSpawns verdoppelt Gegner
+        if (modifier == DungeonFloorModifier.DoubleSpawns)
+            enemyCount *= 2;
+
+        // Modifikator: Elite-Timer kürzer
+        if (roomType == DungeonRoomType.Elite)
+            timeLimit = Math.Max(60, timeLimit - 30);
 
         var enemies = new List<EnemySpawn>();
         for (int i = 0; i < enemyCount; i++)
@@ -752,6 +807,10 @@ public static class LevelGenerator
         {
             mechanic = WorldMechanic.Fog;
         }
+
+        // Modifikator: Darkness → Fog erzwingen
+        if (modifier == DungeonFloorModifier.Darkness)
+            mechanic = WorldMechanic.Fog;
 
         // Boss-Level
         BossType? bossKind = null;
@@ -783,6 +842,22 @@ public static class LevelGenerator
             powerUps.Add(new PowerUpPlacement { Type = PowerUpType.Wallpass });
         if (floor >= 7 && rng.NextDouble() < 0.4)
             powerUps.Add(new PowerUpPlacement { Type = PowerUpType.Detonator });
+
+        // Raum-Typ: Treasure → viele PowerUps
+        if (roomType == DungeonRoomType.Treasure)
+        {
+            powerUps.Add(new PowerUpPlacement { Type = PowerUpType.Kick });
+            powerUps.Add(new PowerUpPlacement { Type = PowerUpType.Wallpass });
+            powerUps.Add(new PowerUpPlacement { Type = PowerUpType.BombUp });
+            powerUps.Add(new PowerUpPlacement { Type = PowerUpType.Fire });
+        }
+
+        // Challenge: NoPowerUps → keine PowerUps
+        if (roomType == DungeonRoomType.Challenge
+            && challengeMode == DungeonChallengeMode.NoPowerUps)
+        {
+            powerUps.Clear();
+        }
 
         var level = new Level
         {

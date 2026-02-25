@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für die Profil- und Statistik-Seite.
 /// Zeigt Spielerprofil (Rahmen, Liga, Währungen) und aggregierte Statistiken.
 /// </summary>
-public partial class StatisticsViewModel : ObservableObject
+public partial class StatisticsViewModel : ObservableObject, INavigable
 {
     private readonly IProgressService _progressService;
     private readonly IHighScoreService _highScoreService;
@@ -28,7 +28,7 @@ public partial class StatisticsViewModel : ObservableObject
     private readonly ICardService _cardService;
     private readonly ILocalizationService _localizationService;
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROFIL-HEADER
@@ -375,40 +375,40 @@ public partial class StatisticsViewModel : ObservableObject
 
     public void UpdateLocalizedTexts()
     {
-        ProfileTitle = _localizationService.GetString("ProfileTitle") ?? "Profil";
-        StatsTitle = _localizationService.GetString("StatsTitle") ?? "Statistiken";
+        ProfileTitle = _localizationService.GetString("ProfileTitle") ?? "Profile";
+        StatsTitle = _localizationService.GetString("StatsTitle") ?? "Statistics";
 
         // Fortschritt
-        ProgressLabel = _localizationService.GetString("StatsProgress") ?? "Fortschritt";
-        LevelsCompletedLabel = _localizationService.GetString("StatsLevelsCompleted") ?? "Level abgeschlossen";
-        TotalStarsLabel = _localizationService.GetString("StatsTotalStars") ?? "Sterne gesammelt";
-        StarsPercentLabel = _localizationService.GetString("StatsStarsPercent") ?? "Sterne %";
+        ProgressLabel = _localizationService.GetString("StatsProgress") ?? "Progress";
+        LevelsCompletedLabel = _localizationService.GetString("StatsLevelsCompleted") ?? "Levels Completed";
+        TotalStarsLabel = _localizationService.GetString("StatsTotalStars") ?? "Stars Collected";
+        StarsPercentLabel = _localizationService.GetString("StatsStarsPercent") ?? "Stars %";
 
         // Kampf
-        CombatLabel = _localizationService.GetString("StatsCombat") ?? "Kampf";
-        TotalKillsLabel = _localizationService.GetString("StatsTotalKills") ?? "Gegner besiegt";
-        BombsKickedLabel = _localizationService.GetString("StatsBombsKicked") ?? "Bomben getreten";
-        PowerBombsLabel = _localizationService.GetString("StatsPowerBombs") ?? "Power-Bomben eingesetzt";
+        CombatLabel = _localizationService.GetString("StatsCombat") ?? "Combat";
+        TotalKillsLabel = _localizationService.GetString("StatsTotalKills") ?? "Enemies Defeated";
+        BombsKickedLabel = _localizationService.GetString("StatsBombsKicked") ?? "Bombs Kicked";
+        PowerBombsLabel = _localizationService.GetString("StatsPowerBombs") ?? "Power Bombs Used";
 
         // Herausforderungen
-        ChallengesLabel = _localizationService.GetString("StatsChallenges") ?? "Herausforderungen";
+        ChallengesLabel = _localizationService.GetString("StatsChallenges") ?? "Challenges";
         DailyStreakLabel = _localizationService.GetString("StatsDailyStreak") ?? "Daily Challenge Streak";
-        LongestStreakLabel = _localizationService.GetString("StatsLongestStreak") ?? "Längster Streak";
-        DailyChallengesCompletedLabel = _localizationService.GetString("StatsDailyChallengesCompleted") ?? "Daily Challenges abgeschlossen";
-        WeeksCompletedLabel = _localizationService.GetString("StatsWeeksCompleted") ?? "Wochenmissionen abgeschlossen";
-        DailyMissionDaysLabel = _localizationService.GetString("StatsDailyMissionDays") ?? "Tage mit täglichen Missionen";
+        LongestStreakLabel = _localizationService.GetString("StatsLongestStreak") ?? "Longest Streak";
+        DailyChallengesCompletedLabel = _localizationService.GetString("StatsDailyChallengesCompleted") ?? "Daily Challenges Completed";
+        WeeksCompletedLabel = _localizationService.GetString("StatsWeeksCompleted") ?? "Weekly Missions Completed";
+        DailyMissionDaysLabel = _localizationService.GetString("StatsDailyMissionDays") ?? "Days with Daily Missions";
 
         // Wirtschaft
-        EconomyLabel = _localizationService.GetString("StatsEconomy") ?? "Wirtschaft";
-        CoinBalanceLabel = _localizationService.GetString("StatsCoinBalance") ?? "Aktuelle Coins";
-        TotalEarnedLabel = _localizationService.GetString("StatsTotalEarned") ?? "Gesamt verdient";
+        EconomyLabel = _localizationService.GetString("StatsEconomy") ?? "Economy";
+        CoinBalanceLabel = _localizationService.GetString("StatsCoinBalance") ?? "Current Coins";
+        TotalEarnedLabel = _localizationService.GetString("StatsTotalEarned") ?? "Total Earned";
         AchievementsLabel = _localizationService.GetString("StatsAchievements") ?? "Achievements";
-        TotalSpinsLabel = _localizationService.GetString("StatsTotalSpins") ?? "Glücksrad-Drehungen";
+        TotalSpinsLabel = _localizationService.GetString("StatsTotalSpins") ?? "Lucky Spins";
 
         // Dungeon
         DungeonLabel = _localizationService.GetString("StatsDungeon") ?? "Dungeon";
         DungeonRunsLabel = _localizationService.GetString("StatsDungeonRuns") ?? "Dungeon Runs";
-        DungeonBestLabel = _localizationService.GetString("StatsDungeonBest") ?? "Bester Floor";
+        DungeonBestLabel = _localizationService.GetString("StatsDungeonBest") ?? "Best Floor";
         DungeonCoinsLabel = _localizationService.GetString("StatsDungeonCoins") ?? "Dungeon Coins";
     }
 
@@ -417,5 +417,5 @@ public partial class StatisticsViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     [RelayCommand]
-    private void Back() => NavigationRequested?.Invoke("..");
+    private void Back() => NavigationRequested?.Invoke(new GoBack());
 }

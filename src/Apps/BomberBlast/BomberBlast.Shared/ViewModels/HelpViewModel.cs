@@ -8,7 +8,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the help/tutorial page.
 /// Provides static help content, tutorial replay and navigation back.
 /// </summary>
-public partial class HelpViewModel : ObservableObject
+public partial class HelpViewModel : ObservableObject, INavigable
 {
     private readonly ITutorialService _tutorialService;
 
@@ -19,7 +19,7 @@ public partial class HelpViewModel : ObservableObject
     /// <summary>
     /// Event to request navigation. Parameter is the route string.
     /// </summary>
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
@@ -41,12 +41,12 @@ public partial class HelpViewModel : ObservableObject
     private void ReplayTutorial()
     {
         _tutorialService.Reset();
-        NavigationRequested?.Invoke("Game?mode=story&level=1");
+        NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: 1));
     }
 
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 }

@@ -18,6 +18,8 @@ public class AchievementService : IAchievementService
     private readonly ICoinService _coinService;
     private readonly IPlayGamesService _playGames;
     private readonly List<Achievement> _achievements;
+    // O(1) Lookup statt List.Find() bei TryUnlock/UpdateProgress (66 Achievements → ~30 Find()-Aufrufe pro ApplyProgress)
+    private readonly Dictionary<string, Achievement> _achievementLookup;
     private AchievementData _data;
 
     // Dirty-Flag + Debounce: Verhindert JSON-Serialize + Preferences-Write bei jedem einzelnen Kill
@@ -25,10 +27,12 @@ public class AchievementService : IAchievementService
     private DateTime _lastSaveTime = DateTime.MinValue;
     private const int SaveDebounceMs = 500;
 
+    private int _unlockedCount;
+
     public event EventHandler<Achievement>? AchievementUnlocked;
 
     public IReadOnlyList<Achievement> Achievements => _achievements;
-    public int UnlockedCount => _achievements.Count(a => a.IsUnlocked);
+    public int UnlockedCount => _unlockedCount;
     public int TotalCount => _achievements.Count;
     public int TotalEnemyKills => _data.TotalEnemyKills;
     public int TotalBombsKicked => _data.TotalBombsKicked;
@@ -46,6 +50,9 @@ public class AchievementService : IAchievementService
         _coinService = coinService;
         _playGames = playGames;
         _achievements = CreateAchievements();
+        _achievementLookup = new Dictionary<string, Achievement>(_achievements.Count);
+        foreach (var ach in _achievements)
+            _achievementLookup[ach.Id] = ach;
         _data = Load();
         ApplyProgress();
     }
@@ -438,13 +445,15 @@ public class AchievementService : IAchievementService
 
     private Achievement? TryUnlock(string id)
     {
-        var achievement = _achievements.Find(a => a.Id == id);
-        if (achievement == null || achievement.IsUnlocked)
+        if (!_achievementLookup.TryGetValue(id, out var achievement))
+            return null;
+        if (achievement.IsUnlocked)
             return null;
 
         achievement.IsUnlocked = true;
         achievement.Progress = achievement.Target;
         _data.UnlockedIds.Add(id);
+        _unlockedCount++;
         Save();
 
         // Coin-Belohnung gutschreiben
@@ -464,8 +473,7 @@ public class AchievementService : IAchievementService
 
     private void UpdateProgress(string id, int progress)
     {
-        var achievement = _achievements.Find(a => a.Id == id);
-        if (achievement != null && !achievement.IsUnlocked)
+        if (_achievementLookup.TryGetValue(id, out var achievement) && !achievement.IsUnlocked)
         {
             achievement.Progress = Math.Min(progress, achievement.Target);
         }
@@ -473,16 +481,18 @@ public class AchievementService : IAchievementService
 
     private void ApplyProgress()
     {
-        // Unlock-Status wiederherstellen
+        // Unlock-Status wiederherstellen (O(1) per Dictionary statt O(n) per List.Find)
         foreach (var id in _data.UnlockedIds)
         {
-            var achievement = _achievements.Find(a => a.Id == id);
-            if (achievement != null)
+            if (_achievementLookup.TryGetValue(id, out var achievement))
             {
                 achievement.IsUnlocked = true;
                 achievement.Progress = achievement.Target;
             }
         }
+
+        // Cache initialisieren
+        _unlockedCount = _data.UnlockedIds.Count;
 
         // Fortschritt aktualisieren - Kills
         UpdateProgress("kills_100", _data.TotalEnemyKills);

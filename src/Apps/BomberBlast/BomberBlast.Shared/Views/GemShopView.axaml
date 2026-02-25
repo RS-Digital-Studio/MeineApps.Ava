@@ -1,0 +1,177 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:BomberBlast.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:controls="using:BomberBlast.Controls"
+             x:Class="BomberBlast.Views.GemShopView"
+             x:DataType="vm:GemShopViewModel">
+
+  <!-- Gem-Shop: Landscape-Layout mit Gem-Balance links und 3 Kauf-Karten rechts -->
+  <Panel Name="GemShop_Root" AutomationProperties.AutomationId="GemShop_Root">
+    <controls:MenuBackgroundCanvas />
+
+    <Grid ColumnDefinitions="*,1.5*" Margin="16,12,16,80">
+
+      <!-- ═══ Linke Spalte: Zurück-Button + Gem-Balance + Beschreibung ═══ -->
+      <StackPanel Grid.Column="0"
+                  VerticalAlignment="Center"
+                  HorizontalAlignment="Center"
+                  Spacing="12">
+
+        <!-- Zurück-Button -->
+        <Button AutomationProperties.AutomationId="GemShop_BtnBack"
+                Classes="Text"
+                Command="{Binding GoBackCommand}"
+                HorizontalAlignment="Left"
+                Margin="0,0,0,8">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20"
+                             Foreground="{DynamicResource TextPrimaryBrush}" />
+            <TextBlock Text="{Binding TitleText}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <!-- Gem-Balance groß -->
+        <Border Background="{DynamicResource SurfaceBrush}"
+                CornerRadius="16"
+                Padding="24,16"
+                HorizontalAlignment="Center"
+                BoxShadow="0 4 16 0 #40000000"
+                AutomationProperties.AutomationId="GemShop_BalanceBadge">
+          <StackPanel Spacing="8" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="DiamondStone" Width="48" Height="48"
+                             Foreground="#E040FB"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding GemBalanceText}"
+                       FontSize="32" FontWeight="Bold"
+                       Foreground="#E040FB"
+                       HorizontalAlignment="Center"
+                       AutomationProperties.AutomationId="GemShop_TxtBalance" />
+            <TextBlock Text="Gems"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Beschreibung -->
+        <TextBlock Text="{Binding DescriptionText}"
+                   FontSize="13"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   HorizontalAlignment="Center"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   MaxWidth="240"
+                   AutomationProperties.AutomationId="GemShop_TxtDesc" />
+      </StackPanel>
+
+      <!-- ═══ Rechte Spalte: 3 Gem-Pakete nebeneinander ═══ -->
+      <ItemsControl Grid.Column="1"
+                    ItemsSource="{Binding Packages}"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    AutomationProperties.AutomationId="GemShop_PackageList">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <StackPanel Orientation="Horizontal" Spacing="12" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:GemPackageItem">
+            <Border CornerRadius="16"
+                    Padding="16"
+                    Width="180"
+                    BoxShadow="0 4 16 0 #40000000"
+                    Background="{DynamicResource SurfaceBrush}">
+              <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+
+                <!-- Badge (optional, oben rechts) -->
+                <Border Grid.Row="0"
+                        IsVisible="{Binding HasBadge}"
+                        CornerRadius="8"
+                        Padding="8,3"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,8">
+                  <Border.Background>
+                    <SolidColorBrush Color="#FF6F00" />
+                  </Border.Background>
+                  <TextBlock Text="{Binding BadgeText}"
+                             FontSize="11" FontWeight="Bold"
+                             Foreground="White" />
+                </Border>
+
+                <!-- Icon -->
+                <Border Grid.Row="1"
+                        Width="64" Height="64"
+                        CornerRadius="32"
+                        HorizontalAlignment="Center"
+                        Margin="0,0,0,10">
+                  <Border.Background>
+                    <SolidColorBrush Color="{Binding IconColor}" Opacity="0.15" />
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="{Binding IconKind}"
+                                   Width="36" Height="36"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center">
+                    <mi:MaterialIcon.Foreground>
+                      <SolidColorBrush Color="{Binding IconColor}" />
+                    </mi:MaterialIcon.Foreground>
+                  </mi:MaterialIcon>
+                </Border>
+
+                <!-- Gem-Anzahl -->
+                <StackPanel Grid.Row="2"
+                            Orientation="Horizontal"
+                            Spacing="6"
+                            HorizontalAlignment="Center"
+                            Margin="0,0,0,4">
+                  <mi:MaterialIcon Kind="DiamondStone" Width="18" Height="18"
+                                   Foreground="#E040FB" />
+                  <TextBlock Text="{Binding GemAmount, StringFormat='{}{0:N0}'}"
+                             FontSize="22" FontWeight="Bold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Paketname -->
+                <TextBlock Grid.Row="3"
+                           Text="{Binding DisplayName}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,10" />
+
+                <!-- Kauf-Button -->
+                <Button Grid.Row="4"
+                        Command="{Binding #GemShop_Root.((vm:GemShopViewModel)DataContext).PurchasePackageCommand}"
+                        CommandParameter="{Binding}"
+                        Classes="GameButton"
+                        HorizontalAlignment="Stretch"
+                        HorizontalContentAlignment="Center"
+                        CornerRadius="10"
+                        Padding="12,8"
+                        AutomationProperties.AutomationId="GemShop_BtnBuy">
+                  <Button.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                      <GradientStop Color="#7B1FA2" Offset="0" />
+                      <GradientStop Color="#E040FB" Offset="1" />
+                    </LinearGradientBrush>
+                  </Button.Background>
+                  <TextBlock Text="{Binding PriceText}"
+                             FontSize="15" FontWeight="Bold"
+                             Foreground="White" />
+                </Button>
+
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+    </Grid>
+  </Panel>
+
+</UserControl>

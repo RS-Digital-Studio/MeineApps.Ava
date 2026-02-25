@@ -325,6 +325,7 @@ public class LeagueService : ILeagueService
     private void ScheduleFirebasePush()
     {
         _pushDebounce?.Cancel();
+        _pushDebounce?.Dispose();
         _pushDebounce = new CancellationTokenSource();
         var token = _pushDebounce.Token;
 
@@ -521,5 +522,12 @@ public class LeagueService : ILeagueService
     private void SaveStats()
     {
         _preferences.Set(StatsKey, JsonSerializer.Serialize(_stats, JsonOptions));
+    }
+
+    public void Dispose()
+    {
+        _pushDebounce?.Cancel();
+        _pushDebounce?.Dispose();
+        _pushDebounce = null;
     }
 }

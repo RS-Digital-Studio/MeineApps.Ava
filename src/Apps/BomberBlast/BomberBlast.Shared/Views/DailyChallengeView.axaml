@@ -83,7 +83,7 @@
           </Border>
 
           <!-- Heute bereits gespielt Hinweis -->
-          <Border Background="#40FF6B00"
+          <Border Background="#60FF6B00"
                   CornerRadius="8" Padding="12,8"
                   IsVisible="{Binding IsCompletedToday}"
                   HorizontalAlignment="Center"

@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the high scores page.
 /// Zeigt die Top 10 Bestenlisten-Scores.
 /// </summary>
-public partial class HighScoresViewModel : ObservableObject
+public partial class HighScoresViewModel : ObservableObject, INavigable
 {
     private readonly IHighScoreService _highScoreService;
     private readonly IPurchaseService _purchaseService;
@@ -23,7 +23,7 @@ public partial class HighScoresViewModel : ObservableObject
     /// <summary>
     /// Event to request navigation. Parameter is the route string.
     /// </summary>
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -87,7 +87,7 @@ public partial class HighScoresViewModel : ObservableObject
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 }
 
@@ -111,4 +111,10 @@ public class ScoreDisplayItem
         2 => new SolidColorBrush(Color.Parse("#CD7F32")), // Bronze
         _ => Brushes.White
     };
+
+    /// <summary>Medaillen-Sichtbarkeit für Top 3</summary>
+    public bool IsRank1 => RankIndex == 0;
+    public bool IsRank2 => RankIndex == 1;
+    public bool IsRank3 => RankIndex == 2;
+    public bool IsRankOther => RankIndex >= 3;
 }

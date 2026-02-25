@@ -1,6 +1,7 @@
 using BomberBlast.Models;
 using BomberBlast.Models.Cosmetics;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Premium.Ava.Services;
 
 namespace BomberBlast.Services;
 
@@ -27,6 +28,8 @@ public class CustomizationService : ICustomizationService
 
     private readonly IPreferencesService _preferences;
     private readonly ICoinService _coinService;
+    private readonly IPurchaseService _purchaseService;
+    private IGemService? _gemService;
     private SkinDefinition _playerSkin;
     private BombSkinDefinition _bombSkin;
     private ExplosionSkinDefinition _explosionSkin;
@@ -54,10 +57,11 @@ public class CustomizationService : ICustomizationService
     public IReadOnlyList<VictoryDefinition> AvailableVictories => VictoryDefinitions.All;
     public IReadOnlyList<FrameDefinition> AvailableFrames => FrameDefinitions.All;
 
-    public CustomizationService(IPreferencesService preferences, ICoinService coinService)
+    public CustomizationService(IPreferencesService preferences, ICoinService coinService, IPurchaseService purchaseService)
     {
         _preferences = preferences;
         _coinService = coinService;
+        _purchaseService = purchaseService;
 
         // Gespeicherte Auswahl laden
         var savedSkinId = _preferences.Get(PLAYER_SKIN_KEY, "default");
@@ -104,6 +108,9 @@ public class CustomizationService : ICustomizationService
         _ownedFrames = new HashSet<string>(ownedFrames.Split(',', StringSplitOptions.RemoveEmptyEntries));
     }
 
+    /// <summary>Lazy-Injection für IGemService (vermeidet zirkuläre DI)</summary>
+    public void SetGemService(IGemService gemService) => _gemService = gemService;
+
     // === Spieler-Skins ===
 
     public void SetPlayerSkin(string skinId)
@@ -115,8 +122,8 @@ public class CustomizationService : ICustomizationService
     public bool IsPlayerSkinOwned(string skinId)
     {
         var skin = FindPlayerSkin(skinId);
-        // Premium-Only Skins ohne Preis = Premium-Feature, keine Coin-Zahlung
-        if (skin.IsPremiumOnly && skin.CoinPrice <= 0) return true; // Verfuegbar wenn Premium aktiv
+        // Premium-Only Skins ohne Preis = nur für Premium-Nutzer freigeschaltet
+        if (skin.IsPremiumOnly && skin.CoinPrice <= 0) return _purchaseService.IsPremium;
         // Kostenlose Skins (CoinPrice=0, nicht premium) = immer owned
         if (skin.CoinPrice <= 0) return true;
         return _ownedPlayerSkins.Contains(skinId);
@@ -130,6 +137,21 @@ public class CustomizationService : ICustomizationService
         if (skin.CoinPrice <= 0) return false;
 
         if (!_coinService.TrySpendCoins(skin.CoinPrice)) return false;
+
+        _ownedPlayerSkins.Add(skinId);
+        SaveOwnedPlayerSkins();
+        return true;
+    }
+
+    public bool TryPurchasePlayerSkinWithGems(string skinId)
+    {
+        if (_ownedPlayerSkins.Contains(skinId)) return false;
+        if (_gemService == null) return false;
+
+        var skin = FindPlayerSkin(skinId);
+        if (skin.GemPrice <= 0) return false;
+
+        if (!_gemService.TrySpendGems(skin.GemPrice)) return false;
 
         _ownedPlayerSkins.Add(skinId);
         SaveOwnedPlayerSkins();
@@ -152,6 +174,9 @@ public class CustomizationService : ICustomizationService
 
     public bool IsBombSkinOwned(string skinId)
     {
+        var skin = FindBombSkin(skinId);
+        // Premium-Only Skins ohne Preis = nur für Premium-Nutzer
+        if (skin.IsPremiumOnly && skin.CoinPrice <= 0) return _purchaseService.IsPremium;
         return _ownedBombSkins.Contains(skinId);
     }
 
@@ -179,6 +204,9 @@ public class CustomizationService : ICustomizationService
 
     public bool IsExplosionSkinOwned(string skinId)
     {
+        var skin = FindExplosionSkin(skinId);
+        // Premium-Only Skins ohne Preis = nur für Premium-Nutzer
+        if (skin.IsPremiumOnly && skin.CoinPrice <= 0) return _purchaseService.IsPremium;
         return _ownedExplosionSkins.Contains(skinId);
     }
 

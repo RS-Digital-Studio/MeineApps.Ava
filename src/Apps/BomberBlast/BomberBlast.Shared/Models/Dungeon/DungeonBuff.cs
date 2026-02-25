@@ -16,7 +16,13 @@ public enum DungeonBuffType
     FireImmunity,
     BlastRadius,
     BombTimer,
-    PowerUpMagnet
+    PowerUpMagnet,
+
+    // Legendäre Buffs (Phase B2)
+    Berserker,
+    TimeFreeze,
+    GoldRush,
+    Phantom
 }
 
 /// <summary>
@@ -26,7 +32,8 @@ public enum DungeonBuffRarity
 {
     Common,
     Rare,
-    Epic
+    Epic,
+    Legendary
 }
 
 /// <summary>
@@ -127,6 +134,32 @@ public static class DungeonBuffCatalog
             Type = DungeonBuffType.FireImmunity, NameKey = "DungeonBuffFireImmunity",
             DescKey = "DungeonBuffFireImmunityDesc", IconName = "ShieldFire",
             Rarity = DungeonBuffRarity.Epic, Weight = 8
+        },
+
+        // Legendary (Gewicht 3-4, extrem selten)
+        new()
+        {
+            Type = DungeonBuffType.Berserker, NameKey = "DungeonBuffBerserker",
+            DescKey = "DungeonBuffBerserkerDesc", IconName = "Sword",
+            Rarity = DungeonBuffRarity.Legendary, Weight = 4
+        },
+        new()
+        {
+            Type = DungeonBuffType.TimeFreeze, NameKey = "DungeonBuffTimeFreeze",
+            DescKey = "DungeonBuffTimeFreezeDesc", IconName = "Snowflake",
+            Rarity = DungeonBuffRarity.Legendary, Weight = 3
+        },
+        new()
+        {
+            Type = DungeonBuffType.GoldRush, NameKey = "DungeonBuffGoldRush",
+            DescKey = "DungeonBuffGoldRushDesc", IconName = "TreasureChest",
+            Rarity = DungeonBuffRarity.Legendary, Weight = 3
+        },
+        new()
+        {
+            Type = DungeonBuffType.Phantom, NameKey = "DungeonBuffPhantom",
+            DescKey = "DungeonBuffPhantomDesc", IconName = "Ghost",
+            Rarity = DungeonBuffRarity.Legendary, Weight = 3
         }
     ];
 

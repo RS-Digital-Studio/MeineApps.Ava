@@ -4,7 +4,7 @@ namespace BomberBlast.Services;
 /// Firebase REST API Client für Realtime Database + Anonymous Auth.
 /// Plattformübergreifend (Android + Desktop) via HttpClient.
 /// </summary>
-public interface IFirebaseService
+public interface IFirebaseService : IDisposable
 {
     /// <summary>Firebase User-ID (nach Authentifizierung).</summary>
     string? Uid { get; }

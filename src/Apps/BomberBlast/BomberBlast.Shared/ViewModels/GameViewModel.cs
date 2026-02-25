@@ -14,9 +14,9 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the game page.
 /// Wraps GameEngine, manages the game loop via render-driven updates, and owns SKCanvas rendering.
 /// </summary>
-public partial class GameViewModel : ObservableObject, IDisposable
+public partial class GameViewModel : ObservableObject, INavigable, IDisposable
 {
-    private const float MAX_DELTA_TIME = 0.1f;
+    private const float MAX_DELTA_TIME = 0.05f;
 
     private readonly GameEngine _gameEngine;
     private readonly IRewardedAdService _rewardedAdService;
@@ -24,6 +24,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
     private readonly IAdService _adService;
     private readonly IProgressService _progressService;
     private readonly IReviewService _reviewService;
+    private readonly IAppLogger _logger;
     private readonly Stopwatch _frameStopwatch = new();
     private CancellationTokenSource _gameEventCts = new();
     private bool _isInitialized;
@@ -45,9 +46,9 @@ public partial class GameViewModel : ObservableObject, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Event to request navigation. Parameter is the route string.
+    /// Typsicheres Navigations-Event (ersetzt String-basierte Routen).
     /// </summary>
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
 
     /// <summary>
     /// Event to request the canvas to invalidate (repaint).
@@ -106,7 +107,8 @@ public partial class GameViewModel : ObservableObject, IDisposable
         IPurchaseService purchaseService,
         IAdService adService,
         IProgressService progressService,
-        IReviewService reviewService)
+        IReviewService reviewService,
+        IAppLogger logger)
     {
         _gameEngine = gameEngine;
         _rewardedAdService = rewardedAdService;
@@ -114,6 +116,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
         _adService = adService;
         _progressService = progressService;
         _reviewService = reviewService;
+        _logger = logger;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -165,7 +168,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
             }
             catch
             {
-                NavigationRequested?.Invoke("..");
+                NavigationRequested?.Invoke(new GoBack());
                 return;
             }
         }
@@ -469,7 +472,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
     {
         _gameEngine.Pause();
         IsPaused = false;
-        NavigationRequested?.Invoke("Settings");
+        NavigationRequested?.Invoke(new GoSettings());
     }
 
     /// <summary>
@@ -489,7 +492,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
     {
         StopGameLoop();
         IsPaused = false;
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     [RelayCommand]
@@ -497,9 +500,11 @@ public partial class GameViewModel : ObservableObject, IDisposable
     {
         if (!CanDoubleScore) return;
 
-        bool rewarded = await _rewardedAdService.ShowAdAsync("score_double");
+        // Premium: Reward sofort gratis (kein Ad nötig)
+        bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("score_double");
         if (rewarded)
         {
+            if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();
             // Score im Engine verdoppeln
             _gameEngine.DoubleScore();
             LevelCompleteScore = _gameEngine.Score;
@@ -539,15 +544,15 @@ public partial class GameViewModel : ObservableObject, IDisposable
         if (_gameEngine.CurrentLevel >= 100 && !_gameEngine.IsDailyChallenge && !_gameEngine.IsQuickPlayMode)
         {
             // Alle 100 Level geschafft → Victory-Screen!
-            NavigationRequested?.Invoke($"Victory?score={score}&coins={coins}");
+            NavigationRequested?.Invoke(new GoVictory(Score: score, Coins: coins));
         }
         else if (_gameEngine.IsDailyChallenge || _gameEngine.IsQuickPlayMode)
         {
             // Daily Challenge / Quick Play → Game Over Screen mit Level-Complete-Flag (kein NextLevel)
-            NavigationRequested?.Invoke(
-                $"GameOver?score={score}&level={level}&highscore={isHighScore}&mode={mode}" +
-                $"&coins={coins}&levelcomplete=true&cancontinue=false" +
-                $"&enemypts={enemyPts}&timebonus={timeBonus}&effbonus={effBonus}&multiplier={multiplier:F2}");
+            NavigationRequested?.Invoke(new GoGameOver(
+                Score: score, Level: level, IsHighScore: isHighScore, Mode: mode,
+                Coins: coins, LevelComplete: true, CanContinue: false,
+                EnemyPoints: enemyPts, TimeBonus: timeBonus, EfficiencyBonus: effBonus, Multiplier: multiplier));
         }
         else
         {
@@ -596,14 +601,14 @@ public partial class GameViewModel : ObservableObject, IDisposable
                 var coins = _lastCoinsEarned;
                 var canContinue = _gameEngine.CanContinue;
 
-                // Survival: Kills und Zeit als Level-/Extra-Params übergeben
-                var survivalParams = _gameEngine.IsSurvivalMode
-                    ? $"&kills={_gameEngine.SurvivalKills}&survivaltime={_gameEngine.SurvivalTimeElapsed:F0}"
-                    : "";
+                // Survival: Kills und Zeit direkt im Record übergeben
+                var survivalKills = _gameEngine.IsSurvivalMode ? _gameEngine.SurvivalKills : 0;
+                var survivalTime = _gameEngine.IsSurvivalMode ? _gameEngine.SurvivalTimeElapsed : 0f;
 
-                NavigationRequested?.Invoke(
-                    $"GameOver?score={score}&level={level}&highscore={isHighScore}&mode={mode}" +
-                    $"&coins={coins}&levelcomplete=false&cancontinue={canContinue}{survivalParams}");
+                NavigationRequested?.Invoke(new GoGameOver(
+                    Score: score, Level: level, IsHighScore: isHighScore, Mode: mode,
+                    Coins: coins, LevelComplete: false, CanContinue: canContinue,
+                    Kills: survivalKills, SurvivalTime: survivalTime));
             });
         }
         catch (OperationCanceledException)
@@ -612,7 +617,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"HandleGameOver Fehler: {ex.Message}");
+            _logger.LogError("HandleGameOver Fehler", ex);
         }
     }
 
@@ -640,7 +645,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
                     await ProceedToNextLevel();
                 }
                 // Free User: Score-Verdopplung per Rewarded Ad anbieten
-                else if (_rewardedAdService.IsAvailable)
+                else if (_rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd)
                 {
                     // Game-Loop stoppen waehrend Overlay sichtbar
                     StopGameLoop();
@@ -663,7 +668,7 @@ public partial class GameViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"HandleLevelComplete Fehler: {ex.Message}");
+            _logger.LogError("HandleLevelComplete Fehler", ex);
         }
     }
 

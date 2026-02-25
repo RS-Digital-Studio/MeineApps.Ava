@@ -9,7 +9,7 @@ namespace BomberBlast.ViewModels;
 /// <summary>
 /// Profil-Seite: Spielername editieren, aktiver Skin/Frame, Stats-Übersicht.
 /// </summary>
-public partial class ProfileViewModel : ObservableObject
+public partial class ProfileViewModel : ObservableObject, INavigable
 {
     private readonly ILeagueService _leagueService;
     private readonly ICustomizationService _customizationService;
@@ -19,13 +19,15 @@ public partial class ProfileViewModel : ObservableObject
     private readonly IAchievementService _achievementService;
     private readonly ILocalizationService _localization;
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
 
     // === OBSERVABLE PROPERTIES ===
 
     [ObservableProperty] private string _titleText = "";
-    [ObservableProperty] private string _playerName = "";
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNameChanged))]
+    private string _playerName = "";
     [ObservableProperty] private string _nameHintText = "";
     [ObservableProperty] private string _saveButtonText = "";
     [ObservableProperty] private string _skinLabel = "";
@@ -49,6 +51,11 @@ public partial class ProfileViewModel : ObservableObject
     [ObservableProperty] private string _achievementsText = "";
     [ObservableProperty] private string _achievementsLabel = "";
     [ObservableProperty] private int _achievementPercent;
+
+    private string _originalName = "";
+
+    /// <summary>Ob der Spielername geändert wurde (Save-Button nur dann aktiv)</summary>
+    public bool IsNameChanged => (PlayerName?.Trim() ?? "") != _originalName;
 
     public ProfileViewModel(
         ILeagueService leagueService,
@@ -78,6 +85,8 @@ public partial class ProfileViewModel : ObservableObject
 
         // Spielernamen laden
         PlayerName = _leagueService.PlayerName;
+        _originalName = PlayerName?.Trim() ?? "";
+        OnPropertyChanged(nameof(IsNameChanged));
 
         // Skin-Info (PrimaryColor ist SKColor)
         var skin = _customizationService.PlayerSkin;
@@ -92,16 +101,16 @@ public partial class ProfileViewModel : ObservableObject
 
     public void UpdateLocalizedTexts()
     {
-        TitleText = _localization.GetString("ProfileTitle") ?? "Profil";
-        NameHintText = _localization.GetString("ProfileNameHint") ?? "Max. 16 Zeichen";
-        SaveButtonText = _localization.GetString("ProfileSave") ?? "Speichern";
+        TitleText = _localization.GetString("ProfileTitle") ?? "Profile";
+        NameHintText = _localization.GetString("ProfileNameHint") ?? "Max. 16 characters";
+        SaveButtonText = _localization.GetString("ProfileSave") ?? "Save";
         SkinLabel = _localization.GetString("ProfileSkin") ?? "Skin";
-        FrameLabel = _localization.GetString("ProfileFrame") ?? "Rahmen";
-        StarsLabel = _localization.GetString("ProfileStars") ?? "Sterne";
+        FrameLabel = _localization.GetString("ProfileFrame") ?? "Frame";
+        StarsLabel = _localization.GetString("ProfileStars") ?? "Stars";
         CoinsLabel = _localization.GetString("ProfileCoins") ?? "Coins";
         GemsLabel = _localization.GetString("ProfileGems") ?? "Gems";
-        LeagueLabel = _localization.GetString("ProfileLeague") ?? "Liga";
-        AchievementsLabel = _localization.GetString("ProfileAchievements") ?? "Erfolge";
+        LeagueLabel = _localization.GetString("ProfileLeague") ?? "League";
+        AchievementsLabel = _localization.GetString("ProfileAchievements") ?? "Achievements";
     }
 
     private void UpdateStats()
@@ -124,7 +133,7 @@ public partial class ProfileViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void GoBack() => NavigationRequested?.Invoke("..");
+    private void GoBack() => NavigationRequested?.Invoke(new GoBack());
 
     [RelayCommand]
     private void SaveName()
@@ -134,9 +143,11 @@ public partial class ProfileViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(name)) return;
 
         PlayerName = name;
+        _originalName = name;
+        OnPropertyChanged(nameof(IsNameChanged));
         _leagueService.SetPlayerName(name);
 
-        var msg = _localization.GetString("ProfileSaved") ?? "Gespeichert!";
+        var msg = _localization.GetString("ProfileSaved") ?? "Saved!";
         FloatingTextRequested?.Invoke(msg, "success");
     }
 }

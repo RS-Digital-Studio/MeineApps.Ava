@@ -25,6 +25,14 @@ public class CollectionService : ICollectionService
 
     private CollectionData _data;
 
+    // Dirty-Flag + Debounce: Verhindert JSON-Serialize + Preferences-Write bei jedem einzelnen Encounter
+    private bool _isDirty;
+    private DateTime _lastSaveTime = DateTime.MinValue;
+    private const int SaveDebounceMs = 5000;
+
+    // Lazy-Cache für GetEntries() (vermeidet Neu-Aufbau bei jedem Aufruf)
+    private readonly Dictionary<CollectionCategory, IReadOnlyList<CollectionEntry>> _entryCache = new();
+
     public event EventHandler? CollectionChanged;
 
     public CollectionService(
@@ -49,16 +57,24 @@ public class CollectionService : ICollectionService
 
     public IReadOnlyList<CollectionEntry> GetEntries(CollectionCategory category)
     {
-        return category switch
+        if (_entryCache.TryGetValue(category, out var cached))
+            return cached;
+
+        var entries = category switch
         {
             CollectionCategory.Enemies => BuildEnemyEntries(),
             CollectionCategory.Bosses => BuildBossEntries(),
             CollectionCategory.PowerUps => BuildPowerUpEntries(),
             CollectionCategory.BombCards => BuildCardEntries(),
             CollectionCategory.Cosmetics => BuildCosmeticEntries(),
-            _ => []
+            _ => new List<CollectionEntry>()
         };
+        _entryCache[category] = entries;
+        return entries;
     }
+
+    /// <summary>Cache invalidieren (bei Datenänderung)</summary>
+    private void InvalidateEntryCache() => _entryCache.Clear();
 
     // ═══════════════════════════════════════════════════════════════════════
     // FORTSCHRITT
@@ -117,7 +133,8 @@ public class CollectionService : ICollectionService
             _data.EnemyStats[key] = stats;
         }
         stats.TimesEncountered++;
-        Save();
+        InvalidateEntryCache();
+        MarkDirty();
         CollectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -133,7 +150,8 @@ public class CollectionService : ICollectionService
         // Encounter implizit mitzählen falls noch nicht geschehen
         if (stats.TimesEncountered < stats.TimesDefeated)
             stats.TimesEncountered = stats.TimesDefeated;
-        Save();
+        InvalidateEntryCache();
+        MarkDirty();
         CollectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -146,7 +164,8 @@ public class CollectionService : ICollectionService
             _data.BossStats[key] = stats;
         }
         stats.TimesEncountered++;
-        Save();
+        InvalidateEntryCache();
+        MarkDirty();
         CollectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -164,7 +183,8 @@ public class CollectionService : ICollectionService
         // Bestzeit tracken (nur wenn besser oder erste)
         if (stats.BestTimeSeconds <= 0 || timeSeconds < stats.BestTimeSeconds)
             stats.BestTimeSeconds = timeSeconds;
-        Save();
+        InvalidateEntryCache();
+        MarkDirty();
         CollectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -172,7 +192,8 @@ public class CollectionService : ICollectionService
     {
         _data.PowerUpCollected.TryGetValue(powerUpId, out int count);
         _data.PowerUpCollected[powerUpId] = count + 1;
-        Save();
+        InvalidateEntryCache();
+        MarkDirty();
         CollectionChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -214,6 +235,7 @@ public class CollectionService : ICollectionService
             _gemService.AddGems(milestone.GemReward);
 
         _data.ClaimedMilestones.Add(percentRequired);
+        InvalidateEntryCache();
         Save();
         CollectionChanged?.Invoke(this, EventArgs.Empty);
         return true;
@@ -481,9 +503,31 @@ public class CollectionService : ICollectionService
         }
     }
 
+    /// <summary>
+    /// Markiert Daten als geändert. Speichert nur wenn das Debounce-Intervall (5s) überschritten ist.
+    /// Verhindert Dutzende JSON-Serializes + Preferences-Writes pro Sekunde bei vielen Encounters.
+    /// </summary>
+    private void MarkDirty()
+    {
+        _isDirty = true;
+        var now = DateTime.UtcNow;
+        if ((now - _lastSaveTime).TotalMilliseconds >= SaveDebounceMs)
+            Save();
+    }
+
+    /// <summary>
+    /// Erzwingt das Speichern falls Dirty-Flag gesetzt (z.B. am Ende eines Levels).
+    /// </summary>
+    public void FlushIfDirty()
+    {
+        if (_isDirty) Save();
+    }
+
     private void Save()
     {
         var json = JsonSerializer.Serialize(_data, JsonOptions);
         _preferences.Set(PersistenceKey, json);
+        _isDirty = false;
+        _lastSaveTime = DateTime.UtcNow;
     }
 }

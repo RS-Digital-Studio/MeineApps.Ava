@@ -17,21 +17,17 @@ public partial class MainView : UserControl
     private Border? _settingsBorder;
     private Border? _highScoresBorder;
     private Border? _gameOverBorder;
-    private Border? _helpBorder;
     private Border? _shopBorder;
-    private Border? _achievementsBorder;
-    private Border? _dailyChallengeBorder;
     private Border? _victoryBorder;
-    private Border? _luckySpinBorder;
-    private Border? _weeklyChallengeBorder;
     private Border? _statisticsBorder;
     private Border? _quickPlayBorder;
-    private Border? _deckBorder;
     private Border? _dungeonBorder;
     private Border? _battlePassBorder;
-    private Border? _collectionBorder;
     private Border? _leagueBorder;
     private Border? _profileBorder;
+    private Border? _gemShopBorder;
+    private Border? _cardsBorder;
+    private Border? _challengesBorder;
 
     public MainView()
     {
@@ -50,21 +46,17 @@ public partial class MainView : UserControl
         _settingsBorder = this.FindControl<Border>("SettingsBorder");
         _highScoresBorder = this.FindControl<Border>("HighScoresBorder");
         _gameOverBorder = this.FindControl<Border>("GameOverBorder");
-        _helpBorder = this.FindControl<Border>("HelpBorder");
         _shopBorder = this.FindControl<Border>("ShopBorder");
-        _achievementsBorder = this.FindControl<Border>("AchievementsBorder");
-        _dailyChallengeBorder = this.FindControl<Border>("DailyChallengeBorder");
         _victoryBorder = this.FindControl<Border>("VictoryBorder");
-        _luckySpinBorder = this.FindControl<Border>("LuckySpinBorder");
-        _weeklyChallengeBorder = this.FindControl<Border>("WeeklyChallengeBorder");
         _statisticsBorder = this.FindControl<Border>("StatisticsBorder");
         _quickPlayBorder = this.FindControl<Border>("QuickPlayBorder");
-        _deckBorder = this.FindControl<Border>("DeckBorder");
         _dungeonBorder = this.FindControl<Border>("DungeonBorder");
         _battlePassBorder = this.FindControl<Border>("BattlePassBorder");
-        _collectionBorder = this.FindControl<Border>("CollectionBorder");
         _leagueBorder = this.FindControl<Border>("LeagueBorder");
         _profileBorder = this.FindControl<Border>("ProfileBorder");
+        _gemShopBorder = this.FindControl<Border>("GemShopBorder");
+        _cardsBorder = this.FindControl<Border>("CardsBorder");
+        _challengesBorder = this.FindControl<Border>("ChallengesBorder");
 
         // Initial: MainMenu aktiv setzen
         UpdateActiveClasses();
@@ -114,21 +106,17 @@ public partial class MainView : UserControl
         SetActiveClass(_settingsBorder, _vm.IsSettingsActive);
         SetActiveClass(_highScoresBorder, _vm.IsHighScoresActive);
         SetActiveClass(_gameOverBorder, _vm.IsGameOverActive);
-        SetActiveClass(_helpBorder, _vm.IsHelpActive);
         SetActiveClass(_shopBorder, _vm.IsShopActive);
-        SetActiveClass(_achievementsBorder, _vm.IsAchievementsActive);
-        SetActiveClass(_dailyChallengeBorder, _vm.IsDailyChallengeActive);
         SetActiveClass(_victoryBorder, _vm.IsVictoryActive);
-        SetActiveClass(_luckySpinBorder, _vm.IsLuckySpinActive);
-        SetActiveClass(_weeklyChallengeBorder, _vm.IsWeeklyChallengeActive);
         SetActiveClass(_statisticsBorder, _vm.IsStatisticsActive);
         SetActiveClass(_quickPlayBorder, _vm.IsQuickPlayActive);
-        SetActiveClass(_deckBorder, _vm.IsDeckActive);
         SetActiveClass(_dungeonBorder, _vm.IsDungeonActive);
         SetActiveClass(_battlePassBorder, _vm.IsBattlePassActive);
-        SetActiveClass(_collectionBorder, _vm.IsCollectionActive);
         SetActiveClass(_leagueBorder, _vm.IsLeagueActive);
         SetActiveClass(_profileBorder, _vm.IsProfileActive);
+        SetActiveClass(_gemShopBorder, _vm.IsGemShopActive);
+        SetActiveClass(_cardsBorder, _vm.IsCardsActive);
+        SetActiveClass(_challengesBorder, _vm.IsChallengesActive);
     }
 
     private static void SetActiveClass(Border? border, bool isActive)
@@ -167,5 +155,21 @@ public partial class MainView : UserControl
     private void OnCelebration()
     {
         CelebrationCanvas.ShowConfetti();
+    }
+
+    protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        // Events abmelden bei Detach (verhindert Memory Leaks)
+        if (_vm != null)
+        {
+            _vm.FloatingTextRequested -= OnFloatingText;
+            _vm.CelebrationRequested -= OnCelebration;
+            _vm.PropertyChanged -= OnViewModelPropertyChanged;
+            _vm = null;
+        }
+
+        DataContextChanged -= OnDataContextChanged;
     }
 }

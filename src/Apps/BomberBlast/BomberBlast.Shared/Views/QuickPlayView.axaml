@@ -44,7 +44,7 @@
       </Border>
 
       <!-- Content: Landscape 2-Spalten Layout -->
-      <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="24,16">
+      <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="24,16,24,80">
 
         <!-- Linke Spalte: Schwierigkeit -->
         <Border Grid.Column="0" Classes="CardElevated"

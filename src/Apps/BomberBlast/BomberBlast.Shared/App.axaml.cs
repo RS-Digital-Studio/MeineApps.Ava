@@ -47,6 +47,11 @@ public partial class App : Application
     /// </summary>
     public static Func<IServiceProvider, ICloudSaveService>? CloudSaveServiceFactory { get; set; }
 
+    /// <summary>
+    /// Factory fuer plattformspezifischen IVibrationService (Android setzt AndroidVibrationService).
+    /// </summary>
+    public static Func<IServiceProvider, IVibrationService>? VibrationServiceFactory { get; set; }
+
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
@@ -59,18 +64,31 @@ public partial class App : Application
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
+        // Statischer Logger für ShaderEffects (nicht DI-verwaltet)
+        ShaderEffects.Logger = Services.GetRequiredService<IAppLogger>();
+
         // Lazy-Injection: AchievementService in Services verdrahten (vermeidet zirkuläre DI)
         var achievementService = Services.GetRequiredService<IAchievementService>();
-        (Services.GetRequiredService<IBattlePassService>() as BattlePassService)?.SetAchievementService(achievementService);
-        (Services.GetRequiredService<ICardService>() as CardService)?.SetAchievementService(achievementService);
-        (Services.GetRequiredService<ILeagueService>() as LeagueService)?.SetAchievementService(achievementService);
-        (Services.GetRequiredService<IDailyMissionService>() as DailyMissionService)?.SetAchievementService(achievementService);
+        Services.GetRequiredService<IBattlePassService>().SetAchievementService(achievementService);
+        Services.GetRequiredService<ICardService>().SetAchievementService(achievementService);
+        Services.GetRequiredService<ILeagueService>().SetAchievementService(achievementService);
+        Services.GetRequiredService<IDailyMissionService>().SetAchievementService(achievementService);
 
         // Lazy-Injection: Mission-Services in GemService + CardService verdrahten (Phase 9.4)
         var weeklyService = Services.GetRequiredService<IWeeklyChallengeService>();
         var dailyMissionService = Services.GetRequiredService<IDailyMissionService>();
-        (Services.GetRequiredService<IGemService>() as GemService)?.SetMissionServices(weeklyService, dailyMissionService);
-        (Services.GetRequiredService<ICardService>() as CardService)?.SetMissionServices(weeklyService, dailyMissionService);
+        Services.GetRequiredService<IGemService>().SetMissionServices(weeklyService, dailyMissionService);
+        Services.GetRequiredService<ICardService>().SetMissionServices(weeklyService, dailyMissionService);
+
+        // Lazy-Injection: CustomizationService braucht IGemService für Gem-Skins
+        var gemService = Services.GetRequiredService<IGemService>();
+        if (Services.GetRequiredService<ICustomizationService>() is CustomizationService customization)
+            customization.SetGemService(gemService);
+
+        // Lazy-Injection: DungeonService braucht IDungeonUpgradeService für permanente Upgrades
+        var dungeonUpgradeService = Services.GetRequiredService<IDungeonUpgradeService>();
+        if (Services.GetRequiredService<IDungeonService>() is DungeonService dungeonSvc)
+            dungeonSvc.SetUpgradeService(dungeonUpgradeService);
 
         // Initialize localization
         var locService = Services.GetRequiredService<ILocalizationService>();
@@ -102,6 +120,9 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services)
     {
+        // Logging
+        services.AddSingleton<IAppLogger, AppLogger>();
+
         // Core Services
         services.AddSingleton<IPreferencesService>(sp => new PreferencesService("BomberBlast"));
         services.AddSingleton<IThemeService, ThemeService>();
@@ -151,6 +172,7 @@ public partial class App : Application
         services.AddSingleton<IDailyMissionService, DailyMissionService>();
         services.AddSingleton<ICardService, CardService>();
         services.AddSingleton<IDungeonService, DungeonService>();
+        services.AddSingleton<IDungeonUpgradeService, DungeonUpgradeService>();
         services.AddSingleton<IBattlePassService, BattlePassService>();
         services.AddSingleton<ICollectionService, CollectionService>();
         services.AddSingleton<IFirebaseService, FirebaseService>();
@@ -162,6 +184,15 @@ public partial class App : Application
         else
             services.AddSingleton<ICloudSaveService, NullCloudSaveService>();
 
+        services.AddSingleton<IStarterPackService, StarterPackService>();
+        services.AddSingleton<IRotatingDealsService, RotatingDealsService>();
+
+        // Vibration (Android-Override: Echte Vibration statt NullVibrationService)
+        if (VibrationServiceFactory != null)
+            services.AddSingleton<IVibrationService>(sp => VibrationServiceFactory!(sp));
+        else
+            services.AddSingleton<IVibrationService, NullVibrationService>();
+        services.AddSingleton<IGameTrackingService, GameTrackingService>();
         services.AddSingleton<SoundManager>();
         services.AddSingleton<InputManager>();
         services.AddSingleton<GameRenderer>();
@@ -191,5 +222,6 @@ public partial class App : Application
         services.AddSingleton<CollectionViewModel>();
         services.AddSingleton<LeagueViewModel>();
         services.AddSingleton<ProfileViewModel>();
+        services.AddSingleton<GemShopViewModel>();
     }
 }

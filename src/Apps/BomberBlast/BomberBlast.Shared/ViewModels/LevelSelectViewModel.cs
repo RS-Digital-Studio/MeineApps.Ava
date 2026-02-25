@@ -15,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// Power-Up Boost Overlay ab Level 20 (Rewarded Ad).
 /// Implementiert IDisposable fuer BalanceChanged-Unsubscription.
 /// </summary>
-public partial class LevelSelectViewModel : ObservableObject, IDisposable
+public partial class LevelSelectViewModel : ObservableObject, INavigable, IGameJuiceEmitter, IDisposable
 {
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;
@@ -27,7 +27,7 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action? CelebrationRequested;
     public event Action<string, string>? FloatingTextRequested;
 
@@ -260,9 +260,10 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
             return;
         }
 
-        // Ab Level 20: Boost-Overlay anbieten
+        // Ab Level 20: Boost-Overlay anbieten (Cooldown-Check für Free-User)
         bool showBoost = level.LevelNumber >= 20;
-        if (showBoost && (_purchaseService.IsPremium || _rewardedAdService.IsAvailable))
+        bool adAvailable = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+        if (showBoost && (_purchaseService.IsPremium || adAvailable))
         {
             PendingLevel = level.LevelNumber;
             PickRandomBoost();
@@ -270,7 +271,7 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
             return;
         }
 
-        NavigationRequested?.Invoke($"Game?mode=story&level={level.LevelNumber}");
+        NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: level.LevelNumber));
     }
 
     private void PickRandomBoost()
@@ -290,7 +291,7 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
         BoostDescText = _localizationService.GetString("PowerUpBoostDesc");
         BoostDeclineText = _localizationService.GetString("WithoutBoost");
         BoostAcceptText = _purchaseService.IsPremium
-            ? _localizationService.GetString("BoostFree") ?? "Boost aktivieren"
+            ? _localizationService.GetString("BoostFree") ?? "Activate boost"
             : _localizationService.GetString("WatchVideo");
 
         BoostPowerUpName = _pendingBoostType switch
@@ -310,7 +311,7 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
         // Premium: Boost kostenlos (kein Ad nötig)
         if (_purchaseService.IsPremium)
         {
-            NavigationRequested?.Invoke($"Game?mode=story&level={PendingLevel}&boost={_pendingBoostType}");
+            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, Boost: _pendingBoostType));
             return;
         }
 
@@ -318,12 +319,13 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
         var success = await _rewardedAdService.ShowAdAsync("power_up");
         if (success)
         {
-            NavigationRequested?.Invoke($"Game?mode=story&level={PendingLevel}&boost={_pendingBoostType}");
+            RewardedAdCooldownTracker.RecordAdShown();
+            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel, Boost: _pendingBoostType));
         }
         else
         {
             // Ad fehlgeschlagen, normal starten
-            NavigationRequested?.Invoke($"Game?mode=story&level={PendingLevel}");
+            NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel));
         }
     }
 
@@ -331,13 +333,13 @@ public partial class LevelSelectViewModel : ObservableObject, IDisposable
     private void DeclineBoost()
     {
         ShowBoostOverlay = false;
-        NavigationRequested?.Invoke($"Game?mode=story&level={PendingLevel}");
+        NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: PendingLevel));
     }
 
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     public void Dispose()

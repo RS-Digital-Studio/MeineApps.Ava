@@ -14,14 +14,15 @@ namespace BomberBlast.ViewModels;
 /// Karten upgraden. Landscape 2-Spalten-Layout (Sammlung links, Deck+Detail rechts).
 /// Zeigt ALLE 13 Karten (besessene + nicht-besessene als gesperrt).
 /// </summary>
-public partial class DeckViewModel : ObservableObject
+public partial class DeckViewModel : ObservableObject, INavigable, IGameJuiceEmitter
 {
     private readonly ICardService _cardService;
     private readonly ICoinService _coinService;
+    private readonly IGemService _gemService;
     private readonly ILocalizationService _localization;
     private readonly IBattlePassService _battlePassService;
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
 
@@ -118,15 +119,40 @@ public partial class DeckViewModel : ObservableObject
     [ObservableProperty]
     private string _notOwnedText = "";
 
+    [ObservableProperty]
+    private string _buyCardGemsText = "";
+
+    [ObservableProperty]
+    private bool _canBuyCardForGems;
+
+    [ObservableProperty]
+    private int _selectedCardGemPrice;
+
+    [ObservableProperty]
+    private string _gemsText = "";
+
+    /// <summary>Ob der 5. Deck-Slot freigeschaltet ist</summary>
+    [ObservableProperty]
+    private bool _isSlot5Unlocked;
+
+    /// <summary>Ob der 5. Slot kaufbar ist (genug Gems + noch nicht freigeschaltet)</summary>
+    [ObservableProperty]
+    private bool _canUnlockSlot5;
+
+    /// <summary>Text für den Unlock-Button</summary>
+    [ObservableProperty]
+    private string _unlockSlot5Text = "";
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public DeckViewModel(ICardService cardService, ICoinService coinService, ILocalizationService localization,
-        IBattlePassService battlePassService)
+    public DeckViewModel(ICardService cardService, ICoinService coinService, IGemService gemService,
+        ILocalizationService localization, IBattlePassService battlePassService)
     {
         _cardService = cardService;
         _coinService = coinService;
+        _gemService = gemService;
         _localization = localization;
         _battlePassService = battlePassService;
 
@@ -139,7 +165,7 @@ public partial class DeckViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     [RelayCommand]
-    private void GoBack() => NavigationRequested?.Invoke("..");
+    private void GoBack() => NavigationRequested?.Invoke(new GoBack());
 
     [RelayCommand]
     private void SelectCard(CardDisplayItem? card)
@@ -152,10 +178,14 @@ public partial class DeckViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void EquipToSlot(int slotIndex)
+    private void EquipToSlot(string slotStr)
     {
+        // XAML CommandParameter="0" übergibt string, nicht int
+        if (!int.TryParse(slotStr, out var slotIndex)) return;
         if (SelectedCard == null || !SelectedCard.IsOwned) return;
         if (slotIndex < 0 || slotIndex >= CardCatalog.MaxDeckSlots) return;
+        // Slot 5 (Index 4) nur wenn freigeschaltet
+        if (slotIndex >= CardCatalog.DefaultDeckSlots && !_cardService.IsSlot5Unlocked) return;
 
         _cardService.EquipCard(SelectedCard.BombType, slotIndex);
         RefreshAll();
@@ -165,6 +195,8 @@ public partial class DeckViewModel : ObservableObject
     private void UnequipSlot(int slotIndex)
     {
         if (slotIndex < 0 || slotIndex >= CardCatalog.MaxDeckSlots) return;
+        // Slot 5 (Index 4) nur wenn freigeschaltet
+        if (slotIndex >= CardCatalog.DefaultDeckSlots && !_cardService.IsSlot5Unlocked) return;
 
         _cardService.UnequipSlot(slotIndex);
         RefreshAll();
@@ -189,7 +221,7 @@ public partial class DeckViewModel : ObservableObject
 
             string levelName = owned.Level switch
             {
-                2 => _localization.GetString("CardLevelSilver") ?? "Silber",
+                2 => _localization.GetString("CardLevelSilver") ?? "Silver",
                 3 => _localization.GetString("CardLevelGold") ?? "Gold",
                 _ => ""
             };
@@ -197,6 +229,61 @@ public partial class DeckViewModel : ObservableObject
             CelebrationRequested?.Invoke();
             RefreshAll();
             UpdateSelectedCardDetails();
+        }
+    }
+
+    /// <summary>Karte für Gems kaufen (Rare 15, Epic 30, Legendary 75)</summary>
+    [RelayCommand]
+    private void BuyCardForGems()
+    {
+        if (SelectedCard == null || !SelectedCard.IsOwned) return;
+
+        var cardDef = CardCatalog.GetCard(SelectedCard.BombType);
+        var owned = _cardService.GetOwnedCard(SelectedCard.BombType);
+        if (cardDef == null || owned == null) return;
+
+        // Nicht kaufen wenn max Level (3)
+        if (!owned.CanUpgrade) return;
+
+        int gemPrice = GetGemPriceForRarity(cardDef.Rarity);
+        if (gemPrice <= 0) return;
+
+        if (!_gemService.TrySpendGems(gemPrice)) return;
+
+        // Duplikat hinzufügen (für Upgrades)
+        _cardService.AddCard(SelectedCard.BombType);
+
+        FloatingTextRequested?.Invoke($"+1 {_localization.GetString(cardDef.NameKey) ?? cardDef.NameKey}", "#00BCD4");
+        RefreshAll();
+        UpdateSelectedCardDetails();
+        UpdateGemDisplay();
+    }
+
+    /// <summary>5. Deck-Slot für 20 Gems freischalten</summary>
+    [RelayCommand]
+    private void UnlockSlot5()
+    {
+        if (IsSlot5Unlocked) return;
+
+        if (!_gemService.CanAfford(CardCatalog.Slot5UnlockCost))
+        {
+            FloatingTextRequested?.Invoke(
+                _localization.GetString("InsufficientGems") ?? "Not enough Gems",
+                "warning");
+            return;
+        }
+
+        if (_cardService.TryUnlockSlot5(_gemService))
+        {
+            FloatingTextRequested?.Invoke($"-{CardCatalog.Slot5UnlockCost} Gems", "#00BCD4");
+            FloatingTextRequested?.Invoke(
+                _localization.GetString("DeckSlot5Unlocked") ?? "Slot #5 unlocked!",
+                "#FFD700");
+            CelebrationRequested?.Invoke();
+            IsSlot5Unlocked = true;
+            CanUnlockSlot5 = false;
+            RefreshAll();
+            UpdateGemDisplay();
         }
     }
 
@@ -220,12 +307,12 @@ public partial class DeckViewModel : ObservableObject
     public void UpdateLocalizedTexts()
     {
         TitleText = _localization.GetString("DeckTitle") ?? "Deck-Builder";
-        SelectCardHintText = _localization.GetString("DeckSelectCardHint") ?? "Karte auswählen";
+        SelectCardHintText = _localization.GetString("DeckSelectCardHint") ?? "Select a card";
         DeckLabel = _localization.GetString("DeckLabel") ?? "Deck";
-        StrengthLabel = _localization.GetString("CardStrength") ?? "Stärke";
-        DropSourceLabel = _localization.GetString("CardDropSource") ?? "Fundorte";
+        StrengthLabel = _localization.GetString("CardStrength") ?? "Strength";
+        DropSourceLabel = _localization.GetString("CardDropSource") ?? "Drop Sources";
         UpgradeLabel = _localization.GetString("CardUpgradeLabel") ?? "Upgrade";
-        NotOwnedText = _localization.GetString("CardNotOwned") ?? "Noch nicht gefunden";
+        NotOwnedText = _localization.GetString("CardNotOwned") ?? "Not found yet";
         UpdateCoins();
     }
 
@@ -291,8 +378,17 @@ public partial class DeckViewModel : ObservableObject
         DeckSlots.Clear();
         var slots = _cardService.EquippedSlots;
         int equippedCount = 0;
+        bool slot5Unlocked = _cardService.IsSlot5Unlocked;
+        IsSlot5Unlocked = slot5Unlocked;
+        CanUnlockSlot5 = !slot5Unlocked && _gemService.CanAfford(CardCatalog.Slot5UnlockCost);
+        UnlockSlot5Text = string.Format(
+            _localization.GetString("DeckUnlockSlot5") ?? "Unlock Slot #5 ({0} Gems)",
+            CardCatalog.Slot5UnlockCost);
 
-        for (int i = 0; i < CardCatalog.MaxDeckSlots; i++)
+        // Verfügbare Slots: 4 Basis + ggf. freigeschalteter 5. Slot
+        int visibleSlots = slot5Unlocked ? CardCatalog.MaxDeckSlots : CardCatalog.DefaultDeckSlots;
+
+        for (int i = 0; i < visibleSlots; i++)
         {
             var slotType = i < slots.Count ? slots[i] : BombType.Normal;
             bool isEmpty = slotType == BombType.Normal;
@@ -309,6 +405,7 @@ public partial class DeckViewModel : ObservableObject
                 SlotIndex = i,
                 BombType = slotType,
                 IsEmpty = isEmpty,
+                IsLocked = false,
                 Name = cardDef != null ? (_localization.GetString(cardDef.NameKey) ?? "") : "",
                 Rarity = cardDef?.Rarity ?? Rarity.Common,
                 Level = owned?.Level ?? 0,
@@ -318,7 +415,7 @@ public partial class DeckViewModel : ObservableObject
             });
         }
 
-        DeckCountText = $"{equippedCount}/{CardCatalog.MaxDeckSlots}";
+        DeckCountText = $"{equippedCount}/{visibleSlots}";
     }
 
     private void UpdateCoins()
@@ -359,7 +456,7 @@ public partial class DeckViewModel : ObservableObject
             string levelStr = owned.Level switch
             {
                 1 => _localization.GetString("CardLevelBronze") ?? "Bronze",
-                2 => _localization.GetString("CardLevelSilver") ?? "Silber",
+                2 => _localization.GetString("CardLevelSilver") ?? "Silver",
                 3 => _localization.GetString("CardLevelGold") ?? "Gold",
                 _ => ""
             };
@@ -397,17 +494,22 @@ public partial class DeckViewModel : ObservableObject
             SelectedCardStrengthText = "";
             SelectedCardUsesText = $"{cardDef.BaseBronzeUses} {_localization.GetString("CardUses") ?? "Uses"} (Lv.1)";
             SelectedCardUpgradeText = "";
+            CanBuyCardForGems = false;
             CanUpgradeSelected = false;
             UpgradeProgressPercent = 0;
             ShowUpgradeProgress = false;
         }
+
+        // Gem-Kauf-Status aktualisieren
+        UpdateGemBuyState();
+        UpdateGemDisplay();
     }
 
     private string GetDropSourceText(Rarity rarity)
     {
         // Drop-Quellen je nach Rarität
-        string levelDrop = _localization.GetString("DropSourceLevel") ?? "Level-Abschluss";
-        string bossDrop = _localization.GetString("DropSourceBoss") ?? "Boss-Kampf";
+        string levelDrop = _localization.GetString("DropSourceLevel") ?? "Level Complete";
+        string bossDrop = _localization.GetString("DropSourceBoss") ?? "Boss Fight";
         string dungeonDrop = _localization.GetString("DropSourceDungeon") ?? "Dungeon";
 
         return rarity switch
@@ -447,6 +549,54 @@ public partial class DeckViewModel : ObservableObject
             if (slots[i] == type) return true;
         }
         return false;
+    }
+
+    /// <summary>Gem-Preis je nach Rarität: Rare 15, Epic 30, Legendary 75</summary>
+    private static int GetGemPriceForRarity(Rarity rarity) => rarity switch
+    {
+        Rarity.Rare => 15,
+        Rarity.Epic => 30,
+        Rarity.Legendary => 75,
+        _ => 0 // Common kann nicht für Gems gekauft werden
+    };
+
+    private void UpdateGemDisplay()
+    {
+        GemsText = $"{_gemService.Balance:N0}";
+    }
+
+    /// <summary>Aktualisiert die Gem-Kauf-Anzeige für die ausgewählte Karte</summary>
+    private void UpdateGemBuyState()
+    {
+        if (SelectedCard == null || !SelectedCard.IsOwned)
+        {
+            CanBuyCardForGems = false;
+            BuyCardGemsText = "";
+            SelectedCardGemPrice = 0;
+            return;
+        }
+
+        var cardDef = CardCatalog.GetCard(SelectedCard.BombType);
+        var owned = _cardService.GetOwnedCard(SelectedCard.BombType);
+        if (cardDef == null || owned == null || !owned.CanUpgrade)
+        {
+            CanBuyCardForGems = false;
+            BuyCardGemsText = "";
+            SelectedCardGemPrice = 0;
+            return;
+        }
+
+        int gemPrice = GetGemPriceForRarity(cardDef.Rarity);
+        if (gemPrice <= 0)
+        {
+            CanBuyCardForGems = false;
+            return;
+        }
+
+        SelectedCardGemPrice = gemPrice;
+        CanBuyCardForGems = _gemService.CanAfford(gemPrice);
+        BuyCardGemsText = string.Format(
+            _localization.GetString("BuyCardGems") ?? "Buy for {0} Gems", gemPrice);
     }
 }
 
@@ -522,6 +672,7 @@ public class DeckSlotItem
     public int SlotIndex { get; set; }
     public BombType BombType { get; set; }
     public bool IsEmpty { get; set; }
+    public bool IsLocked { get; set; }
     public string Name { get; set; } = "";
     public Rarity Rarity { get; set; }
     public int Level { get; set; }

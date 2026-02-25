@@ -50,11 +50,26 @@ public interface IBattlePassService
     /// </summary>
     void ActivatePremium();
 
+    /// <summary>Ob der 2x XP-Boost gerade aktiv ist</summary>
+    bool IsXpBoostActive { get; }
+
+    /// <summary>Ablaufzeitpunkt des XP-Boosts (null wenn nicht aktiv)</summary>
+    DateTime? XpBoostExpiresAt { get; }
+
+    /// <summary>
+    /// Aktiviert den 2x XP-Boost für 24 Stunden (kostet 20 Gems).
+    /// Gibt true zurück wenn erfolgreich aktiviert.
+    /// </summary>
+    bool ActivateXpBoost();
+
     /// <summary>Event wenn sich der Battle Pass ändert (XP, Tier-Up, Claim)</summary>
     event Action? BattlePassChanged;
 
     /// <summary>Event wenn ein Tier aufgestiegen wurde (mit Tier-Nummer)</summary>
     event Action<int>? TierUpReached;
+
+    /// <summary>Lazy-Injection: IAchievementService nach DI-Build setzen (zirkuläre Abhängigkeit)</summary>
+    void SetAchievementService(IAchievementService achievementService);
 }
 
 /// <summary>

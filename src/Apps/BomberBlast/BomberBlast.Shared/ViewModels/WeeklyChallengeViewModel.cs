@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für die wöchentlichen Herausforderungen.
 /// Zeigt 5 Missionen mit Fortschritt, Bonus-Bereich und Countdown bis Reset.
 /// </summary>
-public partial class WeeklyChallengeViewModel : ObservableObject
+public partial class WeeklyChallengeViewModel : ObservableObject, INavigable, IGameJuiceEmitter
 {
     private readonly IWeeklyChallengeService _weeklyService;
     private readonly IDailyMissionService _dailyMissionService;
@@ -19,7 +19,7 @@ public partial class WeeklyChallengeViewModel : ObservableObject
     private readonly ILocalizationService _localizationService;
     private readonly IAchievementService _achievementService;
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
 
@@ -144,7 +144,7 @@ public partial class WeeklyChallengeViewModel : ObservableObject
     [RelayCommand]
     private void Back()
     {
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     private void UpdateMissions()

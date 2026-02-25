@@ -16,6 +16,9 @@ public interface IShopService
     /// <summary>Upgrade kaufen (prueft Coins, upgraded Level, speichert)</summary>
     bool TryPurchase(UpgradeType type);
 
+    /// <summary>Upgrade kostenlos anwenden (ohne Coin-Abzug, z.B. per Rewarded Ad)</summary>
+    bool TryPurchaseFree(UpgradeType type);
+
     /// <summary>Score-Multiplikator (1.0 / 1.25 / 1.5 / 2.0)</summary>
     float GetScoreMultiplier();
 
@@ -42,6 +45,12 @@ public interface IShopService
 
     /// <summary>Ob Klebe-Bombe freigeschaltet ist</summary>
     bool HasStickyBomb();
+
+    /// <summary>Gem-Preis für das nächste Upgrade-Level (0 = nicht mit Gems kaufbar)</summary>
+    int GetGemPrice(UpgradeType type);
+
+    /// <summary>Upgrade mit Gems kaufen (Alternative zu Coins, ab Level 3)</summary>
+    bool TryPurchaseWithGems(UpgradeType type);
 
     /// <summary>Alle Upgrades zuruecksetzen</summary>
     void ResetUpgrades();

@@ -83,6 +83,7 @@ public class CloudSaveService : ICloudSaveService
     private readonly ICoinService _coinService;
     private readonly IGemService _gemService;
     private readonly ICardService _cardService;
+    private readonly IAppLogger _logger;
 
     private CancellationTokenSource? _debounceCts;
     private bool _isSyncing;
@@ -99,7 +100,8 @@ public class CloudSaveService : ICloudSaveService
         IProgressService progressService,
         ICoinService coinService,
         IGemService gemService,
-        ICardService cardService)
+        ICardService cardService,
+        IAppLogger logger)
     {
         _preferences = preferences;
         _playGames = playGames;
@@ -107,6 +109,7 @@ public class CloudSaveService : ICloudSaveService
         _coinService = coinService;
         _gemService = gemService;
         _cardService = cardService;
+        _logger = logger;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -161,7 +164,7 @@ public class CloudSaveService : ICloudSaveService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"CloudSave Load Fehler: {ex.Message}");
+            _logger.LogError("CloudSave Load Fehler", ex);
             return false;
         }
         finally
@@ -181,6 +184,7 @@ public class CloudSaveService : ICloudSaveService
 
         // Vorherigen Debounce-Timer abbrechen
         _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
         _debounceCts = new CancellationTokenSource();
         var token = _debounceCts.Token;
 
@@ -213,7 +217,7 @@ public class CloudSaveService : ICloudSaveService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"CloudSave Upload Fehler: {ex.Message}");
+            _logger.LogError("CloudSave Upload Fehler", ex);
         }
         finally
         {
@@ -245,7 +249,7 @@ public class CloudSaveService : ICloudSaveService
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"CloudSave ForceDownload Fehler: {ex.Message}");
+            _logger.LogError("CloudSave ForceDownload Fehler", ex);
             return false;
         }
         finally
@@ -324,5 +328,12 @@ public class CloudSaveService : ICloudSaveService
     {
         _isSyncing = syncing;
         SyncStatusChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void Dispose()
+    {
+        _debounceCts?.Cancel();
+        _debounceCts?.Dispose();
+        _debounceCts = null;
     }
 }

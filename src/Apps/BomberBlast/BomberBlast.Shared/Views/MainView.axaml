@@ -47,10 +47,45 @@
         <views:LevelSelectView DataContext="{Binding LevelSelectVm}" />
       </Border>
 
-      <!-- Settings -->
+      <!-- Einstellungen + Hilfe (kombiniert mit Tab-Bar) -->
       <Border Classes="PageView" x:Name="SettingsBorder"
               AutomationProperties.AutomationId="MainView_PageSettings">
-        <views:SettingsView DataContext="{Binding SettingsVm}" />
+        <Grid RowDefinitions="Auto,*">
+          <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
+            <Grid ColumnDefinitions="*,*" Height="28">
+              <Panel Grid.Column="0">
+                <Border IsVisible="{Binding !IsSettingsHelpTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate Settings}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding IsSettingsHelpTab}" Command="{Binding SwitchToSettingsTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate Settings}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+              <Panel Grid.Column="1">
+                <Border IsVisible="{Binding IsSettingsHelpTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate Help}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding !IsSettingsHelpTab}" Command="{Binding SwitchToHelpTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate Help}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+            </Grid>
+          </Border>
+          <Panel Grid.Row="1">
+            <Border IsVisible="{Binding !IsSettingsHelpTab}">
+              <views:SettingsView DataContext="{Binding SettingsVm}" />
+            </Border>
+            <Border IsVisible="{Binding IsSettingsHelpTab}">
+              <views:HelpView DataContext="{Binding HelpVm}" />
+            </Border>
+          </Panel>
+        </Grid>
       </Border>
 
       <!-- High Scores -->
@@ -65,28 +100,86 @@
         <views:GameOverView DataContext="{Binding GameOverVm}" />
       </Border>
 
-      <!-- Help -->
-      <Border Classes="PageView" x:Name="HelpBorder"
-              AutomationProperties.AutomationId="MainView_PageHelp">
-        <views:HelpView DataContext="{Binding HelpVm}" />
-      </Border>
-
-      <!-- Shop -->
+      <!-- Shop + Glücksrad (kombiniert mit Tab-Bar) -->
       <Border Classes="PageView" x:Name="ShopBorder"
               AutomationProperties.AutomationId="MainView_PageShop">
-        <views:ShopView DataContext="{Binding ShopVm}" />
+        <Grid RowDefinitions="Auto,*">
+          <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
+            <Grid ColumnDefinitions="*,*" Height="28">
+              <Panel Grid.Column="0">
+                <Border IsVisible="{Binding !IsShopSpinTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate ShopTitle}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding IsShopSpinTab}" Command="{Binding SwitchToShopTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate ShopTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+              <Panel Grid.Column="1">
+                <Border IsVisible="{Binding IsShopSpinTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate LuckySpinTitle}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding !IsShopSpinTab}" Command="{Binding SwitchToSpinTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate LuckySpinTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+            </Grid>
+          </Border>
+          <Panel Grid.Row="1">
+            <Border IsVisible="{Binding !IsShopSpinTab}">
+              <views:ShopView DataContext="{Binding ShopVm}" />
+            </Border>
+            <Border IsVisible="{Binding IsShopSpinTab}">
+              <views:LuckySpinView DataContext="{Binding LuckySpinVm}" />
+            </Border>
+          </Panel>
+        </Grid>
       </Border>
 
-      <!-- Achievements -->
-      <Border Classes="PageView" x:Name="AchievementsBorder"
-              AutomationProperties.AutomationId="MainView_PageAchievements">
-        <views:AchievementsView DataContext="{Binding AchievementsVm}" />
-      </Border>
-
-      <!-- Daily Challenge -->
-      <Border Classes="PageView" x:Name="DailyChallengeBorder"
-              AutomationProperties.AutomationId="MainView_PageDailyChallenge">
-        <views:DailyChallengeView DataContext="{Binding DailyChallengeVm}" />
+      <!-- Profil + Erfolge (kombiniert mit Tab-Bar) -->
+      <Border Classes="PageView" x:Name="ProfileBorder"
+              AutomationProperties.AutomationId="MainView_PageProfile">
+        <Grid RowDefinitions="Auto,*">
+          <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
+            <Grid ColumnDefinitions="*,*" Height="28">
+              <Panel Grid.Column="0">
+                <Border IsVisible="{Binding !IsProfileAchievementsTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate ProfileTitle}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding IsProfileAchievementsTab}" Command="{Binding SwitchToProfileTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate ProfileTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+              <Panel Grid.Column="1">
+                <Border IsVisible="{Binding IsProfileAchievementsTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate AchievementsTitle}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding !IsProfileAchievementsTab}" Command="{Binding SwitchToAchievementsTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate AchievementsTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+            </Grid>
+          </Border>
+          <Panel Grid.Row="1">
+            <Border IsVisible="{Binding !IsProfileAchievementsTab}">
+              <views:ProfileView DataContext="{Binding ProfileVm}" />
+            </Border>
+            <Border IsVisible="{Binding IsProfileAchievementsTab}">
+              <views:AchievementsView DataContext="{Binding AchievementsVm}" />
+            </Border>
+          </Panel>
+        </Grid>
       </Border>
 
       <!-- Victory (alle 50 Level geschafft) -->
@@ -95,16 +188,45 @@
         <views:VictoryView DataContext="{Binding VictoryVm}" />
       </Border>
 
-      <!-- Lucky Spin (Glücksrad) -->
-      <Border Classes="PageView" x:Name="LuckySpinBorder"
-              AutomationProperties.AutomationId="MainView_PageLuckySpin">
-        <views:LuckySpinView DataContext="{Binding LuckySpinVm}" />
-      </Border>
-
-      <!-- Weekly Challenge (Wöchentliche Herausforderungen) -->
-      <Border Classes="PageView" x:Name="WeeklyChallengeBorder"
-              AutomationProperties.AutomationId="MainView_PageWeeklyChallenge">
-        <views:WeeklyChallengeView DataContext="{Binding WeeklyChallengeVm}" />
+      <!-- Herausforderungen: Daily Challenge + Missionen (kombiniert mit Tab-Bar) -->
+      <Border Classes="PageView" x:Name="ChallengesBorder"
+              AutomationProperties.AutomationId="MainView_PageChallenges">
+        <Grid RowDefinitions="Auto,*">
+          <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
+            <Grid ColumnDefinitions="*,*" Height="28">
+              <Panel Grid.Column="0">
+                <Border IsVisible="{Binding !IsChallengesMissionsTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate DailyChallengeTitle}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding IsChallengesMissionsTab}" Command="{Binding SwitchToDailyChallengeTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate DailyChallengeTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+              <Panel Grid.Column="1">
+                <Border IsVisible="{Binding IsChallengesMissionsTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate MissionsButton}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding !IsChallengesMissionsTab}" Command="{Binding SwitchToMissionsTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate MissionsButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+            </Grid>
+          </Border>
+          <Panel Grid.Row="1">
+            <Border IsVisible="{Binding !IsChallengesMissionsTab}">
+              <views:DailyChallengeView DataContext="{Binding DailyChallengeVm}" />
+            </Border>
+            <Border IsVisible="{Binding IsChallengesMissionsTab}">
+              <views:WeeklyChallengeView DataContext="{Binding WeeklyChallengeVm}" />
+            </Border>
+          </Panel>
+        </Grid>
       </Border>
 
       <!-- Statistics (Statistiken) -->
@@ -119,10 +241,45 @@
         <views:QuickPlayView DataContext="{Binding QuickPlayVm}" />
       </Border>
 
-      <!-- Deck Builder (Karten-Sammlung) -->
-      <Border Classes="PageView" x:Name="DeckBorder"
-              AutomationProperties.AutomationId="MainView_PageDeck">
-        <views:DeckView DataContext="{Binding DeckVm}" />
+      <!-- Karten: Deck + Sammlung (kombiniert mit Tab-Bar) -->
+      <Border Classes="PageView" x:Name="CardsBorder"
+              AutomationProperties.AutomationId="MainView_PageCards">
+        <Grid RowDefinitions="Auto,*">
+          <Border Grid.Row="0" Background="#CC0D0D1A" Padding="60,4,60,2">
+            <Grid ColumnDefinitions="*,*" Height="28">
+              <Panel Grid.Column="0">
+                <Border IsVisible="{Binding !IsCardsCollectionTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate DeckButton}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding IsCardsCollectionTab}" Command="{Binding SwitchToDeckTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate DeckButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+              <Panel Grid.Column="1">
+                <Border IsVisible="{Binding IsCardsCollectionTab}" Background="{DynamicResource PrimaryBrush}" CornerRadius="6">
+                  <TextBlock Text="{loc:Translate CollectionButton}" FontSize="11" FontWeight="SemiBold"
+                             Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <Button IsVisible="{Binding !IsCardsCollectionTab}" Command="{Binding SwitchToCollectionTabCommand}"
+                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                  <TextBlock Text="{loc:Translate CollectionButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Button>
+              </Panel>
+            </Grid>
+          </Border>
+          <Panel Grid.Row="1">
+            <Border IsVisible="{Binding !IsCardsCollectionTab}">
+              <views:DeckView DataContext="{Binding DeckVm}" />
+            </Border>
+            <Border IsVisible="{Binding IsCardsCollectionTab}">
+              <views:CollectionView DataContext="{Binding CollectionVm}" />
+            </Border>
+          </Panel>
+        </Grid>
       </Border>
 
       <!-- Dungeon Run (Roguelike-Modus) -->
@@ -137,22 +294,16 @@
         <views:BattlePassView DataContext="{Binding BattlePassVm}" />
       </Border>
 
-      <!-- Sammlungs-Album -->
-      <Border Classes="PageView" x:Name="CollectionBorder"
-              AutomationProperties.AutomationId="MainView_PageCollection">
-        <views:CollectionView DataContext="{Binding CollectionVm}" />
-      </Border>
-
       <!-- Liga -->
       <Border Classes="PageView" x:Name="LeagueBorder"
               AutomationProperties.AutomationId="MainView_PageLeague">
         <views:LeagueView DataContext="{Binding LeagueVm}" />
       </Border>
 
-      <!-- Profil -->
-      <Border Classes="PageView" x:Name="ProfileBorder"
-              AutomationProperties.AutomationId="MainView_PageProfile">
-        <views:ProfileView DataContext="{Binding ProfileVm}" />
+      <!-- Gem-Shop -->
+      <Border Classes="PageView" x:Name="GemShopBorder"
+              AutomationProperties.AutomationId="MainView_PageGemShop">
+        <views:GemShopView DataContext="{Binding GemShopVm}" />
       </Border>
     </Panel>
 

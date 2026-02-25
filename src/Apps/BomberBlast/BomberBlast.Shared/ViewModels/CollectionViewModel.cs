@@ -12,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Sammlungs-Album.
 /// Zeigt entdeckte Gegner, Bosse, PowerUps, Karten und Kosmetik mit Fortschritt und Meilensteinen.
 /// </summary>
-public partial class CollectionViewModel : ObservableObject
+public partial class CollectionViewModel : ObservableObject, INavigable, IGameJuiceEmitter
 {
     private readonly ICollectionService _collectionService;
     private readonly ILocalizationService _localizationService;
@@ -24,7 +24,7 @@ public partial class CollectionViewModel : ObservableObject
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
 
@@ -46,6 +46,9 @@ public partial class CollectionViewModel : ObservableObject
 
     [ObservableProperty]
     private string _totalProgressText = "";
+
+    [ObservableProperty]
+    private string _emptyItemsText = "";
 
     [ObservableProperty]
     private int _totalProgressPercent;
@@ -168,7 +171,7 @@ public partial class CollectionViewModel : ObservableObject
     /// <summary>Lokalisierte Texte aktualisieren (Sprachwechsel)</summary>
     public void UpdateLocalizedTexts()
     {
-        Title = _localizationService.GetString("CollectionTitle") ?? "Sammlung";
+        Title = _localizationService.GetString("CollectionTitle") ?? "Collection";
 
         // Kategorie-Tab-Namen
         for (int i = 0; i < CategoryNameKeys.Length; i++)
@@ -279,10 +282,10 @@ public partial class CollectionViewModel : ObservableObject
             CollectionCategory.Bosses => $"x{entry.TimesDefeated}",
             CollectionCategory.PowerUps => $"x{entry.TimesCollected}",
             CollectionCategory.BombCards => entry.IsOwned
-                ? (_localizationService.GetString("CollectionOwned") ?? "Besessen")
+                ? (_localizationService.GetString("CollectionOwned") ?? "Owned")
                 : (_localizationService.GetString("CollectionNotOwned") ?? "-"),
             CollectionCategory.Cosmetics => entry.IsOwned
-                ? (_localizationService.GetString("CollectionOwned") ?? "Besessen")
+                ? (_localizationService.GetString("CollectionOwned") ?? "Owned")
                 : (_localizationService.GetString("CollectionNotOwned") ?? "-"),
             _ => ""
         };
@@ -294,7 +297,7 @@ public partial class CollectionViewModel : ObservableObject
         if (category is CollectionCategory.BombCards or CollectionCategory.Cosmetics)
         {
             if (entry.IsOwned)
-                return (_localizationService.GetString("CollectionOwned") ?? "Besessen", "#4CAF50");
+                return (_localizationService.GetString("CollectionOwned") ?? "Owned", "#4CAF50");
             return (_localizationService.GetString("CollectionNotOwned") ?? "-", GetCategoryColor(category));
         }
 
@@ -336,7 +339,7 @@ public partial class CollectionViewModel : ObservableObject
     private void LoadMilestones()
     {
         var milestones = _collectionService.GetMilestones();
-        var claimText = _localizationService.GetString("CollectionClaimNow") ?? "Abholen";
+        var claimText = _localizationService.GetString("CollectionClaimNow") ?? "Claim";
 
         Milestones.Clear();
         foreach (var ms in milestones)
@@ -375,12 +378,14 @@ public partial class CollectionViewModel : ObservableObject
     private void GoBack()
     {
         ShowDetail = false;
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     [RelayCommand]
-    private void SelectCategory(int index)
+    private void SelectCategory(string indexStr)
     {
+        // XAML CommandParameter="0" übergibt string, nicht int
+        if (!int.TryParse(indexStr, out var index)) return;
         if (index >= 0 && index < CategoryByIndex.Length)
         {
             SelectedCategoryIndex = index;
@@ -463,25 +468,25 @@ public partial class CollectionViewModel : ObservableObject
 
         if (entry.TimesEncountered > 0)
         {
-            var label = _localizationService.GetString("CollectionEncountered") ?? "Begegnungen";
+            var label = _localizationService.GetString("CollectionEncountered") ?? "Encountered";
             parts.Add($"{label}: {entry.TimesEncountered}");
         }
 
         if (entry.TimesDefeated > 0)
         {
-            var label = _localizationService.GetString("CollectionDefeated") ?? "Besiegt";
+            var label = _localizationService.GetString("CollectionDefeated") ?? "Defeated";
             parts.Add($"{label}: {entry.TimesDefeated}");
         }
 
         if (entry.TimesCollected > 0)
         {
-            var label = _localizationService.GetString("CollectionCollected") ?? "Gesammelt";
+            var label = _localizationService.GetString("CollectionCollected") ?? "Collected";
             parts.Add($"{label}: {entry.TimesCollected}");
         }
 
         if (entry.IsOwned)
         {
-            parts.Add(_localizationService.GetString("CollectionOwned") ?? "Besessen");
+            parts.Add(_localizationService.GetString("CollectionOwned") ?? "Owned");
         }
 
         return string.Join("\n", parts);

@@ -7,7 +7,7 @@ namespace BomberBlast.Services;
 /// Local-First: Lokaler State für schnelle Reads, Firebase-Sync im Hintergrund.
 /// Deterministische 14-Tage-Saisons (alle Clients stimmen überein).
 /// </summary>
-public interface ILeagueService
+public interface ILeagueService : IDisposable
 {
     LeagueTier CurrentTier { get; }
     int CurrentPoints { get; }
@@ -56,6 +56,9 @@ public interface ILeagueService
     event EventHandler? PointsChanged;
     event EventHandler? SeasonEnded;
     event EventHandler? LeaderboardUpdated;
+
+    /// <summary>Lazy-Injection: IAchievementService nach DI-Build setzen (zirkuläre Abhängigkeit)</summary>
+    void SetAchievementService(IAchievementService achievementService);
 }
 
 /// <summary>Einzelner Eintrag in der Liga-Rangliste.</summary>

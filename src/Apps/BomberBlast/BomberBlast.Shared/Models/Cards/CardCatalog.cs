@@ -124,8 +124,14 @@ public static class CardCatalog
         }
     ];
 
-    /// <summary>Maximale Deck-Slots</summary>
-    public const int MaxDeckSlots = 4;
+    /// <summary>Maximale Deck-Slots (inkl. freischaltbarem 5. Slot)</summary>
+    public const int MaxDeckSlots = 5;
+
+    /// <summary>Standard-Slots die von Anfang an verfügbar sind</summary>
+    public const int DefaultDeckSlots = 4;
+
+    /// <summary>Gem-Preis für das Freischalten des 5. Deck-Slots</summary>
+    public const int Slot5UnlockCost = 20;
 
     /// <summary>Karten-Definition für einen BombType finden</summary>
     public static BombCard? GetCard(BombType type)

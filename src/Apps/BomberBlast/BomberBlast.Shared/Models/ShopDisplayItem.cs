@@ -58,8 +58,19 @@ public partial class ShopDisplayItem : ObservableObject
     [ObservableProperty]
     private bool _canAfford;
 
+    /// <summary>Gem-Preis als Alternative (0 = nicht verfügbar)</summary>
+    [ObservableProperty]
+    private int _gemPrice;
+
+    /// <summary>Ob mit Gems gekauft werden kann</summary>
+    [ObservableProperty]
+    private bool _canAffordGems;
+
     /// <summary>Ob der Kauf-Button aktiv sein soll</summary>
     public bool CanBuy => !IsMaxed && CanAfford;
+
+    /// <summary>Ob der Gem-Kauf-Button aktiv sein soll</summary>
+    public bool CanBuyWithGems => !IsMaxed && GemPrice > 0 && CanAffordGems;
 
     /// <summary>Level-Fortschrittsanzeige (z.B. "●●○")</summary>
     public string LevelDots
@@ -73,10 +84,12 @@ public partial class ShopDisplayItem : ObservableObject
     }
 
     /// <summary>Aktualisiert abgeleitete Properties nach Aenderungen</summary>
-    public void Refresh(int coinBalance)
+    public void Refresh(int coinBalance, int gemBalance = 0)
     {
         CanAfford = coinBalance >= NextPrice;
+        CanAffordGems = GemPrice > 0 && gemBalance >= GemPrice;
         OnPropertyChanged(nameof(CanBuy));
+        OnPropertyChanged(nameof(CanBuyWithGems));
         OnPropertyChanged(nameof(LevelDots));
     }
 }

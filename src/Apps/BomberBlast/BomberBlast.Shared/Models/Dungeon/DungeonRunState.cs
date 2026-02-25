@@ -21,8 +21,26 @@ public class DungeonRunState
     /// <summary>Im Run gesammelte Gems</summary>
     public int CollectedGems { get; set; }
 
+    /// <summary>Im Run gesammelte DungeonCoins (für permanente Upgrades)</summary>
+    public int CollectedDungeonCoins { get; set; }
+
+    /// <summary>Anzahl verwendeter Gratis-Rerolls in diesem Run</summary>
+    public int FreeRerollsUsed { get; set; }
+
     /// <summary>Im Run erhaltene Karten-Drops (BombType-IDs als int)</summary>
     public List<int> CollectedCardDrops { get; set; } = [];
+
+    /// <summary>Aktueller Raum-Typ (Normal, Elite, Treasure, Challenge, Rest)</summary>
+    public DungeonRoomType CurrentRoomType { get; set; }
+
+    /// <summary>Aktueller Floor-Modifikator (None = kein Modifikator)</summary>
+    public DungeonFloorModifier CurrentModifier { get; set; }
+
+    /// <summary>Challenge-Modus für Challenge-Räume</summary>
+    public DungeonChallengeMode CurrentChallengeMode { get; set; }
+
+    /// <summary>Anzahl Rest-Räume in den letzten 5 Floors (für Begrenzung max 1 pro 5)</summary>
+    public int RestRoomsInLastFive { get; set; }
 
     /// <summary>Ob ein Run gerade aktiv ist</summary>
     public bool IsActive { get; set; }
@@ -35,6 +53,12 @@ public class DungeonRunState
 
     /// <summary>Datum des letzten Ad-Runs (UTC, ISO 8601)</summary>
     public string LastAdRunDate { get; set; } = "";
+
+    /// <summary>Map-Daten für die Node-Map (serialisiert)</summary>
+    public DungeonMapData? MapData { get; set; }
+
+    /// <summary>Ascension-Level bei dem dieser Run gestartet wurde (0-5)</summary>
+    public int RunAscension { get; set; }
 }
 
 /// <summary>
@@ -56,6 +80,15 @@ public class DungeonStats
 
     /// <summary>Gesamt gesammelte Karten-Drops aus Dungeon-Runs</summary>
     public int TotalCardsEarned { get; set; }
+
+    /// <summary>Gesamt verdiente DungeonCoins</summary>
+    public int TotalDungeonCoinsEarned { get; set; }
+
+    /// <summary>Aktuelles Ascension-Level (0-5, höher = schwieriger + bessere Belohnungen)</summary>
+    public int AscensionLevel { get; set; }
+
+    /// <summary>Höchstes jemals erreichtes Ascension-Level</summary>
+    public int HighestAscension { get; set; }
 }
 
 /// <summary>
@@ -77,4 +110,7 @@ public class DungeonFloorReward
 
     /// <summary>Bonus-Coins aus der Truhe (nur Floor 10)</summary>
     public int ChestBonus { get; set; }
+
+    /// <summary>Verdiente DungeonCoins auf diesem Floor</summary>
+    public int DungeonCoins { get; set; }
 }

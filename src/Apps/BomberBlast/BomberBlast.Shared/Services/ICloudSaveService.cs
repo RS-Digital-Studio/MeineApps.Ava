@@ -9,7 +9,7 @@ namespace BomberBlast.Services;
 /// Sync-Strategie: Pull bei App-Start, Push nach wichtigen Aktionen.
 /// Konflikt-Resolution: Spieler-freundlichster Stand gewinnt (mehr Sterne/Coins/Karten).
 /// </summary>
-public interface ICloudSaveService
+public interface ICloudSaveService : IDisposable
 {
     /// <summary>Ob Cloud Save verfügbar und aktiviert ist</summary>
     bool IsEnabled { get; }

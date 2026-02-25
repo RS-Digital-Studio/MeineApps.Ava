@@ -4,6 +4,12 @@
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              x:Class="BomberBlast.App">
 
+  <Application.Resources>
+    <!-- Gold-Akzentfarbe für Coins, Sterne, Belohnungen -->
+    <SolidColorBrush x:Key="GoldAccentBrush" Color="#FFD700" />
+    <Color x:Key="GoldAccentColor">#FFD700</Color>
+  </Application.Resources>
+
   <Application.Styles>
     <!-- Avalonia Fluent Theme as base -->
     <FluentTheme />

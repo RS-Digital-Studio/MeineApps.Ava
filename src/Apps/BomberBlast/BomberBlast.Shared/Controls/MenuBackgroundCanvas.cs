@@ -11,11 +11,25 @@ namespace BomberBlast.Controls;
 
 /// <summary>
 /// Wiederverwendbares UserControl mit animiertem Bomberman-Menü-Hintergrund.
+/// Unterstützt 7 Themes (Default, Dungeon, Shop, League, BattlePass, Victory, LuckySpin).
 /// Nutzt MenuBackgroundRenderer für SkiaSharp-Rendering mit ~30fps Timer-Animation.
 /// Startet automatisch bei Einfügen in den Visual Tree, stoppt beim Entfernen.
 /// </summary>
 public class MenuBackgroundCanvas : UserControl
 {
+    /// <summary>
+    /// StyledProperty für das Hintergrund-Theme.
+    /// Setzbar per XAML: &lt;controls:MenuBackgroundCanvas Theme="Dungeon" /&gt;
+    /// </summary>
+    public static readonly StyledProperty<BackgroundTheme> BackgroundThemeProperty =
+        AvaloniaProperty.Register<MenuBackgroundCanvas, BackgroundTheme>(nameof(BackgroundTheme), BackgroundTheme.Default);
+
+    public BackgroundTheme BackgroundTheme
+    {
+        get => GetValue(BackgroundThemeProperty);
+        set => SetValue(BackgroundThemeProperty, value);
+    }
+
     private SKCanvasView? _canvas;
     private DispatcherTimer? _timer;
     private readonly Stopwatch _stopwatch = new();
@@ -40,23 +54,58 @@ public class MenuBackgroundCanvas : UserControl
         Content = _canvas;
 
         // Automatisch starten/stoppen bei Visual-Tree-Änderungen
-        AttachedToVisualTree += (_, _) => Start();
+        AttachedToVisualTree += (_, _) => StartIfVisible();
         DetachedFromVisualTree += (_, _) => Stop();
     }
 
     /// <summary>
+    /// Reagiert auf IsVisible- und Theme-Änderungen.
+    /// Timer nur starten wenn sichtbar. Bei Theme-Wechsel: Re-Initialisierung erzwingen.
+    /// </summary>
+    protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
+    {
+        base.OnPropertyChanged(change);
+
+        if (change.Property == IsVisibleProperty)
+        {
+            if (change.GetNewValue<bool>())
+                StartIfVisible();
+            else
+                Stop();
+        }
+        else if (change.Property == BackgroundThemeProperty)
+        {
+            // Theme geändert → Renderer neu initialisieren
+            _initialized = false;
+            if (IsVisible && this.GetVisualRoot() != null)
+            {
+                MenuBackgroundRenderer.Initialize(42, BackgroundTheme);
+                _initialized = true;
+                _canvas?.InvalidateSurface();
+            }
+        }
+    }
+
+    /// <summary>Startet nur wenn sichtbar und im Visual Tree.</summary>
+    private void StartIfVisible()
+    {
+        if (IsVisible && this.GetVisualRoot() != null)
+            Start();
+    }
+
+    /// <summary>
     /// Startet die Animations-Schleife (~30fps).
-    /// Initialisiert den Renderer beim ersten Aufruf.
+    /// Initialisiert den Renderer beim ersten Aufruf mit dem gesetzten Theme.
     /// </summary>
     public void Start()
     {
-        if (this.GetVisualRoot() == null)
+        if (this.GetVisualRoot() == null || !IsVisible)
             return;
 
-        // Renderer einmalig initialisieren
+        // Renderer einmalig initialisieren (mit aktuellem Theme)
         if (!_initialized)
         {
-            MenuBackgroundRenderer.Initialize(42);
+            MenuBackgroundRenderer.Initialize(42, BackgroundTheme);
             _initialized = true;
         }
 
@@ -86,6 +135,6 @@ public class MenuBackgroundCanvas : UserControl
         canvas.Clear();
 
         var time = (float)_stopwatch.Elapsed.TotalSeconds;
-        MenuBackgroundRenderer.Render(canvas, bounds.Width, bounds.Height, time);
+        MenuBackgroundRenderer.Render(canvas, bounds.Width, bounds.Height, time, BackgroundTheme);
     }
 }

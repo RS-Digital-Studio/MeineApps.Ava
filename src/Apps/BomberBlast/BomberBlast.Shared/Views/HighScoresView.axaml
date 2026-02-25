@@ -56,12 +56,31 @@
               <DataTemplate x:DataType="vm:ScoreDisplayItem">
                 <Border Classes="Card" Margin="0,4">
                   <Grid ColumnDefinitions="48,*,Auto">
-                    <!-- Rank -->
-                    <TextBlock Text="{Binding Rank}"
-                               FontSize="24"
-                               FontWeight="Bold"
-                               Foreground="{Binding RankBrush}"
-                               VerticalAlignment="Center" />
+                    <!-- Rang: Medaille für Top 3, Zahl für Rest -->
+                    <Panel VerticalAlignment="Center" Width="36" Height="36">
+                      <mi:MaterialIcon Kind="Trophy" Width="28" Height="28"
+                                       Foreground="#FFD700"
+                                       IsVisible="{Binding IsRank1}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                      <mi:MaterialIcon Kind="Trophy" Width="26" Height="26"
+                                       Foreground="#C0C0C0"
+                                       IsVisible="{Binding IsRank2}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                      <mi:MaterialIcon Kind="Trophy" Width="24" Height="24"
+                                       Foreground="#CD7F32"
+                                       IsVisible="{Binding IsRank3}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                      <TextBlock Text="{Binding Rank}"
+                                 FontSize="24"
+                                 FontWeight="Bold"
+                                 Foreground="{Binding RankBrush}"
+                                 IsVisible="{Binding IsRankOther}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Panel>
 
                     <!-- Name and Wave -->
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">

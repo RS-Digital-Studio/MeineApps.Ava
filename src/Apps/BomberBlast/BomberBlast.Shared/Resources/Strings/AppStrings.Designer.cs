@@ -4095,5 +4095,832 @@ namespace BomberBlast.Resources.Strings {
 
         internal static string DropSourceDungeon => ResourceManager.GetString("DropSourceDungeon", resourceCulture)!;
 
+        internal static string AchBpTier15 => ResourceManager.GetString("AchBpTier15", resourceCulture)!;
+
+        internal static string AchBpTier15Desc => ResourceManager.GetString("AchBpTier15Desc", resourceCulture)!;
+
+        internal static string AchBpTier30 => ResourceManager.GetString("AchBpTier30", resourceCulture)!;
+
+        internal static string AchBpTier30Desc => ResourceManager.GetString("AchBpTier30Desc", resourceCulture)!;
+
+        internal static string AchCardGold => ResourceManager.GetString("AchCardGold", resourceCulture)!;
+
+        internal static string AchCardGoldDesc => ResourceManager.GetString("AchCardGoldDesc", resourceCulture)!;
+
+        internal static string AchCards10 => ResourceManager.GetString("AchCards10", resourceCulture)!;
+
+        internal static string AchCards10Desc => ResourceManager.GetString("AchCards10Desc", resourceCulture)!;
+
+        internal static string AchCollector100 => ResourceManager.GetString("AchCollector100", resourceCulture)!;
+
+        internal static string AchCollector100Desc => ResourceManager.GetString("AchCollector100Desc", resourceCulture)!;
+
+        internal static string AchCollector25 => ResourceManager.GetString("AchCollector25", resourceCulture)!;
+
+        internal static string AchCollector25Desc => ResourceManager.GetString("AchCollector25Desc", resourceCulture)!;
+
+        internal static string AchCollector50 => ResourceManager.GetString("AchCollector50", resourceCulture)!;
+
+        internal static string AchCollector50Desc => ResourceManager.GetString("AchCollector50Desc", resourceCulture)!;
+
+        internal static string AchCombo3 => ResourceManager.GetString("AchCombo3", resourceCulture)!;
+
+        internal static string AchCombo3Desc => ResourceManager.GetString("AchCombo3Desc", resourceCulture)!;
+
+        internal static string AchCombo5 => ResourceManager.GetString("AchCombo5", resourceCulture)!;
+
+        internal static string AchCombo5Desc => ResourceManager.GetString("AchCombo5Desc", resourceCulture)!;
+
+        internal static string AchCurseSurvivor => ResourceManager.GetString("AchCurseSurvivor", resourceCulture)!;
+
+        internal static string AchCurseSurvivorDesc => ResourceManager.GetString("AchCurseSurvivorDesc", resourceCulture)!;
+
+        internal static string AchDailyComplete30 => ResourceManager.GetString("AchDailyComplete30", resourceCulture)!;
+
+        internal static string AchDailyComplete30Desc => ResourceManager.GetString("AchDailyComplete30Desc", resourceCulture)!;
+
+        internal static string AchDailyMission50 => ResourceManager.GetString("AchDailyMission50", resourceCulture)!;
+
+        internal static string AchDailyMission50Desc => ResourceManager.GetString("AchDailyMission50Desc", resourceCulture)!;
+
+        internal static string AchDailyStreak7 => ResourceManager.GetString("AchDailyStreak7", resourceCulture)!;
+
+        internal static string AchDailyStreak7Desc => ResourceManager.GetString("AchDailyStreak7Desc", resourceCulture)!;
+
+        internal static string AchDetonatorMaster => ResourceManager.GetString("AchDetonatorMaster", resourceCulture)!;
+
+        internal static string AchDetonatorMasterDesc => ResourceManager.GetString("AchDetonatorMasterDesc", resourceCulture)!;
+
+        internal static string AchDungeonBoss => ResourceManager.GetString("AchDungeonBoss", resourceCulture)!;
+
+        internal static string AchDungeonBossDesc => ResourceManager.GetString("AchDungeonBossDesc", resourceCulture)!;
+
+        internal static string AchDungeonFloor10 => ResourceManager.GetString("AchDungeonFloor10", resourceCulture)!;
+
+        internal static string AchDungeonFloor10Desc => ResourceManager.GetString("AchDungeonFloor10Desc", resourceCulture)!;
+
+        internal static string AchDungeonRuns10 => ResourceManager.GetString("AchDungeonRuns10", resourceCulture)!;
+
+        internal static string AchDungeonRuns10Desc => ResourceManager.GetString("AchDungeonRuns10Desc", resourceCulture)!;
+
+        internal static string AchEfficient => ResourceManager.GetString("AchEfficient", resourceCulture)!;
+
+        internal static string AchEfficientDesc => ResourceManager.GetString("AchEfficientDesc", resourceCulture)!;
+
+        internal static string AchFirstVictory => ResourceManager.GetString("AchFirstVictory", resourceCulture)!;
+
+        internal static string AchFirstVictoryDesc => ResourceManager.GetString("AchFirstVictoryDesc", resourceCulture)!;
+
+        internal static string AchievementsTitle => ResourceManager.GetString("AchievementsTitle", resourceCulture)!;
+
+        internal static string AchKickMaster => ResourceManager.GetString("AchKickMaster", resourceCulture)!;
+
+        internal static string AchKickMasterDesc => ResourceManager.GetString("AchKickMasterDesc", resourceCulture)!;
+
+        internal static string AchKills100 => ResourceManager.GetString("AchKills100", resourceCulture)!;
+
+        internal static string AchKills1000 => ResourceManager.GetString("AchKills1000", resourceCulture)!;
+
+        internal static string AchKills1000Desc => ResourceManager.GetString("AchKills1000Desc", resourceCulture)!;
+
+        internal static string AchKills100Desc => ResourceManager.GetString("AchKills100Desc", resourceCulture)!;
+
+        internal static string AchKills500 => ResourceManager.GetString("AchKills500", resourceCulture)!;
+
+        internal static string AchKills500Desc => ResourceManager.GetString("AchKills500Desc", resourceCulture)!;
+
+        internal static string AchLeagueDiamond => ResourceManager.GetString("AchLeagueDiamond", resourceCulture)!;
+
+        internal static string AchLeagueDiamondDesc => ResourceManager.GetString("AchLeagueDiamondDesc", resourceCulture)!;
+
+        internal static string AchLeagueGold => ResourceManager.GetString("AchLeagueGold", resourceCulture)!;
+
+        internal static string AchLeagueGoldDesc => ResourceManager.GetString("AchLeagueGoldDesc", resourceCulture)!;
+
+        internal static string AchLineBombMaster => ResourceManager.GetString("AchLineBombMaster", resourceCulture)!;
+
+        internal static string AchLineBombMasterDesc => ResourceManager.GetString("AchLineBombMasterDesc", resourceCulture)!;
+
+        internal static string AchLuckyJackpot => ResourceManager.GetString("AchLuckyJackpot", resourceCulture)!;
+
+        internal static string AchLuckyJackpotDesc => ResourceManager.GetString("AchLuckyJackpotDesc", resourceCulture)!;
+
+        internal static string AchNoDamage => ResourceManager.GetString("AchNoDamage", resourceCulture)!;
+
+        internal static string AchNoDamageDesc => ResourceManager.GetString("AchNoDamageDesc", resourceCulture)!;
+
+        internal static string AchPowerBomber => ResourceManager.GetString("AchPowerBomber", resourceCulture)!;
+
+        internal static string AchPowerBomberDesc => ResourceManager.GetString("AchPowerBomberDesc", resourceCulture)!;
+
+        internal static string AchQuickPlayMax => ResourceManager.GetString("AchQuickPlayMax", resourceCulture)!;
+
+        internal static string AchQuickPlayMaxDesc => ResourceManager.GetString("AchQuickPlayMaxDesc", resourceCulture)!;
+
+        internal static string AchSpeedrun => ResourceManager.GetString("AchSpeedrun", resourceCulture)!;
+
+        internal static string AchSpeedrunDesc => ResourceManager.GetString("AchSpeedrunDesc", resourceCulture)!;
+
+        internal static string AchStars100 => ResourceManager.GetString("AchStars100", resourceCulture)!;
+
+        internal static string AchStars100Desc => ResourceManager.GetString("AchStars100Desc", resourceCulture)!;
+
+        internal static string AchStars150 => ResourceManager.GetString("AchStars150", resourceCulture)!;
+
+        internal static string AchStars150Desc => ResourceManager.GetString("AchStars150Desc", resourceCulture)!;
+
+        internal static string AchStars50 => ResourceManager.GetString("AchStars50", resourceCulture)!;
+
+        internal static string AchStars50Desc => ResourceManager.GetString("AchStars50Desc", resourceCulture)!;
+
+        internal static string AchSurvival300 => ResourceManager.GetString("AchSurvival300", resourceCulture)!;
+
+        internal static string AchSurvival300Desc => ResourceManager.GetString("AchSurvival300Desc", resourceCulture)!;
+
+        internal static string AchSurvivalKills50 => ResourceManager.GetString("AchSurvivalKills50", resourceCulture)!;
+
+        internal static string AchSurvivalKills50Desc => ResourceManager.GetString("AchSurvivalKills50Desc", resourceCulture)!;
+
+        internal static string AchWorld1 => ResourceManager.GetString("AchWorld1", resourceCulture)!;
+
+        internal static string AchWorld10 => ResourceManager.GetString("AchWorld10", resourceCulture)!;
+
+        internal static string AchWorld10Desc => ResourceManager.GetString("AchWorld10Desc", resourceCulture)!;
+
+        internal static string AchWorld1Desc => ResourceManager.GetString("AchWorld1Desc", resourceCulture)!;
+
+        internal static string AchWorld2 => ResourceManager.GetString("AchWorld2", resourceCulture)!;
+
+        internal static string AchWorld2Desc => ResourceManager.GetString("AchWorld2Desc", resourceCulture)!;
+
+        internal static string AchWorld3 => ResourceManager.GetString("AchWorld3", resourceCulture)!;
+
+        internal static string AchWorld3Desc => ResourceManager.GetString("AchWorld3Desc", resourceCulture)!;
+
+        internal static string AchWorld4 => ResourceManager.GetString("AchWorld4", resourceCulture)!;
+
+        internal static string AchWorld4Desc => ResourceManager.GetString("AchWorld4Desc", resourceCulture)!;
+
+        internal static string AchWorld5 => ResourceManager.GetString("AchWorld5", resourceCulture)!;
+
+        internal static string AchWorld5Desc => ResourceManager.GetString("AchWorld5Desc", resourceCulture)!;
+
+        internal static string AchWorld6 => ResourceManager.GetString("AchWorld6", resourceCulture)!;
+
+        internal static string AchWorld6Desc => ResourceManager.GetString("AchWorld6Desc", resourceCulture)!;
+
+        internal static string AchWorld7 => ResourceManager.GetString("AchWorld7", resourceCulture)!;
+
+        internal static string AchWorld7Desc => ResourceManager.GetString("AchWorld7Desc", resourceCulture)!;
+
+        internal static string AchWorld8 => ResourceManager.GetString("AchWorld8", resourceCulture)!;
+
+        internal static string AchWorld8Desc => ResourceManager.GetString("AchWorld8Desc", resourceCulture)!;
+
+        internal static string AchWorld9 => ResourceManager.GetString("AchWorld9", resourceCulture)!;
+
+        internal static string AchWorld9Desc => ResourceManager.GetString("AchWorld9Desc", resourceCulture)!;
+
+        internal static string AdUnavailable => ResourceManager.GetString("AdUnavailable", resourceCulture)!;
+
+        internal static string AllLevelsComplete => ResourceManager.GetString("AllLevelsComplete", resourceCulture)!;
+
+        internal static string AnnounceBossFight => ResourceManager.GetString("AnnounceBossFight", resourceCulture)!;
+
+        internal static string AnnounceBossFloorFormat => ResourceManager.GetString("AnnounceBossFloorFormat", resourceCulture)!;
+
+        internal static string AnnounceDailyChallenge => ResourceManager.GetString("AnnounceDailyChallenge", resourceCulture)!;
+
+        internal static string AnnounceFloorFormat => ResourceManager.GetString("AnnounceFloorFormat", resourceCulture)!;
+
+        internal static string AnnounceQuickPlay => ResourceManager.GetString("AnnounceQuickPlay", resourceCulture)!;
+
+        internal static string AnnounceSurvival => ResourceManager.GetString("AnnounceSurvival", resourceCulture)!;
+
+        internal static string AnnounceWorldFormat => ResourceManager.GetString("AnnounceWorldFormat", resourceCulture)!;
+
+        internal static string BombSkinDefault => ResourceManager.GetString("BombSkinDefault", resourceCulture)!;
+
+        internal static string BombSkinDiamond => ResourceManager.GetString("BombSkinDiamond", resourceCulture)!;
+
+        internal static string BombSkinFire => ResourceManager.GetString("BombSkinFire", resourceCulture)!;
+
+        internal static string BombSkinGold => ResourceManager.GetString("BombSkinGold", resourceCulture)!;
+
+        internal static string BombSkinIce => ResourceManager.GetString("BombSkinIce", resourceCulture)!;
+
+        internal static string BombSkinNeon => ResourceManager.GetString("BombSkinNeon", resourceCulture)!;
+
+        internal static string BombSkinPhantom => ResourceManager.GetString("BombSkinPhantom", resourceCulture)!;
+
+        internal static string BombSkinPixel => ResourceManager.GetString("BombSkinPixel", resourceCulture)!;
+
+        internal static string BuyCardGems => ResourceManager.GetString("BuyCardGems", resourceCulture)!;
+
+        internal static string CloudSaveDownload => ResourceManager.GetString("CloudSaveDownload", resourceCulture)!;
+
+        internal static string CloudSaveLocationGPGS => ResourceManager.GetString("CloudSaveLocationGPGS", resourceCulture)!;
+
+        internal static string CloudSaveLocationLocal => ResourceManager.GetString("CloudSaveLocationLocal", resourceCulture)!;
+
+        internal static string CloudSaveSync => ResourceManager.GetString("CloudSaveSync", resourceCulture)!;
+
+        internal static string CoinsTripled => ResourceManager.GetString("CoinsTripled", resourceCulture)!;
+
+        internal static string ComebackBonus => ResourceManager.GetString("ComebackBonus", resourceCulture)!;
+
+        internal static string ComebackTitle => ResourceManager.GetString("ComebackTitle", resourceCulture)!;
+
+        internal static string DailyBonus => ResourceManager.GetString("DailyBonus", resourceCulture)!;
+
+        internal static string DailyBonusClaimed => ResourceManager.GetString("DailyBonusClaimed", resourceCulture)!;
+
+        internal static string DailyChallengeBestScore => ResourceManager.GetString("DailyChallengeBestScore", resourceCulture)!;
+
+        internal static string DailyChallengeCompleted => ResourceManager.GetString("DailyChallengeCompleted", resourceCulture)!;
+
+        internal static string DailyChallengeCompletedToday => ResourceManager.GetString("DailyChallengeCompletedToday", resourceCulture)!;
+
+        internal static string DailyChallengeLongestStreak => ResourceManager.GetString("DailyChallengeLongestStreak", resourceCulture)!;
+
+        internal static string DailyChallengeNew => ResourceManager.GetString("DailyChallengeNew", resourceCulture)!;
+
+        internal static string DailyChallengePlay => ResourceManager.GetString("DailyChallengePlay", resourceCulture)!;
+
+        internal static string DailyChallengeRetry => ResourceManager.GetString("DailyChallengeRetry", resourceCulture)!;
+
+        internal static string DailyChallengeStreak => ResourceManager.GetString("DailyChallengeStreak", resourceCulture)!;
+
+        internal static string DailyChallengeStreakBonus => ResourceManager.GetString("DailyChallengeStreakBonus", resourceCulture)!;
+
+        internal static string DailyChallengeTitle => ResourceManager.GetString("DailyChallengeTitle", resourceCulture)!;
+
+        internal static string DailyCollectCards => ResourceManager.GetString("DailyCollectCards", resourceCulture)!;
+
+        internal static string DailyCollectCardsDesc => ResourceManager.GetString("DailyCollectCardsDesc", resourceCulture)!;
+
+        internal static string DailyDealsTitle => ResourceManager.GetString("DailyDealsTitle", resourceCulture)!;
+
+        internal static string DailyDungeonFloors => ResourceManager.GetString("DailyDungeonFloors", resourceCulture)!;
+
+        internal static string DailyDungeonFloorsDesc => ResourceManager.GetString("DailyDungeonFloorsDesc", resourceCulture)!;
+
+        internal static string DailyEarnGems => ResourceManager.GetString("DailyEarnGems", resourceCulture)!;
+
+        internal static string DailyEarnGemsDesc => ResourceManager.GetString("DailyEarnGemsDesc", resourceCulture)!;
+
+        internal static string DailyPlayQuickPlay => ResourceManager.GetString("DailyPlayQuickPlay", resourceCulture)!;
+
+        internal static string DailyPlayQuickPlayDesc => ResourceManager.GetString("DailyPlayQuickPlayDesc", resourceCulture)!;
+
+        internal static string DailyRewardClaimed => ResourceManager.GetString("DailyRewardClaimed", resourceCulture)!;
+
+        internal static string DailyRewardCollect => ResourceManager.GetString("DailyRewardCollect", resourceCulture)!;
+
+        internal static string DailyRewardDay => ResourceManager.GetString("DailyRewardDay", resourceCulture)!;
+
+        internal static string DailyRewardExtraLife => ResourceManager.GetString("DailyRewardExtraLife", resourceCulture)!;
+
+        internal static string DailyRewardStreak => ResourceManager.GetString("DailyRewardStreak", resourceCulture)!;
+
+        internal static string DailyRewardTitle => ResourceManager.GetString("DailyRewardTitle", resourceCulture)!;
+
+        internal static string DailyRewardTomorrow => ResourceManager.GetString("DailyRewardTomorrow", resourceCulture)!;
+
+        internal static string DailySpinWheel => ResourceManager.GetString("DailySpinWheel", resourceCulture)!;
+
+        internal static string DailySpinWheelDesc => ResourceManager.GetString("DailySpinWheelDesc", resourceCulture)!;
+
+        internal static string DailyUpgradeCards => ResourceManager.GetString("DailyUpgradeCards", resourceCulture)!;
+
+        internal static string DailyUpgradeCardsDesc => ResourceManager.GetString("DailyUpgradeCardsDesc", resourceCulture)!;
+
+        internal static string DealCardPack => ResourceManager.GetString("DealCardPack", resourceCulture)!;
+
+        internal static string DealClaimed => ResourceManager.GetString("DealClaimed", resourceCulture)!;
+
+        internal static string DealCoinPack => ResourceManager.GetString("DealCoinPack", resourceCulture)!;
+
+        internal static string DealDiscount => ResourceManager.GetString("DealDiscount", resourceCulture)!;
+
+        internal static string DealGemPack => ResourceManager.GetString("DealGemPack", resourceCulture)!;
+
+        internal static string DealMegaCoinPack => ResourceManager.GetString("DealMegaCoinPack", resourceCulture)!;
+
+        internal static string DealMegaGemPack => ResourceManager.GetString("DealMegaGemPack", resourceCulture)!;
+
+        internal static string DealPremiumBundle => ResourceManager.GetString("DealPremiumBundle", resourceCulture)!;
+
+        internal static string DealRareCardBundle => ResourceManager.GetString("DealRareCardBundle", resourceCulture)!;
+
+        internal static string DealUpgradeDiscount => ResourceManager.GetString("DealUpgradeDiscount", resourceCulture)!;
+
+        internal static string DeckSlot5Unlocked => ResourceManager.GetString("DeckSlot5Unlocked", resourceCulture)!;
+
+        internal static string DeckUnlockSlot5 => ResourceManager.GetString("DeckUnlockSlot5", resourceCulture)!;
+
+        internal static string DetonateButton => ResourceManager.GetString("DetonateButton", resourceCulture)!;
+
+        internal static string DiscoverBombpass => ResourceManager.GetString("DiscoverBombpass", resourceCulture)!;
+
+        internal static string DiscoverBombpassDesc => ResourceManager.GetString("DiscoverBombpassDesc", resourceCulture)!;
+
+        internal static string DiscoverConveyor => ResourceManager.GetString("DiscoverConveyor", resourceCulture)!;
+
+        internal static string DiscoverConveyorDesc => ResourceManager.GetString("DiscoverConveyorDesc", resourceCulture)!;
+
+        internal static string DiscoverDetonator => ResourceManager.GetString("DiscoverDetonator", resourceCulture)!;
+
+        internal static string DiscoverDetonatorDesc => ResourceManager.GetString("DiscoverDetonatorDesc", resourceCulture)!;
+
+        internal static string DiscoverFlamepass => ResourceManager.GetString("DiscoverFlamepass", resourceCulture)!;
+
+        internal static string DiscoverFlamepassDesc => ResourceManager.GetString("DiscoverFlamepassDesc", resourceCulture)!;
+
+        internal static string DiscoverIce => ResourceManager.GetString("DiscoverIce", resourceCulture)!;
+
+        internal static string DiscoverIceDesc => ResourceManager.GetString("DiscoverIceDesc", resourceCulture)!;
+
+        internal static string DiscoverKick => ResourceManager.GetString("DiscoverKick", resourceCulture)!;
+
+        internal static string DiscoverKickDesc => ResourceManager.GetString("DiscoverKickDesc", resourceCulture)!;
+
+        internal static string DiscoverLavacrack => ResourceManager.GetString("DiscoverLavacrack", resourceCulture)!;
+
+        internal static string DiscoverLavacrackDesc => ResourceManager.GetString("DiscoverLavacrackDesc", resourceCulture)!;
+
+        internal static string DiscoverLinebomb => ResourceManager.GetString("DiscoverLinebomb", resourceCulture)!;
+
+        internal static string DiscoverLinebombDesc => ResourceManager.GetString("DiscoverLinebombDesc", resourceCulture)!;
+
+        internal static string DiscoverMystery => ResourceManager.GetString("DiscoverMystery", resourceCulture)!;
+
+        internal static string DiscoverMysteryDesc => ResourceManager.GetString("DiscoverMysteryDesc", resourceCulture)!;
+
+        internal static string DiscoverPowerbomb => ResourceManager.GetString("DiscoverPowerbomb", resourceCulture)!;
+
+        internal static string DiscoverPowerbombDesc => ResourceManager.GetString("DiscoverPowerbombDesc", resourceCulture)!;
+
+        internal static string DiscoverSkull => ResourceManager.GetString("DiscoverSkull", resourceCulture)!;
+
+        internal static string DiscoverSkullDesc => ResourceManager.GetString("DiscoverSkullDesc", resourceCulture)!;
+
+        internal static string DiscoverTeleporter => ResourceManager.GetString("DiscoverTeleporter", resourceCulture)!;
+
+        internal static string DiscoverTeleporterDesc => ResourceManager.GetString("DiscoverTeleporterDesc", resourceCulture)!;
+
+        internal static string DiscoverWallpass => ResourceManager.GetString("DiscoverWallpass", resourceCulture)!;
+
+        internal static string DiscoverWallpassDesc => ResourceManager.GetString("DiscoverWallpassDesc", resourceCulture)!;
+
+        internal static string DungeonRevived => ResourceManager.GetString("DungeonRevived", resourceCulture)!;
+
+        internal static string DungeonReviveGems => ResourceManager.GetString("DungeonReviveGems", resourceCulture)!;
+
+        internal static string EnemyPoints => ResourceManager.GetString("EnemyPoints", resourceCulture)!;
+
+        internal static string ExplosionSkinBlue => ResourceManager.GetString("ExplosionSkinBlue", resourceCulture)!;
+
+        internal static string ExplosionSkinDefault => ResourceManager.GetString("ExplosionSkinDefault", resourceCulture)!;
+
+        internal static string ExplosionSkinGreen => ResourceManager.GetString("ExplosionSkinGreen", resourceCulture)!;
+
+        internal static string ExplosionSkinPink => ResourceManager.GetString("ExplosionSkinPink", resourceCulture)!;
+
+        internal static string ExplosionSkinRainbow => ResourceManager.GetString("ExplosionSkinRainbow", resourceCulture)!;
+
+        internal static string ExplosionSkinShadow => ResourceManager.GetString("ExplosionSkinShadow", resourceCulture)!;
+
+        internal static string ExtraSpinGems => ResourceManager.GetString("ExtraSpinGems", resourceCulture)!;
+
+        internal static string FirstVictory => ResourceManager.GetString("FirstVictory", resourceCulture)!;
+
+        internal static string FreeUpgradeActive => ResourceManager.GetString("FreeUpgradeActive", resourceCulture)!;
+
+        internal static string FreeUpgradeReady => ResourceManager.GetString("FreeUpgradeReady", resourceCulture)!;
+
+        internal static string GemPackBestValue => ResourceManager.GetString("GemPackBestValue", resourceCulture)!;
+
+        internal static string GemPackLarge => ResourceManager.GetString("GemPackLarge", resourceCulture)!;
+
+        internal static string GemPackMedium => ResourceManager.GetString("GemPackMedium", resourceCulture)!;
+
+        internal static string GemPackPopular => ResourceManager.GetString("GemPackPopular", resourceCulture)!;
+
+        internal static string GemPackSmall => ResourceManager.GetString("GemPackSmall", resourceCulture)!;
+
+        internal static string GemPurchaseConfirm => ResourceManager.GetString("GemPurchaseConfirm", resourceCulture)!;
+
+        internal static string GemPurchaseSuccess => ResourceManager.GetString("GemPurchaseSuccess", resourceCulture)!;
+
+        internal static string GemShopDescription => ResourceManager.GetString("GemShopDescription", resourceCulture)!;
+
+        internal static string GemShopTitle => ResourceManager.GetString("GemShopTitle", resourceCulture)!;
+
+        internal static string GemSkinsTitle => ResourceManager.GetString("GemSkinsTitle", resourceCulture)!;
+
+        internal static string HudBombs => ResourceManager.GetString("HudBombs", resourceCulture)!;
+
+        internal static string HudBossDefeatedFormat => ResourceManager.GetString("HudBossDefeatedFormat", resourceCulture)!;
+
+        internal static string HudBossHitFormat => ResourceManager.GetString("HudBossHitFormat", resourceCulture)!;
+
+        internal static string HudBuffs => ResourceManager.GetString("HudBuffs", resourceCulture)!;
+
+        internal static string HudCursed => ResourceManager.GetString("HudCursed", resourceCulture)!;
+
+        internal static string HudDeck => ResourceManager.GetString("HudDeck", resourceCulture)!;
+
+        internal static string HudDefeatAll => ResourceManager.GetString("HudDefeatAll", resourceCulture)!;
+
+        internal static string HudEnraged => ResourceManager.GetString("HudEnraged", resourceCulture)!;
+
+        internal static string HudKills => ResourceManager.GetString("HudKills", resourceCulture)!;
+
+        internal static string HudLives => ResourceManager.GetString("HudLives", resourceCulture)!;
+
+        internal static string HudPower => ResourceManager.GetString("HudPower", resourceCulture)!;
+
+        internal static string HudScore => ResourceManager.GetString("HudScore", resourceCulture)!;
+
+        internal static string HudTime => ResourceManager.GetString("HudTime", resourceCulture)!;
+
+        internal static string InputClassicDPad => ResourceManager.GetString("InputClassicDPad", resourceCulture)!;
+
+        internal static string InputSwipeGestures => ResourceManager.GetString("InputSwipeGestures", resourceCulture)!;
+
+        internal static string InsufficientGems => ResourceManager.GetString("InsufficientGems", resourceCulture)!;
+
+        internal static string LeagueClaimReward => ResourceManager.GetString("LeagueClaimReward", resourceCulture)!;
+
+        internal static string LeagueLoading => ResourceManager.GetString("LeagueLoading", resourceCulture)!;
+
+        internal static string LeaguePlayer => ResourceManager.GetString("LeaguePlayer", resourceCulture)!;
+
+        internal static string LeaguePointsHeader => ResourceManager.GetString("LeaguePointsHeader", resourceCulture)!;
+
+        internal static string LeagueRewardClaimed => ResourceManager.GetString("LeagueRewardClaimed", resourceCulture)!;
+
+        internal static string LeagueSeasonFormat => ResourceManager.GetString("LeagueSeasonFormat", resourceCulture)!;
+
+        internal static string Mechanic_Conveyor => ResourceManager.GetString("Mechanic_Conveyor", resourceCulture)!;
+
+        internal static string Mechanic_Conveyor_Desc => ResourceManager.GetString("Mechanic_Conveyor_Desc", resourceCulture)!;
+
+        internal static string Mechanic_Ice => ResourceManager.GetString("Mechanic_Ice", resourceCulture)!;
+
+        internal static string Mechanic_Ice_Desc => ResourceManager.GetString("Mechanic_Ice_Desc", resourceCulture)!;
+
+        internal static string Mechanic_LavaCrack => ResourceManager.GetString("Mechanic_LavaCrack", resourceCulture)!;
+
+        internal static string Mechanic_LavaCrack_Desc => ResourceManager.GetString("Mechanic_LavaCrack_Desc", resourceCulture)!;
+
+        internal static string Mechanic_Teleporter => ResourceManager.GetString("Mechanic_Teleporter", resourceCulture)!;
+
+        internal static string Mechanic_Teleporter_Desc => ResourceManager.GetString("Mechanic_Teleporter_Desc", resourceCulture)!;
+
+        internal static string NearMissStars => ResourceManager.GetString("NearMissStars", resourceCulture)!;
+
+        internal static string New => ResourceManager.GetString("New", resourceCulture)!;
+
+        internal static string PaidContinue => ResourceManager.GetString("PaidContinue", resourceCulture)!;
+
+        internal static string PlayGamesEnabled => ResourceManager.GetString("PlayGamesEnabled", resourceCulture)!;
+
+        internal static string PlayGamesSection => ResourceManager.GetString("PlayGamesSection", resourceCulture)!;
+
+        internal static string PowerUp_Kick => ResourceManager.GetString("PowerUp_Kick", resourceCulture)!;
+
+        internal static string PowerUp_Kick_Desc => ResourceManager.GetString("PowerUp_Kick_Desc", resourceCulture)!;
+
+        internal static string PowerUp_LineBomb => ResourceManager.GetString("PowerUp_LineBomb", resourceCulture)!;
+
+        internal static string PowerUp_LineBomb_Desc => ResourceManager.GetString("PowerUp_LineBomb_Desc", resourceCulture)!;
+
+        internal static string PowerUp_PowerBomb => ResourceManager.GetString("PowerUp_PowerBomb", resourceCulture)!;
+
+        internal static string PowerUp_PowerBomb_Desc => ResourceManager.GetString("PowerUp_PowerBomb_Desc", resourceCulture)!;
+
+        internal static string PowerUp_Skull => ResourceManager.GetString("PowerUp_Skull", resourceCulture)!;
+
+        internal static string PowerUp_Skull_Desc => ResourceManager.GetString("PowerUp_Skull_Desc", resourceCulture)!;
+
+        internal static string PremiumFeatureDoubleCoins => ResourceManager.GetString("PremiumFeatureDoubleCoins", resourceCulture)!;
+
+        internal static string PremiumFeatureNoAds => ResourceManager.GetString("PremiumFeatureNoAds", resourceCulture)!;
+
+        internal static string PremiumFeatureSkins => ResourceManager.GetString("PremiumFeatureSkins", resourceCulture)!;
+
+        internal static string PremiumFeatureSupport => ResourceManager.GetString("PremiumFeatureSupport", resourceCulture)!;
+
+        internal static string ProfileAchievements => ResourceManager.GetString("ProfileAchievements", resourceCulture)!;
+
+        internal static string ProfileCoins => ResourceManager.GetString("ProfileCoins", resourceCulture)!;
+
+        internal static string ProfileFrame => ResourceManager.GetString("ProfileFrame", resourceCulture)!;
+
+        internal static string ProfileGems => ResourceManager.GetString("ProfileGems", resourceCulture)!;
+
+        internal static string ProfileLeague => ResourceManager.GetString("ProfileLeague", resourceCulture)!;
+
+        internal static string ProfileName => ResourceManager.GetString("ProfileName", resourceCulture)!;
+
+        internal static string ProfileNameHint => ResourceManager.GetString("ProfileNameHint", resourceCulture)!;
+
+        internal static string ProfileNoFrame => ResourceManager.GetString("ProfileNoFrame", resourceCulture)!;
+
+        internal static string ProfileSave => ResourceManager.GetString("ProfileSave", resourceCulture)!;
+
+        internal static string ProfileSaved => ResourceManager.GetString("ProfileSaved", resourceCulture)!;
+
+        internal static string ProfileSkin => ResourceManager.GetString("ProfileSkin", resourceCulture)!;
+
+        internal static string ProfileStars => ResourceManager.GetString("ProfileStars", resourceCulture)!;
+
+        internal static string PurchaseFailedDetail => ResourceManager.GetString("PurchaseFailedDetail", resourceCulture)!;
+
+        internal static string SectionBombSkins => ResourceManager.GetString("SectionBombSkins", resourceCulture)!;
+
+        internal static string SectionExplosionSkins => ResourceManager.GetString("SectionExplosionSkins", resourceCulture)!;
+
+        internal static string SectionMechanics => ResourceManager.GetString("SectionMechanics", resourceCulture)!;
+
+        internal static string SectionPowerUps => ResourceManager.GetString("SectionPowerUps", resourceCulture)!;
+
+        internal static string SectionSkins => ResourceManager.GetString("SectionSkins", resourceCulture)!;
+
+        internal static string ShopNotEnoughGems => ResourceManager.GetString("ShopNotEnoughGems", resourceCulture)!;
+
+        internal static string ShowGpgsAchievements => ResourceManager.GetString("ShowGpgsAchievements", resourceCulture)!;
+
+        internal static string ShowLeaderboards => ResourceManager.GetString("ShowLeaderboards", resourceCulture)!;
+
+        internal static string SkinArctic => ResourceManager.GetString("SkinArctic", resourceCulture)!;
+
+        internal static string SkinCherry => ResourceManager.GetString("SkinCherry", resourceCulture)!;
+
+        internal static string SkinCrimson => ResourceManager.GetString("SkinCrimson", resourceCulture)!;
+
+        internal static string SkinCrystal => ResourceManager.GetString("SkinCrystal", resourceCulture)!;
+
+        internal static string SkinCyber => ResourceManager.GetString("SkinCyber", resourceCulture)!;
+
+        internal static string SkinDefault => ResourceManager.GetString("SkinDefault", resourceCulture)!;
+
+        internal static string SkinEmerald => ResourceManager.GetString("SkinEmerald", resourceCulture)!;
+
+        internal static string SkinEquipped => ResourceManager.GetString("SkinEquipped", resourceCulture)!;
+
+        internal static string SkinGalaxy => ResourceManager.GetString("SkinGalaxy", resourceCulture)!;
+
+        internal static string SkinGold => ResourceManager.GetString("SkinGold", resourceCulture)!;
+
+        internal static string SkinInferno => ResourceManager.GetString("SkinInferno", resourceCulture)!;
+
+        internal static string SkinLocked => ResourceManager.GetString("SkinLocked", resourceCulture)!;
+
+        internal static string SkinNeon => ResourceManager.GetString("SkinNeon", resourceCulture)!;
+
+        internal static string SkinOcean => ResourceManager.GetString("SkinOcean", resourceCulture)!;
+
+        internal static string SkinPhoenix => ResourceManager.GetString("SkinPhoenix", resourceCulture)!;
+
+        internal static string SkinPremiumOnly => ResourceManager.GetString("SkinPremiumOnly", resourceCulture)!;
+
+        internal static string SkinRetro => ResourceManager.GetString("SkinRetro", resourceCulture)!;
+
+        internal static string SkinSelect => ResourceManager.GetString("SkinSelect", resourceCulture)!;
+
+        internal static string SkinShadow => ResourceManager.GetString("SkinShadow", resourceCulture)!;
+
+        internal static string SkinStealth => ResourceManager.GetString("SkinStealth", resourceCulture)!;
+
+        internal static string SkinsTitle => ResourceManager.GetString("SkinsTitle", resourceCulture)!;
+
+        internal static string SkinSunset => ResourceManager.GetString("SkinSunset", resourceCulture)!;
+
+        internal static string SkinToxic => ResourceManager.GetString("SkinToxic", resourceCulture)!;
+
+        internal static string SkipLevelConfirm => ResourceManager.GetString("SkipLevelConfirm", resourceCulture)!;
+
+        internal static string SkipLevelConfirmMessage => ResourceManager.GetString("SkipLevelConfirmMessage", resourceCulture)!;
+
+        internal static string StarterPackDesc => ResourceManager.GetString("StarterPackDesc", resourceCulture)!;
+
+        internal static string StarterPackPurchased => ResourceManager.GetString("StarterPackPurchased", resourceCulture)!;
+
+        internal static string StarterPackTitle => ResourceManager.GetString("StarterPackTitle", resourceCulture)!;
+
+        internal static string StatsPointsLabel => ResourceManager.GetString("StatsPointsLabel", resourceCulture)!;
+
+        internal static string StyleClassic => ResourceManager.GetString("StyleClassic", resourceCulture)!;
+
+        internal static string StyleClassicDesc => ResourceManager.GetString("StyleClassicDesc", resourceCulture)!;
+
+        internal static string StyleNeon => ResourceManager.GetString("StyleNeon", resourceCulture)!;
+
+        internal static string StyleNeonDesc => ResourceManager.GetString("StyleNeonDesc", resourceCulture)!;
+
+        internal static string StyleRetro => ResourceManager.GetString("StyleRetro", resourceCulture)!;
+
+        internal static string StyleRetroDesc => ResourceManager.GetString("StyleRetroDesc", resourceCulture)!;
+
+        internal static string SummaryEfficiencyBonus => ResourceManager.GetString("SummaryEfficiencyBonus", resourceCulture)!;
+
+        internal static string SummaryScoreMultiplier => ResourceManager.GetString("SummaryScoreMultiplier", resourceCulture)!;
+
+        internal static string SummaryTimeBonus => ResourceManager.GetString("SummaryTimeBonus", resourceCulture)!;
+
+        internal static string TapToDismiss => ResourceManager.GetString("TapToDismiss", resourceCulture)!;
+
+        internal static string TotalEarned => ResourceManager.GetString("TotalEarned", resourceCulture)!;
+
+        internal static string Unlocked => ResourceManager.GetString("Unlocked", resourceCulture)!;
+
+        internal static string UnlockedAt => ResourceManager.GetString("UnlockedAt", resourceCulture)!;
+
+        internal static string UpgradeCoinBonus => ResourceManager.GetString("UpgradeCoinBonus", resourceCulture)!;
+
+        internal static string UpgradeCoinBonusDesc => ResourceManager.GetString("UpgradeCoinBonusDesc", resourceCulture)!;
+
+        internal static string UpgradePowerUpLuck => ResourceManager.GetString("UpgradePowerUpLuck", resourceCulture)!;
+
+        internal static string UpgradePowerUpLuckDesc => ResourceManager.GetString("UpgradePowerUpLuckDesc", resourceCulture)!;
+
+        internal static string UpgradeShieldStart => ResourceManager.GetString("UpgradeShieldStart", resourceCulture)!;
+
+        internal static string UpgradeShieldStartDesc => ResourceManager.GetString("UpgradeShieldStartDesc", resourceCulture)!;
+
+        internal static string ValidatePurchase => ResourceManager.GetString("ValidatePurchase", resourceCulture)!;
+
+        internal static string VictoryStars => ResourceManager.GetString("VictoryStars", resourceCulture)!;
+
+        internal static string VictorySubtitle => ResourceManager.GetString("VictorySubtitle", resourceCulture)!;
+
+        internal static string VictoryThanks => ResourceManager.GetString("VictoryThanks", resourceCulture)!;
+
+        internal static string VictoryTitle => ResourceManager.GetString("VictoryTitle", resourceCulture)!;
+
+        internal static string VisualStyle => ResourceManager.GetString("VisualStyle", resourceCulture)!;
+
+        internal static string WatchAdCoinMultiplier => ResourceManager.GetString("WatchAdCoinMultiplier", resourceCulture)!;
+
+        internal static string WatchAdExtraBuff => ResourceManager.GetString("WatchAdExtraBuff", resourceCulture)!;
+
+        internal static string WatchAdExtraSpin => ResourceManager.GetString("WatchAdExtraSpin", resourceCulture)!;
+
+        internal static string WatchAdFreeUpgrade => ResourceManager.GetString("WatchAdFreeUpgrade", resourceCulture)!;
+
+        internal static string WatchAdGemBonus => ResourceManager.GetString("WatchAdGemBonus", resourceCulture)!;
+
+        internal static string WaveMilestone => ResourceManager.GetString("WaveMilestone", resourceCulture)!;
+
+        internal static string WeeklyCollectCards => ResourceManager.GetString("WeeklyCollectCards", resourceCulture)!;
+
+        internal static string WeeklyCollectCardsDesc => ResourceManager.GetString("WeeklyCollectCardsDesc", resourceCulture)!;
+
+        internal static string WeeklyDealTitle => ResourceManager.GetString("WeeklyDealTitle", resourceCulture)!;
+
+        internal static string WeeklyDungeonFloors => ResourceManager.GetString("WeeklyDungeonFloors", resourceCulture)!;
+
+        internal static string WeeklyDungeonFloorsDesc => ResourceManager.GetString("WeeklyDungeonFloorsDesc", resourceCulture)!;
+
+        internal static string WeeklyEarnGems => ResourceManager.GetString("WeeklyEarnGems", resourceCulture)!;
+
+        internal static string WeeklyEarnGemsDesc => ResourceManager.GetString("WeeklyEarnGemsDesc", resourceCulture)!;
+
+        internal static string WeeklyPlayQuickPlay => ResourceManager.GetString("WeeklyPlayQuickPlay", resourceCulture)!;
+
+        internal static string WeeklyPlayQuickPlayDesc => ResourceManager.GetString("WeeklyPlayQuickPlayDesc", resourceCulture)!;
+
+        internal static string WeeklySpinWheel => ResourceManager.GetString("WeeklySpinWheel", resourceCulture)!;
+
+        internal static string WeeklySpinWheelDesc => ResourceManager.GetString("WeeklySpinWheelDesc", resourceCulture)!;
+
+        internal static string WeeklyUpgradeCards => ResourceManager.GetString("WeeklyUpgradeCards", resourceCulture)!;
+
+        internal static string WeeklyUpgradeCardsDesc => ResourceManager.GetString("WeeklyUpgradeCardsDesc", resourceCulture)!;
+
+        internal static string XpBoostActive => ResourceManager.GetString("XpBoostActive", resourceCulture)!;
+
+        internal static string XpBoostPrice => ResourceManager.GetString("XpBoostPrice", resourceCulture)!;
+
+        internal static string XpBoostTitle => ResourceManager.GetString("XpBoostTitle", resourceCulture)!;
+
+        // B1: Dungeon Upgrades
+        internal static string DungeonUpgradeStartBombs => ResourceManager.GetString("DungeonUpgradeStartBombs", resourceCulture)!;
+
+        internal static string DungeonUpgradeStartBombsDesc => ResourceManager.GetString("DungeonUpgradeStartBombsDesc", resourceCulture)!;
+
+        internal static string DungeonUpgradeStartFire => ResourceManager.GetString("DungeonUpgradeStartFire", resourceCulture)!;
+
+        internal static string DungeonUpgradeStartFireDesc => ResourceManager.GetString("DungeonUpgradeStartFireDesc", resourceCulture)!;
+
+        internal static string DungeonUpgradeStartSpeed => ResourceManager.GetString("DungeonUpgradeStartSpeed", resourceCulture)!;
+
+        internal static string DungeonUpgradeStartSpeedDesc => ResourceManager.GetString("DungeonUpgradeStartSpeedDesc", resourceCulture)!;
+
+        internal static string DungeonUpgradeExtraBuff => ResourceManager.GetString("DungeonUpgradeExtraBuff", resourceCulture)!;
+
+        internal static string DungeonUpgradeExtraBuffDesc => ResourceManager.GetString("DungeonUpgradeExtraBuffDesc", resourceCulture)!;
+
+        internal static string DungeonUpgradeBossGold => ResourceManager.GetString("DungeonUpgradeBossGold", resourceCulture)!;
+
+        internal static string DungeonUpgradeBossGoldDesc => ResourceManager.GetString("DungeonUpgradeBossGoldDesc", resourceCulture)!;
+
+        internal static string DungeonUpgradeStartShield => ResourceManager.GetString("DungeonUpgradeStartShield", resourceCulture)!;
+
+        internal static string DungeonUpgradeStartShieldDesc => ResourceManager.GetString("DungeonUpgradeStartShieldDesc", resourceCulture)!;
+
+        internal static string DungeonUpgradeCardDrop => ResourceManager.GetString("DungeonUpgradeCardDrop", resourceCulture)!;
+
+        internal static string DungeonUpgradeCardDropDesc => ResourceManager.GetString("DungeonUpgradeCardDropDesc", resourceCulture)!;
+
+        internal static string DungeonUpgradeReviveCost => ResourceManager.GetString("DungeonUpgradeReviveCost", resourceCulture)!;
+
+        internal static string DungeonUpgradeReviveCostDesc => ResourceManager.GetString("DungeonUpgradeReviveCostDesc", resourceCulture)!;
+
+        internal static string DungeonSummaryDC => ResourceManager.GetString("DungeonSummaryDC", resourceCulture)!;
+
+        // B2: Legendary Buffs
+        internal static string DungeonBuffBerserker => ResourceManager.GetString("DungeonBuffBerserker", resourceCulture)!;
+
+        internal static string DungeonBuffBerserkerDesc => ResourceManager.GetString("DungeonBuffBerserkerDesc", resourceCulture)!;
+
+        internal static string DungeonBuffTimeFreeze => ResourceManager.GetString("DungeonBuffTimeFreeze", resourceCulture)!;
+
+        internal static string DungeonBuffTimeFreezeDesc => ResourceManager.GetString("DungeonBuffTimeFreezeDesc", resourceCulture)!;
+
+        internal static string DungeonBuffGoldRush => ResourceManager.GetString("DungeonBuffGoldRush", resourceCulture)!;
+
+        internal static string DungeonBuffGoldRushDesc => ResourceManager.GetString("DungeonBuffGoldRushDesc", resourceCulture)!;
+
+        internal static string DungeonBuffPhantom => ResourceManager.GetString("DungeonBuffPhantom", resourceCulture)!;
+
+        internal static string DungeonBuffPhantomDesc => ResourceManager.GetString("DungeonBuffPhantomDesc", resourceCulture)!;
+
+        // B3: Room Types
+        internal static string DungeonRoomElite => ResourceManager.GetString("DungeonRoomElite", resourceCulture)!;
+
+        internal static string DungeonRoomTreasure => ResourceManager.GetString("DungeonRoomTreasure", resourceCulture)!;
+
+        internal static string DungeonRoomChallenge => ResourceManager.GetString("DungeonRoomChallenge", resourceCulture)!;
+
+        internal static string DungeonRoomRest => ResourceManager.GetString("DungeonRoomRest", resourceCulture)!;
+
+        // B4: Floor Modifiers
+        internal static string DungeonModLava => ResourceManager.GetString("DungeonModLava", resourceCulture)!;
+
+        internal static string DungeonModDarkness => ResourceManager.GetString("DungeonModDarkness", resourceCulture)!;
+
+        internal static string DungeonModDoubleSpawns => ResourceManager.GetString("DungeonModDoubleSpawns", resourceCulture)!;
+
+        internal static string DungeonModFastBombs => ResourceManager.GetString("DungeonModFastBombs", resourceCulture)!;
+
+        internal static string DungeonModBigExplosions => ResourceManager.GetString("DungeonModBigExplosions", resourceCulture)!;
+
+        internal static string DungeonModRegeneration => ResourceManager.GetString("DungeonModRegeneration", resourceCulture)!;
+
+        internal static string DungeonModWealthy => ResourceManager.GetString("DungeonModWealthy", resourceCulture)!;
+
+        // B5: Synergies + Reroll
+        internal static string SynergyBombardier => ResourceManager.GetString("SynergyBombardier", resourceCulture)!;
+
+        internal static string SynergyBombardierDesc => ResourceManager.GetString("SynergyBombardierDesc", resourceCulture)!;
+
+        internal static string SynergyBlitzkrieg => ResourceManager.GetString("SynergyBlitzkrieg", resourceCulture)!;
+
+        internal static string SynergyBlitzkriegDesc => ResourceManager.GetString("SynergyBlitzkriegDesc", resourceCulture)!;
+
+        internal static string SynergyFortress => ResourceManager.GetString("SynergyFortress", resourceCulture)!;
+
+        internal static string SynergyFortressDesc => ResourceManager.GetString("SynergyFortressDesc", resourceCulture)!;
+
+        internal static string SynergyMidas => ResourceManager.GetString("SynergyMidas", resourceCulture)!;
+
+        internal static string SynergyMidasDesc => ResourceManager.GetString("SynergyMidasDesc", resourceCulture)!;
+
+        internal static string SynergyElemental => ResourceManager.GetString("SynergyElemental", resourceCulture)!;
+
+        internal static string SynergyElementalDesc => ResourceManager.GetString("SynergyElementalDesc", resourceCulture)!;
+
+        internal static string DungeonRerollFree => ResourceManager.GetString("DungeonRerollFree", resourceCulture)!;
+
+        internal static string DungeonRerollGems => ResourceManager.GetString("DungeonRerollGems", resourceCulture)!;
+
+        // B7: Ascension
+        internal static string DungeonAscension => ResourceManager.GetString("DungeonAscension", resourceCulture)!;
+
+        internal static string DungeonAscensionUp => ResourceManager.GetString("DungeonAscensionUp", resourceCulture)!;
+
+        // Fehlende Dungeon-Keys (Map-Legende + UI)
+        internal static string DungeonRoomNormal => ResourceManager.GetString("DungeonRoomNormal", resourceCulture)!;
+
+        internal static string DungeonRoomBoss => ResourceManager.GetString("DungeonRoomBoss", resourceCulture)!;
+
+        internal static string DungeonUpgradesTitle => ResourceManager.GetString("DungeonUpgradesTitle", resourceCulture)!;
+
+        internal static string DungeonSelectNode => ResourceManager.GetString("DungeonSelectNode", resourceCulture)!;
+
     }
 }

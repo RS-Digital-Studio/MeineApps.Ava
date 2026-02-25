@@ -12,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// Zeigt Score, Coins, Verdopplungs- und Continue-Option.
 /// Bei Level-Complete: Score-Aufschlüsselung und Sterne.
 /// </summary>
-public partial class GameOverViewModel : ObservableObject
+public partial class GameOverViewModel : ObservableObject, INavigable
 {
     private readonly IPurchaseService _purchaseService;
     private readonly ILocalizationService _localizationService;
@@ -30,7 +30,7 @@ public partial class GameOverViewModel : ObservableObject
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
 
     /// <summary>Bestätigungsdialog anfordern (Titel, Nachricht, Akzeptieren, Abbrechen)</summary>
@@ -166,6 +166,16 @@ public partial class GameOverViewModel : ObservableObject
 
     private const int PAID_CONTINUE_COST = 199;
 
+    // 3x Coin-Multiplikator per Ad (nach 2x Verdopplung verfügbar)
+    [ObservableProperty]
+    private bool _canTripleCoins;
+
+    [ObservableProperty]
+    private bool _hasTripled;
+
+    [ObservableProperty]
+    private string _tripleCoinsButtonText = "";
+
     // Premium: Kostenloser Level-Skip (1x pro Session)
     private static bool _premiumSkipUsed;
 
@@ -240,18 +250,22 @@ public partial class GameOverViewModel : ObservableObject
         _animatedCoins = 0;
         CoinsEarnedText = "+0";
         HasDoubled = false;
+        HasTripled = false;
+        CanTripleCoins = false;
         StartCoinAnimation();
         HasContinued = false;
         _coinsClaimed = false;
-        CanDoubleCoins = coins > 0 && _rewardedAdService.IsAvailable;
-        CanContinue = canContinue && (_rewardedAdService.IsAvailable || _purchaseService.IsPremium);
+        // Premium: Button immer sichtbar (Reward gratis). Free: nur wenn Ad verfügbar + kein Cooldown
+        bool adReady = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+        CanDoubleCoins = coins > 0 && (_purchaseService.IsPremium || adReady);
+        CanContinue = canContinue && (adReady || _purchaseService.IsPremium);
 
         // Level-Skip: Ab 2 Fehlversuchen (Free: Rewarded Ad, Premium: 1x kostenlos pro Session)
         bool hasFreeSkip = _purchaseService.IsPremium && !_premiumSkipUsed;
         CanSkipLevel = !isLevelComplete && !IsSurvivalMode &&
-            (fails >= 2 && _rewardedAdService.IsAvailable || hasFreeSkip);
+            (fails >= 2 && adReady || hasFreeSkip);
         SkipLevelText = hasFreeSkip
-            ? _localizationService.GetString("SkipLevelFree") ?? "Level überspringen"
+            ? _localizationService.GetString("SkipLevelFree") ?? "Skip Level"
             : _localizationService.GetString("SkipLevel");
         SkipLevelInfoText = _localizationService.GetString("SkipLevelInfo");
 
@@ -263,8 +277,9 @@ public partial class GameOverViewModel : ObservableObject
 
         // Lokalisierte Button-Texte
         DoubleCoinsButtonText = _localizationService.GetString("DoubleCoins");
+        TripleCoinsButtonText = _localizationService.GetString("WatchAdCoinMultiplier") ?? "3x Coins via Ad";
         ContinueButtonText = _purchaseService.IsPremium
-            ? _localizationService.GetString("ContinueFree") ?? "Weiterspielen"
+            ? _localizationService.GetString("ContinueFree") ?? "Continue"
             : _localizationService.GetString("ContinueGame");
 
         // Score-Aufschlüsselung (nur bei Level-Complete)
@@ -324,19 +339,54 @@ public partial class GameOverViewModel : ObservableObject
         // Sofort deaktivieren um Doppelklick während async-Gap zu verhindern
         CanDoubleCoins = false;
 
-        bool rewarded = await _rewardedAdService.ShowAdAsync("continue");
+        // Premium: Reward sofort gratis (kein Ad nötig)
+        bool rewarded = _purchaseService.IsPremium || await _rewardedAdService.ShowAdAsync("continue");
         if (rewarded)
         {
+            if (!_purchaseService.IsPremium) RewardedAdCooldownTracker.RecordAdShown();
             CoinsEarned *= 2;
             CoinsEarnedText = $"+{CoinsEarned:N0}";
             FloatingTextRequested?.Invoke("x2!", "gold");
             HasDoubled = true;
             DoubleCoinsButtonText = _localizationService.GetString("CoinsDoubled");
+
+            // Nach 2x: 3x-Option per zweiter Ad anbieten (nicht für Premium, die haben bereits automatisch x2)
+            CanTripleCoins = !_purchaseService.IsPremium &&
+                _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
         }
         else
         {
             // Ad fehlgeschlagen → Button wieder aktivieren
-            CanDoubleCoins = _rewardedAdService.IsAvailable;
+            CanDoubleCoins = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+        }
+    }
+
+    /// <summary>
+    /// 3x Coin-Multiplikator per zweiter Rewarded Ad (nach 2x Verdopplung verfügbar).
+    /// Berechnung: Ursprüngliche Coins * 3 (ersetzt den 2x-Multiplikator)
+    /// </summary>
+    [RelayCommand]
+    private async Task TripleCoins()
+    {
+        if (HasTripled || !HasDoubled || CoinsEarned <= 0) return;
+
+        CanTripleCoins = false;
+
+        bool rewarded = await _rewardedAdService.ShowAdAsync("coin_multiplier");
+        if (rewarded)
+        {
+            RewardedAdCooldownTracker.RecordAdShown();
+            // Von 2x auf 3x: CoinsEarned ist bereits 2x → durch 2 teilen → mal 3
+            var baseCoins = CoinsEarned / 2;
+            CoinsEarned = baseCoins * 3;
+            CoinsEarnedText = $"+{CoinsEarned:N0}";
+            FloatingTextRequested?.Invoke("x3!", "gold");
+            HasTripled = true;
+            TripleCoinsButtonText = _localizationService.GetString("CoinsTripled") ?? "x3!";
+        }
+        else
+        {
+            CanTripleCoins = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
         }
     }
 
@@ -353,9 +403,10 @@ public partial class GameOverViewModel : ObservableObject
         }
 
         // Free: Rewarded Ad
-        bool rewarded = await _rewardedAdService.ShowAdAsync("revival");
-        if (rewarded)
+        bool revived = await _rewardedAdService.ShowAdAsync("revival");
+        if (revived)
         {
+            RewardedAdCooldownTracker.RecordAdShown();
             PerformContinue();
         }
     }
@@ -369,7 +420,7 @@ public partial class GameOverViewModel : ObservableObject
         if (ConfirmationRequested != null)
         {
             var msg = string.Format(
-                _localizationService.GetString("ConfirmPaidContinue") ?? "{0} Coins ausgeben um weiterzuspielen?",
+                _localizationService.GetString("ConfirmPaidContinue") ?? "Spend {0} Coins to continue?",
                 PAID_CONTINUE_COST);
             var confirmed = await ConfirmationRequested.Invoke(
                 _localizationService.GetString("ContinueGame"),
@@ -401,13 +452,24 @@ public partial class GameOverViewModel : ObservableObject
         CanPaidContinue = false;
 
         // Zurueck zum Spiel mit Continue-Modus
-        NavigationRequested?.Invoke($"Game?mode={Mode}&level={Level}&continue=true");
+        NavigationRequested?.Invoke(new GoGame(Mode: Mode, Level: Level, Continue: true));
     }
 
     [RelayCommand]
     private async Task SkipLevelAsync()
     {
         if (!CanSkipLevel) return;
+
+        // Bestätigungsdialog vor Level-Skip
+        if (ConfirmationRequested != null)
+        {
+            var confirmed = await ConfirmationRequested.Invoke(
+                _localizationService.GetString("SkipLevelConfirm") ?? "Skip Level?",
+                _localizationService.GetString("SkipLevelConfirmMessage") ?? "Do you really want to skip this level?",
+                _localizationService.GetString("SkipLevel") ?? "Skip",
+                _localizationService.GetString("Cancel"));
+            if (!confirmed) return;
+        }
 
         // Premium: Kostenloser Skip (1x pro Session)
         if (_purchaseService.IsPremium && !_premiumSkipUsed)
@@ -421,6 +483,7 @@ public partial class GameOverViewModel : ObservableObject
         var success = await _rewardedAdService.ShowAdAsync("level_skip");
         if (success)
         {
+            RewardedAdCooldownTracker.RecordAdShown();
             PerformSkip();
         }
     }
@@ -433,7 +496,7 @@ public partial class GameOverViewModel : ObservableObject
         _progressService.SetLevelBestScore(Level, 100);
 
         ClaimCoins();
-        NavigationRequested?.Invoke("LevelSelect");
+        NavigationRequested?.Invoke(new GoLevelSelect());
     }
 
     [RelayCommand]
@@ -443,11 +506,11 @@ public partial class GameOverViewModel : ObservableObject
 
         if (IsSurvivalMode)
         {
-            NavigationRequested?.Invoke("//MainMenu/Game?mode=survival");
+            NavigationRequested?.Invoke(new GoResetThen(new GoGame(Mode: "survival")));
         }
         else
         {
-            NavigationRequested?.Invoke($"//MainMenu/Game?mode=story&level={Level}");
+            NavigationRequested?.Invoke(new GoResetThen(new GoGame(Mode: "story", Level: Level)));
         }
     }
 
@@ -455,7 +518,7 @@ public partial class GameOverViewModel : ObservableObject
     private void MainMenu()
     {
         ClaimCoins();
-        NavigationRequested?.Invoke("//MainMenu");
+        NavigationRequested?.Invoke(new GoResetThen(new GoMainMenu()));
     }
 
     // Survival-Statistiken

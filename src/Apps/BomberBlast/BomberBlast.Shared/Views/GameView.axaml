@@ -24,7 +24,7 @@
               Padding="32,24"
               VerticalAlignment="Center"
               HorizontalAlignment="Center"
-              MinWidth="420"
+              MaxWidth="420"
               BorderBrush="{DynamicResource CardBorderBrush}"
               BorderThickness="1"
               BoxShadow="0 4 16 0 #40000000">
@@ -109,7 +109,7 @@
               Padding="24"
               VerticalAlignment="Center"
               HorizontalAlignment="Center"
-              MinWidth="400"
+              MaxWidth="400"
               BorderBrush="{DynamicResource CardBorderBrush}"
               BorderThickness="1">
         <StackPanel Spacing="16">

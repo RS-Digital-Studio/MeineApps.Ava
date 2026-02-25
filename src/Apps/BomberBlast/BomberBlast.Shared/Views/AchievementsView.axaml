@@ -58,10 +58,26 @@
         </Grid>
       </Border>
 
+      <!-- Empty State (keine Achievements geladen) -->
+      <StackPanel Grid.Row="1"
+                  IsVisible="{Binding !CategoryGroups.Count}"
+                  VerticalAlignment="Center"
+                  HorizontalAlignment="Center"
+                  Spacing="12">
+        <mi:MaterialIcon Kind="TrophyBroken" Width="48" Height="48"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         HorizontalAlignment="Center" />
+        <TextBlock Text="{Binding EmptyStateText, FallbackValue='Noch keine Achievements verfügbar'}"
+                   FontSize="15"
+                   Foreground="{DynamicResource TextMutedBrush}"
+                   HorizontalAlignment="Center" />
+      </StackPanel>
+
       <!-- Achievement List (nach Kategorie gruppiert) -->
       <ScrollViewer Grid.Row="1"
                     HorizontalScrollBarVisibility="Disabled"
-                    VerticalScrollBarVisibility="Auto">
+                    VerticalScrollBarVisibility="Auto"
+                    IsVisible="{Binding CategoryGroups.Count}">
         <ItemsControl AutomationProperties.AutomationId="Achievements_CategoryList"
                       ItemsSource="{Binding CategoryGroups}" Margin="12,8,12,80">
           <ItemsControl.ItemsPanel>
@@ -73,9 +89,9 @@
             <DataTemplate x:DataType="vm:AchievementCategoryGroup">
               <StackPanel Spacing="4">
                 <!-- Kategorie-Header -->
-                <Grid ColumnDefinitions="4,*,Auto" Margin="0,4,0,2">
+                <Grid ColumnDefinitions="8,*,Auto" Margin="0,4,0,2">
                   <!-- Farbiger Akzent-Streifen -->
-                  <Border Grid.Column="0" CornerRadius="2" Width="4">
+                  <Border Grid.Column="0" CornerRadius="2" Width="8">
                     <Border.Background>
                       <SolidColorBrush Color="{Binding CategoryColor}" />
                     </Border.Background>

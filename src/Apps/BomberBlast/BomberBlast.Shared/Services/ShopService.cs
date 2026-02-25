@@ -16,14 +16,16 @@ public class ShopService : IShopService
 
     private readonly IPreferencesService _preferences;
     private readonly ICoinService _coinService;
+    private readonly IGemService _gemService;
     private PlayerUpgrades _upgrades;
 
     public PlayerUpgrades Upgrades => _upgrades;
 
-    public ShopService(IPreferencesService preferences, ICoinService coinService)
+    public ShopService(IPreferencesService preferences, ICoinService coinService, IGemService gemService)
     {
         _preferences = preferences;
         _coinService = coinService;
+        _gemService = gemService;
         _upgrades = Load();
     }
 
@@ -66,6 +68,8 @@ public class ShopService : IShopService
         bool isMaxed = level >= maxLevel;
         int nextPrice = _upgrades.GetNextPrice(type);
 
+        int gemPrice = GetGemPrice(type);
+
         return new ShopDisplayItem
         {
             Type = type,
@@ -78,6 +82,8 @@ public class ShopService : IShopService
             NextPrice = nextPrice,
             IsMaxed = isMaxed,
             CanAfford = !isMaxed && _coinService.CanAfford(nextPrice),
+            GemPrice = gemPrice,
+            CanAffordGems = gemPrice > 0 && _gemService.CanAfford(gemPrice),
             LevelText = $"{level}/{maxLevel}"
         };
     }
@@ -109,6 +115,25 @@ public class ShopService : IShopService
         return true;
     }
 
+    public bool TryPurchaseFree(UpgradeType type)
+    {
+        if (_upgrades.IsMaxed(type))
+            return false;
+
+        // Kein Coin-Abzug → direkt upgraden
+        try
+        {
+            _upgrades.Upgrade(type);
+            Save();
+        }
+        catch
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     public float GetScoreMultiplier() => _upgrades.GetScoreMultiplier();
     public int GetTimeBonusMultiplier() => _upgrades.GetTimeBonusMultiplier();
     public int GetStartBombs() => _upgrades.GetStartBombs();
@@ -119,6 +144,52 @@ public class ShopService : IShopService
     public bool HasIceBomb() => _upgrades.GetLevel(UpgradeType.IceBomb) >= 1;
     public bool HasFireBomb() => _upgrades.GetLevel(UpgradeType.FireBomb) >= 1;
     public bool HasStickyBomb() => _upgrades.GetLevel(UpgradeType.StickyBomb) >= 1;
+
+    /// <summary>
+    /// Gem-Preis für das nächste Upgrade-Level.
+    /// Formel: Coin-Preis / 100 (gerundet auf nächste 5), minimum 10 Gems.
+    /// Nur für Upgrades ab Level 2+ verfügbar (teure Upgrades als Gem-Alternative).
+    /// </summary>
+    public int GetGemPrice(UpgradeType type)
+    {
+        int level = _upgrades.GetLevel(type);
+        if (_upgrades.IsMaxed(type)) return 0;
+
+        // Nur für Level 2+ als Alternative anbieten (günstige Level 1 sollen mit Coins gekauft werden)
+        if (level < 1) return 0;
+
+        int coinPrice = _upgrades.GetNextPrice(type);
+        // Umrechnung: ~100 Coins = 1 Gem (gerundet auf 5er-Schritte, min 10)
+        int gemPrice = Math.Max(10, (int)(Math.Ceiling(coinPrice / 500.0) * 5));
+        return gemPrice;
+    }
+
+    public bool TryPurchaseWithGems(UpgradeType type)
+    {
+        if (_upgrades.IsMaxed(type))
+            return false;
+
+        int gemPrice = GetGemPrice(type);
+        if (gemPrice <= 0)
+            return false;
+
+        if (!_gemService.TrySpendGems(gemPrice))
+            return false;
+
+        // Upgrade + Save atomar: Bei Fehler Gems zurückerstatten
+        try
+        {
+            _upgrades.Upgrade(type);
+            Save();
+        }
+        catch
+        {
+            _gemService.AddGems(gemPrice);
+            return false;
+        }
+
+        return true;
+    }
 
     public void ResetUpgrades()
     {

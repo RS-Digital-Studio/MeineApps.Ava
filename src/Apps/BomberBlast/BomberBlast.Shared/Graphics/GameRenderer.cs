@@ -37,6 +37,23 @@ public partial class GameRenderer : IDisposable
     public float ComboTimer { get; set; }
     public bool IsSurvivalMode { get; set; }
     public int SurvivalKills { get; set; }
+    public int EnemiesRemaining { get; set; }
+
+    // Dungeon-Buffs (gesetzt von GameEngine vor jedem Render im Dungeon-Modus)
+    public bool IsDungeonRun { get; set; }
+    public List<BomberBlast.Models.Dungeon.DungeonBuffType>? DungeonActiveBuffs { get; set; }
+    public BomberBlast.Models.Dungeon.DungeonRoomType DungeonRoomType { get; set; }
+    public BomberBlast.Models.Dungeon.DungeonFloorModifier DungeonFloorModifier { get; set; }
+
+    // Lokalisierte HUD-Labels (gesetzt von GameEngine vor jedem Render)
+    public string HudLabelKills { get; set; } = "KILLS";
+    public string HudLabelTime { get; set; } = "TIME";
+    public string HudLabelScore { get; set; } = "SCORE";
+    public string HudLabelLives { get; set; } = "LIVES";
+    public string HudLabelBombs { get; set; } = "BOMBS";
+    public string HudLabelPower { get; set; } = "POWER";
+    public string HudLabelDeck { get; set; } = "DECK";
+    public string HudLabelBuffs { get; set; } = "BUFFS";
 
     /// <summary>
     /// Verschiebung nach unten fuer Banner-Ad oben (in Canvas-Einheiten).

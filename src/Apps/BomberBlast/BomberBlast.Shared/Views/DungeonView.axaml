@@ -2,12 +2,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="BomberBlast.Views.DungeonView"
              x:DataType="vm:DungeonViewModel">
 
   <Panel>
-    <controls:MenuBackgroundCanvas />
+    <controls:MenuBackgroundCanvas BackgroundTheme="Dungeon" />
 
     <Grid RowDefinitions="Auto,*">
 
@@ -21,7 +23,13 @@
           <Button AutomationProperties.AutomationId="Dungeon_BtnBack"
                   Classes="Text"
                   Command="{Binding BackCommand}">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+              <TextBlock Text="{loc:Translate Back}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
           </Button>
 
           <!-- Title -->
@@ -37,12 +45,12 @@
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
 
-          <!-- Floor-Anzeige (nur bei aktivem Run / Buff-Auswahl) -->
+          <!-- Floor-Anzeige (bei Buff-Auswahl oder Map-Auswahl) -->
           <StackPanel Grid.Column="2"
                       Orientation="Horizontal"
                       Spacing="6"
                       VerticalAlignment="Center"
-                      IsVisible="{Binding IsBuffSelection}">
+                      IsVisible="{Binding !IsPreRun}">
             <mi:MaterialIcon Kind="Stairs" Width="20" Height="20"
                              Foreground="{DynamicResource AccentBrush}" />
             <TextBlock Text="{Binding CurrentFloorText}"
@@ -52,47 +60,148 @@
 
           <!-- Spacer wenn keine Floor-Anzeige -->
           <Border Grid.Column="2" Width="44"
-                  IsVisible="{Binding !IsBuffSelection}" />
+                  IsVisible="{Binding IsPreRun}" />
         </Grid>
       </Border>
 
       <!-- ===================== PreRun-Bereich ===================== -->
-      <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="24,16"
-            IsVisible="{Binding IsPreRun}">
+      <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="24,16,24,80"
+            IsVisible="{Binding IsPreRun}"
+            x:Name="Dungeon_Root">
 
-        <!-- Linke Spalte: Stats -->
-        <Border Grid.Column="0" Classes="CardElevated"
-                Margin="0,0,8,0" Padding="20"
-                CornerRadius="16"
-                VerticalAlignment="Center">
-          <StackPanel Spacing="16">
+        <!-- Linke Spalte: Stats + Upgrades -->
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="12" Margin="0,0,8,16">
 
-            <!-- TotalRuns -->
-            <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <mi:MaterialIcon Kind="Repeat" Width="22" Height="22"
-                                 Foreground="#4CAF50" />
-                <TextBlock Text="{Binding TotalRunsText}"
-                           FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           VerticalAlignment="Center" />
+            <!-- Stats-Karte -->
+            <Border Classes="CardElevated" Padding="16" CornerRadius="16">
+              <StackPanel Spacing="12">
+                <!-- TotalRuns -->
+                <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <mi:MaterialIcon Kind="Repeat" Width="22" Height="22"
+                                     Foreground="#4CAF50" />
+                    <TextBlock Text="{Binding TotalRunsText}"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+                <!-- BestFloor -->
+                <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
+                  <StackPanel Orientation="Horizontal" Spacing="10">
+                    <mi:MaterialIcon Kind="Trophy" Width="22" Height="22"
+                                     Foreground="#FFD700" />
+                    <TextBlock Text="{Binding BestFloorText}"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+
+                <!-- Ascension-Badge (nur sichtbar bei Ascension > 0) -->
+                <Border CornerRadius="12" Padding="14,10"
+                        IsVisible="{Binding HasAscension}">
+                  <Border.Background>
+                    <SolidColorBrush Color="{Binding AscensionColor}" Opacity="0.15" />
+                  </Border.Background>
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <mi:MaterialIcon Kind="Fire" Width="22" Height="22"
+                                     Foreground="{Binding AscensionColor}" />
+                    <TextBlock Grid.Column="1" Text="{Binding AscensionLevelText}"
+                               FontSize="15" FontWeight="Bold"
+                               Foreground="{Binding AscensionColor}"
+                               VerticalAlignment="Center" Margin="10,0,0,0" />
+                    <Border Grid.Column="2" CornerRadius="8" Padding="8,2"
+                            Margin="6,0,0,0">
+                      <Border.Background>
+                        <SolidColorBrush Color="{Binding AscensionColor}" Opacity="0.25" />
+                      </Border.Background>
+                      <TextBlock Text="{Binding AscensionBadgeText}"
+                                 FontSize="13" FontWeight="ExtraBold"
+                                 Foreground="{Binding AscensionColor}" />
+                    </Border>
+                  </Grid>
+                </Border>
               </StackPanel>
             </Border>
 
-            <!-- BestFloor -->
-            <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10">
-              <StackPanel Orientation="Horizontal" Spacing="10">
-                <mi:MaterialIcon Kind="Trophy" Width="22" Height="22"
-                                 Foreground="#FFD700" />
-                <TextBlock Text="{Binding BestFloorText}"
-                           FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           VerticalAlignment="Center" />
+            <!-- Permanente Upgrades (DungeonCoins-Währung) -->
+            <Border Classes="CardElevated" Padding="16" CornerRadius="16">
+              <StackPanel Spacing="10">
+                <!-- Upgrade-Header mit DungeonCoin-Balance -->
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="ArrowUpBoldCircle" Width="20" Height="20"
+                                     Foreground="#E040FB" />
+                    <TextBlock Text="{loc:Translate DungeonUpgradesTitle}"
+                               FontSize="15" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                  <!-- DungeonCoin-Balance -->
+                  <Border Grid.Column="1" Background="#30E040FB" CornerRadius="10" Padding="10,4">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <mi:MaterialIcon Kind="CircleMultiple" Width="16" Height="16"
+                                       Foreground="#E040FB" />
+                      <TextBlock Text="{Binding DungeonCoinBalanceText}"
+                                 FontSize="14" FontWeight="Bold"
+                                 Foreground="#E040FB"
+                                 VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Border>
+                </Grid>
+
+                <!-- 8 Upgrade-Einträge -->
+                <ItemsControl ItemsSource="{Binding UpgradeItems}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <Border Background="#15FFFFFF" CornerRadius="10" Padding="10,8" Margin="0,2">
+                        <Grid ColumnDefinitions="*,Auto,Auto">
+                          <!-- Name + Level -->
+                          <StackPanel Spacing="2">
+                            <TextBlock Text="{Binding Name}"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <TextBlock Text="{Binding LevelText}"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                          </StackPanel>
+                          <!-- Preis -->
+                          <TextBlock Grid.Column="1" Text="{Binding CostText}"
+                                     FontSize="12" FontWeight="Bold"
+                                     Foreground="#E040FB"
+                                     VerticalAlignment="Center"
+                                     Margin="8,0" />
+                          <!-- Kauf-Button -->
+                          <Button Grid.Column="2"
+                                  Command="{ReflectionBinding DataContext.BuyUpgradeCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                  CommandParameter="{Binding UpgradeId}"
+                                  Classes="Text"
+                                  IsEnabled="{Binding CanBuy}"
+                                  IsVisible="{Binding !IsMaxed}"
+                                  Padding="8,4"
+                                  VerticalAlignment="Center">
+                            <mi:MaterialIcon Kind="CartPlus" Width="18" Height="18"
+                                             Foreground="#E040FB" />
+                          </Button>
+                          <!-- MAX-Badge wenn ausgereizt -->
+                          <Border Grid.Column="2"
+                                  IsVisible="{Binding IsMaxed}"
+                                  Background="#30FFD700" CornerRadius="6" Padding="6,2"
+                                  VerticalAlignment="Center">
+                            <TextBlock Text="MAX" FontSize="10" FontWeight="Bold"
+                                       Foreground="#FFD700" />
+                          </Border>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
               </StackPanel>
             </Border>
-
           </StackPanel>
-        </Border>
+        </ScrollViewer>
 
         <!-- Rechte Spalte: Start-Buttons -->
         <StackPanel Grid.Column="1" Spacing="10"
@@ -173,10 +282,38 @@
         </StackPanel>
       </Grid>
 
-      <!-- ===================== BuffSelection-Bereich ===================== -->
-      <StackPanel Grid.Row="1" Margin="24,16" Spacing="16"
+      <!-- ===================== BuffSelection-Bereich (animiert) ===================== -->
+      <StackPanel Grid.Row="1" Margin="24,16,24,80" Spacing="16"
                   VerticalAlignment="Center"
-                  IsVisible="{Binding IsBuffSelection}">
+                  IsVisible="{Binding IsBuffSelection}"
+                  RenderTransformOrigin="0.5,0.5">
+        <StackPanel.RenderTransform>
+          <TranslateTransform Y="0" />
+        </StackPanel.RenderTransform>
+        <!-- Einblend-Animation: Slide-Up + Fade -->
+        <StackPanel.Styles>
+          <Style Selector="StackPanel">
+            <Style.Animations>
+              <Animation Duration="0:0:0.25" Easing="CubicEaseOut" FillMode="Forward">
+                <KeyFrame Cue="0%">
+                  <Setter Property="Opacity" Value="0" />
+                  <Setter Property="TranslateTransform.Y" Value="30" />
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                  <Setter Property="Opacity" Value="1" />
+                  <Setter Property="TranslateTransform.Y" Value="0" />
+                </KeyFrame>
+              </Animation>
+            </Style.Animations>
+          </Style>
+          <!-- BuffCard Scale bei PointerOver + Pressed -->
+          <Style Selector="Button.BuffCard:pointerover">
+            <Setter Property="RenderTransform" Value="scale(1.05,1.05)" />
+          </Style>
+          <Style Selector="Button.BuffCard:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.97,0.97)" />
+          </Style>
+        </StackPanel.Styles>
 
         <!-- Header -->
         <TextBlock Text="{Binding CurrentFloorText}"
@@ -184,7 +321,27 @@
                    Foreground="{DynamicResource PrimaryBrush}"
                    HorizontalAlignment="Center" />
 
-        <!-- 3 Buff-Karten -->
+        <!-- Raum-Typ + Modifikator-Badges -->
+        <WrapPanel HorizontalAlignment="Center" Margin="0,4,0,4">
+          <Border CornerRadius="10" Padding="10,4" Margin="4,0"
+                  IsVisible="{Binding CurrentRoomTypeText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <Border.Background>
+              <SolidColorBrush Color="{Binding CurrentRoomTypeColor}" Opacity="0.2" />
+            </Border.Background>
+            <TextBlock Text="{Binding CurrentRoomTypeText}" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{Binding CurrentRoomTypeColor}" />
+          </Border>
+          <Border CornerRadius="10" Padding="10,4" Margin="4,0"
+                  IsVisible="{Binding CurrentModifierText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <Border.Background>
+              <SolidColorBrush Color="{Binding CurrentModifierColor}" Opacity="0.15" />
+            </Border.Background>
+            <TextBlock Text="{Binding CurrentModifierText}" FontSize="11" FontWeight="SemiBold"
+                       Foreground="{Binding CurrentModifierColor}" />
+          </Border>
+        </WrapPanel>
+
+        <!-- 3 Buff-Karten mit Raritäts-Glow + Scale-Transition -->
         <ItemsControl AutomationProperties.AutomationId="Dungeon_BuffList"
                       ItemsSource="{Binding BuffChoices}">
           <ItemsControl.ItemsPanel>
@@ -197,40 +354,228 @@
             <DataTemplate>
               <Button Command="{ReflectionBinding DataContext.SelectBuffCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                       CommandParameter="{ReflectionBinding Type}"
-                      Classes="Text"
-                      Margin="6">
-                <Border Classes="CardElevated"
-                        CornerRadius="16" Padding="16"
-                        Width="200" MinHeight="140">
-                  <StackPanel Spacing="8" HorizontalAlignment="Center">
-                    <!-- Name -->
-                    <TextBlock Text="{Binding Name}"
-                               FontSize="16" FontWeight="Bold"
-                               Foreground="{DynamicResource TextPrimaryBrush}"
-                               HorizontalAlignment="Center"
-                               TextAlignment="Center" />
-                    <!-- Description -->
-                    <TextBlock Text="{Binding Description}"
-                               FontSize="12"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               HorizontalAlignment="Center"
-                               TextAlignment="Center" />
-                    <!-- RarityText -->
-                    <TextBlock Text="{Binding RarityText}"
-                               FontSize="11" FontWeight="SemiBold"
-                               Foreground="{DynamicResource AccentBrush}"
-                               HorizontalAlignment="Center" />
-                  </StackPanel>
+                      Classes="Text BuffCard"
+                      Margin="6"
+                      RenderTransformOrigin="0.5,0.5"
+                      RenderTransform="scale(1,1)">
+                <!-- Scale-Transition bei PointerOver/Pressed -->
+                <Button.Transitions>
+                  <Transitions>
+                    <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" Easing="CubicEaseOut" />
+                  </Transitions>
+                </Button.Transitions>
+
+                <!-- Äußerer Raritäts-Glow-Border mit Puls-Animation -->
+                <Border CornerRadius="18" Padding="2"
+                        BoxShadow="0 0 16 0 #40000000">
+                  <Border.Background>
+                    <SolidColorBrush Color="{Binding RarityColor}" />
+                  </Border.Background>
+                  <Border.Styles>
+                    <Style Selector="Border">
+                      <Style.Animations>
+                        <!-- Pulsierender Glow (feste Werte, RarityColor differenziert visuell) -->
+                        <Animation Duration="0:0:2" IterationCount="INFINITE">
+                          <KeyFrame Cue="0%">
+                            <Setter Property="Opacity" Value="0.6" />
+                          </KeyFrame>
+                          <KeyFrame Cue="50%">
+                            <Setter Property="Opacity" Value="0.2" />
+                          </KeyFrame>
+                          <KeyFrame Cue="100%">
+                            <Setter Property="Opacity" Value="0.6" />
+                          </KeyFrame>
+                        </Animation>
+                      </Style.Animations>
+                    </Style>
+                  </Border.Styles>
+
+                  <!-- Innere Karte -->
+                  <Border Classes="CardElevated"
+                          CornerRadius="16" Padding="16"
+                          Width="200" MinHeight="140">
+                    <StackPanel Spacing="8" HorizontalAlignment="Center">
+                      <!-- Name -->
+                      <TextBlock Text="{Binding Name}"
+                                 FontSize="16" FontWeight="Bold"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 HorizontalAlignment="Center"
+                                 TextAlignment="Center" />
+                      <!-- Description -->
+                      <TextBlock Text="{Binding Description}"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 TextWrapping="Wrap"
+                                 HorizontalAlignment="Center"
+                                 TextAlignment="Center" />
+                      <!-- RarityText mit Raritätsfarbe -->
+                      <TextBlock Text="{Binding RarityText}"
+                                 FontSize="11" FontWeight="SemiBold"
+                                 HorizontalAlignment="Center">
+                        <TextBlock.Foreground>
+                          <SolidColorBrush Color="{Binding RarityColor}" />
+                        </TextBlock.Foreground>
+                      </TextBlock>
+                    </StackPanel>
+                  </Border>
                 </Border>
               </Button>
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <!-- Reroll-Button + Aktive Synergien -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="12">
+          <!-- Reroll -->
+          <Button AutomationProperties.AutomationId="Dungeon_BtnReroll"
+                  Classes="Secondary GameButton"
+                  Command="{Binding RerollBuffsCommand}"
+                  IsVisible="{Binding CanReroll}"
+                  Padding="12,8">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="Dice3" Width="20" Height="20"
+                               Foreground="#FF9800" />
+              <TextBlock Text="{Binding RerollCostText}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="#FF9800"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <!-- Aktive Synergien -->
+          <ItemsControl ItemsSource="{Binding ActiveSynergies}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="6" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Border Background="#30FFD700" CornerRadius="10" Padding="10,6">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <mi:MaterialIcon Kind="LinkVariant" Width="16" Height="16"
+                                     Foreground="#FFD700" />
+                    <TextBlock Text="{Binding Name}"
+                               FontSize="12" FontWeight="Bold"
+                               Foreground="#FFD700"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
       </StackPanel>
 
+      <!-- ===================== MapSelection-Bereich ===================== -->
+      <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="24,16,24,80"
+            IsVisible="{Binding IsMapSelection}">
+
+        <!-- Map-Canvas mit ScrollViewer (Map kann höher als View sein) -->
+        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      Margin="0,0,8,0">
+          <skia:SKCanvasView
+              x:Name="MapCanvas"
+              PointerPressed="MapCanvas_PointerPressed"
+              PaintSurface="MapCanvas_PaintSurface"
+              IsHitTestVisible="True"
+              Cursor="Hand" />
+        </ScrollViewer>
+
+        <!-- Rechte Spalte: Legende + Hinweis -->
+        <StackPanel Grid.Column="1" Width="200" Spacing="10"
+                    VerticalAlignment="Center" Margin="8,0,0,0">
+
+          <!-- Floor-Info Header -->
+          <Border Classes="CardElevated" Padding="14" CornerRadius="16">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding CurrentFloorText}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource PrimaryBrush}"
+                         HorizontalAlignment="Center" />
+              <!-- Ascension-Badge in Map-Auswahl -->
+              <Border CornerRadius="8" Padding="8,3" HorizontalAlignment="Center"
+                      IsVisible="{Binding HasAscension}">
+                <Border.Background>
+                  <SolidColorBrush Color="{Binding AscensionColor}" Opacity="0.2" />
+                </Border.Background>
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <mi:MaterialIcon Kind="Fire" Width="14" Height="14"
+                                   Foreground="{Binding AscensionColor}" />
+                  <TextBlock Text="{Binding AscensionBadgeText}"
+                             FontSize="12" FontWeight="ExtraBold"
+                             Foreground="{Binding AscensionColor}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
+              <TextBlock Text="{loc:Translate DungeonSelectNode}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap"
+                         TextAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Legende -->
+          <Border Classes="CardElevated" Padding="12" CornerRadius="12">
+            <StackPanel Spacing="6">
+              <!-- Normal -->
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="14" Height="14" CornerRadius="7"
+                        Background="#9E9E9E" />
+                <TextBlock Text="{loc:Translate DungeonRoomNormal}" FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+              <!-- Elite -->
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="14" Height="14" CornerRadius="7"
+                        Background="#F44336" />
+                <TextBlock Text="{loc:Translate DungeonRoomElite}" FontSize="11"
+                           Foreground="#F44336"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+              <!-- Treasure -->
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="14" Height="14" CornerRadius="7"
+                        Background="#FFD700" />
+                <TextBlock Text="{loc:Translate DungeonRoomTreasure}" FontSize="11"
+                           Foreground="#FFD700"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+              <!-- Challenge -->
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="14" Height="14" CornerRadius="7"
+                        Background="#FF9800" />
+                <TextBlock Text="{loc:Translate DungeonRoomChallenge}" FontSize="11"
+                           Foreground="#FF9800"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+              <!-- Rest -->
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="14" Height="14" CornerRadius="7"
+                        Background="#4CAF50" />
+                <TextBlock Text="{loc:Translate DungeonRoomRest}" FontSize="11"
+                           Foreground="#4CAF50"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+              <!-- Boss -->
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Border Width="14" Height="14" CornerRadius="7"
+                        Background="#9C27B0" />
+                <TextBlock Text="{loc:Translate DungeonRoomBoss}" FontSize="11"
+                           Foreground="#9C27B0"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+        </StackPanel>
+      </Grid>
+
       <!-- ===================== PostRun-Bereich ===================== -->
-      <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="24,16"
+      <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="24,16,24,80"
             IsVisible="{Binding IsPostRun}">
 
         <!-- Linke Spalte: Zusammenfassung -->
@@ -288,6 +633,19 @@
               </StackPanel>
             </Border>
 
+            <!-- DungeonCoins (nur sichtbar wenn > 0) -->
+            <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10"
+                    IsVisible="{Binding SummaryDungeonCoinsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <mi:MaterialIcon Kind="CircleMultiple" Width="20" Height="20"
+                                 Foreground="#E040FB" />
+                <TextBlock Text="{Binding SummaryDungeonCoinsText}"
+                           FontSize="15" FontWeight="Bold"
+                           Foreground="#E040FB"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+
           </StackPanel>
         </Border>
 
@@ -303,6 +661,24 @@
                      Foreground="#FFD700"
                      HorizontalAlignment="Center"
                      Margin="0,0,0,8" />
+
+          <!-- Ascension Level-Up (sichtbar wenn SummaryAscensionText nicht leer) -->
+          <Border CornerRadius="12" Padding="12,6"
+                  HorizontalAlignment="Center"
+                  Margin="0,0,0,8"
+                  IsVisible="{Binding SummaryAscensionText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            <Border.Background>
+              <SolidColorBrush Color="{Binding AscensionColor}" Opacity="0.2" />
+            </Border.Background>
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Fire" Width="22" Height="22"
+                               Foreground="{Binding AscensionColor}" />
+              <TextBlock Text="{Binding SummaryAscensionText}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{Binding AscensionColor}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
 
           <!-- Nochmal Button -->
           <Button AutomationProperties.AutomationId="Dungeon_BtnContinue"
@@ -331,10 +707,9 @@
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20" />
-              <TextBlock Text="&#x2190;"
+              <TextBlock Text="{loc:Translate Back}"
                          FontSize="16" FontWeight="SemiBold"
-                         VerticalAlignment="Center"
-                         IsVisible="False" />
+                         VerticalAlignment="Center" />
             </StackPanel>
           </Button>
         </StackPanel>

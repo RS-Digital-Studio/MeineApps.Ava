@@ -35,8 +35,11 @@ public interface ICustomizationService
     /// <summary>Prüft ob ein Spieler-Skin gekauft/freigeschaltet ist</summary>
     bool IsPlayerSkinOwned(string skinId);
 
-    /// <summary>Spieler-Skin kaufen</summary>
+    /// <summary>Spieler-Skin kaufen (Coins)</summary>
     bool TryPurchasePlayerSkin(string skinId);
+
+    /// <summary>Spieler-Skin mit Gems kaufen (für Gem-exklusive Skins)</summary>
+    bool TryPurchasePlayerSkinWithGems(string skinId);
 
     /// <summary>Gegner-Skin-Set setzen</summary>
     void SetEnemySkinSet(string setId);

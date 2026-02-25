@@ -12,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Liga-System mit Firebase Online-Rangliste.
 /// Zeigt echte Spieler + NPC-Backfill, Saison-Countdown, Belohnungen.
 /// </summary>
-public partial class LeagueViewModel : ObservableObject
+public partial class LeagueViewModel : ObservableObject, INavigable, IGameJuiceEmitter
 {
     private readonly ILeagueService _leagueService;
     private readonly ILocalizationService _localization;
@@ -22,7 +22,7 @@ public partial class LeagueViewModel : ObservableObject
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
 
@@ -128,7 +128,7 @@ public partial class LeagueViewModel : ObservableObject
 
     public void UpdateLocalizedTexts()
     {
-        Title = _localization.GetString("LeagueTitle") ?? "Liga";
+        Title = _localization.GetString("LeagueTitle") ?? "League";
         PlayerName = _leagueService.PlayerName;
         LoadLeaderboard();
         UpdateTierInfo();
@@ -172,11 +172,11 @@ public partial class LeagueViewModel : ObservableObject
         CurrentPoints = _leagueService.CurrentPoints;
         SeasonNumber = _leagueService.SeasonNumber;
 
-        var pointsLabel = _localization.GetString("LeaguePoints") ?? "Punkte";
+        var pointsLabel = _localization.GetString("LeaguePoints") ?? "Points";
         PointsText = $"{CurrentPoints} {pointsLabel}";
 
         PlayerRank = _leagueService.GetPlayerRank();
-        var rankLabel = _localization.GetString("LeagueRank") ?? "Rang";
+        var rankLabel = _localization.GetString("LeagueRank") ?? "Rank";
         RankText = $"{rankLabel} #{PlayerRank}";
 
         // Nächste Liga anzeigen
@@ -184,12 +184,12 @@ public partial class LeagueViewModel : ObservableObject
         {
             var nextTier = tier + 1;
             var nextName = _localization.GetString(nextTier.GetNameKey()) ?? nextTier.ToString();
-            var nextLabel = _localization.GetString("LeagueNextTier") ?? "Nächste Liga";
+            var nextLabel = _localization.GetString("LeagueNextTier") ?? "Next League";
             NextTierText = $"{nextLabel}: {nextName}";
         }
         else
         {
-            NextTierText = _localization.GetString("LeagueMaxTier") ?? "Höchste Liga!";
+            NextTierText = _localization.GetString("LeagueMaxTier") ?? "Highest League!";
         }
     }
 
@@ -202,7 +202,7 @@ public partial class LeagueViewModel : ObservableObject
         var remaining = _leagueService.GetSeasonTimeRemaining();
         if (remaining <= TimeSpan.Zero)
         {
-            SeasonCountdown = _localization.GetString("LeagueSeasonEnded") ?? "Saison beendet!";
+            SeasonCountdown = _localization.GetString("LeagueSeasonEnded") ?? "Season ended!";
             return;
         }
 
@@ -258,9 +258,9 @@ public partial class LeagueViewModel : ObservableObject
     private void UpdateStats()
     {
         var stats = _leagueService.GetStats();
-        var seasonsLabel = _localization.GetString("LeagueStatSeasons") ?? "Saisons";
-        var promotionsLabel = _localization.GetString("LeagueStatPromotions") ?? "Aufstiege";
-        var bestLabel = _localization.GetString("LeagueStatBest") ?? "Bestpunkte";
+        var seasonsLabel = _localization.GetString("LeagueStatSeasons") ?? "Seasons";
+        var promotionsLabel = _localization.GetString("LeagueStatPromotions") ?? "Promotions";
+        var bestLabel = _localization.GetString("LeagueStatBest") ?? "Best Score";
 
         StatsText = $"{seasonsLabel}: {stats.TotalSeasons}  |  {promotionsLabel}: {stats.TotalPromotions}  |  {bestLabel}: {stats.BestSeasonPoints}";
     }
@@ -270,7 +270,7 @@ public partial class LeagueViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     [RelayCommand]
-    private void GoBack() => NavigationRequested?.Invoke("..");
+    private void GoBack() => NavigationRequested?.Invoke(new GoBack());
 
     [RelayCommand]
     private void ClaimReward()

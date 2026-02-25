@@ -1,3 +1,4 @@
+using BomberBlast.Services;
 using SkiaSharp;
 using System;
 
@@ -10,6 +11,11 @@ namespace BomberBlast.Graphics;
 /// </summary>
 public sealed class ShaderEffects : IDisposable
 {
+    /// <summary>
+    /// Statischer Logger, wird nach DI-Build von App.axaml.cs gesetzt.
+    /// </summary>
+    public static IAppLogger? Logger { get; set; }
+
     private bool _disposed;
 
     // --- Welt-Zustand ---
@@ -82,12 +88,12 @@ half4 main(float2 coord) {
             _waterRippleEffect = SKRuntimeEffect.CreateShader(WaterRippleSkSL, out var errors);
             _gpuRipplesAvailable = _waterRippleEffect != null;
             if (!_gpuRipplesAvailable)
-                System.Diagnostics.Debug.WriteLine($"SkSL Kompilierung fehlgeschlagen: {errors}");
+                Logger?.LogWarning($"SkSL Kompilierung fehlgeschlagen: {errors}");
         }
         catch (Exception ex)
         {
             _gpuRipplesAvailable = false;
-            System.Diagnostics.Debug.WriteLine($"SkSL nicht verfügbar: {ex.Message}");
+            Logger?.LogWarning($"SkSL nicht verfügbar: {ex.Message}");
         }
     }
 

@@ -13,7 +13,7 @@
   <Panel AutomationProperties.AutomationId="Deck_Root">
     <controls:MenuBackgroundCanvas />
 
-    <Grid ColumnDefinitions="*,260" Margin="16,12,16,80">
+    <Grid ColumnDefinitions="1.5*,*" Margin="16,12,16,80">
 
       <!-- ═══════════════════════════════════════════════════════════
            LINKE SPALTE (*) - Karten-Sammlung
@@ -37,17 +37,29 @@
                      HorizontalAlignment="Center" VerticalAlignment="Center"
                      AutomationProperties.AutomationId="Deck_TxtTitle" />
 
-          <!-- Coin-Badge -->
-          <Border Grid.Column="2" Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="16" Padding="12,6"
-                  AutomationProperties.AutomationId="Deck_CoinBadge">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18" Foreground="#FFD700" />
-              <TextBlock Text="{Binding CoinsText}"
-                         FontSize="14" FontWeight="SemiBold" Foreground="#FFD700"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-          </Border>
+          <!-- Coin + Gem Badges -->
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6">
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="16" Padding="12,6"
+                    AutomationProperties.AutomationId="Deck_CoinBadge">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18" Foreground="#FFD700" />
+                <TextBlock Text="{Binding CoinsText}"
+                           FontSize="14" FontWeight="SemiBold" Foreground="#FFD700"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+            <Border Background="{DynamicResource SurfaceBrush}"
+                    CornerRadius="16" Padding="12,6"
+                    AutomationProperties.AutomationId="Deck_GemBadge">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="DiamondStone" Width="18" Height="18" Foreground="#00BCD4" />
+                <TextBlock Text="{Binding GemsText}"
+                           FontSize="14" FontWeight="SemiBold" Foreground="#00BCD4"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
         </Grid>
 
         <!-- Sammlungs-Fortschritt -->
@@ -201,7 +213,7 @@
                            VerticalAlignment="Center" />
               </Grid>
 
-              <!-- 4 Deck-Slots -->
+              <!-- Deck-Slots -->
               <ItemsControl ItemsSource="{Binding DeckSlots}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="vm:DeckSlotItem">
@@ -259,6 +271,19 @@
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
               </ItemsControl>
+
+              <!-- Slot #5 Freischalten-Button (nur wenn nicht freigeschaltet) -->
+              <Button Classes="GameButton" HorizontalAlignment="Stretch"
+                      IsVisible="{Binding !IsSlot5Unlocked}"
+                      IsEnabled="{Binding CanUnlockSlot5}"
+                      Command="{Binding UnlockSlot5Command}"
+                      Height="36" Margin="0,4,0,0">
+                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                  <mi:MaterialIcon Kind="LockOpenVariant" Width="16" Height="16" Foreground="#00BCD4" />
+                  <TextBlock Text="{Binding UnlockSlot5Text}"
+                             FontSize="12" FontWeight="SemiBold" Foreground="#00BCD4" />
+                </StackPanel>
+              </Button>
             </StackPanel>
           </Border>
 
@@ -357,8 +382,8 @@
                   </StackPanel>
                 </Border>
 
-                <!-- Equip-Buttons (4 Slots) -->
-                <Grid ColumnDefinitions="*,*,*,*" Margin="0,2,0,0">
+                <!-- Equip-Buttons (4 Basis + optionaler 5. Slot) -->
+                <Grid ColumnDefinitions="*,*,*,*,*" Margin="0,2,0,0">
                   <Button Grid.Column="0" Classes="GameButton" Padding="0" Height="30" Margin="0,0,3,0"
                           Command="{Binding EquipToSlotCommand}" CommandParameter="0"
                           HorizontalContentAlignment="Center">
@@ -374,10 +399,16 @@
                           HorizontalContentAlignment="Center">
                     <TextBlock Text="#3" FontSize="11" FontWeight="Bold" />
                   </Button>
-                  <Button Grid.Column="3" Classes="GameButton" Padding="0" Height="30"
+                  <Button Grid.Column="3" Classes="GameButton" Padding="0" Height="30" Margin="0,0,3,0"
                           Command="{Binding EquipToSlotCommand}" CommandParameter="3"
                           HorizontalContentAlignment="Center">
                     <TextBlock Text="#4" FontSize="11" FontWeight="Bold" />
+                  </Button>
+                  <Button Grid.Column="4" Classes="GameButton" Padding="0" Height="30"
+                          IsVisible="{Binding IsSlot5Unlocked}"
+                          Command="{Binding EquipToSlotCommand}" CommandParameter="4"
+                          HorizontalContentAlignment="Center">
+                    <TextBlock Text="#5" FontSize="11" FontWeight="Bold" Foreground="#00BCD4" />
                   </Button>
                 </Grid>
 

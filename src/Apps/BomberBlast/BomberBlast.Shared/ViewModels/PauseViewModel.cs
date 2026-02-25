@@ -7,7 +7,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the pause overlay.
 /// Provides commands for resume, restart, settings, and quit.
 /// </summary>
-public partial class PauseViewModel : ObservableObject
+public partial class PauseViewModel : ObservableObject, INavigable
 {
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -16,7 +16,7 @@ public partial class PauseViewModel : ObservableObject
     /// <summary>
     /// Event to request navigation. Parameter is the route string.
     /// </summary>
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
 
     /// <summary>
     /// Event raised when the player wants to resume the game.
@@ -44,25 +44,25 @@ public partial class PauseViewModel : ObservableObject
     private void Resume()
     {
         ResumeRequested?.Invoke();
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     [RelayCommand]
     private void Restart()
     {
         RestartRequested?.Invoke();
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     [RelayCommand]
     private void OpenSettings()
     {
-        NavigationRequested?.Invoke("Settings");
+        NavigationRequested?.Invoke(new GoSettings());
     }
 
     [RelayCommand]
     private void Quit()
     {
-        NavigationRequested?.Invoke("//MainMenu");
+        NavigationRequested?.Invoke(new GoResetThen(new GoMainMenu()));
     }
 }

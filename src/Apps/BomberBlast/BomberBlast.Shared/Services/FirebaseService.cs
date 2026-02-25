@@ -300,4 +300,10 @@ public class FirebaseService : IFirebaseService
         _tokenExpiry = DateTime.MinValue;
         await EnsureAuthenticatedAsync();
     }
+
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+        _authLock.Dispose();
+    }
 }

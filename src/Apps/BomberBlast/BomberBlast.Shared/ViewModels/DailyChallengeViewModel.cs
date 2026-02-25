@@ -9,14 +9,14 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für die Daily-Challenge-Übersicht.
 /// Zeigt Streak, Best-Score und ermöglicht Start der heutigen Challenge.
 /// </summary>
-public partial class DailyChallengeViewModel : ObservableObject
+public partial class DailyChallengeViewModel : ObservableObject, INavigable, IGameJuiceEmitter
 {
     private readonly IDailyChallengeService _dailyChallengeService;
     private readonly ICoinService _coinService;
     private readonly ILocalizationService _localizationService;
     private readonly IAchievementService _achievementService;
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? FloatingTextRequested;
     public event Action? CelebrationRequested;
 
@@ -113,13 +113,13 @@ public partial class DailyChallengeViewModel : ObservableObject
     private void PlayChallenge()
     {
         var seed = _dailyChallengeService.GetTodaySeed();
-        NavigationRequested?.Invoke($"Game?mode=daily&level={seed}");
+        NavigationRequested?.Invoke(new GoGame(Mode: "daily", Level: seed));
     }
 
     [RelayCommand]
     private void Back()
     {
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     private void UpdateStats()
@@ -134,18 +134,18 @@ public partial class DailyChallengeViewModel : ObservableObject
         StreakBonusText = bonus > 0 ? $"+{bonus:N0} Coins" : "-";
 
         PlayButtonText = IsCompletedToday
-            ? _localizationService.GetString("DailyChallengeRetry") ?? "Nochmal spielen"
-            : _localizationService.GetString("DailyChallengePlay") ?? "Challenge starten!";
+            ? _localizationService.GetString("DailyChallengeRetry") ?? "Play Again"
+            : _localizationService.GetString("DailyChallengePlay") ?? "Start Challenge!";
     }
 
     private void UpdateLocalizedTexts()
     {
         DailyChallengeTitle = _localizationService.GetString("DailyChallengeTitle") ?? "Daily Challenge";
-        BestScoreLabel = _localizationService.GetString("DailyChallengeBestScore") ?? "Bester Score";
+        BestScoreLabel = _localizationService.GetString("DailyChallengeBestScore") ?? "Best Score";
         StreakLabel = _localizationService.GetString("DailyChallengeStreak") ?? "Streak";
-        LongestStreakLabel = _localizationService.GetString("DailyChallengeLongestStreak") ?? "Längste Streak";
-        CompletedLabel = _localizationService.GetString("DailyChallengeCompleted") ?? "Abgeschlossen";
-        StreakBonusLabel = _localizationService.GetString("DailyChallengeStreakBonus") ?? "Streak-Bonus";
-        CompletedTodayText = _localizationService.GetString("DailyChallengeCompletedToday") ?? "Heute bereits gespielt!";
+        LongestStreakLabel = _localizationService.GetString("DailyChallengeLongestStreak") ?? "Longest Streak";
+        CompletedLabel = _localizationService.GetString("DailyChallengeCompleted") ?? "Completed";
+        StreakBonusLabel = _localizationService.GetString("DailyChallengeStreakBonus") ?? "Streak Bonus";
+        CompletedTodayText = _localizationService.GetString("DailyChallengeCompletedToday") ?? "Already played today!";
     }
 }

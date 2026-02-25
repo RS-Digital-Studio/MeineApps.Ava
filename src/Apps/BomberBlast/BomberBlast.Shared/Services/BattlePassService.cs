@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using BomberBlast.Models.BattlePass;
 using MeineApps.Core.Ava.Services;
@@ -24,11 +25,42 @@ public class BattlePassService : IBattlePassService
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
+    private const int XP_BOOST_GEM_COST = 20;
+    private const int XP_BOOST_DURATION_HOURS = 24;
+
     public BattlePassData Data => _data;
     public bool IsSeasonActive => !_data.IsSeasonExpired;
     public bool IsPremium => _data.IsPremium;
     public int CurrentTier => _data.CurrentTier;
     public int DaysRemaining => _data.DaysRemaining;
+
+    public bool IsXpBoostActive
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_data.XpBoostExpiresAt)) return false;
+            try
+            {
+                var expires = DateTime.Parse(_data.XpBoostExpiresAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+                return DateTime.UtcNow < expires;
+            }
+            catch { return false; }
+        }
+    }
+
+    public DateTime? XpBoostExpiresAt
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_data.XpBoostExpiresAt)) return null;
+            try
+            {
+                var expires = DateTime.Parse(_data.XpBoostExpiresAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
+                return DateTime.UtcNow < expires ? expires : null;
+            }
+            catch { return null; }
+        }
+    }
 
     public event Action? BattlePassChanged;
     public event Action<int>? TierUpReached;
@@ -55,10 +87,25 @@ public class BattlePassService : IBattlePassService
         CheckAndStartNewSeason();
     }
 
+    public bool ActivateXpBoost()
+    {
+        if (IsXpBoostActive) return false;
+        if (!_gemService.TrySpendGems(XP_BOOST_GEM_COST)) return false;
+
+        _data.XpBoostExpiresAt = DateTime.UtcNow.AddHours(XP_BOOST_DURATION_HOURS).ToString("O");
+        SaveData();
+        BattlePassChanged?.Invoke();
+        return true;
+    }
+
     public int AddXp(int amount, string source = "")
     {
         if (_data.IsSeasonExpired) return 0;
         if (_data.CurrentTier >= BattlePassTierDefinitions.MaxTier) return 0;
+
+        // 2x XP-Boost anwenden
+        if (IsXpBoostActive)
+            amount *= 2;
 
         int tierUps = _data.AddXp(amount);
 

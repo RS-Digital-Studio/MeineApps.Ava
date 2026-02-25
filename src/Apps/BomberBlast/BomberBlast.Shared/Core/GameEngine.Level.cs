@@ -133,7 +133,23 @@ public partial class GameEngine
         _isQuickPlayMode = false;
         _isDungeonRun = true;
         _currentLevelNumber = Math.Min(floor * 10, 100); // Floor → Schwierigkeit (World-Mapping)
-        _currentLevel = LevelGenerator.GenerateDungeonFloor(floor, seed);
+
+        // Raum-Typ + Modifikator aus DungeonService lesen
+        var runState = _dungeonService.RunState;
+        var roomType = runState?.CurrentRoomType ?? DungeonRoomType.Normal;
+        var challengeMode = runState?.CurrentChallengeMode ?? DungeonChallengeMode.SpeedRun;
+        var floorModifier = runState?.CurrentModifier ?? DungeonFloorModifier.None;
+
+        // Rest-Raum: Kein Kampf → automatisch Buff-Auswahl triggern (kein Level laden)
+        if (roomType == DungeonRoomType.Rest)
+        {
+            _continueUsed = true;
+            // Rest-Raum triggert sofort Buff-Auswahl + Heilung
+            OnDungeonBuffSelection?.Invoke();
+            return;
+        }
+
+        _currentLevel = LevelGenerator.GenerateDungeonFloor(floor, seed, roomType, challengeMode, floorModifier);
         _continueUsed = true; // Kein Continue im Dungeon
 
         if (floor == 1)
@@ -153,11 +169,83 @@ public partial class GameEngine
 
         await LoadLevelAsync();
 
+        // Floor-Modifikator anwenden (nach Level-Generierung)
+        ApplyDungeonFloorModifier(floorModifier);
+
         var isBoss = DungeonBuffCatalog.IsBossFloor(floor);
         _soundManager.PlayMusic(isBoss ? SoundManager.MUSIC_BOSS : SoundManager.MUSIC_GAMEPLAY);
 
-        _worldAnnouncementText = isBoss ? $"BOSS - FLOOR {floor}" : $"FLOOR {floor}";
+        // Ankündigung mit Raum-Typ
+        string roomLabel = roomType switch
+        {
+            DungeonRoomType.Elite => "ELITE",
+            DungeonRoomType.Treasure => "TREASURE",
+            DungeonRoomType.Challenge => "CHALLENGE",
+            _ => ""
+        };
+        string floorText = isBoss ? $"BOSS - FLOOR {floor}" : $"FLOOR {floor}";
+        if (!string.IsNullOrEmpty(roomLabel))
+            floorText = $"{roomLabel} - FLOOR {floor}";
+        _worldAnnouncementText = floorText;
         _worldAnnouncementTimer = 2.5f;
+    }
+
+    /// <summary>
+    /// Wendet Floor-Modifikator-Effekte an (nach Level-Generierung).
+    /// Einige Modifikatoren ändern Grid-Zellen oder Spieler-Stats für den aktuellen Floor.
+    /// </summary>
+    private void ApplyDungeonFloorModifier(DungeonFloorModifier modifier)
+    {
+        _dungeonFloorModifier = modifier;
+        _dungeonModifierRegenTimer = 0;
+
+        switch (modifier)
+        {
+            case DungeonFloorModifier.LavaBorders:
+                // Äußere Reihe = Lava (sofortiger Tod)
+                for (int x = 0; x < GameGrid.WIDTH; x++)
+                {
+                    var top = _grid.TryGetCell(x, 0);
+                    var bottom = _grid.TryGetCell(x, GameGrid.HEIGHT - 1);
+                    if (top != null && top.Type == CellType.Empty) { top.IsLavaActive = true; top.LavaTimer = 999f; }
+                    if (bottom != null && bottom.Type == CellType.Empty) { bottom.IsLavaActive = true; bottom.LavaTimer = 999f; }
+                }
+                for (int y = 1; y < GameGrid.HEIGHT - 1; y++)
+                {
+                    var left = _grid.TryGetCell(0, y);
+                    var right = _grid.TryGetCell(GameGrid.WIDTH - 1, y);
+                    if (left != null && left.Type == CellType.Empty) { left.IsLavaActive = true; left.LavaTimer = 999f; }
+                    if (right != null && right.Type == CellType.Empty) { right.IsLavaActive = true; right.LavaTimer = 999f; }
+                }
+                break;
+
+            case DungeonFloorModifier.FastBombs:
+                // Wird in PlaceBomb() berücksichtigt (50% kürzere Zündschnur)
+                _dungeonBombFuseReduction += Bomb.DEFAULT_FUSE_TIME * 0.5f;
+                break;
+
+            case DungeonFloorModifier.BigExplosions:
+                // Alle Explosionen +2 Range
+                _player.FireRange += 2;
+                break;
+
+            case DungeonFloorModifier.Regeneration:
+                // Shield-Regeneration nach 15s → wird in UpdatePlaying() geprüft
+                // (nutzt eigenen Timer, schneller als Festungs-Synergy)
+                break;
+
+            case DungeonFloorModifier.Darkness:
+                // Fog wird bereits in LevelGenerator gesetzt
+                break;
+
+            case DungeonFloorModifier.DoubleSpawns:
+                // Gegner-Verdopplung bereits in LevelGenerator
+                break;
+
+            case DungeonFloorModifier.Wealthy:
+                // Coin-Multiplikator in DungeonService.CompleteFloor()
+                break;
+        }
     }
 
     /// <summary>
@@ -167,6 +255,15 @@ public partial class GameEngine
     {
         var state = _dungeonService.RunState;
         if (state?.ActiveBuffs == null) return;
+
+        // Legendäre Buff-Flags zurücksetzen
+        _timeFreezeTimer = 0;
+        _phantomWalkAvailable = false;
+        _phantomWalkActive = false;
+        _phantomWalkTimer = 0;
+        _phantomCooldownTimer = 0;
+        _dungeonEnemySlowActive = false;
+        _dungeonBombFuseReduction = 0;
 
         foreach (var buff in state.ActiveBuffs)
         {
@@ -190,8 +287,74 @@ public partial class GameEngine
                 case DungeonBuffType.BlastRadius:
                     _player.FireRange += 2;
                     break;
+
+                // Legendäre Buffs
+                case DungeonBuffType.Berserker:
+                    // +2 Bomben, +2 Feuer (Leben-Abzug bereits in DungeonService.ApplyBuff)
+                    _player.MaxBombs += 2;
+                    _player.FireRange += 2;
+                    break;
+                case DungeonBuffType.TimeFreeze:
+                    // Wird nach LoadLevelAsync() aktiviert (3s Freeze bei Floor-Start)
+                    _timeFreezeTimer = 3f;
+                    break;
+                case DungeonBuffType.BombTimer:
+                    // Basis: -0.5s Zündschnur (wird via _dungeonBombFuseReduction angewendet)
+                    break;
+                case DungeonBuffType.EnemySlow:
+                    // Basis: Gegner 20% langsamer
+                    _dungeonEnemySlowActive = true;
+                    break;
+                case DungeonBuffType.GoldRush:
+                    // Coin-Multiplikator wird in DungeonService.CompleteFloor() angewendet
+                    break;
+                case DungeonBuffType.Phantom:
+                    // 5s durch Wände laufen, 30s Cooldown - Aktivierung per Spieler-Input
+                    _phantomWalkAvailable = true;
+                    break;
             }
         }
+
+        // Synergien prüfen (zwei bestimmte Buffs → Bonus-Effekt)
+        _synergyBombardierActive = false;
+        _synergyBlitzkriegActive = false;
+        _synergyFortressActive = false;
+        _fortressRegenTimer = 0;
+        _synergyMidasActive = false;
+        _synergyElementalActive = false;
+
+        var buffs = state.ActiveBuffs;
+
+        // Bombardier: ExtraBomb + ExtraFire → nochmal +1 auf beides
+        if (buffs.Contains(DungeonBuffType.ExtraBomb) && buffs.Contains(DungeonBuffType.ExtraFire))
+        {
+            _synergyBombardierActive = true;
+            _player.MaxBombs++;
+            _player.FireRange++;
+        }
+
+        // Blitzkrieg: SpeedBoost + BombTimer → Bomben-Timer -0.5s extra
+        if (buffs.Contains(DungeonBuffType.SpeedBoost) && buffs.Contains(DungeonBuffType.BombTimer))
+            _synergyBlitzkriegActive = true;
+
+        // Festung: Shield + ExtraLife → Shield regeneriert nach 20s ohne Schaden
+        if (buffs.Contains(DungeonBuffType.Shield) && buffs.Contains(DungeonBuffType.ExtraLife))
+            _synergyFortressActive = true;
+
+        // Midas: CoinBonus + GoldRush → Gegner droppen Mini-Coins bei Tod
+        if (buffs.Contains(DungeonBuffType.CoinBonus) && buffs.Contains(DungeonBuffType.GoldRush))
+            _synergyMidasActive = true;
+
+        // Elementar: EnemySlow + FireImmunity → Lava verlangsamt Gegner statt Spieler zu schaden
+        if (buffs.Contains(DungeonBuffType.EnemySlow) && buffs.Contains(DungeonBuffType.FireImmunity))
+            _synergyElementalActive = true;
+
+        // Kumulative Zündschnur-Reduktion berechnen (BombTimer-Buff + Blitzkrieg-Synergy)
+        _dungeonBombFuseReduction = 0;
+        if (buffs.Contains(DungeonBuffType.BombTimer))
+            _dungeonBombFuseReduction += 0.5f;
+        if (_synergyBlitzkriegActive)
+            _dungeonBombFuseReduction += 0.5f;
     }
 
     /// <summary>
@@ -217,6 +380,12 @@ public partial class GameEngine
         _bombs.Clear();
         _explosions.Clear();
         _powerUps.Clear();
+        _enemyPositionCache.Clear();
+        _enemyPositionHashSet.Clear();
+        _destroyingCells.Clear();
+        _afterglowCells.Clear();
+        _specialEffectCells.Clear();
+        _pendingIceCleanups.Clear();
         _particleSystem.Clear();
         _floatingText.Clear();
         _screenShake.Reset();
@@ -274,6 +443,7 @@ public partial class GameEngine
 
         // Gegner spawnen
         SpawnEnemies(random);
+        _originalEnemyCount = _enemies.Count;
 
         // Welt-Theme setzen (basierend auf Level-Nummer)
         int worldIndex = (_currentLevelNumber - 1) / 10;
@@ -311,12 +481,25 @@ public partial class GameEngine
     {
         if (_isDungeonRun)
         {
-            // Dungeon: Nur Base-Stats (Shop-Bonuse gelten nicht)
-            _player.MaxBombs = 1;
-            _player.FireRange = 1;
-            _player.HasSpeed = false;
+            // Dungeon: Verbesserte Base-Stats (Shop-Bonuse gelten nicht, Dungeon-Buffs werden separat addiert)
+            _player.MaxBombs = 2;
+            _player.FireRange = 2;
+            _player.HasSpeed = true;
             _player.Lives = 1;
             _player.HasShield = false;
+
+            // Permanente Dungeon-Upgrades (gekauft mit DungeonCoins)
+            int startBombs = _dungeonUpgradeService.GetUpgradeLevel(DungeonUpgradeCatalog.StartingBombs);
+            if (startBombs > 0) _player.MaxBombs += startBombs;
+
+            int startFire = _dungeonUpgradeService.GetUpgradeLevel(DungeonUpgradeCatalog.StartingFire);
+            if (startFire > 0) _player.FireRange += startFire;
+
+            int startSpeed = _dungeonUpgradeService.GetUpgradeLevel(DungeonUpgradeCatalog.StartingSpeed);
+            if (startSpeed > 0) _player.SpeedLevel = Math.Min(_player.SpeedLevel + 1, 3);
+
+            int startShield = _dungeonUpgradeService.GetUpgradeLevel(DungeonUpgradeCatalog.StartingShield);
+            if (startShield > 0) _player.HasShield = true;
         }
         else
         {
@@ -329,24 +512,32 @@ public partial class GameEngine
         }
 
         // Karten-Deck laden (beide Modi - Karten sind separate Mechanik)
-        if (!_isDungeonRun && !_cardService.HasMigrated)
+        if (!_isDungeonRun && !_tracking.Cards.HasMigrated)
         {
-            _cardService.MigrateFromShop(
+            _tracking.Cards.MigrateFromShop(
                 _shopService.HasIceBomb(),
                 _shopService.HasFireBomb(),
                 _shopService.HasStickyBomb());
         }
 
         // Ausgerüstete Karten für dieses Level laden (mit frischen Uses pro Level)
-        _player.EquippedCards = _cardService.GetEquippedCardsForGameplay();
+        _player.EquippedCards = _tracking.Cards.GetEquippedCardsForGameplay();
         _player.ActiveCardSlot = -1; // Startet immer auf Normalbombe
     }
 
     private void PlacePowerUps(Random random)
     {
-        var blocks = _grid.GetCellsOfType(CellType.Block).ToList();
-        if (blocks.Count == 0 || _currentLevel?.PowerUps == null)
+        // Wiederverwendbare Liste statt LINQ .ToList() (vermeidet Heap-Allokation pro Aufruf)
+        _blockCells.Clear();
+        for (int y = 0; y < _grid.Height; y++)
+            for (int x = 0; x < _grid.Width; x++)
+                if (_grid[x, y].Type == CellType.Block)
+                    _blockCells.Add(_grid[x, y]);
+
+        if (_blockCells.Count == 0 || _currentLevel?.PowerUps == null)
             return;
+
+        var blocks = _blockCells;
 
         // Fisher-Yates Shuffle (in-place, keine LINQ-Allokation)
         for (int i = blocks.Count - 1; i > 0; i--)
@@ -395,15 +586,27 @@ public partial class GameEngine
 
     private void PlaceExit(Random random)
     {
-        var blocks = _grid.GetCellsOfType(CellType.Block)
-            .Where(c => c.HiddenPowerUp == null)
-            .ToList();
+        // Wiederverwendbare Liste statt LINQ .Where().ToList() (vermeidet Heap-Allokation)
+        _blockCells.Clear();
+        for (int y = 0; y < _grid.Height; y++)
+            for (int x = 0; x < _grid.Width; x++)
+            {
+                var c = _grid[x, y];
+                if (c.Type == CellType.Block && c.HiddenPowerUp == null)
+                    _blockCells.Add(c);
+            }
+
+        var blocks = _blockCells;
 
         // Fallback: Wenn ALLE Blöcke ein HiddenPowerUp haben → alle Blöcke nehmen
         // Exit hat Priorität über PowerUp (wird unten auf null gesetzt)
         if (blocks.Count == 0)
         {
-            blocks = _grid.GetCellsOfType(CellType.Block).ToList();
+            for (int y = 0; y < _grid.Height; y++)
+                for (int x = 0; x < _grid.Width; x++)
+                    if (_grid[x, y].Type == CellType.Block)
+                        _blockCells.Add(_grid[x, y]);
+
             if (blocks.Count == 0)
                 return;
         }
@@ -483,11 +686,20 @@ public partial class GameEngine
                 }
                 else
                 {
-                    // Fallback: Zufällige Position mit Validierung (keine Wand/Block)
-                    pos = (random.Next(5, GameGrid.WIDTH - 2), random.Next(5, GameGrid.HEIGHT - 2));
-                    var fallbackCell = _grid.TryGetCell(pos.x, pos.y);
-                    if (fallbackCell == null || fallbackCell.Type != CellType.Empty)
-                        continue; // Ungültige Position überspringen
+                    // Fallback: Bis zu 40 Versuche für gültige Position
+                    bool placed = false;
+                    pos = (0, 0);
+                    for (int attempt = 0; attempt < 40; attempt++)
+                    {
+                        pos = (random.Next(3, GameGrid.WIDTH - 2), random.Next(3, GameGrid.HEIGHT - 2));
+                        var fallbackCell = _grid.TryGetCell(pos.x, pos.y);
+                        if (fallbackCell != null && fallbackCell.Type == CellType.Empty)
+                        {
+                            placed = true;
+                            break;
+                        }
+                    }
+                    if (!placed) continue; // Nur nach 40 Fehlversuchen aufgeben
                 }
 
                 var enemy = Enemy.CreateAtGrid(pos.x, pos.y, spawn.Type);
@@ -523,7 +735,7 @@ public partial class GameEngine
             _enemies.Add(boss);
 
             // Sammlungs-Album: Boss als angetroffen melden
-            _collectionService.RecordBossEncounter(bossType);
+            _tracking.OnBossEncountered(bossType);
         }
     }
 
@@ -654,6 +866,10 @@ public partial class GameEngine
                         if (bossCell.IsFrozen) bossDt *= 0.5f;
                         if (bossCell.IsTimeWarped) bossDt *= 0.5f;
                         if (bossCell.IsBlackHole) bossDt *= 0.3f;
+                        // Elementar-Synergy: Lava verlangsamt Gegner
+                        if (bossCell.IsLavaActive && _synergyElementalActive) bossDt *= 0.4f;
+                        // EnemySlow-Buff: Gegner 20% langsamer
+                        if (_dungeonEnemySlowActive) bossDt *= 0.8f;
                     }
 
                     // Boss-AI: Bewegt sich auf den Spieler zu (vereinfacht, kein A*)
@@ -674,6 +890,10 @@ public partial class GameEngine
                     if (enemyCell.IsFrozen) enemyDt *= 0.5f;
                     if (enemyCell.IsTimeWarped) enemyDt *= 0.5f;
                     if (enemyCell.IsBlackHole) enemyDt *= 0.3f;
+                    // Elementar-Synergy: Lava verlangsamt Gegner
+                    if (enemyCell.IsLavaActive && _synergyElementalActive) enemyDt *= 0.4f;
+                    // EnemySlow-Buff: Gegner 20% langsamer
+                    if (_dungeonEnemySlowActive) enemyDt *= 0.8f;
                 }
 
                 _enemyAI.Update(enemy, _player, enemyDt);
@@ -808,6 +1028,7 @@ public partial class GameEngine
         _stateTimer = 0;
         _levelCompleteHandled = false;
         _timer.Pause();
+        _vibration.VibratePattern();
 
         // Enemy-Kill-Punkte merken (nur Level-Score, nicht kumulierter Gesamtscore)
         LastEnemyKillPoints = _player.Score - _scoreAtLevelStart;
@@ -888,29 +1109,14 @@ public partial class GameEngine
 
             // Karten-Drop bei Dungeon-Floor
             if (reward.CardDrop >= 0)
-            {
-                var dropType = (BombType)reward.CardDrop;
-                _cardService.AddCard(dropType);
-            }
+                _tracking.Cards.AddCard((BombType)reward.CardDrop);
 
-            // Battle Pass XP + Liga-Punkte für Dungeon-Floor
+            // Tracking: Dungeon-Floor (Achievement + BattlePass + Liga + Missionen)
             int floor = _dungeonService.RunState?.CurrentFloor ?? 1;
-            _battlePassService.AddXp(50, "dungeon_floor");
-            _leagueService.AddPoints(5);
-
-            // Achievement: Dungeon-Floor erreicht
-            _achievementService.OnDungeonFloorReached(floor);
-
-            // Mission-Tracking: Dungeon-Floor abgeschlossen (CollectCards wird in CardService.AddCard() getrackt)
-            _weeklyService.TrackProgress(WeeklyMissionType.CompleteDungeonFloors);
-            _dailyMissionService.TrackProgress(WeeklyMissionType.CompleteDungeonFloors);
+            _tracking.OnDungeonFloorCompleted(floor);
 
             if (floor % 5 == 0) // Boss-Floor
-            {
-                _battlePassService.AddXp(100, "dungeon_boss");
-                _leagueService.AddPoints(25);
-                _achievementService.OnDungeonBossDefeated();
-            }
+                _tracking.OnDungeonBossDefeated();
 
             return; // Kein Story-Progress im Dungeon
         }
@@ -925,12 +1131,12 @@ public partial class GameEngine
             int stars = _progressService.GetLevelStars(_currentLevelNumber);
             _levelCompleteStars = stars;
             float timeUsed = _currentLevel!.TimeLimit - _timer.RemainingTime;
-            _achievementService.OnLevelCompleted(
-                _currentLevelNumber, _player.Score, stars, _bombsUsed,
-                _timer.RemainingTime, timeUsed, !_playerDamagedThisLevel);
 
-            // Stern-Fortschritt aktualisieren (jetzt mit aktuellem Score)
-            _achievementService.OnStarsUpdated(_progressService.GetTotalStars());
+            // Tracking: Level-Complete (Achievement + Liga + BattlePass + Missionen)
+            _tracking.OnStoryLevelCompleted(
+                _currentLevelNumber, _player.Score, stars, _bombsUsed,
+                _timer.RemainingTime, timeUsed, !_playerDamagedThisLevel,
+                _progressService.GetTotalStars(), _isDailyChallenge);
 
             // Achievement: Prüfe ob die Welt jetzt perfekt ist (alle 30 Sterne)
             int currentWorld = (_currentLevelNumber - 1) / 10 + 1;
@@ -947,45 +1153,13 @@ public partial class GameEngine
                     }
                 }
                 if (worldPerfect)
-                    _achievementService.OnWorldPerfected(currentWorld);
-            }
-
-            // Wöchentliche Challenge: Level-Abschluss tracken
-            _weeklyService.TrackProgress(WeeklyMissionType.CompleteLevels);
-
-            // Tägliche Mission: Level-Abschluss tracken
-            _dailyMissionService.TrackProgress(WeeklyMissionType.CompleteLevels);
-
-            // Liga-Punkte vergeben
-            int leaguePoints = 10 + _currentLevelNumber / 10;
-            if (_currentLevelNumber % 10 == 0) leaguePoints += 20; // Boss-Bonus
-            _leagueService.AddPoints(leaguePoints);
-
-            // Battle Pass XP
-            _battlePassService.AddXp(100, "level_complete");
-            if (_currentLevelNumber % 10 == 0) // Boss-Level
-                _battlePassService.AddXp(200, "boss_kill");
-            if (stars == 3)
-                _battlePassService.AddXp(50, "three_stars");
-
-            // Daily Challenge: Extra XP + Liga-Punkte
-            if (_isDailyChallenge)
-            {
-                _battlePassService.AddXp(200, "daily_challenge");
-                _leagueService.AddPoints(20);
+                    _tracking.OnWorldPerfected(currentWorld);
             }
         }
 
-        // Achievement: Quick-Play auf maximaler Schwierigkeit (10) abgeschlossen
-        if (_isQuickPlayMode && _quickPlayDifficulty >= 10)
-            _achievementService.OnQuickPlayMaxCompleted();
-
-        // Mission-Tracking: Quick-Play Runde abgeschlossen
+        // Tracking: Quick-Play (Achievement + Missionen)
         if (_isQuickPlayMode)
-        {
-            _weeklyService.TrackProgress(WeeklyMissionType.PlayQuickPlay);
-            _dailyMissionService.TrackProgress(WeeklyMissionType.PlayQuickPlay);
-        }
+            _tracking.OnQuickPlayCompleted(_quickPlayDifficulty);
     }
 
     private void UpdateLevelComplete(float deltaTime)
@@ -1003,7 +1177,7 @@ public partial class GameEngine
                 _progressService.CompleteLevel(_currentLevelNumber);
             }
 
-            _achievementService.FlushIfDirty();
+            _tracking.FlushIfDirty();
             OnLevelComplete?.Invoke();
         }
     }
@@ -1153,7 +1327,7 @@ public partial class GameEngine
     public async Task NextLevelAsync()
     {
         _currentLevelNumber++;
-        if (_currentLevelNumber > 50)
+        if (_currentLevelNumber > 100)
         {
             _state = GameState.Victory;
             _victoryTimer = 0;

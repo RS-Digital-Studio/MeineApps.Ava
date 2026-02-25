@@ -2,6 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:conv="using:BomberBlast.Converters"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:controls="using:BomberBlast.Controls"
              xmlns:skia="using:Avalonia.Labs.Controls"
@@ -13,7 +14,7 @@
   <Panel AutomationProperties.AutomationId="Collection_Root">
     <controls:MenuBackgroundCanvas />
 
-    <Grid ColumnDefinitions="260,*" Margin="16,12,16,80">
+    <Grid ColumnDefinitions="*,1.5*" Margin="16,12,16,80">
 
       <!-- ═══════════════════════════════════════════════════════════
            LINKE SPALTE (260px) - Navigation + Fortschritt
@@ -233,8 +234,23 @@
         <!-- Items + Detail -->
         <Panel Grid.Row="1">
 
+          <!-- Empty State (keine Items in Kategorie) -->
+          <StackPanel IsVisible="{Binding !Items.Count}"
+                      VerticalAlignment="Center"
+                      HorizontalAlignment="Center"
+                      Spacing="12">
+            <materialIcons:MaterialIcon Kind="BookOpenBlankVariant" Width="48" Height="48"
+                                        Foreground="{DynamicResource TextMutedBrush}"
+                                        HorizontalAlignment="Center" />
+            <TextBlock Text="{Binding EmptyItemsText, FallbackValue='Noch nichts entdeckt'}"
+                       FontSize="15"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+
           <!-- Items-Grid -->
-          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                        IsVisible="{Binding Items.Count}">
             <ItemsControl ItemsSource="{Binding Items}"
                           AutomationProperties.AutomationId="Collection_ItemGrid"
                           Margin="0,0,0,8">
@@ -270,7 +286,7 @@
                           <materialIcons:MaterialIcon Width="34" Height="34"
                               IsVisible="{Binding !IsSkiaIcon}"
                               Kind="{Binding IconName, Converter={x:Static conv:StringToMaterialIconKindConverter.Instance}}"
-                              Foreground="{Binding BadgeColor, Converter={x:Static conv:StringToColorBrushConverter.Instance}}" />
+                              Foreground="{Binding BadgeColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}" />
                         </Panel>
 
                         <!-- Name -->
@@ -304,7 +320,7 @@
                   Margin="20" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
                   BoxShadow="0 -4 16 0 #40000000"
                   BorderThickness="2"
-                  BorderBrush="{Binding DetailBadgeColor, Converter={x:Static conv:StringToColorBrushConverter.Instance}}">
+                  BorderBrush="{Binding DetailBadgeColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}">
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" Margin="16">
               <!-- Schließen-Button -->
               <Button Grid.Row="0" Classes="Text"

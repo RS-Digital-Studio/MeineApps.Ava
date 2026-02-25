@@ -18,4 +18,5 @@ public class NullCloudSaveService : ICloudSaveService
     public Task ForceUploadAsync() => Task.CompletedTask;
     public Task<bool> ForceDownloadAsync() => Task.FromResult(false);
     public void SetEnabled(bool enabled) { }
+    public void Dispose() { }
 }

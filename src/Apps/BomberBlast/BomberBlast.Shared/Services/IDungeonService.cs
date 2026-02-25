@@ -68,6 +68,25 @@ public interface IDungeonService
     /// </summary>
     bool IsCurrentFloorBoss { get; }
 
+    /// <summary>Persistiert den aktuellen Run-State (z.B. nach Reroll-Zähler-Änderung)</summary>
+    void PersistRunState();
+
+    /// <summary>
+    /// Wählt einen Node auf der Map aus und setzt RoomType/Modifier für den nächsten Floor.
+    /// </summary>
+    void SelectMapNode(int floor, int column);
+
+    /// <summary>
+    /// Markiert den aktuellen Floor-Node als abgeschlossen.
+    /// </summary>
+    void CompleteMapNode(int floor);
+
+    /// <summary>Aktuelles Ascension-Level (0-5)</summary>
+    int CurrentAscension { get; }
+
+    /// <summary>Coin-Multiplikator basierend auf Ascension-Level</summary>
+    float AscensionCoinMultiplier { get; }
+
     /// <summary>Event wenn sich der Run-State ändert</summary>
     event Action? RunStateChanged;
 }
@@ -92,6 +111,13 @@ public class DungeonRunSummary
     public int TotalCoins { get; init; }
     public int TotalGems { get; init; }
     public int TotalCards { get; init; }
+    public int TotalDungeonCoins { get; init; }
     public bool IsNewBestFloor { get; init; }
     public List<DungeonBuffType> UsedBuffs { get; init; } = [];
+
+    /// <summary>Ob durch diesen Run ein neues Ascension-Level freigeschaltet wurde</summary>
+    public bool AscensionLevelUp { get; init; }
+
+    /// <summary>Neues Ascension-Level (nur relevant wenn AscensionLevelUp == true)</summary>
+    public int NewAscensionLevel { get; init; }
 }

@@ -21,4 +21,13 @@ public interface IDailyRewardService
 
     /// <summary>Heutigen Bonus abholen. Gibt die Belohnung zurück oder null wenn nicht verfügbar.</summary>
     DailyReward? ClaimReward();
+
+    /// <summary>
+    /// Prüft ob ein Comeback-Bonus verfügbar ist (>3 Tage inaktiv).
+    /// Gibt (coins, gems) zurück oder null wenn kein Bonus.
+    /// </summary>
+    (int coins, int gems)? CheckComebackBonus();
+
+    /// <summary>Letzte Aktivität aktualisieren (bei jedem App-Start aufrufen)</summary>
+    void UpdateLastActivity();
 }

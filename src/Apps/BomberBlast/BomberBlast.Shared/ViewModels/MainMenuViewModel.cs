@@ -13,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Hauptmenü.
 /// Navigation zu Spielmodi, Meta-Features und Utility-Seiten.
 /// </summary>
-public partial class MainMenuViewModel : ObservableObject, IDisposable
+public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuiceEmitter, IDisposable
 {
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;
@@ -27,15 +27,16 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     private readonly IDailyMissionService _dailyMissionService;
     private readonly IBattlePassService _battlePassService;
     private readonly ILeagueService _leagueService;
+    private readonly IStarterPackService _starterPackService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Event to request navigation. Parameter is the route string.
+    /// Event für typsichere Navigation zu anderen Views.
     /// </summary>
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
 
     /// <summary>Floating-Text anzeigen (z.B. Daily Bonus)</summary>
     public event Action<string, string>? FloatingTextRequested;
@@ -76,6 +77,25 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _hasNewMissions;
 
+    // Feature-Freischaltung (progressive Sichtbarkeit im Hauptmenü)
+    [ObservableProperty] private bool _isShopUnlocked;
+    [ObservableProperty] private bool _isDailyChallengeUnlocked;
+    [ObservableProperty] private bool _isQuickPlayUnlocked;
+    [ObservableProperty] private bool _isSurvivalUnlocked;
+    [ObservableProperty] private bool _isProfileUnlocked;
+    [ObservableProperty] private bool _isAchievementsUnlocked;
+    [ObservableProperty] private bool _isWeeklyChallengeUnlocked;
+    [ObservableProperty] private bool _isLuckySpinUnlocked;
+    [ObservableProperty] private bool _isStatisticsUnlocked;
+    [ObservableProperty] private bool _isDeckUnlocked;
+    [ObservableProperty] private bool _isDungeonUnlocked;
+    [ObservableProperty] private bool _isBattlePassUnlocked;
+    [ObservableProperty] private bool _isCollectionUnlocked;
+    [ObservableProperty] private bool _isLeagueUnlocked;
+
+    /// <summary>Ob das Starterpaket-Angebot angezeigt werden soll</summary>
+    [ObservableProperty] private bool _isStarterPackAvailable;
+
     // Daily Reward Popup
     [ObservableProperty]
     private bool _isRewardPopupVisible;
@@ -101,7 +121,8 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
         IGemService gemService, ILocalizationService localizationService, IDailyRewardService dailyRewardService,
         IReviewService reviewService, IDailyChallengeService dailyChallengeService,
         IWeeklyChallengeService weeklyChallengeService, IDailyMissionService dailyMissionService,
-        IBattlePassService battlePassService, ILeagueService leagueService)
+        IBattlePassService battlePassService, ILeagueService leagueService,
+        IStarterPackService starterPackService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
@@ -115,6 +136,7 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
         _dailyMissionService = dailyMissionService;
         _battlePassService = battlePassService;
         _leagueService = leagueService;
+        _starterPackService = starterPackService;
 
         // Live-Update bei Coin-/Gem-Änderungen (z.B. aus Shop, Rewarded Ads)
         _coinService.BalanceChanged += OnBalanceChanged;
@@ -175,6 +197,45 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
         IsDailyChallengeNew = !_dailyChallengeService.IsCompletedToday;
         HasNewMissions = !_weeklyChallengeService.IsAllComplete || !_dailyMissionService.IsAllComplete;
         OnPropertyChanged(nameof(HasProgress));
+
+        // Comeback-Bonus prüfen (>3 Tage inaktiv → 2000 Coins + 5 Gems)
+        var comebackBonus = _dailyRewardService.CheckComebackBonus();
+        if (comebackBonus.HasValue)
+        {
+            var (coins, gems) = comebackBonus.Value;
+            _coinService.AddCoins(coins);
+            _gemService.AddGems(gems);
+
+            var comebackTitle = _localizationService.GetString("ComebackTitle") ?? "Welcome back!";
+            var comebackText = string.Format(
+                _localizationService.GetString("ComebackBonus") ?? "+{0} Coins, +{1} Gems",
+                coins.ToString("N0"), gems);
+            FloatingTextRequested?.Invoke($"{comebackTitle} {comebackText}", "gold");
+            CelebrationRequested?.Invoke();
+        }
+
+        // Letzte Aktivität aktualisieren (für zukünftige Comeback-Prüfung)
+        _dailyRewardService.UpdateLastActivity();
+
+        // Starterpaket-Eligibility prüfen
+        _starterPackService.CheckEligibility(_progressService.HighestCompletedLevel);
+        IsStarterPackAvailable = _starterPackService.IsAvailable;
+
+        // Alle Features immer sichtbar
+        IsShopUnlocked = true;
+        IsDailyChallengeUnlocked = true;
+        IsQuickPlayUnlocked = true;
+        IsSurvivalUnlocked = true;
+        IsProfileUnlocked = true;
+        IsAchievementsUnlocked = true;
+        IsWeeklyChallengeUnlocked = true;
+        IsLuckySpinUnlocked = true;
+        IsStatisticsUnlocked = true;
+        IsDeckUnlocked = true;
+        IsDungeonUnlocked = true;
+        IsBattlePassUnlocked = true;
+        IsCollectionUnlocked = true;
+        IsLeagueUnlocked = true;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -213,6 +274,12 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
         {
             _coinService.AddCoins(reward.Coins);
 
+            // Gem-Bonus vergeben (Tag 7: +10 Gems)
+            if (reward.Gems > 0)
+            {
+                _gemService.AddGems(reward.Gems);
+            }
+
             // Battle Pass XP + Liga-Punkte für täglichen Login
             _battlePassService.AddXp(BattlePassXpSources.DailyLogin, "daily_login");
             _leagueService.AddPoints(5);
@@ -221,6 +288,11 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
                 _localizationService.GetString("DailyRewardDay") ?? "Day {0}",
                 reward.Day);
             var bonusText = $"{dayText}: +{reward.Coins:N0} Coins!";
+
+            if (reward.Gems > 0)
+            {
+                bonusText += $" +{reward.Gems} Gems!";
+            }
 
             if (reward.ExtraLives > 0)
             {
@@ -234,9 +306,10 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
 
         IsRewardPopupVisible = false;
 
-        // Coin-Anzeige aktualisieren
+        // Coin-/Gem-Anzeige aktualisieren
         CoinBalance = _coinService.Balance;
         CoinsText = _coinService.Balance.ToString("N0");
+        GemsText = _gemService.Balance.ToString("N0");
     }
 
     [RelayCommand]
@@ -253,7 +326,7 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void StoryMode()
     {
-        NavigationRequested?.Invoke("LevelSelect");
+        NavigationRequested?.Invoke(new GoLevelSelect());
     }
 
     [RelayCommand]
@@ -262,98 +335,135 @@ public partial class MainMenuViewModel : ObservableObject, IDisposable
         int nextLevel = Math.Min(
             _progressService.HighestCompletedLevel + 1,
             _progressService.TotalLevels);
-        NavigationRequested?.Invoke($"Game?mode=story&level={nextLevel}");
+        NavigationRequested?.Invoke(new GoGame(Mode: "story", Level: nextLevel));
     }
 
     [RelayCommand]
     private void QuickPlay()
     {
-        NavigationRequested?.Invoke("QuickPlay");
+        NavigationRequested?.Invoke(new GoQuickPlay());
     }
 
     [RelayCommand]
     private void SurvivalMode()
     {
-        NavigationRequested?.Invoke("Game?mode=survival");
+        NavigationRequested?.Invoke(new GoGame(Mode: "survival"));
     }
 
     [RelayCommand]
     private void HighScores()
     {
-        NavigationRequested?.Invoke("HighScores");
+        NavigationRequested?.Invoke(new GoHighScores());
     }
 
     [RelayCommand]
     private void Help()
     {
-        NavigationRequested?.Invoke("Help");
+        NavigationRequested?.Invoke(new GoHelp());
     }
 
     [RelayCommand]
     private void Settings()
     {
-        NavigationRequested?.Invoke("Settings");
+        NavigationRequested?.Invoke(new GoSettings());
     }
 
     [RelayCommand]
     private void Shop()
     {
-        NavigationRequested?.Invoke("Shop");
+        NavigationRequested?.Invoke(new GoShop());
     }
 
     [RelayCommand]
     private void Achievements()
     {
-        NavigationRequested?.Invoke("Achievements");
+        NavigationRequested?.Invoke(new GoAchievements());
     }
 
     [RelayCommand]
     private void DailyChallenge()
     {
-        NavigationRequested?.Invoke("DailyChallenge");
+        NavigationRequested?.Invoke(new GoDailyChallenge());
     }
 
     [RelayCommand]
     private void LuckyWheel()
     {
-        NavigationRequested?.Invoke("LuckySpin");
+        NavigationRequested?.Invoke(new GoLuckySpin());
     }
 
     [RelayCommand]
     private void WeeklyChallenge()
     {
-        NavigationRequested?.Invoke("WeeklyChallenge");
+        NavigationRequested?.Invoke(new GoWeeklyChallenge());
     }
 
     [RelayCommand]
     private void Statistics()
     {
-        NavigationRequested?.Invoke("Statistics");
+        NavigationRequested?.Invoke(new GoStatistics());
     }
 
     [RelayCommand]
     private void Profile()
     {
-        NavigationRequested?.Invoke("Profile");
+        NavigationRequested?.Invoke(new GoProfile());
     }
 
     [RelayCommand]
     private void Deck()
     {
-        NavigationRequested?.Invoke("Deck");
+        NavigationRequested?.Invoke(new GoDeck());
     }
 
     [RelayCommand]
-    private void Dungeon() => NavigationRequested?.Invoke("Dungeon");
+    private void Dungeon() => NavigationRequested?.Invoke(new GoDungeon());
 
     [RelayCommand]
-    private void BattlePass() => NavigationRequested?.Invoke("BattlePass");
+    private void BattlePass() => NavigationRequested?.Invoke(new GoBattlePass());
 
     [RelayCommand]
-    private void Collection() => NavigationRequested?.Invoke("Collection");
+    private void Collection() => NavigationRequested?.Invoke(new GoCollection());
 
     [RelayCommand]
-    private void League() => NavigationRequested?.Invoke("League");
+    private void League() => NavigationRequested?.Invoke(new GoLeague());
+
+    [RelayCommand]
+    private void GoToGemShop() => NavigationRequested?.Invoke(new GoGemShop());
+
+    /// <summary>
+    /// Starterpaket kaufen. Nutzt IPurchaseService wenn verfügbar, sonst Coins-Fallback (4999).
+    /// </summary>
+    [RelayCommand]
+    private void BuyStarterPack()
+    {
+        if (_starterPackService.IsAlreadyPurchased) return;
+
+        // Versuch: Coin-basierter Kauf als Fallback (4999 Coins)
+        if (_coinService.Balance >= 4999)
+        {
+            _coinService.TrySpendCoins(4999);
+            _starterPackService.MarkAsPurchased();
+
+            var packTitle = _localizationService.GetString("StarterPackTitle") ?? "Starter Pack";
+            var packDesc = _localizationService.GetString("StarterPackDesc") ?? "5000 Coins + 20 Gems + 3 Rare Cards!";
+            FloatingTextRequested?.Invoke($"{packTitle}: {packDesc}", "gold");
+            CelebrationRequested?.Invoke();
+
+            IsStarterPackAvailable = false;
+
+            // Coin-/Gem-Anzeige aktualisieren
+            CoinBalance = _coinService.Balance;
+            CoinsText = _coinService.Balance.ToString("N0");
+            GemsText = _gemService.Balance.ToString("N0");
+        }
+        else
+        {
+            // Nicht genug Coins → Info anzeigen
+            var insufficientText = _localizationService.GetString("ShopNotEnoughCoins") ?? "Not enough Coins!";
+            FloatingTextRequested?.Invoke(insufficientText, "red");
+        }
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // BALANCE CHANGED

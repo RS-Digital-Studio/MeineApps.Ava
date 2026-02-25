@@ -178,7 +178,7 @@
 
                 <!-- Lock-Overlay (nur fuer gesperrte Welten) -->
                 <Border IsVisible="{Binding IsLocked}"
-                        Background="#80000000"
+                        Background="#60000000"
                         CornerRadius="12"
                         IsHitTestVisible="False">
                   <StackPanel HorizontalAlignment="Center"

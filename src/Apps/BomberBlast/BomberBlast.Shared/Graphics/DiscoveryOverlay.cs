@@ -154,7 +154,7 @@ public class DiscoveryOverlay : IDisposable
         _newBadgePaint.Color = new SKColor(255, 80, 0, alpha);
         canvas.DrawRoundRect(badgeX, badgeY, badgeW, badgeH, 6, 6, _newBadgePaint);
 
-        string newText = _localizationService.GetString("New") ?? "NEU!";
+        string newText = _localizationService.GetString("New") ?? "NEW!";
         using var badgePaint = new SKPaint { Color = new SKColor(255, 255, 255, alpha), IsAntialias = true };
         canvas.DrawText(newText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 4,
             SKTextAlign.Center, _badgeFont, badgePaint);

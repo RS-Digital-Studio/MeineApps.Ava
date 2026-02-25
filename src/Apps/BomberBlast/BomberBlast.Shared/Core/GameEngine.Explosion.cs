@@ -46,12 +46,8 @@ public partial class GameEngine
             bomb.Type = activeCard.BombType;
             activeCard.RemainingUses--;
 
-            // Achievement: Spezial-Bombe platziert
-            _achievementService.OnSpecialBombUsed();
-
-            // Wöchentliche/Tägliche Challenge: Spezial-Bombe tracken
-            _weeklyService.TrackProgress(WeeklyMissionType.UseSpecialBombs);
-            _dailyMissionService.TrackProgress(WeeklyMissionType.UseSpecialBombs);
+            // Tracking: Spezial-Bombe (Achievement + Missionen)
+            _tracking.OnSpecialBombUsed();
 
             // Wenn keine Uses mehr → automatisch auf Normal zurückschalten
             if (!activeCard.HasUsesLeft)
@@ -59,6 +55,10 @@ public partial class GameEngine
                 _player.ActiveCardSlot = -1;
             }
         }
+
+        // Dungeon-Zündschnur-Reduktion (BombTimer-Buff + Blitzkrieg-Synergy)
+        if (_dungeonBombFuseReduction > 0)
+            bomb.ReduceFuse(_dungeonBombFuseReduction);
 
         _bombs.Add(bomb);
         cell.Bomb = bomb;
@@ -89,8 +89,8 @@ public partial class GameEngine
         _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB);
         _soundManager.PlaySound(SoundManager.SFX_FUSE);
 
-        // Achievement: Power-Bomb Einsatz zählen
-        _achievementService.OnPowerBombUsed();
+        // Tracking: Power-Bomb (Achievement + Missionen)
+        _tracking.OnPowerBombUsed();
     }
 
     /// <summary>
@@ -115,6 +115,11 @@ public partial class GameEngine
                 break;
 
             var bomb = Bomb.CreateAtGrid(gx, gy, _player);
+
+            // Dungeon-Zündschnur-Reduktion (BombTimer-Buff + Blitzkrieg-Synergy)
+            if (_dungeonBombFuseReduction > 0)
+                bomb.ReduceFuse(_dungeonBombFuseReduction);
+
             _bombs.Add(bomb);
             cell.Bomb = bomb;
             _player.ActiveBombs++;
@@ -127,8 +132,8 @@ public partial class GameEngine
             _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB);
             _soundManager.PlaySound(SoundManager.SFX_FUSE);
 
-            // Achievement: Line-Bomb eingesetzt
-            _achievementService.OnLineBombUsed();
+            // Tracking: Line-Bomb (Achievement + Missionen)
+            _tracking.OnLineBombUsed();
         }
     }
 
@@ -166,24 +171,19 @@ public partial class GameEngine
             {
                 float size = GameGrid.CELL_SIZE * 0.35f;
 
-                bool stillOnBomb = false;
-                float[] cornersX = { _player.X - size, _player.X + size };
-                float[] cornersY = { _player.Y - size, _player.Y + size };
+                // Direkte Variablen statt Array-Allokation pro Frame/Bombe
+                float cxMin = _player.X - size;
+                float cxMax = _player.X + size;
+                float cyMin = _player.Y - size;
+                float cyMax = _player.Y + size;
+                int bGx = bomb.GridX;
+                int bGy = bomb.GridY;
 
-                foreach (float cx in cornersX)
-                {
-                    foreach (float cy in cornersY)
-                    {
-                        int cellX = (int)MathF.Floor(cx / GameGrid.CELL_SIZE);
-                        int cellY = (int)MathF.Floor(cy / GameGrid.CELL_SIZE);
-                        if (cellX == bomb.GridX && cellY == bomb.GridY)
-                        {
-                            stillOnBomb = true;
-                            break;
-                        }
-                    }
-                    if (stillOnBomb) break;
-                }
+                bool stillOnBomb =
+                    ((int)MathF.Floor(cxMin / GameGrid.CELL_SIZE) == bGx && (int)MathF.Floor(cyMin / GameGrid.CELL_SIZE) == bGy) ||
+                    ((int)MathF.Floor(cxMax / GameGrid.CELL_SIZE) == bGx && (int)MathF.Floor(cyMin / GameGrid.CELL_SIZE) == bGy) ||
+                    ((int)MathF.Floor(cxMin / GameGrid.CELL_SIZE) == bGx && (int)MathF.Floor(cyMax / GameGrid.CELL_SIZE) == bGy) ||
+                    ((int)MathF.Floor(cxMax / GameGrid.CELL_SIZE) == bGx && (int)MathF.Floor(cyMax / GameGrid.CELL_SIZE) == bGy);
 
                 if (!stillOnBomb)
                 {
@@ -227,17 +227,13 @@ public partial class GameEngine
             return;
         }
 
-        // Prüfen ob ein Gegner auf der Zielzelle steht
-        foreach (var enemy in _enemies)
+        // Prüfen ob ein Gegner auf der Zielzelle steht (O(1) Lookup statt N-Iteration)
+        if (_enemyPositionHashSet.Contains((targetGridX, targetGridY)))
         {
-            if (enemy.IsActive && !enemy.IsDying &&
-                enemy.GridX == targetGridX && enemy.GridY == targetGridY)
-            {
-                bomb.StopSlide();
-                var snapCell = _grid.TryGetCell(bomb.GridX, bomb.GridY);
-                if (snapCell != null) snapCell.Bomb = bomb;
-                return;
-            }
+            bomb.StopSlide();
+            var snapCell = _grid.TryGetCell(bomb.GridX, bomb.GridY);
+            if (snapCell != null) snapCell.Bomb = bomb;
+            return;
         }
 
         // Alte Grid-Zelle freiräumen
@@ -269,13 +265,18 @@ public partial class GameEngine
         explosion.CalculateSpread(_grid, bomb.Range);
         _explosions.Add(explosion);
 
-        _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
+        // Spezial-Bomben: Differenzierter Sound (Layering), Normal: Standard-Explosion
+        if (bomb.Type != BombType.Normal)
+            _soundManager.PlayBombExplosion(bomb.Type);
+        else
+            _soundManager.PlaySound(SoundManager.SFX_EXPLOSION);
 
         // Game-Feel: Screen-Shake und Partikel eskalieren mit Kettenreaktions-Tiefe
         int depth = bomb.ChainDepth;
         float shakeIntensity = 3f + depth * 1.5f;
         float shakeDuration = 0.2f + depth * 0.05f;
         _screenShake.Trigger(shakeIntensity, shakeDuration);
+        _vibration.VibrateMedium();
 
         float px = bomb.X;
         float py = bomb.Y;
@@ -379,70 +380,67 @@ public partial class GameEngine
     {
         cell.IsDestroying = true;
         cell.DestructionProgress = 0f;
+        _destroyingCells.Add(cell);
     }
 
     /// <summary>
-    /// Timer-basierte Block-Zerstörung (statt Dispatcher.Post + Task.Delay)
+    /// Timer-basierte Block-Zerstörung (Dirty-Liste statt kompletter Grid-Iteration)
     /// </summary>
     private void UpdateDestroyingBlocks(float deltaTime)
     {
-        for (int y = 0; y < _grid.Height; y++)
+        for (int i = _destroyingCells.Count - 1; i >= 0; i--)
         {
-            for (int x = 0; x < _grid.Width; x++)
+            var cell = _destroyingCells[i];
+
+            cell.DestructionProgress += deltaTime / BLOCK_DESTROY_DURATION;
+
+            if (cell.DestructionProgress >= 1f)
             {
-                var cell = _grid[x, y];
-                if (!cell.IsDestroying)
-                    continue;
+                cell.Type = CellType.Empty;
+                cell.IsDestroying = false;
+                cell.DestructionProgress = 0f;
+                _destroyingCells.RemoveAt(i);
 
-                cell.DestructionProgress += deltaTime / BLOCK_DESTROY_DURATION;
+                // Gegner-AI: Pfad-Cache invalidieren → sofortige Neuberechnung
+                // Neue Wege sind jetzt möglich, alle Timer auf 0 setzen
+                InvalidateEnemyPaths();
 
-                if (cell.DestructionProgress >= 1f)
+                // Block-Zerstörungs-Partikel
+                float bpx = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                float bpy = cell.Y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+                _particleSystem.Emit(bpx, bpy, 5, ParticleColors.BlockDestroy, 50f, 0.4f);
+                _particleSystem.Emit(bpx, bpy, 3, ParticleColors.BlockDestroyLight, 30f, 0.3f);
+
+                // Exit aufdecken wenn unter diesem Block versteckt (klassisches Bomberman)
+                if (cell.HasHiddenExit)
                 {
-                    cell.Type = CellType.Empty;
-                    cell.IsDestroying = false;
-                    cell.DestructionProgress = 0f;
+                    cell.HasHiddenExit = false;
+                    cell.Type = CellType.Exit;
+                    _exitRevealed = true;
+                    _exitCell = cell;
+                    _soundManager.PlaySound(SoundManager.SFX_EXIT_APPEAR);
 
-                    // Gegner-AI: Pfad-Cache invalidieren → sofortige Neuberechnung
-                    // Neue Wege sind jetzt möglich, alle Timer auf 0 setzen
-                    InvalidateEnemyPaths();
-
-                    // Block-Zerstörungs-Partikel
-                    float bpx = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-                    float bpy = cell.Y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-                    _particleSystem.Emit(bpx, bpy, 5, ParticleColors.BlockDestroy, 50f, 0.4f);
-                    _particleSystem.Emit(bpx, bpy, 3, ParticleColors.BlockDestroyLight, 30f, 0.3f);
-
-                    // Exit aufdecken wenn unter diesem Block versteckt (klassisches Bomberman)
-                    if (cell.HasHiddenExit)
-                    {
-                        cell.HasHiddenExit = false;
-                        cell.Type = CellType.Exit;
-                        _exitRevealed = true;
-                        _exitCell = cell;
-                        _soundManager.PlaySound(SoundManager.SFX_EXIT_APPEAR);
-
-                        // Exit-Reveal Partikel (grün)
-                        _particleSystem.Emit(bpx, bpy, 12, ParticleColors.ExitReveal, 60f, 0.8f);
-                        _particleSystem.Emit(bpx, bpy, 6, ParticleColors.ExitRevealLight, 40f, 0.5f);
-                    }
-                    // PowerUp anzeigen wenn versteckt (mit Pop-Out Animation)
-                    else if (cell.HiddenPowerUp.HasValue)
-                    {
-                        var powerUp = PowerUp.CreateAtGrid(cell.X, cell.Y, cell.HiddenPowerUp.Value);
-                        powerUp.BirthTimer = Models.Entities.PowerUp.BIRTH_DURATION;
-                        _powerUps.Add(powerUp);
-                        cell.PowerUp = powerUp;
-                        cell.HiddenPowerUp = null;
-
-                        // Gold-Partikel-Burst bei PowerUp-Erscheinung
-                        _particleSystem.Emit(bpx, bpy, 8, new SKColor(255, 215, 0), 50f, 0.4f);
-                        _particleSystem.Emit(bpx, bpy, 4, new SKColor(255, 255, 200), 30f, 0.3f);
-
-                        _soundManager.PlaySound(SoundManager.SFX_POWERUP);
-                    }
-
-                    CheckExitReveal();
+                    // Exit-Reveal Partikel (grün)
+                    _particleSystem.Emit(bpx, bpy, 12, ParticleColors.ExitReveal, 60f, 0.8f);
+                    _particleSystem.Emit(bpx, bpy, 6, ParticleColors.ExitRevealLight, 40f, 0.5f);
                 }
+                // PowerUp anzeigen wenn versteckt (mit Pop-Out Animation)
+                else if (cell.HiddenPowerUp.HasValue)
+                {
+                    var powerUp = PowerUp.CreateAtGrid(cell.X, cell.Y, cell.HiddenPowerUp.Value);
+                    powerUp.BirthTimer = Models.Entities.PowerUp.BIRTH_DURATION;
+                    _powerUps.Add(powerUp);
+                    cell.PowerUp = powerUp;
+                    cell.HiddenPowerUp = null;
+
+                    // Gold-Partikel-Burst bei PowerUp-Erscheinung
+                    _particleSystem.Emit(bpx, bpy, 8, new SKColor(255, 215, 0), 50f, 0.4f);
+                    _particleSystem.Emit(bpx, bpy, 4, new SKColor(255, 255, 200), 30f, 0.3f);
+
+                    _soundManager.PlaySound(SoundManager.SFX_POWERUP);
+                }
+
+                CheckExitReveal();
             }
         }
     }
@@ -456,26 +454,31 @@ public partial class GameEngine
             if (explosion.IsMarkedForRemoval)
             {
                 explosion.ClearFromGrid(_grid);
+
+                // Betroffene Zellen in Afterglow-Dirty-Liste eintragen
+                foreach (var cell in explosion.AffectedCells)
+                {
+                    var gridCell = _grid.TryGetCell(cell.X, cell.Y);
+                    if (gridCell != null && gridCell.AfterglowTimer > 0)
+                        _afterglowCells.Add(gridCell);
+                }
             }
         }
 
-        // Nachglüh-Timer der Zellen aktualisieren
+        // Nachglüh-Timer der Zellen aktualisieren (nur Dirty-Liste)
         UpdateAfterglow(deltaTime);
     }
 
     private void UpdateAfterglow(float deltaTime)
     {
-        for (int y = 0; y < _grid.Height; y++)
+        for (int i = _afterglowCells.Count - 1; i >= 0; i--)
         {
-            for (int x = 0; x < _grid.Width; x++)
+            var cell = _afterglowCells[i];
+            cell.AfterglowTimer -= deltaTime;
+            if (cell.AfterglowTimer <= 0)
             {
-                var cell = _grid[x, y];
-                if (cell.AfterglowTimer > 0)
-                {
-                    cell.AfterglowTimer -= deltaTime;
-                    if (cell.AfterglowTimer < 0)
-                        cell.AfterglowTimer = 0;
-                }
+                cell.AfterglowTimer = 0;
+                _afterglowCells.RemoveAt(i);
             }
         }
     }
@@ -497,6 +500,7 @@ public partial class GameEngine
             // Zelle einfrieren
             gridCell.IsFrozen = true;
             gridCell.FreezeTimer = 3.0f;
+            _specialEffectCells.Add(gridCell);
 
             // Blaue Frost-Partikel
             float px = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
@@ -507,7 +511,7 @@ public partial class GameEngine
         // Floating Text über dem Explosions-Zentrum
         float centerX = explosion.X;
         float centerY = explosion.Y;
-        string frozenText = _localizationService.GetString("FrozenEffect") ?? "EINFRIEREN!";
+        string frozenText = _localizationService.GetString("FrozenEffect") ?? "FROZEN!";
         _floatingText.Spawn(centerX, centerY - 16, frozenText, new SKColor(100, 200, 255), 16f, 1.5f);
     }
 
@@ -524,6 +528,7 @@ public partial class GameEngine
             // Lava-Nachwirkung aktivieren
             gridCell.IsLavaActive = true;
             gridCell.LavaTimer = 3.0f;
+            _specialEffectCells.Add(gridCell);
 
             // Rote/orange Glut-Partikel
             float px = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
@@ -557,6 +562,7 @@ public partial class GameEngine
             // Klebe-Verlangsamung: Zelle einfrieren mit kürzerem Timer (1.5s)
             gridCell.IsFrozen = true;
             gridCell.FreezeTimer = 1.5f;
+            _specialEffectCells.Add(gridCell);
 
             // Grüne Partikel
             float px = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
@@ -568,7 +574,7 @@ public partial class GameEngine
         // Floating Text
         float centerX = explosion.X;
         float centerY = explosion.Y;
-        string stuckText = _localizationService.GetString("StickyEffect") ?? "KLEBEN!";
+        string stuckText = _localizationService.GetString("StickyEffect") ?? "STUCK!";
         _floatingText.Spawn(centerX, centerY - 16, stuckText, new SKColor(50, 205, 50), 16f, 1.5f);
     }
 
@@ -594,6 +600,7 @@ public partial class GameEngine
 
                 gridCell.IsSmokeCloud = true;
                 gridCell.SmokeTimer = 4.0f;
+                _specialEffectCells.Add(gridCell);
 
                 // Graue Rauchpartikel
                 float px = gridCell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
@@ -605,7 +612,7 @@ public partial class GameEngine
 
         float cx = centerX * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
         float cy = centerY * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
-        string smokeText = _localizationService.GetString("SmokeEffect") ?? "RAUCH!";
+        string smokeText = _localizationService.GetString("SmokeEffect") ?? "SMOKE!";
         _floatingText.Spawn(cx, cy - 16, smokeText, new SKColor(160, 160, 160), 16f, 1.5f);
     }
 
@@ -662,7 +669,7 @@ public partial class GameEngine
             }
         }
 
-        string lightningText = _localizationService.GetString("LightningEffect") ?? "BLITZ!";
+        string lightningText = _localizationService.GetString("LightningEffect") ?? "ZAP!";
         _floatingText.Spawn(bx, by - 16, lightningText, new SKColor(255, 255, 100), 16f, 1.5f);
     }
 
@@ -684,6 +691,7 @@ public partial class GameEngine
 
             gridCell.IsGravityWell = true;
             gridCell.GravityTimer = 2.0f;
+            _specialEffectCells.Add(gridCell);
         }
 
         // Gegner im 3-Zellen-Radius 1 Zelle zum Zentrum ziehen
@@ -717,7 +725,7 @@ public partial class GameEngine
         _particleSystem.EmitShaped(bx, by, 15, new SKColor(180, 100, 255),
             ParticleShape.Circle, 80f, 0.6f, 3f, hasGlow: true);
 
-        string gravityText = _localizationService.GetString("GravityEffect") ?? "GRAVITATION!";
+        string gravityText = _localizationService.GetString("GravityEffect") ?? "PULL!";
         _floatingText.Spawn(bx, by - 16, gravityText, new SKColor(180, 100, 255), 16f, 1.5f);
     }
 
@@ -733,6 +741,7 @@ public partial class GameEngine
 
             gridCell.IsPoisoned = true;
             gridCell.PoisonTimer = 3.0f;
+            _specialEffectCells.Add(gridCell);
 
             // Grüne Gift-Partikel
             float px = cell.X * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
@@ -743,7 +752,7 @@ public partial class GameEngine
 
         float cx = explosion.X;
         float cy = explosion.Y;
-        string poisonText = _localizationService.GetString("PoisonEffect") ?? "GIFT!";
+        string poisonText = _localizationService.GetString("PoisonEffect") ?? "POISON!";
         _floatingText.Spawn(cx, cy - 16, poisonText, new SKColor(0, 200, 0), 16f, 1.5f);
     }
 
@@ -759,6 +768,7 @@ public partial class GameEngine
 
             gridCell.IsTimeWarped = true;
             gridCell.TimeWarpTimer = 5.0f;
+            _specialEffectCells.Add(gridCell);
         }
 
         // Blaue/violette Zeitverzerrungspartikel
@@ -768,7 +778,7 @@ public partial class GameEngine
             ParticleShape.Circle, 60f, 1.0f, 4f, hasGlow: true);
         _particleSystem.EmitExplosionSparks(cx, cy, 12, new SKColor(200, 200, 255), 80f);
 
-        string timeText = _localizationService.GetString("TimeWarpEffect") ?? "ZEITSTOP!";
+        string timeText = _localizationService.GetString("TimeWarpEffect") ?? "SLOW!";
         _floatingText.Spawn(cx, cy - 16, timeText, new SKColor(100, 150, 255), 16f, 1.5f);
     }
 
@@ -791,7 +801,7 @@ public partial class GameEngine
         _particleSystem.EmitShaped(cx, cy, 8, new SKColor(200, 200, 255),
             ParticleShape.Circle, 100f, 0.4f, 2f, hasGlow: true);
 
-        string mirrorText = _localizationService.GetString("MirrorEffect") ?? "SPIEGEL!";
+        string mirrorText = _localizationService.GetString("MirrorEffect") ?? "MIRROR!";
         _floatingText.Spawn(cx, cy - 16, mirrorText, new SKColor(220, 220, 240), 16f, 1.5f);
     }
 
@@ -829,6 +839,7 @@ public partial class GameEngine
                     gridCell.IsExploding = true;
                     gridCell.ExplosionProgress = 0f;
                     gridCell.AfterglowTimer = 0.4f;
+                    _afterglowCells.Add(gridCell);
 
                     // Kettenreaktion
                     if (gridCell.Bomb != null && !gridCell.Bomb.HasExploded)
@@ -847,7 +858,7 @@ public partial class GameEngine
             ParticleShape.Circle, 100f, 0.6f, 3f, hasGlow: true);
         _particleSystem.EmitExplosionSparks(px, py, 16, new SKColor(200, 100, 255), 120f);
 
-        string vortexText = _localizationService.GetString("VortexEffect") ?? "WIRBEL!";
+        string vortexText = _localizationService.GetString("VortexEffect") ?? "VORTEX!";
         _floatingText.Spawn(px, py - 16, vortexText, new SKColor(148, 0, 211), 16f, 1.5f);
     }
 
@@ -898,6 +909,7 @@ public partial class GameEngine
                     cell.IsExploding = true;
                     cell.ExplosionProgress = 0f;
                     cell.AfterglowTimer = 0.4f;
+                    _afterglowCells.Add(cell);
 
                     if (cell.Bomb != null && !cell.Bomb.HasExploded)
                     {
@@ -944,6 +956,7 @@ public partial class GameEngine
                 cell.IsExploding = true;
                 cell.ExplosionProgress = 0f;
                 cell.AfterglowTimer = 0.4f;
+                _afterglowCells.Add(cell);
 
                 if (cell.Bomb != null && !cell.Bomb.HasExploded)
                 {
@@ -957,10 +970,9 @@ public partial class GameEngine
         var centerCell = _grid.TryGetCell(cx, cy);
         if (centerCell != null && centerCell.PowerUp == null)
         {
-            var rng = new Random();
             var types = new[] { PowerUpType.BombUp, PowerUpType.Fire, PowerUpType.Speed,
                                PowerUpType.Kick, PowerUpType.Detonator, PowerUpType.Bombpass };
-            var randomType = types[rng.Next(types.Length)];
+            var randomType = types[_pontanRandom.Next(types.Length)];
             var powerUp = PowerUp.CreateAtGrid(cx, cy, randomType);
             powerUp.BirthTimer = Models.Entities.PowerUp.BIRTH_DURATION;
             _powerUps.Add(powerUp);
@@ -993,6 +1005,7 @@ public partial class GameEngine
 
             gridCell.IsBlackHole = true;
             gridCell.BlackHoleTimer = 3.0f;
+            _specialEffectCells.Add(gridCell);
         }
 
         // Zentrale Zelle als Anker
@@ -1001,6 +1014,7 @@ public partial class GameEngine
         {
             centerCell.IsBlackHole = true;
             centerCell.BlackHoleTimer = 3.0f;
+            _specialEffectCells.Add(centerCell);
         }
 
         // Dunkle Partikel die zum Zentrum gezogen werden
@@ -1008,98 +1022,115 @@ public partial class GameEngine
             ParticleShape.Circle, 40f, 1.0f, 3f, hasGlow: true);
         _particleSystem.EmitExplosionSparks(bomb.X, bomb.Y, 10, new SKColor(100, 0, 200), 60f);
 
-        string bhText = _localizationService.GetString("BlackHoleEffect") ?? "SCHWARZES LOCH!";
+        string bhText = _localizationService.GetString("BlackHoleEffect") ?? "VOID!";
         _floatingText.Spawn(bomb.X, bomb.Y - 16, bhText, new SKColor(100, 0, 200), 16f, 2f);
     }
 
     /// <summary>
-    /// Spezial-Bomben-Zellen-Effekte aktualisieren (Frost- und Lava-Timer)
+    /// Spezial-Bomben-Zellen-Effekte aktualisieren (Dirty-Liste statt kompletter Grid-Iteration).
+    /// Nur Zellen mit aktivem Spezial-Effekt werden geprüft und ggf. entfernt.
     /// </summary>
     private void UpdateSpecialBombEffects(float deltaTime)
     {
-        for (int y = 0; y < _grid.Height; y++)
+        for (int i = _specialEffectCells.Count - 1; i >= 0; i--)
         {
-            for (int x = 0; x < _grid.Width; x++)
+            var cell = _specialEffectCells[i];
+            bool stillActive = false;
+
+            // Frost-Timer abbauen
+            if (cell.IsFrozen)
             {
-                var cell = _grid[x, y];
-
-                // Frost-Timer abbauen
-                if (cell.IsFrozen)
+                cell.FreezeTimer -= deltaTime;
+                if (cell.FreezeTimer <= 0)
                 {
-                    cell.FreezeTimer -= deltaTime;
-                    if (cell.FreezeTimer <= 0)
-                    {
-                        cell.IsFrozen = false;
-                        cell.FreezeTimer = 0;
-                    }
+                    cell.IsFrozen = false;
+                    cell.FreezeTimer = 0;
                 }
-
-                // Lava-Timer abbauen (Spezial-Bomben-Lava, nicht LavaCrack-Mechanik)
-                if (cell.IsLavaActive)
-                {
-                    cell.LavaTimer -= deltaTime;
-                    if (cell.LavaTimer <= 0)
-                    {
-                        cell.IsLavaActive = false;
-                        cell.LavaTimer = 0;
-                    }
-                }
-
-                // Rauch-Timer abbauen
-                if (cell.IsSmokeCloud)
-                {
-                    cell.SmokeTimer -= deltaTime;
-                    if (cell.SmokeTimer <= 0)
-                    {
-                        cell.IsSmokeCloud = false;
-                        cell.SmokeTimer = 0;
-                    }
-                }
-
-                // Gift-Timer abbauen
-                if (cell.IsPoisoned)
-                {
-                    cell.PoisonTimer -= deltaTime;
-                    if (cell.PoisonTimer <= 0)
-                    {
-                        cell.IsPoisoned = false;
-                        cell.PoisonTimer = 0;
-                    }
-                }
-
-                // Gravitations-Timer abbauen
-                if (cell.IsGravityWell)
-                {
-                    cell.GravityTimer -= deltaTime;
-                    if (cell.GravityTimer <= 0)
-                    {
-                        cell.IsGravityWell = false;
-                        cell.GravityTimer = 0;
-                    }
-                }
-
-                // TimeWarp-Timer abbauen
-                if (cell.IsTimeWarped)
-                {
-                    cell.TimeWarpTimer -= deltaTime;
-                    if (cell.TimeWarpTimer <= 0)
-                    {
-                        cell.IsTimeWarped = false;
-                        cell.TimeWarpTimer = 0;
-                    }
-                }
-
-                // BlackHole-Timer abbauen + Gegner-Sog
-                if (cell.IsBlackHole)
-                {
-                    cell.BlackHoleTimer -= deltaTime;
-                    if (cell.BlackHoleTimer <= 0)
-                    {
-                        cell.IsBlackHole = false;
-                        cell.BlackHoleTimer = 0;
-                    }
-                }
+                else
+                    stillActive = true;
             }
+
+            // Lava-Timer abbauen (Spezial-Bomben-Lava, nicht LavaCrack-Mechanik)
+            if (cell.IsLavaActive)
+            {
+                cell.LavaTimer -= deltaTime;
+                if (cell.LavaTimer <= 0)
+                {
+                    cell.IsLavaActive = false;
+                    cell.LavaTimer = 0;
+                }
+                else
+                    stillActive = true;
+            }
+
+            // Rauch-Timer abbauen
+            if (cell.IsSmokeCloud)
+            {
+                cell.SmokeTimer -= deltaTime;
+                if (cell.SmokeTimer <= 0)
+                {
+                    cell.IsSmokeCloud = false;
+                    cell.SmokeTimer = 0;
+                }
+                else
+                    stillActive = true;
+            }
+
+            // Gift-Timer abbauen
+            if (cell.IsPoisoned)
+            {
+                cell.PoisonTimer -= deltaTime;
+                if (cell.PoisonTimer <= 0)
+                {
+                    cell.IsPoisoned = false;
+                    cell.PoisonTimer = 0;
+                }
+                else
+                    stillActive = true;
+            }
+
+            // Gravitations-Timer abbauen
+            if (cell.IsGravityWell)
+            {
+                cell.GravityTimer -= deltaTime;
+                if (cell.GravityTimer <= 0)
+                {
+                    cell.IsGravityWell = false;
+                    cell.GravityTimer = 0;
+                }
+                else
+                    stillActive = true;
+            }
+
+            // TimeWarp-Timer abbauen
+            if (cell.IsTimeWarped)
+            {
+                cell.TimeWarpTimer -= deltaTime;
+                if (cell.TimeWarpTimer <= 0)
+                {
+                    cell.IsTimeWarped = false;
+                    cell.TimeWarpTimer = 0;
+                }
+                else
+                    stillActive = true;
+            }
+
+            // BlackHole-Timer abbauen
+            if (cell.IsBlackHole)
+            {
+                cell.BlackHoleTimer -= deltaTime;
+                if (cell.BlackHoleTimer <= 0)
+                {
+                    cell.IsBlackHole = false;
+                    cell.BlackHoleTimer = 0;
+                }
+                else
+                    stillActive = true;
+            }
+
+            // Zelle aus Dirty-Liste entfernen wenn kein Effekt mehr aktiv
+            if (!stillActive)
+                _specialEffectCells.RemoveAt(i);
         }
 
         // BlackHole Sog-Effekt: Gegner auf BlackHole-Zellen zum Zentrum ziehen

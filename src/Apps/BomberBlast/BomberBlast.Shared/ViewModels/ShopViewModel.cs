@@ -16,21 +16,26 @@ namespace BomberBlast.ViewModels;
 /// ViewModel fuer den Shop - zeigt Upgrades, PowerUp-Übersicht, Skins und Coin-Stand.
 /// Implementiert IDisposable fuer BalanceChanged-Unsubscription.
 /// </summary>
-public partial class ShopViewModel : ObservableObject, IDisposable
+public partial class ShopViewModel : ObservableObject, INavigable, IDisposable
 {
     private readonly IShopService _shopService;
     private readonly ICoinService _coinService;
+    private readonly IGemService _gemService;
     private readonly ILocalizationService _localizationService;
     private readonly IProgressService _progressService;
     private readonly ICustomizationService _customizationService;
     private readonly IPurchaseService _purchaseService;
+    private readonly IRewardedAdService _rewardedAdService;
+    private readonly MeineApps.Core.Ava.Services.IPreferencesService _preferencesService;
+    private readonly IRotatingDealsService _rotatingDealsService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
+    public event Action<string, string>? FloatingTextRequested;
 
     /// <summary>Kauf erfolgreich (Upgrade-Name)</summary>
     public event Action<string>? PurchaseSucceeded;
@@ -111,22 +116,71 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _sectionFramesText = "";
 
+    // Gratis-Upgrade per Ad (1x pro Tag)
+    /// <summary>Ob der Button "Gratis-Upgrade per Werbung" angezeigt wird</summary>
+    [ObservableProperty]
+    private bool _canWatchAdForFreeUpgrade;
+
+    /// <summary>Ob heute bereits ein Gratis-Upgrade per Ad genutzt wurde</summary>
+    [ObservableProperty]
+    private bool _hasFreeUpgradeToday;
+
+    /// <summary>Ob das nächste Upgrade kostenlos ist (Flag nach erfolgreicher Ad)</summary>
+    [ObservableProperty]
+    private bool _freeUpgradeActive;
+
+    [ObservableProperty]
+    private string _freeUpgradeButtonText = "";
+
+    [ObservableProperty]
+    private string _freeUpgradeActiveText = "";
+
+    // Rotierende Deals
+    [ObservableProperty]
+    private ObservableCollection<RotatingDeal> _dailyDeals = [];
+
+    [ObservableProperty]
+    private RotatingDeal? _weeklyDeal;
+
+    [ObservableProperty]
+    private string _sectionDailyDealsText = "";
+
+    [ObservableProperty]
+    private string _sectionWeeklyDealText = "";
+
+    // Gem-exklusive Skins
+    [ObservableProperty]
+    private ObservableCollection<SkinDisplayItem> _gemSkinItems = [];
+
+    [ObservableProperty]
+    private string _sectionGemSkinsText = "";
+
+    [ObservableProperty]
+    private string _gemsText = "0";
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public ShopViewModel(IShopService shopService, ICoinService coinService,
+    public ShopViewModel(IShopService shopService, ICoinService coinService, IGemService gemService,
         ILocalizationService localizationService, IProgressService progressService,
-        ICustomizationService customizationService, IPurchaseService purchaseService)
+        ICustomizationService customizationService, IPurchaseService purchaseService,
+        IRewardedAdService rewardedAdService, MeineApps.Core.Ava.Services.IPreferencesService preferencesService,
+        IRotatingDealsService rotatingDealsService)
     {
         _shopService = shopService;
         _coinService = coinService;
+        _gemService = gemService;
         _localizationService = localizationService;
         _progressService = progressService;
         _customizationService = customizationService;
         _purchaseService = purchaseService;
+        _rewardedAdService = rewardedAdService;
+        _preferencesService = preferencesService;
+        _rotatingDealsService = rotatingDealsService;
 
         _coinService.BalanceChanged += OnBalanceChanged;
+        _gemService.BalanceChanged += OnBalanceChanged;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -145,7 +199,11 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         RefreshTrailItems();
         RefreshVictoryItems();
         RefreshFrameItems();
+        RefreshDailyDeals();
+        RefreshGemSkinItems();
         UpdateCoinDisplay();
+        UpdateGemDisplay();
+        CheckFreeUpgradeAvailability();
     }
 
     public void UpdateLocalizedTexts()
@@ -161,6 +219,11 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         SectionTrailsText = _localizationService.GetString("SectionTrails") ?? "Trails";
         SectionVictoriesText = _localizationService.GetString("SectionVictories") ?? "Victory Animations";
         SectionFramesText = _localizationService.GetString("SectionFrames") ?? "Profile Frames";
+        FreeUpgradeButtonText = _localizationService.GetString("WatchAdFreeUpgrade") ?? "Free Upgrade via Ad";
+        FreeUpgradeActiveText = _localizationService.GetString("FreeUpgradeActive") ?? "Next upgrade is free!";
+        SectionDailyDealsText = _localizationService.GetString("DailyDealsTitle") ?? "Daily Deals";
+        SectionWeeklyDealText = _localizationService.GetString("WeeklyDealTitle") ?? "Weekly Deal";
+        SectionGemSkinsText = _localizationService.GetString("GemSkinsTitle") ?? "Exclusive Gem Skins";
     }
 
     private void RefreshItems()
@@ -175,7 +238,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             item.LevelText = string.Format(
                 _localizationService.GetString("UpgradeLevelFormat"),
                 item.CurrentLevel, item.MaxLevel);
-            item.Refresh(_coinService.Balance);
+            item.Refresh(_coinService.Balance, _gemService.Balance);
         }
 
         ShopItems = new ObservableCollection<ShopDisplayItem>(items);
@@ -218,8 +281,8 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     {
         int highest = _progressService.HighestCompletedLevel;
         bool isUnlocked = highest >= unlockLevel || unlockLevel <= 1;
-        var unlockedFormat = _localizationService.GetString("UnlockedAt") ?? "Ab Level {0}";
-        var unlockedText = _localizationService.GetString("Unlocked") ?? "Freigeschaltet";
+        var unlockedFormat = _localizationService.GetString("UnlockedAt") ?? "From Level {0}";
+        var unlockedText = _localizationService.GetString("Unlocked") ?? "Unlocked";
 
         return new PowerUpDisplayItem
         {
@@ -255,6 +318,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             {
                 Id = skin.Id,
                 Category = SkinCategory.Player,
+                PreviewIconKind = MaterialIconKind.Account,
                 DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
                 PrimaryColor = Color.FromRgb(skin.PrimaryColor.Red, skin.PrimaryColor.Green, skin.PrimaryColor.Blue),
                 SecondaryColor = Color.FromRgb(skin.SecondaryColor.Red, skin.SecondaryColor.Green, skin.SecondaryColor.Blue),
@@ -289,6 +353,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             {
                 Id = skin.Id,
                 Category = SkinCategory.Bomb,
+                PreviewIconKind = MaterialIconKind.Bomb,
                 DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
                 PrimaryColor = skin.BodyColor == SkiaSharp.SKColor.Empty
                     ? Color.Parse("#444444")
@@ -326,6 +391,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             {
                 Id = skin.Id,
                 Category = SkinCategory.Explosion,
+                PreviewIconKind = MaterialIconKind.Fire,
                 DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
                 PrimaryColor = skin.OuterColor == SkiaSharp.SKColor.Empty
                     ? Color.Parse("#FF6600")
@@ -357,6 +423,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         {
             Id = "",
             Category = SkinCategory.Trail,
+            PreviewIconKind = MaterialIconKind.WavesArrowRight,
             DisplayName = noneText,
             PrimaryColor = Color.Parse("#888888"),
             SecondaryColor = Color.Parse("#666666"),
@@ -376,6 +443,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             {
                 Id = trail.Id,
                 Category = SkinCategory.Trail,
+                PreviewIconKind = MaterialIconKind.WavesArrowRight,
                 DisplayName = _localizationService.GetString(trail.NameKey) ?? trail.Id,
                 PrimaryColor = Color.FromRgb(trail.PrimaryColor.Red, trail.PrimaryColor.Green, trail.PrimaryColor.Blue),
                 SecondaryColor = Color.FromRgb(trail.SecondaryColor.Red, trail.SecondaryColor.Green, trail.SecondaryColor.Blue),
@@ -402,6 +470,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         {
             Id = "",
             Category = SkinCategory.Victory,
+            PreviewIconKind = MaterialIconKind.PartyPopper,
             DisplayName = noneText,
             PrimaryColor = Color.Parse("#888888"),
             SecondaryColor = Color.Parse("#666666"),
@@ -424,6 +493,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             {
                 Id = victory.Id,
                 Category = SkinCategory.Victory,
+                PreviewIconKind = MaterialIconKind.PartyPopper,
                 DisplayName = _localizationService.GetString(victory.NameKey) ?? victory.Id,
                 PrimaryColor = Color.FromRgb(rarityColor.Red, rarityColor.Green, rarityColor.Blue),
                 SecondaryColor = Color.FromRgb(rarityGlow.Red, rarityGlow.Green, rarityGlow.Blue),
@@ -450,6 +520,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         {
             Id = "",
             Category = SkinCategory.Frame,
+            PreviewIconKind = MaterialIconKind.CardAccountDetailsOutline,
             DisplayName = noneText,
             PrimaryColor = Color.Parse("#888888"),
             SecondaryColor = Color.Parse("#666666"),
@@ -469,6 +540,7 @@ public partial class ShopViewModel : ObservableObject, IDisposable
             {
                 Id = frame.Id,
                 Category = SkinCategory.Frame,
+                PreviewIconKind = MaterialIconKind.CardAccountDetailsOutline,
                 DisplayName = _localizationService.GetString(frame.NameKey) ?? frame.Id,
                 PrimaryColor = Color.FromRgb(frame.PrimaryColor.Red, frame.PrimaryColor.Green, frame.PrimaryColor.Blue),
                 SecondaryColor = Color.FromRgb(frame.SecondaryColor.Red, frame.SecondaryColor.Green, frame.SecondaryColor.Blue),
@@ -493,15 +565,11 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         UpdateCoinDisplay();
         foreach (var item in ShopItems)
         {
-            item.Refresh(_coinService.Balance);
+            item.Refresh(_coinService.Balance, _gemService.Balance);
         }
-        // Skins aktualisieren (CanBuy Status kann sich aendern)
-        RefreshSkinItems();
-        RefreshBombSkinItems();
-        RefreshExplosionSkinItems();
-        RefreshTrailItems();
-        RefreshVictoryItems();
-        RefreshFrameItems();
+        // Skin-Collections NICHT neu erstellen: Kein Skin-Property hängt vom Balance ab.
+        // CanBuy = !IsOwned && !IsLocked && CoinPrice > 0 (balance-unabhängig).
+        // Rebuild passiert nur bei Kauf (PurchaseSkinAsync) oder Auswahl (SelectSkin).
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -513,8 +581,29 @@ public partial class ShopViewModel : ObservableObject, IDisposable
     {
         if (item == null || item.IsMaxed) return;
 
+        // Gratis-Upgrade per Ad: Coins werden nicht abgezogen
+        if (FreeUpgradeActive)
+        {
+            if (_shopService.TryPurchaseFree(item.Type))
+            {
+                var upgradeName = _localizationService.GetString(item.NameKey);
+                PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
+                FreeUpgradeActive = false;
+                RefreshItems();
+                UpdateCoinDisplay();
+            }
+            return;
+        }
+
         if (!_coinService.CanAfford(item.NextPrice))
         {
+            // Detailliertes Fehler-Feedback: Wie viele Coins fehlen
+            var detail = string.Format(
+                _localizationService.GetString("PurchaseFailedDetail") ?? "Requires {0} Coins, you have {1}",
+                item.NextPrice.ToString("N0"), _coinService.Balance.ToString("N0"));
+            MessageRequested?.Invoke(
+                _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
+                detail);
             InsufficientFunds?.Invoke();
             return;
         }
@@ -524,17 +613,61 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         {
             var upgradeName = _localizationService.GetString(item.NameKey) ?? item.NameKey;
             var msg = string.Format(
-                _localizationService.GetString("ConfirmPurchaseMessage") ?? "{0} Coins für {1} ausgeben?",
+                _localizationService.GetString("ConfirmPurchaseMessage") ?? "Spend {0} Coins on {1}?",
                 item.NextPrice.ToString("N0"), upgradeName);
             var confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("ConfirmPurchaseTitle") ?? "Kauf bestätigen",
+                _localizationService.GetString("ConfirmPurchaseTitle") ?? "Confirm Purchase",
                 msg,
-                _localizationService.GetString("Buy") ?? "Kaufen",
+                _localizationService.GetString("Buy") ?? "Buy",
                 _localizationService.GetString("Cancel"));
             if (!confirmed) return;
         }
 
         if (_shopService.TryPurchase(item.Type))
+        {
+            var upgradeName = _localizationService.GetString(item.NameKey);
+            PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
+            RefreshItems();
+            UpdateCoinDisplay();
+        }
+    }
+
+    /// <summary>
+    /// Upgrade mit Gems kaufen (Alternative zu Coins, ab Level 2).
+    /// </summary>
+    [RelayCommand]
+    private async Task PurchaseWithGemsAsync(ShopDisplayItem? item)
+    {
+        if (item == null || item.IsMaxed || item.GemPrice <= 0) return;
+
+        if (!_gemService.CanAfford(item.GemPrice))
+        {
+            var detail = string.Format(
+                _localizationService.GetString("PurchaseFailedDetailGems") ?? "Requires {0} Gems, you have {1}",
+                item.GemPrice, _gemService.Balance);
+            MessageRequested?.Invoke(
+                _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
+                detail);
+            InsufficientFunds?.Invoke();
+            return;
+        }
+
+        // Bestätigungsdialog bei teureren Gem-Käufen (ab 30 Gems)
+        if (item.GemPrice >= 30 && ConfirmationRequested != null)
+        {
+            var upgradeName = _localizationService.GetString(item.NameKey) ?? item.NameKey;
+            var msg = string.Format(
+                _localizationService.GetString("ConfirmGemPurchaseMessage") ?? "Spend {0} Gems on {1}?",
+                item.GemPrice, upgradeName);
+            var confirmed = await ConfirmationRequested.Invoke(
+                _localizationService.GetString("ConfirmPurchaseTitle") ?? "Confirm Purchase",
+                msg,
+                _localizationService.GetString("Buy") ?? "Buy",
+                _localizationService.GetString("Cancel"));
+            if (!confirmed) return;
+        }
+
+        if (_shopService.TryPurchaseWithGems(item.Type))
         {
             var upgradeName = _localizationService.GetString(item.NameKey);
             PurchaseSucceeded?.Invoke(upgradeName ?? item.NameKey);
@@ -586,6 +719,13 @@ public partial class ShopViewModel : ObservableObject, IDisposable
 
         if (!_coinService.CanAfford(item.CoinPrice))
         {
+            // Detailliertes Fehler-Feedback: Wie viele Coins fehlen
+            var detail = string.Format(
+                _localizationService.GetString("PurchaseFailedDetail") ?? "Requires {0} Coins, you have {1}",
+                item.CoinPrice.ToString("N0"), _coinService.Balance.ToString("N0"));
+            MessageRequested?.Invoke(
+                _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
+                detail);
             InsufficientFunds?.Invoke();
             return;
         }
@@ -594,12 +734,12 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         if (item.CoinPrice >= 3000 && ConfirmationRequested != null)
         {
             var msg = string.Format(
-                _localizationService.GetString("ConfirmPurchaseMessage") ?? "{0} Coins für {1} ausgeben?",
+                _localizationService.GetString("ConfirmPurchaseMessage") ?? "Spend {0} Coins on {1}?",
                 item.CoinPrice.ToString("N0"), item.DisplayName);
             var confirmed = await ConfirmationRequested.Invoke(
-                _localizationService.GetString("ConfirmPurchaseTitle") ?? "Kauf bestätigen",
+                _localizationService.GetString("ConfirmPurchaseTitle") ?? "Confirm Purchase",
                 msg,
-                _localizationService.GetString("Buy") ?? "Kaufen",
+                _localizationService.GetString("Buy") ?? "Buy",
                 _localizationService.GetString("Cancel"));
             if (!confirmed) return;
         }
@@ -631,15 +771,178 @@ public partial class ShopViewModel : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>
+    /// Rewarded Ad für 1 Gratis-Upgrade pro Tag.
+    /// Nach Erfolg wird FreeUpgradeActive gesetzt → nächster Kauf kostenlos.
+    /// </summary>
+    [RelayCommand]
+    private async Task WatchAdForFreeUpgrade()
+    {
+        if (HasFreeUpgradeToday || FreeUpgradeActive) return;
+
+        CanWatchAdForFreeUpgrade = false;
+
+        var success = await _rewardedAdService.ShowAdAsync("free_shop_upgrade");
+        if (success)
+        {
+            RewardedAdCooldownTracker.RecordAdShown();
+            FreeUpgradeActive = true;
+            HasFreeUpgradeToday = true;
+
+            // Feedback: Gratis-Upgrade bereit
+            FloatingTextRequested?.Invoke(
+                _localizationService.GetString("FreeUpgradeReady") ?? "Next Upgrade FREE!",
+                "gold");
+
+            // Heutiges Datum speichern, damit es nur 1x pro Tag geht
+            _preferencesService.Set("FreeUpgradeDate", DateTime.UtcNow.Date.ToString("O"));
+        }
+        else
+        {
+            CanWatchAdForFreeUpgrade = _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+        }
+    }
+
+    /// <summary>Prüft ob heute bereits ein Gratis-Upgrade genutzt wurde</summary>
+    private void CheckFreeUpgradeAvailability()
+    {
+        var savedDate = _preferencesService.Get("FreeUpgradeDate", "");
+        if (!string.IsNullOrEmpty(savedDate))
+        {
+            if (DateTime.TryParse(savedDate, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var date))
+            {
+                HasFreeUpgradeToday = date.Date == DateTime.UtcNow.Date;
+            }
+        }
+        else
+        {
+            HasFreeUpgradeToday = false;
+        }
+
+        CanWatchAdForFreeUpgrade = !HasFreeUpgradeToday && _rewardedAdService.IsAvailable && RewardedAdCooldownTracker.CanShowAd;
+    }
+
+    /// <summary>Rotierenden Deal kaufen</summary>
+    [RelayCommand]
+    private void BuyDeal(RotatingDeal? deal)
+    {
+        if (deal == null || deal.IsClaimed) return;
+
+        if (_rotatingDealsService.ClaimDeal(deal.Id))
+        {
+            PurchaseSucceeded?.Invoke(_localizationService.GetString(deal.TitleKey) ?? deal.TitleKey);
+            RefreshDailyDeals();
+            UpdateCoinDisplay();
+            UpdateGemDisplay();
+        }
+        else
+        {
+            InsufficientFunds?.Invoke();
+        }
+    }
+
+    /// <summary>Gem-Skin kaufen (mit Gems statt Coins)</summary>
+    [RelayCommand]
+    private void BuyGemSkin(SkinDisplayItem? item)
+    {
+        if (item == null || item.IsOwned || item.IsLocked) return;
+
+        var skin = PlayerSkins.All.FirstOrDefault(s => s.Id == item.Id);
+        if (skin == null || skin.GemPrice <= 0) return;
+
+        if (!_gemService.CanAfford(skin.GemPrice))
+        {
+            var detail = string.Format(
+                _localizationService.GetString("PurchaseFailedDetail") ?? "Requires {0} Gems, you have {1}",
+                skin.GemPrice, _gemService.Balance);
+            MessageRequested?.Invoke(
+                _localizationService.GetString("PurchaseFailed") ?? "Purchase Failed",
+                detail);
+            InsufficientFunds?.Invoke();
+            return;
+        }
+
+        if (_customizationService.TryPurchasePlayerSkinWithGems(item.Id))
+        {
+            PurchaseSucceeded?.Invoke(item.DisplayName);
+            RefreshGemSkinItems();
+            UpdateGemDisplay();
+        }
+    }
+
+    /// <summary>Gem-Skin auswählen (wenn bereits gekauft)</summary>
+    [RelayCommand]
+    private void SelectGemSkin(SkinDisplayItem? item)
+    {
+        if (item == null || item.IsLocked || item.IsEquipped || !item.IsOwned) return;
+
+        _customizationService.SetPlayerSkin(item.Id);
+        RefreshGemSkinItems();
+        RefreshSkinItems(); // Auch normale Skin-Liste aktualisieren
+        PurchaseSucceeded?.Invoke(item.DisplayName);
+    }
+
     [RelayCommand]
     private void GoBack()
     {
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     public void Dispose()
     {
         _coinService.BalanceChanged -= OnBalanceChanged;
+        _gemService.BalanceChanged -= OnBalanceChanged;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // REFRESH-METHODEN FÜR DEALS & GEM-SKINS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void RefreshDailyDeals()
+    {
+        var deals = _rotatingDealsService.GetTodaysDeals();
+        DailyDeals = new ObservableCollection<RotatingDeal>(deals);
+        WeeklyDeal = _rotatingDealsService.GetWeeklyDeal();
+    }
+
+    private void RefreshGemSkinItems()
+    {
+        var currentSkin = _customizationService.PlayerSkin;
+        var equippedText = _localizationService.GetString("SkinEquipped") ?? "Equipped";
+        var selectText = _localizationService.GetString("SkinSelect") ?? "Select";
+
+        var items = new List<SkinDisplayItem>();
+        // Nur Skins mit GemPrice > 0 anzeigen
+        foreach (var skin in PlayerSkins.All)
+        {
+            if (skin.GemPrice <= 0) continue;
+
+            bool isEquipped = skin.Id == currentSkin.Id;
+            bool isOwned = _customizationService.IsPlayerSkinOwned(skin.Id);
+
+            items.Add(new SkinDisplayItem
+            {
+                Id = skin.Id,
+                Category = SkinCategory.Player,
+                PreviewIconKind = MaterialIconKind.DiamondStone,
+                DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
+                PrimaryColor = Color.FromRgb(skin.PrimaryColor.Red, skin.PrimaryColor.Green, skin.PrimaryColor.Blue),
+                SecondaryColor = Color.FromRgb(skin.SecondaryColor.Red, skin.SecondaryColor.Green, skin.SecondaryColor.Blue),
+                HasGlow = skin.GlowColor.HasValue,
+                CoinPrice = skin.GemPrice, // GemPrice in CoinPrice-Feld für Anzeige
+                IsOwned = isOwned,
+                IsEquipped = isEquipped,
+                IsLocked = false,
+                StatusText = isEquipped ? equippedText : (isOwned ? selectText : $"{skin.GemPrice} Gems")
+            });
+        }
+        GemSkinItems = new ObservableCollection<SkinDisplayItem>(items);
+    }
+
+    private void UpdateGemDisplay()
+    {
+        GemsText = _gemService.Balance.ToString("N0");
     }
 
     // ═══════════════════════════════════════════════════════════════════════

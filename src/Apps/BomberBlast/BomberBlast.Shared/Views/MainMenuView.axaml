@@ -12,11 +12,11 @@
   <Panel AutomationProperties.AutomationId="MainMenu_Root">
     <controls:MenuBackgroundCanvas />
 
-    <Grid RowDefinitions="*,Auto" Margin="24,12,24,80">
+    <Grid RowDefinitions="*,Auto" Margin="20,8,20,8">
 
       <!-- ═══ HAUPTBEREICH: 3 Spalten (Titel | Spielmodi | Meta) ═══ -->
       <Grid Grid.Row="0"
-            ColumnDefinitions="*,1.5*,1.5*"
+            ColumnDefinitions="0.8*,1.2*,1.2*"
             VerticalAlignment="Center">
 
         <!-- ═══ Spalte 0: Titel + Währungen ═══ -->
@@ -25,57 +25,58 @@
                     HorizontalAlignment="Center"
                     Spacing="0">
           <TextBlock Text="BOMBER"
-                     FontSize="40"
+                     FontSize="36"
                      FontWeight="Bold"
                      Foreground="{DynamicResource SecondaryBrush}"
                      HorizontalAlignment="Center"
                      AutomationProperties.AutomationId="MainMenu_TxtBomber" />
           <TextBlock Text="BLAST"
-                     FontSize="40"
+                     FontSize="36"
                      FontWeight="Bold"
                      Foreground="{DynamicResource AccentBrush}"
                      HorizontalAlignment="Center"
-                     Margin="0,-12,0,0"
+                     Margin="0,-10,0,0"
                      AutomationProperties.AutomationId="MainMenu_TxtBlast" />
 
           <!-- Coin-Badge -->
           <Border Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="16"
-                  Padding="14,6"
-                  Margin="0,16,0,0"
+                  CornerRadius="14"
+                  Padding="12,5"
+                  Margin="0,12,0,0"
                   HorizontalAlignment="Center"
                   AutomationProperties.AutomationId="MainMenu_CoinBadge">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="CircleMultiple" Width="20" Height="20"
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18"
                                Foreground="#FFD700" />
               <TextBlock Text="{Binding CoinsText}"
-                         FontSize="16" FontWeight="SemiBold"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="#FFD700"
                          VerticalAlignment="Center"
                          AutomationProperties.AutomationId="MainMenu_TxtCoins" />
             </StackPanel>
           </Border>
 
-          <!-- Gem-Badge -->
-          <Border Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="16"
-                  Padding="14,6"
-                  Margin="0,6,0,0"
+          <!-- Gem-Badge (tappbar → Gem-Shop) -->
+          <Button Background="{DynamicResource SurfaceBrush}"
+                  CornerRadius="14"
+                  Padding="12,5"
+                  Margin="0,4,0,0"
                   HorizontalAlignment="Center"
+                  Command="{Binding GoToGemShopCommand}"
                   AutomationProperties.AutomationId="MainMenu_GemBadge">
-            <StackPanel Orientation="Horizontal" Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="DiamondStone" Width="18" Height="18"
                                Foreground="#E040FB" />
               <TextBlock Text="{Binding GemsText}"
-                         FontSize="15" FontWeight="SemiBold"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="#E040FB"
                          VerticalAlignment="Center"
                          AutomationProperties.AutomationId="MainMenu_TxtGems" />
             </StackPanel>
-          </Border>
+          </Button>
 
           <TextBlock Text="{Binding TotalEarnedText}"
-                     FontSize="10"
+                     FontSize="11"
                      Foreground="{DynamicResource TextMutedBrush}"
                      HorizontalAlignment="Center"
                      Margin="0,6,0,0"
@@ -85,15 +86,15 @@
                      FontSize="10"
                      Foreground="{DynamicResource TextMutedBrush}"
                      HorizontalAlignment="Center"
-                     Margin="0,4,0,0"
+                     Margin="0,2,0,0"
                      AutomationProperties.AutomationId="MainMenu_TxtVersion" />
         </StackPanel>
 
         <!-- ═══ Spalte 1: Spielmodi ═══ -->
         <StackPanel Grid.Column="1"
                     VerticalAlignment="Center"
-                    Margin="20,0,6,0"
-                    Spacing="5">
+                    Margin="16,0,4,0"
+                    Spacing="4">
 
           <!-- Story Mode = Primary CTA -->
           <Button Content="{loc:Translate StoryMode}"
@@ -101,8 +102,8 @@
                   Command="{Binding StoryModeCommand}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  FontSize="17"
-                  Height="50"
+                  FontSize="18"
+                  Height="48"
                   AutomationProperties.AutomationId="MainMenu_BtnStoryMode" />
 
           <!-- Continue (nur wenn Fortschritt) -->
@@ -113,11 +114,12 @@
                   IsVisible="{Binding HasProgress}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Height="38"
+                  MinHeight="36"
                   AutomationProperties.AutomationId="MainMenu_BtnContinue" />
 
           <!-- Survival + QuickPlay nebeneinander -->
-          <Grid ColumnDefinitions="*,*">
+          <Grid ColumnDefinitions="*,*"
+                IsVisible="{Binding IsSurvivalUnlocked}">
             <Button Grid.Column="0"
                     Classes="Primary GameButton"
                     Background="#B71C1C"
@@ -125,14 +127,14 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
                     Margin="0,0,2,0"
-                    Height="38"
+                    MinHeight="36"
                     AutomationProperties.AutomationId="MainMenu_BtnSurvival">
               <StackPanel Orientation="Horizontal" Spacing="3">
                 <mi:MaterialIcon Kind="Skull" Width="12" Height="12"
                                  Foreground="White" />
                 <TextBlock Text="{loc:Translate SurvivalMode}"
                            Foreground="White"
-                           FontSize="11" />
+                           FontSize="13" />
               </StackPanel>
             </Button>
             <Button Grid.Column="1"
@@ -142,58 +144,27 @@
                     Command="{Binding QuickPlayCommand}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    FontSize="11"
+                    FontSize="13"
                     Margin="2,0,0,0"
-                    Height="38"
+                    MinHeight="36"
                     AutomationProperties.AutomationId="MainMenu_BtnQuickPlay" />
           </Grid>
 
-          <!-- Daily Challenge -->
-          <Panel>
-            <Button Classes="Primary GameButton"
-                    Background="#FF6B00"
-                    Command="{Binding DailyChallengeCommand}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Height="38"
-                    AutomationProperties.AutomationId="MainMenu_BtnDailyChallenge">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="Sword" Width="16" Height="16"
-                                 Foreground="White" />
-                <TextBlock Text="{loc:Translate DailyChallengeTitle}"
-                           Foreground="White"
-                           FontSize="13" />
-              </StackPanel>
-            </Button>
-            <!-- "Neu!" Badge -->
-            <Border IsVisible="{Binding IsDailyChallengeNew}"
-                    Background="#FF2020"
-                    CornerRadius="8"
-                    Padding="5,2"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Top"
-                    Margin="0,-4,-2,0"
-                    AutomationProperties.AutomationId="MainMenu_BadgeDailyNew">
-              <TextBlock Text="{loc:Translate DailyChallengeNew}"
-                         FontSize="10" FontWeight="Bold"
-                         Foreground="White" />
-            </Border>
-          </Panel>
-
-          <!-- Dungeon Run -->
+          <!-- Dungeon (volle Breite) -->
           <Button Classes="Primary GameButton"
                   Background="#4A148C"
                   Command="{Binding DungeonCommand}"
+                  IsVisible="{Binding IsDungeonUnlocked}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Height="38"
+                  MinHeight="36"
                   AutomationProperties.AutomationId="MainMenu_BtnDungeon">
-            <StackPanel Orientation="Horizontal" Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="4">
               <mi:MaterialIcon Kind="Sword" Width="14" Height="14"
                                Foreground="#E040FB" />
               <TextBlock Text="{loc:Translate DungeonButton}"
                          Foreground="White"
-                         FontSize="13" />
+                         FontSize="14" />
             </StackPanel>
           </Button>
 
@@ -202,39 +173,23 @@
         <!-- ═══ Spalte 2: Meta / Sammlung ═══ -->
         <StackPanel Grid.Column="2"
                     VerticalAlignment="Center"
-                    Margin="6,0,0,0"
-                    Spacing="5">
+                    Margin="4,0,0,0"
+                    Spacing="4">
 
-          <!-- Deck Builder (Karten-Sammlung) -->
-          <Button Classes="Primary GameButton"
-                  Background="#1565C0"
-                  Command="{Binding DeckCommand}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Height="38"
-                  AutomationProperties.AutomationId="MainMenu_BtnDeck">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="CardsPlaying" Width="16" Height="16"
-                               Foreground="White" />
-              <TextBlock Text="{loc:Translate DeckButton}"
-                         Foreground="White"
-                         FontSize="13" />
-            </StackPanel>
-          </Button>
-
-          <!-- Battle Pass -->
+          <!-- Battle Pass (Eye-Catcher, oben) -->
           <Button Classes="Primary GameButton"
                   Command="{Binding BattlePassCommand}"
+                  IsVisible="{Binding IsBattlePassUnlocked}"
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
-                  Height="38"
+                  MinHeight="36"
                   AutomationProperties.AutomationId="MainMenu_BtnBattlePass">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="Shield" Width="16" Height="16"
+              <mi:MaterialIcon Kind="Shield" Width="14" Height="14"
                                Foreground="#FFD700" />
               <TextBlock Text="{loc:Translate BattlePassButton}"
                          Foreground="White"
-                         FontSize="13" />
+                         FontSize="14" />
             </StackPanel>
             <Button.Background>
               <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
@@ -244,108 +199,103 @@
             </Button.Background>
           </Button>
 
-          <!-- Liga -->
-          <Button Classes="Secondary GameButton"
-                  Command="{Binding LeagueCommand}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Height="38"
-                  AutomationProperties.AutomationId="MainMenu_BtnLeague">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="Trophy" Width="16" Height="16"
-                               Foreground="#00CED1" />
-              <TextBlock Text="{loc:Translate LeagueButton}" FontSize="12" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"
-                         TextTrimming="CharacterEllipsis" />
-            </StackPanel>
-          </Button>
-
-          <!-- Sammlungs-Album -->
-          <Button Classes="Secondary GameButton"
-                  Command="{Binding CollectionCommand}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Height="38"
-                  AutomationProperties.AutomationId="MainMenu_BtnCollection">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="BookOpenPageVariant" Width="16" Height="16"
-                               Foreground="#E040FB" />
-              <TextBlock Text="{loc:Translate CollectionButton}"
-                         Foreground="{DynamicResource TextPrimaryBrush}"
-                         FontSize="12" />
-            </StackPanel>
-          </Button>
-
-          <!-- Missions (Daily + Weekly) -->
-          <Panel>
-            <Button Classes="Secondary GameButton"
-                    Command="{Binding WeeklyChallengeCommand}"
+          <!-- Karten + Liga nebeneinander -->
+          <Grid ColumnDefinitions="*,*">
+            <Button Grid.Column="0"
+                    Classes="Primary GameButton"
+                    Background="#1565C0"
+                    Command="{Binding DeckCommand}"
+                    IsVisible="{Binding IsDeckUnlocked}"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    Height="38"
-                    AutomationProperties.AutomationId="MainMenu_BtnMissions">
-              <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="ClipboardList" Width="16" Height="16"
-                                 Foreground="#00BCD4" />
-                <TextBlock Text="{loc:Translate MissionsButton}"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           FontSize="12" />
+                    Margin="0,0,2,0"
+                    MinHeight="36"
+                    AutomationProperties.AutomationId="MainMenu_BtnCards">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <mi:MaterialIcon Kind="CardsPlaying" Width="14" Height="14"
+                                 Foreground="White" />
+                <TextBlock Text="{loc:Translate DeckButton}"
+                           Foreground="White"
+                           FontSize="13" TextTrimming="CharacterEllipsis" />
               </StackPanel>
             </Button>
-            <!-- "!" Badge wenn Missionen offen -->
-            <Border IsVisible="{Binding HasNewMissions}"
-                    Background="#00BCD4"
+
+            <Button Grid.Column="1"
+                    Classes="Secondary GameButton"
+                    Command="{Binding LeagueCommand}"
+                    IsVisible="{Binding IsLeagueUnlocked}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Margin="2,0,0,0"
+                    MinHeight="36"
+                    AutomationProperties.AutomationId="MainMenu_BtnLeague">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <mi:MaterialIcon Kind="Trophy" Width="14" Height="14"
+                                 Foreground="#00CED1" />
+                <TextBlock Text="{loc:Translate LeagueButton}" FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Button>
+          </Grid>
+
+          <!-- Herausforderungen (volle Breite) -->
+          <Panel IsVisible="{Binding IsDailyChallengeUnlocked}">
+            <Button Classes="Primary GameButton"
+                    Background="#FF6B00"
+                    Command="{Binding DailyChallengeCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    MinHeight="36"
+                    AutomationProperties.AutomationId="MainMenu_BtnChallenges">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <mi:MaterialIcon Kind="Sword" Width="14" Height="14"
+                                 Foreground="White" />
+                <TextBlock Text="{loc:Translate DailyChallengeTitle}"
+                           Foreground="White"
+                           FontSize="14" />
+              </StackPanel>
+            </Button>
+            <!-- "!" Badge wenn Herausforderungen/Missionen offen -->
+            <Border IsVisible="{Binding IsDailyChallengeNew}"
+                    Background="#FF2020"
                     CornerRadius="6"
                     Padding="4,1"
                     HorizontalAlignment="Right"
                     VerticalAlignment="Top"
-                    Margin="0,-3,-2,0"
-                    AutomationProperties.AutomationId="MainMenu_BadgeMissionsNew">
-              <TextBlock Text="!" FontSize="10" FontWeight="Bold" Foreground="White" />
+                    Margin="0,-3,0,0"
+                    AutomationProperties.AutomationId="MainMenu_BadgeChallengesNew">
+              <TextBlock Text="{loc:Translate DailyChallengeNew}"
+                         FontSize="9" FontWeight="Bold"
+                         Foreground="White" />
             </Border>
           </Panel>
-
-          <!-- Lucky Spin (Glücksrad) -->
-          <Button Classes="Primary GameButton"
-                  Background="#7B1FA2"
-                  Command="{Binding LuckyWheelCommand}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Height="38"
-                  AutomationProperties.AutomationId="MainMenu_BtnLuckySpin">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="ChartDonut" Width="16" Height="16"
-                               Foreground="#FFD700" />
-              <TextBlock Text="{loc:Translate LuckySpinTitle}"
-                         Foreground="White"
-                         FontSize="13" />
-            </StackPanel>
-          </Button>
 
         </StackPanel>
 
       </Grid>
 
-      <!-- ═══ UNTERE LEISTE: Utility-Buttons ═══ -->
+      <!-- ═══ UNTERE LEISTE: 3 Utility-Buttons ═══ -->
       <Grid Grid.Row="1"
-            ColumnDefinitions="*,*,*,*,*"
-            Margin="0,8,0,0">
+            ColumnDefinitions="*,*,*"
+            Margin="0,6,0,0">
 
         <!-- Shop -->
         <Button Grid.Column="0"
                 Classes="Secondary GameButton"
                 Command="{Binding ShopCommand}"
+                IsVisible="{Binding IsShopUnlocked}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Margin="0,0,2,0"
                 Height="36"
                 AutomationProperties.AutomationId="MainMenu_BtnShop">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="Store" Width="14" Height="14"
+            <mi:MaterialIcon Kind="Store" Width="16" Height="16"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
             <TextBlock Text="{loc:Translate ShopTitle}"
                        Foreground="{DynamicResource TextPrimaryBrush}"
-                       FontSize="11" />
+                       FontSize="14" />
           </StackPanel>
         </Button>
 
@@ -353,71 +303,36 @@
         <Button Grid.Column="1"
                 Classes="Secondary GameButton"
                 Command="{Binding ProfileCommand}"
+                IsVisible="{Binding IsProfileUnlocked}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Margin="2,0,2,0"
                 Height="36"
                 AutomationProperties.AutomationId="MainMenu_BtnProfile">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="AccountCircle" Width="14" Height="14"
+            <mi:MaterialIcon Kind="AccountCircle" Width="16" Height="16"
                              Foreground="#00BCD4" />
             <TextBlock Text="{loc:Translate ProfileTitle}"
-                       FontSize="11"
+                       FontSize="14"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
         </Button>
 
-        <!-- Achievements -->
+        <!-- Einstellungen -->
         <Button Grid.Column="2"
-                Classes="Secondary GameButton"
-                Command="{Binding AchievementsCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Margin="2,0,2,0"
-                Height="36"
-                AutomationProperties.AutomationId="MainMenu_BtnAchievements">
-          <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon Kind="Trophy" Width="14" Height="14"
-                             Foreground="#FFD700" />
-            <TextBlock Text="{loc:Translate AchievementsTitle}"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       FontSize="11" />
-          </StackPanel>
-        </Button>
-
-        <!-- Settings -->
-        <Button Grid.Column="3"
                 Classes="Secondary GameButton"
                 Command="{Binding SettingsCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                Margin="2,0,2,0"
-                Height="36"
-                AutomationProperties.AutomationId="MainMenu_BtnSettings">
-          <StackPanel Orientation="Horizontal" Spacing="3">
-            <mi:MaterialIcon Kind="Cog" Width="14" Height="14"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{loc:Translate Settings}"
-                       FontSize="11"
-                       TextTrimming="CharacterEllipsis"
-                       Foreground="{DynamicResource TextSecondaryBrush}" />
-          </StackPanel>
-        </Button>
-
-        <!-- Help -->
-        <Button Grid.Column="4"
-                Classes="Secondary GameButton"
-                Command="{Binding HelpCommand}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
                 Margin="2,0,0,0"
                 Height="36"
-                AutomationProperties.AutomationId="MainMenu_BtnHelp">
-          <StackPanel Orientation="Horizontal" Spacing="3">
-            <mi:MaterialIcon Kind="HelpCircleOutline" Width="14" Height="14"
+                AutomationProperties.AutomationId="MainMenu_BtnSettings">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Cog" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-            <TextBlock Text="{loc:Translate Help}"
-                       FontSize="11"
+            <TextBlock Text="{loc:Translate Settings}"
+                       FontSize="14"
+                       TextTrimming="CharacterEllipsis"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
           </StackPanel>
         </Button>
@@ -435,7 +350,16 @@
               CornerRadius="16" Padding="20"
               MaxWidth="520" MaxHeight="300"
               HorizontalAlignment="Center" VerticalAlignment="Center"
-              BoxShadow="0 8 24 0 #60000000">
+              BoxShadow="0 8 24 0 #60000000"
+              RenderTransformOrigin="0.5,0.5">
+        <Border.RenderTransform>
+          <ScaleTransform ScaleX="1" ScaleY="1" />
+        </Border.RenderTransform>
+        <Border.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="0:0:0.25" Easing="CubicEaseOut" />
+          </Transitions>
+        </Border.Transitions>
         <Grid RowDefinitions="Auto,*,Auto">
           <!-- Titel -->
           <StackPanel Orientation="Horizontal" Spacing="8"

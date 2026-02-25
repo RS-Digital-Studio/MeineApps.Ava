@@ -1,4 +1,5 @@
 using BomberBlast.Models;
+using BomberBlast.Models.Dungeon;
 using SkiaSharp;
 
 namespace BomberBlast.Core;
@@ -52,11 +53,26 @@ public partial class GameEngine
             canvas.Translate(_screenShake.OffsetX, _screenShake.OffsetY);
         }
 
-        // Combo-Daten + Survival-Daten an Renderer übergeben
+        // Combo-Daten + Survival-Daten + Dungeon-Daten an Renderer übergeben
         _renderer.ComboCount = _comboCount;
         _renderer.ComboTimer = _comboTimer;
         _renderer.IsSurvivalMode = _isSurvivalMode;
         _renderer.SurvivalKills = _enemiesKilled;
+        _renderer.EnemiesRemaining = EnemiesRemaining;
+        _renderer.IsDungeonRun = _isDungeonRun;
+        _renderer.DungeonActiveBuffs = _isDungeonRun ? _dungeonService.RunState?.ActiveBuffs : null;
+        _renderer.DungeonRoomType = _isDungeonRun ? _dungeonService.RunState?.CurrentRoomType ?? DungeonRoomType.Normal : DungeonRoomType.Normal;
+        _renderer.DungeonFloorModifier = _isDungeonRun ? _dungeonFloorModifier : DungeonFloorModifier.None;
+
+        // Lokalisierte HUD-Labels übergeben
+        _renderer.HudLabelKills = _localizationService.GetString("HudKills") ?? "KILLS";
+        _renderer.HudLabelTime = _localizationService.GetString("HudTime") ?? "TIME";
+        _renderer.HudLabelScore = _localizationService.GetString("HudScore") ?? "SCORE";
+        _renderer.HudLabelLives = _localizationService.GetString("HudLives") ?? "LIVES";
+        _renderer.HudLabelBombs = _localizationService.GetString("HudBombs") ?? "BOMBS";
+        _renderer.HudLabelPower = _localizationService.GetString("HudPower") ?? "POWER";
+        _renderer.HudLabelDeck = _localizationService.GetString("HudDeck") ?? "DECK";
+        _renderer.HudLabelBuffs = _localizationService.GetString("HudBuffs") ?? "BUFFS";
 
         // Survival-Modus: Verstrichene Zeit anzeigen statt Countdown
         float displayTime = _isSurvivalMode ? _survivalTimeElapsed : _timer.RemainingTime;

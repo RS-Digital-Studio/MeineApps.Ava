@@ -2856,4 +2856,435 @@
   <data name="ProfileNoFrame" xml:space="preserve">
     <value>Ninguno</value>
   </data>
+
+  <!-- Rewarded Ad Placements (Phase 6.2) -->
+  <data name="WatchAdExtraSpin" xml:space="preserve">
+    <value>Giro Extra por Anuncio</value>
+  </data>
+  <data name="WatchAdCoinMultiplier" xml:space="preserve">
+    <value>3x Monedas por Anuncio</value>
+  </data>
+  <data name="WatchAdFreeUpgrade" xml:space="preserve">
+    <value>Mejora Gratis por Anuncio</value>
+  </data>
+  <data name="WatchAdExtraBuff" xml:space="preserve">
+    <value>Buff Extra por Anuncio</value>
+  </data>
+  <data name="WatchAdGemBonus" xml:space="preserve">
+    <value>+5 Gemas por Anuncio</value>
+  </data>
+  <data name="FreeUpgradeActive" xml:space="preserve">
+    <value>¡Próxima mejora gratis!</value>
+  </data>
+  <data name="CoinsTripled" xml:space="preserve">
+    <value>x3!</value>
+  </data>
+
+  <!-- Gem-Shop (IAP) -->
+  <data name="GemShopTitle" xml:space="preserve">
+    <value>Tienda de Gemas</value>
+  </data>
+  <data name="GemShopDescription" xml:space="preserve">
+    <value>Compra gemas para desbloquear objetos premium más rápido</value>
+  </data>
+  <data name="GemPackSmall" xml:space="preserve">
+    <value>Paquete Pequeño</value>
+  </data>
+  <data name="GemPackMedium" xml:space="preserve">
+    <value>Paquete Mediano</value>
+  </data>
+  <data name="GemPackLarge" xml:space="preserve">
+    <value>Paquete Grande</value>
+  </data>
+  <data name="GemPackPopular" xml:space="preserve">
+    <value>¡Popular!</value>
+  </data>
+  <data name="GemPackBestValue" xml:space="preserve">
+    <value>¡Mejor Valor!</value>
+  </data>
+  <data name="GemPurchaseSuccess" xml:space="preserve">
+    <value>+{0} Gemas!</value>
+  </data>
+  <data name="PurchaseFailedDetail" xml:space="preserve">
+    <value>Necesitas {0} Coins, tienes {1}</value>
+  </data>
+  <data name="SkipLevelConfirm" xml:space="preserve">
+    <value>¿Saltar nivel?</value>
+  </data>
+  <data name="SkipLevelConfirmMessage" xml:space="preserve">
+    <value>¿Realmente quieres saltar este nivel?</value>
+  </data>
+  <data name="AdUnavailable" xml:space="preserve">
+    <value>Anuncio no disponible</value>
+  </data>
+  <data name="ValidatePurchase" xml:space="preserve">
+    <value>Validar compra</value>
+  </data>
+  <data name="FreeUpgradeReady" xml:space="preserve">
+    <value>¡Próxima mejora GRATIS!</value>
+  </data>
+  <data name="GemPurchaseConfirm" xml:space="preserve">
+    <value>¿Comprar {0} Gems por {1}?</value>
+  </data>
+
+  <!-- HUD Labels -->
+  <data name="HudKills" xml:space="preserve">
+    <value>MUERTES</value>
+  </data>
+  <data name="HudTime" xml:space="preserve">
+    <value>TIEMPO</value>
+  </data>
+  <data name="HudScore" xml:space="preserve">
+    <value>PUNTOS</value>
+  </data>
+  <data name="HudLives" xml:space="preserve">
+    <value>VIDAS</value>
+  </data>
+  <data name="HudBombs" xml:space="preserve">
+    <value>BOMBAS</value>
+  </data>
+  <data name="HudPower" xml:space="preserve">
+    <value>PODER</value>
+  </data>
+  <data name="HudDeck" xml:space="preserve">
+    <value>DECK</value>
+  </data>
+  <data name="HudBuffs" xml:space="preserve">
+    <value>BUFFS</value>
+  </data>
+
+  <!-- GameEngine Announcement Strings -->
+  <data name="AnnounceBossFight" xml:space="preserve">
+    <value>¡PELEA DE JEFE!</value>
+  </data>
+  <data name="AnnounceWorldFormat" xml:space="preserve">
+    <value>MUNDO {0}</value>
+  </data>
+  <data name="AnnounceDailyChallenge" xml:space="preserve">
+    <value>DESAFÍO DIARIO</value>
+  </data>
+  <data name="AnnounceQuickPlay" xml:space="preserve">
+    <value>PARTIDA RÁPIDA</value>
+  </data>
+  <data name="AnnounceSurvival" xml:space="preserve">
+    <value>¡SUPERVIVENCIA!</value>
+  </data>
+  <data name="AnnounceFloorFormat" xml:space="preserve">
+    <value>PISO {0}</value>
+  </data>
+  <data name="AnnounceBossFloorFormat" xml:space="preserve">
+    <value>JEFE - PISO {0}</value>
+  </data>
+
+  <!-- GameEngine Collision Strings -->
+  <data name="HudDefeatAll" xml:space="preserve">
+    <value>¡DERROTA A TODOS!</value>
+  </data>
+  <data name="HudBossHitFormat" xml:space="preserve">
+    <value>¡GOLPE! {0}/{1}</value>
+  </data>
+  <data name="HudEnraged" xml:space="preserve">
+    <value>¡ENFURECIDO!</value>
+  </data>
+  <data name="HudCursed" xml:space="preserve">
+    <value>¡MALDITO!</value>
+  </data>
+  <data name="HudBossDefeatedFormat" xml:space="preserve">
+    <value>¡JEFE DERROTADO! +{0}</value>
+  </data>
+
+  <!-- AXAML Labels -->
+  <data name="LeagueClaimReward" xml:space="preserve">
+    <value>Recoger</value>
+  </data>
+  <data name="LeagueRewardClaimed" xml:space="preserve">
+    <value>Recogido</value>
+  </data>
+  <data name="LeaguePlayer" xml:space="preserve">
+    <value>Jugador</value>
+  </data>
+  <data name="LeaguePointsHeader" xml:space="preserve">
+    <value>Puntos</value>
+  </data>
+  <data name="LeagueLoading" xml:space="preserve">
+    <value>Cargando clasificación...</value>
+  </data>
+  <data name="LeagueSeasonFormat" xml:space="preserve">
+    <value>Temporada {0}</value>
+  </data>
+  <data name="StatsPointsLabel" xml:space="preserve">
+    <value>{0} Puntos</value>
+  </data>
+
+  <!-- Pack de inicio (Feature 65) -->
+  <data name="StarterPackTitle" xml:space="preserve">
+    <value>Pack de inicio</value>
+  </data>
+  <data name="StarterPackDesc" xml:space="preserve">
+    <value>5000 Monedas + 20 Gems + 3 Cartas Raras!</value>
+  </data>
+  <data name="StarterPackPurchased" xml:space="preserve">
+    <value>Ya comprado</value>
+  </data>
+
+  <!-- Comeback (Feature 68) -->
+  <data name="ComebackTitle" xml:space="preserve">
+    <value>¡Bienvenido de vuelta!</value>
+  </data>
+  <data name="ComebackBonus" xml:space="preserve">
+    <value>+{0} Monedas, +{1} Gems</value>
+  </data>
+
+  <!-- XP-Boost (Feature 69) -->
+  <data name="XpBoostTitle" xml:space="preserve">
+    <value>2x XP Boost</value>
+  </data>
+  <data name="XpBoostActive" xml:space="preserve">
+    <value>¡Activo! {0} restante</value>
+  </data>
+  <data name="XpBoostPrice" xml:space="preserve">
+    <value>20 Gems</value>
+  </data>
+  <data name="ShopNotEnoughGems" xml:space="preserve">
+    <value>¡No hay suficientes Gems!</value>
+  </data>
+
+  <!-- Ofertas rotativas (Feature 66) -->
+  <data name="DailyDealsTitle" xml:space="preserve">
+    <value>Ofertas del día</value>
+  </data>
+  <data name="WeeklyDealTitle" xml:space="preserve">
+    <value>Oferta semanal</value>
+  </data>
+  <data name="DealDiscount" xml:space="preserve">
+    <value>{0}% descuento</value>
+  </data>
+  <data name="DealClaimed" xml:space="preserve">
+    <value>Canjeado</value>
+  </data>
+  <data name="DealCoinPack" xml:space="preserve">
+    <value>Pack de monedas</value>
+  </data>
+  <data name="DealGemPack" xml:space="preserve">
+    <value>Pack de gemas</value>
+  </data>
+  <data name="DealCardPack" xml:space="preserve">
+    <value>Carta rara</value>
+  </data>
+  <data name="DealUpgradeDiscount" xml:space="preserve">
+    <value>Descuento de mejora</value>
+  </data>
+  <data name="DealMegaCoinPack" xml:space="preserve">
+    <value>Mega pack de monedas</value>
+  </data>
+  <data name="DealMegaGemPack" xml:space="preserve">
+    <value>Mega pack de gemas</value>
+  </data>
+  <data name="DealRareCardBundle" xml:space="preserve">
+    <value>Pack de cartas raras</value>
+  </data>
+  <data name="DealPremiumBundle" xml:space="preserve">
+    <value>Pack premium</value>
+  </data>
+  <data name="GemSkinsTitle" xml:space="preserve">
+    <value>Skins exclusivos</value>
+  </data>
+  <data name="SkinCrystal" xml:space="preserve">
+    <value>Cristal</value>
+  </data>
+  <data name="SkinShadow" xml:space="preserve">
+    <value>Sombra</value>
+  </data>
+  <data name="SkinPhoenix" xml:space="preserve">
+    <value>Fénix</value>
+  </data>
+  <data name="BuyCardGems" xml:space="preserve">
+    <value>Comprar por {0} Gemas</value>
+  </data>
+  <data name="ExtraSpinGems" xml:space="preserve">
+    <value>Giro extra (3 Gemas)</value>
+  </data>
+  <data name="DungeonReviveGems" xml:space="preserve">
+    <value>Revivir (15 Gemas)</value>
+  </data>
+  <data name="DungeonRevived" xml:space="preserve">
+    <value>¡Revivido!</value>
+  </data>
+  <data name="InsufficientGems" xml:space="preserve">
+    <value>No hay suficientes Gemas</value>
+  </data>
+  <data name="DeckUnlockSlot5" xml:space="preserve">
+    <value>Desbloquear Slot #5 ({0} Gemas)</value>
+  </data>
+  <data name="DeckSlot5Unlocked" xml:space="preserve">
+    <value>¡Slot #5 desbloqueado!</value>
+  </data>
+  <!-- B1: Mejoras de Mazmorra -->
+  <data name="DungeonUpgradeStartBombs" xml:space="preserve">
+    <value>Bombas Iniciales</value>
+  </data>
+  <data name="DungeonUpgradeStartBombsDesc" xml:space="preserve">
+    <value>Comienza cada run con bombas extra</value>
+  </data>
+  <data name="DungeonUpgradeStartFire" xml:space="preserve">
+    <value>Fuego Inicial</value>
+  </data>
+  <data name="DungeonUpgradeStartFireDesc" xml:space="preserve">
+    <value>Comienza cada run con alcance de fuego extra</value>
+  </data>
+  <data name="DungeonUpgradeStartSpeed" xml:space="preserve">
+    <value>Velocidad Inicial</value>
+  </data>
+  <data name="DungeonUpgradeStartSpeedDesc" xml:space="preserve">
+    <value>Comienza cada run con impulso de velocidad</value>
+  </data>
+  <data name="DungeonUpgradeExtraBuff" xml:space="preserve">
+    <value>Buff Extra</value>
+  </data>
+  <data name="DungeonUpgradeExtraBuffDesc" xml:space="preserve">
+    <value>Elige entre 4 buffs en vez de 3</value>
+  </data>
+  <data name="DungeonUpgradeBossGold" xml:space="preserve">
+    <value>Oro de Jefe</value>
+  </data>
+  <data name="DungeonUpgradeBossGoldDesc" xml:space="preserve">
+    <value>Recompensas de jefe aumentadas</value>
+  </data>
+  <data name="DungeonUpgradeStartShield" xml:space="preserve">
+    <value>Escudo Inicial</value>
+  </data>
+  <data name="DungeonUpgradeStartShieldDesc" xml:space="preserve">
+    <value>Comienza cada run con un escudo</value>
+  </data>
+  <data name="DungeonUpgradeCardDrop" xml:space="preserve">
+    <value>Mejora de Cartas</value>
+  </data>
+  <data name="DungeonUpgradeCardDropDesc" xml:space="preserve">
+    <value>Mayor probabilidad de cartas</value>
+  </data>
+  <data name="DungeonUpgradeReviveCost" xml:space="preserve">
+    <value>Descuento de Revivir</value>
+  </data>
+  <data name="DungeonUpgradeReviveCostDesc" xml:space="preserve">
+    <value>Coste de revivir reducido</value>
+  </data>
+  <data name="DungeonSummaryDC" xml:space="preserve">
+    <value>Monedas de Mazmorra: {0}</value>
+  </data>
+  <!-- B2: Buffs Legendarios -->
+  <data name="DungeonBuffBerserker" xml:space="preserve">
+    <value>Berserker</value>
+  </data>
+  <data name="DungeonBuffBerserkerDesc" xml:space="preserve">
+    <value>+2 Bombas, +2 Fuego, pero -1 Vida</value>
+  </data>
+  <data name="DungeonBuffTimeFreeze" xml:space="preserve">
+    <value>Congelamiento</value>
+  </data>
+  <data name="DungeonBuffTimeFreezeDesc" xml:space="preserve">
+    <value>Todos los enemigos congelados 3s al iniciar piso</value>
+  </data>
+  <data name="DungeonBuffGoldRush" xml:space="preserve">
+    <value>Fiebre del Oro</value>
+  </data>
+  <data name="DungeonBuffGoldRushDesc" xml:space="preserve">
+    <value>3x recompensas de monedas por el resto del run</value>
+  </data>
+  <data name="DungeonBuffPhantom" xml:space="preserve">
+    <value>Fantasma</value>
+  </data>
+  <data name="DungeonBuffPhantomDesc" xml:space="preserve">
+    <value>Atraviesa muros 5s (30s de enfriamiento)</value>
+  </data>
+  <!-- B3: Tipos de Sala -->
+  <data name="DungeonRoomElite" xml:space="preserve">
+    <value>Elite</value>
+  </data>
+  <data name="DungeonRoomTreasure" xml:space="preserve">
+    <value>Tesoro</value>
+  </data>
+  <data name="DungeonRoomChallenge" xml:space="preserve">
+    <value>Desafio</value>
+  </data>
+  <data name="DungeonRoomRest" xml:space="preserve">
+    <value>Descanso</value>
+  </data>
+  <data name="DungeonRoomNormal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="DungeonRoomBoss" xml:space="preserve">
+    <value>Jefe</value>
+  </data>
+  <data name="DungeonUpgradesTitle" xml:space="preserve">
+    <value>Mejoras</value>
+  </data>
+  <data name="DungeonSelectNode" xml:space="preserve">
+    <value>Toca un nodo para elegir tu camino</value>
+  </data>
+  <!-- B4: Modificadores de Piso -->
+  <data name="DungeonModLava" xml:space="preserve">
+    <value>Bordes de Lava</value>
+  </data>
+  <data name="DungeonModDarkness" xml:space="preserve">
+    <value>Oscuridad</value>
+  </data>
+  <data name="DungeonModDoubleSpawns" xml:space="preserve">
+    <value>Doble Enemigos</value>
+  </data>
+  <data name="DungeonModFastBombs" xml:space="preserve">
+    <value>Bombas Rapidas</value>
+  </data>
+  <data name="DungeonModBigExplosions" xml:space="preserve">
+    <value>Grandes Explosiones</value>
+  </data>
+  <data name="DungeonModRegeneration" xml:space="preserve">
+    <value>Regeneracion</value>
+  </data>
+  <data name="DungeonModWealthy" xml:space="preserve">
+    <value>Riqueza</value>
+  </data>
+  <!-- B5: Sinergias + Reroll -->
+  <data name="SynergyBombardier" xml:space="preserve">
+    <value>Bombardero</value>
+  </data>
+  <data name="SynergyBombardierDesc" xml:space="preserve">
+    <value>+1 Bomba &amp; Fuego</value>
+  </data>
+  <data name="SynergyBlitzkrieg" xml:space="preserve">
+    <value>Blitzkrieg</value>
+  </data>
+  <data name="SynergyBlitzkriegDesc" xml:space="preserve">
+    <value>Temporizador de bomba mas rapido</value>
+  </data>
+  <data name="SynergyFortress" xml:space="preserve">
+    <value>Fortaleza</value>
+  </data>
+  <data name="SynergyFortressDesc" xml:space="preserve">
+    <value>El escudo se regenera con el tiempo</value>
+  </data>
+  <data name="SynergyMidas" xml:space="preserve">
+    <value>Midas</value>
+  </data>
+  <data name="SynergyMidasDesc" xml:space="preserve">
+    <value>Los enemigos sueltan monedas al morir</value>
+  </data>
+  <data name="SynergyElemental" xml:space="preserve">
+    <value>Elemental</value>
+  </data>
+  <data name="SynergyElementalDesc" xml:space="preserve">
+    <value>La lava ralentiza enemigos en vez de danarte</value>
+  </data>
+  <data name="DungeonRerollFree" xml:space="preserve">
+    <value>Relanzar (Gratis)</value>
+  </data>
+  <data name="DungeonRerollGems" xml:space="preserve">
+    <value>Relanzar ({0} Gemas)</value>
+  </data>
+  <!-- B7: Ascension -->
+  <data name="DungeonAscension" xml:space="preserve">
+    <value>Ascension {0}</value>
+  </data>
+  <data name="DungeonAscensionUp" xml:space="preserve">
+    <value>¡Ascension {0} desbloqueada!</value>
+  </data>
 </root>

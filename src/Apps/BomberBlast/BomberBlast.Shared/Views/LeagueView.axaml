@@ -10,9 +10,9 @@
 
   <!-- Liga-System: Landscape 2-Spalten Layout mit Firebase Online-Rangliste -->
   <Panel AutomationProperties.AutomationId="League_Root">
-    <controls:MenuBackgroundCanvas />
+    <controls:MenuBackgroundCanvas BackgroundTheme="League" />
 
-    <Grid ColumnDefinitions="260,*" Margin="16,12,16,80">
+    <Grid ColumnDefinitions="*,2*" Margin="16,12,16,80">
 
       <!-- ═══════════════════════════════════════════════════════════
            LINKE SPALTE (260px) - Liga-Info + Belohnungen + Stats
@@ -161,7 +161,7 @@
             <!-- Refresh-Button -->
             <Button Grid.Column="3" Classes="Secondary GameButton"
                     Command="{Binding RefreshLeaderboardCommand}"
-                    Width="32" Height="32" Padding="0"
+                    Width="44" Height="44" Padding="0"
                     HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                     AutomationProperties.AutomationId="League_BtnRefresh">
               <materialIcons:MaterialIcon Kind="Refresh" Width="18" Height="18"

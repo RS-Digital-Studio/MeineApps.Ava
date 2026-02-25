@@ -37,7 +37,7 @@
 
         <!-- Linke Spalte: Missions-Listen (Daily + Weekly) -->
         <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-          <StackPanel Margin="0,0,12,60">
+          <StackPanel Margin="0,0,12,0">
 
             <!-- ═══ DAILY MISSIONS ═══ -->
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,8">
@@ -176,7 +176,7 @@
 
         <!-- Rechte Spalte: Stats + Bonus (scrollbar) -->
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
-          <StackPanel Spacing="10" Margin="12,0,0,60">
+          <StackPanel Spacing="10" Margin="12,0,0,0">
 
             <!-- ═══ DAILY STATS ═══ -->
             <TextBlock Text="{Binding DailyTitle}" FontSize="14" FontWeight="Bold"

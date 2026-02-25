@@ -24,7 +24,7 @@ public class LuckySpinService : ILuckySpinService
         new() { Index = 5, NameKey = "SpinReward750",   Coins = 750,  Weight = 10 },
         new() { Index = 6, NameKey = "SpinReward250",   Coins = 250,  Weight = 18 },
         new() { Index = 7, NameKey = "SpinReward5Gems", Gems = 5,     Weight = 8 },
-        new() { Index = 8, NameKey = "SpinReward1500",  Coins = 1500, Weight = 5, IsJackpot = true },
+        new() { Index = 8, NameKey = "SpinRewardJackpot", Coins = 3000, Gems = 10, Weight = 5, IsJackpot = true },
     ];
 
     private static readonly int _totalWeight = _rewards.Sum(r => r.Weight);

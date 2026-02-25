@@ -1,5 +1,6 @@
 using BomberBlast.Models;
 using BomberBlast.Models.Cards;
+using BomberBlast.Models.Dungeon;
 using BomberBlast.Models.Entities;
 using BomberBlast.Models.Grid;
 using BomberBlast.Services;
@@ -54,7 +55,7 @@ public partial class GameRenderer
         {
             // Survival: Kills-Anzeige + verstrichene Zeit
             _textPaint.Color = _palette.HudText.WithAlpha(150);
-            canvas.DrawText("KILLS", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
+            canvas.DrawText(HudLabelKills, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
             cy += 24;
 
             _textPaint.Color = new SKColor(255, 80, 50); // Rot für Kills
@@ -74,7 +75,7 @@ public partial class GameRenderer
         else
         {
             _textPaint.Color = _palette.HudText.WithAlpha(150);
-            canvas.DrawText("TIME", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
+            canvas.DrawText(HudLabelTime, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
             cy += 24;
 
             bool timeWarning = remainingTime <= 30;
@@ -100,7 +101,7 @@ public partial class GameRenderer
 
         // ── SCORE ──
         _textPaint.Color = _palette.HudText.WithAlpha(150);
-        canvas.DrawText("SCORE", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
+        canvas.DrawText(HudLabelScore, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
         cy += 22;
 
         _textPaint.Color = _palette.HudAccent;
@@ -165,7 +166,7 @@ public partial class GameRenderer
 
         // ── LIVES (heart icons) ──
         _textPaint.Color = _palette.HudText.WithAlpha(150);
-        canvas.DrawText("LIVES", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
+        canvas.DrawText(HudLabelLives, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
         cy += 20;
 
         float heartSize = 12;
@@ -179,6 +180,25 @@ public partial class GameRenderer
         }
         cy += heartSize + 16;
 
+        // ── ENEMIES (Gegner-Zähler) ──
+        if (EnemiesRemaining > 0 && !IsSurvivalMode)
+        {
+            // Separator
+            canvas.DrawLine(x + 10, cy, x + w - 10, cy, _strokePaint);
+            cy += 14;
+
+            // Mini-Skull + Anzahl
+            float skullCx = cx - 12;
+            RenderMiniSkull(canvas, skullCx, cy + 2, 6f, isNeon);
+            _textPaint.Color = EnemiesRemaining <= 2
+                ? new SKColor(255, 80, 50)   // Rot: fast geschafft
+                : _palette.HudText;
+            _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
+            canvas.DrawText($"x{EnemiesRemaining}", cx + 6, cy + 6, SKTextAlign.Left, _hudFontMedium, _textPaint);
+            _textPaint.MaskFilter = null;
+            cy += 20;
+        }
+
         // Separator
         canvas.DrawLine(x + 10, cy, x + w - 10, cy, _strokePaint);
         cy += 16;
@@ -187,7 +207,7 @@ public partial class GameRenderer
         if (player != null)
         {
             _textPaint.Color = _palette.HudText.WithAlpha(150);
-            canvas.DrawText("BOMBS", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
+            canvas.DrawText(HudLabelBombs, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
             cy += 20;
 
             _textPaint.Color = _palette.HudText;
@@ -260,7 +280,7 @@ public partial class GameRenderer
                 cy += 14;
 
                 _textPaint.Color = _palette.HudText.WithAlpha(150);
-                canvas.DrawText("POWER", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
+                canvas.DrawText(HudLabelPower, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
                 cy += 18;
 
                 foreach (var (label, color) in _activePowers)
@@ -281,10 +301,59 @@ public partial class GameRenderer
                 cy += 14;
 
                 _textPaint.Color = _palette.HudText.WithAlpha(150);
-                canvas.DrawText("DECK", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
+                canvas.DrawText(HudLabelDeck, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
                 cy += 16;
 
                 RenderCardSlots(canvas, player, x, cy, w, isNeon);
+                cy += CARD_SLOT_SIZE + 8;
+            }
+
+            // ── DUNGEON RAUM-TYP + MODIFIKATOR (nur im Dungeon-Modus) ──
+            if (IsDungeonRun && DungeonRoomType != Models.Dungeon.DungeonRoomType.Normal)
+            {
+                cy += 6;
+                var (rtLabel, rtColor) = GetRoomTypeInfo(DungeonRoomType);
+                _fillPaint.Color = rtColor.WithAlpha(60);
+                _fillPaint.MaskFilter = null;
+                _fillPaint.Shader = null;
+                canvas.DrawRoundRect(x + 4, cy, w - 8, 16, 4, 4, _fillPaint);
+                _strokePaint.Color = rtColor;
+                _strokePaint.StrokeWidth = 1f;
+                _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
+                canvas.DrawRoundRect(x + 4, cy, w - 8, 16, 4, 4, _strokePaint);
+                _strokePaint.MaskFilter = null;
+                _textPaint.Color = rtColor;
+                canvas.DrawText(rtLabel, cx, cy + 12f, SKTextAlign.Center, _hudFontSmall, _textPaint);
+                cy += 20;
+            }
+
+            if (IsDungeonRun && DungeonFloorModifier != Models.Dungeon.DungeonFloorModifier.None)
+            {
+                var (modLabel, modColor) = GetFloorModifierInfo(DungeonFloorModifier);
+                _fillPaint.Color = modColor.WithAlpha(40);
+                _fillPaint.MaskFilter = null;
+                _fillPaint.Shader = null;
+                canvas.DrawRoundRect(x + 4, cy, w - 8, 16, 4, 4, _fillPaint);
+                _strokePaint.Color = modColor;
+                _strokePaint.StrokeWidth = 1f;
+                canvas.DrawRoundRect(x + 4, cy, w - 8, 16, 4, 4, _strokePaint);
+                _textPaint.Color = modColor;
+                canvas.DrawText(modLabel, cx, cy + 12f, SKTextAlign.Center, _hudFontSmall, _textPaint);
+                cy += 20;
+            }
+
+            // ── DUNGEON BUFFS (nur im Dungeon-Modus) ──
+            if (IsDungeonRun && DungeonActiveBuffs != null && DungeonActiveBuffs.Count > 0)
+            {
+                cy += 6;
+                canvas.DrawLine(x + 10, cy, x + w - 10, cy, _strokePaint);
+                cy += 14;
+
+                _textPaint.Color = _palette.HudText.WithAlpha(150);
+                canvas.DrawText(HudLabelBuffs, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
+                cy += 14;
+
+                RenderDungeonBuffIcons(canvas, x, cy, w, isNeon);
             }
         }
     }
@@ -355,12 +424,39 @@ public partial class GameRenderer
         canvas.DrawPath(_fusePath, _fillPaint);
     }
 
+    private void RenderMiniSkull(SKCanvas canvas, float cx, float cy, float r, bool isNeon)
+    {
+        // Schädel-Kopf (Oval)
+        _fillPaint.Color = isNeon ? new SKColor(220, 200, 200) : new SKColor(200, 190, 180);
+        _fillPaint.MaskFilter = null;
+        canvas.DrawOval(cx, cy - r * 0.2f, r * 0.8f, r, _fillPaint);
+
+        // Augen (zwei dunkle Punkte)
+        _fillPaint.Color = isNeon ? new SKColor(255, 50, 50) : new SKColor(40, 10, 10);
+        canvas.DrawCircle(cx - r * 0.3f, cy - r * 0.25f, r * 0.2f, _fillPaint);
+        canvas.DrawCircle(cx + r * 0.3f, cy - r * 0.25f, r * 0.2f, _fillPaint);
+
+        // Kiefer (schmaler Rechteck)
+        _fillPaint.Color = isNeon ? new SKColor(190, 170, 170) : new SKColor(170, 160, 150);
+        canvas.DrawRect(cx - r * 0.5f, cy + r * 0.5f, r, r * 0.4f, _fillPaint);
+
+        // Zähne (kleine vertikale Linien)
+        _strokePaint.Color = isNeon ? new SKColor(40, 20, 20) : new SKColor(80, 70, 60);
+        _strokePaint.StrokeWidth = 1f;
+        _strokePaint.MaskFilter = null;
+        for (int i = -1; i <= 1; i++)
+        {
+            float tx = cx + i * r * 0.25f;
+            canvas.DrawLine(tx, cy + r * 0.5f, tx, cy + r * 0.9f, _strokePaint);
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // CARD SLOTS (Deck-System)
     // ═══════════════════════════════════════════════════════════════════════
 
     // Gespeicherte Slot-Positionen für Touch-HitTest
-    private const int MAX_CARD_SLOTS = 4;
+    private const int MAX_CARD_SLOTS = 5;
     private const float CARD_SLOT_SIZE = 26f;
     private const float CARD_SLOT_GAP = 4f;
     private readonly SKRect[] _cardSlotRects = new SKRect[MAX_CARD_SLOTS];
@@ -489,5 +585,108 @@ public partial class GameRenderer
         Rarity.Epic => new SKColor(156, 39, 176),     // #9C27B0
         Rarity.Legendary => new SKColor(255, 215, 0), // #FFD700
         _ => SKColors.White
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DUNGEON BUFF ICONS
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Rendert aktive Dungeon-Buffs als farbige Mini-Quadrate mit Buchstaben-Kürzel.
+    /// Horizontale Anordnung, 2 pro Zeile falls nötig.
+    /// </summary>
+    private void RenderDungeonBuffIcons(SKCanvas canvas, float hudX, float startY, float hudWidth, bool isNeon)
+    {
+        if (DungeonActiveBuffs == null || DungeonActiveBuffs.Count == 0) return;
+
+        const float buffSize = 18f;
+        const float buffGap = 3f;
+        int maxPerRow = 4;
+        float cx = hudX + hudWidth / 2f;
+
+        for (int i = 0; i < DungeonActiveBuffs.Count; i++)
+        {
+            int row = i / maxPerRow;
+            int col = i % maxPerRow;
+            int countInRow = Math.Min(DungeonActiveBuffs.Count - row * maxPerRow, maxPerRow);
+            float totalRowWidth = countInRow * (buffSize + buffGap) - buffGap;
+            float rowStartX = cx - totalRowWidth / 2f;
+
+            float bx = rowStartX + col * (buffSize + buffGap);
+            float by = startY + row * (buffSize + buffGap);
+
+            var (label, color) = GetDungeonBuffInfo(DungeonActiveBuffs[i]);
+
+            // Farbiges Quadrat
+            _fillPaint.Color = color.WithAlpha(180);
+            _fillPaint.MaskFilter = null;
+            _fillPaint.Shader = null;
+            canvas.DrawRoundRect(bx, by, buffSize, buffSize, 3, 3, _fillPaint);
+
+            // Rahmen
+            _strokePaint.Color = color;
+            _strokePaint.StrokeWidth = 1f;
+            _strokePaint.MaskFilter = isNeon ? _smallGlow : null;
+            canvas.DrawRoundRect(bx, by, buffSize, buffSize, 3, 3, _strokePaint);
+            _strokePaint.MaskFilter = null;
+
+            // Buchstaben-Kürzel
+            _textPaint.Color = SKColors.White;
+            _textPaint.MaskFilter = null;
+            canvas.DrawText(label, bx + buffSize / 2f, by + buffSize / 2f + 4f,
+                SKTextAlign.Center, _hudFontSmall, _textPaint);
+        }
+    }
+
+    /// <summary>
+    /// Gibt Label und Farbe für einen Dungeon-Raum-Typ zurück.
+    /// </summary>
+    private static (string label, SKColor color) GetRoomTypeInfo(Models.Dungeon.DungeonRoomType type) => type switch
+    {
+        Models.Dungeon.DungeonRoomType.Elite => ("ELITE", new SKColor(244, 67, 54)),         // Rot
+        Models.Dungeon.DungeonRoomType.Treasure => ("TREASURE", new SKColor(255, 215, 0)),   // Gold
+        Models.Dungeon.DungeonRoomType.Challenge => ("CHALLENGE", new SKColor(255, 152, 0)), // Orange
+        Models.Dungeon.DungeonRoomType.Rest => ("REST", new SKColor(76, 175, 80)),           // Grün
+        _ => ("", SKColors.White)
+    };
+
+    /// <summary>
+    /// Gibt Label und Farbe für einen Floor-Modifikator zurück.
+    /// </summary>
+    private static (string label, SKColor color) GetFloorModifierInfo(Models.Dungeon.DungeonFloorModifier mod) => mod switch
+    {
+        Models.Dungeon.DungeonFloorModifier.LavaBorders => ("LAVA", new SKColor(255, 87, 34)),     // Orange-Rot
+        Models.Dungeon.DungeonFloorModifier.Darkness => ("DARK", new SKColor(120, 120, 160)),      // Grau-Blau
+        Models.Dungeon.DungeonFloorModifier.DoubleSpawns => ("x2 EN", new SKColor(244, 67, 54)),   // Rot
+        Models.Dungeon.DungeonFloorModifier.FastBombs => ("FAST", new SKColor(255, 193, 7)),       // Gelb
+        Models.Dungeon.DungeonFloorModifier.BigExplosions => ("+FIRE", new SKColor(255, 152, 0)),   // Orange
+        Models.Dungeon.DungeonFloorModifier.Regeneration => ("REGEN", new SKColor(76, 175, 80)),    // Grün
+        Models.Dungeon.DungeonFloorModifier.Wealthy => ("x3 $", new SKColor(255, 215, 0)),          // Gold
+        _ => ("", SKColors.White)
+    };
+
+    /// <summary>
+    /// Gibt Kürzel und Farbe für einen Dungeon-Buff zurück.
+    /// </summary>
+    private static (string label, SKColor color) GetDungeonBuffInfo(DungeonBuffType type) => type switch
+    {
+        DungeonBuffType.ExtraBomb => ("B", new SKColor(100, 150, 255)),      // Blau (Bombe)
+        DungeonBuffType.ExtraFire => ("F", new SKColor(255, 120, 40)),       // Orange (Feuer)
+        DungeonBuffType.SpeedBoost => ("S", new SKColor(80, 220, 100)),      // Grün (Speed)
+        DungeonBuffType.Shield => ("SH", new SKColor(0, 229, 255)),          // Cyan (Schild)
+        DungeonBuffType.CoinBonus => ("$", new SKColor(255, 215, 0)),        // Gold (Münzen)
+        DungeonBuffType.ReloadSpecialBombs => ("R", new SKColor(200, 100, 255)), // Violett (Reload)
+        DungeonBuffType.EnemySlow => ("ES", new SKColor(100, 200, 200)),     // Teal (Enemy Slow)
+        DungeonBuffType.ExtraLife => ("L", new SKColor(240, 50, 60)),        // Rot (Leben)
+        DungeonBuffType.FireImmunity => ("FI", new SKColor(255, 80, 30)),    // Orange-Rot (Feuerimmunität)
+        DungeonBuffType.BlastRadius => ("BR", new SKColor(255, 200, 60)),    // Gelb (Blast)
+        DungeonBuffType.BombTimer => ("T", new SKColor(180, 180, 200)),      // Grau (Timer)
+        DungeonBuffType.PowerUpMagnet => ("M", new SKColor(200, 50, 200)),   // Magenta (Magnet)
+        // Legendäre Buffs (goldener Rahmen)
+        DungeonBuffType.Berserker => ("BK", new SKColor(255, 50, 50)),       // Rot (Berserker)
+        DungeonBuffType.TimeFreeze => ("TF", new SKColor(100, 200, 255)),    // Hellblau (TimeFreeze)
+        DungeonBuffType.GoldRush => ("GR", new SKColor(255, 215, 0)),        // Gold (GoldRush)
+        DungeonBuffType.Phantom => ("PH", new SKColor(160, 32, 240)),        // Violett (Phantom)
+        _ => ("?", SKColors.White)
     };
 }

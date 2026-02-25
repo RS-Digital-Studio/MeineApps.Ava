@@ -9,9 +9,9 @@ using MeineApps.Core.Premium.Ava.Services;
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// Main ViewModel that manages navigation between views (MainMenu, Game, LevelSelect, etc.).
-/// Acts as a view-switcher: only one child view is visible at a time.
-/// Holds child ViewModels so each view gets the correct DataContext.
+/// Haupt-ViewModel für Navigation zwischen Views (MainMenu, Game, LevelSelect, etc.).
+/// Zeigt jeweils nur eine Child-View an.
+/// Hält alle Child-ViewModels für den korrekten DataContext.
 /// </summary>
 public partial class MainViewModel : ObservableObject
 {
@@ -53,6 +53,7 @@ public partial class MainViewModel : ObservableObject
     public CollectionViewModel CollectionVm { get; }
     public LeagueViewModel LeagueVm { get; }
     public ProfileViewModel ProfileVm { get; }
+    public GemShopViewModel GemShopVm { get; }
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -77,25 +78,10 @@ public partial class MainViewModel : ObservableObject
     private bool _isGameOverActive;
 
     [ObservableProperty]
-    private bool _isHelpActive;
-
-    [ObservableProperty]
     private bool _isShopActive;
 
     [ObservableProperty]
-    private bool _isAchievementsActive;
-
-    [ObservableProperty]
-    private bool _isDailyChallengeActive;
-
-    [ObservableProperty]
     private bool _isVictoryActive;
-
-    [ObservableProperty]
-    private bool _isLuckySpinActive;
-
-    [ObservableProperty]
-    private bool _isWeeklyChallengeActive;
 
     [ObservableProperty]
     private bool _isStatisticsActive;
@@ -104,22 +90,55 @@ public partial class MainViewModel : ObservableObject
     private bool _isQuickPlayActive;
 
     [ObservableProperty]
-    private bool _isDeckActive;
-
-    [ObservableProperty]
     private bool _isDungeonActive;
 
     [ObservableProperty]
     private bool _isBattlePassActive;
 
     [ObservableProperty]
-    private bool _isCollectionActive;
-
-    [ObservableProperty]
     private bool _isLeagueActive;
 
     [ObservableProperty]
     private bool _isProfileActive;
+
+    [ObservableProperty]
+    private bool _isGemShopActive;
+
+    /// <summary>
+    /// Kombinierte View: Deck + Sammlung
+    /// </summary>
+    [ObservableProperty]
+    private bool _isCardsActive;
+
+    /// <summary>
+    /// Kombinierte View: Tägliche Herausforderung + Missionen
+    /// </summary>
+    [ObservableProperty]
+    private bool _isChallengesActive;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TAB-STATE PROPERTIES (für kombinierte Views)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Shop: false=Shop-Tab, true=Glücksrad-Tab</summary>
+    [ObservableProperty]
+    private bool _isShopSpinTab;
+
+    /// <summary>Profil: false=Profil-Tab, true=Erfolge-Tab</summary>
+    [ObservableProperty]
+    private bool _isProfileAchievementsTab;
+
+    /// <summary>Einstellungen: false=Settings-Tab, true=Hilfe-Tab</summary>
+    [ObservableProperty]
+    private bool _isSettingsHelpTab;
+
+    /// <summary>Karten: false=Deck-Tab, true=Sammlung-Tab</summary>
+    [ObservableProperty]
+    private bool _isCardsCollectionTab;
+
+    /// <summary>Herausforderungen: false=Daily-Tab, true=Missions-Tab</summary>
+    [ObservableProperty]
+    private bool _isChallengesMissionsTab;
 
     /// <summary>
     /// Ad-Banner-Spacer: sichtbar in Menü-Views, versteckt im Game-View
@@ -161,7 +180,7 @@ public partial class MainViewModel : ObservableObject
     private TaskCompletionSource<bool>? _confirmDialogTcs;
 
     /// <summary>
-    /// Tracks whether Settings was opened from within a game (for back-navigation).
+    /// Merkt ob Einstellungen aus dem Spiel geöffnet wurden (für Zurück-Navigation).
     /// </summary>
     private bool _returnToGameFromSettings;
 
@@ -170,8 +189,10 @@ public partial class MainViewModel : ObservableObject
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IAchievementService _achievementService;
     private readonly ICoinService _coinService;
+    private readonly IPurchaseService _purchaseService;
     private readonly ICloudSaveService _cloudSaveService;
     private readonly SoundManager _soundManager;
+    private readonly IAppLogger _logger;
 
     /// <summary>
     /// Zeitpunkt des letzten Back-Presses (für Double-Back-to-Exit)
@@ -210,6 +231,7 @@ public partial class MainViewModel : ObservableObject
         CollectionViewModel collectionVm,
         LeagueViewModel leagueVm,
         ProfileViewModel profileVm,
+        GemShopViewModel gemShopVm,
         ILocalizationService localization,
         IAdService adService,
         IPurchaseService purchaseService,
@@ -217,7 +239,8 @@ public partial class MainViewModel : ObservableObject
         IAchievementService achievementService,
         ICoinService coinService,
         ICloudSaveService cloudSaveService,
-        SoundManager soundManager)
+        SoundManager soundManager,
+        IAppLogger logger)
     {
         MenuVm = menuVm;
         GameVm = gameVm;
@@ -241,21 +264,19 @@ public partial class MainViewModel : ObservableObject
         CollectionVm = collectionVm;
         LeagueVm = leagueVm;
         ProfileVm = profileVm;
+        GemShopVm = gemShopVm;
         _localizationService = localization;
         _adService = adService;
+        _purchaseService = purchaseService;
         _rewardedAdService = rewardedAdService;
         _achievementService = achievementService;
         _coinService = coinService;
         _cloudSaveService = cloudSaveService;
         _soundManager = soundManager;
+        _logger = logger;
 
-        // Game Juice Events weiterleiten
-        GameOverVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
+        // GameOverVm-spezifische Events (Confirmation Dialog)
         GameOverVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
-        MenuVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        MenuVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
-        LevelSelectVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
-        LevelSelectVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
 
         // Achievement-Toast bei Unlock (mit Coin-Belohnung)
         _achievementService.AchievementUnlocked += (_, achievement) =>
@@ -275,17 +296,16 @@ public partial class MainViewModel : ObservableObject
         };
         ShopVm.InsufficientFunds += () =>
         {
-            var msg = localization.GetString("ShopNotEnoughCoins") ?? "Nicht genug Coins!";
+            var msg = localization.GetString("ShopNotEnoughCoins") ?? "Not enough coins!";
             FloatingTextRequested?.Invoke(msg, "error");
         };
 
-        // Ad-Banner starten
+        // Ad-Banner: Beim Start NICHT anzeigen (MainMenu hat kein Banner)
+        // Banner wird erst angezeigt wenn eine Sub-View navigiert wird
+        IsAdBannerVisible = false;
         if (adService.AdsEnabled && !purchaseService.IsPremium)
-            adService.ShowBanner();
-
-        // Ad-Spacer-Sichtbarkeit (Menü-Views: sichtbar, Game-View: versteckt)
-        IsAdBannerVisible = adService.BannerVisible;
-        adService.AdsStateChanged += (_, _) => IsAdBannerVisible = adService.BannerVisible && !IsGameActive;
+            adService.HideBanner();
+        adService.AdsStateChanged += (_, _) => IsAdBannerVisible = adService.BannerVisible && !IsGameActive && !IsMainMenuActive;
 
         // Ad-Unavailable Meldung anzeigen (benannte Methode statt Lambda fuer Unsubscribe)
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
@@ -294,81 +314,55 @@ public partial class MainViewModel : ObservableObject
         pauseVm.ResumeRequested += () => gameVm.ResumeCommand.Execute(null);
         pauseVm.RestartRequested += () => gameVm.RestartCommand.Execute(null);
 
-        // Wire up navigation from child VMs
-        WireNavigation(menuVm);
-        WireNavigation(gameVm);
-        WireNavigation(levelSelectVm);
-        WireNavigation(settingsVm);
-        WireNavigation(highScoresVm);
-        WireNavigation(gameOverVm);
-        WireNavigation(pauseVm);
-        WireNavigation(helpVm);
-        WireNavigation(shopVm);
-        WireNavigation(achievementsVm);
-        WireNavigation(dailyChallengeVm);
-        WireNavigation(victoryVm);
-        WireNavigation(luckySpinVm);
-        WireNavigation(weeklyChallengeVm);
-        WireNavigation(statisticsVm);
-        WireNavigation(quickPlayVm);
-        WireNavigation(deckVm);
-        WireNavigation(dungeonVm);
-        WireNavigation(battlePassVm);
-        WireNavigation(collectionVm);
-        WireNavigation(leagueVm);
-        WireNavigation(profileVm);
+        // Navigation + Game Juice Events per Interface verdrahten (kein Reflection)
+        INavigable[] allVms = [menuVm, gameVm, levelSelectVm, settingsVm, highScoresVm, gameOverVm,
+            pauseVm, helpVm, shopVm, achievementsVm, dailyChallengeVm, victoryVm, luckySpinVm,
+            weeklyChallengeVm, statisticsVm, quickPlayVm, deckVm, dungeonVm, battlePassVm,
+            collectionVm, leagueVm, profileVm, gemShopVm];
+        foreach (var vm in allVms)
+        {
+            vm.NavigationRequested += request => NavigateTo(request);
+            if (vm is IGameJuiceEmitter emitter)
+            {
+                emitter.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
+                emitter.CelebrationRequested += () => CelebrationRequested?.Invoke();
+            }
+        }
 
-        // Lucky Spin Game Juice Events weiterleiten
-        LuckySpinVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        LuckySpinVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
-
-        // Daily Challenge Game Juice Events weiterleiten
-        DailyChallengeVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        DailyChallengeVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
-
-        // Weekly Challenge Game Juice Events weiterleiten
-        WeeklyChallengeVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        WeeklyChallengeVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
-
-        // Deck Game Juice Events weiterleiten
-        DeckVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        DeckVm.CelebrationRequested += () => CelebrationRequested?.Invoke();
-
-        // Dungeon Game Juice Events weiterleiten
-        DungeonVm.FloatingTextRequested += (_, args) => FloatingTextRequested?.Invoke(args.text, args.type);
-        DungeonVm.CelebrationRequested += (_, _) => CelebrationRequested?.Invoke();
-
-        // Battle Pass Game Juice Events weiterleiten
-        BattlePassVm.FloatingTextRequested += (_, args) => FloatingTextRequested?.Invoke(args.text, args.type);
-        BattlePassVm.CelebrationRequested += (_, _) => CelebrationRequested?.Invoke();
-
-        // Profile Game Juice Events weiterleiten
+        // FloatingText für VMs die nur FloatingText haben (kein IGameJuiceEmitter)
+        GameOverVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         ProfileVm.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
 
         // Battle Pass Premium-Kauf anfordern
         BattlePassVm.PremiumPurchaseRequested += async () =>
         {
-            // TODO Phase 9: IPurchaseService.PurchaseAsync("battle_pass_premium")
-            // Vorerst direkt aktivieren (Test-Modus)
-            BattlePassVm.OnPremiumPurchaseConfirmed();
+            var success = await _purchaseService.PurchaseConsumableAsync("battle_pass_premium");
+            if (success)
+                BattlePassVm.OnPremiumPurchaseConfirmed();
         };
 
-        // Dungeon Ad-Run: Rewarded Ad zeigen und bei Erfolg melden
+        // Dungeon Ad-Run: Rewarded Ad zeigen und bei Erfolg melden (Cooldown beachten)
         DungeonVm.AdRunRequested += async () =>
         {
             var result = await _rewardedAdService.ShowAdAsync("dungeon_run");
-            if (result) DungeonVm.OnAdRunRewarded();
+            if (result)
+            {
+                RewardedAdCooldownTracker.RecordAdShown();
+                DungeonVm.OnAdRunRewarded();
+            }
         };
 
-        // Wire up dialog events from SettingsVM + ShopVM
+        // Dialog-Events von SettingsVM + ShopVM verdrahten
         settingsVm.AlertRequested += (t, m, b) => ShowAlertDialog(t, m, b);
         settingsVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
         shopVm.MessageRequested += (t, m) => ShowAlertDialog(t, m, "OK");
         shopVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
+        shopVm.FloatingTextRequested += (text, type) => FloatingTextRequested?.Invoke(text, type);
+        gemShopVm.ConfirmationRequested += (t, m, a, c) => ShowConfirmDialog(t, m, a, c);
 
         localization.LanguageChanged += (_, _) =>
         {
-            // Child VMs re-read their localized texts on next OnAppearing
+            // Child VMs lesen lokalisierte Texte beim nächsten OnAppearing neu
             MenuVm.OnAppearing();
             ShopVm.UpdateLocalizedTexts();
             QuickPlayVm.UpdateLocalizedTexts();
@@ -378,22 +372,18 @@ public partial class MainViewModel : ObservableObject
             CollectionVm.UpdateLocalizedTexts();
             LeagueVm.UpdateLocalizedTexts();
             ProfileVm.UpdateLocalizedTexts();
+            GemShopVm.UpdateLocalizedTexts();
         };
 
-        // Cloud Save: Bei App-Start Cloud-Stand laden (fire-and-forget)
-        _ = _cloudSaveService.TryLoadFromCloudAsync();
-
-        // Initialize menu
-        menuVm.OnAppearing();
-    }
-
-    private void WireNavigation(ObservableObject vm)
-    {
-        var navEvent = vm.GetType().GetEvent("NavigationRequested");
-        if (navEvent != null)
+        // Cloud Save: Bei App-Start Cloud-Stand laden (fire-and-forget mit Error-Handling)
+        _ = Task.Run(async () =>
         {
-            navEvent.AddEventHandler(vm, new Action<string>(route => NavigateTo(route)));
-        }
+            try { await _cloudSaveService.TryLoadFromCloudAsync(); }
+            catch (Exception ex) { _logger?.LogWarning($"CloudSave Init fehlgeschlagen: {ex.Message}"); }
+        });
+
+        // Menü initialisieren
+        menuVm.OnAppearing();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -401,15 +391,66 @@ public partial class MainViewModel : ObservableObject
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Navigate to a specific view. Hides all others.
-    /// Supports routes like "Game?mode=story&amp;level=5" and
-    /// compound routes like "//MainMenu/Game?mode=story".
+    /// Typsichere Navigation: Konvertiert NavigationRequest in Route-String
+    /// und delegiert an die bestehende String-basierte NavigateTo-Methode.
     /// </summary>
-    public async void NavigateTo(string route)
+    public void NavigateTo(NavigationRequest request)
+    {
+        var route = request switch
+        {
+            GoMainMenu => "MainMenu",
+            GoLevelSelect => "LevelSelect",
+            GoSettings => "Settings",
+            GoShop => "Shop",
+            GoAchievements => "Achievements",
+            GoHighScores => "HighScores",
+            GoHelp => "Help",
+            GoStatistics => "Statistics",
+            GoProfile => "Profile",
+            GoDailyChallenge => "DailyChallenge",
+            GoLuckySpin => "LuckySpin",
+            GoQuickPlay => "QuickPlay",
+            GoWeeklyChallenge => "WeeklyChallenge",
+            GoCollection => "Collection",
+            GoDeck => "Deck",
+            GoDungeon => "Dungeon",
+            GoBattlePass => "BattlePass",
+            GoLeague => "League",
+            GoGemShop => "GemShop",
+            GoBack => "..",
+            GoGame g => $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}",
+            GoGameOver go => $"GameOver?score={go.Score}&level={go.Level}&highscore={go.IsHighScore}&mode={go.Mode}&coins={go.Coins}&levelcomplete={go.LevelComplete}&cancontinue={go.CanContinue}&enemypts={go.EnemyPoints}&timebonus={go.TimeBonus}&effbonus={go.EfficiencyBonus}&multiplier={go.Multiplier.ToString(System.Globalization.CultureInfo.InvariantCulture)}&kills={go.Kills}&survivaltime={go.SurvivalTime.ToString(System.Globalization.CultureInfo.InvariantCulture)}",
+            GoVictory v => $"Victory?score={v.Score}&coins={v.Coins}",
+            GoResetThen r => $"//MainMenu/{NavigationRequestToRoute(r.Then)}",
+            _ => "MainMenu"
+        };
+        NavigateToRoute(route);
+    }
+
+    /// <summary>
+    /// Hilfsmethode für GoResetThen: Konvertiert inneren Request in Route-String.
+    /// </summary>
+    private string NavigationRequestToRoute(NavigationRequest request)
+    {
+        // Rekursiv: gleiche Logik wie NavigateTo, aber gibt String zurück
+        return request switch
+        {
+            GoGame g => $"Game?mode={g.Mode}&level={g.Level}&difficulty={g.Difficulty}&continue={g.Continue}&boost={g.Boost}&floor={g.Floor}&seed={g.Seed}",
+            GoMainMenu => "MainMenu",
+            _ => "MainMenu"
+        };
+    }
+
+    /// <summary>
+    /// Navigiert zu einer bestimmten View. Versteckt alle anderen.
+    /// Unterstützt Routen wie "Game?mode=story&amp;level=5" und
+    /// zusammengesetzte Routen wie "//MainMenu/Game?mode=story".
+    /// </summary>
+    public async void NavigateToRoute(string route)
     {
         try
         {
-        // Handle compound routes (e.g., "//MainMenu/Game?mode=story")
+        // Zusammengesetzte Routen behandeln (z.B. "//MainMenu/Game?mode=story")
         if (route.StartsWith("//"))
         {
             var withoutPrefix = route[2..];
@@ -422,10 +463,10 @@ public partial class MainViewModel : ObservableObject
 
         var baseRoute = route.Contains('?') ? route[..route.IndexOf('?')] : route;
 
-        // Save current state before hiding (needed for back-navigation)
+        // Aktuellen Zustand merken (für Zurück-Navigation)
         var wasGameActive = IsGameActive;
 
-        // Lifecycle: stop game loop when leaving Game view
+        // Lifecycle: Game-Loop stoppen beim Verlassen der Game-View
         if (wasGameActive && baseRoute != "Game")
         {
             GameVm.OnDisappearing();
@@ -437,19 +478,31 @@ public partial class MainViewModel : ObservableObject
         if (baseRoute != "Game")
             _soundManager.PlaySound(SoundManager.SFX_MENU_SELECT);
 
+        // Banner-Steuerung: MainMenu, Game, Shop und GemShop ohne Banner
+        if (baseRoute is "MainMenu" or "Game" or "Shop" or "GemShop" or "LuckySpin")
+        {
+            if (_adService.AdsEnabled && !_purchaseService.IsPremium)
+                _adService.HideBanner();
+            IsAdBannerVisible = false;
+        }
+        else
+        {
+            if (_adService.AdsEnabled && !_purchaseService.IsPremium)
+                _adService.ShowBanner();
+            IsAdBannerVisible = _adService.BannerVisible;
+        }
+
         switch (baseRoute)
         {
             case "MainMenu":
                 _returnToGameFromSettings = false;
                 IsMainMenuActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 MenuVm.OnAppearing();
                 break;
 
             case "Game":
                 IsGameActive = true;
-                IsAdBannerVisible = false; // Kein Spacer im Spiel (Banner ist oben)
-                // Parse game parameters
+                // Spiel-Parameter parsen
                 if (route.Contains('?'))
                 {
                     var query = route[(route.IndexOf('?') + 1)..];
@@ -476,32 +529,22 @@ public partial class MainViewModel : ObservableObject
                     }
                     GameVm.SetParameters(mode, level, continueMode, boost, difficulty, floor, seed);
                 }
-                // Start the game (initializes engine + starts 60fps loop)
+                // Spiel starten (Engine initialisieren + 60fps Loop starten)
                 await GameVm.OnAppearingAsync();
                 break;
 
             case "LevelSelect":
                 IsLevelSelectActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 LevelSelectVm.OnAppearing();
-                break;
-
-            case "Settings":
-                _returnToGameFromSettings = wasGameActive;
-                IsSettingsActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
-                SettingsVm.OnAppearing();
                 break;
 
             case "HighScores":
                 IsHighScoresActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 HighScoresVm.OnAppearing();
                 break;
 
             case "GameOver":
                 IsGameOverActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 if (route.Contains('?'))
                 {
                     var query = route[(route.IndexOf('?') + 1)..];
@@ -574,92 +617,105 @@ public partial class MainViewModel : ObservableObject
                 }
                 break;
 
+            // Shop (kombiniert mit Glücksrad)
             case "Shop":
                 IsShopActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
+                IsShopSpinTab = false;
                 ShopVm.OnAppearing();
                 break;
 
-            case "Help":
-                IsHelpActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
-                break;
-
-            case "Achievements":
-                IsAchievementsActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
-                AchievementsVm.OnAppearing();
-                break;
-
-            case "DailyChallenge":
-                IsDailyChallengeActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
-                DailyChallengeVm.OnAppearing();
-                break;
-
             case "LuckySpin":
-                IsLuckySpinActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
+                IsShopActive = true;
+                IsShopSpinTab = true;
                 LuckySpinVm.OnAppearing();
                 break;
 
+            // Profil (kombiniert mit Erfolge)
+            case "Profile":
+                IsProfileActive = true;
+                IsProfileAchievementsTab = false;
+                ProfileVm.OnAppearing();
+                break;
+
+            case "Achievements":
+                IsProfileActive = true;
+                IsProfileAchievementsTab = true;
+                AchievementsVm.OnAppearing();
+                break;
+
+            // Einstellungen (kombiniert mit Hilfe)
+            case "Settings":
+                _returnToGameFromSettings = wasGameActive;
+                IsSettingsActive = true;
+                IsSettingsHelpTab = false;
+                SettingsVm.OnAppearing();
+                break;
+
+            case "Help":
+                IsSettingsActive = true;
+                IsSettingsHelpTab = true;
+                break;
+
+            // Karten (Deck + Sammlung kombiniert)
+            case "Cards":
+            case "Deck":
+                IsCardsActive = true;
+                IsCardsCollectionTab = false;
+                DeckVm.OnAppearing();
+                break;
+
+            case "Collection":
+                IsCardsActive = true;
+                IsCardsCollectionTab = true;
+                CollectionVm.OnAppearing();
+                break;
+
+            // Herausforderungen (Daily + Missions kombiniert)
+            case "Challenges":
+            case "DailyChallenge":
+                IsChallengesActive = true;
+                IsChallengesMissionsTab = false;
+                DailyChallengeVm.OnAppearing();
+                break;
+
             case "WeeklyChallenge":
-                IsWeeklyChallengeActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
+                IsChallengesActive = true;
+                IsChallengesMissionsTab = true;
                 WeeklyChallengeVm.OnAppearing();
                 break;
 
             case "Statistics":
                 IsStatisticsActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 StatisticsVm.OnAppearing();
                 break;
 
             case "QuickPlay":
                 IsQuickPlayActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 QuickPlayVm.OnAppearing();
-                break;
-
-            case "Deck":
-                IsDeckActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
-                DeckVm.OnAppearing();
                 break;
 
             case "Dungeon":
                 IsDungeonActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 DungeonVm.OnAppearing();
                 break;
 
             case "BattlePass":
                 IsBattlePassActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 BattlePassVm.OnAppearing();
-                break;
-
-            case "Collection":
-                IsCollectionActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
-                CollectionVm.OnAppearing();
                 break;
 
             case "League":
                 IsLeagueActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 LeagueVm.OnAppearing();
                 break;
 
-            case "Profile":
-                IsProfileActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
-                ProfileVm.OnAppearing();
+            case "GemShop":
+                IsGemShopActive = true;
+                GemShopVm.OnAppearing();
                 break;
 
             case "Victory":
                 IsVictoryActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 VictoryVm.OnAppearing();
                 // Query-Parameter parsen (score, coins)
                 if (route.Contains('?'))
@@ -687,7 +743,7 @@ public partial class MainViewModel : ObservableObject
                 break;
 
             case "..":
-                // Back-navigation: return to Game if Settings was opened from Game
+                // Zurück-Navigation: zum Spiel zurückkehren wenn Einstellungen aus dem Spiel geöffnet wurden
                 if (_returnToGameFromSettings)
                 {
                     _returnToGameFromSettings = false;
@@ -698,27 +754,27 @@ public partial class MainViewModel : ObservableObject
                 else
                 {
                     IsMainMenuActive = true;
-                    IsAdBannerVisible = _adService.BannerVisible;
                     MenuVm.OnAppearing();
                 }
                 break;
 
             default:
                 IsMainMenuActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
                 MenuVm.OnAppearing();
                 break;
         }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"NavigateTo Fehler bei Route '{route}': {ex.Message}");
+            _logger.LogError($"NavigateTo Fehler bei Route '{route}'", ex);
             // Fallback: Zurück zum Hauptmenü damit die App nicht hängt
             try
             {
                 HideAll();
                 IsMainMenuActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
+                if (_adService.AdsEnabled && !_purchaseService.IsPremium)
+                    _adService.HideBanner();
+                IsAdBannerVisible = false;
                 MenuVm.OnAppearing();
             }
             catch { /* Letzter Ausweg - App lebt weiter */ }
@@ -733,22 +789,59 @@ public partial class MainViewModel : ObservableObject
         IsSettingsActive = false;
         IsHighScoresActive = false;
         IsGameOverActive = false;
-        IsHelpActive = false;
         IsShopActive = false;
-        IsAchievementsActive = false;
-        IsDailyChallengeActive = false;
         IsVictoryActive = false;
-        IsLuckySpinActive = false;
-        IsWeeklyChallengeActive = false;
         IsStatisticsActive = false;
         IsQuickPlayActive = false;
-        IsDeckActive = false;
         IsDungeonActive = false;
         IsBattlePassActive = false;
-        IsCollectionActive = false;
         IsLeagueActive = false;
         IsProfileActive = false;
+        IsGemShopActive = false;
+        IsCardsActive = false;
+        IsChallengesActive = false;
+
+        // Tab-States zurücksetzen
+        IsShopSpinTab = false;
+        IsProfileAchievementsTab = false;
+        IsSettingsHelpTab = false;
+        IsCardsCollectionTab = false;
+        IsChallengesMissionsTab = false;
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TAB-SWITCHING (für kombinierte Views)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private void SwitchToShopTab() { IsShopSpinTab = false; ShopVm.OnAppearing(); }
+
+    [RelayCommand]
+    private void SwitchToSpinTab() { IsShopSpinTab = true; LuckySpinVm.OnAppearing(); }
+
+    [RelayCommand]
+    private void SwitchToProfileTab() { IsProfileAchievementsTab = false; ProfileVm.OnAppearing(); }
+
+    [RelayCommand]
+    private void SwitchToAchievementsTab() { IsProfileAchievementsTab = true; AchievementsVm.OnAppearing(); }
+
+    [RelayCommand]
+    private void SwitchToSettingsTab() { IsSettingsHelpTab = false; SettingsVm.OnAppearing(); }
+
+    [RelayCommand]
+    private void SwitchToHelpTab() { IsSettingsHelpTab = true; }
+
+    [RelayCommand]
+    private void SwitchToDeckTab() { IsCardsCollectionTab = false; DeckVm.OnAppearing(); }
+
+    [RelayCommand]
+    private void SwitchToCollectionTab() { IsCardsCollectionTab = true; CollectionVm.OnAppearing(); }
+
+    [RelayCommand]
+    private void SwitchToDailyChallengeTab() { IsChallengesMissionsTab = false; DailyChallengeVm.OnAppearing(); }
+
+    [RelayCommand]
+    private void SwitchToMissionsTab() { IsChallengesMissionsTab = true; WeeklyChallengeVm.OnAppearing(); }
 
     // ═══════════════════════════════════════════════════════════════════════
     // BACK-NAVIGATION (Android Hardware-Zurücktaste)
@@ -798,7 +891,9 @@ public partial class MainViewModel : ObservableObject
                 GameVm.OnDisappearing();
                 HideAll();
                 IsMainMenuActive = true;
-                IsAdBannerVisible = _adService.BannerVisible;
+                if (_adService.AdsEnabled && !_purchaseService.IsPremium)
+                    _adService.HideBanner();
+                IsAdBannerVisible = false;
                 MenuVm.OnAppearing();
             }
             return true;
@@ -807,17 +902,21 @@ public partial class MainViewModel : ObservableObject
         // 4. Settings → zurück (zum Spiel oder Menü)
         if (IsSettingsActive)
         {
-            NavigateTo("..");
+            NavigateTo(new GoBack());
             return true;
         }
 
         // 5. Alle anderen Sub-Views → zurück zum Hauptmenü
         if (IsGameOverActive || IsLevelSelectActive || IsHighScoresActive ||
-            IsHelpActive || IsShopActive || IsAchievementsActive || IsDailyChallengeActive || IsVictoryActive || IsLuckySpinActive || IsWeeklyChallengeActive || IsStatisticsActive || IsQuickPlayActive || IsDeckActive || IsDungeonActive || IsBattlePassActive || IsCollectionActive || IsLeagueActive || IsProfileActive)
+            IsShopActive || IsVictoryActive || IsStatisticsActive || IsQuickPlayActive ||
+            IsDungeonActive || IsBattlePassActive || IsLeagueActive || IsProfileActive ||
+            IsGemShopActive || IsCardsActive || IsChallengesActive)
         {
             HideAll();
             IsMainMenuActive = true;
-            IsAdBannerVisible = _adService.BannerVisible;
+            if (_adService.AdsEnabled && !_purchaseService.IsPremium)
+                _adService.HideBanner();
+            IsAdBannerVisible = false;
             MenuVm.OnAppearing();
             return true;
         }

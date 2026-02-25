@@ -10,10 +10,11 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für den Battle Pass (30-Tier Saison mit Free/Premium-Track).
 /// Zeigt Tier-Liste, XP-Fortschritt und ermöglicht Reward-Claims.
 /// </summary>
-public partial class BattlePassViewModel : ObservableObject
+public partial class BattlePassViewModel : ObservableObject, INavigable, IGameJuiceEmitter
 {
     private readonly IBattlePassService _battlePassService;
     private readonly ILocalizationService _localizationService;
+    private readonly IGemService _gemService;
 
     // Gecachte Tier-Definitionen (statisch, ändern sich nicht)
     private readonly BattlePassReward[] _freeRewards;
@@ -23,9 +24,9 @@ public partial class BattlePassViewModel : ObservableObject
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event Action<string>? NavigationRequested;
-    public event EventHandler<(string type, string text)>? FloatingTextRequested;
-    public event EventHandler? CelebrationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
+    public event Action<string, string>? FloatingTextRequested;
+    public event Action? CelebrationRequested;
 
     /// <summary>Premium-Kauf anfordern (wird an MainViewModel delegiert für IAP)</summary>
     public event Action? PremiumPurchaseRequested;
@@ -49,10 +50,6 @@ public partial class BattlePassViewModel : ObservableObject
     [ObservableProperty]
     private double _xpProgress;
 
-    /// <summary>XP-Balken-Breite in Pixel (basierend auf XpProgress * 180)</summary>
-    [ObservableProperty]
-    private double _xpBarWidth;
-
     [ObservableProperty]
     private string _seasonTimeDisplay = "";
 
@@ -68,14 +65,27 @@ public partial class BattlePassViewModel : ObservableObject
     [ObservableProperty]
     private List<BattlePassTierDisplayItem> _tiers = [];
 
+    /// <summary>Ob der 2x XP-Boost aktiv ist</summary>
+    [ObservableProperty]
+    private bool _isXpBoostActive;
+
+    /// <summary>Verbleibende Zeit des XP-Boosts (z.B. "23:45:12")</summary>
+    [ObservableProperty]
+    private string _xpBoostTimeText = "";
+
+    /// <summary>Lokalisierter Text für den XP-Boost-Button</summary>
+    [ObservableProperty]
+    private string _xpBoostButtonText = "";
+
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public BattlePassViewModel(IBattlePassService battlePassService, ILocalizationService localizationService)
+    public BattlePassViewModel(IBattlePassService battlePassService, ILocalizationService localizationService, IGemService gemService)
     {
         _battlePassService = battlePassService;
         _localizationService = localizationService;
+        _gemService = gemService;
 
         // Tier-Definitionen einmal laden
         _freeRewards = BattlePassTierDefinitions.GetFreeRewards();
@@ -96,6 +106,7 @@ public partial class BattlePassViewModel : ObservableObject
 
         RefreshState();
         UpdateLocalizedTexts();
+        UpdateXpBoostState();
     }
 
     /// <summary>
@@ -110,7 +121,7 @@ public partial class BattlePassViewModel : ObservableObject
         var data = _battlePassService.Data;
 
         // Saison-Anzeige
-        var seasonFormat = _localizationService.GetString("BattlePassSeason") ?? "Saison {0}";
+        var seasonFormat = _localizationService.GetString("BattlePassSeason") ?? "Season {0}";
         SeasonNumberDisplay = string.Format(seasonFormat, data.SeasonNumber);
 
         // Tier-Anzeige
@@ -161,7 +172,7 @@ public partial class BattlePassViewModel : ObservableObject
 
         // Floating-Text mit Belohnungs-Info
         var text = FormatRewardText(reward);
-        FloatingTextRequested?.Invoke(this, ("+", text));
+        FloatingTextRequested?.Invoke(text, "+");
 
         RefreshState();
     }
@@ -177,15 +188,44 @@ public partial class BattlePassViewModel : ObservableObject
 
         // Floating-Text mit Belohnungs-Info
         var text = FormatRewardText(reward);
-        FloatingTextRequested?.Invoke(this, ("+", text));
+        FloatingTextRequested?.Invoke(text, "+");
 
         // Cosmetic-Rewards bekommen eine Celebration
         if (reward.Type == BattlePassRewardType.Cosmetic)
         {
-            CelebrationRequested?.Invoke(this, EventArgs.Empty);
+            CelebrationRequested?.Invoke();
         }
 
         RefreshState();
+    }
+
+    /// <summary>
+    /// 2x XP-Boost für 20 Gems aktivieren (24 Stunden Dauer).
+    /// </summary>
+    [RelayCommand]
+    private void ActivateXpBoost()
+    {
+        if (_battlePassService.IsXpBoostActive)
+        {
+            var alreadyActive = _localizationService.GetString("XpBoostActive") ?? "Active! {0} remaining";
+            FloatingTextRequested?.Invoke(string.Format(alreadyActive, GetBoostRemainingText()), "cyan");
+            return;
+        }
+
+        if (!_gemService.CanAfford(20))
+        {
+            var noGems = _localizationService.GetString("ShopNotEnoughGems") ?? "Not enough Gems!";
+            FloatingTextRequested?.Invoke(noGems, "red");
+            return;
+        }
+
+        if (_battlePassService.ActivateXpBoost())
+        {
+            var boostTitle = _localizationService.GetString("XpBoostTitle") ?? "2x XP Boost";
+            FloatingTextRequested?.Invoke($"{boostTitle}!", "cyan");
+            CelebrationRequested?.Invoke();
+            UpdateXpBoostState();
+        }
     }
 
     /// <summary>
@@ -205,7 +245,7 @@ public partial class BattlePassViewModel : ObservableObject
     [RelayCommand]
     private void Back()
     {
-        NavigationRequested?.Invoke("..");
+        NavigationRequested?.Invoke(new GoBack());
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -221,7 +261,7 @@ public partial class BattlePassViewModel : ObservableObject
         _battlePassService.ActivatePremium();
         RefreshState();
         UpdateLocalizedTexts();
-        CelebrationRequested?.Invoke(this, EventArgs.Empty);
+        CelebrationRequested?.Invoke();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -242,8 +282,7 @@ public partial class BattlePassViewModel : ObservableObject
             XpProgress = data.TierProgress;
         }
 
-        // Balken-Breite berechnen (Container = 180px)
-        XpBarWidth = XpProgress * 180.0;
+        // XP-Bar nutzt ScaleTransform mit XpProgress (0.0-1.0) in XAML
     }
 
     /// <summary>Verbleibende Zeit aktualisieren</summary>
@@ -252,16 +291,16 @@ public partial class BattlePassViewModel : ObservableObject
         int days = data.DaysRemaining;
         if (days <= 0)
         {
-            SeasonTimeDisplay = _localizationService.GetString("BattlePassExpired") ?? "Abgelaufen";
+            SeasonTimeDisplay = _localizationService.GetString("BattlePassExpired") ?? "Expired";
         }
         else if (days == 1)
         {
-            var format = _localizationService.GetString("BattlePassDayRemaining") ?? "{0} Tag";
+            var format = _localizationService.GetString("BattlePassDayRemaining") ?? "{0} day left";
             SeasonTimeDisplay = string.Format(format, days);
         }
         else
         {
-            var format = _localizationService.GetString("BattlePassDaysRemaining") ?? "{0} Tage";
+            var format = _localizationService.GetString("BattlePassDaysRemaining") ?? "{0} days left";
             SeasonTimeDisplay = string.Format(format, days);
         }
     }
@@ -329,6 +368,39 @@ public partial class BattlePassViewModel : ObservableObject
         }
     }
 
+    /// <summary>XP-Boost-Zustand aktualisieren (Button-Text, Timer-Text)</summary>
+    private void UpdateXpBoostState()
+    {
+        IsXpBoostActive = _battlePassService.IsXpBoostActive;
+
+        if (IsXpBoostActive)
+        {
+            var activeFormat = _localizationService.GetString("XpBoostActive") ?? "Active! {0} remaining";
+            XpBoostTimeText = string.Format(activeFormat, GetBoostRemainingText());
+            XpBoostButtonText = _localizationService.GetString("XpBoostTitle") ?? "2x XP Boost";
+        }
+        else
+        {
+            XpBoostTimeText = "";
+            var priceText = _localizationService.GetString("XpBoostPrice") ?? "20 Gems";
+            XpBoostButtonText = $"{_localizationService.GetString("XpBoostTitle") ?? "2x XP Boost"} ({priceText})";
+        }
+    }
+
+    /// <summary>Verbleibende Boost-Zeit als String (z.B. "23:45")</summary>
+    private string GetBoostRemainingText()
+    {
+        var expires = _battlePassService.XpBoostExpiresAt;
+        if (expires == null) return "";
+
+        var remaining = expires.Value - DateTime.UtcNow;
+        if (remaining.TotalSeconds <= 0) return "";
+
+        return remaining.TotalHours >= 1
+            ? $"{(int)remaining.TotalHours}:{remaining.Minutes:D2}h"
+            : $"{remaining.Minutes}:{remaining.Seconds:D2}m";
+    }
+
     /// <summary>
     /// Belohnungs-Text formatieren (z.B. "500 Coins", "3 Gems", "1 Karten-Pack").
     /// </summary>
@@ -341,8 +413,8 @@ public partial class BattlePassViewModel : ObservableObject
             BattlePassRewardType.Gems => $"{reward.Amount} Gems",
 
             BattlePassRewardType.CardPack => reward.Amount == 1
-                ? $"1 {_localizationService.GetString("CardPack") ?? "Karten-Pack"}"
-                : $"{reward.Amount} {_localizationService.GetString("CardPacks") ?? "Karten-Packs"}",
+                ? $"1 {_localizationService.GetString("CardPack") ?? "Card Pack"}"
+                : $"{reward.Amount} {_localizationService.GetString("CardPacks") ?? "Card Packs"}",
 
             BattlePassRewardType.Cosmetic =>
                 _localizationService.GetString(reward.DescriptionKey) ?? reward.DescriptionKey,

@@ -10,18 +10,21 @@ namespace BomberBlast.ViewModels;
 /// <summary>
 /// ViewModel für die Achievements-Ansicht
 /// </summary>
-public partial class AchievementsViewModel : ObservableObject
+public partial class AchievementsViewModel : ObservableObject, INavigable
 {
     private readonly IAchievementService _achievementService;
     private readonly ILocalizationService _localizationService;
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
 
     [ObservableProperty]
     private string _titleText = "Achievements";
 
     [ObservableProperty]
     private string _progressText = "0/0";
+
+    [ObservableProperty]
+    private string _emptyStateText = "";
 
     public ObservableCollection<AchievementCategoryGroup> CategoryGroups { get; } = [];
 
@@ -95,7 +98,7 @@ public partial class AchievementsViewModel : ObservableObject
     };
 
     [RelayCommand]
-    private void Back() => NavigationRequested?.Invoke("..");
+    private void Back() => NavigationRequested?.Invoke(new GoBack());
 }
 
 /// <summary>

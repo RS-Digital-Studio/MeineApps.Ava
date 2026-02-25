@@ -10,7 +10,7 @@
   <Panel AutomationProperties.AutomationId="Stats_Root">
     <controls:MenuBackgroundCanvas />
 
-    <Grid ColumnDefinitions="280,*" Margin="16,12,16,80">
+    <Grid ColumnDefinitions="*,1.5*" Margin="16,12,16,80">
 
       <!-- ═══════════════════════════════════════════════════════════
            LINKE SPALTE (280px) - Profil-Karte

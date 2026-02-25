@@ -29,6 +29,9 @@ public class BattlePassData
     /// <summary>Bereits beanspruchte Premium-Tier-Indizes (0-basiert)</summary>
     public List<int> ClaimedPremiumTiers { get; set; } = [];
 
+    /// <summary>Ablaufzeitpunkt des 2x XP-Boosts (ISO 8601 UTC, null wenn nicht aktiv)</summary>
+    public string? XpBoostExpiresAt { get; set; }
+
     // === Berechnete Properties (nicht serialisiert) ===
 
     /// <summary>XP benötigt für das nächste Tier</summary>

@@ -3,35 +3,38 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.VictoryView"
              x:DataType="vm:VictoryViewModel">
 
-  <!-- Gradient Background -->
+  <!-- Animierter Victory-Hintergrund (Gold-Explosion, Confetti, Fireworks) -->
   <Panel AutomationProperties.AutomationId="Victory_Root">
-    <Border>
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="#1A0A2E" Offset="0" />
-          <GradientStop Color="#2D1B4E" Offset="0.5" />
-          <GradientStop Color="#1A0A2E" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
-    </Border>
+    <controls:MenuBackgroundCanvas BackgroundTheme="Victory" />
 
-    <!-- Goldener Akzent-Schimmer -->
-    <Border Opacity="0.15">
-      <Border.Background>
-        <RadialGradientBrush Center="50%,40%" RadiusX="60%" RadiusY="60%">
-          <GradientStop Color="#FFD700" Offset="0" />
-          <GradientStop Color="Transparent" Offset="1" />
-        </RadialGradientBrush>
-      </Border.Background>
-    </Border>
-
-    <!-- 2-Column Layout (Landscape) -->
+    <!-- 2-Column Layout (Landscape) mit SlideUp Entry-Animation -->
     <Grid ColumnDefinitions="*,*"
           VerticalAlignment="Center"
-          Margin="32,16">
+          Margin="32,16,32,80"
+          RenderTransformOrigin="0.5,0.5">
+      <Grid.RenderTransform>
+        <TranslateTransform Y="0" />
+      </Grid.RenderTransform>
+      <Grid.Styles>
+        <Style Selector="Grid">
+          <Style.Animations>
+            <Animation Duration="0:0:0.2" Easing="CubicEaseOut" FillMode="Forward">
+              <KeyFrame Cue="0%">
+                <Setter Property="Opacity" Value="0" />
+                <Setter Property="TranslateTransform.Y" Value="20" />
+              </KeyFrame>
+              <KeyFrame Cue="100%">
+                <Setter Property="Opacity" Value="1" />
+                <Setter Property="TranslateTransform.Y" Value="0" />
+              </KeyFrame>
+            </Animation>
+          </Style.Animations>
+        </Style>
+      </Grid.Styles>
 
       <!-- Links: Trophy + Titel -->
       <StackPanel Grid.Column="0"
@@ -39,30 +42,48 @@
                   HorizontalAlignment="Center"
                   Spacing="12">
 
-        <!-- Grosse Krone -->
+        <!-- Grosse Krone mit Puls-Animation -->
         <mi:MaterialIcon Kind="Crown" Width="72" Height="72"
-                         Foreground="#FFD700"
+                         Foreground="{DynamicResource GoldAccentBrush}"
                          HorizontalAlignment="Center"
-                         AutomationProperties.AutomationId="Victory_Crown" />
+                         AutomationProperties.AutomationId="Victory_Crown">
+          <mi:MaterialIcon.Styles>
+            <Style Selector="mi|MaterialIcon">
+              <Style.Animations>
+                <Animation Duration="0:0:2" IterationCount="INFINITE">
+                  <KeyFrame Cue="0%">
+                    <Setter Property="Opacity" Value="1.0" />
+                  </KeyFrame>
+                  <KeyFrame Cue="50%">
+                    <Setter Property="Opacity" Value="0.7" />
+                  </KeyFrame>
+                  <KeyFrame Cue="100%">
+                    <Setter Property="Opacity" Value="1.0" />
+                  </KeyFrame>
+                </Animation>
+              </Style.Animations>
+            </Style>
+          </mi:MaterialIcon.Styles>
+        </mi:MaterialIcon>
 
         <!-- Titel -->
         <TextBlock Text="{Binding TitleText}"
                    FontSize="42" FontWeight="ExtraBold"
-                   Foreground="#FFD700"
+                   Foreground="{DynamicResource GoldAccentBrush}"
                    HorizontalAlignment="Center"
                    AutomationProperties.AutomationId="Victory_TxtTitle" />
 
         <!-- Untertitel -->
         <TextBlock Text="{Binding SubtitleText}"
                    FontSize="18"
-                   Foreground="#E0E0E0"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
                    HorizontalAlignment="Center"
                    TextWrapping="Wrap"
                    TextAlignment="Center"
                    AutomationProperties.AutomationId="Victory_TxtSubtitle" />
 
         <!-- Sterne-Anzeige -->
-        <Border Background="#2A1A4A"
+        <Border Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="12"
                 Padding="20,12"
                 HorizontalAlignment="Center"
@@ -72,10 +93,10 @@
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Center">
               <mi:MaterialIcon Kind="Star" Width="28" Height="28"
-                               Foreground="#FFD700" />
+                               Foreground="{DynamicResource GoldAccentBrush}" />
               <TextBlock Text="{Binding StarsText}"
                          FontSize="22" FontWeight="Bold"
-                         Foreground="#FFD700"
+                         Foreground="{DynamicResource GoldAccentBrush}"
                          VerticalAlignment="Center"
                          AutomationProperties.AutomationId="Victory_TxtStars" />
             </StackPanel>
@@ -92,8 +113,9 @@
 
         <!-- Dankes-Text -->
         <TextBlock Text="{Binding ThanksText}"
-                   FontSize="20"
-                   Foreground="#C0C0F0"
+                   FontSize="24"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
                    HorizontalAlignment="Center"
                    TextWrapping="Wrap"
                    TextAlignment="Center"
@@ -102,7 +124,7 @@
         <!-- Hauptmenue Button -->
         <Button Command="{Binding GoToMainMenuCommand}"
                 Classes="Primary GameButton"
-                Background="#FFD700"
+                Background="{DynamicResource GoldAccentBrush}"
                 FontSize="20"
                 Height="56"
                 HorizontalAlignment="Stretch"
@@ -110,10 +132,10 @@
                 AutomationProperties.AutomationId="Victory_BtnMainMenu">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="Home" Width="24" Height="24"
-                             Foreground="#1A0A2E" />
+                             Foreground="{DynamicResource BackgroundBrush}" />
             <TextBlock Text="{loc:Translate MainMenu}"
                        FontSize="20" FontWeight="Bold"
-                       Foreground="#1A0A2E" />
+                       Foreground="{DynamicResource BackgroundBrush}" />
           </StackPanel>
         </Button>
 

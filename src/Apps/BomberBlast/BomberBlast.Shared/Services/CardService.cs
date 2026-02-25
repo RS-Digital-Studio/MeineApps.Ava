@@ -25,6 +25,7 @@ public class CardService : ICardService
     public IReadOnlyList<OwnedCard> OwnedCards => _data.Cards;
     public IReadOnlyList<BombType> EquippedSlots => _data.DeckSlots;
     public bool HasMigrated => _data.ShopMigrated;
+    public bool IsSlot5Unlocked => _data.Slot5Unlocked;
 
     public event EventHandler? CollectionChanged;
 
@@ -123,6 +124,8 @@ public class CardService : ICardService
     public void EquipCard(BombType type, int slotIndex)
     {
         if (slotIndex < 0 || slotIndex >= CardCatalog.MaxDeckSlots) return;
+        // Slot 5 (Index 4) nur erlauben wenn freigeschaltet
+        if (slotIndex >= CardCatalog.DefaultDeckSlots && !_data.Slot5Unlocked) return;
         if (!HasCard(type)) return;
 
         // Karte aus eventuell anderem Slot entfernen
@@ -134,7 +137,7 @@ public class CardService : ICardService
             }
         }
 
-        // Slots auf 4 auffüllen falls nötig
+        // Slots auffüllen falls nötig
         while (_data.DeckSlots.Count <= slotIndex)
         {
             _data.DeckSlots.Add(BombType.Normal);
@@ -220,6 +223,22 @@ public class CardService : ICardService
         return result;
     }
 
+    public bool TryUnlockSlot5(IGemService gemService)
+    {
+        if (_data.Slot5Unlocked) return false;
+        if (!gemService.TrySpendGems(CardCatalog.Slot5UnlockCost)) return false;
+
+        _data.Slot5Unlocked = true;
+
+        // 5. Slot zur DeckSlots-Liste hinzufügen
+        while (_data.DeckSlots.Count < CardCatalog.MaxDeckSlots)
+            _data.DeckSlots.Add(BombType.Normal);
+
+        Save();
+        CollectionChanged?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
     public void MigrateFromShop(bool hasIce, bool hasFire, bool hasSticky)
     {
         if (_data.ShopMigrated) return;
@@ -277,5 +296,6 @@ public class CardService : ICardService
         public List<OwnedCard> Cards { get; set; } = new();
         public List<BombType> DeckSlots { get; set; } = new() { BombType.Normal, BombType.Normal, BombType.Normal, BombType.Normal };
         public bool ShopMigrated { get; set; }
+        public bool Slot5Unlocked { get; set; }
     }
 }

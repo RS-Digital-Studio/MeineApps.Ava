@@ -8,11 +8,11 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für Quick-Play Modus mit Schwierigkeits-Slider und Seed-Anzeige.
 /// Ermöglicht dem Spieler ein zufälliges Level mit einstellbarer Schwierigkeit zu starten.
 /// </summary>
-public partial class QuickPlayViewModel : ObservableObject
+public partial class QuickPlayViewModel : ObservableObject, INavigable
 {
     private readonly ILocalizationService _localizationService;
 
-    public event Action<string>? NavigationRequested;
+    public event Action<NavigationRequest>? NavigationRequested;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -48,7 +48,7 @@ public partial class QuickPlayViewModel : ObservableObject
     {
         // Label mit lokalisiertem "Welt X" Text aktualisieren
         DifficultyLabel = string.Format(
-            _localizationService.GetString("QuickPlayWorldLevel") ?? "Welt {0}", value);
+            _localizationService.GetString("QuickPlayWorldLevel") ?? "World {0}", value);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -63,11 +63,11 @@ public partial class QuickPlayViewModel : ObservableObject
     public void UpdateLocalizedTexts()
     {
         Title = _localizationService.GetString("QuickPlayTitle") ?? "Quick Play";
-        DifficultyHeaderLabel = _localizationService.GetString("QuickPlayDifficulty") ?? "Schwierigkeit";
+        DifficultyHeaderLabel = _localizationService.GetString("QuickPlayDifficulty") ?? "Difficulty";
         SeedHeaderLabel = _localizationService.GetString("QuickPlaySeed") ?? "Seed";
-        SeedHint = _localizationService.GetString("QuickPlaySeedHint") ?? "Teile den Seed um das gleiche Level zu spielen";
-        PlayButtonText = _localizationService.GetString("QuickPlayPlay") ?? "Spielen!";
-        NewSeedButtonText = _localizationService.GetString("QuickPlayNewSeed") ?? "Neuer Seed";
+        SeedHint = _localizationService.GetString("QuickPlaySeedHint") ?? "Share the seed to play the same level";
+        PlayButtonText = _localizationService.GetString("QuickPlayPlay") ?? "Play!";
+        NewSeedButtonText = _localizationService.GetString("QuickPlayNewSeed") ?? "New Seed";
         // DifficultyLabel mit aktuellem Wert auffrischen
         OnDifficultyChanged(Difficulty);
     }
@@ -85,11 +85,11 @@ public partial class QuickPlayViewModel : ObservableObject
     [RelayCommand]
     private void Play()
     {
-        NavigationRequested?.Invoke($"Game?mode=quick&level={_currentSeed}&difficulty={Difficulty}");
+        NavigationRequested?.Invoke(new GoGame(Mode: "quick", Level: _currentSeed, Difficulty: Difficulty));
     }
 
     [RelayCommand]
-    private void Back() => NavigationRequested?.Invoke("..");
+    private void Back() => NavigationRequested?.Invoke(new GoBack());
 
     // ═══════════════════════════════════════════════════════════════════════
     // PRIVATE HELPERS
@@ -97,7 +97,7 @@ public partial class QuickPlayViewModel : ObservableObject
 
     private void GenerateNewSeed()
     {
-        _currentSeed = Random.Shared.Next(10000, 99999);
-        SeedText = _currentSeed.ToString();
+        _currentSeed = Random.Shared.Next(0x100000, 0xFFFFFF);
+        SeedText = _currentSeed.ToString("X6");
     }
 }

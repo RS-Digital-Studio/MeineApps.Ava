@@ -8,17 +8,150 @@
              x:Class="BomberBlast.Views.ShopView"
              x:DataType="vm:ShopViewModel">
 
-  <!-- Gradient-Hintergrund -->
+  <!-- Gemeinsames Skin-DataTemplate (6 Sektionen nutzen dasselbe Layout) -->
+  <UserControl.Resources>
+    <DataTemplate x:Key="SkinItemTemplate" x:DataType="models:SkinDisplayItem">
+      <Border CornerRadius="12"
+              Padding="12"
+              Margin="6"
+              MinWidth="200" MaxWidth="280"
+              BoxShadow="0 2 8 0 #30000000"
+              Opacity="{Binding CardOpacity}">
+        <Border.Background>
+          <SolidColorBrush Color="{DynamicResource CardColor}" />
+        </Border.Background>
+        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
+
+          <!-- Farb-Vorschau (Gradient-Kreis mit Kategorie-Icon) -->
+          <Border Grid.Row="0" Grid.Column="0"
+                  Grid.RowSpan="2"
+                  Width="44" Height="44"
+                  CornerRadius="22"
+                  Margin="0,0,10,0"
+                  VerticalAlignment="Center"
+                  BorderThickness="2">
+            <Border.BorderBrush>
+              <SolidColorBrush Color="{Binding SecondaryColor}" />
+            </Border.BorderBrush>
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                <GradientStop Color="{Binding PrimaryColor}" Offset="0" />
+                <GradientStop Color="{Binding SecondaryColor}" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+            <mi:MaterialIcon Kind="{Binding PreviewIconKind}" Width="20" Height="20"
+                             Foreground="White" Opacity="0.7"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center" />
+          </Border>
+
+          <!-- Name -->
+          <TextBlock Grid.Row="0" Grid.Column="1"
+                     Text="{Binding DisplayName}"
+                     FontSize="15" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" />
+
+          <!-- Preis-Anzeige (nur wenn nicht owned) -->
+          <StackPanel Grid.Row="1" Grid.Column="1"
+                      Orientation="Horizontal" Spacing="4"
+                      IsVisible="{Binding !IsOwned}">
+            <mi:MaterialIcon Kind="CircleMultiple" Width="12" Height="12"
+                             Foreground="{DynamicResource GoldAccentBrush}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
+                       FontSize="12" Foreground="{DynamicResource GoldAccentBrush}"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Status: Ausgeruestet -->
+          <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                  Margin="0,6,0,0"
+                  CornerRadius="8"
+                  Padding="8,5"
+                  HorizontalAlignment="Stretch"
+                  IsVisible="{Binding IsEquipped}">
+            <Border.Background>
+              <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
+            </Border.Background>
+            <StackPanel Orientation="Horizontal" Spacing="6"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                               Foreground="#4CAF50" />
+              <TextBlock Text="{Binding StatusText}"
+                         FontSize="12" FontWeight="SemiBold"
+                         Foreground="#4CAF50" />
+            </StackPanel>
+          </Border>
+
+          <!-- Status: Gesperrt (Premium) -->
+          <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                  Margin="0,6,0,0"
+                  CornerRadius="8"
+                  Padding="8,5"
+                  HorizontalAlignment="Stretch"
+                  IsVisible="{Binding IsLocked}">
+            <Border.Background>
+              <SolidColorBrush Color="{DynamicResource CardColor}" Opacity="0.5" />
+            </Border.Background>
+            <StackPanel Orientation="Horizontal" Spacing="6"
+                        HorizontalAlignment="Center">
+              <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                               Foreground="{DynamicResource GoldAccentBrush}" />
+              <TextBlock Text="{Binding StatusText}"
+                         FontSize="12" FontWeight="SemiBold"
+                         Foreground="{DynamicResource GoldAccentBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- Auswaehlen-Button (owned + nicht equipped) -->
+          <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                  Margin="0,6,0,0"
+                  IsVisible="{Binding CanSelect}"
+                  Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
+                  CommandParameter="{Binding}"
+                  Classes="GameButton"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  CornerRadius="8"
+                  Padding="8,5">
+            <Button.Background>
+              <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
+            </Button.Background>
+            <TextBlock Text="{Binding StatusText}"
+                       FontSize="12" FontWeight="SemiBold"
+                       Foreground="White" />
+          </Button>
+
+          <!-- Kauf-Button (nicht owned, nicht locked) -->
+          <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                  Margin="0,6,0,0"
+                  IsVisible="{Binding CanBuy}"
+                  Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
+                  CommandParameter="{Binding}"
+                  Classes="GameButton"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  CornerRadius="8"
+                  Padding="8,5">
+            <Button.Background>
+              <SolidColorBrush Color="#FF6F00" />
+            </Button.Background>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
+                               Foreground="{DynamicResource GoldAccentBrush}" />
+              <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
+                         FontSize="13" FontWeight="SemiBold"
+                         Foreground="White" />
+            </StackPanel>
+          </Button>
+
+        </Grid>
+      </Border>
+    </DataTemplate>
+  </UserControl.Resources>
+
+  <!-- Animierter Shop-Hintergrund (Gold-Gradient, Münzen, Shimmer) -->
   <Panel AutomationProperties.AutomationId="Shop_Root">
-    <Border>
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="{DynamicResource GradientStartColor}" Offset="0" />
-          <GradientStop Color="{DynamicResource GradientMidColor}" Offset="0.5" />
-          <GradientStop Color="{DynamicResource GradientEndColor}" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
-    </Border>
+    <ctrl:MenuBackgroundCanvas BackgroundTheme="Shop" />
 
     <Grid RowDefinitions="Auto,*">
 
@@ -86,7 +219,7 @@
                         CornerRadius="12"
                         Padding="12"
                         Margin="6"
-                        Width="240"
+                        MinWidth="200" MaxWidth="280"
                         BoxShadow="0 2 8 0 #30000000">
                   <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="Auto,*">
 
@@ -204,7 +337,7 @@
                 <Border CornerRadius="12"
                         Padding="12"
                         Margin="6"
-                        Width="240"
+                        MinWidth="200" MaxWidth="280"
                         BoxShadow="0 2 8 0 #30000000"
                         Opacity="{Binding CardOpacity}">
                   <Border.Background>
@@ -324,7 +457,7 @@
                 <Border CornerRadius="12"
                         Padding="12"
                         Margin="6"
-                        Width="240"
+                        MinWidth="200" MaxWidth="280"
                         BoxShadow="0 2 8 0 #30000000"
                         Opacity="{Binding CardOpacity}">
                   <Border.Background>
@@ -430,148 +563,14 @@
                      Margin="6,8,0,0" />
 
           <ItemsControl AutomationProperties.AutomationId="Shop_SkinList"
-                        ItemsSource="{Binding SkinItems}">
+                        ItemsSource="{Binding SkinItems}"
+                        ItemTemplate="{StaticResource SkinItemTemplate}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <WrapPanel Orientation="Horizontal"
                            HorizontalAlignment="Center" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="models:SkinDisplayItem">
-                <Border CornerRadius="12"
-                        Padding="12"
-                        Margin="6"
-                        Width="240"
-                        BoxShadow="0 2 8 0 #30000000"
-                        Opacity="{Binding CardOpacity}">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource CardColor}" />
-                  </Border.Background>
-                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
-
-                    <!-- Farb-Vorschau (Gradient-Kreis) -->
-                    <Border Grid.Row="0" Grid.Column="0"
-                            Grid.RowSpan="2"
-                            Width="44" Height="44"
-                            CornerRadius="22"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center"
-                            BorderThickness="2">
-                      <Border.BorderBrush>
-                        <SolidColorBrush Color="{Binding SecondaryColor}" />
-                      </Border.BorderBrush>
-                      <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                          <GradientStop Color="{Binding PrimaryColor}" Offset="0" />
-                          <GradientStop Color="{Binding SecondaryColor}" Offset="1" />
-                        </LinearGradientBrush>
-                      </Border.Background>
-                    </Border>
-
-                    <!-- Name -->
-                    <TextBlock Grid.Row="0" Grid.Column="1"
-                               Text="{Binding DisplayName}"
-                               FontSize="15" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                    <!-- Preis-Anzeige (nur wenn nicht owned + hat Preis) -->
-                    <StackPanel Grid.Row="1" Grid.Column="1"
-                                Orientation="Horizontal" Spacing="4"
-                                IsVisible="{Binding !IsOwned}">
-                      <mi:MaterialIcon Kind="CircleMultiple" Width="12" Height="12"
-                                       Foreground="#FFD700" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                 FontSize="12" Foreground="#FFD700"
-                                 VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <!-- Status: Ausgewählt -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsEquipped}">
-                      <Border.Background>
-                        <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
-                                         Foreground="#4CAF50" />
-                        <TextBlock Text="{Binding StatusText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#4CAF50" />
-                      </StackPanel>
-                    </Border>
-
-                    <!-- Status: Gesperrt (Premium) -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsLocked}">
-                      <Border.Background>
-                        <SolidColorBrush Color="{DynamicResource CardColor}" Opacity="0.5" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding StatusText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#FFD700" />
-                      </StackPanel>
-                    </Border>
-
-                    <!-- Auswählen-Button (owned + nicht equipped) -->
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanSelect}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-                      </Button.Background>
-                      <TextBlock Text="{Binding StatusText}"
-                                 FontSize="12" FontWeight="SemiBold"
-                                 Foreground="White" />
-                    </Button>
-
-                    <!-- Kauf-Button (nicht owned, nicht locked) -->
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanBuy}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="#FF6F00" />
-                      </Button.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                   FontSize="13" FontWeight="SemiBold"
-                                   Foreground="White" />
-                      </StackPanel>
-                    </Button>
-
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
           </ItemsControl>
 
           <!-- ═══════════════════════════════════════════════
@@ -584,153 +583,14 @@
                      Margin="6,8,0,0" />
 
           <ItemsControl AutomationProperties.AutomationId="Shop_BombSkinList"
-                        ItemsSource="{Binding BombSkinItems}">
+                        ItemsSource="{Binding BombSkinItems}"
+                        ItemTemplate="{StaticResource SkinItemTemplate}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <WrapPanel Orientation="Horizontal"
                            HorizontalAlignment="Center" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="models:SkinDisplayItem">
-                <Border CornerRadius="12"
-                        Padding="12"
-                        Margin="6"
-                        Width="240"
-                        BoxShadow="0 2 8 0 #30000000"
-                        Opacity="{Binding CardOpacity}">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource CardColor}" />
-                  </Border.Background>
-                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
-
-                    <!-- Farb-Vorschau (Gradient-Kreis) -->
-                    <Border Grid.Row="0" Grid.Column="0"
-                            Grid.RowSpan="2"
-                            Width="44" Height="44"
-                            CornerRadius="22"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center"
-                            BorderThickness="2">
-                      <Border.BorderBrush>
-                        <SolidColorBrush Color="{Binding SecondaryColor}" />
-                      </Border.BorderBrush>
-                      <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                          <GradientStop Color="{Binding PrimaryColor}" Offset="0" />
-                          <GradientStop Color="{Binding SecondaryColor}" Offset="1" />
-                        </LinearGradientBrush>
-                      </Border.Background>
-                      <!-- Bomben-Icon -->
-                      <mi:MaterialIcon Kind="Bomb" Width="20" Height="20"
-                                       Foreground="White" Opacity="0.7"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                    </Border>
-
-                    <!-- Name -->
-                    <TextBlock Grid.Row="0" Grid.Column="1"
-                               Text="{Binding DisplayName}"
-                               FontSize="15" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                    <!-- Preis-Anzeige (nur wenn nicht owned) -->
-                    <StackPanel Grid.Row="1" Grid.Column="1"
-                                Orientation="Horizontal" Spacing="4"
-                                IsVisible="{Binding !IsOwned}">
-                      <mi:MaterialIcon Kind="CircleMultiple" Width="12" Height="12"
-                                       Foreground="#FFD700" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                 FontSize="12" Foreground="#FFD700"
-                                 VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <!-- Status: Ausgerüstet -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsEquipped}">
-                      <Border.Background>
-                        <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
-                                         Foreground="#4CAF50" />
-                        <TextBlock Text="{Binding StatusText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#4CAF50" />
-                      </StackPanel>
-                    </Border>
-
-                    <!-- Status: Gesperrt (Premium) -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsLocked}">
-                      <Border.Background>
-                        <SolidColorBrush Color="{DynamicResource CardColor}" Opacity="0.5" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding StatusText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#FFD700" />
-                      </StackPanel>
-                    </Border>
-
-                    <!-- Auswählen-Button (owned + nicht equipped) -->
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanSelect}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-                      </Button.Background>
-                      <TextBlock Text="{Binding StatusText}"
-                                 FontSize="12" FontWeight="SemiBold"
-                                 Foreground="White" />
-                    </Button>
-
-                    <!-- Kauf-Button (nicht owned, nicht locked) -->
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanBuy}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="#FF6F00" />
-                      </Button.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                   FontSize="13" FontWeight="SemiBold"
-                                   Foreground="White" />
-                      </StackPanel>
-                    </Button>
-
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
           </ItemsControl>
 
           <!-- ═══════════════════════════════════════════════
@@ -743,153 +603,14 @@
                      Margin="6,8,0,0" />
 
           <ItemsControl AutomationProperties.AutomationId="Shop_ExplosionSkinList"
-                        ItemsSource="{Binding ExplosionSkinItems}">
+                        ItemsSource="{Binding ExplosionSkinItems}"
+                        ItemTemplate="{StaticResource SkinItemTemplate}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <WrapPanel Orientation="Horizontal"
                            HorizontalAlignment="Center" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="models:SkinDisplayItem">
-                <Border CornerRadius="12"
-                        Padding="12"
-                        Margin="6"
-                        Width="240"
-                        BoxShadow="0 2 8 0 #30000000"
-                        Opacity="{Binding CardOpacity}">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource CardColor}" />
-                  </Border.Background>
-                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
-
-                    <!-- Farb-Vorschau (Gradient-Kreis) -->
-                    <Border Grid.Row="0" Grid.Column="0"
-                            Grid.RowSpan="2"
-                            Width="44" Height="44"
-                            CornerRadius="22"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center"
-                            BorderThickness="2">
-                      <Border.BorderBrush>
-                        <SolidColorBrush Color="{Binding SecondaryColor}" />
-                      </Border.BorderBrush>
-                      <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                          <GradientStop Color="{Binding PrimaryColor}" Offset="0" />
-                          <GradientStop Color="{Binding SecondaryColor}" Offset="1" />
-                        </LinearGradientBrush>
-                      </Border.Background>
-                      <!-- Explosions-Icon -->
-                      <mi:MaterialIcon Kind="Fire" Width="20" Height="20"
-                                       Foreground="White" Opacity="0.7"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                    </Border>
-
-                    <!-- Name -->
-                    <TextBlock Grid.Row="0" Grid.Column="1"
-                               Text="{Binding DisplayName}"
-                               FontSize="15" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                    <!-- Preis-Anzeige (nur wenn nicht owned) -->
-                    <StackPanel Grid.Row="1" Grid.Column="1"
-                                Orientation="Horizontal" Spacing="4"
-                                IsVisible="{Binding !IsOwned}">
-                      <mi:MaterialIcon Kind="CircleMultiple" Width="12" Height="12"
-                                       Foreground="#FFD700" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                 FontSize="12" Foreground="#FFD700"
-                                 VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <!-- Status: Ausgerüstet -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsEquipped}">
-                      <Border.Background>
-                        <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
-                                         Foreground="#4CAF50" />
-                        <TextBlock Text="{Binding StatusText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#4CAF50" />
-                      </StackPanel>
-                    </Border>
-
-                    <!-- Status: Gesperrt (Premium) -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsLocked}">
-                      <Border.Background>
-                        <SolidColorBrush Color="{DynamicResource CardColor}" Opacity="0.5" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding StatusText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#FFD700" />
-                      </StackPanel>
-                    </Border>
-
-                    <!-- Auswählen-Button (owned + nicht equipped) -->
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanSelect}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-                      </Button.Background>
-                      <TextBlock Text="{Binding StatusText}"
-                                 FontSize="12" FontWeight="SemiBold"
-                                 Foreground="White" />
-                    </Button>
-
-                    <!-- Kauf-Button (nicht owned, nicht locked) -->
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanBuy}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="#FF6F00" />
-                      </Button.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                   FontSize="13" FontWeight="SemiBold"
-                                   Foreground="White" />
-                      </StackPanel>
-                    </Button>
-
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
           </ItemsControl>
 
           <!-- ═══════════════════════════════════════════════
@@ -902,133 +623,14 @@
                      Margin="6,8,0,0" />
 
           <ItemsControl AutomationProperties.AutomationId="Shop_TrailList"
-                        ItemsSource="{Binding TrailItems}">
+                        ItemsSource="{Binding TrailItems}"
+                        ItemTemplate="{StaticResource SkinItemTemplate}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <WrapPanel Orientation="Horizontal"
                            HorizontalAlignment="Center" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="models:SkinDisplayItem">
-                <Border CornerRadius="12"
-                        Padding="12"
-                        Margin="6"
-                        Width="240"
-                        BoxShadow="0 2 8 0 #30000000"
-                        Opacity="{Binding CardOpacity}">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource CardColor}" />
-                  </Border.Background>
-                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
-
-                    <!-- Farb-Vorschau (Gradient-Kreis) -->
-                    <Border Grid.Row="0" Grid.Column="0"
-                            Grid.RowSpan="2"
-                            Width="44" Height="44"
-                            CornerRadius="22"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center"
-                            BorderThickness="2">
-                      <Border.BorderBrush>
-                        <SolidColorBrush Color="{Binding SecondaryColor}" />
-                      </Border.BorderBrush>
-                      <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                          <GradientStop Color="{Binding PrimaryColor}" Offset="0" />
-                          <GradientStop Color="{Binding SecondaryColor}" Offset="1" />
-                        </LinearGradientBrush>
-                      </Border.Background>
-                      <!-- Trail-Icon -->
-                      <mi:MaterialIcon Kind="WavesArrowRight" Width="20" Height="20"
-                                       Foreground="White" Opacity="0.7"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                    </Border>
-
-                    <!-- Name -->
-                    <TextBlock Grid.Row="0" Grid.Column="1"
-                               Text="{Binding DisplayName}"
-                               FontSize="15" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                    <!-- Preis-Anzeige (nur wenn nicht owned + hat Preis) -->
-                    <StackPanel Grid.Row="1" Grid.Column="1"
-                                Orientation="Horizontal" Spacing="4"
-                                IsVisible="{Binding !IsOwned}">
-                      <mi:MaterialIcon Kind="CircleMultiple" Width="12" Height="12"
-                                       Foreground="#FFD700" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                 FontSize="12" Foreground="#FFD700"
-                                 VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <!-- Status: Ausgerüstet -->
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsEquipped}">
-                      <Border.Background>
-                        <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
-                                         Foreground="#4CAF50" />
-                        <TextBlock Text="{Binding StatusText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#4CAF50" />
-                      </StackPanel>
-                    </Border>
-
-                    <!-- Auswählen-Button (owned + nicht equipped) -->
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanSelect}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-                      </Button.Background>
-                      <TextBlock Text="{Binding StatusText}"
-                                 FontSize="12" FontWeight="SemiBold"
-                                 Foreground="White" />
-                    </Button>
-
-                    <!-- Kauf-Button (nicht owned, nicht locked) -->
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanBuy}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="#FF6F00" />
-                      </Button.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                   FontSize="13" FontWeight="SemiBold"
-                                   Foreground="White" />
-                      </StackPanel>
-                    </Button>
-
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
           </ItemsControl>
 
           <!-- ═══════════════════════════════════════════════
@@ -1041,127 +643,14 @@
                      Margin="6,8,0,0" />
 
           <ItemsControl AutomationProperties.AutomationId="Shop_VictoryList"
-                        ItemsSource="{Binding VictoryItems}">
+                        ItemsSource="{Binding VictoryItems}"
+                        ItemTemplate="{StaticResource SkinItemTemplate}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <WrapPanel Orientation="Horizontal"
                            HorizontalAlignment="Center" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="models:SkinDisplayItem">
-                <Border CornerRadius="12"
-                        Padding="12"
-                        Margin="6"
-                        Width="240"
-                        BoxShadow="0 2 8 0 #30000000"
-                        Opacity="{Binding CardOpacity}">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource CardColor}" />
-                  </Border.Background>
-                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
-
-                    <!-- Farb-Vorschau -->
-                    <Border Grid.Row="0" Grid.Column="0"
-                            Grid.RowSpan="2"
-                            Width="44" Height="44"
-                            CornerRadius="22"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center"
-                            BorderThickness="2">
-                      <Border.BorderBrush>
-                        <SolidColorBrush Color="{Binding SecondaryColor}" />
-                      </Border.BorderBrush>
-                      <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                          <GradientStop Color="{Binding PrimaryColor}" Offset="0" />
-                          <GradientStop Color="{Binding SecondaryColor}" Offset="1" />
-                        </LinearGradientBrush>
-                      </Border.Background>
-                      <mi:MaterialIcon Kind="PartyPopper" Width="20" Height="20"
-                                       Foreground="White" Opacity="0.7"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                    </Border>
-
-                    <TextBlock Grid.Row="0" Grid.Column="1"
-                               Text="{Binding DisplayName}"
-                               FontSize="15" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                    <StackPanel Grid.Row="1" Grid.Column="1"
-                                Orientation="Horizontal" Spacing="4"
-                                IsVisible="{Binding !IsOwned}">
-                      <mi:MaterialIcon Kind="CircleMultiple" Width="12" Height="12"
-                                       Foreground="#FFD700" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                 FontSize="12" Foreground="#FFD700"
-                                 VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsEquipped}">
-                      <Border.Background>
-                        <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
-                                         Foreground="#4CAF50" />
-                        <TextBlock Text="{Binding StatusText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#4CAF50" />
-                      </StackPanel>
-                    </Border>
-
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanSelect}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-                      </Button.Background>
-                      <TextBlock Text="{Binding StatusText}"
-                                 FontSize="12" FontWeight="SemiBold"
-                                 Foreground="White" />
-                    </Button>
-
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanBuy}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="#FF6F00" />
-                      </Button.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                   FontSize="13" FontWeight="SemiBold"
-                                   Foreground="White" />
-                      </StackPanel>
-                    </Button>
-
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
           </ItemsControl>
 
           <!-- ═══════════════════════════════════════════════
@@ -1174,127 +663,14 @@
                      Margin="6,8,0,0" />
 
           <ItemsControl AutomationProperties.AutomationId="Shop_FrameList"
-                        ItemsSource="{Binding FrameItems}">
+                        ItemsSource="{Binding FrameItems}"
+                        ItemTemplate="{StaticResource SkinItemTemplate}">
             <ItemsControl.ItemsPanel>
               <ItemsPanelTemplate>
                 <WrapPanel Orientation="Horizontal"
                            HorizontalAlignment="Center" />
               </ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate x:DataType="models:SkinDisplayItem">
-                <Border CornerRadius="12"
-                        Padding="12"
-                        Margin="6"
-                        Width="240"
-                        BoxShadow="0 2 8 0 #30000000"
-                        Opacity="{Binding CardOpacity}">
-                  <Border.Background>
-                    <SolidColorBrush Color="{DynamicResource CardColor}" />
-                  </Border.Background>
-                  <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="Auto,*">
-
-                    <!-- Farb-Vorschau -->
-                    <Border Grid.Row="0" Grid.Column="0"
-                            Grid.RowSpan="2"
-                            Width="44" Height="44"
-                            CornerRadius="22"
-                            Margin="0,0,10,0"
-                            VerticalAlignment="Center"
-                            BorderThickness="2">
-                      <Border.BorderBrush>
-                        <SolidColorBrush Color="{Binding SecondaryColor}" />
-                      </Border.BorderBrush>
-                      <Border.Background>
-                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                          <GradientStop Color="{Binding PrimaryColor}" Offset="0" />
-                          <GradientStop Color="{Binding SecondaryColor}" Offset="1" />
-                        </LinearGradientBrush>
-                      </Border.Background>
-                      <mi:MaterialIcon Kind="CardAccountDetailsOutline" Width="20" Height="20"
-                                       Foreground="White" Opacity="0.7"
-                                       HorizontalAlignment="Center"
-                                       VerticalAlignment="Center" />
-                    </Border>
-
-                    <TextBlock Grid.Row="0" Grid.Column="1"
-                               Text="{Binding DisplayName}"
-                               FontSize="15" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-
-                    <StackPanel Grid.Row="1" Grid.Column="1"
-                                Orientation="Horizontal" Spacing="4"
-                                IsVisible="{Binding !IsOwned}">
-                      <mi:MaterialIcon Kind="CircleMultiple" Width="12" Height="12"
-                                       Foreground="#FFD700" VerticalAlignment="Center" />
-                      <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                 FontSize="12" Foreground="#FFD700"
-                                 VerticalAlignment="Center" />
-                    </StackPanel>
-
-                    <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            CornerRadius="8"
-                            Padding="8,5"
-                            HorizontalAlignment="Stretch"
-                            IsVisible="{Binding IsEquipped}">
-                      <Border.Background>
-                        <SolidColorBrush Color="#1B5E20" Opacity="0.3" />
-                      </Border.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6"
-                                  HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
-                                         Foreground="#4CAF50" />
-                        <TextBlock Text="{Binding StatusText}"
-                                   FontSize="12" FontWeight="SemiBold"
-                                   Foreground="#4CAF50" />
-                      </StackPanel>
-                    </Border>
-
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanSelect}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-                      </Button.Background>
-                      <TextBlock Text="{Binding StatusText}"
-                                 FontSize="12" FontWeight="SemiBold"
-                                 Foreground="White" />
-                    </Button>
-
-                    <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                            Margin="0,6,0,0"
-                            IsVisible="{Binding CanBuy}"
-                            Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
-                            CommandParameter="{Binding}"
-                            Classes="GameButton"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            CornerRadius="8"
-                            Padding="8,5">
-                      <Button.Background>
-                        <SolidColorBrush Color="#FF6F00" />
-                      </Button.Background>
-                      <StackPanel Orientation="Horizontal" Spacing="6">
-                        <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
-                                         Foreground="#FFD700" />
-                        <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                                   FontSize="13" FontWeight="SemiBold"
-                                   Foreground="White" />
-                      </StackPanel>
-                    </Button>
-
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
           </ItemsControl>
 
         </StackPanel>

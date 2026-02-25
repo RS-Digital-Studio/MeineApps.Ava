@@ -9,9 +9,9 @@
              x:DataType="vm:LuckySpinViewModel">
 
   <Panel AutomationProperties.AutomationId="LuckySpin_Root">
-    <controls:MenuBackgroundCanvas />
+    <controls:MenuBackgroundCanvas BackgroundTheme="LuckySpin" />
 
-    <Grid ColumnDefinitions="*,Auto" Margin="24,16,24,16">
+    <Grid ColumnDefinitions="*,Auto" Margin="24,16,24,80">
 
       <!-- Links: Glücksrad (SKCanvasView) -->
       <Panel Grid.Column="0" Margin="0,0,16,0">
@@ -30,10 +30,10 @@
         <StackPanel Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
           <mi:MaterialIcon Kind="ChartDonut" Width="24" Height="24"
-                           Foreground="#FFD700" />
+                           Foreground="{DynamicResource GoldAccentBrush}" />
           <TextBlock Text="{loc:Translate LuckySpinTitle}"
                      FontSize="20" FontWeight="Bold"
-                     Foreground="#FFD700"
+                     Foreground="{DynamicResource GoldAccentBrush}"
                      AutomationProperties.AutomationId="LuckySpin_Title" />
         </StackPanel>
 
@@ -44,10 +44,10 @@
                 AutomationProperties.AutomationId="LuckySpin_CoinBadge">
           <StackPanel Orientation="Horizontal" Spacing="8">
             <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18"
-                             Foreground="#FFD700" />
+                             Foreground="{DynamicResource GoldAccentBrush}" />
             <TextBlock Text="{Binding CoinsText}"
                        FontSize="16" FontWeight="SemiBold"
-                       Foreground="#FFD700"
+                       Foreground="{DynamicResource GoldAccentBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
         </Border>
@@ -60,11 +60,11 @@
                 AutomationProperties.AutomationId="LuckySpin_Result">
           <StackPanel Spacing="4" HorizontalAlignment="Center">
             <mi:MaterialIcon Kind="Star" Width="28" Height="28"
-                             Foreground="#FFD700"
+                             Foreground="{DynamicResource GoldAccentBrush}"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{Binding ResultText}"
                        FontSize="16" FontWeight="Bold"
-                       Foreground="#FFD700"
+                       Foreground="{DynamicResource GoldAccentBrush}"
                        HorizontalAlignment="Center"
                        TextAlignment="Center" />
           </StackPanel>
@@ -123,7 +123,7 @@
                 Command="{Binding GoBackCommand}"
                 HorizontalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
-                Height="40"
+                MinHeight="48"
                 AutomationProperties.AutomationId="LuckySpin_BtnBack">
           <StackPanel Orientation="Horizontal" Spacing="6">
             <mi:MaterialIcon Kind="ArrowLeft" Width="16" Height="16"

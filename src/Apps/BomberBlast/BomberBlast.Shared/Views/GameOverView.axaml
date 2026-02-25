@@ -22,14 +22,37 @@
     <Grid RowDefinitions="*">
 
       <!-- 2-Column Layout: Score+Coins links, Buttons rechts -->
+      <!-- SlideUp Entry-Animation -->
       <Grid Grid.Row="0"
             ColumnDefinitions="*,*"
             VerticalAlignment="Center"
-            Margin="24,16">
+            Margin="24,16,24,80"
+            RenderTransformOrigin="0.5,0.5">
+        <Grid.RenderTransform>
+          <TranslateTransform Y="0" />
+        </Grid.RenderTransform>
+        <Grid.Styles>
+          <Style Selector="Grid">
+            <Style.Animations>
+              <Animation Duration="0:0:0.2" Easing="CubicEaseOut" FillMode="Forward">
+                <KeyFrame Cue="0%">
+                  <Setter Property="Opacity" Value="0" />
+                  <Setter Property="TranslateTransform.Y" Value="20" />
+                </KeyFrame>
+                <KeyFrame Cue="100%">
+                  <Setter Property="Opacity" Value="1" />
+                  <Setter Property="TranslateTransform.Y" Value="0" />
+                </KeyFrame>
+              </Animation>
+            </Style.Animations>
+          </Style>
+        </Grid.Styles>
 
-        <!-- Links: Score + Coins Info -->
-        <StackPanel Grid.Column="0"
-                    VerticalAlignment="Center"
+        <!-- Links: Score + Coins Info (ScrollViewer für Overflow-Schutz) -->
+        <ScrollViewer Grid.Column="0"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+        <StackPanel VerticalAlignment="Center"
                     HorizontalAlignment="Center"
                     Spacing="12">
 
@@ -192,15 +215,15 @@
                             VerticalAlignment="Center">
                   <Panel Width="22" Height="22">
                     <mi:MaterialIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star1Earned}" />
-                    <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="#FFD700" IsVisible="{Binding Star1Earned}" />
+                    <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" IsVisible="{Binding Star1Earned}" />
                   </Panel>
                   <Panel Width="22" Height="22">
                     <mi:MaterialIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star2Earned}" />
-                    <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="#FFD700" IsVisible="{Binding Star2Earned}" />
+                    <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" IsVisible="{Binding Star2Earned}" />
                   </Panel>
                   <Panel Width="22" Height="22">
                     <mi:MaterialIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star3Earned}" />
-                    <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="#FFD700" IsVisible="{Binding Star3Earned}" />
+                    <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" IsVisible="{Binding Star3Earned}" />
                   </Panel>
                 </StackPanel>
               </StackPanel>
@@ -221,10 +244,10 @@
                       HorizontalAlignment="Center"
                       Margin="0,4,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="Crown" Width="16" Height="16" Foreground="#FFD700" />
+                  <mi:MaterialIcon Kind="Crown" Width="16" Height="16" Foreground="{DynamicResource GoldAccentBrush}" />
                   <TextBlock Text="{loc:Translate PremiumFeatureDoubleCoins}"
                              FontSize="13" FontWeight="Bold"
-                             Foreground="#FFD700" />
+                             Foreground="{DynamicResource GoldAccentBrush}" />
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -241,11 +264,11 @@
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
                 <mi:MaterialIcon Kind="CircleMultiple" Width="22" Height="22"
-                                 Foreground="#FFD700" />
+                                 Foreground="{DynamicResource GoldAccentBrush}" />
                 <TextBlock AutomationProperties.AutomationId="GameOver_TxtCoinsEarned"
                            Text="{Binding CoinsEarnedText}"
                            FontSize="22" FontWeight="Bold"
-                           Foreground="#FFD700" />
+                           Foreground="{DynamicResource GoldAccentBrush}" />
               </StackPanel>
 
               <!-- Verdoppeln Button (Primary CTA: groß, Gold, pulsierend) -->
@@ -282,6 +305,7 @@
           </Border>
 
         </StackPanel>
+        </ScrollViewer>
 
         <!-- Rechts: Buttons (Primary CTA oben, optionale Aktionen Mitte, Exit unten) -->
         <StackPanel Grid.Column="1"
@@ -323,7 +347,7 @@
                   IsVisible="{Binding CanPaidContinue}"
                   Command="{Binding PaidContinueCommand}"
                   Classes="Primary GameButton"
-                  Background="#FF8F00"
+                  Background="#FFD700"
                   FontSize="14"
                   Height="40"
                   HorizontalAlignment="Stretch"

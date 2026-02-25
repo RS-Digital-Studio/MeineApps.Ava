@@ -34,4 +34,7 @@ public interface IDailyMissionService
 
     /// <summary>All-Complete-Bonus einsammeln</summary>
     int ClaimAllCompleteBonus();
+
+    /// <summary>Lazy-Injection: IAchievementService nach DI-Build setzen (zirkuläre Abhängigkeit)</summary>
+    void SetAchievementService(IAchievementService achievementService);
 }

@@ -32,9 +32,9 @@ public static class MenuBackgroundRenderer
     private const byte GRID_ALPHA = 20;
 
     // Default Theme
-    private const int DEFAULT_BOMB_COUNT = 8;
-    private const int DEFAULT_SPARK_COUNT = 25;
-    private const int DEFAULT_FLAME_COUNT = 6;
+    private const int DEFAULT_BOMB_COUNT = 10;
+    private const int DEFAULT_SPARK_COUNT = 35;
+    private const int DEFAULT_FLAME_COUNT = 8;
 
     // Dungeon Theme
     private const int DUNGEON_TORCH_COUNT = 4;
@@ -62,17 +62,17 @@ public static class MenuBackgroundRenderer
     private const int VICTORY_SPARK_COUNT = 12;
 
     // LuckySpin Theme
-    private const int SPIN_RAINBOW_COUNT = 20;
-    private const int SPIN_GLITTER_COUNT = 10;
-    private const int SPIN_LIGHT_COUNT = 4;
+    private const int SPIN_RAINBOW_COUNT = 30;
+    private const int SPIN_GLITTER_COUNT = 20;
+    private const int SPIN_LIGHT_COUNT = 6;
 
     // ═══════════════════════════════════════════════════════════════════════
     // GRADIENT-FARBEN PRO THEME
     // ═══════════════════════════════════════════════════════════════════════
 
-    // Default: Bomberman-Blau
-    private static readonly SKColor DefaultGrad1 = new(0x2D, 0x2D, 0x48);
-    private static readonly SKColor DefaultGrad2 = new(0x29, 0x3A, 0x56);
+    // Default: Bomberman-Blau (kontrastreich)
+    private static readonly SKColor DefaultGrad1 = new(0x1A, 0x1A, 0x35);
+    private static readonly SKColor DefaultGrad2 = new(0x1E, 0x33, 0x55);
 
     // Dungeon: Violett/Dunkel
     private static readonly SKColor DungeonGrad1 = new(0x1A, 0x0A, 0x2E);
@@ -94,9 +94,9 @@ public static class MenuBackgroundRenderer
     private static readonly SKColor VictoryGrad1 = new(0x2E, 0x1A, 0x00);
     private static readonly SKColor VictoryGrad2 = new(0x1A, 0x0A, 0x00);
 
-    // LuckySpin: Dunkel-Blau/Violett
-    private static readonly SKColor SpinGrad1 = new(0x0A, 0x0A, 0x2E);
-    private static readonly SKColor SpinGrad2 = new(0x1A, 0x0A, 0x2E);
+    // LuckySpin: Tiefes Violett/Blau (deutlich farbiger)
+    private static readonly SKColor SpinGrad1 = new(0x12, 0x0A, 0x35);
+    private static readonly SKColor SpinGrad2 = new(0x0A, 0x18, 0x38);
 
     // ═══════════════════════════════════════════════════════════════════════
     // GEPOOLTE PAINT-OBJEKTE
@@ -144,9 +144,9 @@ public static class MenuBackgroundRenderer
     // ═══════════════════════════════════════════════════════════════════════
 
     // Default
-    private static readonly Particle[] _defaultBombs = new Particle[DEFAULT_BOMB_COUNT];
-    private static readonly Particle[] _defaultSparks = new Particle[DEFAULT_SPARK_COUNT];
-    private static readonly Particle[] _defaultFlames = new Particle[DEFAULT_FLAME_COUNT];
+    private static readonly Particle[] _defaultBombs = new Particle[10];
+    private static readonly Particle[] _defaultSparks = new Particle[35];
+    private static readonly Particle[] _defaultFlames = new Particle[8];
 
     // Dungeon
     private static readonly Particle[] _dungeonTorches = new Particle[DUNGEON_TORCH_COUNT];
@@ -174,9 +174,9 @@ public static class MenuBackgroundRenderer
     private static readonly Particle[] _victorySparks = new Particle[VICTORY_SPARK_COUNT];
 
     // LuckySpin
-    private static readonly Particle[] _spinRainbow = new Particle[SPIN_RAINBOW_COUNT];
-    private static readonly Particle[] _spinGlitter = new Particle[SPIN_GLITTER_COUNT];
-    private static readonly Particle[] _spinLights = new Particle[SPIN_LIGHT_COUNT];
+    private static readonly Particle[] _spinRainbow = new Particle[30];
+    private static readonly Particle[] _spinGlitter = new Particle[20];
+    private static readonly Particle[] _spinLights = new Particle[6];
 
     // ═══════════════════════════════════════════════════════════════════════
     // INITIALISIERUNG
@@ -235,6 +235,10 @@ public static class MenuBackgroundRenderer
         RenderGradient(canvas, width, height, theme);
         RenderGrid(canvas, width, height, theme);
 
+        // Subtiler radialer Glow nur für Default-Theme (vor den Partikeln)
+        if (theme == BackgroundTheme.Default)
+            RenderDefaultVignette(canvas, width, height, time);
+
         // Theme-spezifische Partikel
         switch (theme)
         {
@@ -269,6 +273,7 @@ public static class MenuBackgroundRenderer
                 RenderVictorySparks(canvas, width, height, time);
                 break;
             case BackgroundTheme.LuckySpin:
+                RenderSpinRainbowRing(canvas, width, height, time);
                 RenderSpinRainbow(canvas, width, height, time);
                 RenderSpinGlitter(canvas, width, height, time);
                 RenderSpinLights(canvas, width, height, time);
@@ -327,24 +332,26 @@ public static class MenuBackgroundRenderer
 
     private static void InitDefault(Random rng)
     {
+        // Bomben-Silhouetten (stärker sichtbar)
         for (int i = 0; i < DEFAULT_BOMB_COUNT; i++)
         {
             ref var b = ref _defaultBombs[i];
             b.X = (float)rng.NextDouble();
             b.Y = (float)rng.NextDouble();
-            b.Size = 20f + (float)rng.NextDouble() * 20f;
+            b.Size = 22f + (float)rng.NextDouble() * 25f;
             b.Speed = 8f + (float)rng.NextDouble() * 12f;
             b.Phase = (float)rng.NextDouble() * MathF.PI * 2f;
-            b.Speed *= 1f - (b.Size - 20f) / 40f * 0.5f;
-            b.A = (byte)(25 + rng.Next(11));
+            b.Speed *= 1f - (b.Size - 22f) / 47f * 0.5f;
+            b.A = (byte)(40 + rng.Next(15));
         }
 
+        // Funken (mehr + heller)
         for (int i = 0; i < DEFAULT_SPARK_COUNT; i++)
         {
             ref var s = ref _defaultSparks[i];
             s.X = (float)rng.NextDouble();
             s.Y = (float)rng.NextDouble();
-            s.Size = 2f + (float)rng.NextDouble() * 2f;
+            s.Size = 2.5f + (float)rng.NextDouble() * 2.5f;
             s.Speed = 10f + (float)rng.NextDouble() * 15f;
             s.Phase = (float)rng.NextDouble() * MathF.PI * 2f;
             if (rng.NextDouble() < 0.5)
@@ -353,14 +360,15 @@ public static class MenuBackgroundRenderer
             { s.R = 255; s.G = (byte)(200 + rng.Next(40)); s.B = (byte)(60 + rng.Next(40)); }
         }
 
+        // Flammen (größer + heller)
         for (int i = 0; i < DEFAULT_FLAME_COUNT; i++)
         {
             ref var f = ref _defaultFlames[i];
             f.X = (i + 0.5f) / DEFAULT_FLAME_COUNT;
             f.Phase = (float)rng.NextDouble() * MathF.PI * 2f;
-            f.Extra1 = 30f + (float)rng.NextDouble() * 20f; // Width
-            f.Extra2 = 20f + (float)rng.NextDouble() * 15f; // Height
-            f.A = (byte)(50 + rng.Next(15));
+            f.Extra1 = 35f + (float)rng.NextDouble() * 25f; // Width
+            f.Extra2 = 30f + (float)rng.NextDouble() * 25f; // Height (deutlich höher)
+            f.A = (byte)(65 + rng.Next(20));
         }
     }
 
@@ -393,7 +401,7 @@ public static class MenuBackgroundRenderer
             float x = s.X * w + MathF.Sin(t * 1.2f + s.Phase) * 8f;
             float y = h - ((t * s.Speed + s.Y * h) % (h + 20f));
             float pulse = MathF.Sin(t * 3f + s.Phase) * 0.3f + 0.7f;
-            _p2.Color = new SKColor(s.R, s.G, s.B, (byte)(80 * pulse));
+            _p2.Color = new SKColor(s.R, s.G, s.B, (byte)(120 * pulse));
             canvas.DrawCircle(x, y, s.Size, _p2);
         }
         _p2.MaskFilter = null;
@@ -428,10 +436,27 @@ public static class MenuBackgroundRenderer
             inner.QuadTo(x - iw * 0.2f + wind * 0.3f, h - ih * 0.6f, x + wind * 0.6f, h - ih);
             inner.QuadTo(x + iw * 0.2f + wind * 0.3f, h - ih * 0.6f, x + iw * 0.4f, h);
             inner.Close();
-            _p3.Color = new SKColor(255, 160, 40, (byte)Math.Min(255, alpha * 0.7f));
+            _p3.Color = new SKColor(255, 200, 80, (byte)Math.Min(255, alpha * 0.7f));
             canvas.DrawPath(inner, _p3);
         }
         _p3.MaskFilter = null;
+    }
+
+    /// <summary>Subtiler warmer radialer Glow in der Bildmitte (nur Default-Theme).</summary>
+    private static void RenderDefaultVignette(SKCanvas canvas, float w, float h, float t)
+    {
+        float pulse = MathF.Sin(t * 0.3f) * 0.15f + 0.85f;
+        float cx = w * 0.5f, cy = h * 0.45f;
+        float radius = MathF.Max(w, h) * 0.6f;
+
+        using var shader = SKShader.CreateRadialGradient(
+            new SKPoint(cx, cy), radius * pulse,
+            [new SKColor(255, 120, 40, 12), new SKColor(0, 0, 0, 0)],
+            SKShaderTileMode.Clamp);
+        _p1.Shader = shader;
+        _p1.MaskFilter = null;
+        canvas.DrawRect(0, 0, w, h, _p1);
+        _p1.Shader = null;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1014,41 +1039,77 @@ public static class MenuBackgroundRenderer
 
     private static void InitLuckySpin(Random rng)
     {
-        // Regenbogen-Punkte in Orbit-Rotation
+        // Regenbogen-Punkte in Orbit-Rotation (mehr + größer + heller + breiter verteilt)
         for (int i = 0; i < SPIN_RAINBOW_COUNT; i++)
         {
             ref var r = ref _spinRainbow[i];
             r.Phase = i * MathF.PI * 2f / SPIN_RAINBOW_COUNT;
-            r.Size = 3f + (float)rng.NextDouble() * 3f;
-            r.Speed = 0.3f + (float)rng.NextDouble() * 0.4f; // Orbit-Speed
-            r.Extra1 = 0.15f + (float)rng.NextDouble() * 0.25f; // Orbit-Radius (normalisiert)
-            r.Extra2 = (float)rng.NextDouble(); // Vertikaler Offset
+            r.Size = 4f + (float)rng.NextDouble() * 4f;
+            r.Speed = 0.3f + (float)rng.NextDouble() * 0.4f;
+            r.Extra1 = 0.15f + (float)rng.NextDouble() * 0.35f; // Breitere Orbit-Radien
+            r.Extra2 = (float)rng.NextDouble();
 
             // Regenbogen-HSV
             float hue = i * 360f / SPIN_RAINBOW_COUNT;
             HsvToRgb(hue, 0.8f, 1f, out r.R, out r.G, out r.B);
-            r.A = 60;
+            r.A = 100;
         }
 
+        // Glitzer (mehr + größer + deutlich heller)
         for (int i = 0; i < SPIN_GLITTER_COUNT; i++)
         {
             ref var g = ref _spinGlitter[i];
             g.X = (float)rng.NextDouble();
             g.Y = (float)rng.NextDouble();
-            g.Size = 2f + (float)rng.NextDouble() * 2f;
+            g.Size = 2.5f + (float)rng.NextDouble() * 3f;
             g.Phase = (float)rng.NextDouble() * MathF.PI * 2f;
             g.Speed = (float)rng.NextDouble() * 3f;
-            g.R = 255; g.G = 255; g.B = 255; g.A = 80;
+            g.R = 255; g.G = 255; g.B = 255; g.A = 130;
         }
 
+        // Lichtstreifen (mehr + stärker)
         for (int i = 0; i < SPIN_LIGHT_COUNT; i++)
         {
             ref var l = ref _spinLights[i];
             l.Phase = i * MathF.PI * 2f / SPIN_LIGHT_COUNT;
             l.Size = 2f;
             l.Speed = 0.5f + (float)rng.NextDouble() * 0.3f;
-            l.A = 15;
+            l.A = 30;
         }
+    }
+
+    /// <summary>Langsam rotierender Regenbogen-Ring in der Bildmitte (LuckySpin).</summary>
+    private static void RenderSpinRainbowRing(SKCanvas canvas, float w, float h, float t)
+    {
+        float cx = w * 0.5f, cy = h * 0.5f;
+        float radius = MathF.Min(w, h) * 0.35f;
+        float pulse = MathF.Sin(t * 0.4f) * 0.1f + 0.9f;
+
+        _strokePaint.StrokeWidth = 4f;
+        _strokePaint.MaskFilter = _largeGlow;
+        _strokePaint.Style = SKPaintStyle.Stroke;
+
+        // 12 Segmente mit Regenbogenfarben, rotierend
+        int segments = 12;
+        float sweepAngle = 360f / segments;
+        for (int i = 0; i < segments; i++)
+        {
+            float hue = (i * 360f / segments + t * 20f) % 360f;
+            HsvToRgb(hue, 0.7f, 1f, out byte r, out byte g, out byte b);
+            byte alpha = (byte)(25 * pulse);
+
+            _strokePaint.Color = new SKColor(r, g, b, alpha);
+
+            float startAngle = i * sweepAngle + t * 20f;
+            using var path = new SKPath();
+            path.AddArc(new SKRect(cx - radius * pulse, cy - radius * pulse * 0.6f,
+                                   cx + radius * pulse, cy + radius * pulse * 0.6f),
+                        startAngle, sweepAngle - 2f);
+            canvas.DrawPath(path, _strokePaint);
+        }
+
+        _strokePaint.MaskFilter = null;
+        _strokePaint.Style = SKPaintStyle.Stroke;
     }
 
     private static void RenderSpinRainbow(SKCanvas canvas, float w, float h, float t)
@@ -1066,7 +1127,7 @@ public static class MenuBackgroundRenderer
             float x = cx + MathF.Cos(angle) * radius;
             float y = cy + MathF.Sin(angle) * radius * 0.6f + (r.Extra2 - 0.5f) * h * 0.4f;
 
-            float pulse = MathF.Sin(t * 2f + r.Phase) * 0.3f + 0.7f;
+            float pulse = MathF.Sin(t * 2f + r.Phase) * 0.2f + 0.8f;
             _p1.Color = new SKColor(r.R, r.G, r.B, (byte)(r.A * pulse));
             canvas.DrawCircle(x, y, r.Size, _p1);
         }
@@ -1082,10 +1143,10 @@ public static class MenuBackgroundRenderer
             float x = g.X * w;
             float y = g.Y * h;
 
-            // Blink-Effekt (schnell ein/aus)
+            // Blink-Effekt (volle Sinus-Kurve nutzen, weniger unsichtbare Zeit)
             float blink = MathF.Sin(t * 5f + g.Phase);
-            if (blink < 0.3f) continue; // Unsichtbar
-            float alpha = (blink - 0.3f) / 0.7f;
+            if (blink < 0f) continue; // Nur negative Hälfte unsichtbar
+            float alpha = blink;
 
             _p2.Color = new SKColor(g.R, g.G, g.B, (byte)(g.A * alpha));
 
@@ -1110,14 +1171,14 @@ public static class MenuBackgroundRenderer
             float x = cx + MathF.Cos(angle) * maxR;
             float y = cy + MathF.Sin(angle) * maxR * 0.5f;
 
-            // Langer Lichtstreifen tangential zur Rotation
+            // Langer Lichtstreifen tangential zur Rotation (stärker + länger)
             float tangentX = -MathF.Sin(angle);
             float tangentY = MathF.Cos(angle) * 0.5f;
-            float len = 40f;
+            float len = 60f;
 
             _strokePaint.Color = new SKColor(255, 255, 255, l.A);
-            _strokePaint.StrokeWidth = 2f;
-            _strokePaint.MaskFilter = _mediumGlow;
+            _strokePaint.StrokeWidth = 3f;
+            _strokePaint.MaskFilter = _largeGlow;
             canvas.DrawLine(
                 x - tangentX * len, y - tangentY * len,
                 x + tangentX * len, y + tangentY * len,

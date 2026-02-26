@@ -28,8 +28,11 @@
     <StyleInclude Source="avares://MeineApps.UI/Controls/FloatingActionButton.axaml" />
     <StyleInclude Source="avares://MeineApps.UI/Styles/ModernCardStyles.axaml" />
 
-    <!-- BomberBlast GameButton: Scale-Transition bei Hover/Press -->
+    <!-- BomberBlast GameButton: Komplett transparenter Hintergrund + Scale-Transition -->
     <Style Selector="Button.GameButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="RenderTransformOrigin" Value="50%,50%" />
       <Setter Property="RenderTransform" Value="scale(1)" />
       <Setter Property="Transitions">
@@ -37,6 +40,18 @@
           <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" Easing="CubicEaseOut" />
         </Transitions>
       </Setter>
+    </Style>
+    <!-- Fluent-Theme ContentPresenter überschreiben (hat eigenen Background) -->
+    <Style Selector="Button.GameButton /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.GameButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.GameButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="Button.GameButton:pointerover">
       <Setter Property="RenderTransform" Value="scale(1.05)" />

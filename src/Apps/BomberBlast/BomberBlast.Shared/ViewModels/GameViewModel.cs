@@ -193,13 +193,8 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
         StopGameLoop();
         _gameEngine.Pause();
 
-        // Banner nach Spiel-Ende wieder anzeigen (Standard-Position unten)
+        // Banner-Offset zurücksetzen (Banner wird in BomberBlast nicht angezeigt)
         _gameEngine.BannerTopOffset = 0;
-        if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-        {
-            _adService.SetBannerPosition(false);
-            _adService.ShowBanner();
-        }
 
         // Unsubscribe from game events to prevent memory leaks
         _gameEngine.OnGameOver -= HandleGameOver;

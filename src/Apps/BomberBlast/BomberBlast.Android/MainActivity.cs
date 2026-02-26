@@ -82,8 +82,15 @@ public class MainActivity : AvaloniaMainActivity<App>
             {
                 gameEngine.OnDirectionChanged += () =>
                 {
-                    if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
-                        vibrator.Vibrate(VibrationEffect.CreateOneShot(15, VibrationEffect.DefaultAmplitude));
+                    try
+                    {
+                        if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
+                            vibrator.Vibrate(VibrationEffect.CreateOneShot(15, VibrationEffect.DefaultAmplitude));
+                    }
+                    catch (Java.Lang.SecurityException)
+                    {
+                        // VIBRATE-Permission fehlt oder entzogen → still ignorieren
+                    }
                 };
             }
         }

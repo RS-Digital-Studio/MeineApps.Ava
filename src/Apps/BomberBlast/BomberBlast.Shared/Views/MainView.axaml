@@ -26,9 +26,9 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid AutomationProperties.AutomationId="MainView_Root" RowDefinitions="*,Auto">
-    <!-- Row 0: Alle Page-Views -->
-    <Panel Grid.Row="0">
+  <Grid AutomationProperties.AutomationId="MainView_Root">
+    <!-- Alle Page-Views -->
+    <Panel>
       <!-- Main Menu -->
       <Border Classes="PageView" x:Name="MainMenuBorder"
               AutomationProperties.AutomationId="MainView_PageMainMenu">
@@ -59,7 +59,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsSettingsHelpTab}" Command="{Binding SwitchToSettingsTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate Settings}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -70,7 +70,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsSettingsHelpTab}" Command="{Binding SwitchToHelpTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate Help}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -112,7 +112,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsShopSpinTab}" Command="{Binding SwitchToShopTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate ShopTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -123,7 +123,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsShopSpinTab}" Command="{Binding SwitchToSpinTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate LuckySpinTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -153,7 +153,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsProfileAchievementsTab}" Command="{Binding SwitchToProfileTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate ProfileTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -164,7 +164,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsProfileAchievementsTab}" Command="{Binding SwitchToAchievementsTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate AchievementsTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -200,7 +200,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsChallengesMissionsTab}" Command="{Binding SwitchToDailyChallengeTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate DailyChallengeTitle}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -211,7 +211,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsChallengesMissionsTab}" Command="{Binding SwitchToMissionsTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate MissionsButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -253,7 +253,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding IsCardsCollectionTab}" Command="{Binding SwitchToDeckTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate DeckButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -264,7 +264,7 @@
                              Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
                 <Button IsVisible="{Binding !IsCardsCollectionTab}" Command="{Binding SwitchToCollectionTabCommand}"
-                        Background="Transparent" HorizontalContentAlignment="Center" Padding="0" Height="28">
+                        Background="Transparent" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="0" Height="28">
                   <TextBlock Text="{loc:Translate CollectionButton}" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
@@ -307,15 +307,11 @@
       </Border>
     </Panel>
 
-    <!-- Row 1: Ad-Banner Spacer (64dp fuer adaptive Banner, sichtbar wenn aktiv und nicht im Spiel) -->
-    <Border Grid.Row="1" Height="64"
-            AutomationProperties.AutomationId="MainView_AdSpacer"
-            IsVisible="{Binding IsAdBannerVisible}"
-            Background="Transparent" />
+    <!-- Kein Ad-Banner in BomberBlast (Landscape-Spiel, nur Rewarded Ads) -->
 
     <!-- Dialog-Overlays + Game Juice: über beide Rows gespannt -->
     <!-- Alert Dialog Overlay -->
-    <Border Grid.RowSpan="2" IsVisible="{Binding IsAlertDialogVisible}"
+    <Border IsVisible="{Binding IsAlertDialogVisible}"
             AutomationProperties.AutomationId="MainView_AlertOverlay"
             Background="#80000000" ZIndex="100"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -341,7 +337,7 @@
     </Border>
 
     <!-- Confirm Dialog Overlay -->
-    <Border Grid.RowSpan="2" IsVisible="{Binding IsConfirmDialogVisible}"
+    <Border IsVisible="{Binding IsConfirmDialogVisible}"
             AutomationProperties.AutomationId="MainView_ConfirmOverlay"
             Background="#80000000" ZIndex="100"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -375,11 +371,11 @@
     <!-- Game Juice Overlays -->
     <controls:FloatingTextOverlay x:Name="FloatingTextCanvas"
                                    AutomationProperties.AutomationId="MainView_FloatingText"
-                                   Grid.RowSpan="2" ZIndex="15"
+                                   ZIndex="15"
                                    IsHitTestVisible="False" />
     <controls:SkiaCelebrationOverlay x:Name="CelebrationCanvas"
                                       AutomationProperties.AutomationId="MainView_Celebration"
-                                      Grid.RowSpan="2" ZIndex="16"
+                                      ZIndex="16"
                                       IsHitTestVisible="False" />
   </Grid>
 

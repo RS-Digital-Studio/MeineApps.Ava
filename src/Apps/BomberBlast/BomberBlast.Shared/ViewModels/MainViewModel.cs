@@ -300,12 +300,10 @@ public partial class MainViewModel : ObservableObject
             FloatingTextRequested?.Invoke(msg, "error");
         };
 
-        // Ad-Banner: Beim Start NICHT anzeigen (MainMenu hat kein Banner)
-        // Banner wird erst angezeigt wenn eine Sub-View navigiert wird
+        // Ad-Banner: In BomberBlast (Landscape) kein Banner - nur Rewarded Ads
         IsAdBannerVisible = false;
-        if (adService.AdsEnabled && !purchaseService.IsPremium)
+        if (adService.AdsEnabled)
             adService.HideBanner();
-        adService.AdsStateChanged += (_, _) => IsAdBannerVisible = adService.BannerVisible && !IsGameActive && !IsMainMenuActive;
 
         // Ad-Unavailable Meldung anzeigen (benannte Methode statt Lambda fuer Unsubscribe)
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
@@ -478,19 +476,8 @@ public partial class MainViewModel : ObservableObject
         if (baseRoute != "Game")
             _soundManager.PlaySound(SoundManager.SFX_MENU_SELECT);
 
-        // Banner-Steuerung: MainMenu, Game, Shop und GemShop ohne Banner
-        if (baseRoute is "MainMenu" or "Game" or "Shop" or "GemShop" or "LuckySpin")
-        {
-            if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-                _adService.HideBanner();
-            IsAdBannerVisible = false;
-        }
-        else
-        {
-            if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-                _adService.ShowBanner();
-            IsAdBannerVisible = _adService.BannerVisible;
-        }
+        // Kein Banner in BomberBlast (Landscape) - nur Rewarded Ads
+        IsAdBannerVisible = false;
 
         switch (baseRoute)
         {
@@ -772,9 +759,6 @@ public partial class MainViewModel : ObservableObject
             {
                 HideAll();
                 IsMainMenuActive = true;
-                if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-                    _adService.HideBanner();
-                IsAdBannerVisible = false;
                 MenuVm.OnAppearing();
             }
             catch { /* Letzter Ausweg - App lebt weiter */ }
@@ -891,9 +875,6 @@ public partial class MainViewModel : ObservableObject
                 GameVm.OnDisappearing();
                 HideAll();
                 IsMainMenuActive = true;
-                if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-                    _adService.HideBanner();
-                IsAdBannerVisible = false;
                 MenuVm.OnAppearing();
             }
             return true;
@@ -914,9 +895,6 @@ public partial class MainViewModel : ObservableObject
         {
             HideAll();
             IsMainMenuActive = true;
-            if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-                _adService.HideBanner();
-            IsAdBannerVisible = false;
             MenuVm.OnAppearing();
             return true;
         }

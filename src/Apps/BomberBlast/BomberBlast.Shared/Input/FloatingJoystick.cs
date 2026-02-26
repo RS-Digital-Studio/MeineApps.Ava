@@ -5,8 +5,11 @@ namespace BomberBlast.Input;
 
 /// <summary>
 /// Joystick-Input-Handler mit zwei Modi:
-/// - Floating: Erscheint wo der Spieler tippt (Standard)
+/// - Floating: Erscheint wo der Spieler tippt (Standard, wie Brawl Stars)
 /// - Fixed: Immer sichtbar an fester Position unten links
+///
+/// Richtungsbestimmung per dominanter Achse (|dx| vs |dy|), kein Winkel-/Hysterese-System.
+/// Following-Base: Wenn der Daumen über den Radius hinausgeht, folgt die Basis dem Finger.
 /// </summary>
 public class FloatingJoystick : IInputHandler, IDisposable
 {
@@ -15,12 +18,14 @@ public class FloatingJoystick : IInputHandler, IDisposable
     // Joystick-Zustand
     private bool _isPressed;
     private float _baseX, _baseY;      // Mittelpunkt des Joysticks
-    private float _stickX, _stickY;    // Aktuelle Stick-Position
+    private float _stickX, _stickY;    // Aktuelle Stick-Position (= Finger-Position, geclampt)
+
     // Bomb-Button Zustand
     private bool _bombPressed;
     private bool _bombConsumed;
     private float _bombButtonX, _bombButtonY;
     private bool _bombButtonPressed;
+
     // Detonator-Button Zustand
     private float _detonatorButtonX, _detonatorButtonY;
     private bool _detonatorButtonPressed;
@@ -33,11 +38,11 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
     // Konfiguration
     private float _joystickRadius = 60f;
-    private float _deadZone = 0.15f;
+    private const float DEAD_ZONE = 0.18f; // 18% des Radius als Ruhezone
     private float _bombButtonRadius = 50f;
     private float _detonatorButtonRadius = 40f;
     private float _opacity = 0.7f;
-    private bool _isFixed; // Fixed-Modus: immer sichtbar an fester Position
+    private bool _isFixed;
 
     // Bewegung
     private Direction _currentDirection = Direction.None;
@@ -101,12 +106,12 @@ public class FloatingJoystick : IInputHandler, IDisposable
     {
         UpdateBombButtonPosition(screenWidth, screenHeight);
 
-        // Detonator-Button pruefen (ueber dem Bomb-Button)
+        // Detonator-Button prüfen (über dem Bomb-Button)
         if (HasDetonator)
         {
             float ddx = x - _detonatorButtonX;
             float ddy = y - _detonatorButtonY;
-            if (ddx * ddx + ddy * ddy <= _detonatorButtonRadius * _detonatorButtonRadius * 1.15f)
+            if (ddx * ddx + ddy * ddy <= _detonatorButtonRadius * _detonatorButtonRadius * 1.3f)
             {
                 _detonatorButtonPressed = true;
                 _detonatePressed = true;
@@ -116,10 +121,10 @@ public class FloatingJoystick : IInputHandler, IDisposable
             }
         }
 
-        // Bomb-Button pruefen (rechte Seite)
+        // Bomb-Button prüfen (rechte Seite)
         float dx = x - _bombButtonX;
         float dy = y - _bombButtonY;
-        if (dx * dx + dy * dy <= _bombButtonRadius * _bombButtonRadius * 1.15f)
+        if (dx * dx + dy * dy <= _bombButtonRadius * _bombButtonRadius * 1.3f)
         {
             _bombButtonPressed = true;
             _bombPressed = true;
@@ -130,23 +135,24 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
         if (_isFixed)
         {
-            // Fixed-Modus: Nur auf Joystick-Bereich reagieren
+            // Fixed-Modus: Nur auf Joystick-Bereich reagieren (1.8x Radius als Touch-Zone)
             UpdateFixedPosition(screenWidth, screenHeight);
             float jdx = x - _baseX;
             float jdy = y - _baseY;
-            if (jdx * jdx + jdy * jdy <= (_joystickRadius * 1.5f) * (_joystickRadius * 1.5f))
+            float touchZone = _joystickRadius * 1.8f;
+            if (jdx * jdx + jdy * jdy <= touchZone * touchZone)
             {
                 _isPressed = true;
                 _joystickPointerId = pointerId;
                 _stickX = x;
                 _stickY = y;
-                ClampStick();
+                ClampAndFollow();
                 UpdateDirection();
             }
         }
         else
         {
-            // Floating-Modus: Linke Hälfte - Joystick erscheint wo getippt wird
+            // Floating-Modus: Linke 60% - Joystick erscheint wo getippt wird
             if (x < screenWidth * 0.6f)
             {
                 _isPressed = true;
@@ -155,7 +161,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
                 _baseY = y;
                 _stickX = x;
                 _stickY = y;
-                UpdateDirection();
+                _currentDirection = Direction.None;
             }
         }
     }
@@ -168,14 +174,17 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
         _stickX = x;
         _stickY = y;
-        ClampStick();
+        ClampAndFollow();
         UpdateDirection();
     }
 
     /// <summary>
-    /// Stick auf Joystick-Radius begrenzen
+    /// Stick auf Radius begrenzen + Following-Base:
+    /// Wenn der Finger über den Radius hinausgeht, folgt die Basis dem Finger.
+    /// So bleibt der Stick immer am Rand und der Spieler kann intuitiv die Richtung ändern,
+    /// ohne seinen Finger zurückziehen zu müssen.
     /// </summary>
-    private void ClampStick()
+    private void ClampAndFollow()
     {
         float dx = _stickX - _baseX;
         float dy = _stickY - _baseY;
@@ -183,9 +192,16 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
         if (distance > _joystickRadius)
         {
-            float ratio = _joystickRadius / distance;
-            _stickX = _baseX + dx * ratio;
-            _stickY = _baseY + dy * ratio;
+            // Basis folgt dem Finger (Following-Mode)
+            float excess = distance - _joystickRadius;
+            float nx = dx / distance; // Normalisierte Richtung
+            float ny = dy / distance;
+            _baseX += nx * excess;
+            _baseY += ny * excess;
+
+            // Stick bleibt am Rand des Radius
+            _stickX = _baseX + nx * _joystickRadius;
+            _stickY = _baseY + ny * _joystickRadius;
         }
     }
 
@@ -239,32 +255,39 @@ public class FloatingJoystick : IInputHandler, IDisposable
         _bombPointerId = -1;
     }
 
-    // Hysterese: Richtung erst wechseln wenn Winkel deutlich abweicht (~10°)
-    private const float DIRECTION_HYSTERESIS = 0.17f; // ~10° in Radiant
-
+    /// <summary>
+    /// Richtung per dominanter Achse bestimmen (Standard für 4-Wege-Spiele).
+    /// |dx| > |dy| → horizontal (Left/Right), sonst vertikal (Up/Down).
+    /// Der Achsenvergleich IST die natürliche Hysterese: Um von horizontal zu vertikal
+    /// zu wechseln, muss der Daumen über die 45°-Diagonale hinaus.
+    /// </summary>
     private void UpdateDirection()
     {
         float dx = _stickX - _baseX;
         float dy = _stickY - _baseY;
-        float distance = MathF.Sqrt(dx * dx + dy * dy);
+        float distSq = dx * dx + dy * dy;
+        float deadZonePx = _joystickRadius * DEAD_ZONE;
 
-        if (distance < _joystickRadius * _deadZone)
+        // In der Dead Zone → keine Bewegung
+        if (distSq < deadZonePx * deadZonePx)
         {
-            _currentDirection = Direction.None;
+            if (_currentDirection != Direction.None)
+            {
+                _currentDirection = Direction.None;
+                DirectionChanged?.Invoke();
+            }
             return;
         }
 
-        float angle = MathF.Atan2(dy, dx);
-        Direction newDir = GetDirectionFromAngle(angle);
+        float absDx = MathF.Abs(dx);
+        float absDy = MathF.Abs(dy);
 
-        // Hysterese: Richtung nur wechseln wenn genug Abstand zur aktuellen
-        if (newDir != _currentDirection && _currentDirection != Direction.None)
-        {
-            float currentAngle = GetAngleForDirection(_currentDirection);
-            float angleDiff = MathF.Abs(NormalizeAngle(angle - currentAngle));
-            if (angleDiff < MathF.PI / 4 + DIRECTION_HYSTERESIS)
-                return; // Alte Richtung beibehalten
-        }
+        // Dominante Achse bestimmt die Richtung
+        Direction newDir;
+        if (absDx > absDy)
+            newDir = dx > 0 ? Direction.Right : Direction.Left;
+        else
+            newDir = dy > 0 ? Direction.Down : Direction.Up;
 
         if (newDir != _currentDirection)
         {
@@ -273,39 +296,12 @@ public class FloatingJoystick : IInputHandler, IDisposable
         }
     }
 
-    private static Direction GetDirectionFromAngle(float angle)
-    {
-        if (angle >= -MathF.PI / 4 && angle < MathF.PI / 4)
-            return Direction.Right;
-        if (angle >= MathF.PI / 4 && angle < 3 * MathF.PI / 4)
-            return Direction.Down;
-        if (angle >= -3 * MathF.PI / 4 && angle < -MathF.PI / 4)
-            return Direction.Up;
-        return Direction.Left;
-    }
-
-    private static float GetAngleForDirection(Direction dir) => dir switch
-    {
-        Direction.Right => 0f,
-        Direction.Down => MathF.PI / 2,
-        Direction.Left => MathF.PI,
-        Direction.Up => -MathF.PI / 2,
-        _ => 0f
-    };
-
-    private static float NormalizeAngle(float angle)
-    {
-        while (angle > MathF.PI) angle -= 2 * MathF.PI;
-        while (angle < -MathF.PI) angle += 2 * MathF.PI;
-        return angle;
-    }
-
     private void UpdateBombButtonPosition(float screenWidth, float screenHeight)
     {
         // Bomb-Button weiter in die Spielfläche (mehr Abstand vom Rand)
         _bombButtonX = screenWidth - _bombButtonRadius - 80;
-        _bombButtonY = screenHeight - _bombButtonRadius - 60;
-        // Detonator-Button ueber dem Bomb-Button
+        _bombButtonY = screenHeight - _bombButtonRadius - 30;
+        // Detonator-Button über dem Bomb-Button
         _detonatorButtonX = _bombButtonX;
         _detonatorButtonY = _bombButtonY - _bombButtonRadius - _detonatorButtonRadius - 15;
     }
@@ -326,14 +322,14 @@ public class FloatingJoystick : IInputHandler, IDisposable
             _borderPaint.Color = new SKColor(255, 255, 255, (byte)(alpha * 0.6f));
             canvas.DrawCircle(_baseX, _baseY, _joystickRadius, _borderPaint);
 
-            // Stick (zeigt Auslenkung wenn gedrueckt)
+            // Stick (zeigt Auslenkung wenn gedrückt)
             byte stickAlpha = _isPressed ? alpha : (byte)(alpha * 0.7f);
             _stickPaint.Color = new SKColor(255, 255, 255, stickAlpha);
             canvas.DrawCircle(_stickX, _stickY, _joystickRadius * 0.4f, _stickPaint);
         }
         else
         {
-            // Floating-Modus: Joystick nur wenn gedrueckt
+            // Floating-Modus: Joystick nur wenn gedrückt
             if (_isPressed)
             {
                 _basePaint.Color = new SKColor(100, 100, 100, (byte)(alpha * 0.5f));

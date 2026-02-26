@@ -188,7 +188,7 @@ public class Player : Entity
 
     // Stuck-Detection: Zählt Frames in denen sich der Spieler trotz Input nicht bewegt
     private int _stuckFrames;
-    private const int STUCK_THRESHOLD = 25; // Nach 25 Frames (~417ms) ohne Bewegung → Recovery
+    private const int STUCK_THRESHOLD = 15; // Nach 15 Frames (~250ms) ohne Bewegung → Recovery
 
     /// <summary>
     /// Bewege Spieler in aktuelle Richtung mit automatischem Grid-Alignment.

@@ -4169,4 +4169,109 @@
   <data name="PrestigeLose" xml:space="preserve">
     <value>You lose</value>
   </data>
+  <data name="PrestigeIncome10" xml:space="preserve">
+    <value>+10% Income</value>
+  </data>
+  <data name="PrestigeIncome10Desc" xml:space="preserve">
+    <value>Increases all workshop income by 10%</value>
+  </data>
+  <data name="PrestigeIncome25" xml:space="preserve">
+    <value>+25% Income</value>
+  </data>
+  <data name="PrestigeIncome25Desc" xml:space="preserve">
+    <value>Increases all workshop income by 25%</value>
+  </data>
+  <data name="PrestigeXp15" xml:space="preserve">
+    <value>+15% Experience</value>
+  </data>
+  <data name="PrestigeXp15Desc" xml:space="preserve">
+    <value>Increases all experience points by 15%</value>
+  </data>
+  <data name="PrestigeXp30" xml:space="preserve">
+    <value>+30% Experience</value>
+  </data>
+  <data name="PrestigeXp30Desc" xml:space="preserve">
+    <value>Increases all experience points by 30%</value>
+  </data>
+  <data name="PrestigeMoodSlow" xml:space="preserve">
+    <value>Mood Protection</value>
+  </data>
+  <data name="PrestigeMoodSlowDesc" xml:space="preserve">
+    <value>Reduces worker mood decay by 25%</value>
+  </data>
+  <data name="PrestigeCost15" xml:space="preserve">
+    <value>-15% Costs</value>
+  </data>
+  <data name="PrestigeCost15Desc" xml:space="preserve">
+    <value>Reduces all running costs by 15%</value>
+  </data>
+  <data name="PrestigeStartMoney" xml:space="preserve">
+    <value>Starting Capital</value>
+  </data>
+  <data name="PrestigeStartMoneyDesc" xml:space="preserve">
+    <value>Start after prestige with 5,000 € extra</value>
+  </data>
+  <data name="PrestigeStartMoneyBig" xml:space="preserve">
+    <value>Large Starting Capital</value>
+  </data>
+  <data name="PrestigeStartMoneyBigDesc" xml:space="preserve">
+    <value>Start after prestige with 50,000 € extra</value>
+  </data>
+  <data name="PrestigeBetterStartWorker" xml:space="preserve">
+    <value>Better Starting Worker</value>
+  </data>
+  <data name="PrestigeBetterStartWorkerDesc" xml:space="preserve">
+    <value>Start after prestige with a D-tier worker instead of F-tier</value>
+  </data>
+  <data name="PrestigeIncome50" xml:space="preserve">
+    <value>+50% Income</value>
+  </data>
+  <data name="PrestigeIncome50Desc" xml:space="preserve">
+    <value>Increases all workshop income by 50%</value>
+  </data>
+  <data name="PrestigeIncome100" xml:space="preserve">
+    <value>+100% Income</value>
+  </data>
+  <data name="PrestigeIncome100Desc" xml:space="preserve">
+    <value>Doubles all workshop income</value>
+  </data>
+  <data name="PrestigeCost30" xml:space="preserve">
+    <value>-30% Costs</value>
+  </data>
+  <data name="PrestigeCost30Desc" xml:space="preserve">
+    <value>Reduces all running costs by 30%</value>
+  </data>
+  <data name="PrestigeMoodImmunity" xml:space="preserve">
+    <value>Mood Immunity</value>
+  </data>
+  <data name="PrestigeMoodImmunityDesc" xml:space="preserve">
+    <value>Reduces worker mood decay by 50%</value>
+  </data>
+  <data name="PrestigeOfflineHours" xml:space="preserve">
+    <value>Offline Bonus</value>
+  </data>
+  <data name="PrestigeOfflineHoursDesc" xml:space="preserve">
+    <value>Increases maximum offline time by 4 hours</value>
+  </data>
+  <data name="PrestigeQuickJobLimit" xml:space="preserve">
+    <value>More Quick Jobs</value>
+  </data>
+  <data name="PrestigeQuickJobLimitDesc" xml:space="preserve">
+    <value>Increases the daily quick job limit by 10</value>
+  </data>
+  <data name="PrestigeStartWorkerB" xml:space="preserve">
+    <value>B-Tier Starting Worker</value>
+  </data>
+  <data name="PrestigeStartWorkerBDesc" xml:space="preserve">
+    <value>Start after prestige with a B-tier worker</value>
+  </data>
+  <data name="PrestigeCraftingSpeed" xml:space="preserve">
+    <value>Faster Crafting</value>
+  </data>
+  <data name="PrestigeCraftingSpeedDesc" xml:space="preserve">
+    <value>+25% crafting speed</value>
+  </data>
+  <data name="Claim" xml:space="preserve">
+    <value>Claim</value>
+  </data>
 </root>

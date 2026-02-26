@@ -32,6 +32,7 @@
                 <DataTemplate x:DataType="models:DailyChallenge">
                   <Border Margin="0,4" Padding="8" CornerRadius="8"
                           Background="{DynamicResource SurfaceBrush}"
+                          IsVisible="{Binding !IsClaimed}"
                           AutomationProperties.AutomationId="Dashboard_Border_ChallengeItem">
                     <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" RowSpacing="4">
                       <TextBlock Text="{Binding DisplayDescription}" FontSize="12"
@@ -39,21 +40,37 @@
                                  AutomationProperties.AutomationId="Dashboard_Txt_ChallengeDescription" />
                       <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4"
                                   VerticalAlignment="Center">
-                        <TextBlock Text="{Binding MoneyReward, StringFormat='{}{0:N0} €'}" FontSize="12"
-                                   Foreground="{DynamicResource SuccessBrush}"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardMoney" />
-                        <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="{Binding XpReward, StringFormat='{}{0} XP'}" FontSize="12"
-                                   Foreground="{DynamicResource SuccessBrush}"
-                                   AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardXp" />
-                        <!-- Goldschrauben mit Icon -->
-                        <StackPanel Orientation="Horizontal" Spacing="2"
-                                    IsVisible="{Binding HasGoldenScrewReward}">
+                        <!-- Belohnungs-Anzeige (nur wenn noch nicht abgeschlossen) -->
+                        <StackPanel Orientation="Horizontal" Spacing="4"
+                                    IsVisible="{Binding !IsCompleted}">
+                          <TextBlock Text="{Binding MoneyReward, StringFormat='{}{0:N0} €'}" FontSize="12"
+                                     Foreground="{DynamicResource SuccessBrush}"
+                                     AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardMoney" />
                           <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                          <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
-                          <TextBlock Text="{Binding GoldenScrewReward}" FontSize="12" Foreground="{StaticResource CraftGoldBrush}"
-                                     AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardGS" />
+                          <TextBlock Text="{Binding XpReward, StringFormat='{}{0} XP'}" FontSize="12"
+                                     Foreground="{DynamicResource SuccessBrush}"
+                                     AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardXp" />
+                          <!-- Goldschrauben mit Icon -->
+                          <StackPanel Orientation="Horizontal" Spacing="2"
+                                      IsVisible="{Binding HasGoldenScrewReward}">
+                            <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+                            <TextBlock Text="{Binding GoldenScrewReward}" FontSize="12" Foreground="{StaticResource CraftGoldBrush}"
+                                       AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardGS" />
+                          </StackPanel>
                         </StackPanel>
+                        <!-- Belohnung einsammeln Button (abgeschlossen, aber noch nicht eingesammelt) -->
+                        <Button Classes="Primary" Padding="10,6" MinHeight="36" CornerRadius="8"
+                                Background="{StaticResource CraftPrimaryBrush}"
+                                IsVisible="{Binding IsCompleted}"
+                                Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).ClaimChallengeRewardCommand}"
+                                CommandParameter="{Binding .}"
+                                AutomationProperties.AutomationId="Dashboard_Btn_ClaimChallengeReward">
+                          <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="Gift" Width="16" Height="16" Foreground="White" />
+                            <TextBlock Text="{loc:Translate Claim}" FontSize="12" FontWeight="Bold" Foreground="White" />
+                          </StackPanel>
+                        </Button>
                         <!-- Retry per Video-Ad -->
                         <Button Classes="Text" Padding="8,6" MinHeight="36" MinWidth="36"
                                 IsVisible="{Binding CanRetryWithAd}"

@@ -3,6 +3,7 @@ using Android.Content;
 using Android.Content.Res;
 using Android.Media;
 using Android.OS;
+using HandwerkerImperium.Services;
 using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Android;
@@ -40,12 +41,33 @@ public class AndroidAudioService : IAudioService
         [GameSound.ComboHit] = "sfx_combo_hit",
     };
 
-    public bool SoundEnabled { get; set; } = true;
-    public bool MusicEnabled { get; set; }
+    private readonly IGameStateService _gameStateService;
 
-    public AndroidAudioService(Activity activity)
+    public bool SoundEnabled
+    {
+        get => _gameStateService.State.SoundEnabled;
+        set
+        {
+            _gameStateService.State.SoundEnabled = value;
+            _gameStateService.MarkDirty();
+        }
+    }
+
+    public bool MusicEnabled
+    {
+        get => _gameStateService.State.MusicEnabled;
+        set
+        {
+            _gameStateService.State.MusicEnabled = value;
+            _gameStateService.MarkDirty();
+            if (!value) StopMusic();
+        }
+    }
+
+    public AndroidAudioService(Activity activity, IGameStateService gameStateService)
     {
         _activity = activity;
+        _gameStateService = gameStateService;
         _assets = activity.Assets!;
         InitializeSoundPool();
         InitializeVibrator();

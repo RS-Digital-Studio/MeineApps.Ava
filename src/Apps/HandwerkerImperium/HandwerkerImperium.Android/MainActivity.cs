@@ -12,6 +12,8 @@ using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
 using Android.Gms.Games;
 using HandwerkerImperium.Android;
+using HandwerkerImperium.Services;
+using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium;
 
@@ -47,8 +49,7 @@ public class MainActivity : AvaloniaMainActivity<App>
                 this, sp.GetRequiredService<IPreferencesService>(), sp.GetRequiredService<IAdService>());
 
         // Audio-Service für Sounds und Haptik
-        // TODO: AndroidAudioService-Klasse erstellen
-        App.AudioServiceFactory = _ => new AndroidAudioService(this);
+        App.AudioServiceFactory = sp => new AndroidAudioService(this, sp.GetRequiredService<IGameStateService>());
 
         // Benachrichtigungs-Service für lokale Push-Benachrichtigungen
         // TODO: AndroidNotificationService-Klasse erstellen

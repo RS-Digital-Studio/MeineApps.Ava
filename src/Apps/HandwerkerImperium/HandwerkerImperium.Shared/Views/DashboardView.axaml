@@ -243,6 +243,37 @@
       <StackPanel Spacing="20" Margin="16" AutomationProperties.AutomationId="Dashboard_Panel_MainContent">
 
         <!-- ============================================================= -->
+        <!-- WORKSHOPS (ganz oben auf dem Dashboard)                       -->
+        <!-- ============================================================= -->
+        <Grid ColumnDefinitions="*,Auto" AutomationProperties.AutomationId="Dashboard_Grid_WorkshopsHeader">
+          <TextBlock Text="{loc:Translate Workshops}" FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
+          <Button Grid.Column="1" Classes="Text" Padding="8,4" CornerRadius="12"
+                  Background="{StaticResource CraftPrimaryBrush}"
+                  Command="{Binding CycleBulkBuyCommand}">
+            <TextBlock Text="{Binding BulkBuyLabel}" FontSize="12" FontWeight="Bold" Foreground="White" />
+          </Button>
+        </Grid>
+
+        <!-- Onboarding-Hint -->
+        <Border Classes="TutorialHint" IsVisible="{Binding ShowTutorialHint}" Background="#20FFD700"
+                BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="1.5" CornerRadius="10"
+                Padding="10,6" Margin="0,0,0,4">
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+            <TextBlock Text="{loc:Translate TutorialUpgradeHint}" FontSize="13" FontWeight="SemiBold"
+                       Foreground="{StaticResource CraftGoldBrush}" />
+            <mi:MaterialIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+          </StackPanel>
+        </Border>
+
+        <!-- Workshop-Karten Canvas -->
+        <skia:SKCanvasView x:Name="WorkshopCardsCanvas" Height="800"
+                           PaintSurface="OnWorkshopCardsPaintSurface"
+                           PointerPressed="OnWorkshopCardsPointerPressed"
+                           PointerReleased="OnWorkshopCardsPointerReleased" />
+
+        <!-- ============================================================= -->
         <!-- WORKER-WARNUNG (erschöpft/unzufrieden/kündigung)              -->
         <!-- ============================================================= -->
         <Border IsVisible="{Binding HasWorkerWarning}"
@@ -516,54 +547,6 @@
             </ListBox>
           </StackPanel>
         </Border>
-
-        <!-- ============================================================= -->
-        <!-- WORKSHOPS SECTION: Farbige Karten mit Workshop-Identitaet     -->
-        <!-- ============================================================= -->
-        <Grid ColumnDefinitions="*,Auto" AutomationProperties.AutomationId="Dashboard_Grid_WorkshopsHeader">
-          <TextBlock Text="{loc:Translate Workshops}"
-                     FontSize="18" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     VerticalAlignment="Center"
-                     AutomationProperties.AutomationId="Dashboard_Txt_WorkshopsTitle" />
-          <!-- BulkBuy-Toggle -->
-          <Button Grid.Column="1" Classes="Text" Padding="8,4" CornerRadius="12"
-                  Background="{StaticResource CraftPrimaryBrush}"
-                  Command="{Binding CycleBulkBuyCommand}"
-                  AutomationProperties.AutomationId="Dashboard_Btn_BulkBuy">
-            <TextBlock Text="{Binding BulkBuyLabel}" FontSize="12" FontWeight="Bold"
-                       Foreground="White"
-                       AutomationProperties.AutomationId="Dashboard_Txt_BulkBuyLabel" />
-          </Button>
-        </Grid>
-
-        <!-- Onboarding-Hint: Pulsierender Hinweis fuer neue Spieler -->
-        <Border Classes="TutorialHint"
-                IsVisible="{Binding ShowTutorialHint}"
-                Background="#20FFD700"
-                BorderBrush="{StaticResource CraftGoldBrush}"
-                BorderThickness="1.5"
-                CornerRadius="10"
-                Padding="10,6"
-                Margin="0,0,0,4"
-                AutomationProperties.AutomationId="Dashboard_Border_TutorialHint">
-          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
-            <TextBlock Text="{loc:Translate TutorialUpgradeHint}"
-                       FontSize="13" FontWeight="SemiBold"
-                       Foreground="{StaticResource CraftGoldBrush}"
-                       AutomationProperties.AutomationId="Dashboard_Txt_TutorialHint" />
-            <mi:MaterialIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
-          </StackPanel>
-        </Border>
-
-        <!-- Workshop-Karten: Ein SKCanvasView rendert alle 8 Cards im Game-Stil (2x4 Grid) -->
-        <skia:SKCanvasView x:Name="WorkshopCardsCanvas"
-                           Height="800"
-                           PaintSurface="OnWorkshopCardsPaintSurface"
-                           PointerPressed="OnWorkshopCardsPointerPressed"
-                           PointerReleased="OnWorkshopCardsPointerReleased"
-                           AutomationProperties.AutomationId="Dashboard_Canvas_WorkshopCards" />
 
         <!-- ============================================================= -->
         <!-- FEATURES (8 Karten, 2 Spalten, individuelle Farben + Status)  -->

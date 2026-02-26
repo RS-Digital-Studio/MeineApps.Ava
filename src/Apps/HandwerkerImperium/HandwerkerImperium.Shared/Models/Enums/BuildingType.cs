@@ -71,14 +71,14 @@ public static class BuildingTypeExtensions
     /// </summary>
     public static string GetIcon(this BuildingType type) => type switch
     {
-        BuildingType.Canteen => "\ud83c\udf7d\ufe0f",           // Fork and knife
-        BuildingType.Storage => "\ud83d\udce6",                  // Package
-        BuildingType.Office => "\ud83c\udfe2",                   // Office building
-        BuildingType.Showroom => "\ud83c\udfaa",                 // Circus tent
-        BuildingType.TrainingCenter => "\ud83c\udf93",           // Graduation cap
-        BuildingType.VehicleFleet => "\ud83d\ude9a",             // Delivery truck
-        BuildingType.WorkshopExtension => "\ud83c\udfd7\ufe0f",  // Construction
-        _ => "\ud83c\udfe2"
+        BuildingType.Canteen => "Silverware",
+        BuildingType.Storage => "PackageVariantClosed",
+        BuildingType.Office => "OfficeBuildingOutline",
+        BuildingType.Showroom => "StorefrontOutline",
+        BuildingType.TrainingCenter => "SchoolOutline",
+        BuildingType.VehicleFleet => "TruckOutline",
+        BuildingType.WorkshopExtension => "HammerWrench",
+        _ => "OfficeBuildingOutline"
     };
 
     /// <summary>

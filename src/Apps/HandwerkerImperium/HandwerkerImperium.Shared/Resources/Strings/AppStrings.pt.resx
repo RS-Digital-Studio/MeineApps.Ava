@@ -3974,4 +3974,109 @@
   <data name="PrestigeLose" xml:space="preserve">
     <value>Perdes</value>
   </data>
+  <data name="PrestigeIncome10" xml:space="preserve">
+    <value>+10% Rendimento</value>
+  </data>
+  <data name="PrestigeIncome10Desc" xml:space="preserve">
+    <value>Aumenta o rendimento de todas as oficinas em 10%</value>
+  </data>
+  <data name="PrestigeIncome25" xml:space="preserve">
+    <value>+25% Rendimento</value>
+  </data>
+  <data name="PrestigeIncome25Desc" xml:space="preserve">
+    <value>Aumenta o rendimento de todas as oficinas em 25%</value>
+  </data>
+  <data name="PrestigeXp15" xml:space="preserve">
+    <value>+15% Experiência</value>
+  </data>
+  <data name="PrestigeXp15Desc" xml:space="preserve">
+    <value>Aumenta todos os pontos de experiência em 15%</value>
+  </data>
+  <data name="PrestigeXp30" xml:space="preserve">
+    <value>+30% Experiência</value>
+  </data>
+  <data name="PrestigeXp30Desc" xml:space="preserve">
+    <value>Aumenta todos os pontos de experiência em 30%</value>
+  </data>
+  <data name="PrestigeMoodSlow" xml:space="preserve">
+    <value>Proteção de humor</value>
+  </data>
+  <data name="PrestigeMoodSlowDesc" xml:space="preserve">
+    <value>Reduz a perda de humor dos trabalhadores em 25%</value>
+  </data>
+  <data name="PrestigeCost15" xml:space="preserve">
+    <value>-15% Custos</value>
+  </data>
+  <data name="PrestigeCost15Desc" xml:space="preserve">
+    <value>Reduz todos os custos operacionais em 15%</value>
+  </data>
+  <data name="PrestigeStartMoney" xml:space="preserve">
+    <value>Capital inicial</value>
+  </data>
+  <data name="PrestigeStartMoneyDesc" xml:space="preserve">
+    <value>Comece após o prestígio com 5.000 € extra</value>
+  </data>
+  <data name="PrestigeStartMoneyBig" xml:space="preserve">
+    <value>Grande capital inicial</value>
+  </data>
+  <data name="PrestigeStartMoneyBigDesc" xml:space="preserve">
+    <value>Comece após o prestígio com 50.000 € extra</value>
+  </data>
+  <data name="PrestigeBetterStartWorker" xml:space="preserve">
+    <value>Melhor trabalhador inicial</value>
+  </data>
+  <data name="PrestigeBetterStartWorkerDesc" xml:space="preserve">
+    <value>Comece após o prestígio com um trabalhador de nível D em vez de F</value>
+  </data>
+  <data name="PrestigeIncome50" xml:space="preserve">
+    <value>+50% Rendimento</value>
+  </data>
+  <data name="PrestigeIncome50Desc" xml:space="preserve">
+    <value>Aumenta o rendimento de todas as oficinas em 50%</value>
+  </data>
+  <data name="PrestigeIncome100" xml:space="preserve">
+    <value>+100% Rendimento</value>
+  </data>
+  <data name="PrestigeIncome100Desc" xml:space="preserve">
+    <value>Duplica o rendimento de todas as oficinas</value>
+  </data>
+  <data name="PrestigeCost30" xml:space="preserve">
+    <value>-30% Custos</value>
+  </data>
+  <data name="PrestigeCost30Desc" xml:space="preserve">
+    <value>Reduz todos os custos operacionais em 30%</value>
+  </data>
+  <data name="PrestigeMoodImmunity" xml:space="preserve">
+    <value>Imunidade de humor</value>
+  </data>
+  <data name="PrestigeMoodImmunityDesc" xml:space="preserve">
+    <value>Reduz a perda de humor dos trabalhadores em 50%</value>
+  </data>
+  <data name="PrestigeOfflineHours" xml:space="preserve">
+    <value>Bónus offline</value>
+  </data>
+  <data name="PrestigeOfflineHoursDesc" xml:space="preserve">
+    <value>Aumenta o tempo máximo offline em 4 horas</value>
+  </data>
+  <data name="PrestigeQuickJobLimit" xml:space="preserve">
+    <value>Mais trabalhos rápidos</value>
+  </data>
+  <data name="PrestigeQuickJobLimitDesc" xml:space="preserve">
+    <value>Aumenta o limite diário de trabalhos rápidos em 10</value>
+  </data>
+  <data name="PrestigeStartWorkerB" xml:space="preserve">
+    <value>Trabalhador inicial nível B</value>
+  </data>
+  <data name="PrestigeStartWorkerBDesc" xml:space="preserve">
+    <value>Comece após o prestígio com um trabalhador de nível B</value>
+  </data>
+  <data name="PrestigeCraftingSpeed" xml:space="preserve">
+    <value>Artesanato mais rápido</value>
+  </data>
+  <data name="PrestigeCraftingSpeedDesc" xml:space="preserve">
+    <value>+25% velocidade de artesanato</value>
+  </data>
+  <data name="Claim" xml:space="preserve">
+    <value>Recolher</value>
+  </data>
 </root>

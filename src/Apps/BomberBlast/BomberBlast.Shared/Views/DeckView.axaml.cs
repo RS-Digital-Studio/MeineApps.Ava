@@ -15,8 +15,8 @@ public partial class DeckView : UserControl
     }
 
     /// <summary>
-    /// PaintSurface-Handler für Karten im Sammlung-Grid (30x30).
-    /// Rendert SkiaSharp Bomben-Icons statt generischer MaterialIcons.
+    /// PaintSurface-Handler für Karten im Sammlung-Grid.
+    /// Rendert SkiaSharp Bomben-Icons - auch für gesperrte Karten (Silhouette).
     /// </summary>
     private void OnDeckCardPaint(object? sender, SKPaintSurfaceEventArgs e)
     {
@@ -25,8 +25,6 @@ public partial class DeckView : UserControl
 
         if (sender is not SKCanvasView view || view.Tag is not CardDisplayItem card)
             return;
-
-        if (!card.IsOwned) return;
 
         var bounds = canvas.LocalClipBounds;
         HelpIconRenderer.DrawBombCard(canvas, bounds.MidX, bounds.MidY,

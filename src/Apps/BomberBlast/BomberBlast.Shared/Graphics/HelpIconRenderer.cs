@@ -932,32 +932,56 @@ public static class HelpIconRenderer
 
         var bodyColor = GetBombBodyColor(type);
         float r = size * 0.3f;
+        float bombCy = cy + r * 0.1f;
 
-        // Bomben-Körper (farbiger Kreis)
-        fillPaint.Color = bodyColor;
-        canvas.DrawCircle(cx, cy + r * 0.1f, r, fillPaint);
+        // Farbige Glow-Aura hinter dem Bomben-Körper (Blur-basiert)
+        fillPaint.Color = bodyColor.WithAlpha(80);
+        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.5f);
+        canvas.DrawCircle(cx, bombCy, r * 1.1f, fillPaint);
+        fillPaint.MaskFilter = null;
 
-        // Highlight (heller Fleck oben-links)
-        fillPaint.Color = new SKColor(255, 255, 255, 60);
-        canvas.DrawCircle(cx - r * 0.25f, cy - r * 0.2f, r * 0.3f, fillPaint);
+        // Bomben-Körper mit Gradient (heller oben, bodyColor unten)
+        var lighterColor = new SKColor(
+            (byte)Math.Min(255, bodyColor.Red + 60),
+            (byte)Math.Min(255, bodyColor.Green + 60),
+            (byte)Math.Min(255, bodyColor.Blue + 60));
+        using var bodyShader = SKShader.CreateLinearGradient(
+            new SKPoint(cx, bombCy - r),
+            new SKPoint(cx, bombCy + r),
+            [lighterColor, bodyColor],
+            [0f, 1f],
+            SKShaderTileMode.Clamp);
+        fillPaint.Shader = bodyShader;
+        canvas.DrawCircle(cx, bombCy, r, fillPaint);
+        fillPaint.Shader = null;
 
-        // Zündschnur
+        // Highlight (heller Fleck oben-links, größer und kräftiger)
+        fillPaint.Color = new SKColor(255, 255, 255, 100);
+        canvas.DrawCircle(cx - r * 0.25f, cy - r * 0.2f, r * 0.35f, fillPaint);
+
+        // Zündschnur (etwas dicker)
         strokePaint.Color = new SKColor(180, 140, 80);
-        strokePaint.StrokeWidth = size * 0.04f;
-        float fuseBaseY = cy + r * 0.1f - r;
+        strokePaint.StrokeWidth = size * 0.06f;
+        float fuseBaseY = bombCy - r;
         using var fusePath = new SKPath();
         fusePath.MoveTo(cx, fuseBaseY);
         fusePath.QuadTo(cx + r * 0.3f, fuseBaseY - r * 0.3f, cx + r * 0.15f, fuseBaseY - r * 0.5f);
         canvas.DrawPath(fusePath, strokePaint);
 
-        // Funke an der Zündschnur-Spitze
+        // Funke mit Glow (erst großer goldener Glow-Kreis, dann heller Kern)
+        float sparkX = cx + r * 0.15f;
+        float sparkY = fuseBaseY - r * 0.5f;
+        fillPaint.Color = new SKColor(255, 200, 50, 100);
+        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.04f);
+        canvas.DrawCircle(sparkX, sparkY, size * 0.07f, fillPaint);
+        fillPaint.MaskFilter = null;
         fillPaint.Color = new SKColor(255, 200, 50);
-        canvas.DrawCircle(cx + r * 0.15f, fuseBaseY - r * 0.5f, size * 0.04f, fillPaint);
-        fillPaint.Color = new SKColor(255, 255, 200);
-        canvas.DrawCircle(cx + r * 0.15f, fuseBaseY - r * 0.5f, size * 0.02f, fillPaint);
+        canvas.DrawCircle(sparkX, sparkY, size * 0.045f, fillPaint);
+        fillPaint.Color = new SKColor(255, 255, 220);
+        canvas.DrawCircle(sparkX, sparkY, size * 0.025f, fillPaint);
 
-        // Typ-Symbol im Bomben-Kreis
-        DrawBombTypeSymbol(canvas, type, cx, cy + r * 0.1f, r * 0.55f, fillPaint, strokePaint);
+        // Typ-Symbol im Bomben-Kreis (groß und deutlich)
+        DrawBombTypeSymbol(canvas, type, cx, bombCy, r * 0.85f, fillPaint, strokePaint);
     }
 
     /// <summary>Zeichnet das Typ-Symbol innerhalb des Bomben-Kreises</summary>

@@ -51,6 +51,8 @@
             </Border>
             <Border Background="{DynamicResource SurfaceBrush}"
                     CornerRadius="16" Padding="12,6"
+                    BorderBrush="#40FFD700" BorderThickness="1"
+                    BoxShadow="0 2 8 0 #25000000"
                     AutomationProperties.AutomationId="Deck_GemBadge">
               <StackPanel Orientation="Horizontal" Spacing="6">
                 <mi:MaterialIcon Kind="DiamondStone" Width="18" Height="18" Foreground="#00BCD4" />
@@ -64,17 +66,18 @@
 
         <!-- Sammlungs-Fortschritt -->
         <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="10" Padding="12,6" Margin="0,0,0,10">
+                CornerRadius="10" Padding="12,6" Margin="0,0,0,10"
+                BoxShadow="0 2 8 0 #25000000">
           <Grid ColumnDefinitions="Auto,*,Auto">
             <mi:MaterialIcon Grid.Column="0" Kind="CardsPlaying" Width="18" Height="18"
                              Foreground="#1565C0" Margin="0,0,8,0" VerticalAlignment="Center" />
             <ProgressBar Grid.Column="1"
                          Value="{Binding CollectionProgressPercent}" Maximum="100"
-                         Foreground="#1565C0" Height="6" CornerRadius="3"
+                         Foreground="#1565C0" Height="14" CornerRadius="7"
                          VerticalAlignment="Center" Margin="0,0,8,0" />
             <TextBlock Grid.Column="2"
                        Text="{Binding CollectionProgressText}"
-                       FontSize="13" FontWeight="SemiBold"
+                       FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </Grid>
@@ -91,94 +94,151 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:CardDisplayItem">
-                <Button Classes="Text" Padding="0" Margin="4"
-                        Command="{Binding #Deck_Root.DataContext.SelectCardCommand}"
-                        CommandParameter="{Binding}"
-                        Opacity="{Binding CardOpacity}">
-                  <Border Width="100" Height="120" CornerRadius="10" Padding="6"
-                          BorderThickness="2" ClipToBounds="True">
-                    <Border.Background>
-                      <SolidColorBrush Color="#FFFFFF" Opacity="0.06" />
-                    </Border.Background>
+                <Button Classes="Text" Padding="0" Margin="3"
+                        Width="155" Height="240">
+                  <Button.Command>
+                    <Binding Path="DataContext.SelectCardCommand" ElementName="Deck_Root" />
+                  </Button.Command>
+                  <Button.CommandParameter>
+                    <Binding />
+                  </Button.CommandParameter>
+                  <!-- Karten-Tile: Groß mit Raritäts-Border (auch bei gesperrten) -->
+                  <Border CornerRadius="14" Padding="0"
+                          ClipToBounds="True"
+                          BoxShadow="0 3 12 0 #35000000">
                     <Border.BorderBrush>
-                      <SolidColorBrush Color="{Binding RarityColorHex}" />
+                      <SolidColorBrush Color="{Binding RarityColorHex}"
+                                       Opacity="{Binding RarityBorderOpacity}" />
                     </Border.BorderBrush>
-                    <Grid RowDefinitions="Auto,*,Auto,Auto">
+                    <Border.BorderThickness>3</Border.BorderThickness>
+                    <Panel>
+                      <!-- Basis-Hintergrund mit Raritäts-Tönung -->
+                      <Border CornerRadius="11">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                            <GradientStop Color="#30FFFFFF" Offset="0" />
+                            <GradientStop Color="#12FFFFFF" Offset="0.4" />
+                            <GradientStop Color="#25000000" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                      </Border>
 
-                      <!-- Oben: Raritäts-Punkt + Badges -->
-                      <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,2">
-                        <!-- Raritäts-Punkt -->
-                        <Ellipse Grid.Column="0" Width="8" Height="8">
-                          <Ellipse.Fill>
-                            <SolidColorBrush Color="{Binding RarityColorHex}" />
-                          </Ellipse.Fill>
-                        </Ellipse>
+                      <!-- Raritäts-Schimmer-Overlay (subtiler Farbverlauf) -->
+                      <Border CornerRadius="11" Opacity="{Binding RarityShimmerOpacity}">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                            <GradientStop Color="{Binding RarityGlowHex}" Offset="0" />
+                            <GradientStop Color="Transparent" Offset="0.6" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                      </Border>
 
-                        <!-- Upgrade-Badge -->
-                        <Border Grid.Column="2" CornerRadius="6" Padding="3,1"
-                                IsVisible="{Binding ShowUpgradeBadge}">
-                          <Border.Background>
-                            <SolidColorBrush Color="#4CAF50" Opacity="0.8" />
-                          </Border.Background>
-                          <mi:MaterialIcon Kind="ArrowUpBold" Width="10" Height="10"
-                                           Foreground="White" />
-                        </Border>
+                      <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="8">
 
-                        <!-- Equipped-Badge -->
-                        <Border Grid.Column="2" CornerRadius="6" Padding="3,1"
-                                IsVisible="{Binding ShowEquippedBadge}">
-                          <Border.Background>
-                            <SolidColorBrush Color="#2196F3" Opacity="0.8" />
-                          </Border.Background>
-                          <mi:MaterialIcon Kind="Check" Width="10" Height="10"
-                                           Foreground="White" />
-                        </Border>
-                      </Grid>
+                        <!-- Oben: Rarität-Badge + Status-Badges -->
+                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,2,0,0">
+                          <!-- Raritäts-Indikator -->
+                          <Border Grid.Column="0" CornerRadius="6" Padding="6,3">
+                            <Border.Background>
+                              <SolidColorBrush Color="{Binding RarityColorHex}" Opacity="0.2" />
+                            </Border.Background>
+                            <Ellipse Width="9" Height="9">
+                              <Ellipse.Fill>
+                                <SolidColorBrush Color="{Binding RarityColorHex}" />
+                              </Ellipse.Fill>
+                            </Ellipse>
+                          </Border>
 
-                      <!-- Mitte: Bomben-Icon (SkiaSharp für besessene, Lock für gesperrte) -->
-                      <Panel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
-                        <!-- Gesperrtes Icon -->
-                        <mi:MaterialIcon Kind="Lock" Width="28" Height="28"
-                                         Foreground="{DynamicResource TextMutedBrush}"
-                                         IsVisible="{Binding !IsOwned}" />
-                        <!-- SkiaSharp Bomben-Icon -->
-                        <skia:SKCanvasView Width="30" Height="30"
-                                           IsVisible="{Binding IsOwned}"
-                                           Tag="{Binding}" PaintSurface="OnDeckCardPaint" />
-                      </Panel>
+                          <!-- Upgrade-Badge -->
+                          <Border Grid.Column="2" CornerRadius="6" Padding="5,3"
+                                  IsVisible="{Binding ShowUpgradeBadge}">
+                            <Border.Background>
+                              <SolidColorBrush Color="#4CAF50" Opacity="0.85" />
+                            </Border.Background>
+                            <mi:MaterialIcon Kind="ArrowUpBold" Width="12" Height="12"
+                                             Foreground="White" />
+                          </Border>
 
-                      <!-- Name -->
-                      <TextBlock Grid.Row="2"
-                                 Text="{Binding Name}"
-                                 FontSize="10" FontWeight="SemiBold"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 TextTrimming="CharacterEllipsis"
-                                 TextAlignment="Center" MaxLines="1"
-                                 HorizontalAlignment="Center" Margin="0,2,0,0" />
+                          <!-- Equipped-Badge -->
+                          <Border Grid.Column="2" CornerRadius="6" Padding="5,3"
+                                  IsVisible="{Binding ShowEquippedBadge}">
+                            <Border.Background>
+                              <SolidColorBrush Color="#2196F3" Opacity="0.85" />
+                            </Border.Background>
+                            <mi:MaterialIcon Kind="Check" Width="12" Height="12"
+                                             Foreground="White" />
+                          </Border>
+                        </Grid>
 
-                      <!-- Unten: Level + Count -->
-                      <Grid Grid.Row="3" ColumnDefinitions="*,*" IsVisible="{Binding IsOwned}">
-                        <TextBlock Grid.Column="0"
-                                   Text="{Binding LevelLabel}"
-                                   FontSize="11" FontWeight="Bold"
-                                   HorizontalAlignment="Left">
+                        <!-- Mitte: GROSSES Bomben-Icon (SkiaSharp) - zentriert -->
+                        <Panel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+                          <!-- Gesperrte Karte: Bomben-Silhouette (gedimmt) + Lock -->
+                          <Panel IsVisible="{Binding !IsOwned}">
+                            <skia:SKCanvasView Width="130" Height="130" Opacity="0.2"
+                                               Tag="{Binding}" PaintSurface="OnDeckCardPaint" />
+                            <mi:MaterialIcon Kind="LockOutline" Width="40" Height="40"
+                                             Foreground="{DynamicResource TextMutedBrush}"
+                                             Opacity="0.7"
+                                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          </Panel>
+                          <!-- Freigeschaltete Karte: Großes SkiaSharp Bomben-Icon -->
+                          <skia:SKCanvasView Width="130" Height="130"
+                                             IsVisible="{Binding IsOwned}"
+                                             Tag="{Binding}" PaintSurface="OnDeckCardPaint" />
+                        </Panel>
+
+                        <!-- Name -->
+                        <TextBlock Grid.Row="2"
+                                   Text="{Binding Name}"
+                                   FontSize="13" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextAlignment="Center" MaxLines="1"
+                                   HorizontalAlignment="Center" Margin="0,4,0,0"
+                                   Opacity="{Binding NameOpacity}" />
+
+                        <!-- Unten: Level-Anzeige + Count (nur bei besessenen) -->
+                        <Grid Grid.Row="3" ColumnDefinitions="*,*" Margin="0,3,0,2"
+                              IsVisible="{Binding IsOwned}">
+                          <Border Grid.Column="0" CornerRadius="5" Padding="5,2"
+                                  HorizontalAlignment="Left">
+                            <Border.Background>
+                              <SolidColorBrush Color="{Binding LevelColorHex}" Opacity="0.2" />
+                            </Border.Background>
+                            <TextBlock Text="{Binding LevelLabel}"
+                                       FontSize="12" FontWeight="Bold">
+                              <TextBlock.Foreground>
+                                <SolidColorBrush Color="{Binding LevelColorHex}" />
+                              </TextBlock.Foreground>
+                            </TextBlock>
+                          </Border>
+                          <TextBlock Grid.Column="1"
+                                     FontSize="11" FontWeight="SemiBold"
+                                     Foreground="{DynamicResource TextMutedBrush}"
+                                     HorizontalAlignment="Right"
+                                     VerticalAlignment="Center">
+                            <TextBlock.Text>
+                              <MultiBinding StringFormat="x{0}">
+                                <Binding Path="Count" />
+                              </MultiBinding>
+                            </TextBlock.Text>
+                          </TextBlock>
+                        </Grid>
+
+                        <!-- Raritäts-Label für gesperrte Karten -->
+                        <TextBlock Grid.Row="3"
+                                   IsVisible="{Binding !IsOwned}"
+                                   Text="{Binding RarityLabel}"
+                                   FontSize="10" FontWeight="SemiBold"
+                                   TextAlignment="Center"
+                                   HorizontalAlignment="Center"
+                                   Margin="0,3,0,2">
                           <TextBlock.Foreground>
-                            <SolidColorBrush Color="{Binding LevelColorHex}" />
+                            <SolidColorBrush Color="{Binding RarityColorHex}" Opacity="0.6" />
                           </TextBlock.Foreground>
                         </TextBlock>
-                        <TextBlock Grid.Column="1"
-                                   FontSize="9"
-                                   Foreground="{DynamicResource TextMutedBrush}"
-                                   HorizontalAlignment="Right"
-                                   VerticalAlignment="Center">
-                          <TextBlock.Text>
-                            <MultiBinding StringFormat="x{0}">
-                              <Binding Path="Count" />
-                            </MultiBinding>
-                          </TextBlock.Text>
-                        </TextBlock>
                       </Grid>
-                    </Grid>
+                    </Panel>
                   </Border>
                 </Button>
               </DataTemplate>
@@ -194,8 +254,14 @@
         <StackPanel Spacing="10" Margin="0,0,0,8">
 
           <!-- ── Deck-Slots ── -->
-          <Border Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="12" Padding="12,10">
+          <Border CornerRadius="12" Padding="12,10"
+                  BoxShadow="0 2 8 0 #25000000">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Color="#15003064" Offset="0" />
+                <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
             <StackPanel Spacing="8">
               <!-- Deck-Header -->
               <Grid ColumnDefinitions="Auto,*,Auto">
@@ -229,13 +295,13 @@
                             <SolidColorBrush Color="#FFFFFF" Opacity="0.08" />
                           </Border.Background>
                           <TextBlock Text="{Binding SlotNumber}"
-                                     FontSize="11" FontWeight="Bold"
+                                     FontSize="12" FontWeight="Bold"
                                      Foreground="{DynamicResource TextSecondaryBrush}" />
                         </Border>
 
                         <!-- Icon (wenn belegt) - SkiaSharp Bomben-Icon -->
                         <skia:SKCanvasView Grid.Column="1"
-                                           Width="16" Height="16"
+                                           Width="22" Height="22"
                                            IsVisible="{Binding !IsEmpty}"
                                            Margin="0,0,6,0" VerticalAlignment="Center"
                                            Tag="{Binding}" PaintSurface="OnDeckSlotPaint" />
@@ -244,7 +310,7 @@
                         <StackPanel Grid.Column="2" VerticalAlignment="Center">
                           <TextBlock Text="{Binding Name}"
                                      IsVisible="{Binding !IsEmpty}"
-                                     FontSize="12" FontWeight="SemiBold"
+                                     FontSize="13" FontWeight="SemiBold"
                                      Foreground="{DynamicResource TextPrimaryBrush}"
                                      TextTrimming="CharacterEllipsis" />
                           <TextBlock IsVisible="{Binding !IsEmpty}"
@@ -253,7 +319,7 @@
                                      Foreground="{DynamicResource TextSecondaryBrush}" />
                           <TextBlock Text="---"
                                      IsVisible="{Binding IsEmpty}"
-                                     FontSize="12"
+                                     FontSize="13"
                                      Foreground="{DynamicResource TextMutedBrush}" />
                         </StackPanel>
 
@@ -273,37 +339,45 @@
               </ItemsControl>
 
               <!-- Slot #5 Freischalten-Button (nur wenn nicht freigeschaltet) -->
-              <Button Classes="GameButton" HorizontalAlignment="Stretch"
-                      IsVisible="{Binding !IsSlot5Unlocked}"
-                      IsEnabled="{Binding CanUnlockSlot5}"
-                      Command="{Binding UnlockSlot5Command}"
-                      Height="36" Margin="0,4,0,0">
-                <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="LockOpenVariant" Width="16" Height="16" Foreground="#00BCD4" />
-                  <TextBlock Text="{Binding UnlockSlot5Text}"
-                             FontSize="12" FontWeight="SemiBold" Foreground="#00BCD4" />
-                </StackPanel>
-              </Button>
+              <Panel MinHeight="36" Margin="0,4,0,0"
+                     IsVisible="{Binding !IsSlot5Unlocked}">
+                <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.4" ButtonSeed="140" />
+                <Button Classes="GameButton" HorizontalAlignment="Stretch"
+                        IsEnabled="{Binding CanUnlockSlot5}"
+                        Command="{Binding UnlockSlot5Command}"
+                        Background="Transparent"
+                        Foreground="White"
+                        Height="36">
+                  <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="LockOpenVariant" Width="16" Height="16" Foreground="White" />
+                    <TextBlock Text="{Binding UnlockSlot5Text}"
+                               FontSize="12" FontWeight="SemiBold" Foreground="White" />
+                  </StackPanel>
+                </Button>
+              </Panel>
             </StackPanel>
           </Border>
 
           <!-- ── Karten-Detail ── -->
           <Border Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="12,10"
+                  BorderBrush="{DynamicResource AccentBrush}"
+                  BorderThickness="0,3,0,0"
+                  BoxShadow="0 2 8 0 #25000000"
                   IsVisible="{Binding HasSelectedCard}">
             <StackPanel Spacing="8">
 
               <!-- Name + Schließen-Button -->
               <Grid ColumnDefinitions="Auto,*,Auto">
-                <!-- SkiaSharp Bomben-Icon -->
+                <!-- SkiaSharp Bomben-Icon (größer für Detail-Ansicht) -->
                 <skia:SKCanvasView Grid.Column="0"
-                                   Width="24" Height="24" Margin="0,0,8,0"
+                                   Width="36" Height="36" Margin="0,0,8,0"
                                    IsVisible="{Binding HasSelectedCard}"
                                    PaintSurface="OnDeckDetailPaint" />
                 <!-- Name -->
                 <TextBlock Grid.Column="1"
                            Text="{Binding SelectedCardName}"
-                           FontSize="16" FontWeight="Bold"
+                           FontSize="18" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
                            VerticalAlignment="Center" />
                 <!-- Schließen -->
@@ -375,10 +449,25 @@
                                FontSize="10" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextMutedBrush}" />
                     <ProgressBar Value="{Binding UpgradeProgressPercent}" Maximum="100"
-                                 Foreground="#4CAF50" Height="5" CornerRadius="2" />
+                                 Foreground="#4CAF50" Height="12" CornerRadius="6" />
                     <TextBlock Text="{Binding SelectedCardUpgradeText}"
                                FontSize="11"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
+
+                    <!-- Upgrade-Benefit: Was bringt das nächste Level? -->
+                    <Border CornerRadius="5" Padding="6,3" Margin="0,2,0,0"
+                            IsVisible="{Binding ShowUpgradeProgress}">
+                      <Border.Background>
+                        <SolidColorBrush Color="#FFD700" Opacity="0.08" />
+                      </Border.Background>
+                      <StackPanel Orientation="Horizontal" Spacing="5">
+                        <mi:MaterialIcon Kind="ArrowUpBold" Width="12" Height="12"
+                                         Foreground="#FFD700" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding SelectedCardUpgradeBenefitText}"
+                                   FontSize="10" FontWeight="SemiBold"
+                                   Foreground="#FFD700" VerticalAlignment="Center" />
+                      </StackPanel>
+                    </Border>
                   </StackPanel>
                 </Border>
 
@@ -413,16 +502,21 @@
                 </Grid>
 
                 <!-- Upgrade-Button -->
-                <Button Classes="GameButton" HorizontalAlignment="Stretch"
-                        IsEnabled="{Binding CanUpgradeSelected}"
-                        Command="{Binding UpgradeCardCommand}"
-                        Height="34" Margin="0,2,0,0">
-                  <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="ArrowUpBold" Width="16" Height="16" />
-                    <TextBlock Text="{Binding SelectedCardUpgradeText}"
-                               FontSize="12" FontWeight="SemiBold" />
-                  </StackPanel>
-                </Button>
+                <Panel MinHeight="34" Margin="0,2,0,0">
+                  <controls:GameButtonCanvas ButtonColor="#4CAF50" DamageLevel="0.5" ButtonSeed="141" />
+                  <Button Classes="GameButton" HorizontalAlignment="Stretch"
+                          IsEnabled="{Binding CanUpgradeSelected}"
+                          Command="{Binding UpgradeCardCommand}"
+                          Background="Transparent"
+                          Foreground="White"
+                          Height="34">
+                    <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="ArrowUpBold" Width="16" Height="16" Foreground="White" />
+                      <TextBlock Text="{Binding SelectedCardUpgradeText}"
+                                 FontSize="12" FontWeight="SemiBold" Foreground="White" />
+                    </StackPanel>
+                  </Button>
+                </Panel>
               </StackPanel>
 
               <!-- ── Nicht besessene Karte: Info ── -->

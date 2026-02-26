@@ -116,6 +116,10 @@ public partial class DeckViewModel : ObservableObject, INavigable, IGameJuiceEmi
     [ObservableProperty]
     private string _upgradeLabel = "";
 
+    /// <summary>Beschreibung was das nächste Upgrade bringt (z.B. "Silber: 3 Einsätze, 1.2x Stärke")</summary>
+    [ObservableProperty]
+    private string _selectedCardUpgradeBenefitText = "";
+
     [ObservableProperty]
     private string _notOwnedText = "";
 
@@ -347,6 +351,11 @@ public partial class DeckViewModel : ObservableObject, INavigable, IGameJuiceEmi
             var owned = _cardService.GetOwnedCard(cardDef.BombType);
             bool isOwned = owned != null;
 
+            // Raritäts-Label für gesperrte Karten
+            string rarityLabel = !isOwned
+                ? (_localization.GetString(cardDef.Rarity.GetNameKey()) ?? cardDef.Rarity.ToString())
+                : "";
+
             CollectionCards.Add(new CardDisplayItem
             {
                 BombType = cardDef.BombType,
@@ -360,7 +369,8 @@ public partial class DeckViewModel : ObservableObject, INavigable, IGameJuiceEmi
                 IsEquipped = isOwned && IsCardEquipped(cardDef.BombType),
                 IsOwned = isOwned,
                 IconName = GetBombIcon(cardDef.BombType),
-                UsesPerLevel = isOwned ? cardDef.GetUsesForLevel(owned!.Level) : cardDef.BaseBronzeUses
+                UsesPerLevel = isOwned ? cardDef.GetUsesForLevel(owned!.Level) : cardDef.BaseBronzeUses,
+                RarityLabel = rarityLabel
             });
         }
     }
@@ -478,6 +488,19 @@ public partial class DeckViewModel : ObservableObject, INavigable, IGameJuiceEmi
                 CanUpgradeSelected = owned.Count >= dupsNeeded && _coinService.Balance >= coinCost;
                 UpgradeProgressPercent = Math.Min(100, owned.Count * 100 / Math.Max(1, dupsNeeded));
                 ShowUpgradeProgress = true;
+
+                // Upgrade-Benefit: Was bringt das nächste Level?
+                int nextLevel = owned.Level + 1;
+                int nextUses = cardDef.GetUsesForLevel(nextLevel);
+                float nextMultiplier = nextLevel switch { 2 => 1.2f, 3 => 1.4f, _ => 1.0f };
+                string nextLevelName = nextLevel switch
+                {
+                    2 => _localization.GetString("CardLevelSilver") ?? "Silver",
+                    3 => _localization.GetString("CardLevelGold") ?? "Gold",
+                    _ => ""
+                };
+                string usesLabel = _localization.GetString("CardUses") ?? "Uses";
+                SelectedCardUpgradeBenefitText = $"{nextLevelName}: {nextUses} {usesLabel}, {nextMultiplier:F1}x";
             }
             else
             {
@@ -485,6 +508,7 @@ public partial class DeckViewModel : ObservableObject, INavigable, IGameJuiceEmi
                 CanUpgradeSelected = false;
                 UpgradeProgressPercent = 100;
                 ShowUpgradeProgress = false;
+                SelectedCardUpgradeBenefitText = "";
             }
         }
         else
@@ -494,6 +518,7 @@ public partial class DeckViewModel : ObservableObject, INavigable, IGameJuiceEmi
             SelectedCardStrengthText = "";
             SelectedCardUsesText = $"{cardDef.BaseBronzeUses} {_localization.GetString("CardUses") ?? "Uses"} (Lv.1)";
             SelectedCardUpgradeText = "";
+            SelectedCardUpgradeBenefitText = "";
             CanBuyCardForGems = false;
             CanUpgradeSelected = false;
             UpgradeProgressPercent = 0;
@@ -656,6 +681,25 @@ public class CardDisplayItem
 
     /// <summary>Opacity für nicht-besessene Karten</summary>
     public double CardOpacity => IsOwned ? 1.0 : 0.4;
+
+    /// <summary>Raritäts-Border-Opacity (voll bei besessenen, gedimmt bei gesperrten)</summary>
+    public double RarityBorderOpacity => IsOwned ? 1.0 : 0.35;
+
+    /// <summary>Raritäts-Schimmer-Overlay-Opacity (stärker bei höherer Rarität)</summary>
+    public double RarityShimmerOpacity => Rarity switch
+    {
+        Rarity.Common => 0.08,
+        Rarity.Rare => 0.12,
+        Rarity.Epic => 0.18,
+        Rarity.Legendary => 0.25,
+        _ => 0.08
+    };
+
+    /// <summary>Name-Opacity (voll bei besessenen, leicht gedimmt bei "???")</summary>
+    public double NameOpacity => IsOwned ? 1.0 : 0.6;
+
+    /// <summary>Raritäts-Label für gesperrte Karten (z.B. "Rare", "Epic")</summary>
+    public string RarityLabel { get; set; } = "";
 
     /// <summary>Ob ein Upgrade-Badge angezeigt werden soll</summary>
     public bool ShowUpgradeBadge => IsOwned && CanUpgrade;

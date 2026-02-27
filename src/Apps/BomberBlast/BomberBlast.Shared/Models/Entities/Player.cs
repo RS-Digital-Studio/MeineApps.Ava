@@ -16,9 +16,17 @@ public class Player : Entity
     private const int MAX_SPEED_LEVEL = 3;
 
     // Movement
+    private float _lastDeltaTime = 0.016f; // Für deltaTime-skalierte Corner-Assists
     public Direction FacingDirection { get; set; } = Direction.Down;
     public Direction MovementDirection { get; set; } = Direction.None;
     public bool IsMoving => MovementDirection != Direction.None;
+
+    // Pre-Turn Buffering: Richtung vorpuffern für flüssigere Turns an Kreuzungen
+    // Wenn der Spieler eine Richtung eingibt bevor er am Zellzentrum ist,
+    // wird die Richtung gepuffert und automatisch ausgeführt sobald möglich.
+    private Direction _bufferedDirection = Direction.None;
+    private Direction _lastMovingDirection = Direction.None;
+    private const float PRE_TURN_WINDOW = 0.4f; // 40% der Zellgröße als Toleranz
 
     // Power-up stats (permanent, per Shop-Upgrades auch von aussen setzbar)
     public int MaxBombs { get; set; } = 1;
@@ -191,26 +199,74 @@ public class Player : Entity
     private const int STUCK_THRESHOLD = 15; // Nach 15 Frames (~250ms) ohne Bewegung → Recovery
 
     /// <summary>
-    /// Bewege Spieler in aktuelle Richtung mit automatischem Grid-Alignment.
+    /// Bewege Spieler in aktuelle Richtung mit automatischem Grid-Alignment und Pre-Turn-Buffering.
     /// Klassisches Bomberman-Gefühl: Querachse wird sanft zum Grid-Zentrum gezogen,
     /// sodass der Spieler nicht an Ecken hängen bleibt.
+    ///
+    /// Pre-Turn: Wenn der Spieler eine senkrechte Richtung eingibt bevor er am Zellzentrum ist,
+    /// wird die Richtung gepuffert. Der Spieler bewegt sich weiter in der alten Richtung
+    /// bis das Zellzentrum erreicht ist, dann wird der Turn automatisch ausgeführt.
     /// </summary>
     public void Move(float deltaTime, GameGrid grid)
     {
+        _lastDeltaTime = deltaTime;
+
         if (IsDying || MovementDirection == Direction.None)
         {
             _stuckFrames = 0;
+            _bufferedDirection = Direction.None;
+            _lastMovingDirection = Direction.None;
             return;
         }
 
-        FacingDirection = MovementDirection;
+        Direction desiredDir = MovementDirection;
+        Direction activeDir = desiredDir;
+        float speed = Speed * deltaTime;
+
+        // Pre-Turn-Buffering: Bei senkrechtem Richtungswechsel prüfen ob Turn möglich
+        if (_lastMovingDirection != Direction.None && IsPerpendicular(desiredDir, _lastMovingDirection))
+        {
+            // Senkrechter Turn gewünscht → prüfe ob Querachse am Zellzentrum liegt
+            if (TryExecuteTurn(desiredDir, speed, grid))
+            {
+                // Turn erfolgreich → gewünschte Richtung verwenden
+                activeDir = desiredDir;
+                _bufferedDirection = Direction.None;
+            }
+            else
+            {
+                // Turn noch nicht möglich → buffern, weiter in alter Richtung
+                _bufferedDirection = desiredDir;
+                activeDir = _lastMovingDirection;
+            }
+        }
+        else if (_bufferedDirection != Direction.None)
+        {
+            // Gepufferte Richtung vorhanden → jeden Frame prüfen ob Turn jetzt möglich
+            if (TryExecuteTurn(_bufferedDirection, speed, grid))
+            {
+                activeDir = _bufferedDirection;
+                _bufferedDirection = Direction.None;
+            }
+            else
+            {
+                // Buffer beibehalten, weiter in aktueller Richtung
+                activeDir = _lastMovingDirection != Direction.None ? _lastMovingDirection : desiredDir;
+            }
+        }
+        else
+        {
+            // Kein Richtungswechsel oder paralleler Wechsel (z.B. Links→Rechts) → sofort erlauben
+            _bufferedDirection = Direction.None;
+        }
+
+        FacingDirection = activeDir;
 
         float prevX = X;
         float prevY = Y;
 
-        float speed = Speed * deltaTime;
-        float dx = MovementDirection.GetDeltaX() * speed;
-        float dy = MovementDirection.GetDeltaY() * speed;
+        float dx = activeDir.GetDeltaX() * speed;
+        float dy = activeDir.GetDeltaY() * speed;
 
         // Grid-Alignment: Querachse automatisch zum Zellzentrum ziehen
         // Wenn horizontal → Y alignen, wenn vertikal → X alignen
@@ -234,7 +290,51 @@ public class Player : Entity
         else
         {
             _stuckFrames = 0;
+            _lastMovingDirection = activeDir;
         }
+    }
+
+    /// <summary>
+    /// Prüft ob zwei Richtungen senkrecht zueinander sind (horizontal ↔ vertikal).
+    /// </summary>
+    private static bool IsPerpendicular(Direction a, Direction b)
+    {
+        bool aHorizontal = a is Direction.Left or Direction.Right;
+        bool bHorizontal = b is Direction.Left or Direction.Right;
+        return aHorizontal != bHorizontal;
+    }
+
+    /// <summary>
+    /// Versucht einen Turn in die gewünschte Richtung auszuführen.
+    /// Prüft ob die Querachse nah genug am Zellzentrum liegt und ob die Richtung frei ist.
+    /// Bei Erfolg wird die Querachse zum Zellzentrum gesnapped.
+    /// </summary>
+    private bool TryExecuteTurn(Direction turnDir, float speed, GameGrid grid)
+    {
+        // Querachse bestimmen: Bei vertikalem Turn muss X am Zentrum sein, bei horizontalem Y
+        bool turnIsVertical = turnDir is Direction.Up or Direction.Down;
+        float crossPos = turnIsVertical ? X : Y;
+        float cellCenter = MathF.Floor(crossPos / GameGrid.CELL_SIZE) * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
+        float offset = MathF.Abs(crossPos - cellCenter);
+
+        // Zu weit vom Zentrum → Turn nicht möglich
+        if (offset > GameGrid.CELL_SIZE * PRE_TURN_WINDOW)
+            return false;
+
+        // Prüfe ob die Richtung frei ist (von der gesnappten Position aus)
+        float testX = turnIsVertical ? cellCenter : X + turnDir.GetDeltaX() * speed;
+        float testY = turnIsVertical ? Y + turnDir.GetDeltaY() * speed : cellCenter;
+
+        if (!CanMoveTo(testX, testY, grid))
+            return false;
+
+        // Turn möglich → Querachse zum Zellzentrum snappen
+        if (turnIsVertical)
+            X = cellCenter;
+        else
+            Y = cellCenter;
+
+        return true;
     }
 
     /// <summary>
@@ -339,12 +439,14 @@ public class Player : Entity
     }
 
     /// <summary>
-    /// Starker Corner-Assist: Wenn der Spieler knapp an einer Ecke hängt,
-    /// wird er automatisch um die Ecke geschoben. Prüft ob eine Nachbarzelle
-    /// frei ist und nudgt den Spieler dorthin.
+    /// Corner-Assist: Wenn der Spieler knapp an einer Ecke hängt,
+    /// wird er automatisch um die Ecke geschoben. deltaTime-skaliert für
+    /// konsistentes Verhalten bei verschiedenen Framerates.
     /// </summary>
     private void TryCornerAssist(float dx, float dy, GameGrid grid)
     {
+        // Nudge-Speed proportional zur Spielergeschwindigkeit, deltaTime-skaliert
+        float nudgeSpeed = MathF.Max(Speed * 0.6f * _lastDeltaTime, 0.5f);
         float cellCenter;
         float offset;
 
@@ -354,13 +456,11 @@ public class Player : Entity
             cellCenter = MathF.Floor(Y / GameGrid.CELL_SIZE) * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
             offset = Y - cellCenter;
 
-            // Prüfe ob Ausrichten nach oben oder unten die Blockade löst
             float targetX = X + dx;
-            float nudgeSpeed = 4.0f; // Konstanter Nudge (unabhängig von Speed-Level)
 
             if (MathF.Abs(offset) < GameGrid.CELL_SIZE * 0.5f)
             {
-                // Versuche zum Zellzentrum zu schieben
+                // Zum Zellzentrum schieben
                 float nudge = MathF.Min(MathF.Abs(offset), nudgeSpeed);
                 float nudgedY = Y - MathF.Sign(offset) * nudge;
                 if (CanMoveTo(targetX, nudgedY, grid))
@@ -384,7 +484,6 @@ public class Player : Entity
             offset = X - cellCenter;
 
             float targetY = Y + dy;
-            float nudgeSpeed = 4.0f; // Konstanter Nudge (unabhängig von Speed-Level)
 
             if (MathF.Abs(offset) < GameGrid.CELL_SIZE * 0.5f)
             {
@@ -522,6 +621,8 @@ public class Player : Entity
         IsMarkedForRemoval = false;
         FacingDirection = Direction.Down;
         MovementDirection = Direction.None;
+        _bufferedDirection = Direction.None;
+        _lastMovingDirection = Direction.None;
         AnimationFrame = 0;
         AnimationTimer = 0;
         ActiveBombs = 0;
@@ -592,6 +693,8 @@ public class Player : Entity
         IsMarkedForRemoval = false;
         FacingDirection = Direction.Down;
         MovementDirection = Direction.None;
+        _bufferedDirection = Direction.None;
+        _lastMovingDirection = Direction.None;
         AnimationFrame = 0;
         AnimationTimer = 0;
     }

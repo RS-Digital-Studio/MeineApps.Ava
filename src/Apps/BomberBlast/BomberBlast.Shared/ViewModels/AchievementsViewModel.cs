@@ -75,7 +75,7 @@ public partial class AchievementsViewModel : ObservableObject, INavigable
                     CoinReward = achievement.CoinReward,
                     HasCoinReward = achievement.CoinReward > 0,
                     CoinRewardText = achievement.CoinReward > 0
-                        ? $"+{achievement.CoinReward:N0} Coins"
+                        ? $"+{achievement.CoinReward:N0} {_localizationService.GetString("Coins") ?? "Coins"}"
                         : ""
                 });
             }

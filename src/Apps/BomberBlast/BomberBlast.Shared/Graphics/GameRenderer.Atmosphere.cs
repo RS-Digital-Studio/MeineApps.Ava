@@ -17,16 +17,22 @@ public partial class GameRenderer
     /// </summary>
     private void RenderBackground(SKCanvas canvas, float screenWidth, float screenHeight)
     {
-        // Vertikaler Gradient pro Welt
-        var (topColor, bottomColor) = GetWorldGradientColors();
+        // Gecachter Shader (nur neu erstellen bei Welt-Wechsel oder Höhenänderung)
+        if (_bgShader == null || _bgShaderWorldIndex != _currentWorldIndex ||
+            MathF.Abs(_bgShaderHeight - screenHeight) > 1f)
+        {
+            _bgShader?.Dispose();
+            var (topColor, bottomColor) = GetWorldGradientColors();
+            _bgShader = SKShader.CreateLinearGradient(
+                new SKPoint(0, 0),
+                new SKPoint(0, screenHeight),
+                [topColor, bottomColor],
+                SKShaderTileMode.Clamp);
+            _bgShaderWorldIndex = _currentWorldIndex;
+            _bgShaderHeight = screenHeight;
+        }
 
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(0, 0),
-            new SKPoint(0, screenHeight),
-            [topColor, bottomColor],
-            SKShaderTileMode.Clamp);
-
-        _fillPaint.Shader = shader;
+        _fillPaint.Shader = _bgShader;
         _fillPaint.MaskFilter = null;
         canvas.DrawRect(0, 0, screenWidth, screenHeight, _fillPaint);
         _fillPaint.Shader = null;
@@ -58,28 +64,36 @@ public partial class GameRenderer
     /// </summary>
     private void RenderVignette(SKCanvas canvas, float screenWidth, float screenHeight)
     {
-        // Stärke je nach Welt (dunkle Welten = stärkere Vignette)
-        byte vignetteAlpha = _currentWorldIndex switch
+        // Gecachter Shader (nur neu erstellen bei Welt-Wechsel oder Größenänderung)
+        if (_vignetteShader == null || _vignetteShaderWorldIndex != _currentWorldIndex ||
+            MathF.Abs(_vignetteShaderW - screenWidth) > 1f || MathF.Abs(_vignetteShaderH - screenHeight) > 1f)
         {
-            2 => 100,  // Cavern
-            4 => 110,  // Inferno
-            7 => 100,  // Volcano
-            9 => 120,  // ShadowRealm
-            _ => 60
-        };
+            _vignetteShader?.Dispose();
+            byte vignetteAlpha = _currentWorldIndex switch
+            {
+                2 => 100,  // Cavern
+                4 => 110,  // Inferno
+                7 => 100,  // Volcano
+                9 => 120,  // ShadowRealm
+                _ => 60
+            };
 
-        float cx = screenWidth / 2f;
-        float cy = screenHeight / 2f;
-        float radius = MathF.Sqrt(cx * cx + cy * cy);
+            float cx = screenWidth / 2f;
+            float cy = screenHeight / 2f;
+            float radius = MathF.Sqrt(cx * cx + cy * cy);
 
-        using var shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy),
-            radius,
-            [new SKColor(0, 0, 0, 0), new SKColor(0, 0, 0, vignetteAlpha)],
-            [0.5f, 1.0f],
-            SKShaderTileMode.Clamp);
+            _vignetteShader = SKShader.CreateRadialGradient(
+                new SKPoint(cx, cy),
+                radius,
+                [new SKColor(0, 0, 0, 0), new SKColor(0, 0, 0, vignetteAlpha)],
+                [0.5f, 1.0f],
+                SKShaderTileMode.Clamp);
+            _vignetteShaderW = screenWidth;
+            _vignetteShaderH = screenHeight;
+            _vignetteShaderWorldIndex = _currentWorldIndex;
+        }
 
-        _fillPaint.Shader = shader;
+        _fillPaint.Shader = _vignetteShader;
         _fillPaint.MaskFilter = null;
         canvas.DrawRect(0, 0, screenWidth, screenHeight, _fillPaint);
         _fillPaint.Shader = null;
@@ -354,8 +368,8 @@ public partial class GameRenderer
     /// Bomben, Explosionen, Lava/Eis-Zellen, Exit-Portal, Schild, Bosse, Fackeln, PowerUps
     /// </summary>
     private void CollectLightSources(SKCanvas canvas, GameGrid grid,
-        IEnumerable<Bomb> bombs, IEnumerable<Explosion> explosions,
-        IEnumerable<Enemy> enemies, IEnumerable<PowerUp> powerUps,
+        List<Bomb> bombs, List<Explosion> explosions,
+        List<Enemy> enemies, List<PowerUp> powerUps,
         Player? player, Cell? exitCell)
     {
         int cs = GameGrid.CELL_SIZE;

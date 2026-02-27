@@ -36,11 +36,12 @@ public class FloatingJoystick : IInputHandler, IDisposable
     private long _joystickPointerId = -1;
     private long _bombPointerId = -1;
 
-    // Konfiguration
-    private float _joystickRadius = 60f;
-    private const float DEAD_ZONE = 0.18f; // 18% des Radius als Ruhezone
-    private float _bombButtonRadius = 50f;
-    private float _detonatorButtonRadius = 40f;
+    // Konfiguration (Werte basierend auf Mobile-Touch-Best-Practices: größere Targets für Daumen)
+    private float _joystickRadius = 75f;
+    private const float DEAD_ZONE = 0.15f; // 15% des Radius als Ruhezone (Touch ist ungenauer als Controller)
+    private const float DIRECTION_HYSTERESIS = 1.15f; // 15% Hysterese gegen Richtungsflackern bei ~45°
+    private float _bombButtonRadius = 70f;
+    private float _detonatorButtonRadius = 48f;
     private float _opacity = 0.7f;
     private bool _isFixed;
 
@@ -111,7 +112,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
         {
             float ddx = x - _detonatorButtonX;
             float ddy = y - _detonatorButtonY;
-            if (ddx * ddx + ddy * ddy <= _detonatorButtonRadius * _detonatorButtonRadius * 1.3f)
+            if (ddx * ddx + ddy * ddy <= _detonatorButtonRadius * _detonatorButtonRadius * 1.6f)
             {
                 _detonatorButtonPressed = true;
                 _detonatePressed = true;
@@ -124,7 +125,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
         // Bomb-Button prüfen (rechte Seite)
         float dx = x - _bombButtonX;
         float dy = y - _bombButtonY;
-        if (dx * dx + dy * dy <= _bombButtonRadius * _bombButtonRadius * 1.3f)
+        if (dx * dx + dy * dy <= _bombButtonRadius * _bombButtonRadius * 1.6f)
         {
             _bombButtonPressed = true;
             _bombPressed = true;
@@ -168,8 +169,8 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
     public void OnTouchMove(float x, float y, long pointerId = 0)
     {
-        // Nur auf Joystick-Finger reagieren
-        if (!_isPressed || (pointerId != 0 && pointerId != _joystickPointerId))
+        // Nur auf Joystick-Finger reagieren (exakter Pointer-Match)
+        if (!_isPressed || pointerId != _joystickPointerId)
             return;
 
         _stickX = x;
@@ -207,8 +208,8 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
     public void OnTouchEnd(long pointerId = 0)
     {
-        // Joystick-Finger losgelassen
-        if (pointerId == 0 || pointerId == _joystickPointerId)
+        // Joystick-Finger losgelassen (exakter Pointer-Match oder kein Pointer zugewiesen)
+        if (pointerId == _joystickPointerId || _joystickPointerId == -1)
         {
             _isPressed = false;
             _stickX = _baseX;
@@ -217,8 +218,8 @@ public class FloatingJoystick : IInputHandler, IDisposable
             _joystickPointerId = -1;
         }
 
-        // Bomb/Detonator-Finger losgelassen
-        if (pointerId == 0 || pointerId == _bombPointerId)
+        // Bomb/Detonator-Finger losgelassen (exakter Pointer-Match oder kein Pointer zugewiesen)
+        if (pointerId == _bombPointerId || _bombPointerId == -1)
         {
             _bombButtonPressed = false;
             _detonatorButtonPressed = false;
@@ -256,10 +257,9 @@ public class FloatingJoystick : IInputHandler, IDisposable
     }
 
     /// <summary>
-    /// Richtung per dominanter Achse bestimmen (Standard für 4-Wege-Spiele).
-    /// |dx| > |dy| → horizontal (Left/Right), sonst vertikal (Up/Down).
-    /// Der Achsenvergleich IST die natürliche Hysterese: Um von horizontal zu vertikal
-    /// zu wechseln, muss der Daumen über die 45°-Diagonale hinaus.
+    /// Richtung per dominanter Achse mit Hysterese bestimmen (4-Wege).
+    /// Aktuelle Richtung wird beibehalten wenn die andere Achse nicht deutlich dominant ist.
+    /// Verhindert Richtungsflackern bei ~45° Daumenhaltung.
     /// </summary>
     private void UpdateDirection()
     {
@@ -282,12 +282,34 @@ public class FloatingJoystick : IInputHandler, IDisposable
         float absDx = MathF.Abs(dx);
         float absDy = MathF.Abs(dy);
 
-        // Dominante Achse bestimmt die Richtung
         Direction newDir;
-        if (absDx > absDy)
-            newDir = dx > 0 ? Direction.Right : Direction.Left;
+        bool isCurrentHorizontal = _currentDirection is Direction.Left or Direction.Right;
+        bool isCurrentVertical = _currentDirection is Direction.Up or Direction.Down;
+
+        if (isCurrentHorizontal)
+        {
+            // Aktuelle Richtung ist horizontal → nur wechseln wenn vertikal DEUTLICH dominiert
+            if (absDy > absDx * DIRECTION_HYSTERESIS)
+                newDir = dy > 0 ? Direction.Down : Direction.Up;
+            else
+                newDir = dx > 0 ? Direction.Right : Direction.Left;
+        }
+        else if (isCurrentVertical)
+        {
+            // Aktuelle Richtung ist vertikal → nur wechseln wenn horizontal DEUTLICH dominiert
+            if (absDx > absDy * DIRECTION_HYSTERESIS)
+                newDir = dx > 0 ? Direction.Right : Direction.Left;
+            else
+                newDir = dy > 0 ? Direction.Down : Direction.Up;
+        }
         else
-            newDir = dy > 0 ? Direction.Down : Direction.Up;
+        {
+            // Keine aktuelle Richtung (None) → einfache dominante Achse
+            if (absDx > absDy)
+                newDir = dx > 0 ? Direction.Right : Direction.Left;
+            else
+                newDir = dy > 0 ? Direction.Down : Direction.Up;
+        }
 
         if (newDir != _currentDirection)
         {

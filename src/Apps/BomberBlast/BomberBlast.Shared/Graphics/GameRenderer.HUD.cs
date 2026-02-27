@@ -65,11 +65,17 @@ public partial class GameRenderer
             _textPaint.MaskFilter = null;
             cy += 20;
 
-            // Verstrichene Zeit (kleiner, unter den Kills)
+            // Verstrichene Zeit (kleiner, unter den Kills) - gecacht
             _textPaint.Color = _palette.HudText.WithAlpha(120);
             int survMins = (int)(remainingTime / 60);
             int survSecs = (int)(remainingTime % 60);
-            canvas.DrawText($"{survMins}:{survSecs:D2}", cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
+            if (survMins != _lastSurvivalMins || survSecs != _lastSurvivalSecs)
+            {
+                _lastSurvivalMins = survMins;
+                _lastSurvivalSecs = survSecs;
+                _lastSurvivalTimeString = $"{survMins}:{survSecs:D2}";
+            }
+            canvas.DrawText(_lastSurvivalTimeString, cx, cy, SKTextAlign.Center, _hudFontSmall, _textPaint);
             cy += 16;
         }
         else
@@ -132,12 +138,17 @@ public partial class GameRenderer
                     : new SKColor(255, 165, 0); // Orange x2-x3
             comboColor = comboColor.WithAlpha((byte)(255 * comboAlphaFactor));
 
-            string comboStr = ComboCount >= 5 ? $"MEGA x{ComboCount}" : $"x{ComboCount}";
+            // Combo-String gecacht
+            if (ComboCount != _lastComboCount)
+            {
+                _lastComboCount = ComboCount;
+                _lastComboString = ComboCount >= 5 ? $"MEGA x{ComboCount}" : $"x{ComboCount}";
+            }
             _textPaint.Color = comboColor;
-            _textPaint.MaskFilter = isNeon ? _hudTextGlow : SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+            _textPaint.MaskFilter = isNeon ? _hudTextGlow : _hudComboBlur;
             float originalFontSize = _hudFontMedium.Size;
             _hudFontMedium.Size = originalFontSize * comboScale;
-            canvas.DrawText(comboStr, cx, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
+            canvas.DrawText(_lastComboString, cx, cy, SKTextAlign.Center, _hudFontMedium, _textPaint);
             _hudFontMedium.Size = originalFontSize;
             _textPaint.MaskFilter = null;
             cy += 16;
@@ -194,7 +205,13 @@ public partial class GameRenderer
                 ? new SKColor(255, 80, 50)   // Rot: fast geschafft
                 : _palette.HudText;
             _textPaint.MaskFilter = isNeon ? _hudTextGlow : null;
-            canvas.DrawText($"x{EnemiesRemaining}", cx + 6, cy + 6, SKTextAlign.Left, _hudFontMedium, _textPaint);
+            // Enemies-String gecacht
+            if (EnemiesRemaining != _lastEnemiesRemaining)
+            {
+                _lastEnemiesRemaining = EnemiesRemaining;
+                _lastEnemiesString = $"x{EnemiesRemaining}";
+            }
+            canvas.DrawText(_lastEnemiesString, cx + 6, cy + 6, SKTextAlign.Left, _hudFontMedium, _textPaint);
             _textPaint.MaskFilter = null;
             cy += 20;
         }
@@ -238,8 +255,13 @@ public partial class GameRenderer
             _activePowers.Clear();
             if (player.SpeedLevel > 0)
             {
-                string spdLabel = player.SpeedLevel > 1 ? $"SPD x{player.SpeedLevel}" : "SPD";
-                _activePowers.Add((spdLabel, new SKColor(60, 220, 80)));
+                // Speed-String gecacht
+                if (player.SpeedLevel != _lastSpeedLevel)
+                {
+                    _lastSpeedLevel = player.SpeedLevel;
+                    _lastSpeedString = player.SpeedLevel > 1 ? $"SPD x{player.SpeedLevel}" : "SPD";
+                }
+                _activePowers.Add((_lastSpeedString, new SKColor(60, 220, 80)));
             }
             if (player.HasWallpass) _activePowers.Add(("WLP", new SKColor(150, 100, 50)));
             if (player.HasDetonator) _activePowers.Add(("DET", new SKColor(240, 40, 40)));
@@ -251,15 +273,23 @@ public partial class GameRenderer
             if (player.HasPowerBomb) _activePowers.Add(("PWR", new SKColor(255, 50, 50)));
             if (player.IsCursed)
             {
-                string curseLabel = player.ActiveCurse switch
+                // Curse-String gecacht
+                int curseTimerInt = (int)player.CurseTimer;
+                if (player.ActiveCurse != _lastCurseType || curseTimerInt != _lastCurseTimer)
                 {
-                    CurseType.Diarrhea => "DIA",
-                    CurseType.Slow => "SLOW",
-                    CurseType.Constipation => "BLOCK",
-                    CurseType.ReverseControls => "REV",
-                    _ => "???"
-                };
-                _activePowers.Add(($"☠{curseLabel}:{(int)player.CurseTimer}", new SKColor(180, 0, 180)));
+                    _lastCurseType = player.ActiveCurse;
+                    _lastCurseTimer = curseTimerInt;
+                    string curseLabel = player.ActiveCurse switch
+                    {
+                        CurseType.Diarrhea => "DIA",
+                        CurseType.Slow => "SLOW",
+                        CurseType.Constipation => "BLOCK",
+                        CurseType.ReverseControls => "REV",
+                        _ => "???"
+                    };
+                    _lastCurseString = $"☠{curseLabel}:{curseTimerInt}";
+                }
+                _activePowers.Add((_lastCurseString, new SKColor(180, 0, 180)));
             }
             if (player.IsInvincible)
             {
@@ -534,7 +564,7 @@ public partial class GameRenderer
                 float pulse = MathF.Sin(_globalTimer * 6f) * 0.3f + 0.7f;
                 _strokePaint.Color = rarityColor.WithAlpha((byte)(pulse * 180));
                 _strokePaint.StrokeWidth = 1.5f;
-                _strokePaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+                _strokePaint.MaskFilter = _hudComboBlur;
                 canvas.DrawRoundRect(sx - 1, startY - 1, CARD_SLOT_SIZE + 2, CARD_SLOT_SIZE + 2, 5, 5, _strokePaint);
                 _strokePaint.MaskFilter = null;
             }

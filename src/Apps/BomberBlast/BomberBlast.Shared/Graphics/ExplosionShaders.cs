@@ -213,37 +213,19 @@ public static class ExplosionShaders
         BuildFlamePath(cx, cy, dx, dy, startOffset, length, width,
             time, seed, isHorizontal, taperExponent);
 
-        // Gradient quer zur Flammenachse: außen transparent, Mitte kräftig
-        // Gradient-Bereich = Breite der Flamme (nicht zu weit!)
-        SKPoint p1, p2;
-        float gradientSpread = width * 1.1f; // Knapp breiter als Pfad
-        if (isHorizontal)
-        {
-            p1 = new SKPoint(cx, cy - gradientSpread);
-            p2 = new SKPoint(cx, cy + gradientSpread);
-        }
-        else
-        {
-            p1 = new SKPoint(cx - gradientSpread, cy);
-            p2 = new SKPoint(cx + gradientSpread, cy);
-        }
-
-        using var shader = SKShader.CreateLinearGradient(p1, p2,
-            new[] {
-                colorOuter.WithAlpha((byte)(alpha * 0.15f)),
-                colorOuter.WithAlpha((byte)(alpha * 0.7f)),
-                colorInner.WithAlpha(alpha),
-                colorOuter.WithAlpha((byte)(alpha * 0.7f)),
-                colorOuter.WithAlpha((byte)(alpha * 0.15f))
-            },
-            new[] { 0f, 0.25f, 0.5f, 0.75f, 1f },
-            SKShaderTileMode.Clamp);
-
-        _flamePaint.Shader = shader;
+        // Solid Color statt 5-Stop-Gradient (eliminiert native Shader-Allokation pro Arm/Layer).
+        // MaskFilter-Blur auf Glow-Layer erzeugt bereits weiche Kanten,
+        // und der noise-modulierte Pfad sorgt für organische Ränder.
+        byte blendAlpha = (byte)Math.Clamp(alpha * 0.75f, 0, 255);
+        _flamePaint.Shader = null;
+        _flamePaint.Color = new SKColor(
+            (byte)((colorOuter.Red + colorInner.Red) / 2),
+            (byte)((colorOuter.Green + colorInner.Green) / 2),
+            (byte)((colorOuter.Blue + colorInner.Blue) / 2),
+            blendAlpha);
         _flamePaint.MaskFilter = maskFilter;
         canvas.DrawPath(_armPath, _flamePaint);
         _flamePaint.MaskFilter = null;
-        _flamePaint.Shader = null;
     }
 
     /// <summary>
@@ -366,7 +348,6 @@ public static class ExplosionShaders
             var tongueColor = LerpColor(colorOuter, colorInner, n * 0.5f);
 
             float tx, ty, tw, th;
-            SKPoint gp1, gp2;
 
             if (isHorizontal)
             {
@@ -374,8 +355,6 @@ public static class ExplosionShaders
                 ty = side > 0 ? cy - sideOffset - tongueHeight : cy + sideOffset;
                 tw = tongueWidth;
                 th = tongueHeight;
-                gp1 = new SKPoint(tx + tw * 0.5f, side > 0 ? ty + th : ty);
-                gp2 = new SKPoint(tx + tw * 0.5f, side > 0 ? ty : ty + th);
             }
             else
             {
@@ -383,20 +362,13 @@ public static class ExplosionShaders
                 ty = posY - tongueWidth * 0.5f;
                 tw = tongueHeight;
                 th = tongueWidth;
-                gp1 = new SKPoint(side > 0 ? tx + tw : tx, ty + th * 0.5f);
-                gp2 = new SKPoint(side > 0 ? tx : tx + tw, ty + th * 0.5f);
             }
 
-            using var shader = SKShader.CreateLinearGradient(
-                gp1, gp2,
-                new[] { tongueColor.WithAlpha(a), tongueColor.WithAlpha((byte)(a * 0.2f)), SKColors.Transparent },
-                new[] { 0f, 0.5f, 1f },
-                SKShaderTileMode.Clamp);
-            _flamePaint.Shader = shader;
-
+            // Solid Color statt Gradient (eliminiert native Shader-Allokation pro Zunge)
+            _flamePaint.Shader = null;
+            _flamePaint.Color = tongueColor.WithAlpha((byte)(a * 0.6f));
             float cr = Math.Min(tw, th) * 0.4f;
             canvas.DrawRoundRect(tx, ty, tw, th, cr, cr, _flamePaint);
-            _flamePaint.Shader = null;
         }
     }
 
@@ -447,14 +419,14 @@ public static class ExplosionShaders
         byte a = (byte)Math.Clamp(intensity * 30f, 0, 255);
         if (a < 2) return;
 
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(rect.MidX, rect.Bottom),
-            new SKPoint(rect.MidX, rect.Top),
-            new[] { new SKColor(255, 180, 80, a), new SKColor(255, 220, 100, (byte)(a * 0.5f)), SKColors.Transparent },
-            new[] { 0f, 0.4f, 1f },
-            SKShaderTileMode.Clamp);
-        paint.Shader = shader;
-        canvas.DrawRect(rect, paint);
+        // 2-Schritt Alpha statt LinearGradient (eliminiert native Shader-Allokation pro Explosion)
         paint.Shader = null;
+        float halfH = rect.Height * 0.5f;
+        // Untere Hälfte: kräftiger (warm-orange)
+        paint.Color = new SKColor(255, 180, 80, (byte)(a * 0.7f));
+        canvas.DrawRect(rect.Left, rect.MidY, rect.Width, halfH, paint);
+        // Obere Hälfte: schwächer (hell-orange, aufsteigend)
+        paint.Color = new SKColor(255, 220, 100, (byte)(a * 0.25f));
+        canvas.DrawRect(rect.Left, rect.Top, rect.Width, halfH, paint);
     }
 }

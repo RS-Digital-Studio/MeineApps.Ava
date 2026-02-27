@@ -905,6 +905,9 @@
   <data name="TutorialSkip" xml:space="preserve">
     <value>Saltar</value>
   </data>
+  <data name="ExitRevealed" xml:space="preserve">
+    <value>¡SALIDA!</value>
+  </data>
   <data name="PressBackAgainToExit" xml:space="preserve">
     <value>Pulsa atrás de nuevo para salir</value>
   </data>
@@ -1831,6 +1834,11 @@
   </data>
   <data name="QuickPlayEasyHard" xml:space="preserve">
     <value>Fácil / Difícil</value>
+  </data>
+
+  <!-- Coins -->
+  <data name="Coins" xml:space="preserve">
+    <value>Monedas</value>
   </data>
 
   <!-- Gems -->

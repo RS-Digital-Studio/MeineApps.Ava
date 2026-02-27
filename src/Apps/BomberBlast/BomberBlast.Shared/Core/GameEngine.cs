@@ -49,6 +49,16 @@ public partial class GameEngine : IDisposable
     // Discovery-Hints (Erstentdeckung von PowerUps/Mechaniken)
     private readonly DiscoveryOverlay _discoveryOverlay;
 
+    // Gecachte HUD-Labels (nur bei Level-Start und Sprachwechsel aktualisiert)
+    private string _hudLabelKills = "KILLS";
+    private string _hudLabelTime = "TIME";
+    private string _hudLabelScore = "SCORE";
+    private string _hudLabelLives = "LIVES";
+    private string _hudLabelBombs = "BOMBS";
+    private string _hudLabelPower = "POWER";
+    private string _hudLabelDeck = "DECK";
+    private string _hudLabelBuffs = "BUFFS";
+
     private bool _disposed;
 
     // Game state
@@ -177,6 +187,21 @@ public partial class GameEngine : IDisposable
         _vibration.VibrateMedium();
     }
 
+    /// <summary>
+    /// Lokalisierte HUD-Labels cachen (bei Level-Start und Sprachwechsel)
+    /// </summary>
+    private void CacheHudLabels()
+    {
+        _hudLabelKills = _localizationService.GetString("HudKills") ?? "KILLS";
+        _hudLabelTime = _localizationService.GetString("HudTime") ?? "TIME";
+        _hudLabelScore = _localizationService.GetString("HudScore") ?? "SCORE";
+        _hudLabelLives = _localizationService.GetString("HudLives") ?? "LIVES";
+        _hudLabelBombs = _localizationService.GetString("HudBombs") ?? "BOMBS";
+        _hudLabelPower = _localizationService.GetString("HudPower") ?? "POWER";
+        _hudLabelDeck = _localizationService.GetString("HudDeck") ?? "DECK";
+        _hudLabelBuffs = _localizationService.GetString("HudBuffs") ?? "BUFFS";
+    }
+
     // Slow-Motion bei letztem Kill / hohem Combo
     private float _slowMotionTimer;
     private float _slowMotionFactor = 1f;
@@ -251,7 +276,7 @@ public partial class GameEngine : IDisposable
     private const float PAUSE_BUTTON_SIZE = 40f;
     private const float PAUSE_BUTTON_MARGIN = 10f;
     /// <summary>Callback für Pause-Anfrage vom Touch-Button</summary>
-    public event Action? OnPauseRequested;
+    public event Action? PauseRequested;
 
     // Score-Aufschlüsselung (für Level-Complete Summary Screen)
     public int LastTimeBonus { get; private set; }
@@ -263,20 +288,20 @@ public partial class GameEngine : IDisposable
     // EVENTS
     // ═══════════════════════════════════════════════════════════════════════
 
-    public event Action? OnGameOver;
-    public event Action? OnLevelComplete;
-    public event Action? OnVictory;
-    public event Action<int>? OnScoreChanged;
+    public event Action? GameOver;
+    public event Action? LevelComplete;
+    public event Action? Victory;
+    public event Action<int>? ScoreChanged;
     /// <summary>Coins verdient: (coinsEarned, totalScore, isLevelComplete)</summary>
-    public event Action<int, int, bool>? OnCoinsEarned;
+    public event Action<int, int, bool>? CoinsEarned;
     /// <summary>Joystick-Richtungswechsel (für haptisches Feedback auf Android)</summary>
-    public event Action? OnDirectionChanged;
+    public event Action? DirectionChanged;
     /// <summary>Dungeon-Floor abgeschlossen (Belohnung)</summary>
-    public event Action<DungeonFloorReward>? OnDungeonFloorComplete;
+    public event Action<DungeonFloorReward>? DungeonFloorComplete;
     /// <summary>Dungeon-Buff-Auswahl anzeigen</summary>
-    public event Action? OnDungeonBuffSelection;
+    public event Action? DungeonBuffSelection;
     /// <summary>Dungeon-Run beendet (Zusammenfassung)</summary>
-    public event Action<DungeonRunSummary>? OnDungeonRunEnd;
+    public event Action<DungeonRunSummary>? DungeonRunEnd;
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES
@@ -338,7 +363,7 @@ public partial class GameEngine : IDisposable
             float pauseBottom = pauseTop + PAUSE_BUTTON_SIZE;
             if (x <= pauseRight + 10 && y >= pauseTop - 10 && y <= pauseBottom + 10)
             {
-                OnPauseRequested?.Invoke();
+                PauseRequested?.Invoke();
                 return;
             }
         }
@@ -453,8 +478,12 @@ public partial class GameEngine : IDisposable
         _timer.OnExpired += OnTimeExpired;
 
         // Haptisches Feedback bei Richtungswechsel weiterleiten
-        _directionChangedHandler = () => OnDirectionChanged?.Invoke();
+        _directionChangedHandler = () => DirectionChanged?.Invoke();
         _inputManager.DirectionChanged += _directionChangedHandler;
+
+        // HUD-Labels cachen und bei Sprachwechsel aktualisieren
+        CacheHudLabels();
+        _localizationService.LanguageChanged += (_, _) => CacheHudLabels();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -485,8 +514,8 @@ public partial class GameEngine : IDisposable
         int levelScore = _player.Score - _scoreAtLevelStart;
         if (levelScore <= 0) return;
         _player.Score = (int)Math.Min((long)_player.Score + levelScore, int.MaxValue);
-        OnScoreChanged?.Invoke(_player.Score);
-        OnCoinsEarned?.Invoke(levelScore, _player.Score, true);
+        ScoreChanged?.Invoke(_player.Score);
+        CoinsEarned?.Invoke(levelScore, _player.Score, true);
     }
 
     /// <summary>
@@ -931,7 +960,7 @@ public partial class GameEngine : IDisposable
                     coins *= 3;
                 if (coins > 0)
                 {
-                    OnCoinsEarned?.Invoke(coins, _player.Score, false);
+                    CoinsEarned?.Invoke(coins, _player.Score, false);
                 }
 
                 // Survival-Runde beendet (Achievement + BattlePass)
@@ -944,11 +973,11 @@ public partial class GameEngine : IDisposable
                     _tracking.OnDungeonRunCompleted();
                     var summary = _dungeonService.EndRun();
                     _isDungeonRun = false;
-                    OnDungeonRunEnd?.Invoke(summary);
+                    DungeonRunEnd?.Invoke(summary);
                 }
 
                 _tracking.FlushIfDirty();
-                OnGameOver?.Invoke();
+                GameOver?.Invoke();
             }
             else
             {

@@ -8,7 +8,7 @@ using SkiaSharp;
 namespace BomberBlast.Graphics;
 
 /// <summary>
-/// Renders the game using SkiaSharp with two visual styles (Classic HD / Neon)
+/// Rendert das Spiel mit SkiaSharp in zwei visuellen Stilen (Classic HD / Neon)
 /// </summary>
 public partial class GameRenderer : IDisposable
 {
@@ -16,7 +16,7 @@ public partial class GameRenderer : IDisposable
     private readonly IGameStyleService _styleService;
     private readonly ICustomizationService _customizationService;
 
-    // Rendering settings
+    // Rendering-Einstellungen
     private float _scale = 1f;
     private float _offsetX, _offsetY;
     private float _hudX, _hudY, _hudWidth, _hudHeight;
@@ -64,17 +64,28 @@ public partial class GameRenderer : IDisposable
     // ReducedEffects: Atmosphärische Systeme deaktivieren (Performance-Modus)
     public bool ReducedEffects { get; set; }
 
-    // Animation timing
+    // Animations-Timing
     private float _globalTimer;
     private float _lastDeltaTime;
+
+    // Rainbow-Explosion: Farben nur alle 3 Frames aktualisieren (statt pro Frame)
+    private int _rainbowUpdateCounter;
 
     // Nebel-Overlay (Welt 10: Schattenwelt)
     private bool _fogEnabled;
 
-    // Current palette (swapped on style change)
+    // Gecachte Shader (vermeidet native SKShader-Allokationen pro Frame)
+    private SKShader? _bgShader;
+    private int _bgShaderWorldIndex = -1;
+    private float _bgShaderHeight;
+    private SKShader? _vignetteShader;
+    private float _vignetteShaderW, _vignetteShaderH;
+    private int _vignetteShaderWorldIndex = -1;
+
+    // Aktuelle Palette (wird bei Style-Wechsel getauscht)
     private StylePalette _palette;
 
-    // Effektive Explosionsfarben (Skin-Override oder Palette)
+    // Effektive Explosionsfarben (Skin-ueberschreibt Palette)
     private SKColor _explOuter, _explInner, _explCore;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -83,31 +94,31 @@ public partial class GameRenderer : IDisposable
 
     private sealed class StylePalette
     {
-        // Background
+        // Hintergrund
         public SKColor Background;
 
-        // Floor
+        // Boden
         public SKColor FloorBase;
         public SKColor FloorAlt;
         public SKColor FloorLine;
 
-        // Wall
+        // Wand
         public SKColor WallBase;
         public SKColor WallHighlight;
         public SKColor WallShadow;
         public SKColor WallEdge;
 
-        // Block
+        // Block (zerstoerbar)
         public SKColor BlockBase;
         public SKColor BlockMortar;
         public SKColor BlockHighlight;
         public SKColor BlockShadow;
 
-        // Exit
+        // Ausgang
         public SKColor ExitGlow;
         public SKColor ExitInner;
 
-        // Bomb
+        // Bombe
         public SKColor BombBody;
         public SKColor BombGlowColor;
         public SKColor BombFuse;
@@ -118,12 +129,12 @@ public partial class GameRenderer : IDisposable
         public SKColor ExplosionInner;
         public SKColor ExplosionCore;
 
-        // Player
+        // Spieler
         public SKColor PlayerBody;
         public SKColor PlayerHelm;
         public SKColor PlayerAura;
 
-        // Enemy
+        // Gegner
         public SKColor EnemyAura;
 
         // HUD
@@ -493,13 +504,13 @@ public partial class GameRenderer : IDisposable
     private readonly SKFont _powerUpFont = new() { Size = 14, Embolden = true };
     private readonly SKPath _fusePath = new();
 
-    // Cached glow filters
+    // Gecachte Glow-Filter
     private readonly SKMaskFilter _smallGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
     private readonly SKMaskFilter _mediumGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6);
     private readonly SKMaskFilter _outerGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Outer, 4);
     private readonly SKMaskFilter _hudTextGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Outer, 3);
 
-    // HUD gradient cache
+    // HUD-Gradient-Cache (wird bei Style-Wechsel invalidiert)
     private SKShader? _hudGradientShader;
     private float _lastHudShaderHeight;
 
@@ -517,6 +528,20 @@ public partial class GameRenderer : IDisposable
     private string _lastBombsString = "";
     private int _lastFireValue = -1;
     private string _lastFireString = "";
+    private int _lastSurvivalMins = -1;
+    private int _lastSurvivalSecs = -1;
+    private string _lastSurvivalTimeString = "";
+    private int _lastComboCount = -1;
+    private string _lastComboString = "";
+    private int _lastEnemiesRemaining = -1;
+    private string _lastEnemiesString = "";
+    private int _lastSpeedLevel = -1;
+    private string _lastSpeedString = "";
+    private int _lastCurseTimer = -1;
+    private CurseType _lastCurseType = (CurseType)(-1);
+    private string _lastCurseString = "";
+    // Gecachter Blur-Filter für Combo-/Card-Glow im HUD (statt pro-Frame CreateBlur)
+    private readonly SKMaskFilter _hudComboBlur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
 
     public float Scale => _scale;
     public float OffsetX => _offsetX;
@@ -572,7 +597,7 @@ public partial class GameRenderer : IDisposable
     {
         _palette = GetPaletteForStyle(style);
         UpdateExplosionSkinColors();
-        // Invalidate cached HUD gradient
+        // Gecachten HUD-Gradient invalidieren
         _hudGradientShader?.Dispose();
         _hudGradientShader = null;
     }
@@ -582,7 +607,7 @@ public partial class GameRenderer : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Calculate rendering scale and offset (Landscape: game left, HUD right)
+    /// Rendering-Skalierung und Offset berechnen (Landscape: Spiel links, HUD rechts)
     /// </summary>
     public void CalculateViewport(float screenWidth, float screenHeight, int gridPixelWidth, int gridPixelHeight)
     {
@@ -595,16 +620,16 @@ public partial class GameRenderer : IDisposable
         // Effektive Höhe: abzüglich Banner-Ad oben
         float effectiveHeight = screenHeight - BannerTopOffset;
 
-        // Reserve HUD space on the right side
+        // HUD-Platz auf der rechten Seite reservieren
         float hudReserved = HUD_LOGICAL_WIDTH;
 
-        // Scale to fit grid in remaining area
+        // Skalierung um Grid in verbleibende Flaeche einzupassen
         float availableWidth = screenWidth - hudReserved;
         float scaleX = availableWidth / gridPixelWidth;
         float scaleY = effectiveHeight / gridPixelHeight;
         _scale = Math.Min(scaleX, scaleY);
 
-        // Center the game field vertically (unterhalb des Banners)
+        // Spielfeld vertikal zentrieren (unterhalb des Banners)
         float scaledGridWidth = gridPixelWidth * _scale;
         float scaledGridHeight = gridPixelHeight * _scale;
         _offsetX = (availableWidth - scaledGridWidth) / 2f;
@@ -618,7 +643,7 @@ public partial class GameRenderer : IDisposable
     }
 
     /// <summary>
-    /// Update animation timer
+    /// Animations-Timer aktualisieren
     /// </summary>
     public void Update(float deltaTime)
     {
@@ -643,16 +668,20 @@ public partial class GameRenderer : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Render the entire game
+    /// Das gesamte Spiel rendern
     /// </summary>
     public void Render(SKCanvas canvas, GameGrid grid, Player player,
-        IEnumerable<Enemy> enemies, IEnumerable<Bomb> bombs,
-        IEnumerable<Explosion> explosions, IEnumerable<PowerUp> powerUps,
+        List<Enemy> enemies, List<Bomb> bombs,
+        List<Explosion> explosions, List<PowerUp> powerUps,
         float remainingTime, int score, int lives, Cell? exitCell = null)
     {
-        // Rainbow-Explosion muss pro Frame aktualisiert werden
+        // Rainbow-Explosion: Farben nur alle 3 Frames aktualisieren (HSL-Berechnung sparen)
         if (_customizationService.ExplosionSkin.Id == "expl_rainbow")
-            UpdateExplosionSkinColors();
+        {
+            _rainbowUpdateCounter++;
+            if (_rainbowUpdateCounter % 3 == 0)
+                UpdateExplosionSkinColors();
+        }
 
         // Hintergrund mit Welt-Gradient (statt canvas.Clear)
         RenderBackground(canvas, _screenWidth, _screenHeight);
@@ -671,7 +700,7 @@ public partial class GameRenderer : IDisposable
             canvas.Restore();
         }
 
-        // Save canvas state and apply transform for game field
+        // Canvas-Zustand sichern und Transformation fuer Spielfeld anwenden
         canvas.Save();
         canvas.Translate(_offsetX, _offsetY);
         canvas.Scale(_scale);
@@ -764,7 +793,7 @@ public partial class GameRenderer : IDisposable
             RenderMoodLighting(canvas, _screenWidth, _screenHeight);
         }
 
-        // Draw HUD (not scaled with game)
+        // HUD zeichnen (nicht mit Spiel skaliert)
         RenderHUD(canvas, remainingTime, score, lives, player);
     }
 
@@ -773,7 +802,7 @@ public partial class GameRenderer : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Convert screen coordinates to grid coordinates
+    /// Bildschirmkoordinaten in Grid-Koordinaten umrechnen
     /// </summary>
     public (int gridX, int gridY) ScreenToGrid(float screenX, float screenY)
     {
@@ -820,5 +849,8 @@ public partial class GameRenderer : IDisposable
         _shaderEffects.Dispose();
         _trailSystem.Dispose();
         _floorCacheBitmap?.Dispose();
+        _bgShader?.Dispose();
+        _vignetteShader?.Dispose();
+        _hudComboBlur.Dispose();
     }
 }

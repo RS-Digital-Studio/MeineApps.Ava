@@ -23,7 +23,7 @@ public class ProgressService : IProgressService
     }
 
     // Stern-Anforderungen pro Welt (Index = Welt-Nummer)
-    private static readonly int[] WorldStarsRequired = [0, 0, 10, 25, 45, 70, 100, 135, 175, 220, 270];
+    private static readonly int[] WorldStarsRequired = [0, 0, 10, 25, 45, 70, 100, 135, 175, 200, 270];
 
     public bool IsLevelUnlocked(int level)
     {

@@ -1284,6 +1284,13 @@ namespace BomberBlast.Resources.Strings {
             }
         }
 
+        // Exit-Feedback
+        internal static string ExitRevealed {
+            get {
+                return ResourceManager.GetString("ExitRevealed", resourceCulture);
+            }
+        }
+
         // Back-Navigation
         internal static string PressBackAgainToExit {
             get {
@@ -2351,6 +2358,13 @@ namespace BomberBlast.Resources.Strings {
         internal static string QuickPlayEasyHard {
             get {
                 return ResourceManager.GetString("QuickPlayEasyHard", resourceCulture);
+            }
+        }
+
+        // Coins
+        internal static string Coins {
+            get {
+                return ResourceManager.GetString("Coins", resourceCulture);
             }
         }
 

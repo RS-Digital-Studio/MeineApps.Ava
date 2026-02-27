@@ -22,6 +22,7 @@ public partial class GameEngine
         _isDailyChallenge = false;
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
+        _isDungeonRun = false;
         _currentLevelNumber = levelNumber;
         _currentLevel = LevelGenerator.GenerateLevel(levelNumber, _progressService.HighestCompletedLevel);
         _continueUsed = false;
@@ -56,6 +57,7 @@ public partial class GameEngine
         _isDailyChallenge = true;
         _isSurvivalMode = false;
         _isQuickPlayMode = false;
+        _isDungeonRun = false;
         _currentLevelNumber = 99;
         _currentLevel = LevelGenerator.GenerateDailyChallengeLevel(seed);
         _continueUsed = false;
@@ -78,6 +80,7 @@ public partial class GameEngine
         _isDailyChallenge = false;
         _isSurvivalMode = false;
         _isQuickPlayMode = true;
+        _isDungeonRun = false;
         _quickPlayDifficulty = difficulty;
         _currentLevelNumber = difficulty * 10; // Für Welt-Palette
         _currentLevel = LevelGenerator.GenerateQuickPlayLevel(seed, difficulty);
@@ -103,6 +106,7 @@ public partial class GameEngine
         _isDailyChallenge = false;
         _isSurvivalMode = true;
         _isQuickPlayMode = false;
+        _isDungeonRun = false;
         _currentLevelNumber = 1;
         _currentLevel = LevelGenerator.GenerateSurvivalLevel();
         _continueUsed = true; // Kein Continue im Survival
@@ -145,7 +149,7 @@ public partial class GameEngine
         {
             _continueUsed = true;
             // Rest-Raum triggert sofort Buff-Auswahl + Heilung
-            OnDungeonBuffSelection?.Invoke();
+            DungeonBuffSelection?.Invoke();
             return;
         }
 
@@ -778,6 +782,11 @@ public partial class GameEngine
                     float epy = cell.Y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
                     _particleSystem.Emit(epx, epy, 12, ParticleColors.ExitReveal, 60f, 0.8f);
                     _particleSystem.Emit(epx, epy, 6, ParticleColors.ExitRevealLight, 40f, 0.5f);
+
+                    // Goldener Floating-Text: Ausgang gefunden!
+                    var exitText = _localizationService.GetString("ExitRevealed") ?? "EXIT!";
+                    _floatingText.Spawn(epx, epy - 20, exitText, new SKColor(255, 215, 0), 22f, 2.0f);
+                    _vibration.VibrateMedium();
                     return;
                 }
             }
@@ -826,6 +835,11 @@ public partial class GameEngine
             float epy = bestCell.Y * GameGrid.CELL_SIZE + GameGrid.CELL_SIZE / 2f;
             _particleSystem.Emit(epx, epy, 12, ParticleColors.ExitReveal, 60f, 0.8f);
             _particleSystem.Emit(epx, epy, 6, ParticleColors.ExitRevealLight, 40f, 0.5f);
+
+            // Goldener Floating-Text: Ausgang gefunden!
+            var exitText = _localizationService.GetString("ExitRevealed") ?? "EXIT!";
+            _floatingText.Spawn(epx, epy - 20, exitText, new SKColor(255, 215, 0), 22f, 2.0f);
+            _vibration.VibrateMedium();
         }
     }
 
@@ -1065,7 +1079,7 @@ public partial class GameEngine
         LastScoreMultiplier = scoreMultiplier;
 
         _soundManager.PlaySound(SoundManager.SFX_LEVEL_COMPLETE);
-        OnScoreChanged?.Invoke(_player.Score);
+        ScoreChanged?.Invoke(_player.Score);
 
         // Erster Sieg: Level 1 zum ersten Mal abgeschlossen
         _isFirstVictory = _currentLevelNumber == 1 && _progressService.HighestCompletedLevel == 0;
@@ -1091,7 +1105,7 @@ public partial class GameEngine
 
         if (_purchaseService.IsPremium)
             coins *= 3;
-        OnCoinsEarned?.Invoke(coins, _player.Score, true);
+        CoinsEarned?.Invoke(coins, _player.Score, true);
 
         // Coin-Floating-Text über dem Exit (gold, groß)
         if (coins > 0 && _exitCell != null)
@@ -1119,7 +1133,7 @@ public partial class GameEngine
         if (_isDungeonRun)
         {
             var reward = _dungeonService.CompleteFloor();
-            OnDungeonFloorComplete?.Invoke(reward);
+            DungeonFloorComplete?.Invoke(reward);
 
             // Karten-Drop bei Dungeon-Floor
             if (reward.CardDrop >= 0)
@@ -1192,7 +1206,7 @@ public partial class GameEngine
             }
 
             _tracking.FlushIfDirty();
-            OnLevelComplete?.Invoke();
+            LevelComplete?.Invoke();
         }
     }
 
@@ -1211,7 +1225,7 @@ public partial class GameEngine
             }
 
             // Coins wurden bereits in CompleteLevel (Level 50) gutgeschrieben → kein Doppel-Credit
-            OnVictory?.Invoke();
+            Victory?.Invoke();
         }
     }
 

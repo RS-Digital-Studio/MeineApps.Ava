@@ -2,7 +2,7 @@ namespace BomberBlast.Services;
 
 /// <summary>
 /// Service für das einmalige Starterpaket-Angebot nach Level 5.
-/// Enthält 5000 Coins + 20 Gems + 3 Rare-Karten für 0,99 EUR.
+/// Enthält 2500 Coins + 10 Gems + 2 Rare-Karten für 1999 Coins.
 /// </summary>
 public interface IStarterPackService
 {

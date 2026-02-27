@@ -7,7 +7,7 @@
 Bomberman-Klon mit SkiaSharp Rendering, AI Pathfinding und mehreren Input-Methoden.
 Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/Cyberpunk.
 
-**Version:** 2.0.13 (VersionCode 23) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
+**Version:** 2.0.20 (VersionCode 30) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
 
 ## Haupt-Features
 
@@ -16,7 +16,10 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - Zwei Visual Styles: Classic HD + Neon/Cyberpunk (IGameStyleService)
 - 60fps Game Loop via DispatcherTimer (16ms) in GameView.axaml.cs, InvalidateSurface() treibt PaintSurface
 - DPI-Handling: `canvas.LocalClipBounds` statt `e.Info.Width/Height`
-- GC-Optimierung: Gepoolte SKPaint/SKFont/SKPath (6 per-frame Allokationen eliminiert)
+- GC-Optimierung: Gepoolte SKPaint/SKFont/SKPath (6 per-frame Allokationen eliminiert), HUD-String-Caching (11 Cache-Felder: Survival-Timer, Combo, Enemies, Speed, Curse), gecachter SKMaskFilter für HUD-Glow
+- **Shader-Optimierung**: Alle per-Frame SKShader-Allokationen eliminiert. Background/Vignette/DynamicLighting-Shader beim Init gecacht. Grid-Border-Transitions (Ice/Lava/Teleporter) nutzen 2-Step-Alpha-DrawRect statt LinearGradient. ExplosionShaders (FlameLayer/FlameTongues/HeatHaze) nutzen Solid-Color statt Gradient. Fog-Overlay nutzt Stroke-Ringe statt RadialGradient+SKPaint-Allokation
+- **IEnumerable→List**: Render()/CollectLightSources()/TrailSystem.Update() nehmen List<T> statt IEnumerable<T> (kein Interface-Dispatch-Overhead)
+- Rainbow-Explosion-Skin: HSL-Farben nur alle 3 Frames aktualisiert (`_rainbowUpdateCounter % 3`)
 - HUD: Side-Panel rechts (TIME, SCORE, COMBO mit Timer-Bar, LIVES, BOMBS/FIRE mit Mini-Icons, PowerUp-Liste mit Glow)
 - **Partial Classes**: GameRenderer.cs (Core/Palette/Viewport), .Grid.cs (Boden/Wände/Blöcke/ProceduralTextures), .Characters.cs (Spieler+12 Gegner), .Bosses.cs (5 Bosse), .Items.cs (PowerUps/Bomben/Exit), .Atmosphere.cs (Hintergrund/Vignette/Schatten/Fackeln), .HUD.cs
 - **ReducedEffects**: Deaktiviert alle atmosphärischen Systeme (Weather, Ambient, DynamicLighting, Trails, ShaderEffects, Vignette, MoodLighting, BackgroundElements)
@@ -57,7 +60,8 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | TornMetalRenderer | Prozeduraler "Torn Metal" Button-Hintergrund (SkiaSharp): Metallischer Gradient, gezackte Kanten mit abgebrochenen Ecken, Risse/Kratzer, Nieten, Metallic-Sheen. Deterministisch per Seed. Statische Klasse mit gepoolten SKPaint/SKPath |
 
 ### Input-Handler (3x)
-- **FloatingJoystick**: Touch-basiert, zwei Modi: Floating (erscheint wo getippt, Standard) + Fixed (immer sichtbar unten links). Bomb-Button weiter in die Spielfläche gerückt (80px/60px Offset statt 30px/20px)
+- **FloatingJoystick**: Touch-basiert, zwei Modi: Floating (erscheint wo getippt, Standard) + Fixed (immer sichtbar unten links). Bomb-Button weiter in die Spielfläche gerückt (80px/60px Offset statt 30px/20px). Mobile-optimierte Sizes: Joystick-Radius 75dp, Deadzone 15%, Bomb-Button 70dp, Detonator 48dp, Hit-Zone 1.6x Visual. Richtungs-Hysterese (1.15x) gegen Flackern bei ~45°
+- **Pre-Turn Buffering** (Player.cs): Bei senkrechtem Richtungswechsel wird die gewünschte Richtung gepuffert wenn der Spieler nicht am Zellzentrum ist. Spieler bewegt sich weiter in der alten Richtung, Turn wird automatisch ausgeführt sobald Querachse innerhalb 40% des Zellzentrums liegt. Snap der Querachse bei Turn für pixelgenaues Grid-Alignment
 - **Keyboard**: Arrow/WASD + Space (Bomb) + E (Detonate) + T (ToggleSpecialBomb) + Escape (Pause) → Desktop Default
 - **Gamepad**: D-Pad (Key.Up/Down/Left/Right, Priorität über Analog-Stick) + Analog-Stick (4-Wege-Quantisierung, Deadzone 0.25) + Face-Buttons (A=Bomb, B/X=Detonate, Y=ToggleSpecialBomb, Start=Pause). Kein visuelles Rendering
 - InputManager verwaltet aktiven Handler, auto-detect Desktop vs Android, JoystickFixed-Setting persistiert
@@ -96,6 +100,19 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - Welt-Freischaltung: 0/0/10/25/45/70/100/135/175/220 Sterne
 - Stern-System: 3 Sterne pro Level (Zeit-basiert)
 - Fail-Counter fuer Level-Skip
+
+### Progressive Feature-Freischaltung (MainMenuViewModel)
+- Features werden basierend auf `HighestCompletedLevel` freigeschaltet
+- Level 0-2: Nur Story, Settings, Help, Profile
+- Level 3+: + Shop
+- Level 5+: + Survival, QuickPlay
+- Level 8+: + DailyChallenge, LuckySpin
+- Level 10+: + Achievements, Statistics, Collection (1. Boss besiegt)
+- Level 15+: + Deck, DailyMissions, WeeklyMissions
+- Level 20+: + Dungeon
+- Level 30+: + League, BattlePass
+- "NEU!"-Badges via `IPreferencesService` (`feature_seen_{name}`) - Badge verschwindet nach erstem Besuch
+- `MarkFeatureSeen(string)` wird in den Navigation-Commands aufgerufen
 
 ## Premium & Ads
 
@@ -166,6 +183,10 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Keyboard Input**: Window-Level KeyDown/KeyUp in MainWindow.axaml.cs → GameViewModel
 - **DI**: 23 ViewModels (alle Singleton), 29 Services, GameEngine + GameRenderer in App.axaml.cs (GameRenderer + IAchievementService + IDiscoveryService + IPlayGamesService + IWeeklyChallengeService + IDailyMissionService + ICardService + IDungeonService + IDungeonUpgradeService + ILeagueService per DI in GameEngine injiziert). IFirebaseService als Singleton registriert (LeagueService nimmt es per Constructor). Lazy-Injection: 4 Services (BattlePass, Card, League, DailyMission) erhalten IAchievementService via SetAchievementService() nach ServiceProvider-Build. Lazy-Injection: GemService + CardService erhalten IWeeklyChallengeService + IDailyMissionService via SetMissionServices(). Lazy-Injection: CustomizationService erhält IGemService via SetGemService() für Gem-Skin-Käufe
 - **GameEngine Partial Classes**: GameEngine.cs (Kern), .Collision.cs, .Explosion.cs, .Level.cs, .Render.cs
+- **GameEngine Events**: Kein "On"-Prefix (Convention-konform): `GameOver`, `LevelComplete`, `Victory`, `ScoreChanged`, `CoinsEarned`, `PauseRequested`, `DirectionChanged`, `DungeonFloorComplete`, `DungeonBuffSelection`, `DungeonRunEnd`
+- **GameEngine Dispose**: Wird via `App.DisposeServices()` aufgerufen (Desktop: ShutdownRequested, Android: OnDestroy). Disposed: GameEngine, GameRenderer, GameViewModel, IFirebaseService
+- **HUD-Labels**: Gecacht in GameEngine-Feldern, aktualisiert bei Level-Start und LanguageChanged (nicht pro Frame)
+- **Cloud Save**: `_cloudSaveInitTask` Task wird gespeichert (kein Fire-and-Forget), verhindert Race Condition
 - **12 PowerUp-Typen**: BombUp, Fire, Speed, Wallpass, Detonator, Bombpass, Flamepass, Mystery, Kick, LineBomb, PowerBomb, Skull
 - **PowerUp-Freischaltung**: Level-basiert via `GetUnlockLevel()` Extension. Story-Mode filtert gesperrte PowerUps. DailyChallenge: Alle verfügbar
 - **Discovery-System**: `IDiscoveryService` (Preferences-basiert), `DiscoveryOverlay` (SkiaSharp), pausiert Spiel bei Erstentdeckung
@@ -219,7 +240,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **FloatingText (UI)**: "x2!" (gold) bei Coins-Verdopplung, "LevelComplete" (gruen) - View-Overlays
 - **In-Game FloatingText**: `Graphics/GameFloatingTextSystem.cs` - Struct-Pool (20 max), Score-Popups (+100, +400), Combo-Text (x2!, MEGA x5!), PowerUp-Collect-Text (+SPEED, +FIRE, +KICK, +LINE, +POWER, CURSED!)
 - **Combo-System**: Kills innerhalb 2s-Fenster → Combo-Bonus (x2: +200, x3: +500, x4: +1000, x5+: +2000) mit farbigem Floating Text. Chain-Kill-Bonus: 1.5x Multiplikator bei 3+ Combo (Kettenreaktion), "CHAIN x{N}!" goldener Text
-- **Haptic-Feedback**: `_vibration.VibrateLight()` bei PowerUp-Einsammlung (GameEngine.Collision.cs)
+- **Haptic-Feedback**: `_vibration.VibrateLight()` bei PowerUp-Einsammlung (GameEngine.Collision.cs), Bomben-Platzierung (GameEngine.Explosion.cs), `_vibration.VibrateMedium()` bei Exit-Erscheinen (GameEngine.Level.cs)
 - **Timer-Warnung**: Pulsierender roter Bildschirmrand unter 30s, Intensitaet steigt mit sinkender Zeit
 - **Danger Telegraphing**: Rote pulsierende Warnzonen auf Zellen im Explosionsradius aktiver Bomben (Zuendschnur < 0.8s), Intensitaet steigt mit sinkender Zuendzeit
 - **Celebration**: Confetti bei Welt-Freischaltung
@@ -373,7 +394,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - 66 Achievements in 5 Kategorien: Progress (17), Mastery (6), Combat (11), Skill (11), Challenge (1), + 20 neue Cross-Feature Achievements
 - JSON-Persistenz via IPreferencesService
 - **IAchievementService in GameEngine injiziert** → automatische Achievement-Prüfung bei:
-  - Level-Complete → OnLevelCompleted (Welten, NoDamage, Efficient, Speedrun, FirstVictory, NoDamage5/10, Speedrun5/10)
+  - Level-Complete → LevelComplete (Welten, NoDamage, Efficient, Speedrun, FirstVictory, NoDamage5/10, Speedrun5/10)
   - Enemy-Kill → OnEnemyKilled (kumulative Kills 100/500/1000/2500/5000)
   - Stars → OnStarsUpdated (50/100/150/200/250/300 Sterne)
   - Combo → OnComboReached (x3, x5, x7)
@@ -795,6 +816,11 @@ Alle Action-Buttons verwenden prozedural generierte "Torn Metal" Hintergründe v
 
 ## Changelog Highlights
 
+- **27.02.2026 (41)**: **Steuerungs-Optimierung: Touch-Targets + Pre-Turn Buffering**: (1) **FloatingJoystick Touch-Targets** (FloatingJoystick.cs): Joystick-Radius 60→75dp, Deadzone 0.12→0.15, Bomb-Button 50→70dp, Detonator 40→48dp, Hit-Zone-Multiplikator 1.3→1.6x (Mobile-Best-Practices). Richtungs-Hysterese 1.15x gegen Flackern bei ~45°. (2) **Pre-Turn Buffering** (Player.cs): Bei senkrechtem Richtungswechsel wird die gewünschte Richtung gepuffert wenn Querachse >40% vom Zellzentrum entfernt. Spieler bewegt weiter in alter Richtung, Turn wird automatisch bei Zellzentrum-Nähe ausgeführt mit Querachsen-Snap. Eliminiert das Problem, dass Turns auf dem exakten Frame am Grid-Zentrum getimed werden müssen. IsPerpendicular() + TryExecuteTurn() Helper. _bufferedDirection + _lastMovingDirection Felder, Reset in Respawn/ResetForNewGame. (3) **Bomben-Bug-Fix** (GameEngine.cs): InputManager.Update() zurück NACH UpdatePlayer() verschoben - Bomb-Consume-Pattern erfordert BombPressed-Check VOR Consume (v2.0.18, VC 28). Build 0 Fehler.
+- **27.02.2026 (40)**: **Performance-Optimierung: Shader + Input + HUD**: (1) **Input-Reihenfolge** (GameEngine.cs): InputManager.Update() vor UpdatePlayer() verschoben (1 Frame weniger Input-Latenz). (2) **FloatingJoystick** (FloatingJoystickHandler.cs): Deadzone 0.15→0.12, Hysterese-Check mit ~10° Toleranz, PointerId-Tracking für Multi-Touch-Stabilität, HandleTouchReleased resettet bei korrektem PointerId. (3) **SKShader-Caching** (GameRenderer.cs/Atmosphere.cs): Background-Gradient, Vignette-Shader, DynamicLighting-Shader beim Init gecacht statt pro-Frame erstellt. (4) **HUD-String-Caching** (GameRenderer.HUD.cs): 11 Cache-Felder (SurvivalTimer, Combo, Enemies, Speed, Curse), gecachter SKMaskFilter für Glow, Strings nur bei Wert-Änderung aktualisiert. (5) **IEnumerable→List** (GameRenderer.cs/Atmosphere.cs/TrailSystem.cs): Render(), CollectLightSources(), TrailSystem.Update() von IEnumerable<T> auf List<T> umgestellt (kein Interface-Dispatch). (6) **Grid-Border-Shader eliminiert** (GameRenderer.Grid.cs): Ice/Lava/Teleporter-Borders von LinearGradient auf 2-Step-Alpha-DrawRect umgestellt (bis zu 12 native Shader-Allokationen pro sichtbare Transition-Zelle eliminiert). (7) **ExplosionShader optimiert** (ExplosionShaders.cs): DrawFlameLayerGradient (5-Stop-Gradient→Solid Color), DrawArmFlameTongues (3-Stop→Solid), DrawHeatHaze (3-Stop→2-Step-Alpha). (8) **Fog-Overlay** (GameRenderer.Grid.cs): RadialGradient+new SKPaint→2 Stroke-Ringe auf _fillPaint. Insgesamt ~50-100 native Shader-Allokationen pro Frame eliminiert. Build 0 Fehler.
+- **27.02.2026 (39)**: **Release v2.0.14 (VC 24)**: 3 Lokalisierungs-Fixes (hardcodierte "Coins"/"Day X"/"Gems!" Strings → lokalisiert via RESX in 6 Sprachen), neuer "Coins" RESX-Key in allen 6 Sprachen + Designer.cs. Android-Gerätetest auf Sony Xperia XQ-CC54 (7 Screenshots für Play Store). Version 2.0.13→2.0.14, VersionCode 23→24, Shared-Version 2.0.10→2.0.14.
+- **27.02.2026 (38)**: **3 Code-Quality-Fixes**: (1) **Cloud Save Fire-and-Forget Race Condition** (MainViewModel.cs): `_ = Task.Run(...)` mit TryLoadFromCloudAsync → `_cloudSaveInitTask = Task.Run(...)` (Task gespeichert statt verworfen, vermeidet unbeobachtete Exceptions und Race Conditions). (2) **HighScoreService DateTime-Serialisierung** (HighScoreService.cs): ScoreData.Date (DateTime) → ScoreData.DateUtc (string, ISO 8601 "O" Format) + ParseDateSafe() mit CultureInfo.InvariantCulture + DateTimeStyles.RoundtripKind. Abwärtskompatibel: Altes DateTime-Property konvertiert automatisch beim Deserialisieren. Englischer Catch-Kommentar → Deutsch. (3) **GameEngine/GameRenderer Dispose** (App.axaml.cs + MainActivity.cs): Statische App.DisposeServices() Methode disposed GameEngine, GameRenderer, GameViewModel, IFirebaseService. Desktop: desktop.ShutdownRequested Event. Android: MainActivity.OnDestroy(). Build 0 Fehler (auf clean master verifiziert, 24 vorbestehende Fehler in anderen unstaged Dateien).
+- **27.02.2026 (37)**: **3 Code-Fixes**: (1) `_isDungeonRun = false` in StartStoryModeAsync/StartDailyChallengeModeAsync/StartQuickPlayModeAsync/StartSurvivalModeAsync (Bug: Dungeon-Flag blieb nach Dungeon-Run aktiv, HUD zeigte Dungeon-Buffs in anderen Modi). (2) HUD-Label-Strings pro Frame via GetString() geladen → 8 gecachte Felder (`_hudLabelKills` etc.) + `CacheHudLabels()` Methode + LanguageChanged-Event-Subscription (8 Dictionary-Lookups/Frame eliminiert). (3) `_vibration.VibrateLight()` in PlaceBomb/PlacePowerBomb/PlaceLineBombs (haptisches Feedback bei Bomben-Platzierung, konsistent mit PowerUp-Einsammlung). Build 0 Fehler.
 - **26.02.2026 (36)**: **AAA Visual Redesign aller 21 Content-Views + Torn Metal Buttons**: (1) Konsistente Design-Patterns auf alle Menü-Views angewendet: Farbige 3px Akzent-Borders (oben/links) pro Sektion, Gradient-Hero-Backgrounds (getönte Farbe→SurfaceColor), BoxShadow auf allen Karten-Borders, größere Fonts + Bold/SemiBold-Hierarchie, Gradient-Trenner (Height=2 CornerRadius=1), farbige Badge-Borders. Phase 3: 8 Views, Phase 4: 12 Views, Phase 5: QuickPlayView. (2) **Torn Metal Buttons**: TornMetalRenderer.cs (SkiaSharp, statisch, gepoolte SKPaint/SKPath) + GameButtonCanvas.cs (SKCanvasView, 3 StyledProperties). ~59 Action-Buttons in 18 Views konvertiert: Panel-Wrapper mit GameButtonCanvas (Hintergrund) + transparenter Button darüber. Prozedural generierte Risse, Kratzer, abgebrochene Ecken, Nieten, Metallic-Sheen. Deterministisch per Seed (10-181). DamageLevel nach Funktion (CTA=0.5, Success=0.3, Danger=0.7, Gold=0.6, Secondary=0.2). Build 0 Fehler.
 - **24.02.2026 (35)**: **Dungeon-Erweiterung + Visuelle Aufwertung** (Phasen A1-A3, B1-B7, C): (1) **Theme-System** (A1): MenuBackgroundRenderer mit 7 BackgroundTheme-Varianten (Default/Dungeon/Shop/League/BattlePass/Victory/LuckySpin), je max 60 struct-basierte Partikel, MenuBackgroundCanvas.Theme StyledProperty, 15 Views mit thematischem Hintergrund. (2) **VictoryView Victory-Theme** (A2): XAML-Gradient durch Victory-Theme ersetzt (Confetti+Fireworks+Gold-Funken). (3) **Buff-Animationen** (A3): Gestaffelte Einblend-Animation (3 Karten, 200ms delay) + Rarität-Glow-Pulsation in DungeonView. (4) **Permanente Upgrades** (B1): IDungeonUpgradeService mit 8 Upgrades (50-300 DungeonCoins), DungeonCoins als dungeon-spezifische Währung (10-100 DC/Floor). (5) **4 Legendary Buffs** (B2): Berserker/TimeFreeze/GoldRush/Phantom mit Weight 3-4. (6) **Buff-Reroll + 5 Synergies** (B5): 1x gratis Reroll, 5 Gem-Rerolls, 5 Buff-Kombinationen (Bombardier/Blitzkrieg/Festung/Midas/Elementar). (7) **5 Raum-Typen** (B3): Normal/Elite/Treasure/Challenge/Rest mit gewichteter Zufallsauswahl. (8) **8 Floor-Modifikatoren** (B4): Ab Floor 3 30% Chance (LavaBorders/Darkness/DoubleSpawns/FastBombs/BigExplosions/CursedFloor/Regeneration/Wealthy). (9) **Dungeon Node-Map** (B6): Slay the Spire-inspirierte 10×3 Map mit DungeonMapRenderer (SkiaSharp), Pfad-Auswahl, Raum-Typ-Icons, Modifikator-Badges. (10) **Ascension 0-5** (B7): Eskalierende Schwierigkeit + Belohnungen nach Floor 10 Clear. (11) **53 neue RESX-Keys** (C): Alle 6 Sprachen + Designer.cs. Build 0 Fehler, AppChecker 105 PASS / 0 FAIL. 7 neue Dateien (DungeonUpgrade.cs, IDungeonUpgradeService.cs, DungeonUpgradeService.cs, DungeonRoomType.cs, DungeonFloorModifier.cs, DungeonMapNode.cs, DungeonMapRenderer.cs).
 - **24.02.2026 (34)**: **Komplett-Audit abgeschlossen** (88 Findings, 10 Phasen): Build 0 Fehler, AppChecker 105 PASS / 0 FAIL. Designer.cs synchronisiert (755→1111 Properties). Alle deutschen Fallback-Strings auf EN normalisiert. 1111 RESX-Keys in 6 Sprachen vollständig.

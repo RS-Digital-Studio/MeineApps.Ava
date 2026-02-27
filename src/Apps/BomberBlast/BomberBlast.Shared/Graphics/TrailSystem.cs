@@ -66,7 +66,7 @@ public sealed class TrailSystem : IDisposable
     /// Trails aktualisieren: Neue Punkte erstellen, alte altern lassen.
     /// </summary>
     public void Update(float deltaTime, Player? player,
-        IEnumerable<Enemy> enemies, float globalTimer)
+        List<Enemy> enemies, float globalTimer)
     {
         // Timer altern
         for (int i = 0; i < MAX_TRAILS; i++)

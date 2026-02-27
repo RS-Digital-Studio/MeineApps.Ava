@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using BomberBlast.Models;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace BomberBlast.ViewModels;
@@ -28,6 +29,7 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
     private readonly IBattlePassService _battlePassService;
     private readonly ILeagueService _leagueService;
     private readonly IStarterPackService _starterPackService;
+    private readonly IPreferencesService _preferencesService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -93,6 +95,22 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
     [ObservableProperty] private bool _isCollectionUnlocked;
     [ObservableProperty] private bool _isLeagueUnlocked;
 
+    // "NEU!"-Badges fuer frisch freigeschaltete Features (noch nicht vom Spieler besucht)
+    [ObservableProperty] private bool _isShopNew;
+    [ObservableProperty] private bool _isQuickPlayNew;
+    [ObservableProperty] private bool _isSurvivalNew;
+    [ObservableProperty] private bool _isDailyChallengeNewBadge;
+    [ObservableProperty] private bool _isLuckySpinNew;
+    [ObservableProperty] private bool _isAchievementsNew;
+    [ObservableProperty] private bool _isStatisticsNew;
+    [ObservableProperty] private bool _isCollectionNew;
+    [ObservableProperty] private bool _isDeckNew;
+    [ObservableProperty] private bool _isDailyMissionsNew;
+    [ObservableProperty] private bool _isWeeklyMissionsNew;
+    [ObservableProperty] private bool _isDungeonNew;
+    [ObservableProperty] private bool _isLeagueNew;
+    [ObservableProperty] private bool _isBattlePassNew;
+
     /// <summary>Ob das Starterpaket-Angebot angezeigt werden soll</summary>
     [ObservableProperty] private bool _isStarterPackAvailable;
 
@@ -122,7 +140,7 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
         IReviewService reviewService, IDailyChallengeService dailyChallengeService,
         IWeeklyChallengeService weeklyChallengeService, IDailyMissionService dailyMissionService,
         IBattlePassService battlePassService, ILeagueService leagueService,
-        IStarterPackService starterPackService)
+        IStarterPackService starterPackService, IPreferencesService preferencesService)
     {
         _progressService = progressService;
         _purchaseService = purchaseService;
@@ -137,6 +155,7 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
         _battlePassService = battlePassService;
         _leagueService = leagueService;
         _starterPackService = starterPackService;
+        _preferencesService = preferencesService;
 
         // Live-Update bei Coin-/Gem-Änderungen (z.B. aus Shop, Rewarded Ads)
         _coinService.BalanceChanged += OnBalanceChanged;
@@ -217,25 +236,110 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
         // Letzte Aktivität aktualisieren (für zukünftige Comeback-Prüfung)
         _dailyRewardService.UpdateLastActivity();
 
-        // Starterpaket-Eligibility prüfen
+        // Starterpaket-Eligibility pruefen
         _starterPackService.CheckEligibility(_progressService.HighestCompletedLevel);
         IsStarterPackAvailable = _starterPackService.IsAvailable;
 
-        // Alle Features immer sichtbar
-        IsShopUnlocked = true;
-        IsDailyChallengeUnlocked = true;
-        IsQuickPlayUnlocked = true;
-        IsSurvivalUnlocked = true;
+        // Progressive Feature-Freischaltung basierend auf hoechstem abgeschlossenen Level
+        UpdateFeatureUnlocks();
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROGRESSIVE FEATURE-FREISCHALTUNG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Prueft ob ein Feature bereits vom Spieler besucht wurde.
+    /// </summary>
+    private bool HasSeenFeature(string feature) =>
+        _preferencesService.Get($"feature_seen_{feature}", false);
+
+    /// <summary>
+    /// Markiert ein Feature als gesehen (entfernt "NEU!"-Badge).
+    /// Wird beim Navigieren zum Feature aufgerufen.
+    /// </summary>
+    public void MarkFeatureSeen(string feature)
+    {
+        _preferencesService.Set($"feature_seen_{feature}", true);
+
+        // Entsprechendes "NEU!"-Badge Property zuruecksetzen
+        switch (feature)
+        {
+            case "shop": IsShopNew = false; break;
+            case "quickplay": IsQuickPlayNew = false; break;
+            case "survival": IsSurvivalNew = false; break;
+            case "daily_challenge": IsDailyChallengeNewBadge = false; break;
+            case "lucky_spin": IsLuckySpinNew = false; break;
+            case "achievements": IsAchievementsNew = false; break;
+            case "statistics": IsStatisticsNew = false; break;
+            case "collection": IsCollectionNew = false; break;
+            case "deck": IsDeckNew = false; break;
+            case "daily_missions": IsDailyMissionsNew = false; break;
+            case "weekly_missions": IsWeeklyMissionsNew = false; break;
+            case "dungeon": IsDungeonNew = false; break;
+            case "league": IsLeagueNew = false; break;
+            case "battle_pass": IsBattlePassNew = false; break;
+        }
+    }
+
+    /// <summary>
+    /// Setzt Feature-Sichtbarkeit und "NEU!"-Badges basierend auf Spielfortschritt.
+    /// Level 0-2: Nur Story, Settings, Help
+    /// Level 3-4: + Shop
+    /// Level 5-7: + Survival, QuickPlay
+    /// Level 8-9: + DailyChallenge, LuckySpin
+    /// Level 10-14: + Achievements, Statistics, Collection (1. Boss besiegt)
+    /// Level 15-19: + Deck, DailyMissions, WeeklyMissions
+    /// Level 20-29: + Dungeon
+    /// Level 30+: + League, BattlePass
+    /// </summary>
+    private void UpdateFeatureUnlocks()
+    {
+        int level = _progressService.HighestCompletedLevel;
+
+        // Story, Settings, Help, Profile: Immer sichtbar
         IsProfileUnlocked = true;
-        IsAchievementsUnlocked = true;
-        IsWeeklyChallengeUnlocked = true;
-        IsLuckySpinUnlocked = true;
-        IsStatisticsUnlocked = true;
-        IsDeckUnlocked = true;
-        IsDungeonUnlocked = true;
-        IsBattlePassUnlocked = true;
-        IsCollectionUnlocked = true;
-        IsLeagueUnlocked = true;
+
+        // Level 3+: Shop
+        IsShopUnlocked = level >= 3;
+        IsShopNew = IsShopUnlocked && !HasSeenFeature("shop");
+
+        // Level 5+: Survival, QuickPlay
+        IsSurvivalUnlocked = level >= 5;
+        IsQuickPlayUnlocked = level >= 5;
+        IsSurvivalNew = IsSurvivalUnlocked && !HasSeenFeature("survival");
+        IsQuickPlayNew = IsQuickPlayUnlocked && !HasSeenFeature("quickplay");
+
+        // Level 8+: DailyChallenge, LuckySpin
+        IsDailyChallengeUnlocked = level >= 8;
+        IsLuckySpinUnlocked = level >= 8;
+        IsDailyChallengeNewBadge = IsDailyChallengeUnlocked && !HasSeenFeature("daily_challenge");
+        IsLuckySpinNew = IsLuckySpinUnlocked && !HasSeenFeature("lucky_spin");
+
+        // Level 10+: Achievements, Statistics, Collection (1. Boss besiegt)
+        IsAchievementsUnlocked = level >= 10;
+        IsStatisticsUnlocked = level >= 10;
+        IsCollectionUnlocked = level >= 10;
+        IsAchievementsNew = IsAchievementsUnlocked && !HasSeenFeature("achievements");
+        IsStatisticsNew = IsStatisticsUnlocked && !HasSeenFeature("statistics");
+        IsCollectionNew = IsCollectionUnlocked && !HasSeenFeature("collection");
+
+        // Level 15+: Deck, DailyMissions, WeeklyMissions
+        IsDeckUnlocked = level >= 15;
+        IsWeeklyChallengeUnlocked = level >= 15;
+        IsDeckNew = IsDeckUnlocked && !HasSeenFeature("deck");
+        IsDailyMissionsNew = level >= 15 && !HasSeenFeature("daily_missions");
+        IsWeeklyMissionsNew = IsWeeklyChallengeUnlocked && !HasSeenFeature("weekly_missions");
+
+        // Level 20+: Dungeon
+        IsDungeonUnlocked = level >= 20;
+        IsDungeonNew = IsDungeonUnlocked && !HasSeenFeature("dungeon");
+
+        // Level 30+: League, BattlePass
+        IsLeagueUnlocked = level >= 30;
+        IsBattlePassUnlocked = level >= 30;
+        IsLeagueNew = IsLeagueUnlocked && !HasSeenFeature("league");
+        IsBattlePassNew = IsBattlePassUnlocked && !HasSeenFeature("battle_pass");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -254,7 +358,8 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
             RewardDays.Add(new DailyRewardDisplayItem
             {
                 Day = r.Day,
-                DayText = $"Day {r.Day}",
+                DayText = string.Format(
+                    _localizationService.GetString("DailyRewardDay") ?? "Day {0}", r.Day),
                 CoinsText = $"+{r.Coins:N0}",
                 HasExtraLife = r.ExtraLives > 0,
                 IsClaimed = r.IsClaimed,
@@ -287,11 +392,13 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
             var dayText = string.Format(
                 _localizationService.GetString("DailyRewardDay") ?? "Day {0}",
                 reward.Day);
-            var bonusText = $"{dayText}: +{reward.Coins:N0} Coins!";
+            var coinsLabel = _localizationService.GetString("Coins") ?? "Coins";
+            var bonusText = $"{dayText}: +{reward.Coins:N0} {coinsLabel}!";
 
             if (reward.Gems > 0)
             {
-                bonusText += $" +{reward.Gems} Gems!";
+                var gemsLabel = _localizationService.GetString("Gems") ?? "Gems";
+                bonusText += $" +{reward.Gems} {gemsLabel}!";
             }
 
             if (reward.ExtraLives > 0)
@@ -341,12 +448,14 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
     [RelayCommand]
     private void QuickPlay()
     {
+        MarkFeatureSeen("quickplay");
         NavigationRequested?.Invoke(new GoQuickPlay());
     }
 
     [RelayCommand]
     private void SurvivalMode()
     {
+        MarkFeatureSeen("survival");
         NavigationRequested?.Invoke(new GoGame(Mode: "survival"));
     }
 
@@ -371,36 +480,42 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
     [RelayCommand]
     private void Shop()
     {
+        MarkFeatureSeen("shop");
         NavigationRequested?.Invoke(new GoShop());
     }
 
     [RelayCommand]
     private void Achievements()
     {
+        MarkFeatureSeen("achievements");
         NavigationRequested?.Invoke(new GoAchievements());
     }
 
     [RelayCommand]
     private void DailyChallenge()
     {
+        MarkFeatureSeen("daily_challenge");
         NavigationRequested?.Invoke(new GoDailyChallenge());
     }
 
     [RelayCommand]
     private void LuckyWheel()
     {
+        MarkFeatureSeen("lucky_spin");
         NavigationRequested?.Invoke(new GoLuckySpin());
     }
 
     [RelayCommand]
     private void WeeklyChallenge()
     {
+        MarkFeatureSeen("weekly_missions");
         NavigationRequested?.Invoke(new GoWeeklyChallenge());
     }
 
     [RelayCommand]
     private void Statistics()
     {
+        MarkFeatureSeen("statistics");
         NavigationRequested?.Invoke(new GoStatistics());
     }
 
@@ -413,40 +528,57 @@ public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuic
     [RelayCommand]
     private void Deck()
     {
+        MarkFeatureSeen("deck");
         NavigationRequested?.Invoke(new GoDeck());
     }
 
     [RelayCommand]
-    private void Dungeon() => NavigationRequested?.Invoke(new GoDungeon());
+    private void Dungeon()
+    {
+        MarkFeatureSeen("dungeon");
+        NavigationRequested?.Invoke(new GoDungeon());
+    }
 
     [RelayCommand]
-    private void BattlePass() => NavigationRequested?.Invoke(new GoBattlePass());
+    private void BattlePass()
+    {
+        MarkFeatureSeen("battle_pass");
+        NavigationRequested?.Invoke(new GoBattlePass());
+    }
 
     [RelayCommand]
-    private void Collection() => NavigationRequested?.Invoke(new GoCollection());
+    private void Collection()
+    {
+        MarkFeatureSeen("collection");
+        NavigationRequested?.Invoke(new GoCollection());
+    }
 
     [RelayCommand]
-    private void League() => NavigationRequested?.Invoke(new GoLeague());
+    private void League()
+    {
+        MarkFeatureSeen("league");
+        NavigationRequested?.Invoke(new GoLeague());
+    }
 
     [RelayCommand]
     private void GoToGemShop() => NavigationRequested?.Invoke(new GoGemShop());
 
     /// <summary>
-    /// Starterpaket kaufen. Nutzt IPurchaseService wenn verfügbar, sonst Coins-Fallback (4999).
+    /// Starterpaket kaufen. Nutzt IPurchaseService wenn verfügbar, sonst Coins-Fallback (1999).
     /// </summary>
     [RelayCommand]
     private void BuyStarterPack()
     {
         if (_starterPackService.IsAlreadyPurchased) return;
 
-        // Versuch: Coin-basierter Kauf als Fallback (4999 Coins)
-        if (_coinService.Balance >= 4999)
+        // Versuch: Coin-basierter Kauf als Fallback (1999 Coins)
+        if (_coinService.Balance >= 1999)
         {
-            _coinService.TrySpendCoins(4999);
+            _coinService.TrySpendCoins(1999);
             _starterPackService.MarkAsPurchased();
 
             var packTitle = _localizationService.GetString("StarterPackTitle") ?? "Starter Pack";
-            var packDesc = _localizationService.GetString("StarterPackDesc") ?? "5000 Coins + 20 Gems + 3 Rare Cards!";
+            var packDesc = _localizationService.GetString("StarterPackDesc") ?? "2500 Coins + 10 Gems + 2 Rare Cards!";
             FloatingTextRequested?.Invoke($"{packTitle}: {packDesc}", "gold");
             CelebrationRequested?.Invoke();
 

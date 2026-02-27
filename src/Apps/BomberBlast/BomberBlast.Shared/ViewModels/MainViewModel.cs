@@ -195,6 +195,11 @@ public partial class MainViewModel : ObservableObject
     private readonly IAppLogger _logger;
 
     /// <summary>
+    /// Task für Cloud-Save-Initialisierung (kein Fire-and-Forget, vermeidet Race Conditions)
+    /// </summary>
+    private Task? _cloudSaveInitTask;
+
+    /// <summary>
     /// Zeitpunkt des letzten Back-Presses (für Double-Back-to-Exit)
     /// </summary>
     private DateTime _lastBackPressTime = DateTime.MinValue;
@@ -373,8 +378,8 @@ public partial class MainViewModel : ObservableObject
             GemShopVm.UpdateLocalizedTexts();
         };
 
-        // Cloud Save: Bei App-Start Cloud-Stand laden (fire-and-forget mit Error-Handling)
-        _ = Task.Run(async () =>
+        // Cloud Save: Bei App-Start Cloud-Stand laden (Task gespeichert, kein Fire-and-Forget)
+        _cloudSaveInitTask = Task.Run(async () =>
         {
             try { await _cloudSaveService.TryLoadFromCloudAsync(); }
             catch (Exception ex) { _logger?.LogWarning($"CloudSave Init fehlgeschlagen: {ex.Message}"); }

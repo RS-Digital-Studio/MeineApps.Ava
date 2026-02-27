@@ -5,7 +5,7 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Services;
 
 /// <summary>
-/// Einmaliges Starterpaket: 5000 Coins + 20 Gems + 3 Rare-Karten für 0,99 EUR.
+/// Einmaliges Starterpaket: 2500 Coins + 10 Gems + 2 Rare-Karten für 1999 Coins.
 /// Verfügbar ab Level 5, einmalig pro Spieler.
 /// Persistenz via IPreferencesService (JSON).
 /// </summary>
@@ -13,9 +13,9 @@ public class StarterPackService : IStarterPackService
 {
     private const string DATA_KEY = "StarterPackData";
     private const int REQUIRED_LEVEL = 5;
-    private const int PACK_COINS = 5000;
-    private const int PACK_GEMS = 20;
-    private const int PACK_RARE_CARDS = 3;
+    private const int PACK_COINS = 2500;
+    private const int PACK_GEMS = 10;
+    private const int PACK_RARE_CARDS = 2;
 
     private static readonly JsonSerializerOptions JsonOptions = new();
 
@@ -61,7 +61,7 @@ public class StarterPackService : IStarterPackService
         _coinService.AddCoins(PACK_COINS);
         _gemService.AddGems(PACK_GEMS);
 
-        // 3 Rare-Karten droppen (Welt 7 = höhere Rare-Drop-Rate)
+        // 2 Rare-Karten droppen (Welt 7 = höhere Rare-Drop-Rate)
         for (int i = 0; i < PACK_RARE_CARDS; i++)
         {
             var drop = _cardService.GenerateDrop(worldNumber: 7);

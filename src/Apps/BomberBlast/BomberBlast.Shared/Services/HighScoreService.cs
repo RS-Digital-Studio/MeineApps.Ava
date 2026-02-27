@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using MeineApps.Core.Ava.Services;
 
@@ -73,7 +74,9 @@ public class HighScoreService : IHighScoreService
             if (!string.IsNullOrEmpty(json))
             {
                 var data = JsonSerializer.Deserialize<List<ScoreData>>(json);
-                _scores = data?.Select(d => new HighScoreEntry(d.Name, d.Score, d.Level, d.Date)).ToList()
+                _scores = data?.Select(d => new HighScoreEntry(
+                    d.Name, d.Score, d.Level,
+                    ParseDateSafe(d.DateUtc))).ToList()
                     ?? new List<HighScoreEntry>();
             }
             else
@@ -96,7 +99,8 @@ public class HighScoreService : IHighScoreService
                 Name = s.PlayerName,
                 Score = s.Score,
                 Level = s.Level,
-                Date = s.Date
+                // ISO 8601 "O" Format mit UTC-Kind beibehalten
+                DateUtc = s.Date.ToString("O")
             }).ToList();
 
             string json = JsonSerializer.Serialize(data);
@@ -104,15 +108,39 @@ public class HighScoreService : IHighScoreService
         }
         catch (Exception)
         {
-            // Save failed silently
+            // Speichern fehlgeschlagen - wird beim nächsten Mal erneut versucht
         }
     }
 
+    /// <summary>
+    /// Parst einen ISO 8601 UTC-String mit RoundtripKind (Projekt-Convention).
+    /// Fallback auf DateTime.UtcNow bei ungültigem Format.
+    /// </summary>
+    private static DateTime ParseDateSafe(string? dateStr)
+    {
+        if (string.IsNullOrEmpty(dateStr))
+            return DateTime.UtcNow;
+
+        // RoundtripKind bewahrt DateTimeKind.Utc aus dem "O"-Format
+        if (DateTime.TryParse(dateStr, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var result))
+            return result;
+
+        return DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Serialisierungs-DTO für HighScore-Einträge.
+    /// DateUtc als String im ISO 8601 "O" Format (Projekt-Convention).
+    /// Abwärtskompatibel: Akzeptiert auch altes "Date"-Property via ParseDateSafe().
+    /// </summary>
     private class ScoreData
     {
         public string Name { get; set; } = "";
         public int Score { get; set; }
         public int Level { get; set; }
-        public DateTime Date { get; set; }
+        /// <summary>ISO 8601 "O" UTC-String (neues Format)</summary>
+        public string? DateUtc { get; set; }
+        /// <summary>Altes DateTime-Property für Abwärtskompatibilität beim Deserialisieren</summary>
+        public DateTime? Date { set => DateUtc ??= value?.ToString("O"); }
     }
 }

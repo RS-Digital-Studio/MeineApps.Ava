@@ -88,15 +88,17 @@ public partial class GameRenderer
         canvas.DrawRect(0, 0, grid.PixelWidth, grid.PixelHeight, _fillPaint);
         canvas.Restore();
 
-        // Weicher Rand am Sichtkreis (Gradient für natürlichen Übergang)
-        using var gradientPaint = new SKPaint { IsAntialias = true };
-        gradientPaint.Shader = SKShader.CreateRadialGradient(
-            new SKPoint(playerX, playerY),
-            fogRadius,
-            [new SKColor(0, 0, 0, 0), new SKColor(0, 0, 0, 120)],
-            [0.7f, 1.0f],
-            SKShaderTileMode.Clamp);
-        canvas.DrawCircle(playerX, playerY, fogRadius, gradientPaint);
+        // Weicher Rand am Sichtkreis: 2-Ring-Approximation statt RadialGradient + SKPaint-Allokation
+        _fillPaint.Shader = null;
+        _fillPaint.MaskFilter = null;
+        _fillPaint.Color = new SKColor(0, 0, 0, 40);
+        _fillPaint.Style = SKPaintStyle.Stroke;
+        _fillPaint.StrokeWidth = fogRadius * 0.15f;
+        canvas.DrawCircle(playerX, playerY, fogRadius * 0.92f, _fillPaint);
+        _fillPaint.Color = new SKColor(0, 0, 0, 80);
+        _fillPaint.StrokeWidth = fogRadius * 0.1f;
+        canvas.DrawCircle(playerX, playerY, fogRadius * 0.98f, _fillPaint);
+        _fillPaint.Style = SKPaintStyle.Fill;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -213,50 +215,38 @@ public partial class GameRenderer
         float px, float py, int cs, float tw,
         bool top, bool bot, bool left, bool right)
     {
-        // Frost-Gradient: Hellblau → Transparent an den Rändern zur normalen Zelle
+        // Frost-Fade: 2-Schritt Alpha statt pro-Zelle Shader (eliminiert native Allokationen)
+        float halfTw = tw * 0.5f;
+        _fillPaint.Shader = null;
+        _fillPaint.MaskFilter = null;
+
         if (top)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px + cs / 2f, py),
-                new SKPoint(px + cs / 2f, py - tw),
-                new[] { new SKColor(180, 220, 255, 50), SKColors.Transparent },
-                SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px, py - tw, cs, tw, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(180, 220, 255, 50);
+            canvas.DrawRect(px, py - halfTw, cs, halfTw, _fillPaint);
+            _fillPaint.Color = new SKColor(180, 220, 255, 20);
+            canvas.DrawRect(px, py - tw, cs, halfTw, _fillPaint);
         }
         if (bot)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px + cs / 2f, py + cs),
-                new SKPoint(px + cs / 2f, py + cs + tw),
-                new[] { new SKColor(180, 220, 255, 50), SKColors.Transparent },
-                SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px, py + cs, cs, tw, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(180, 220, 255, 50);
+            canvas.DrawRect(px, py + cs, cs, halfTw, _fillPaint);
+            _fillPaint.Color = new SKColor(180, 220, 255, 20);
+            canvas.DrawRect(px, py + cs + halfTw, cs, halfTw, _fillPaint);
         }
         if (left)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px, py + cs / 2f),
-                new SKPoint(px - tw, py + cs / 2f),
-                new[] { new SKColor(180, 220, 255, 50), SKColors.Transparent },
-                SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px - tw, py, tw, cs, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(180, 220, 255, 50);
+            canvas.DrawRect(px - halfTw, py, halfTw, cs, _fillPaint);
+            _fillPaint.Color = new SKColor(180, 220, 255, 20);
+            canvas.DrawRect(px - tw, py, halfTw, cs, _fillPaint);
         }
         if (right)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px + cs, py + cs / 2f),
-                new SKPoint(px + cs + tw, py + cs / 2f),
-                new[] { new SKColor(180, 220, 255, 50), SKColors.Transparent },
-                SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px + cs, py, tw, cs, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(180, 220, 255, 50);
+            canvas.DrawRect(px + cs, py, halfTw, cs, _fillPaint);
+            _fillPaint.Color = new SKColor(180, 220, 255, 20);
+            canvas.DrawRect(px + cs + halfTw, py, halfTw, cs, _fillPaint);
         }
 
         // Eis-Kristall-Punkte am Rand
@@ -275,50 +265,38 @@ public partial class GameRenderer
         float px, float py, int cs, float tw,
         bool top, bool bot, bool left, bool right)
     {
-        // Glühendes Orange → Transparent
+        // Lava-Fade: 2-Schritt Alpha statt pro-Zelle Shader (eliminiert native Allokationen)
+        float halfTw = tw * 0.5f;
+        _fillPaint.Shader = null;
+        _fillPaint.MaskFilter = null;
+
         if (top)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px + cs / 2f, py),
-                new SKPoint(px + cs / 2f, py - tw),
-                new[] { new SKColor(255, 120, 30, 60), new SKColor(80, 30, 10, 15), SKColors.Transparent },
-                new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px, py - tw, cs, tw, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(255, 120, 30, 50);
+            canvas.DrawRect(px, py - halfTw, cs, halfTw, _fillPaint);
+            _fillPaint.Color = new SKColor(80, 30, 10, 15);
+            canvas.DrawRect(px, py - tw, cs, halfTw, _fillPaint);
         }
         if (bot)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px + cs / 2f, py + cs),
-                new SKPoint(px + cs / 2f, py + cs + tw),
-                new[] { new SKColor(255, 120, 30, 60), new SKColor(80, 30, 10, 15), SKColors.Transparent },
-                new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px, py + cs, cs, tw, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(255, 120, 30, 50);
+            canvas.DrawRect(px, py + cs, cs, halfTw, _fillPaint);
+            _fillPaint.Color = new SKColor(80, 30, 10, 15);
+            canvas.DrawRect(px, py + cs + halfTw, cs, halfTw, _fillPaint);
         }
         if (left)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px, py + cs / 2f),
-                new SKPoint(px - tw, py + cs / 2f),
-                new[] { new SKColor(255, 120, 30, 60), new SKColor(80, 30, 10, 15), SKColors.Transparent },
-                new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px - tw, py, tw, cs, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(255, 120, 30, 50);
+            canvas.DrawRect(px - halfTw, py, halfTw, cs, _fillPaint);
+            _fillPaint.Color = new SKColor(80, 30, 10, 15);
+            canvas.DrawRect(px - tw, py, halfTw, cs, _fillPaint);
         }
         if (right)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px + cs, py + cs / 2f),
-                new SKPoint(px + cs + tw, py + cs / 2f),
-                new[] { new SKColor(255, 120, 30, 60), new SKColor(80, 30, 10, 15), SKColors.Transparent },
-                new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px + cs, py, tw, cs, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(255, 120, 30, 50);
+            canvas.DrawRect(px + cs, py, halfTw, cs, _fillPaint);
+            _fillPaint.Color = new SKColor(80, 30, 10, 15);
+            canvas.DrawRect(px + cs + halfTw, py, halfTw, cs, _fillPaint);
         }
     }
 
@@ -354,53 +332,42 @@ public partial class GameRenderer
         float px, float py, int cs, float tw,
         bool top, bool bot, bool left, bool right)
     {
-        // Magischer Glow in Teleporter-Farbe (Violett → Transparent)
+        // Teleporter-Fade: 2-Schritt Alpha statt pro-Zelle Shader (eliminiert native Allokationen)
         float pulse = 0.7f + MathF.Sin(_globalTimer * 3f + px * 0.1f) * 0.3f;
-        byte alpha = (byte)(45 * pulse);
+        byte alphaInner = (byte)(40 * pulse);
+        byte alphaOuter = (byte)(15 * pulse);
+        float edgeTw = tw * 0.7f;
+        float halfEdge = edgeTw * 0.5f;
+        _fillPaint.Shader = null;
+        _fillPaint.MaskFilter = null;
 
         if (top)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px + cs / 2f, py),
-                new SKPoint(px + cs / 2f, py - tw * 0.7f),
-                new[] { new SKColor(180, 100, 255, alpha), SKColors.Transparent },
-                SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px, py - tw * 0.7f, cs, tw * 0.7f, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(180, 100, 255, alphaInner);
+            canvas.DrawRect(px, py - halfEdge, cs, halfEdge, _fillPaint);
+            _fillPaint.Color = new SKColor(180, 100, 255, alphaOuter);
+            canvas.DrawRect(px, py - edgeTw, cs, halfEdge, _fillPaint);
         }
         if (bot)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px + cs / 2f, py + cs),
-                new SKPoint(px + cs / 2f, py + cs + tw * 0.7f),
-                new[] { new SKColor(180, 100, 255, alpha), SKColors.Transparent },
-                SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px, py + cs, cs, tw * 0.7f, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(180, 100, 255, alphaInner);
+            canvas.DrawRect(px, py + cs, cs, halfEdge, _fillPaint);
+            _fillPaint.Color = new SKColor(180, 100, 255, alphaOuter);
+            canvas.DrawRect(px, py + cs + halfEdge, cs, halfEdge, _fillPaint);
         }
         if (left)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px, py + cs / 2f),
-                new SKPoint(px - tw * 0.7f, py + cs / 2f),
-                new[] { new SKColor(180, 100, 255, alpha), SKColors.Transparent },
-                SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px - tw * 0.7f, py, tw * 0.7f, cs, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(180, 100, 255, alphaInner);
+            canvas.DrawRect(px - halfEdge, py, halfEdge, cs, _fillPaint);
+            _fillPaint.Color = new SKColor(180, 100, 255, alphaOuter);
+            canvas.DrawRect(px - edgeTw, py, halfEdge, cs, _fillPaint);
         }
         if (right)
         {
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(px + cs, py + cs / 2f),
-                new SKPoint(px + cs + tw * 0.7f, py + cs / 2f),
-                new[] { new SKColor(180, 100, 255, alpha), SKColors.Transparent },
-                SKShaderTileMode.Clamp);
-            _fillPaint.Shader = shader;
-            canvas.DrawRect(px + cs, py, tw * 0.7f, cs, _fillPaint);
-            _fillPaint.Shader = null;
+            _fillPaint.Color = new SKColor(180, 100, 255, alphaInner);
+            canvas.DrawRect(px + cs, py, halfEdge, cs, _fillPaint);
+            _fillPaint.Color = new SKColor(180, 100, 255, alphaOuter);
+            canvas.DrawRect(px + cs + halfEdge, py, halfEdge, cs, _fillPaint);
         }
     }
 

@@ -146,34 +146,42 @@ public sealed class DynamicLighting
         AddLight(x, y, cellSize * 1.2f, new SKColor(0, 220, 255), 0.2f);
     }
 
+    // Gecachter MaskFilter für Licht-Blur (statt pro-Licht Shader)
+    private SKMaskFilter? _lightBlur;
+    private float _lastBlurRadius;
+
     /// <summary>
-    /// Alle gesammelten Lichtquellen rendern
+    /// Alle gesammelten Lichtquellen rendern.
+    /// Verwendet MaskFilter-Blur statt pro-Licht RadialGradient-Shader
+    /// (eliminiert ~40 native Shader-Allokationen pro Frame).
     /// </summary>
     public void Render(SKCanvas canvas)
     {
         if (_lightCount == 0) return;
+
+        _lightPaint.Shader = null;
 
         for (int i = 0; i < _lightCount; i++)
         {
             ref var light = ref _lights[i];
             if (light.Intensity < 0.02f) continue;
 
-            byte alpha = (byte)(light.Intensity * 80); // Subtiler Effekt
-            _gradientColors[0] = light.Color.WithAlpha(alpha);
-            _gradientColors[1] = light.Color.WithAlpha(0);
+            byte alpha = (byte)(light.Intensity * 80);
+            _lightPaint.Color = light.Color.WithAlpha(alpha);
 
-            var shader = SKShader.CreateRadialGradient(
-                new SKPoint(light.X, light.Y),
-                light.Radius,
-                _gradientColors,
-                GradientPositions,
-                SKShaderTileMode.Clamp);
-            _lightPaint.Shader = shader;
+            // Blur-Filter für weichen Lichtrand (gecacht wenn Radius ähnlich)
+            float blurSigma = light.Radius * 0.45f;
+            if (_lightBlur == null || MathF.Abs(_lastBlurRadius - blurSigma) > 5f)
+            {
+                _lightBlur?.Dispose();
+                _lightBlur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, blurSigma);
+                _lastBlurRadius = blurSigma;
+            }
+            _lightPaint.MaskFilter = _lightBlur;
 
-            canvas.DrawCircle(light.X, light.Y, light.Radius, _lightPaint);
-            _lightPaint.Shader = null;
-            shader.Dispose();
+            canvas.DrawCircle(light.X, light.Y, light.Radius * 0.6f, _lightPaint);
         }
+        _lightPaint.MaskFilter = null;
     }
 
     /// <summary>
@@ -249,6 +257,7 @@ public sealed class DynamicLighting
 
     public void Dispose()
     {
+        _lightBlur?.Dispose();
         _lightPaint.Shader?.Dispose();
         _lightPaint.Dispose();
     }

@@ -11,8 +11,8 @@ using SkiaSharp;
 namespace BomberBlast.ViewModels;
 
 /// <summary>
-/// ViewModel for the game page.
-/// Wraps GameEngine, manages the game loop via render-driven updates, and owns SKCanvas rendering.
+/// ViewModel fuer die Spielseite.
+/// Kapselt GameEngine, steuert den Game-Loop via render-getriebene Updates und besitzt SKCanvas-Rendering.
 /// </summary>
 public partial class GameViewModel : ObservableObject, INavigable, IDisposable
 {
@@ -51,7 +51,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     public event Action<NavigationRequest>? NavigationRequested;
 
     /// <summary>
-    /// Event to request the canvas to invalidate (repaint).
+    /// Event um die Canvas zur Neuzeichnung aufzufordern.
     /// </summary>
     public event Action? InvalidateCanvasRequested;
 
@@ -83,12 +83,12 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Current game state from the engine.
+    /// Aktueller Spielzustand aus der Engine.
     /// </summary>
     public GameState State => _gameEngine.State;
 
     /// <summary>
-    /// The game engine instance (for views that need direct access to render).
+    /// Die GameEngine-Instanz (fuer Views die direkten Zugriff zum Rendern brauchen).
     /// </summary>
     public GameEngine Engine => _gameEngine;
 
@@ -124,8 +124,8 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Set the game mode and level parameters before starting.
-    /// Resets initialization flag so the game engine reinitializes on next OnAppearingAsync.
+    /// Spielmodus und Level-Parameter setzen vor dem Start.
+    /// Setzt das Initialisierungs-Flag zurueck, damit die Engine beim naechsten OnAppearingAsync neu initialisiert.
     /// </summary>
     public void SetParameters(string mode, int level, bool continueMode = false, string boostType = "", int difficulty = 5, int dungeonFloor = 0, int dungeonSeed = 0)
     {
@@ -140,7 +140,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     }
 
     /// <summary>
-    /// Called when the view appears. Initializes the game and starts the loop.
+    /// Wird aufgerufen wenn die View erscheint. Initialisiert das Spiel und startet den Loop.
     /// </summary>
     public async Task OnAppearingAsync()
     {
@@ -150,14 +150,14 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
         _gameEventCts = new CancellationTokenSource();
 
         // Erst Unsubscribe (idempotent), dann Subscribe → verhindert doppelte Subscriptions
-        _gameEngine.OnGameOver -= HandleGameOver;
-        _gameEngine.OnLevelComplete -= HandleLevelComplete;
-        _gameEngine.OnCoinsEarned -= HandleCoinsEarned;
-        _gameEngine.OnPauseRequested -= HandlePauseRequested;
-        _gameEngine.OnGameOver += HandleGameOver;
-        _gameEngine.OnLevelComplete += HandleLevelComplete;
-        _gameEngine.OnCoinsEarned += HandleCoinsEarned;
-        _gameEngine.OnPauseRequested += HandlePauseRequested;
+        _gameEngine.GameOver -= HandleGameOver;
+        _gameEngine.LevelComplete -= HandleLevelComplete;
+        _gameEngine.CoinsEarned -= HandleCoinsEarned;
+        _gameEngine.PauseRequested -= HandlePauseRequested;
+        _gameEngine.GameOver += HandleGameOver;
+        _gameEngine.LevelComplete += HandleLevelComplete;
+        _gameEngine.CoinsEarned += HandleCoinsEarned;
+        _gameEngine.PauseRequested += HandlePauseRequested;
 
         if (!_isInitialized)
         {
@@ -183,7 +183,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     }
 
     /// <summary>
-    /// Called when the view disappears. Stops the game loop and pauses.
+    /// Wird aufgerufen wenn die View verschwindet. Stoppt den Game-Loop und pausiert.
     /// </summary>
     public void OnDisappearing()
     {
@@ -196,11 +196,11 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
         // Banner-Offset zurücksetzen (Banner wird in BomberBlast nicht angezeigt)
         _gameEngine.BannerTopOffset = 0;
 
-        // Unsubscribe from game events to prevent memory leaks
-        _gameEngine.OnGameOver -= HandleGameOver;
-        _gameEngine.OnLevelComplete -= HandleLevelComplete;
-        _gameEngine.OnCoinsEarned -= HandleCoinsEarned;
-        _gameEngine.OnPauseRequested -= HandlePauseRequested;
+        // Event-Abmeldung gegen Memory Leaks
+        _gameEngine.GameOver -= HandleGameOver;
+        _gameEngine.LevelComplete -= HandleLevelComplete;
+        _gameEngine.CoinsEarned -= HandleCoinsEarned;
+        _gameEngine.PauseRequested -= HandlePauseRequested;
     }
 
     private async Task InitializeGameAsync()
@@ -255,7 +255,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     private void StartGameLoop()
     {
         _isGameLoopRunning = true;
-        // Kick off the first frame
+        // Erstes Frame anstoßen
         InvalidateCanvasRequested?.Invoke();
     }
 
@@ -269,25 +269,25 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Called by the SKCanvasView to paint the game.
-    /// Drives both update and render in a single frame - each paint triggers the next.
+    /// Wird von der SKCanvasView zum Zeichnen des Spiels aufgerufen.
+    /// Treibt sowohl Update als auch Render in einem Frame - jedes Paint loest das naechste aus.
     /// </summary>
     public void OnPaintSurface(SKCanvas canvas, int width, int height)
     {
-        // Update game state if the loop is running
+        // Spielzustand aktualisieren wenn der Loop laeuft
         if (_isGameLoopRunning)
         {
             // Stopwatch ist praeziser und guenstiger als DateTime.Now
             float deltaTime = (float)_frameStopwatch.Elapsed.TotalSeconds;
             _frameStopwatch.Restart();
 
-            // Clamp delta time to prevent large jumps
+            // Delta-Zeit begrenzen um große Spruenge zu verhindern
             deltaTime = Math.Min(deltaTime, MAX_DELTA_TIME);
 
             _gameEngine.Update(deltaTime);
         }
 
-        // Always render current state
+        // Immer aktuellen Zustand rendern
         _gameEngine.Render(canvas, width, height);
     }
 
@@ -296,7 +296,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Handle touch/pointer press.
+    /// Touch-/Pointer-Druck verarbeiten.
     /// </summary>
     public void OnPointerPressed(float x, float y, float screenWidth, float screenHeight, long pointerId = 0)
     {
@@ -307,7 +307,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
             return;
         }
 
-        // Handle paused state - resume on tap
+        // Pausierter Zustand - bei Tap fortsetzen
         if (_gameEngine.State == GameState.Paused)
         {
             _gameEngine.Resume();
@@ -315,7 +315,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
             return;
         }
 
-        // Forward touch to input manager via game engine
+        // Touch an InputManager via GameEngine weiterleiten
         if (_gameEngine.State == GameState.Playing)
         {
             _gameEngine.OnTouchStart(x, y, screenWidth, screenHeight, pointerId);
@@ -323,7 +323,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     }
 
     /// <summary>
-    /// Handle touch/pointer move.
+    /// Touch-/Pointer-Bewegung verarbeiten.
     /// </summary>
     public void OnPointerMoved(float x, float y, long pointerId = 0)
     {
@@ -334,7 +334,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     }
 
     /// <summary>
-    /// Handle touch/pointer release.
+    /// Touch-/Pointer-Loslassen verarbeiten.
     /// </summary>
     public void OnPointerReleased(long pointerId = 0)
     {
@@ -349,11 +349,11 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Forward keyboard key-down to the game engine.
+    /// Tastatur-KeyDown an die GameEngine weiterleiten.
     /// </summary>
     public void OnKeyDown(Key key)
     {
-        // Escape toggles pause
+        // Escape schaltet Pause um
         if (key == Key.Escape)
         {
             if (_gameEngine.State == GameState.Playing)
@@ -377,7 +377,7 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
     }
 
     /// <summary>
-    /// Forward keyboard key-up to the game engine.
+    /// Tastatur-KeyUp an die GameEngine weiterleiten.
     /// </summary>
     public void OnKeyUp(Key key)
     {
@@ -679,10 +679,10 @@ public partial class GameViewModel : ObservableObject, INavigable, IDisposable
         _gameEventCts.Dispose();
         StopGameLoop();
 
-        _gameEngine.OnGameOver -= HandleGameOver;
-        _gameEngine.OnLevelComplete -= HandleLevelComplete;
-        _gameEngine.OnCoinsEarned -= HandleCoinsEarned;
-        _gameEngine.OnPauseRequested -= HandlePauseRequested;
+        _gameEngine.GameOver -= HandleGameOver;
+        _gameEngine.LevelComplete -= HandleLevelComplete;
+        _gameEngine.CoinsEarned -= HandleCoinsEarned;
+        _gameEngine.PauseRequested -= HandlePauseRequested;
 
         _disposed = true;
         GC.SuppressFinalize(this);

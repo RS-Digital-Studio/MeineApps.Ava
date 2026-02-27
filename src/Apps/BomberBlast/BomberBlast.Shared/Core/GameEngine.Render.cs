@@ -64,15 +64,15 @@ public partial class GameEngine
         _renderer.DungeonRoomType = _isDungeonRun ? _dungeonService.RunState?.CurrentRoomType ?? DungeonRoomType.Normal : DungeonRoomType.Normal;
         _renderer.DungeonFloorModifier = _isDungeonRun ? _dungeonFloorModifier : DungeonFloorModifier.None;
 
-        // Lokalisierte HUD-Labels übergeben
-        _renderer.HudLabelKills = _localizationService.GetString("HudKills") ?? "KILLS";
-        _renderer.HudLabelTime = _localizationService.GetString("HudTime") ?? "TIME";
-        _renderer.HudLabelScore = _localizationService.GetString("HudScore") ?? "SCORE";
-        _renderer.HudLabelLives = _localizationService.GetString("HudLives") ?? "LIVES";
-        _renderer.HudLabelBombs = _localizationService.GetString("HudBombs") ?? "BOMBS";
-        _renderer.HudLabelPower = _localizationService.GetString("HudPower") ?? "POWER";
-        _renderer.HudLabelDeck = _localizationService.GetString("HudDeck") ?? "DECK";
-        _renderer.HudLabelBuffs = _localizationService.GetString("HudBuffs") ?? "BUFFS";
+        // Lokalisierte HUD-Labels übergeben (gecacht, nicht pro Frame laden)
+        _renderer.HudLabelKills = _hudLabelKills;
+        _renderer.HudLabelTime = _hudLabelTime;
+        _renderer.HudLabelScore = _hudLabelScore;
+        _renderer.HudLabelLives = _hudLabelLives;
+        _renderer.HudLabelBombs = _hudLabelBombs;
+        _renderer.HudLabelPower = _hudLabelPower;
+        _renderer.HudLabelDeck = _hudLabelDeck;
+        _renderer.HudLabelBuffs = _hudLabelBuffs;
 
         // Survival-Modus: Verstrichene Zeit anzeigen statt Countdown
         float displayTime = _isSurvivalMode ? _survivalTimeElapsed : _timer.RemainingTime;

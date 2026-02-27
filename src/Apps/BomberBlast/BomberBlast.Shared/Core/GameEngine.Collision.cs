@@ -222,7 +222,7 @@ public partial class GameEngine
 
                 _soundManager.PlaySound(SoundManager.SFX_POWERUP);
                 _vibration.VibrateLight();
-                OnScoreChanged?.Invoke(_player.Score);
+                ScoreChanged?.Invoke(_player.Score);
 
                 // Tracking: PowerUp eingesammelt (Missionen + Sammlung)
                 _tracking.OnPowerUpCollected(powerUp.Type.ToString());
@@ -468,7 +468,7 @@ public partial class GameEngine
         _particleSystem.Emit(enemy.X, enemy.Y, 4, ParticleColors.EnemyDeathLight, 50f, 0.3f);
 
         _soundManager.PlaySound(SoundManager.SFX_ENEMY_DEATH);
-        OnScoreChanged?.Invoke(_player.Score);
+        ScoreChanged?.Invoke(_player.Score);
 
         // Tracking: Enemy-Kill (Achievement + Collection + Missionen)
         _tracking.OnEnemyKilled(enemy.Type, _isSurvivalMode);

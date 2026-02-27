@@ -67,6 +67,9 @@ public partial class GameEngine
 
         _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB);
         _soundManager.PlaySound(SoundManager.SFX_FUSE);
+
+        // Haptisches Feedback bei Bomben-Platzierung
+        _vibration.VibrateLight();
     }
 
     /// <summary>
@@ -88,6 +91,9 @@ public partial class GameEngine
 
         _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB);
         _soundManager.PlaySound(SoundManager.SFX_FUSE);
+
+        // Haptisches Feedback bei Power-Bomb-Platzierung
+        _vibration.VibrateLight();
 
         // Tracking: Power-Bomb (Achievement + Missionen)
         _tracking.OnPowerBombUsed();
@@ -131,6 +137,9 @@ public partial class GameEngine
         {
             _soundManager.PlaySound(SoundManager.SFX_PLACE_BOMB);
             _soundManager.PlaySound(SoundManager.SFX_FUSE);
+
+            // Haptisches Feedback bei Line-Bomb-Platzierung
+            _vibration.VibrateLight();
 
             // Tracking: Line-Bomb (Achievement + Missionen)
             _tracking.OnLineBombUsed();

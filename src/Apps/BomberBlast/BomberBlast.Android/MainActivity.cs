@@ -80,7 +80,7 @@ public class MainActivity : AvaloniaMainActivity<App>
             var vibrator = (Vibrator?)GetSystemService(VibratorService);
             if (vibrator != null)
             {
-                gameEngine.OnDirectionChanged += () =>
+                gameEngine.DirectionChanged += () =>
                 {
                     try
                     {
@@ -245,6 +245,9 @@ public class MainActivity : AvaloniaMainActivity<App>
 
     protected override void OnDestroy()
     {
+        // SkiaSharp-Objekte in GameEngine/GameRenderer freigeben
+        App.DisposeServices();
+
         _rewardedAdHelper?.Dispose();
         _adMobHelper?.Dispose();
         base.OnDestroy();

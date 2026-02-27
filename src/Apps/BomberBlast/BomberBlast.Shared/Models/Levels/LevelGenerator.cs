@@ -459,7 +459,7 @@ public static class LevelGenerator
                 level.Name = "Bonus: Coin Rush";
                 level.BlockDensity = 0.3f;
                 level.Layout = LevelLayout.Arena;
-                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ballom, Count = 8 });
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ballom, Count = 12 });
                 level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.BombUp });
                 level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Fire });
                 level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Speed });
@@ -512,8 +512,19 @@ public static class LevelGenerator
 
         switch (levelNumber)
         {
-            case >= 1 and <= 5:
+            case >= 1 and <= 2:
+                // Welt 1, Level 1-2: Nur Ballom (Einführung)
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ballom, Count = 2 + levelNumber / 2 });
+                break;
+            case >= 3 and <= 4:
+                // Welt 1, Level 3-4: Ballom + 1 Onil (Variation)
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ballom, Count = 2 });
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Onil, Count = 1 });
+                break;
+            case >= 5 and <= 5:
+                // Welt 1, Level 5 (Bonus-Level wird separat behandelt): Ballom + 1-2 Onil
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ballom, Count = 2 });
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Onil, Count = 2 });
                 break;
             case >= 6 and <= 9:
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ballom, Count = 1 });
@@ -604,11 +615,18 @@ public static class LevelGenerator
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Tanker, Count = 1 + (levelNumber - 91) / 2 });
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Pontan, Count = 1 });
                 break;
-            case >= 96 and <= 99:
+            case >= 96 and <= 97:
+                // Welt 10, Level 96-97: Ghost-Fokus (kein Mimic, entschärft)
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Tanker, Count = 2 });
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Ghost, Count = 2 });
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Splitter, Count = 1 });
-                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Mimic, Count = 1 });
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Pontan, Count = 1 });
+                break;
+            case >= 98 and <= 99:
+                // Welt 10, Level 98-99: Mimic-Fokus (kein Ghost, entschärft)
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Tanker, Count = 2 });
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Mimic, Count = 2 });
+                level.Enemies.Add(new EnemySpawn { Type = EnemyType.Splitter, Count = 1 });
                 level.Enemies.Add(new EnemySpawn { Type = EnemyType.Pontan, Count = 1 });
                 break;
         }
@@ -618,10 +636,18 @@ public static class LevelGenerator
     {
         level.PowerUps.Clear();
 
-        if (levelNumber <= 5)
+        if (levelNumber <= 1)
         {
+            // Level 1: Nur BombUp + Fire (Tutorial)
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.BombUp });
             level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Fire });
+        }
+        else if (levelNumber <= 5)
+        {
+            // Level 2-5: Speed-PowerUp verfügbar
+            level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.BombUp });
+            level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Fire });
+            level.PowerUps.Add(new PowerUpPlacement { Type = PowerUpType.Speed });
         }
         else if (levelNumber <= 15)
         {

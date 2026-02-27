@@ -106,6 +106,8 @@ public partial class App : Application
             {
                 DataContext = Services.GetRequiredService<MainViewModel>()
             };
+            // Desktop: Beim Herunterfahren alle IDisposable-Singletons disposen
+            desktop.ShutdownRequested += (_, _) => DisposeServices();
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
@@ -116,6 +118,29 @@ public partial class App : Application
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>
+    /// Disposed alle IDisposable-Singletons (GameEngine, GameRenderer, etc.).
+    /// Wird bei Desktop-Shutdown aufgerufen, auf Android via MainActivity.OnDestroy().
+    /// </summary>
+    public static void DisposeServices()
+    {
+        if (Services == null) return;
+
+        try
+        {
+            // GameEngine und GameRenderer halten SkiaSharp-Objekte (SKPaint, SKPath, SKBitmap etc.)
+            // die explizit freigegeben werden müssen
+            (Services.GetService<GameEngine>() as IDisposable)?.Dispose();
+            (Services.GetService<GameRenderer>() as IDisposable)?.Dispose();
+            (Services.GetService<GameViewModel>() as IDisposable)?.Dispose();
+            (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
+        }
+        catch
+        {
+            // Fehler beim Dispose beim Herunterfahren sind unkritisch
+        }
     }
 
     private static void ConfigureServices(IServiceCollection services)

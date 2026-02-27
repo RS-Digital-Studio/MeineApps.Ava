@@ -103,46 +103,48 @@
           </Border>
 
           <!-- Auswaehlen-Button (owned + nicht equipped) -->
-          <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                  Margin="0,6,0,0"
-                  IsVisible="{Binding CanSelect}"
-                  Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
-                  CommandParameter="{Binding}"
-                  Classes="GameButton"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  CornerRadius="8"
-                  Padding="8,5">
-            <Button.Background>
-              <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-            </Button.Background>
-            <TextBlock Text="{Binding StatusText}"
-                       FontSize="12" FontWeight="SemiBold"
-                       Foreground="White" />
-          </Button>
+          <Panel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                 Margin="0,6,0,0" MinHeight="30"
+                 IsVisible="{Binding CanSelect}">
+            <ctrl:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.3" ButtonSeed="130" />
+            <Button Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).SelectSkinCommand}"
+                    CommandParameter="{Binding}"
+                    Classes="GameButton"
+                    Background="Transparent"
+                    Foreground="White"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    CornerRadius="8"
+                    Padding="8,5">
+              <TextBlock Text="{Binding StatusText}"
+                         FontSize="12" FontWeight="SemiBold"
+                         Foreground="White" />
+            </Button>
+          </Panel>
 
           <!-- Kauf-Button (nicht owned, nicht locked) -->
-          <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                  Margin="0,6,0,0"
-                  IsVisible="{Binding CanBuy}"
-                  Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
-                  CommandParameter="{Binding}"
-                  Classes="GameButton"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  CornerRadius="8"
-                  Padding="8,5">
-            <Button.Background>
-              <SolidColorBrush Color="#FF6F00" />
-            </Button.Background>
-            <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
-                               Foreground="{DynamicResource GoldAccentBrush}" />
-              <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
-                         FontSize="13" FontWeight="SemiBold"
-                         Foreground="White" />
-            </StackPanel>
-          </Button>
+          <Panel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                 Margin="0,6,0,0" MinHeight="30"
+                 IsVisible="{Binding CanBuy}">
+            <ctrl:GameButtonCanvas ButtonColor="#FF6F00" DamageLevel="0.5" ButtonSeed="131" />
+            <Button Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseSkinCommand}"
+                    CommandParameter="{Binding}"
+                    Classes="GameButton"
+                    Background="Transparent"
+                    Foreground="White"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    CornerRadius="8"
+                    Padding="8,5">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
+                                 Foreground="{DynamicResource GoldAccentBrush}" />
+                <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="White" />
+              </StackPanel>
+            </Button>
+          </Panel>
 
         </Grid>
       </Border>
@@ -182,7 +184,10 @@
                   Grid.Column="2"
                   Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="16"
-                  Padding="12,6">
+                  Padding="12,6"
+                  BorderBrush="#40FFD700"
+                  BorderThickness="1"
+                  BoxShadow="0 2 8 0 #20FFD700">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18"
                                Foreground="#FFD700" />
@@ -287,26 +292,28 @@
                       </Border>
 
                       <!-- Kauf-Button -->
-                      <Button IsVisible="{Binding !IsMaxed}"
-                              Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseCommand}"
-                              CommandParameter="{Binding}"
-                              IsEnabled="{Binding CanBuy}"
-                              Classes="GameButton"
-                              HorizontalAlignment="Stretch"
-                              HorizontalContentAlignment="Center"
-                              CornerRadius="8"
-                              Padding="8,6">
-                        <Button.Background>
-                          <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-                        </Button.Background>
-                        <StackPanel Orientation="Horizontal" Spacing="6">
-                          <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
-                                           Foreground="#FFD700" />
-                          <TextBlock Text="{Binding NextPrice, StringFormat='{}{0:N0}'}"
-                                     FontSize="13" FontWeight="SemiBold"
-                                     Foreground="White" />
-                        </StackPanel>
-                      </Button>
+                      <Panel MinHeight="32"
+                             IsVisible="{Binding !IsMaxed}">
+                        <ctrl:GameButtonCanvas ButtonColor="#4CAF50" DamageLevel="0.4" ButtonSeed="132" />
+                        <Button Command="{Binding $parent[ItemsControl].((vm:ShopViewModel)DataContext).PurchaseCommand}"
+                                CommandParameter="{Binding}"
+                                IsEnabled="{Binding CanBuy}"
+                                Classes="GameButton"
+                                Background="Transparent"
+                                Foreground="White"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Center"
+                                CornerRadius="8"
+                                Padding="8,6">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
+                                             Foreground="#FFD700" />
+                            <TextBlock Text="{Binding NextPrice, StringFormat='{}{0:N0}'}"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="White" />
+                          </StackPanel>
+                        </Button>
+                      </Panel>
                     </Panel>
 
                   </Grid>
@@ -318,11 +325,19 @@
           <!-- ═══════════════════════════════════════════════
                FÄHIGKEITEN (PowerUps)
                ═══════════════════════════════════════════════ -->
-          <TextBlock AutomationProperties.AutomationId="Shop_TxtPowerUpsSection"
-                     Text="{Binding SectionPowerUpsText}"
-                     FontSize="17" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     Margin="6,8,0,0" />
+          <Border CornerRadius="8"
+                  Padding="14,10"
+                  Margin="0,8,0,0"
+                  BorderThickness="3,0,0,0"
+                  BorderBrush="#FFD700">
+            <Border.Background>
+              <SolidColorBrush Color="#FFD700" Opacity="0.08" />
+            </Border.Background>
+            <TextBlock AutomationProperties.AutomationId="Shop_TxtPowerUpsSection"
+                       Text="{Binding SectionPowerUpsText}"
+                       FontSize="17" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_PowerUpList"
                         ItemsSource="{Binding PowerUpItems}">
@@ -438,11 +453,19 @@
           <!-- ═══════════════════════════════════════════════
                WELT-MECHANIKEN
                ═══════════════════════════════════════════════ -->
-          <TextBlock AutomationProperties.AutomationId="Shop_TxtMechanicsSection"
-                     Text="{Binding SectionMechanicsText}"
-                     FontSize="17" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     Margin="6,8,0,0" />
+          <Border CornerRadius="8"
+                  Padding="14,10"
+                  Margin="0,8,0,0"
+                  BorderThickness="3,0,0,0"
+                  BorderBrush="#2196F3">
+            <Border.Background>
+              <SolidColorBrush Color="#2196F3" Opacity="0.08" />
+            </Border.Background>
+            <TextBlock AutomationProperties.AutomationId="Shop_TxtMechanicsSection"
+                       Text="{Binding SectionMechanicsText}"
+                       FontSize="17" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_MechanicList"
                         ItemsSource="{Binding MechanicItems}">
@@ -556,11 +579,19 @@
           <!-- ═══════════════════════════════════════════════
                SPIELER-SKINS
                ═══════════════════════════════════════════════ -->
-          <TextBlock AutomationProperties.AutomationId="Shop_TxtSkinsSection"
-                     Text="{Binding SectionSkinsText}"
-                     FontSize="17" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     Margin="6,8,0,0" />
+          <Border CornerRadius="8"
+                  Padding="14,10"
+                  Margin="0,8,0,0"
+                  BorderThickness="3,0,0,0"
+                  BorderBrush="#00BCD4">
+            <Border.Background>
+              <SolidColorBrush Color="#00BCD4" Opacity="0.08" />
+            </Border.Background>
+            <TextBlock AutomationProperties.AutomationId="Shop_TxtSkinsSection"
+                       Text="{Binding SectionSkinsText}"
+                       FontSize="17" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_SkinList"
                         ItemsSource="{Binding SkinItems}"
@@ -576,11 +607,19 @@
           <!-- ═══════════════════════════════════════════════
                BOMBEN-SKINS
                ═══════════════════════════════════════════════ -->
-          <TextBlock AutomationProperties.AutomationId="Shop_TxtBombSkinsSection"
-                     Text="{Binding SectionBombSkinsText}"
-                     FontSize="17" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     Margin="6,8,0,0" />
+          <Border CornerRadius="8"
+                  Padding="14,10"
+                  Margin="0,8,0,0"
+                  BorderThickness="3,0,0,0"
+                  BorderBrush="#FF6D00">
+            <Border.Background>
+              <SolidColorBrush Color="#FF6D00" Opacity="0.08" />
+            </Border.Background>
+            <TextBlock AutomationProperties.AutomationId="Shop_TxtBombSkinsSection"
+                       Text="{Binding SectionBombSkinsText}"
+                       FontSize="17" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_BombSkinList"
                         ItemsSource="{Binding BombSkinItems}"
@@ -596,11 +635,19 @@
           <!-- ═══════════════════════════════════════════════
                EXPLOSIONS-SKINS
                ═══════════════════════════════════════════════ -->
-          <TextBlock AutomationProperties.AutomationId="Shop_TxtExplosionSkinsSection"
-                     Text="{Binding SectionExplosionSkinsText}"
-                     FontSize="17" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     Margin="6,8,0,0" />
+          <Border CornerRadius="8"
+                  Padding="14,10"
+                  Margin="0,8,0,0"
+                  BorderThickness="3,0,0,0"
+                  BorderBrush="#F44336">
+            <Border.Background>
+              <SolidColorBrush Color="#F44336" Opacity="0.08" />
+            </Border.Background>
+            <TextBlock AutomationProperties.AutomationId="Shop_TxtExplosionSkinsSection"
+                       Text="{Binding SectionExplosionSkinsText}"
+                       FontSize="17" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_ExplosionSkinList"
                         ItemsSource="{Binding ExplosionSkinItems}"
@@ -616,11 +663,19 @@
           <!-- ═══════════════════════════════════════════════
                TRAILS
                ═══════════════════════════════════════════════ -->
-          <TextBlock AutomationProperties.AutomationId="Shop_TxtTrailsSection"
-                     Text="{Binding SectionTrailsText}"
-                     FontSize="17" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     Margin="6,8,0,0" />
+          <Border CornerRadius="8"
+                  Padding="14,10"
+                  Margin="0,8,0,0"
+                  BorderThickness="3,0,0,0"
+                  BorderBrush="#4CAF50">
+            <Border.Background>
+              <SolidColorBrush Color="#4CAF50" Opacity="0.08" />
+            </Border.Background>
+            <TextBlock AutomationProperties.AutomationId="Shop_TxtTrailsSection"
+                       Text="{Binding SectionTrailsText}"
+                       FontSize="17" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_TrailList"
                         ItemsSource="{Binding TrailItems}"
@@ -636,11 +691,19 @@
           <!-- ═══════════════════════════════════════════════
                SIEGES-ANIMATIONEN
                ═══════════════════════════════════════════════ -->
-          <TextBlock AutomationProperties.AutomationId="Shop_TxtVictoriesSection"
-                     Text="{Binding SectionVictoriesText}"
-                     FontSize="17" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     Margin="6,8,0,0" />
+          <Border CornerRadius="8"
+                  Padding="14,10"
+                  Margin="0,8,0,0"
+                  BorderThickness="3,0,0,0"
+                  BorderBrush="#9C27B0">
+            <Border.Background>
+              <SolidColorBrush Color="#9C27B0" Opacity="0.08" />
+            </Border.Background>
+            <TextBlock AutomationProperties.AutomationId="Shop_TxtVictoriesSection"
+                       Text="{Binding SectionVictoriesText}"
+                       FontSize="17" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_VictoryList"
                         ItemsSource="{Binding VictoryItems}"
@@ -656,11 +719,19 @@
           <!-- ═══════════════════════════════════════════════
                PROFILRAHMEN
                ═══════════════════════════════════════════════ -->
-          <TextBlock AutomationProperties.AutomationId="Shop_TxtFramesSection"
-                     Text="{Binding SectionFramesText}"
-                     FontSize="17" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
-                     Margin="6,8,0,0" />
+          <Border CornerRadius="8"
+                  Padding="14,10"
+                  Margin="0,8,0,0"
+                  BorderThickness="3,0,0,0"
+                  BorderBrush="#3B82F6">
+            <Border.Background>
+              <SolidColorBrush Color="#3B82F6" Opacity="0.08" />
+            </Border.Background>
+            <TextBlock AutomationProperties.AutomationId="Shop_TxtFramesSection"
+                       Text="{Binding SectionFramesText}"
+                       FontSize="17" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </Border>
 
           <ItemsControl AutomationProperties.AutomationId="Shop_FrameList"
                         ItemsSource="{Binding FrameItems}"

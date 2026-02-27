@@ -38,10 +38,11 @@
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
           <StackPanel Spacing="10">
 
-            <!-- Profil-Karte (Bomber-Avatar + Rahmen + Liga) -->
+            <!-- Profil-Karte (Bomber-Avatar + Rahmen + Liga) mit Glow-Effekt -->
             <Border Background="{DynamicResource SurfaceBrush}"
                     CornerRadius="16" Padding="16,20"
-                    BorderThickness="2">
+                    BorderThickness="2"
+                    BoxShadow="0 0 20 0 #30536DFE, 0 2 8 0 #25000000">
               <Border.BorderBrush>
                 <SolidColorBrush Color="{Binding FrameOuterColor}" />
               </Border.BorderBrush>
@@ -128,18 +129,32 @@
               </StackPanel>
             </Border>
 
-            <!-- Währungen -->
+            <!-- Währungen mit subtilen Farb-Tints -->
             <Grid ColumnDefinitions="*,*">
-              <Border Grid.Column="0" Background="{DynamicResource SurfaceBrush}"
-                      CornerRadius="10" Padding="10,8" Margin="0,0,4,0">
+              <!-- Coins-Karte mit Gold-Tint -->
+              <Border Grid.Column="0" CornerRadius="10" Padding="10,8" Margin="0,0,4,0"
+                      BoxShadow="0 2 8 0 #25000000">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="#18FFD700" Offset="0" />
+                    <GradientStop Color="#08FFD700" Offset="1" />
+                  </LinearGradientBrush>
+                </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                   <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18" Foreground="#FFD700" />
                   <TextBlock Text="{Binding CoinsText}" FontSize="15" FontWeight="Bold"
                              Foreground="#FFD700" VerticalAlignment="Center" />
                 </StackPanel>
               </Border>
-              <Border Grid.Column="1" Background="{DynamicResource SurfaceBrush}"
-                      CornerRadius="10" Padding="10,8" Margin="4,0,0,0">
+              <!-- Gems-Karte mit Violett-Tint -->
+              <Border Grid.Column="1" CornerRadius="10" Padding="10,8" Margin="4,0,0,0"
+                      BoxShadow="0 2 8 0 #25000000">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="#18E040FB" Offset="0" />
+                    <GradientStop Color="#08E040FB" Offset="1" />
+                  </LinearGradientBrush>
+                </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
                   <mi:MaterialIcon Kind="DiamondStone" Width="16" Height="16" Foreground="#E040FB" />
                   <TextBlock Text="{Binding GemsText}" FontSize="15" FontWeight="Bold"
@@ -148,9 +163,15 @@
               </Border>
             </Grid>
 
-            <!-- Schnell-Übersicht: Achievements -->
-            <Border Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="10" Padding="12,8">
+            <!-- Schnell-Übersicht: Achievements mit Gold-Gradient -->
+            <Border CornerRadius="10" Padding="12,8"
+                    BoxShadow="0 2 8 0 #25000000">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#14FFD700" Offset="0" />
+                  <GradientStop Color="#06FFD700" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
               <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="Auto,*,Auto">
                   <mi:MaterialIcon Grid.Column="0" Kind="Trophy" Width="16" Height="16"
@@ -167,9 +188,15 @@
               </StackPanel>
             </Border>
 
-            <!-- Schnell-Übersicht: Sterne + Karten + Dungeon -->
-            <Border Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="10" Padding="12,8">
+            <!-- Schnell-Übersicht: Sterne + Karten + Dungeon mit Gradient -->
+            <Border CornerRadius="10" Padding="12,8"
+                    BoxShadow="0 2 8 0 #25000000">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#102196F3" Offset="0" />
+                  <GradientStop Color="#062196F3" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
               <StackPanel Spacing="6">
                 <!-- Sterne -->
                 <Grid ColumnDefinitions="Auto,*,Auto">
@@ -232,14 +259,22 @@
           <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,0,8,60">
 
-              <!-- Kategorie: Fortschritt -->
-              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
-                <mi:MaterialIcon Kind="ChartLine" Width="16" Height="16" Foreground="#4CAF50" />
-                <TextBlock Text="{Binding ProgressLabel}" FontSize="14" FontWeight="Bold"
-                           Foreground="#4CAF50" VerticalAlignment="Center" />
-              </StackPanel>
+              <!-- Kategorie-Header: Fortschritt (Grün) -->
+              <Border CornerRadius="8" Padding="10,6" Margin="0,0,0,6">
+                <Border.Background>
+                  <SolidColorBrush Color="#4CAF50" Opacity="0.12" />
+                </Border.Background>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="ChartLine" Width="18" Height="18" Foreground="#4CAF50" />
+                  <TextBlock Text="{Binding ProgressLabel}" FontSize="16" FontWeight="Bold"
+                             Foreground="#4CAF50" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
 
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Fortschritt: LevelsCompleted -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#4CAF50">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding LevelsCompletedLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -247,7 +282,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Fortschritt: TotalStars -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#4CAF50">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding TotalStarsLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -255,7 +293,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Fortschritt: StarsPercent -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#4CAF50">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding StarsPercentLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -264,16 +305,33 @@
                 </Grid>
               </Border>
 
-              <Border Height="1" Background="{DynamicResource TextMutedBrush}" Opacity="0.15" Margin="0,6" />
+              <!-- Gestylter Separator -->
+              <Border Height="2" CornerRadius="1" Opacity="0.25" Margin="0,8">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                    <GradientStop Color="#004CAF50" Offset="0" />
+                    <GradientStop Color="#4CAF50" Offset="0.5" />
+                    <GradientStop Color="#00F44336" Offset="1" />
+                  </LinearGradientBrush>
+                </Border.Background>
+              </Border>
 
-              <!-- Kategorie: Kampf -->
-              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
-                <mi:MaterialIcon Kind="Sword" Width="16" Height="16" Foreground="#F44336" />
-                <TextBlock Text="{Binding CombatLabel}" FontSize="14" FontWeight="Bold"
-                           Foreground="#F44336" VerticalAlignment="Center" />
-              </StackPanel>
+              <!-- Kategorie-Header: Kampf (Rot) -->
+              <Border CornerRadius="8" Padding="10,6" Margin="0,0,0,6">
+                <Border.Background>
+                  <SolidColorBrush Color="#F44336" Opacity="0.12" />
+                </Border.Background>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Sword" Width="18" Height="18" Foreground="#F44336" />
+                  <TextBlock Text="{Binding CombatLabel}" FontSize="16" FontWeight="Bold"
+                             Foreground="#F44336" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
 
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Kampf: TotalKills -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#F44336">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding TotalKillsLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -281,7 +339,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Kampf: BombsKicked -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#F44336">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding BombsKickedLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -289,7 +350,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Kampf: PowerBombs -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#F44336">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding PowerBombsLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -298,16 +362,33 @@
                 </Grid>
               </Border>
 
-              <Border Height="1" Background="{DynamicResource TextMutedBrush}" Opacity="0.15" Margin="0,6" />
+              <!-- Gestylter Separator -->
+              <Border Height="2" CornerRadius="1" Opacity="0.25" Margin="0,8">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                    <GradientStop Color="#00F44336" Offset="0" />
+                    <GradientStop Color="#9C27B0" Offset="0.5" />
+                    <GradientStop Color="#009C27B0" Offset="1" />
+                  </LinearGradientBrush>
+                </Border.Background>
+              </Border>
 
-              <!-- Kategorie: Dungeon -->
-              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
-                <mi:MaterialIcon Kind="Sword" Width="16" Height="16" Foreground="#9C27B0" />
-                <TextBlock Text="{Binding DungeonLabel}" FontSize="14" FontWeight="Bold"
-                           Foreground="#9C27B0" VerticalAlignment="Center" />
-              </StackPanel>
+              <!-- Kategorie-Header: Dungeon (Violett) -->
+              <Border CornerRadius="8" Padding="10,6" Margin="0,0,0,6">
+                <Border.Background>
+                  <SolidColorBrush Color="#9C27B0" Opacity="0.12" />
+                </Border.Background>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Sword" Width="18" Height="18" Foreground="#9C27B0" />
+                  <TextBlock Text="{Binding DungeonLabel}" FontSize="16" FontWeight="Bold"
+                             Foreground="#9C27B0" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
 
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Dungeon: DungeonRuns -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#9C27B0">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding DungeonRunsLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -315,7 +396,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Dungeon: DungeonBest -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#9C27B0">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding DungeonBestLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -323,7 +407,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Dungeon: DungeonCoins -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#9C27B0">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding DungeonCoinsLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -339,14 +426,22 @@
           <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="8,0,0,60">
 
-              <!-- Kategorie: Herausforderungen -->
-              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
-                <mi:MaterialIcon Kind="Target" Width="16" Height="16" Foreground="#FF9800" />
-                <TextBlock Text="{Binding ChallengesLabel}" FontSize="14" FontWeight="Bold"
-                           Foreground="#FF9800" VerticalAlignment="Center" />
-              </StackPanel>
+              <!-- Kategorie-Header: Herausforderungen (Orange) -->
+              <Border CornerRadius="8" Padding="10,6" Margin="0,0,0,6">
+                <Border.Background>
+                  <SolidColorBrush Color="#FF9800" Opacity="0.12" />
+                </Border.Background>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="Target" Width="18" Height="18" Foreground="#FF9800" />
+                  <TextBlock Text="{Binding ChallengesLabel}" FontSize="16" FontWeight="Bold"
+                             Foreground="#FF9800" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
 
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Herausforderungen: DailyStreak -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding DailyStreakLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -354,7 +449,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Herausforderungen: LongestStreak -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding LongestStreakLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -362,7 +460,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Herausforderungen: DailyChallengesCompleted -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding DailyChallengesCompletedLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
@@ -371,7 +472,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Herausforderungen: WeeksCompleted -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding WeeksCompletedLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
@@ -380,7 +484,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Herausforderungen: DailyMissionDays -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#FF9800">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding DailyMissionDaysLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center"
@@ -390,16 +497,33 @@
                 </Grid>
               </Border>
 
-              <Border Height="1" Background="{DynamicResource TextMutedBrush}" Opacity="0.15" Margin="0,6" />
+              <!-- Gestylter Separator -->
+              <Border Height="2" CornerRadius="1" Opacity="0.25" Margin="0,8">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                    <GradientStop Color="#00FF9800" Offset="0" />
+                    <GradientStop Color="#FFD700" Offset="0.5" />
+                    <GradientStop Color="#00FFD700" Offset="1" />
+                  </LinearGradientBrush>
+                </Border.Background>
+              </Border>
 
-              <!-- Kategorie: Wirtschaft -->
-              <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
-                <mi:MaterialIcon Kind="CircleMultiple" Width="16" Height="16" Foreground="#FFD700" />
-                <TextBlock Text="{Binding EconomyLabel}" FontSize="14" FontWeight="Bold"
-                           Foreground="#FFD700" VerticalAlignment="Center" />
-              </StackPanel>
+              <!-- Kategorie-Header: Wirtschaft (Gold) -->
+              <Border CornerRadius="8" Padding="10,6" Margin="0,0,0,6">
+                <Border.Background>
+                  <SolidColorBrush Color="#FFD700" Opacity="0.12" />
+                </Border.Background>
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18" Foreground="#FFD700" />
+                  <TextBlock Text="{Binding EconomyLabel}" FontSize="16" FontWeight="Bold"
+                             Foreground="#FFD700" VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
 
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Wirtschaft: CoinBalance -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#FFD700">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding CoinBalanceLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -407,7 +531,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Wirtschaft: TotalEarned -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#FFD700">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding TotalEarnedLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -415,7 +542,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Wirtschaft: Achievements -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#FFD700">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding AchievementsLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
@@ -423,7 +553,10 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </Grid>
               </Border>
-              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4">
+              <!-- Wirtschaft: TotalSpins -->
+              <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="8" Padding="10,6" Margin="0,0,0,4"
+                      BoxShadow="0 1 4 0 #20000000"
+                      BorderThickness="3,0,0,0" BorderBrush="#FFD700">
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{Binding TotalSpinsLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />

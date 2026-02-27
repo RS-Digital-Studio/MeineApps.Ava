@@ -111,7 +111,8 @@ public partial class GemShopViewModel : ObservableObject, INavigable, IGameJuice
                 IconKind = MaterialIconKind.DiamondStone,
                 IconColor = "#00BCD4",
                 BadgeText = null,
-                IsPopular = false
+                IsPopular = false,
+                ButtonSeed = 110
             },
             new GemPackageItem
             {
@@ -122,7 +123,8 @@ public partial class GemShopViewModel : ObservableObject, INavigable, IGameJuice
                 IconKind = MaterialIconKind.Diamond,
                 IconColor = "#2196F3",
                 BadgeText = popularBadge,
-                IsPopular = true
+                IsPopular = true,
+                ButtonSeed = 111
             },
             new GemPackageItem
             {
@@ -133,7 +135,8 @@ public partial class GemShopViewModel : ObservableObject, INavigable, IGameJuice
                 IconKind = MaterialIconKind.TreasureChest,
                 IconColor = "#FFD700",
                 BadgeText = bestValueBadge,
-                IsPopular = false
+                IsPopular = false,
+                ButtonSeed = 112
             }
         ];
     }
@@ -218,4 +221,7 @@ public class GemPackageItem
 
     /// <summary>Ob ein Badge angezeigt werden soll</summary>
     public bool HasBadge => !string.IsNullOrEmpty(BadgeText);
+
+    /// <summary>Einzigartiger Seed fuer GameButtonCanvas (prozedurale Textur)</summary>
+    public int ButtonSeed { get; init; }
 }

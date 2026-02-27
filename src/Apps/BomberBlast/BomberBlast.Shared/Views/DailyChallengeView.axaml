@@ -43,12 +43,18 @@
                     HorizontalAlignment="Center"
                     Spacing="16">
 
-          <!-- Best Score (groß, prominent) -->
-          <Border Background="{DynamicResource SurfaceBrush}"
-                  CornerRadius="16" Padding="20,16"
+          <!-- Best Score (groß, prominent) - Gold-Gradient als Hero-Element -->
+          <Border CornerRadius="16" Padding="20,16"
+                  BoxShadow="0 2 8 0 #25000000"
                   HorizontalAlignment="Stretch"
                   MinWidth="200"
                   AutomationProperties.AutomationId="DailyChallenge_BestScoreCard">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Color="#35332200" Offset="0" />
+                <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
             <StackPanel Spacing="4" HorizontalAlignment="Center">
               <TextBlock Text="{Binding BestScoreLabel}"
                          FontSize="13"
@@ -66,6 +72,7 @@
           <!-- Streak-Bonus -->
           <Border Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="16,10"
+                  BoxShadow="0 2 8 0 #25000000"
                   HorizontalAlignment="Stretch"
                   MinWidth="200"
                   AutomationProperties.AutomationId="DailyChallenge_StreakBonusCard">
@@ -92,7 +99,7 @@
               <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
                                Foreground="#FF6B00" />
               <TextBlock Text="{Binding CompletedTodayText}"
-                         FontSize="13" FontWeight="SemiBold"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="#FF6B00"
                          VerticalAlignment="Center"
                          AutomationProperties.AutomationId="DailyChallenge_TxtCompleted" />
@@ -107,10 +114,12 @@
               HorizontalAlignment="Center"
               Margin="16,0,0,0">
 
-          <!-- Streak -->
+          <!-- Streak - Farbiger Akzent-Rand links (orange, passend zum Fire-Icon) -->
           <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="16,12"
                   Margin="0,0,0,8" MinWidth="180"
+                  BoxShadow="0 2 8 0 #25000000"
+                  BorderBrush="#FF6B00" BorderThickness="3,0,0,0"
                   AutomationProperties.AutomationId="DailyChallenge_StreakCard">
             <Grid ColumnDefinitions="Auto,*">
               <mi:MaterialIcon Grid.Column="0" Kind="Fire" Width="28" Height="28"
@@ -127,10 +136,12 @@
             </Grid>
           </Border>
 
-          <!-- Längste Streak -->
+          <!-- Längste Streak - Farbiger Akzent-Rand links (gold, passend zum Trophy-Icon) -->
           <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="16,12"
                   Margin="0,0,0,8" MinWidth="180"
+                  BoxShadow="0 2 8 0 #25000000"
+                  BorderBrush="#FFD700" BorderThickness="3,0,0,0"
                   AutomationProperties.AutomationId="DailyChallenge_LongestStreakCard">
             <Grid ColumnDefinitions="Auto,*">
               <mi:MaterialIcon Grid.Column="0" Kind="Trophy" Width="28" Height="28"
@@ -147,10 +158,12 @@
             </Grid>
           </Border>
 
-          <!-- Gesamt abgeschlossen -->
+          <!-- Gesamt abgeschlossen - Farbiger Akzent-Rand links (Secondary, passend zum Calendar-Icon) -->
           <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="16,12"
                   MinWidth="180"
+                  BoxShadow="0 2 8 0 #25000000"
+                  BorderBrush="{DynamicResource SecondaryBrush}" BorderThickness="3,0,0,0"
                   AutomationProperties.AutomationId="DailyChallenge_TotalCard">
             <Grid ColumnDefinitions="Auto,*">
               <mi:MaterialIcon Grid.Column="0" Kind="CalendarCheck" Width="28" Height="28"
@@ -169,24 +182,30 @@
         </Grid>
       </Grid>
 
-      <!-- Unten: Play-Button -->
-      <Button Grid.Row="2"
-              Classes="Primary GameButton"
-              Command="{Binding PlayChallengeCommand}"
-              HorizontalAlignment="Center"
-              HorizontalContentAlignment="Center"
-              Height="56" MinWidth="280"
-              Margin="0,16,0,0"
-              AutomationProperties.AutomationId="DailyChallenge_BtnPlay">
-        <StackPanel Orientation="Horizontal" Spacing="10">
-          <mi:MaterialIcon Kind="Sword" Width="24" Height="24"
-                           Foreground="{DynamicResource TextOnPrimaryBrush}" />
-          <TextBlock Text="{Binding PlayButtonText}"
-                     FontSize="18" FontWeight="Bold"
-                     Foreground="{DynamicResource TextOnPrimaryBrush}"
-                     VerticalAlignment="Center" />
-        </StackPanel>
-      </Button>
+      <!-- Unten: Play-Button - Torn Metal mit warmem Orange -->
+      <Panel Grid.Row="2" MinHeight="60" MinWidth="280"
+             HorizontalAlignment="Center"
+             Margin="0,16,0,0">
+        <controls:GameButtonCanvas ButtonColor="#FF6B00" DamageLevel="0.5" ButtonSeed="90" />
+        <Button Classes="Primary GameButton"
+                Command="{Binding PlayChallengeCommand}"
+                Background="Transparent"
+                Foreground="White"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Height="60"
+                AutomationProperties.AutomationId="DailyChallenge_BtnPlay">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <mi:MaterialIcon Kind="Sword" Width="24" Height="24"
+                             Foreground="White" />
+            <TextBlock Text="{Binding PlayButtonText}"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="White"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Panel>
 
     </Grid>
   </Panel>

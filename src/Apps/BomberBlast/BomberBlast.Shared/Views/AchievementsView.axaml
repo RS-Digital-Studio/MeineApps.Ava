@@ -7,17 +7,9 @@
              x:Class="BomberBlast.Views.AchievementsView"
              x:DataType="vm:AchievementsViewModel">
 
-  <!-- Gradient Background -->
+  <!-- Animierter Menü-Hintergrund -->
   <Panel AutomationProperties.AutomationId="Achievements_Root">
-    <Border>
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="{DynamicResource GradientStartColor}" Offset="0" />
-          <GradientStop Color="{DynamicResource GradientMidColor}" Offset="0.5" />
-          <GradientStop Color="{DynamicResource GradientEndColor}" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
-    </Border>
+    <ctrl:MenuBackgroundCanvas />
 
     <Grid RowDefinitions="Auto,*">
 
@@ -51,7 +43,7 @@
           <TextBlock Grid.Column="2"
                      AutomationProperties.AutomationId="Achievements_TxtProgress"
                      Text="{Binding ProgressText}"
-                     FontSize="16" FontWeight="Bold"
+                     FontSize="18" FontWeight="Bold"
                      Foreground="{DynamicResource TextSecondaryBrush}"
                      VerticalAlignment="Center"
                      Margin="0,0,8,0" />
@@ -89,39 +81,50 @@
             <DataTemplate x:DataType="vm:AchievementCategoryGroup">
               <StackPanel Spacing="4">
                 <!-- Kategorie-Header -->
-                <Grid ColumnDefinitions="8,*,Auto" Margin="0,4,0,2">
-                  <!-- Farbiger Akzent-Streifen -->
-                  <Border Grid.Column="0" CornerRadius="2" Width="8">
-                    <Border.Background>
-                      <SolidColorBrush Color="{Binding CategoryColor}" />
-                    </Border.Background>
-                  </Border>
-                  <TextBlock Grid.Column="1"
-                             Text="{Binding CategoryName}"
-                             FontSize="15" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             Margin="8,0" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2"
-                             Text="{Binding ProgressText}"
-                             FontSize="12"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
-                             VerticalAlignment="Center" />
-                </Grid>
+                <Border CornerRadius="6" Padding="0" Margin="0,4,0,2"
+                        BorderThickness="3,0,0,0">
+                  <Border.BorderBrush>
+                    <SolidColorBrush Color="{Binding CategoryColor}" />
+                  </Border.BorderBrush>
+                  <Border.Background>
+                    <SolidColorBrush Color="{Binding CategoryColor}" Opacity="0.08" />
+                  </Border.Background>
+                  <Grid ColumnDefinitions="*,Auto" Margin="12,8">
+                    <TextBlock Grid.Column="0"
+                               Text="{Binding CategoryName}"
+                               FontSize="16" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1"
+                               Text="{Binding ProgressText}"
+                               FontSize="13" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
 
                 <!-- Achievements in dieser Kategorie -->
                 <ItemsControl ItemsSource="{Binding Items}">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:AchievementItem">
                       <Border Classes="Card" Margin="0,2"
+                              BoxShadow="0 2 8 0 #25000000"
                               Opacity="{Binding IsUnlocked, Converter={x:Static conv:BoolToOpacityConverter.Instance}}">
-                        <Grid ColumnDefinitions="48,*,Auto" Margin="8">
-                          <!-- SkiaSharp Achievement-Icon -->
-                          <ctrl:AchievementIconCanvas Width="40" Height="40"
-                                  CategoryIndex="{Binding CategoryIndex}"
-                                  IsAchievementUnlocked="{Binding IsUnlocked}"
-                                  ProgressFraction="{Binding ProgressFraction}"
+                        <Grid ColumnDefinitions="52,*,Auto" Margin="8">
+                          <!-- SkiaSharp Achievement-Icon mit Background-Circle -->
+                          <Border Width="44" Height="44" CornerRadius="22"
                                   HorizontalAlignment="Center"
-                                  VerticalAlignment="Center" />
+                                  VerticalAlignment="Center">
+                            <Border.Background>
+                              <SolidColorBrush Color="#FFFFFF" Opacity="0.06" />
+                            </Border.Background>
+                            <ctrl:AchievementIconCanvas Width="40" Height="40"
+                                    CategoryIndex="{Binding CategoryIndex}"
+                                    IsAchievementUnlocked="{Binding IsUnlocked}"
+                                    ProgressFraction="{Binding ProgressFraction}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+                          </Border>
 
                           <!-- Name + Description + Coin-Belohnung -->
                           <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
@@ -132,10 +135,17 @@
                                        FontSize="12"
                                        Foreground="{DynamicResource TextSecondaryBrush}"
                                        TextWrapping="Wrap" />
-                            <TextBlock IsVisible="{Binding HasCoinReward}"
-                                       Text="{Binding CoinRewardText}"
-                                       FontSize="11" FontWeight="SemiBold"
-                                       Foreground="#FFD700" />
+                            <!-- Coin-Belohnung mit goldenem Badge -->
+                            <Border IsVisible="{Binding HasCoinReward}"
+                                    CornerRadius="4" Padding="6,2" Margin="0,2,0,0"
+                                    HorizontalAlignment="Left">
+                              <Border.Background>
+                                <SolidColorBrush Color="#FFD700" Opacity="0.15" />
+                              </Border.Background>
+                              <TextBlock Text="{Binding CoinRewardText}"
+                                         FontSize="11" FontWeight="Bold"
+                                         Foreground="#FFD700" />
+                            </Border>
                           </StackPanel>
 
                           <!-- Progress -->

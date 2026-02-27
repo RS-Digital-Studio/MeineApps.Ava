@@ -681,7 +681,7 @@ public partial class SettingsViewModel : ObservableObject, INavigable
     private void OpenPrivacyPolicy()
     {
         MeineApps.Core.Ava.Services.UriLauncher.OpenUri(
-            "https://sites.google.com/rs-digital.org/bomberblast/startseite");
+            "https://rs-digital-studio.github.io/privacy/bomberblast.html");
     }
 
     [RelayCommand]

@@ -54,6 +54,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 | ShopIconRenderer | 12 prozedurale Shop-Upgrade-Icons (Bombe/Flamme/Blitz/Herz/Stern/Uhr/Schild/Münzen/Kleeblatt/Eis/Feuer/Schleim), gepoolte SKPaint |
 | MenuBackgroundRenderer | Animierter Menü-Hintergrund mit 7 Themes (BackgroundTheme Enum): Default (Bomben+Funken+Flammen), Dungeon (Fackeln+Fledermäuse+Steine), Shop (Münzen+Shimmer+Gems), League (Trophäen+Sterne+Podest), BattlePass (XP-Orbs+Streifen+Badges), Victory (Confetti+Fireworks+Gold), LuckySpin (Regenbogen+Glitzer+Lichtstreifen). Max 60 Partikel/Theme, struct-basiert, gepoolte SKPaint |
 | DungeonMapRenderer | Dungeon Node-Map (Slay the Spire-inspiriert): 10 Reihen × 2-3 Nodes, farbige Kreise (30px) mit Raum-Typ-Icons, Verbindungslinien (gestrichelt/durchgezogen/gold), Modifikator-Badges, Pulsierender Glow-Ring für aktuellen Node, vertikaler Scroll |
+| TornMetalRenderer | Prozeduraler "Torn Metal" Button-Hintergrund (SkiaSharp): Metallischer Gradient, gezackte Kanten mit abgebrochenen Ecken, Risse/Kratzer, Nieten, Metallic-Sheen. Deterministisch per Seed. Statische Klasse mit gepoolten SKPaint/SKPath |
 
 ### Input-Handler (3x)
 - **FloatingJoystick**: Touch-basiert, zwei Modi: Floating (erscheint wo getippt, Standard) + Fixed (immer sichtbar unten links). Bomb-Button weiter in die Spielfläche gerückt (80px/60px Offset statt 30px/20px)
@@ -739,8 +740,62 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 - **Rewarded Ad Cooldown 60s** (RewardedAdCooldownTracker): Statische Klasse für globalen 60s Cooldown zwischen Rewarded Ads. Integriert in alle 12 Ad-Placements über 8 ViewModels (GameOver, Game, Victory, LevelSelect, LuckySpin, Dungeon, Main, Shop). CanShowAd check vor Button-Aktivierung, RecordAdShown() nach erfolgreicher Ad
 - **RESX-Keys**: 7 Keys in 6 Sprachen (BuyCardGems, ExtraSpinGems, DungeonReviveGems, DungeonRevived, InsufficientGems, DeckUnlockSlot5, DeckSlot5Unlocked)
 
+## AAA Visual Redesign (alle 21 Content-Views)
+
+Alle UI-Views wurden auf AAA-Game-Studio-Niveau aufgewertet mit konsistenten Design-Patterns:
+
+### Angewandte Design-Patterns
+| Pattern | Beschreibung |
+|---------|-------------|
+| Farbige Akzent-Borders | 3px oben oder links, farblich zum Sektions-Thema passend |
+| Gradient-Hero-Sections | `LinearGradientBrush` von getönter Farbe (#15XXXXXX) → SurfaceColor |
+| BoxShadow auf Karten | `"0 2 8 0 #25000000"` auf allen card-artigen Borders |
+| Verbesserte Typographie | Größere FontSizes, SemiBold/Bold Hierarchie, farbige Akzent-Texte |
+| Gradient-Trenner | `Height="2" CornerRadius="1"`, transparente Enden |
+| Farbige Badge-Borders | 1px Borders mit `#40XXXXXX` passend zum Akzent |
+
+### Polierte Views (21 von 24 - 3 brauchen kein Redesign)
+- **Phase 3**: MainMenuView, LevelSelectView, StatisticsView, DailyChallengeView, LeagueView, ProfileView, WeeklyChallengeView, CollectionView
+- **Phase 4**: HighScoresView, HelpView, SettingsView, ShopView, GameOverView, VictoryView, DungeonView, BattlePassView, LuckySpinView, DeckView, GemShopView, AchievementsView
+- **Phase 5**: QuickPlayView
+- **Kein Redesign nötig**: MainWindow (Shell), MainView (Container), GameView (SkiaSharp)
+
+### Torn Metal Buttons (SkiaSharp, alle Action-Buttons)
+Alle Action-Buttons verwenden prozedural generierte "Torn Metal" Hintergründe via `GameButtonCanvas` (SKCanvasView) + `TornMetalRenderer`.
+
+**Pattern**: `Panel > GameButtonCanvas (Hintergrund) + Button (Background=Transparent, Foreground=White)`
+
+**Dateien**:
+- `Graphics/TornMetalRenderer.cs`: Statischer Renderer (DrawMetalBody, DrawCracks, DrawScratches, DrawRivets, DrawHighlight, DrawEdgeGlow), gepoolte SKPaint/SKPath
+- `Controls/GameButtonCanvas.cs`: SKCanvasView mit 3 StyledProperties (ButtonColor, DamageLevel, ButtonSeed), IsHitTestVisible=false
+
+**DamageLevel Convention**: CTA=0.5, Success=0.3, Danger=0.7, Gold/Premium=0.6, Secondary=0.2-0.3
+
+**ButtonSeed Ranges** (jeder Button braucht einzigartigen Seed):
+| View | Seeds | Buttons |
+|------|-------|---------|
+| MainMenu | 10-32 | 12 (Story, Continue, Survival, QuickPlay, Dungeon, BattlePass, Cards, League, Challenges, Shop, Profile, Settings) |
+| GameOver | 40-45 | 6 (TryAgain, DoubleCoins, ContinueAd, PaidContinue, LevelSkip, MainMenu) |
+| Victory | 50-51 | 2 (MainMenu/CTA, Shop) |
+| QuickPlay | 60-61 | 2 (Play, NewSeed) |
+| Dungeon | 70-74 | 5 (FreeStart, CoinsStart, GemsStart, AdStart, Retry) |
+| LuckySpin | 80-82 | 2 (Spin, Collect) |
+| DailyChallenge | 90 | 1 (Play) |
+| BattlePass | 100-103 | 4 (XpBoost, FreeClaim, PremiumClaim, PremiumUpgrade) |
+| GemShop | 110-112 | 3 (via Binding) |
+| LevelSelect | 120 | 1 (AcceptBoost) |
+| Shop | 130-132 | 3 (SelectSkin, PurchaseSkin, PurchaseUpgrade) |
+| Deck | 140-142 | 2-3 (UnlockSlot5, UpgradeCard, BuyCardGems) |
+| Collection | 150 | 1 (ClaimMilestone) |
+| WeeklyChallenge | 155-156 | 2 (DailyBonus, WeeklyBonus) |
+| Settings | 160-168 | 9 (Leaderboards, GPGS, CloudSync, CloudDownload, BuyPremium, Restore, Reset, ClearHighscores, Privacy) |
+| Help | 170 | 1 (ReplayTutorial) |
+| Profile | 175 | 1 (SaveName) |
+| League | 180-181 | 2 (ClaimReward, Refresh) |
+
 ## Changelog Highlights
 
+- **26.02.2026 (36)**: **AAA Visual Redesign aller 21 Content-Views + Torn Metal Buttons**: (1) Konsistente Design-Patterns auf alle Menü-Views angewendet: Farbige 3px Akzent-Borders (oben/links) pro Sektion, Gradient-Hero-Backgrounds (getönte Farbe→SurfaceColor), BoxShadow auf allen Karten-Borders, größere Fonts + Bold/SemiBold-Hierarchie, Gradient-Trenner (Height=2 CornerRadius=1), farbige Badge-Borders. Phase 3: 8 Views, Phase 4: 12 Views, Phase 5: QuickPlayView. (2) **Torn Metal Buttons**: TornMetalRenderer.cs (SkiaSharp, statisch, gepoolte SKPaint/SKPath) + GameButtonCanvas.cs (SKCanvasView, 3 StyledProperties). ~59 Action-Buttons in 18 Views konvertiert: Panel-Wrapper mit GameButtonCanvas (Hintergrund) + transparenter Button darüber. Prozedural generierte Risse, Kratzer, abgebrochene Ecken, Nieten, Metallic-Sheen. Deterministisch per Seed (10-181). DamageLevel nach Funktion (CTA=0.5, Success=0.3, Danger=0.7, Gold=0.6, Secondary=0.2). Build 0 Fehler.
 - **24.02.2026 (35)**: **Dungeon-Erweiterung + Visuelle Aufwertung** (Phasen A1-A3, B1-B7, C): (1) **Theme-System** (A1): MenuBackgroundRenderer mit 7 BackgroundTheme-Varianten (Default/Dungeon/Shop/League/BattlePass/Victory/LuckySpin), je max 60 struct-basierte Partikel, MenuBackgroundCanvas.Theme StyledProperty, 15 Views mit thematischem Hintergrund. (2) **VictoryView Victory-Theme** (A2): XAML-Gradient durch Victory-Theme ersetzt (Confetti+Fireworks+Gold-Funken). (3) **Buff-Animationen** (A3): Gestaffelte Einblend-Animation (3 Karten, 200ms delay) + Rarität-Glow-Pulsation in DungeonView. (4) **Permanente Upgrades** (B1): IDungeonUpgradeService mit 8 Upgrades (50-300 DungeonCoins), DungeonCoins als dungeon-spezifische Währung (10-100 DC/Floor). (5) **4 Legendary Buffs** (B2): Berserker/TimeFreeze/GoldRush/Phantom mit Weight 3-4. (6) **Buff-Reroll + 5 Synergies** (B5): 1x gratis Reroll, 5 Gem-Rerolls, 5 Buff-Kombinationen (Bombardier/Blitzkrieg/Festung/Midas/Elementar). (7) **5 Raum-Typen** (B3): Normal/Elite/Treasure/Challenge/Rest mit gewichteter Zufallsauswahl. (8) **8 Floor-Modifikatoren** (B4): Ab Floor 3 30% Chance (LavaBorders/Darkness/DoubleSpawns/FastBombs/BigExplosions/CursedFloor/Regeneration/Wealthy). (9) **Dungeon Node-Map** (B6): Slay the Spire-inspirierte 10×3 Map mit DungeonMapRenderer (SkiaSharp), Pfad-Auswahl, Raum-Typ-Icons, Modifikator-Badges. (10) **Ascension 0-5** (B7): Eskalierende Schwierigkeit + Belohnungen nach Floor 10 Clear. (11) **53 neue RESX-Keys** (C): Alle 6 Sprachen + Designer.cs. Build 0 Fehler, AppChecker 105 PASS / 0 FAIL. 7 neue Dateien (DungeonUpgrade.cs, IDungeonUpgradeService.cs, DungeonUpgradeService.cs, DungeonRoomType.cs, DungeonFloorModifier.cs, DungeonMapNode.cs, DungeonMapRenderer.cs).
 - **24.02.2026 (34)**: **Komplett-Audit abgeschlossen** (88 Findings, 10 Phasen): Build 0 Fehler, AppChecker 105 PASS / 0 FAIL. Designer.cs synchronisiert (755→1111 Properties). Alle deutschen Fallback-Strings auf EN normalisiert. 1111 RESX-Keys in 6 Sprachen vollständig.
 - **24.02.2026 (33)**: Lokalisierung Phase 4 (Findings 27-35): (1) **HUD-Labels lokalisiert** (Finding 27): 8 gecachte Strings für Kills/Time/Score/Lives/Bombs/Speed/Power/Deck. (2) **NewHighScore lokalisiert** (Finding 28). (3) **GameEngine-Strings lokalisiert** (Finding 30): BossFight/World/DailyChallenge/QuickPlay/Survival/DefeatAll/BossHit/Enraged/EnemyHit/Cursed. (4) **Designer.cs Sync** (Finding 35): 356 fehlende Properties hinzugefügt (755→1111). (5) **Deutsche Fallbacks→EN** (Finding 33): ~30 StatisticsVM Fallbacks auf EN normalisiert.

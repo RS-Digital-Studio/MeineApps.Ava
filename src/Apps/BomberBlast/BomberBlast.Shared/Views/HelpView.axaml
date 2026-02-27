@@ -4,20 +4,13 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.HelpView"
              x:DataType="vm:HelpViewModel">
 
-  <!-- Gradient Background -->
+  <!-- Animierter Menü-Hintergrund -->
   <Panel AutomationProperties.AutomationId="Help_Root">
-    <Border>
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="{DynamicResource GradientStartColor}" Offset="0" />
-          <GradientStop Color="{DynamicResource GradientMidColor}" Offset="0.5" />
-          <GradientStop Color="{DynamicResource GradientEndColor}" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
-    </Border>
+    <controls:MenuBackgroundCanvas />
 
     <Grid RowDefinitions="Auto,*">
 
@@ -61,18 +54,25 @@
           <!-- How to Play + Controls: Side by Side -->
           <Grid ColumnDefinitions="*,*">
 
-            <!-- How to Play -->
+            <!-- How to Play - Blauer Akzent -->
             <Border Grid.Column="0" Classes="Card StatsCard" Margin="0,0,6,0"
+                    BorderThickness="3,0,0,0" BorderBrush="#2196F3"
+                    BoxShadow="0 2 8 0 #25000000"
                     AutomationProperties.AutomationId="Help_HowToPlaySection">
               <StackPanel Spacing="8">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="GamepadVariantOutline" Width="20" Height="20"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
-                  <TextBlock AutomationProperties.AutomationId="Help_TxtHowToPlayTitle"
-                             Text="{loc:Translate HowToPlay}"
-                             FontSize="16" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                </StackPanel>
+                <Border CornerRadius="6" Padding="8,6" Margin="0,0,0,4">
+                  <Border.Background>
+                    <SolidColorBrush Color="#2196F3" Opacity="0.1" />
+                  </Border.Background>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="GamepadVariantOutline" Width="22" Height="22"
+                                     Foreground="#2196F3" />
+                    <TextBlock AutomationProperties.AutomationId="Help_TxtHowToPlayTitle"
+                               Text="{loc:Translate HowToPlay}"
+                               FontSize="17" FontWeight="Bold"
+                               Foreground="#2196F3" />
+                  </StackPanel>
+                </Border>
                 <TextBlock AutomationProperties.AutomationId="Help_TxtHowToPlayDesc"
                            Text="{loc:Translate HowToPlayDesc}"
                            FontSize="13" TextWrapping="Wrap"
@@ -80,18 +80,25 @@
               </StackPanel>
             </Border>
 
-            <!-- Controls -->
+            <!-- Controls - Grüner Akzent -->
             <Border Grid.Column="1" Classes="Card StatsCard" Margin="6,0,0,0"
+                    BorderThickness="3,0,0,0" BorderBrush="#4CAF50"
+                    BoxShadow="0 2 8 0 #25000000"
                     AutomationProperties.AutomationId="Help_ControlsSection">
               <StackPanel Spacing="8">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Gamepad" Width="20" Height="20"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
-                  <TextBlock AutomationProperties.AutomationId="Help_TxtControlsTitle"
-                             Text="{loc:Translate ControlsHelp}"
-                             FontSize="16" FontWeight="Bold"
-                             Foreground="{DynamicResource TextPrimaryBrush}" />
-                </StackPanel>
+                <Border CornerRadius="6" Padding="8,6" Margin="0,0,0,4">
+                  <Border.Background>
+                    <SolidColorBrush Color="#4CAF50" Opacity="0.1" />
+                  </Border.Background>
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <mi:MaterialIcon Kind="Gamepad" Width="22" Height="22"
+                                     Foreground="#4CAF50" />
+                    <TextBlock AutomationProperties.AutomationId="Help_TxtControlsTitle"
+                               Text="{loc:Translate ControlsHelp}"
+                               FontSize="17" FontWeight="Bold"
+                               Foreground="#4CAF50" />
+                  </StackPanel>
+                </Border>
                 <TextBlock AutomationProperties.AutomationId="Help_TxtControlsDesc"
                            Text="{loc:Translate ControlsHelpDesc}"
                            FontSize="13" TextWrapping="Wrap"
@@ -101,18 +108,39 @@
 
           </Grid>
 
-          <!-- Power-Ups -->
+          <!-- Styled Separator -->
+          <Border Height="2" CornerRadius="1" Margin="20,4">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Color="Transparent" Offset="0" />
+                <GradientStop Color="#40FFD700" Offset="0.5" />
+                <GradientStop Color="Transparent" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+
+          <!-- Power-Ups - Goldener Akzent -->
           <Border Classes="Card StatsCard"
+                  BorderThickness="3,0,0,0" BorderBrush="#FFD700"
+                  BoxShadow="0 2 8 0 #25000000"
                   AutomationProperties.AutomationId="Help_PowerUpsSection">
             <StackPanel Spacing="8">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="StarCircleOutline" Width="20" Height="20"
-                                 Foreground="Gold" />
-                <TextBlock AutomationProperties.AutomationId="Help_TxtPowerUpsTitle"
-                           Text="{loc:Translate PowerUps}"
-                           FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-              </StackPanel>
+              <Border CornerRadius="6" Padding="8,6" Margin="0,0,0,4">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                    <GradientStop Color="#20FFD700" Offset="0" />
+                    <GradientStop Color="Transparent" Offset="0.7" />
+                  </LinearGradientBrush>
+                </Border.Background>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="StarCircleOutline" Width="22" Height="22"
+                                   Foreground="#FFD700" />
+                  <TextBlock AutomationProperties.AutomationId="Help_TxtPowerUpsTitle"
+                             Text="{loc:Translate PowerUps}"
+                             FontSize="17" FontWeight="Bold"
+                             Foreground="#FFD700" />
+                </StackPanel>
+              </Border>
 
               <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <!-- Bomb Up -->
@@ -299,18 +327,36 @@
             </StackPanel>
           </Border>
 
-          <!-- Enemies -->
+          <!-- Styled Separator -->
+          <Border Height="2" CornerRadius="1" Margin="20,4">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Color="Transparent" Offset="0" />
+                <GradientStop Color="#40F44336" Offset="0.5" />
+                <GradientStop Color="Transparent" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+
+          <!-- Enemies - Roter Akzent -->
           <Border Classes="Card StatsCard"
+                  BorderThickness="3,0,0,0" BorderBrush="#F44336"
+                  BoxShadow="0 2 8 0 #25000000"
                   AutomationProperties.AutomationId="Help_EnemiesSection">
             <StackPanel Spacing="8">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Ghost" Width="20" Height="20"
-                                 Foreground="{DynamicResource ErrorBrush}" />
-                <TextBlock AutomationProperties.AutomationId="Help_TxtEnemiesTitle"
-                           Text="{loc:Translate Enemies}"
-                           FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-              </StackPanel>
+              <Border CornerRadius="6" Padding="8,6" Margin="0,0,0,4">
+                <Border.Background>
+                  <SolidColorBrush Color="#F44336" Opacity="0.1" />
+                </Border.Background>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="Ghost" Width="22" Height="22"
+                                   Foreground="#F44336" />
+                  <TextBlock AutomationProperties.AutomationId="Help_TxtEnemiesTitle"
+                             Text="{loc:Translate Enemies}"
+                             FontSize="17" FontWeight="Bold"
+                             Foreground="#F44336" />
+                </StackPanel>
+              </Border>
 
               <WrapPanel Orientation="Horizontal" HorizontalAlignment="Center">
                 <!-- Ballom -->
@@ -437,18 +483,36 @@
             </StackPanel>
           </Border>
 
-          <!-- Tips -->
+          <!-- Styled Separator -->
+          <Border Height="2" CornerRadius="1" Margin="20,4">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                <GradientStop Color="Transparent" Offset="0" />
+                <GradientStop Color="#40FF9800" Offset="0.5" />
+                <GradientStop Color="Transparent" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+
+          <!-- Tips - Orange Akzent -->
           <Border Classes="Card StatsCard"
+                  BorderThickness="3,0,0,0" BorderBrush="#FF9800"
+                  BoxShadow="0 2 8 0 #25000000"
                   AutomationProperties.AutomationId="Help_TipsSection">
             <StackPanel Spacing="8">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="LightbulbOnOutline" Width="20" Height="20"
-                                 Foreground="{DynamicResource WarningBrush}" />
-                <TextBlock AutomationProperties.AutomationId="Help_TxtTipsTitle"
-                           Text="{loc:Translate Tips}"
-                           FontSize="16" FontWeight="Bold"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-              </StackPanel>
+              <Border CornerRadius="6" Padding="8,6" Margin="0,0,0,4">
+                <Border.Background>
+                  <SolidColorBrush Color="#FF9800" Opacity="0.1" />
+                </Border.Background>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="LightbulbOnOutline" Width="22" Height="22"
+                                   Foreground="#FF9800" />
+                  <TextBlock AutomationProperties.AutomationId="Help_TxtTipsTitle"
+                             Text="{loc:Translate Tips}"
+                             FontSize="17" FontWeight="Bold"
+                             Foreground="#FF9800" />
+                </StackPanel>
+              </Border>
               <TextBlock AutomationProperties.AutomationId="Help_TxtTipsDesc"
                          Text="{loc:Translate TipsDesc}"
                          FontSize="13" TextWrapping="Wrap"
@@ -458,17 +522,19 @@
           </Border>
 
           <!-- Tutorial wiederholen -->
-          <Button Classes="Primary GameButton"
-                  AutomationProperties.AutomationId="Help_BtnReplayTutorial"
-                  Command="{Binding ReplayTutorialCommand}"
-                  HorizontalAlignment="Center"
-                  Margin="0,8,0,0"
-                  Padding="24,12">
-            <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="SchoolOutline" Width="20" Height="20" />
-              <TextBlock Text="{loc:Translate ReplayTutorial}" FontSize="15" FontWeight="SemiBold" />
-            </StackPanel>
-          </Button>
+          <Panel MinHeight="44" HorizontalAlignment="Center" Margin="0,8,0,0">
+            <controls:GameButtonCanvas ButtonColor="#2196F3" DamageLevel="0.5" ButtonSeed="170" />
+            <Button Classes="Primary GameButton"
+                    AutomationProperties.AutomationId="Help_BtnReplayTutorial"
+                    Command="{Binding ReplayTutorialCommand}"
+                    Background="Transparent" Foreground="White"
+                    Padding="24,12">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="SchoolOutline" Width="20" Height="20" Foreground="White" />
+                <TextBlock Text="{loc:Translate ReplayTutorial}" FontSize="15" FontWeight="SemiBold" Foreground="White" />
+              </StackPanel>
+            </Button>
+          </Panel>
 
           <!-- Bottom Spacer (80dp für Ad-Banner + Navigation-Bar) -->
           <Border Height="80" />

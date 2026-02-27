@@ -35,24 +35,30 @@
         </Button>
 
         <!-- Gem-Balance groß -->
-        <Border Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="16"
+        <Border CornerRadius="16"
                 Padding="24,16"
                 HorizontalAlignment="Center"
                 BoxShadow="0 4 16 0 #40000000"
+                BorderBrush="#3000BCD4" BorderThickness="1"
                 AutomationProperties.AutomationId="GemShop_BalanceBadge">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+              <GradientStop Color="#2000BCD4" Offset="0" />
+              <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
           <StackPanel Spacing="8" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="DiamondStone" Width="48" Height="48"
-                             Foreground="#E040FB"
+            <mi:MaterialIcon Kind="DiamondStone" Width="56" Height="56"
+                             Foreground="#00BCD4"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{Binding GemBalanceText}"
-                       FontSize="32" FontWeight="Bold"
-                       Foreground="#E040FB"
+                       FontSize="36" FontWeight="Bold"
+                       Foreground="#00BCD4"
                        HorizontalAlignment="Center"
                        AutomationProperties.AutomationId="GemShop_TxtBalance" />
             <TextBlock Text="Gems"
-                       FontSize="14"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       FontSize="15" FontWeight="SemiBold"
+                       Foreground="#4DD0E1"
                        HorizontalAlignment="Center" />
           </StackPanel>
         </Border>
@@ -85,7 +91,11 @@
                     Padding="16"
                     Width="180"
                     BoxShadow="0 4 16 0 #40000000"
-                    Background="{DynamicResource SurfaceBrush}">
+                    Background="{DynamicResource SurfaceBrush}"
+                    BorderThickness="0,3,0,0">
+              <Border.BorderBrush>
+                <SolidColorBrush Color="{Binding IconColor}" />
+              </Border.BorderBrush>
               <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
 
                 <!-- Badge (optional, oben rechts) -->
@@ -94,7 +104,8 @@
                         CornerRadius="8"
                         Padding="8,3"
                         HorizontalAlignment="Center"
-                        Margin="0,0,0,8">
+                        Margin="0,0,0,8"
+                        BoxShadow="0 2 6 0 #30000000">
                   <Border.Background>
                     <SolidColorBrush Color="#FF6F00" />
                   </Border.Background>
@@ -105,15 +116,15 @@
 
                 <!-- Icon -->
                 <Border Grid.Row="1"
-                        Width="64" Height="64"
-                        CornerRadius="32"
+                        Width="68" Height="68"
+                        CornerRadius="34"
                         HorizontalAlignment="Center"
                         Margin="0,0,0,10">
                   <Border.Background>
                     <SolidColorBrush Color="{Binding IconColor}" Opacity="0.15" />
                   </Border.Background>
                   <mi:MaterialIcon Kind="{Binding IconKind}"
-                                   Width="36" Height="36"
+                                   Width="40" Height="40"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center">
                     <mi:MaterialIcon.Foreground>
@@ -128,10 +139,10 @@
                             Spacing="6"
                             HorizontalAlignment="Center"
                             Margin="0,0,0,4">
-                  <mi:MaterialIcon Kind="DiamondStone" Width="18" Height="18"
-                                   Foreground="#E040FB" />
+                  <mi:MaterialIcon Kind="DiamondStone" Width="20" Height="20"
+                                   Foreground="#00BCD4" />
                   <TextBlock Text="{Binding GemAmount, StringFormat='{}{0:N0}'}"
-                             FontSize="22" FontWeight="Bold"
+                             FontSize="24" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              VerticalAlignment="Center" />
                 </StackPanel>
@@ -139,31 +150,30 @@
                 <!-- Paketname -->
                 <TextBlock Grid.Row="3"
                            Text="{Binding DisplayName}"
-                           FontSize="12"
+                           FontSize="13" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            HorizontalAlignment="Center"
                            Margin="0,0,0,10" />
 
                 <!-- Kauf-Button -->
-                <Button Grid.Row="4"
-                        Command="{Binding #GemShop_Root.((vm:GemShopViewModel)DataContext).PurchasePackageCommand}"
-                        CommandParameter="{Binding}"
-                        Classes="GameButton"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center"
-                        CornerRadius="10"
-                        Padding="12,8"
-                        AutomationProperties.AutomationId="GemShop_BtnBuy">
-                  <Button.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                      <GradientStop Color="#7B1FA2" Offset="0" />
-                      <GradientStop Color="#E040FB" Offset="1" />
-                    </LinearGradientBrush>
-                  </Button.Background>
-                  <TextBlock Text="{Binding PriceText}"
-                             FontSize="15" FontWeight="Bold"
-                             Foreground="White" />
-                </Button>
+                <Panel Grid.Row="4" MinHeight="40">
+                  <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.5" ButtonSeed="{Binding ButtonSeed}" />
+                  <Button Command="{Binding #GemShop_Root.((vm:GemShopViewModel)DataContext).PurchasePackageCommand}"
+                          CommandParameter="{Binding}"
+                          Classes="GameButton"
+                          Background="Transparent"
+                          Foreground="White"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center"
+                          VerticalContentAlignment="Center"
+                          CornerRadius="10"
+                          Padding="12,8"
+                          AutomationProperties.AutomationId="GemShop_BtnBuy">
+                    <TextBlock Text="{Binding PriceText}"
+                               FontSize="15" FontWeight="Bold"
+                               Foreground="White" />
+                  </Button>
+                </Panel>
 
               </Grid>
             </Border>

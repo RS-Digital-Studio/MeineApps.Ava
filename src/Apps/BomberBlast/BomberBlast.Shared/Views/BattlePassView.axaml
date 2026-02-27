@@ -43,7 +43,9 @@
           <Border Grid.Column="2"
                   Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12"
-                  Padding="10,5">
+                  Padding="10,5"
+                  BoxShadow="0 2 8 0 #25000000"
+                  BorderBrush="#40FFD700" BorderThickness="1">
             <TextBlock Text="{Binding SeasonNumberDisplay}"
                        FontSize="14" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextSecondaryBrush}"
@@ -58,14 +60,21 @@
       <Grid Grid.Row="1" ColumnDefinitions="*,2.5*" Margin="16,12,16,80">
 
         <!-- ═══════════════════════════════════════
-             LINKE SPALTE: Info-Panel
+             LINKE SPALTE: Info-Panel (Gold-tint Gradient)
              ═══════════════════════════════════════ -->
         <Border Grid.Column="0"
                 Classes="CardElevated"
                 Padding="16"
                 CornerRadius="16"
                 Margin="0,0,8,0"
-                VerticalAlignment="Center">
+                VerticalAlignment="Center"
+                BoxShadow="0 2 8 0 #25000000">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#15FFD700" Offset="0" />
+              <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
           <StackPanel Spacing="14">
 
             <!-- Aktuelle Tier-Anzeige -->
@@ -83,15 +92,15 @@
             <!-- XP-Fortschrittsbalken (Stretch statt fester Breite) -->
             <StackPanel Spacing="4">
               <Border Background="#20FFFFFF"
-                      CornerRadius="6"
-                      Height="12"
+                      CornerRadius="8"
+                      Height="16"
                       ClipToBounds="True"
                       HorizontalAlignment="Stretch"
                       Margin="8,0">
                 <Border Background="{DynamicResource GoldAccentBrush}"
-                        CornerRadius="6"
+                        CornerRadius="8"
                         HorizontalAlignment="Stretch"
-                        Height="12"
+                        Height="16"
                         RenderTransformOrigin="0%,50%">
                   <Border.RenderTransform>
                     <ScaleTransform ScaleX="{Binding XpProgress}" />
@@ -105,11 +114,12 @@
             </StackPanel>
 
             <!-- Countdown -->
-            <Border Background="#20FFFFFF" CornerRadius="10" Padding="10,6">
+            <Border Background="#20FFFFFF" CornerRadius="10" Padding="10,6"
+                    BorderBrush="#FF9800" BorderThickness="3,0,0,0">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
                 <mi:MaterialIcon Kind="Clock" Width="18" Height="18"
-                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                                 Foreground="#FF9800" />
                 <TextBlock Text="{Binding SeasonTimeDisplay}"
                            FontSize="13" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
@@ -136,29 +146,59 @@
             </Border>
 
             <!-- Wenn kein Premium: Upgrade-Button -->
-            <Button AutomationProperties.AutomationId="BP_BtnUpgrade"
-                    Classes="GameButton"
-                    Command="{Binding UpgradeToPremiumCommand}"
-                    IsVisible="{Binding !IsPremiumPass}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Padding="12,10"
-                    CornerRadius="10">
-              <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                  <GradientStop Color="#FFD700" Offset="0" />
-                  <GradientStop Color="#FF8F00" Offset="1" />
-                </LinearGradientBrush>
-              </Button.Background>
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Crown" Width="18" Height="18"
-                                 Foreground="White" />
-                <TextBlock Text="{Binding UpgradeButtonText}"
-                           FontSize="14" FontWeight="Bold"
-                           Foreground="White"
-                           VerticalAlignment="Center" />
-              </StackPanel>
-            </Button>
+            <Panel MinHeight="44" IsVisible="{Binding !IsPremiumPass}">
+              <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.6" ButtonSeed="103" />
+              <Button AutomationProperties.AutomationId="BP_BtnUpgrade"
+                      Classes="GameButton"
+                      Command="{Binding UpgradeToPremiumCommand}"
+                      Background="Transparent"
+                      Foreground="White"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      VerticalContentAlignment="Center"
+                      Padding="12,10"
+                      CornerRadius="10">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="Crown" Width="18" Height="18"
+                                   Foreground="White" />
+                  <TextBlock Text="{Binding UpgradeButtonText}"
+                             FontSize="14" FontWeight="Bold"
+                             Foreground="White"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Panel>
+
+            <!-- XP-Boost Button -->
+            <Panel MinHeight="40">
+              <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.5" ButtonSeed="100" />
+              <Button AutomationProperties.AutomationId="BP_BtnXpBoost"
+                      Classes="GameButton"
+                      Command="{Binding ActivateXpBoostCommand}"
+                      Background="Transparent"
+                      Foreground="White"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      VerticalContentAlignment="Center"
+                      Padding="10,8"
+                      CornerRadius="10">
+                <StackPanel Spacing="2" HorizontalAlignment="Center">
+                  <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                    <mi:MaterialIcon Kind="Flash" Width="16" Height="16"
+                                     Foreground="White" />
+                    <TextBlock Text="{Binding XpBoostButtonText}"
+                               FontSize="13" FontWeight="Bold"
+                               Foreground="White"
+                               VerticalAlignment="Center" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding XpBoostTimeText}"
+                             FontSize="11"
+                             Foreground="#B0FFFFFF"
+                             HorizontalAlignment="Center"
+                             IsVisible="{Binding IsXpBoostActive}" />
+                </StackPanel>
+              </Button>
+            </Panel>
 
           </StackPanel>
         </Border>
@@ -223,21 +263,23 @@
                                      HorizontalAlignment="Center" />
 
                           <!-- Claim-Button (wenn verfuegbar) -->
-                          <Button Command="{ReflectionBinding DataContext.ClaimFreeRewardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                  CommandParameter="{Binding TierIndex}"
-                                  IsVisible="{Binding CanClaimFree}"
-                                  Classes="GameButton"
-                                  HorizontalAlignment="Stretch"
-                                  HorizontalContentAlignment="Center"
-                                  Padding="6,4"
-                                  CornerRadius="6">
-                            <Button.Background>
-                              <SolidColorBrush Color="#4CAF50" />
-                            </Button.Background>
-                            <TextBlock Text="{Binding ClaimText}"
-                                       FontSize="11" FontWeight="Bold"
-                                       Foreground="White" />
-                          </Button>
+                          <Panel MinHeight="28" IsVisible="{Binding CanClaimFree}">
+                            <controls:GameButtonCanvas ButtonColor="#4CAF50" DamageLevel="0.3" ButtonSeed="101" />
+                            <Button Command="{ReflectionBinding DataContext.ClaimFreeRewardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding TierIndex}"
+                                    Classes="GameButton"
+                                    Background="Transparent"
+                                    Foreground="White"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Padding="6,4"
+                                    CornerRadius="6">
+                              <TextBlock Text="{Binding ClaimText}"
+                                         FontSize="11" FontWeight="Bold"
+                                         Foreground="White" />
+                            </Button>
+                          </Panel>
 
                           <!-- Haekchen wenn bereits beansprucht -->
                           <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
@@ -247,16 +289,23 @@
                         </StackPanel>
                       </Border>
 
-                      <!-- Trennlinie -->
-                      <Border Height="1" Background="#30FFFFFF"
-                              Margin="4,0" />
+                      <!-- Trennlinie (Styled Separator) -->
+                      <Border Height="2" CornerRadius="1" Margin="4,0">
+                        <Border.Background>
+                          <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                            <GradientStop Color="Transparent" Offset="0" />
+                            <GradientStop Color="#50FFD700" Offset="0.5" />
+                            <GradientStop Color="Transparent" Offset="1" />
+                          </LinearGradientBrush>
+                        </Border.Background>
+                      </Border>
 
                       <!-- ────── Premium-Reward Sektion ────── -->
                       <Border CornerRadius="8"
                               Padding="6"
                               MinHeight="52">
                         <Border.Background>
-                          <SolidColorBrush Color="#FFD700" Opacity="0.06" />
+                          <SolidColorBrush Color="#FFD700" Opacity="0.10" />
                         </Border.Background>
                         <StackPanel Spacing="3" HorizontalAlignment="Center">
                           <TextBlock Text="{Binding PremiumRewardText}"
@@ -267,24 +316,23 @@
                                      HorizontalAlignment="Center" />
 
                           <!-- Claim-Button (Premium verfuegbar) -->
-                          <Button Command="{ReflectionBinding DataContext.ClaimPremiumRewardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                  CommandParameter="{Binding TierIndex}"
-                                  IsVisible="{Binding CanClaimPremium}"
-                                  Classes="GameButton"
-                                  HorizontalAlignment="Stretch"
-                                  HorizontalContentAlignment="Center"
-                                  Padding="6,4"
-                                  CornerRadius="6">
-                            <Button.Background>
-                              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                                <GradientStop Color="#FFD700" Offset="0" />
-                                <GradientStop Color="#FF8F00" Offset="1" />
-                              </LinearGradientBrush>
-                            </Button.Background>
-                            <TextBlock Text="{Binding ClaimText}"
-                                       FontSize="11" FontWeight="Bold"
-                                       Foreground="White" />
-                          </Button>
+                          <Panel MinHeight="28" IsVisible="{Binding CanClaimPremium}">
+                            <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.3" ButtonSeed="102" />
+                            <Button Command="{ReflectionBinding DataContext.ClaimPremiumRewardCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding TierIndex}"
+                                    Classes="GameButton"
+                                    Background="Transparent"
+                                    Foreground="White"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Padding="6,4"
+                                    CornerRadius="6">
+                              <TextBlock Text="{Binding ClaimText}"
+                                         FontSize="11" FontWeight="Bold"
+                                         Foreground="White" />
+                            </Button>
+                          </Panel>
 
                           <!-- Haekchen wenn bereits beansprucht -->
                           <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"

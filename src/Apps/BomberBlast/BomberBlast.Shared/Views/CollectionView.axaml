@@ -41,24 +41,26 @@
 
         <!-- Gesamt-Fortschritt -->
         <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="10" Padding="12,8" Margin="0,0,0,12">
+                CornerRadius="10" Padding="12,8" Margin="0,0,0,12"
+                BoxShadow="0 2 8 0 #25000000">
           <StackPanel Spacing="6">
             <TextBlock Text="{Binding TotalProgressText}"
-                       FontSize="14" FontWeight="Bold"
+                       FontSize="16" FontWeight="Bold"
                        Foreground="#FFD700" HorizontalAlignment="Center" />
             <ProgressBar Value="{Binding TotalProgressPercent}" Maximum="100"
-                         Foreground="#FFD700" Height="8" CornerRadius="4" />
+                         Foreground="#FFD700" Height="10" CornerRadius="5" />
           </StackPanel>
         </Border>
 
         <!-- 5 Kategorie-Tabs -->
         <StackPanel Grid.Row="2" Spacing="4" Margin="0,0,0,12">
 
-          <!-- Tab 0: Gegner -->
+          <!-- Tab 0: Gegner (aktiv: roter linker Akzent) -->
           <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="0">
             <Panel>
-              <Border CornerRadius="8" Background="#30FFFFFF"
+              <Border CornerRadius="8" Background="#40FFFFFF"
+                      BorderThickness="3,0,0,0" BorderBrush="#F44336"
                       IsVisible="{Binding IsCategory0Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -71,11 +73,12 @@
             </Panel>
           </Button>
 
-          <!-- Tab 1: Bosse -->
+          <!-- Tab 1: Bosse (aktiv: goldener linker Akzent) -->
           <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="1">
             <Panel>
-              <Border CornerRadius="8" Background="#30FFFFFF"
+              <Border CornerRadius="8" Background="#40FFFFFF"
+                      BorderThickness="3,0,0,0" BorderBrush="#FFD700"
                       IsVisible="{Binding IsCategory1Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -88,11 +91,12 @@
             </Panel>
           </Button>
 
-          <!-- Tab 2: PowerUps -->
+          <!-- Tab 2: PowerUps (aktiv: grüner linker Akzent) -->
           <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="2">
             <Panel>
-              <Border CornerRadius="8" Background="#30FFFFFF"
+              <Border CornerRadius="8" Background="#40FFFFFF"
+                      BorderThickness="3,0,0,0" BorderBrush="#4CAF50"
                       IsVisible="{Binding IsCategory2Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -105,11 +109,12 @@
             </Panel>
           </Button>
 
-          <!-- Tab 3: Karten -->
+          <!-- Tab 3: Karten (aktiv: blauer linker Akzent) -->
           <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="3">
             <Panel>
-              <Border CornerRadius="8" Background="#30FFFFFF"
+              <Border CornerRadius="8" Background="#40FFFFFF"
+                      BorderThickness="3,0,0,0" BorderBrush="#2196F3"
                       IsVisible="{Binding IsCategory3Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -122,11 +127,12 @@
             </Panel>
           </Button>
 
-          <!-- Tab 4: Kosmetik -->
+          <!-- Tab 4: Kosmetik (aktiv: violetter linker Akzent) -->
           <Button Classes="Text" Padding="0" HorizontalAlignment="Stretch"
                   Command="{Binding SelectCategoryCommand}" CommandParameter="4">
             <Panel>
-              <Border CornerRadius="8" Background="#30FFFFFF"
+              <Border CornerRadius="8" Background="#40FFFFFF"
+                      BorderThickness="3,0,0,0" BorderBrush="#9C27B0"
                       IsVisible="{Binding IsCategory4Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
@@ -151,7 +157,8 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:MilestoneDisplayItem">
                 <Border Background="{DynamicResource SurfaceBrush}"
-                        CornerRadius="8" Padding="10,8">
+                        CornerRadius="8" Padding="10,8"
+                        BoxShadow="0 1 4 0 #20000000">
                   <StackPanel Spacing="4">
                     <Grid ColumnDefinitions="Auto,*,Auto">
                       <!-- Prozent-Label -->
@@ -161,13 +168,13 @@
                           <SolidColorBrush Color="#FFD700" Opacity="0.15" />
                         </Border.Background>
                         <TextBlock Text="{Binding PercentLabel}"
-                                   FontSize="13" FontWeight="Bold" Foreground="#FFD700" />
+                                   FontSize="14" FontWeight="Bold" Foreground="#FFD700" />
                       </Border>
 
-                      <!-- Belohnungstext -->
+                      <!-- Belohnungstext (fett für bessere Sichtbarkeit) -->
                       <TextBlock Grid.Column="1"
                                  Text="{Binding RewardText}"
-                                 FontSize="12" FontWeight="SemiBold"
+                                 FontSize="12" FontWeight="Bold"
                                  Foreground="{DynamicResource TextPrimaryBrush}"
                                  TextTrimming="CharacterEllipsis"
                                  VerticalAlignment="Center" />
@@ -175,14 +182,18 @@
                       <!-- Status: Claim / Claimed / Locked -->
                       <Panel Grid.Column="2" VerticalAlignment="Center" Margin="6,0,0,0">
                         <!-- Einfordern-Button -->
-                        <Button Classes="Primary GameButton"
-                                IsVisible="{Binding CanClaim}"
-                                Command="{Binding #Collection_Root.DataContext.ClaimMilestoneCommand}"
-                                CommandParameter="{Binding}"
-                                Height="30" Padding="10,0" Background="#22C55E">
-                          <TextBlock Text="{Binding ClaimText}"
-                                     FontSize="11" FontWeight="Bold" Foreground="#1A1A2A" />
-                        </Button>
+                        <Panel MinHeight="30" IsVisible="{Binding CanClaim}">
+                          <controls:GameButtonCanvas ButtonColor="#22C55E" DamageLevel="0.3" ButtonSeed="150" />
+                          <Button Classes="Primary GameButton"
+                                  Command="{Binding #Collection_Root.DataContext.ClaimMilestoneCommand}"
+                                  CommandParameter="{Binding}"
+                                  Height="30" Padding="10,0"
+                                  Background="Transparent"
+                                  Foreground="White">
+                            <TextBlock Text="{Binding ClaimText}"
+                                       FontSize="11" FontWeight="Bold" Foreground="White" />
+                          </Button>
+                        </Panel>
                         <!-- Eingefordert -->
                         <materialIcons:MaterialIcon Kind="CheckCircle"
                                                     Width="24" Height="24" Foreground="#22C55E"
@@ -213,7 +224,8 @@
 
         <!-- Kategorie-Header mit Fortschrittsbalken -->
         <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="10" Padding="12,8" Margin="0,0,0,8">
+                CornerRadius="10" Padding="12,8" Margin="0,0,0,8"
+                BoxShadow="0 2 8 0 #25000000">
           <StackPanel Spacing="6">
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0"

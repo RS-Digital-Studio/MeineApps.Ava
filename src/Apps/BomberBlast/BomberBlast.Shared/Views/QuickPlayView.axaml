@@ -47,15 +47,24 @@
       <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="24,16,24,80">
 
         <!-- Linke Spalte: Schwierigkeit -->
-        <Border Grid.Column="0" Classes="CardElevated"
+        <Border Grid.Column="0"
                 Margin="0,0,8,0" Padding="20"
                 CornerRadius="16"
+                BorderThickness="0,3,0,0"
+                BorderBrush="{DynamicResource AccentBrush}"
+                BoxShadow="0 2 8 0 #25000000"
                 VerticalAlignment="Center">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+              <GradientStop Color="#1500BCD4" Offset="0" />
+              <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
           <StackPanel Spacing="16">
             <!-- Schwierigkeits-Header -->
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Speedometer" Width="22" Height="22"
+              <mi:MaterialIcon Kind="Speedometer" Width="24" Height="24"
                                Foreground="{DynamicResource AccentBrush}" />
               <TextBlock AutomationProperties.AutomationId="QuickPlay_TxtDifficultyHeader"
                          Text="{Binding DifficultyHeaderLabel}"
@@ -66,13 +75,24 @@
             <!-- Aktueller Wert (Welt X) -->
             <TextBlock AutomationProperties.AutomationId="QuickPlay_TxtDifficultyValue"
                        Text="{Binding DifficultyLabel}"
-                       FontSize="28" FontWeight="Bold"
-                       Foreground="{DynamicResource PrimaryBrush}"
+                       FontSize="32" FontWeight="Bold"
+                       Foreground="{DynamicResource AccentBrush}"
                        HorizontalAlignment="Center" />
+
+            <!-- Gradient-Trenner -->
+            <Border Height="2" CornerRadius="1" Margin="16,0">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+                  <GradientStop Color="Transparent" Offset="0" />
+                  <GradientStop Color="#4000BCD4" Offset="0.5" />
+                  <GradientStop Color="Transparent" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+            </Border>
 
             <!-- Slider -->
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,4">
-              <TextBlock Text="1" FontSize="14" FontWeight="SemiBold"
+              <TextBlock Text="1" FontSize="15" FontWeight="Bold"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
               <Slider AutomationProperties.AutomationId="QuickPlay_SliderDifficulty"
@@ -82,7 +102,7 @@
                       IsSnapToTickEnabled="True"
                       TickFrequency="1"
                       Margin="8,0" />
-              <TextBlock Grid.Column="2" Text="10" FontSize="14" FontWeight="SemiBold"
+              <TextBlock Grid.Column="2" Text="10" FontSize="15" FontWeight="Bold"
                          Foreground="{DynamicResource TextSecondaryBrush}"
                          VerticalAlignment="Center" />
             </Grid>
@@ -95,16 +115,25 @@
                     VerticalAlignment="Center">
 
           <!-- Seed-Karte -->
-          <Border Classes="CardElevated" Padding="20" CornerRadius="16">
+          <Border Padding="20" CornerRadius="16"
+                  BorderThickness="0,3,0,0"
+                  BorderBrush="#4CAF50"
+                  BoxShadow="0 2 8 0 #25000000">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Color="#154CAF50" Offset="0" />
+                <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
             <StackPanel Spacing="12">
               <!-- Seed-Header -->
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="Seed" Width="20" Height="20"
-                                 Foreground="{DynamicResource AccentBrush}" />
+                <mi:MaterialIcon Kind="Seed" Width="22" Height="22"
+                                 Foreground="#4CAF50" />
                 <TextBlock AutomationProperties.AutomationId="QuickPlay_TxtSeedHeader"
                            Text="{Binding SeedHeaderLabel}"
-                           FontSize="16" FontWeight="Bold"
+                           FontSize="17" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
@@ -112,28 +141,35 @@
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock AutomationProperties.AutomationId="QuickPlay_TxtSeedValue"
                            Text="{Binding SeedText}"
-                           FontSize="32" FontWeight="Bold"
-                           Foreground="{DynamicResource PrimaryBrush}"
+                           FontSize="34" FontWeight="Bold"
+                           Foreground="#4CAF50"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            FontFamily="Consolas, Courier New, monospace" />
-                <Button AutomationProperties.AutomationId="QuickPlay_BtnNewSeed"
-                        Grid.Column="1"
-                        Classes="Secondary"
-                        Command="{Binding NewSeedCommand}"
-                        VerticalAlignment="Center"
-                        Padding="10,8">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="Refresh" Width="18" Height="18" />
-                    <TextBlock Text="{Binding NewSeedButtonText}" FontSize="12" />
-                  </StackPanel>
-                </Button>
+                <Panel Grid.Column="1" MinHeight="40" VerticalAlignment="Center">
+                  <controls:GameButtonCanvas ButtonColor="#555555" DamageLevel="0.3" ButtonSeed="61" />
+                  <Button AutomationProperties.AutomationId="QuickPlay_BtnNewSeed"
+                          Classes="Secondary GameButton"
+                          Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding NewSeedCommand}"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center"
+                          VerticalContentAlignment="Center"
+                          Padding="12,10">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <mi:MaterialIcon Kind="Refresh" Width="20" Height="20" Foreground="White" />
+                      <TextBlock Text="{Binding NewSeedButtonText}" FontSize="13" FontWeight="SemiBold"
+                                 Foreground="White" />
+                    </StackPanel>
+                  </Button>
+                </Panel>
               </Grid>
 
               <!-- Seed-Hinweis -->
               <TextBlock AutomationProperties.AutomationId="QuickPlay_TxtSeedHint"
                          Text="{Binding SeedHint}"
-                         FontSize="11"
+                         FontSize="12"
                          Foreground="{DynamicResource TextMutedBrush}"
                          TextWrapping="Wrap"
                          HorizontalAlignment="Center"
@@ -142,21 +178,28 @@
           </Border>
 
           <!-- Play Button -->
-          <Button AutomationProperties.AutomationId="QuickPlay_BtnPlay"
-                  Classes="Primary GameButton"
-                  Command="{Binding PlayCommand}"
-                  HorizontalAlignment="Stretch"
-                  HorizontalContentAlignment="Center"
-                  Padding="16,14"
-                  FontSize="20" FontWeight="Bold">
-            <StackPanel Orientation="Horizontal" Spacing="10"
-                        HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Play" Width="28" Height="28" />
-              <TextBlock Text="{Binding PlayButtonText}"
-                         FontSize="20" FontWeight="Bold"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
+          <Panel MinHeight="56">
+            <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.5" ButtonSeed="60" />
+            <Button AutomationProperties.AutomationId="QuickPlay_BtnPlay"
+                    Classes="Primary GameButton"
+                    Background="Transparent"
+                    Foreground="White"
+                    Command="{Binding PlayCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
+                    Padding="16,16"
+                    FontSize="20" FontWeight="Bold">
+              <StackPanel Orientation="Horizontal" Spacing="10"
+                          HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="Play" Width="30" Height="30" Foreground="White" />
+                <TextBlock Text="{Binding PlayButtonText}"
+                           FontSize="22" FontWeight="Bold"
+                           Foreground="White"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Panel>
 
         </StackPanel>
 

@@ -46,9 +46,15 @@
           </Panel>
         </Grid>
 
-        <!-- Liga-Tier Emblem -->
-        <Border Grid.Row="1" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="12" Padding="16,12" Margin="0,0,0,12">
+        <!-- Liga-Tier Emblem - Subtiler Cyan-Tint Gradient als Blickfang -->
+        <Border Grid.Row="1"
+                CornerRadius="12" Padding="16,12" Margin="0,0,0,12" BoxShadow="0 2 8 0 #25000000">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+              <GradientStop Color="#20006064" Offset="0" />
+              <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
           <StackPanel Spacing="8" HorizontalAlignment="Center">
             <!-- Tier-Icon -->
             <materialIcons:MaterialIcon
@@ -81,12 +87,12 @@
 
         <!-- Saison-Countdown -->
         <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="10" Padding="12,8" Margin="0,0,0,12">
+                CornerRadius="10" Padding="12,8" Margin="0,0,0,12" BoxShadow="0 2 8 0 #25000000">
           <StackPanel Spacing="4">
             <TextBlock Text="{Binding SeasonCountdown}"
-                       FontSize="18" FontWeight="Bold"
+                       FontSize="20" FontWeight="Bold"
                        Foreground="#FFD700" HorizontalAlignment="Center" />
-            <TextBlock FontSize="11"
+            <TextBlock FontSize="13"
                        Foreground="{DynamicResource TextMutedBrush}"
                        HorizontalAlignment="Center">
               <TextBlock.Text>
@@ -100,7 +106,7 @@
 
         <!-- Saison-Belohnung -->
         <Border Grid.Row="3" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="10" Padding="12,8" Margin="0,0,0,12">
+                CornerRadius="10" Padding="12,8" Margin="0,0,0,12" BoxShadow="0 2 8 0 #25000000">
           <StackPanel Spacing="6">
             <TextBlock Text="{Binding RewardText}"
                        FontSize="12" FontWeight="SemiBold"
@@ -109,14 +115,15 @@
                        TextTrimming="CharacterEllipsis" />
 
             <!-- Belohnung abholen -->
-            <Button Classes="Primary GameButton"
-                    IsVisible="{Binding CanClaimReward}"
-                    Command="{Binding ClaimRewardCommand}"
-                    Height="32" Padding="12,0" Background="#22C55E"
-                    HorizontalAlignment="Center">
-              <TextBlock Text="Abholen"
-                         FontSize="12" FontWeight="Bold" Foreground="#1A1A2A" />
-            </Button>
+            <Panel MinHeight="32" IsVisible="{Binding CanClaimReward}" HorizontalAlignment="Center">
+              <controls:GameButtonCanvas ButtonColor="#22C55E" DamageLevel="0.3" ButtonSeed="180" />
+              <Button Classes="Primary GameButton"
+                      Command="{Binding ClaimRewardCommand}"
+                      Height="32" Padding="12,0" Background="Transparent" Foreground="White">
+                <TextBlock Text="Abholen"
+                           FontSize="12" FontWeight="Bold" Foreground="White" />
+              </Button>
+            </Panel>
             <!-- Bereits abgeholt -->
             <StackPanel Orientation="Horizontal" Spacing="6"
                         IsVisible="{Binding IsRewardClaimed}"
@@ -131,9 +138,10 @@
 
         <!-- Stats -->
         <Border Grid.Row="4" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="10" Padding="12,8" VerticalAlignment="Top">
+                CornerRadius="10" Padding="12,8" VerticalAlignment="Top"
+                BoxShadow="0 2 8 0 #25000000">
           <TextBlock Text="{Binding StatsText}"
-                     FontSize="10"
+                     FontSize="12"
                      Foreground="{DynamicResource TextMutedBrush}"
                      TextWrapping="Wrap" />
         </Border>
@@ -146,7 +154,8 @@
 
         <!-- Rangliste Header + Refresh-Button -->
         <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="10" Padding="12,8" Margin="0,0,0,8">
+                CornerRadius="10" Padding="12,8" Margin="0,0,0,8"
+                BoxShadow="0 2 8 0 #25000000">
           <Grid ColumnDefinitions="Auto,*,Auto,Auto">
             <TextBlock Grid.Column="0" Text="#"
                        FontSize="14" FontWeight="Bold" Width="40"
@@ -159,14 +168,18 @@
                        Foreground="{DynamicResource AccentBrush}"
                        Margin="0,0,8,0" />
             <!-- Refresh-Button -->
-            <Button Grid.Column="3" Classes="Secondary GameButton"
-                    Command="{Binding RefreshLeaderboardCommand}"
-                    Width="44" Height="44" Padding="0"
-                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                    AutomationProperties.AutomationId="League_BtnRefresh">
-              <materialIcons:MaterialIcon Kind="Refresh" Width="18" Height="18"
-                                          Foreground="{DynamicResource AccentBrush}" />
-            </Button>
+            <Panel Grid.Column="3" MinHeight="44" MinWidth="44">
+              <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="181" />
+              <Button Classes="Secondary GameButton"
+                      Command="{Binding RefreshLeaderboardCommand}"
+                      Width="44" Height="44" Padding="0"
+                      Background="Transparent" Foreground="White"
+                      HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                      AutomationProperties.AutomationId="League_BtnRefresh">
+                <materialIcons:MaterialIcon Kind="Refresh" Width="18" Height="18"
+                                            Foreground="White" />
+              </Button>
+            </Panel>
           </Grid>
         </Border>
 
@@ -195,7 +208,12 @@
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="vm:LeagueDisplayEntry">
-                <Border CornerRadius="8" Padding="12,8">
+                <!-- Leaderboard-Eintrag mit farbigem linken Akzent-Rand -->
+                <Border CornerRadius="8" Padding="12,8"
+                        BorderThickness="3,0,0,0">
+                  <Border.BorderBrush>
+                    <SolidColorBrush Color="{Binding NameColor}" />
+                  </Border.BorderBrush>
                   <Border.Background>
                     <SolidColorBrush Color="#FFFFFF" Opacity="{Binding BackgroundOpacity}" />
                   </Border.Background>

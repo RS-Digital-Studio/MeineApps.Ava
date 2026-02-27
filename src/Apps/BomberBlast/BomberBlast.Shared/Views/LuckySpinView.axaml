@@ -29,10 +29,10 @@
         <!-- Titel -->
         <StackPanel Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
-          <mi:MaterialIcon Kind="ChartDonut" Width="24" Height="24"
+          <mi:MaterialIcon Kind="ChartDonut" Width="28" Height="28"
                            Foreground="{DynamicResource GoldAccentBrush}" />
           <TextBlock Text="{loc:Translate LuckySpinTitle}"
-                     FontSize="20" FontWeight="Bold"
+                     FontSize="24" FontWeight="Bold"
                      Foreground="{DynamicResource GoldAccentBrush}"
                      AutomationProperties.AutomationId="LuckySpin_Title" />
         </StackPanel>
@@ -41,12 +41,14 @@
         <Border Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="12" Padding="12,8"
                 HorizontalAlignment="Center"
+                BoxShadow="0 2 8 0 #25000000"
+                BorderBrush="#40FFD700" BorderThickness="1"
                 AutomationProperties.AutomationId="LuckySpin_CoinBadge">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18"
+            <mi:MaterialIcon Kind="CircleMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource GoldAccentBrush}" />
             <TextBlock Text="{Binding CoinsText}"
-                       FontSize="16" FontWeight="SemiBold"
+                       FontSize="17" FontWeight="Bold"
                        Foreground="{DynamicResource GoldAccentBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
@@ -54,16 +56,23 @@
 
         <!-- Ergebnis-Anzeige -->
         <Border IsVisible="{Binding ShowResult}"
-                Background="#33FFD700"
-                CornerRadius="12" Padding="12,10"
+                CornerRadius="12" Padding="14,12"
                 HorizontalAlignment="Stretch"
+                BoxShadow="0 2 8 0 #25000000"
+                BorderBrush="#40FFD700" BorderThickness="1"
                 AutomationProperties.AutomationId="LuckySpin_Result">
-          <StackPanel Spacing="4" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="Star" Width="28" Height="28"
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#30FFD700" Offset="0" />
+              <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Spacing="6" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="Star" Width="32" Height="32"
                              Foreground="{DynamicResource GoldAccentBrush}"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{Binding ResultText}"
-                       FontSize="16" FontWeight="Bold"
+                       FontSize="20" FontWeight="Bold"
                        Foreground="{DynamicResource GoldAccentBrush}"
                        HorizontalAlignment="Center"
                        TextAlignment="Center" />
@@ -71,45 +80,53 @@
         </Border>
 
         <!-- Spin / Collect Button -->
-        <Button Classes="Primary GameButton"
-                Command="{Binding SpinWheelCommand}"
-                IsVisible="{Binding !ShowResult}"
-                IsEnabled="{Binding CanSpin}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Height="52"
-                Background="#FFD700"
-                AutomationProperties.AutomationId="LuckySpin_BtnSpin">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="Play" Width="20" Height="20"
-                             Foreground="#1A1A2A"
-                             IsVisible="{Binding IsFreeSpinAvailable}" />
-            <mi:MaterialIcon Kind="Video" Width="20" Height="20"
-                             Foreground="#1A1A2A"
-                             IsVisible="{Binding !IsFreeSpinAvailable}" />
-            <TextBlock Text="{Binding SpinButtonText}"
-                       FontSize="16" FontWeight="Bold"
-                       Foreground="#1A1A2A" />
-          </StackPanel>
-        </Button>
+        <Panel MinHeight="56" IsVisible="{Binding !ShowResult}">
+          <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.6" ButtonSeed="80" />
+          <Button Classes="Primary GameButton"
+                  Command="{Binding SpinWheelCommand}"
+                  IsEnabled="{Binding CanSpin}"
+                  Background="Transparent"
+                  Foreground="White"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Height="56"
+                  AutomationProperties.AutomationId="LuckySpin_BtnSpin">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Play" Width="22" Height="22"
+                               Foreground="#1A1A2A"
+                               IsVisible="{Binding IsFreeSpinAvailable}" />
+              <mi:MaterialIcon Kind="Video" Width="22" Height="22"
+                               Foreground="#1A1A2A"
+                               IsVisible="{Binding !IsFreeSpinAvailable}" />
+              <TextBlock Text="{Binding SpinButtonText}"
+                         FontSize="17" FontWeight="Bold"
+                         Foreground="#1A1A2A" />
+            </StackPanel>
+          </Button>
+        </Panel>
 
         <!-- Collect Button (nach Spin) -->
-        <Button Classes="Primary GameButton"
-                Command="{Binding CollectRewardCommand}"
-                IsVisible="{Binding ShowResult}"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Height="52"
-                Background="#22C55E"
-                AutomationProperties.AutomationId="LuckySpin_BtnCollect">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="CheckCircle" Width="20" Height="20"
-                             Foreground="White" />
-            <TextBlock Text="{Binding SpinButtonText}"
-                       FontSize="16" FontWeight="Bold"
-                       Foreground="White" />
-          </StackPanel>
-        </Button>
+        <Panel MinHeight="56" IsVisible="{Binding ShowResult}">
+          <controls:GameButtonCanvas ButtonColor="#22C55E" DamageLevel="0.3" ButtonSeed="81" />
+          <Button Classes="Primary GameButton"
+                  Command="{Binding CollectRewardCommand}"
+                  Background="Transparent"
+                  Foreground="White"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  Height="56"
+                  AutomationProperties.AutomationId="LuckySpin_BtnCollect">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="CheckCircle" Width="22" Height="22"
+                               Foreground="White" />
+              <TextBlock Text="{Binding SpinButtonText}"
+                         FontSize="17" FontWeight="Bold"
+                         Foreground="White" />
+            </StackPanel>
+          </Button>
+        </Panel>
 
         <!-- Total Spins -->
         <TextBlock Text="{Binding TotalSpinsText}"
@@ -118,7 +135,7 @@
                    HorizontalAlignment="Center"
                    AutomationProperties.AutomationId="LuckySpin_TxtTotal" />
 
-        <!-- Zurück Button -->
+        <!-- Zurueck Button -->
         <Button Classes="Secondary GameButton"
                 Command="{Binding GoBackCommand}"
                 HorizontalAlignment="Stretch"
@@ -126,10 +143,10 @@
                 MinHeight="48"
                 AutomationProperties.AutomationId="LuckySpin_BtnBack">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="16" Height="16"
+            <mi:MaterialIcon Kind="ArrowLeft" Width="18" Height="18"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate Back}"
-                       FontSize="13"
+                       FontSize="14"
                        Foreground="{DynamicResource TextSecondaryBrush}" />
           </StackPanel>
         </Button>

@@ -3,20 +3,13 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.SettingsView"
              x:DataType="vm:SettingsViewModel">
 
-  <!-- Gradient Background -->
+  <!-- Animierter Menü-Hintergrund -->
   <Panel AutomationProperties.AutomationId="Settings_Root">
-    <Border>
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="{DynamicResource GradientStartColor}" Offset="0" />
-          <GradientStop Color="{DynamicResource GradientMidColor}" Offset="0.5" />
-          <GradientStop Color="{DynamicResource GradientEndColor}" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
-    </Border>
+    <controls:MenuBackgroundCanvas />
 
     <Grid RowDefinitions="Auto,*">
 
@@ -60,16 +53,18 @@
           <!-- Controls + Sound: Side by Side -->
           <Grid ColumnDefinitions="*,*">
 
-            <!-- Controls Section -->
+            <!-- Controls Section - Blauer Top-Border -->
             <Border AutomationProperties.AutomationId="Settings_ControlsSection"
-                    Grid.Column="0" Classes="SettingsCard" Margin="0,0,6,0">
+                    Grid.Column="0" Classes="SettingsCard" Margin="0,0,6,0"
+                    BorderThickness="0,3,0,0" BorderBrush="#3B82F6"
+                    BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Gamepad" Width="20" Height="20"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
+                  <mi:MaterialIcon Kind="Gamepad" Width="22" Height="22"
+                                   Foreground="#3B82F6" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtControlsTitle"
                              Text="{loc:Translate ControlsSection}"
-                             FontSize="16" FontWeight="Bold"
+                             FontSize="17" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
 
@@ -156,16 +151,18 @@
               </StackPanel>
             </Border>
 
-            <!-- Sound Section -->
+            <!-- Sound Section - Grüner Top-Border -->
             <Border AutomationProperties.AutomationId="Settings_SoundSection"
-                    Grid.Column="1" Classes="SettingsCard" Margin="6,0,0,0">
+                    Grid.Column="1" Classes="SettingsCard" Margin="6,0,0,0"
+                    BorderThickness="0,3,0,0" BorderBrush="#22C55E"
+                    BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="VolumeHigh" Width="20" Height="20"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
+                  <mi:MaterialIcon Kind="VolumeHigh" Width="22" Height="22"
+                                   Foreground="#22C55E" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtSoundTitle"
                              Text="{loc:Translate SoundSection}"
-                             FontSize="16" FontWeight="Bold"
+                             FontSize="17" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
 
@@ -241,16 +238,18 @@
 
           </Grid>
 
-          <!-- Visual Style Section -->
+          <!-- Visual Style Section - Violetter Top-Border -->
           <Border AutomationProperties.AutomationId="Settings_VisualSection"
-                  Classes="SettingsCard">
+                  Classes="SettingsCard"
+                  BorderThickness="0,3,0,0" BorderBrush="#8B5CF6"
+                  BoxShadow="0 2 8 0 #25000000">
             <StackPanel Spacing="12">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="PaletteOutline" Width="20" Height="20"
-                                 Foreground="{DynamicResource PrimaryBrush}" />
+                <mi:MaterialIcon Kind="PaletteOutline" Width="22" Height="22"
+                                 Foreground="#8B5CF6" />
                 <TextBlock AutomationProperties.AutomationId="Settings_TxtVisualTitle"
                            Text="{Binding VisualStyleText}"
-                           FontSize="16" FontWeight="Bold"
+                           FontSize="17" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
@@ -384,16 +383,18 @@
             </StackPanel>
           </Border>
 
-          <!-- Google Play Games Section -->
+          <!-- Google Play Games Section - Grüner Top-Border -->
           <Border AutomationProperties.AutomationId="Settings_PlayGamesSection"
-                  Classes="SettingsCard">
+                  Classes="SettingsCard"
+                  BorderThickness="0,3,0,0" BorderBrush="#34A853"
+                  BoxShadow="0 2 8 0 #25000000">
             <StackPanel Spacing="12">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="GooglePlay" Width="20" Height="20"
+                <mi:MaterialIcon Kind="GooglePlay" Width="22" Height="22"
                                  Foreground="#34A853" />
                 <TextBlock AutomationProperties.AutomationId="Settings_TxtPlayGamesTitle"
                            Text="{loc:Translate PlayGamesSection}"
-                           FontSize="16" FontWeight="Bold"
+                           FontSize="17" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
@@ -426,42 +427,49 @@
 
               <!-- Buttons (nur wenn eingeloggt) -->
               <Grid ColumnDefinitions="*,*" IsVisible="{Binding IsPlayGamesSignedIn}">
-                <Button AutomationProperties.AutomationId="Settings_BtnLeaderboards"
-                        Grid.Column="0"
-                        Classes="Secondary"
-                        Command="{Binding ShowLeaderboardsCommand}"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center"
-                        Margin="0,0,4,0">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" />
-                    <TextBlock Text="{loc:Translate ShowLeaderboards}" FontSize="12" />
-                  </StackPanel>
-                </Button>
-                <Button AutomationProperties.AutomationId="Settings_BtnGpgsAchievements"
-                        Grid.Column="1"
-                        Classes="Secondary"
-                        Command="{Binding ShowGpgsAchievementsCommand}"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center"
-                        Margin="4,0,0,0">
-                  <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="Medal" Width="16" Height="16" />
-                    <TextBlock Text="{loc:Translate ShowGpgsAchievements}" FontSize="12" />
-                  </StackPanel>
-                </Button>
+                <Panel Grid.Column="0" MinHeight="36" Margin="0,0,4,0">
+                  <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="160" />
+                  <Button AutomationProperties.AutomationId="Settings_BtnLeaderboards"
+                          Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding ShowLeaderboardsCommand}"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <mi:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" />
+                      <TextBlock Text="{loc:Translate ShowLeaderboards}" FontSize="12" />
+                    </StackPanel>
+                  </Button>
+                </Panel>
+                <Panel Grid.Column="1" MinHeight="36" Margin="4,0,0,0">
+                  <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="161" />
+                  <Button AutomationProperties.AutomationId="Settings_BtnGpgsAchievements"
+                          Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding ShowGpgsAchievementsCommand}"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <mi:MaterialIcon Kind="Medal" Width="16" Height="16" />
+                      <TextBlock Text="{loc:Translate ShowGpgsAchievements}" FontSize="12" />
+                    </StackPanel>
+                  </Button>
+                </Panel>
               </Grid>
             </StackPanel>
           </Border>
 
-          <!-- Cloud Save -->
-          <Border Classes="SettingsCard" Margin="0,0,0,12">
+          <!-- Cloud Save - Cyan Top-Border -->
+          <Border Classes="SettingsCard"
+                  BorderThickness="0,3,0,0" BorderBrush="#00BCD4"
+                  BoxShadow="0 2 8 0 #25000000"
+                  Margin="0,0,0,0">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="CloudSync" Width="20" Height="20"
-                                 Foreground="{DynamicResource AccentBrush}" />
+                <mi:MaterialIcon Kind="CloudSync" Width="22" Height="22"
+                                 Foreground="#00BCD4" />
                 <TextBlock Text="{Binding CloudSaveTitle}"
-                           FontSize="16" FontWeight="SemiBold"
+                           FontSize="17" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
               </StackPanel>
 
@@ -483,7 +491,7 @@
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <TextBlock Text="{Binding CloudSaveLocation}"
                            FontSize="11" FontWeight="SemiBold"
-                           Foreground="{DynamicResource AccentBrush}" />
+                           Foreground="#00BCD4" />
                 <TextBlock Text="{Binding CloudSyncStatus}"
                            FontSize="11"
                            Foreground="{DynamicResource TextMutedBrush}" />
@@ -492,28 +500,32 @@
               <!-- Sync Buttons -->
               <StackPanel Orientation="Horizontal" Spacing="8"
                           IsVisible="{Binding CloudSaveEnabled}">
-                <Button Classes="Secondary GameButton"
-                        Command="{Binding SyncNowCommand}"
-                        IsEnabled="{Binding !IsCloudSyncing}"
-                        Height="32" Padding="12,0">
-                  <StackPanel Orientation="Horizontal" Spacing="4">
-                    <mi:MaterialIcon Kind="CloudUpload" Width="16" Height="16"
-                                     Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="{Binding CloudSaveSyncText}" FontSize="12"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                  </StackPanel>
-                </Button>
-                <Button Classes="Secondary GameButton"
-                        Command="{Binding DownloadFromCloudCommand}"
-                        IsEnabled="{Binding !IsCloudSyncing}"
-                        Height="32" Padding="12,0">
-                  <StackPanel Orientation="Horizontal" Spacing="4">
-                    <mi:MaterialIcon Kind="CloudDownload" Width="16" Height="16"
-                                     Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="{Binding CloudSaveDownloadText}" FontSize="12"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                  </StackPanel>
-                </Button>
+                <Panel MinHeight="32">
+                  <controls:GameButtonCanvas ButtonColor="#2196F3" DamageLevel="0.3" ButtonSeed="162" />
+                  <Button Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding SyncNowCommand}"
+                          IsEnabled="{Binding !IsCloudSyncing}"
+                          Height="32" Padding="12,0">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <mi:MaterialIcon Kind="CloudUpload" Width="16" Height="16" />
+                      <TextBlock Text="{Binding CloudSaveSyncText}" FontSize="12" />
+                    </StackPanel>
+                  </Button>
+                </Panel>
+                <Panel MinHeight="32">
+                  <controls:GameButtonCanvas ButtonColor="#2196F3" DamageLevel="0.3" ButtonSeed="163" />
+                  <Button Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding DownloadFromCloudCommand}"
+                          IsEnabled="{Binding !IsCloudSyncing}"
+                          Height="32" Padding="12,0">
+                    <StackPanel Orientation="Horizontal" Spacing="4">
+                      <mi:MaterialIcon Kind="CloudDownload" Width="16" Height="16" />
+                      <TextBlock Text="{Binding CloudSaveDownloadText}" FontSize="12" />
+                    </StackPanel>
+                  </Button>
+                </Panel>
               </StackPanel>
             </StackPanel>
           </Border>
@@ -521,16 +533,18 @@
           <!-- Language + Premium: Side by Side -->
           <Grid ColumnDefinitions="*,*">
 
-            <!-- Language Section -->
+            <!-- Language Section - Blauer Top-Border -->
             <Border AutomationProperties.AutomationId="Settings_LanguageSection"
-                    Grid.Column="0" Classes="SettingsCard" Margin="0,0,6,0">
+                    Grid.Column="0" Classes="SettingsCard" Margin="0,0,6,0"
+                    BorderThickness="0,3,0,0" BorderBrush="#3B82F6"
+                    BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Translate" Width="20" Height="20"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
+                  <mi:MaterialIcon Kind="Translate" Width="22" Height="22"
+                                   Foreground="#3B82F6" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtLanguageTitle"
                              Text="{loc:Translate LanguageSection}"
-                             FontSize="16" FontWeight="Bold"
+                             FontSize="17" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
 
@@ -549,17 +563,25 @@
               </StackPanel>
             </Border>
 
-            <!-- Premium Section -->
+            <!-- Premium Section - Goldener Top-Border + Gradient -->
             <Border AutomationProperties.AutomationId="Settings_PremiumSection"
-                    Grid.Column="1" Classes="SettingsCard" Margin="6,0,0,0">
+                    Grid.Column="1" Classes="SettingsCard" Margin="6,0,0,0"
+                    BorderThickness="0,3,0,0" BorderBrush="#FFD700"
+                    BoxShadow="0 2 8 0 #25000000">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                  <GradientStop Color="#15FFD700" Offset="0" />
+                  <GradientStop Color="Transparent" Offset="0.5" />
+                </LinearGradientBrush>
+              </Border.Background>
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
-                                   Foreground="Gold" />
+                  <mi:MaterialIcon Kind="Crown" Width="22" Height="22"
+                                   Foreground="#FFD700" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtPremiumTitle"
                              Text="{loc:Translate PremiumSection}"
-                             FontSize="16" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}" />
+                             FontSize="17" FontWeight="Bold"
+                             Foreground="#FFD700" />
                 </StackPanel>
 
                 <!-- Premium Status -->
@@ -614,30 +636,35 @@
                 </StackPanel>
 
                 <!-- Buy Premium (mit Preis) -->
-                <Button AutomationProperties.AutomationId="Settings_BtnBuyPremium"
-                        Classes="Primary"
-                        Background="Gold"
-                        Command="{Binding BuyPremiumCommand}"
-                        IsVisible="{Binding !IsPremium}"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center"
-                        Padding="12,10">
-                  <StackPanel Orientation="Horizontal" Spacing="8"
-                              HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
-                                     Foreground="#1A1A2A" />
-                    <TextBlock Text="{loc:Translate BuyPremium}"
-                               FontSize="16" FontWeight="Bold"
-                               Foreground="#1A1A2A" />
-                  </StackPanel>
-                </Button>
+                <Panel MinHeight="44" IsVisible="{Binding !IsPremium}">
+                  <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.6" ButtonSeed="164" />
+                  <Button AutomationProperties.AutomationId="Settings_BtnBuyPremium"
+                          Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding BuyPremiumCommand}"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center"
+                          Padding="12,10">
+                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
+                                       Foreground="White" />
+                      <TextBlock Text="{loc:Translate BuyPremium}"
+                                 FontSize="16" FontWeight="Bold"
+                                 Foreground="White" />
+                    </StackPanel>
+                  </Button>
+                </Panel>
 
                 <!-- Restore Purchases -->
-                <Button AutomationProperties.AutomationId="Settings_BtnRestore"
-                        Content="{Binding RestoreButtonText}"
-                        Classes="Secondary"
-                        Command="{Binding RestorePurchasesCommand}"
-                        HorizontalAlignment="Left" />
+                <Panel MinHeight="36" HorizontalAlignment="Left">
+                  <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="165" />
+                  <Button AutomationProperties.AutomationId="Settings_BtnRestore"
+                          Content="{Binding RestoreButtonText}"
+                          Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding RestorePurchasesCommand}" />
+                </Panel>
               </StackPanel>
             </Border>
 
@@ -646,51 +673,60 @@
           <!-- Data + About: Side by Side -->
           <Grid ColumnDefinitions="*,*">
 
-            <!-- Data Section -->
+            <!-- Data Section - behält roten Border -->
             <Border AutomationProperties.AutomationId="Settings_DataSection"
                     Grid.Column="0" Classes="SettingsCard" Margin="0,0,6,0"
                     BorderBrush="{DynamicResource ErrorBrush}"
-                    BorderThickness="2">
+                    BorderThickness="2"
+                    BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="AlertCircle" Width="20" Height="20"
+                  <mi:MaterialIcon Kind="AlertCircle" Width="22" Height="22"
                                    Foreground="{DynamicResource ErrorBrush}" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtDataTitle"
                              Text="{loc:Translate DataSection}"
-                             FontSize="16" FontWeight="Bold"
+                             FontSize="17" FontWeight="Bold"
                              Foreground="{DynamicResource ErrorBrush}" />
                 </StackPanel>
 
-                <Button AutomationProperties.AutomationId="Settings_BtnResetProgress"
-                        Content="{loc:Translate ResetProgress}"
-                        Classes="Primary"
-                        Background="{DynamicResource ErrorBrush}"
-                        Command="{Binding ResetProgressCommand}"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center"
-                        FontSize="14" />
+                <Panel MinHeight="36">
+                  <controls:GameButtonCanvas ButtonColor="#F44336" DamageLevel="0.7" ButtonSeed="166" />
+                  <Button AutomationProperties.AutomationId="Settings_BtnResetProgress"
+                          Content="{loc:Translate ResetProgress}"
+                          Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding ResetProgressCommand}"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center"
+                          FontSize="14" />
+                </Panel>
 
-                <Button AutomationProperties.AutomationId="Settings_BtnClearHighScores"
-                        Content="{loc:Translate ClearHighScores}"
-                        Classes="Primary"
-                        Background="{DynamicResource ErrorBrush}"
-                        Command="{Binding ClearHighScoresCommand}"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center"
-                        FontSize="14" />
+                <Panel MinHeight="36">
+                  <controls:GameButtonCanvas ButtonColor="#F44336" DamageLevel="0.7" ButtonSeed="167" />
+                  <Button AutomationProperties.AutomationId="Settings_BtnClearHighScores"
+                          Content="{loc:Translate ClearHighScores}"
+                          Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding ClearHighScoresCommand}"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center"
+                          FontSize="14" />
+                </Panel>
               </StackPanel>
             </Border>
 
-            <!-- About Section -->
+            <!-- About Section - Grauer Top-Border -->
             <Border AutomationProperties.AutomationId="Settings_AboutSection"
-                    Grid.Column="1" Classes="SettingsCard" Margin="6,0,0,0">
+                    Grid.Column="1" Classes="SettingsCard" Margin="6,0,0,0"
+                    BorderThickness="0,3,0,0" BorderBrush="#6B7280"
+                    BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="InformationOutline" Width="20" Height="20"
-                                   Foreground="{DynamicResource PrimaryBrush}" />
+                  <mi:MaterialIcon Kind="InformationOutline" Width="22" Height="22"
+                                   Foreground="#6B7280" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtAboutTitle"
                              Text="{loc:Translate AboutSection}"
-                             FontSize="16" FontWeight="Bold"
+                             FontSize="17" FontWeight="Bold"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
                 </StackPanel>
 
@@ -711,12 +747,16 @@
                            FontSize="12"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
 
-                <Button AutomationProperties.AutomationId="Settings_BtnPrivacy"
-                        Content="{loc:Translate PrivacyPolicy}"
-                        Classes="Secondary"
-                        Command="{Binding OpenPrivacyPolicyCommand}"
-                        HorizontalAlignment="Stretch"
-                        HorizontalContentAlignment="Center" />
+                <Panel MinHeight="36">
+                  <controls:GameButtonCanvas ButtonColor="#607D8B" DamageLevel="0.2" ButtonSeed="168" />
+                  <Button AutomationProperties.AutomationId="Settings_BtnPrivacy"
+                          Content="{loc:Translate PrivacyPolicy}"
+                          Background="Transparent"
+                          Foreground="White"
+                          Command="{Binding OpenPrivacyPolicyCommand}"
+                          HorizontalAlignment="Stretch"
+                          HorizontalContentAlignment="Center" />
+                </Panel>
               </StackPanel>
             </Border>
 

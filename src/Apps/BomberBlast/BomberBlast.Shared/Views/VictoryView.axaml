@@ -75,27 +75,49 @@
 
         <!-- Untertitel -->
         <TextBlock Text="{Binding SubtitleText}"
-                   FontSize="18"
+                   FontSize="20"
+                   FontWeight="SemiBold"
                    Foreground="{DynamicResource TextSecondaryBrush}"
                    HorizontalAlignment="Center"
                    TextWrapping="Wrap"
                    TextAlignment="Center"
                    AutomationProperties.AutomationId="Victory_TxtSubtitle" />
 
-        <!-- Sterne-Anzeige -->
-        <Border Background="{DynamicResource SurfaceBrush}"
-                CornerRadius="12"
-                Padding="20,12"
+        <!-- Styled Separator -->
+        <Border Height="2" CornerRadius="1"
                 HorizontalAlignment="Center"
-                BoxShadow="0 4 12 0 #40000000"
+                Width="180"
+                Margin="0,4">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+              <GradientStop Color="#00FFD700" Offset="0" />
+              <GradientStop Color="#60FFD700" Offset="0.5" />
+              <GradientStop Color="#00FFD700" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+        </Border>
+
+        <!-- Sterne-Anzeige -->
+        <Border CornerRadius="12"
+                Padding="24,14"
+                HorizontalAlignment="Center"
+                BoxShadow="0 6 16 0 #50000000"
+                BorderBrush="#40FFD700"
+                BorderThickness="1"
                 AutomationProperties.AutomationId="Victory_StarsBadge">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#30FFD700" Offset="0" />
+              <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
           <StackPanel Spacing="8" HorizontalAlignment="Center">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Star" Width="28" Height="28"
+              <mi:MaterialIcon Kind="Star" Width="32" Height="32"
                                Foreground="{DynamicResource GoldAccentBrush}" />
               <TextBlock Text="{Binding StarsText}"
-                         FontSize="22" FontWeight="Bold"
+                         FontSize="26" FontWeight="ExtraBold"
                          Foreground="{DynamicResource GoldAccentBrush}"
                          VerticalAlignment="Center"
                          AutomationProperties.AutomationId="Victory_TxtStars" />
@@ -121,40 +143,62 @@
                    TextAlignment="Center"
                    AutomationProperties.AutomationId="Victory_TxtThanks" />
 
-        <!-- Hauptmenue Button -->
-        <Button Command="{Binding GoToMainMenuCommand}"
-                Classes="Primary GameButton"
-                Background="{DynamicResource GoldAccentBrush}"
-                FontSize="20"
-                Height="56"
+        <!-- Styled Separator -->
+        <Border Height="2" CornerRadius="1"
                 HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                AutomationProperties.AutomationId="Victory_BtnMainMenu">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="Home" Width="24" Height="24"
-                             Foreground="{DynamicResource BackgroundBrush}" />
-            <TextBlock Text="{loc:Translate MainMenu}"
-                       FontSize="20" FontWeight="Bold"
-                       Foreground="{DynamicResource BackgroundBrush}" />
-          </StackPanel>
-        </Button>
+                Margin="20,4">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+              <GradientStop Color="#00FFD700" Offset="0" />
+              <GradientStop Color="#60FFD700" Offset="0.5" />
+              <GradientStop Color="#00FFD700" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+        </Border>
+
+        <!-- Hauptmenue Button -->
+        <Panel MinHeight="56">
+          <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.6" ButtonSeed="50" />
+          <Button Command="{Binding GoToMainMenuCommand}"
+                  Classes="Primary GameButton"
+                  Background="Transparent"
+                  Foreground="White"
+                  FontSize="20"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Victory_BtnMainMenu">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Home" Width="24" Height="24"
+                               Foreground="White" />
+              <TextBlock Text="{loc:Translate MainMenu}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="White" />
+            </StackPanel>
+          </Button>
+        </Panel>
 
         <!-- Shop Button -->
-        <Button Command="{Binding GoToShopCommand}"
-                Classes="Secondary GameButton"
-                FontSize="18"
-                Height="48"
-                HorizontalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                AutomationProperties.AutomationId="Victory_BtnShop">
-          <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="Cart" Width="20" Height="20"
-                             Foreground="White" />
-            <TextBlock Text="{loc:Translate ShopTitle}"
-                       FontSize="18"
-                       Foreground="White" />
-          </StackPanel>
-        </Button>
+        <Panel MinHeight="48">
+          <controls:GameButtonCanvas ButtonColor="#555555" DamageLevel="0.3" ButtonSeed="51" />
+          <Button Command="{Binding GoToShopCommand}"
+                  Classes="Secondary GameButton"
+                  Background="Transparent"
+                  Foreground="White"
+                  FontSize="18"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  VerticalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Victory_BtnShop">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="Cart" Width="20" Height="20"
+                               Foreground="White" />
+              <TextBlock Text="{loc:Translate ShopTitle}"
+                         FontSize="18"
+                         Foreground="White" />
+            </StackPanel>
+          </Button>
+        </Panel>
 
       </StackPanel>
 

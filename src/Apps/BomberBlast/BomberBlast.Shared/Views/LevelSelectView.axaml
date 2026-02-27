@@ -3,20 +3,13 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.LevelSelectView"
              x:DataType="vm:LevelSelectViewModel">
 
-  <!-- Gradient Background -->
+  <!-- Animierter Menü-Hintergrund -->
   <Panel AutomationProperties.AutomationId="LevelSelect_Root">
-    <Border>
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-          <GradientStop Color="{DynamicResource GradientStartColor}" Offset="0" />
-          <GradientStop Color="{DynamicResource GradientMidColor}" Offset="0.5" />
-          <GradientStop Color="{DynamicResource GradientEndColor}" Offset="1" />
-        </LinearGradientBrush>
-      </Border.Background>
-    </Border>
+    <controls:MenuBackgroundCanvas />
 
     <Grid RowDefinitions="Auto,*,Auto">
 
@@ -42,16 +35,17 @@
                              Foreground="{DynamicResource TextPrimaryBrush}" />
             <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtTitle"
                        Text="{loc:Translate SelectLevel}"
-                       FontSize="20" FontWeight="Bold"
+                       FontSize="22" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
           </StackPanel>
 
-          <!-- Coin-Badge -->
+          <!-- Coin-Badge mit goldenem Rand -->
           <Border Grid.Column="2"
                   AutomationProperties.AutomationId="LevelSelect_CoinBadge"
                   Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="16"
-                  Padding="12,6">
+                  Padding="12,6"
+                  BorderThickness="1" BorderBrush="#40FFD700">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18"
                                Foreground="#FFD700" />
@@ -88,8 +82,8 @@
                         Background="{Binding HeaderBackgroundBrush}">
                   <StackPanel Spacing="4">
 
-                    <!-- Welt-Header -->
-                    <Grid ColumnDefinitions="Auto,*,Auto">
+                    <!-- Welt-Header mit subtiler Trennung -->
+                    <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,2">
                       <!-- Icon + Name -->
                       <StackPanel Grid.Column="0"
                                   Orientation="Horizontal" Spacing="8"
@@ -98,14 +92,14 @@
                                          Width="20" Height="20"
                                          Foreground="{Binding HeaderTextBrush}" />
                         <TextBlock Text="{Binding WorldLockText}"
-                                   FontSize="15" FontWeight="SemiBold"
+                                   FontSize="16" FontWeight="SemiBold"
                                    Foreground="{Binding HeaderTextBrush}" />
                       </StackPanel>
 
                       <!-- Sterne-Fortschritt (rechts) -->
                       <TextBlock Grid.Column="2"
                                  Text="{Binding ProgressText}"
-                                 FontSize="13"
+                                 FontSize="13" FontWeight="SemiBold"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  VerticalAlignment="Center" />
                     </Grid>
@@ -124,7 +118,7 @@
                                   Background="{Binding BackgroundColor}"
                                   BorderBrush="#40FFFFFF"
                                   BorderThickness="1"
-                                  MinHeight="52">
+                                  MinHeight="56">
                             <Button Command="{Binding SelectCommand}"
                                     Classes="GameButton"
                                     Padding="0"
@@ -134,10 +128,10 @@
                                     HorizontalContentAlignment="Stretch"
                                     VerticalContentAlignment="Stretch">
                               <Grid RowDefinitions="*,Auto,Auto">
-                                <!-- Level-Nummer -->
+                                <!-- Level-Nummer (größer für bessere Lesbarkeit) -->
                                 <TextBlock Grid.Row="0"
                                            Text="{Binding LevelNumber}"
-                                           FontSize="18"
+                                           FontSize="20"
                                            FontWeight="Bold"
                                            Foreground="{Binding TextBrush}"
                                            HorizontalAlignment="Center"
@@ -202,6 +196,8 @@
       <Border Grid.Row="2"
               AutomationProperties.AutomationId="LevelSelect_Footer"
               Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="12,12,0,0"
+              BoxShadow="0 -2 8 0 #25000000"
               Padding="12,8">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
           <TextBlock AutomationProperties.AutomationId="LevelSelect_TxtProgress"
@@ -259,18 +255,26 @@
                      TextAlignment="Center" />
 
           <StackPanel Spacing="8">
-            <Button Classes="Filled GameButton"
-                    AutomationProperties.AutomationId="LevelSelect_BtnAcceptBoost"
-                    Command="{Binding AcceptBoostCommand}"
-                    HorizontalAlignment="Stretch"
-                    HorizontalContentAlignment="Center"
-                    Padding="16,12">
-              <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Flash" Width="20" Height="20" />
-                <TextBlock Text="{Binding BoostAcceptText}"
-                           FontSize="15" FontWeight="SemiBold" />
-              </StackPanel>
-            </Button>
+            <Panel MinHeight="48">
+              <controls:GameButtonCanvas ButtonColor="#00BCD4" DamageLevel="0.5" ButtonSeed="120" />
+              <Button Classes="Filled GameButton"
+                      AutomationProperties.AutomationId="LevelSelect_BtnAcceptBoost"
+                      Command="{Binding AcceptBoostCommand}"
+                      Background="Transparent"
+                      Foreground="White"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      VerticalContentAlignment="Center"
+                      Padding="16,12">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                  <mi:MaterialIcon Kind="Flash" Width="20" Height="20"
+                                   Foreground="White" />
+                  <TextBlock Text="{Binding BoostAcceptText}"
+                             FontSize="15" FontWeight="SemiBold"
+                             Foreground="White" />
+                </StackPanel>
+              </Button>
+            </Panel>
 
             <Button Classes="Text"
                     AutomationProperties.AutomationId="LevelSelect_BtnDeclineBoost"

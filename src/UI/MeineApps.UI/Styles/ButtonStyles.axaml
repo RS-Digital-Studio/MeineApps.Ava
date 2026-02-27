@@ -7,7 +7,7 @@
 
   <!-- Base Button Improvements -->
   <Style Selector="Button">
-    <Setter Property="Height" Value="{DynamicResource ButtonHeightMd}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightMd}" />
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusSm}" />
     <Setter Property="Padding" Value="16,0" />
     <Setter Property="FontWeight" Value="Medium" />
@@ -109,14 +109,14 @@
 
   <!-- Small Button -->
   <Style Selector="Button.Small">
-    <Setter Property="Height" Value="{DynamicResource ButtonHeightSm}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightSm}" />
     <Setter Property="Padding" Value="12,0" />
     <Setter Property="FontSize" Value="{DynamicResource FontSizeLabelMd}" />
   </Style>
 
   <!-- Large Button -->
   <Style Selector="Button.Large">
-    <Setter Property="Height" Value="{DynamicResource ButtonHeightLg}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightLg}" />
     <Setter Property="Padding" Value="24,0" />
     <Setter Property="FontSize" Value="{DynamicResource FontSizeBodyLg}" />
   </Style>

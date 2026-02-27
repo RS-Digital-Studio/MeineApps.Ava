@@ -116,6 +116,7 @@ var val = _prefs.Get<string>("key", "default");
 - `RelativeTimeConverter` - DateTime → "2 hours ago"
 - `StringTruncateConverter` - "Long text..." → "Long..."
 - `StringToColorBrushConverter` - "#RRGGBB" → SolidColorBrush (Gray Fallback, statische `Instance` Property)
+- `StringToColorConverter` - "#RRGGBB" → Color (Gray Fallback, für SolidColorBrush.Color Bindings mit Opacity)
 
 ## Behaviors
 

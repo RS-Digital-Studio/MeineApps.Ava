@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.WorkshopView"
              x:DataType="vm:WorkshopViewModel">
 
@@ -353,7 +354,7 @@
                       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
                         <!-- Tier-Farb-Punkt -->
                         <Border Width="10" Height="10" CornerRadius="5"
-                                Background="{Binding TierColorHex}"
+                                Background="{Binding TierColorHex, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                                 VerticalAlignment="Center" />
                         <TextBlock Grid.Column="1" Text="{Binding Name}"
                                    FontSize="12"

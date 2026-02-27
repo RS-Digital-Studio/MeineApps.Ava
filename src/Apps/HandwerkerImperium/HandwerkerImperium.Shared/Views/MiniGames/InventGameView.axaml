@@ -263,7 +263,7 @@
       <TextBlock AutomationProperties.AutomationId="Invent_Txt_Countdown"
                  Text="{Binding CountdownText}"
                  FontSize="72" FontWeight="Bold"
-                 Foreground="#BB86FC"
+                 Foreground="{StaticResource CraftGoldBrush}"
                  HorizontalAlignment="Center" VerticalAlignment="Center" />
     </Border>
 

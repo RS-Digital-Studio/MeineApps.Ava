@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.OrderView"
              x:DataType="vm:OrderViewModel"
              AutomationProperties.AutomationId="Order_Root">
@@ -97,7 +98,7 @@
                   <TextBlock Text="{Binding DifficultyText}"
                              AutomationProperties.AutomationId="Order_Txt_Difficulty"
                              FontSize="12" FontWeight="Bold"
-                             Foreground="{Binding DifficultyColor}" />
+                             Foreground="{Binding DifficultyColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}" />
                 </Border>
               </StackPanel>
             </StackPanel>

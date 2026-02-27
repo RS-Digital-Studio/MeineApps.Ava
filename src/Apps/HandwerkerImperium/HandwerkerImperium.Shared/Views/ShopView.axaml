@@ -3,6 +3,7 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.ShopView"
              x:DataType="vm:ShopViewModel">
 
@@ -326,7 +327,7 @@
             <DataTemplate x:DataType="vm:EquipmentShopItem">
               <Border Classes="Card" Margin="0,4" Padding="12"
                       BorderThickness="2"
-                      BorderBrush="{Binding RarityColor}"
+                      BorderBrush="{Binding RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                       AutomationProperties.AutomationId="Shop_Border_EquipmentItemCard">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                   <!-- Icon mit Seltenheits-Farbe -->
@@ -334,11 +335,11 @@
                           AutomationProperties.AutomationId="Shop_Border_EquipmentIconBg2"
                           VerticalAlignment="Center">
                     <Border.Background>
-                      <SolidColorBrush Color="{Binding RarityColor}" Opacity="0.2" />
+                      <SolidColorBrush Color="{Binding RarityColor, Converter={x:Static coreConv:StringToColorConverter.Instance}}" Opacity="0.2" />
                     </Border.Background>
                     <mi:MaterialIcon Kind="{Binding IconKind}" Width="24" Height="24"
                                      AutomationProperties.AutomationId="Shop_Icon_EquipmentItem"
-                                     Foreground="{Binding RarityColor}"
+                                     Foreground="{Binding RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
 
@@ -346,7 +347,7 @@
                   <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                     <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
                                AutomationProperties.AutomationId="Shop_Txt_EquipmentName"
-                               Foreground="{Binding RarityColor}" />
+                               Foreground="{Binding RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}" />
                     <TextBlock Text="{Binding BonusDescription}" FontSize="11"
                                AutomationProperties.AutomationId="Shop_Txt_EquipmentBonus"
                                Foreground="{DynamicResource TextSecondaryBrush}" />

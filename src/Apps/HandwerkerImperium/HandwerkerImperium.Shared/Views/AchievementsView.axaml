@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.AchievementsView"
              x:DataType="vm:AchievementsViewModel">
 
@@ -128,7 +129,7 @@
                   <!-- Icon -->
                   <Border Grid.RowSpan="3"
                           AutomationProperties.AutomationId="Achievements_Border_ItemIcon"
-                          Background="{Binding IconBackground}"
+                          Background="{Binding IconBackground, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                           CornerRadius="8"
                           Width="48" Height="48"
                           VerticalAlignment="Center">
@@ -145,7 +146,7 @@
                              AutomationProperties.AutomationId="Achievements_Txt_ItemTitle"
                              Text="{Binding Title}"
                              FontSize="14" FontWeight="Bold"
-                             Foreground="{Binding TitleColor}" />
+                             Foreground="{Binding TitleColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}" />
 
                   <!-- Reward / Checkmark -->
                   <TextBlock Grid.Column="2"

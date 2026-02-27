@@ -3,6 +3,7 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.StatisticsView"
              x:DataType="vm:StatisticsViewModel">
 
@@ -471,7 +472,7 @@
                           Opacity="{Binding DisplayOpacity}">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                       <!-- Icon -->
-                      <Border Background="{Binding IconBackground}"
+                      <Border Background="{Binding IconBackground, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                               AutomationProperties.AutomationId="Statistics_Border_ShopItemIcon"
                               CornerRadius="8"
                               Width="40" Height="40"

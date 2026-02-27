@@ -5,6 +5,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:HandwerkerImperium.Controls"
              xmlns:labs="using:Avalonia.Labs.Controls"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.WorkerProfileView"
              x:DataType="vm:WorkerProfileViewModel">
 
@@ -252,7 +253,7 @@
               <Border Grid.Column="0" CornerRadius="10" Padding="6,8"
                       MinHeight="90"
                       BorderThickness="2"
-                      BorderBrush="{Binding EquippedHelmet.RarityColor, FallbackValue=#444444, TargetNullValue=#444444}"
+                      BorderBrush="{Binding EquippedHelmet.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#444444, TargetNullValue=#444444}"
                       AutomationProperties.AutomationId="WorkerProfile_Border_SlotHelmet">
                 <Border.Background>
                   <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
@@ -260,7 +261,7 @@
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
                   <mi:MaterialIcon Kind="HardHat" Width="24" Height="24"
                                    HorizontalAlignment="Center"
-                                   Foreground="{Binding EquippedHelmet.RarityColor, FallbackValue=#666666, TargetNullValue=#666666}"
+                                   Foreground="{Binding EquippedHelmet.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#666666, TargetNullValue=#666666}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_SlotHelmet" />
                   <TextBlock Text="{loc:Translate Helmet}"
                              FontSize="10" FontWeight="SemiBold"
@@ -271,7 +272,7 @@
                   <TextBlock FontSize="9" TextAlignment="Center"
                              TextTrimming="CharacterEllipsis" MaxLines="1"
                              IsVisible="{Binding EquippedHelmet, Converter={x:Static ObjectConverters.IsNotNull}}"
-                             Foreground="{Binding EquippedHelmet.RarityColor, FallbackValue=#9E9E9E}"
+                             Foreground="{Binding EquippedHelmet.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#9E9E9E}"
                              Text="{Binding EquippedItemName}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotHelmetName" />
                   <TextBlock Text="{loc:Translate EquipmentEmpty}"
@@ -286,7 +287,7 @@
               <Border Grid.Column="1" CornerRadius="10" Padding="6,8"
                       MinHeight="90"
                       BorderThickness="2"
-                      BorderBrush="{Binding EquippedGloves.RarityColor, FallbackValue=#444444, TargetNullValue=#444444}"
+                      BorderBrush="{Binding EquippedGloves.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#444444, TargetNullValue=#444444}"
                       AutomationProperties.AutomationId="WorkerProfile_Border_SlotGloves">
                 <Border.Background>
                   <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
@@ -294,7 +295,7 @@
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
                   <mi:MaterialIcon Kind="HandWave" Width="24" Height="24"
                                    HorizontalAlignment="Center"
-                                   Foreground="{Binding EquippedGloves.RarityColor, FallbackValue=#666666, TargetNullValue=#666666}"
+                                   Foreground="{Binding EquippedGloves.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#666666, TargetNullValue=#666666}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_SlotGloves" />
                   <TextBlock Text="{loc:Translate Gloves}"
                              FontSize="10" FontWeight="SemiBold"
@@ -304,7 +305,7 @@
                   <TextBlock FontSize="9" TextAlignment="Center"
                              TextTrimming="CharacterEllipsis" MaxLines="1"
                              IsVisible="{Binding EquippedGloves, Converter={x:Static ObjectConverters.IsNotNull}}"
-                             Foreground="{Binding EquippedGloves.RarityColor, FallbackValue=#9E9E9E}"
+                             Foreground="{Binding EquippedGloves.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#9E9E9E}"
                              Text="{Binding EquippedItemName}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotGlovesName" />
                   <TextBlock Text="{loc:Translate EquipmentEmpty}"
@@ -319,7 +320,7 @@
               <Border Grid.Column="2" CornerRadius="10" Padding="6,8"
                       MinHeight="90"
                       BorderThickness="2"
-                      BorderBrush="{Binding EquippedBoots.RarityColor, FallbackValue=#444444, TargetNullValue=#444444}"
+                      BorderBrush="{Binding EquippedBoots.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#444444, TargetNullValue=#444444}"
                       AutomationProperties.AutomationId="WorkerProfile_Border_SlotBoots">
                 <Border.Background>
                   <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
@@ -327,7 +328,7 @@
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
                   <mi:MaterialIcon Kind="ShoeFormal" Width="24" Height="24"
                                    HorizontalAlignment="Center"
-                                   Foreground="{Binding EquippedBoots.RarityColor, FallbackValue=#666666, TargetNullValue=#666666}"
+                                   Foreground="{Binding EquippedBoots.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#666666, TargetNullValue=#666666}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_SlotBoots" />
                   <TextBlock Text="{loc:Translate Boots}"
                              FontSize="10" FontWeight="SemiBold"
@@ -337,7 +338,7 @@
                   <TextBlock FontSize="9" TextAlignment="Center"
                              TextTrimming="CharacterEllipsis" MaxLines="1"
                              IsVisible="{Binding EquippedBoots, Converter={x:Static ObjectConverters.IsNotNull}}"
-                             Foreground="{Binding EquippedBoots.RarityColor, FallbackValue=#9E9E9E}"
+                             Foreground="{Binding EquippedBoots.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#9E9E9E}"
                              Text="{Binding EquippedItemName}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBootsName" />
                   <TextBlock Text="{loc:Translate EquipmentEmpty}"
@@ -352,7 +353,7 @@
               <Border Grid.Column="3" CornerRadius="10" Padding="6,8"
                       MinHeight="90"
                       BorderThickness="2"
-                      BorderBrush="{Binding EquippedBelt.RarityColor, FallbackValue=#444444, TargetNullValue=#444444}"
+                      BorderBrush="{Binding EquippedBelt.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#444444, TargetNullValue=#444444}"
                       AutomationProperties.AutomationId="WorkerProfile_Border_SlotBelt">
                 <Border.Background>
                   <SolidColorBrush Color="#1A1A2E" Opacity="0.6" />
@@ -360,7 +361,7 @@
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
                   <mi:MaterialIcon Kind="Wrench" Width="24" Height="24"
                                    HorizontalAlignment="Center"
-                                   Foreground="{Binding EquippedBelt.RarityColor, FallbackValue=#666666, TargetNullValue=#666666}"
+                                   Foreground="{Binding EquippedBelt.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#666666, TargetNullValue=#666666}"
                                    AutomationProperties.AutomationId="WorkerProfile_Icon_SlotBelt" />
                   <TextBlock Text="{loc:Translate Belt}"
                              FontSize="10" FontWeight="SemiBold"
@@ -370,7 +371,7 @@
                   <TextBlock FontSize="9" TextAlignment="Center"
                              TextTrimming="CharacterEllipsis" MaxLines="1"
                              IsVisible="{Binding EquippedBelt, Converter={x:Static ObjectConverters.IsNotNull}}"
-                             Foreground="{Binding EquippedBelt.RarityColor, FallbackValue=#9E9E9E}"
+                             Foreground="{Binding EquippedBelt.RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}, FallbackValue=#9E9E9E}"
                              Text="{Binding EquippedItemName}"
                              AutomationProperties.AutomationId="WorkerProfile_Txt_SlotBeltName" />
                   <TextBlock Text="{loc:Translate EquipmentEmpty}"

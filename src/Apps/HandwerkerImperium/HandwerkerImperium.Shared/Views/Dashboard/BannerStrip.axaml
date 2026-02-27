@@ -6,9 +6,8 @@
              x:DataType="vm:MainViewModel">
 
   <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                VerticalScrollBarVisibility="Disabled"
-                Padding="16,4">
-    <StackPanel Orientation="Horizontal" Spacing="8">
+                VerticalScrollBarVisibility="Disabled">
+    <StackPanel Orientation="Horizontal" Spacing="8" Margin="16,4">
 
       <!-- Rush-Chip (verfügbar, noch nicht aktiv) -->
       <Button IsVisible="{Binding CanActivateRush}"

@@ -101,7 +101,7 @@ public class Workshop
         get
         {
             decimal baseIncome = (decimal)Math.Pow(1.025, Level - 1);
-            return baseIncome * Type.GetBaseIncomeMultiplier();
+            return baseIncome * Type.GetBaseIncomeMultiplier() * GetMilestoneMultiplier();
         }
     }
 
@@ -146,6 +146,44 @@ public class Workshop
         decimal adjustedPenalty = basePenalty * (1m - totalResistance);
         return Math.Max(0.20m, 1m - adjustedPenalty); // Min 20% (Worker wird nie komplett nutzlos)
     }
+
+    /// <summary>
+    /// Multiplikator-Meilensteine bei bestimmten Workshop-Leveln.
+    /// Erzeugt "Bumpy Progression" (AdVenture-Capitalist-Pattern):
+    /// Vor einem Meilenstein verlangsamt es sich, danach explodiert das Einkommen.
+    /// Kumulativ: Lv1000 = 1.5 * 2 * 2 * 3 * 5 * 10 = 900x
+    /// </summary>
+    public decimal GetMilestoneMultiplier()
+    {
+        decimal mult = 1.0m;
+        if (Level >= 25) mult *= 1.5m;
+        if (Level >= 50) mult *= 2.0m;
+        if (Level >= 100) mult *= 2.0m;
+        if (Level >= 250) mult *= 3.0m;
+        if (Level >= 500) mult *= 5.0m;
+        if (Level >= 1000) mult *= 10.0m;
+        return mult;
+    }
+
+    /// <summary>
+    /// Prüft ob das aktuelle Level ein Multiplikator-Meilenstein ist.
+    /// </summary>
+    public static bool IsMilestoneLevel(int level) =>
+        level is 25 or 50 or 100 or 250 or 500 or 1000;
+
+    /// <summary>
+    /// Gibt den Multiplikator für ein bestimmtes Meilenstein-Level zurück.
+    /// </summary>
+    public static decimal GetMilestoneMultiplierForLevel(int level) => level switch
+    {
+        25 => 1.5m,
+        50 => 2.0m,
+        100 => 2.0m,
+        250 => 3.0m,
+        500 => 5.0m,
+        1000 => 10.0m,
+        _ => 1.0m
+    };
 
     /// <summary>
     /// Rent cost per hour (scales with level).

@@ -304,14 +304,18 @@ public class GameLoopService : IGameLoopService, IDisposable
                 grossIncome *= (1m + gm.ResearchEfficiencyBonus);
         }
 
-        // 3f. Hard-Cap: Gesamt-Einkommens-Multiplikator auf +200% begrenzen (3.0x)
-        // Betrifft: Prestige-Shop, Meisterwerkzeuge, Gilden-Boni, Research-Effizienz
-        // baseIncome ist state.TotalIncomePerSecond (enthält bereits Prestige-PermanentMultiplier)
+        // Soft-Cap: Diminishing Returns ab 2.0x Einkommens-Multiplikator
+        // Logarithmisch: Jeder Bonus bringt etwas, aber immer weniger.
+        // Beispiele: 3.0x→2.58x, 5.0x→3.17x, 10.0x→4.17x, 50.0x→6.64x
         if (state.TotalIncomePerSecond > 0)
         {
             decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
-            if (effectiveMultiplier > 3.0m)
-                grossIncome = state.TotalIncomePerSecond * 3.0m;
+            if (effectiveMultiplier > 2.0m)
+            {
+                decimal excess = effectiveMultiplier - 2.0m;
+                decimal softened = 2.0m + (decimal)Math.Log(1.0 + (double)excess, 2.0);
+                grossIncome = state.TotalIncomePerSecond * softened;
+            }
         }
 
         // 4. Net earnings (can be negative!)

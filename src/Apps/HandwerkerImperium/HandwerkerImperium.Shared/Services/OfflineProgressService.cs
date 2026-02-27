@@ -72,13 +72,16 @@ public class OfflineProgressService : IOfflineProgressService
         if (state.GuildMembership != null && state.GuildMembership.IncomeBonus > 0)
             grossIncome *= (1m + state.GuildMembership.IncomeBonus);
 
-        // Hard-Cap: Gesamt-Einkommens-Multiplikator auf +200% begrenzen (3.0x)
-        // Analog zum GameLoopService
+        // Soft-Cap: Diminishing Returns ab 2.0x (identisch mit GameLoopService)
         if (state.TotalIncomePerSecond > 0)
         {
             decimal effectiveMultiplier = grossIncome / state.TotalIncomePerSecond;
-            if (effectiveMultiplier > 3.0m)
-                grossIncome = state.TotalIncomePerSecond * 3.0m;
+            if (effectiveMultiplier > 2.0m)
+            {
+                decimal excess = effectiveMultiplier - 2.0m;
+                decimal softened = 2.0m + (decimal)Math.Log(1.0 + (double)excess, 2.0);
+                grossIncome = state.TotalIncomePerSecond * softened;
+            }
         }
 
         // === Kosten berechnen (wie GameLoop) ===
@@ -100,7 +103,13 @@ public class OfflineProgressService : IOfflineProgressService
 
         // Netto-Einkommen (mindestens 0 - offline kein Geld verlieren)
         decimal netPerSecond = Math.Max(0, grossIncome - costs);
-        decimal earnings = netPerSecond * (decimal)effectiveDuration.TotalSeconds;
+        // Gestaffelte Offline-Earnings: 100% erste 2h, 50% bis 6h, 25% danach
+        // Anreiz regelmäßig reinzuschauen (Egg Inc / Idle Miner Pattern)
+        decimal totalSeconds = (decimal)effectiveDuration.TotalSeconds;
+        decimal first2h = Math.Min(totalSeconds, 7200m);
+        decimal next4h = Math.Min(Math.Max(totalSeconds - 7200m, 0m), 14400m);
+        decimal remaining = Math.Max(totalSeconds - 21600m, 0m);
+        decimal earnings = netPerSecond * (first2h + next4h * 0.5m + remaining * 0.25m);
 
         // Saisonaler Multiplikator
         var month = DateTime.UtcNow.Month;

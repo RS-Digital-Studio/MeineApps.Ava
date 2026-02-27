@@ -11,6 +11,7 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              xmlns:dashboard="using:HandwerkerImperium.Views.Dashboard"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.DashboardView"
              x:DataType="vm:MainViewModel"
              AutomationProperties.AutomationId="Dashboard_Root">
@@ -123,7 +124,7 @@
                            AutomationProperties.AutomationId="Dashboard_Txt_Income" />
                 <TextBlock Text="{Binding NetIncomeHeaderDisplay}"
                            FontSize="11" Opacity="0.8"
-                           Foreground="{Binding NetIncomeColor}"
+                           Foreground="{Binding NetIncomeColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                            AutomationProperties.AutomationId="Dashboard_Txt_NetIncome" />
               </StackPanel>
 
@@ -194,11 +195,11 @@
                         AutomationProperties.AutomationId="Dashboard_Btn_Reputation">
                   <StackPanel Orientation="Horizontal" Spacing="2">
                     <mi:MaterialIcon Kind="Star" Width="13" Height="13"
-                                     Foreground="{Binding ReputationColor}"
+                                     Foreground="{Binding ReputationColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                                      AutomationProperties.AutomationId="Dashboard_Icon_Reputation" />
                     <TextBlock Text="{Binding ReputationScore}"
                                FontSize="11" FontWeight="Bold"
-                               Foreground="{Binding ReputationColor}"
+                               Foreground="{Binding ReputationColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                                VerticalAlignment="Center"
                                AutomationProperties.AutomationId="Dashboard_Txt_ReputationScore" />
                   </StackPanel>
@@ -283,6 +284,43 @@
 
         <!-- Banner-Strip (kompakte Chips) -->
         <dashboard:BannerStrip Margin="0,8,0,0" />
+
+        <!-- Nächstes Ziel Banner -->
+        <Border Margin="0,8,0,0" Padding="12,10"
+                CornerRadius="12"
+                Background="#20D97706"
+                BorderBrush="#60D97706"
+                BorderThickness="1.5"
+                IsVisible="{Binding HasCurrentGoal}">
+          <Button Classes="Text" Command="{Binding NavigateToGoalCommand}"
+                  HorizontalAlignment="Stretch" Padding="0">
+            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
+              <!-- Icon -->
+              <mi:MaterialIcon Grid.Column="0" Grid.RowSpan="2"
+                               Kind="TrendingUp"
+                               Width="28" Height="28"
+                               Foreground="{StaticResource CraftGoldBrush}"
+                               Margin="0,0,10,0"
+                               VerticalAlignment="Center" />
+              <!-- Beschreibung -->
+              <TextBlock Grid.Column="1" Grid.Row="0"
+                         Text="{Binding CurrentGoalDescription}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+              <!-- Belohnung -->
+              <TextBlock Grid.Column="1" Grid.Row="1"
+                         Text="{Binding CurrentGoalReward}"
+                         FontSize="12"
+                         Foreground="{StaticResource CraftGoldBrush}" />
+              <!-- Pfeil -->
+              <mi:MaterialIcon Grid.Column="2" Grid.RowSpan="2"
+                               Kind="ChevronRight"
+                               Width="20" Height="20"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" />
+            </Grid>
+          </Button>
+        </Border>
 
         <!-- ============================================================= -->
         <!-- AUFTRÄGE + QUICK JOBS (Tab-Umschalter)                       -->
@@ -407,7 +445,7 @@
                                  VerticalAlignment="Center" />
                       <Border Grid.Row="1" Grid.ColumnSpan="2"
                               IsVisible="{Binding ShowOrderTypeBadge}"
-                              Background="{Binding OrderTypeBadgeColor}"
+                              Background="{Binding OrderTypeBadgeColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                               Opacity="0.9"
                               CornerRadius="4" Padding="6,2"
                               HorizontalAlignment="Left"

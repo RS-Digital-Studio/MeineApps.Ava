@@ -89,6 +89,22 @@
                          Foreground="White" />
               <TextBlock Text="{Binding PrestigePointsPreview}" FontSize="12"
                          Foreground="#FFFFFFCC" />
+              <!-- Gewinne -->
+              <TextBlock Text="{Binding PrestigePreviewGains}"
+                         FontSize="12" Foreground="#4CAF50"
+                         TextWrapping="Wrap" Margin="0,6,0,0"
+                         IsVisible="{Binding IsPrestigeAvailable}" />
+              <!-- Verluste -->
+              <TextBlock Text="{Binding PrestigePreviewLosses}"
+                         FontSize="12" Foreground="#EF5350"
+                         TextWrapping="Wrap" Margin="0,4,0,0"
+                         IsVisible="{Binding IsPrestigeAvailable}" />
+              <!-- Speed-Up -->
+              <TextBlock Text="{Binding PrestigePreviewSpeedUp}"
+                         FontSize="13" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         Margin="0,6,0,0"
+                         IsVisible="{Binding IsPrestigeAvailable}" />
             </StackPanel>
             <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
                              Foreground="#FFFFFFAA" VerticalAlignment="Center" />

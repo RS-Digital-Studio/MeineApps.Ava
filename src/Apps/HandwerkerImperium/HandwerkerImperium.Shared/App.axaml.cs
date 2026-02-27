@@ -179,6 +179,7 @@ public partial class App : Application
         services.AddSingleton<IGiftService, GiftService>();
         services.AddSingleton<IGuildChatService, GuildChatService>();
         services.AddSingleton<ICosmeticService, CosmeticService>();
+        services.AddSingleton<IGoalService, GoalService>();
 
         // ViewModels (Singleton because MainViewModel holds references to child VMs)
         services.AddSingleton<MainViewModel>();

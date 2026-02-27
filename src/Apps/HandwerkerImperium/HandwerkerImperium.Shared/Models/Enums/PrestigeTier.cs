@@ -12,19 +12,19 @@ public enum PrestigeTier
     /// <summary>Erste Prestige-Stufe, erfordert Level 30</summary>
     Bronze = 1,
 
-    /// <summary>Zweite Stufe, erfordert Level 100 + 3x Bronze</summary>
+    /// <summary>Zweite Stufe, erfordert Level 100 + 1x Bronze</summary>
     Silver = 2,
 
-    /// <summary>Dritte Stufe, erfordert Level 250 + 3x Silver</summary>
+    /// <summary>Dritte Stufe, erfordert Level 250 + 1x Silver</summary>
     Gold = 3,
 
-    /// <summary>Vierte Stufe, erfordert Level 500 + 3x Gold</summary>
+    /// <summary>Vierte Stufe, erfordert Level 500 + 2x Gold</summary>
     Platin = 4,
 
-    /// <summary>Fünfte Stufe, erfordert Level 750 + 3x Platin</summary>
+    /// <summary>Fünfte Stufe, erfordert Level 750 + 2x Platin</summary>
     Diamant = 5,
 
-    /// <summary>Sechste Stufe, erfordert Level 1000 + 3x Diamant</summary>
+    /// <summary>Sechste Stufe, erfordert Level 1000 + 2x Diamant</summary>
     Meister = 6,
 
     /// <summary>Höchste Stufe, erfordert Level 1200 + 3x Meister</summary>
@@ -54,11 +54,11 @@ public static class PrestigeTierExtensions
     public static int GetRequiredPreviousTierCount(this PrestigeTier tier) => tier switch
     {
         PrestigeTier.Bronze => 0,
-        PrestigeTier.Silver => 3,   // 3x Bronze
-        PrestigeTier.Gold => 3,     // 3x Silver
-        PrestigeTier.Platin => 3,   // 3x Gold
-        PrestigeTier.Diamant => 3,  // 3x Platin
-        PrestigeTier.Meister => 3,  // 3x Diamant
+        PrestigeTier.Silver => 1,   // 1x Bronze
+        PrestigeTier.Gold => 1,     // 1x Silver
+        PrestigeTier.Platin => 2,   // 2x Gold
+        PrestigeTier.Diamant => 2,  // 2x Platin
+        PrestigeTier.Meister => 2,  // 2x Diamant
         PrestigeTier.Legende => 3,  // 3x Meister
         _ => 0
     };

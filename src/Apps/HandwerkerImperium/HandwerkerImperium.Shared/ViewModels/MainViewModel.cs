@@ -63,6 +63,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IWelcomeBackService _welcomeBackService;
     private readonly ILuckySpinService _luckySpinService;
     private readonly IEquipmentService _equipmentService;
+    private readonly IGoalService _goalService;
     private bool _disposed;
     private decimal _pendingOfflineEarnings;
     private QuickJob? _activeQuickJob;
@@ -73,6 +74,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     // Zaehler fuer FloatingText-Anzeige (nur alle 3 Ticks, nicht jeden)
     private int _floatingTextCounter;
+
+    // Zaehler fuer Ziel-Aktualisierung (alle 60 Ticks)
+    private int _tickForGoal;
 
     // Phase 9: Smooth Money-Counter Animation
     private decimal _displayedMoney;
@@ -256,6 +260,39 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _prestigePointsPreview = "";
+
+    [ObservableProperty]
+    private string _prestigePreviewGains = "";
+
+    [ObservableProperty]
+    private string _prestigePreviewLosses = "";
+
+    [ObservableProperty]
+    private string _prestigePreviewSpeedUp = "";
+
+    [ObservableProperty]
+    private string _prestigePreviewTierName = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // NÄCHSTES ZIEL (GoalService)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private string _currentGoalDescription = "";
+
+    [ObservableProperty]
+    private string _currentGoalReward = "";
+
+    [ObservableProperty]
+    private double _currentGoalProgress;
+
+    [ObservableProperty]
+    private string _currentGoalIcon = "TrendingUp";
+
+    [ObservableProperty]
+    private bool _hasCurrentGoal;
+
+    private string? _currentGoalRoute;
 
     // ═══════════════════════════════════════════════════════════════════════
     // BUILDINGS-ZUSAMMENFASSUNG (Task #5)
@@ -927,6 +964,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ForgeGameViewModel forgeGameViewModel,
         InventGameViewModel inventGameViewModel,
         GameJuiceEngine gameJuiceEngine,
+        IGoalService goalService,
         IStoryService? storyService = null)
     {
         _gameStateService = gameStateService;
@@ -949,6 +987,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _welcomeBackService = welcomeBackService;
         _luckySpinService = luckySpinService;
         _equipmentService = equipmentService;
+        _goalService = goalService;
         GameJuiceEngine = gameJuiceEngine;
 
         // Delegate-Felder zuweisen (statt anonymer Lambdas, damit Dispose() abmelden kann)
@@ -1850,6 +1889,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             // Celebration
             FloatingTextRequested?.Invoke($"{highestTier.GetIcon()} {tierName}!", "level");
+
+            // Ziel-Cache invalidieren (Prestige ändert den gesamten Spielzustand)
+            _goalService.Invalidate();
         }
     }
 
@@ -2191,10 +2233,50 @@ public partial class MainViewModel : ObservableObject, IDisposable
             int tierPoints = (int)(potentialPoints * highestTier.GetPointMultiplier());
             var pointsLabel = _localizationService.GetString("PrestigePoints") ?? "Prestige-Punkte";
             PrestigePointsPreview = $"+{tierPoints} {pointsLabel}";
+
+            PrestigePreviewTierName = _localizationService.GetString(highestTier.GetLocalizationKey()) ?? highestTier.ToString();
+
+            // Gewinne
+            decimal permanentBonus = highestTier.GetPermanentMultiplierBonus() * 100;
+            var gains = new List<string>();
+            gains.Add($"+{tierPoints} {pointsLabel} (x{highestTier.GetPointMultiplier()})");
+            gains.Add($"+{permanentBonus:0}% {_localizationService.GetString("PermanentIncomeBonus") ?? "permanenter Einkommens-Bonus"}");
+            if (highestTier.KeepsResearch())
+                gains.Add(_localizationService.GetString("PrestigeKeepsResearch") ?? "Forschung bleibt erhalten!");
+            if (highestTier.KeepsShopItems())
+                gains.Add(_localizationService.GetString("PrestigeKeepsShop") ?? "Prestige-Shop bleibt!");
+            if (highestTier.KeepsMasterTools())
+                gains.Add(_localizationService.GetString("PrestigeKeepsTools") ?? "Meisterwerkzeuge bleiben!");
+            if (highestTier.KeepsBuildings())
+                gains.Add(_localizationService.GetString("PrestigeKeepsBuildings") ?? "Gebäude bleiben (Lv.1)!");
+            if (highestTier.KeepsManagers())
+                gains.Add(_localizationService.GetString("PrestigeKeepsManagers") ?? "Manager bleiben (Lv.1)!");
+            if (highestTier.KeepsBestWorkers())
+                gains.Add(_localizationService.GetString("PrestigeKeepsWorkers") ?? "Beste Worker bleiben!");
+            PrestigePreviewGains = string.Join("\n", gains);
+
+            // Verluste
+            var losses = new List<string>();
+            losses.Add(_localizationService.GetString("PrestigeLosesLevel") ?? "Spieler-Level → 1");
+            losses.Add(_localizationService.GetString("PrestigeLosesMoney") ?? "Geld → 0");
+            losses.Add(_localizationService.GetString("PrestigeLosesWorkers") ?? "Worker → entlassen");
+            if (!highestTier.KeepsResearch())
+                losses.Add(_localizationService.GetString("PrestigeLosesResearch") ?? "Forschung → Reset");
+            PrestigePreviewLosses = string.Join("\n", losses);
+
+            // Geschätzter Speed-Up
+            decimal currentMult = state.Prestige.PermanentMultiplier;
+            decimal newMult = currentMult + highestTier.GetPermanentMultiplierBonus();
+            int speedUpPercent = currentMult > 0 ? (int)((newMult / currentMult - 1m) * 100) : 100;
+            PrestigePreviewSpeedUp = $"~{speedUpPercent}% {_localizationService.GetString("Faster") ?? "schneller"}";
         }
         else
         {
             PrestigePointsPreview = "";
+            PrestigePreviewGains = "";
+            PrestigePreviewLosses = "";
+            PrestigePreviewSpeedUp = "";
+            PrestigePreviewTierName = "";
         }
     }
 
@@ -3518,6 +3600,25 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _gameStateService.MarkDirty();
         }
 
+        // Multiplikator-Meilensteine (Bumpy Progression)
+        if (!IsHoldingUpgrade && Workshop.IsMilestoneLevel(e.NewLevel))
+        {
+            decimal milestoneMultiplier = Workshop.GetMilestoneMultiplierForLevel(e.NewLevel);
+            var workshopName = _localizationService.GetString(e.WorkshopType.GetLocalizationKey());
+            string boostText = $"x{milestoneMultiplier:0.#} {_localizationService.GetString("IncomeBoost") ?? "EINKOMMENS-BOOST"}!";
+
+            FloatingTextRequested?.Invoke(boostText, "golden_screws");
+            _audioService.PlaySoundAsync(GameSound.LevelUp).FireAndForget();
+
+            // Größere Zeremonien bei höheren Meilensteinen
+            if (e.NewLevel >= 50)
+            {
+                CeremonyRequested?.Invoke(CeremonyType.WorkshopMilestone,
+                    $"{workshopName} Lv.{e.NewLevel}",
+                    boostText);
+            }
+        }
+
         // Workshop-Level-Milestone prüfen (nicht während Hold-to-Upgrade)
         // Schwellen weiter auseinander damit nicht bei jedem frühen Level Benachrichtigungen kommen
         if (!IsHoldingUpgrade)
@@ -3543,12 +3644,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
             // Story-Kapitel prüfen
             CheckForNewStoryChapter();
         }
+
+        // Ziel-Cache invalidieren (Workshop-Level könnte Ziel erfüllen)
+        _goalService.Invalidate();
     }
 
     private void OnWorkerHired(object? sender, WorkerHiredEventArgs e)
     {
         // Nur den betroffenen Workshop aktualisieren statt alle
         RefreshSingleWorkshop(e.WorkshopType);
+
+        // Ziel-Cache invalidieren (Worker-Einstellung könnte Ziel erfüllen)
+        _goalService.Invalidate();
     }
 
     private void OnOrderCompleted(object? sender, OrderCompletedEventArgs e)
@@ -3570,6 +3677,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Review-Milestone prüfen
         _reviewService?.OnMilestone("orders", _gameStateService.State.TotalOrdersCompleted);
         CheckReviewPrompt();
+
+        // Ziel-Cache invalidieren (Auftragsabschluss könnte Ziel erfüllen)
+        _goalService.Invalidate();
     }
 
     /// <summary>
@@ -3789,6 +3899,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
             RefreshReputation(state);
             RefreshPrestigeBanner(state);
         }
+
+        // Nächstes Ziel alle 60 Ticks aktualisieren
+        if (_tickForGoal++ >= 60)
+        {
+            _tickForGoal = 0;
+            RefreshCurrentGoal();
+        }
         else if (HasActiveEvent)
         {
             UpdateEventTimer();
@@ -3831,6 +3948,34 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             WorkerProfileViewModel.RefreshDisplayProperties();
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // NÄCHSTES ZIEL
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Aktualisiert das nächste Ziel-Banner auf dem Dashboard.
+    /// </summary>
+    private void RefreshCurrentGoal()
+    {
+        var goal = _goalService.GetCurrentGoal();
+        HasCurrentGoal = goal != null;
+        if (goal != null)
+        {
+            CurrentGoalDescription = goal.Description;
+            CurrentGoalReward = goal.RewardHint;
+            CurrentGoalProgress = goal.Progress;
+            CurrentGoalIcon = goal.IconKind;
+            _currentGoalRoute = goal.NavigationRoute;
+        }
+    }
+
+    [RelayCommand]
+    private void NavigateToGoal()
+    {
+        if (_currentGoalRoute != null)
+            OnChildNavigation(_currentGoalRoute);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

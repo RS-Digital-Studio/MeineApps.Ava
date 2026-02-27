@@ -363,3 +363,9 @@ MigrationBackup/
 FodyWeavers.xsd
 /.claude/settings.local.json
 /nul
+
+# Claude Code Worktrees
+.claude/worktrees/
+
+# Website (eigenes Git-Repo)
+website/

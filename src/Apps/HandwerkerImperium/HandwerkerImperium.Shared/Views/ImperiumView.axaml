@@ -1,0 +1,474 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             x:Class="HandwerkerImperium.Views.ImperiumView"
+             x:DataType="vm:MainViewModel"
+             AutomationProperties.AutomationId="Imperium_Root">
+
+  <!-- FadeIn-Animation -->
+  <UserControl.Styles>
+    <Style Selector="ScrollViewer#ImperiumScrollViewer">
+      <Setter Property="(i:Interaction.Behaviors)">
+        <i:BehaviorCollection>
+          <behaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+        </i:BehaviorCollection>
+      </Setter>
+    </Style>
+    <!-- Prestige-Banner Glow -->
+    <Style Selector="Border.PrestigeBannerGlow">
+      <Style.Animations>
+        <Animation Duration="0:0:3" IterationCount="Infinite">
+          <KeyFrame Cue="0%"><Setter Property="BoxShadow" Value="0 0 6 0 #30FFD700"/></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="BoxShadow" Value="0 0 16 0 #60FFD700"/></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="BoxShadow" Value="0 0 6 0 #30FFD700"/></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
+
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                Name="ImperiumScrollViewer"
+                AutomationProperties.AutomationId="Imperium_Scroll_Main">
+    <StackPanel Spacing="12" Margin="16"
+                AutomationProperties.AutomationId="Imperium_Panel_MainContent">
+
+      <!-- ================================================================= -->
+      <!-- 1. HEADER: Titel + Geld-Anzeige                                  -->
+      <!-- ================================================================= -->
+      <Grid ColumnDefinitions="*,Auto"
+            AutomationProperties.AutomationId="Imperium_Grid_Header">
+        <StackPanel Spacing="2">
+          <TextBlock Text="{loc:Translate TabImperium}"
+                     FontSize="22" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     AutomationProperties.AutomationId="Imperium_Txt_Title" />
+          <!-- Gebäude-Zähler -->
+          <TextBlock Text="{Binding BuildingsViewModel.BuildingsCountDisplay}"
+                     FontSize="12"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     AutomationProperties.AutomationId="Imperium_Txt_BuildingsCount" />
+        </StackPanel>
+        <!-- Geld-Anzeige -->
+        <Border Grid.Column="1" CornerRadius="16"
+                Background="{DynamicResource SurfaceBrush}"
+                Padding="12,6" VerticalAlignment="Center"
+                AutomationProperties.AutomationId="Imperium_Border_Balance">
+          <TextBlock Text="{Binding MoneyDisplay}"
+                     FontSize="13" FontWeight="Bold"
+                     Foreground="{DynamicResource SuccessBrush}"
+                     AutomationProperties.AutomationId="Imperium_Txt_Balance" />
+        </Border>
+      </Grid>
+
+      <!-- ================================================================= -->
+      <!-- 2. PRESTIGE-BANNER (Gold-Gradient, nur wenn verfügbar)            -->
+      <!-- ================================================================= -->
+      <Button IsVisible="{Binding IsPrestigeAvailable}"
+              Command="{Binding NavigateToPrestigeCommand}"
+              Classes="Text" Padding="0" CornerRadius="12"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch"
+              AutomationProperties.AutomationId="Imperium_Btn_Prestige">
+        <Border Classes="PrestigeBannerGlow" CornerRadius="12" Padding="14,10"
+                AutomationProperties.AutomationId="Imperium_Border_PrestigeBanner">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+              <GradientStop Color="#D97706" Offset="0" />
+              <GradientStop Color="#FFD700" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <mi:MaterialIcon Kind="Creation" Width="24" Height="24" Foreground="White"
+                             VerticalAlignment="Center" />
+            <StackPanel Grid.Column="1" Spacing="1" Margin="10,0,0,0" VerticalAlignment="Center">
+              <TextBlock Text="{loc:Translate PrestigeShop}" FontSize="15" FontWeight="Bold"
+                         Foreground="White" />
+              <TextBlock Text="{Binding PrestigePointsPreview}" FontSize="12"
+                         Foreground="#FFFFFFCC" />
+            </StackPanel>
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                             Foreground="#FFFFFFAA" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+      </Button>
+
+      <!-- ================================================================= -->
+      <!-- 3. GEBÄUDE - FREIGESCHALTETE (Full-Width Karten)                  -->
+      <!-- ================================================================= -->
+      <TextBlock Text="{loc:Translate Buildings}" FontSize="16" FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4,0,0"
+                 AutomationProperties.AutomationId="Imperium_Txt_BuildingsHeader" />
+
+      <ItemsControl ItemsSource="{Binding BuildingsViewModel.UnlockedBuildings}"
+                    AutomationProperties.AutomationId="Imperium_Items_UnlockedBuildings">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:BuildingDisplayItem">
+            <Border Classes="CardElevated" CornerRadius="12" Padding="12" Margin="0,4"
+                    AutomationProperties.AutomationId="Imperium_Border_BuildingCard">
+              <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <!-- Runder Icon-Container -->
+                <Border CornerRadius="14" Width="48" Height="48"
+                        VerticalAlignment="Center"
+                        AutomationProperties.AutomationId="Imperium_Border_BuildingIcon">
+                  <Border.Background>
+                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                      <GradientStop Color="#25D97706" Offset="0" />
+                      <GradientStop Color="#10FFD700" Offset="1" />
+                    </LinearGradientBrush>
+                  </Border.Background>
+                  <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                   Width="24" Height="24"
+                                   Foreground="{StaticResource CraftPrimaryBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+
+                <!-- Info: Name, Level, Effekt -->
+                <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding Name}" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               AutomationProperties.AutomationId="Imperium_Txt_BuildingName" />
+                    <!-- Level-Badge (nur wenn gebaut) -->
+                    <TextBlock Grid.Column="1" Text="{Binding LevelDisplay}" FontSize="11"
+                               FontWeight="SemiBold"
+                               Foreground="{StaticResource CraftPrimaryBrush}"
+                               IsVisible="{Binding IsBuilt}"
+                               VerticalAlignment="Center"
+                               AutomationProperties.AutomationId="Imperium_Txt_BuildingLevel" />
+                  </Grid>
+                  <TextBlock Text="{Binding DisplayText}" FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextWrapping="Wrap" MaxLines="2"
+                             AutomationProperties.AutomationId="Imperium_Txt_BuildingEffect" />
+                </StackPanel>
+
+                <!-- Action: Build/Upgrade Button oder Max-Badge -->
+                <Panel Grid.Column="2" VerticalAlignment="Center">
+                  <!-- Build/Upgrade Button -->
+                  <Button Classes="Primary" Padding="10,6" CornerRadius="8"
+                          MinWidth="80"
+                          IsVisible="{Binding ShowActionButton}"
+                          IsEnabled="{Binding CanAfford}"
+                          Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).BuildingsViewModel.BuildOrUpgradeCommand}"
+                          CommandParameter="{Binding Type}"
+                          AutomationProperties.AutomationId="Imperium_Btn_BuildUpgrade">
+                    <StackPanel Orientation="Horizontal" Spacing="4"
+                                HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="HammerWrench" Width="14" Height="14"
+                                       IsVisible="{Binding !IsBuilt}" />
+                      <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14"
+                                       IsVisible="{Binding IsBuilt}" />
+                      <TextBlock Text="{Binding CostDisplay}" FontSize="11" FontWeight="SemiBold" />
+                    </StackPanel>
+                  </Button>
+                  <!-- Max-Level Badge -->
+                  <Border CornerRadius="8" Padding="10,6"
+                          IsVisible="{Binding IsMaxLevel}"
+                          Background="#1522C55E"
+                          AutomationProperties.AutomationId="Imperium_Border_MaxLevel">
+                    <StackPanel Orientation="Horizontal" Spacing="4"
+                                HorizontalAlignment="Center">
+                      <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                                       Foreground="{DynamicResource SuccessBrush}" />
+                      <TextBlock Text="Max" FontSize="11" FontWeight="SemiBold"
+                                 Foreground="{DynamicResource SuccessBrush}" />
+                    </StackPanel>
+                  </Border>
+                </Panel>
+              </Grid>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- ================================================================= -->
+      <!-- 4. GEBÄUDE - GESPERRTE (kompaktes 2-Spalten Grid)                 -->
+      <!-- ================================================================= -->
+      <StackPanel Spacing="6"
+                  IsVisible="{Binding BuildingsViewModel.HasLockedBuildings}"
+                  AutomationProperties.AutomationId="Imperium_Panel_LockedBuildings">
+        <TextBlock Text="{loc:Translate Locked}" FontSize="12"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   Margin="0,4,0,0"
+                   AutomationProperties.AutomationId="Imperium_Txt_LockedHeader" />
+        <ItemsControl ItemsSource="{Binding BuildingsViewModel.LockedBuildings}"
+                      AutomationProperties.AutomationId="Imperium_Items_LockedBuildings">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <UniformGrid Columns="2" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:BuildingDisplayItem">
+              <Border Background="{DynamicResource CardBrush}" CornerRadius="8"
+                      Padding="8,6" Margin="3" Opacity="0.5"
+                      AutomationProperties.AutomationId="Imperium_Border_LockedCard">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
+                  <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="11"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             TextTrimming="CharacterEllipsis"
+                             VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" FontSize="10"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             VerticalAlignment="Center">
+                    <Run Text="Lv." /><Run Text="{Binding UnlockLevel}" />
+                  </TextBlock>
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </StackPanel>
+
+      <!-- ================================================================= -->
+      <!-- 5. AKTIVE PROZESSE (Crafting + Forschung nebeneinander)           -->
+      <!-- ================================================================= -->
+      <TextBlock Text="{loc:Translate ActiveProcesses}"
+                 FontSize="16" FontWeight="Bold"
+                 Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,8,0,0"
+                 AutomationProperties.AutomationId="Imperium_Txt_ProcessesHeader" />
+
+      <Grid ColumnDefinitions="*,8,*"
+            AutomationProperties.AutomationId="Imperium_Grid_Processes">
+        <!-- Produktion/Crafting -->
+        <Button Grid.Column="0" Classes="Text" Padding="0" CornerRadius="10"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch"
+                Command="{Binding NavigateToCraftingCommand}"
+                AutomationProperties.AutomationId="Imperium_Btn_Crafting">
+          <Border Classes="CardElevated" Padding="10" CornerRadius="10" MinHeight="70"
+                  AutomationProperties.AutomationId="Imperium_Border_Crafting">
+            <StackPanel Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="Hammer" Width="16" Height="16"
+                                 Foreground="#B45309" />
+                <TextBlock Text="{loc:Translate CraftingTitle}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+              <!-- Aktiver Job -->
+              <StackPanel IsVisible="{Binding CraftingViewModel.HasActiveJobs}">
+                <ItemsControl ItemsSource="{Binding CraftingViewModel.ActiveJobs}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel Spacing="1">
+                        <TextBlock Text="{Binding OutputName}" FontSize="10"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="{Binding TimeRemainingDisplay}" FontSize="10"
+                                   Foreground="{StaticResource CraftPrimaryBrush}" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+              <!-- Inaktiv: Einladung -->
+              <StackPanel Orientation="Horizontal" Spacing="4"
+                          Opacity="0.6">
+                <StackPanel.IsVisible>
+                  <Binding Path="CraftingViewModel.HasActiveJobs" Converter="{x:Static BoolConverters.Not}" />
+                </StackPanel.IsVisible>
+                <TextBlock Text="{loc:Translate StartCrafting}" FontSize="10"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <mi:MaterialIcon Kind="ChevronRight" Width="12" Height="12"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Button>
+
+        <!-- Forschung -->
+        <Button Grid.Column="2" Classes="Text" Padding="0" CornerRadius="10"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch"
+                Command="{Binding NavigateToResearchCommand}"
+                AutomationProperties.AutomationId="Imperium_Btn_Research">
+          <Border Classes="CardElevated" Padding="10" CornerRadius="10" MinHeight="70"
+                  AutomationProperties.AutomationId="Imperium_Border_Research">
+            <StackPanel Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="FlaskOutline" Width="16" Height="16"
+                                 Foreground="{StaticResource CraftPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate ResearchTitle}" FontSize="12" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+              <!-- Aktive Forschung -->
+              <StackPanel Spacing="2"
+                          IsVisible="{Binding ResearchViewModel.HasActiveResearch}">
+                <TextBlock Text="{Binding ResearchViewModel.ActiveResearchName}" FontSize="10"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           TextTrimming="CharacterEllipsis" />
+                <ProgressBar Value="{Binding ResearchViewModel.ActiveResearchProgress}"
+                             Maximum="1" MinHeight="3"
+                             Foreground="{StaticResource CraftPrimaryBrush}"
+                             Background="{DynamicResource SurfaceBrush}" />
+              </StackPanel>
+              <!-- Inaktiv: Einladung -->
+              <StackPanel Orientation="Horizontal" Spacing="4"
+                          Opacity="0.6">
+                <StackPanel.IsVisible>
+                  <Binding Path="ResearchViewModel.HasActiveResearch" Converter="{x:Static BoolConverters.Not}" />
+                </StackPanel.IsVisible>
+                <TextBlock Text="{loc:Translate StartResearch}" FontSize="10"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <mi:MaterialIcon Kind="ChevronRight" Width="12" Height="12"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Button>
+      </Grid>
+
+      <!-- ================================================================= -->
+      <!-- 6. QUICK-ACCESS (Team, Vorarbeiter, Meisterwerkzeuge)             -->
+      <!-- ================================================================= -->
+      <ItemsControl AutomationProperties.AutomationId="Imperium_Items_QuickAccess">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <UniformGrid Columns="3" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+
+        <!-- Team -->
+        <Button Classes="Text" Margin="3" Padding="0"
+                HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                HorizontalContentAlignment="Stretch"
+                Command="{Binding NavigateToWorkerMarketCommand}"
+                AutomationProperties.AutomationId="Imperium_Btn_Workers">
+          <Border Classes="CardElevated" Padding="8,10" CornerRadius="10">
+            <StackPanel Spacing="4" HorizontalAlignment="Center">
+              <Border CornerRadius="10" Width="32" Height="32" HorizontalAlignment="Center">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="#350E7490" Offset="0"/>
+                    <GradientStop Color="#1514B8A6" Offset="1"/>
+                  </LinearGradientBrush>
+                </Border.Background>
+                <mi:MaterialIcon Kind="AccountHardHat" Width="18" Height="18"
+                                 Foreground="#0E7490"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="{loc:Translate Workers}" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding WorkersStatusText}" FontSize="9"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+        </Button>
+
+        <!-- Vorarbeiter -->
+        <Button Classes="Text" Margin="3" Padding="0"
+                HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                HorizontalContentAlignment="Stretch"
+                Command="{Binding NavigateToManagerCommand}"
+                AutomationProperties.AutomationId="Imperium_Btn_Manager">
+          <Border Classes="CardElevated" Padding="8,10" CornerRadius="10">
+            <StackPanel Spacing="4" HorizontalAlignment="Center">
+              <Border CornerRadius="10" Width="32" Height="32" HorizontalAlignment="Center">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="#35D97706" Offset="0"/>
+                    <GradientStop Color="#15FFD700" Offset="1"/>
+                  </LinearGradientBrush>
+                </Border.Background>
+                <mi:MaterialIcon Kind="AccountGroup" Width="18" Height="18"
+                                 Foreground="{StaticResource CraftPrimaryBrush}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="{loc:Translate ManagerTitle}" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding ManagerStatusText}" FontSize="9"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+        </Button>
+
+        <!-- Meisterwerkzeuge -->
+        <Button Classes="Text" Margin="3" Padding="0"
+                HorizontalAlignment="Stretch" VerticalAlignment="Top"
+                HorizontalContentAlignment="Stretch"
+                Command="{Binding ShowMasterToolsInfoCommand}"
+                AutomationProperties.AutomationId="Imperium_Btn_MasterTools">
+          <Border Classes="CardElevated" Padding="8,10" CornerRadius="10">
+            <StackPanel Spacing="4" HorizontalAlignment="Center">
+              <Border CornerRadius="10" Width="32" Height="32" HorizontalAlignment="Center">
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="#35F59E0B" Offset="0"/>
+                    <GradientStop Color="#15FBBF24" Offset="1"/>
+                  </LinearGradientBrush>
+                </Border.Background>
+                <mi:MaterialIcon Kind="Wrench" Width="18" Height="18"
+                                 Foreground="#F59E0B"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+              <TextBlock Text="{loc:Translate MasterTools}" FontSize="11" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" />
+              <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                <TextBlock FontSize="9"
+                           Foreground="{DynamicResource TextSecondaryBrush}">
+                  <Run Text="{Binding MasterToolsCollected}" />/<Run Text="{Binding MasterToolsTotal}" />
+                </TextBlock>
+                <TextBlock Text="{Binding MasterToolsBonusDisplay}" FontSize="9"
+                           FontWeight="SemiBold"
+                           Foreground="{StaticResource CraftGoldBrush}"
+                           IsVisible="{Binding MasterToolsCollected}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+        </Button>
+      </ItemsControl>
+
+      <!-- Prestige-Shop (nur wenn freigeschaltet) -->
+      <Button Classes="Text" Padding="0" CornerRadius="10"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Stretch"
+              Command="{Binding NavigateToPrestigeCommand}"
+              IsVisible="{Binding IsPrestigeShopUnlocked}"
+              AutomationProperties.AutomationId="Imperium_Btn_PrestigeShop">
+        <Border Classes="CardElevated" Padding="10,8" CornerRadius="10">
+          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
+            <Border CornerRadius="10" Width="32" Height="32">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#30FFD700" Offset="0"/>
+                  <GradientStop Color="#15FFF176" Offset="1"/>
+                </LinearGradientBrush>
+              </Border.Background>
+              <mi:MaterialIcon Kind="Creation" Width="18" Height="18"
+                               Foreground="{StaticResource CraftGoldBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBlock Grid.Column="1" Text="{loc:Translate PrestigeShop}"
+                       FontSize="13" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       VerticalAlignment="Center" />
+            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+      </Button>
+
+      <!-- Bottom Spacer -->
+      <Border Height="16" />
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

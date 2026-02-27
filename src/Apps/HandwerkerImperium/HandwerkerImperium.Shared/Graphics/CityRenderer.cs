@@ -5,6 +5,29 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
+/// Ergebnis-Typ für City-Tap: Kein Treffer, Workshop oder Gebäude.
+/// </summary>
+public enum CityTapTarget
+{
+    None,
+    Workshop,
+    Building
+}
+
+/// <summary>
+/// Ergebnis eines HitTest auf die City-Skyline mit Ziel-Typ und Index.
+/// </summary>
+public struct CityTapResult
+{
+    public CityTapTarget Target;
+    public int Index;
+    public WorkshopType? WorkshopType;
+    public BuildingType? BuildingType;
+    /// <summary>Gebäude-Bounds für Highlight-Glow bei Tap.</summary>
+    public float HitX, HitY, HitW, HitH;
+}
+
+/// <summary>
 /// Rendert die City-Skyline als 2.5D-isometrische Szene.
 /// 5-Layer Parallax-Hintergrund, isometrische Gebäude, animierte Mini-Figuren,
 /// Schornstein-Rauch, Lieferwagen, Tag/Nacht-Palette, Workshop-Partikel.
@@ -17,6 +40,17 @@ public class CityRenderer
     // Wetter-System (saisonale Effekte über der City-Szene)
     private readonly CityWeatherSystem _weatherSystem = new();
     private bool _weatherInitialized;
+
+    // Tap-Label (Workshop-Name bei Tap)
+    private string? _tapLabel;
+    private float _tapLabelX, _tapLabelY;
+    private float _tapLabelTimer;
+    private const float TapLabelDuration = 1.5f;
+
+    // Tap-Highlight (Glow um getipptes Gebäude)
+    private float _tapHighlightX, _tapHighlightY, _tapHighlightW, _tapHighlightH;
+    private float _tapHighlightTimer;
+    private SKColor _tapHighlightColor;
 
     // Lebhaftigkeits-Multiplikator (gecacht, wird beim Rendern aktualisiert)
     private float _cachedVibrancy = 1.0f;
@@ -110,6 +144,9 @@ public class CityRenderer
 
         // Workshop-Partikel (Rauch, Funken etc. - über den Gebäuden)
         DrawWorkshopParticles(canvas, bounds, state, workshopRowBottom, nightDim);
+
+        // Tap-Label + Highlight-Glow (über allem)
+        DrawTapLabel(canvas, deltaTime);
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -453,6 +490,10 @@ public class CityRenderer
                 float textWidth = _labelFont.MeasureText(label);
                 canvas.DrawText(label, x + (buildingWidth - textWidth) / 2f, rowBottom + 15,
                     SKTextAlign.Left, _labelFont, _labelPaint);
+
+                // Workshop-Mini-Icon unter dem Level-Label
+                CityBuildingShapes.DrawWorkshopMiniIcon(
+                    canvas, x + buildingWidth / 2f, rowBottom + 26, type, nightDim);
             }
             else
             {
@@ -894,6 +935,94 @@ public class CityRenderer
     }
 
     // ═════════════════════════════════════════════════════════════════
+    // TAP-LABEL + HIGHLIGHT
+    // ═════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeigt ein Tap-Label mit dem Workshop-/Building-Namen an der angegebenen Position.
+    /// </summary>
+    public void ShowTapLabel(string text, float x, float y, float buildingX, float buildingY, float buildingW, float buildingH, SKColor highlightColor)
+    {
+        _tapLabel = text;
+        _tapLabelX = x;
+        _tapLabelY = y - 20; // Über dem Gebäude
+        _tapLabelTimer = TapLabelDuration;
+
+        _tapHighlightX = buildingX;
+        _tapHighlightY = buildingY;
+        _tapHighlightW = buildingW;
+        _tapHighlightH = buildingH;
+        _tapHighlightTimer = 0.3f;
+        _tapHighlightColor = highlightColor;
+    }
+
+    /// <summary>
+    /// Rendert das Tap-Label (Fade-In/Fade-Out Pill) und den Highlight-Glow.
+    /// Aufgerufen am Ende von Render(), über allen anderen Elementen.
+    /// </summary>
+    private void DrawTapLabel(SKCanvas canvas, float deltaTime)
+    {
+        // Highlight-Glow um das getippte Gebäude
+        if (_tapHighlightTimer > 0)
+        {
+            _tapHighlightTimer -= deltaTime;
+            float highlightAlpha = Math.Clamp(_tapHighlightTimer / 0.3f, 0f, 1f);
+            byte a = (byte)(60 * highlightAlpha);
+            _particlePaint.Color = new SKColor(_tapHighlightColor.Red, _tapHighlightColor.Green,
+                _tapHighlightColor.Blue, a);
+            canvas.DrawRoundRect(_tapHighlightX - 2, _tapHighlightY - 2,
+                _tapHighlightW + 4, _tapHighlightH + 4, 4, 4, _particlePaint);
+        }
+
+        // Tap-Label (Name-Popup)
+        if (_tapLabel == null || _tapLabelTimer <= 0) return;
+
+        _tapLabelTimer -= deltaTime;
+        if (_tapLabelTimer <= 0)
+        {
+            _tapLabel = null;
+            return;
+        }
+
+        // Alpha: 0-0.2s Fade-In, 0.2-1.2s voll, 1.2-1.5s Fade-Out
+        float remaining = _tapLabelTimer;
+        float elapsed = TapLabelDuration - remaining;
+        float alpha;
+        if (elapsed < 0.2f)
+            alpha = elapsed / 0.2f; // Fade-In
+        else if (remaining < 0.3f)
+            alpha = remaining / 0.3f; // Fade-Out
+        else
+            alpha = 1f; // Voll sichtbar
+
+        alpha = Math.Clamp(alpha, 0f, 1f);
+
+        // Text messen
+        using var font = new SKFont(SKTypeface.Default, 11);
+        float textWidth = font.MeasureText(_tapLabel);
+        float pillW = textWidth + 14;
+        float pillH = 18;
+        float pillX = _tapLabelX - pillW / 2f;
+        float pillY = _tapLabelY - pillH / 2f;
+
+        // Hintergrund-Pill (semi-transparent dunkel)
+        _particlePaint.Color = new SKColor(0x18, 0x12, 0x10, (byte)(200 * alpha));
+        canvas.DrawRoundRect(pillX, pillY, pillW, pillH, pillH / 2f, pillH / 2f, _particlePaint);
+
+        // Rand (Workshop-Farbe, subtil)
+        _decoStrokePaint.Color = new SKColor(_tapHighlightColor.Red, _tapHighlightColor.Green,
+            _tapHighlightColor.Blue, (byte)(160 * alpha));
+        _decoStrokePaint.StrokeWidth = 1f;
+        _decoStrokePaint.PathEffect = null;
+        canvas.DrawRoundRect(pillX, pillY, pillW, pillH, pillH / 2f, pillH / 2f, _decoStrokePaint);
+
+        // Text (weiß)
+        _labelPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, (byte)(255 * alpha));
+        canvas.DrawText(_tapLabel, _tapLabelX - textWidth / 2f, _tapLabelY + 4f,
+            SKTextAlign.Left, font, _labelPaint);
+    }
+
+    // ═════════════════════════════════════════════════════════════════
     // HILFSMETHODEN
     // ═════════════════════════════════════════════════════════════════
 
@@ -923,5 +1052,88 @@ public class CityRenderer
         if (hour >= 20 || hour < 6) return 0.6f;
         if (hour >= 6 && hour < 8) return 0.6f + (hour - 6) * 0.2f;
         return 1.0f - (hour - 18) * 0.2f;
+    }
+
+    // ═════════════════════════════════════════════════════════════════
+    // HIT-TEST (Touch-Navigation auf City-Gebäude)
+    // ═════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Prüft welches Gebäude in der City-Skyline getippt wurde.
+    /// Verwendet die gleiche Positions-Logik wie DrawWorkshopRow() und DrawBuildingRow().
+    /// </summary>
+    public CityTapResult HitTest(SKRect bounds, float touchX, float touchY, GameState state, List<Building> buildings)
+    {
+        // Y-Positionen (identisch zu Render())
+        float groundY = bounds.Top + bounds.Height * 0.52f;
+        float streetY = groundY + 6;
+        float workshopRowBottom = streetY - 2;
+        float buildingRowTop = streetY + 14;
+
+        // 1. Workshop-Reihe testen (oberhalb der Straße)
+        var workshopTypes = Enum.GetValues<WorkshopType>();
+        int wsCount = workshopTypes.Length;
+        if (wsCount > 0)
+        {
+            float totalWidth = bounds.Width - 16;
+            float gap = 5;
+            float bw = Math.Max(22, (totalWidth - (wsCount - 1) * gap) / wsCount);
+            float x = bounds.Left + 8;
+
+            for (int i = 0; i < wsCount; i++)
+            {
+                var ws = state.Workshops.FirstOrDefault(w => w.Type == workshopTypes[i]);
+                bool isUnlocked = state.IsWorkshopUnlocked(workshopTypes[i]);
+                float height = (isUnlocked && ws != null)
+                    ? CityBuildingShapes.GetBuildingHeight(ws.Level)
+                    : 28f;
+                float top = workshopRowBottom - height;
+
+                if (touchX >= x && touchX <= x + bw &&
+                    touchY >= top && touchY <= workshopRowBottom)
+                {
+                    return new CityTapResult
+                    {
+                        Target = CityTapTarget.Workshop,
+                        Index = i,
+                        WorkshopType = workshopTypes[i],
+                        HitX = x, HitY = top, HitW = bw, HitH = height
+                    };
+                }
+                x += bw + gap;
+            }
+        }
+
+        // 2. Building-Reihe testen (unterhalb der Straße)
+        var buildingTypes = Enum.GetValues<BuildingType>();
+        int bldCount = buildingTypes.Length;
+        if (bldCount > 0)
+        {
+            float totalWidth = bounds.Width - 16;
+            float gap = 4;
+            float bw = Math.Max(18, (totalWidth - (bldCount - 1) * gap) / bldCount);
+            float x = bounds.Left + 8;
+
+            for (int i = 0; i < bldCount; i++)
+            {
+                var building = buildings.FirstOrDefault(b => b.Type == buildingTypes[i]);
+                float height = (building?.IsBuilt ?? false) ? 18f + building!.Level * 3f : 18f;
+
+                if (touchX >= x && touchX <= x + bw &&
+                    touchY >= buildingRowTop && touchY <= buildingRowTop + height)
+                {
+                    return new CityTapResult
+                    {
+                        Target = CityTapTarget.Building,
+                        Index = i,
+                        BuildingType = buildingTypes[i],
+                        HitX = x, HitY = buildingRowTop, HitW = bw, HitH = height
+                    };
+                }
+                x += bw + gap;
+            }
+        }
+
+        return new CityTapResult { Target = CityTapTarget.None };
     }
 }

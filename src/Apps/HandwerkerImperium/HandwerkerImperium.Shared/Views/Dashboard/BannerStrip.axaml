@@ -1,0 +1,103 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             x:Class="HandwerkerImperium.Views.Dashboard.BannerStrip"
+             x:DataType="vm:MainViewModel">
+
+  <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                VerticalScrollBarVisibility="Disabled"
+                Padding="16,4">
+    <StackPanel Orientation="Horizontal" Spacing="8">
+
+      <!-- Rush-Chip (verfügbar, noch nicht aktiv) -->
+      <Button IsVisible="{Binding CanActivateRush}"
+              Command="{Binding ActivateRushCommand}"
+              Classes="Text" Padding="0" CornerRadius="22"
+              AutomationProperties.AutomationId="Dashboard_Btn_RushChip">
+        <Border CornerRadius="22" Padding="12,6" Height="44">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+              <GradientStop Color="#D97706" Offset="0" />
+              <GradientStop Color="#FFD700" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="Flash" Width="16" Height="16" Foreground="White" />
+            <TextBlock Text="{Binding RushButtonText}" FontSize="12"
+                       FontWeight="Bold" Foreground="White" />
+          </StackPanel>
+        </Border>
+      </Button>
+
+      <!-- Rush-Aktiv-Chip (Timer läuft) -->
+      <Border IsVisible="{Binding IsRushActive}"
+              CornerRadius="22" Padding="12,6" Height="44"
+              Background="#30FFD700" BorderBrush="{StaticResource CraftGoldBrush}"
+              BorderThickness="1"
+              AutomationProperties.AutomationId="Dashboard_Border_RushActiveChip">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <mi:MaterialIcon Kind="Flash" Width="16" Height="16"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+          <TextBlock Text="{Binding RushTimeRemaining}" FontSize="12"
+                     FontWeight="Bold" Foreground="{StaticResource CraftGoldBrush}" />
+        </StackPanel>
+      </Border>
+
+      <!-- Lieferant-Chip -->
+      <Button IsVisible="{Binding HasPendingDelivery}"
+              Command="{Binding ClaimDeliveryCommand}"
+              Classes="Text" Padding="0" CornerRadius="22"
+              AutomationProperties.AutomationId="Dashboard_Btn_DeliveryChip">
+        <Border CornerRadius="22" Padding="12,6" Height="44">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+              <GradientStop Color="#065F46" Offset="0" />
+              <GradientStop Color="#10B981" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <mi:MaterialIcon Kind="PackageDown" Width="16" Height="16" Foreground="White" />
+            <TextBlock Text="{Binding DeliveryDescription}" FontSize="12"
+                       FontWeight="Bold" Foreground="White"
+                       MaxWidth="120" TextTrimming="CharacterEllipsis" />
+          </StackPanel>
+        </Border>
+      </Button>
+
+      <!-- Event-Chip -->
+      <Border IsVisible="{Binding HasActiveEvent}"
+              CornerRadius="22" Padding="12,6" Height="44"
+              Background="#20D97706" BorderBrush="{StaticResource CraftPrimaryBrush}"
+              BorderThickness="1"
+              AutomationProperties.AutomationId="Dashboard_Border_EventChip">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <mi:MaterialIcon Kind="{Binding ActiveEventIcon, Converter={StaticResource IconKindConverter}}"
+                           Width="16" Height="16"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          <TextBlock Text="{Binding ActiveEventName}" FontSize="12"
+                     FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     MaxWidth="100" TextTrimming="CharacterEllipsis" />
+          <TextBlock Text="{Binding ActiveEventTimeRemaining}" FontSize="11"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+        </StackPanel>
+      </Border>
+
+      <!-- Worker-Warnung-Chip -->
+      <Border IsVisible="{Binding HasWorkerWarning}"
+              CornerRadius="22" Padding="12,6" Height="44"
+              Background="#33FF5722"
+              AutomationProperties.AutomationId="Dashboard_Border_WorkerWarningChip">
+        <StackPanel Orientation="Horizontal" Spacing="6">
+          <mi:MaterialIcon Kind="AlertCircleOutline" Width="16" Height="16"
+                           Foreground="#FF5722" />
+          <TextBlock Text="{Binding WorkerWarningText}" FontSize="11"
+                     Foreground="#FF5722" MaxWidth="140"
+                     TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+      </Border>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

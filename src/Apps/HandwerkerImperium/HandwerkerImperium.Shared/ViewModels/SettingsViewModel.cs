@@ -554,7 +554,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            UriLauncher.OpenUri("https://sites.google.com/rs-digital.org/handwerkerimperium/privacy");
+            UriLauncher.OpenUri("https://rs-digital-studio.github.io/privacy/handwerkerimperium.html");
         }
         catch
         {

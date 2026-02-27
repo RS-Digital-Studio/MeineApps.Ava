@@ -34,7 +34,7 @@ public partial class MainView : UserControl
     private SKRect _lastTabBarBounds;
     private SKRect _lastBackgroundBounds;
     private GameScreenType _currentScreenType = GameScreenType.Dashboard;
-    private string[] _tabLabels = ["Home", "Buildings", "Guild", "Shop", "Settings"];
+    private string[] _tabLabels = ["Workshop", "Empire", "Missions", "Guild", "Shop"];
 
     public MainView()
     {
@@ -150,6 +150,7 @@ public partial class MainView : UserControl
         if (_vm == null) return GameScreenType.Dashboard;
         if (_vm.IsDashboardActive) return GameScreenType.Dashboard;
         if (_vm.IsBuildingsActive) return GameScreenType.Buildings;
+        if (_vm.IsMissionenActive) return GameScreenType.Dashboard; // Missionen nutzen Dashboard-Hintergrund
         if (_vm.IsGuildActive || _vm.IsGuildResearchActive || _vm.IsGuildMembersActive || _vm.IsGuildInviteActive)
             return GameScreenType.Guild;
         if (_vm.IsShopActive) return GameScreenType.Shop;
@@ -175,7 +176,19 @@ public partial class MainView : UserControl
         var state = new TabBarState
         {
             ActiveTab = GetActiveTabIndex(),
-            BadgeCounts = new int[5],
+            BadgeCounts = _vm != null ? new[]
+            {
+                // Tab 0 Werkstatt: Lieferant + Rush
+                (_vm.HasPendingDelivery ? 1 : 0) + (_vm.CanActivateRush ? 1 : 0),
+                // Tab 1 Imperium: Worker-Warnung
+                (_vm.HasWorkerWarning ? 1 : 0),
+                // Tab 2 Missionen: Claimbare Challenges + Gratis-Spin
+                _vm.ClaimableMissionsCount + (_vm.HasFreeSpin ? 1 : 0),
+                // Tab 3 Gilde: 0 (kein Badge vorerst)
+                0,
+                // Tab 4 Shop: 0
+                0
+            } : new int[5],
             Labels = _tabLabels,
             Time = _renderTime,
             TabSwitchTime = _lastTabSwitchTime
@@ -236,11 +249,11 @@ public partial class MainView : UserControl
     private int GetActiveTabIndex()
     {
         if (_vm == null) return 0;
-        if (_vm.IsDashboardActive) return 0;
-        if (_vm.IsBuildingsActive) return 1;
-        if (_vm.IsGuildActive) return 2;
-        if (_vm.IsShopActive) return 3;
-        if (_vm.IsSettingsActive) return 4;
+        if (_vm.IsDashboardActive) return 0;     // Werkstatt
+        if (_vm.IsBuildingsActive) return 1;     // Imperium
+        if (_vm.IsMissionenActive) return 2;     // Missionen
+        if (_vm.IsGuildActive) return 3;         // Gilde
+        if (_vm.IsShopActive) return 4;          // Shop
         return -1;
     }
 
@@ -253,10 +266,10 @@ public partial class MainView : UserControl
         switch (tabIndex)
         {
             case 0: _vm.SelectDashboardTabCommand.Execute(null); break;
-            case 1: _vm.SelectBuildingsTabCommand.Execute(null); break;
-            case 2: _vm.SelectGuildTabCommand.Execute(null); break;
-            case 3: _vm.SelectShopTabCommand.Execute(null); break;
-            case 4: _vm.SelectSettingsTabCommand.Execute(null); break;
+            case 1: _vm.SelectBuildingsTabCommand.Execute(null); break;  // Imperium
+            case 2: _vm.SelectMissionenTabCommand.Execute(null); break;  // Missionen
+            case 3: _vm.SelectGuildTabCommand.Execute(null); break;
+            case 4: _vm.SelectShopTabCommand.Execute(null); break;
         }
     }
 
@@ -265,7 +278,7 @@ public partial class MainView : UserControl
     /// </summary>
     private void RefreshTabLabels()
     {
-        _tabLabels = _vm?.GetTabLabels() ?? ["Home", "Buildings", "Guild", "Shop", "Settings"];
+        _tabLabels = _vm?.GetTabLabels() ?? ["Workshop", "Empire", "Missions", "Guild", "Shop"];
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -278,7 +291,8 @@ public partial class MainView : UserControl
         if (e.PropertyName is "IsDashboardActive" or "IsShopActive" or "IsStatisticsActive"
             or "IsAchievementsActive" or "IsSettingsActive" or "IsWorkerMarketActive"
             or "IsResearchActive" or "IsBuildingsActive" or "IsGuildActive"
-            or "IsGuildResearchActive" or "IsGuildMembersActive" or "IsGuildInviteActive")
+            or "IsGuildResearchActive" or "IsGuildMembersActive" or "IsGuildInviteActive"
+            or "IsMissionenActive")
         {
             // Hintergrund-Typ aktualisieren
             _currentScreenType = GetCurrentScreenType();
@@ -307,6 +321,7 @@ public partial class MainView : UserControl
         if (_vm.IsResearchActive) return "Research";
         if (_vm.IsBuildingsActive) return "Buildings";
         if (_vm.IsGuildActive) return "Guild";
+        if (_vm.IsMissionenActive) return "Missionen";
         return "";
     }
 

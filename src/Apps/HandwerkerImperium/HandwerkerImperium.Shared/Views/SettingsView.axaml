@@ -151,6 +151,100 @@
           </StackPanel>
         </Border>
 
+        <!-- AUTOMATION -->
+        <Border Classes="SettingsCard"
+                AutomationProperties.AutomationId="Settings_Border_AutomationCard">
+          <StackPanel Spacing="16">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="RobotOutline" Width="20" Height="20"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <TextBlock Text="{loc:Translate Automation}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+
+            <!-- AutoCollect (Lv15+) -->
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_AutoCollect">
+              <mi:MaterialIcon Kind="PackageDown" Width="24" Height="24"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Translate AutoCollectDesc}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate AutoCollectLocked}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           IsVisible="{Binding !IsAutoCollectUnlocked}" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="2"
+                            IsChecked="{Binding AutoCollectDelivery}"
+                            IsEnabled="{Binding IsAutoCollectUnlocked}"
+                            OnContent="" OffContent="" />
+            </Grid>
+
+            <!-- AutoAccept (Lv25+) -->
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_AutoAccept">
+              <mi:MaterialIcon Kind="FileDocumentCheck" Width="24" Height="24"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Translate AutoAcceptDesc}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate AutoAcceptLocked}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           IsVisible="{Binding !IsAutoAcceptUnlocked}" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="2"
+                            IsChecked="{Binding AutoAcceptOrder}"
+                            IsEnabled="{Binding IsAutoAcceptUnlocked}"
+                            OnContent="" OffContent="" />
+            </Grid>
+
+            <!-- AutoAssign (Lv50+) -->
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_AutoAssign">
+              <mi:MaterialIcon Kind="AccountSwitch" Width="24" Height="24"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Translate AutoAssignDesc}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate AutoAssignLocked}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           IsVisible="{Binding !IsAutoAssignUnlocked}" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="2"
+                            IsChecked="{Binding AutoAssignWorkers}"
+                            IsEnabled="{Binding IsAutoAssignUnlocked}"
+                            OnContent="" OffContent="" />
+            </Grid>
+
+            <!-- AutoClaimDaily (Premium) -->
+            <Grid ColumnDefinitions="Auto,*,Auto"
+                  AutomationProperties.AutomationId="Settings_Grid_AutoClaimDaily">
+              <mi:MaterialIcon Kind="Gift" Width="24" Height="24"
+                               Foreground="{StaticResource CraftGoldBrush}" />
+              <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                <TextBlock Text="{loc:Translate AutoClaimDailyDesc}"
+                           FontSize="14"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                <TextBlock Text="{loc:Translate AutoClaimDailyLocked}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextMutedBrush}"
+                           IsVisible="{Binding !IsAutoClaimUnlocked}" />
+              </StackPanel>
+              <ToggleSwitch Grid.Column="2"
+                            IsChecked="{Binding AutoClaimDaily}"
+                            IsEnabled="{Binding IsAutoClaimUnlocked}"
+                            OnContent="" OffContent="" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
         <!-- CLOUD SAVE -->
         <Border Classes="SettingsCard"
                 AutomationProperties.AutomationId="Settings_Border_CloudSaveActions">

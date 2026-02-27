@@ -57,7 +57,7 @@
 
   </UserControl.Styles>
 
-  <Grid RowDefinitions="*,Auto,Auto" AutomationProperties.AutomationId="Main_Grid_Root">
+  <Grid RowDefinitions="*,Auto" AutomationProperties.AutomationId="Main_Grid_Root">
 
     <!-- ============================================ -->
     <!-- Hintergrund: Animierter SkiaSharp-Background   -->
@@ -65,7 +65,7 @@
     <!-- + Vignette-Overlay fuer Tiefe                   -->
     <!-- ============================================ -->
     <skia:SKCanvasView x:Name="BackgroundCanvas"
-                        Grid.RowSpan="3"
+                        Grid.RowSpan="2"
                         IsHitTestVisible="False"
                         PaintSurface="OnBackgroundPaintSurface"
                         AutomationProperties.AutomationId="Main_Canvas_Background" />
@@ -114,10 +114,13 @@
 
       <!-- Worker Profile → als Bottom-Sheet (siehe unten) -->
 
-      <!-- Buildings (overlay when selected) -->
-      <views:BuildingsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBuildingsActive}"
-                           DataContext="{Binding BuildingsViewModel}"
-                           AutomationProperties.AutomationId="Main_View_Buildings" />
+      <!-- Imperium Tab (nutzt IsBuildingsActive, DataContext vom Parent geerbt) -->
+      <views:ImperiumView IsVisible="{Binding IsBuildingsActive}"
+                          AutomationProperties.AutomationId="Main_View_Imperium" />
+
+      <!-- Missionen Tab (neu) -->
+      <views:MissionenView IsVisible="{Binding IsMissionenActive}"
+                           AutomationProperties.AutomationId="Main_View_Missionen" />
 
       <!-- Research (overlay when selected) -->
       <views:ResearchView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsResearchActive}"
@@ -187,21 +190,15 @@
                                 AutomationProperties.AutomationId="Main_View_InventGame" />
     </Panel>
 
-    <!-- ============================================ -->
-    <!-- Ad Banner Spacer (64dp fuer adaptive Banner) -->
-    <Border Grid.Row="1" Height="64"
-            IsVisible="{Binding IsAdBannerVisible}"
-            AutomationProperties.AutomationId="Main_Border_AdSpacer" />
-
     <!-- Ersatz-Spacer wenn Tab-Bar versteckt (Overlay/MiniGame offen) -->
     <!-- Gleiche Hoehe wie Tab-Bar, damit Inhalt ueber der nativen Ad bleibt -->
-    <Border Grid.Row="2" Height="68"
+    <Border Grid.Row="1" Height="68"
             IsVisible="{Binding !IsTabBarVisible}"
             AutomationProperties.AutomationId="Main_Border_TabBarSpacer" />
 
-    <!-- Row 2: Game-Style Tab Bar (SkiaSharp, Holz-Textur mit illustrierten Icons) -->
+    <!-- Row 1: Game-Style Tab Bar (SkiaSharp, Holz-Textur mit illustrierten Icons) -->
     <skia:SKCanvasView x:Name="TabBarCanvas"
-                        Grid.Row="2"
+                        Grid.Row="1"
                         Height="68"
                         Margin="12,0,12,8"
                         IsVisible="{Binding IsTabBarVisible}"
@@ -211,7 +208,7 @@
 
     <!-- Screen-Transition Overlay (SkiaSharp, über Content, unter Dialogen) -->
     <skia:SKCanvasView x:Name="TransitionCanvas"
-                        Grid.RowSpan="3"
+                        Grid.RowSpan="2"
                         IsHitTestVisible="False"
                         PaintSurface="OnTransitionPaintSurface"
                         AutomationProperties.AutomationId="Main_Canvas_Transition" />
@@ -221,19 +218,19 @@
     <!-- ============================================ -->
 
     <!-- Offline Earnings Dialog (extrahiert in UserControl) -->
-    <dialogs:OfflineEarningsDialog Grid.RowSpan="3" DataContext="{Binding}" />
+    <dialogs:OfflineEarningsDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Level-Up: Kein Dialog mehr, nur noch dezente Pulse-Animation
          (IsLevelUpPulsing wird im Dashboard-Header genutzt) -->
 
     <!-- Daily Reward Dialog (extrahiert in UserControl) -->
-    <dialogs:DailyRewardDialog Grid.RowSpan="3" DataContext="{Binding}" />
+    <dialogs:DailyRewardDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Welcome Back Offer Dialog (extrahiert in UserControl) -->
-    <dialogs:WelcomeBackOfferDialog Grid.RowSpan="3" DataContext="{Binding}" />
+    <dialogs:WelcomeBackOfferDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Lucky Spin Bottom-Sheet Overlay -->
-    <Border Grid.RowSpan="3"
+    <Border Grid.RowSpan="2"
             Classes="SheetBackdrop"
             Classes.Open="{Binding IsLuckySpinVisible}"
             IsVisible="{Binding IsLuckySpinVisible}"
@@ -254,25 +251,25 @@
     </Border>
 
     <!-- Achievement Unlocked Dialog (extrahiert in UserControl) -->
-    <dialogs:AchievementDialog Grid.RowSpan="3" DataContext="{Binding}" />
+    <dialogs:AchievementDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Tutorial Overlay (extrahiert in UserControl) -->
-    <dialogs:TutorialDialog Grid.RowSpan="3" DataContext="{Binding}" />
+    <dialogs:TutorialDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Story Dialog mit Meister Hans (extrahiert in UserControl) -->
-    <dialogs:StoryDialog x:Name="StoryDialogControl" Grid.RowSpan="3" DataContext="{Binding}" />
+    <dialogs:StoryDialog x:Name="StoryDialogControl" Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Alert Dialog (extrahiert in UserControl) -->
-    <dialogs:AlertDialog Grid.RowSpan="3" DataContext="{Binding}" />
+    <dialogs:AlertDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Confirm Dialog (extrahiert in UserControl) -->
-    <dialogs:ConfirmDialog Grid.RowSpan="3" DataContext="{Binding}" />
+    <dialogs:ConfirmDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Worker Profile Bottom-Sheet (extrahiert in UserControl) -->
-    <dialogs:WorkerProfileDialog Grid.RowSpan="3" DataContext="{Binding}" />
+    <dialogs:WorkerProfileDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Worker-Undo Snackbar (5s Rückgängig nach Entlassung) -->
-    <Border Grid.RowSpan="3"
+    <Border Grid.RowSpan="2"
             IsVisible="{Binding WorkerProfileViewModel.ShowUndoFireWorker}"
             VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
             Margin="16,0,16,80"
@@ -298,14 +295,14 @@
 
     <!-- Confetti-Overlay (Level-Up, Achievement-Unlock) -->
     <controls:SkiaCelebrationOverlay x:Name="CelebrationCanvas"
-                                     Grid.RowSpan="3"
+                                     Grid.RowSpan="2"
                                      ZIndex="100"
                                      IsHitTestVisible="False"
                                      AutomationProperties.AutomationId="Main_Img_CelebrationOverlay" />
 
     <!-- Full-Screen Reward-Zeremonie (Feuerwerk + Confetti + Text) -->
     <skia:SKCanvasView x:Name="CeremonyCanvas"
-                       Grid.RowSpan="3"
+                       Grid.RowSpan="2"
                        ZIndex="110"
                        IsVisible="False"
                        PaintSurface="OnCeremonyPaintSurface"
@@ -314,7 +311,7 @@
 
     <!-- Animierter Loading-Screen (Zahnräder + Fortschritt + Tipps) -->
     <skia:SKCanvasView x:Name="LoadingCanvas"
-                       Grid.RowSpan="3"
+                       Grid.RowSpan="2"
                        ZIndex="200"
                        IsVisible="{Binding IsLoading}"
                        PaintSurface="OnLoadingPaintSurface"

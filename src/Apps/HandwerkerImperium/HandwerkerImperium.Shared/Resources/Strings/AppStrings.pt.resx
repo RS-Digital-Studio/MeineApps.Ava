@@ -633,6 +633,9 @@
   <data name="AutoClaimDailyDesc" xml:space="preserve">
     <value>Resgatar recompensa diária automaticamente</value>
   </data>
+  <data name="Automation" xml:space="preserve">
+    <value>Automação</value>
+  </data>
   <data name="GuildLeaderboard" xml:space="preserve">
     <value>Ranking da guilda</value>
   </data>
@@ -1233,6 +1236,10 @@
   </data>
   <data name="PersonSpecialist" xml:space="preserve">
     <value>Especialista</value>
+  </data>
+
+  <data name="Details" xml:space="preserve">
+    <value>Detalhes</value>
   </data>
 
   <!-- Buildings -->
@@ -3186,6 +3193,12 @@
   <data name="NoEventActive" xml:space="preserve">
     <value>Nenhum evento ativo</value>
   </data>
+  <data name="NoCraftingActive" xml:space="preserve">
+    <value>Sem produção ativa</value>
+  </data>
+  <data name="NoResearchActive" xml:space="preserve">
+    <value>Sem pesquisa ativa</value>
+  </data>
   <data name="Guild" xml:space="preserve">
     <value>Guilda</value>
   </data>
@@ -3295,6 +3308,9 @@
   </data>
   <data name="LuckySpinFree" xml:space="preserve">
     <value>Giro grátis!</value>
+  </data>
+  <data name="LuckySpinFreeAvailable" xml:space="preserve">
+    <value>Giro grátis disponível!</value>
   </data>
   <data name="LuckySpinCost" xml:space="preserve">
     <value>Girar ({0})</value>
@@ -3938,6 +3954,12 @@
   <data name="StartCrafting" xml:space="preserve">
     <value>Iniciar fabricação</value>
   </data>
+  <data name="ActiveProcesses" xml:space="preserve">
+    <value>Processos ativos</value>
+  </data>
+  <data name="Build" xml:space="preserve">
+    <value>Construir</value>
+  </data>
   <data name="UpgradePremium" xml:space="preserve">
     <value>Melhorar para Premium</value>
   </data>
@@ -4078,5 +4100,20 @@
   </data>
   <data name="Claim" xml:space="preserve">
     <value>Recolher</value>
+  </data>
+  <data name="TabWerkstatt" xml:space="preserve">
+    <value>Oficina</value>
+  </data>
+  <data name="TabImperium" xml:space="preserve">
+    <value>Império</value>
+  </data>
+  <data name="TabMissionen" xml:space="preserve">
+    <value>Missões</value>
+  </data>
+  <data name="TabGilde" xml:space="preserve">
+    <value>Guilda</value>
+  </data>
+  <data name="TabShop" xml:space="preserve">
+    <value>Loja</value>
   </data>
 </root>

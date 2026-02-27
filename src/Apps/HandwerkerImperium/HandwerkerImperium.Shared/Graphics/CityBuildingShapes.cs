@@ -190,6 +190,169 @@ public static class CityBuildingShapes
     }
 
     // ═════════════════════════════════════════════════════════════════
+    // WORKSHOP-MINI-ICONS (unter dem Level-Label in der City-Szene)
+    // ═════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeichnet ein kleines (8x8dp) Workshop-spezifisches Vektor-Icon.
+    /// Wird direkt unter dem "LvX"-Text in der City-Skyline angezeigt.
+    /// </summary>
+    public static void DrawWorkshopMiniIcon(SKCanvas canvas, float centerX, float y,
+        WorkshopType type, float nightDim)
+    {
+        var color = ApplyDim(GetWorkshopColor(type), nightDim);
+        _detailPaint.Color = color;
+        _detailPaint.Style = SKPaintStyle.Fill;
+
+        const float s = 6f; // Halbe Icon-Größe (12dp total)
+
+        switch (type)
+        {
+            case WorkshopType.Carpenter:
+                // Sägeblatt (Kreis mit Zähnen)
+                _detailPaint.Style = SKPaintStyle.Stroke;
+                _detailPaint.StrokeWidth = 1.2f;
+                canvas.DrawCircle(centerX, y, s * 0.7f, _detailPaint);
+                _detailPaint.Style = SKPaintStyle.Fill;
+                // Zähne (4 kleine Dreiecke am Rand)
+                for (int i = 0; i < 4; i++)
+                {
+                    float angle = i * MathF.PI / 2f;
+                    float tx = centerX + MathF.Cos(angle) * s * 0.7f;
+                    float ty = y + MathF.Sin(angle) * s * 0.7f;
+                    canvas.DrawCircle(tx, ty, 1f, _detailPaint);
+                }
+                break;
+
+            case WorkshopType.Plumber:
+                // Wassertropfen
+                using (var drop = new SKPath())
+                {
+                    drop.MoveTo(centerX, y - s * 0.8f);
+                    drop.QuadTo(centerX + s * 0.6f, y + s * 0.2f, centerX, y + s * 0.7f);
+                    drop.QuadTo(centerX - s * 0.6f, y + s * 0.2f, centerX, y - s * 0.8f);
+                    drop.Close();
+                    canvas.DrawPath(drop, _detailPaint);
+                }
+                break;
+
+            case WorkshopType.Electrician:
+                // Blitz-Symbol
+                using (var bolt = new SKPath())
+                {
+                    bolt.MoveTo(centerX + s * 0.1f, y - s * 0.9f);
+                    bolt.LineTo(centerX - s * 0.4f, y + s * 0.1f);
+                    bolt.LineTo(centerX + s * 0.1f, y + s * 0.1f);
+                    bolt.LineTo(centerX - s * 0.1f, y + s * 0.9f);
+                    bolt.LineTo(centerX + s * 0.4f, y - s * 0.1f);
+                    bolt.LineTo(centerX - s * 0.1f, y - s * 0.1f);
+                    bolt.Close();
+                    canvas.DrawPath(bolt, _detailPaint);
+                }
+                break;
+
+            case WorkshopType.Painter:
+                // Farbpinsel (Griff + Borsten)
+                _detailPaint.Color = ApplyDim(new SKColor(0x8B, 0x69, 0x14), nightDim);
+                canvas.DrawRect(centerX - 0.8f, y - s * 0.8f, 1.6f, s * 1.0f, _detailPaint);
+                _detailPaint.Color = color;
+                canvas.DrawRoundRect(centerX - s * 0.4f, y + s * 0.2f,
+                    s * 0.8f, s * 0.6f, 1, 1, _detailPaint);
+                break;
+
+            case WorkshopType.Roofer:
+                // Dachgiebel-Silhouette
+                using (var roof = new SKPath())
+                {
+                    roof.MoveTo(centerX, y - s * 0.7f);
+                    roof.LineTo(centerX + s, y + s * 0.3f);
+                    roof.LineTo(centerX + s * 0.7f, y + s * 0.3f);
+                    roof.LineTo(centerX + s * 0.7f, y + s * 0.7f);
+                    roof.LineTo(centerX - s * 0.7f, y + s * 0.7f);
+                    roof.LineTo(centerX - s * 0.7f, y + s * 0.3f);
+                    roof.LineTo(centerX - s, y + s * 0.3f);
+                    roof.Close();
+                    canvas.DrawPath(roof, _detailPaint);
+                }
+                break;
+
+            case WorkshopType.Contractor:
+                // Bauhelm
+                using (var helm = new SKPath())
+                {
+                    // Helmschale (Halbkreis)
+                    helm.AddArc(new SKRect(centerX - s * 0.8f, y - s * 0.6f,
+                        centerX + s * 0.8f, y + s * 0.4f), 180, 180);
+                    helm.Close();
+                    canvas.DrawPath(helm, _detailPaint);
+                    // Krempe
+                    canvas.DrawRect(centerX - s, y + s * 0.2f, s * 2, s * 0.25f, _detailPaint);
+                }
+                break;
+
+            case WorkshopType.Architect:
+                // Winkelmesser/Zirkel (Dreieck mit Messlinie)
+                _detailPaint.Style = SKPaintStyle.Stroke;
+                _detailPaint.StrokeWidth = 1.2f;
+                using (var compass = new SKPath())
+                {
+                    compass.MoveTo(centerX, y - s * 0.8f);
+                    compass.LineTo(centerX - s * 0.7f, y + s * 0.7f);
+                    compass.LineTo(centerX + s * 0.7f, y + s * 0.7f);
+                    compass.Close();
+                    canvas.DrawPath(compass, _detailPaint);
+                }
+                _detailPaint.Style = SKPaintStyle.Fill;
+                break;
+
+            case WorkshopType.GeneralContractor:
+                // Gold-Stern (5-zackig)
+                _detailPaint.Color = ApplyDim(new SKColor(0xFF, 0xD7, 0x00), nightDim);
+                using (var star = new SKPath())
+                {
+                    for (int i = 0; i < 5; i++)
+                    {
+                        float outerAngle = -MathF.PI / 2f + i * 2f * MathF.PI / 5f;
+                        float innerAngle = outerAngle + MathF.PI / 5f;
+                        float ox = centerX + MathF.Cos(outerAngle) * s * 0.8f;
+                        float oy = y + MathF.Sin(outerAngle) * s * 0.8f;
+                        float ix = centerX + MathF.Cos(innerAngle) * s * 0.35f;
+                        float iy = y + MathF.Sin(innerAngle) * s * 0.35f;
+                        if (i == 0) star.MoveTo(ox, oy);
+                        else star.LineTo(ox, oy);
+                        star.LineTo(ix, iy);
+                    }
+                    star.Close();
+                    canvas.DrawPath(star, _detailPaint);
+                }
+                break;
+
+            case WorkshopType.MasterSmith:
+                // Amboss-Silhouette
+                canvas.DrawRect(centerX - s * 0.8f, y + s * 0.1f, s * 1.6f, s * 0.4f, _detailPaint);
+                canvas.DrawRect(centerX - s * 0.4f, y - s * 0.5f, s * 0.8f, s * 0.6f, _detailPaint);
+                canvas.DrawRect(centerX - s * 0.6f, y - s * 0.5f, s * 1.2f, s * 0.2f, _detailPaint);
+                break;
+
+            case WorkshopType.InnovationLab:
+                // Glühbirne
+                _detailPaint.Style = SKPaintStyle.Stroke;
+                _detailPaint.StrokeWidth = 1.2f;
+                canvas.DrawCircle(centerX, y - s * 0.15f, s * 0.55f, _detailPaint);
+                _detailPaint.Style = SKPaintStyle.Fill;
+                // Sockel
+                canvas.DrawRect(centerX - s * 0.25f, y + s * 0.4f, s * 0.5f, s * 0.35f, _detailPaint);
+                // Filament
+                _detailPaint.Style = SKPaintStyle.Stroke;
+                _detailPaint.StrokeWidth = 0.8f;
+                canvas.DrawLine(centerX - s * 0.15f, y + s * 0.1f,
+                    centerX + s * 0.15f, y - s * 0.2f, _detailPaint);
+                _detailPaint.Style = SKPaintStyle.Fill;
+                break;
+        }
+    }
+
+    // ═════════════════════════════════════════════════════════════════
     // Interne Hilfsmethoden
     // ═════════════════════════════════════════════════════════════════
 

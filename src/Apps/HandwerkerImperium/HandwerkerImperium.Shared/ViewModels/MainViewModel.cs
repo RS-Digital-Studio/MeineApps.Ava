@@ -96,7 +96,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // Gespeicherte Delegate-Referenzen fuer Lambda-Subscriptions (fuer Dispose-Unsubscribe)
     private readonly Action _adUnavailableHandler;
     private readonly Action<string, string> _saveGameErrorHandler;
-    private readonly EventHandler _adsStateChangedHandler;
     private readonly Action<string> _luckySpinNavHandler;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -111,9 +110,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
-
-    [ObservableProperty]
-    private bool _isAdBannerVisible;
 
     [ObservableProperty]
     private decimal _money;
@@ -244,6 +240,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _allQuickJobsDone;
 
+    // Dashboard Aufträge/Schnelljobs Umschalter
+    [ObservableProperty]
+    private bool _isOrdersTabActive = true;
+
+    [ObservableProperty]
+    private bool _isQuickJobsTabActive;
+
     // ═══════════════════════════════════════════════════════════════════════
     // PRESTIGE-BANNER (Task #14)
     // ═══════════════════════════════════════════════════════════════════════
@@ -310,6 +313,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _weeklyMissionsExpandIconKind = "ChevronDown";
+
+    /// <summary>
+    /// Anzahl claimbarer Daily Challenges + Weekly Missions (für Tab-Bar Badge).
+    /// </summary>
+    [ObservableProperty]
+    private int _claimableMissionsCount;
 
     // ═══════════════════════════════════════════════════════════════════════
     // WELCOME BACK OFFER
@@ -430,6 +439,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private int _masterToolsTotal;
+
+    /// <summary>
+    /// Gesamt-Einkommensbonus durch gesammelte Meisterwerkzeuge (z.B. "+12%").
+    /// </summary>
+    [ObservableProperty]
+    private string _masterToolsBonusDisplay = "";
+
+    /// <summary>
+    /// Prestige-Shop ist ab Level 500 freigeschaltet.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isPrestigeShopUnlocked;
 
     // Aktives Event (Banner-Anzeige)
     [ObservableProperty]
@@ -741,6 +762,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isGuildActive;
 
     [ObservableProperty]
+    private bool _isMissionenActive;
+
+    [ObservableProperty]
     private bool _isGuildResearchActive;
 
     [ObservableProperty]
@@ -794,6 +818,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsWorkerMarketActive = false;
         IsWorkerProfileActive = false;
         IsBuildingsActive = false;
+        IsMissionenActive = false;
         IsResearchActive = false;
         IsManagerActive = false;
         IsTournamentActive = false;
@@ -941,14 +966,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 _localizationService.GetString("OK")));
         _saveGameService.ErrorOccurred += _saveGameErrorHandler;
 
-        _adsStateChangedHandler = (_, _) => IsAdBannerVisible = _adService.BannerVisible;
-        IsAdBannerVisible = _adService.BannerVisible;
-        _adService.AdsStateChanged += _adsStateChangedHandler;
-
-        // Banner beim Start anzeigen (fuer Desktop + Fallback falls AdMobHelper fehlschlaegt)
-        if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-            _adService.ShowBanner();
-
         // Store child ViewModels
         ShopViewModel = shopViewModel;
         StatisticsViewModel = statisticsViewModel;
@@ -1032,6 +1049,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         WorkerProfileViewModel.ConfirmationRequested += _confirmHandler;
         WorkerProfileViewModel.FloatingTextRequested += _workerProfileFloatingTextHandler;
         BuildingsViewModel.AlertRequested += _alertHandler;
+        BuildingsViewModel.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
         ResearchViewModel.AlertRequested += _alertHandler;
         ResearchViewModel.ConfirmationRequested += _confirmHandler;
         TournamentViewModel.AlertRequested += _alertHandler;
@@ -1476,6 +1494,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         HasWeeklyMissions = true;
         AllWeeklyMissionsCompleted = state.Missions.All(m => m.IsCompleted);
         CanClaimWeeklyBonus = AllWeeklyMissionsCompleted && !state.AllCompletedBonusClaimed;
+        UpdateClaimableMissionsCount();
 
         // Reset-Timer berechnen (nächster Montag)
         var now = DateTime.UtcNow;
@@ -1570,8 +1589,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         LuckySpinViewModel.StopCountdownTimer();
         IsLuckySpinVisible = false;
-        if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-            _adService.ShowBanner();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1736,10 +1753,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         IsConfirmDialogVisible = false;
         _confirmDialogTcs?.TrySetResult(true);
-
-        // Ad-Banner wieder einblenden
-        if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-            _adService.ShowBanner();
     }
 
     [RelayCommand]
@@ -1747,10 +1760,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         IsConfirmDialogVisible = false;
         _confirmDialogTcs?.TrySetResult(false);
-
-        // Ad-Banner wieder einblenden
-        if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-            _adService.ShowBanner();
     }
 
     private void ShowAlertDialog(string title, string message, string buttonText)
@@ -1894,6 +1903,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
         UpdateDeliveryDisplay();
         MasterToolsCollected = state.CollectedMasterTools.Count;
         MasterToolsTotal = MasterTool.GetAllDefinitions().Count;
+        var totalMtBonus = MasterTool.GetTotalIncomeBonus(state.CollectedMasterTools);
+        MasterToolsBonusDisplay = totalMtBonus > 0 ? $"+{(int)(totalMtBonus * 100)}%" : "";
+
+        // Prestige-Shop ab Level 500 (oder wenn bereits prestigiert → Shop bleibt zugänglich nach Reset)
+        IsPrestigeShopUnlocked = state.PlayerLevel >= 500 || state.Prestige.TotalPrestigeCount > 0;
 
         // Refresh workshops
         RefreshWorkshops();
@@ -2459,15 +2473,27 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Gibt den lokalisierten Workshop-Namen zurück (für City-Tap-Label).
+    /// </summary>
+    public string GetLocalizedWorkshopName(WorkshopType type)
+        => _localizationService.GetString(type.GetLocalizationKey()) ?? type.ToString();
+
+    /// <summary>
+    /// Gibt den lokalisierten Gebäude-Namen zurück (für City-Tap-Label).
+    /// </summary>
+    public string GetLocalizedBuildingName(BuildingType type)
+        => _localizationService.GetString(type.GetLocalizationKey()) ?? type.ToString();
+
+    /// <summary>
     /// Gibt die lokalisierten Tab-Labels für die SkiaSharp Tab-Bar zurück.
     /// </summary>
     public string[] GetTabLabels() =>
     [
-        _localizationService.GetString("Home") ?? "Home",
-        _localizationService.GetString("Buildings") ?? "Buildings",
-        _localizationService.GetString("GuildTitle") ?? "Guild",
-        _localizationService.GetString("Shop") ?? "Shop",
-        _localizationService.GetString("Settings") ?? "Settings"
+        _localizationService.GetString("TabWerkstatt") ?? "Workshop",
+        _localizationService.GetString("TabImperium") ?? "Empire",
+        _localizationService.GetString("TabMissionen") ?? "Missions",
+        _localizationService.GetString("TabGilde") ?? "Guild",
+        _localizationService.GetString("TabShop") ?? "Shop"
     ];
 
     /// <summary>
@@ -2542,7 +2568,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Navigiert zur Gebäude-Detail-Ansicht.
+    /// Navigiert zum Imperium-Tab (Gebäude sind dort inline).
     /// </summary>
     [RelayCommand]
     private void NavigateToBuildings()
@@ -2669,7 +2695,37 @@ public partial class MainViewModel : ObservableObject, IDisposable
         DeactivateAllTabs();
         IsBuildingsActive = true;
         BuildingsViewModel.LoadBuildings();
+        CraftingViewModel.RefreshCrafting();
+        ResearchViewModel.LoadResearchTree();
         NotifyTabBarVisibility();
+    }
+
+    [RelayCommand]
+    private void SelectMissionenTab()
+    {
+        DeactivateAllTabs();
+        IsMissionenActive = true;
+        NotifyTabBarVisibility();
+    }
+
+    /// <summary>
+    /// Dashboard-interner Umschalter: Aufträge-Tab anzeigen.
+    /// </summary>
+    [RelayCommand]
+    private void ShowOrdersTab()
+    {
+        IsOrdersTabActive = true;
+        IsQuickJobsTabActive = false;
+    }
+
+    /// <summary>
+    /// Dashboard-interner Umschalter: Schnelljobs-Tab anzeigen.
+    /// </summary>
+    [RelayCommand]
+    private void ShowQuickJobsTab()
+    {
+        IsOrdersTabActive = false;
+        IsQuickJobsTabActive = true;
     }
 
     [RelayCommand]
@@ -2727,8 +2783,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (IsWorkerProfileActive)
         {
             IsWorkerProfileActive = false;
-            if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-                _adService.ShowBanner();
             NotifyTabBarVisibility();
             return true;
         }
@@ -2747,18 +2801,30 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return true;
         }
 
-        // 5. Sub-Views (Feature-Views, von Dashboard aus erreichbar) → zurück zum Dashboard
-        if (IsWorkerMarketActive || IsResearchActive ||
-            IsManagerActive || IsTournamentActive || IsSeasonalEventActive ||
-            IsBattlePassActive || IsCraftingActive)
+        // 5a. Imperium-Sub-Views → zurück zum Imperium-Tab (Buildings)
+        if (IsWorkerMarketActive || IsResearchActive || IsManagerActive || IsCraftingActive)
         {
-            SelectDashboardTab();
+            SelectBuildingsTab();
+            return true;
+        }
+
+        // 5b. Missionen-Sub-Views → zurück zum Missionen-Tab
+        if (IsTournamentActive || IsSeasonalEventActive || IsBattlePassActive)
+        {
+            SelectMissionenTab();
+            return true;
+        }
+
+        // 5c. Statistiken/Achievements → zurück zum Missionen-Tab (von dort erreichbar)
+        if (IsStatisticsActive || IsAchievementsActive)
+        {
+            SelectMissionenTab();
             return true;
         }
 
         // 6. Nicht-Dashboard-Tabs → zum Dashboard
-        if (IsShopActive || IsStatisticsActive || IsAchievementsActive || IsSettingsActive ||
-            IsBuildingsActive || IsGuildActive)
+        if (IsShopActive || IsSettingsActive ||
+            IsBuildingsActive || IsMissionenActive || IsGuildActive)
         {
             SelectDashboardTab();
             return true;
@@ -2829,7 +2895,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var collected = state.CollectedMasterTools;
         var totalBonus = MasterTool.GetTotalIncomeBonus(collected);
 
-        // Info-Text zusammenbauen
+        // Kompakten Info-Text zusammenbauen (1 Zeile pro Tool)
         var sb = new System.Text.StringBuilder();
         sb.AppendLine($"{_localizationService.GetString("IncomeBonus") ?? "Einkommensbonus"}: +{totalBonus:P0}");
         sb.AppendLine();
@@ -2838,17 +2904,18 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             bool isCollected = collected.Contains(tool.Id);
             var name = _localizationService.GetString(tool.NameKey) ?? tool.Id;
-            var rarity = _localizationService.GetString(tool.Rarity.GetLocalizationKey()) ?? tool.Rarity.ToString();
-            var status = isCollected ? "\u2713" : "\u2717";
-            sb.AppendLine($"{status} {tool.Icon} {name}");
-            sb.AppendLine($"   [{rarity}] +{tool.IncomeBonus:P0}");
+            var bonus = $"+{(int)(tool.IncomeBonus * 100)}%";
 
-            if (!isCollected)
+            if (isCollected)
+            {
+                sb.AppendLine($"\u2713 {name} ({bonus})");
+            }
+            else
             {
                 var condition = GetMasterToolCondition(tool.Id);
+                sb.AppendLine($"\u2717 {name} ({bonus})");
                 sb.AppendLine($"   \u2192 {condition}");
             }
-            sb.AppendLine();
         }
 
         var title = _localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge";
@@ -3077,6 +3144,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
         DailyChallenges = new List<DailyChallenge>(state.Challenges);
         HasDailyChallenges = state.Challenges.Count > 0;
         CanClaimAllBonus = _dailyChallengeService.AreAllCompleted && !state.AllCompletedBonusClaimed;
+        UpdateClaimableMissionsCount();
+    }
+
+    /// <summary>
+    /// Berechnet die Anzahl claimbarer Daily Challenges + Weekly Missions.
+    /// </summary>
+    private void UpdateClaimableMissionsCount()
+    {
+        var dailyClaimable = DailyChallenges.Count(c => c.IsCompleted && !c.IsClaimed);
+        var weeklyClaimable = WeeklyMissions.Count(m => m.IsCompleted && !m.IsClaimed);
+        ClaimableMissionsCount = dailyClaimable + weeklyClaimable;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -3099,8 +3177,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (IsWorkerProfileActive)
             {
                 IsWorkerProfileActive = false;
-                if (_adService.AdsEnabled && !_purchaseService.IsPremium)
-                    _adService.ShowBanner();
                 NotifyTabBarVisibility();
                 return;
             }
@@ -3127,6 +3203,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive)
             {
                 SelectGuildTab();
+                return;
+            }
+
+            // Imperium-Sub-Views → zurück zum Imperium-Tab (Buildings)
+            if (IsWorkerMarketActive || IsResearchActive || IsManagerActive || IsCraftingActive)
+            {
+                SelectBuildingsTab();
+                RefreshFromState();
+                return;
+            }
+
+            // Missionen-Sub-Views → zurück zum Missionen-Tab
+            if (IsTournamentActive || IsSeasonalEventActive || IsBattlePassActive ||
+                IsStatisticsActive || IsAchievementsActive)
+            {
+                SelectMissionenTab();
+                RefreshFromState();
                 return;
             }
 
@@ -3960,7 +4053,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Lambda-basierte Service-Subscriptions abmelden
         _rewardedAdService.AdUnavailable -= _adUnavailableHandler;
         _saveGameService.ErrorOccurred -= _saveGameErrorHandler;
-        _adService.AdsStateChanged -= _adsStateChangedHandler;
 
         _gameStateService.MoneyChanged -= OnMoneyChanged;
         _gameStateService.GoldenScrewsChanged -= OnGoldenScrewsChanged;

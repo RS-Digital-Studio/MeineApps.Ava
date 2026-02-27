@@ -540,51 +540,61 @@ public partial class DashboardView : UserControl
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Tap auf City-Canvas: HitTest auf Workshop-Gebäude → Navigation + RadialBurst.
+    /// Tap auf City-Canvas: HitTest auf Workshop-/Building-Gebäude → Navigation + RadialBurst.
     /// </summary>
     private void OnCityCanvasTapped(object? sender, PointerPressedEventArgs e)
     {
         if (_vm == null || _cityCanvas == null) return;
 
         var point = e.GetPosition(_cityCanvas);
-        var bounds = _cityCanvas.Bounds;
-        if (bounds.Width < 10 || bounds.Height < 10) return;
+        var avBounds = _cityCanvas.Bounds;
+        if (avBounds.Width < 10 || avBounds.Height < 10) return;
 
-        // Nur Tap in der oberen Hälfte (Workshop-Bereich) berücksichtigen
-        float tapY = (float)point.Y;
-        float canvasHeight = (float)bounds.Height;
-        if (tapY > canvasHeight * 0.7f) return; // Unterer Bereich ignorieren
+        // Avalonia → SkiaSharp Koordinaten
+        // CityCanvas nutzt LocalClipBounds im PaintSurface, daher verwenden wir
+        // die gleichen Bounds wie beim Rendern
+        var gameState = _vm.GetGameStateForRendering();
+        if (gameState == null) return;
 
-        // Workshop-HitTest: X-Position auf Workshop-Index mappen
-        var allTypes = Enum.GetValues<WorkshopType>();
-        int count = allTypes.Length;
-        if (count == 0) return;
+        // Für den HitTest verwenden wir die Canvas-Bounds direkt
+        // (da OnCityPaintSurface canvas.LocalClipBounds verwendet)
+        var skBounds = new SKRect(0, 0, (float)avBounds.Width, (float)avBounds.Height);
 
-        float totalWidth = (float)bounds.Width - 16f;
-        float gap = 5f;
-        float buildingWidth = Math.Max(22f, (totalWidth - (count - 1) * gap) / count);
+        float touchX = (float)point.X;
+        float touchY = (float)point.Y;
 
-        float tapX = (float)point.X;
-        float x = 8f;
-        for (int i = 0; i < count; i++)
+        var result = _cityRenderer.HitTest(skBounds, touchX, touchY, gameState, gameState.Buildings);
+
+        if (result.Target == CityTapTarget.Workshop && result.WorkshopType.HasValue)
         {
-            if (tapX >= x && tapX <= x + buildingWidth)
+            if (gameState.IsWorkshopUnlocked(result.WorkshopType.Value))
             {
-                var type = allTypes[i];
-                var gameState = _vm.GetGameStateForRendering();
-                if (gameState != null && gameState.IsWorkshopUnlocked(type))
-                {
-                    // RadialBurst-Effekt am Tap-Punkt
-                    _juiceEngine?.RadialBurst(
-                        (float)point.X, (float)point.Y,
-                        new SKColor(0xD9, 0x77, 0x06), maxRadius: 50f);
+                // RadialBurst-Effekt am Tap-Punkt
+                var wsColor = CityBuildingShapes.GetWorkshopColor(result.WorkshopType.Value);
+                _juiceEngine?.RadialBurst(touchX, touchY, wsColor, maxRadius: 50f);
 
-                    // Zum Workshop navigieren
-                    _vm.NavigateToWorkshopFromCity(type);
-                }
-                break;
+                // Tap-Label: Lokalisierter Workshop-Name über dem Gebäude
+                var wsName = _vm.GetLocalizedWorkshopName(result.WorkshopType.Value);
+                _cityRenderer.ShowTapLabel(wsName, touchX, touchY,
+                    result.HitX, result.HitY, result.HitW, result.HitH, wsColor);
+
+                // Zum Workshop navigieren
+                _vm.NavigateToWorkshopFromCity(result.WorkshopType.Value);
             }
-            x += buildingWidth + gap;
+        }
+        else if (result.Target == CityTapTarget.Building && result.BuildingType.HasValue)
+        {
+            // RadialBurst-Effekt am Tap-Punkt
+            _juiceEngine?.RadialBurst(touchX, touchY, new SKColor(0xD9, 0x77, 0x06), maxRadius: 40f);
+
+            // Tap-Label: Lokalisierter Gebäude-Name über dem Gebäude
+            var buildingName = _vm.GetLocalizedBuildingName(result.BuildingType.Value);
+            _cityRenderer.ShowTapLabel(buildingName, touchX, touchY,
+                result.HitX, result.HitY, result.HitW, result.HitH,
+                new SKColor(0xD9, 0x77, 0x06));
+
+            // Zum Imperium-Tab wechseln (dort werden die Gebäude angezeigt)
+            _vm.SelectBuildingsTabCommand.Execute(null);
         }
     }
 

@@ -12,22 +12,25 @@
           AutomationProperties.AutomationId="Main_Overlay_Alert">
     <Border Background="{DynamicResource SurfaceBrush}"
             CornerRadius="16" Padding="24"
-            MaxWidth="340" MaxHeight="300"
+            MaxWidth="340" MaxHeight="500"
             HorizontalAlignment="Center" VerticalAlignment="Center"
             BoxShadow="0 8 24 0 #40000000"
             PointerPressed="OnDialogContentPressed"
             AutomationProperties.AutomationId="Main_Border_AlertDialog">
-      <StackPanel Spacing="16" HorizontalAlignment="Center">
+      <StackPanel Spacing="16">
         <TextBlock Text="{Binding AlertDialogTitle}"
                    FontSize="20" FontWeight="Bold"
                    HorizontalAlignment="Center"
                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                    AutomationProperties.AutomationId="Main_Txt_AlertTitle" />
-        <TextBlock Text="{Binding AlertDialogMessage}"
-                   FontSize="14" TextWrapping="Wrap"
-                   HorizontalAlignment="Center"
-                   Foreground="{DynamicResource TextSecondaryBrush}"
-                   AutomationProperties.AutomationId="Main_Txt_AlertMessage" />
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      MaxHeight="380">
+          <TextBlock Text="{Binding AlertDialogMessage}"
+                     FontSize="14" TextWrapping="Wrap"
+                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     AutomationProperties.AutomationId="Main_Txt_AlertMessage" />
+        </ScrollViewer>
         <Button Classes="Primary" Content="{Binding AlertDialogButtonText}"
                 Command="{Binding DismissAlertDialogCommand}"
                 HorizontalAlignment="Center" MinWidth="120"

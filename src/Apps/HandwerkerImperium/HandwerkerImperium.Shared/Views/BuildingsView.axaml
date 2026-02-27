@@ -18,9 +18,17 @@
             Classes="CardElevated"
             Padding="16,12"
             CornerRadius="0,0,12,12">
-      <Grid ColumnDefinitions="*,Auto">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Zurück-Button -->
+        <Button Grid.Column="0" Classes="Text" Padding="4"
+                Command="{Binding GoBackCommand}"
+                AutomationProperties.AutomationId="Buildings_Btn_Back">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+        </Button>
         <!-- Title -->
-        <StackPanel AutomationProperties.AutomationId="Buildings_Panel_Title"
+        <StackPanel Grid.Column="1"
+                    AutomationProperties.AutomationId="Buildings_Panel_Title"
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
@@ -34,7 +42,7 @@
         </StackPanel>
 
         <!-- Balance -->
-        <Border Grid.Column="1"
+        <Border Grid.Column="2"
                 AutomationProperties.AutomationId="Buildings_Border_Balance"
                 Background="{DynamicResource SurfaceBrush}"
                 CornerRadius="16"

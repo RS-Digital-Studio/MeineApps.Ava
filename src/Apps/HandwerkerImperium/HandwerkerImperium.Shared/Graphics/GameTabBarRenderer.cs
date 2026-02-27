@@ -90,6 +90,17 @@ public class GameTabBarRenderer
     private static readonly SKColor GearColor = new(0x78, 0x71, 0x6C);
     private static readonly SKColor GearHandle = new(0x8B, 0x45, 0x13);
 
+    // Imperium-Tab
+    private static readonly SKColor CrownGold = new(0xFF, 0xD7, 0x00);
+    private static readonly SKColor CrownDark = new(0xB7, 0x8C, 0x00);
+    private static readonly SKColor TowerStone = new(0x8D, 0x6E, 0x63);
+    private static readonly SKColor TowerDark = new(0x5D, 0x40, 0x37);
+
+    // Missionen-Tab
+    private static readonly SKColor ClipboardWood = new(0x8B, 0x69, 0x14);
+    private static readonly SKColor ClipboardPaper = new(0xF5, 0xF5, 0xDC);
+    private static readonly SKColor CheckGreen = new(0x4C, 0xAF, 0x50);
+
     // ═══════════════════════════════════════════════════════════════════
     // GECACHTE PAINTS (kein new im Render-Loop)
     // ═══════════════════════════════════════════════════════════════════
@@ -403,10 +414,10 @@ public class GameTabBarRenderer
         switch (tabIndex)
         {
             case 0: DrawHomeIcon(canvas, cx, cy, size, isActive); break;
-            case 1: DrawBuildingsIcon(canvas, cx, cy, size, isActive); break;
-            case 2: DrawGuildIcon(canvas, cx, cy, size, isActive); break;
-            case 3: DrawShopIcon(canvas, cx, cy, size, isActive); break;
-            case 4: DrawSettingsIcon(canvas, cx, cy, size, isActive, time); break;
+            case 1: DrawImperiumIcon(canvas, cx, cy, size, isActive); break;
+            case 2: DrawMissionenIcon(canvas, cx, cy, size, isActive); break;
+            case 3: DrawGuildIcon(canvas, cx, cy, size, isActive); break;
+            case 4: DrawShopIcon(canvas, cx, cy, size, isActive); break;
         }
     }
 
@@ -558,6 +569,127 @@ public class GameTabBarRenderer
         // Kran-Dreieck (Abstützung)
         _strokePaint.StrokeWidth = 1f;
         canvas.DrawLine(craneX, craneY + s * 0.15f, craneX - s * 0.15f, craneY, _strokePaint);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // ICON: IMPERIUM - Steinturm mit Krone
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeichnet einen Steinturm mit 3-zackiger Krone, Zinnen, Fenster und Tür.
+    /// Handwerker-Stil passend zu den anderen Tab-Icons.
+    /// </summary>
+    private void DrawImperiumIcon(SKCanvas canvas, float cx, float cy, float size, bool isActive)
+    {
+        float s = size * 0.45f;
+        byte alpha = isActive ? (byte)255 : (byte)160;
+
+        // --- Turm-Körper ---
+        _fillPaint.Color = TowerStone.WithAlpha(alpha);
+        _fillPaint.Shader = null;
+        canvas.DrawRoundRect(cx - s * 0.35f, cy - s * 0.2f, s * 0.7f, s * 0.8f, 2, 2, _fillPaint);
+
+        // Turm-Schatten (dunklere rechte Seite für Tiefenwirkung)
+        _fillPaint.Color = TowerDark.WithAlpha(alpha);
+        canvas.DrawRect(cx + s * 0.1f, cy - s * 0.2f, s * 0.25f, s * 0.8f, _fillPaint);
+
+        // --- Zinnen oben (3 Stück) ---
+        float zinneW = s * 0.18f;
+        float zinneH = s * 0.15f;
+        float zinneY = cy - s * 0.2f - zinneH;
+        _fillPaint.Color = TowerStone.WithAlpha(alpha);
+        canvas.DrawRect(cx - s * 0.32f, zinneY, zinneW, zinneH, _fillPaint);
+        canvas.DrawRect(cx - zinneW * 0.5f, zinneY, zinneW, zinneH, _fillPaint);
+        canvas.DrawRect(cx + s * 0.32f - zinneW, zinneY, zinneW, zinneH, _fillPaint);
+
+        // --- Krone (3 Zacken, über den Zinnen) ---
+        float crownY = zinneY - s * 0.25f;
+        _fillPaint.Color = CrownGold.WithAlpha(alpha);
+        using var crownPath = new SKPath();
+        crownPath.MoveTo(cx - s * 0.25f, zinneY);
+        crownPath.LineTo(cx - s * 0.2f, crownY + s * 0.05f);
+        crownPath.LineTo(cx - s * 0.07f, zinneY - s * 0.05f);
+        crownPath.LineTo(cx, crownY);
+        crownPath.LineTo(cx + s * 0.07f, zinneY - s * 0.05f);
+        crownPath.LineTo(cx + s * 0.2f, crownY + s * 0.05f);
+        crownPath.LineTo(cx + s * 0.25f, zinneY);
+        crownPath.Close();
+        canvas.DrawPath(crownPath, _fillPaint);
+
+        // Kronen-Schatten (dunklere Unterseite)
+        _strokePaint.Color = CrownDark.WithAlpha(alpha);
+        _strokePaint.StrokeWidth = 1f;
+        canvas.DrawLine(cx - s * 0.25f, zinneY, cx + s * 0.25f, zinneY, _strokePaint);
+
+        // --- Fenster (kleines Bogenfenster) ---
+        _fillPaint.Color = HouseWindow.WithAlpha(alpha);
+        canvas.DrawRoundRect(cx - s * 0.1f, cy + s * 0.0f, s * 0.2f, s * 0.22f, 3, 3, _fillPaint);
+
+        // Fensterkreuz
+        _strokePaint.Color = TowerDark.WithAlpha(alpha);
+        _strokePaint.StrokeWidth = 0.8f;
+        canvas.DrawLine(cx, cy + s * 0.0f, cx, cy + s * 0.22f, _strokePaint);
+        canvas.DrawLine(cx - s * 0.1f, cy + s * 0.11f, cx + s * 0.1f, cy + s * 0.11f, _strokePaint);
+
+        // --- Tür (unten Mitte) ---
+        _fillPaint.Color = HouseDoor.WithAlpha(alpha);
+        canvas.DrawRoundRect(cx - s * 0.1f, cy + s * 0.35f, s * 0.2f, s * 0.25f, 2, 2, _fillPaint);
+
+        // Tür-Griff
+        _fillPaint.Color = CrownGold.WithAlpha(alpha);
+        canvas.DrawCircle(cx + s * 0.04f, cy + s * 0.47f, 1.2f, _fillPaint);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // ICON: MISSIONEN - Clipboard mit Haken
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeichnet ein Holz-Clipboard mit Papier-Fläche, Metallclip oben
+    /// und 3 Haken-Zeilen (Checkmarks mit Linien).
+    /// </summary>
+    private void DrawMissionenIcon(SKCanvas canvas, float cx, float cy, float size, bool isActive)
+    {
+        float s = size * 0.45f;
+        byte alpha = isActive ? (byte)255 : (byte)160;
+
+        // --- Clipboard-Brett (Holz) ---
+        _fillPaint.Color = ClipboardWood.WithAlpha(alpha);
+        _fillPaint.Shader = null;
+        canvas.DrawRoundRect(cx - s * 0.38f, cy - s * 0.45f, s * 0.76f, s * 1.0f, 3, 3, _fillPaint);
+
+        // --- Papier ---
+        _fillPaint.Color = ClipboardPaper.WithAlpha(alpha);
+        canvas.DrawRoundRect(cx - s * 0.3f, cy - s * 0.3f, s * 0.6f, s * 0.8f, 2, 2, _fillPaint);
+
+        // --- Metallclip oben (Mitte) ---
+        _fillPaint.Color = RivetBase.WithAlpha(alpha);
+        canvas.DrawRoundRect(cx - s * 0.12f, cy - s * 0.5f, s * 0.24f, s * 0.15f, 2, 2, _fillPaint);
+        // Clip-Highlight
+        _fillPaint.Color = RivetHighlight.WithAlpha(alpha);
+        canvas.DrawRoundRect(cx - s * 0.08f, cy - s * 0.48f, s * 0.16f, s * 0.05f, 1, 1, _fillPaint);
+
+        // --- 3 Haken-Zeilen (Checkmarks + Linien) ---
+        _strokePaint.Color = CheckGreen.WithAlpha(alpha);
+        _strokePaint.StrokeWidth = 2f;
+        _strokePaint.StrokeCap = SKStrokeCap.Round;
+
+        float lineStartX = cx - s * 0.1f;
+        float lineEndX = cx + s * 0.2f;
+
+        for (int i = 0; i < 3; i++)
+        {
+            float lineY = cy - s * 0.12f + i * s * 0.22f;
+
+            // Haken (Checkmark) - grüne Striche
+            float checkX = cx - s * 0.22f;
+            canvas.DrawLine(checkX, lineY, checkX + s * 0.06f, lineY + s * 0.06f, _strokePaint);
+            canvas.DrawLine(checkX + s * 0.06f, lineY + s * 0.06f, checkX + s * 0.14f, lineY - s * 0.04f, _strokePaint);
+
+            // Text-Linie (gedämpftes Grau)
+            _fillPaint.Color = new SKColor(0xCC, 0xCC, 0xBB).WithAlpha(alpha);
+            canvas.DrawRect(lineStartX, lineY, lineEndX - lineStartX, 2, _fillPaint);
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════

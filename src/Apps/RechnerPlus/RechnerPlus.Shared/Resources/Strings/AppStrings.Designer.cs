@@ -421,7 +421,7 @@ namespace RechnerPlus.Resources.Strings {
         }
         
         /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die https://sites.google.com/rs-digital.org/rechnerplus/startseite ähnelt.
+        ///   Sucht eine lokalisierte Zeichenfolge, die https://rs-digital-studio.github.io/privacy/rechnerplus.html ähnelt.
         /// </summary>
         public static string PrivacyPolicyUrl {
             get {

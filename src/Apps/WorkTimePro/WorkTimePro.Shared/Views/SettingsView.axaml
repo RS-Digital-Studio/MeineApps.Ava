@@ -801,6 +801,19 @@
         </StackPanel>
       </Border>
 
+      <!-- Privacy Policy -->
+      <Button AutomationProperties.AutomationId="Settings_BtnPrivacyPolicy"
+              Command="{Binding OpenPrivacyPolicyCommand}"
+              Classes="Text"
+              HorizontalAlignment="Stretch"
+              HorizontalContentAlignment="Center"
+              Margin="0,4">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <mi:MaterialIcon Kind="ShieldCheck" Width="20" Height="20" />
+          <TextBlock Text="{loc:Translate PrivacyPolicy}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+
       <!-- App Version -->
       <TextBlock AutomationProperties.AutomationId="Settings_TxtAppVersion"
                  Text="{Binding AppVersion}"

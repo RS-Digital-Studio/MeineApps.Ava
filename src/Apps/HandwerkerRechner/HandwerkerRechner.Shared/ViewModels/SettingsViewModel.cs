@@ -99,6 +99,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     public string AdFreeConfirmationText => _localizationService.GetString("AdFreeConfirmation") ?? "You are enjoying the ad-free experience. Thank you!";
     public string AboutTitleText => _localizationService.GetString("SettingsAbout") ?? "About";
     public string SendFeedbackText => _localizationService.GetString("FeedbackButton") ?? "Send Feedback";
+    public string PrivacyPolicyText => _localizationService.GetString("PrivacyPolicy") ?? "Privacy Policy";
     public string ThemeMidnightName => _localizationService.GetString("ThemeMidnightName") ?? "Midnight";
     public string ThemeMidnightDesc => _localizationService.GetString("ThemeMidnightDesc") ?? "Modern dark";
     public string ThemeAuroraName => _localizationService.GetString("ThemeAuroraName") ?? "Aurora";
@@ -124,6 +125,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(AdFreeConfirmationText));
         OnPropertyChanged(nameof(AboutTitleText));
         OnPropertyChanged(nameof(SendFeedbackText));
+        OnPropertyChanged(nameof(PrivacyPolicyText));
         OnPropertyChanged(nameof(ThemeMidnightName));
         OnPropertyChanged(nameof(ThemeMidnightDesc));
         OnPropertyChanged(nameof(ThemeAuroraName));
@@ -291,6 +293,21 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private void SendFeedback()
     {
         FeedbackRequested?.Invoke("HandwerkerRechner");
+    }
+
+    [RelayCommand]
+    private void OpenPrivacyPolicy()
+    {
+        try
+        {
+            MeineApps.Core.Ava.Services.UriLauncher.OpenUri("https://rs-digital-studio.github.io/privacy/handwerkerrechner.html");
+        }
+        catch
+        {
+            MessageRequested?.Invoke(
+                _localizationService.GetString("AlertError") ?? "Error",
+                _localizationService.GetString("BrowserError") ?? "Could not open browser.");
+        }
     }
 
     #endregion

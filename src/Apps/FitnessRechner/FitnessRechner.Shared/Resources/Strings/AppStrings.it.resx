@@ -64,6 +64,7 @@
   <data name="SettingsLanguage" xml:space="preserve"><value>Lingua</value></data>
   <data name="SettingsAboutApp" xml:space="preserve"><value>Info sull'app</value></data>
   <data name="FeedbackButton" xml:space="preserve"><value>Invia feedback</value></data>
+  <data name="PrivacyPolicy" xml:space="preserve"><value>Informativa sulla privacy</value></data>
 
   <!-- Themes -->
   <data name="ThemeVivid" xml:space="preserve"><value>Vivid</value></data>

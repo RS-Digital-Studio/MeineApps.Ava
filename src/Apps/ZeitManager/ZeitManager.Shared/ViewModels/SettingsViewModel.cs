@@ -148,7 +148,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         try
         {
-            MeineApps.Core.Ava.Services.UriLauncher.OpenUri("https://sites.google.com/rs-digital.org/zeitmanager/startseite");
+            MeineApps.Core.Ava.Services.UriLauncher.OpenUri("https://rs-digital-studio.github.io/privacy/zeitmanager.html");
         }
         catch
         {

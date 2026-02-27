@@ -722,6 +722,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
     private const string ARBZG_URL = "https://www.gesetze-im-internet.de/arbzg/";
     private const string HOLIDAYS_URL = "https://www.bmi.bund.de/DE/themen/verfassung/staatliche-symbole/nationale-feiertage/nationale-feiertage-node.html";
+    private const string PRIVACY_POLICY_URL = "https://rs-digital-studio.github.io/privacy/worktimepro.html";
 
     [RelayCommand]
     private void OpenArbZG()
@@ -733,6 +734,12 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private void OpenHolidaysSource()
     {
         UriLauncher.OpenUri(HOLIDAYS_URL);
+    }
+
+    [RelayCommand]
+    private void OpenPrivacyPolicy()
+    {
+        UriLauncher.OpenUri(PRIVACY_POLICY_URL);
     }
 
     // === Helper methods ===

@@ -96,6 +96,7 @@
   <data name="LegalComplianceDescription" xml:space="preserve"><value>Mostrar avisos de nao conformidade (max. 10h/dia, min. 11h descanso)</value></data>
   <data name="Theme" xml:space="preserve"><value>Tema</value></data>
   <data name="SaveSettings" xml:space="preserve"><value>Salvar configuracoes</value></data>
+  <data name="PrivacyPolicy" xml:space="preserve"><value>Política de Privacidade</value></data>
   <data name="Premium" xml:space="preserve"><value>Premium</value></data>
   <data name="PremiumStatus" xml:space="preserve"><value>Status Premium</value></data>
   <data name="PremiumActive" xml:space="preserve"><value>Premium ativo</value></data>

@@ -137,7 +137,7 @@
     <value>Politique de confidentialité</value>
   </data>
   <data name="PrivacyPolicyUrl" xml:space="preserve">
-    <value>https://sites.google.com/rs-digital.org/rechnerplus/startseite</value>
+    <value>https://rs-digital-studio.github.io/privacy/rechnerplus.html</value>
   </data>
   <data name="BrowserError" xml:space="preserve">
     <value>Impossible d'ouvrir le navigateur. Veuillez vérifier votre connexion Internet.</value>

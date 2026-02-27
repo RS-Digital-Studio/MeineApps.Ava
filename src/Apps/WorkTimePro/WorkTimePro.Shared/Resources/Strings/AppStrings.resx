@@ -272,6 +272,9 @@
   <data name="SaveSettings" xml:space="preserve">
     <value>Save settings</value>
   </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>Privacy Policy</value>
+  </data>
 
   <!-- Premium -->
   <data name="Premium" xml:space="preserve">

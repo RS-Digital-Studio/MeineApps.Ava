@@ -186,6 +186,9 @@
   <data name="FeedbackButton" xml:space="preserve">
     <value>Invia feedback</value>
   </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>Informativa sulla privacy</value>
+  </data>
 
   <!-- Themes -->
   <data name="ThemeVivid" xml:space="preserve">

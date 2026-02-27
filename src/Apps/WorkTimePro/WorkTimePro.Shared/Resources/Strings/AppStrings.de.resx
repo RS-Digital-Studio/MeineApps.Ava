@@ -96,6 +96,7 @@
   <data name="LegalComplianceDescription" xml:space="preserve"><value>Warnungen bei Verstößen anzeigen (max. 10h/Tag, min. 11h Ruhezeit)</value></data>
   <data name="Theme" xml:space="preserve"><value>Design</value></data>
   <data name="SaveSettings" xml:space="preserve"><value>Einstellungen speichern</value></data>
+  <data name="PrivacyPolicy" xml:space="preserve"><value>Datenschutzerklärung</value></data>
   <data name="Premium" xml:space="preserve"><value>Premium</value></data>
   <data name="PremiumStatus" xml:space="preserve"><value>Premium-Status</value></data>
   <data name="PremiumActive" xml:space="preserve"><value>Premium aktiv</value></data>

@@ -248,6 +248,21 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         FeedbackRequested?.Invoke("FitnessRechner");
     }
 
+    [RelayCommand]
+    private void OpenPrivacyPolicy()
+    {
+        try
+        {
+            MeineApps.Core.Ava.Services.UriLauncher.OpenUri("https://rs-digital-studio.github.io/privacy/fitnessrechner.html");
+        }
+        catch
+        {
+            MessageRequested?.Invoke(
+                _localizationService.GetString("AlertError") ?? "Error",
+                _localizationService.GetString("BrowserError") ?? "Could not open browser.");
+        }
+    }
+
     #endregion
 
     #region Navigation

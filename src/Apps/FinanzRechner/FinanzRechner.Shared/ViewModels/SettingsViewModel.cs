@@ -17,7 +17,7 @@ public partial class SettingsViewModel : ObservableObject
 
     public event Action<string, string>? MessageRequested;
 
-    private const string PrivacyPolicyUrl = "https://sites.google.com/rs-digital.org/finanzrechner/startseite";
+    private const string PrivacyPolicyUrl = "https://rs-digital-studio.github.io/privacy/finanzrechner.html";
 
     public SettingsViewModel(
         IThemeService themeService,

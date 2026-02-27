@@ -275,7 +275,7 @@ Dispatcher.UIThread.Post(() => { SomeProperty = newValue; });
 - **Ad-Spacer 64dp**: Adaptive Banner (`GetCurrentOrientationAnchoredAdaptiveBannerAdSize`) können 50-60dp+ hoch sein → 64dp als sicherer Spacer
 - **Jeder MainViewModel**: Muss `_adService.ShowBanner()` explizit aufrufen (AdMobHelper verschluckt Fehler)
 - **ScrollViewer Bottom-Margin**: Mindestens 60dp Margin (NICHT Padding!) auf dem Kind-Element in ALLEN scrollbaren Sub-Views
-- **Tab-Bar Heights**: FinanzRechner/FitnessRechner/HandwerkerRechner/WorkTimePro=56, HandwerkerImperium=64, BomberBlast=0
+- **Tab-Bar Heights**: FinanzRechner/FitnessRechner/HandwerkerRechner/WorkTimePro=56, HandwerkerImperium=64 (SkiaSharp GameTabBarRenderer, kein Ad-Banner/Spacer), BomberBlast=0
 
 ## AdMob
 

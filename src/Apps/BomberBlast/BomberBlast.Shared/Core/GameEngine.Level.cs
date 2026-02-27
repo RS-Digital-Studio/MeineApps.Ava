@@ -1101,6 +1101,20 @@ public partial class GameEngine
             _floatingText.Spawn(coinX, coinY, $"+{coins} Coins", new SKColor(255, 215, 0), 18f, 1.5f);
         }
 
+        // Boss-Level Erst-Abschluss: 5 Gems (L10, L20, ..., L100)
+        // Nur Story-Modus, nicht bei Replay (HighestCompletedLevel < aktuelles Level)
+        if (_currentLevel!.IsBossLevel
+            && !_isDungeonRun && !_isQuickPlayMode && !_isDailyChallenge && !_isSurvivalMode
+            && _progressService.HighestCompletedLevel < _currentLevelNumber)
+        {
+            _tracking.OnBossLevelFirstComplete(_currentLevelNumber);
+
+            // Floating-Text "+5 Gems!" in Cyan über dem Spieler
+            float gemX = _player.X;
+            float gemY = _player.Y - Models.Grid.GameGrid.CELL_SIZE;
+            _floatingText.Spawn(gemX, gemY, "+5 Gems!", new SKColor(0, 188, 212), 20f, 2.0f);
+        }
+
         // Dungeon-Floor abgeschlossen
         if (_isDungeonRun)
         {

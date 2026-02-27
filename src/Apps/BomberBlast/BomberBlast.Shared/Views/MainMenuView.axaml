@@ -464,24 +464,31 @@
           <!-- Buttons -->
           <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="12"
                       HorizontalAlignment="Center" Margin="0,12,0,0">
-            <Button Command="{Binding ClaimDailyRewardCommand}"
-                    Classes="Primary GameButton"
-                    Background="#FFD700"
-                    Height="44" MinWidth="140"
-                    HorizontalContentAlignment="Center"
-                    AutomationProperties.AutomationId="MainMenu_BtnClaimReward">
-              <TextBlock Text="{Binding RewardClaimText}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="#1A1A2A" />
-            </Button>
-            <Button Command="{Binding DismissRewardPopupCommand}"
-                    Classes="Secondary GameButton"
-                    Height="44" MinWidth="100"
-                    HorizontalContentAlignment="Center"
-                    AutomationProperties.AutomationId="MainMenu_BtnDismissReward">
-              <mi:MaterialIcon Kind="Close" Width="20" Height="20"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-            </Button>
+            <!-- Abholen-Button mit TornMetal-Hintergrund -->
+            <Panel Height="44" MinWidth="140">
+              <controls:GameButtonCanvas ButtonColor="#FFD700" DamageLevel="0.5" ButtonSeed="33" />
+              <Button Command="{Binding ClaimDailyRewardCommand}"
+                      Classes="Primary GameButton"
+                      Height="44" MinWidth="140"
+                      HorizontalContentAlignment="Center"
+                      AutomationProperties.AutomationId="MainMenu_BtnClaimReward">
+                <TextBlock Text="{Binding RewardClaimText}"
+                           FontSize="16" FontWeight="Bold"
+                           Foreground="White" />
+              </Button>
+            </Panel>
+            <!-- Schließen-Button mit TornMetal-Hintergrund -->
+            <Panel Height="44" MinWidth="56">
+              <controls:GameButtonCanvas ButtonColor="#666666" DamageLevel="0.3" ButtonSeed="34" />
+              <Button Command="{Binding DismissRewardPopupCommand}"
+                      Classes="Secondary GameButton"
+                      Height="44" MinWidth="56"
+                      HorizontalContentAlignment="Center"
+                      AutomationProperties.AutomationId="MainMenu_BtnDismissReward">
+                <mi:MaterialIcon Kind="Close" Width="20" Height="20"
+                                 Foreground="White" />
+              </Button>
+            </Panel>
           </StackPanel>
         </Grid>
       </Border>

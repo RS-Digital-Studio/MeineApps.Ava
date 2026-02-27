@@ -15,6 +15,7 @@ public class GameTrackingService : IGameTrackingService
     private readonly ICollectionService _collection;
     private readonly ILeagueService _league;
     private readonly IBattlePassService _battlePass;
+    private readonly IGemService _gems;
 
     public ICardService Cards { get; }
     public int TotalEnemyKills => _achievements.TotalEnemyKills;
@@ -26,7 +27,8 @@ public class GameTrackingService : IGameTrackingService
         ICollectionService collection,
         ILeagueService league,
         IBattlePassService battlePass,
-        ICardService cards)
+        ICardService cards,
+        IGemService gems)
     {
         _achievements = achievements;
         _weekly = weekly;
@@ -35,6 +37,7 @@ public class GameTrackingService : IGameTrackingService
         _league = league;
         _battlePass = battlePass;
         Cards = cards;
+        _gems = gems;
     }
 
     // --- Bomben ---
@@ -169,6 +172,16 @@ public class GameTrackingService : IGameTrackingService
         _achievements.OnSurvivalKillsReached(enemiesKilled);
         if (timeElapsed >= 60f)
             _battlePass.AddXp(100, "survival_60s");
+    }
+
+    // --- Gems ---
+
+    public void OnBossLevelFirstComplete(int level)
+    {
+        // 5 Gems bei Erst-Abschluss eines Boss-Levels (L10, L20, ..., L100)
+        _gems.AddGems(5);
+        _weekly.TrackProgress(WeeklyMissionType.EarnGems, 5);
+        _daily.TrackProgress(WeeklyMissionType.EarnGems, 5);
     }
 
     // --- Persistenz ---

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using BomberBlast.Graphics;
@@ -9,9 +10,34 @@ namespace BomberBlast.Views;
 
 public partial class DeckView : UserControl
 {
+    private DeckViewModel? _vm;
+
     public DeckView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        // Alte Subscription abmelden
+        if (_vm != null)
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+
+        _vm = DataContext as DeckViewModel;
+
+        // Neue Subscription anmelden
+        if (_vm != null)
+            _vm.PropertyChanged += OnVmPropertyChanged;
+    }
+
+    /// <summary>
+    /// Bei Kartenwechsel die Detail-Canvas neu zeichnen.
+    /// </summary>
+    private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is "SelectedCard" or "HasSelectedCard")
+            DetailBombCanvas?.InvalidateSurface();
     }
 
     /// <summary>
@@ -32,7 +58,7 @@ public partial class DeckView : UserControl
     }
 
     /// <summary>
-    /// PaintSurface-Handler für Deck-Slots (16x16).
+    /// PaintSurface-Handler für Deck-Slots (22x22).
     /// Zeigt Mini-Bomben-Icons in belegten Slots.
     /// </summary>
     private void OnDeckSlotPaint(object? sender, SKPaintSurfaceEventArgs e)
@@ -51,7 +77,7 @@ public partial class DeckView : UserControl
     }
 
     /// <summary>
-    /// PaintSurface-Handler für das Karten-Detail-Panel (24x24).
+    /// PaintSurface-Handler für das Karten-Detail-Panel (36x36).
     /// Zeigt das Icon der aktuell ausgewählten Karte.
     /// </summary>
     private void OnDeckDetailPaint(object? sender, SKPaintSurfaceEventArgs e)
@@ -59,11 +85,11 @@ public partial class DeckView : UserControl
         var canvas = e.Surface.Canvas;
         canvas.Clear();
 
-        if (DataContext is not DeckViewModel vm || vm.SelectedCard == null)
+        if (_vm?.SelectedCard == null)
             return;
 
         var bounds = canvas.LocalClipBounds;
         HelpIconRenderer.DrawBombCard(canvas, bounds.MidX, bounds.MidY,
-            Math.Min(bounds.Width, bounds.Height), vm.SelectedCard.BombType);
+            Math.Min(bounds.Width, bounds.Height), _vm.SelectedCard.BombType);
     }
 }

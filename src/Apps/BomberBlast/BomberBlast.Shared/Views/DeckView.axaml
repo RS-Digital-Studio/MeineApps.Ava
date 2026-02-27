@@ -174,11 +174,11 @@
                         <Panel Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">
                           <!-- Gesperrte Karte: Bomben-Silhouette (gedimmt) + Lock -->
                           <Panel IsVisible="{Binding !IsOwned}">
-                            <skia:SKCanvasView Width="130" Height="130" Opacity="0.2"
+                            <skia:SKCanvasView Width="130" Height="130" Opacity="0.4"
                                                Tag="{Binding}" PaintSurface="OnDeckCardPaint" />
-                            <mi:MaterialIcon Kind="LockOutline" Width="40" Height="40"
+                            <mi:MaterialIcon Kind="LockOutline" Width="36" Height="36"
                                              Foreground="{DynamicResource TextMutedBrush}"
-                                             Opacity="0.7"
+                                             Opacity="0.6"
                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                           </Panel>
                           <!-- Freigeschaltete Karte: Großes SkiaSharp Bomben-Icon -->
@@ -371,6 +371,7 @@
               <Grid ColumnDefinitions="Auto,*,Auto">
                 <!-- SkiaSharp Bomben-Icon (größer für Detail-Ansicht) -->
                 <skia:SKCanvasView Grid.Column="0"
+                                   x:Name="DetailBombCanvas"
                                    Width="36" Height="36" Margin="0,0,8,0"
                                    IsVisible="{Binding HasSelectedCard}"
                                    PaintSurface="OnDeckDetailPaint" />

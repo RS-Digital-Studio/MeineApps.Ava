@@ -51,6 +51,10 @@ public interface IGameTrackingService
     // --- Survival ---
     void OnSurvivalEnded(float timeElapsed, int enemiesKilled);
 
+    // --- Gems ---
+    /// <summary>Boss-Level Erst-Abschluss: 5 Gems Belohnung (L10, L20, ..., L100)</summary>
+    void OnBossLevelFirstComplete(int level);
+
     // --- Persistenz ---
     void FlushIfDirty();
 }

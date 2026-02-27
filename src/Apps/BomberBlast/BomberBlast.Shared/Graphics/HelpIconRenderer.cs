@@ -922,8 +922,9 @@ public static class HelpIconRenderer
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Zeichnet eine Bomben-Karte (farbiger Bomben-Kreis + Typ-Symbol + Zündschnur).
-    /// Farben aus GameRenderer.Items.cs.
+    /// Zeichnet eine Bomben-Karte im BomberBlast-Spielstil: Farbige Kugel mit Glow,
+    /// Game-Style Zündschnur mit Funken, subtiles Typ-Symbol.
+    /// Visuell konsistent mit GameRenderer.Items.cs RenderBomb().
     /// </summary>
     public static void DrawBombCard(SKCanvas canvas, float cx, float cy, float size, BombType type)
     {
@@ -931,72 +932,134 @@ public static class HelpIconRenderer
         using var strokePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
 
         var bodyColor = GetBombBodyColor(type);
-        float r = size * 0.3f;
-        float bombCy = cy + r * 0.1f;
+        var glowColor = GetBombGlowColor(type);
+        // Größerer Radius wie im Spiel (GameRenderer nutzt drawSize * 0.38f)
+        float r = size * 0.38f;
+        float bombCy = cy + r * 0.08f;
 
-        // Farbige Glow-Aura hinter dem Bomben-Körper (Blur-basiert)
-        fillPaint.Color = bodyColor.WithAlpha(80);
-        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.5f);
-        canvas.DrawCircle(cx, bombCy, r * 1.1f, fillPaint);
+        // Äußerer Typ-farbiger Glow-Ring (wie GameRenderer Partikel-Effekt)
+        fillPaint.Color = glowColor.WithAlpha(50);
+        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.8f);
+        canvas.DrawCircle(cx, bombCy, r * 1.3f, fillPaint);
         fillPaint.MaskFilter = null;
 
-        // Bomben-Körper mit Gradient (heller oben, bodyColor unten)
+        // Innerer Glow direkt um den Körper (intensiver)
+        fillPaint.Color = glowColor.WithAlpha(90);
+        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.4f);
+        canvas.DrawCircle(cx, bombCy, r * 1.05f, fillPaint);
+        fillPaint.MaskFilter = null;
+
+        // Bomben-Körper: Radialer Gradient für Kugel-Effekt (wie im Spiel)
         var lighterColor = new SKColor(
-            (byte)Math.Min(255, bodyColor.Red + 60),
-            (byte)Math.Min(255, bodyColor.Green + 60),
-            (byte)Math.Min(255, bodyColor.Blue + 60));
-        using var bodyShader = SKShader.CreateLinearGradient(
-            new SKPoint(cx, bombCy - r),
-            new SKPoint(cx, bombCy + r),
-            [lighterColor, bodyColor],
-            [0f, 1f],
+            (byte)Math.Min(255, bodyColor.Red + 70),
+            (byte)Math.Min(255, bodyColor.Green + 70),
+            (byte)Math.Min(255, bodyColor.Blue + 70));
+        var darkerColor = new SKColor(
+            (byte)(bodyColor.Red * 0.6f),
+            (byte)(bodyColor.Green * 0.6f),
+            (byte)(bodyColor.Blue * 0.6f));
+        using var bodyShader = SKShader.CreateRadialGradient(
+            new SKPoint(cx - r * 0.2f, bombCy - r * 0.25f), // Highlight-Zentrum oben-links
+            r * 1.6f,
+            [lighterColor, bodyColor, darkerColor],
+            [0f, 0.5f, 1f],
             SKShaderTileMode.Clamp);
         fillPaint.Shader = bodyShader;
         canvas.DrawCircle(cx, bombCy, r, fillPaint);
         fillPaint.Shader = null;
 
-        // Highlight (heller Fleck oben-links, größer und kräftiger)
-        fillPaint.Color = new SKColor(255, 255, 255, 100);
-        canvas.DrawCircle(cx - r * 0.25f, cy - r * 0.2f, r * 0.35f, fillPaint);
+        // Glossy Highlight (wie im Spiel: heller Fleck oben-links)
+        fillPaint.Color = new SKColor(255, 255, 255, 120);
+        canvas.DrawCircle(cx - r * 0.3f, bombCy - r * 0.3f, r * 0.25f, fillPaint);
+        // Zweiter subtiler Highlight-Punkt (Kugel-Reflektion)
+        fillPaint.Color = new SKColor(255, 255, 255, 50);
+        canvas.DrawCircle(cx + r * 0.15f, bombCy + r * 0.2f, r * 0.12f, fillPaint);
 
-        // Zündschnur (etwas dicker)
-        strokePaint.Color = new SKColor(180, 140, 80);
-        strokePaint.StrokeWidth = size * 0.06f;
+        // Zündschnur (Game-Style: Kurve von Bomben-Oberseite nach oben-rechts)
         float fuseBaseY = bombCy - r;
+        float fuseEndX = cx + r * 0.5f;
+        float fuseEndY = fuseBaseY - r * 0.6f;
+        float fuseMidX = cx + r * 0.35f;
+        float fuseMidY = fuseBaseY - r * 0.45f;
+
+        strokePaint.Color = new SKColor(180, 140, 80);
+        strokePaint.StrokeWidth = Math.Max(1.5f, size * 0.05f);
+        strokePaint.StrokeCap = SKStrokeCap.Round;
         using var fusePath = new SKPath();
         fusePath.MoveTo(cx, fuseBaseY);
-        fusePath.QuadTo(cx + r * 0.3f, fuseBaseY - r * 0.3f, cx + r * 0.15f, fuseBaseY - r * 0.5f);
+        fusePath.QuadTo(fuseMidX, fuseMidY, fuseEndX, fuseEndY);
         canvas.DrawPath(fusePath, strokePaint);
 
-        // Funke mit Glow (erst großer goldener Glow-Kreis, dann heller Kern)
-        float sparkX = cx + r * 0.15f;
-        float sparkY = fuseBaseY - r * 0.5f;
-        fillPaint.Color = new SKColor(255, 200, 50, 100);
-        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.04f);
-        canvas.DrawCircle(sparkX, sparkY, size * 0.07f, fillPaint);
-        fillPaint.MaskFilter = null;
-        fillPaint.Color = new SKColor(255, 200, 50);
-        canvas.DrawCircle(sparkX, sparkY, size * 0.045f, fillPaint);
-        fillPaint.Color = new SKColor(255, 255, 220);
-        canvas.DrawCircle(sparkX, sparkY, size * 0.025f, fillPaint);
+        // 2-3 kleine Funken-Punkte entlang der Schnur (wie GameRenderer)
+        int sparkCount = size >= 30 ? 3 : 2;
+        for (int i = 0; i < sparkCount; i++)
+        {
+            float t = (i + 1f) / (sparkCount + 1f);
+            float omt = 1f - t;
+            float sx = omt * omt * cx + 2 * omt * t * fuseMidX + t * t * fuseEndX;
+            float sy = omt * omt * fuseBaseY + 2 * omt * t * fuseMidY + t * t * fuseEndY;
+            fillPaint.Color = new SKColor(255, 220, 100, (byte)(150 + i * 30));
+            canvas.DrawCircle(sx, sy, Math.Max(0.8f, size * 0.015f), fillPaint);
+        }
 
-        // Typ-Symbol im Bomben-Kreis (groß und deutlich)
-        DrawBombTypeSymbol(canvas, type, cx, bombCy, r * 0.85f, fillPaint, strokePaint);
+        // Hauptfunke am Zündschnur-Ende mit Glow
+        fillPaint.Color = new SKColor(255, 200, 50, 120);
+        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.04f);
+        canvas.DrawCircle(fuseEndX, fuseEndY, size * 0.06f, fillPaint);
+        fillPaint.MaskFilter = null;
+        fillPaint.Color = new SKColor(255, 220, 80);
+        canvas.DrawCircle(fuseEndX, fuseEndY, size * 0.04f, fillPaint);
+        fillPaint.Color = new SKColor(255, 255, 220);
+        canvas.DrawCircle(fuseEndX, fuseEndY, size * 0.02f, fillPaint);
+
+        // Typ-Partikel um die Bombe herum (simuliert GameRenderer Partikel-Effekte)
+        if (type != BombType.Normal && size >= 24)
+            DrawBombTypeParticles(canvas, type, cx, bombCy, r, glowColor, fillPaint);
+
+        // Typ-Symbol: Subtil im Bomben-Inneren (niedrigere Opacity als Identifikationshilfe)
+        DrawBombTypeSymbol(canvas, type, cx, bombCy, r * 0.7f, fillPaint, strokePaint);
     }
 
-    /// <summary>Zeichnet das Typ-Symbol innerhalb des Bomben-Kreises</summary>
+    /// <summary>
+    /// Zeichnet farbige Partikel-Punkte um die Bombe (simuliert die GameRenderer Typ-Partikel).
+    /// Nur bei ausreichender Größe und Nicht-Normal-Typ.
+    /// </summary>
+    private static void DrawBombTypeParticles(SKCanvas canvas, BombType type,
+        float cx, float cy, float r, SKColor glowColor, SKPaint fill)
+    {
+        // 4-6 kleine Partikel-Punkte im Typ-Farb-Glow um die Bombe
+        int count = type is BombType.Nova or BombType.BlackHole ? 6 : 4;
+        float orbRadius = r * 1.5f;
+        float dotSize = r * 0.12f;
+
+        for (int i = 0; i < count; i++)
+        {
+            float angle = i * MathF.PI * 2f / count + 0.3f; // Leichter Offset
+            float px = cx + MathF.Cos(angle) * orbRadius;
+            float py = cy + MathF.Sin(angle) * orbRadius;
+            byte alpha = (byte)(80 + (i % 2) * 40);
+            fill.Color = glowColor.WithAlpha(alpha);
+            canvas.DrawCircle(px, py, dotSize, fill);
+        }
+    }
+
+    /// <summary>
+    /// Zeichnet das Typ-Symbol subtil im Bomben-Inneren.
+    /// Niedrigere Opacity als zuvor, damit Farbe + Glow die Hauptidentifikation sind.
+    /// </summary>
     private static void DrawBombTypeSymbol(SKCanvas canvas, BombType type,
         float cx, float cy, float size, SKPaint fill, SKPaint stroke)
     {
-        fill.Color = new SKColor(255, 255, 255, 220);
-        stroke.Color = new SKColor(255, 255, 255, 220);
-        stroke.StrokeWidth = size * 0.15f;
+        // Subtiler als zuvor: Alpha 140 statt 220, damit Bombenfarbe dominiert
+        fill.Color = new SKColor(255, 255, 255, 140);
+        stroke.Color = new SKColor(255, 255, 255, 140);
+        stroke.StrokeWidth = size * 0.12f;
+        stroke.StrokeCap = SKStrokeCap.Round;
 
         switch (type)
         {
             case BombType.Normal:
-                // Stern-Symbol
-                canvas.DrawCircle(cx, cy, size * 0.3f, fill);
+                // Kein Symbol bei Normal-Bombe (wie im Spiel - nur Farbe)
                 break;
 
             case BombType.Ice:
@@ -1160,7 +1223,7 @@ public static class HelpIconRenderer
         }
     }
 
-    /// <summary>Farb-Mapping für Bomben-Körper (aus GameRenderer.Items.cs)</summary>
+    /// <summary>Farb-Mapping für Bomben-Körper (identisch mit GameRenderer.Items.cs)</summary>
     private static SKColor GetBombBodyColor(BombType type) => type switch
     {
         BombType.Ice => new SKColor(100, 200, 255),
@@ -1177,5 +1240,24 @@ public static class HelpIconRenderer
         BombType.Nova => new SKColor(255, 200, 0),
         BombType.BlackHole => new SKColor(40, 0, 60),
         _ => new SKColor(60, 60, 60) // Normal
+    };
+
+    /// <summary>Farb-Mapping für Bomben-Glow (identisch mit GameRenderer.Items.cs)</summary>
+    private static SKColor GetBombGlowColor(BombType type) => type switch
+    {
+        BombType.Ice => new SKColor(0, 200, 255),
+        BombType.Fire => new SKColor(255, 100, 0),
+        BombType.Sticky => new SKColor(100, 220, 50),
+        BombType.Smoke => new SKColor(180, 180, 180),
+        BombType.Lightning => new SKColor(255, 255, 200),
+        BombType.Gravity => new SKColor(180, 100, 255),
+        BombType.Poison => new SKColor(50, 220, 50),
+        BombType.TimeWarp => new SKColor(100, 150, 255),
+        BombType.Mirror => new SKColor(220, 220, 255),
+        BombType.Vortex => new SKColor(170, 50, 255),
+        BombType.Phantom => new SKColor(200, 220, 255),
+        BombType.Nova => new SKColor(255, 215, 0),
+        BombType.BlackHole => new SKColor(100, 0, 200),
+        _ => new SKColor(255, 160, 50) // Normal: warmer orangener Glow
     };
 }

@@ -780,6 +780,10 @@ public class DungeonService : IDungeonService
         {
             // Frühe Floors: 200-500 Coins, 30-45% Karten-Drop
             reward.Coins = (int)((200 + (floor % 5) * 75) * scaleFactor);
+            // Floor 3+4 (und 13+14, 23+24 etc.) geben je 2 Gems als Trostpreis
+            int floorInCycle = floor > 10 ? floor % 10 : floor;
+            if (floorInCycle >= 3)
+                reward.Gems = 2;
             if (_random.NextDouble() < 0.3 + (floor % 5) * 0.0375)
                 reward.CardDrop = (int)GenerateCardDrop(minRarity: 0);
         }

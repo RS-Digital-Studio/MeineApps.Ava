@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using BomberBlast.Graphics;
@@ -9,14 +10,37 @@ namespace BomberBlast.Views;
 
 public partial class CollectionView : UserControl
 {
+    private CollectionViewModel? _vm;
+
     public CollectionView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (_vm != null)
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+
+        _vm = DataContext as CollectionViewModel;
+
+        if (_vm != null)
+            _vm.PropertyChanged += OnVmPropertyChanged;
     }
 
     /// <summary>
-    /// PaintSurface-Handler für Sammlungs-Items (34x34 Icons).
-    /// Rendert echte SkiaSharp-Grafiken statt generischer MaterialIcons.
+    /// Bei Eintragswechsel die Detail-Canvas neu zeichnen.
+    /// </summary>
+    private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName is "SelectedEntry" or "ShowDetail")
+            DetailIconCanvas?.InvalidateSurface();
+    }
+
+    /// <summary>
+    /// PaintSurface-Handler für Sammlungs-Items (80x80 Icons).
+    /// Rendert echte SkiaSharp-Grafiken - auch für gesperrte Items (als Silhouette).
     /// </summary>
     private void OnCollectionItemPaint(object? sender, SKPaintSurfaceEventArgs e)
     {
@@ -25,9 +49,6 @@ public partial class CollectionView : UserControl
 
         if (sender is not SKCanvasView view || view.Tag is not CollectionDisplayItem item)
             return;
-
-        // Nicht-entdeckte Items: Nichts zeichnen (Lock-Icon wird per MaterialIcon angezeigt)
-        if (!item.IsDiscovered) return;
 
         var bounds = canvas.LocalClipBounds;
         float cx = bounds.MidX, cy = bounds.MidY;
@@ -52,7 +73,7 @@ public partial class CollectionView : UserControl
 
     /// <summary>
     /// PaintSurface-Handler für das Detail-Panel (36x36 Icon).
-    /// Nutzt SelectedEntry aus dem ViewModel-DataContext.
+    /// Nutzt SelectedEntry aus dem ViewModel.
     /// </summary>
     private void OnCollectionDetailPaint(object? sender, SKPaintSurfaceEventArgs e)
     {

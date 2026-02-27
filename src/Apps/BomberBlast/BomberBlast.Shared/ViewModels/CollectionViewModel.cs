@@ -232,6 +232,8 @@ public partial class CollectionViewModel : ObservableObject, INavigable, IGameJu
     /// <summary>Erstellt ein Anzeige-Item aus einem Sammlungs-Eintrag</summary>
     private CollectionDisplayItem CreateDisplayItem(CollectionEntry entry, CollectionCategory category)
     {
+        var statLabel = GetStatLabel(category);
+
         if (!entry.IsDiscovered)
         {
             return new CollectionDisplayItem
@@ -240,9 +242,10 @@ public partial class CollectionViewModel : ObservableObject, INavigable, IGameJu
                 Name = "???",
                 IconName = "LockOutline",
                 IsDiscovered = false,
-                StatText = "???",
+                StatText = "",
+                StatLabel = "",
                 BadgeText = "",
-                BadgeColor = "#808080",
+                BadgeColor = GetCategoryColor(category),
                 Entry = entry,
                 Category = category,
                 EnemyType = entry.EnemyType,
@@ -263,6 +266,7 @@ public partial class CollectionViewModel : ObservableObject, INavigable, IGameJu
             IconName = entry.IconName,
             IsDiscovered = true,
             StatText = statText,
+            StatLabel = statLabel,
             BadgeText = badgeText,
             BadgeColor = badgeColor,
             Entry = entry,
@@ -273,6 +277,15 @@ public partial class CollectionViewModel : ObservableObject, INavigable, IGameJu
             BombType = entry.BombType
         };
     }
+
+    /// <summary>Stat-Label je nach Kategorie (z.B. "Besiegt", "Gesammelt")</summary>
+    private string GetStatLabel(CollectionCategory category) => category switch
+    {
+        CollectionCategory.Enemies => _localizationService.GetString("CollectionDefeated") ?? "Defeated",
+        CollectionCategory.Bosses => _localizationService.GetString("CollectionDefeated") ?? "Defeated",
+        CollectionCategory.PowerUps => _localizationService.GetString("CollectionCollected") ?? "Collected",
+        _ => ""
+    };
 
     private string GetStatText(CollectionEntry entry, CollectionCategory category)
     {
@@ -497,7 +510,7 @@ public partial class CollectionViewModel : ObservableObject, INavigable, IGameJu
 // DISPLAY MODELS
 // ═══════════════════════════════════════════════════════════════════════════
 
-/// <summary>Anzeige-Item für die Sammlungs-Liste</summary>
+/// <summary>Anzeige-Item für die Sammlungs-Liste (Premium-Karten-Design wie DeckView)</summary>
 public class CollectionDisplayItem
 {
     public string Id { get; init; } = "";
@@ -520,6 +533,36 @@ public class CollectionDisplayItem
 
     /// <summary>True wenn SkiaSharp-Icon verwendet werden soll (alles außer Kosmetik)</summary>
     public bool IsSkiaIcon => Category != CollectionCategory.Cosmetics;
+
+    // ── Premium-Karten-Styling (analog DeckView) ──
+
+    /// <summary>Kategorie-Glow-Farbe (heller als BadgeColor)</summary>
+    public string GlowColorHex => Category switch
+    {
+        CollectionCategory.Enemies => "#EF9A9A",
+        CollectionCategory.Bosses => "#FFE082",
+        CollectionCategory.PowerUps => "#A5D6A7",
+        CollectionCategory.BombCards => "#90CAF9",
+        CollectionCategory.Cosmetics => "#CE93D8",
+        _ => "#B0B0B0"
+    };
+
+    /// <summary>Border-Opacity (voll bei entdeckten, gedimmt bei gesperrten)</summary>
+    public double BorderOpacity => IsDiscovered ? 1.0 : 0.3;
+
+    /// <summary>Shimmer-Overlay-Opacity nach Kategorie</summary>
+    public double ShimmerOpacity => IsDiscovered ? Category switch
+    {
+        CollectionCategory.Bosses => 0.2,
+        CollectionCategory.BombCards => 0.15,
+        _ => 0.1
+    } : 0.03;
+
+    /// <summary>Name-Opacity (voll bei entdeckten, gedimmt bei "???")</summary>
+    public double NameOpacity => IsDiscovered ? 1.0 : 0.5;
+
+    /// <summary>Stat-Label z.B. "Besiegt" / "Gesammelt"</summary>
+    public string StatLabel { get; init; } = "";
 }
 
 /// <summary>Anzeige-Item für die Meilenstein-Liste</summary>

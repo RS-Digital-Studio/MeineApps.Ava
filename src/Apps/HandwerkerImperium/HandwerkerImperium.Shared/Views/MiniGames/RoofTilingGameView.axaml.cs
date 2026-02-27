@@ -117,7 +117,8 @@ public partial class RoofTilingGameView : UserControl
         _lastCanvasWidth = bounds.Width;
         _lastCanvasHeight = bounds.Height;
 
-        _renderer.Render(canvas, bounds, tileData, _vm.GridColumns, _vm.GridRows, deltaTime);
+        _renderer.Render(canvas, bounds, tileData, _vm.GridColumns, _vm.GridRows,
+            _vm.PlacedCount, _vm.TotalToPlace, deltaTime);
     }
 
     /// <summary>

@@ -105,8 +105,15 @@ public partial class DesignPuzzleGameView : UserControl
         // Grid-Dimensionen berechnen
         GetGridDimensions(out int cols, out int rows);
 
+        // Korrekt gefuellte Slots zaehlen fuer Completion-Erkennung
+        int filledCorrectCount = 0;
+        foreach (var s in slots)
+        {
+            if (s.IsCorrect) filledCorrectCount++;
+        }
+
         _renderer.Render(canvas, bounds,
-            slots, cols, rows, deltaTime);
+            slots, cols, rows, filledCorrectCount, _vm.TotalSlots, deltaTime);
     }
 
     /// <summary>

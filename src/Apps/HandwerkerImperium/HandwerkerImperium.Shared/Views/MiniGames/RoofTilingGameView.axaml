@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.MiniGames.RoofTilingGameView"
              x:DataType="vm:RoofTilingGameViewModel">
 
@@ -149,7 +150,7 @@
                       CommandParameter="{Binding .}">
                 <Border Width="42" Height="42"
                         CornerRadius="8"
-                        Background="{Binding .}"
+                        Background="{Binding ., Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                         BorderThickness="3"
                         Cursor="Hand">
                   <Border.BorderBrush>
@@ -175,7 +176,7 @@
           <Border AutomationProperties.AutomationId="RoofTiling_Border_SelectedColorSwatch"
                   Width="24" Height="24"
                   CornerRadius="4"
-                  Background="{Binding SelectedColor}" />
+                  Background="{Binding SelectedColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}" />
         </StackPanel>
       </StackPanel>
     </Border>

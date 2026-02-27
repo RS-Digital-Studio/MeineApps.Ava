@@ -99,7 +99,8 @@ public partial class InspectionGameView : UserControl
         var cells = BuildCellData();
 
         _renderer.Render(canvas, _lastBounds,
-            cells, _vm.GridColumns, _vm.GridRows, _vm.IsPlaying, deltaTime);
+            cells, _vm.GridColumns, _vm.GridRows, _vm.IsPlaying,
+            _vm.FoundDefects, _vm.TotalDefects, deltaTime);
     }
 
     /// <summary>

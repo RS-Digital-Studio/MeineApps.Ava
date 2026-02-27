@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.MiniGames.DesignPuzzleGameView"
              x:DataType="vm:DesignPuzzleGameViewModel">
 
@@ -180,7 +181,7 @@
                       <Border Width="78" Height="78"
                               CornerRadius="10"
                               BorderThickness="2"
-                              BorderBrush="{Binding SelectionBorderColor}"
+                              BorderBrush="{Binding SelectionBorderColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                               Background="{DynamicResource SurfaceBrush}">
                         <StackPanel VerticalAlignment="Center"
                                     HorizontalAlignment="Center"
@@ -188,7 +189,7 @@
                           <!-- Raum-Icon (Material Icon) -->
                           <mi:MaterialIcon Kind="{Binding IconKind}"
                                            Width="30" Height="30"
-                                           Foreground="{Binding IconColor}" />
+                                           Foreground="{Binding IconColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}" />
 
                           <!-- Raum-Name -->
                           <TextBlock Text="{Binding DisplayName}"

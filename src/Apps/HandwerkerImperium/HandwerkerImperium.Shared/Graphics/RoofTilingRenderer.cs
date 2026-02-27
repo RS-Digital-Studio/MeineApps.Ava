@@ -17,10 +17,12 @@ public struct RoofTileData
 }
 
 /// <summary>
-/// SkiaSharp-Renderer fuer das Dachdecken-Minigame.
+/// AAA SkiaSharp-Renderer fuer das Dachdecken-Minigame.
 /// Zeichnet ein realistisches Dach mit Sparren-Struktur, gebogene Dachziegel,
 /// Hint-Markierungen (Schloss), Fehler-Blinken und Dachfirst.
-/// Pixel-Art Stil: Flache Fuellungen, kein Anti-Aliasing, passend zu den anderen Renderern.
+/// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
+/// Platzierungs-Partikel (Funken in Ziegelfarbe), Holzstaub-Atmosphaere,
+/// Completion-Celebration mit goldenem Flash.
 /// </summary>
 public class RoofTilingRenderer
 {
@@ -38,22 +40,50 @@ public class RoofTilingRenderer
     private static readonly SKColor PlacedBorder = new(0x4C, 0xAF, 0x50);     // Gruen-Rand
     private static readonly SKColor DefaultBorder = new(0x55, 0x55, 0x55);    // Grau-Rand
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // Partikel-System (Struct-basiert, kein GC)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private const int MAX_TILES = 30;
+    private const int MAX_SPARKS = 40;
+    private const int MAX_DUST = 10;
+
+    // Fehler-Blink-Timer pro Tile (Array statt Dictionary)
+    private readonly float[] _errorBlinkTimers = new float[MAX_TILES];
+
+    // Platzierungs-Funken (Partikel in Ziegelfarbe)
+    private struct SparkParticle
+    {
+        public float X, Y, VelocityX, VelocityY, Life, MaxLife, Size;
+        public byte R, G, B;
+    }
+
+    private readonly SparkParticle[] _sparks = new SparkParticle[MAX_SPARKS];
+    private int _sparkCount;
+
+    // Atmosphaerischer Holzstaub
+    private struct DustParticle
+    {
+        public float X, Y, VelocityX, VelocityY, Life, MaxLife, Size;
+        public byte Alpha;
+    }
+
+    private readonly DustParticle[] _dust = new DustParticle[MAX_DUST];
+    private int _dustCount;
+
+    // Zustandsverfolgung
+    private int _prevPlacedCount;
+    private bool _prevAllPlaced;
+    private float _completionFlashTimer;
+
     // Animationszeit
     private float _time;
-
-    // Fehler-Blink-Tracker (Index -> verbleibende Blink-Zeit)
-    private readonly Dictionary<int, float> _errorBlinks = new();
 
     /// <summary>
     /// Rendert das gesamte Dach-Grid auf das Canvas.
     /// </summary>
-    /// <param name="canvas">SkiaSharp Canvas zum Zeichnen.</param>
-    /// <param name="bounds">Verfuegbarer Zeichenbereich.</param>
-    /// <param name="tiles">Array aller Dachziegel-Daten.</param>
-    /// <param name="cols">Spaltenanzahl im Grid.</param>
-    /// <param name="rows">Zeilenanzahl im Grid.</param>
-    /// <param name="deltaTime">Zeitdelta seit letztem Frame in Sekunden.</param>
-    public void Render(SKCanvas canvas, SKRect bounds, RoofTileData[] tiles, int cols, int rows, float deltaTime)
+    public void Render(SKCanvas canvas, SKRect bounds, RoofTileData[] tiles, int cols, int rows,
+        int placedCount, int totalSlots, float deltaTime)
     {
         _time += deltaTime;
 
@@ -73,9 +103,6 @@ public class RoofTilingRenderer
         float tileWidth = (availableWidth - (cols - 1) * tileSpacing) / cols;
         float tileHeight = (gridHeight - (rows - 1) * tileSpacing) / rows;
 
-        // Maximale Groesse begrenzen, damit Ziegel nicht zu gross werden
-        // Kein Size-Cap: Bounds bestimmen die Groesse
-
         // Grid zentrieren
         float totalGridWidth = cols * tileWidth + (cols - 1) * tileSpacing;
         float totalGridHeight = rows * tileHeight + (rows - 1) * tileSpacing;
@@ -89,11 +116,34 @@ public class RoofTilingRenderer
         // 2. Dachfirst (dekoratives Element oben)
         DrawRidge(canvas, gridLeft, gridTop - ridgeHeight - 2, totalGridWidth, ridgeHeight);
 
-        // 3. Ziegel zeichnen
+        // 3. Holzstaub-Partikel (hinter den Ziegeln)
+        UpdateAndDrawDust(canvas, bounds, gridLeft, gridTop, totalGridWidth, totalGridHeight, deltaTime);
+
+        // 4. Ziegel zeichnen
         DrawTiles(canvas, tiles, cols, rows, gridLeft, gridTop, tileWidth, tileHeight, tileSpacing, deltaTime);
 
-        // 4. Fehler-Blinks aktualisieren
+        // 5. Fehler-Blinks aktualisieren
         UpdateErrorBlinks(tiles, deltaTime);
+
+        // 6. Platzierungs-Partikel pruefen und spawnen
+        DetectNewPlacements(tiles, placedCount, gridLeft, gridTop, tileWidth, tileHeight, tileSpacing, cols);
+
+        // 7. Platzierungs-Funken zeichnen
+        UpdateAndDrawSparks(canvas, deltaTime);
+
+        // 8. Completion-Celebration
+        bool allPlaced = totalSlots > 0 && placedCount >= totalSlots;
+        if (allPlaced && !_prevAllPlaced)
+        {
+            _completionFlashTimer = 1.5f; // 1.5s goldener Flash
+        }
+        _prevAllPlaced = allPlaced;
+
+        if (_completionFlashTimer > 0)
+        {
+            DrawCompletionFlash(canvas, gridLeft, gridTop, totalGridWidth, totalGridHeight, ridgeHeight);
+            _completionFlashTimer -= deltaTime;
+        }
     }
 
     /// <summary>
@@ -115,16 +165,14 @@ public class RoofTilingRenderer
         float tileWidth = (availableWidth - (cols - 1) * tileSpacing) / cols;
         float tileHeight = (gridHeight - (rows - 1) * tileSpacing) / rows;
 
-        // Kein Size-Cap: Bounds bestimmen die Groesse
-
         float totalGridWidth = cols * tileWidth + (cols - 1) * tileSpacing;
-        float totalGridHeight = rows * tileHeight + (rows - 1) * tileSpacing;
         float gridLeft = bounds.Left + (bounds.Width - totalGridWidth) / 2;
         // Oben ausrichten (identisch mit Render)
         float gridTop = bounds.Top + padding + ridgeHeight + 4;
 
         // Pruefe ob Touch innerhalb des Grids liegt
         if (touchX < gridLeft || touchX > gridLeft + totalGridWidth) return -1;
+        float totalGridHeight = rows * tileHeight + (rows - 1) * tileSpacing;
         if (touchY < gridTop || touchY > gridTop + totalGridHeight) return -1;
 
         // Spalte und Zeile berechnen
@@ -145,6 +193,10 @@ public class RoofTilingRenderer
 
         return row * cols + col;
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // HINTERGRUND
+    // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Zeichnet den Holz-Dachstuhl als Hintergrund.
@@ -242,6 +294,10 @@ public class RoofTilingRenderer
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // ZIEGEL
+    // ═══════════════════════════════════════════════════════════════════════
+
     /// <summary>
     /// Zeichnet alle Dachziegel im Grid.
     /// </summary>
@@ -280,15 +336,15 @@ public class RoofTilingRenderer
                 tileColor = new SKColor(tile.DisplayColor);
             }
 
-            // Fehler-Blink-Effekt
-            bool isBlinking = _errorBlinks.ContainsKey(i);
+            // Fehler-Blink-Effekt (Array-basiert)
+            bool isBlinking = i < MAX_TILES && _errorBlinkTimers[i] > 0;
             if (tile.HasError || isBlinking)
             {
                 float blinkPhase = (float)Math.Sin(_time * 12) * 0.5f + 0.5f;
                 tileColor = BlendColors(tileColor, ErrorFlashColor, blinkPhase * 0.6f);
 
-                if (!_errorBlinks.ContainsKey(i))
-                    _errorBlinks[i] = 0.5f; // 0.5s Blink-Dauer
+                if (i < MAX_TILES && _errorBlinkTimers[i] <= 0)
+                    _errorBlinkTimers[i] = 0.5f; // 0.5s Blink-Dauer
             }
 
             // --- Dachziegel zeichnen (leicht gebogene Optik) ---
@@ -422,40 +478,273 @@ public class RoofTilingRenderer
             paint);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // FEHLER-BLINK (Array-basiert)
+    // ═══════════════════════════════════════════════════════════════════════
+
     /// <summary>
-    /// Aktualisiert Fehler-Blink-Timer und entfernt abgelaufene Blinks.
+    /// Aktualisiert Fehler-Blink-Timer (Array statt Dictionary).
     /// </summary>
     private void UpdateErrorBlinks(RoofTileData[] tiles, float deltaTime)
     {
-        // Neue Fehler registrieren
-        for (int i = 0; i < tiles.Length; i++)
+        for (int i = 0; i < tiles.Length && i < MAX_TILES; i++)
         {
-            if (tiles[i].HasError && !_errorBlinks.ContainsKey(i))
+            // Neue Fehler registrieren
+            if (tiles[i].HasError && _errorBlinkTimers[i] <= 0)
             {
-                _errorBlinks[i] = 0.5f;
+                _errorBlinkTimers[i] = 0.5f;
             }
-        }
 
-        // Timer runterzaehlen
-        var keysToRemove = new List<int>();
-        foreach (var kvp in _errorBlinks)
-        {
-            var remaining = kvp.Value - deltaTime;
-            if (remaining <= 0 || !tiles[kvp.Key].HasError)
+            // Timer runterzaehlen
+            if (_errorBlinkTimers[i] > 0)
             {
-                keysToRemove.Add(kvp.Key);
-            }
-            else
-            {
-                _errorBlinks[kvp.Key] = remaining;
-            }
-        }
+                _errorBlinkTimers[i] -= deltaTime;
+                if (_errorBlinkTimers[i] < 0) _errorBlinkTimers[i] = 0;
 
-        foreach (var key in keysToRemove)
-        {
-            _errorBlinks.Remove(key);
+                // Stoppen wenn Fehler nicht mehr aktiv
+                if (!tiles[i].HasError)
+                    _errorBlinkTimers[i] = 0;
+            }
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PLATZIERUNGS-PARTIKEL (Funken in Ziegelfarbe)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Erkennt neu platzierte Ziegel und spawnt Funken-Partikel.
+    /// </summary>
+    private void DetectNewPlacements(RoofTileData[] tiles, int placedCount,
+        float gridLeft, float gridTop, float tileWidth, float tileHeight, float spacing, int cols)
+    {
+        if (placedCount > _prevPlacedCount && _prevPlacedCount >= 0)
+        {
+            // Neuen platzierten Ziegel finden (letzten mit IsPlaced der kein Hint ist)
+            for (int i = tiles.Length - 1; i >= 0; i--)
+            {
+                if (tiles[i].IsPlaced && !tiles[i].IsHint)
+                {
+                    int row = i / cols;
+                    int col = i % cols;
+                    float tx = gridLeft + col * (tileWidth + spacing) + tileWidth / 2;
+                    float ty = gridTop + row * (tileHeight + spacing) + tileHeight / 2;
+
+                    // Versatz fuer ungerade Reihen
+                    if (row % 2 == 1) tx += tileWidth * 0.15f;
+
+                    // Ziegelfarbe extrahieren
+                    var color = new SKColor(tiles[i].DisplayColor);
+
+                    // 8 Funken in Ziegelfarbe spawnen
+                    SpawnPlacementSparks(tx, ty, color);
+                    break;
+                }
+            }
+        }
+        _prevPlacedCount = placedCount;
+    }
+
+    /// <summary>
+    /// Spawnt 8 Funken vom Ziegel-Mittelpunkt in Ziegelfarbe.
+    /// </summary>
+    private void SpawnPlacementSparks(float cx, float cy, SKColor color)
+    {
+        var rng = Random.Shared;
+        for (int i = 0; i < 8 && _sparkCount < MAX_SPARKS; i++)
+        {
+            float angle = (float)(rng.NextDouble() * Math.PI * 2);
+            float speed = 40 + (float)(rng.NextDouble() * 60);
+
+            _sparks[_sparkCount++] = new SparkParticle
+            {
+                X = cx,
+                Y = cy,
+                VelocityX = MathF.Cos(angle) * speed,
+                VelocityY = MathF.Sin(angle) * speed,
+                Life = 0,
+                MaxLife = 0.4f + (float)(rng.NextDouble() * 0.4f),
+                Size = 2 + (float)(rng.NextDouble() * 2),
+                R = color.Red,
+                G = color.Green,
+                B = color.Blue
+            };
+        }
+    }
+
+    /// <summary>
+    /// Aktualisiert und zeichnet alle aktiven Funken-Partikel.
+    /// </summary>
+    private void UpdateAndDrawSparks(SKCanvas canvas, float deltaTime)
+    {
+        if (_sparkCount == 0) return;
+
+        using var sparkPaint = new SKPaint { IsAntialias = false };
+
+        for (int i = 0; i < _sparkCount; i++)
+        {
+            var p = _sparks[i];
+            p.Life += deltaTime;
+            p.X += p.VelocityX * deltaTime;
+            p.Y += p.VelocityY * deltaTime;
+            p.VelocityY += 100 * deltaTime; // Schwerkraft
+            p.VelocityX *= 0.97f; // Luftwiderstand
+
+            if (p.Life >= p.MaxLife)
+            {
+                // Entfernen durch Kompaktierung (letztes Element an geloeschte Stelle)
+                _sparks[i] = _sparks[--_sparkCount];
+                i--;
+                continue;
+            }
+
+            _sparks[i] = p;
+
+            float alpha = 1 - (p.Life / p.MaxLife);
+            sparkPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
+            canvas.DrawRect(p.X - p.Size / 2, p.Y - p.Size / 2, p.Size, p.Size, sparkPaint);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // HOLZSTAUB-ATMOSPHAERE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Aktualisiert und zeichnet atmosphaerische Holzstaub-Partikel ueber dem Dachstuhl.
+    /// </summary>
+    private void UpdateAndDrawDust(SKCanvas canvas, SKRect bounds, float gridLeft, float gridTop,
+        float gridWidth, float gridHeight, float deltaTime)
+    {
+        var rng = Random.Shared;
+
+        // Neue Partikel erzeugen (langsam, atmosphaerisch)
+        if (_dustCount < MAX_DUST && rng.NextDouble() < 0.3 * deltaTime * 10)
+        {
+            _dust[_dustCount++] = new DustParticle
+            {
+                X = gridLeft + (float)(rng.NextDouble() * gridWidth),
+                Y = gridTop + (float)(rng.NextDouble() * gridHeight),
+                VelocityX = (float)(rng.NextDouble() - 0.5) * 8,
+                VelocityY = -5 - (float)(rng.NextDouble() * 8),
+                Life = 0,
+                MaxLife = 3.0f + (float)(rng.NextDouble() * 3.0f),
+                Size = 1 + (float)(rng.NextDouble() * 2),
+                Alpha = (byte)(30 + rng.Next(0, 40))
+            };
+        }
+
+        using var dustPaint = new SKPaint { IsAntialias = false };
+
+        for (int i = 0; i < _dustCount; i++)
+        {
+            var p = _dust[i];
+            p.Life += deltaTime;
+            p.X += p.VelocityX * deltaTime;
+            p.Y += p.VelocityY * deltaTime;
+
+            // Leichte horizontale Drift (Wind-Effekt)
+            p.VelocityX += (float)(Math.Sin(_time * 0.5 + i) * 1.5) * deltaTime;
+
+            if (p.Life >= p.MaxLife)
+            {
+                _dust[i] = _dust[--_dustCount];
+                i--;
+                continue;
+            }
+
+            _dust[i] = p;
+
+            // Alpha: Fade-In/Fade-Out
+            float lifeRatio = p.Life / p.MaxLife;
+            float alpha = lifeRatio < 0.15f
+                ? lifeRatio / 0.15f
+                : 1.0f - (lifeRatio - 0.15f) / 0.85f;
+            byte finalAlpha = (byte)(p.Alpha * alpha);
+
+            // Warme Holzstaub-Farbe
+            dustPaint.Color = new SKColor(0xA0, 0x8B, 0x70, finalAlpha);
+            canvas.DrawRect(p.X, p.Y, p.Size, p.Size, dustPaint);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMPLETION-CELEBRATION
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeichnet einen goldenen Flash ueber dem gesamten Dach wenn alle Ziegel platziert sind.
+    /// </summary>
+    private void DrawCompletionFlash(SKCanvas canvas, float gridLeft, float gridTop,
+        float gridWidth, float gridHeight, float ridgeHeight)
+    {
+        float intensity = _completionFlashTimer / 1.5f; // 0-1, nimmt ab
+        float pulse = (float)(0.5 + 0.5 * Math.Sin(_time * 8));
+
+        // Goldener Glow ueber das gesamte Dach
+        byte alpha = (byte)(intensity * pulse * 80);
+        using var glowPaint = new SKPaint
+        {
+            Color = new SKColor(0xFF, 0xD7, 0x00, alpha),
+            IsAntialias = false
+        };
+        canvas.DrawRect(gridLeft - 8, gridTop - ridgeHeight - 8,
+            gridWidth + 16, gridHeight + ridgeHeight + 16, glowPaint);
+
+        // Goldene Randlinie (staerker)
+        byte borderAlpha = (byte)(intensity * 180);
+        using var borderPaint = new SKPaint
+        {
+            Color = new SKColor(0xFF, 0xD7, 0x00, borderAlpha),
+            IsAntialias = false,
+            StrokeWidth = 3,
+            Style = SKPaintStyle.Stroke
+        };
+        canvas.DrawRect(gridLeft - 10, gridTop - ridgeHeight - 10,
+            gridWidth + 20, gridHeight + ridgeHeight + 20, borderPaint);
+
+        // Goldene Sterne oben (3 Stueck, versetzt animiert)
+        if (intensity > 0.3f)
+        {
+            using var starPaint = new SKPaint
+            {
+                Color = new SKColor(0xFF, 0xD7, 0x00, (byte)(intensity * 220)),
+                IsAntialias = true
+            };
+
+            float centerX = gridLeft + gridWidth / 2;
+            float starY = gridTop - ridgeHeight - 20;
+            float starSize = 6 + pulse * 3;
+
+            // 3 Sterne nebeneinander
+            for (int s = -1; s <= 1; s++)
+            {
+                float sx = centerX + s * 25;
+                float sOffset = (float)Math.Sin(_time * 4 + s * 1.2f) * 2;
+                DrawStar(canvas, sx, starY + sOffset, starSize, starPaint);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Zeichnet einen einfachen 4-zackigen Stern.
+    /// </summary>
+    private static void DrawStar(SKCanvas canvas, float cx, float cy, float size, SKPaint paint)
+    {
+        // 4-zackiger Stern aus Rauten
+        canvas.DrawRect(cx - size / 2, cy - 1, size, 2, paint);
+        canvas.DrawRect(cx - 1, cy - size / 2, 2, size, paint);
+        // Diagonale Zacken (kleiner)
+        float d = size * 0.35f;
+        canvas.DrawRect(cx - d, cy - d, d * 0.7f, d * 0.7f, paint);
+        canvas.DrawRect(cx + d * 0.3f, cy - d, d * 0.7f, d * 0.7f, paint);
+        canvas.DrawRect(cx - d, cy + d * 0.3f, d * 0.7f, d * 0.7f, paint);
+        canvas.DrawRect(cx + d * 0.3f, cy + d * 0.3f, d * 0.7f, d * 0.7f, paint);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // HILFSFUNKTIONEN
+    // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Mischt zwei Farben mit gegebenem Faktor (0 = color1, 1 = color2).

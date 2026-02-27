@@ -17,10 +17,12 @@ public struct InspectionCellData
 }
 
 /// <summary>
-/// SkiaSharp-Renderer fuer das Bauabnahme-Minigame (Inspection).
+/// AAA SkiaSharp-Renderer fuer das Bauabnahme-Minigame (Inspection).
 /// Baustellen-Optik: Betongrau mit Rissen, Kacheln mit Baustellen-Elementen,
 /// Staub-Partikel, Lupe als Deko, Mangel-Hinweis per subtiles Schimmern.
-/// Pixel-Art Stil: Flache Fuellungen, kein Anti-Aliasing, passend zu CityRenderer/SawingGameRenderer.
+/// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
+/// Entdeckungs-Effekte (gruene/rote Partikel), pulsierende Lupe,
+/// Completion-Effekt wenn alle Defekte gefunden.
 /// </summary>
 public class InspectionGameRenderer
 {
@@ -54,27 +56,43 @@ public class InspectionGameRenderer
     private static readonly SKColor MagnifierGlass = new(0x42, 0xA5, 0xF5, 40);
     private static readonly SKColor MagnifierHandle = new(0x5D, 0x40, 0x37);
 
-    // Staub-Partikel
-    private readonly List<DustParticle> _dustParticles = [];
-    private const int MaxDustParticles = 15;
+    // ═══════════════════════════════════════════════════════════════════════
+    // Partikel-System (Struct-basiert, kein GC)
+    // ═══════════════════════════════════════════════════════════════════════
 
+    private const int MAX_DUST = 15;
+    private const int MAX_SPARKS = 30;
+    private const int MAX_TRACKED_CELLS = 30;
+
+    // Staub-Partikel (Struct-Array statt List)
     private struct DustParticle
     {
         public float X, Y, VelocityX, VelocityY, Life, MaxLife, Size;
         public byte Alpha;
     }
 
+    private readonly DustParticle[] _dust = new DustParticle[MAX_DUST];
+    private int _dustCount;
+
+    // Entdeckungs-Funken (gruen bei Defekt gefunden, rot bei Fehlalarm)
+    private struct SparkParticle
+    {
+        public float X, Y, VelocityX, VelocityY, Life, MaxLife, Size;
+        public byte R, G, B;
+    }
+
+    private readonly SparkParticle[] _sparks = new SparkParticle[MAX_SPARKS];
+    private int _sparkCount;
+
+    // Zustandsverfolgung fuer Entdeckungs-Erkennung
+    private readonly bool[] _prevDefectFound = new bool[MAX_TRACKED_CELLS];
+    private readonly bool[] _prevFalseAlarm = new bool[MAX_TRACKED_CELLS];
+
     /// <summary>
     /// Rendert das gesamte Inspektions-Spielfeld.
     /// </summary>
-    /// <param name="canvas">SkiaSharp Canvas zum Zeichnen.</param>
-    /// <param name="bounds">Verfuegbarer Zeichenbereich.</param>
-    /// <param name="cells">Zell-Daten fuer das Grid.</param>
-    /// <param name="cols">Spaltenanzahl.</param>
-    /// <param name="rows">Zeilenanzahl.</param>
-    /// <param name="isPlaying">Ob das Spiel laeuft.</param>
-    /// <param name="deltaTime">Zeitdelta seit letztem Frame in Sekunden.</param>
-    public void Render(SKCanvas canvas, SKRect bounds, InspectionCellData[] cells, int cols, int rows, bool isPlaying, float deltaTime)
+    public void Render(SKCanvas canvas, SKRect bounds, InspectionCellData[] cells, int cols, int rows,
+        bool isPlaying, int defectsFound, int totalDefects, float deltaTime)
     {
         _time += deltaTime;
 
@@ -111,27 +129,30 @@ public class InspectionGameRenderer
                 float cellY = gridTop + row * cellSize + spacing / 2;
                 DrawCell(canvas, cellX, cellY, effectiveCellSize, effectiveCellSize, cells[i], isPlaying);
             }
+
+            // Entdeckungs-Effekte pruefen und spawnen
+            if (isPlaying)
+            {
+                DetectNewDiscoveries(cells, gridLeft, gridTop, cellSize, spacing, cols);
+            }
         }
 
-        // Lupe/Inspektor-Deko (oben rechts)
-        DrawMagnifier(canvas, bounds.Right - 44, bounds.Top + 12);
+        // Lupe/Inspektor-Deko (oben rechts, pulsierend)
+        DrawMagnifier(canvas, bounds.Right - 44, bounds.Top + 12, isPlaying);
 
         // Staub-Partikel
         if (isPlaying)
         {
             UpdateAndDrawDust(canvas, bounds, deltaTime);
         }
+
+        // Entdeckungs-Funken zeichnen
+        UpdateAndDrawSparks(canvas, deltaTime);
     }
 
     /// <summary>
     /// HitTest: Gibt den Zell-Index zurueck oder -1 wenn kein Treffer.
     /// </summary>
-    /// <param name="bounds">Verfuegbarer Zeichenbereich.</param>
-    /// <param name="touchX">Touch X-Koordinate (in Skia-Pixeln).</param>
-    /// <param name="touchY">Touch Y-Koordinate (in Skia-Pixeln).</param>
-    /// <param name="cols">Spaltenanzahl.</param>
-    /// <param name="rows">Zeilenanzahl.</param>
-    /// <returns>Zell-Index (0..cols*rows-1) oder -1.</returns>
     public int HitTest(SKRect bounds, float touchX, float touchY, int cols, int rows)
     {
         float padding = 12;
@@ -344,12 +365,12 @@ public class InspectionGameRenderer
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // VEKTOR-ICONS (Ersatz fuer Emojis - Desktop rendert Emojis als □)
+    // VEKTOR-ICONS (Ersatz fuer Emojis - Desktop rendert Emojis als Quadrat)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Zeichnet ein Vektor-Icon zentriert an (cx, cy) mit gegebener Größe.
-    /// 16 Icons: 8 gute (Baustellen-Elemente) + 8 defekte (Mängel).
+    /// Zeichnet ein Vektor-Icon zentriert an (cx, cy) mit gegebener Groesse.
+    /// 16 Icons: 8 gute (Baustellen-Elemente) + 8 defekte (Maengel).
     /// </summary>
     private static void DrawCellIcon(SKCanvas canvas, float cx, float cy, float size, string iconId, byte alpha)
     {
@@ -357,7 +378,7 @@ public class InspectionGameRenderer
 
         switch (iconId)
         {
-            // ── GUTE ICONS (Baustellen-Elemente, "in Ordnung") ──
+            // -- GUTE ICONS (Baustellen-Elemente, "in Ordnung") --
 
             case "brick":
                 DrawBrickIcon(canvas, cx, cy, half, alpha);
@@ -384,7 +405,7 @@ public class InspectionGameRenderer
                 DrawBeamIcon(canvas, cx, cy, half, alpha);
                 break;
 
-            // ── DEFEKT-ICONS (Mängel, "Problem") ──
+            // -- DEFEKT-ICONS (Maengel, "Problem") --
 
             case "warning":
                 DrawWarningIcon(canvas, cx, cy, half, alpha);
@@ -413,36 +434,32 @@ public class InspectionGameRenderer
         }
     }
 
-    // ── Gute Icons ──────────────────────────────────────────────────────
+    // -- Gute Icons --
 
     /// <summary>Ziegel-Muster (2x3 orange/braune Rechtecke).</summary>
     private static void DrawBrickIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
-        float bw = half * 0.6f;  // Breite eines Ziegels
-        float bh = half * 0.35f; // Höhe eines Ziegels
+        float bw = half * 0.6f;
+        float bh = half * 0.35f;
         float gap = half * 0.08f;
 
         using var brickPaint = new SKPaint { Color = new SKColor(0xCC, 0x66, 0x33, alpha), IsAntialias = true };
         using var brickDark = new SKPaint { Color = new SKColor(0x8B, 0x45, 0x13, alpha), IsAntialias = true };
         using var mortarPaint = new SKPaint { Color = new SKColor(0xD2, 0xB4, 0x8C, alpha), IsAntialias = true, StrokeWidth = 1, Style = SKPaintStyle.Stroke };
 
-        // Obere Reihe: 2 Ziegel
         float topY = cy - bh - gap / 2;
         canvas.DrawRect(cx - bw - gap / 2, topY, bw, bh, brickPaint);
         canvas.DrawRect(cx + gap / 2, topY, bw, bh, brickDark);
 
-        // Mittlere Reihe: 2 Ziegel versetzt
         float midY = cy - bh / 2 + gap / 2;
         canvas.DrawRect(cx - bw * 0.5f - gap / 2, midY, bw, bh, brickDark);
         canvas.DrawRect(cx + bw * 0.5f + gap / 2, midY, bw * 0.5f, bh, brickPaint);
         canvas.DrawRect(cx - bw - gap / 2, midY, bw * 0.5f, bh, brickPaint);
 
-        // Untere Reihe: 2 Ziegel
         float botY = cy + gap / 2 + bh * 0.5f;
         canvas.DrawRect(cx - bw - gap / 2, botY, bw, bh, brickPaint);
         canvas.DrawRect(cx + gap / 2, botY, bw, bh, brickDark);
 
-        // Fugen-Linien
         canvas.DrawLine(cx - bw - gap, topY + bh, cx + bw + gap, topY + bh, mortarPaint);
         canvas.DrawLine(cx - bw - gap, midY + bh, cx + bw + gap, midY + bh, mortarPaint);
     }
@@ -457,11 +474,9 @@ public class InspectionGameRenderer
         using var grainPaint = new SKPaint { Color = new SKColor(0x6B, 0x4B, 0x2D, alpha), IsAntialias = true, StrokeWidth = 1 };
         using var lightPaint = new SKPaint { Color = new SKColor(0xA0, 0x80, 0x50, alpha), IsAntialias = true, StrokeWidth = 1 };
 
-        // Balken
         var rect = new SKRect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
         canvas.DrawRoundRect(rect, 2, 2, woodPaint);
 
-        // Maserung (3 dunkle + 2 helle Linien)
         float left = cx - w / 2 + 3;
         float right = cx + w / 2 - 3;
         canvas.DrawLine(left, cy - h * 0.25f, right, cy - h * 0.2f, grainPaint);
@@ -482,13 +497,9 @@ public class InspectionGameRenderer
         using var slotPaint = new SKPaint { Color = new SKColor(0x50, 0x50, 0x58, alpha), IsAntialias = true, StrokeWidth = 2, Style = SKPaintStyle.Stroke };
         using var shaftPaint = new SKPaint { Color = new SKColor(0x90, 0x90, 0x98, alpha), IsAntialias = true };
 
-        // Schaft (unterhalb des Kopfes)
         canvas.DrawRect(cx - shaftW / 2, cy, shaftW, shaftH, shaftPaint);
-
-        // Schraubenkopf
         canvas.DrawCircle(cx, cy - half * 0.1f, headR, metalPaint);
 
-        // Kreuzschlitz
         float slotLen = headR * 0.6f;
         float scy = cy - half * 0.1f;
         canvas.DrawLine(cx - slotLen, scy, cx + slotLen, scy, slotPaint);
@@ -498,22 +509,20 @@ public class InspectionGameRenderer
     /// <summary>Leiter (2 vertikale + 3 horizontale Linien).</summary>
     private static void DrawLadderIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
-        float lw = half * 0.7f;  // halbe Breite
-        float lh = half * 0.9f;  // halbe Höhe
+        float lw = half * 0.7f;
+        float lh = half * 0.9f;
 
         using var railPaint = new SKPaint { Color = new SKColor(0xA0, 0x7B, 0x50, alpha), IsAntialias = true, StrokeWidth = 3, StrokeCap = SKStrokeCap.Round };
         using var rungPaint = new SKPaint { Color = new SKColor(0xC0, 0x95, 0x60, alpha), IsAntialias = true, StrokeWidth = 2, StrokeCap = SKStrokeCap.Round };
 
-        // Seitenholme (leicht nach oben zusammenlaufend)
         canvas.DrawLine(cx - lw, cy + lh, cx - lw * 0.7f, cy - lh, railPaint);
         canvas.DrawLine(cx + lw, cy + lh, cx + lw * 0.7f, cy - lh, railPaint);
 
-        // 3 Sprossen
         for (int i = 0; i < 3; i++)
         {
-            float t = 0.2f + i * 0.3f; // 0.2, 0.5, 0.8
+            float t = 0.2f + i * 0.3f;
             float ry = cy - lh + 2 * lh * t;
-            float rOffset = lw * (1.0f - t * 0.15f); // Sprossen werden oben schmaler
+            float rOffset = lw * (1.0f - t * 0.15f);
             canvas.DrawLine(cx - rOffset, ry, cx + rOffset, ry, rungPaint);
         }
     }
@@ -525,42 +534,33 @@ public class InspectionGameRenderer
         using var cablePaint = new SKPaint { Color = new SKColor(0x90, 0x90, 0x90, alpha), IsAntialias = true, StrokeWidth = 1.5f };
         using var hookPaint = new SKPaint { Color = new SKColor(0xD0, 0xD0, 0xD0, alpha), IsAntialias = true, StrokeWidth = 2, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
 
-        // Vertikaler Mast
         float mastX = cx - half * 0.4f;
         canvas.DrawLine(mastX, cy + half, mastX, cy - half * 0.7f, cranePaint);
-
-        // Horizontaler Ausleger
         canvas.DrawLine(mastX, cy - half * 0.7f, cx + half * 0.8f, cy - half * 0.7f, cranePaint);
 
-        // Seil (vertikal vom Ausleger-Ende)
         float hookX = cx + half * 0.6f;
         canvas.DrawLine(hookX, cy - half * 0.7f, hookX, cy + half * 0.1f, cablePaint);
 
-        // Haken (kleiner Bogen unten am Seil)
         using var hookPath = new SKPath();
         hookPath.MoveTo(hookX, cy + half * 0.1f);
         hookPath.ArcTo(new SKRect(hookX - half * 0.2f, cy + half * 0.05f, hookX + half * 0.2f, cy + half * 0.45f), 0, 180, false);
         canvas.DrawPath(hookPath, hookPaint);
     }
 
-    /// <summary>Schraubenschlüssel (U-Form oben + gerader Griff).</summary>
+    /// <summary>Schraubenschluessel (U-Form oben + gerader Griff).</summary>
     private static void DrawWrenchIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         using var metalPaint = new SKPaint { Color = new SKColor(0xA0, 0xA0, 0xA8, alpha), IsAntialias = true };
-        using var darkPaint = new SKPaint { Color = new SKColor(0x70, 0x70, 0x78, alpha), IsAntialias = true };
         using var handlePaint = new SKPaint { Color = new SKColor(0x80, 0x80, 0x88, alpha), IsAntialias = true };
 
-        // Griff (schmales Rechteck, leicht diagonal)
         float gw = half * 0.22f;
         float gh = half * 1.2f;
 
         canvas.Save();
         canvas.RotateDegrees(-20, cx, cy);
 
-        // Griff
         canvas.DrawRoundRect(new SKRect(cx - gw / 2, cy - gh * 0.1f, cx + gw / 2, cy + gh), 2, 2, handlePaint);
 
-        // Maulöffnung (U-Form oben)
         float jawW = half * 0.5f;
         float jawH = half * 0.4f;
         using var jawPath = new SKPath();
@@ -589,7 +589,6 @@ public class InspectionGameRenderer
         using var gearPaint = new SKPaint { Color = new SKColor(0x90, 0x90, 0x98, alpha), IsAntialias = true };
         using var holePaint = new SKPaint { Color = new SKColor(0x37, 0x47, 0x4F, alpha), IsAntialias = true };
 
-        // Zahnrad-Path mit Zacken
         using var path = new SKPath();
         float angleStep = 360f / teeth;
         float toothHalf = angleStep * 0.25f;
@@ -601,7 +600,6 @@ public class InspectionGameRenderer
             float rad2 = (baseAngle + toothHalf) * MathF.PI / 180;
             float radM1 = (baseAngle - toothHalf * 0.6f) * MathF.PI / 180;
             float radM2 = (baseAngle + toothHalf * 0.6f) * MathF.PI / 180;
-            // Zwischen den Zähnen (innerer Radius)
             float radGap1 = (baseAngle + toothHalf + 2) * MathF.PI / 180;
             float radGap2 = (baseAngle + angleStep - toothHalf - 2) * MathF.PI / 180;
 
@@ -610,23 +608,19 @@ public class InspectionGameRenderer
             else
                 path.LineTo(cx + innerR * MathF.Cos(rad1), cy + innerR * MathF.Sin(rad1));
 
-            // Zacke nach außen
             path.LineTo(cx + outerR * MathF.Cos(radM1), cy + outerR * MathF.Sin(radM1));
             path.LineTo(cx + outerR * MathF.Cos(radM2), cy + outerR * MathF.Sin(radM2));
             path.LineTo(cx + innerR * MathF.Cos(rad2), cy + innerR * MathF.Sin(rad2));
-
-            // Lücke zum nächsten Zahn
             path.LineTo(cx + innerR * MathF.Cos(radGap1), cy + innerR * MathF.Sin(radGap1));
             path.LineTo(cx + innerR * MathF.Cos(radGap2), cy + innerR * MathF.Sin(radGap2));
         }
         path.Close();
         canvas.DrawPath(path, gearPaint);
 
-        // Mittelloch
         canvas.DrawCircle(cx, cy, holeR, holePaint);
     }
 
-    /// <summary>I-Träger (breite Flansche oben/unten + schmaler Steg).</summary>
+    /// <summary>I-Traeger (breite Flansche oben/unten + schmaler Steg).</summary>
     private static void DrawBeamIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float flangeW = half * 1.2f;
@@ -637,19 +631,13 @@ public class InspectionGameRenderer
         using var steelPaint = new SKPaint { Color = new SKColor(0x78, 0x90, 0x9C, alpha), IsAntialias = true };
         using var highlightPaint = new SKPaint { Color = new SKColor(0x90, 0xA4, 0xAE, alpha), IsAntialias = true };
 
-        // Steg (vertikal, schmal)
         canvas.DrawRect(cx - webW / 2, cy - webH / 2, webW, webH, steelPaint);
-
-        // Oberer Flansch
         canvas.DrawRect(cx - flangeW / 2, cy - webH / 2 - flangeH / 2, flangeW, flangeH, steelPaint);
-        // Highlight auf oberem Flansch
         canvas.DrawRect(cx - flangeW / 2, cy - webH / 2 - flangeH / 2, flangeW, flangeH * 0.3f, highlightPaint);
-
-        // Unterer Flansch
         canvas.DrawRect(cx - flangeW / 2, cy + webH / 2 - flangeH / 2, flangeW, flangeH, steelPaint);
     }
 
-    // ── Defekt-Icons ────────────────────────────────────────────────────
+    // -- Defekt-Icons --
 
     /// <summary>Warndreieck (gelbes Dreieck mit schwarzem "!").</summary>
     private static void DrawWarningIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
@@ -658,7 +646,6 @@ public class InspectionGameRenderer
         using var borderPaint = new SKPaint { Color = new SKColor(0xE6, 0x9C, 0x00, alpha), IsAntialias = true, StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke };
         using var exclPaint = new SKPaint { Color = new SKColor(0x33, 0x33, 0x33, alpha), IsAntialias = true, StrokeWidth = 2.5f, StrokeCap = SKStrokeCap.Round };
 
-        // Dreieck
         using var triPath = new SKPath();
         triPath.MoveTo(cx, cy - half * 0.85f);
         triPath.LineTo(cx - half * 0.9f, cy + half * 0.7f);
@@ -667,12 +654,11 @@ public class InspectionGameRenderer
         canvas.DrawPath(triPath, triPaint);
         canvas.DrawPath(triPath, borderPaint);
 
-        // Ausrufezeichen
         canvas.DrawLine(cx, cy - half * 0.3f, cx, cy + half * 0.2f, exclPaint);
         canvas.DrawCircle(cx, cy + half * 0.45f, 1.5f, exclPaint);
     }
 
-    /// <summary>Absperrung (rot-weiß gestreifter Balken auf 2 Füßen).</summary>
+    /// <summary>Absperrung (rot-weiss gestreifter Balken auf 2 Fuessen).</summary>
     private static void DrawBarrierIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float barW = half * 1.6f;
@@ -683,15 +669,12 @@ public class InspectionGameRenderer
         using var whitePaint = new SKPaint { Color = new SKColor(0xF5, 0xF5, 0xF5, alpha), IsAntialias = true };
         using var legPaint = new SKPaint { Color = new SKColor(0x90, 0x90, 0x90, alpha), IsAntialias = true, StrokeWidth = 2.5f };
 
-        // Füße (2 vertikale Linien)
         canvas.DrawLine(cx - half * 0.55f, barY + barH, cx - half * 0.55f, cy + half * 0.8f, legPaint);
         canvas.DrawLine(cx + half * 0.55f, barY + barH, cx + half * 0.55f, cy + half * 0.8f, legPaint);
 
-        // Balken-Hintergrund (rot)
         var barRect = new SKRect(cx - barW / 2, barY, cx + barW / 2, barY + barH);
         canvas.DrawRoundRect(barRect, 2, 2, redPaint);
 
-        // Weiße Streifen (diagonal)
         canvas.Save();
         canvas.ClipRect(barRect);
         float stripeW = barH * 0.6f;
@@ -728,7 +711,6 @@ public class InspectionGameRenderer
             Style = SKPaintStyle.Stroke
         };
 
-        // Zickzack-Riss
         using var path = new SKPath();
         path.MoveTo(cx - half * 0.1f, cy - half * 0.9f);
         path.LineTo(cx + half * 0.3f, cy - half * 0.5f);
@@ -738,7 +720,6 @@ public class InspectionGameRenderer
         path.LineTo(cx + half * 0.1f, cy + half * 0.9f);
         canvas.DrawPath(path, crackPaint);
 
-        // Lichtreflex-Linie daneben
         using var lightPath = new SKPath();
         lightPath.MoveTo(cx - half * 0.1f + 3, cy - half * 0.9f);
         lightPath.LineTo(cx + half * 0.3f + 3, cy - half * 0.5f);
@@ -749,7 +730,6 @@ public class InspectionGameRenderer
     /// <summary>Flamme (orange/rote Tropfen-Form mit innerem gelben Kern).</summary>
     private static void DrawFireIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
-        // Äußere Flamme (rot-orange)
         using var outerPaint = new SKPaint { Color = new SKColor(0xE5, 0x50, 0x00, alpha), IsAntialias = true };
         using var outerPath = new SKPath();
         outerPath.MoveTo(cx, cy - half * 0.9f);
@@ -759,7 +739,6 @@ public class InspectionGameRenderer
         outerPath.Close();
         canvas.DrawPath(outerPath, outerPaint);
 
-        // Mittlere Flamme (orange)
         using var midPaint = new SKPaint { Color = new SKColor(0xFF, 0x8F, 0x00, alpha), IsAntialias = true };
         using var midPath = new SKPath();
         midPath.MoveTo(cx, cy - half * 0.5f);
@@ -769,7 +748,6 @@ public class InspectionGameRenderer
         midPath.Close();
         canvas.DrawPath(midPath, midPaint);
 
-        // Innerer Kern (gelb)
         using var innerPaint = new SKPaint { Color = new SKColor(0xFF, 0xEB, 0x3B, alpha), IsAntialias = true };
         using var innerPath = new SKPath();
         innerPath.MoveTo(cx, cy + half * 0.05f);
@@ -795,7 +773,7 @@ public class InspectionGameRenderer
         canvas.DrawLine(cx + len, cy - len, cx - len, cy + len, crossPaint);
     }
 
-    /// <summary>Stoppschild (roter Kreis mit weißem horizontalem Strich).</summary>
+    /// <summary>Stoppschild (roter Kreis mit weissem horizontalem Strich).</summary>
     private static void DrawStopIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float radius = half * 0.75f;
@@ -805,8 +783,6 @@ public class InspectionGameRenderer
 
         canvas.DrawCircle(cx, cy, radius, circlePaint);
         canvas.DrawCircle(cx, cy, radius, borderPaint);
-
-        // Weißer horizontaler Balken
         canvas.DrawLine(cx - radius * 0.55f, cy, cx + radius * 0.55f, cy, linePaint);
     }
 
@@ -816,15 +792,12 @@ public class InspectionGameRenderer
         float outerR = half * 0.7f;
         float innerR = half * 0.5f;
 
-        // Äußerer heller Rand (Betonkante)
         using var rimPaint = new SKPaint { Color = new SKColor(0x90, 0x9D, 0xA5, alpha), IsAntialias = true };
         canvas.DrawOval(cx, cy, outerR, outerR * 0.75f, rimPaint);
 
-        // Inneres dunkles Loch
         using var holePaint = new SKPaint { Color = new SKColor(0x1A, 0x1A, 0x1A, alpha), IsAntialias = true };
         canvas.DrawOval(cx, cy + 1, innerR, innerR * 0.7f, holePaint);
 
-        // Schatten-Gradient am oberen Rand
         using var shadowPaint = new SKPaint { Color = new SKColor(0x30, 0x30, 0x30, (byte)(alpha * 0.5f)), IsAntialias = true };
         canvas.DrawOval(cx, cy - 1, innerR * 0.8f, innerR * 0.3f, shadowPaint);
     }
@@ -835,7 +808,6 @@ public class InspectionGameRenderer
         using var waterPaint = new SKPaint { Color = new SKColor(0x42, 0xA5, 0xF5, alpha), IsAntialias = true };
         using var lightPaint = new SKPaint { Color = new SKColor(0x90, 0xCA, 0xF9, alpha), IsAntialias = true };
 
-        // 3 Tropfen in verschiedenen Positionen (fallend)
         float[] dropXOffsets = { -half * 0.35f, half * 0.1f, half * 0.4f };
         float[] dropYOffsets = { -half * 0.4f, half * 0.1f, -half * 0.1f };
         float[] dropSizes = { half * 0.28f, half * 0.35f, half * 0.25f };
@@ -846,43 +818,51 @@ public class InspectionGameRenderer
             float dy = cy + dropYOffsets[i];
             float ds = dropSizes[i];
 
-            // Tropfen-Form (invertierte Träne)
             using var dropPath = new SKPath();
-            dropPath.MoveTo(dx, dy - ds * 1.2f); // Spitze oben
+            dropPath.MoveTo(dx, dy - ds * 1.2f);
             dropPath.CubicTo(dx + ds * 0.7f, dy - ds * 0.2f, dx + ds * 0.7f, dy + ds * 0.5f, dx, dy + ds * 0.7f);
             dropPath.CubicTo(dx - ds * 0.7f, dy + ds * 0.5f, dx - ds * 0.7f, dy - ds * 0.2f, dx, dy - ds * 1.2f);
             dropPath.Close();
             canvas.DrawPath(dropPath, waterPaint);
 
-            // Lichtreflex
             canvas.DrawCircle(dx - ds * 0.15f, dy - ds * 0.1f, ds * 0.15f, lightPaint);
         }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // DEKO: LUPE
+    // DEKO: LUPE (pulsierend)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Zeichnet eine kleine Lupe/Inspektor-Symbol als Deko-Element.
-    /// Leichtes Schwanken waehrend das Spiel laeuft.
+    /// Leichtes Schwanken und Puls-Animation waehrend das Spiel laeuft.
     /// </summary>
-    private void DrawMagnifier(SKCanvas canvas, float x, float y)
+    private void DrawMagnifier(SKCanvas canvas, float x, float y, bool isPlaying)
     {
         // Leichte Schwankbewegung
         float bobY = (float)Math.Sin(_time * 1.5) * 2;
 
         float cx = x + 12;
         float cy = y + 12 + bobY;
-        float radius = 10;
+        float baseRadius = 10;
+
+        // Puls-Animation: Lupe pulsiert subtil (Scale-Effekt)
+        float pulseScale = isPlaying ? 1.0f + 0.08f * (float)Math.Sin(_time * 3.0) : 1.0f;
+        float radius = baseRadius * pulseScale;
+
+        canvas.Save();
+        // Scale um den Lupe-Mittelpunkt
+        canvas.Translate(cx, cy);
+        canvas.Scale(pulseScale);
+        canvas.Translate(-cx, -cy);
 
         // Glasflaeche (halbtransparent blau)
         using var glassPaint = new SKPaint { Color = MagnifierGlass, IsAntialias = false };
-        canvas.DrawCircle(cx, cy, radius, glassPaint);
+        canvas.DrawCircle(cx, cy, baseRadius, glassPaint);
 
         // Metallring
         using var ringPaint = new SKPaint { Color = MagnifierRing, IsAntialias = false, StrokeWidth = 3, Style = SKPaintStyle.Stroke };
-        canvas.DrawCircle(cx, cy, radius, ringPaint);
+        canvas.DrawCircle(cx, cy, baseRadius, ringPaint);
 
         // Glanz auf dem Glas (kleiner heller Punkt)
         using var glintPaint = new SKPaint { Color = new SKColor(255, 255, 255, 80), IsAntialias = false };
@@ -890,17 +870,19 @@ public class InspectionGameRenderer
 
         // Griff (diagonal nach unten rechts)
         using var handlePaint = new SKPaint { Color = MagnifierHandle, IsAntialias = false, StrokeWidth = 4, StrokeCap = SKStrokeCap.Round };
-        float handleStartX = cx + radius * 0.6f;
-        float handleStartY = cy + radius * 0.6f;
+        float handleStartX = cx + baseRadius * 0.6f;
+        float handleStartY = cy + baseRadius * 0.6f;
         canvas.DrawLine(handleStartX, handleStartY, handleStartX + 10, handleStartY + 10, handlePaint);
 
         // Griff-Akzent (hellere Kante)
         using var handleAccent = new SKPaint { Color = new SKColor(0x8D, 0x6E, 0x63), IsAntialias = false, StrokeWidth = 2, StrokeCap = SKStrokeCap.Round };
         canvas.DrawLine(handleStartX + 1, handleStartY, handleStartX + 9, handleStartY + 8, handleAccent);
+
+        canvas.Restore();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // PARTIKEL: STAUB
+    // PARTIKEL: STAUB (Struct-Array statt List)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
@@ -911,9 +893,9 @@ public class InspectionGameRenderer
         var random = Random.Shared;
 
         // Neue Partikel erzeugen
-        if (_dustParticles.Count < MaxDustParticles)
+        if (_dustCount < MAX_DUST)
         {
-            _dustParticles.Add(new DustParticle
+            _dust[_dustCount++] = new DustParticle
             {
                 X = bounds.Left + (float)(random.NextDouble() * bounds.Width),
                 Y = bounds.Bottom + 5,
@@ -923,14 +905,14 @@ public class InspectionGameRenderer
                 MaxLife = 2.0f + (float)random.NextDouble() * 2.0f,
                 Size = 1 + random.Next(0, 3),
                 Alpha = (byte)(60 + random.Next(0, 60))
-            });
+            };
         }
 
         // Partikel aktualisieren und zeichnen
         using var dustPaint = new SKPaint { IsAntialias = false };
-        for (int i = _dustParticles.Count - 1; i >= 0; i--)
+        for (int i = 0; i < _dustCount; i++)
         {
-            var p = _dustParticles[i];
+            var p = _dust[i];
             p.Life += deltaTime;
             p.X += p.VelocityX * deltaTime;
             p.Y += p.VelocityY * deltaTime;
@@ -940,11 +922,13 @@ public class InspectionGameRenderer
 
             if (p.Life >= p.MaxLife || p.Y < bounds.Top - 10)
             {
-                _dustParticles.RemoveAt(i);
+                // Entfernen durch Kompaktierung
+                _dust[i] = _dust[--_dustCount];
+                i--;
                 continue;
             }
 
-            _dustParticles[i] = p;
+            _dust[i] = p;
 
             // Alpha basierend auf Lebenszeit (Fade-Out)
             float lifeRatio = p.Life / p.MaxLife;
@@ -955,6 +939,101 @@ public class InspectionGameRenderer
 
             dustPaint.Color = new SKColor(0xB0, 0xBE, 0xC5, finalAlpha);
             canvas.DrawRect(p.X, p.Y, p.Size, p.Size, dustPaint);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ENTDECKUNGS-EFFEKTE (Funken bei Defekt/Fehlalarm)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Erkennt neue Defekt-Funde und Fehlalarme und spawnt entsprechende Funken.
+    /// </summary>
+    private void DetectNewDiscoveries(InspectionCellData[] cells, float gridLeft, float gridTop,
+        float cellSize, float spacing, int cols)
+    {
+        for (int i = 0; i < cells.Length && i < MAX_TRACKED_CELLS; i++)
+        {
+            int col = i % cols;
+            int row = i / cols;
+            float cx = gridLeft + col * cellSize + cellSize / 2;
+            float cy = gridTop + row * cellSize + cellSize / 2;
+
+            // Defekt gefunden: 10 gruene Partikel
+            if (cells[i].IsDefectFound && !_prevDefectFound[i])
+            {
+                SpawnDiscoverySparks(cx, cy, CheckmarkGreen, 10);
+            }
+
+            // Fehlalarm: 8 rote Partikel
+            if (cells[i].IsFalseAlarm && !_prevFalseAlarm[i])
+            {
+                SpawnDiscoverySparks(cx, cy, CrossRed, 8);
+            }
+
+            _prevDefectFound[i] = cells[i].IsDefectFound;
+            _prevFalseAlarm[i] = cells[i].IsFalseAlarm;
+        }
+    }
+
+    /// <summary>
+    /// Spawnt Funken-Partikel vom Zell-Mittelpunkt.
+    /// </summary>
+    private void SpawnDiscoverySparks(float cx, float cy, SKColor color, int count)
+    {
+        var rng = Random.Shared;
+        for (int i = 0; i < count && _sparkCount < MAX_SPARKS; i++)
+        {
+            float angle = (float)(rng.NextDouble() * Math.PI * 2);
+            float speed = 30 + (float)(rng.NextDouble() * 50);
+
+            _sparks[_sparkCount++] = new SparkParticle
+            {
+                X = cx,
+                Y = cy,
+                VelocityX = MathF.Cos(angle) * speed,
+                VelocityY = MathF.Sin(angle) * speed,
+                Life = 0,
+                MaxLife = 0.4f + (float)(rng.NextDouble() * 0.4f),
+                Size = 2 + (float)(rng.NextDouble() * 2),
+                R = color.Red,
+                G = color.Green,
+                B = color.Blue
+            };
+        }
+    }
+
+    /// <summary>
+    /// Aktualisiert und zeichnet alle aktiven Entdeckungs-Funken.
+    /// </summary>
+    private void UpdateAndDrawSparks(SKCanvas canvas, float deltaTime)
+    {
+        if (_sparkCount == 0) return;
+
+        using var sparkPaint = new SKPaint { IsAntialias = false };
+
+        for (int i = 0; i < _sparkCount; i++)
+        {
+            var p = _sparks[i];
+            p.Life += deltaTime;
+            p.X += p.VelocityX * deltaTime;
+            p.Y += p.VelocityY * deltaTime;
+            p.VelocityY += 80 * deltaTime; // Leichte Schwerkraft
+            p.VelocityX *= 0.97f; // Luftwiderstand
+
+            if (p.Life >= p.MaxLife)
+            {
+                // Entfernen durch Kompaktierung
+                _sparks[i] = _sparks[--_sparkCount];
+                i--;
+                continue;
+            }
+
+            _sparks[i] = p;
+
+            float alpha = 1 - (p.Life / p.MaxLife);
+            sparkPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
+            canvas.DrawRect(p.X - p.Size / 2, p.Y - p.Size / 2, p.Size, p.Size, sparkPaint);
         }
     }
 }

@@ -3,40 +3,71 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// SkiaSharp-Renderer für das Erfinder-Puzzle-Minigame.
-/// Zeichnet ein Werkstatt-/Labor-Grid mit Bauteilen, Nummern und Elektro-Partikel-Effekten.
-/// Violett-Palette für Tech-/Labor-Atmosphäre.
+/// AAA SkiaSharp-Renderer fuer das Erfinder-Puzzle-Minigame.
+/// Tech-Labor-Atmosphaere mit Neon-Grid, holographische Kacheln mit Schaltkreis-Rahmen,
+/// Circuit-Verbindungslinien zwischen erledigten Teilen mit fliessenden Pulsen,
+/// Completion-Burst-Partikel pro Kachel, goldene Celebration bei Komplett-Montage,
+/// Fehler-Schock mit Blitz-Effekt, Memorisierungs-Scan-Linie.
+/// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
 /// </summary>
 public class InventGameRenderer
 {
-    // Hintergrund (Dunkelviolett mit Tech-Raster)
-    private static readonly SKColor LabBg = new(0x1A, 0x10, 0x40);              // Dunkelviolett
-    private static readonly SKColor LabGridCoarse = new(0x2D, 0x1B, 0x69);      // Grobe Rasterlinien
-    private static readonly SKColor LabGridFine = new(0x22, 0x15, 0x55);        // Feine Rasterlinien
+    // ═══════════════════════════════════════════════════════════════════════
+    // PARTIKEL-SYSTEM (Struct-basiert, kein GC)
+    // ═══════════════════════════════════════════════════════════════════════
 
-    // Kachel-Zustände
-    private static readonly SKColor CompletedBorder = new(0x4C, 0xAF, 0x50);    // Grün
-    private static readonly SKColor ActiveBorderColor = new(0xBB, 0x86, 0xFC);  // Helles Violett (pulsierend)
-    private static readonly SKColor DefaultBorder = new(0xFF, 0xFF, 0xFF, 0x40); // Halbtransparent weiß
-    private static readonly SKColor CheckmarkBg = new(0x4C, 0xAF, 0x50);        // Grüner Hintergrund für Häkchen
-    private static readonly SKColor ErrorColor = new(0xF4, 0x43, 0x36);          // Rot bei Fehler
-
-    // Text-Farben
-    private static readonly SKColor TextWhite = SKColors.White;
-    private static readonly SKColor TextNumber = new(0xFF, 0xFF, 0xFF, 0xE0);
-    private static readonly SKColor TextQuestion = new(0xFF, 0xFF, 0xFF, 0x80);
-
-    // Elektro-Funken-Partikel
-    private readonly List<SparkParticle> _sparkParticles = new();
-    private float _animTime;
+    private const int MAX_SPARKS = 60;
+    private const int MAX_CIRCUIT_PULSES = 20;
 
     private struct SparkParticle
     {
         public float X, Y, VelocityX, VelocityY, Life, MaxLife, Size;
+        public byte R, G, B;
+        public bool IsGolden; // Goldene Partikel bei Komplett-Montage
     }
 
+    private struct CircuitPulse
+    {
+        public float Progress; // 0-1 entlang der Verbindungslinie
+        public float Speed;
+        public int FromTile, ToTile; // Index der verbundenen Kacheln
+        public byte R, G, B;
+        public float Life, MaxLife;
+    }
+
+    private readonly SparkParticle[] _sparks = new SparkParticle[MAX_SPARKS];
+    private int _sparkCount;
+    private readonly CircuitPulse[] _pulses = new CircuitPulse[MAX_CIRCUIT_PULSES];
+    private int _pulseCount;
+
+    // Zustandsverfolgung fuer Effekt-Trigger
+    private int _prevCompletedCount;
+    private bool _prevAllComplete;
+    private readonly bool[] _prevHasError = new bool[20]; // Max 20 Teile
+    private float _completionFlashTimer;
+    private float _animTime;
+
+    // Atmosphaerische Hintergrund-Partikel
+    private const int MAX_AMBIENT = 12;
+    private readonly SparkParticle[] _ambient = new SparkParticle[MAX_AMBIENT];
+    private int _ambientCount;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FARBEN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Hintergrund (Dunkelviolett mit Tech-Raster)
+    private static readonly SKColor LabBg = new(0x0D, 0x08, 0x2A);
+    private static readonly SKColor GridCoarse = new(0x2D, 0x1B, 0x69);
+    private static readonly SKColor GridFine = new(0x1A, 0x10, 0x45);
+    private static readonly SKColor NeonViolet = new(0xBB, 0x86, 0xFC);
+    private static readonly SKColor NeonCyan = new(0x00, 0xE5, 0xFF);
+    private static readonly SKColor CompletedGreen = new(0x4C, 0xAF, 0x50);
+    private static readonly SKColor ErrorRed = new(0xF4, 0x43, 0x36);
+    private static readonly SKColor GoldenYellow = new(0xFF, 0xD7, 0x00);
+
     /// <summary>
-    /// Daten-Struct für ein einzelnes Bauteil (View-optimiert, keine VM-Referenz).
+    /// Daten-Struct fuer ein einzelnes Bauteil (View-optimiert, keine VM-Referenz).
     /// </summary>
     public struct InventPartData
     {
@@ -46,10 +77,12 @@ public class InventGameRenderer
         public bool IsCompleted;
         public bool IsActive;
         public bool HasError;
+        public int StepNumber; // Montage-Reihenfolge (1-basiert)
     }
 
-    // Zwischengespeicherte Kachel-Positionen für HitTest
+    // Zwischengespeicherte Kachel-Positionen fuer HitTest und Circuit-Lines
     private SKRect[] _tileRects = Array.Empty<SKRect>();
+    private SKPoint[] _tileCenters = Array.Empty<SKPoint>();
 
     /// <summary>
     /// Rendert das gesamte Erfinder-Puzzle-Spielfeld.
@@ -57,11 +90,16 @@ public class InventGameRenderer
     public void Render(SKCanvas canvas, SKRect bounds,
         InventPartData[] parts, int cols,
         bool isMemorizing, bool isPlaying,
+        int completedCount, int totalParts,
         float deltaTime)
     {
         _animTime += deltaTime;
 
-        // Labor-Hintergrund zeichnen
+        // Effekt-Trigger erkennen
+        DetectCompletion(parts, completedCount, totalParts);
+        DetectErrors(parts);
+
+        // Labor-Hintergrund mit Neon-Grid
         DrawLabBackground(canvas, bounds);
 
         if (parts.Length == 0 || cols <= 0) return;
@@ -69,46 +107,66 @@ public class InventGameRenderer
         // Grid-Layout berechnen
         int rows = (int)Math.Ceiling((double)parts.Length / cols);
         float padding = 16;
-        float tileSpacing = 8;
+        float tileSpacing = 10;
 
         float availableWidth = bounds.Width - 2 * padding;
-        float availableHeight = bounds.Height - 2 * padding;
+        float availableHeight = bounds.Height - 2 * padding - 30; // Platz fuer Progress-Bar
 
-        // Kachelgröße berechnen (quadratisch, passt in verfügbaren Platz)
         float maxTileWidth = (availableWidth - (cols - 1) * tileSpacing) / cols;
         float maxTileHeight = (availableHeight - (rows - 1) * tileSpacing) / rows;
         float tileSize = Math.Min(maxTileWidth, maxTileHeight);
 
-        // Grid zentrieren (horizontal), oben ausrichten (vertikal)
+        // Grid zentrieren
         float gridWidth = cols * tileSize + (cols - 1) * tileSpacing;
+        float gridHeight = rows * tileSize + (rows - 1) * tileSpacing;
         float startX = bounds.Left + (bounds.Width - gridWidth) / 2;
-        float startY = bounds.Top + padding;
+        float startY = bounds.Top + padding + 4;
 
-        // Kachel-Positionen speichern für HitTest
+        // Kachel-Positionen speichern
         if (_tileRects.Length != parts.Length)
+        {
             _tileRects = new SKRect[parts.Length];
+            _tileCenters = new SKPoint[parts.Length];
+        }
 
-        // Kacheln zeichnen
         for (int i = 0; i < parts.Length; i++)
         {
             int col = i % cols;
             int row = i / cols;
-
             float x = startX + col * (tileSize + tileSpacing);
             float y = startY + row * (tileSize + tileSpacing);
-
-            var tileRect = SKRect.Create(x, y, tileSize, tileSize);
-            _tileRects[i] = tileRect;
-
-            DrawTile(canvas, tileRect, parts[i], isMemorizing, isPlaying);
+            _tileRects[i] = SKRect.Create(x, y, tileSize, tileSize);
+            _tileCenters[i] = new SKPoint(x + tileSize / 2, y + tileSize / 2);
         }
 
-        // Elektro-Funken-Partikel (atmosphärisch)
-        UpdateAndDrawSparkParticles(canvas, bounds, deltaTime);
+        // Circuit-Verbindungslinien zwischen erledigten Teilen (unter den Kacheln)
+        DrawCircuitConnections(canvas, parts);
+
+        // Kacheln zeichnen
+        for (int i = 0; i < parts.Length; i++)
+        {
+            DrawTile(canvas, _tileRects[i], parts[i], isMemorizing, isPlaying, tileSize);
+        }
+
+        // Memorisierungs-Scan-Linie
+        if (isMemorizing)
+            DrawScanLine(canvas, bounds, startY, gridHeight);
+
+        // Partikel-Systeme aktualisieren und zeichnen
+        UpdateAndDrawSparks(canvas, deltaTime);
+        UpdateAndDrawCircuitPulses(canvas, parts, deltaTime);
+        UpdateAndDrawAmbient(canvas, bounds, deltaTime);
+
+        // Completion-Flash-Overlay
+        if (_completionFlashTimer > 0)
+            DrawCompletionFlash(canvas, bounds, deltaTime);
+
+        // Fortschrittsanzeige unten
+        DrawProgressBar(canvas, bounds, completedCount, totalParts, startY + gridHeight + 8);
     }
 
     /// <summary>
-    /// HitTest: Gibt den Index des getroffenen Bauteils zurück, oder -1.
+    /// HitTest: Gibt den Index des getroffenen Bauteils zurueck, oder -1.
     /// </summary>
     public int HitTest(SKRect bounds, float touchX, float touchY, int cols, int totalParts)
     {
@@ -120,74 +178,317 @@ public class InventGameRenderer
         return -1;
     }
 
-    /// <summary>
-    /// Zeichnet den Labor-Hintergrund mit Tech-Rasterlinien.
-    /// </summary>
-    private void DrawLabBackground(SKCanvas canvas, SKRect bounds)
+    // ═══════════════════════════════════════════════════════════════════════
+    // EFFEKT-TRIGGER-ERKENNUNG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void DetectCompletion(InventPartData[] parts, int completedCount, int totalParts)
     {
-        // Dunkelvioletter Hintergrund
-        using var bgPaint = new SKPaint { Color = LabBg, IsAntialias = false };
-        canvas.DrawRect(bounds, bgPaint);
-
-        // Feine Rasterlinien (20px Abstand, Tech-Look)
-        using var fineGridPaint = new SKPaint
+        // Einzelnes Teil erledigt → Burst-Partikel
+        if (completedCount > _prevCompletedCount)
         {
-            Color = LabGridFine,
-            IsAntialias = false,
-            StrokeWidth = 1,
-            Style = SKPaintStyle.Stroke
-        };
-
-        for (float x = bounds.Left; x < bounds.Right; x += 20)
-        {
-            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, fineGridPaint);
-        }
-        for (float y = bounds.Top; y < bounds.Bottom; y += 20)
-        {
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, fineGridPaint);
+            int newlyCompleted = completedCount - _prevCompletedCount;
+            for (int i = 0; i < parts.Length && newlyCompleted > 0; i++)
+            {
+                if (parts[i].IsCompleted && i < _tileRects.Length)
+                {
+                    // Pruefen ob dieses Teil gerade erst erledigt wurde (StepNumber == completedCount)
+                    if (parts[i].StepNumber == completedCount)
+                    {
+                        SpawnCompletionBurst(_tileRects[i]);
+                        SpawnCircuitPulse(parts, i);
+                        newlyCompleted--;
+                    }
+                }
+            }
         }
 
-        // Grobe Rasterlinien (80px Abstand)
-        using var gridPaint = new SKPaint
+        // Alle Teile komplett → Celebration
+        bool allComplete = completedCount >= totalParts && totalParts > 0;
+        if (allComplete && !_prevAllComplete)
         {
-            Color = LabGridCoarse,
-            IsAntialias = false,
-            StrokeWidth = 1,
-            Style = SKPaintStyle.Stroke
-        };
-
-        for (float x = bounds.Left; x < bounds.Right; x += 80)
-        {
-            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, gridPaint);
-        }
-        for (float y = bounds.Top; y < bounds.Bottom; y += 80)
-        {
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, gridPaint);
+            _completionFlashTimer = 1.5f;
+            SpawnCelebrationSparks(parts);
         }
 
-        // Eck-Markierungen (Labor-Stil, diagonal)
-        using var cornerPaint = new SKPaint
-        {
-            Color = LabGridCoarse.WithAlpha(80),
-            IsAntialias = false,
-            StrokeWidth = 1
-        };
-
-        float cornerSize = 30;
-        canvas.DrawLine(bounds.Left, bounds.Top + cornerSize, bounds.Left + cornerSize, bounds.Top, cornerPaint);
-        canvas.DrawLine(bounds.Right - cornerSize, bounds.Top, bounds.Right, bounds.Top + cornerSize, cornerPaint);
-        canvas.DrawLine(bounds.Left, bounds.Bottom - cornerSize, bounds.Left + cornerSize, bounds.Bottom, cornerPaint);
-        canvas.DrawLine(bounds.Right - cornerSize, bounds.Bottom, bounds.Right, bounds.Bottom - cornerSize, cornerPaint);
+        _prevCompletedCount = completedCount;
+        _prevAllComplete = allComplete;
     }
 
-    /// <summary>
-    /// Zeichnet eine einzelne Bauteil-Kachel mit Icon, Nummer und Zustandsanzeige.
-    /// </summary>
-    private void DrawTile(SKCanvas canvas, SKRect rect, InventPartData part, bool isMemorizing, bool isPlaying)
+    private void DetectErrors(InventPartData[] parts)
     {
-        float cornerRadius = 8;
+        for (int i = 0; i < parts.Length && i < _prevHasError.Length; i++)
+        {
+            if (parts[i].HasError && !_prevHasError[i])
+            {
+                // Neuer Fehler → Schock-Effekt
+                if (i < _tileRects.Length)
+                    SpawnErrorShock(_tileRects[i]);
+            }
+            _prevHasError[i] = parts[i].HasError;
+        }
+    }
 
-        // Hintergrundfarbe der Kachel
+    // ═══════════════════════════════════════════════════════════════════════
+    // PARTIKEL-SPAWNER
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void SpawnCompletionBurst(SKRect tileRect)
+    {
+        var rng = Random.Shared;
+        float cx = tileRect.MidX;
+        float cy = tileRect.MidY;
+
+        for (int i = 0; i < 12 && _sparkCount < MAX_SPARKS; i++)
+        {
+            float angle = rng.NextSingle() * MathF.PI * 2;
+            float speed = 40 + rng.NextSingle() * 80;
+            _sparks[_sparkCount++] = new SparkParticle
+            {
+                X = cx, Y = cy,
+                VelocityX = MathF.Cos(angle) * speed,
+                VelocityY = MathF.Sin(angle) * speed,
+                Life = 0, MaxLife = 0.6f + rng.NextSingle() * 0.4f,
+                Size = 2f + rng.NextSingle() * 3f,
+                R = 0x4C, G = 0xAF, B = 0x50 // Gruen
+            };
+        }
+    }
+
+    private void SpawnCelebrationSparks(InventPartData[] parts)
+    {
+        var rng = Random.Shared;
+        // Goldene Funken von jeder Kachel
+        for (int t = 0; t < parts.Length && t < _tileRects.Length; t++)
+        {
+            float cx = _tileCenters[t].X;
+            float cy = _tileCenters[t].Y;
+
+            for (int i = 0; i < 4 && _sparkCount < MAX_SPARKS; i++)
+            {
+                float angle = rng.NextSingle() * MathF.PI * 2;
+                float speed = 30 + rng.NextSingle() * 60;
+                _sparks[_sparkCount++] = new SparkParticle
+                {
+                    X = cx, Y = cy,
+                    VelocityX = MathF.Cos(angle) * speed,
+                    VelocityY = MathF.Sin(angle) * speed - 20,
+                    Life = 0, MaxLife = 0.8f + rng.NextSingle() * 0.6f,
+                    Size = 2.5f + rng.NextSingle() * 3f,
+                    R = 0xFF, G = 0xD7, B = 0x00,
+                    IsGolden = true
+                };
+            }
+        }
+    }
+
+    private void SpawnErrorShock(SKRect tileRect)
+    {
+        var rng = Random.Shared;
+        float cx = tileRect.MidX;
+        float cy = tileRect.MidY;
+
+        // Rote Schock-Partikel
+        for (int i = 0; i < 8 && _sparkCount < MAX_SPARKS; i++)
+        {
+            float angle = rng.NextSingle() * MathF.PI * 2;
+            float speed = 30 + rng.NextSingle() * 50;
+            _sparks[_sparkCount++] = new SparkParticle
+            {
+                X = cx + (rng.NextSingle() - 0.5f) * tileRect.Width * 0.5f,
+                Y = cy + (rng.NextSingle() - 0.5f) * tileRect.Height * 0.5f,
+                VelocityX = MathF.Cos(angle) * speed,
+                VelocityY = MathF.Sin(angle) * speed,
+                Life = 0, MaxLife = 0.3f + rng.NextSingle() * 0.3f,
+                Size = 1.5f + rng.NextSingle() * 2.5f,
+                R = 0xF4, G = 0x43, B = 0x36 // Rot
+            };
+        }
+    }
+
+    private void SpawnCircuitPulse(InventPartData[] parts, int completedTileIndex)
+    {
+        // Finde den vorangehenden erledigten Teil (StepNumber - 1)
+        int currentStep = parts[completedTileIndex].StepNumber;
+        if (currentStep <= 1) return;
+
+        int prevStep = currentStep - 1;
+        int prevTileIndex = -1;
+        for (int i = 0; i < parts.Length; i++)
+        {
+            if (parts[i].StepNumber == prevStep && parts[i].IsCompleted)
+            {
+                prevTileIndex = i;
+                break;
+            }
+        }
+
+        if (prevTileIndex < 0 || _pulseCount >= MAX_CIRCUIT_PULSES) return;
+
+        _pulses[_pulseCount++] = new CircuitPulse
+        {
+            Progress = 0, Speed = 1.2f,
+            FromTile = prevTileIndex, ToTile = completedTileIndex,
+            R = 0x00, G = 0xE5, B = 0xFF, // Cyan
+            Life = 0, MaxLife = 1.5f
+        };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // HINTERGRUND
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void DrawLabBackground(SKCanvas canvas, SKRect bounds)
+    {
+        // Tiefdunkler Hintergrund mit Vignette
+        using var bgPaint = new SKPaint
+        {
+            Shader = SKShader.CreateRadialGradient(
+                new SKPoint(bounds.MidX, bounds.MidY),
+                Math.Max(bounds.Width, bounds.Height) * 0.7f,
+                new[] { new SKColor(0x15, 0x0B, 0x35), LabBg },
+                null, SKShaderTileMode.Clamp),
+            IsAntialias = false
+        };
+        canvas.DrawRect(bounds, bgPaint);
+
+        // Feines Raster (Neon-Stil)
+        using var fineGridPaint = new SKPaint
+        {
+            Color = GridFine, IsAntialias = false,
+            StrokeWidth = 0.5f, Style = SKPaintStyle.Stroke
+        };
+        for (float x = bounds.Left; x < bounds.Right; x += 20)
+            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, fineGridPaint);
+        for (float y = bounds.Top; y < bounds.Bottom; y += 20)
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, fineGridPaint);
+
+        // Grobes Raster mit leichtem Glow
+        using var coarseGridPaint = new SKPaint
+        {
+            Color = GridCoarse, IsAntialias = false,
+            StrokeWidth = 1f, Style = SKPaintStyle.Stroke
+        };
+        for (float x = bounds.Left; x < bounds.Right; x += 80)
+            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, coarseGridPaint);
+        for (float y = bounds.Top; y < bounds.Bottom; y += 80)
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, coarseGridPaint);
+
+        // Pulsierende Kreuzungspunkte (Tech-Atmosphaere)
+        float pulse = 0.3f + 0.7f * (0.5f + 0.5f * MathF.Sin(_animTime * 1.5f));
+        using var dotPaint = new SKPaint
+        {
+            Color = NeonViolet.WithAlpha((byte)(25 * pulse)),
+            IsAntialias = true
+        };
+        for (float x = bounds.Left; x < bounds.Right; x += 80)
+        {
+            for (float y = bounds.Top; y < bounds.Bottom; y += 80)
+            {
+                canvas.DrawCircle(x, y, 2.5f, dotPaint);
+            }
+        }
+
+        // Eck-Markierungen (Laborstil)
+        using var cornerPaint = new SKPaint
+        {
+            Color = NeonViolet.WithAlpha(40),
+            IsAntialias = true, StrokeWidth = 1.5f,
+            Style = SKPaintStyle.Stroke
+        };
+        float cs = 25;
+        // Oben links
+        canvas.DrawLine(bounds.Left + 4, bounds.Top + 4, bounds.Left + 4 + cs, bounds.Top + 4, cornerPaint);
+        canvas.DrawLine(bounds.Left + 4, bounds.Top + 4, bounds.Left + 4, bounds.Top + 4 + cs, cornerPaint);
+        // Oben rechts
+        canvas.DrawLine(bounds.Right - 4, bounds.Top + 4, bounds.Right - 4 - cs, bounds.Top + 4, cornerPaint);
+        canvas.DrawLine(bounds.Right - 4, bounds.Top + 4, bounds.Right - 4, bounds.Top + 4 + cs, cornerPaint);
+        // Unten links
+        canvas.DrawLine(bounds.Left + 4, bounds.Bottom - 4, bounds.Left + 4 + cs, bounds.Bottom - 4, cornerPaint);
+        canvas.DrawLine(bounds.Left + 4, bounds.Bottom - 4, bounds.Left + 4, bounds.Bottom - 4 - cs, cornerPaint);
+        // Unten rechts
+        canvas.DrawLine(bounds.Right - 4, bounds.Bottom - 4, bounds.Right - 4 - cs, bounds.Bottom - 4, cornerPaint);
+        canvas.DrawLine(bounds.Right - 4, bounds.Bottom - 4, bounds.Right - 4, bounds.Bottom - 4 - cs, cornerPaint);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SCHALTKREIS-VERBINDUNGSLINIEN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void DrawCircuitConnections(SKCanvas canvas, InventPartData[] parts)
+    {
+        // Sortiere erledigte Teile nach StepNumber und verbinde sie
+        // Sammle erledigte Teile mit ihren Indizes
+        Span<(int index, int step)> completed = stackalloc (int, int)[Math.Min(parts.Length, 20)];
+        int count = 0;
+
+        for (int i = 0; i < parts.Length && count < completed.Length; i++)
+        {
+            if (parts[i].IsCompleted)
+                completed[count++] = (i, parts[i].StepNumber);
+        }
+
+        if (count < 2) return;
+
+        // Einfache Insertion-Sort nach StepNumber
+        for (int i = 1; i < count; i++)
+        {
+            var key = completed[i];
+            int j = i - 1;
+            while (j >= 0 && completed[j].step > key.step)
+            {
+                completed[j + 1] = completed[j];
+                j--;
+            }
+            completed[j + 1] = key;
+        }
+
+        // Verbindungslinien zeichnen
+        using var linePaint = new SKPaint
+        {
+            Color = CompletedGreen.WithAlpha(60),
+            IsAntialias = true,
+            StrokeWidth = 2f,
+            Style = SKPaintStyle.Stroke,
+            PathEffect = SKPathEffect.CreateDash(new[] { 6f, 4f }, _animTime * 30)
+        };
+
+        using var glowPaint = new SKPaint
+        {
+            Color = CompletedGreen.WithAlpha(20),
+            IsAntialias = true,
+            StrokeWidth = 6f,
+            Style = SKPaintStyle.Stroke,
+            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
+        };
+
+        for (int i = 0; i < count - 1; i++)
+        {
+            int fromIdx = completed[i].index;
+            int toIdx = completed[i + 1].index;
+
+            if (fromIdx >= _tileCenters.Length || toIdx >= _tileCenters.Length) continue;
+
+            var from = _tileCenters[fromIdx];
+            var to = _tileCenters[toIdx];
+
+            // Glow
+            canvas.DrawLine(from, to, glowPaint);
+            // Gestrichelte Linie
+            canvas.DrawLine(from, to, linePaint);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // KACHELN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void DrawTile(SKCanvas canvas, SKRect rect, InventPartData part,
+        bool isMemorizing, bool isPlaying, float tileSize)
+    {
+        float cr = 10;
+
+        // Hintergrundfarbe extrahieren
         var bgColor = new SKColor(
             (byte)((part.BackgroundColor >> 16) & 0xFF),
             (byte)((part.BackgroundColor >> 8) & 0xFF),
@@ -195,102 +496,527 @@ public class InventGameRenderer
             (byte)((part.BackgroundColor >> 24) & 0xFF)
         );
 
-        // Kachel-Hintergrund (abgerundetes Rechteck)
-        using var bgPaint = new SKPaint { Color = bgColor, IsAntialias = true };
-        canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, bgPaint);
-
-        // Leichter Gradient-Effekt (obere Hälfte heller)
-        using var highlightPaint = new SKPaint
+        // Kachel-Schatten (Tiefe)
+        using var shadowPaint = new SKPaint
         {
-            Color = new SKColor(0xFF, 0xFF, 0xFF, 0x12),
+            Color = new SKColor(0, 0, 0, 60),
+            IsAntialias = true,
+            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
+        };
+        var shadowRect = SKRect.Create(rect.Left + 2, rect.Top + 3, rect.Width, rect.Height);
+        canvas.DrawRoundRect(shadowRect, cr, cr, shadowPaint);
+
+        // Kachel-Hintergrund mit Gradient
+        using var bgPaint = new SKPaint
+        {
+            Shader = SKShader.CreateLinearGradient(
+                new SKPoint(rect.Left, rect.Top),
+                new SKPoint(rect.Right, rect.Bottom),
+                new[] { bgColor, bgColor.WithAlpha((byte)(bgColor.Alpha * 0.7f)) },
+                null, SKShaderTileMode.Clamp),
             IsAntialias = true
         };
-        var highlightRect = SKRect.Create(rect.Left, rect.Top, rect.Width, rect.Height * 0.45f);
-        canvas.DrawRoundRect(highlightRect, cornerRadius, cornerRadius, highlightPaint);
+        canvas.DrawRoundRect(rect, cr, cr, bgPaint);
+
+        // Oberer Highlight-Streifen (Glaseffekt)
+        using var highlightPaint = new SKPaint
+        {
+            Shader = SKShader.CreateLinearGradient(
+                new SKPoint(rect.Left, rect.Top),
+                new SKPoint(rect.Left, rect.Top + rect.Height * 0.4f),
+                new[] { new SKColor(0xFF, 0xFF, 0xFF, 0x18), SKColors.Transparent },
+                null, SKShaderTileMode.Clamp),
+            IsAntialias = true
+        };
+        canvas.DrawRoundRect(rect, cr, cr, highlightPaint);
 
         // Rahmen basierend auf Zustand
-        DrawTileBorder(canvas, rect, part, cornerRadius);
+        DrawTileBorder(canvas, rect, part, cr);
 
-        // Icon (Vektor-Icon oben in der Kachel)
+        // Icon
         DrawTileIcon(canvas, rect, part.Icon);
 
-        // Nummer oder Fragezeichen (unten in der Kachel)
-        DrawTileNumber(canvas, rect, part.DisplayNumber, isMemorizing);
+        // Nummer oder Fragezeichen
+        DrawTileNumber(canvas, rect, part.DisplayNumber, isMemorizing, part.IsCompleted);
 
-        // Häkchen bei abgeschlossenen Teilen (oben rechts)
+        // Haekchen bei erledigten Teilen
         if (part.IsCompleted)
-        {
             DrawCheckmark(canvas, rect);
-        }
 
-        // Fehler-Overlay (rotes Blinken)
+        // Step-Number Badge (kleine Nummer oben links bei erledigten)
+        if (part.IsCompleted && part.StepNumber > 0)
+            DrawStepBadge(canvas, rect, part.StepNumber);
+
+        // Fehler-Overlay (roter Puls + Zickzack-Blitz)
         if (part.HasError)
-        {
-            using var errorPaint = new SKPaint
-            {
-                Color = ErrorColor.WithAlpha(100),
-                IsAntialias = true
-            };
-            canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, errorPaint);
-        }
+            DrawErrorOverlay(canvas, rect, cr);
     }
 
-    /// <summary>
-    /// Zeichnet den Kachel-Rahmen je nach Zustand (aktiv=pulsierend violett, erledigt=grün, normal=weiß).
-    /// </summary>
-    private void DrawTileBorder(SKCanvas canvas, SKRect rect, InventPartData part, float cornerRadius)
+    private void DrawTileBorder(SKCanvas canvas, SKRect rect, InventPartData part, float cr)
     {
-        SKColor borderColor;
-        float borderWidth;
-
         if (part.IsActive && !part.IsCompleted)
         {
-            // Pulsierender violetter Rand für aktives Bauteil
-            float pulse = (float)(0.5 + 0.5 * Math.Sin(_animTime * 5));
-            byte alpha = (byte)(150 + 105 * pulse);
-            borderColor = ActiveBorderColor.WithAlpha(alpha);
-            borderWidth = 3;
+            // Pulsierender Neon-Rahmen fuer aktives Bauteil
+            float pulse = 0.5f + 0.5f * MathF.Sin(_animTime * 6);
+            byte alpha = (byte)(160 + 95 * pulse);
 
-            // Äußerer Glow-Effekt
-            using var glowPaint = new SKPaint
+            // Aeusserer Glow
+            using var outerGlow = new SKPaint
             {
-                Color = ActiveBorderColor.WithAlpha((byte)(40 * pulse)),
+                Color = NeonViolet.WithAlpha((byte)(50 * pulse)),
                 IsAntialias = true,
                 Style = SKPaintStyle.Stroke,
-                StrokeWidth = 6
+                StrokeWidth = 8,
+                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
             };
-            var glowRect = SKRect.Create(rect.Left - 2, rect.Top - 2, rect.Width + 4, rect.Height + 4);
-            canvas.DrawRoundRect(glowRect, cornerRadius + 2, cornerRadius + 2, glowPaint);
+            var glowRect = SKRect.Create(rect.Left - 3, rect.Top - 3, rect.Width + 6, rect.Height + 6);
+            canvas.DrawRoundRect(glowRect, cr + 3, cr + 3, outerGlow);
+
+            // Innerer Neon-Rand
+            using var borderPaint = new SKPaint
+            {
+                Color = NeonViolet.WithAlpha(alpha),
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2.5f
+            };
+            canvas.DrawRoundRect(rect, cr, cr, borderPaint);
+
+            // Ecken-Akzente (Schaltkreis-Stil)
+            DrawCircuitCorners(canvas, rect, NeonViolet.WithAlpha(alpha), cr);
         }
         else if (part.IsCompleted)
         {
-            borderColor = CompletedBorder;
-            borderWidth = 3;
+            // Gruener Rahmen mit leichtem Glow
+            using var glowPaint = new SKPaint
+            {
+                Color = CompletedGreen.WithAlpha(30),
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 6,
+                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
+            };
+            canvas.DrawRoundRect(rect, cr, cr, glowPaint);
+
+            using var borderPaint = new SKPaint
+            {
+                Color = CompletedGreen,
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 2.5f
+            };
+            canvas.DrawRoundRect(rect, cr, cr, borderPaint);
         }
         else if (part.HasError)
         {
-            borderColor = ErrorColor;
-            borderWidth = 3;
+            // Roter Fehler-Rand (pulsierend)
+            float errPulse = 0.6f + 0.4f * MathF.Sin(_animTime * 12);
+            using var borderPaint = new SKPaint
+            {
+                Color = ErrorRed.WithAlpha((byte)(200 * errPulse)),
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 3
+            };
+            canvas.DrawRoundRect(rect, cr, cr, borderPaint);
         }
         else
         {
-            borderColor = DefaultBorder;
-            borderWidth = 2;
-        }
+            // Standard-Rahmen (dezent, Tech-Stil)
+            using var borderPaint = new SKPaint
+            {
+                Color = new SKColor(0xFF, 0xFF, 0xFF, 0x25),
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 1.5f
+            };
+            canvas.DrawRoundRect(rect, cr, cr, borderPaint);
 
-        using var borderPaint = new SKPaint
-        {
-            Color = borderColor,
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = borderWidth
-        };
-        canvas.DrawRoundRect(rect, cornerRadius, cornerRadius, borderPaint);
+            // Dezente Ecken-Markierungen
+            DrawCircuitCorners(canvas, rect, new SKColor(0xFF, 0xFF, 0xFF, 0x15), cr);
+        }
     }
 
     /// <summary>
-    /// Zeichnet ein Vektor-Icon in der oberen Hälfte der Kachel basierend auf dem Icon-Identifier.
+    /// Zeichnet Schaltkreis-Ecken (L-foermige Markierungen) an den Kachel-Ecken.
     /// </summary>
+    private static void DrawCircuitCorners(SKCanvas canvas, SKRect rect, SKColor color, float cr)
+    {
+        float len = Math.Min(rect.Width, rect.Height) * 0.18f;
+        using var paint = new SKPaint
+        {
+            Color = color, IsAntialias = true,
+            StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round
+        };
+
+        float inset = cr * 0.3f;
+        // Oben links
+        canvas.DrawLine(rect.Left + inset, rect.Top + inset + len, rect.Left + inset, rect.Top + inset, paint);
+        canvas.DrawLine(rect.Left + inset, rect.Top + inset, rect.Left + inset + len, rect.Top + inset, paint);
+        // Oben rechts
+        canvas.DrawLine(rect.Right - inset - len, rect.Top + inset, rect.Right - inset, rect.Top + inset, paint);
+        canvas.DrawLine(rect.Right - inset, rect.Top + inset, rect.Right - inset, rect.Top + inset + len, paint);
+        // Unten links
+        canvas.DrawLine(rect.Left + inset, rect.Bottom - inset - len, rect.Left + inset, rect.Bottom - inset, paint);
+        canvas.DrawLine(rect.Left + inset, rect.Bottom - inset, rect.Left + inset + len, rect.Bottom - inset, paint);
+        // Unten rechts
+        canvas.DrawLine(rect.Right - inset - len, rect.Bottom - inset, rect.Right - inset, rect.Bottom - inset, paint);
+        canvas.DrawLine(rect.Right - inset, rect.Bottom - inset, rect.Right - inset, rect.Bottom - inset - len, paint);
+    }
+
+    /// <summary>
+    /// Zeichnet den Step-Number-Badge oben links (kleine Zahl im Kreis).
+    /// </summary>
+    private static void DrawStepBadge(SKCanvas canvas, SKRect rect, int step)
+    {
+        float badgeR = 9;
+        float bx = rect.Left + badgeR + 4;
+        float by = rect.Top + badgeR + 4;
+
+        using var bgPaint = new SKPaint
+        {
+            Color = CompletedGreen.WithAlpha(200),
+            IsAntialias = true
+        };
+        canvas.DrawCircle(bx, by, badgeR, bgPaint);
+
+        using var textPaint = new SKPaint
+        {
+            Color = SKColors.White,
+            IsAntialias = true,
+            TextSize = 11,
+            TextAlign = SKTextAlign.Center,
+            FakeBoldText = true
+        };
+        canvas.DrawText(step.ToString(), bx, by + 4, textPaint);
+    }
+
+    /// <summary>
+    /// Fehler-Overlay: Rotes Pulsieren + Zickzack-Blitz.
+    /// </summary>
+    private void DrawErrorOverlay(SKCanvas canvas, SKRect rect, float cr)
+    {
+        float errPulse = 0.4f + 0.6f * MathF.Sin(_animTime * 15);
+
+        // Rotes Overlay
+        using var overlayPaint = new SKPaint
+        {
+            Color = ErrorRed.WithAlpha((byte)(80 * errPulse)),
+            IsAntialias = true
+        };
+        canvas.DrawRoundRect(rect, cr, cr, overlayPaint);
+
+        // Kleiner Blitz in der Mitte
+        float cx = rect.MidX;
+        float cy = rect.MidY;
+        float boltH = rect.Height * 0.3f;
+
+        using var boltPaint = new SKPaint
+        {
+            Color = new SKColor(0xFF, 0x80, 0x80, (byte)(200 * errPulse)),
+            IsAntialias = true,
+            StrokeWidth = 2.5f,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round
+        };
+        using var boltPath = new SKPath();
+        boltPath.MoveTo(cx - boltH * 0.15f, cy - boltH * 0.5f);
+        boltPath.LineTo(cx + boltH * 0.1f, cy - boltH * 0.05f);
+        boltPath.LineTo(cx - boltH * 0.1f, cy + boltH * 0.05f);
+        boltPath.LineTo(cx + boltH * 0.15f, cy + boltH * 0.5f);
+        canvas.DrawPath(boltPath, boltPaint);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MEMORISIERUNGS-SCAN-LINIE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void DrawScanLine(SKCanvas canvas, SKRect bounds, float gridTop, float gridHeight)
+    {
+        // Horizontale leuchtende Linie die ueber das Grid faehrt
+        float period = 2.0f; // 2 Sekunden pro Durchgang
+        float progress = (_animTime % period) / period;
+        float scanY = gridTop + progress * gridHeight;
+
+        using var scanPaint = new SKPaint
+        {
+            Shader = SKShader.CreateLinearGradient(
+                new SKPoint(bounds.Left, scanY - 8),
+                new SKPoint(bounds.Left, scanY + 8),
+                new[] { SKColors.Transparent, NeonCyan.WithAlpha(60), NeonCyan.WithAlpha(100),
+                        NeonCyan.WithAlpha(60), SKColors.Transparent },
+                new[] { 0f, 0.3f, 0.5f, 0.7f, 1f },
+                SKShaderTileMode.Clamp),
+            IsAntialias = false
+        };
+        canvas.DrawRect(bounds.Left, scanY - 8, bounds.Width, 16, scanPaint);
+
+        // Heller Kern
+        using var corePaint = new SKPaint
+        {
+            Color = NeonCyan.WithAlpha(150),
+            IsAntialias = false,
+            StrokeWidth = 1
+        };
+        canvas.DrawLine(bounds.Left + 20, scanY, bounds.Right - 20, scanY, corePaint);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMPLETION-FLASH
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void DrawCompletionFlash(SKCanvas canvas, SKRect bounds, float deltaTime)
+    {
+        _completionFlashTimer -= deltaTime;
+        float t = Math.Clamp(_completionFlashTimer / 1.5f, 0, 1);
+
+        // Goldener Glow vom Zentrum
+        byte alpha;
+        if (t > 0.7f)
+            alpha = (byte)(180 * ((t - 0.7f) / 0.3f)); // Schnelles Aufblitzen
+        else
+            alpha = (byte)(180 * t / 0.7f * 0.5f); // Langsames Ausblenden
+
+        using var flashPaint = new SKPaint
+        {
+            Shader = SKShader.CreateRadialGradient(
+                new SKPoint(bounds.MidX, bounds.MidY),
+                Math.Max(bounds.Width, bounds.Height) * 0.5f,
+                new[] { GoldenYellow.WithAlpha(alpha), SKColors.Transparent },
+                null, SKShaderTileMode.Clamp),
+            IsAntialias = false
+        };
+        canvas.DrawRect(bounds, flashPaint);
+
+        // Goldener Rahmen
+        if (t > 0.5f)
+        {
+            byte borderAlpha = (byte)(200 * ((t - 0.5f) / 0.5f));
+            using var borderPaint = new SKPaint
+            {
+                Color = GoldenYellow.WithAlpha(borderAlpha),
+                IsAntialias = true,
+                Style = SKPaintStyle.Stroke,
+                StrokeWidth = 3,
+                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
+            };
+            canvas.DrawRoundRect(new SKRect(bounds.Left + 4, bounds.Top + 4,
+                bounds.Right - 4, bounds.Bottom - 4), 12, 12, borderPaint);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FORTSCHRITTSANZEIGE
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void DrawProgressBar(SKCanvas canvas, SKRect bounds,
+        int completed, int total, float y)
+    {
+        if (total <= 0) return;
+
+        float barWidth = bounds.Width * 0.6f;
+        float barHeight = 6;
+        float barX = bounds.Left + (bounds.Width - barWidth) / 2;
+
+        // Hintergrund
+        using var bgPaint = new SKPaint
+        {
+            Color = new SKColor(0xFF, 0xFF, 0xFF, 0x15),
+            IsAntialias = true
+        };
+        canvas.DrawRoundRect(barX, y, barWidth, barHeight, 3, 3, bgPaint);
+
+        // Fortschritt
+        float progress = (float)completed / total;
+        if (progress > 0)
+        {
+            float fillWidth = barWidth * progress;
+
+            // Gradient: Violett → Cyan → Gruen
+            SKColor fillColor;
+            if (progress < 0.5f)
+                fillColor = NeonViolet;
+            else if (progress < 1f)
+                fillColor = NeonCyan;
+            else
+                fillColor = CompletedGreen;
+
+            using var fillPaint = new SKPaint
+            {
+                Color = fillColor,
+                IsAntialias = true
+            };
+            canvas.DrawRoundRect(barX, y, fillWidth, barHeight, 3, 3, fillPaint);
+
+            // Glow am Ende
+            using var glowPaint = new SKPaint
+            {
+                Color = fillColor.WithAlpha(60),
+                IsAntialias = true,
+                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
+            };
+            canvas.DrawCircle(barX + fillWidth, y + barHeight / 2, 5, glowPaint);
+        }
+
+        // Fortschritts-Text
+        using var textPaint = new SKPaint
+        {
+            Color = new SKColor(0xFF, 0xFF, 0xFF, 0xB0),
+            IsAntialias = true,
+            TextSize = 11,
+            TextAlign = SKTextAlign.Center
+        };
+        canvas.DrawText($"{completed}/{total}", bounds.MidX, y + barHeight + 14, textPaint);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PARTIKEL-UPDATE & ZEICHNEN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private void UpdateAndDrawSparks(SKCanvas canvas, float deltaTime)
+    {
+        using var paint = new SKPaint { IsAntialias = true };
+
+        for (int i = _sparkCount - 1; i >= 0; i--)
+        {
+            ref var s = ref _sparks[i];
+            s.Life += deltaTime;
+            if (s.Life >= s.MaxLife)
+            {
+                // Kompaktieren: Letztes Element an diese Stelle
+                _sparks[i] = _sparks[--_sparkCount];
+                continue;
+            }
+
+            s.X += s.VelocityX * deltaTime;
+            s.Y += s.VelocityY * deltaTime;
+            s.VelocityY += 30 * deltaTime; // Leichte Schwerkraft
+
+            float lifeRatio = s.Life / s.MaxLife;
+            float alpha = lifeRatio < 0.2f ? lifeRatio / 0.2f : (1 - lifeRatio) / 0.8f;
+            alpha = Math.Clamp(alpha, 0, 1);
+
+            if (s.IsGolden)
+            {
+                // Goldene Funken schimmern
+                float shimmer = 0.7f + 0.3f * MathF.Sin(s.Life * 15 + s.X * 0.1f);
+                paint.Color = new SKColor(s.R, s.G, (byte)(s.B * shimmer), (byte)(alpha * 220));
+            }
+            else
+            {
+                paint.Color = new SKColor(s.R, s.G, s.B, (byte)(alpha * 200));
+            }
+
+            float size = s.Size * (1 - lifeRatio * 0.5f);
+            canvas.DrawCircle(s.X, s.Y, size, paint);
+
+            // Heller Kern
+            paint.Color = new SKColor(0xFF, 0xFF, 0xFF, (byte)(alpha * 100));
+            canvas.DrawCircle(s.X, s.Y, size * 0.4f, paint);
+        }
+    }
+
+    private void UpdateAndDrawCircuitPulses(SKCanvas canvas, InventPartData[] parts, float deltaTime)
+    {
+        using var pulsePaint = new SKPaint
+        {
+            IsAntialias = true,
+            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
+        };
+
+        for (int i = _pulseCount - 1; i >= 0; i--)
+        {
+            ref var p = ref _pulses[i];
+            p.Life += deltaTime;
+            p.Progress += p.Speed * deltaTime;
+
+            if (p.Life >= p.MaxLife || p.Progress > 1.2f)
+            {
+                _pulses[i] = _pulses[--_pulseCount];
+                continue;
+            }
+
+            if (p.FromTile >= _tileCenters.Length || p.ToTile >= _tileCenters.Length) continue;
+
+            var from = _tileCenters[p.FromTile];
+            var to = _tileCenters[p.ToTile];
+
+            // Position entlang der Linie
+            float prog = Math.Clamp(p.Progress, 0, 1);
+            float px = from.X + (to.X - from.X) * prog;
+            float py = from.Y + (to.Y - from.Y) * prog;
+
+            float alpha = p.Life < 0.2f ? p.Life / 0.2f : (1 - p.Life / p.MaxLife);
+            alpha = Math.Clamp(alpha, 0, 1);
+
+            // Leuchtender Punkt
+            pulsePaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 180));
+            canvas.DrawCircle(px, py, 5, pulsePaint);
+
+            // Heller Kern
+            pulsePaint.Color = new SKColor(0xFF, 0xFF, 0xFF, (byte)(alpha * 120));
+            canvas.DrawCircle(px, py, 2, pulsePaint);
+        }
+    }
+
+    private void UpdateAndDrawAmbient(SKCanvas canvas, SKRect bounds, float deltaTime)
+    {
+        var rng = Random.Shared;
+
+        // Atmosphaerische Partikel auffuellen
+        while (_ambientCount < MAX_AMBIENT)
+        {
+            _ambient[_ambientCount++] = new SparkParticle
+            {
+                X = bounds.Left + rng.NextSingle() * bounds.Width,
+                Y = bounds.Top + rng.NextSingle() * bounds.Height,
+                VelocityX = (rng.NextSingle() - 0.5f) * 15,
+                VelocityY = -5 - rng.NextSingle() * 10,
+                Life = 0,
+                MaxLife = 3f + rng.NextSingle() * 4f,
+                Size = 1 + rng.NextSingle() * 2f,
+                R = 0xBB, G = 0x86, B = 0xFC // Violett
+            };
+        }
+
+        using var paint = new SKPaint { IsAntialias = false };
+
+        for (int i = _ambientCount - 1; i >= 0; i--)
+        {
+            ref var a = ref _ambient[i];
+            a.Life += deltaTime;
+            if (a.Life >= a.MaxLife)
+            {
+                _ambient[i] = _ambient[--_ambientCount];
+                continue;
+            }
+
+            a.X += a.VelocityX * deltaTime;
+            a.Y += a.VelocityY * deltaTime;
+            a.X += MathF.Sin(a.Life * 2 + a.X * 0.02f) * 3 * deltaTime;
+
+            if (a.Y < bounds.Top - 10 || a.X < bounds.Left - 10 || a.X > bounds.Right + 10)
+            {
+                _ambient[i] = _ambient[--_ambientCount];
+                continue;
+            }
+
+            float lifeRatio = a.Life / a.MaxLife;
+            float alpha;
+            if (lifeRatio < 0.15f) alpha = lifeRatio / 0.15f;
+            else if (lifeRatio > 0.65f) alpha = (1 - lifeRatio) / 0.35f;
+            else alpha = 1;
+
+            paint.Color = new SKColor(a.R, a.G, a.B, (byte)(alpha * 50));
+            canvas.DrawCircle(a.X, a.Y, a.Size, paint);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // BAUTEIL-ICONS (12 SkiaSharp-Zeichnungen)
+    // ═══════════════════════════════════════════════════════════════════════
+
     private static void DrawTileIcon(SKCanvas canvas, SKRect rect, string iconId)
     {
         if (string.IsNullOrEmpty(iconId)) return;
@@ -317,31 +1043,30 @@ public class InventGameRenderer
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // 12 BAUTEIL-ICONS (SkiaSharp-Zeichnungen)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>Zahnrad: Kreis mit 8 Zähnen.</summary>
+    /// <summary>Zahnrad: Kreis mit 8 Zaehnen und Gradient.</summary>
     private static void DrawGearIcon(SKCanvas canvas, float cx, float cy, float size)
     {
         float half = size / 2;
         float outerR = half * 0.85f;
-        float innerR = half * 0.55f;
         float toothW = half * 0.22f;
         int teeth = 8;
 
-        // Zahnrad-Kontur mit Zähnen
-        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xB0, 0xBE, 0xC5) };
+        using var fillPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Fill,
+            Shader = SKShader.CreateRadialGradient(
+                new SKPoint(cx - half * 0.2f, cy - half * 0.2f), outerR * 1.2f,
+                new[] { new SKColor(0xCF, 0xD8, 0xDC), new SKColor(0x90, 0xA4, 0xAE) },
+                null, SKShaderTileMode.Clamp)
+        };
         using var borderPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 1.5f
+            Color = new SKColor(0x60, 0x7D, 0x8B), StrokeWidth = 1.5f
         };
 
-        // Äußerer Kreis (Basis)
         canvas.DrawCircle(cx, cy, outerR, fillPaint);
 
-        // Zähne als kleine Rechtecke
         using var toothPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x90, 0xA4, 0xAE) };
         for (int i = 0; i < teeth; i++)
         {
@@ -359,8 +1084,8 @@ public class InventGameRenderer
 
         canvas.DrawCircle(cx, cy, outerR, borderPaint);
 
-        // Innerer Kreis (Achsloch)
-        using var holePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x2A, 0x1A, 0x40) };
+        using var holePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x15, 0x0B, 0x35) };
+        float innerR = half * 0.55f;
         canvas.DrawCircle(cx, cy, innerR * 0.45f, holePaint);
         canvas.DrawCircle(cx, cy, innerR * 0.45f, borderPaint);
     }
@@ -370,12 +1095,17 @@ public class InventGameRenderer
     {
         float half = size / 2;
 
-        // Kolbenkopf (breites Rechteck oben)
-        using var headPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x9E, 0x9E, 0x9E) };
+        using var headPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Fill,
+            Shader = SKShader.CreateLinearGradient(
+                new SKPoint(cx, cy - half * 0.7f), new SKPoint(cx, cy),
+                new[] { new SKColor(0xB0, 0xBE, 0xC5), new SKColor(0x78, 0x90, 0x9C) },
+                null, SKShaderTileMode.Clamp)
+        };
         var headRect = SKRect.Create(cx - half * 0.6f, cy - half * 0.7f, half * 1.2f, half * 0.7f);
         canvas.DrawRoundRect(headRect, 3, 3, headPaint);
 
-        // Kolbenring (dünne Linie oben)
         using var ringPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -383,16 +1113,13 @@ public class InventGameRenderer
         };
         canvas.DrawLine(headRect.Left + 3, headRect.Top + half * 0.15f, headRect.Right - 3, headRect.Top + half * 0.15f, ringPaint);
 
-        // Pleuelstange (schmal nach unten)
         using var rodPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x78, 0x90, 0x9C) };
         var rodRect = SKRect.Create(cx - half * 0.15f, cy, half * 0.3f, half * 0.8f);
         canvas.DrawRect(rodRect, rodPaint);
 
-        // Bolzen unten (Kreis)
         using var boltPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xB0, 0xBE, 0xC5) };
         canvas.DrawCircle(cx, cy + half * 0.8f, half * 0.18f, boltPaint);
 
-        // Rand
         using var borderPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -412,7 +1139,6 @@ public class InventGameRenderer
             Color = new SKColor(0xEF, 0x53, 0x50), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
         };
 
-        // Wellenlinie (3 Bögen)
         using var path = new SKPath();
         path.MoveTo(cx - half, cy);
         float segW = half * 2f / 3f;
@@ -424,11 +1150,8 @@ public class InventGameRenderer
         }
         canvas.DrawPath(path, wirePaint);
 
-        // Stecker links
         using var plugPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xFF, 0xCA, 0x28) };
         canvas.DrawCircle(cx - half, cy, half * 0.15f, plugPaint);
-
-        // Stecker rechts
         canvas.DrawCircle(cx + half, cy, half * 0.15f, plugPaint);
     }
 
@@ -437,29 +1160,23 @@ public class InventGameRenderer
     {
         float half = size / 2;
 
-        // Platinen-Rechteck (grün)
         using var boardPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x2E, 0x7D, 0x32) };
         var boardRect = SKRect.Create(cx - half * 0.8f, cy - half * 0.6f, half * 1.6f, half * 1.2f);
         canvas.DrawRoundRect(boardRect, 3, 3, boardPaint);
 
-        // Leiterbahnen (goldene Linien)
         using var tracePaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
             Color = new SKColor(0xFF, 0xD5, 0x4F, 0xC0), StrokeWidth = 1.5f
         };
-        // Horizontal
         canvas.DrawLine(boardRect.Left + 4, cy - half * 0.2f, boardRect.Right - 4, cy - half * 0.2f, tracePaint);
         canvas.DrawLine(boardRect.Left + 4, cy + half * 0.2f, boardRect.Right - 4, cy + half * 0.2f, tracePaint);
-        // Vertikal
         canvas.DrawLine(cx - half * 0.3f, boardRect.Top + 4, cx - half * 0.3f, boardRect.Bottom - 4, tracePaint);
         canvas.DrawLine(cx + half * 0.3f, boardRect.Top + 4, cx + half * 0.3f, boardRect.Bottom - 4, tracePaint);
 
-        // Chip (kleines Quadrat in der Mitte)
         using var chipPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x21, 0x21, 0x21) };
         canvas.DrawRect(cx - half * 0.2f, cy - half * 0.15f, half * 0.4f, half * 0.3f, chipPaint);
 
-        // Rand
         using var borderPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -474,11 +1191,16 @@ public class InventGameRenderer
         float half = size / 2;
         float radius = half * 0.7f;
 
-        // Schraubenkopf (Kreis)
-        using var headPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xB0, 0xBE, 0xC5) };
+        using var headPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Fill,
+            Shader = SKShader.CreateRadialGradient(
+                new SKPoint(cx - radius * 0.2f, cy - radius * 0.2f), radius * 1.3f,
+                new[] { new SKColor(0xCF, 0xD8, 0xDC), new SKColor(0x90, 0xA4, 0xAE) },
+                null, SKShaderTileMode.Clamp)
+        };
         canvas.DrawCircle(cx, cy, radius, headPaint);
 
-        // Rand
         using var borderPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -486,7 +1208,6 @@ public class InventGameRenderer
         };
         canvas.DrawCircle(cx, cy, radius, borderPaint);
 
-        // Kreuzschlitz
         using var slotPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -497,17 +1218,22 @@ public class InventGameRenderer
         canvas.DrawLine(cx, cy - slotLen, cx, cy + slotLen, slotPaint);
     }
 
-    /// <summary>Gehäuse: Abgerundetes Rechteck mit Schrauben in Ecken.</summary>
+    /// <summary>Gehaeuse: Abgerundetes Rechteck mit Schrauben in Ecken.</summary>
     private static void DrawHousingIcon(SKCanvas canvas, float cx, float cy, float size)
     {
         float half = size / 2;
 
-        // Gehäuse
-        using var housingPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x60, 0x7D, 0x8B) };
+        using var housingPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Fill,
+            Shader = SKShader.CreateLinearGradient(
+                new SKPoint(cx, cy - half * 0.7f), new SKPoint(cx, cy + half * 0.7f),
+                new[] { new SKColor(0x78, 0x90, 0x9C), new SKColor(0x54, 0x6E, 0x7A) },
+                null, SKShaderTileMode.Clamp)
+        };
         var housingRect = SKRect.Create(cx - half * 0.8f, cy - half * 0.7f, half * 1.6f, half * 1.4f);
         canvas.DrawRoundRect(housingRect, 6, 6, housingPaint);
 
-        // Rand
         using var borderPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -515,7 +1241,6 @@ public class InventGameRenderer
         };
         canvas.DrawRoundRect(housingRect, 6, 6, borderPaint);
 
-        // 4 Schrauben in Ecken
         using var screwPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xB0, 0xBE, 0xC5) };
         float screwR = half * 0.08f;
         float inset = half * 0.2f;
@@ -524,7 +1249,6 @@ public class InventGameRenderer
         canvas.DrawCircle(housingRect.Left + inset, housingRect.Bottom - inset, screwR, screwPaint);
         canvas.DrawCircle(housingRect.Right - inset, housingRect.Bottom - inset, screwR, screwPaint);
 
-        // Ventilationsschlitze
         using var slitPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -548,15 +1272,13 @@ public class InventGameRenderer
             Color = new SKColor(0xE0, 0xE0, 0xE0), StrokeWidth = 2.5f, StrokeCap = SKStrokeCap.Round
         };
 
-        // Zickzack-Feder (7 Segmente)
-        using var path = new SKPath();
         int segments = 7;
         float segHeight = (half * 1.6f) / segments;
         float zigWidth = half * 0.5f;
 
-        // Obere Endkappe
         canvas.DrawLine(cx - half * 0.15f, cy - half * 0.8f, cx + half * 0.15f, cy - half * 0.8f, springPaint);
 
+        using var path = new SKPath();
         path.MoveTo(cx, cy - half * 0.8f);
         for (int i = 0; i < segments; i++)
         {
@@ -566,35 +1288,29 @@ public class InventGameRenderer
         }
         canvas.DrawPath(path, springPaint);
 
-        // Untere Endkappe
         float bottomY = cy - half * 0.8f + segments * segHeight;
         float lastX = (segments % 2 != 0) ? cx + zigWidth : cx - zigWidth;
         canvas.DrawLine(lastX, bottomY, cx, bottomY, springPaint);
         canvas.DrawLine(cx - half * 0.15f, bottomY, cx + half * 0.15f, bottomY, springPaint);
     }
 
-    /// <summary>Linse: Doppelkonvexe Form.</summary>
+    /// <summary>Linse: Doppelkonvexe Form mit Lichtreflex.</summary>
     private static void DrawLensIcon(SKCanvas canvas, float cx, float cy, float size)
     {
         float half = size / 2;
 
-        // Linke konvexe Seite
         using var lensPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x42, 0xA5, 0xF5, 0xA0) };
         using var path = new SKPath();
 
         float lensHeight = half * 1.4f;
         float bulgeFactor = half * 0.6f;
 
-        // Linke Seite
         path.MoveTo(cx, cy - lensHeight / 2);
         path.QuadTo(cx - bulgeFactor, cy, cx, cy + lensHeight / 2);
-        // Rechte Seite
         path.QuadTo(cx + bulgeFactor, cy, cx, cy - lensHeight / 2);
         path.Close();
-
         canvas.DrawPath(path, lensPaint);
 
-        // Rand
         using var borderPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -602,7 +1318,6 @@ public class InventGameRenderer
         };
         canvas.DrawPath(path, borderPaint);
 
-        // Lichtreflex (kleiner heller Bogen oben links)
         using var reflexPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -619,12 +1334,17 @@ public class InventGameRenderer
     {
         float half = size / 2;
 
-        // Motor-Gehäuse
-        using var bodyPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x78, 0x90, 0x9C) };
+        using var bodyPaint = new SKPaint
+        {
+            IsAntialias = true, Style = SKPaintStyle.Fill,
+            Shader = SKShader.CreateLinearGradient(
+                new SKPoint(cx - half * 0.6f, cy), new SKPoint(cx + half * 0.6f, cy),
+                new[] { new SKColor(0x60, 0x7D, 0x8B), new SKColor(0x90, 0xA4, 0xAE) },
+                null, SKShaderTileMode.Clamp)
+        };
         var bodyRect = SKRect.Create(cx - half * 0.6f, cy - half * 0.5f, half * 1.2f, half);
         canvas.DrawRoundRect(bodyRect, 4, 4, bodyPaint);
 
-        // Wicklungs-Streifen (2 kupferfarbene Linien)
         using var coilPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -633,7 +1353,6 @@ public class InventGameRenderer
         canvas.DrawLine(bodyRect.Left + 4, cy - half * 0.15f, bodyRect.Right - 4, cy - half * 0.15f, coilPaint);
         canvas.DrawLine(bodyRect.Left + 4, cy + half * 0.15f, bodyRect.Right - 4, cy + half * 0.15f, coilPaint);
 
-        // Achse (rechts herausragend)
         using var axlePaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -641,11 +1360,9 @@ public class InventGameRenderer
         };
         canvas.DrawLine(bodyRect.Right, cy, bodyRect.Right + half * 0.35f, cy, axlePaint);
 
-        // Achsenlager (Kreis am Ende)
         using var bearingPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xE0, 0xE0, 0xE0) };
         canvas.DrawCircle(bodyRect.Right + half * 0.35f, cy, half * 0.1f, bearingPaint);
 
-        // Rand
         using var borderPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -659,16 +1376,13 @@ public class InventGameRenderer
     {
         float half = size / 2;
 
-        // Batterie-Körper
         using var bodyPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x43, 0xA0, 0x47) };
         var bodyRect = SKRect.Create(cx - half * 0.5f, cy - half * 0.7f, half, half * 1.4f);
         canvas.DrawRoundRect(bodyRect, 3, 3, bodyPaint);
 
-        // Batterie-Kappe (oben, schmaler)
         using var capPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xB0, 0xBE, 0xC5) };
         canvas.DrawRect(cx - half * 0.2f, bodyRect.Top - half * 0.15f, half * 0.4f, half * 0.15f, capPaint);
 
-        // "+" Symbol oben
         using var symbolPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -678,11 +1392,9 @@ public class InventGameRenderer
         canvas.DrawLine(cx - half * 0.15f, plusY, cx + half * 0.15f, plusY, symbolPaint);
         canvas.DrawLine(cx, plusY - half * 0.15f, cx, plusY + half * 0.15f, symbolPaint);
 
-        // "-" Symbol unten
         float minusY = cy + half * 0.3f;
         canvas.DrawLine(cx - half * 0.15f, minusY, cx + half * 0.15f, minusY, symbolPaint);
 
-        // Rand
         using var borderPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -696,17 +1408,14 @@ public class InventGameRenderer
     {
         float half = size / 2;
 
-        // Basis (flaches Rechteck unten)
         using var basePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x78, 0x90, 0x9C) };
         var baseRect = SKRect.Create(cx - half * 0.7f, cy + half * 0.1f, half * 1.4f, half * 0.4f);
         canvas.DrawRoundRect(baseRect, 4, 4, basePaint);
 
-        // Drehpunkt (Kreis in der Mitte der Basis)
         using var pivotPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xB0, 0xBE, 0xC5) };
         float pivotY = baseRect.Top;
         canvas.DrawCircle(cx, pivotY, half * 0.12f, pivotPaint);
 
-        // Hebel (diagonal nach oben rechts)
         using var leverPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -714,16 +1423,13 @@ public class InventGameRenderer
         };
         canvas.DrawLine(cx, pivotY, cx + half * 0.5f, cy - half * 0.6f, leverPaint);
 
-        // Griff (Kreis am Hebelende)
         using var handlePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xFF, 0xD5, 0x4F) };
         canvas.DrawCircle(cx + half * 0.5f, cy - half * 0.6f, half * 0.15f, handlePaint);
 
-        // Kontaktpunkte (links und rechts auf Basis)
         using var contactPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xE0, 0xE0, 0xE0) };
         canvas.DrawCircle(baseRect.Left + half * 0.2f, pivotY, half * 0.08f, contactPaint);
         canvas.DrawCircle(baseRect.Right - half * 0.2f, pivotY, half * 0.08f, contactPaint);
 
-        // Rand
         using var borderPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -732,12 +1438,11 @@ public class InventGameRenderer
         canvas.DrawRoundRect(baseRect, 4, 4, borderPaint);
     }
 
-    /// <summary>Antenne: Vertikale Linie mit Kreisen (Signalwellen).</summary>
+    /// <summary>Antenne: Vertikale Linie mit Signalwellen.</summary>
     private static void DrawAntennaIcon(SKCanvas canvas, float cx, float cy, float size)
     {
         float half = size / 2;
 
-        // Antennenstab (vertikal)
         using var stickPaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -745,7 +1450,6 @@ public class InventGameRenderer
         };
         canvas.DrawLine(cx, cy + half * 0.5f, cx, cy - half * 0.5f, stickPaint);
 
-        // Basis (kleines Dreieck unten)
         using var basePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x78, 0x90, 0x9C) };
         using var basePath = new SKPath();
         basePath.MoveTo(cx, cy + half * 0.5f);
@@ -754,7 +1458,6 @@ public class InventGameRenderer
         basePath.Close();
         canvas.DrawPath(basePath, basePaint);
 
-        // Signalwellen (3 konzentrische Halbkreise oben)
         using var wavePaint = new SKPaint
         {
             IsAntialias = true, Style = SKPaintStyle.Stroke,
@@ -771,7 +1474,7 @@ public class InventGameRenderer
         }
     }
 
-    /// <summary>Fallback-Icon: Einfacher Kreis mit Fragezeichen.</summary>
+    /// <summary>Fallback-Icon: Kreis mit Fragezeichen.</summary>
     private static void DrawDefaultIcon(SKCanvas canvas, float cx, float cy, float size)
     {
         float half = size / 2;
@@ -792,159 +1495,96 @@ public class InventGameRenderer
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // NUMMER + HÄKCHEN + PARTIKEL
+    // NUMMER + HAEKCHEN
     // ═══════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Zeichnet die Nummer oder das Fragezeichen in der unteren Hälfte der Kachel.
-    /// </summary>
-    private static void DrawTileNumber(SKCanvas canvas, SKRect rect, string displayNumber, bool isMemorizing)
+    private void DrawTileNumber(SKCanvas canvas, SKRect rect, string displayNumber,
+        bool isMemorizing, bool isCompleted)
     {
         if (string.IsNullOrEmpty(displayNumber)) return;
 
         bool isQuestion = displayNumber == "?";
         float fontSize = rect.Height * 0.28f;
 
-        using var numberPaint = new SKPaint
-        {
-            Color = isQuestion ? TextQuestion : TextNumber,
-            TextSize = fontSize,
-            IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            FakeBoldText = !isQuestion
-        };
-
         float x = rect.MidX;
         float y = rect.Bottom - rect.Height * 0.12f;
 
-        // Schatten unter der Nummer
+        // Schatten
         if (!isQuestion)
         {
             using var shadowPaint = new SKPaint
             {
-                Color = new SKColor(0, 0, 0, 80),
-                TextSize = fontSize,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Center,
-                FakeBoldText = true
+                Color = new SKColor(0, 0, 0, 100),
+                TextSize = fontSize, IsAntialias = true,
+                TextAlign = SKTextAlign.Center, FakeBoldText = true
             };
             canvas.DrawText(displayNumber, x + 1, y + 1, shadowPaint);
         }
 
+        // Haupttext
+        SKColor textColor;
+        if (isQuestion)
+            textColor = new SKColor(0xFF, 0xFF, 0xFF, 0x60);
+        else if (isCompleted)
+            textColor = CompletedGreen;
+        else
+            textColor = new SKColor(0xFF, 0xFF, 0xFF, 0xE0);
+
+        using var numberPaint = new SKPaint
+        {
+            Color = textColor,
+            TextSize = fontSize, IsAntialias = true,
+            TextAlign = SKTextAlign.Center,
+            FakeBoldText = !isQuestion
+        };
         canvas.DrawText(displayNumber, x, y, numberPaint);
 
-        // Memorisierungsphase: Nummer pulsiert leicht
+        // Holographischer Glow bei Memorisierung
         if (isMemorizing && !isQuestion)
         {
+            float glowPulse = 0.5f + 0.5f * MathF.Sin(_animTime * 4 + rect.Left * 0.05f);
             using var glowPaint = new SKPaint
             {
-                Color = TextWhite.WithAlpha(30),
-                TextSize = fontSize + 2,
+                Color = NeonCyan.WithAlpha((byte)(60 * glowPulse)),
+                TextSize = fontSize + 3,
                 IsAntialias = true,
                 TextAlign = SKTextAlign.Center,
-                FakeBoldText = true
+                FakeBoldText = true,
+                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
             };
             canvas.DrawText(displayNumber, x, y, glowPaint);
         }
     }
 
-    /// <summary>
-    /// Zeichnet ein grünes Häkchen oben rechts in der Kachel.
-    /// </summary>
     private static void DrawCheckmark(SKCanvas canvas, SKRect rect)
     {
         float badgeSize = 16;
         float badgeX = rect.Right - badgeSize - 3;
         float badgeY = rect.Top + 3;
+        float cx = badgeX + badgeSize / 2;
+        float cy = badgeY + badgeSize / 2;
 
-        // Grüner Kreis-Hintergrund
-        using var circlePaint = new SKPaint
+        // Gruener Kreis mit Glow
+        using var glowPaint = new SKPaint
         {
-            Color = CheckmarkBg,
-            IsAntialias = true
+            Color = CompletedGreen.WithAlpha(40),
+            IsAntialias = true,
+            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
         };
-        canvas.DrawCircle(badgeX + badgeSize / 2, badgeY + badgeSize / 2, badgeSize / 2, circlePaint);
+        canvas.DrawCircle(cx, cy, badgeSize / 2 + 2, glowPaint);
 
-        // Häkchen (zwei Linien)
+        using var circlePaint = new SKPaint { Color = CompletedGreen, IsAntialias = true };
+        canvas.DrawCircle(cx, cy, badgeSize / 2, circlePaint);
+
         using var checkPaint = new SKPaint
         {
-            Color = TextWhite,
-            IsAntialias = true,
-            StrokeWidth = 2,
-            StrokeCap = SKStrokeCap.Round,
+            Color = SKColors.White, IsAntialias = true,
+            StrokeWidth = 2, StrokeCap = SKStrokeCap.Round,
             Style = SKPaintStyle.Stroke
         };
 
-        float checkCx = badgeX + badgeSize / 2;
-        float checkCy = badgeY + badgeSize / 2;
         float s = badgeSize * 0.22f;
-
-        // Kurzer Strich nach unten-links
-        canvas.DrawLine(checkCx - s * 1.2f, checkCy, checkCx - s * 0.1f, checkCy + s, checkPaint);
-        // Langer Strich nach oben-rechts
-        canvas.DrawLine(checkCx - s * 0.1f, checkCy + s, checkCx + s * 1.5f, checkCy - s * 0.8f, checkPaint);
-    }
-
-    /// <summary>
-    /// Aktualisiert und zeichnet die Elektro-Funken-Partikel.
-    /// Kleine violette/weiße Lichtpunkte die über den Hintergrund schweben.
-    /// </summary>
-    private void UpdateAndDrawSparkParticles(SKCanvas canvas, SKRect bounds, float deltaTime)
-    {
-        var random = Random.Shared;
-
-        // Neue Partikel erzeugen (maximal 15 gleichzeitig)
-        while (_sparkParticles.Count < 15)
-        {
-            _sparkParticles.Add(new SparkParticle
-            {
-                X = bounds.Left + (float)random.NextDouble() * bounds.Width,
-                Y = bounds.Top + (float)random.NextDouble() * bounds.Height,
-                VelocityX = ((float)random.NextDouble() - 0.5f) * 20,
-                VelocityY = -8 - (float)random.NextDouble() * 12,
-                Life = 0,
-                MaxLife = 2f + (float)random.NextDouble() * 3f,
-                Size = 1 + (float)random.NextDouble() * 2.5f
-            });
-        }
-
-        // Partikel aktualisieren und zeichnen
-        using var sparkPaint = new SKPaint { IsAntialias = false };
-        for (int i = _sparkParticles.Count - 1; i >= 0; i--)
-        {
-            var p = _sparkParticles[i];
-            p.Life += deltaTime;
-            p.X += p.VelocityX * deltaTime;
-            p.Y += p.VelocityY * deltaTime;
-
-            // Leichtes Flackern (Sinus + Noise)
-            p.X += (float)Math.Sin(p.Life * 2.5f + i * 0.7f) * 4 * deltaTime;
-
-            if (p.Life >= p.MaxLife || p.Y < bounds.Top - 10 || p.X < bounds.Left - 10 || p.X > bounds.Right + 10)
-            {
-                _sparkParticles.RemoveAt(i);
-                continue;
-            }
-
-            _sparkParticles[i] = p;
-
-            // Alpha: Einblenden -> Halten -> Ausblenden
-            float lifeRatio = p.Life / p.MaxLife;
-            float alpha;
-            if (lifeRatio < 0.15f)
-                alpha = lifeRatio / 0.15f;
-            else if (lifeRatio > 0.65f)
-                alpha = (1 - lifeRatio) / 0.35f;
-            else
-                alpha = 1;
-
-            // Farbe: Violett-Weiß-Mix (Labor-Atmosphäre / Elektro-Funken)
-            byte r = (byte)(180 + random.Next(0, 76));
-            byte g = (byte)(130 + random.Next(0, 70));
-            byte b = (byte)(220 + random.Next(0, 36));
-            sparkPaint.Color = new SKColor(r, g, b, (byte)(alpha * 70));
-
-            canvas.DrawCircle(p.X, p.Y, p.Size, sparkPaint);
-        }
+        canvas.DrawLine(cx - s * 1.2f, cy, cx - s * 0.1f, cy + s, checkPaint);
+        canvas.DrawLine(cx - s * 0.1f, cy + s, cx + s * 1.5f, cy - s * 0.8f, checkPaint);
     }
 }

@@ -103,11 +103,13 @@ public partial class PipePuzzleView : UserControl
                 IsSource = t.IsSource,
                 IsDrain = t.IsDrain,
                 IsLocked = t.IsLocked,
-                IsConnected = t.IsConnected
+                IsConnected = t.IsConnected,
+                ConnectionDistance = t.ConnectionDistance
             };
         }
 
-        _renderer.Render(canvas, _lastBounds, tiles, _vm.GridCols, _vm.GridRows, deltaTime);
+        _renderer.Render(canvas, _lastBounds, tiles, _vm.GridCols, _vm.GridRows,
+            _vm.IsPuzzleSolved, _vm.MaxConnectionDistance, deltaTime);
     }
 
     /// <summary>

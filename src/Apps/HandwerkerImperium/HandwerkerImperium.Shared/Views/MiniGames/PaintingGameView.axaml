@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              x:Class="HandwerkerImperium.Views.MiniGames.PaintingGameView"
              x:DataType="vm:PaintingGameViewModel">
 
@@ -166,7 +167,7 @@
           <Border AutomationProperties.AutomationId="Painting_Border_ColorSwatch"
                   Width="24" Height="24"
                   CornerRadius="4"
-                  Background="{Binding SelectedColor}" />
+                  Background="{Binding SelectedColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}" />
         </StackPanel>
       </Panel>
     </Border>

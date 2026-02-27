@@ -119,7 +119,9 @@ public partial class WiringGameView : UserControl
             if (idx >= 0) selectedLeft = idx;
         }
 
-        _renderer.Render(canvas, _lastBounds, leftData, rightData, selectedLeft, deltaTime);
+        bool isAllConnected = _vm.ConnectedCount >= _vm.WireCount && _vm.WireCount > 0;
+        _renderer.Render(canvas, _lastBounds, leftData, rightData, selectedLeft,
+            isAllConnected, _vm.ConnectedCount, deltaTime);
     }
 
     /// <summary>

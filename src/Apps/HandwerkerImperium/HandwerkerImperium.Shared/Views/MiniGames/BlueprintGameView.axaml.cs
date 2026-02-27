@@ -60,7 +60,7 @@ public partial class BlueprintGameView : UserControl
     /// </summary>
     private void StartRenderLoop()
     {
-        StopRenderLoop();
+        _renderTimer?.Stop();
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20 fps
         _renderTimer.Tick += (_, _) =>
         {
@@ -116,11 +116,13 @@ public partial class BlueprintGameView : UserControl
                 BackgroundColor = bgColor,
                 IsCompleted = step.IsCompleted,
                 IsActive = isActive,
-                HasError = step.HasError
+                HasError = step.HasError,
+                StepNumber = step.StepNumber
             };
         }
 
-        _renderer.Render(canvas, _lastBounds, steps, cols, _vm.IsMemorizing, _vm.IsPlaying, deltaTime);
+        _renderer.Render(canvas, _lastBounds, steps, cols, _vm.IsMemorizing, _vm.IsPlaying,
+            _vm.CompletedSteps, _vm.TotalSteps, deltaTime);
     }
 
     /// <summary>

@@ -3,19 +3,45 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// SkiaSharp-Renderer fuer das Grundriss-Raetsel Mini-Game.
+/// AAA SkiaSharp-Renderer fuer das Grundriss-Raetsel Mini-Game.
 /// Zeichnet einen Architektenplan: Weisses Papier, blaue Grundrisslinien,
-/// Slots mit Hint-Icons, gefuellte Slots mit Emoji, Korrekt-Haekchen,
+/// Slots mit Hint-Icons, gefuellte Slots mit Label, Korrekt-Haekchen,
 /// Fehler-Blinken, Massstab-Linien am Rand.
-/// Pixel-Art Stil passend zu SawingGameRenderer/CityRenderer.
+/// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
+/// Platzierungs-Partikel (gruene Funken bei korrekt), Completion-Celebration
+/// mit goldenem Grundriss-Glow.
 /// </summary>
 public class DesignPuzzleRenderer
 {
     // Animationszeit (wird intern hochgezaehlt)
     private float _time;
 
-    // Fehler-Flash pro Slot (Index -> verbleibende Flash-Zeit)
-    private readonly Dictionary<int, float> _errorFlash = new();
+    // ═══════════════════════════════════════════════════════════════════════
+    // Fehler-Flash (Array-basiert statt Dictionary)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private const int MAX_SLOTS = 20;
+    private readonly float[] _errorFlashTimers = new float[MAX_SLOTS];
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Partikel-System (Struct-basiert, kein GC)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private const int MAX_SPARKS = 30;
+
+    private struct SparkParticle
+    {
+        public float X, Y, VelocityX, VelocityY, Life, MaxLife, Size;
+        public byte R, G, B;
+    }
+
+    private readonly SparkParticle[] _sparks = new SparkParticle[MAX_SPARKS];
+    private int _sparkCount;
+
+    // Zustandsverfolgung fuer Platzierungs-Erkennung
+    private int _prevCorrectCount;
+    private bool _prevAllCorrect;
+    private float _completionGlowTimer;
 
     // Farb-Palette (Architektenplan)
     private static readonly SKColor PaperWhite = new(0xF5, 0xF0, 0xE8);       // Warmes Papier-Weiss
@@ -50,13 +76,8 @@ public class DesignPuzzleRenderer
     /// <summary>
     /// Rendert den gesamten Grundriss auf das Canvas.
     /// </summary>
-    /// <param name="canvas">SkiaSharp Canvas zum Zeichnen.</param>
-    /// <param name="bounds">Verfuegbarer Zeichenbereich.</param>
-    /// <param name="slots">Slot-Daten-Array.</param>
-    /// <param name="cols">Anzahl Spalten im Grid.</param>
-    /// <param name="rows">Anzahl Zeilen im Grid.</param>
-    /// <param name="deltaTime">Zeitdelta seit letztem Frame in Sekunden.</param>
-    public void Render(SKCanvas canvas, SKRect bounds, RoomSlotData[] slots, int cols, int rows, float deltaTime)
+    public void Render(SKCanvas canvas, SKRect bounds, RoomSlotData[] slots, int cols, int rows,
+        int filledCorrectCount, int totalSlots, float deltaTime)
     {
         _time += deltaTime;
 
@@ -112,6 +133,26 @@ public class DesignPuzzleRenderer
 
         // 7. Innere Trennlinien (Grundriss-Waende)
         DrawInnerWalls(canvas, gridLeft, gridTop, totalW, totalH, cols, rows, slotSize, slotSpacing);
+
+        // 8. Platzierungs-Partikel: neue korrekte Platzierungen erkennen
+        DetectNewCorrectPlacements(slots, filledCorrectCount, gridLeft, gridTop, slotSize, slotSpacing, cols);
+
+        // 9. Funken-Partikel zeichnen
+        UpdateAndDrawSparks(canvas, deltaTime);
+
+        // 10. Completion-Celebration
+        bool allCorrect = totalSlots > 0 && filledCorrectCount >= totalSlots;
+        if (allCorrect && !_prevAllCorrect)
+        {
+            _completionGlowTimer = 2.0f; // 2s goldener Grundriss-Glow
+        }
+        _prevAllCorrect = allCorrect;
+
+        if (_completionGlowTimer > 0)
+        {
+            DrawCompletionGlow(canvas, gridLeft, gridTop, totalW, totalH);
+            _completionGlowTimer -= deltaTime;
+        }
     }
 
     /// <summary>
@@ -133,10 +174,9 @@ public class DesignPuzzleRenderer
         float slotSize = Math.Min(slotW, slotH);
 
         float totalW = cols * slotSize + (cols - 1) * slotSpacing;
-        float totalH = rows * slotSize + (rows - 1) * slotSpacing;
         float gridLeft = bounds.Left + (bounds.Width - totalW) / 2;
         // Oben ausrichten (identisch mit Render)
-        float gridTop = bounds.Top + padding + 20; // +20 fuer Massstab-Markierungen oben
+        float gridTop = bounds.Top + padding + 20;
 
         for (int i = 0; i < slotCount && i < cols * rows; i++)
         {
@@ -156,16 +196,19 @@ public class DesignPuzzleRenderer
     }
 
     /// <summary>
-    /// Setzt einen Fehler-Flash fuer einen bestimmten Slot.
+    /// Setzt einen Fehler-Flash fuer einen bestimmten Slot (Interface-kompatibel).
     /// </summary>
     public void TriggerErrorFlash(int slotIndex)
     {
-        _errorFlash[slotIndex] = 0.4f; // 400ms Flash
+        if (slotIndex >= 0 && slotIndex < MAX_SLOTS)
+        {
+            _errorFlashTimers[slotIndex] = 0.4f; // 400ms Flash
+        }
     }
 
-    // =========================================================================
+    // ═══════════════════════════════════════════════════════════════════════
     // ZEICHENFUNKTIONEN
-    // =========================================================================
+    // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Zeichnet den Papier-Hintergrund mit leichter Textur.
@@ -343,8 +386,8 @@ public class DesignPuzzleRenderer
     /// </summary>
     private void DrawSlot(SKCanvas canvas, float x, float y, float w, float h, RoomSlotData slot, int index)
     {
-        // Fehler-Flash pruefen
-        bool isFlashing = _errorFlash.ContainsKey(index) && _errorFlash[index] > 0;
+        // Fehler-Flash pruefen (Array-basiert)
+        bool isFlashing = index < MAX_SLOTS && _errorFlashTimers[index] > 0;
 
         if (slot.IsFilled)
         {
@@ -352,7 +395,7 @@ public class DesignPuzzleRenderer
         }
         else if (isFlashing)
         {
-            DrawErrorSlot(canvas, x, y, w, h, slot, _errorFlash[index]);
+            DrawErrorSlot(canvas, x, y, w, h, slot, _errorFlashTimers[index]);
         }
         else
         {
@@ -525,33 +568,190 @@ public class DesignPuzzleRenderer
         canvas.DrawRect(x, y, w, 5, hintBarPaint);
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // FEHLER-FLASH (Array-basiert)
+    // ═══════════════════════════════════════════════════════════════════════
+
     /// <summary>
-    /// Aktualisiert die Fehler-Flash Timer.
+    /// Aktualisiert die Fehler-Flash Timer (Array statt Dictionary).
     /// </summary>
     private void UpdateErrorFlash(RoomSlotData[] slots, float deltaTime)
     {
-        // Neue Fehler-Slots registrieren
-        for (int i = 0; i < slots.Length; i++)
+        for (int i = 0; i < slots.Length && i < MAX_SLOTS; i++)
         {
-            if (slots[i].HasError && !_errorFlash.ContainsKey(i))
+            // Neue Fehler-Slots registrieren
+            if (slots[i].HasError && _errorFlashTimers[i] <= 0)
             {
-                _errorFlash[i] = 0.4f;
+                _errorFlashTimers[i] = 0.4f;
             }
-        }
 
-        // Timer herunterzaehlen
-        var keysToRemove = new List<int>();
-        foreach (var key in _errorFlash.Keys.ToList())
-        {
-            _errorFlash[key] -= deltaTime;
-            if (_errorFlash[key] <= 0)
+            // Timer herunterzaehlen
+            if (_errorFlashTimers[i] > 0)
             {
-                keysToRemove.Add(key);
+                _errorFlashTimers[i] -= deltaTime;
+                if (_errorFlashTimers[i] < 0) _errorFlashTimers[i] = 0;
             }
         }
-        foreach (var key in keysToRemove)
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PLATZIERUNGS-PARTIKEL (gruene Funken bei korrekt)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Erkennt neue korrekte Platzierungen und spawnt gruene Funken-Partikel.
+    /// </summary>
+    private void DetectNewCorrectPlacements(RoomSlotData[] slots, int filledCorrectCount,
+        float gridLeft, float gridTop, float slotSize, float slotSpacing, int cols)
+    {
+        if (filledCorrectCount > _prevCorrectCount && _prevCorrectCount >= 0)
         {
-            _errorFlash.Remove(key);
+            // Neuen korrekt platzierten Slot finden
+            for (int i = slots.Length - 1; i >= 0; i--)
+            {
+                if (slots[i].IsCorrect && slots[i].IsFilled)
+                {
+                    int col = i % cols;
+                    int row = i / cols;
+                    float cx = gridLeft + col * (slotSize + slotSpacing) + slotSize / 2;
+                    float cy = gridTop + row * (slotSize + slotSpacing) + slotSize / 2;
+
+                    // 8 gruene Partikel spawnen
+                    SpawnCorrectSparks(cx, cy);
+                    break;
+                }
+            }
+        }
+        _prevCorrectCount = filledCorrectCount;
+    }
+
+    /// <summary>
+    /// Spawnt 8 gruene Funken vom Slot-Mittelpunkt.
+    /// </summary>
+    private void SpawnCorrectSparks(float cx, float cy)
+    {
+        var rng = Random.Shared;
+        for (int i = 0; i < 8 && _sparkCount < MAX_SPARKS; i++)
+        {
+            float angle = (float)(rng.NextDouble() * Math.PI * 2);
+            float speed = 35 + (float)(rng.NextDouble() * 50);
+
+            _sparks[_sparkCount++] = new SparkParticle
+            {
+                X = cx,
+                Y = cy,
+                VelocityX = MathF.Cos(angle) * speed,
+                VelocityY = MathF.Sin(angle) * speed,
+                Life = 0,
+                MaxLife = 0.5f + (float)(rng.NextDouble() * 0.4f),
+                Size = 2 + (float)(rng.NextDouble() * 2),
+                R = CorrectGreen.Red,
+                G = CorrectGreen.Green,
+                B = CorrectGreen.Blue
+            };
+        }
+    }
+
+    /// <summary>
+    /// Aktualisiert und zeichnet alle aktiven Funken-Partikel.
+    /// </summary>
+    private void UpdateAndDrawSparks(SKCanvas canvas, float deltaTime)
+    {
+        if (_sparkCount == 0) return;
+
+        using var sparkPaint = new SKPaint { IsAntialias = false };
+
+        for (int i = 0; i < _sparkCount; i++)
+        {
+            var p = _sparks[i];
+            p.Life += deltaTime;
+            p.X += p.VelocityX * deltaTime;
+            p.Y += p.VelocityY * deltaTime;
+            p.VelocityY += 80 * deltaTime; // Leichte Schwerkraft
+            p.VelocityX *= 0.97f; // Luftwiderstand
+
+            if (p.Life >= p.MaxLife)
+            {
+                // Entfernen durch Kompaktierung
+                _sparks[i] = _sparks[--_sparkCount];
+                i--;
+                continue;
+            }
+
+            _sparks[i] = p;
+
+            float alpha = 1 - (p.Life / p.MaxLife);
+            sparkPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
+            canvas.DrawRect(p.X - p.Size / 2, p.Y - p.Size / 2, p.Size, p.Size, sparkPaint);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMPLETION-CELEBRATION (goldener Grundriss-Glow)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeichnet einen goldenen Glow ueber den gesamten Grundriss wenn alle Raeume korrekt platziert sind.
+    /// Zusaetzlich goldene Partikel entlang des Grundrisses.
+    /// </summary>
+    private void DrawCompletionGlow(SKCanvas canvas, float gridLeft, float gridTop, float totalW, float totalH)
+    {
+        float intensity = _completionGlowTimer / 2.0f; // 0-1, nimmt ab
+        float pulse = (float)(0.5 + 0.5 * Math.Sin(_time * 6));
+
+        // Goldener Overlay ueber den Grundriss
+        byte glowAlpha = (byte)(intensity * pulse * 60);
+        using var glowPaint = new SKPaint
+        {
+            Color = new SKColor(0xFF, 0xD7, 0x00, glowAlpha),
+            IsAntialias = false
+        };
+        canvas.DrawRect(gridLeft - 4, gridTop - 4, totalW + 8, totalH + 8, glowPaint);
+
+        // Goldener Rahmen (pulsierend)
+        byte borderAlpha = (byte)(intensity * 200);
+        using var borderPaint = new SKPaint
+        {
+            Color = new SKColor(0xFF, 0xD7, 0x00, borderAlpha),
+            IsAntialias = false,
+            StrokeWidth = 3,
+            Style = SKPaintStyle.Stroke
+        };
+        canvas.DrawRect(gridLeft - 8, gridTop - 8, totalW + 16, totalH + 16, borderPaint);
+
+        // Goldene Completion-Partikel entlang des Randes spawnen
+        if (intensity > 0.2f)
+        {
+            var rng = Random.Shared;
+            // Pro Frame 1-2 Partikel am Rand spawnen
+            for (int s = 0; s < 2 && _sparkCount < MAX_SPARKS; s++)
+            {
+                if (rng.NextDouble() > 0.5) continue;
+
+                float px, py;
+                int edge = rng.Next(4);
+                switch (edge)
+                {
+                    case 0: px = gridLeft + (float)(rng.NextDouble() * totalW); py = gridTop - 4; break;
+                    case 1: px = gridLeft + (float)(rng.NextDouble() * totalW); py = gridTop + totalH + 4; break;
+                    case 2: px = gridLeft - 4; py = gridTop + (float)(rng.NextDouble() * totalH); break;
+                    default: px = gridLeft + totalW + 4; py = gridTop + (float)(rng.NextDouble() * totalH); break;
+                }
+
+                _sparks[_sparkCount++] = new SparkParticle
+                {
+                    X = px,
+                    Y = py,
+                    VelocityX = (float)(rng.NextDouble() - 0.5) * 30,
+                    VelocityY = -20 - (float)(rng.NextDouble() * 30),
+                    Life = 0,
+                    MaxLife = 0.6f + (float)(rng.NextDouble() * 0.5f),
+                    Size = 2 + (float)(rng.NextDouble() * 2),
+                    R = 0xFF,
+                    G = 0xD7,
+                    B = 0x00
+                };
+            }
         }
     }
 }

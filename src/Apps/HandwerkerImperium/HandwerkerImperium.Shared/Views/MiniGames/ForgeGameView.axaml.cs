@@ -106,6 +106,7 @@ public partial class ForgeGameView : UserControl
         var bounds = canvas.LocalClipBounds;
         _lastBounds = bounds;
 
+        bool isAllComplete = _vm.HitsCompleted >= _vm.HitsRequired && _vm.HitsRequired > 0;
         _renderer.Render(canvas, bounds,
             _vm.Temperature,
             _vm.TargetTemperatureStart, _vm.TargetTemperatureWidth,
@@ -114,6 +115,7 @@ public partial class ForgeGameView : UserControl
             _vm.HitsCompleted, _vm.HitsRequired,
             _vm.IsPlaying, _vm.IsResultShown,
             _vm.IsHammering,
+            isAllComplete,
             deltaTime);
     }
 

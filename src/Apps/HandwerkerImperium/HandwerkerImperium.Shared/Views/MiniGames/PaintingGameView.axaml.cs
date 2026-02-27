@@ -113,7 +113,10 @@ public partial class PaintingGameView : UserControl
         // Ausgewaehlte Farbe parsen (Fallback: CraftOrange)
         var paintColor = SKColor.Parse(_vm.SelectedColor ?? "#E8A00E");
 
-        _renderer.Render(canvas, _lastBounds, cells, _vm.GridSize, paintColor, _vm.IsPlaying, deltaTime);
+        // Alle Zielzellen gestrichen? (fuer Completion-Celebration im Renderer)
+        bool isAllPainted = _vm.TargetCellCount > 0 && _vm.PaintedTargetCount >= _vm.TargetCellCount;
+
+        _renderer.Render(canvas, _lastBounds, cells, _vm.GridSize, paintColor, _vm.IsPlaying, isAllPainted, deltaTime);
     }
 
     /// <summary>

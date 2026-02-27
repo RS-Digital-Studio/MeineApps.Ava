@@ -68,6 +68,9 @@ public partial class PipePuzzleViewModel : ObservableObject, IDisposable
     private bool _isPuzzleSolved;
 
     [ObservableProperty]
+    private int _maxConnectionDistance;
+
+    [ObservableProperty]
     private bool _isResultShown;
 
     [ObservableProperty]
@@ -307,6 +310,9 @@ public partial class PipePuzzleViewModel : ObservableObject, IDisposable
                 Tiles.Add(tile);
             }
         }
+
+        // Initial-Verbindungen berechnen (Source + zufällig passende Nachbarn)
+        UpdateConnections();
     }
 
     private List<PathCell> GeneratePath(Random random)
@@ -542,7 +548,8 @@ public partial class PipePuzzleViewModel : ObservableObject, IDisposable
 
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
-        if (CheckIfSolved())
+        // Verbindungen aktualisieren (visuelles Feedback + Lösung prüfen)
+        if (UpdateConnections())
         {
             IsPuzzleSolved = true;
             await EndGameAsync(true);
@@ -610,6 +617,81 @@ public partial class PipePuzzleViewModel : ObservableObject, IDisposable
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// BFS von der Quelle: Markiert alle verbundenen Tiles (IsConnected + ConnectionDistance).
+    /// Gibt true zurück wenn der Abfluss erreicht wurde (Puzzle gelöst).
+    /// </summary>
+    private bool UpdateConnections()
+    {
+        // Alle Verbindungen zurücksetzen
+        foreach (var tile in Tiles)
+        {
+            tile.IsConnected = false;
+            tile.ConnectionDistance = -1;
+        }
+
+        int sourceIndex = _sourceRow * GridCols + _sourceCol;
+        if (sourceIndex < 0 || sourceIndex >= Tiles.Count) return false;
+
+        var sourceTile = Tiles[sourceIndex];
+        if (!sourceTile.ConnectsFrom(Direction.Left)) return false;
+
+        // BFS von Quelle
+        sourceTile.IsConnected = true;
+        sourceTile.ConnectionDistance = 0;
+        bool drainReached = sourceTile.IsDrain;
+
+        var queue = new Queue<(int row, int col, Direction from, int distance)>();
+        var visited = new HashSet<int> { sourceIndex };
+
+        foreach (var exit in sourceTile.GetExitDirections(Direction.Left))
+        {
+            var (nr, nc, nf) = GetNeighbor(_sourceRow, _sourceCol, exit);
+            queue.Enqueue((nr, nc, nf, 1));
+        }
+
+        int maxDist = 0;
+        while (queue.Count > 0)
+        {
+            var (row, col, fromDir, dist) = queue.Dequeue();
+            if (row < 0 || row >= GridRows || col < 0 || col >= GridCols) continue;
+
+            int index = row * GridCols + col;
+            if (visited.Contains(index)) continue;
+
+            var tile = Tiles[index];
+            if (!tile.ConnectsFrom(fromDir)) continue;
+
+            visited.Add(index);
+            tile.IsConnected = true;
+            tile.ConnectionDistance = dist;
+            if (dist > maxDist) maxDist = dist;
+
+            if (tile.IsDrain) drainReached = true;
+
+            foreach (var exit in tile.GetExitDirections(fromDir))
+            {
+                var (nr, nc, nf) = GetNeighbor(row, col, exit);
+                queue.Enqueue((nr, nc, nf, dist + 1));
+            }
+        }
+
+        MaxConnectionDistance = maxDist;
+        return drainReached;
+    }
+
+    private static (int row, int col, Direction from) GetNeighbor(int row, int col, Direction exit)
+    {
+        return exit switch
+        {
+            Direction.Up => (row - 1, col, Direction.Down),
+            Direction.Down => (row + 1, col, Direction.Up),
+            Direction.Left => (row, col - 1, Direction.Right),
+            Direction.Right => (row, col + 1, Direction.Left),
+            _ => (row, col, exit)
+        };
     }
 
     private async Task EndGameAsync(bool solved)
@@ -874,6 +956,9 @@ public partial class PipeTile : ObservableObject
 
     /// <summary>The rotation at which this tile is part of the solution (-1 if not on path).</summary>
     public int SolvedRotation { get; set; } = -1;
+
+    /// <summary>BFS-Distanz von der Quelle (-1 wenn nicht verbunden). Für progressive Wasser-Animation.</summary>
+    public int ConnectionDistance { get; set; } = -1;
 
     [ObservableProperty]
     private int _rotation;

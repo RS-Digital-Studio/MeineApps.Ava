@@ -117,11 +117,13 @@ public partial class InventGameView : UserControl
                 BackgroundColor = bgColor,
                 IsCompleted = part.IsCompleted,
                 IsActive = isActive,
-                HasError = part.HasError
+                HasError = part.HasError,
+                StepNumber = part.StepNumber
             };
         }
 
-        _renderer.Render(canvas, _lastBounds, parts, cols, _vm.IsMemorizing, _vm.IsPlaying, deltaTime);
+        _renderer.Render(canvas, _lastBounds, parts, cols, _vm.IsMemorizing, _vm.IsPlaying,
+            _vm.CompletedParts, _vm.TotalParts, deltaTime);
     }
 
     /// <summary>

@@ -4116,4 +4116,49 @@
   <data name="TabShop" xml:space="preserve">
     <value>Loja</value>
   </data>
+  <data name="IncomeBoost" xml:space="preserve">
+    <value>Impulso de renda</value>
+  </data>
+  <data name="PermanentIncomeBonus" xml:space="preserve">
+    <value>bônus permanente de renda</value>
+  </data>
+  <data name="PrestigeKeepsResearch" xml:space="preserve">
+    <value>Pesquisa preservada!</value>
+  </data>
+  <data name="PrestigeKeepsShop" xml:space="preserve">
+    <value>Loja de prestígio preservada!</value>
+  </data>
+  <data name="PrestigeKeepsTools" xml:space="preserve">
+    <value>Ferramentas mestras preservadas!</value>
+  </data>
+  <data name="PrestigeKeepsBuildings" xml:space="preserve">
+    <value>Edifícios preservados (Nv.1)!</value>
+  </data>
+  <data name="PrestigeKeepsManagers" xml:space="preserve">
+    <value>Gerentes preservados (Nv.1)!</value>
+  </data>
+  <data name="PrestigeKeepsWorkers" xml:space="preserve">
+    <value>Melhores trabalhadores preservados!</value>
+  </data>
+  <data name="PrestigeLosesLevel" xml:space="preserve">
+    <value>Nível do jogador → 1</value>
+  </data>
+  <data name="PrestigeLosesMoney" xml:space="preserve">
+    <value>Dinheiro → 0</value>
+  </data>
+  <data name="PrestigeLosesWorkers" xml:space="preserve">
+    <value>Trabalhadores → demitidos</value>
+  </data>
+  <data name="PrestigeLosesResearch" xml:space="preserve">
+    <value>Pesquisa → reset</value>
+  </data>
+  <data name="Faster" xml:space="preserve">
+    <value>mais rápido</value>
+  </data>
+  <data name="Unlock" xml:space="preserve">
+    <value>desbloquear</value>
+  </data>
+  <data name="BuildingUpgradeHint" xml:space="preserve">
+    <value>Melhores bônus!</value>
+  </data>
 </root>

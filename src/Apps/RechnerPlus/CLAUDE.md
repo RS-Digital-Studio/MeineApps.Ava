@@ -6,7 +6,7 @@
 
 Scientific Calculator mit Unit Converter - werbefrei, kostenlos.
 
-**Version:** 2.0.0
+**Version:** 2.0.6
 **Package:** com.meineapps.rechnerplus
 **Werbung:** Keine
 **Status:** Im geschlossenen Test

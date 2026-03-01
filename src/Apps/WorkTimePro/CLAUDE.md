@@ -6,7 +6,7 @@
 
 Zeiterfassung & Arbeitszeitmanagement mit Pausen, Kalender-Heatmap, Statistiken, Export, Urlaubsverwaltung, Feiertage (16 Bundeslaender), Projekten, Arbeitgebern und Schichtplanung.
 
-**Version:** 2.0.0 | **Package-ID:** com.meineapps.worktimepro | **Status:** Geschlossener Test
+**Version:** 2.0.6 | **Package-ID:** com.meineapps.worktimepro | **Status:** Geschlossener Test
 
 ## Premium-Modell
 

@@ -4,7 +4,7 @@
 
 ## Status
 
-**Version:** 2.0.0 | **Package-ID:** com.meineapps.zeitmanager | **Preis:** Kostenlos (werbefrei)
+**Version:** 2.0.6 | **Package-ID:** com.meineapps.zeitmanager | **Preis:** Kostenlos (werbefrei)
 
 ## App-Beschreibung
 

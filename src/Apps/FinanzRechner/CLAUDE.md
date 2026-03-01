@@ -6,7 +6,7 @@
 
 Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 6 Finanz-Rechnern.
 
-**Version:** 2.0.2 | **Package-ID:** com.meineapps.finanzrechner | **Status:** Geschlossener Test
+**Version:** 2.0.6 | **Package-ID:** com.meineapps.finanzrechner | **Status:** Geschlossener Test
 
 ## Features
 

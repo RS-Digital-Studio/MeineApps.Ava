@@ -6,7 +6,7 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Auftraege oder spiele Mini-Games.
 
-**Version:** 2.0.11 (VersionCode 19) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Geschlossener Test
+**Version:** 2.0.13 (VersionCode 21) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Geschlossener Test
 
 ## Haupt-Features
 

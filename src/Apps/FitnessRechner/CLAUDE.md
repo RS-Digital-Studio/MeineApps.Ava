@@ -6,7 +6,7 @@
 
 Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), Tracking mit Charts und Nahrungsmittel-Suche (114 Foods + Barcode-Scanner).
 
-**Version:** 2.0.0 | **Package-ID:** com.meineapps.fitnessrechner | **Status:** Geschlossener Test
+**Version:** 2.0.6 | **Package-ID:** com.meineapps.fitnessrechner | **Status:** Geschlossener Test
 
 ## Features
 

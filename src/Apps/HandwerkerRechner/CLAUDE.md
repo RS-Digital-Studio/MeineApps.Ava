@@ -6,7 +6,7 @@
 
 Handwerker-App mit 16 Rechnern (5 Free Floor + 11 Premium), Projektverwaltung und Einheiten-Umrechnung.
 
-**Version:** 2.0.0 | **Package-ID:** com.meineapps.handwerkerrechner | **Status:** Geschlossener Test
+**Version:** 2.0.6 | **Package-ID:** com.meineapps.handwerkerrechner | **Status:** Geschlossener Test
 
 ## Features
 

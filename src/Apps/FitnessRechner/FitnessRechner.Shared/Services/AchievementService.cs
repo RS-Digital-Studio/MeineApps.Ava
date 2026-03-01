@@ -52,6 +52,7 @@ public class AchievementService : IAchievementService
     public void CheckProgress(AchievementCheckContext ctx)
     {
         var newlyUnlocked = new List<FitnessAchievement>();
+        var isDirty = false;
 
         foreach (var a in _achievements)
         {
@@ -63,26 +64,28 @@ public class AchievementService : IAchievementService
             {
                 a.CurrentValue = newValue;
                 _progressData[a.Id] = newValue;
+                isDirty = true;
             }
 
-            // Prüfen ob Achievement erreicht
+            // Pruefen ob Achievement erreicht
             if (a.CurrentValue >= a.TargetValue)
             {
                 a.IsUnlocked = true;
                 a.UnlockedAt = DateTime.UtcNow;
                 _unlockedIds.Add(a.Id);
                 newlyUnlocked.Add(a);
+                isDirty = true;
             }
         }
 
-        // Speichern wenn sich was geändert hat
-        if (newlyUnlocked.Count > 0 || _progressData.Count > 0)
+        // Nur speichern wenn sich tatsaechlich etwas geaendert hat
+        if (isDirty)
         {
             SaveUnlockedIds();
             SaveProgressData();
         }
 
-        // Events auslösen
+        // Events ausloesen
         foreach (var a in newlyUnlocked)
             AchievementUnlocked?.Invoke(a.TitleKey, a.XpReward);
     }
@@ -198,7 +201,11 @@ public class AchievementService : IAchievementService
             var ids = JsonSerializer.Deserialize<List<string>>(json);
             return ids != null ? new HashSet<string>(ids) : [];
         }
-        catch { return []; }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Fehler beim Laden der freigeschalteten Achievements: {ex.Message}");
+            return [];
+        }
     }
 
     private Dictionary<string, int> LoadProgressData()
@@ -209,7 +216,11 @@ public class AchievementService : IAchievementService
             var data = JsonSerializer.Deserialize<Dictionary<string, int>>(json);
             return data ?? new Dictionary<string, int>();
         }
-        catch { return new Dictionary<string, int>(); }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Fehler beim Laden der Achievement-Fortschrittsdaten: {ex.Message}");
+            return new Dictionary<string, int>();
+        }
     }
 
     private void SaveUnlockedIds()

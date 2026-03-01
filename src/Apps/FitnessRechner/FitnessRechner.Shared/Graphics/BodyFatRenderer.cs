@@ -5,16 +5,10 @@ namespace FitnessRechner.Graphics;
 
 /// <summary>
 /// Körperfett-Visualisierung: Prozent-Ring mit Kategorie-Farbe + Körper-Silhouette.
+/// Thread-safe: Verwendet lokale Paint-Objekte statt statischer Felder.
 /// </summary>
 public static class BodyFatRenderer
 {
-    private static readonly SKPaint _trackPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
-    private static readonly SKPaint _arcPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
-    private static readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    private static readonly SKPaint _textPaint = new() { IsAntialias = true };
-    private static readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
-    private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
-
     public static void Render(SKCanvas canvas, SKRect bounds, float bodyFatPercent, bool isMale, bool hasResult)
     {
         if (!hasResult || bodyFatPercent <= 0) return;
@@ -44,36 +38,58 @@ public static class BodyFatRenderer
         var arcRect = new SKRect(ringCx - radius, ringCy - radius, ringCx + radius, ringCy + radius);
 
         // Track
-        _trackPaint.StrokeWidth = strokeW;
-        _trackPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.TextMuted, 30);
-        canvas.DrawOval(arcRect, _trackPaint);
+        using var trackPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = strokeW,
+            Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.TextMuted, 30)
+        };
+        canvas.DrawOval(arcRect, trackPaint);
 
         // Fortschritts-Arc (max 100%)
         float fraction = Math.Clamp(bodyFatPercent / 50f, 0f, 1f); // 50% = voller Ring
         float sweepAngle = fraction * 360f;
 
-        // Glow
-        _glowPaint.StrokeWidth = strokeW + 4f;
-        _glowPaint.Color = SkiaThemeHelper.WithAlpha(categoryColor, 80);
-        _glowPaint.MaskFilter = _glowFilter;
+        // Glow-Effekt auf dem Fortschritts-Arc
+        using var glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+        using var glowPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = strokeW + 4f,
+            Color = SkiaThemeHelper.WithAlpha(categoryColor, 80),
+            MaskFilter = glowFilter
+        };
         using var glowPath = new SKPath();
         glowPath.AddArc(arcRect, -90f, sweepAngle);
-        canvas.DrawPath(glowPath, _glowPaint);
-        _glowPaint.MaskFilter = null;
+        canvas.DrawPath(glowPath, glowPaint);
 
-        // Arc
-        _arcPaint.StrokeWidth = strokeW;
-        _arcPaint.Color = categoryColor;
+        // Fortschritts-Arc
+        using var arcPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = strokeW,
+            Color = categoryColor
+        };
         using var arcPath = new SKPath();
         arcPath.AddArc(arcRect, -90f, sweepAngle);
-        canvas.DrawPath(arcPath, _arcPaint);
+        canvas.DrawPath(arcPath, arcPaint);
 
         // Prozentwert in der Mitte
-        _textPaint.Color = SkiaThemeHelper.TextPrimary;
-        _textPaint.TextSize = radius * 0.4f;
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.FakeBoldText = true;
-        canvas.DrawText($"{bodyFatPercent:F1}%", ringCx, ringCy + _textPaint.TextSize * 0.35f, _textPaint);
+        using var textPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = SkiaThemeHelper.TextPrimary,
+            TextSize = radius * 0.4f,
+            TextAlign = SKTextAlign.Center,
+            FakeBoldText = true
+        };
+        canvas.DrawText($"{bodyFatPercent:F1}%", ringCx, ringCy + textPaint.TextSize * 0.35f, textPaint);
     }
 
     private static void DrawSilhouette(SKCanvas canvas, float cx, float cy, float scale, float bodyFatPercent, bool isMale, SKColor color)
@@ -90,31 +106,38 @@ public static class BodyFatRenderer
 
         float headY = cy - bodyH * 0.5f - headR - 2f * scale;
 
+        // Lokales Fill-Paint für Silhouette
+        using var fillPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill
+        };
+
         // Hintergrund-Silhouette
-        _fillPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.TextMuted, 40);
-        canvas.DrawCircle(cx, headY, headR, _fillPaint);
-        canvas.DrawRoundRect(cx - bodyW / 2f, cy - bodyH * 0.35f, bodyW, bodyH, 8f * scale, 8f * scale, _fillPaint);
+        fillPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.TextMuted, 40);
+        canvas.DrawCircle(cx, headY, headR, fillPaint);
+        canvas.DrawRoundRect(cx - bodyW / 2f, cy - bodyH * 0.35f, bodyW, bodyH, 8f * scale, 8f * scale, fillPaint);
 
         // Arme
         float armW = 6f * scale;
         float armH = 30f * scale;
-        canvas.DrawRoundRect(cx - bodyW / 2f - armW - 2f * scale, cy - bodyH * 0.25f, armW, armH, 3f * scale, 3f * scale, _fillPaint);
-        canvas.DrawRoundRect(cx + bodyW / 2f + 2f * scale, cy - bodyH * 0.25f, armW, armH, 3f * scale, 3f * scale, _fillPaint);
+        canvas.DrawRoundRect(cx - bodyW / 2f - armW - 2f * scale, cy - bodyH * 0.25f, armW, armH, 3f * scale, 3f * scale, fillPaint);
+        canvas.DrawRoundRect(cx + bodyW / 2f + 2f * scale, cy - bodyH * 0.25f, armW, armH, 3f * scale, 3f * scale, fillPaint);
 
         // Beine
         float legW = 8f * scale * fatFactor;
         float legH = 35f * scale;
-        canvas.DrawRoundRect(cx - legW - 1f * scale, cy + bodyH * 0.55f, legW, legH, 4f * scale, 4f * scale, _fillPaint);
-        canvas.DrawRoundRect(cx + 1f * scale, cy + bodyH * 0.55f, legW, legH, 4f * scale, 4f * scale, _fillPaint);
+        canvas.DrawRoundRect(cx - legW - 1f * scale, cy + bodyH * 0.55f, legW, legH, 4f * scale, 4f * scale, fillPaint);
+        canvas.DrawRoundRect(cx + 1f * scale, cy + bodyH * 0.55f, legW, legH, 4f * scale, 4f * scale, fillPaint);
 
         // Farbige Overlay (Fett-Bereich am Bauch)
         float fatH = bodyH * Math.Clamp(bodyFatPercent / 40f, 0.2f, 0.8f);
         float fatY = cy - bodyH * 0.35f + (bodyH - fatH) * 0.3f;
-        _fillPaint.Color = SkiaThemeHelper.WithAlpha(color, 80);
+        fillPaint.Color = SkiaThemeHelper.WithAlpha(color, 80);
 
         canvas.Save();
         canvas.ClipRoundRect(new SKRoundRect(new SKRect(cx - bodyW / 2f, cy - bodyH * 0.35f, cx + bodyW / 2f, cy - bodyH * 0.35f + bodyH), 8f * scale));
-        canvas.DrawRoundRect(cx - bodyW / 2f + 2f, fatY, bodyW - 4f, fatH, 6f * scale, 6f * scale, _fillPaint);
+        canvas.DrawRoundRect(cx - bodyW / 2f + 2f, fatY, bodyW - 4f, fatH, 6f * scale, 6f * scale, fillPaint);
         canvas.Restore();
     }
 

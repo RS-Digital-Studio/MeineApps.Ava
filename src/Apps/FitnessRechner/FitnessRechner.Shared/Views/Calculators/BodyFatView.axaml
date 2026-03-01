@@ -7,7 +7,8 @@
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FitnessRechner.Views.Calculators.BodyFatView"
-             x:DataType="vm:BodyFatViewModel">
+             x:DataType="vm:BodyFatViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*,Auto"
         AutomationProperties.AutomationId="BodyFat_RootPanel">

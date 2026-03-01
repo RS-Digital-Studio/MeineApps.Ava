@@ -5,7 +5,8 @@
              xmlns:models="using:FitnessRechner.Models"
              xmlns:conv="using:FitnessRechner.Converters"
              x:Class="FitnessRechner.Views.AchievementsView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <conv:LocalizeKeyConverter x:Key="LocalizeKey" />
@@ -48,7 +49,7 @@
           </ItemsPanelTemplate>
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
-          <DataTemplate DataType="models:FitnessAchievement">
+          <DataTemplate DataType="models:FitnessAchievement" x:DataType="models:FitnessAchievement">
             <Border Width="170" Margin="4" Padding="12" CornerRadius="12"
                     BoxShadow="{DynamicResource CardShadow}">
               <Border.Background>

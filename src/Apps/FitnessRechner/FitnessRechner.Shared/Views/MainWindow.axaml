@@ -5,6 +5,7 @@
         xmlns:splash="using:MeineApps.UI.Controls"
         x:Class="FitnessRechner.Views.MainWindow"
         x:DataType="vm:MainViewModel"
+        x:CompileBindings="True"
         Title="FitnessRechner"
         Icon="avares://FitnessRechner.Shared/Assets/icon.png"
         Width="400"

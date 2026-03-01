@@ -7,7 +7,7 @@ namespace FitnessRechner.ViewModels.Calculators;
 
 public partial class IdealWeightViewModel : ObservableObject
 {
-    private readonly FitnessEngine _fitnessEngine;
+    private readonly IFitnessEngine _fitnessEngine;
     private readonly ILocalizationService _localization;
 
     /// <summary>
@@ -22,7 +22,7 @@ public partial class IdealWeightViewModel : ObservableObject
 
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
-    public IdealWeightViewModel(FitnessEngine fitnessEngine, ILocalizationService localization)
+    public IdealWeightViewModel(IFitnessEngine fitnessEngine, ILocalizationService localization)
     {
         _fitnessEngine = fitnessEngine;
         _localization = localization;

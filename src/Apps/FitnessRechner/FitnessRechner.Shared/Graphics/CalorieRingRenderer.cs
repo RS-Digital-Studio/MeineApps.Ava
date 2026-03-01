@@ -6,16 +6,11 @@ namespace FitnessRechner.Graphics;
 /// <summary>
 /// Kalorien-Aufschlüsselung als 3 konzentrische Ringe (BMR, TDEE, Ziele)
 /// plus Makro-Anteile als Kreissegmente.
+/// Thread-safe: Verwendet lokale Paint-Objekte statt statischer Felder.
 /// </summary>
 public static class CalorieRingRenderer
 {
-    private static readonly SKPaint _arcPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
-    private static readonly SKPaint _trackPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
-    private static readonly SKPaint _textPaint = new() { IsAntialias = true };
-    private static readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
-    private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
-
-    // Ring-Farben
+    // Ring-Farben (thread-safe, immutable structs)
     private static readonly SKColor _bmrColor = new(0x3B, 0x82, 0xF6);    // Blau
     private static readonly SKColor _tdeeColor = new(0xF5, 0x9E, 0x0B);   // Orange
     private static readonly SKColor _lossColor = new(0x22, 0xC5, 0x5E);   // Grün
@@ -43,12 +38,18 @@ public static class CalorieRingRenderer
         // Max-Wert für Normalisierung
         float maxVal = Math.Max(tdee, weightGain) * 1.1f;
 
-        // Tracks
-        _trackPaint.StrokeWidth = strokeW;
-        _trackPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.TextMuted, 25);
-        canvas.DrawCircle(cx, cy, r1, _trackPaint);
-        canvas.DrawCircle(cx, cy, r2, _trackPaint);
-        canvas.DrawCircle(cx, cy, r3, _trackPaint);
+        // Track-Kreise
+        using var trackPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = strokeW,
+            Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.TextMuted, 25)
+        };
+        canvas.DrawCircle(cx, cy, r1, trackPaint);
+        canvas.DrawCircle(cx, cy, r2, trackPaint);
+        canvas.DrawCircle(cx, cy, r3, trackPaint);
 
         // Ring 1: TDEE (außen, Orange)
         DrawRing(canvas, cx, cy, r1, strokeW, tdee / maxVal, _tdeeColor);
@@ -56,37 +57,49 @@ public static class CalorieRingRenderer
         // Ring 2: BMR (mitte, Blau)
         DrawRing(canvas, cx, cy, r2, strokeW, bmr / maxVal, _bmrColor);
 
-        // Ring 3: WeightLoss (innen, Grün) - als Hälfte
+        // Ring 3: WeightLoss/WeightGain (innen, als Hälften)
         float lossAngle = (weightLoss / maxVal) * 180f;
         float gainAngle = (weightGain / maxVal) * 180f;
 
-        _arcPaint.StrokeWidth = strokeW;
-        _arcPaint.Color = _lossColor;
+        using var arcPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = strokeW
+        };
+
         var r3Rect = new SKRect(cx - r3, cy - r3, cx + r3, cy + r3);
+
+        // Gewichtsverlust-Hälfte (Grün)
+        arcPaint.Color = _lossColor;
         using (var lossPath = new SKPath())
         {
             lossPath.AddArc(r3Rect, -90f, lossAngle);
-            canvas.DrawPath(lossPath, _arcPaint);
+            canvas.DrawPath(lossPath, arcPaint);
         }
 
-        _arcPaint.Color = _gainColor;
+        // Gewichtszunahme-Hälfte (Rot)
+        arcPaint.Color = _gainColor;
         using (var gainPath = new SKPath())
         {
             gainPath.AddArc(r3Rect, -90f + 180f, gainAngle);
-            canvas.DrawPath(gainPath, _arcPaint);
+            canvas.DrawPath(gainPath, arcPaint);
         }
 
-        // TDEE in der Mitte
-        _textPaint.Color = SkiaThemeHelper.TextPrimary;
-        _textPaint.TextSize = Math.Max(14f, r3 * 0.35f);
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.FakeBoldText = true;
-        canvas.DrawText($"{tdee:F0}", cx, cy + _textPaint.TextSize * 0.15f, _textPaint);
+        // TDEE-Text in der Mitte
+        using var textPaint = new SKPaint { IsAntialias = true };
 
-        _textPaint.TextSize = Math.Max(8f, r3 * 0.18f);
-        _textPaint.FakeBoldText = false;
-        _textPaint.Color = SkiaThemeHelper.TextMuted;
-        canvas.DrawText("kcal", cx, cy + r3 * 0.35f, _textPaint);
+        textPaint.Color = SkiaThemeHelper.TextPrimary;
+        textPaint.TextSize = Math.Max(14f, r3 * 0.35f);
+        textPaint.TextAlign = SKTextAlign.Center;
+        textPaint.FakeBoldText = true;
+        canvas.DrawText($"{tdee:F0}", cx, cy + textPaint.TextSize * 0.15f, textPaint);
+
+        textPaint.TextSize = Math.Max(8f, r3 * 0.18f);
+        textPaint.FakeBoldText = false;
+        textPaint.Color = SkiaThemeHelper.TextMuted;
+        canvas.DrawText("kcal", cx, cy + r3 * 0.35f, textPaint);
 
         // Legende unten
         float legendY = cy + maxRadius + strokeW + 14f;
@@ -102,21 +115,33 @@ public static class CalorieRingRenderer
         float sweepAngle = Math.Clamp(fraction, 0f, 1f) * 360f;
         var rect = new SKRect(cx - radius, cy - radius, cx + radius, cy + radius);
 
-        // Glow
-        _glowPaint.StrokeWidth = strokeW + 3f;
-        _glowPaint.Color = SkiaThemeHelper.WithAlpha(color, 60);
-        _glowPaint.MaskFilter = _glowFilter;
+        // Glow-Effekt
+        using var glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+        using var glowPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = strokeW + 3f,
+            Color = SkiaThemeHelper.WithAlpha(color, 60),
+            MaskFilter = glowFilter
+        };
         using var glowPath = new SKPath();
         glowPath.AddArc(rect, -90f, sweepAngle);
-        canvas.DrawPath(glowPath, _glowPaint);
-        _glowPaint.MaskFilter = null;
+        canvas.DrawPath(glowPath, glowPaint);
 
-        // Arc
-        _arcPaint.StrokeWidth = strokeW;
-        _arcPaint.Color = color;
+        // Fortschritts-Arc
+        using var arcPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = strokeW,
+            Color = color
+        };
         using var arcPath = new SKPath();
         arcPath.AddArc(rect, -90f, sweepAngle);
-        canvas.DrawPath(arcPath, _arcPaint);
+        canvas.DrawPath(arcPath, arcPaint);
     }
 
     private static void DrawLegendDot(SKCanvas canvas, float x, float y, SKColor color, string label)
@@ -124,10 +149,14 @@ public static class CalorieRingRenderer
         using var dotPaint = new SKPaint { IsAntialias = true, Color = color, Style = SKPaintStyle.Fill };
         canvas.DrawCircle(x, y, 4f, dotPaint);
 
-        _textPaint.Color = SkiaThemeHelper.TextMuted;
-        _textPaint.TextSize = 9f;
-        _textPaint.TextAlign = SKTextAlign.Left;
-        _textPaint.FakeBoldText = false;
-        canvas.DrawText(label, x + 7f, y + 3.5f, _textPaint);
+        using var labelPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Color = SkiaThemeHelper.TextMuted,
+            TextSize = 9f,
+            TextAlign = SKTextAlign.Left,
+            FakeBoldText = false
+        };
+        canvas.DrawText(label, x + 7f, y + 3.5f, labelPaint);
     }
 }

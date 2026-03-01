@@ -30,6 +30,21 @@ public class FoodSearchService : IFoodSearchService, IDisposable
     private bool _favoritesLoaded = false;
     private bool _recipesLoaded = false;
 
+    // Lowercase-Cache fuer Food-Namen und Aliase (einmalig berechnet, nicht bei jeder Suche)
+    private static readonly Dictionary<FoodItem, string> _lowercaseNames;
+    private static readonly Dictionary<FoodItem, string[]> _lowercaseAliases;
+
+    static FoodSearchService()
+    {
+        _lowercaseNames = new Dictionary<FoodItem, string>(FoodDatabase.Foods.Count);
+        _lowercaseAliases = new Dictionary<FoodItem, string[]>(FoodDatabase.Foods.Count);
+        foreach (var food in FoodDatabase.Foods)
+        {
+            _lowercaseNames[food] = food.Name.ToLowerInvariant();
+            _lowercaseAliases[food] = food.Aliases.Select(a => a.ToLowerInvariant()).ToArray();
+        }
+    }
+
     public FoodSearchService()
     {
         var dataDir = GetDataDirectory();
@@ -54,22 +69,23 @@ public class FoodSearchService : IFoodSearchService, IDisposable
             var bestScore = 0.0;
             var matchedOn = "";
 
-            // Check main name
-            var nameScore = CalculateScore(query, food.Name.ToLowerInvariant());
+            // Gecachte Lowercase-Namen verwenden statt wiederholter ToLowerInvariant()
+            var nameScore = CalculateScore(query, _lowercaseNames[food]);
             if (nameScore > bestScore)
             {
                 bestScore = nameScore;
                 matchedOn = food.Name;
             }
 
-            // Check aliases
-            foreach (var alias in food.Aliases)
+            // Gecachte Lowercase-Aliase verwenden
+            var lowercaseAliases = _lowercaseAliases[food];
+            for (var i = 0; i < lowercaseAliases.Length; i++)
             {
-                var aliasScore = CalculateScore(query, alias.ToLowerInvariant());
+                var aliasScore = CalculateScore(query, lowercaseAliases[i]);
                 if (aliasScore > bestScore)
                 {
                     bestScore = aliasScore;
-                    matchedOn = alias;
+                    matchedOn = food.Aliases[i];
                 }
             }
 
@@ -257,6 +273,29 @@ public class FoodSearchService : IFoodSearchService, IDisposable
         }
     }
 
+    public async Task<IReadOnlyDictionary<DateTime, IReadOnlyList<FoodLogEntry>>> GetFoodLogsInRangeAsync(DateTime start, DateTime end)
+    {
+        await EnsureFoodLogLoadedAsync();
+
+        await _loadLock.WaitAsync();
+        try
+        {
+            var startDate = start.Date;
+            var endDate = end.Date;
+
+            return _foodLog
+                .Where(e => e.Date.Date >= startDate && e.Date.Date <= endDate)
+                .GroupBy(e => e.Date.Date)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (IReadOnlyList<FoodLogEntry>)g.OrderBy(e => e.Meal).ToList());
+        }
+        finally
+        {
+            _loadLock.Release();
+        }
+    }
+
     public async Task<DailyNutritionSummary> GetDailySummaryAsync(DateTime date)
     {
         var entries = await GetFoodLogAsync(date);
@@ -269,6 +308,35 @@ public class FoodSearchService : IFoodSearchService, IDisposable
             TotalFat: entries.Sum(e => e.Fat),
             EntryCount: entries.Count
         );
+    }
+
+    public async Task<IReadOnlyDictionary<DateTime, DailyNutritionSummary>> GetDailySummariesInRangeAsync(DateTime start, DateTime end)
+    {
+        await EnsureFoodLogLoadedAsync();
+
+        await _loadLock.WaitAsync();
+        try
+        {
+            var startDate = start.Date;
+            var endDate = end.Date;
+
+            return _foodLog
+                .Where(e => e.Date.Date >= startDate && e.Date.Date <= endDate)
+                .GroupBy(e => e.Date.Date)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new DailyNutritionSummary(
+                        Date: g.Key,
+                        TotalCalories: g.Sum(e => e.Calories),
+                        TotalProtein: g.Sum(e => e.Protein),
+                        TotalCarbs: g.Sum(e => e.Carbs),
+                        TotalFat: g.Sum(e => e.Fat),
+                        EntryCount: g.Count()));
+        }
+        finally
+        {
+            _loadLock.Release();
+        }
     }
 
     public async Task DeleteFoodLogAsync(string entryId)

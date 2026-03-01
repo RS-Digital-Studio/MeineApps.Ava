@@ -1,11 +1,17 @@
+using System.Diagnostics;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Extensions;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.UI.Controls;
+using FitnessRechner.Loading;
 using FitnessRechner.Models;
 using FitnessRechner.Resources.Strings;
 using FitnessRechner.Services;
@@ -85,21 +91,73 @@ public partial class App : Application
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = Services.GetRequiredService<MainViewModel>()
-            };
+            desktop.MainWindow = new MainWindow();
+            var splash = CreateSplash();
+            var panel = new Panel();
+            panel.Children.Add(new MainView());
+            panel.Children.Add(splash);
+            desktop.MainWindow.Content = panel;
+            _ = RunLoadingAsync(splash);
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            var vm = Services.GetRequiredService<MainViewModel>();
-            singleViewPlatform.MainView = new MainView
-            {
-                DataContext = vm
-            };
+            var splash = CreateSplash();
+            var panel = new Panel();
+            panel.Children.Add(new MainView());
+            panel.Children.Add(splash);
+            singleViewPlatform.MainView = panel;
+            _ = RunLoadingAsync(splash);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static SkiaLoadingSplash CreateSplash()
+    {
+        return new SkiaLoadingSplash
+        {
+            AppName = "FitnessRechner",
+            AppVersion = "v2.0.5"
+        };
+    }
+
+    private async Task RunLoadingAsync(SkiaLoadingSplash splash)
+    {
+        try
+        {
+            var pipeline = new FitnessRechnerLoadingPipeline(Services);
+            pipeline.ProgressChanged += (progress, text) =>
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    splash.Progress = progress;
+                    splash.StatusText = text;
+                });
+
+            var sw = Stopwatch.StartNew();
+            await pipeline.ExecuteAsync();
+
+            var remaining = 500 - (int)sw.ElapsedMilliseconds;
+            if (remaining > 0) await Task.Delay(remaining);
+
+            var mainVm = Services.GetRequiredService<MainViewModel>();
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                    && desktop.MainWindow != null)
+                    desktop.MainWindow.DataContext = mainVm;
+                else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform
+                         && singleViewPlatform.MainView != null)
+                    singleViewPlatform.MainView.DataContext = mainVm;
+
+                splash.FadeOut();
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[FitnessRechner] Loading-Pipeline fehlgeschlagen: {ex}");
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
+        }
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -138,8 +196,8 @@ public partial class App : Application
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));
 
         // App Services
-        services.AddSingleton<FitnessEngine>();
-        services.AddSingleton<StreakService>();
+        services.AddSingleton<IFitnessEngine, FitnessEngine>();
+        services.AddSingleton<IStreakService, StreakService>();
         services.AddSingleton<IAchievementService, AchievementService>();
         services.AddSingleton<ILevelService, LevelService>();
         services.AddSingleton<IChallengeService, ChallengeService>();
@@ -163,20 +221,26 @@ public partial class App : Application
         else
             services.AddSingleton<IReminderService, ReminderService>();
 
-        // ViewModels
+        // ViewModels (Haupt-VMs als Singleton, Calculator-VMs als Transient)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<ProgressViewModel>();
         services.AddSingleton<FoodSearchViewModel>();
         services.AddSingleton<SettingsViewModel>();
-        services.AddSingleton<TrackingViewModel>();
-        services.AddSingleton<HistoryViewModel>();
-        services.AddSingleton<BarcodeScannerViewModel>();
 
-        // Calculator ViewModels
-        services.AddSingleton<BmiViewModel>();
-        services.AddSingleton<CaloriesViewModel>();
-        services.AddSingleton<WaterViewModel>();
-        services.AddSingleton<IdealWeightViewModel>();
-        services.AddSingleton<BodyFatViewModel>();
+        // Calculator-VMs als Transient (jedes Oeffnen erzeugt frische Instanz)
+        services.AddTransient<BmiViewModel>();
+        services.AddTransient<CaloriesViewModel>();
+        services.AddTransient<WaterViewModel>();
+        services.AddTransient<IdealWeightViewModel>();
+        services.AddTransient<BodyFatViewModel>();
+        services.AddTransient<BarcodeScannerViewModel>();
+
+        // Func<T> Factories fuer Calculator-VMs (Constructor Injection statt Service-Locator)
+        services.AddSingleton<Func<BmiViewModel>>(sp => () => sp.GetRequiredService<BmiViewModel>());
+        services.AddSingleton<Func<CaloriesViewModel>>(sp => () => sp.GetRequiredService<CaloriesViewModel>());
+        services.AddSingleton<Func<WaterViewModel>>(sp => () => sp.GetRequiredService<WaterViewModel>());
+        services.AddSingleton<Func<IdealWeightViewModel>>(sp => () => sp.GetRequiredService<IdealWeightViewModel>());
+        services.AddSingleton<Func<BodyFatViewModel>>(sp => () => sp.GetRequiredService<BodyFatViewModel>());
+        services.AddSingleton<Func<BarcodeScannerViewModel>>(sp => () => sp.GetRequiredService<BarcodeScannerViewModel>());
     }
 }

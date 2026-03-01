@@ -7,7 +7,7 @@ namespace FitnessRechner.Services;
 /// Verwaltet Logging-Streaks (aufeinanderfolgende Tage mit Aktivität).
 /// Preferences-basiert, kein extra File nötig.
 /// </summary>
-public class StreakService
+public class StreakService : IStreakService
 {
     private readonly IPreferencesService _preferences;
 

@@ -5,17 +5,19 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:conv="using:FitnessRechner.Converters"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              xmlns:behaviors="using:MeineApps.Core.Ava.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:uiControls="using:MeineApps.UI.Controls"
              x:Class="FitnessRechner.Views.FoodSearchView"
-             x:DataType="vm:FoodSearchViewModel">
+             x:DataType="vm:FoodSearchViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <conv:IsNotNullConverter x:Key="IsNotNullConverter" />
-    <conv:BoolToStringConverter x:Key="FavoriteIconConverter"
-                                TrueValue="StarFace"
-                                FalseValue="StarOutline" />
+    <coreConv:BoolToStringConverter x:Key="FavoriteIconConverter"
+                                    TrueValue="StarFace"
+                                    FalseValue="StarOutline" />
     <conv:FoodCategoryToIconConverter x:Key="CategoryIconConverter" />
     <conv:FoodCategoryToColorConverter x:Key="CategoryColorConverter" />
   </UserControl.Resources>

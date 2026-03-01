@@ -12,7 +12,8 @@
              xmlns:conv="using:FitnessRechner.Converters"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="FitnessRechner.Views.HomeView"
-             x:DataType="vm:MainViewModel">
+             x:DataType="vm:MainViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <conv:LocalizeKeyConverter x:Key="LocalizeKey" />
@@ -38,7 +39,7 @@
   </UserControl.Styles>
 
   <ScrollViewer AutomationProperties.AutomationId="Home_ScrollViewer" VerticalScrollBarVisibility="Auto">
-    <StackPanel AutomationProperties.AutomationId="Home_RootPanel" Spacing="0" Margin="0,0,0,60">
+    <StackPanel AutomationProperties.AutomationId="Home_RootPanel" Spacing="0" Margin="0,0,0,80">
 
       <!-- ========== Hero-Header (Green/Teal Gradient) ========== -->
       <Border AutomationProperties.AutomationId="Home_HeroHeader" CornerRadius="0,0,16,16" Padding="20,20,20,16">
@@ -560,7 +561,7 @@
                   </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                  <DataTemplate DataType="models:FitnessAchievement">
+                  <DataTemplate DataType="models:FitnessAchievement" x:DataType="models:FitnessAchievement">
                     <Border Width="36" Height="36" CornerRadius="18">
                       <Border.Background>
                         <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">

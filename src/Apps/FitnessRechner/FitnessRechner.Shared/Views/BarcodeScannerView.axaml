@@ -4,7 +4,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="FitnessRechner.Views.BarcodeScannerView"
-             x:DataType="vm:BarcodeScannerViewModel">
+             x:DataType="vm:BarcodeScannerViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="Barcode_RootPanel">

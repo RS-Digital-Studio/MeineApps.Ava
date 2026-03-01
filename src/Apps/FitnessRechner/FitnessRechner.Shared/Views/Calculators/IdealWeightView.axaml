@@ -6,7 +6,8 @@
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              x:Class="FitnessRechner.Views.Calculators.IdealWeightView"
-             x:DataType="vm:IdealWeightViewModel">
+             x:DataType="vm:IdealWeightViewModel"
+             x:CompileBindings="True">
 
   <Grid RowDefinitions="Auto,*,Auto"
         AutomationProperties.AutomationId="Ideal_RootPanel">

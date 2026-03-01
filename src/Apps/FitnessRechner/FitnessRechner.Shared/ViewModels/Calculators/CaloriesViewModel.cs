@@ -9,7 +9,7 @@ namespace FitnessRechner.ViewModels.Calculators;
 
 public partial class CaloriesViewModel : ObservableObject
 {
-    private readonly FitnessEngine _fitnessEngine;
+    private readonly IFitnessEngine _fitnessEngine;
     private readonly IPreferencesService _preferences;
     private readonly ILocalizationService _localization;
 
@@ -25,7 +25,7 @@ public partial class CaloriesViewModel : ObservableObject
 
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
-    public CaloriesViewModel(FitnessEngine fitnessEngine, IPreferencesService preferences, ILocalizationService localization)
+    public CaloriesViewModel(IFitnessEngine fitnessEngine, IPreferencesService preferences, ILocalizationService localization)
     {
         _fitnessEngine = fitnessEngine;
         _preferences = preferences;

@@ -8,6 +8,7 @@
              xmlns:controls="using:MeineApps.UI.Controls"
              x:Class="FitnessRechner.Views.MainView"
              x:DataType="vm:MainViewModel"
+             x:CompileBindings="True"
              Background="{DynamicResource BackgroundBrush}">
 
   <UserControl.Styles>
@@ -48,22 +49,22 @@
   </UserControl.Styles>
 
   <UserControl.DataTemplates>
-    <DataTemplate DataType="calcVm:BmiViewModel">
+    <DataTemplate DataType="calcVm:BmiViewModel" x:DataType="calcVm:BmiViewModel">
       <calcViews:BmiView />
     </DataTemplate>
-    <DataTemplate DataType="calcVm:CaloriesViewModel">
+    <DataTemplate DataType="calcVm:CaloriesViewModel" x:DataType="calcVm:CaloriesViewModel">
       <calcViews:CaloriesView />
     </DataTemplate>
-    <DataTemplate DataType="calcVm:WaterViewModel">
+    <DataTemplate DataType="calcVm:WaterViewModel" x:DataType="calcVm:WaterViewModel">
       <calcViews:WaterView />
     </DataTemplate>
-    <DataTemplate DataType="calcVm:IdealWeightViewModel">
+    <DataTemplate DataType="calcVm:IdealWeightViewModel" x:DataType="calcVm:IdealWeightViewModel">
       <calcViews:IdealWeightView />
     </DataTemplate>
-    <DataTemplate DataType="calcVm:BodyFatViewModel">
+    <DataTemplate DataType="calcVm:BodyFatViewModel" x:DataType="calcVm:BodyFatViewModel">
       <calcViews:BodyFatView />
     </DataTemplate>
-    <DataTemplate DataType="vm:BarcodeScannerViewModel">
+    <DataTemplate DataType="vm:BarcodeScannerViewModel" x:DataType="vm:BarcodeScannerViewModel">
       <views:BarcodeScannerView />
     </DataTemplate>
   </UserControl.DataTemplates>

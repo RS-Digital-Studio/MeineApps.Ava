@@ -5,13 +5,15 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:conv="using:FitnessRechner.Converters"
+             xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
              xmlns:labs="using:Avalonia.Labs.Controls"
              x:Class="FitnessRechner.Views.ProgressView"
-             x:DataType="vm:ProgressViewModel">
+             x:DataType="vm:ProgressViewModel"
+             x:CompileBindings="True">
 
   <UserControl.Resources>
     <conv:IsNotNullConverter x:Key="IsNotNullConverter" />
-    <conv:BoolToStringConverter x:Key="BmiBodyFatConverter" TrueValue="BMI" FalseValue="{loc:Translate BodyFat}" />
+    <coreConv:BoolToStringConverter x:Key="BmiBodyFatConverter" TrueValue="BMI" FalseValue="{loc:Translate BodyFat}" />
 
     <!-- Wiederverwendbares Mahlzeit-Item Template -->
     <DataTemplate x:Key="MealItemTemplate" x:DataType="models:FoodLogEntry">

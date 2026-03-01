@@ -3,7 +3,7 @@ namespace FitnessRechner.Models;
 /// <summary>
 /// Berechnungs-Engine für alle Fitness-Rechner
 /// </summary>
-public class FitnessEngine
+public class FitnessEngine : IFitnessEngine
 {
     #region BMI (Body Mass Index)
 

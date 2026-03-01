@@ -22,11 +22,10 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 ## App-spezifische Services
 
 - **TrackingService**: JSON-Persistenz (TrackingEntry Model), IDisposable mit CancellationTokenSource Cleanup, `EntryAdded`-Event fuer Streak
-- **FoodSearchService**: Fuzzy Matching, Favorites, Recipes (generisch fuer FoodItem/Recipe), `FoodLogAdded`-Event fuer Streak
-- **StreakService**: Logging-Streak (aufeinanderfolgende Tage mit Aktivitaet), Preferences-basiert, Meilenstein-Confetti (3/7/14/21/30/50/75/100/150/200/365 Tage)
+- **FoodSearchService**: Fuzzy Matching, Favorites, Recipes (generisch fuer FoodItem/Recipe), `FoodLogAdded`-Event fuer Streak, Batch-Methoden `GetFoodLogsInRangeAsync` + `GetDailySummariesInRangeAsync` (N+1 Query Fix)
+- **IStreakService / StreakService**: Logging-Streak (aufeinanderfolgende Tage mit Aktivitaet), Preferences-basiert, Meilenstein-Confetti (3/7/14/21/30/50/75/100/150/200/365 Tage)
 - **FoodDatabase**: 114 Nahrungsmittel mit lokalisierten Namen + Aliase (statische Liste)
 - **BarcodeLookupService**: Open Food Facts API, _barcodeCache Dictionary mit SemaphoreSlim
-- **UndoService<T>**: Generischer Undo mit Timeout (VMs erstellen eigene Instanzen, nicht per DI)
 - **IScanLimitService / ScanLimitService**: Tages-Limit (3 Scans/Tag), Bonus-Scans via Rewarded Ad
 - **IBarcodeService**: Plattform-Interface fuer nativen Barcode-Scan (Android: CameraX + ML Kit, Desktop: null → manuelle Eingabe)
 
@@ -44,8 +43,10 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 
 ## Besondere Architektur
 
-### IDisposable Pattern
-- **TrackingViewModel**: IDisposable fuer CancellationTokenSource Cleanup (Dispose-Pattern mit `_disposed` Flag)
+### Calculator-VM Factory Pattern
+- Calculator-VMs (BmiViewModel, CaloriesViewModel, etc.) als Transient registriert
+- MainViewModel erhaelt `Func<T>` Factories per Constructor Injection (kein Service-Locator)
+- Jedes Oeffnen eines Rechners erzeugt eine frische VM-Instanz
 
 ### ProgressView Sub-Tabs
 - 4 Sub-Tabs: Weight, BMI, BodyFat, Water/Calories
@@ -115,6 +116,10 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 
 ## Changelog (Highlights)
 
+- **01.03.2026**: **Immersiver Ladebildschirm**: Loading-Pipeline (`Loading/FitnessRechnerLoadingPipeline.cs`) mit `ShaderPreloader` (weight 30) + ViewModel-Erstellung (weight 15). `App.axaml.cs` nutzt `Panel(MainView + SkiaLoadingSplash)`-Pattern mit `RunLoadingAsync`. `DataContext` wird erst nach Pipeline-Abschluss gesetzt (nicht mehr synchron beim Start). Partikel-Effekte via `SplashScreenRenderer` aus `MeineApps.UI`.
+- **28.02.2026 (3)**: Thread-Safety Fix: Statische `SKPaint`-Felder in BmiGaugeRenderer (4), BodyFatRenderer (5 + SKMaskFilter) und CalorieRingRenderer (4 + SKMaskFilter) durch lokale `using var` Paint-Objekte ersetzt. Statische SKColor-Konstanten beibehalten (thread-safe immutable structs). Analog zu HealthTrendVisualization die bereits lokale Paints verwendet.
+- **28.02.2026 (2)**: Refactoring (7 Aufgaben): (1) x:CompileBindings="True" in allen 13 Views aktiviert + x:DataType auf DataTemplates ergaenzt. (2) IFitnessEngine und IStreakService Interfaces erstellt, FitnessEngine/StreakService implementieren die Interfaces, DI + alle 6 Consumer auf Interfaces umgestellt. (3) FoodSearchService: Lowercase-Cache fuer Food-Namen/Aliase (statischer Dictionary, einmalig berechnet statt ToLowerInvariant() bei jeder Suche). (4) BarcodeLookupService: Race Condition behoben (`_ = LoadCacheAsync()` -> `_cacheTask = LoadCacheAsync()` + `await _cacheTask` in LookupAsync). (5) AchievementService: Dirty-Flag in CheckProgress (nur speichern wenn sich Progress/Unlocked aendert, vorher bei jedem Aufruf). (6) HomeView+SettingsView Bottom-Margin: 60dp auf 80dp fuer Konsistenz mit allen anderen Views. (7) Leere catch-Bloecke in MainViewModel + AchievementService mit Debug.WriteLine Logging versehen.
+- **28.02.2026**: Refactoring (3 Aufgaben): (1) N+1 Query Fix: Batch-Methoden `GetFoodLogsInRangeAsync` + `GetDailySummariesInRangeAsync` in FoodSearchService. LoadHeatmapDataAsync (1 statt ~90 Queries) und LoadWeeklyComparisonAsync (1 statt 14 Queries) umgestellt. (2) Toter Code entfernt (~1260 Zeilen): TrackingViewModel, HistoryViewModel, VersionedDataService, UndoService/IUndoService geloescht + BoolToStringConverter (Duplikat, existiert in MeineApps.Core.Ava). (3) Service-Locator eliminiert: App.Services.GetRequiredService in CreateCalculatorVm durch Func<T> Factories ersetzt (Constructor Injection). Calculator-VMs von Singleton auf Transient umgestellt. Debug.WriteLine durch MessageRequested ersetzt.
 - **16.02.2026 (3)**: 4 UI-Bugfixes: (1) Disclaimer-Text unten auf Hauptseite abgeschnitten → StackPanel Horizontal durch Grid ColumnDefinitions="Auto,*" ersetzt (TextWrapping funktioniert jetzt korrekt). (2) Dashboard-Daten (Wasser, Kalorien, Gewicht) nicht aktualisiert nach Tab-Wechsel zurück → OnSelectedTabChanged ruft jetzt OnAppearingAsync() bei Tab 0 auf. (3) Heatmap-Kalender leer bei wenig Daten → CellSize 11→13, Months 3→2, Motivations-Hinweis bei <7 Aktivitätstagen. (4) Achievement-Fortschrittsbalken abgeschnitten → StackPanel HorizontalAlignment Center entfernt, ProgressBar + Container explizit Stretch. 1 neuer RESX-Key (HeatmapHint) in 6 Sprachen.
 - **16.02.2026 (2)**: LiveCharts komplett durch SkiaSharp ersetzt. HealthTrendVisualization (Catmull-Rom Spline, Gradient-Fill, Target-Zones für BMI 18.5-25, Milestone-Lines) ersetzt LineSeries in ProgressView (Gewicht/BMI/Körperfett) und HistoryView. WeeklyCaloriesBarVisualization (Gradient-Balken, Target-Linie) ersetzt ColumnSeries. 5 ProgressBars in ProgressView + 2 in HomeView durch LinearProgressVisualization (SkiaSharp) ersetzt. LiveChartsCore.SkiaSharpView.Avalonia Package-Referenz entfernt.
 - **16.02.2026**: SkiaSharp-Visualisierungen in 4 Rechner-Views integriert: BmiView (BMI-Gauge via BmiGaugeRenderer), BodyFatView (Körperfett-Visualisierung via BodyFatRenderer), CaloriesView (Kalorien-Ring via CalorieRingRenderer), WaterView (Wasserglas mit Füllstand + Wellen inline gezeichnet). HomeView: 3 CircularProgress Controls durch SkiaGradientRing ersetzt (Score-Ring, Wasser-Ring, Kalorien-Ring) mit Gradient + Glow-Effekt. Renderer-Dateien in Graphics/ Ordner.

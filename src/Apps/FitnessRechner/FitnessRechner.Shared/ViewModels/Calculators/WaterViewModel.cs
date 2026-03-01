@@ -8,7 +8,7 @@ namespace FitnessRechner.ViewModels.Calculators;
 
 public partial class WaterViewModel : ObservableObject
 {
-    private readonly FitnessEngine _fitnessEngine;
+    private readonly IFitnessEngine _fitnessEngine;
     private readonly IPreferencesService _preferences;
     private readonly ILocalizationService _localization;
 
@@ -24,7 +24,7 @@ public partial class WaterViewModel : ObservableObject
 
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
-    public WaterViewModel(FitnessEngine fitnessEngine, IPreferencesService preferences, ILocalizationService localization)
+    public WaterViewModel(IFitnessEngine fitnessEngine, IPreferencesService preferences, ILocalizationService localization)
     {
         _fitnessEngine = fitnessEngine;
         _preferences = preferences;

@@ -4,7 +4,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="FitnessRechner.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel">
+             x:DataType="vm:SettingsViewModel"
+             x:CompileBindings="True">
 
   <ScrollViewer AutomationProperties.AutomationId="Settings_ScrollViewer" VerticalScrollBarVisibility="Auto">
     <StackPanel AutomationProperties.AutomationId="Settings_RootPanel" Spacing="12" Margin="16">
@@ -485,8 +486,8 @@
         </StackPanel>
       </Border>
 
-      <!-- Bottom Spacer (60dp fuer Ad-Banner Overlay) -->
-      <Border Height="60" />
+      <!-- Bottom Spacer (80dp fuer Ad-Banner Overlay, konsistent mit allen Views) -->
+      <Border Height="80" />
 
     </StackPanel>
   </ScrollViewer>

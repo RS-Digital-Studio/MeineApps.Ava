@@ -8,7 +8,7 @@ namespace FitnessRechner.ViewModels.Calculators;
 
 public partial class BmiViewModel : ObservableObject
 {
-    private readonly FitnessEngine _fitnessEngine;
+    private readonly IFitnessEngine _fitnessEngine;
     private readonly ITrackingService _trackingService;
     private readonly ILocalizationService _localization;
 
@@ -24,7 +24,7 @@ public partial class BmiViewModel : ObservableObject
 
     private void NavigateTo(string route) => NavigationRequested?.Invoke(route);
 
-    public BmiViewModel(FitnessEngine fitnessEngine, ITrackingService trackingService, ILocalizationService localization)
+    public BmiViewModel(IFitnessEngine fitnessEngine, ITrackingService trackingService, ILocalizationService localization)
     {
         _fitnessEngine = fitnessEngine;
         _trackingService = trackingService;

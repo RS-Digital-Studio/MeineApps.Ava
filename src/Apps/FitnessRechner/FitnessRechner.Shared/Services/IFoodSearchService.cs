@@ -36,14 +36,26 @@ public interface IFoodSearchService
     Task SaveFoodLogAsync(FoodLogEntry entry);
 
     /// <summary>
-    /// Loads all log entries for a date
+    /// Laedt alle Log-Eintraege fuer ein bestimmtes Datum.
     /// </summary>
     Task<IReadOnlyList<FoodLogEntry>> GetFoodLogAsync(DateTime date);
 
     /// <summary>
-    /// Loads the daily summary
+    /// Laedt alle Log-Eintraege fuer einen Datumsbereich (inklusive Start und Ende).
+    /// Vermeidet N+1 Queries bei Schleifen ueber mehrere Tage (z.B. Heatmap, Wochenvergleich).
+    /// </summary>
+    Task<IReadOnlyDictionary<DateTime, IReadOnlyList<FoodLogEntry>>> GetFoodLogsInRangeAsync(DateTime start, DateTime end);
+
+    /// <summary>
+    /// Laedt die taegliche Zusammenfassung fuer ein Datum.
     /// </summary>
     Task<DailyNutritionSummary> GetDailySummaryAsync(DateTime date);
+
+    /// <summary>
+    /// Laedt taegliche Zusammenfassungen fuer einen Datumsbereich (inklusive Start und Ende).
+    /// Vermeidet N+1 Queries bei Schleifen ueber mehrere Tage.
+    /// </summary>
+    Task<IReadOnlyDictionary<DateTime, DailyNutritionSummary>> GetDailySummariesInRangeAsync(DateTime start, DateTime end);
 
     /// <summary>
     /// Deletes a log entry

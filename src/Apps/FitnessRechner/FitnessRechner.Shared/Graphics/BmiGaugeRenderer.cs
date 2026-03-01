@@ -6,14 +6,10 @@ namespace FitnessRechner.Graphics;
 /// <summary>
 /// BMI-Halbkreis-Gauge mit 4 Zonen (Untergewicht/Normal/Übergewicht/Adipositas).
 /// Nutzt SkiaGauge-Pattern aber direkt gerendert für inline-Einbettung.
+/// Thread-safe: Verwendet lokale Paint-Objekte statt statischer Felder.
 /// </summary>
 public static class BmiGaugeRenderer
 {
-    private static readonly SKPaint _arcPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
-    private static readonly SKPaint _needlePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    private static readonly SKPaint _textPaint = new() { IsAntialias = true };
-    private static readonly SKPaint _zoneFill = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Butt };
-
     // BMI-Zonen: Blau (Untergewicht), Grün (Normal), Gelb (Übergewicht), Rot (Adipositas)
     private static readonly SKColor _zoneUnderweight = new(0x3B, 0x82, 0xF6); // Blau
     private static readonly SKColor _zoneNormal = new(0x22, 0xC5, 0x5E); // Grün
@@ -57,25 +53,38 @@ public static class BmiGaugeRenderer
             (Start: 30f, End: 45f, Color: _zoneObese),
         };
 
-        _zoneFill.StrokeWidth = strokeW;
+        // Zonen-Bögen zeichnen
+        using var zoneFill = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Butt,
+            StrokeWidth = strokeW
+        };
 
         foreach (var zone in zones)
         {
             float zoneStart = (zone.Start - minBmi) / range * totalSweep + startAngle;
             float zoneSweep = (zone.End - zone.Start) / range * totalSweep;
 
-            _zoneFill.Color = zone.Color;
+            zoneFill.Color = zone.Color;
             using var path = new SKPath();
             path.AddArc(arcRect, zoneStart, zoneSweep);
-            canvas.DrawPath(path, _zoneFill);
+            canvas.DrawPath(path, zoneFill);
         }
 
-        // Track-Rahmen (dünner Rand über den Zonen)
-        _arcPaint.StrokeWidth = strokeW + 2f;
-        _arcPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.TextMuted, 30);
+        // Track-Rahmen (dünner Rand über den Zonen) + Zeiger-Linie teilen sich ein Paint
+        using var strokePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeCap = SKStrokeCap.Round,
+            StrokeWidth = strokeW + 2f,
+            Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.TextMuted, 30)
+        };
         using var trackPath = new SKPath();
         trackPath.AddArc(arcRect, startAngle, totalSweep);
-        canvas.DrawPath(trackPath, _arcPaint);
+        canvas.DrawPath(trackPath, strokePaint);
 
         // Zeiger
         float clampedBmi = Math.Clamp(bmiValue, minBmi, maxBmi);
@@ -86,18 +95,24 @@ public static class BmiGaugeRenderer
         float needleX = cx + MathF.Cos(needleAngleRad) * needleLen;
         float needleY = cy + MathF.Sin(needleAngleRad) * needleLen;
 
-        // Zeiger-Linie
-        _needlePaint.Color = SkiaThemeHelper.TextPrimary;
+        // Zeiger-Linie (strokePaint wiederverwenden mit neuen Werten)
+        strokePaint.StrokeWidth = 2.5f;
+        strokePaint.Color = SkiaThemeHelper.TextPrimary;
         using var needlePath = new SKPath();
         needlePath.MoveTo(cx, cy);
         needlePath.LineTo(needleX, needleY);
-        _arcPaint.StrokeWidth = 2.5f;
-        _arcPaint.Color = SkiaThemeHelper.TextPrimary;
-        canvas.DrawPath(needlePath, _arcPaint);
+        canvas.DrawPath(needlePath, strokePaint);
+
+        // Füllung für Zeiger-Basis, Zeiger-Spitze
+        using var fillPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill,
+            Color = SkiaThemeHelper.TextPrimary
+        };
 
         // Zentraler Kreis (Zeiger-Basis)
-        _needlePaint.Color = SkiaThemeHelper.TextPrimary;
-        canvas.DrawCircle(cx, cy, 5f, _needlePaint);
+        canvas.DrawCircle(cx, cy, 5f, fillPaint);
 
         // Zeiger-Spitze (leuchtender Punkt)
         SKColor dotColor = bmiValue switch
@@ -107,20 +122,23 @@ public static class BmiGaugeRenderer
             < 30f => _zoneOverweight,
             _ => _zoneObese,
         };
-        _needlePaint.Color = dotColor;
-        canvas.DrawCircle(needleX, needleY, 6f, _needlePaint);
+        fillPaint.Color = dotColor;
+        canvas.DrawCircle(needleX, needleY, 6f, fillPaint);
+
+        // Text-Paint für BMI-Wert und Zonen-Labels
+        using var textPaint = new SKPaint { IsAntialias = true };
 
         // BMI-Wert Text unter dem Gauge
-        _textPaint.Color = SkiaThemeHelper.TextPrimary;
-        _textPaint.TextSize = Math.Max(18f, radius * 0.22f);
-        _textPaint.TextAlign = SKTextAlign.Center;
-        _textPaint.FakeBoldText = true;
-        canvas.DrawText($"{bmiValue:F1}", cx, cy + radius * 0.35f, _textPaint);
+        textPaint.Color = SkiaThemeHelper.TextPrimary;
+        textPaint.TextSize = Math.Max(18f, radius * 0.22f);
+        textPaint.TextAlign = SKTextAlign.Center;
+        textPaint.FakeBoldText = true;
+        canvas.DrawText($"{bmiValue:F1}", cx, cy + radius * 0.35f, textPaint);
 
         // Zonen-Labels (klein, unter dem Bogen)
-        _textPaint.TextSize = Math.Max(8f, radius * 0.1f);
-        _textPaint.FakeBoldText = false;
-        _textPaint.Color = SkiaThemeHelper.TextMuted;
+        textPaint.TextSize = Math.Max(8f, radius * 0.1f);
+        textPaint.FakeBoldText = false;
+        textPaint.Color = SkiaThemeHelper.TextMuted;
 
         float labelRadius = radius + strokeW * 0.5f + 10f;
         var labels = new[] { ("18.5", 18.5f), ("25", 25f), ("30", 30f) };
@@ -130,7 +148,7 @@ public static class BmiGaugeRenderer
             float rad = angle * MathF.PI / 180f;
             float lx = cx + MathF.Cos(rad) * labelRadius;
             float ly = cy + MathF.Sin(rad) * labelRadius;
-            canvas.DrawText(text, lx, ly, _textPaint);
+            canvas.DrawText(text, lx, ly, textPaint);
         }
     }
 }

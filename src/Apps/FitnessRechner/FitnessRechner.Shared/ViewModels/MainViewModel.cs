@@ -7,7 +7,6 @@ using FitnessRechner.ViewModels.Calculators;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace FitnessRechner.ViewModels;
 
@@ -21,12 +20,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IPreferencesService _preferences;
     private readonly ILocalizationService _localization;
     private readonly IRewardedAdService _rewardedAdService;
-    private readonly StreakService _streakService;
+    private readonly IStreakService _streakService;
     private readonly IAchievementService _achievementService;
     private readonly ILevelService _levelService;
     private readonly IChallengeService _challengeService;
     private readonly IHapticService _hapticService;
     private readonly IFitnessSoundService _soundService;
+
+    // Factories fuer Calculator-VMs (statt Service-Locator via App.Services)
+    private readonly Func<BmiViewModel> _bmiVmFactory;
+    private readonly Func<CaloriesViewModel> _caloriesVmFactory;
+    private readonly Func<WaterViewModel> _waterVmFactory;
+    private readonly Func<IdealWeightViewModel> _idealWeightVmFactory;
+    private readonly Func<BodyFatViewModel> _bodyFatVmFactory;
+    private readonly Func<BarcodeScannerViewModel> _barcodeScannerVmFactory;
 
     /// <summary>
     /// Raised when the VM wants to show a message (title, message).
@@ -58,7 +65,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IPreferencesService preferences,
         ILocalizationService localization,
         IThemeService themeService,
-        StreakService streakService,
+        IStreakService streakService,
         IAchievementService achievementService,
         ILevelService levelService,
         IChallengeService challengeService,
@@ -66,7 +73,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IFitnessSoundService soundService,
         SettingsViewModel settingsViewModel,
         ProgressViewModel progressViewModel,
-        FoodSearchViewModel foodSearchViewModel)
+        FoodSearchViewModel foodSearchViewModel,
+        Func<BmiViewModel> bmiVmFactory,
+        Func<CaloriesViewModel> caloriesVmFactory,
+        Func<WaterViewModel> waterVmFactory,
+        Func<IdealWeightViewModel> idealWeightVmFactory,
+        Func<BodyFatViewModel> bodyFatVmFactory,
+        Func<BarcodeScannerViewModel> barcodeScannerVmFactory)
     {
         _purchaseService = purchaseService;
         _adService = adService;
@@ -81,6 +94,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _challengeService = challengeService;
         _hapticService = hapticService;
         _soundService = soundService;
+        _bmiVmFactory = bmiVmFactory;
+        _caloriesVmFactory = caloriesVmFactory;
+        _waterVmFactory = waterVmFactory;
+        _idealWeightVmFactory = idealWeightVmFactory;
+        _bodyFatVmFactory = bodyFatVmFactory;
+        _barcodeScannerVmFactory = barcodeScannerVmFactory;
 
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
 
@@ -497,7 +516,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"OnAppearingAsync Fehler: {ex.Message}");
+            MessageRequested?.Invoke(
+                _localization.GetString("Error") ?? "Error",
+                $"Dashboard: {ex.Message}");
         }
         finally
         {
@@ -719,12 +740,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         ObservableObject? vm = basePage switch
         {
-            "BmiPage" => App.Services.GetRequiredService<BmiViewModel>(),
-            "CaloriesPage" => App.Services.GetRequiredService<CaloriesViewModel>(),
-            "WaterPage" => App.Services.GetRequiredService<WaterViewModel>(),
-            "IdealWeightPage" => App.Services.GetRequiredService<IdealWeightViewModel>(),
-            "BodyFatPage" => App.Services.GetRequiredService<BodyFatViewModel>(),
-            "BarcodeScannerPage" => App.Services.GetRequiredService<BarcodeScannerViewModel>(),
+            "BmiPage" => _bmiVmFactory(),
+            "CaloriesPage" => _caloriesVmFactory(),
+            "WaterPage" => _waterVmFactory(),
+            "IdealWeightPage" => _idealWeightVmFactory(),
+            "BodyFatPage" => _bodyFatVmFactory(),
+            "BarcodeScannerPage" => _barcodeScannerVmFactory(),
             _ => null
         };
 
@@ -941,7 +962,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (lastWeight != null)
                 QuickAddWeight = lastWeight.Value;
         }
-        catch { /* Standardwert beibehalten */ }
+        catch
+        {
+            // Standardwert beibehalten bei Fehler
+        }
     }
 
     [RelayCommand]
@@ -1038,8 +1062,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     #endregion
 
     /// <summary>
-    /// Lädt Aktivitäts-Daten für die Heatmap (letzte 3 Monate).
-    /// Kombiniert Tracking-Einträge und Food-Logs zu einem Aktivitäts-Level pro Tag.
+    /// Laedt Aktivitaets-Daten fuer die Heatmap (letzte 3 Monate).
+    /// Kombiniert Tracking-Eintraege und Food-Logs zu einem Aktivitaets-Level pro Tag.
+    /// Nutzt Batch-Query (GetFoodLogsInRangeAsync) statt N+1 Einzelabfragen.
     /// </summary>
     private async Task LoadHeatmapDataAsync()
     {
@@ -1048,39 +1073,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var startDate = DateTime.Today.AddMonths(-3);
             var endDate = DateTime.Today;
 
-            // Tracking-Einträge laden (alle Typen)
+            // Tracking-Eintraege laden (alle Typen)
             var weightEntries = await _trackingService.GetEntriesAsync(TrackingType.Weight, startDate, endDate);
             var waterEntries = await _trackingService.GetEntriesAsync(TrackingType.Water, startDate, endDate);
             var bmiEntries = await _trackingService.GetEntriesAsync(TrackingType.Bmi, startDate, endDate);
             var bodyFatEntries = await _trackingService.GetEntriesAsync(TrackingType.BodyFat, startDate, endDate);
 
-            // Tracking-Tage sammeln
-            var trackingDates = weightEntries.Select(e => e.Date)
-                .Concat(waterEntries.Select(e => e.Date))
-                .Concat(bmiEntries.Select(e => e.Date))
-                .Concat(bodyFatEntries.Select(e => e.Date))
-                .ToList();
+            // Food-Log-Tage per Batch laden (1 Query statt ~90 Einzelabfragen)
+            var foodLogs = await _foodSearchService.GetFoodLogsInRangeAsync(startDate, endDate);
+            var foodLogDates = foodLogs.Keys.ToHashSet();
 
-            // Food-Log-Tage laden (iteriere über jeden Tag)
-            var foodLogDates = new List<DateTime>();
-            var totalDays = (endDate - startDate).Days + 1;
-            for (var i = 0; i < totalDays; i++)
-            {
-                var date = startDate.AddDays(i);
-                var foodLog = await _foodSearchService.GetFoodLogAsync(date);
-                if (foodLog.Count > 0)
-                    foodLogDates.Add(date);
-            }
-
-            // Aktivitäts-Level berechnen
+            // Aktivitaets-Level berechnen
             var data = new Dictionary<DateTime, int>();
-            var waterGoal = _preferences.Get(PreferenceKeys.WaterGoal, 2500.0);
-            var calorieGoal = _preferences.Get(PreferenceKeys.CalorieGoal, 2000.0);
+            var totalDays = (endDate - startDate).Days + 1;
 
             for (var i = 0; i < totalDays; i++)
             {
                 var date = startDate.AddDays(i).Date;
-                int level = 0;
 
                 // Punkte sammeln
                 var hasWeight = weightEntries.Any(e => e.Date.Date == date);
@@ -1089,7 +1098,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 var hasBmi = bmiEntries.Any(e => e.Date.Date == date) || bodyFatEntries.Any(e => e.Date.Date == date);
 
                 var score = (hasWeight ? 1 : 0) + (hasWater ? 1 : 0) + (hasFood ? 1 : 0) + (hasBmi ? 1 : 0);
-                level = score switch
+                var level = score switch
                 {
                     >= 4 => 4,
                     3 => 3,
@@ -1354,7 +1363,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Lädt Wochenvergleichs-Daten (diese Woche vs. letzte Woche).
+    /// Laedt Wochenvergleichs-Daten (diese Woche vs. letzte Woche).
+    /// Nutzt Batch-Query (GetDailySummariesInRangeAsync) statt 14 Einzelabfragen.
     /// </summary>
     private async Task LoadWeeklyComparisonAsync()
     {
@@ -1365,16 +1375,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var lastWeekStart = today.AddDays(-13);
             var lastWeekEnd = today.AddDays(-7);
 
-            // Kalorien
+            // Kalorien per Batch laden (1 Query statt 14 Einzelabfragen)
+            var summaries = await _foodSearchService.GetDailySummariesInRangeAsync(lastWeekStart, today);
+
             double thisWeekCal = 0, lastWeekCal = 0;
             int thisWeekDays = 0, lastWeekDays = 0;
             for (int i = 0; i < 7; i++)
             {
-                var s1 = await _foodSearchService.GetDailySummaryAsync(thisWeekStart.AddDays(i));
-                if (s1.TotalCalories > 0) { thisWeekCal += s1.TotalCalories; thisWeekDays++; }
+                var thisDate = thisWeekStart.AddDays(i);
+                if (summaries.TryGetValue(thisDate, out var s1) && s1.TotalCalories > 0)
+                { thisWeekCal += s1.TotalCalories; thisWeekDays++; }
 
-                var s2 = await _foodSearchService.GetDailySummaryAsync(lastWeekStart.AddDays(i));
-                if (s2.TotalCalories > 0) { lastWeekCal += s2.TotalCalories; lastWeekDays++; }
+                var lastDate = lastWeekStart.AddDays(i);
+                if (summaries.TryGetValue(lastDate, out var s2) && s2.TotalCalories > 0)
+                { lastWeekCal += s2.TotalCalories; lastWeekDays++; }
             }
 
             // Wasser

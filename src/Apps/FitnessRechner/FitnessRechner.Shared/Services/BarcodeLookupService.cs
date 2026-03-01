@@ -20,6 +20,9 @@ public class BarcodeLookupService : IBarcodeLookupService
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
     private Dictionary<string, CachedBarcodeEntry> _barcodeCache = new();
 
+    // Task fuer das asynchrone Laden des Caches (verhindert Race Condition)
+    private readonly Task _cacheTask;
+
     static BarcodeLookupService()
     {
         _httpClient.DefaultRequestHeaders.Add("User-Agent", "FitnessRechner - Avalonia - Version 1.0");
@@ -29,13 +32,16 @@ public class BarcodeLookupService : IBarcodeLookupService
     {
         _foodSearchService = foodSearchService;
 
-        // Cache file in AppData directory
+        // Cache-Datei im AppData-Verzeichnis
         _cacheFilePath = Path.Combine(GetDataDirectory(), "barcode_cache.json");
-        _ = LoadCacheAsync();
+        _cacheTask = LoadCacheAsync();
     }
 
     public async Task<FoodItem?> LookupByBarcodeAsync(string barcode)
     {
+        // Sicherstellen dass der Cache vollstaendig geladen ist bevor wir zugreifen
+        await _cacheTask;
+
         // 1. Cache-Prüfung (mit Lock)
         await _cacheLock.WaitAsync();
         try

@@ -332,4 +332,14 @@ public static class SkiaElectricArcEffect
             arcColor: new SKColor(0x44, 0xBB, 0xFF, 200),
             intensity: 0.5f);
     }
+
+    /// <summary>
+    /// Kompiliert beide SkSL-Shader vorab (Arc + EnergyPulse).
+    /// Aufruf während Loading-Screen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        _arcEffect ??= SKRuntimeEffect.CreateShader(ArcSksl, out _);
+        _pulseEffect ??= SKRuntimeEffect.CreateShader(EnergyPulseSksl, out _);
+    }
 }

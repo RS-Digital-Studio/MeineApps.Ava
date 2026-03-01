@@ -176,6 +176,34 @@ public class CalculationHistoryService : ICalculationHistoryService
         }
     }
 
+    public async Task<List<CalculationHistoryItem>> GetAllHistoryAsync(int maxItemsPerCalculator = 10)
+    {
+        await _semaphore.WaitAsync();
+        try
+        {
+            var allItems = new List<CalculationHistoryItem>();
+            if (!Directory.Exists(_historyPath)) return allItems;
+
+            var files = Directory.GetFiles(_historyPath, "*.json");
+            foreach (var file in files)
+            {
+                var json = await File.ReadAllTextAsync(file);
+                var history = JsonSerializer.Deserialize<List<CalculationHistoryItem>>(json);
+                if (history != null)
+                    allItems.AddRange(history.Take(maxItemsPerCalculator));
+            }
+            return allItems.OrderByDescending(h => h.CreatedAt).ToList();
+        }
+        catch
+        {
+            return [];
+        }
+        finally
+        {
+            _semaphore.Release();
+        }
+    }
+
     /// <summary>
     /// Interner Read - MUSS innerhalb des Semaphore-Locks aufgerufen werden
     /// </summary>

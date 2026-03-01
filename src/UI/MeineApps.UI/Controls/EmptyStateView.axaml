@@ -8,12 +8,15 @@
               Spacing="16"
               Margin="32">
 
-    <!-- Icon -->
-    <mi:MaterialIcon x:Name="IconElement"
-                     Width="{DynamicResource IconSizeXl}"
-                     Height="{DynamicResource IconSizeXl}"
-                     Foreground="{DynamicResource TextMutedBrush}"
-                     HorizontalAlignment="Center" />
+    <!-- Icon mit Puls-Animation -->
+    <Border Classes="EmptyPulse"
+            HorizontalAlignment="Center">
+      <mi:MaterialIcon x:Name="IconElement"
+                       Width="{DynamicResource IconSizeXl}"
+                       Height="{DynamicResource IconSizeXl}"
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       HorizontalAlignment="Center" />
+    </Border>
 
     <!-- Title -->
     <TextBlock x:Name="TitleText"

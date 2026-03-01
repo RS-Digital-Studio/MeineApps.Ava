@@ -121,7 +121,11 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 - **Namespace:** `MeineApps.Core.Premium.Ava.Droid`
 - Load(Activity, adUnitId) + ShowAsync() → Task<bool> (true = Belohnung verdient)
 - Automatisches Nachladen nach Ad-Dismiss
-- **Java Generics Erasure Fix:** `LoadCallback` nutzt `[Android.Runtime.Register("onAdLoaded", "(Lcom/google/android/gms/ads/rewarded/RewardedAd;)V", "")]` statt override, weil Java Erasure `onAdLoaded(Object)` vs `onAdLoaded(RewardedAd)` kollidiert
+- **Retry mit exponentiellem Backoff (28.02.2026):** Bei fehlgeschlagenem Pre-Load: 5s → 15s → 30s (max 3 Versuche). `ScheduleRetry()` + `_retryCount` Feld. Reset bei erfolgreichem Load oder nach Ad-Dismiss
+- **KRITISCHER JNI Fix (28.02.2026):** `FixedRewardedAdLoadCallback` abstrakte Basis-Klasse mit korrektem JNI Delegate-Wiring. Behebt Xamarin Binding Bug #425 (https://github.com/xamarin/GooglePlayServicesComponents/issues/425):
+  - **Problem:** `RewardedAdLoadCallback` erbt von `AdLoadCallback<RewardedAd>`. Java Generics Erasure macht `onAdLoaded(RewardedAd)` zu `onAdLoaded(Object)`. Die Xamarin-Binding generiert `[Register("onAdLoaded", "...", "")]` mit leerem Connector → JNI Native Delegate wird NIE verdrahtet → C# `OnAdLoaded` wird nie aufgerufen → `_rewardedAd` bleibt null → 100% Match Rate aber 0 Impressions
+  - **Fix:** `JNINativeWrapper.CreateDelegate()` + `GetOnAdLoadedHandler` Connector + `n_OnAdLoaded` statische Methode + `[Register("onAdLoaded", "(Lcom/google/android/gms/ads/rewarded/RewardedAd;)V", "GetOnAdLoadedHandler")]` mit echtem Connector-String
+  - **Betrifft:** Alle 6 werbe-unterstützten Apps (LoadCallback + OnDemandLoadCallback erben beide von FixedRewardedAdLoadCallback)
 
 #### AndroidRewardedAdService.cs (Linked File Pattern)
 - Lebt in `Android/AndroidRewardedAdService.cs`, wird per `<Compile Include>` in jedes Android-Projekt eingebunden
@@ -172,5 +176,6 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 
 ### Changelog (Premium Library)
 
+- **28.02.2026**: **KRITISCHER FIX: Rewarded Ads OnAdLoaded JNI-Callback** – FixedRewardedAdLoadCallback mit korrektem JNI Delegate-Wiring (GetOnAdLoadedHandler Connector statt leerer String). Behebt 0 Impressions trotz 100% Match Rate in ALLEN 6 Apps. + Retry mit exponentiellem Backoff (5s/15s/30s, max 3 Versuche). + 2 fehlende BomberBlast Placements (lucky_spin, dungeon_run) in AdConfig.cs.
 - **17.02.2026**: AndroidPurchaseService mit Google Play Billing Client v8.3.0.1 integriert. Ersetzt AIDL-basierte Billing. Alle 6 Premium-Apps verwenden jetzt echte Google Play Billing Library.
 - **10.02.2026**: TrialService DateTime.Now → DateTime.UtcNow + TryParse mit CultureInfo.InvariantCulture + DateTimeStyles.RoundtripKind. AdMobHelper TestDeviceId nur noch in DEBUG-Builds registriert.

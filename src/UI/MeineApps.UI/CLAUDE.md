@@ -28,14 +28,20 @@ MeineApps.UI/
 │   ├── EmptyStateView.axaml.cs
 │   ├── WheelPicker.axaml           # Drum-style swipe number picker
 │   ├── WheelPicker.axaml.cs
-│   ├── SplashOverlay.axaml         # App startup splash with icon + loading bar
+│   ├── SplashOverlay.axaml         # App startup splash with icon + loading bar (6 Apps)
 │   ├── SplashOverlay.axaml.cs
+│   ├── SkiaLoadingSplash.axaml     # Ladebildschirm mit SkiaSharp-Fortschrittsring (WTP + ZM)
+│   ├── SkiaLoadingSplash.axaml.cs
 │   ├── CircularProgress.cs          # Kreisförmiger Fortschrittsring
 │   ├── FloatingTextOverlay.cs      # Floating text animation (Game Juice)
 │   ├── CelebrationOverlay.cs       # Legacy Confetti (Border-basiert)
 │   ├── SkiaCelebrationOverlay.cs   # Premium Confetti (SkiaSharp, Glow, Sterne)
 │   ├── LottieAnimationView.cs      # Lottie-Wrapper mit OneShot-Modus
 │   └── TooltipBubble.cs            # Onboarding tooltip with tap-to-dismiss
+├── Loading/
+│   ├── ILoadingPipeline.cs          # Interface: Steps, ProgressChanged, ExecuteAsync
+│   ├── LoadingStep.cs               # Datenmodell: Name, DisplayName, Weight, ExecuteAsync
+│   └── LoadingPipelineBase.cs       # Basis: sequentielle Ausführung, gewichteter Fortschritt
 ├── Behaviors/
 │   ├── TapScaleBehavior.cs         # Scale-Down Micro-Animation bei Tap
 │   ├── FadeInBehavior.cs           # Fade-In + Slide-from-Bottom Animation
@@ -53,13 +59,19 @@ MeineApps.UI/
 │   ├── SkiaBlueprintCanvas.cs       # Technische Zeichnungen
 │   ├── SkiaChartTooltip.cs          # Tooltip-System für Charts
 │   ├── InteractiveChartBase.cs      # Basis für Touch-Charts
+│   ├── EasingFunctions.cs           # Mathematische Easing-Funktionen (aus HI verschoben)
+│   ├── AnimatedVisualizationBase.cs # Basis für animierte Renderer (Einschwing-Animation)
+│   ├── SplashScreen/
+│   │   ├── SplashParticle.cs        # Struct für Partikel-Pool (kein GC-Druck)
+│   │   └── SplashScreenRenderer.cs  # Immersiver Splash: Gradient-BG, 24 Glow-Partikel, Fortschrittsbalken
 │   └── Shaders/
 │       ├── SkiaShimmerEffect.cs     # GPU-Shimmer (SkSL)
 │       ├── SkiaGlowEffect.cs        # GPU-Glow (SkSL)
 │       ├── SkiaWaveEffect.cs        # GPU-Wellen (SkSL)
 │       ├── SkiaFireEffect.cs        # GPU-Feuer/Flammen (SkSL)
 │       ├── SkiaHeatShimmerEffect.cs # GPU-Hitze-Flimmern (SkSL)
-│       └── SkiaElectricArcEffect.cs # GPU-Lichtbogen/Blitz (SkSL)
+│       ├── SkiaElectricArcEffect.cs # GPU-Lichtbogen/Blitz (SkSL)
+│       └── ShaderPreloader.cs       # Zentraler Preloader für alle 12 SkSL-Shader
 └── Styles/
     ├── ButtonStyles.axaml
     ├── TextStyles.axaml
@@ -265,18 +277,92 @@ xmlns:controls="using:MeineApps.UI.Controls"
 ```axaml
 xmlns:splash="using:MeineApps.UI.Controls"
 
-<!-- In MainWindow.axaml -->
+<!-- In MainView.axaml (über dem Content) -->
 <Panel>
-  <views:MainView />
-  <splash:SplashOverlay AppName="MyApp"
-                        IconSource="avares://MyApp.Shared/Assets/icon.png" />
+  <Grid> <!-- Normaler Content --> </Grid>
+  <splash:SplashOverlay x:Name="Splash" AppName="MyApp" />
 </Panel>
 ```
 
-- Shows app icon (120x120, rounded corners) + app name + animated loading bar
-- Auto-fades out after 1.5s, hides after 2s
-- Properties: AppName (string), IconSource (IImage)
-- Uses BackgroundBrush, TextPrimaryBrush, SurfaceBrush, PrimaryBrush from theme
+```csharp
+// Im Code-Behind: Echtes Preloading mit Progress-Updates
+Splash.PreloadAction = async (reportProgress) =>
+{
+    reportProgress(0.0f, "Shader werden kompiliert...");
+    await Task.Run(() => ShaderPreloader.PreloadAll());
+
+    reportProgress(0.5f, "Daten werden geladen...");
+    await LoadDataAsync();
+
+    reportProgress(1.0f, "Fertig");
+};
+Splash.PreloadCompleted += (_, _) => { /* Nach Splash */ };
+```
+
+- App icon (120x120, rounded corners) + App name + animated loading bar + Status-Text
+- **Echtes Preloading**: `PreloadAction` (Func<Action<float, string>, Task>) für async Preload-Tasks
+- **Progress-Updates**: Callback mit Progress (0.0-1.0) und Status-Text, automatisches UI-Thread-Marshalling
+- **PreloadCompleted Event**: Wird nach Preloading + Fade-Out gefeuert
+- **Fallback**: Ohne PreloadAction → Timer-basiert (1.5s, altes Verhalten)
+- Properties: AppName (string), IconSource (IImage?), StatusText (string)
+- Ladebalken 220px breit mit 300ms CubicEaseOut Transition
+- Uses BackgroundBrush, TextPrimaryBrush, SurfaceBrush, PrimaryBrush, TextMutedBrush from theme
+- **Verwendet in**: HandwerkerRechner (5 Preload-Schritte), RechnerPlus (2 Preload-Schritte)
+
+## SkiaLoadingSplash (Immersiver Ladebildschirm)
+
+Vollbild-Ladebildschirm mit immersivem SkiaSharp-Partikel-Effekt. Nutzt `SplashScreenRenderer` für Gradient-Hintergrund, 24 schwebende Glow-Partikel, pulsierenden App-Namen, animierten Fortschrittsbalken und Statustext. Wird über alle 8 Apps einheitlich verwendet.
+
+```csharp
+// In App.axaml.cs - einheitliches Pattern für alle 8 Apps:
+var splash = new SkiaLoadingSplash { AppName = "MyApp", AppVersion = "v2.0.4" };
+var panel = new Panel();
+panel.Children.Add(new MainView());
+panel.Children.Add(splash);
+// Desktop: desktop.MainWindow.Content = panel;
+// Android: singleViewPlatform.MainView = panel;
+
+var pipeline = new MyAppLoadingPipeline(Services);
+pipeline.ProgressChanged += (progress, text) =>
+    Dispatcher.UIThread.Post(() => { splash.Progress = progress; splash.StatusText = text; });
+await pipeline.ExecuteAsync();
+splash.FadeOut(); // 200ms Pause + 300ms Opacity-Fade → dispose
+```
+
+- **SplashScreenRenderer**: Gradient-Hintergrund (Background→Surface), 24 schwebende Glow-Partikel (Sinus-Oszillation, Alpha-Pulsation), pulsierender App-Name mit Glow-Kreis, Fortschrittsbalken (RoundRect, Gradient Primary→Accent, Glow am Ende), Statustext
+- **SplashParticle struct**: Fixed-Size-Pool, keine GC-Allokationen pro Frame
+- **Smooth-Interpolation**: Fortschritt interpoliert mit Lerp-Faktor 0.12f pro Frame
+- **Cached Rendering**: 9 SKPaints, 4 SKFonts, 1 SKPath, 2 SKMaskFilters - alles einmal alloziert
+- **IDisposable**: Sauberes Cleanup aller nativen SkiaSharp-Ressourcen
+- **Fade-Out**: `FadeOut()` → 200ms Pause → 300ms Opacity 1→0 (CubicEaseOut) → IsVisible=false + Dispose
+- Properties: AppName (string), AppVersion (string), Progress (float 0-1), StatusText (string)
+- **Verwendet in**: Alle 8 Apps (mit LoadingPipeline)
+
+### Loading-Pipeline (ILoadingPipeline + LoadingPipelineBase)
+
+Basis-Framework für app-spezifische Lade-Pipelines mit gewichtetem Fortschritt.
+
+```csharp
+public class MyAppLoadingPipeline : LoadingPipelineBase
+{
+    public MyAppLoadingPipeline(IServiceProvider services)
+    {
+        AddStep(new LoadingStep {
+            Name = "DB+Shader", DisplayName = "Initialisierung...", Weight = 40,
+            ExecuteAsync = () => Task.WhenAll(dbInit, Task.Run(() => ShaderPreloader.PreloadAll()))
+        });
+        AddStep(new LoadingStep {
+            Name = "ViewModel", DisplayName = "Daten werden geladen...", Weight = 20,
+            ExecuteAsync = () => { services.GetRequiredService<MainViewModel>(); return Task.CompletedTask; }
+        });
+    }
+}
+```
+
+- Steps werden sequentiell ausgeführt, Fortschritt ist gewichtet (Weight/TotalWeight)
+- Fehlerbehandlung: try/catch pro Step, Pipeline läuft weiter bei Fehlern
+- Debug-Logging: Dauer pro Step + Gesamtdauer
+- **8 Implementierungen**: `RechnerPlusLoadingPipeline`, `ZeitManagerLoadingPipeline`, `FinanzRechnerLoadingPipeline`, `FitnessRechnerLoadingPipeline`, `HandwerkerRechnerLoadingPipeline`, `WorkTimeProLoadingPipeline`, `HandwerkerImperiumLoadingPipeline`, `BomberBlastLoadingPipeline`
 
 ## Text Styles
 
@@ -788,3 +874,17 @@ SkiaElectricArcEffect.DrawEnergyPulse(canvas, bounds, time,
 SkiaElectricArcEffect.DrawLightning(canvas, bounds, time);   // Heller weisser Blitz
 SkiaElectricArcEffect.DrawTeslaCoil(canvas, bounds, time);   // Blau-violetter Tesla-Bogen
 ```
+
+### ShaderPreloader.cs
+
+Zentraler Preloader der alle 12 SkSL-GPU-Shader vorab kompiliert. Sollte während des Loading-Screens aufgerufen werden um Jank (50-200ms pro Shader auf Android) beim ersten Render zu vermeiden.
+
+```csharp
+// Während Loading-Screen aufrufen (gibt Kompilierungsdauer in ms zurück)
+long durationMs = ShaderPreloader.PreloadAll();
+```
+
+- Kompiliert 12 Shader (2 pro Effekt-Klasse): Shimmer, Glow, Wave, Fire, HeatShimmer, ElectricArc
+- Thread-safe durch `??=` Pattern in den einzelnen Effekt-Klassen
+- Gibt Kompilierungsdauer für Logging/Profiling zurück
+- Jede Effekt-Klasse hat auch eine eigene `Preload()`-Methode für selektives Laden

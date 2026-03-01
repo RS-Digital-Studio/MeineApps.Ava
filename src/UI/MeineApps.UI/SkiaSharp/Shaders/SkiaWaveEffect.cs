@@ -186,4 +186,14 @@ public static class SkiaWaveEffect
         canvas.DrawRect(0, 0, bounds.Width, bounds.Height, paint);
         canvas.Restore();
     }
+
+    /// <summary>
+    /// Kompiliert beide SkSL-Shader vorab (WaterWave + BackgroundWave).
+    /// Aufruf während Loading-Screen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        _waterEffect ??= SKRuntimeEffect.CreateShader(WaterWaveSksl, out _);
+        _bgWaveEffect ??= SKRuntimeEffect.CreateShader(BackgroundWaveSksl, out _);
+    }
 }

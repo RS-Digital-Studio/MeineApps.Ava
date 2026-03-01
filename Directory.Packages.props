@@ -55,6 +55,11 @@
     <PackageVersion Include="Xamarin.Android.Google.BillingClient" Version="8.3.0.1" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- IN-APP REVIEW (Google Play Review API)                            -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <PackageVersion Include="Xamarin.Google.Android.Play.Review" Version="2.0.2.5" />
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- GOOGLE PLAY GAMES SERVICES v2                                     -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="Xamarin.GooglePlayServices.Games.V2" Version="121.0.0.2" />

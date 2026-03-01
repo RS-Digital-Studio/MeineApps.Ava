@@ -301,7 +301,8 @@ public class AndroidPlayGamesService : IPlayGamesService
     /// <summary>
     /// Speicherdaten in die Cloud hochladen.
     /// Nutzt Google Play Games Snapshots API (wenn verfügbar) oder Drive App Data.
-    /// TODO: Snapshots-Client via Java-Interop implementieren wenn auf Gerät getestet.
+    /// Snapshots-Client nicht im NuGet-Binding (121.0.0.2) verfügbar.
+    /// Aktuell lokaler Datei-Fallback statt echter Cloud-Synchronisation.
     /// </summary>
     public async Task<bool> SaveToCloudAsync(string jsonData)
     {

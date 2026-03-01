@@ -181,4 +181,14 @@ public static class SkiaShimmerEffect
             stripWidth: 0.15f,
             speed: 0.3f);
     }
+
+    /// <summary>
+    /// Kompiliert beide SkSL-Shader vorab (Shimmer + Overlay).
+    /// Aufruf während Loading-Screen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        _effect ??= SKRuntimeEffect.CreateShader(ShimmerSksl, out _);
+        _overlayEffect ??= SKRuntimeEffect.CreateShader(ShimmerOverlaySksl, out _);
+    }
 }

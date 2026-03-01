@@ -189,4 +189,14 @@ public static class SkiaGlowEffect
             new SKColor(0xFF, 0xD7, 0x00, 120),
             pulseSpeed: 1.2f, pulseMin: 0.02f, pulseMax: 0.07f);
     }
+
+    /// <summary>
+    /// Kompiliert beide SkSL-Shader vorab (EdgeGlow + RadialGlow).
+    /// Aufruf während Loading-Screen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        _edgeEffect ??= SKRuntimeEffect.CreateShader(GlowSksl, out _);
+        _radialEffect ??= SKRuntimeEffect.CreateShader(RadialGlowSksl, out _);
+    }
 }

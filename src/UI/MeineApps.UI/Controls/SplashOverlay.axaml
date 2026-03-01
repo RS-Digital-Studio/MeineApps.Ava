@@ -31,26 +31,36 @@
                  Foreground="{DynamicResource TextPrimaryBrush}"
                  HorizontalAlignment="Center" />
 
-      <!-- Loading indicator -->
-      <Border Height="3"
-              Width="180"
-              CornerRadius="2"
-              Background="{DynamicResource SurfaceBrush}"
-              HorizontalAlignment="Center"
-              Margin="0,16,0,0">
-        <Border x:Name="LoadingBar"
-                Height="3"
+      <!-- Ladebalken-Container -->
+      <StackPanel Spacing="10" HorizontalAlignment="Center">
+        <!-- Loading indicator -->
+        <Border Height="3"
+                Width="220"
                 CornerRadius="2"
-                Background="{DynamicResource PrimaryBrush}"
-                HorizontalAlignment="Left"
-                Width="0">
-          <Border.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Width" Duration="0:0:1.2" Easing="CubicEaseInOut" />
-            </Transitions>
-          </Border.Transitions>
+                Background="{DynamicResource SurfaceBrush}"
+                HorizontalAlignment="Center">
+          <Border x:Name="LoadingBar"
+                  Height="3"
+                  CornerRadius="2"
+                  Background="{DynamicResource PrimaryBrush}"
+                  HorizontalAlignment="Left"
+                  Width="0">
+            <Border.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Width" Duration="0:0:0.3" Easing="CubicEaseOut" />
+              </Transitions>
+            </Border.Transitions>
+          </Border>
         </Border>
-      </Border>
+
+        <!-- Status-Text -->
+        <TextBlock x:Name="StatusTextBlock"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextMutedBrush}"
+                   HorizontalAlignment="Center"
+                   Opacity="0.7"
+                   Text="" />
+      </StackPanel>
     </StackPanel>
   </Panel>
 </UserControl>

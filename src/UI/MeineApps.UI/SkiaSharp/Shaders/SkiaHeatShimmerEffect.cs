@@ -264,4 +264,14 @@ public static class SkiaHeatShimmerEffect
             waveCount: 4,
             speed: 0.6f);
     }
+
+    /// <summary>
+    /// Kompiliert beide SkSL-Shader vorab (HeatShimmer + HeatHaze).
+    /// Aufruf während Loading-Screen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        _shimmerEffect ??= SKRuntimeEffect.CreateShader(HeatShimmerSksl, out _);
+        _hazeEffect ??= SKRuntimeEffect.CreateShader(HeatHazeSksl, out _);
+    }
 }

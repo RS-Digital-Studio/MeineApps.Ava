@@ -1,6 +1,7 @@
 using Android.App;
 using Android.Gms.Ads;
 using Android.Gms.Ads.Rewarded;
+using Android.Runtime;
 
 namespace MeineApps.Core.Premium.Ava.Droid;
 
@@ -14,12 +15,15 @@ public sealed class RewardedAdHelper : IDisposable
 {
     private const string Tag = "RewardedAdHelper";
     private const int LoadTimeoutMs = 8000; // 8 Sekunden Timeout fuer On-Demand Ad-Laden
+    private const int MaxRetryAttempts = 3;
+    private static readonly int[] RetryDelaysMs = [5000, 15000, 30000]; // Exponentieller Backoff: 5s, 15s, 30s
 
     private RewardedAd? _rewardedAd;
     private Activity? _activity;
     private string _defaultAdUnitId = "";
     private bool _isLoading;
     private bool _disposed;
+    private int _retryCount;
 
     /// <summary>Ob eine Rewarded Ad geladen und bereit ist</summary>
     public bool IsLoaded => _rewardedAd != null;
@@ -136,9 +140,10 @@ public sealed class RewardedAdHelper : IDisposable
 
     private void OnAdLoaded(RewardedAd ad)
     {
-        Android.Util.Log.Info(Tag, "Pre-Load: Rewarded Ad erfolgreich geladen");
+        Android.Util.Log.Info(Tag, "Pre-Load: Rewarded Ad erfolgreich geladen und C# Callback erreicht");
         _rewardedAd = ad;
         _isLoading = false;
+        _retryCount = 0; // Retry-Zaehler zuruecksetzen bei Erfolg
     }
 
     private void OnAdFailedToLoad(LoadAdError error)
@@ -146,6 +151,35 @@ public sealed class RewardedAdHelper : IDisposable
         Android.Util.Log.Error(Tag, $"Pre-Load FEHLGESCHLAGEN: Code={error.Code}, Message={error.Message}, Domain={error.Domain}");
         _rewardedAd = null;
         _isLoading = false;
+        ScheduleRetry();
+    }
+
+    /// <summary>
+    /// Retry mit exponentiellem Backoff (5s, 15s, 30s).
+    /// Wird nach fehlgeschlagenem Pre-Load aufgerufen.
+    /// </summary>
+    private async void ScheduleRetry()
+    {
+        if (_retryCount >= MaxRetryAttempts || _disposed || string.IsNullOrEmpty(_defaultAdUnitId))
+        {
+            Android.Util.Log.Warn(Tag, $"Retry abgebrochen: retryCount={_retryCount}/{MaxRetryAttempts}, disposed={_disposed}");
+            return;
+        }
+
+        var delayMs = RetryDelaysMs[_retryCount];
+        _retryCount++;
+        Android.Util.Log.Info(Tag, $"Retry {_retryCount}/{MaxRetryAttempts} in {delayMs}ms");
+
+        try
+        {
+            await Task.Delay(delayMs);
+            if (!_disposed && _rewardedAd == null)
+                LoadInternal(_defaultAdUnitId);
+        }
+        catch (Exception ex)
+        {
+            Android.Util.Log.Error(Tag, $"ScheduleRetry Exception: {ex.Message}");
+        }
     }
 
     private void OnAdDismissed()
@@ -153,6 +187,7 @@ public sealed class RewardedAdHelper : IDisposable
         // Nach dem Schliessen neue Default-Ad laden fuer naechste Nutzung
         Android.Util.Log.Info(Tag, "Ad geschlossen, lade naechste Default-Ad");
         _rewardedAd = null;
+        _retryCount = 0; // Retry-Zaehler zuruecksetzen fuer frischen Ladeversuch
         if (!string.IsNullOrEmpty(_defaultAdUnitId))
             LoadInternal(_defaultAdUnitId);
     }
@@ -165,22 +200,68 @@ public sealed class RewardedAdHelper : IDisposable
         _activity = null;
     }
 
+    // ==================================================================================
+    // JNI Workaround fuer Xamarin Binding Bug (OnAdLoaded wird sonst nie aufgerufen)
+    // https://github.com/xamarin/GooglePlayServicesComponents/issues/425
+    // https://gist.github.com/dtaylorus/63fef408cec34999a1e566bd5fac27e5
+    //
+    // Problem: RewardedAdLoadCallback erbt von AdLoadCallback<RewardedAd>.
+    // Durch Java Generics Erasure wird onAdLoaded(RewardedAd) zu onAdLoaded(Object).
+    // Die Xamarin-Binding generiert nur OnAdLoaded(Java.Lang.Object), aber der
+    // [Register]-Attribut mit leerem Connector ("") verdrahtet keinen JNI Native Delegate.
+    // Resultat: Java ruft onAdLoaded auf, C# bekommt den Aufruf nie.
+    //
+    // Fix: Eigene Basis-Klasse mit korrektem JNI Delegate via GetOnAdLoadedHandler.
+    // ==================================================================================
+
+    /// <summary>
+    /// Basis-Klasse mit korrekt verdrahtetem OnAdLoaded JNI-Callback.
+    /// Alle Rewarded-Callbacks muessen hiervon erben statt direkt von RewardedAdLoadCallback.
+    /// </summary>
+    private abstract class FixedRewardedAdLoadCallback : RewardedAdLoadCallback
+    {
+        private static Delegate? _cbOnAdLoaded;
+
+        private static Delegate GetOnAdLoadedHandler()
+        {
+            _cbOnAdLoaded ??= JNINativeWrapper.CreateDelegate(
+                (Action<IntPtr, IntPtr, IntPtr>)n_OnAdLoaded);
+            return _cbOnAdLoaded;
+        }
+
+        private static void n_OnAdLoaded(IntPtr jnienv, IntPtr native_this, IntPtr native_p0)
+        {
+            var callback = GetObject<FixedRewardedAdLoadCallback>(jnienv, native_this, JniHandleOwnership.DoNotTransfer);
+            var rewardedAd = GetObject<RewardedAd>(native_p0, JniHandleOwnership.DoNotTransfer);
+            if (callback != null && rewardedAd != null)
+            {
+                Android.Util.Log.Info(Tag, "JNI: OnAdLoaded Callback korrekt empfangen");
+                callback.OnRewardedAdLoaded(rewardedAd);
+            }
+            else
+            {
+                Android.Util.Log.Error(Tag, $"JNI: OnAdLoaded Marshalling fehlgeschlagen - callback={callback != null}, ad={rewardedAd != null}");
+            }
+        }
+
+        [Register("onAdLoaded", "(Lcom/google/android/gms/ads/rewarded/RewardedAd;)V", "GetOnAdLoadedHandler")]
+        public virtual void OnRewardedAdLoaded(RewardedAd rewardedAd) { }
+    }
+
     /// <summary>Callback fuer Pre-Load Ad-Ladevorgang (Default-Placement)</summary>
-    private sealed class LoadCallback : RewardedAdLoadCallback
+    private sealed class LoadCallback : FixedRewardedAdLoadCallback
     {
         private readonly RewardedAdHelper _helper;
 
         public LoadCallback(RewardedAdHelper helper) => _helper = helper;
 
-        // Register mit Java-Signatur fuer RewardedAd (nicht Object) um Erasure-Konflikt zu vermeiden
-        [Android.Runtime.Register("onAdLoaded", "(Lcom/google/android/gms/ads/rewarded/RewardedAd;)V", "")]
-        public void OnAdLoaded(RewardedAd ad) => _helper.OnAdLoaded(ad);
+        public override void OnRewardedAdLoaded(RewardedAd ad) => _helper.OnAdLoaded(ad);
 
         public override void OnAdFailedToLoad(LoadAdError error) => _helper.OnAdFailedToLoad(error);
     }
 
     /// <summary>Callback fuer On-Demand Load+Show (laedt Ad und zeigt sie sofort)</summary>
-    private sealed class OnDemandLoadCallback : RewardedAdLoadCallback
+    private sealed class OnDemandLoadCallback : FixedRewardedAdLoadCallback
     {
         private readonly RewardedAdHelper _helper;
         private readonly Activity _activity;
@@ -193,8 +274,7 @@ public sealed class RewardedAdHelper : IDisposable
             _tcs = tcs;
         }
 
-        [Android.Runtime.Register("onAdLoaded", "(Lcom/google/android/gms/ads/rewarded/RewardedAd;)V", "")]
-        public void OnAdLoaded(RewardedAd ad)
+        public override void OnRewardedAdLoaded(RewardedAd ad)
         {
             Android.Util.Log.Info(Tag, "On-Demand: Rewarded Ad geladen, zeige sofort");
             // Ad geladen → sofort zeigen
@@ -230,7 +310,7 @@ public sealed class RewardedAdHelper : IDisposable
     {
         private readonly TaskCompletionSource<bool> _tcs;
         private readonly RewardedAdHelper? _helper;
-        internal bool Rewarded;
+        internal volatile bool Rewarded;
 
         public FullScreenCallback(TaskCompletionSource<bool> tcs, RewardedAdHelper? helper)
         {

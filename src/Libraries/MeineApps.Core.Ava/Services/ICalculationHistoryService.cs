@@ -11,6 +11,12 @@ public interface ICalculationHistoryService
     Task DeleteCalculationAsync(string id);
     Task ClearHistoryAsync(string calculatorId);
     Task CleanupOldEntriesAsync(int olderThanDays = 90);
+
+    /// <summary>
+    /// Lädt History-Einträge aus ALLEN Rechnern, maxItemsPerCalculator pro Rechner.
+    /// Ergebnis sortiert nach CreatedAt absteigend.
+    /// </summary>
+    Task<List<CalculationHistoryItem>> GetAllHistoryAsync(int maxItemsPerCalculator = 10);
 }
 
 /// <summary>

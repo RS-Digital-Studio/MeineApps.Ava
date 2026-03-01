@@ -375,4 +375,14 @@ public static class SkiaFireEffect
             baseColor: new SKColor(0xCC, 0x22, 0x00),  // Dunkles Rot
             tipColor: new SKColor(0xFF, 0xCC, 0x44));   // Warmes Orange-Gelb
     }
+
+    /// <summary>
+    /// Kompiliert beide SkSL-Shader vorab (Flame + Ember).
+    /// Aufruf während Loading-Screen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        _flameEffect ??= SKRuntimeEffect.CreateShader(FlameSksl, out _);
+        _emberEffect ??= SKRuntimeEffect.CreateShader(EmberSksl, out _);
+    }
 }

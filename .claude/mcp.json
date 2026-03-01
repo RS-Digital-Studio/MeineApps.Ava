@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "screenshot": {
+      "command": "node",
+      "args": ["F:/Meine_Apps_Ava/tools/screenshot-mcp/index.js"],
+      "type": "stdio"
+    }
+  }
+}

@@ -121,6 +121,7 @@ Implementierung: `MeineApps.Core.Ava/Themes/` - ThemeService laedt dynamisch via
 | SkiaSharp.Skottie | 3.119.2 | Lottie-Animations-Backend |
 | Avalonia.Labs.Lottie | 11.3.1 | Lottie-Animationen (JSON) |
 | Xamarin.Android.Google.BillingClient | 8.3.0.1 | Google Play Billing |
+| Xamarin.Google.Android.Play.Review | 2.0.2.5 | Google In-App Review |
 | sqlite-net-pcl | 1.9.172 | Database |
 
 ---
@@ -256,8 +257,10 @@ Dispatcher.UIThread.Post(() => { SomeProperty = newValue; });
 ### UriLauncher (Plattformuebergreifend)
 
 - `UriLauncher.OpenUri(uri)` statt `Process.Start(new ProcessStartInfo(uri) { UseShellExecute = true })`
-- Desktop: Fallback auf Process.Start
+- `UriLauncher.ShareText(text, title)` fuer natives Share-Sheet (Android) oder Clipboard (Desktop)
+- Desktop: Fallback auf Process.Start (OpenUri) bzw. Clipboard (ShareText)
 - Android: `PlatformOpenUri` wird in MainActivity auf `Intent.ActionView` gesetzt
+- Android: `PlatformShareText` wird in MainActivity auf `Intent.ActionSend` gesetzt
 - Datei: `MeineApps.Core.Ava/Services/UriLauncher.cs`
 
 ### Tab-Navigation (UI)
@@ -284,7 +287,7 @@ Dispatcher.UIThread.Post(() => { SomeProperty = newValue; });
 - Per `<Compile Include="..." Link="..." />` in jedes Android-Projekt eingebunden
 - `<Compile Remove="Android\**" />` verhindert Kompilierung im net10.0 Library-Projekt
 - **UMP Namespace-Typo**: `Xamarin.Google.UserMesssagingPlatform` (DREIFACHES 's')
-- **Java Generics Erasure**: RewardedAdHelper.LoadCallback braucht `[Register]`-Attribut
+- **Java Generics Erasure (KRITISCH)**: `[Register("...", "")]` mit leerem Connector verdrahtet keinen JNI Delegate → Callback nie aufgerufen. FIX: `FixedRewardedAdLoadCallback` mit `GetOnAdLoadedHandler` Connector
 
 ### Rewarded Ads Multi-Placement
 - `AdConfig.cs`: 28 Rewarded Ad-Unit-IDs (6 Apps)
@@ -364,6 +367,8 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Assembly-Version 1.0.0 (Default) | Shared-Projekt hat keine `<Version>` Property → Assembly-Version ist 1.0.0.0 | `<Version>X.Y.Z</Version>` in Shared .csproj setzen wenn Assembly-Version zur Laufzeit ausgelesen wird |
 | Button.OnAttachedToLogicalTree Crash (Android) | `TransformOperationsTransition` für `RenderTransform` ohne initialen `RenderTransform`-Wert → Transition von null→scale() crasht auf manchen GPU-Treibern | IMMER `RenderTransform="scale(1)"` + `RenderTransformOrigin="50%,50%"` setzen wenn `TransformOperationsTransition Property="RenderTransform"` verwendet wird. Fix in ButtonStyles.axaml |
 | CommandParameter string→int Crash | XAML `CommandParameter="0"` ist IMMER `string`. `RelayCommand<int>` wirft `ArgumentException` in `CanExecute()` bei View-Attach | Methoden von `int` auf `string` ändern + `int.TryParse()` intern. Oder `<sys:Int32>0</sys:Int32>` im XAML. Betroffen: Alle hardcodierten CommandParameter-Werte |
+| Play Review Namespace falsch | `Com.Google.Android.Play.Core.Review` existiert nicht | `Xamarin.Google.Android.Play.Core.Review` verwenden. Task/IOnCompleteListener aus `Android.Gms.Tasks`. `ReviewInfo` (Klasse), NICHT `IReviewInfo` |
+| MediaPlayer.PrepareAsync() gibt void zurück | Android Java-Binding: PrepareAsync() ist void, nicht Task | `Prepare()` synchron verwenden oder TaskCompletionSource mit Prepared-Event |
 
 ---
 

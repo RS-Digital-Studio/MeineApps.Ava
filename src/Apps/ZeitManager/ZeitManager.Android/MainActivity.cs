@@ -135,6 +135,7 @@ public class MainActivity : AvaloniaMainActivity<App>
             services.AddSingleton<INotificationService, AndroidNotificationService>();
             services.AddSingleton<IAudioService, AndroidAudioService>();
             services.AddSingleton<IShakeDetectionService, AndroidShakeDetectionService>();
+            services.AddSingleton<IHapticService, AndroidHapticService>();
         };
 
         return base.CustomizeAppBuilder(builder)

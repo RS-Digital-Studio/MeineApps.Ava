@@ -106,6 +106,7 @@ public static class PomodoroVisualization
             // Gradient-Arc
             var endColor = SkiaThemeHelper.AdjustBrightness(phaseColor, 1.4f);
             _arcPaint.StrokeWidth = strokeW;
+            _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = SKShader.CreateSweepGradient(
                 new SKPoint(cx, cy),
                 new[] { phaseColor, endColor },
@@ -116,6 +117,7 @@ public static class PomodoroVisualization
             using var arcPath = new SKPath();
             arcPath.AddArc(arcRect, -90f, sweepAngle);
             canvas.DrawPath(arcPath, _arcPaint);
+            _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = null;
 
             // Leuchtender Endpunkt
@@ -298,8 +300,9 @@ public static class PomodoroVisualization
     /// <param name="dayNames">7 Tagesnamen (Mo-So)</param>
     /// <param name="sessions">7 Session-Counts</param>
     /// <param name="todayIndex">Index des heutigen Tages (0-6)</param>
+    /// <param name="animFraction">Animation (0.0=leer, 1.0=voll). Fuer Einfahren der Balken.</param>
     public static void RenderWeeklyBars(SKCanvas canvas, SKRect bounds,
-        string[] dayNames, int[] sessions, int todayIndex)
+        string[] dayNames, int[] sessions, int todayIndex, float animFraction = 1f)
     {
         if (dayNames.Length != 7 || sessions.Length != 7) return;
 
@@ -323,11 +326,15 @@ public static class PomodoroVisualization
         float barW = chartW / 7f;
         float barMaxW = Math.Min(barW - 8f, 36f);
 
+        // animFraction begrenzen (0.0 bis 1.0)
+        float anim = Math.Clamp(animFraction, 0f, 1f);
+
         for (int i = 0; i < 7; i++)
         {
             float barCx = chartLeft + barW * i + barW / 2f;
             float fraction = sessions[i] / (float)maxSessions;
-            float barH = Math.Max(fraction * chartH, sessions[i] > 0 ? 4f : 0f);
+            // Balkenhoehe mit Animation multiplizieren (Einfahren von unten)
+            float barH = Math.Max(fraction * chartH * anim, sessions[i] > 0 ? 4f * anim : 0f);
 
             // Balken (Gradient von unten nach oben)
             if (barH > 0)
@@ -337,6 +344,7 @@ public static class PomodoroVisualization
                 var barRect = new SKRect(barLeft, barTop, barLeft + barMaxW, chartBottom);
 
                 // Gradient: Phase-Rot nach heller
+                _barPaint.Shader?.Dispose();
                 _barPaint.Shader = SKShader.CreateLinearGradient(
                     new SKPoint(barCx, barTop),
                     new SKPoint(barCx, chartBottom),
@@ -345,6 +353,7 @@ public static class PomodoroVisualization
 
                 float cornerR = Math.Min(6f, barMaxW / 2f);
                 canvas.DrawRoundRect(barRect, cornerR, cornerR, _barPaint);
+                _barPaint.Shader?.Dispose();
                 _barPaint.Shader = null;
 
                 // Heutiger Tag: Akzent-Rahmen

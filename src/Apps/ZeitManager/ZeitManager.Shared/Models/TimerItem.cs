@@ -186,14 +186,43 @@ public partial class TimerItem : ObservableObject
             _ => "#22C55E"          // Grün sonst
         };
 
-    /// <summary>Brush für Fortschrittsring-Binding.</summary>
-    [Ignore]
-    public IBrush ProgressBrush =>
-        new SolidColorBrush(Color.Parse(ProgressColor));
+    /// <summary>Brush für Fortschrittsring-Binding (gecacht, wird nur bei Farbwechsel neu erstellt).</summary>
+    private IBrush? _progressBrush;
+    private string? _progressBrushColor;
 
-    /// <summary>Fortschrittsfarbe als Avalonia Color für SkiaGradientRing-Binding.</summary>
     [Ignore]
-    public Color ProgressRingColor => Color.Parse(ProgressColor);
+    public IBrush ProgressBrush
+    {
+        get
+        {
+            var currentColor = ProgressColor;
+            if (_progressBrush == null || _progressBrushColor != currentColor)
+            {
+                _progressBrushColor = currentColor;
+                _progressBrush = new SolidColorBrush(Color.Parse(currentColor));
+            }
+            return _progressBrush;
+        }
+    }
+
+    /// <summary>Fortschrittsfarbe als Avalonia Color für SkiaGradientRing-Binding (gecacht).</summary>
+    private Color? _progressRingColor;
+    private string? _progressRingColorString;
+
+    [Ignore]
+    public Color ProgressRingColor
+    {
+        get
+        {
+            var currentColor = ProgressColor;
+            if (_progressRingColor == null || _progressRingColorString != currentColor)
+            {
+                _progressRingColorString = currentColor;
+                _progressRingColor = Color.Parse(currentColor);
+            }
+            return _progressRingColor.Value;
+        }
+    }
 
     [Ignore]
     public string RemainingTimeFormatted

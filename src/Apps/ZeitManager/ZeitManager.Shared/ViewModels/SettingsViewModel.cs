@@ -7,8 +7,9 @@ using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly IThemeService _themeService;
     private readonly ILocalizationService _localization;
     private readonly IPreferencesService _preferences;
@@ -159,5 +160,15 @@ public partial class SettingsViewModel : ObservableObject
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         OnPropertyChanged(string.Empty);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _localization.LanguageChanged -= OnLanguageChanged;
+
+        GC.SuppressFinalize(this);
     }
 }

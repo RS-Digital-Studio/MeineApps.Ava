@@ -16,10 +16,20 @@
       <Setter Property="Background" Value="{DynamicResource CardBrush}" />
       <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
     </Style>
-    <!-- Weekday-Toggle: Ausgewählt -->
+    <!-- Weekday-Toggle: Ausgewaehlt -->
     <Style Selector="Button.WeekdayToggle.Selected">
       <Setter Property="Background" Value="{DynamicResource AlarmAccentBrush}" />
       <Setter Property="Foreground" Value="White" />
+    </Style>
+    <!-- Bottom-Sheet Slide-In mit BounceEaseOut -->
+    <Style Selector="Border.BottomSheet">
+      <Setter Property="RenderTransform" Value="translate(0px, 0px)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.4" Easing="BounceEaseOut" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
+        </Transitions>
+      </Setter>
     </Style>
   </UserControl.Styles>
 
@@ -220,7 +230,7 @@
             AutomationProperties.AutomationId="Alarm_EditorOverlay"
             IsVisible="{Binding IsEditMode}"
             Background="#AA000000">
-        <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+        <Border Classes="BottomSheet" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
                 AutomationProperties.AutomationId="Alarm_EditorSheet"
                 Background="{DynamicResource CardBrush}"
                 CornerRadius="20,20,0,0" Padding="24,16,24,32"
@@ -380,7 +390,7 @@
             AutomationProperties.AutomationId="Alarm_DeleteOverlay"
             IsVisible="{Binding IsDeleteConfirmVisible}"
             Background="#AA000000">
-      <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+      <Border Classes="BottomSheet" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
               AutomationProperties.AutomationId="Alarm_DeleteSheet"
               Background="{DynamicResource CardBrush}"
               CornerRadius="20,20,0,0" Padding="24,16,24,32"
@@ -412,7 +422,7 @@
             AutomationProperties.AutomationId="Alarm_PauseOverlay"
             IsVisible="{Binding IsPauseDialogVisible}"
             Background="#AA000000">
-      <Border VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
+      <Border Classes="BottomSheet" VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
               AutomationProperties.AutomationId="Alarm_PauseSheet"
               Background="{DynamicResource CardBrush}"
               CornerRadius="20,20,0,0" Padding="24,16,24,32"

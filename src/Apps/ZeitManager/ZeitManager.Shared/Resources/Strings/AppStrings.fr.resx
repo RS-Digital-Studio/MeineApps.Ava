@@ -695,4 +695,14 @@ Exemples :
   <data name="AlarmPermissionMissing" xml:space="preserve">
     <value>Permission d'alarme requise. Veuillez autoriser les alarmes exactes dans les paramètres de l'application.</value>
   </data>
+  <data name="TaskNamePlaceholder" xml:space="preserve">
+    <value>Sur quoi travaillez-vous ?</value>
+  </data>
+  <data name="DailyGoal" xml:space="preserve">
+    <value>Objectif quotidien (sessions)</value>
+  </data>
+  <data name="PomodoroWorkComplete" xml:space="preserve"><value>Session de travail terminée !</value></data>
+  <data name="PomodoroBreakComplete" xml:space="preserve"><value>La pause est terminée !</value></data>
+  <data name="PomodoroBreakStarting" xml:space="preserve"><value>Pause méritée</value></data>
+  <data name="PomodoroWorkStarting" xml:space="preserve"><value>C'est l'heure de se concentrer</value></data>
 </root>

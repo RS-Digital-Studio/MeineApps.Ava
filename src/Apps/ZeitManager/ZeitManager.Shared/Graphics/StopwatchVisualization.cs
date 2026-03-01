@@ -22,6 +22,7 @@ public static class StopwatchVisualization
     private static readonly SKFont _subDialFont = new() { Size = 10f };
     private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5f);
     private static readonly SKMaskFilter _needleGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+    private static readonly SKFont _smallFont = new() { Size = 10f };
 
     // Runden-Sektoren Farben (verschiedene Farben pro Runde)
     private static readonly SKColor[] LapColors =
@@ -100,6 +101,7 @@ public static class StopwatchVisualization
             // Gradient-Arc (Cyan → helles Cyan)
             var endColor = SkiaThemeHelper.AdjustBrightness(accent, 1.3f);
             _arcPaint.StrokeWidth = strokeW;
+            _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = SKShader.CreateSweepGradient(
                 new SKPoint(cx, cy),
                 new[] { accent, endColor },
@@ -110,6 +112,7 @@ public static class StopwatchVisualization
             using var arcPath = new SKPath();
             arcPath.AddArc(arcRect, -90f, sweepAngle);
             canvas.DrawPath(arcPath, _arcPaint);
+            _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = null;
         }
 
@@ -393,10 +396,9 @@ public static class StopwatchVisualization
         if (count > 10)
         {
             _textPaint.Color = SkiaThemeHelper.TextMuted;
-            var font = new SKFont { Size = 10f };
             string extra = $"+{count - 10}";
             canvas.DrawText(extra, startX + visibleCount * (dotR * 2 + spacing) + 4f, cy + 3.5f,
-                SKTextAlign.Left, font, _textPaint);
+                SKTextAlign.Left, _smallFont, _textPaint);
         }
     }
 

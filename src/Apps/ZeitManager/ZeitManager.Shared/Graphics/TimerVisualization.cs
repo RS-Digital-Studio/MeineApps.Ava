@@ -47,6 +47,33 @@ public static class TimerVisualization
     private static float _burstTime;
 
     /// <summary>
+    /// Setzt alle statischen Partikel-Daten zurück (Tropfen, Burst).
+    /// Muss beim Start eines neuen Timers aufgerufen werden, da statische Felder
+    /// über verschiedene Timer-Lebenszyklen hinweg bestehen bleiben.
+    /// </summary>
+    public static void Reset()
+    {
+        // Tropfen-Partikel zurücksetzen
+        Array.Clear(_dropX);
+        Array.Clear(_dropY);
+        Array.Clear(_dropVy);
+        Array.Clear(_dropLife);
+        Array.Clear(_dropSize);
+        _lastDropSpawn = 0f;
+
+        // Burst-Partikel zurücksetzen
+        Array.Clear(_burstX);
+        Array.Clear(_burstY);
+        Array.Clear(_burstVx);
+        Array.Clear(_burstVy);
+        Array.Clear(_burstLife);
+        Array.Clear(_burstSize);
+        Array.Clear(_burstColors);
+        _burstActive = false;
+        _burstTime = 0f;
+    }
+
+    /// <summary>
     /// Bestimmt die Akzent-Farbe basierend auf dem verbleibenden Fortschritt.
     /// Grün > 30%, Amber 10-30%, Rot < 10%.
     /// </summary>
@@ -112,6 +139,7 @@ public static class TimerVisualization
             // Fortschrittsring
             var endColor = SkiaThemeHelper.AdjustBrightness(color, 1.3f);
             _arcPaint.StrokeWidth = strokeW;
+            _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = SKShader.CreateSweepGradient(
                 new SKPoint(cx, cy),
                 new[] { color, endColor },
@@ -122,6 +150,7 @@ public static class TimerVisualization
             using var arcPath = new SKPath();
             arcPath.AddArc(arcRect, -90f, sweepAngle);
             canvas.DrawPath(arcPath, _arcPaint);
+            _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = null;
         }
 
@@ -343,12 +372,14 @@ public static class TimerVisualization
         canvas.ClipPath(clipPath);
 
         // Füllung mit Gradient
+        _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, fillTop),
             new SKPoint(cx, cy + radius),
             new[] { color.WithAlpha(40), color.WithAlpha(20) },
             null, SKShaderTileMode.Clamp);
         canvas.DrawRect(cx - radius, fillTop, radius * 2, cy + radius - fillTop, _fillPaint);
+        _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = null;
 
         // Welleneffekt an der Oberfläche (nur bei laufend)

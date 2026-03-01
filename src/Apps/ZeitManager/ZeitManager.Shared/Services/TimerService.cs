@@ -25,6 +25,12 @@ public class TimerService : ITimerService, IDisposable
         get { lock (_lock) return _timers.Where(t => t.State == TimerState.Running).ToList().AsReadOnly(); }
     }
 
+    /// <summary>Anzahl laufender Timer ohne Listenerzeugung (fuer interne Pruefungen).</summary>
+    public int RunningTimerCount
+    {
+        get { lock (_lock) return _timers.Count(t => t.State == TimerState.Running); }
+    }
+
     // Callbacks fuer Android ForegroundService
     public Action<string, string>? ForegroundNotificationCallback { get; set; }
     public Action? StopForegroundCallback { get; set; }
@@ -262,7 +268,7 @@ public class TimerService : ITimerService, IDisposable
 
     private void CheckStopUiTimer()
     {
-        if (RunningTimers.Count == 0 && _uiTimer != null)
+        if (RunningTimerCount == 0 && _uiTimer != null)
         {
             _uiTimer.Stop();
             _uiTimer.Elapsed -= OnUiTimerTick;

@@ -7,12 +7,14 @@ using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly IThemeService _themeService;
     private readonly ILocalizationService _localization;
     private readonly ITimerService _timerService;
     private readonly IAlarmSchedulerService _alarmScheduler;
+    private readonly IHapticService _haptic;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsTimerActive))]
@@ -74,6 +76,7 @@ public partial class MainViewModel : ObservableObject
         ILocalizationService localization,
         ITimerService timerService,
         IAlarmSchedulerService alarmScheduler,
+        IHapticService haptic,
         AlarmOverlayViewModel alarmOverlayViewModel,
         TimerViewModel timerViewModel,
         StopwatchViewModel stopwatchViewModel,
@@ -85,6 +88,7 @@ public partial class MainViewModel : ObservableObject
         _localization = localization;
         _timerService = timerService;
         _alarmScheduler = alarmScheduler;
+        _haptic = haptic;
         _timerViewModel = timerViewModel;
         _stopwatchViewModel = stopwatchViewModel;
         _pomodoroViewModel = pomodoroViewModel;
@@ -94,31 +98,27 @@ public partial class MainViewModel : ObservableObject
 
         _localization.LanguageChanged += OnLanguageChanged;
 
-        // Wire up timer finished event to show overlay
+        // Timer/Alarm Events verdrahten
         _timerService.TimerFinished += OnTimerFinished;
-
-        // Wire up alarm triggered event to show overlay
         _alarmScheduler.AlarmTriggered += OnAlarmTriggered;
+        _alarmScheduler.AlarmPermissionMissing += OnAlarmPermissionMissing;
 
-        // Wire up alarm permission missing
-        _alarmScheduler.AlarmPermissionMissing += (_, _) =>
-            ShowSnackbar(_localization.GetString("AlarmPermissionMissing"));
-
-        // Wire up overlay dismiss
-        _alarmOverlayViewModel.DismissRequested += (_, _) => IsAlarmOverlayVisible = false;
+        // Overlay-Dismiss
+        _alarmOverlayViewModel.DismissRequested += OnOverlayDismissRequested;
 
         // Floating Text Events von Kind-ViewModels weiterleiten
-        _stopwatchViewModel.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        _pomodoroViewModel.FloatingTextRequested += (text, cat) => FloatingTextRequested?.Invoke(text, cat);
-        _pomodoroViewModel.CelebrationRequested += () => CelebrationRequested?.Invoke();
+        _stopwatchViewModel.FloatingTextRequested += OnChildFloatingTextRequested;
+        _pomodoroViewModel.FloatingTextRequested += OnChildFloatingTextRequested;
+        _pomodoroViewModel.CelebrationRequested += OnChildCelebrationRequested;
 
-        // Wire up MessageRequested from child ViewModels
+        // MessageRequested von Kind-ViewModels
         _settingsViewModel.MessageRequested += OnChildMessageRequested;
-        _timerViewModel.MessageRequested += (_, msg) => ShowSnackbar(msg);
+        _timerViewModel.MessageRequested += OnTimerMessageRequested;
     }
 
     private void OnTimerFinished(object? sender, TimerItem timer)
     {
+        _haptic.HeavyClick();
         FloatingTextRequested?.Invoke(_localization.GetString("TimerDone"), "success");
         CelebrationRequested?.Invoke();
         AlarmOverlayViewModel.ShowForTimer(timer);
@@ -131,7 +131,32 @@ public partial class MainViewModel : ObservableObject
         IsAlarmOverlayVisible = true;
     }
 
+    private void OnAlarmPermissionMissing(object? sender, EventArgs e)
+    {
+        ShowSnackbar(_localization.GetString("AlarmPermissionMissing"));
+    }
+
+    private void OnOverlayDismissRequested(object? sender, EventArgs e)
+    {
+        IsAlarmOverlayVisible = false;
+    }
+
+    private void OnChildFloatingTextRequested(string text, string category)
+    {
+        FloatingTextRequested?.Invoke(text, category);
+    }
+
+    private void OnChildCelebrationRequested()
+    {
+        CelebrationRequested?.Invoke();
+    }
+
     private void OnChildMessageRequested(object? sender, string message)
+    {
+        ShowSnackbar(message);
+    }
+
+    private void OnTimerMessageRequested(string title, string message)
     {
         ShowSnackbar(message);
     }
@@ -263,6 +288,17 @@ public partial class MainViewModel : ObservableObject
 
     #endregion
 
+    /// <summary>
+    /// Wartet bis alle Kind-ViewModels ihre Initialisierung abgeschlossen haben.
+    /// Wird von der Loading-Pipeline aufgerufen um sicherzustellen, dass
+    /// Timer-/Alarm-/Schichtdaten geladen sind bevor der Splash verschwindet.
+    /// </summary>
+    public async Task WaitForInitializationAsync()
+    {
+        await TimerViewModel.WaitForInitializationAsync();
+        await AlarmViewModel.WaitForInitializationAsync();
+    }
+
     [RelayCommand]
     private void NavigateToTimer() => SelectedTabIndex = 0;
 
@@ -277,4 +313,26 @@ public partial class MainViewModel : ObservableObject
 
     [RelayCommand]
     private void NavigateToSettings() => SelectedTabIndex = 4;
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _localization.LanguageChanged -= OnLanguageChanged;
+        _timerService.TimerFinished -= OnTimerFinished;
+        _alarmScheduler.AlarmTriggered -= OnAlarmTriggered;
+        _alarmScheduler.AlarmPermissionMissing -= OnAlarmPermissionMissing;
+        _alarmOverlayViewModel.DismissRequested -= OnOverlayDismissRequested;
+        _stopwatchViewModel.FloatingTextRequested -= OnChildFloatingTextRequested;
+        _pomodoroViewModel.FloatingTextRequested -= OnChildFloatingTextRequested;
+        _pomodoroViewModel.CelebrationRequested -= OnChildCelebrationRequested;
+        _settingsViewModel.MessageRequested -= OnChildMessageRequested;
+        _timerViewModel.MessageRequested -= OnTimerMessageRequested;
+
+        _snackbarCts?.Cancel();
+        _snackbarCts?.Dispose();
+
+        GC.SuppressFinalize(this);
+    }
 }

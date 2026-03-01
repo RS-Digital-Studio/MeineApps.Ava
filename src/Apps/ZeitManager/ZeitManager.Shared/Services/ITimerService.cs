@@ -7,6 +7,9 @@ public interface ITimerService
     IReadOnlyList<TimerItem> Timers { get; }
     IReadOnlyList<TimerItem> RunningTimers { get; }
 
+    /// <summary>Anzahl laufender Timer ohne Listenerzeugung (fuer interne Pruefungen).</summary>
+    int RunningTimerCount { get; }
+
     Task LoadTimersAsync();
     Task<TimerItem> CreateTimerAsync(string name, TimeSpan duration);
     Task StartTimerAsync(TimerItem timer);

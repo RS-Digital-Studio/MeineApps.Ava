@@ -730,4 +730,23 @@ Examples:
   <data name="AlarmPermissionMissing" xml:space="preserve">
     <value>Alarm permission required. Please allow exact alarms in app settings.</value>
   </data>
+  <!-- Pomodoro: Aufgabenname + Tagesziel -->
+  <data name="TaskNamePlaceholder" xml:space="preserve">
+    <value>What are you working on?</value>
+  </data>
+  <data name="DailyGoal" xml:space="preserve">
+    <value>Daily goal (sessions)</value>
+  </data>
+  <data name="PomodoroWorkComplete" xml:space="preserve">
+    <value>Work session complete!</value>
+  </data>
+  <data name="PomodoroBreakComplete" xml:space="preserve">
+    <value>Break is over!</value>
+  </data>
+  <data name="PomodoroBreakStarting" xml:space="preserve">
+    <value>Time for a break</value>
+  </data>
+  <data name="PomodoroWorkStarting" xml:space="preserve">
+    <value>Time to focus</value>
+  </data>
 </root>

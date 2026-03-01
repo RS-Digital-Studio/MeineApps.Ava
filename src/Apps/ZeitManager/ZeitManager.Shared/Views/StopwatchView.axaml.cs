@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using Avalonia.Threading;
 using SkiaSharp;
+using System.ComponentModel;
 using ZeitManager.Graphics;
 using ZeitManager.ViewModels;
 
@@ -13,6 +14,9 @@ public partial class StopwatchView : UserControl
     private DispatcherTimer? _animTimer;
     private float _animTime;
 
+    // ViewModel-Referenz für saubere Event-Abmeldung
+    private StopwatchViewModel? _viewModel;
+
     public StopwatchView()
     {
         InitializeComponent();
@@ -22,17 +26,30 @@ public partial class StopwatchView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        // Alten Handler abmelden
+        if (_viewModel != null)
+        {
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel = null;
+        }
+
+        // Neuen Handler anmelden
         if (DataContext is StopwatchViewModel vm)
         {
-            // Bei Property-Änderungen Canvas invalidieren
-            vm.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName is nameof(vm.ElapsedTimeFormatted) or nameof(vm.IsRunning) or nameof(vm.Laps))
-                {
-                    StopwatchCanvas?.InvalidateSurface();
-                    UpdateAnimation(vm.IsRunning);
-                }
-            };
+            _viewModel = vm;
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
+    }
+
+    /// <summary>Selektive Canvas-Invalidierung bei relevanten Property-Änderungen.</summary>
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (sender is not StopwatchViewModel vm) return;
+
+        if (args.PropertyName is nameof(vm.TotalElapsedSeconds) or nameof(vm.IsRunning) or nameof(vm.Laps))
+        {
+            StopwatchCanvas?.InvalidateSurface();
+            UpdateAnimation(vm.IsRunning);
         }
     }
 
@@ -63,8 +80,8 @@ public partial class StopwatchView : UserControl
 
         if (DataContext is not StopwatchViewModel vm) return;
 
-        // ElapsedTimeFormatted parsen → Sekunden (Format: "mm:ss.cc")
-        double elapsedSeconds = ParseElapsedTime(vm.ElapsedTimeFormatted);
+        // Direkt die berechnete Property verwenden (kein String-Parsing noetig)
+        double elapsedSeconds = vm.TotalElapsedSeconds;
 
         // Rundenzeiten für Sektor-Darstellung sammeln
         double[]? lapTimesSeconds = null;
@@ -80,33 +97,17 @@ public partial class StopwatchView : UserControl
             lapTimesSeconds);
     }
 
-    /// <summary>
-    /// Parst "mm:ss.cc" zu Sekunden.
-    /// </summary>
-    private static double ParseElapsedTime(string formatted)
-    {
-        try
-        {
-            // Format: "00:12.45" oder "01:30.00"
-            var parts = formatted.Split(':');
-            if (parts.Length != 2) return 0;
-
-            int minutes = int.Parse(parts[0]);
-            var secParts = parts[1].Split('.');
-            int seconds = int.Parse(secParts[0]);
-            int centis = secParts.Length > 1 ? int.Parse(secParts[1]) : 0;
-
-            return minutes * 60.0 + seconds + centis / 100.0;
-        }
-        catch
-        {
-            return 0;
-        }
-    }
-
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+
+        // Event-Handler abmelden (Memory-Leak verhindern)
+        if (_viewModel != null)
+        {
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel = null;
+        }
+
         _animTimer?.Stop();
         _animTimer = null;
     }

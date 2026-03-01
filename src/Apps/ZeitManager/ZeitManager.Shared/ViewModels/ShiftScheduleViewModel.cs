@@ -7,8 +7,9 @@ using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class ShiftScheduleViewModel : ObservableObject
+public partial class ShiftScheduleViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly IShiftScheduleService _shiftService;
     private readonly ILocalizationService _localization;
 
@@ -111,6 +112,8 @@ public partial class ShiftScheduleViewModel : ObservableObject
     public string NightShiftShortText => _localization.GetString("ShiftNightShort");
     public string DayOffShortText => _localization.GetString("DayOff");
 
+    private Task _initTask = Task.CompletedTask;
+
     public ShiftScheduleViewModel(IShiftScheduleService shiftService, ILocalizationService localization)
     {
         _shiftService = shiftService;
@@ -121,7 +124,7 @@ public partial class ShiftScheduleViewModel : ObservableObject
         _displayMonth = now.Month;
         _displayYear = now.Year;
 
-        _ = LoadAsync();
+        _initTask = LoadAsync();
     }
 
     private async Task LoadAsync()
@@ -138,8 +141,9 @@ public partial class ShiftScheduleViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ShowEditor()
+    private async Task ShowEditor()
     {
+        await _initTask;
         if (ActiveSchedule != null)
         {
             ScheduleName = ActiveSchedule.Name;
@@ -177,6 +181,7 @@ public partial class ShiftScheduleViewModel : ObservableObject
     [RelayCommand]
     private async Task SaveSchedule()
     {
+        await _initTask;
         var schedule = ActiveSchedule ?? new ShiftSchedule();
         schedule.Name = ScheduleName;
         schedule.PatternType = SelectedPatternType;
@@ -225,6 +230,7 @@ public partial class ShiftScheduleViewModel : ObservableObject
     [RelayCommand]
     private async Task SetException(string exceptionType)
     {
+        await _initTask;
         if (SelectedDay == null || ActiveSchedule == null)
         {
             IsExceptionDialogVisible = false;
@@ -376,6 +382,16 @@ public partial class ShiftScheduleViewModel : ObservableObject
     {
         OnPropertyChanged(string.Empty);
         UpdateCalendar();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _localization.LanguageChanged -= OnLanguageChanged;
+
+        GC.SuppressFinalize(this);
     }
 }
 

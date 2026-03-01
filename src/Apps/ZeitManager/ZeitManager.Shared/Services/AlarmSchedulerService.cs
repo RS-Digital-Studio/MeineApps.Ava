@@ -241,8 +241,14 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
 
     private void EnsureCheckTimer()
     {
+        // Timer nur starten wenn tatsächlich aktive Alarme vorhanden sind
+        int count;
+        lock (_lock) count = _activeAlarms.Count;
+        if (count == 0) return;
+
         if (_checkTimer != null) return;
-        _checkTimer = new Timer(10_000); // Check every 10 seconds
+        // 60 Sekunden Intervall - Alarme sind minutengenau, nicht sekundengenau
+        _checkTimer = new Timer(60_000);
         _checkTimer.Elapsed += OnCheckTimerTick;
         _checkTimer.Start();
     }
@@ -318,8 +324,9 @@ public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
         if (now.Hour != alarmTime.Hour || now.Minute != alarmTime.Minute)
             return false;
 
-        // Nur in den ersten 30 Sekunden der Minute auslösen
-        if (now.Second > 30)
+        // Innerhalb der gesamten Minute auslösen (Timer-Intervall ist 60s)
+        // Double-Trigger-Schutz in OnCheckTimerTick verhindert Mehrfach-Auslösung
+        if (now.Second > 59)
             return false;
 
         // Wochentag pruefen

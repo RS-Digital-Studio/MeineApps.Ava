@@ -5,6 +5,7 @@ using Avalonia.Labs.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
 using SkiaSharp;
+using System.ComponentModel;
 using ZeitManager.Graphics;
 using ZeitManager.Models;
 using ZeitManager.ViewModels;
@@ -20,9 +21,17 @@ public partial class PomodoroView : UserControl
     private double _springFrom;
     private int _springFrame;
 
-    // SkiaSharp Animation
+    // SkiaSharp Animation (Pomodoro-Ring Puls)
     private DispatcherTimer? _animTimer;
     private float _animTime;
+
+    // Balken-Einfahranimation
+    private DispatcherTimer? _barAnimTimer;
+    private float _barAnimFraction;
+    private bool _barAnimCompleted;
+
+    // ViewModel-Referenz für saubere Event-Abmeldung
+    private PomodoroViewModel? _viewModel;
 
     private const double DismissThreshold = 80;
     private const int SpringFrames = 10;
@@ -39,20 +48,59 @@ public partial class PomodoroView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        // Alten Handler abmelden
+        if (_viewModel != null)
+        {
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel = null;
+        }
+
+        // Neuen Handler anmelden
         if (DataContext is PomodoroViewModel vm)
         {
-            vm.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName is nameof(vm.ProgressFraction) or nameof(vm.IsRunning)
-                    or nameof(vm.CurrentPhase) or nameof(vm.CurrentCycle)
-                    or nameof(vm.RemainingFormatted) or nameof(vm.WeekDays)
-                    or nameof(vm.IsStatisticsView))
-                {
-                    PomodoroRingCanvas?.InvalidateSurface();
-                    WeeklyBarsCanvas?.InvalidateSurface();
-                    UpdateAnimation(vm.IsRunning);
-                }
-            };
+            _viewModel = vm;
+            _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        }
+    }
+
+    /// <summary>Selektive Canvas-Invalidierung je nach geändertem Property.</summary>
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (sender is not PomodoroViewModel vm) return;
+
+        switch (args.PropertyName)
+        {
+            // Ring-relevante Properties → nur PomodoroRingCanvas
+            case nameof(vm.ProgressFraction):
+            case nameof(vm.IsRunning):
+            case nameof(vm.CurrentPhase):
+            case nameof(vm.CurrentCycle):
+            case nameof(vm.RemainingFormatted):
+            case nameof(vm.TodaySessions):
+            case nameof(vm.DailyGoal):
+                PomodoroRingCanvas?.InvalidateSurface();
+                UpdateAnimation(vm.IsRunning);
+                break;
+
+            // Wochen-Balken → nur WeeklyBarsCanvas
+            case nameof(vm.WeekDays):
+                WeeklyBarsCanvas?.InvalidateSurface();
+                break;
+
+            // Heatmap → nur HeatmapCanvas
+            case nameof(vm.HeatmapDays):
+                HeatmapCanvas?.InvalidateSurface();
+                break;
+
+            // Sichtbarkeitswechsel → alle Canvas (wegen Anzeige-Toggle)
+            case nameof(vm.IsStatisticsView):
+                PomodoroRingCanvas?.InvalidateSurface();
+                WeeklyBarsCanvas?.InvalidateSurface();
+                HeatmapCanvas?.InvalidateSurface();
+                UpdateAnimation(vm.IsRunning);
+                if (vm.IsStatisticsView)
+                    StartBarAnimation();
+                break;
         }
     }
 
@@ -97,7 +145,37 @@ public partial class PomodoroView : UserControl
             vm.CurrentCycle, vm.CyclesBeforeLongBreak,
             vm.IsRunning, vm.RemainingFormatted ?? "25:00",
             vm.PhaseText ?? "", _animTime,
-            vm.TodaySessions);
+            vm.TodaySessions, vm.DailyGoal);
+    }
+
+    /// <summary>Startet die Balken-Einfahranimation (CubicEaseOut, ~500ms).</summary>
+    private void StartBarAnimation()
+    {
+        StopBarAnimation();
+        _barAnimFraction = 0f;
+        _barAnimCompleted = false;
+
+        _barAnimTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+        _barAnimTimer.Tick += (_, _) =>
+        {
+            // ~500ms Dauer bei 33ms Intervall = ~15 Frames
+            _barAnimFraction += 0.066f; // ~1.0 nach 15 Frames
+            if (_barAnimFraction >= 1f)
+            {
+                _barAnimFraction = 1f;
+                _barAnimCompleted = true;
+                StopBarAnimation();
+            }
+            WeeklyBarsCanvas?.InvalidateSurface();
+        };
+        _barAnimTimer.Start();
+    }
+
+    /// <summary>Stoppt die Balken-Animation.</summary>
+    private void StopBarAnimation()
+    {
+        _barAnimTimer?.Stop();
+        _barAnimTimer = null;
     }
 
     /// <summary>Rendert das Wochen-Balkendiagramm mit SkiaSharp.</summary>
@@ -122,8 +200,28 @@ public partial class PomodoroView : UserControl
                 todayIndex = i;
         }
 
+        // CubicEaseOut auf animFraction anwenden
+        float t = Math.Clamp(_barAnimFraction, 0f, 1f);
+        float eased = 1f - (1f - t) * (1f - t) * (1f - t);
+        // Wenn Animation abgeschlossen oder nie gestartet: volle Hoehe
+        float anim = _barAnimCompleted ? 1f : eased;
+
         PomodoroVisualization.RenderWeeklyBars(canvas, bounds,
-            dayNames, sessions, todayIndex);
+            dayNames, sessions, todayIndex, anim);
+    }
+
+    /// <summary>Rendert die Monats-Heatmap mit SkiaSharp.</summary>
+    private void OnPaintHeatmap(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+
+        if (DataContext is not PomodoroViewModel vm) return;
+        if (vm.HeatmapDays.Length == 0) return;
+
+        PomodoroStatisticsVisualization.Render(canvas, bounds,
+            vm.HeatmapDays, vm.HeatmapWeekDayLabels, vm.HeatmapTitle);
     }
 
     /// <summary>Backdrop-Tap schließt Config-Overlay.</summary>
@@ -253,7 +351,16 @@ public partial class PomodoroView : UserControl
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+
+        // Event-Handler abmelden (Memory-Leak verhindern)
+        if (_viewModel != null)
+        {
+            _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+            _viewModel = null;
+        }
+
         _animTimer?.Stop();
         _animTimer = null;
+        StopBarAnimation();
     }
 }

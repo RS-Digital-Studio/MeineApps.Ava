@@ -11,6 +11,7 @@ namespace ZeitManager.ViewModels;
 
 public partial class StopwatchViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly ILocalizationService _localization;
     private readonly Stopwatch _stopwatch = new();
     private System.Timers.Timer? _uiTimer;
@@ -18,6 +19,10 @@ public partial class StopwatchViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private string _elapsedTimeFormatted = "00:00.00";
+
+    /// <summary>Gesamte verstrichene Zeit in Sekunden (fuer SkiaSharp-Rendering, vermeidet String-Parsing).</summary>
+    [ObservableProperty]
+    private double _totalElapsedSeconds;
 
     [ObservableProperty]
     private bool _isRunning;
@@ -100,6 +105,7 @@ public partial class StopwatchViewModel : ObservableObject, IDisposable
         Laps.Clear();
         _lastLapTime = TimeSpan.Zero;
         ElapsedTimeFormatted = "00:00.00";
+        TotalElapsedSeconds = 0;
         OnPropertyChanged(nameof(HasLaps));
         CheckStopUiTimer();
     }
@@ -114,6 +120,7 @@ public partial class StopwatchViewModel : ObservableObject, IDisposable
         Laps = new ObservableCollection<StopwatchLap>(_undoLaps);
         _lastLapTime = _undoLastLapTime;
         ElapsedTimeFormatted = TimeFormatHelper.Format(_undoElapsedTime);
+        TotalElapsedSeconds = _undoElapsedTime.TotalSeconds;
         CanUndo = false;
         OnPropertyChanged(nameof(HasLaps));
     }
@@ -187,7 +194,12 @@ public partial class StopwatchViewModel : ObservableObject, IDisposable
 
     private void UpdateDisplay()
     {
-        Dispatcher.UIThread.Post(() => ElapsedTimeFormatted = TimeFormatHelper.Format(TotalElapsed));
+        Dispatcher.UIThread.Post(() =>
+        {
+            var elapsed = TotalElapsed;
+            ElapsedTimeFormatted = TimeFormatHelper.Format(elapsed);
+            TotalElapsedSeconds = elapsed.TotalSeconds;
+        });
     }
 
     private void OnLanguageChanged(object? sender, EventArgs e)
@@ -197,8 +209,14 @@ public partial class StopwatchViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
+        _localization.LanguageChanged -= OnLanguageChanged;
         _uiTimer?.Stop();
         _uiTimer?.Dispose();
         _uiTimer = null;
+
+        GC.SuppressFinalize(this);
     }
 }

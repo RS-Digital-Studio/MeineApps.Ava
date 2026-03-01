@@ -10,8 +10,9 @@ using Timer = System.Timers.Timer;
 
 namespace ZeitManager.ViewModels;
 
-public partial class AlarmViewModel : ObservableObject
+public partial class AlarmViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly IDatabaseService _database;
     private readonly ILocalizationService _localization;
     private readonly IAudioService _audioService;
@@ -164,14 +165,19 @@ public partial class AlarmViewModel : ObservableObject
         _initTask = InitializeAsync();
     }
 
+    /// <summary>
+    /// Wartet auf Abschluss der Initialisierung (Alarme aus DB).
+    /// </summary>
+    public Task WaitForInitializationAsync() => _initTask;
+
     private async Task InitializeAsync()
     {
         await LoadAlarms();
         UpdateNextAlarmCountdown();
 
-        // Timer für regelmäßige Countdown-Aktualisierung (60s)
+        // Timer fuer regelmaessige Countdown-Aktualisierung (60s)
         _countdownTimer = new Timer(60_000);
-        _countdownTimer.Elapsed += (_, _) => Dispatcher.UIThread.Post(UpdateNextAlarmCountdown);
+        _countdownTimer.Elapsed += OnCountdownTimerElapsed;
         _countdownTimer.Start();
     }
 
@@ -423,6 +429,11 @@ public partial class AlarmViewModel : ObservableObject
         OnPropertyChanged(nameof(PausedUntilText));
     }
 
+    private void OnCountdownTimerElapsed(object? sender, ElapsedEventArgs e)
+    {
+        Dispatcher.UIThread.Post(UpdateNextAlarmCountdown);
+    }
+
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         OnPropertyChanged(string.Empty);
@@ -430,5 +441,22 @@ public partial class AlarmViewModel : ObservableObject
         // Notify RepeatDaysFormatted on each AlarmItem (uses LocalizationManager)
         foreach (var alarm in Alarms)
             alarm.NotifyLocalizationChanged();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _localization.LanguageChanged -= OnLanguageChanged;
+        if (_countdownTimer != null)
+        {
+            _countdownTimer.Elapsed -= OnCountdownTimerElapsed;
+            _countdownTimer.Stop();
+            _countdownTimer.Dispose();
+            _countdownTimer = null;
+        }
+
+        GC.SuppressFinalize(this);
     }
 }

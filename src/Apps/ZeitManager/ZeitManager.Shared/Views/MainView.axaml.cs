@@ -49,7 +49,7 @@ public partial class MainView : UserControl
         if (w < 10) w = 300;
         var h = FloatingTextCanvas.Bounds.Height;
         if (h < 10) h = 400;
-        FloatingTextCanvas.ShowFloatingText(text, w * 0.3 + new Random().NextDouble() * w * 0.4, h * 0.35, color, 18);
+        FloatingTextCanvas.ShowFloatingText(text, w * 0.3 + Random.Shared.NextDouble() * w * 0.4, h * 0.35, color, 18);
     }
 
     private void OnCelebration()

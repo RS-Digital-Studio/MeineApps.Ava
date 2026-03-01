@@ -7,8 +7,9 @@ using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class TimerViewModel : ObservableObject
+public partial class TimerViewModel : ObservableObject, IDisposable
 {
+    private bool _disposed;
     private readonly ITimerService _timerService;
     private readonly ILocalizationService _localization;
     private readonly IDatabaseService _database;
@@ -79,18 +80,45 @@ public partial class TimerViewModel : ObservableObject
 
     public bool HasTimers => Timers.Count > 0;
 
+    /// <summary>Ob die grosse Timer-Visualisierung angezeigt werden soll (genau 1 laufender Timer).</summary>
+    public bool ShowVisualization => _activeRunningTimer != null;
+
+    /// <summary>Fortschritt des aktiven laufenden Timers als Fraktion (0.0-1.0).</summary>
+    public float VisualizationProgress => (float)(_activeRunningTimer?.ProgressFraction ?? 0);
+
+    /// <summary>Ob der visualisierte Timer gerade laeuft.</summary>
+    public bool VisualizationIsRunning => _activeRunningTimer?.IsRunning ?? false;
+
+    /// <summary>Ob der visualisierte Timer abgelaufen ist.</summary>
+    public bool VisualizationIsFinished => _activeRunningTimer?.IsFinished ?? false;
+
+    /// <summary>Formatierte Restzeit des visualisierten Timers.</summary>
+    public string VisualizationRemainingFormatted => _activeRunningTimer?.RemainingTimeFormatted ?? "";
+
+    /// <summary>Name des visualisierten Timers.</summary>
+    public string? VisualizationTimerName => _activeRunningTimer?.Name;
+
+    /// <summary>Verbleibende Sekunden des visualisierten Timers (fuer Countdown-Anzeige).</summary>
+    public double VisualizationRemainingSeconds => _activeRunningTimer?.RemainingTime.TotalSeconds ?? -1;
+
+    private TimerItem? _activeRunningTimer;
+
     public TimerViewModel(ITimerService timerService, ILocalizationService localization, IDatabaseService database)
     {
         _timerService = timerService;
         _localization = localization;
         _database = database;
         _localization.LanguageChanged += OnLanguageChanged;
-
-        _timerService.TimersChanged += (_, _) => LoadTimers();
-        _timerService.TimerTick += (_, timer) => timer.RemainingTimeTicks = _timerService.GetRemainingTime(timer).Ticks;
+        _timerService.TimersChanged += OnTimersChanged;
+        _timerService.TimerTick += OnTimerTick;
 
         _initTask = InitializeAsync();
     }
+
+    /// <summary>
+    /// Wartet auf Abschluss der Initialisierung (Timer + Presets aus DB).
+    /// </summary>
+    public Task WaitForInitializationAsync() => _initTask;
 
     private async Task InitializeAsync()
     {
@@ -114,6 +142,7 @@ public partial class TimerViewModel : ObservableObject
                 _ => 4
             }));
         OnPropertyChanged(nameof(HasTimers));
+        UpdateActiveRunningTimer();
     }
 
     [RelayCommand]
@@ -263,8 +292,50 @@ public partial class TimerViewModel : ObservableObject
         Presets.Remove(preset);
     }
 
+    /// <summary>Bestimmt den aktiven laufenden Timer fuer die Visualisierung (erster laufender Timer).</summary>
+    private void UpdateActiveRunningTimer()
+    {
+        var running = Timers.FirstOrDefault(t => t.State == TimerState.Running);
+        var changed = running != _activeRunningTimer;
+        _activeRunningTimer = running;
+
+        if (changed)
+            OnPropertyChanged(nameof(ShowVisualization));
+
+        // Visualisierungs-Properties aktualisieren wenn ein Timer laeuft
+        if (_activeRunningTimer != null)
+        {
+            OnPropertyChanged(nameof(VisualizationProgress));
+            OnPropertyChanged(nameof(VisualizationIsRunning));
+            OnPropertyChanged(nameof(VisualizationIsFinished));
+            OnPropertyChanged(nameof(VisualizationRemainingFormatted));
+            OnPropertyChanged(nameof(VisualizationTimerName));
+            OnPropertyChanged(nameof(VisualizationRemainingSeconds));
+        }
+    }
+
+    private void OnTimersChanged(object? sender, EventArgs e) => LoadTimers();
+
+    private void OnTimerTick(object? sender, TimerItem timer)
+    {
+        timer.RemainingTimeTicks = _timerService.GetRemainingTime(timer).Ticks;
+        UpdateActiveRunningTimer();
+    }
+
     private void OnLanguageChanged(object? sender, EventArgs e)
     {
         OnPropertyChanged(string.Empty);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _localization.LanguageChanged -= OnLanguageChanged;
+        _timerService.TimersChanged -= OnTimersChanged;
+        _timerService.TimerTick -= OnTimerTick;
+
+        GC.SuppressFinalize(this);
     }
 }

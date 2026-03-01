@@ -14,6 +14,7 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
     private readonly IAudioService _audioService;
     private readonly ILocalizationService _localization;
     private readonly IShakeDetectionService _shakeDetection;
+    private readonly IHapticService _haptic;
 
     [ObservableProperty]
     private string _title = string.Empty;
@@ -88,13 +89,15 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
         IAlarmSchedulerService alarmScheduler,
         IAudioService audioService,
         ILocalizationService localization,
-        IShakeDetectionService shakeDetection)
+        IShakeDetectionService shakeDetection,
+        IHapticService haptic)
     {
         _timerService = timerService;
         _alarmScheduler = alarmScheduler;
         _audioService = audioService;
         _localization = localization;
         _shakeDetection = shakeDetection;
+        _haptic = haptic;
 
         _shakeDetection.ShakeDetected += OnShakeDetected;
     }
@@ -165,6 +168,7 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task Dismiss()
     {
+        _haptic.HeavyClick();
         _audioService.Stop();
         _shakeDetection.StopListening();
         StopClock();
@@ -243,6 +247,7 @@ public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private async Task Snooze()
     {
+        _haptic.Click();
         _audioService.Stop();
         _shakeDetection.StopListening();
         StopClock();

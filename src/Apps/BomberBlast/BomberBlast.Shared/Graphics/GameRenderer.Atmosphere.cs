@@ -9,6 +9,8 @@ namespace BomberBlast.Graphics;
 /// </summary>
 public partial class GameRenderer
 {
+    // Gepoolter SKPath für Hintergrund-Elemente (Bäume, Stalaktiten, Flammen etc.)
+    private readonly SKPath _bgPath = new();
     // Welt-Index für atmosphärische Effekte (0-9)
     private int _currentWorldIndex;
 
@@ -170,12 +172,12 @@ public partial class GameRenderer
             {
                 float crownY = treeBottom - treeHeight + j * treeHeight * 0.15f;
                 float crownSize = 15f + j * 8f;
-                using var path = new SKPath();
-                path.MoveTo(x + windSway, crownY);
-                path.LineTo(x - crownSize + windSway * 0.5f, crownY + crownSize * 1.2f);
-                path.LineTo(x + crownSize + windSway * 0.5f, crownY + crownSize * 1.2f);
-                path.Close();
-                canvas.DrawPath(path, _fillPaint);
+                _bgPath.Rewind();
+                _bgPath.MoveTo(x + windSway, crownY);
+                _bgPath.LineTo(x - crownSize + windSway * 0.5f, crownY + crownSize * 1.2f);
+                _bgPath.LineTo(x + crownSize + windSway * 0.5f, crownY + crownSize * 1.2f);
+                _bgPath.Close();
+                canvas.DrawPath(_bgPath, _fillPaint);
             }
         }
     }
@@ -219,12 +221,12 @@ public partial class GameRenderer
             float x = i * gl * 0.18f + 5;
             if (x > gl - 5) continue;
             float length = 20f + MathF.Sin(i * 2.3f) * 15f;
-            using var path = new SKPath();
-            path.MoveTo(x - 4, 0);
-            path.LineTo(x + 4, 0);
-            path.LineTo(x, length);
-            path.Close();
-            canvas.DrawPath(path, _fillPaint);
+            _bgPath.Rewind();
+            _bgPath.MoveTo(x - 4, 0);
+            _bgPath.LineTo(x + 4, 0);
+            _bgPath.LineTo(x, length);
+            _bgPath.Close();
+            canvas.DrawPath(_bgPath, _fillPaint);
         }
     }
 
@@ -256,12 +258,12 @@ public partial class GameRenderer
             float height = 25f + flicker + MathF.Sin(i * 1.1f) * 10f;
 
             _fillPaint.Color = new SKColor(200, 60, 10, 40);
-            using var path = new SKPath();
-            path.MoveTo(x - 8, sh);
-            path.LineTo(x + MathF.Sin(_globalTimer * 2f + i) * 3f, sh - height);
-            path.LineTo(x + 8, sh);
-            path.Close();
-            canvas.DrawPath(path, _fillPaint);
+            _bgPath.Rewind();
+            _bgPath.MoveTo(x - 8, sh);
+            _bgPath.LineTo(x + MathF.Sin(_globalTimer * 2f + i) * 3f, sh - height);
+            _bgPath.LineTo(x + 8, sh);
+            _bgPath.Close();
+            canvas.DrawPath(_bgPath, _fillPaint);
         }
     }
 

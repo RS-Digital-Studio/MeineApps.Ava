@@ -6,6 +6,7 @@ namespace BomberBlast.Graphics;
 /// CPU-basierte Explosions-Effekte: Flammen, Heat Haze.
 /// Arm-basiertes Rendering: Jeder Explosions-Arm wird als durchgehender
 /// Flammenstreifen gerendert (kein Pro-Zelle-Rendering → keine sichtbaren Übergänge).
+/// WICHTIG: Darf nur vom UI-Thread aufgerufen werden (statische mutable Felder).
 /// </summary>
 public static class ExplosionShaders
 {
@@ -62,6 +63,7 @@ public static class ExplosionShaders
     // Gecachte Paint-Objekte (GC-Optimierung)
     private static readonly SKPaint _flamePaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKMaskFilter _softGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
+    private static readonly SKMaskFilter _mediumGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
     private static readonly SKPath _armPath = new();
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -85,49 +87,35 @@ public static class ExplosionShaders
         float n = Fbm(time * 1.5f, time * 1.2f);
         float pulse = 0.9f + n * 0.2f;
 
+        // Solid-Color + MaskFilter statt 3x RadialGradient (eliminiert 3 native Shader-Allokationen pro Explosion/Frame)
+        _flamePaint.Shader = null;
+
         // Schicht 1: Weicher äußerer Glow (dunkel-orange, groß)
         float r1 = radius * 1.1f * pulse;
         byte a1 = (byte)Math.Clamp(envelope * 200f, 0, 255);
-        using (var shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy), r1,
-            new[] { colorOuter.WithAlpha(a1), colorOuter.WithAlpha((byte)(a1 * 0.4f)), SKColors.Transparent },
-            new[] { 0f, 0.5f, 1f },
-            SKShaderTileMode.Clamp))
-        {
-            _flamePaint.Shader = shader;
-            _flamePaint.MaskFilter = _softGlow;
-            canvas.DrawCircle(cx, cy, r1 * 1.2f, _flamePaint);
-            _flamePaint.MaskFilter = null;
-            _flamePaint.Shader = null;
-        }
+        _flamePaint.MaskFilter = _mediumGlow;
+        _flamePaint.Color = colorOuter.WithAlpha((byte)(a1 * 0.5f));
+        canvas.DrawCircle(cx, cy, r1 * 1.2f, _flamePaint);
+        _flamePaint.Color = colorOuter.WithAlpha((byte)(a1 * 0.3f));
+        canvas.DrawCircle(cx, cy, r1 * 0.7f, _flamePaint);
 
         // Schicht 2: Mittlerer Feuerball (orange→gelb, kräftig)
         float r2 = radius * 0.7f * pulse;
         byte a2 = (byte)Math.Clamp(envelope * 240f, 0, 255);
-        using (var shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy), r2,
-            new[] { colorInner.WithAlpha(a2), colorOuter.WithAlpha((byte)(a2 * 0.6f)), SKColors.Transparent },
-            new[] { 0f, 0.45f, 1f },
-            SKShaderTileMode.Clamp))
-        {
-            _flamePaint.Shader = shader;
-            canvas.DrawCircle(cx, cy, r2 * 1.1f, _flamePaint);
-            _flamePaint.Shader = null;
-        }
+        _flamePaint.MaskFilter = _softGlow;
+        _flamePaint.Color = colorInner.WithAlpha(a2);
+        canvas.DrawCircle(cx, cy, r2 * 1.1f, _flamePaint);
+        _flamePaint.Color = colorOuter.WithAlpha((byte)(a2 * 0.5f));
+        canvas.DrawCircle(cx, cy, r2 * 0.6f, _flamePaint);
 
         // Schicht 3: Heißer Kern (weiß-gelb)
         float r3 = radius * 0.35f;
         byte a3 = (byte)Math.Clamp(envelope * 220f, 0, 255);
-        using (var shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy), r3,
-            new[] { colorCore.WithAlpha(a3), colorInner.WithAlpha((byte)(a3 * 0.5f)), SKColors.Transparent },
-            new[] { 0f, 0.4f, 1f },
-            SKShaderTileMode.Clamp))
-        {
-            _flamePaint.Shader = shader;
-            canvas.DrawCircle(cx, cy, r3 * 1.2f, _flamePaint);
-            _flamePaint.Shader = null;
-        }
+        _flamePaint.Color = colorCore.WithAlpha(a3);
+        canvas.DrawCircle(cx, cy, r3 * 1.2f, _flamePaint);
+        _flamePaint.Color = colorInner.WithAlpha((byte)(a3 * 0.4f));
+        canvas.DrawCircle(cx, cy, r3 * 0.5f, _flamePaint);
+        _flamePaint.MaskFilter = null;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -235,7 +223,7 @@ public static class ExplosionShaders
         int dx, int dy, float startOffset, float length, float width,
         float time, float seed, bool isHorizontal, float taperExponent)
     {
-        _armPath.Reset();
+        _armPath.Rewind();
 
         const int SEGMENTS = 14;
 
@@ -370,6 +358,29 @@ public static class ExplosionShaders
             float cr = Math.Min(tw, th) * 0.4f;
             canvas.DrawRoundRect(tx, ty, tw, th, cr, cr, _flamePaint);
         }
+    }
+
+    /// <summary>
+    /// Statische Felder und Noise-LUT vorinitialisieren.
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Explosions-Frame zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        InitNoise();
+        // Statische readonly-Felder (_flamePaint, _softGlow, _mediumGlow, _armPath)
+        // werden automatisch durch den CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
+    /// Alle statischen nativen Objekte freigeben (SKPaint, SKMaskFilter, SKPath).
+    /// Wird bei App-Shutdown über App.DisposeServices() aufgerufen.
+    /// </summary>
+    public static void Cleanup()
+    {
+        _flamePaint.Dispose();
+        _softGlow.Dispose();
+        _mediumGlow.Dispose();
+        _armPath.Dispose();
     }
 
     /// <summary>Farbmischung zwischen zwei SKColors</summary>

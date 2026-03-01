@@ -1,7 +1,11 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using BomberBlast.Graphics;
 using BomberBlast.ViewModels;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MeineApps.UI.SkiaSharp.Shaders;
+using System.Threading.Tasks;
 
 namespace BomberBlast.Views;
 
@@ -155,6 +159,34 @@ public partial class MainView : UserControl
     private void OnCelebration()
     {
         CelebrationCanvas.ShowConfetti();
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        // Preload-Pipeline: Shader + Renderer vorkompilieren während Splash angezeigt wird
+        Splash.PreloadAction = async (reportProgress) =>
+        {
+            // Schritt 1: SkSL-GPU-Shader kompilieren (12 Shader, 600-2400ms auf Android)
+            reportProgress(0.0f, "Grafik-Engine wird vorbereitet...");
+            await Task.Run(() => ShaderPreloader.PreloadAll());
+
+            // Schritt 2: Statische Renderer-Klassen initialisieren
+            // (SKPaint/SKFont/SKMaskFilter/SKPath + Noise-LUT vorallokieren,
+            //  verhindert Jank beim ersten Frame/View-Öffnen)
+            reportProgress(0.7f, "Effekte werden geladen...");
+            await Task.Run(() =>
+            {
+                ExplosionShaders.Preload();
+                HelpIconRenderer.Preload();
+                TornMetalRenderer.Preload();
+                RarityRenderer.Preload();
+                MenuBackgroundRenderer.Preload();
+            });
+
+            reportProgress(1.0f, "Fertig");
+        };
     }
 
     protected override void OnDetachedFromVisualTree(Avalonia.VisualTreeAttachmentEventArgs e)

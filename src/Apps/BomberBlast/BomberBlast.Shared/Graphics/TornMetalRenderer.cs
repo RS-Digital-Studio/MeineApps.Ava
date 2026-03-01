@@ -42,6 +42,16 @@ public static class TornMetalRenderer
     private static readonly SKPath _crackPath = new();
 
     /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint, SKPath).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Button-Render zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        // Statische readonly-Felder werden durch diesen Methodenaufruf
+        // vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
     /// Einfacher deterministischer Pseudo-Zufallsgenerator.
     /// Gleicher Seed + Index → immer gleicher Wert (0..1).
     /// </summary>

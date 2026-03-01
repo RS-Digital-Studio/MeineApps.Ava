@@ -7,16 +7,49 @@ namespace BomberBlast.Graphics;
 /// Statische Render-Methoden für Gegner-, Boss-, PowerUp- und Bomben-Icons.
 /// Gleiche Farben, Formen und Proportionen wie GameRenderer (ohne Animationen).
 /// Verwendet in HelpView, CollectionView und DeckView.
+/// WICHTIG: Darf nur vom UI-Thread aufgerufen werden (statische mutable Felder).
 /// </summary>
 public static class HelpIconRenderer
 {
+    // Gecachte Paint-Objekte (GC-Optimierung, statt pro-Aufruf neue Instanzen)
+    private static readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+    // Gecachte MaskFilter für Bomben-Glow (statt pro-DrawBombCard Allokation)
+    private static readonly SKMaskFilter _bombGlowLarge = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
+    private static readonly SKMaskFilter _bombGlowSmall = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+    private static readonly SKMaskFilter _sparkGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2f);
+
+    /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint, SKMaskFilter).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten View-Öffnen zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        // Statische readonly-Felder werden durch diesen Methodenaufruf
+        // vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
+    /// Alle statischen nativen Objekte freigeben.
+    /// Wird bei App-Shutdown über App.DisposeServices() aufgerufen.
+    /// </summary>
+    public static void Cleanup()
+    {
+        _fillPaint.Dispose();
+        _strokePaint.Dispose();
+        _bombGlowLarge.Dispose();
+        _bombGlowSmall.Dispose();
+        _sparkGlow.Dispose();
+    }
+
     /// <summary>
     /// Zeichnet einen Gegner (statisch, ohne Wobble/Blink) - passend zum einzigartigen GameRenderer-Design.
     /// </summary>
     public static void DrawEnemy(SKCanvas canvas, float cx, float cy, float size, EnemyType type)
     {
-        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
-        using var strokePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
+        var fillPaint = _fillPaint;
+        var strokePaint = _strokePaint;
 
         // Schatten unter jedem Gegner
         fillPaint.Color = new SKColor(0, 0, 0, 30);
@@ -492,8 +525,8 @@ public static class HelpIconRenderer
         var color = GetPowerUpColor(type);
         float radius = size * 0.35f;
 
-        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
-        using var strokePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
+        var fillPaint = _fillPaint;
+        var strokePaint = _strokePaint;
 
         // Farbiger Kreis-Hintergrund
         fillPaint.Color = color;
@@ -678,8 +711,8 @@ public static class HelpIconRenderer
     /// </summary>
     public static void DrawBoss(SKCanvas canvas, float cx, float cy, float size, BossType type)
     {
-        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
-        using var strokePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
+        var fillPaint = _fillPaint;
+        var strokePaint = _strokePaint;
 
         switch (type)
         {
@@ -928,8 +961,8 @@ public static class HelpIconRenderer
     /// </summary>
     public static void DrawBombCard(SKCanvas canvas, float cx, float cy, float size, BombType type)
     {
-        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill };
-        using var strokePaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Stroke };
+        var fillPaint = _fillPaint;
+        var strokePaint = _strokePaint;
 
         var bodyColor = GetBombBodyColor(type);
         var glowColor = GetBombGlowColor(type);
@@ -939,13 +972,13 @@ public static class HelpIconRenderer
 
         // Äußerer Typ-farbiger Glow-Ring (wie GameRenderer Partikel-Effekt)
         fillPaint.Color = glowColor.WithAlpha(50);
-        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.8f);
+        fillPaint.MaskFilter = _bombGlowLarge;
         canvas.DrawCircle(cx, bombCy, r * 1.3f, fillPaint);
         fillPaint.MaskFilter = null;
 
         // Innerer Glow direkt um den Körper (intensiver)
         fillPaint.Color = glowColor.WithAlpha(90);
-        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.4f);
+        fillPaint.MaskFilter = _bombGlowSmall;
         canvas.DrawCircle(cx, bombCy, r * 1.05f, fillPaint);
         fillPaint.MaskFilter = null;
 
@@ -1004,7 +1037,7 @@ public static class HelpIconRenderer
 
         // Hauptfunke am Zündschnur-Ende mit Glow
         fillPaint.Color = new SKColor(255, 200, 50, 120);
-        fillPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, size * 0.04f);
+        fillPaint.MaskFilter = _sparkGlow;
         canvas.DrawCircle(fuseEndX, fuseEndY, size * 0.06f, fillPaint);
         fillPaint.MaskFilter = null;
         fillPaint.Color = new SKColor(255, 220, 80);

@@ -6,7 +6,7 @@ namespace BomberBlast.Graphics;
 /// Wetter-Effekte pro Welt: Partikel die ÜBER dem Grid gerendert werden (unter HUD).
 /// Struct-basiert, max 80 Partikel. Leichtgewichtig für 60fps.
 /// </summary>
-public sealed class WeatherSystem
+public sealed class WeatherSystem : IDisposable
 {
     private struct WeatherParticle
     {
@@ -30,6 +30,9 @@ public sealed class WeatherSystem
     // Gepoolte Paint-Objekte
     private readonly SKPaint _fillPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
     private readonly SKPaint _strokePaint = new() { Style = SKPaintStyle.Stroke, IsAntialias = true };
+
+    // Gepoolter SKPath für Tropfen-Form (statt pro-Partikel new SKPath())
+    private readonly SKPath _tempPath = new();
 
     /// <summary>
     /// Welt-Index setzen (0-9), bestimmt welcher Wetter-Effekt aktiv ist
@@ -285,12 +288,12 @@ public sealed class WeatherSystem
 
         // Tropfenform (Kreis + kleines Dreieck oben)
         canvas.DrawCircle(p.X, p.Y, p.Size, _fillPaint);
-        using var path = new SKPath();
-        path.MoveTo(p.X - p.Size * 0.5f, p.Y);
-        path.LineTo(p.X, p.Y - p.Size * 2f);
-        path.LineTo(p.X + p.Size * 0.5f, p.Y);
-        path.Close();
-        canvas.DrawPath(path, _fillPaint);
+        _tempPath.Rewind();
+        _tempPath.MoveTo(p.X - p.Size * 0.5f, p.Y);
+        _tempPath.LineTo(p.X, p.Y - p.Size * 2f);
+        _tempPath.LineTo(p.X + p.Size * 0.5f, p.Y);
+        _tempPath.Close();
+        canvas.DrawPath(_tempPath, _fillPaint);
     }
 
     private void RenderCloudShadow(SKCanvas canvas, ref WeatherParticle p, float alpha)
@@ -375,6 +378,7 @@ public sealed class WeatherSystem
 
     public void Dispose()
     {
+        _tempPath.Dispose();
         _fillPaint.Dispose();
         _strokePaint.Dispose();
     }

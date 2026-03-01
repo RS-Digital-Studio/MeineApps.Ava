@@ -27,6 +27,7 @@ public partial class GameEngine : IDisposable
 {
     // Event-Handler (als Feld für Dispose-Abmeldung)
     private readonly Action _directionChangedHandler;
+    private readonly EventHandler _languageChangedHandler;
 
     // Dependencies
     private readonly SoundManager _soundManager;
@@ -483,7 +484,8 @@ public partial class GameEngine : IDisposable
 
         // HUD-Labels cachen und bei Sprachwechsel aktualisieren
         CacheHudLabels();
-        _localizationService.LanguageChanged += (_, _) => CacheHudLabels();
+        _languageChangedHandler = (_, _) => CacheHudLabels();
+        _localizationService.LanguageChanged += _languageChangedHandler;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1757,6 +1759,7 @@ public partial class GameEngine : IDisposable
         _timer.OnWarning -= OnTimeWarning;
         _timer.OnExpired -= OnTimeExpired;
         _inputManager.DirectionChanged -= _directionChangedHandler;
+        _localizationService.LanguageChanged -= _languageChangedHandler;
 
         _overlayBgPaint.Dispose();
         _overlayTextPaint.Dispose();
@@ -1768,5 +1771,7 @@ public partial class GameEngine : IDisposable
         _tutorialOverlay.Dispose();
         _discoveryOverlay.Dispose();
         _inputManager.Dispose();
+        _irisClipPath.Dispose();
+        _starPath.Dispose();
     }
 }

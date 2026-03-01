@@ -21,6 +21,7 @@ public enum BackgroundTheme
 /// Animierter Hintergrund-Renderer für Menü-Screens.
 /// Unterstützt 7 Themes mit jeweils eigenen Gradienten und Partikel-Systemen.
 /// Struct-basiert, keine per-Frame-Allokationen, gepoolte SKPaint.
+/// WICHTIG: Darf nur vom UI-Thread aufgerufen werden (statische mutable Felder).
 /// </summary>
 public static class MenuBackgroundRenderer
 {
@@ -115,6 +116,15 @@ public static class MenuBackgroundRenderer
     private static readonly SKMaskFilter _smallGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 2f);
     private static readonly SKMaskFilter _mediumGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
     private static readonly SKMaskFilter _largeGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
+
+    // Gepoolte SKPaths (vermeidet native Allokationen pro Frame)
+    private static readonly SKPath _poolPath1 = new();
+    private static readonly SKPath _poolPath2 = new();
+
+    // Gecachter Gradient-Shader (invalidiert bei Größenänderung/Theme-Wechsel)
+    private static SKShader? _cachedGradientShader;
+    private static float _cachedGradW, _cachedGradH;
+    private static BackgroundTheme _cachedGradTheme = (BackgroundTheme)(-1);
 
     // Confetti-Farben (Victory Theme)
     private static readonly SKColor[] ConfettiColors =
@@ -287,21 +297,31 @@ public static class MenuBackgroundRenderer
 
     private static void RenderGradient(SKCanvas canvas, float width, float height, BackgroundTheme theme)
     {
-        var (c1, c2) = theme switch
+        // Gradient-Shader cachen (ändert sich nur bei Resize/Theme-Wechsel, nicht pro Frame)
+        if (_cachedGradientShader == null || _cachedGradW != width || _cachedGradH != height || _cachedGradTheme != theme)
         {
-            BackgroundTheme.Dungeon => (DungeonGrad1, DungeonGrad2),
-            BackgroundTheme.Shop => (ShopGrad1, ShopGrad2),
-            BackgroundTheme.League => (LeagueGrad1, LeagueGrad2),
-            BackgroundTheme.BattlePass => (BPGrad1, BPGrad2),
-            BackgroundTheme.Victory => (VictoryGrad1, VictoryGrad2),
-            BackgroundTheme.LuckySpin => (SpinGrad1, SpinGrad2),
-            _ => (DefaultGrad1, DefaultGrad2)
-        };
+            _cachedGradientShader?.Dispose();
 
-        using var shader = SKShader.CreateLinearGradient(
-            new SKPoint(0, 0), new SKPoint(width, height),
-            [c1, c2], SKShaderTileMode.Clamp);
-        _gradientPaint.Shader = shader;
+            var (c1, c2) = theme switch
+            {
+                BackgroundTheme.Dungeon => (DungeonGrad1, DungeonGrad2),
+                BackgroundTheme.Shop => (ShopGrad1, ShopGrad2),
+                BackgroundTheme.League => (LeagueGrad1, LeagueGrad2),
+                BackgroundTheme.BattlePass => (BPGrad1, BPGrad2),
+                BackgroundTheme.Victory => (VictoryGrad1, VictoryGrad2),
+                BackgroundTheme.LuckySpin => (SpinGrad1, SpinGrad2),
+                _ => (DefaultGrad1, DefaultGrad2)
+            };
+
+            _cachedGradientShader = SKShader.CreateLinearGradient(
+                new SKPoint(0, 0), new SKPoint(width, height),
+                [c1, c2], SKShaderTileMode.Clamp);
+            _cachedGradW = width;
+            _cachedGradH = height;
+            _cachedGradTheme = theme;
+        }
+
+        _gradientPaint.Shader = _cachedGradientShader;
         canvas.DrawRect(0, 0, width, height, _gradientPaint);
         _gradientPaint.Shader = null;
     }
@@ -421,23 +441,23 @@ public static class MenuBackgroundRenderer
             byte alpha = (byte)(f.A * combined);
             float wind = MathF.Sin(t * 0.8f + f.Phase * 0.7f) * 4f;
 
-            using var path = new SKPath();
-            path.MoveTo(x - cw * 0.5f, h);
-            path.QuadTo(x - cw * 0.3f + wind * 0.5f, h - ch * 0.6f, x + wind, h - ch);
-            path.QuadTo(x + cw * 0.3f + wind * 0.5f, h - ch * 0.6f, x + cw * 0.5f, h);
-            path.Close();
+            _poolPath1.Rewind();
+            _poolPath1.MoveTo(x - cw * 0.5f, h);
+            _poolPath1.QuadTo(x - cw * 0.3f + wind * 0.5f, h - ch * 0.6f, x + wind, h - ch);
+            _poolPath1.QuadTo(x + cw * 0.3f + wind * 0.5f, h - ch * 0.6f, x + cw * 0.5f, h);
+            _poolPath1.Close();
             _p3.Color = new SKColor(255, 80, 20, alpha);
-            canvas.DrawPath(path, _p3);
+            canvas.DrawPath(_poolPath1, _p3);
 
             // Innerer Kern
             float ih = ch * 0.5f, iw = cw * 0.5f;
-            using var inner = new SKPath();
-            inner.MoveTo(x - iw * 0.4f, h);
-            inner.QuadTo(x - iw * 0.2f + wind * 0.3f, h - ih * 0.6f, x + wind * 0.6f, h - ih);
-            inner.QuadTo(x + iw * 0.2f + wind * 0.3f, h - ih * 0.6f, x + iw * 0.4f, h);
-            inner.Close();
+            _poolPath2.Rewind();
+            _poolPath2.MoveTo(x - iw * 0.4f, h);
+            _poolPath2.QuadTo(x - iw * 0.2f + wind * 0.3f, h - ih * 0.6f, x + wind * 0.6f, h - ih);
+            _poolPath2.QuadTo(x + iw * 0.2f + wind * 0.3f, h - ih * 0.6f, x + iw * 0.4f, h);
+            _poolPath2.Close();
             _p3.Color = new SKColor(255, 200, 80, (byte)Math.Min(255, alpha * 0.7f));
-            canvas.DrawPath(inner, _p3);
+            canvas.DrawPath(_poolPath2, _p3);
         }
         _p3.MaskFilter = null;
     }
@@ -445,18 +465,16 @@ public static class MenuBackgroundRenderer
     /// <summary>Subtiler warmer radialer Glow in der Bildmitte (nur Default-Theme).</summary>
     private static void RenderDefaultVignette(SKCanvas canvas, float w, float h, float t)
     {
+        // Solid-Color + MaskFilter statt per-Frame RadialGradient-Allokation
         float pulse = MathF.Sin(t * 0.3f) * 0.15f + 0.85f;
         float cx = w * 0.5f, cy = h * 0.45f;
-        float radius = MathF.Max(w, h) * 0.6f;
+        float radius = MathF.Max(w, h) * 0.25f;
 
-        using var shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy), radius * pulse,
-            [new SKColor(255, 120, 40, 12), new SKColor(0, 0, 0, 0)],
-            SKShaderTileMode.Clamp);
-        _p1.Shader = shader;
-        _p1.MaskFilter = null;
-        canvas.DrawRect(0, 0, w, h, _p1);
         _p1.Shader = null;
+        _p1.MaskFilter = _largeGlow;
+        _p1.Color = new SKColor(255, 120, 40, (byte)(12 * pulse));
+        canvas.DrawCircle(cx, cy, radius, _p1);
+        _p1.MaskFilter = null;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -563,20 +581,20 @@ public static class MenuBackgroundRenderer
             canvas.DrawOval(x, y, bat.Size * 0.3f, bat.Size * 0.2f, _p2);
 
             // Linker Flügel (Dreieck)
-            using var lWing = new SKPath();
-            lWing.MoveTo(x - bat.Size * 0.2f, y);
-            lWing.LineTo(x - wingSpan, y - bat.Size * 0.3f * (1f + wingAngle));
-            lWing.LineTo(x - wingSpan * 0.6f, y + bat.Size * 0.1f);
-            lWing.Close();
-            canvas.DrawPath(lWing, _p2);
+            _poolPath1.Rewind();
+            _poolPath1.MoveTo(x - bat.Size * 0.2f, y);
+            _poolPath1.LineTo(x - wingSpan, y - bat.Size * 0.3f * (1f + wingAngle));
+            _poolPath1.LineTo(x - wingSpan * 0.6f, y + bat.Size * 0.1f);
+            _poolPath1.Close();
+            canvas.DrawPath(_poolPath1, _p2);
 
             // Rechter Flügel
-            using var rWing = new SKPath();
-            rWing.MoveTo(x + bat.Size * 0.2f, y);
-            rWing.LineTo(x + wingSpan, y - bat.Size * 0.3f * (1f + wingAngle));
-            rWing.LineTo(x + wingSpan * 0.6f, y + bat.Size * 0.1f);
-            rWing.Close();
-            canvas.DrawPath(rWing, _p2);
+            _poolPath2.Rewind();
+            _poolPath2.MoveTo(x + bat.Size * 0.2f, y);
+            _poolPath2.LineTo(x + wingSpan, y - bat.Size * 0.3f * (1f + wingAngle));
+            _poolPath2.LineTo(x + wingSpan * 0.6f, y + bat.Size * 0.1f);
+            _poolPath2.Close();
+            canvas.DrawPath(_poolPath2, _p2);
         }
     }
 
@@ -693,16 +711,16 @@ public static class MenuBackgroundRenderer
             float pulse = MathF.Sin(t * 0.5f + g.Phase) * 0.2f + 0.8f;
 
             // Rauten-Form (Gem-Silhouette)
-            using var path = new SKPath();
+            _poolPath1.Rewind();
             float s = g.Size * pulse;
-            path.MoveTo(x, y - s);
-            path.LineTo(x + s * 0.6f, y);
-            path.LineTo(x, y + s * 0.4f);
-            path.LineTo(x - s * 0.6f, y);
-            path.Close();
+            _poolPath1.MoveTo(x, y - s);
+            _poolPath1.LineTo(x + s * 0.6f, y);
+            _poolPath1.LineTo(x, y + s * 0.4f);
+            _poolPath1.LineTo(x - s * 0.6f, y);
+            _poolPath1.Close();
 
             _p3.Color = new SKColor(g.R, g.G, g.B, (byte)(g.A * pulse));
-            canvas.DrawPath(path, _p3);
+            canvas.DrawPath(_poolPath1, _p3);
         }
         _p3.MaskFilter = null;
     }
@@ -761,13 +779,13 @@ public static class MenuBackgroundRenderer
             _p1.Color = new SKColor(0, 188, 212, tr.A);
 
             // Kelch-Form (vereinfacht)
-            using var path = new SKPath();
-            path.MoveTo(x - s * 0.5f, y - s * 0.3f);
-            path.LineTo(x - s * 0.3f, y + s * 0.3f);
-            path.LineTo(x + s * 0.3f, y + s * 0.3f);
-            path.LineTo(x + s * 0.5f, y - s * 0.3f);
-            path.Close();
-            canvas.DrawPath(path, _p1);
+            _poolPath1.Rewind();
+            _poolPath1.MoveTo(x - s * 0.5f, y - s * 0.3f);
+            _poolPath1.LineTo(x - s * 0.3f, y + s * 0.3f);
+            _poolPath1.LineTo(x + s * 0.3f, y + s * 0.3f);
+            _poolPath1.LineTo(x + s * 0.5f, y - s * 0.3f);
+            _poolPath1.Close();
+            canvas.DrawPath(_poolPath1, _p1);
 
             // Fuß
             canvas.DrawRect(x - s * 0.15f, y + s * 0.3f, s * 0.3f, s * 0.2f, _p1);
@@ -898,17 +916,17 @@ public static class MenuBackgroundRenderer
             float s = b.Size * pulse;
 
             // Schild-Form
-            using var path = new SKPath();
-            path.MoveTo(x, y - s);
-            path.LineTo(x + s * 0.6f, y - s * 0.5f);
-            path.LineTo(x + s * 0.6f, y + s * 0.2f);
-            path.LineTo(x, y + s * 0.6f);
-            path.LineTo(x - s * 0.6f, y + s * 0.2f);
-            path.LineTo(x - s * 0.6f, y - s * 0.5f);
-            path.Close();
+            _poolPath1.Rewind();
+            _poolPath1.MoveTo(x, y - s);
+            _poolPath1.LineTo(x + s * 0.6f, y - s * 0.5f);
+            _poolPath1.LineTo(x + s * 0.6f, y + s * 0.2f);
+            _poolPath1.LineTo(x, y + s * 0.6f);
+            _poolPath1.LineTo(x - s * 0.6f, y + s * 0.2f);
+            _poolPath1.LineTo(x - s * 0.6f, y - s * 0.5f);
+            _poolPath1.Close();
 
             _p3.Color = new SKColor(156, 39, 176, (byte)(b.A * pulse));
-            canvas.DrawPath(path, _p3);
+            canvas.DrawPath(_poolPath1, _p3);
         }
         _p3.MaskFilter = null;
     }
@@ -1101,11 +1119,11 @@ public static class MenuBackgroundRenderer
             _strokePaint.Color = new SKColor(r, g, b, alpha);
 
             float startAngle = i * sweepAngle + t * 20f;
-            using var path = new SKPath();
-            path.AddArc(new SKRect(cx - radius * pulse, cy - radius * pulse * 0.6f,
+            _poolPath1.Rewind();
+            _poolPath1.AddArc(new SKRect(cx - radius * pulse, cy - radius * pulse * 0.6f,
                                    cx + radius * pulse, cy + radius * pulse * 0.6f),
                         startAngle, sweepAngle - 2f);
-            canvas.DrawPath(path, _strokePaint);
+            canvas.DrawPath(_poolPath1, _strokePaint);
         }
 
         _strokePaint.MaskFilter = null;
@@ -1191,6 +1209,37 @@ public static class MenuBackgroundRenderer
     // ═══════════════════════════════════════════════════════════════════════
     // HILFS-METHODEN
     // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint, SKMaskFilter, SKPath).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Menü-Render zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        // Statische readonly-Felder werden durch diesen Methodenaufruf
+        // vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
+    /// Alle statischen nativen Objekte freigeben (SKPaint, SKMaskFilter, SKPath, SKShader).
+    /// Wird bei App-Shutdown über App.DisposeServices() aufgerufen.
+    /// </summary>
+    public static void Cleanup()
+    {
+        _gradientPaint.Dispose();
+        _gridPaint.Dispose();
+        _p1.Dispose();
+        _p2.Dispose();
+        _p3.Dispose();
+        _strokePaint.Dispose();
+        _smallGlow.Dispose();
+        _mediumGlow.Dispose();
+        _largeGlow.Dispose();
+        _poolPath1.Dispose();
+        _poolPath2.Dispose();
+        _cachedGradientShader?.Dispose();
+        _cachedGradientShader = null;
+    }
 
     /// <summary>HSV nach RGB konvertieren (H: 0-360, S/V: 0-1)</summary>
     private static void HsvToRgb(float h, float s, float v, out byte r, out byte g, out byte b)

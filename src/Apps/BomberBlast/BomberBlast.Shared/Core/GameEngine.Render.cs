@@ -9,6 +9,11 @@ namespace BomberBlast.Core;
 /// </summary>
 public partial class GameEngine
 {
+    // Gepoolter SKPath für Iris-Wipe Clip (statt pro-Frame new SKPath())
+    private readonly SKPath _irisClipPath = new();
+
+    // Gepoolter SKPath für Stern-Rendering in LevelComplete
+    private readonly SKPath _starPath = new();
     /// <summary>
     /// Welt-spezifische Iris-Wipe-Farbe (statt immer Schwarz).
     /// </summary>
@@ -178,10 +183,10 @@ public partial class GameEngine
 
         // Welt-farbige Maske mit kreisförmigem Ausschnitt (Iris-Wipe)
         canvas.Save();
-        using var clipPath = new SKPath();
-        clipPath.AddRect(new SKRect(0, 0, screenWidth, screenHeight));
-        clipPath.AddCircle(screenWidth / 2f, screenHeight / 2f, irisRadius, SKPathDirection.CounterClockwise);
-        canvas.ClipPath(clipPath);
+        _irisClipPath.Rewind();
+        _irisClipPath.AddRect(new SKRect(0, 0, screenWidth, screenHeight));
+        _irisClipPath.AddCircle(screenWidth / 2f, screenHeight / 2f, irisRadius, SKPathDirection.CounterClockwise);
+        canvas.ClipPath(_irisClipPath);
         _overlayBgPaint.Color = new SKColor(irisColor.Red, irisColor.Green, irisColor.Blue, 255);
         canvas.DrawRect(0, 0, screenWidth, screenHeight, _overlayBgPaint);
         canvas.Restore();
@@ -247,10 +252,10 @@ public partial class GameEngine
             float irisRadius = (1f - closeProgress) * maxRadius;
 
             canvas.Save();
-            using var clipPath = new SKPath();
-            clipPath.AddRect(new SKRect(0, 0, screenWidth, screenHeight));
-            clipPath.AddCircle(screenWidth / 2f, screenHeight / 2f, Math.Max(irisRadius, 1), SKPathDirection.CounterClockwise);
-            canvas.ClipPath(clipPath);
+            _irisClipPath.Rewind();
+            _irisClipPath.AddRect(new SKRect(0, 0, screenWidth, screenHeight));
+            _irisClipPath.AddCircle(screenWidth / 2f, screenHeight / 2f, Math.Max(irisRadius, 1), SKPathDirection.CounterClockwise);
+            canvas.ClipPath(_irisClipPath);
             var irisColor = GetIrisWipeColor();
             _overlayBgPaint.Color = new SKColor(irisColor.Red, irisColor.Green, irisColor.Blue, 255);
             canvas.DrawRect(0, 0, screenWidth, screenHeight, _overlayBgPaint);
@@ -320,18 +325,18 @@ public partial class GameEngine
 
                 float s = starSize * bounceScale;
 
-                // Stern zeichnen (5-zackiger Stern via SKPath)
-                using var starPath = new SKPath();
+                // Stern zeichnen (5-zackiger Stern via gepooltem SKPath)
+                _starPath.Rewind();
                 for (int p = 0; p < 10; p++)
                 {
                     float angle = MathF.PI / 2f + p * MathF.PI / 5f;
                     float r = p % 2 == 0 ? s : s * 0.4f;
                     float px = sx + MathF.Cos(angle) * r;
                     float py = starY - MathF.Sin(angle) * r;
-                    if (p == 0) starPath.MoveTo(px, py);
-                    else starPath.LineTo(px, py);
+                    if (p == 0) _starPath.MoveTo(px, py);
+                    else _starPath.LineTo(px, py);
                 }
-                starPath.Close();
+                _starPath.Close();
 
                 _overlayTextPaint.Style = SKPaintStyle.Fill;
                 _overlayTextPaint.MaskFilter = earned ? _overlayGlowFilter : null;
@@ -339,7 +344,7 @@ public partial class GameEngine
                     ? new SKColor(255, 215, 0, (byte)(255 * starProgress))  // Gold
                     : new SKColor(80, 80, 80, (byte)(150 * starProgress));  // Grau (nicht verdient)
 
-                canvas.DrawPath(starPath, _overlayTextPaint);
+                canvas.DrawPath(_starPath, _overlayTextPaint);
 
                 // Umrandung
                 _overlayTextPaint.Style = SKPaintStyle.Stroke;
@@ -347,7 +352,7 @@ public partial class GameEngine
                 _overlayTextPaint.Color = earned
                     ? new SKColor(200, 160, 0, (byte)(255 * starProgress))
                     : new SKColor(60, 60, 60, (byte)(150 * starProgress));
-                canvas.DrawPath(starPath, _overlayTextPaint);
+                canvas.DrawPath(_starPath, _overlayTextPaint);
             }
             _overlayTextPaint.Style = SKPaintStyle.StrokeAndFill;
             _overlayTextPaint.MaskFilter = null;

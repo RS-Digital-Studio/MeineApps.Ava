@@ -38,9 +38,10 @@ public class FloatingJoystick : IInputHandler, IDisposable
 
     // Konfiguration (Werte basierend auf Mobile-Touch-Best-Practices: größere Targets für Daumen)
     private float _joystickRadius = 75f;
-    private const float DEAD_ZONE = 0.15f; // 15% des Radius als Ruhezone (Touch ist ungenauer als Controller)
+    private const float DEAD_ZONE_FIXED = 0.15f; // 15% des Radius als Ruhezone für Fixed-Modus (Daumen ruht auf Joystick)
+    private const float DEAD_ZONE_FLOATING = 0.05f; // 5% für Floating-Modus (Base = Touchpoint → sofortige Richtung nötig)
     private const float DIRECTION_HYSTERESIS = 1.15f; // 15% Hysterese gegen Richtungsflackern bei ~45°
-    private float _bombButtonRadius = 70f;
+    private float _bombButtonRadius = 50f;
     private float _detonatorButtonRadius = 48f;
     private float _opacity = 0.7f;
     private bool _isFixed;
@@ -266,7 +267,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
         float dx = _stickX - _baseX;
         float dy = _stickY - _baseY;
         float distSq = dx * dx + dy * dy;
-        float deadZonePx = _joystickRadius * DEAD_ZONE;
+        float deadZonePx = _joystickRadius * (_isFixed ? DEAD_ZONE_FIXED : DEAD_ZONE_FLOATING);
 
         // In der Dead Zone → keine Bewegung
         if (distSq < deadZonePx * deadZonePx)
@@ -322,7 +323,7 @@ public class FloatingJoystick : IInputHandler, IDisposable
     {
         // Bomb-Button weiter in die Spielfläche (mehr Abstand vom Rand)
         _bombButtonX = screenWidth - _bombButtonRadius - 80;
-        _bombButtonY = screenHeight - _bombButtonRadius - 30;
+        _bombButtonY = screenHeight - _bombButtonRadius - 10;
         // Detonator-Button über dem Bomb-Button
         _detonatorButtonX = _bombButtonX;
         _detonatorButtonY = _bombButtonY - _bombButtonRadius - _detonatorButtonRadius - 15;

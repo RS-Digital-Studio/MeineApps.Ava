@@ -57,6 +57,11 @@ public class DiscoveryOverlay : IDisposable
         Color = new SKColor(255, 80, 0),
         IsAntialias = true
     };
+    private readonly SKPaint _badgeTextPaint = new()
+    {
+        Color = SKColors.White,
+        IsAntialias = true
+    };
     private readonly SKFont _titleFont = new() { Size = 20, Embolden = true };
     private readonly SKFont _descFont = new() { Size = 15 };
     private readonly SKFont _hintFont = new() { Size = 13 };
@@ -155,9 +160,9 @@ public class DiscoveryOverlay : IDisposable
         canvas.DrawRoundRect(badgeX, badgeY, badgeW, badgeH, 6, 6, _newBadgePaint);
 
         string newText = _localizationService.GetString("New") ?? "NEW!";
-        using var badgePaint = new SKPaint { Color = new SKColor(255, 255, 255, alpha), IsAntialias = true };
+        _badgeTextPaint.Color = new SKColor(255, 255, 255, alpha);
         canvas.DrawText(newText, badgeX + badgeW / 2, badgeY + badgeH / 2 + 4,
-            SKTextAlign.Center, _badgeFont, badgePaint);
+            SKTextAlign.Center, _badgeFont, _badgeTextPaint);
 
         // Titel
         string title = _localizationService.GetString(_titleKey) ?? _titleKey;
@@ -189,6 +194,7 @@ public class DiscoveryOverlay : IDisposable
         _descPaint.Dispose();
         _hintPaint.Dispose();
         _newBadgePaint.Dispose();
+        _badgeTextPaint.Dispose();
         _titleFont.Dispose();
         _descFont.Dispose();
         _hintFont.Dispose();

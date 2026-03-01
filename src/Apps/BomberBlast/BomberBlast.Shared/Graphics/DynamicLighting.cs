@@ -146,9 +146,13 @@ public sealed class DynamicLighting
         AddLight(x, y, cellSize * 1.2f, new SKColor(0, 220, 255), 0.2f);
     }
 
-    // Gecachter MaskFilter für Licht-Blur (statt pro-Licht Shader)
-    private SKMaskFilter? _lightBlur;
-    private float _lastBlurRadius;
+    // 3 vorgecachte MaskFilter-Stufen (eliminiert pro-Licht MaskFilter-Allokation)
+    private static readonly SKMaskFilter _blurSmall = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8f);
+    private static readonly SKMaskFilter _blurMedium = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 18f);
+    private static readonly SKMaskFilter _blurLarge = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 32f);
+
+    // Gepoolter SKPath für Fackel-Flammen-Rendering (statt pro-Flamme new SKPath())
+    private readonly SKPath _torchPath = new();
 
     /// <summary>
     /// Alle gesammelten Lichtquellen rendern.
@@ -169,15 +173,11 @@ public sealed class DynamicLighting
             byte alpha = (byte)(light.Intensity * 80);
             _lightPaint.Color = light.Color.WithAlpha(alpha);
 
-            // Blur-Filter für weichen Lichtrand (gecacht wenn Radius ähnlich)
+            // Blur-Filter aus 3 vorgecachten Stufen wählen (keine native Allokation pro Licht)
             float blurSigma = light.Radius * 0.45f;
-            if (_lightBlur == null || MathF.Abs(_lastBlurRadius - blurSigma) > 5f)
-            {
-                _lightBlur?.Dispose();
-                _lightBlur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, blurSigma);
-                _lastBlurRadius = blurSigma;
-            }
-            _lightPaint.MaskFilter = _lightBlur;
+            _lightPaint.MaskFilter = blurSigma < 12f ? _blurSmall
+                                   : blurSigma < 24f ? _blurMedium
+                                   : _blurLarge;
 
             canvas.DrawCircle(light.X, light.Y, light.Radius * 0.6f, _lightPaint);
         }
@@ -240,12 +240,12 @@ public sealed class DynamicLighting
                     fillPaint.Color = new SKColor(r, g, 20, fAlpha);
                     fillPaint.MaskFilter = null;
 
-                    using var path = new SKPath();
-                    path.MoveTo(fackelX - 2 + fOff, fackelY);
-                    path.LineTo(fackelX + flicker1 + fOff, fackelY - fHeight);
-                    path.LineTo(fackelX + 2 + fOff, fackelY);
-                    path.Close();
-                    canvas.DrawPath(path, fillPaint);
+                    _torchPath.Rewind();
+                    _torchPath.MoveTo(fackelX - 2 + fOff, fackelY);
+                    _torchPath.LineTo(fackelX + flicker1 + fOff, fackelY - fHeight);
+                    _torchPath.LineTo(fackelX + 2 + fOff, fackelY);
+                    _torchPath.Close();
+                    canvas.DrawPath(_torchPath, fillPaint);
                 }
 
                 // Lichtquelle
@@ -257,7 +257,7 @@ public sealed class DynamicLighting
 
     public void Dispose()
     {
-        _lightBlur?.Dispose();
+        _torchPath.Dispose();
         _lightPaint.Shader?.Dispose();
         _lightPaint.Dispose();
     }

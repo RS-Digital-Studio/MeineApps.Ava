@@ -6,7 +6,7 @@ namespace BomberBlast.Graphics;
 /// Ambient-Partikel pro Welt: Hintergrund-Effekte UNTER dem Grid, ÜBER dem Hintergrund.
 /// Struct-basiert, max 60 Partikel. Jede Welt hat eigene atmosphärische Effekte.
 /// </summary>
-public sealed class AmbientParticleSystem
+public sealed class AmbientParticleSystem : IDisposable
 {
     private struct AmbientParticle
     {
@@ -31,6 +31,9 @@ public sealed class AmbientParticleSystem
     private readonly SKPaint _fillPaint = new() { Style = SKPaintStyle.Fill, IsAntialias = true };
     private readonly SKPaint _strokePaint = new() { Style = SKPaintStyle.Stroke, IsAntialias = true };
     private readonly SKMaskFilter _glow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
+
+    // Gepoolter SKPath für Seegras-Halme (statt pro-Partikel new SKPath())
+    private readonly SKPath _tempPath = new();
 
     /// <summary>
     /// Welt-Index setzen (0-9) + Spielfeld-Grenzen
@@ -107,6 +110,7 @@ public sealed class AmbientParticleSystem
 
     public void Dispose()
     {
+        _tempPath.Dispose();
         _fillPaint.Dispose();
         _strokePaint.Dispose();
         _glow.Dispose();
@@ -342,10 +346,10 @@ public sealed class AmbientParticleSystem
         _strokePaint.MaskFilter = null;
 
         // Geschwungener Halm von unten nach oben
-        using var path = new SKPath();
-        path.MoveTo(p.X, p.Y);
-        path.QuadTo(p.X + sway, p.Y - p.Size * 0.5f, p.X + sway * 0.7f, p.Y - p.Size);
-        canvas.DrawPath(path, _strokePaint);
+        _tempPath.Rewind();
+        _tempPath.MoveTo(p.X, p.Y);
+        _tempPath.QuadTo(p.X + sway, p.Y - p.Size * 0.5f, p.X + sway * 0.7f, p.Y - p.Size);
+        canvas.DrawPath(_tempPath, _strokePaint);
     }
 
     // Welt 7: Volcano - Magma-Blasen (aufsteigende Kreise die platzen)

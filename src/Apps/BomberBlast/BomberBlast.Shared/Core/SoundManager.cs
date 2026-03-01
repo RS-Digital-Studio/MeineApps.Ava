@@ -4,19 +4,19 @@ using MeineApps.Core.Ava.Services;
 namespace BomberBlast.Core;
 
 /// <summary>
-/// Manages game audio (sound effects and music).
-/// Uses ISoundService abstraction instead of Plugin.Maui.Audio.
-/// Uses IPreferencesService instead of MAUI Preferences.
+/// Verwaltet Spiel-Audio (Soundeffekte und Musik).
+/// Nutzt ISoundService-Abstraktion statt Plugin.Maui.Audio.
+/// Nutzt IPreferencesService statt MAUI Preferences.
 /// </summary>
 public class SoundManager : IDisposable
 {
     private readonly ISoundService _soundService;
     private readonly IPreferencesService _preferences;
 
-    // Current music state
+    // Aktueller Musik-Zustand
     private string? _currentMusic;
 
-    // Volume settings
+    // Lautstärke-Einstellungen
     private float _sfxVolume = 1.0f;
     private float _musicVolume = 0.7f;
     private bool _sfxEnabled = true;
@@ -28,7 +28,7 @@ public class SoundManager : IDisposable
     private string? _nextMusicKey;
     private float _currentFadeVolume = 1f;
 
-    // Sound effect keys
+    // Soundeffekt-Schlüssel
     public const string SFX_EXPLOSION = "explosion";
     public const string SFX_PLACE_BOMB = "place_bomb";
     public const string SFX_FUSE = "fuse";
@@ -42,7 +42,7 @@ public class SoundManager : IDisposable
     public const string SFX_MENU_SELECT = "menu_select";
     public const string SFX_MENU_CONFIRM = "menu_confirm";
 
-    // Music keys
+    // Musik-Schlüssel
     public const string MUSIC_MENU = "menu";
     public const string MUSIC_GAMEPLAY = "gameplay";
     public const string MUSIC_BOSS = "boss";
@@ -60,7 +60,7 @@ public class SoundManager : IDisposable
         set
         {
             _musicVolume = Math.Clamp(value, 0f, 1f);
-            // Volume change takes effect on next PlayMusic call
+            // Lautstärke-Änderung wird beim nächsten PlayMusic-Aufruf wirksam
         }
     }
 
@@ -95,7 +95,7 @@ public class SoundManager : IDisposable
     }
 
     /// <summary>
-    /// Load audio settings from preferences
+    /// Audio-Einstellungen aus Preferences laden
     /// </summary>
     private void LoadSettings()
     {
@@ -106,7 +106,7 @@ public class SoundManager : IDisposable
     }
 
     /// <summary>
-    /// Save audio settings to preferences
+    /// Audio-Einstellungen in Preferences speichern
     /// </summary>
     public void SaveSettings()
     {
@@ -117,7 +117,7 @@ public class SoundManager : IDisposable
     }
 
     /// <summary>
-    /// Preload all sound effects for instant playback
+    /// Alle Soundeffekte vorladen für sofortige Wiedergabe
     /// </summary>
     public async Task PreloadSoundsAsync()
     {
@@ -125,7 +125,7 @@ public class SoundManager : IDisposable
     }
 
     /// <summary>
-    /// Play a sound effect
+    /// Soundeffekt abspielen
     /// </summary>
     public void PlaySound(string soundKey)
     {
@@ -138,7 +138,9 @@ public class SoundManager : IDisposable
     /// <summary>
     /// Spezial-Bomben-Explosion: Spielt den Basis-Explosionssound
     /// plus einen sekundären SFX-Layer je nach BombType.
-    /// TODO: Echte Pitch-Variation wenn ISoundService um PlaySound(key, volume, pitch) erweitert wird
+    /// Design-Entscheidung: Akustische Differenzierung über Volume-Layering statt Pitch-Variation,
+    /// da ISoundService-Erweiterung um Pitch alle Apps (8 Projekte) betreffen würde.
+    /// Das aktuelle Layering-System ist ausreichend differenziert.
     /// </summary>
     public void PlayBombExplosion(BomberBlast.Models.Entities.BombType bombType)
     {
@@ -212,7 +214,7 @@ public class SoundManager : IDisposable
     }
 
     /// <summary>
-    /// Play background music (loops continuously, mit Crossfade)
+    /// Hintergrundmusik abspielen (Endlosschleife, mit Crossfade)
     /// </summary>
     public void PlayMusic(string musicKey)
     {
@@ -222,11 +224,11 @@ public class SoundManager : IDisposable
             return;
         }
 
-        // Don't restart if already playing this music
+        // Nicht neustarten wenn bereits diese Musik läuft
         if (_currentMusic == musicKey)
             return;
 
-        // Crossfade wenn bereits Musik läuft
+        // Crossfade wenn bereits andere Musik läuft
         if (_currentMusic != null)
         {
             _nextMusicKey = musicKey;
@@ -250,7 +252,7 @@ public class SoundManager : IDisposable
     }
 
     /// <summary>
-    /// Pause background music
+    /// Hintergrundmusik pausieren
     /// </summary>
     public void PauseMusic()
     {
@@ -258,7 +260,7 @@ public class SoundManager : IDisposable
     }
 
     /// <summary>
-    /// Resume background music
+    /// Hintergrundmusik fortsetzen
     /// </summary>
     public void ResumeMusic()
     {

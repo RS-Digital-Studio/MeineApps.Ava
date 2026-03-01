@@ -46,6 +46,11 @@ public sealed class ShaderEffects : IDisposable
     private readonly SKPaint _ripplePaint = new() { IsAntialias = true };
     private readonly SKPaint _shimmerPaint = new() { IsAntialias = false };
 
+    // --- Gecachte Uniforms + Arrays (vermeidet pro-Frame Allokation) ---
+    private SKRuntimeEffectUniforms? _cachedUniforms;
+    private readonly float[] _resolutionArr = new float[2];
+    private readonly float[] _centerArr = new float[2];
+
     // SkSL Wasser-Ripple Shader (SkiaSharp 3.x SkSL-Syntax)
     private const string WaterRippleSkSL = @"
 uniform float2 iResolution;
@@ -268,12 +273,17 @@ half4 main(float2 coord) {
     {
         try
         {
-            var uniforms = new SKRuntimeEffectUniforms(_waterRippleEffect!);
-            uniforms["iResolution"] = new[] { w, h };
-            uniforms["iTime"] = timer;
-            uniforms["iCenter"] = new[] { _playerScreenX, _playerScreenY };
+            // Gecachte Uniforms + Arrays wiederverwenden (keine Heap-Allokation pro Frame)
+            _cachedUniforms ??= new SKRuntimeEffectUniforms(_waterRippleEffect!);
+            _resolutionArr[0] = w;
+            _resolutionArr[1] = h;
+            _centerArr[0] = _playerScreenX;
+            _centerArr[1] = _playerScreenY;
+            _cachedUniforms["iResolution"] = _resolutionArr;
+            _cachedUniforms["iTime"] = timer;
+            _cachedUniforms["iCenter"] = _centerArr;
 
-            using var shader = _waterRippleEffect!.ToShader(uniforms);
+            using var shader = _waterRippleEffect!.ToShader(_cachedUniforms);
             _ripplePaint.Shader = shader;
             _ripplePaint.BlendMode = SKBlendMode.SrcOver;
             canvas.DrawRect(0, 0, w, h, _ripplePaint);
@@ -374,6 +384,7 @@ half4 main(float2 coord) {
         _disposed = true;
 
         _waterRippleEffect?.Dispose();
+        _cachedUniforms = null;
         _overlayPaint.Dispose();
         _ripplePaint.Dispose();
         _shimmerPaint.Dispose();

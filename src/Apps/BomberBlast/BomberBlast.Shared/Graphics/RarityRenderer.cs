@@ -35,6 +35,16 @@ public static class RarityRenderer
     };
 
     /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void Preload()
+    {
+        // Statische readonly-Felder werden durch diesen Methodenaufruf
+        // vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
     /// Zeichnet einen Raritäts-Rahmen um ein Rechteck.
     /// Common: schlichter weißer Rahmen, Rare: blauer Glow, Epic: violetter Puls, Legendary: goldener Shimmer.
     /// </summary>

@@ -21,14 +21,19 @@ public partial class GameEngine
     // Ursprüngliche Gegner-Anzahl bei Level-Start (für Slow-Motion-Bedingung)
     private int _originalEnemyCount;
 
+    // Zähler für periodische Dict-Bereinigung (verwaiste Keys entfernen)
+    private int _cacheCleanupCounter;
+
     /// <summary>
     /// Baut den Positions-Cache für alle aktiven Gegner auf.
+    /// Lists werden wiederverwendet statt pro Frame neu allokiert.
     /// Bosse belegen mehrere Zellen und werden unter jeder registriert.
     /// </summary>
     private void RebuildEnemyPositionCache()
     {
-        // Verwaiste Keys entfernen (Gegner sterben, Positionen ändern sich → Dict wächst unbegrenzt)
-        _enemyPositionCache.Clear();
+        // Lists behalten und nur leeren (keine neue Allokation pro Frame)
+        foreach (var list in _enemyPositionCache.Values)
+            list.Clear();
 
         foreach (var enemy in _enemies)
         {
@@ -37,7 +42,6 @@ public partial class GameEngine
 
             if (enemy is BossEnemy boss)
             {
-                // Boss belegt mehrere Zellen (2x2 oder 3x3)
                 for (int bx = 0; bx < boss.BossSize; bx++)
                 for (int by = 0; by < boss.BossSize; by++)
                     AddEnemyToCache((boss.GridX + bx, boss.GridY + by), boss);
@@ -46,6 +50,24 @@ public partial class GameEngine
             {
                 AddEnemyToCache((enemy.GridX, enemy.GridY), enemy);
             }
+        }
+
+        // Alle 120 Frames verwaiste Keys entfernen (Dict wächst sonst unbegrenzt)
+        if (++_cacheCleanupCounter >= 120)
+        {
+            _cacheCleanupCounter = 0;
+            List<(int, int)>? keysToRemove = null;
+            foreach (var kvp in _enemyPositionCache)
+            {
+                if (kvp.Value.Count == 0)
+                {
+                    keysToRemove ??= new List<(int, int)>();
+                    keysToRemove.Add(kvp.Key);
+                }
+            }
+            if (keysToRemove != null)
+                foreach (var key in keysToRemove)
+                    _enemyPositionCache.Remove(key);
         }
     }
 

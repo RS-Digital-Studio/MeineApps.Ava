@@ -473,8 +473,12 @@ public partial class GameRenderer : IDisposable
         InvalidateFloorCache();
 
         // Atmosphärische Subsysteme für neue Welt initialisieren
-        _weatherSystem.SetWorld(worldIndex, _screenWidth, _screenHeight);
-        _ambientParticles.SetWorld(worldIndex, _screenWidth, _screenHeight);
+        // Spielfeld-Dimensionen verwenden (nicht Screen), da beide Systeme
+        // innerhalb des Spielfeld-Canvas-Transforms gerendert werden
+        float fieldW = GameGrid.WIDTH * GameGrid.CELL_SIZE;
+        float fieldH = GameGrid.HEIGHT * GameGrid.CELL_SIZE;
+        _weatherSystem.SetWorld(worldIndex, fieldW, fieldH);
+        _ambientParticles.SetWorld(worldIndex, fieldW, fieldH);
         _shaderEffects.SetWorld(worldIndex);
 
         // Basis-Palette Farben mit Welt-Theme überschreiben
@@ -852,5 +856,8 @@ public partial class GameRenderer : IDisposable
         _bgShader?.Dispose();
         _vignetteShader?.Dispose();
         _hudComboBlur.Dispose();
+        _bgPath.Dispose();
+        _charPath1.Dispose();
+        _charPath2.Dispose();
     }
 }

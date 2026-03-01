@@ -79,12 +79,12 @@ public partial class GameRenderer
         _fillPaint.Color = new SKColor(0, 0, 0, 200);
         _fillPaint.MaskFilter = null;
 
-        using var clipPath = new SKPath();
-        clipPath.AddRect(new SKRect(0, 0, grid.PixelWidth, grid.PixelHeight));
-        clipPath.AddCircle(playerX, playerY, fogRadius);
-        clipPath.FillType = SKPathFillType.EvenOdd;
+        _bgPath.Reset(); // Reset statt Rewind - FillType muss auf EvenOdd gesetzt werden und soll nicht in Atmosphere-Nutzung leaken
+        _bgPath.AddRect(new SKRect(0, 0, grid.PixelWidth, grid.PixelHeight));
+        _bgPath.AddCircle(playerX, playerY, fogRadius);
+        _bgPath.FillType = SKPathFillType.EvenOdd;
 
-        canvas.ClipPath(clipPath);
+        canvas.ClipPath(_bgPath);
         canvas.DrawRect(0, 0, grid.PixelWidth, grid.PixelHeight, _fillPaint);
         canvas.Restore();
 

@@ -26,6 +26,7 @@
     </Style>
   </UserControl.Styles>
 
+  <Panel>
   <Grid AutomationProperties.AutomationId="MainView_Root">
     <!-- Alle Page-Views -->
     <Panel>
@@ -378,5 +379,11 @@
                                       ZIndex="16"
                                       IsHitTestVisible="False" />
   </Grid>
+
+  <!-- Ladebildschirm (Shader-Preloading) -->
+  <controls:SplashOverlay x:Name="Splash"
+                           AppName="BomberBlast"
+                           IconSource="avares://BomberBlast.Shared/Assets/icon.png" />
+  </Panel>
 
 </UserControl>

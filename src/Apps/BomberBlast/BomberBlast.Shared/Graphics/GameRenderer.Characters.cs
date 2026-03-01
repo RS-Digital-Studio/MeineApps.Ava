@@ -11,6 +11,9 @@ namespace BomberBlast.Graphics;
 /// </summary>
 public partial class GameRenderer
 {
+    // Gepoolte SKPaths für Charakter-Rendering (statt pro-Gegner new SKPath())
+    private readonly SKPath _charPath1 = new();
+    private readonly SKPath _charPath2 = new();
     // ═══════════════════════════════════════════════════════════════════════
     // SPIELER
     // ═══════════════════════════════════════════════════════════════════════
@@ -383,16 +386,16 @@ public partial class GameRenderer
         // Tropfenform (breiter unten)
         _fillPaint.Color = new SKColor(80, 120, 255);
         _fillPaint.MaskFilter = null;
-        using var path = new SKPath();
-        path.MoveTo(e.X, e.Y + wy - r * 1.1f);                         // Spitze oben
-        path.CubicTo(e.X + r * 1.2f, e.Y + wy - r * 0.3f,             // Rechts oben
+        _charPath1.Rewind();
+        _charPath1.MoveTo(e.X, e.Y + wy - r * 1.1f);                         // Spitze oben
+        _charPath1.CubicTo(e.X + r * 1.2f, e.Y + wy - r * 0.3f,             // Rechts oben
                       e.X + r * 1.1f, e.Y + wy + r * 0.8f,             // Rechts unten
                       e.X, e.Y + wy + r);                                // Mitte unten
-        path.CubicTo(e.X - r * 1.1f, e.Y + wy + r * 0.8f,             // Links unten
+        _charPath1.CubicTo(e.X - r * 1.1f, e.Y + wy + r * 0.8f,             // Links unten
                       e.X - r * 1.2f, e.Y + wy - r * 0.3f,             // Links oben
                       e.X, e.Y + wy - r * 1.1f);                        // Zurück
-        path.Close();
-        canvas.DrawPath(path, _fillPaint);
+        _charPath1.Close();
+        canvas.DrawPath(_charPath1, _fillPaint);
 
         // Listige schräge Augen
         float eyeY = e.Y + wy - r * 0.1f;
@@ -458,18 +461,18 @@ public partial class GameRenderer
         // Hörner (vor dem Körper)
         _fillPaint.Color = new SKColor(180, 30, 30);
         _fillPaint.MaskFilter = null;
-        using var hornL = new SKPath();
-        hornL.MoveTo(e.X - w * 0.35f, e.Y + wy - h * 0.4f);
-        hornL.LineTo(e.X - w * 0.5f, e.Y + wy - h * 0.75f);
-        hornL.LineTo(e.X - w * 0.15f, e.Y + wy - h * 0.35f);
-        hornL.Close();
-        canvas.DrawPath(hornL, _fillPaint);
-        using var hornR = new SKPath();
-        hornR.MoveTo(e.X + w * 0.35f, e.Y + wy - h * 0.4f);
-        hornR.LineTo(e.X + w * 0.5f, e.Y + wy - h * 0.75f);
-        hornR.LineTo(e.X + w * 0.15f, e.Y + wy - h * 0.35f);
-        hornR.Close();
-        canvas.DrawPath(hornR, _fillPaint);
+        _charPath1.Rewind();
+        _charPath1.MoveTo(e.X - w * 0.35f, e.Y + wy - h * 0.4f);
+        _charPath1.LineTo(e.X - w * 0.5f, e.Y + wy - h * 0.75f);
+        _charPath1.LineTo(e.X - w * 0.15f, e.Y + wy - h * 0.35f);
+        _charPath1.Close();
+        canvas.DrawPath(_charPath1, _fillPaint);
+        _charPath1.Rewind();
+        _charPath1.MoveTo(e.X + w * 0.35f, e.Y + wy - h * 0.4f);
+        _charPath1.LineTo(e.X + w * 0.5f, e.Y + wy - h * 0.75f);
+        _charPath1.LineTo(e.X + w * 0.15f, e.Y + wy - h * 0.35f);
+        _charPath1.Close();
+        canvas.DrawPath(_charPath1, _fillPaint);
 
         // Eckiger Körper
         _fillPaint.Color = new SKColor(255, 60, 60);
@@ -592,25 +595,25 @@ public partial class GameRenderer
         // Keilform (Pfeilspitze in Bewegungsrichtung)
         _fillPaint.Color = new SKColor(255, 255, 80);
         _fillPaint.MaskFilter = null;
-        using var body = new SKPath();
+        _charPath1.Rewind();
         if (MathF.Abs(fdx) >= MathF.Abs(fdy))
         {
             // Horizontal
             float front = e.X + fdx * w * 0.5f;
-            body.MoveTo(front, e.Y + wy);
-            body.LineTo(e.X - fdx * w * 0.4f, e.Y + wy - h * 0.45f);
-            body.LineTo(e.X - fdx * w * 0.4f, e.Y + wy + h * 0.45f);
+            _charPath1.MoveTo(front, e.Y + wy);
+            _charPath1.LineTo(e.X - fdx * w * 0.4f, e.Y + wy - h * 0.45f);
+            _charPath1.LineTo(e.X - fdx * w * 0.4f, e.Y + wy + h * 0.45f);
         }
         else
         {
             // Vertikal
             float front = e.Y + wy + fdy * h * 0.5f;
-            body.MoveTo(e.X, front);
-            body.LineTo(e.X - w * 0.45f, e.Y + wy - fdy * h * 0.4f);
-            body.LineTo(e.X + w * 0.45f, e.Y + wy - fdy * h * 0.4f);
+            _charPath1.MoveTo(e.X, front);
+            _charPath1.LineTo(e.X - w * 0.45f, e.Y + wy - fdy * h * 0.4f);
+            _charPath1.LineTo(e.X + w * 0.45f, e.Y + wy - fdy * h * 0.4f);
         }
-        body.Close();
-        canvas.DrawPath(body, _fillPaint);
+        _charPath1.Close();
+        canvas.DrawPath(_charPath1, _fillPaint);
 
         // Aggressive schmale Augen
         float eyeY = e.Y + wy - 1;
@@ -657,11 +660,11 @@ public partial class GameRenderer
                          new SKColor(255, 100, 20, alpha);
             _fillPaint.MaskFilter = i == 2 ? _smallGlow : null;
             float tongueW = r * (0.8f + i * 0.2f);
-            using var flame = new SKPath();
-            flame.MoveTo(e.X - tongueW, e.Y + wy + r * 0.3f);
-            flame.QuadTo(e.X + flicker * 0.5f, e.Y + wy - tongueH, e.X + tongueW, e.Y + wy + r * 0.3f);
-            flame.Close();
-            canvas.DrawPath(flame, _fillPaint);
+            _charPath2.Rewind();
+            _charPath2.MoveTo(e.X - tongueW, e.Y + wy + r * 0.3f);
+            _charPath2.QuadTo(e.X + flicker * 0.5f, e.Y + wy - tongueH, e.X + tongueW, e.Y + wy + r * 0.3f);
+            _charPath2.Close();
+            canvas.DrawPath(_charPath2, _fillPaint);
         }
         _fillPaint.MaskFilter = null;
 
@@ -733,9 +736,9 @@ public partial class GameRenderer
         // Geisterkörper (oben rund, unten wellig)
         _fillPaint.Color = new SKColor(180, 200, 255, bodyAlpha);
         _fillPaint.MaskFilter = null;
-        using var ghost = new SKPath();
-        ghost.MoveTo(e.X - r, e.Y + wy + floatOff);
-        ghost.ArcTo(new SKRect(e.X - r, e.Y + wy + floatOff - r * 1.6f, e.X + r, e.Y + wy + floatOff),
+        _charPath1.Rewind();
+        _charPath1.MoveTo(e.X - r, e.Y + wy + floatOff);
+        _charPath1.ArcTo(new SKRect(e.X - r, e.Y + wy + floatOff - r * 1.6f, e.X + r, e.Y + wy + floatOff),
             180, 180, false);
         // Welliger unterer Saum
         float bottomY = e.Y + wy + floatOff + r * 0.5f;
@@ -745,10 +748,10 @@ public partial class GameRenderer
             float x1 = e.X + r - i * segW;
             float x2 = x1 - segW;
             float wave = MathF.Sin(_globalTimer * 4f + i * 1.5f) * 2f;
-            ghost.QuadTo(x1 - segW * 0.5f, bottomY + wave + 3, x2, bottomY);
+            _charPath1.QuadTo(x1 - segW * 0.5f, bottomY + wave + 3, x2, bottomY);
         }
-        ghost.Close();
-        canvas.DrawPath(ghost, _fillPaint);
+        _charPath1.Close();
+        canvas.DrawPath(_charPath1, _fillPaint);
 
         // Leuchtende hohle Augen
         float eyeY = e.Y + wy + floatOff - r * 0.3f;

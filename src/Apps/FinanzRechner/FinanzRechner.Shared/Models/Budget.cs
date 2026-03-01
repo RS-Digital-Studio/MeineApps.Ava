@@ -36,18 +36,11 @@ public record BudgetStatus(
     /// Lokalisierter Kategorie-Name. Faellt auf Enum-Name zurueck wenn nicht gesetzt.
     /// </summary>
     public string CategoryName => LocalizedCategoryName ?? Category.ToString();
-    public string CategoryIcon => Category switch
-    {
-        ExpenseCategory.Food => "\U0001F354",
-        ExpenseCategory.Transport => "\U0001F697",
-        ExpenseCategory.Housing => "\U0001F3E0",
-        ExpenseCategory.Entertainment => "\U0001F3AC",
-        ExpenseCategory.Shopping => "\U0001F6D2",
-        ExpenseCategory.Health => "\U0001F48A",
-        ExpenseCategory.Education => "\U0001F4DA",
-        ExpenseCategory.Bills => "\U0001F4C4",
-        _ => "\U0001F4E6"
-    };
+    // TODO: Emojis durch Material Icons ersetzen (erfordert AXAML-Umbau in BudgetsView.axaml:
+    // TextBlock→MaterialIcon, Binding von string auf MaterialIconKind ändern).
+    // Aktuell wird CategoryIcon als TextBlock.Text in BudgetsView angezeigt.
+    // Delegiert an zentralen Helper um Duplikation zu vermeiden.
+    public string CategoryIcon => CategoryLocalizationHelper.GetCategoryIcon(Category);
     public string SpentDisplay => CurrencyHelper.Format(Spent);
     public string LimitDisplay => CurrencyHelper.Format(Limit);
     public string PercentageDisplay => $"{PercentageUsed:F0}%";

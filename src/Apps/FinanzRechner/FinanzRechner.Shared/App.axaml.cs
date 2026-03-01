@@ -1,11 +1,17 @@
+using System.Diagnostics;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Extensions;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.UI.Controls;
+using FinanzRechner.Loading;
 using FinanzRechner.Models;
 using FinanzRechner.Resources.Strings;
 using FinanzRechner.Services;
@@ -59,26 +65,75 @@ public partial class App : Application
         locService.Initialize();
         LocalizationManager.Initialize(locService);
 
-        // Ausgabenservice initialisieren
-        var expenseService = Services.GetRequiredService<IExpenseService>();
-        expenseService.InitializeAsync().ConfigureAwait(false);
-
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            desktop.MainWindow = new MainWindow
-            {
-                DataContext = Services.GetRequiredService<MainViewModel>()
-            };
+            desktop.MainWindow = new MainWindow();
+            var splash = CreateSplash();
+            var panel = new Panel();
+            panel.Children.Add(new MainView());
+            panel.Children.Add(splash);
+            desktop.MainWindow.Content = panel;
+            _ = RunLoadingAsync(splash);
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            singleViewPlatform.MainView = new MainView
-            {
-                DataContext = Services.GetRequiredService<MainViewModel>()
-            };
+            var splash = CreateSplash();
+            var panel = new Panel();
+            panel.Children.Add(new MainView());
+            panel.Children.Add(splash);
+            singleViewPlatform.MainView = panel;
+            _ = RunLoadingAsync(splash);
         }
 
         base.OnFrameworkInitializationCompleted();
+    }
+
+    private static SkiaLoadingSplash CreateSplash()
+    {
+        return new SkiaLoadingSplash
+        {
+            AppName = "FinanzRechner",
+            AppVersion = "v2.0.5"
+        };
+    }
+
+    private async Task RunLoadingAsync(SkiaLoadingSplash splash)
+    {
+        try
+        {
+            var pipeline = new FinanzRechnerLoadingPipeline(Services);
+            pipeline.ProgressChanged += (progress, text) =>
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    splash.Progress = progress;
+                    splash.StatusText = text;
+                });
+
+            var sw = Stopwatch.StartNew();
+            await pipeline.ExecuteAsync();
+
+            var remaining = 500 - (int)sw.ElapsedMilliseconds;
+            if (remaining > 0) await Task.Delay(remaining);
+
+            var mainVm = Services.GetRequiredService<MainViewModel>();
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                    && desktop.MainWindow != null)
+                    desktop.MainWindow.DataContext = mainVm;
+                else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform
+                         && singleViewPlatform.MainView != null)
+                    singleViewPlatform.MainView.DataContext = mainVm;
+
+                splash.FadeOut();
+            });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[FinanzRechner] Loading-Pipeline fehlgeschlagen: {ex}");
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
+        }
     }
 
     private static void ConfigureServices(IServiceCollection services)

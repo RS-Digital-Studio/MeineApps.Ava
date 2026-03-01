@@ -1,7 +1,7 @@
 namespace FinanzRechner.Models;
 
 /// <summary>
-/// Calculation engine for all finance calculators
+/// Berechnungsengine für alle Finanzrechner.
 /// </summary>
 public class FinanceEngine
 {
@@ -21,9 +21,9 @@ public class FinanceEngine
         double principal, double annualRate, int years, int compoundingsPerYear = 1)
     {
         if (years <= 0)
-            throw new ArgumentException("Years must be greater than zero.", nameof(years));
+            throw new ArgumentException("Jahre müssen größer als Null sein.", nameof(years));
         if (compoundingsPerYear <= 0)
-            throw new ArgumentException("Compoundings per year must be greater than zero.", nameof(compoundingsPerYear));
+            throw new ArgumentException("Zinsperioden pro Jahr müssen größer als Null sein.", nameof(compoundingsPerYear));
 
         var rate = annualRate / 100;
         var n = compoundingsPerYear;
@@ -48,6 +48,11 @@ public class FinanceEngine
     public SavingsPlanResult CalculateSavingsPlan(
         double monthlyDeposit, double annualRate, int years, double initialDeposit = 0)
     {
+        if (annualRate < 0)
+            throw new ArgumentException("Zinssatz darf nicht negativ sein.", nameof(annualRate));
+        if (years <= 0)
+            throw new ArgumentException("Jahre müssen größer als Null sein.", nameof(years));
+
         var monthlyRate = (annualRate / 100) / 12;
         var months = years * 12;
 
@@ -80,9 +85,9 @@ public class FinanceEngine
     public LoanResult CalculateLoan(double loanAmount, double annualRate, int years)
     {
         if (loanAmount <= 0)
-            throw new ArgumentException("Loan amount must be greater than zero.", nameof(loanAmount));
+            throw new ArgumentException("Kreditbetrag muss größer als Null sein.", nameof(loanAmount));
         if (years <= 0)
-            throw new ArgumentException("Years must be greater than zero.", nameof(years));
+            throw new ArgumentException("Jahre müssen größer als Null sein.", nameof(years));
 
         var monthlyRate = (annualRate / 100) / 12;
         var months = years * 12;
@@ -159,9 +164,9 @@ public class FinanceEngine
     public YieldResult CalculateEffectiveYield(double initialInvestment, double finalValue, int years)
     {
         if (initialInvestment <= 0)
-            throw new ArgumentException("Initial investment must be greater than zero.", nameof(initialInvestment));
+            throw new ArgumentException("Anfangsinvestition muss größer als Null sein.", nameof(initialInvestment));
         if (years <= 0)
-            throw new ArgumentException("Years must be greater than zero.", nameof(years));
+            throw new ArgumentException("Jahre müssen größer als Null sein.", nameof(years));
 
         var effectiveAnnualRate = (Math.Pow(finalValue / initialInvestment, 1.0 / years) - 1) * 100;
         ValidateResult(effectiveAnnualRate, "EffectiveAnnualRate");
@@ -186,9 +191,9 @@ public class FinanceEngine
     public InflationResult CalculateInflation(double currentAmount, double annualInflationRate, int years)
     {
         if (currentAmount <= 0)
-            throw new ArgumentException("Current amount must be greater than zero.", nameof(currentAmount));
+            throw new ArgumentException("Betrag muss größer als Null sein.", nameof(currentAmount));
         if (years <= 0)
-            throw new ArgumentException("Years must be greater than zero.", nameof(years));
+            throw new ArgumentException("Jahre müssen größer als Null sein.", nameof(years));
 
         var rate = annualInflationRate / 100;
         var futureValue = currentAmount * Math.Pow(1 + rate, years);

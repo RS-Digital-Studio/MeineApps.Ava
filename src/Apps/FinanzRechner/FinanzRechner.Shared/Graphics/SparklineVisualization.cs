@@ -16,6 +16,16 @@ public static class SparklineVisualization
     private static readonly SKFont _labelFont = new() { Size = 10f };
 
     /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint, SKFont).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void WarmUp()
+    {
+        // Statische readonly-Felder werden durch diesen Methodenaufruf
+        // vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
     /// Rendert eine Mini-Sparkline mit Gradient-Füllung.
     /// </summary>
     /// <param name="canvas">SkiaSharp Canvas</param>
@@ -24,6 +34,7 @@ public static class SparklineVisualization
     /// <param name="lineColor">Linienfarbe</param>
     /// <param name="showEndDot">Leuchtenden Punkt am Ende anzeigen</param>
     /// <param name="trendLabel">Optional: Label wie "+5%" oder "-12%"</param>
+    // Hinweis: Nur vom UI-Thread aufrufen (statische Paints nicht thread-safe)
     public static void Render(SKCanvas canvas, SKRect bounds,
         float[] values, SKColor lineColor, bool showEndDot = true, string? trendLabel = null)
     {
@@ -108,7 +119,6 @@ public static class SparklineVisualization
         // 4. Trend-Label (rechts)
         if (trendLabel != null)
         {
-            bool isPositive = trendLabel.StartsWith("+") || trendLabel.StartsWith("-") && values[^1] < values[0];
             bool isNegativeExpense = trendLabel.StartsWith("-");
             // Bei Ausgaben: weniger = gut (grün), mehr = schlecht (rot)
             _textPaint.Color = isNegativeExpense ? SKColor.Parse("#22C55E") : SKColor.Parse("#EF4444");

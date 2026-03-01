@@ -6,7 +6,7 @@ using MeineApps.Core.Ava.Localization;
 namespace FinanzRechner.Services;
 
 /// <summary>
-/// Implementierung des ExpenseService mit lokalem JSON-Speicher
+/// Implementierung des ExpenseService mit lokalem JSON-Speicher.
 /// </summary>
 public class ExpenseService : IExpenseService, IDisposable
 {
@@ -145,7 +145,7 @@ public class ExpenseService : IExpenseService, IDisposable
             _ = Task.Run(async () =>
             {
                 try { await CheckBudgetWarningAsync(expense.Category, expense.Date); }
-                catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Budget-Warnung fehlgeschlagen: {ex.Message}"); }
+                catch (Exception ex) { System.Diagnostics.Trace.TraceError($"Budget-Warnung fehlgeschlagen: {ex.Message}"); }
             });
         }
 
@@ -443,7 +443,7 @@ public class ExpenseService : IExpenseService, IDisposable
                     iterations++;
                 }
                 if (iterations >= maxIterationsPerRecurring)
-                    System.Diagnostics.Debug.WriteLine($"WARNUNG: Dauerauftrag '{recurring.Description}' (ID: {recurring.Id}) hat Iterations-Limit ({maxIterationsPerRecurring}) erreicht.");
+                    System.Diagnostics.Trace.TraceWarning($"Dauerauftrag '{recurring.Description}' (ID: {recurring.Id}) hat Iterations-Limit ({maxIterationsPerRecurring}) erreicht.");
             }
             // Batch-Save: Alles auf einmal statt pro Expense einzeln
             if (count > 0)
@@ -490,14 +490,14 @@ public class ExpenseService : IExpenseService, IDisposable
     public async Task<int> ImportFromJsonAsync(string json, bool mergeData = false)
     {
         if (string.IsNullOrWhiteSpace(json))
-            throw new ArgumentException("JSON cannot be empty.", nameof(json));
+            throw new ArgumentException("JSON darf nicht leer sein.", nameof(json));
 
         await InitializeAsync();
         await _semaphore.WaitAsync();
         try
         {
             var backup = JsonSerializer.Deserialize<BackupData>(json);
-            if (backup == null) throw new InvalidOperationException("Invalid backup data format.");
+            if (backup == null) throw new InvalidOperationException("Ungültiges Backup-Datenformat.");
 
             int importedCount = 0;
             if (!mergeData)
@@ -725,37 +725,37 @@ public class ExpenseService : IExpenseService, IDisposable
     {
         ArgumentNullException.ThrowIfNull(expense);
         if (string.IsNullOrWhiteSpace(expense.Description))
-            throw new ArgumentException("Description cannot be empty.");
+            throw new ArgumentException("Beschreibung darf nicht leer sein.");
         if (expense.Description.Length > MaxDescriptionLength)
-            throw new ArgumentException($"Description cannot exceed {MaxDescriptionLength} characters.");
+            throw new ArgumentException($"Beschreibung darf maximal {MaxDescriptionLength} Zeichen lang sein.");
         if (expense.Amount <= 0)
-            throw new ArgumentException("Amount must be greater than zero.");
+            throw new ArgumentException("Betrag muss größer als Null sein.");
         if (expense.Amount > MaxAmount)
-            throw new ArgumentException($"Amount cannot exceed {MaxAmount:N2}.");
+            throw new ArgumentException($"Betrag darf {MaxAmount:N2} nicht überschreiten.");
         if (!string.IsNullOrEmpty(expense.Note) && expense.Note.Length > MaxNoteLength)
-            throw new ArgumentException($"Note cannot exceed {MaxNoteLength} characters.");
+            throw new ArgumentException($"Notiz darf maximal {MaxNoteLength} Zeichen lang sein.");
     }
 
     private static void ValidateBudget(Budget budget)
     {
         ArgumentNullException.ThrowIfNull(budget);
         if (budget.MonthlyLimit <= 0)
-            throw new ArgumentException("Monthly limit must be greater than zero.");
+            throw new ArgumentException("Monatliches Limit muss größer als Null sein.");
         if (budget.MonthlyLimit > MaxAmount)
-            throw new ArgumentException($"Monthly limit cannot exceed {MaxAmount:N2}.");
+            throw new ArgumentException($"Monatliches Limit darf {MaxAmount:N2} nicht überschreiten.");
         if (budget.WarningThreshold is < 0 or > 100)
-            throw new ArgumentException("Warning threshold must be between 0 and 100.");
+            throw new ArgumentException("Warnschwelle muss zwischen 0 und 100 liegen.");
     }
 
     private static void ValidateRecurringTransaction(RecurringTransaction transaction)
     {
         ArgumentNullException.ThrowIfNull(transaction);
         if (string.IsNullOrWhiteSpace(transaction.Description))
-            throw new ArgumentException("Description cannot be empty.");
+            throw new ArgumentException("Beschreibung darf nicht leer sein.");
         if (transaction.Amount <= 0)
-            throw new ArgumentException("Amount must be greater than zero.");
+            throw new ArgumentException("Betrag muss größer als Null sein.");
         if (transaction.EndDate.HasValue && transaction.EndDate.Value <= transaction.StartDate)
-            throw new ArgumentException("End date must be after start date.");
+            throw new ArgumentException("Enddatum muss nach dem Startdatum liegen.");
     }
 
     private async Task CheckBudgetWarningAsync(ExpenseCategory category, DateTime date)

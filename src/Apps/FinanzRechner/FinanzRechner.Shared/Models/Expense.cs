@@ -3,7 +3,7 @@ using FinanzRechner.Helpers;
 namespace FinanzRechner.Models;
 
 /// <summary>
-/// Single transaction (expense or income)
+/// Einzelne Transaktion (Ausgabe oder Einnahme).
 /// </summary>
 public class Expense
 {
@@ -17,7 +17,7 @@ public class Expense
 }
 
 /// <summary>
-/// Transaction type
+/// Transaktionstyp.
 /// </summary>
 public enum TransactionType
 {
@@ -26,11 +26,11 @@ public enum TransactionType
 }
 
 /// <summary>
-/// Transaction categories (expenses and income)
+/// Transaktionskategorien (Ausgaben und Einnahmen).
 /// </summary>
 public enum ExpenseCategory
 {
-    // Expenses
+    // Ausgaben
     Food,
     Transport,
     Housing,
@@ -41,7 +41,7 @@ public enum ExpenseCategory
     Bills,
     Other,
 
-    // Income
+    // Einnahmen
     Salary,
     Freelance,
     Investment,
@@ -50,7 +50,7 @@ public enum ExpenseCategory
 }
 
 /// <summary>
-/// Monthly summary
+/// Monatliche Zusammenfassung.
 /// </summary>
 public record MonthSummary(
     int Year,
@@ -64,7 +64,7 @@ public record MonthSummary(
 }
 
 /// <summary>
-/// Filter options for expenses
+/// Filteroptionen für Transaktionen.
 /// </summary>
 public class ExpenseFilter
 {
@@ -76,7 +76,7 @@ public class ExpenseFilter
 }
 
 /// <summary>
-/// Grouped transactions by date
+/// Nach Datum gruppierte Transaktionen.
 /// </summary>
 public class ExpenseGroup : List<Expense>
 {

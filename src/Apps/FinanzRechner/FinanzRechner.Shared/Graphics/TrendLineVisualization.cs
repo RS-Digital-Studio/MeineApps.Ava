@@ -18,6 +18,16 @@ public static class TrendLineVisualization
     private static readonly SKFont _axisFont = new() { Size = 9f };
 
     /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint, SKFont).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void WarmUp()
+    {
+        // Statische readonly-Felder werden durch diesen Methodenaufruf
+        // vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
     /// Rendert einen 6-Monats-Trend mit Einnahmen- und Ausgaben-Kurven.
     /// </summary>
     /// <param name="canvas">SkiaSharp Canvas</param>
@@ -25,6 +35,7 @@ public static class TrendLineVisualization
     /// <param name="monthLabels">Monatsnamen (z.B. "Jan", "Feb", ...)</param>
     /// <param name="incomeValues">Einnahmen pro Monat</param>
     /// <param name="expenseValues">Ausgaben pro Monat</param>
+    // Hinweis: Nur vom UI-Thread aufrufen (statische Paints nicht thread-safe)
     public static void Render(SKCanvas canvas, SKRect bounds,
         string[] monthLabels, float[] incomeValues, float[] expenseValues)
     {

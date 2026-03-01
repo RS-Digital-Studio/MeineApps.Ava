@@ -20,6 +20,16 @@ public static class AmortizationBarVisualization
     private static readonly SKColor InterestColor = new(0xF5, 0x9E, 0x0B);
 
     /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint, SKFont).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void WarmUp()
+    {
+        // Statische readonly-Felder werden durch diesen Methodenaufruf
+        // vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
     /// Rendert ein gestapeltes Balkendiagramm (Tilgung + Zinsen pro Jahr).
     /// </summary>
     /// <param name="canvas">SkiaSharp Canvas</param>
@@ -27,6 +37,7 @@ public static class AmortizationBarVisualization
     /// <param name="yearLabels">Jahreslabels (z.B. "1", "2", ...)</param>
     /// <param name="principalPayments">Tilgungsanteile pro Jahr</param>
     /// <param name="interestPayments">Zinsanteile pro Jahr</param>
+    // Hinweis: Nur vom UI-Thread aufrufen (statische Paints nicht thread-safe)
     public static void Render(SKCanvas canvas, SKRect bounds,
         string[] yearLabels, float[] principalPayments, float[] interestPayments)
     {
@@ -60,12 +71,12 @@ public static class AmortizationBarVisualization
         _gridPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Border, 20);
         _textPaint.Color = SkiaThemeHelper.TextMuted;
 
-        float gridStep = CalculateGridStep(maxVal);
+        float gridStep = ChartHelper.CalculateGridStep(maxVal);
         for (float v = 0; v <= maxVal; v += gridStep)
         {
             float y = chartBottom - (v / maxVal) * chartH;
             canvas.DrawLine(chartLeft, y, chartRight, y, _gridPaint);
-            string label = FormatYLabel(v);
+            string label = ChartHelper.FormatYLabel(v);
             canvas.DrawText(label, chartLeft - 4f, y + 3f, SKTextAlign.Right, _axisFont, _textPaint);
         }
 
@@ -120,28 +131,4 @@ public static class AmortizationBarVisualization
         }
     }
 
-    /// <summary>
-    /// Berechnet den optimalen Grid-Schritt für die Y-Achse.
-    /// </summary>
-    private static float CalculateGridStep(float maxVal)
-    {
-        if (maxVal <= 500) return 100f;
-        if (maxVal <= 1000) return 200f;
-        if (maxVal <= 2000) return 500f;
-        if (maxVal <= 5000) return 1000f;
-        if (maxVal <= 10000) return 2000f;
-        if (maxVal <= 50000) return 10000f;
-        if (maxVal <= 100000) return 20000f;
-        return maxVal / 5f;
-    }
-
-    /// <summary>
-    /// Formatiert Y-Achsen-Labels kompakt.
-    /// </summary>
-    private static string FormatYLabel(float value)
-    {
-        if (value >= 1_000_000) return $"{value / 1_000_000:F1}M";
-        if (value >= 1_000) return $"{value / 1_000:F0}k";
-        return $"{value:F0}";
-    }
 }

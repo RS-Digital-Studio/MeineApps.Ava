@@ -25,6 +25,17 @@ public static class BudgetGaugeVisualization
     private static readonly SKColor _redColor = SKColor.Parse("#EF4444");
 
     /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint, SKFont, SKMaskFilter).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void WarmUp()
+    {
+        // Statische readonly-Felder (_trackPaint, _arcPaint, _glowPaint, _textPaint,
+        // _tickPaint, _dotPaint, _valueFont, _labelFont, _glowFilter)
+        // werden durch diesen Methodenaufruf vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
     /// Rendert den Budget-Halbkreis-Tachometer.
     /// </summary>
     /// <param name="canvas">SkiaSharp Canvas</param>
@@ -33,6 +44,7 @@ public static class BudgetGaugeVisualization
     /// <param name="spentDisplay">Anzeige-Text für ausgegeben (z.B. "€1.234")</param>
     /// <param name="limitDisplay">Anzeige-Text für Budget-Limit (z.B. "€2.000")</param>
     /// <param name="isOverLimit">Ob das Budget überschritten ist</param>
+    // Hinweis: Nur vom UI-Thread aufrufen (statische Paints nicht thread-safe)
     public static void Render(SKCanvas canvas, SKRect bounds,
         double percentage, string spentDisplay, string limitDisplay, bool isOverLimit)
     {

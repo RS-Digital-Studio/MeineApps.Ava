@@ -721,7 +721,7 @@ public partial class StatisticsViewModel : ObservableObject, IDisposable
             IsExporting = true;
 
             var (startDate, endDate) = GetDateRange();
-            var suggestedName = $"statistics_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            var suggestedName = $"statistics_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv";
             var title = _localizationService.GetString("ExportStatistics") ?? "Export Statistics";
 
             var targetPath = await _fileDialogService.SaveFileAsync(suggestedName, title, "CSV", "csv");
@@ -807,7 +807,7 @@ public partial class StatisticsViewModel : ObservableObject, IDisposable
         try
         {
             var title = _localizationService.GetString("ExportStatistics") ?? "Export Statistics";
-            var suggestedName = $"statistics_{DateTime.Now:yyyyMMdd_HHmmss}.pdf";
+            var suggestedName = $"statistics_{DateTime.UtcNow:yyyyMMdd_HHmmss}.pdf";
 
             // Desktop: FileDialog, Android: direkt in Export-Verzeichnis
             var targetPath = await _fileDialogService.SaveFileAsync(suggestedName, title, "PDF", "pdf");

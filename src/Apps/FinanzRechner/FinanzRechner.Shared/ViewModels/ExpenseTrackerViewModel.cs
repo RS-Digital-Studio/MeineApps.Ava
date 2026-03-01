@@ -532,8 +532,8 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             // ExpenseService sicherstellen dass initialisiert
             await _expenseService.InitializeAsync();
 
-            // Fällige Daueraufträge prüfen und erstellen
-            await _expenseService.ProcessDueRecurringTransactionsAsync();
+            // Daueraufträge werden bereits in MainViewModel.OnAppearingAsync() verarbeitet,
+            // daher hier kein erneuter Aufruf nötig
 
             var expenses = await _expenseService.GetExpensesByMonthAsync(SelectedYear, SelectedMonth);
             _allExpenses = expenses.ToList();
@@ -579,14 +579,14 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
     {
         // Optimierte Filterung: Ein Durchlauf mit List statt IEnumerable
         var filtered = new List<Expense>(_allExpenses.Count);
-        var searchLower = string.IsNullOrWhiteSpace(SearchTerm) ? null : SearchTerm.ToLowerInvariant();
+        var hasSearch = !string.IsNullOrWhiteSpace(SearchTerm);
 
         foreach (var expense in _allExpenses)
         {
-            // Nach Suchbegriff filtern
-            if (searchLower != null &&
-                !expense.Description.ToLowerInvariant().Contains(searchLower) &&
-                (expense.Note == null || !expense.Note.ToLowerInvariant().Contains(searchLower)))
+            // Nach Suchbegriff filtern (OrdinalIgnoreCase statt ToLowerInvariant)
+            if (hasSearch &&
+                !expense.Description.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) &&
+                (expense.Note == null || !expense.Note.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)))
                 continue;
 
             // Nach Transaktionstyp filtern
@@ -620,6 +620,9 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             _ => (a, b) => b.Date.CompareTo(a.Date) // Default: DateDescending
         });
 
+        // Neue Collection statt Clear+AddRange: Bei Avalonia effizienter, da Clear+Add
+        // viele einzelne CollectionChanged-Events feuert (je eines pro Add), während
+        // eine neue Collection nur ein einziges PropertyChanged auslöst.
         Expenses = new ObservableCollection<Expense>(filtered);
         HasExpenses = Expenses.Count > 0;
 
@@ -784,7 +787,10 @@ public partial class ExpenseTrackerViewModel : ObservableObject, IDisposable
             }
             else
             {
+                // _suppressLoad verhindert doppeltes Laden wenn Jahr UND Monat sich ändern
+                _suppressLoad = true;
                 SelectedYear = savedDate.Year;
+                _suppressLoad = false;
                 SelectedMonth = savedDate.Month;
             }
         }

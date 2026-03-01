@@ -120,19 +120,21 @@ public partial class AmortizationViewModel : ObservableObject, IDisposable
             return;
         }
 
-        // Tilgung und Zinsen pro Jahr aggregieren
+        // Tilgung und Zinsen pro Jahr aggregieren (Single-Pass statt LINQ pro Jahr)
         var labels = new string[Years];
         var principalPerYear = new float[Years];
         var interestPerYear = new float[Years];
 
-        for (int year = 1; year <= Years; year++)
+        for (int i = 0; i < Years; i++)
+            labels[i] = (i + 1).ToString();
+
+        foreach (var entry in Result.Schedule)
         {
-            var yearEntries = Result.Schedule
-                .Where(e => e.Month > (year - 1) * 12 && e.Month <= year * 12)
-                .ToList();
-            labels[year - 1] = year.ToString();
-            principalPerYear[year - 1] = (float)yearEntries.Sum(e => e.Principal);
-            interestPerYear[year - 1] = (float)yearEntries.Sum(e => e.Interest);
+            // Monat 1-12 → Jahr 0, Monat 13-24 → Jahr 1, etc.
+            int yearIndex = (entry.Month - 1) / 12;
+            if (yearIndex < 0 || yearIndex >= Years) continue;
+            principalPerYear[yearIndex] += (float)entry.Principal;
+            interestPerYear[yearIndex] += (float)entry.Interest;
         }
 
         AmortYearLabels = labels;

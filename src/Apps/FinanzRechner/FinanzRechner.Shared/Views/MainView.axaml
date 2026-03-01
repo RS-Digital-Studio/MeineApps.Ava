@@ -179,6 +179,7 @@
     </Style>
   </UserControl.Styles>
 
+  <Panel>
   <Grid RowDefinitions="*,Auto,Auto"
         AutomationProperties.AutomationId="Main_LayoutRoot">
 
@@ -629,5 +630,7 @@
     </Border>
 
   </Grid>
+
+  </Panel>
 
 </UserControl>

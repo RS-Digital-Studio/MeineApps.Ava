@@ -17,6 +17,16 @@ public static class BudgetMiniRingVisualization
     private static readonly SKFont _nameFont = new() { Size = 8f };
 
     /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint, SKFont).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void WarmUp()
+    {
+        // Statische readonly-Felder werden durch diesen Methodenaufruf
+        // vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
     /// Daten für einen einzelnen Budget-Ring.
     /// </summary>
     public readonly struct BudgetRingData
@@ -39,6 +49,7 @@ public static class BudgetMiniRingVisualization
     /// <param name="canvas">SkiaSharp Canvas</param>
     /// <param name="bounds">Zeichenbereich</param>
     /// <param name="budgets">Budget-Daten (max. 5 Ringe empfohlen)</param>
+    // Hinweis: Nur vom UI-Thread aufrufen (statische Paints nicht thread-safe)
     public static void Render(SKCanvas canvas, SKRect bounds, BudgetRingData[] budgets)
     {
         if (budgets == null || budgets.Length == 0) return;

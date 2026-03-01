@@ -15,9 +15,9 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     private readonly ILocalizationService _localizationService;
     private readonly INotificationService _notificationService;
 
-    // Thread-safe Collection zum Tracken benachrichtigter Budgets
+    // Trackt bereits benachrichtigte Budgets (ConcurrentDictionary ist selbst thread-safe,
+    // daher kein zusätzlicher Lock nötig)
     private static readonly ConcurrentDictionary<string, DateTime> _notifiedBudgets = new();
-    private static readonly object _cleanupLock = new();
 
     public event Action<string, string>? MessageRequested;
     public event Action? DataChanged;
@@ -214,22 +214,20 @@ public partial class BudgetsViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Entfernt alte Benachrichtigungs-Einträge (älter als aktueller Monat)
+    /// Entfernt alte Benachrichtigungs-Einträge (älter als aktueller Monat).
+    /// ConcurrentDictionary.TryRemove ist thread-safe, kein Lock nötig.
     /// </summary>
     private static void CleanupOldNotifications()
     {
-        lock (_cleanupLock)
-        {
-            var today = DateTime.Today;
-            var currentMonthKey = $"{today.Year}-{today.Month}";
-            var keysToRemove = _notifiedBudgets.Keys
-                .Where(k => !k.Contains(currentMonthKey))
-                .ToList();
+        var today = DateTime.Today;
+        var currentMonthKey = $"{today.Year}-{today.Month}";
+        var keysToRemove = _notifiedBudgets.Keys
+            .Where(k => !k.Contains(currentMonthKey))
+            .ToList();
 
-            foreach (var key in keysToRemove)
-            {
-                _notifiedBudgets.TryRemove(key, out _);
-            }
+        foreach (var key in keysToRemove)
+        {
+            _notifiedBudgets.TryRemove(key, out _);
         }
     }
 

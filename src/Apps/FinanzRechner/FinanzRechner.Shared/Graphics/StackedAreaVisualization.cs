@@ -17,6 +17,16 @@ public static class StackedAreaVisualization
     private static readonly SKFont _axisFont = new() { Size = 8f };
 
     /// <summary>
+    /// Statische Felder vorinitialisieren (SKPaint, SKFont).
+    /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Render zu vermeiden.
+    /// </summary>
+    public static void WarmUp()
+    {
+        // Statische readonly-Felder werden durch diesen Methodenaufruf
+        // vom CLR-Klassen-Initializer angelegt
+    }
+
+    /// <summary>
     /// Rendert ein gestapeltes Flächendiagramm mit 2 Flächen.
     /// </summary>
     /// <param name="canvas">SkiaSharp Canvas</param>
@@ -28,6 +38,7 @@ public static class StackedAreaVisualization
     /// <param name="color2">Farbe der oberen Fläche</param>
     /// <param name="legend1">Legendentext Fläche 1</param>
     /// <param name="legend2">Legendentext Fläche 2</param>
+    // Hinweis: Nur vom UI-Thread aufrufen (statische Paints nicht thread-safe)
     public static void Render(SKCanvas canvas, SKRect bounds,
         string[] xLabels, float[] area1, float[] area2,
         SKColor color1, SKColor color2,
@@ -66,12 +77,12 @@ public static class StackedAreaVisualization
         _gridPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Border, 20);
         _textPaint.Color = SkiaThemeHelper.TextMuted;
 
-        float gridStep = CalculateGridStep(maxVal);
+        float gridStep = ChartHelper.CalculateGridStep(maxVal);
         for (float v = 0; v <= maxVal; v += gridStep)
         {
             float y = chartBottom - (v / maxVal) * chartH;
             canvas.DrawLine(chartLeft, y, chartRight, y, _gridPaint);
-            string label = FormatYLabel(v);
+            string label = ChartHelper.FormatYLabel(v);
             canvas.DrawText(label, chartLeft - 4f, y + 3f, SKTextAlign.Right, _axisFont, _textPaint);
         }
 
@@ -192,30 +203,4 @@ public static class StackedAreaVisualization
         return path;
     }
 
-    /// <summary>
-    /// Berechnet den optimalen Grid-Schritt für die Y-Achse.
-    /// </summary>
-    private static float CalculateGridStep(float maxVal)
-    {
-        if (maxVal <= 500) return 100f;
-        if (maxVal <= 1000) return 200f;
-        if (maxVal <= 2000) return 500f;
-        if (maxVal <= 5000) return 1000f;
-        if (maxVal <= 10000) return 2000f;
-        if (maxVal <= 50000) return 10000f;
-        if (maxVal <= 100000) return 20000f;
-        if (maxVal <= 500000) return 100000f;
-        if (maxVal <= 1000000) return 200000f;
-        return maxVal / 5f;
-    }
-
-    /// <summary>
-    /// Formatiert Y-Achsen-Labels kompakt (1000 → 1k, 1000000 → 1M).
-    /// </summary>
-    private static string FormatYLabel(float value)
-    {
-        if (value >= 1_000_000) return $"{value / 1_000_000:F1}M";
-        if (value >= 1_000) return $"{value / 1_000:F0}k";
-        return $"{value:F0}";
-    }
 }

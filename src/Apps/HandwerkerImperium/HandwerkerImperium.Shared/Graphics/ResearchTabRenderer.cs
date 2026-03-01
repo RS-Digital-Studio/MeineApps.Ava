@@ -11,8 +11,9 @@ namespace HandwerkerImperium.Graphics;
 /// - Branch-farbige Icons (Hammer/Aktentasche/Megaphon)
 /// - Smooth-Sliding Unterstrich beim Tab-Wechsel
 /// </summary>
-public class ResearchTabRenderer
+public class ResearchTabRenderer : IDisposable
 {
+    private bool _disposed;
     private float _time;
 
     // Animierter Unterstrich: glättet den Übergang zwischen Tabs
@@ -32,6 +33,10 @@ public class ResearchTabRenderer
     private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _text = new() { IsAntialias = true };
+
+    // Gecachte Font- und Path-Objekte (vermeidet Allokationen pro Frame)
+    private readonly SKFont _tabFont = new() { Edging = SKFontEdging.Antialias };
+    private readonly SKPath _megaphonPath = new();
 
     /// <summary>
     /// Rendert die Tab-Leiste.
@@ -128,26 +133,27 @@ public class ResearchTabRenderer
         DrawBranchIcon(canvas, iconCx, iconCy, iconSize, branch, isActive ? branchColor : TextInactive);
 
         // Label-Text
-        using var font = new SKFont { Size = 11, Embolden = isActive };
+        _tabFont.Size = 11;
+        _tabFont.Embolden = isActive;
         _text.Color = isActive ? TextActive : TextInactive;
 
         // Label kürzen wenn nötig
         string displayLabel = label;
         float maxLabelW = w - 32;
-        if (font.MeasureText(displayLabel) > maxLabelW)
+        if (_tabFont.MeasureText(displayLabel) > maxLabelW)
         {
-            while (displayLabel.Length > 3 && font.MeasureText(displayLabel + "..") > maxLabelW)
+            while (displayLabel.Length > 3 && _tabFont.MeasureText(displayLabel + "..") > maxLabelW)
                 displayLabel = displayLabel[..^1];
             displayLabel += "..";
         }
 
-        canvas.DrawText(displayLabel, x + 28, y + h / 2 + 4, font, _text);
+        canvas.DrawText(displayLabel, x + 28, y + h / 2 + 4, _tabFont, _text);
     }
 
     /// <summary>
     /// Zeichnet Branch-spezifische Icons als SkiaSharp-Grafik.
     /// </summary>
-    private static void DrawBranchIcon(SKCanvas canvas, float cx, float cy, float s,
+    private void DrawBranchIcon(SKCanvas canvas, float cx, float cy, float s,
         ResearchBranch branch, SKColor color)
     {
         _fill.Color = color;
@@ -177,16 +183,14 @@ public class ResearchTabRenderer
                 break;
 
             case ResearchBranch.Marketing:
-                // Megaphon
-                using (var path = new SKPath())
-                {
-                    path.MoveTo(cx - s * 0.5f, cy - s * 0.2f);
-                    path.LineTo(cx + s * 0.6f, cy - s * 0.6f);
-                    path.LineTo(cx + s * 0.6f, cy + s * 0.6f);
-                    path.LineTo(cx - s * 0.5f, cy + s * 0.2f);
-                    path.Close();
-                    canvas.DrawPath(path, _fill);
-                }
+                // Megaphon (gecachter Path)
+                _megaphonPath.Reset();
+                _megaphonPath.MoveTo(cx - s * 0.5f, cy - s * 0.2f);
+                _megaphonPath.LineTo(cx + s * 0.6f, cy - s * 0.6f);
+                _megaphonPath.LineTo(cx + s * 0.6f, cy + s * 0.6f);
+                _megaphonPath.LineTo(cx - s * 0.5f, cy + s * 0.2f);
+                _megaphonPath.Close();
+                canvas.DrawPath(_megaphonPath, _fill);
                 // Griff
                 canvas.DrawRect(cx - s * 0.8f, cy - s * 0.15f, s * 0.35f, s * 0.3f, _fill);
                 break;
@@ -210,5 +214,16 @@ public class ResearchTabRenderer
         _fill.Color = branchColor;
         var underlineRect = new SKRoundRect(new SKRect(x + 8, y, x + w - 8, y + 3), 1.5f);
         canvas.DrawRoundRect(underlineRect, _fill);
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _tabFont?.Dispose();
+        _megaphonPath?.Dispose();
     }
 }

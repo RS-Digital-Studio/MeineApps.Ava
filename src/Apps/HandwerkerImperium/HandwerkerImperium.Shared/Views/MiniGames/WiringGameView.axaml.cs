@@ -207,7 +207,9 @@ public partial class WiringGameView : UserControl
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"Fehler in OnGameCompleted: {ex.Message}");
+#endif
         }
     }
 }

@@ -97,8 +97,9 @@ public class BountyService : IBountyService
             _lastBountyCheck = DateTime.UtcNow;
             return _cachedBounty;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in GetActiveBountyAsync: {ex.Message}");
             return null;
         }
         finally
@@ -148,9 +149,9 @@ public class BountyService : IBountyService
             // Cache invalidieren
             _cachedBounty = null;
         }
-        catch
+        catch (Exception ex)
         {
-            // Fire-and-forget
+            System.Diagnostics.Debug.WriteLine($"Fehler in ContributeAsync: {ex.Message}");
         }
     }
 
@@ -180,9 +181,9 @@ public class BountyService : IBountyService
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in CheckAndFinalizeBountyAsync: {ex.Message}");
         }
     }
 

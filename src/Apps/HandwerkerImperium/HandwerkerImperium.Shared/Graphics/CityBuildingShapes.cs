@@ -17,6 +17,12 @@ public static class CityBuildingShapes
     private static readonly SKPaint _windowPaint = new() { IsAntialias = true };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true, Color = SKColors.White };
 
+    // Gecachte Path-Objekte (vermeidet Allokationen pro Frame, nur UI-Thread)
+    private static readonly SKPath _sidePath = new();
+    private static readonly SKPath _roofPath = new();
+    private static readonly SKPath _crownPath = new();
+    private static readonly SKPath _iconPath = new();
+
     // Workshop-Farben (Vorderseite)
     private static readonly Dictionary<WorkshopType, SKColor> FrontColors = new()
     {
@@ -225,30 +231,26 @@ public static class CityBuildingShapes
                 break;
 
             case WorkshopType.Plumber:
-                // Wassertropfen
-                using (var drop = new SKPath())
-                {
-                    drop.MoveTo(centerX, y - s * 0.8f);
-                    drop.QuadTo(centerX + s * 0.6f, y + s * 0.2f, centerX, y + s * 0.7f);
-                    drop.QuadTo(centerX - s * 0.6f, y + s * 0.2f, centerX, y - s * 0.8f);
-                    drop.Close();
-                    canvas.DrawPath(drop, _detailPaint);
-                }
+                // Wassertropfen (gecachter Path)
+                _iconPath.Reset();
+                _iconPath.MoveTo(centerX, y - s * 0.8f);
+                _iconPath.QuadTo(centerX + s * 0.6f, y + s * 0.2f, centerX, y + s * 0.7f);
+                _iconPath.QuadTo(centerX - s * 0.6f, y + s * 0.2f, centerX, y - s * 0.8f);
+                _iconPath.Close();
+                canvas.DrawPath(_iconPath, _detailPaint);
                 break;
 
             case WorkshopType.Electrician:
-                // Blitz-Symbol
-                using (var bolt = new SKPath())
-                {
-                    bolt.MoveTo(centerX + s * 0.1f, y - s * 0.9f);
-                    bolt.LineTo(centerX - s * 0.4f, y + s * 0.1f);
-                    bolt.LineTo(centerX + s * 0.1f, y + s * 0.1f);
-                    bolt.LineTo(centerX - s * 0.1f, y + s * 0.9f);
-                    bolt.LineTo(centerX + s * 0.4f, y - s * 0.1f);
-                    bolt.LineTo(centerX - s * 0.1f, y - s * 0.1f);
-                    bolt.Close();
-                    canvas.DrawPath(bolt, _detailPaint);
-                }
+                // Blitz-Symbol (gecachter Path)
+                _iconPath.Reset();
+                _iconPath.MoveTo(centerX + s * 0.1f, y - s * 0.9f);
+                _iconPath.LineTo(centerX - s * 0.4f, y + s * 0.1f);
+                _iconPath.LineTo(centerX + s * 0.1f, y + s * 0.1f);
+                _iconPath.LineTo(centerX - s * 0.1f, y + s * 0.9f);
+                _iconPath.LineTo(centerX + s * 0.4f, y - s * 0.1f);
+                _iconPath.LineTo(centerX - s * 0.1f, y - s * 0.1f);
+                _iconPath.Close();
+                canvas.DrawPath(_iconPath, _detailPaint);
                 break;
 
             case WorkshopType.Painter:
@@ -261,70 +263,61 @@ public static class CityBuildingShapes
                 break;
 
             case WorkshopType.Roofer:
-                // Dachgiebel-Silhouette
-                using (var roof = new SKPath())
-                {
-                    roof.MoveTo(centerX, y - s * 0.7f);
-                    roof.LineTo(centerX + s, y + s * 0.3f);
-                    roof.LineTo(centerX + s * 0.7f, y + s * 0.3f);
-                    roof.LineTo(centerX + s * 0.7f, y + s * 0.7f);
-                    roof.LineTo(centerX - s * 0.7f, y + s * 0.7f);
-                    roof.LineTo(centerX - s * 0.7f, y + s * 0.3f);
-                    roof.LineTo(centerX - s, y + s * 0.3f);
-                    roof.Close();
-                    canvas.DrawPath(roof, _detailPaint);
-                }
+                // Dachgiebel-Silhouette (gecachter Path)
+                _iconPath.Reset();
+                _iconPath.MoveTo(centerX, y - s * 0.7f);
+                _iconPath.LineTo(centerX + s, y + s * 0.3f);
+                _iconPath.LineTo(centerX + s * 0.7f, y + s * 0.3f);
+                _iconPath.LineTo(centerX + s * 0.7f, y + s * 0.7f);
+                _iconPath.LineTo(centerX - s * 0.7f, y + s * 0.7f);
+                _iconPath.LineTo(centerX - s * 0.7f, y + s * 0.3f);
+                _iconPath.LineTo(centerX - s, y + s * 0.3f);
+                _iconPath.Close();
+                canvas.DrawPath(_iconPath, _detailPaint);
                 break;
 
             case WorkshopType.Contractor:
-                // Bauhelm
-                using (var helm = new SKPath())
-                {
-                    // Helmschale (Halbkreis)
-                    helm.AddArc(new SKRect(centerX - s * 0.8f, y - s * 0.6f,
-                        centerX + s * 0.8f, y + s * 0.4f), 180, 180);
-                    helm.Close();
-                    canvas.DrawPath(helm, _detailPaint);
-                    // Krempe
-                    canvas.DrawRect(centerX - s, y + s * 0.2f, s * 2, s * 0.25f, _detailPaint);
-                }
+                // Bauhelm (gecachter Path)
+                _iconPath.Reset();
+                _iconPath.AddArc(new SKRect(centerX - s * 0.8f, y - s * 0.6f,
+                    centerX + s * 0.8f, y + s * 0.4f), 180, 180);
+                _iconPath.Close();
+                canvas.DrawPath(_iconPath, _detailPaint);
+                // Krempe
+                canvas.DrawRect(centerX - s, y + s * 0.2f, s * 2, s * 0.25f, _detailPaint);
                 break;
 
             case WorkshopType.Architect:
-                // Winkelmesser/Zirkel (Dreieck mit Messlinie)
+                // Winkelmesser/Zirkel (gecachter Path)
                 _detailPaint.Style = SKPaintStyle.Stroke;
                 _detailPaint.StrokeWidth = 1.2f;
-                using (var compass = new SKPath())
-                {
-                    compass.MoveTo(centerX, y - s * 0.8f);
-                    compass.LineTo(centerX - s * 0.7f, y + s * 0.7f);
-                    compass.LineTo(centerX + s * 0.7f, y + s * 0.7f);
-                    compass.Close();
-                    canvas.DrawPath(compass, _detailPaint);
-                }
+                _iconPath.Reset();
+                _iconPath.MoveTo(centerX, y - s * 0.8f);
+                _iconPath.LineTo(centerX - s * 0.7f, y + s * 0.7f);
+                _iconPath.LineTo(centerX + s * 0.7f, y + s * 0.7f);
+                _iconPath.Close();
+                canvas.DrawPath(_iconPath, _detailPaint);
                 _detailPaint.Style = SKPaintStyle.Fill;
                 break;
 
             case WorkshopType.GeneralContractor:
-                // Gold-Stern (5-zackig)
+                // Gold-Stern (gecachter Path)
                 _detailPaint.Color = ApplyDim(new SKColor(0xFF, 0xD7, 0x00), nightDim);
-                using (var star = new SKPath())
+                _iconPath.Reset();
+                for (int i = 0; i < 5; i++)
                 {
-                    for (int i = 0; i < 5; i++)
-                    {
-                        float outerAngle = -MathF.PI / 2f + i * 2f * MathF.PI / 5f;
-                        float innerAngle = outerAngle + MathF.PI / 5f;
-                        float ox = centerX + MathF.Cos(outerAngle) * s * 0.8f;
-                        float oy = y + MathF.Sin(outerAngle) * s * 0.8f;
-                        float ix = centerX + MathF.Cos(innerAngle) * s * 0.35f;
-                        float iy = y + MathF.Sin(innerAngle) * s * 0.35f;
-                        if (i == 0) star.MoveTo(ox, oy);
-                        else star.LineTo(ox, oy);
-                        star.LineTo(ix, iy);
-                    }
-                    star.Close();
-                    canvas.DrawPath(star, _detailPaint);
+                    float outerAngle = -MathF.PI / 2f + i * 2f * MathF.PI / 5f;
+                    float innerAngle = outerAngle + MathF.PI / 5f;
+                    float ox = centerX + MathF.Cos(outerAngle) * s * 0.8f;
+                    float oy = y + MathF.Sin(outerAngle) * s * 0.8f;
+                    float ix = centerX + MathF.Cos(innerAngle) * s * 0.35f;
+                    float iy = y + MathF.Sin(innerAngle) * s * 0.35f;
+                    if (i == 0) _iconPath.MoveTo(ox, oy);
+                    else _iconPath.LineTo(ox, oy);
+                    _iconPath.LineTo(ix, iy);
                 }
+                _iconPath.Close();
+                canvas.DrawPath(_iconPath, _detailPaint);
                 break;
 
             case WorkshopType.MasterSmith:
@@ -369,29 +362,29 @@ public static class CityBuildingShapes
         float sideOffset = width * 0.15f; // Isometrische Seiten-Verschiebung
         float roofThickness = 4f;
 
-        // Seitenwand (rechts, dunkler - Parallelogramm)
-        using var sidePath = new SKPath();
-        sidePath.MoveTo(x + width, y);
-        sidePath.LineTo(x + width + sideOffset, y - sideOffset * 0.6f);
-        sidePath.LineTo(x + width + sideOffset, y - sideOffset * 0.6f + height);
-        sidePath.LineTo(x + width, y + height);
-        sidePath.Close();
+        // Seitenwand (rechts, dunkler - Parallelogramm, gecachter Path)
+        _sidePath.Reset();
+        _sidePath.MoveTo(x + width, y);
+        _sidePath.LineTo(x + width + sideOffset, y - sideOffset * 0.6f);
+        _sidePath.LineTo(x + width + sideOffset, y - sideOffset * 0.6f + height);
+        _sidePath.LineTo(x + width, y + height);
+        _sidePath.Close();
         _fillPaint.Color = sideColor;
-        canvas.DrawPath(sidePath, _fillPaint);
+        canvas.DrawPath(_sidePath, _fillPaint);
 
         // Vorderseite (Hauptfläche)
         _fillPaint.Color = frontColor;
         canvas.DrawRoundRect(x, y, width, height, 2, 2, _fillPaint);
 
-        // Dach (Trapez oben)
-        using var roofPath = new SKPath();
-        roofPath.MoveTo(x - 1, y);
-        roofPath.LineTo(x + width + 1, y);
-        roofPath.LineTo(x + width + sideOffset + 1, y - sideOffset * 0.6f);
-        roofPath.LineTo(x + sideOffset - 1, y - sideOffset * 0.6f);
-        roofPath.Close();
+        // Dach (Trapez oben, gecachter Path)
+        _roofPath.Reset();
+        _roofPath.MoveTo(x - 1, y);
+        _roofPath.LineTo(x + width + 1, y);
+        _roofPath.LineTo(x + width + sideOffset + 1, y - sideOffset * 0.6f);
+        _roofPath.LineTo(x + sideOffset - 1, y - sideOffset * 0.6f);
+        _roofPath.Close();
         _fillPaint.Color = roofColor;
-        canvas.DrawPath(roofPath, _fillPaint);
+        canvas.DrawPath(_roofPath, _fillPaint);
 
         // Dachrand (dunkle Linie für Tiefe)
         _strokePaint.Color = DarkenColor(frontColor, 0.4f);
@@ -668,18 +661,18 @@ public static class CityBuildingShapes
     private static void DrawCrown(SKCanvas canvas, float cx, float cy)
     {
         _fillPaint.Color = new SKColor(0xFF, 0xD7, 0x00);
-        using var path = new SKPath();
+        _crownPath.Reset();
         float w = 8f, h = 6f;
-        // Krone: 3 Zacken
-        path.MoveTo(cx - w, cy + h);
-        path.LineTo(cx - w, cy);
-        path.LineTo(cx - w * 0.5f, cy + h * 0.4f);
-        path.LineTo(cx, cy - h * 0.3f);
-        path.LineTo(cx + w * 0.5f, cy + h * 0.4f);
-        path.LineTo(cx + w, cy);
-        path.LineTo(cx + w, cy + h);
-        path.Close();
-        canvas.DrawPath(path, _fillPaint);
+        // Krone: 3 Zacken (gecachter Path)
+        _crownPath.MoveTo(cx - w, cy + h);
+        _crownPath.LineTo(cx - w, cy);
+        _crownPath.LineTo(cx - w * 0.5f, cy + h * 0.4f);
+        _crownPath.LineTo(cx, cy - h * 0.3f);
+        _crownPath.LineTo(cx + w * 0.5f, cy + h * 0.4f);
+        _crownPath.LineTo(cx + w, cy);
+        _crownPath.LineTo(cx + w, cy + h);
+        _crownPath.Close();
+        canvas.DrawPath(_crownPath, _fillPaint);
 
         // Juwelen (3 kleine Punkte)
         _fillPaint.Color = new SKColor(0xE0, 0x40, 0x40);

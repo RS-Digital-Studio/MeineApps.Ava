@@ -7,13 +7,17 @@ namespace HandwerkerImperium.Graphics;
 /// Steinmauer-Hintergrund, 2 Fackeln mit Flammen-Animation, großes Gilden-Wappen in der Mitte,
 /// warmer Fackelschein. Alle SKPaint-Objekte gecacht für GC-freie Performance.
 /// </summary>
-public class GuildHallHeaderRenderer
+public class GuildHallHeaderRenderer : IDisposable
 {
+    private bool _disposed;
     private float _time;
 
-    // Flammen-Partikel
-    private readonly List<FlameParticle> _leftFlameParticles = [];
-    private readonly List<FlameParticle> _rightFlameParticles = [];
+    // Flammen-Partikel (Fixed-Size struct-Pool, 0 GC)
+    private const int MaxFlameParticles = 15;
+    private readonly FlameParticle[] _leftFlameParticles = new FlameParticle[MaxFlameParticles];
+    private int _leftFlameCount;
+    private readonly FlameParticle[] _rightFlameParticles = new FlameParticle[MaxFlameParticles];
+    private int _rightFlameCount;
     private float _flameTimer;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -82,8 +86,8 @@ public class GuildHallHeaderRenderer
         DrawTorch(canvas, torchX2, torchY, h);
 
         // 5. Flammen
-        UpdateAndDrawFlames(canvas, torchX1, torchY - 8, deltaTime, _leftFlameParticles);
-        UpdateAndDrawFlames(canvas, torchX2, torchY - 8, deltaTime, _rightFlameParticles);
+        UpdateAndDrawFlames(canvas, torchX1, torchY - 8, deltaTime, _leftFlameParticles, ref _leftFlameCount);
+        UpdateAndDrawFlames(canvas, torchX2, torchY - 8, deltaTime, _rightFlameParticles, ref _rightFlameCount);
 
         // 6. Vignette (dunkle Ränder)
         DrawVignette(canvas, w, h);
@@ -207,17 +211,17 @@ public class GuildHallHeaderRenderer
     // ═══════════════════════════════════════════════════════════════════════
 
     private void UpdateAndDrawFlames(SKCanvas canvas, float cx, float cy, float deltaTime,
-        List<FlameParticle> particles)
+        FlameParticle[] particles, ref int particleCount)
     {
         _flameTimer += deltaTime;
 
-        // Neue Flammen-Partikel emittieren (häufig, für dichte Flamme)
+        // Neue Flammen-Partikel emittieren (haeufig, fuer dichte Flamme)
         if (_flameTimer >= 0.04f)
         {
             _flameTimer = 0;
-            if (particles.Count < 12)
+            if (particleCount < MaxFlameParticles)
             {
-                particles.Add(new FlameParticle
+                particles[particleCount++] = new FlameParticle
                 {
                     X = cx + (Random.Shared.NextSingle() - 0.5f) * 6,
                     Y = cy,
@@ -226,20 +230,17 @@ public class GuildHallHeaderRenderer
                     Life = 0.4f + Random.Shared.NextSingle() * 0.3f,
                     MaxLife = 0.4f + Random.Shared.NextSingle() * 0.3f,
                     Size = 4 + Random.Shared.NextSingle() * 4
-                });
+                };
             }
         }
 
-        // Partikel aktualisieren und zeichnen
-        for (int i = particles.Count - 1; i >= 0; i--)
+        // Partikel aktualisieren und zeichnen (Compact-Loop)
+        int aliveCount = 0;
+        for (int i = 0; i < particleCount; i++)
         {
             var p = particles[i];
             p.Life -= deltaTime;
-            if (p.Life <= 0)
-            {
-                particles.RemoveAt(i);
-                continue;
-            }
+            if (p.Life <= 0) continue;
 
             p.X += p.VX * deltaTime;
             p.Y += p.VY * deltaTime;
@@ -248,7 +249,7 @@ public class GuildHallHeaderRenderer
 
             float lifeRatio = p.Life / p.MaxLife;
 
-            // Farbe: Kern (gelb) → Mitte (orange) → Rand (rot) je nach Lebensdauer
+            // Farbe: Kern (gelb) -> Mitte (orange) -> Rand (rot) je nach Lebensdauer
             SKColor color;
             if (lifeRatio > 0.6f)
                 color = FlameCore.WithAlpha((byte)(220 * lifeRatio));
@@ -267,8 +268,9 @@ public class GuildHallHeaderRenderer
                 canvas.DrawCircle(p.X, p.Y, p.Size * lifeRatio * 1.8f, _fillPaint);
             }
 
-            particles[i] = p;
+            particles[aliveCount++] = p;
         }
+        particleCount = aliveCount;
 
         // Statische Flammen-Basis (immer sichtbar)
         float flicker = MathF.Sin(_time * 12f) * 2 + MathF.Sin(_time * 8.3f) * 1.5f;
@@ -458,9 +460,19 @@ public class GuildHallHeaderRenderer
     // FLAMMEN-PARTIKEL STRUCT
     // ═══════════════════════════════════════════════════════════════════════
 
-    private class FlameParticle
+    private struct FlameParticle
     {
         public float X, Y, VX, VY;
         public float Life, MaxLife, Size;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _vignetteShader?.Dispose();
     }
 }

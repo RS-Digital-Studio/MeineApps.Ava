@@ -39,8 +39,7 @@ public class AudioService : IAudioService
 
     public Task PlaySoundAsync(GameSound sound)
     {
-        // Stub: No audio playback on desktop/Avalonia
-        // TODO: Integrate a cross-platform audio library if needed
+        // Desktop-Stub: Audio nur auf Android via AndroidAudioService
         return Task.CompletedTask;
     }
 

@@ -10,8 +10,9 @@ namespace HandwerkerImperium.Graphics;
 /// Fehler-Schock mit Blitz-Effekt, Memorisierungs-Scan-Linie, Fortschrittsbalken.
 /// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
 /// </summary>
-public class BlueprintGameRenderer
+public class BlueprintGameRenderer : IDisposable
 {
+    private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════
     // PARTIKEL-SYSTEM (Struct-basiert, kein GC)
     // ═══════════════════════════════════════════════════════════════════════
@@ -51,6 +52,9 @@ public class BlueprintGameRenderer
     private readonly bool[] _prevHasError = new bool[20]; // Max 20 Schritte
     private float _completionFlashTimer;
     private float _animTime;
+
+    // Gecachter SKPath fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
+    private readonly SKPath _cachedPath = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // FARBEN (Blaupausen-Farbschema)
@@ -753,12 +757,12 @@ public class BlueprintGameRenderer
             Style = SKPaintStyle.Stroke,
             StrokeCap = SKStrokeCap.Round
         };
-        using var boltPath = new SKPath();
-        boltPath.MoveTo(cx - boltH * 0.15f, cy - boltH * 0.5f);
-        boltPath.LineTo(cx + boltH * 0.1f, cy - boltH * 0.05f);
-        boltPath.LineTo(cx - boltH * 0.1f, cy + boltH * 0.05f);
-        boltPath.LineTo(cx + boltH * 0.15f, cy + boltH * 0.5f);
-        canvas.DrawPath(boltPath, boltPaint);
+        _cachedPath.Reset();
+        _cachedPath.MoveTo(cx - boltH * 0.15f, cy - boltH * 0.5f);
+        _cachedPath.LineTo(cx + boltH * 0.1f, cy - boltH * 0.05f);
+        _cachedPath.LineTo(cx - boltH * 0.1f, cy + boltH * 0.05f);
+        _cachedPath.LineTo(cx + boltH * 0.15f, cy + boltH * 0.5f);
+        canvas.DrawPath(_cachedPath, boltPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1568,5 +1572,15 @@ public class BlueprintGameRenderer
         float s = badgeSize * 0.22f;
         canvas.DrawLine(bCx - s * 1.2f, bCy, bCx - s * 0.1f, bCy + s, checkPaint);
         canvas.DrawLine(bCx - s * 0.1f, bCy + s, bCx + s * 1.5f, bCy - s * 0.8f, checkPaint);
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cachedPath?.Dispose();
     }
 }

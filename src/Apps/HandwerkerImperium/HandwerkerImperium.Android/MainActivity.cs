@@ -1,4 +1,5 @@
 using Android.App;
+using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Views;
@@ -11,6 +12,7 @@ using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Droid;
 using MeineApps.Core.Premium.Ava.Services;
 using Android.Gms.Games;
+using Xamarin.Google.Android.Play.Core.Review;
 using HandwerkerImperium.Android;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.Services.Interfaces;
@@ -52,7 +54,6 @@ public class MainActivity : AvaloniaMainActivity<App>
         App.AudioServiceFactory = sp => new AndroidAudioService(this, sp.GetRequiredService<IGameStateService>());
 
         // Benachrichtigungs-Service für lokale Push-Benachrichtigungen
-        // TODO: AndroidNotificationService-Klasse erstellen
         App.NotificationServiceFactory = _ => new AndroidNotificationService(this);
 
         // Google Play Games SDK initialisieren (MUSS vor erstem Client-Aufruf)
@@ -63,6 +64,22 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         // In-App Review-Prompt über Google Play Review API
         App.ReviewPromptRequested = () => LaunchReviewFlow();
+
+        // Share-Text via natives Android Share-Sheet (Intent.ActionSend)
+        UriLauncher.PlatformShareText = (text, title) =>
+        {
+            try
+            {
+                var intent = new Intent(Intent.ActionSend);
+                intent.SetType("text/plain");
+                intent.PutExtra(Intent.ExtraText, text);
+                StartActivity(Intent.CreateChooser(intent, title));
+            }
+            catch
+            {
+                // Share-Sheet nicht verfügbar
+            }
+        };
 
         base.OnCreate(savedInstanceState);
 
@@ -165,11 +182,39 @@ public class MainActivity : AvaloniaMainActivity<App>
     /// </summary>
     private void LaunchReviewFlow()
     {
-        // Google In-App Review API
-        // TODO: Xamarin.Google.Android.Play.Review NuGet hinzufügen
-        // var manager = ReviewManagerFactory.Create(this);
-        // var request = manager.RequestReviewFlow();
-        // request.AddOnCompleteListener(new ReviewListener(this, manager));
+        try
+        {
+            var manager = ReviewManagerFactory.Create(this);
+            var requestTask = manager.RequestReviewFlow();
+            requestTask.AddOnCompleteListener(new ReviewRequestListener(this, manager));
+        }
+        catch
+        {
+            // Review API nicht verfügbar (z.B. kein Play Store auf Gerät)
+        }
+    }
+
+    /// <summary>
+    /// Java-Callback für den asynchronen Review-Request.
+    /// Startet den eigentlichen Review-Dialog wenn der Request erfolgreich war.
+    /// </summary>
+    private class ReviewRequestListener(Activity activity, IReviewManager manager)
+        : Java.Lang.Object, global::Android.Gms.Tasks.IOnCompleteListener
+    {
+        public void OnComplete(global::Android.Gms.Tasks.Task task)
+        {
+            if (task.IsSuccessful && task.Result is ReviewInfo reviewInfo)
+            {
+                try
+                {
+                    manager.LaunchReviewFlow(activity, reviewInfo);
+                }
+                catch
+                {
+                    // Review-Dialog konnte nicht angezeigt werden
+                }
+            }
+        }
     }
 
     protected override void OnDestroy()

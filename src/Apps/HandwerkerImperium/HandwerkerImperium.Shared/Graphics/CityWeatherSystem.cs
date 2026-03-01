@@ -8,8 +8,9 @@ namespace HandwerkerImperium.Graphics;
 /// fallende Blätter (Herbst), Schnee (Winter).
 /// Wetter ändert sich nach aktuellem Monat oder aktivem SeasonalEvent.
 /// </summary>
-public class CityWeatherSystem
+public class CityWeatherSystem : IDisposable
 {
+    private bool _disposed;
     // Wetter-Typ
     public enum WeatherType { Clear, Rain, Snow, Leaves, Sunshine }
 
@@ -22,6 +23,9 @@ public class CityWeatherSystem
     private readonly SKPaint _particlePaint = new() { IsAntialias = true };
     private readonly SKPaint _sunPaint = new() { IsAntialias = true };
     private readonly SKPaint _rainbowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2.5f };
+
+    // Gecachter Path (vermeidet Allokation pro Sonnenstrahl pro Frame)
+    private readonly SKPath _sunRayPath = new();
 
     // Zustand
     private WeatherType _currentWeather = WeatherType.Clear;
@@ -300,14 +304,14 @@ public class CityWeatherSystem
             // Alpha-Wert: Strahl ist in der Mitte heller
             byte alpha = (byte)(12 + 8 * MathF.Sin(_time * 0.5f + i * 0.9f));
 
-            using var path = new SKPath();
-            path.MoveTo(sunX, sunY);
-            path.LineTo(endX + perpX, endY + perpY);
-            path.LineTo(endX - perpX, endY - perpY);
-            path.Close();
+            _sunRayPath.Reset();
+            _sunRayPath.MoveTo(sunX, sunY);
+            _sunRayPath.LineTo(endX + perpX, endY + perpY);
+            _sunRayPath.LineTo(endX - perpX, endY - perpY);
+            _sunRayPath.Close();
 
             _sunPaint.Color = new SKColor(0xFF, 0xFF, 0xE0, alpha);
-            canvas.DrawPath(path, _sunPaint);
+            canvas.DrawPath(_sunRayPath, _sunPaint);
         }
 
         // Heat-Shimmer am Boden (subtile Wellen-Verzerrung visuell)
@@ -373,5 +377,18 @@ public class CityWeatherSystem
         public float SpeedX, SpeedY;
         public float Size;       // 0-1 normalisiert
         public float Phase;      // Zufällige Phase für Sinus-Drift
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _particlePaint?.Dispose();
+        _sunPaint?.Dispose();
+        _rainbowPaint?.Dispose();
+        _sunRayPath?.Dispose();
     }
 }

@@ -116,9 +116,9 @@ public class FriendService : IFriendService
 
             await _firebase.SetAsync($"friend_requests/{targetUid}/{uid}", request);
         }
-        catch
+        catch (Exception ex)
         {
-            // Fire-and-forget
+            System.Diagnostics.Debug.WriteLine($"Fehler in SendFriendRequestAsync: {ex.Message}");
         }
     }
 
@@ -148,9 +148,9 @@ public class FriendService : IFriendService
                 });
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in GetPendingRequestsAsync: {ex.Message}");
         }
 
         return result;
@@ -194,9 +194,9 @@ public class FriendService : IFriendService
 
             FriendsUpdated?.Invoke();
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in AcceptRequestAsync: {ex.Message}");
         }
     }
 
@@ -209,9 +209,9 @@ public class FriendService : IFriendService
 
             await _firebase.DeleteAsync($"friend_requests/{uid}/{fromUid}");
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in DeclineRequestAsync: {ex.Message}");
         }
     }
 
@@ -241,9 +241,9 @@ public class FriendService : IFriendService
                 });
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in GetRealFriendsAsync: {ex.Message}");
         }
 
         return result;
@@ -262,9 +262,9 @@ public class FriendService : IFriendService
 
             FriendsUpdated?.Invoke();
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in RemoveFriendAsync: {ex.Message}");
         }
     }
 }

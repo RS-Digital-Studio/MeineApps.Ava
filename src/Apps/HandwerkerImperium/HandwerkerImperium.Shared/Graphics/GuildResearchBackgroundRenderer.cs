@@ -7,8 +7,9 @@ namespace HandwerkerImperium.Graphics;
 /// Dunkles Pergament-Thema mit Faserlinien, Gilden-Siegel-Wasserzeichen und goldener Bordüre.
 /// Alle SKPaint-Objekte sind static readonly für GC-freie Performance im Render-Loop.
 /// </summary>
-public class GuildResearchBackgroundRenderer
+public class GuildResearchBackgroundRenderer : IDisposable
 {
+    private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════
     // FARBEN (warme Pergament-Palette)
     // ═══════════════════════════════════════════════════════════════════════
@@ -479,5 +480,19 @@ public class GuildResearchBackgroundRenderer
         _vignettePaint.Shader = _vignetteShader;
         canvas.DrawRect(bounds, _vignettePaint);
         _vignettePaint.Shader = null;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _vignetteShader?.Dispose();
+        _sealPath?.Dispose();
+        _fiberPath?.Dispose();
+        _fiberLightPath?.Dispose();
+        _borderDiamondPath?.Dispose();
     }
 }

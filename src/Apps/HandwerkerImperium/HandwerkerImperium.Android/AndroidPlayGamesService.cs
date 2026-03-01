@@ -221,9 +221,9 @@ public class AndroidPlayGamesService : IPlayGamesService
         if (leaderboardId.StartsWith("TODO_"))
             return Task.FromResult(new List<PlayGamesLeaderboardEntry>());
 
-        // TODO: Play Games v2 NuGet (121.0.0.2) bietet keine LoadTopScores() API.
-        // Die Leaderboard-Daten können nur über die native UI (GetAllLeaderboardsIntent) angezeigt werden.
-        // Für Gilden-Leaderboard-Einträge muss ein neueres NuGet oder die native Java-API genutzt werden.
+        // Play Games v2 NuGet (121.0.0.2) bietet keine LoadTopScores() API.
+        // Leaderboard-Daten nur über native UI (GetAllLeaderboardsIntent) anzeigbar.
+        // Für programmatischen Zugriff neueres NuGet oder native Java-API nötig.
         global::Android.Util.Log.Info(Tag, $"LoadLeaderboardScores: API nicht im NuGet-Binding verfügbar (Leaderboard {leaderboardId})");
         return Task.FromResult(new List<PlayGamesLeaderboardEntry>());
     }
@@ -238,14 +238,14 @@ public class AndroidPlayGamesService : IPlayGamesService
 
     public Task<bool> SaveToCloudAsync(string jsonData, string description)
     {
-        // TODO: Play Games v2 Snapshots API nicht im NuGet-Binding verfügbar
+        // Play Games v2 Snapshots API nicht im NuGet-Binding (121.0.0.2) verfügbar
         global::Android.Util.Log.Warn(Tag, "Cloud Save nicht verfügbar: Snapshots-API fehlt im NuGet-Binding");
         return Task.FromResult(false);
     }
 
     public Task<string?> LoadCloudSaveAsync()
     {
-        // TODO: Play Games v2 Snapshots API nicht im NuGet-Binding verfügbar
+        // Play Games v2 Snapshots API nicht im NuGet-Binding (121.0.0.2) verfügbar
         global::Android.Util.Log.Warn(Tag, "Cloud Load nicht verfügbar: Snapshots-API fehlt im NuGet-Binding");
         return Task.FromResult<string?>(null);
     }

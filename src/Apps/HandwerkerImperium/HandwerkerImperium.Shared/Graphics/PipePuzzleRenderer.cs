@@ -7,8 +7,9 @@ namespace HandwerkerImperium.Graphics;
 /// Zeichnet Metall-Rohre auf Beton-Kacheln mit progressiver Wasser-Animation,
 /// Blasen-Partikeln und Splash-Effekt beim Lösen.
 /// </summary>
-public class PipePuzzleRenderer
+public class PipePuzzleRenderer : IDisposable
 {
+    private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════
     // FARBEN
     // ═══════════════════════════════════════════════════════════════════════
@@ -64,6 +65,9 @@ public class PipePuzzleRenderer
     // Gecachte Filter
     private readonly SKMaskFilter _indicatorGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
     private readonly SKMaskFilter _waterGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
+
+    // Gecachter SKPath fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
+    private readonly SKPath _cachedPath = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // HAUPT-RENDER
@@ -374,12 +378,12 @@ public class PipePuzzleRenderer
         float dropH = iconRadius * 1.2f;
         float dropW = iconRadius * 0.7f;
         using var dropPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
-        using var dropPath = new SKPath();
-        dropPath.MoveTo(cx, cy - dropH * 0.5f);
-        dropPath.CubicTo(cx - dropW, cy, cx - dropW * 0.6f, cy + dropH * 0.4f, cx, cy + dropH * 0.35f);
-        dropPath.CubicTo(cx + dropW * 0.6f, cy + dropH * 0.4f, cx + dropW, cy, cx, cy - dropH * 0.5f);
-        dropPath.Close();
-        canvas.DrawPath(dropPath, dropPaint);
+        _cachedPath.Reset();
+        _cachedPath.MoveTo(cx, cy - dropH * 0.5f);
+        _cachedPath.CubicTo(cx - dropW, cy, cx - dropW * 0.6f, cy + dropH * 0.4f, cx, cy + dropH * 0.35f);
+        _cachedPath.CubicTo(cx + dropW * 0.6f, cy + dropH * 0.4f, cx + dropW, cy, cx, cy - dropH * 0.5f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, dropPaint);
 
         using var glanzPaint = new SKPaint { Color = SourceColor.WithAlpha(180), IsAntialias = true };
         canvas.DrawCircle(cx - dropW * 0.2f, cy - dropH * 0.1f, dropW * 0.2f, glanzPaint);
@@ -417,15 +421,15 @@ public class PipePuzzleRenderer
         float funnelW = iconRadius * 0.8f;
         float funnelH = iconRadius * 0.9f;
         using var funnelPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
-        using var funnelPath = new SKPath();
-        funnelPath.MoveTo(cx - funnelW, cy - funnelH * 0.4f);
-        funnelPath.LineTo(cx + funnelW, cy - funnelH * 0.4f);
-        funnelPath.LineTo(cx + funnelW * 0.25f, cy + funnelH * 0.2f);
-        funnelPath.LineTo(cx + funnelW * 0.25f, cy + funnelH * 0.4f);
-        funnelPath.LineTo(cx - funnelW * 0.25f, cy + funnelH * 0.4f);
-        funnelPath.LineTo(cx - funnelW * 0.25f, cy + funnelH * 0.2f);
-        funnelPath.Close();
-        canvas.DrawPath(funnelPath, funnelPaint);
+        _cachedPath.Reset();
+        _cachedPath.MoveTo(cx - funnelW, cy - funnelH * 0.4f);
+        _cachedPath.LineTo(cx + funnelW, cy - funnelH * 0.4f);
+        _cachedPath.LineTo(cx + funnelW * 0.25f, cy + funnelH * 0.2f);
+        _cachedPath.LineTo(cx + funnelW * 0.25f, cy + funnelH * 0.4f);
+        _cachedPath.LineTo(cx - funnelW * 0.25f, cy + funnelH * 0.4f);
+        _cachedPath.LineTo(cx - funnelW * 0.25f, cy + funnelH * 0.2f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, funnelPaint);
         canvas.DrawCircle(cx, cy + funnelH * 0.55f, funnelW * 0.2f, funnelPaint);
 
         // Wenn Wasser angekommen: Wellen-Ringe am Abfluss
@@ -497,12 +501,12 @@ public class PipePuzzleRenderer
         {
             float px = positions[i][0], py = positions[i][1];
             float dx = dirs[i][0], dy = dirs[i][1];
-            using var path = new SKPath();
-            path.MoveTo(px + dx * arrowSize, py + dy * arrowSize);
-            path.LineTo(px - dy * arrowSize * 0.5f, py + dx * arrowSize * 0.5f);
-            path.LineTo(px + dy * arrowSize * 0.5f, py - dx * arrowSize * 0.5f);
-            path.Close();
-            canvas.DrawPath(path, arrowPaint);
+            _cachedPath.Reset();
+            _cachedPath.MoveTo(px + dx * arrowSize, py + dy * arrowSize);
+            _cachedPath.LineTo(px - dy * arrowSize * 0.5f, py + dx * arrowSize * 0.5f);
+            _cachedPath.LineTo(px + dy * arrowSize * 0.5f, py - dx * arrowSize * 0.5f);
+            _cachedPath.Close();
+            canvas.DrawPath(_cachedPath, arrowPaint);
         }
     }
 
@@ -772,6 +776,18 @@ public class PipePuzzleRenderer
     {
         public float X, Y, VX, VY, Size, Life, MaxLife;
         public bool Active;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _indicatorGlow?.Dispose();
+        _waterGlow?.Dispose();
+        _cachedPath?.Dispose();
     }
 }
 

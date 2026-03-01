@@ -374,7 +374,9 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"Fehler in OnGameTimerTick: {ex}");
+#endif
         }
     }
 

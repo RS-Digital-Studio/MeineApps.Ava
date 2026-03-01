@@ -54,6 +54,7 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 - **Ausrüstungs-System** (4 Typen x 4 Seltenheiten für Arbeiter, Drop nach MiniGames, Effizienz/Ermüdungs/Stimmungs-Boni)
 - **Streak-Rettung** (Verlorene Login-Streaks für 5 Goldschrauben rettbar)
 - **Prestige-Pass** (Optionaler IAP 2,99 EUR pro Prestige-Durchlauf: +50% Prestige-Punkte, wird bei Prestige-Reset verbraucht. GameState.IsPrestigePassActive, PrestigeService.ActivatePrestigePass())
+- **Isometrische Weltkarte** (Full-Screen 2.5D SkiaSharp-Weltkarte als Hauptansicht (Tab 0), ersetzt DashboardView. 8x8 Diamond-Grid mit 10 einzigartigen Workshop-Gebäuden (25+ Draw-Calls/Gebäude), 7 Support-Gebäuden, Kamera-System (Pan/Zoom/Inertia), Radial-Menü (Upgrade/Workers/MiniGame/Info), Partikel-System (300 Struct-Pool), Tag/Nacht-Zyklus, Wetter-Effekte, Painter's-Algorithm Rendering)
 
 ## Premium & Ads
 
@@ -73,6 +74,21 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 9. `achievement_boost` → Achievement Progress +20% (AchievementsView)
 
 ## Architektur-Besonderheiten
+
+### MainViewModel Partial-Class-Split
+
+MainViewModel (urspruenglich ~4.400 Zeilen) ist in 6 partielle Dateien aufgeteilt:
+
+| Datei | Inhalt | Zeilen (ca.) |
+|-------|--------|-------------|
+| `MainViewModel.cs` | Felder, Constructor, Properties (~120 ObservableProperties), Event-Handler, GameTick, Dispose, WorkshopDisplayModel | ~1.800 |
+| `MainViewModel.Navigation.cs` | Tab-Auswahl (SelectXxxTab), NavigateTo-Commands, HandleBackPressed, OnChildNavigation, NavigateToMiniGame | ~470 |
+| `MainViewModel.Dialogs.cs` | Alert/Confirm-Dialoge, Prestige-Bestaetigung, Story-Dialog (Meister Hans), Tutorial-Overlay | ~280 |
+| `MainViewModel.Economy.cs` | Workshop-Kauf/Upgrade, Auftraege, Rush, Lieferant, RefreshFromState, RefreshWorkshops, BulkBuy, Hold-to-Upgrade | ~730 |
+| `MainViewModel.Missions.cs` | Weekly Missions, Welcome-Back, Lucky Spin, Streak-Rettung, Quick Jobs, Daily Challenges, Meisterwerkzeuge | ~370 |
+| `MainViewModel.Init.cs` | InitializeAsync, Cloud-Save, Offline-Earnings, Daily Reward | ~370 |
+
+**Konventionen**: Jede Datei hat eigene `using`-Direktiven + `namespace HandwerkerImperium.ViewModels;` + `public partial class MainViewModel`. Methoden koennen sich gegenseitig aufrufen da alle Dateien zur selben Klasse gehoeren. Event-Handler fuer BuildingsViewModel.FloatingTextRequested als benanntes Delegate-Feld mit korrektem Unsubscribe in Dispose().
 
 ### Dialog-UserControls (Views/Dialogs/)
 MainView-Dialoge sind in eigenständige UserControls extrahiert (reduziert MainView.axaml um ~650 Zeilen):
@@ -94,7 +110,7 @@ Inhalte aus dem überladenen Dashboard auf 5 thematische Tabs verteilt. Ad-Banne
 
 | Tab | Index | View | Inhalt |
 |-----|-------|------|--------|
-| Werkstatt | 0 | DashboardView | City-Header, BannerStrip (Rush/Lieferant/Worker-Warnung), Workshop-Karten, Aufträge/Schnelljobs |
+| Werkstatt | 0 | IsometricWorldView | Isometrische 2.5D-Weltkarte (Full-Screen SkiaSharp), ersetzt DashboardView. 10 Workshop-Gebäude + 7 Support-Gebäude, Kamera (Pan/Zoom), Radial-Menü, Partikel, Tag/Nacht, Wetter |
 | Imperium | 1 | ImperiumView | Header (Titel+Geld), Prestige-Banner, Gebäude Full-Width-Karten (inline Build/Upgrade), Gesperrte Gebäude kompakt, Crafting+Research nebeneinander, Quick-Access 3-Spalten (Workers/Manager/MasterTools), PrestigeShop |
 | Missionen | 2 | MissionenView | Daily Challenges, Weekly Missions, Feature-Karten (Turnier/BattlePass/SaisonEvent/Erfolge), Glücksrad-Banner |
 | Gilde | 3 | GuildView | Guild-Hub, Research/Members/Invite Sub-Seiten |
@@ -123,6 +139,56 @@ GuildView als kompakter Hub mit 3 Navigations-Karten. Detailansichten als eigene
 - `GuildInviteView` - Einladungs-Code (6-stellig, teilen), Code eingeben, Spieler-Browser
 
 Alle Guild-Sub-Views erben DataContext vom GuildViewModel. Navigation via `NavigationRequested` Events → MainViewModel routing (`guild_research`/`guild_members`/`guild_invite`). Zurück-Navigation (".." oder Android-Back) führt zum Guild-Hub.
+
+### Isometrische Weltkarte (Graphics/IsometricWorld/)
+
+Full-Screen 2.5D-Weltkarte als zentraler Game-Hub (Tab 0, ersetzt DashboardView). Komplett SkiaSharp-basiert, 20fps Render-Loop.
+
+**8 Dateien im Unterordner `Graphics/IsometricWorld/`:**
+
+| Datei | Zweck |
+|-------|-------|
+| `IsoGridHelper.cs` | Statische Klasse: IsoToScreen/ScreenToIso-Konvertierung, GetTileDiamond, IsPointInTile, GetDrawOrder (Painter's Algorithm), GetWorldBounds. TileWidth=96f, TileHeight=48f, GridCols=8, GridRows=8 |
+| `IsoCameraSystem.cs` | Pan mit Inertia, PinchZoom (0.5x-2.0x), FocusOnBuilding (animiert), CenterOnWorld, GetTransformMatrix, ScreenToWorld, StopMotion, Bounds-Clamping |
+| `IsoTerrainRenderer.cs` | TileType Enum, DrawAllTiles mit Painter's Algorithm, 4 Grüntöne, Weg-Farben nach WorldTier, wind-animiertes Gras, Dekorationen (Blumen, Büsche, Bäume, Steine) |
+| `IsoBuildingRenderer.cs` | DrawBuilding (10 Workshop-Typen, 25+ Draw-Calls/Gebäude), DrawSupportBuilding (7 Typen), DrawLockedSlot. MaterialType/RoofType Enums, Level-Rahmen, Worker-Indikatoren, Rauch-Partikel. **0 GC/Frame**: 18 static readonly SKPath (Body 3, Roof 4, Star 1, Locked 4, Workshop 2, Terrain 2) mit Rewind() statt new, manuelle Shader-Dispose() |
+| `IsoParticleManager.cs` | 300-Partikel Struct-Pool (0 GC), 10 ParticleTypes, LCG Pseudo-Random, SpawnWorkshopParticles/SpawnWeatherParticles, lock-basiert thread-safe |
+| `IsoRadialMenu.cs` | 4 Aktionen (Upgrade/Workers/MiniGame/Info), EaseOutBack staggered Animation, 6 static readonly SKPaint (0 GC/Frame), Screen-Space HitTestScreen (±45° Quadranten), IsPointInsideMenu (Close-Logik), Open/Close/ForceClose, Render mit Fade-Out Layer. Menü bleibt bei Upgrade offen (schnelles Mehrfach-Upgrade). Icons: Upgrade=Pfeil-hoch, Workers=Silhouette, MiniGame=Pfeil-rechts(→), Info=Kreis-i |
+| `IsometricWorldRenderer.cs` | Orchestrator: 9-Stage Render-Pipeline (Sky → Camera → Terrain → Buildings sorted → Particles → Camera reset → Weather → RadialMenu → HUD). GridCell Struct, InitializeGrid, Update, Render, HitTest, UpdateGridFromState, CenterCamera, FocusOnWorkshop. **Shader-Cache**: Sky-Gradient und HUD-Shader gecacht (nur bei Farbwechsel/Bounds-Änderung neu erstellt) |
+| `EasingFunctions.cs` | (Shared) EaseOutCubic, EaseOutBack, EaseOutElastic, EaseOutBounce, Spring, Lerp, SmoothStep, PingPong |
+
+**View:**
+- `Views/IsometricWorldView.axaml` - SKCanvasView + FloatingTextOverlay
+- `Views/IsometricWorldView.axaml.cs` - Render-Loop (20fps DispatcherTimer), Touch-Handling (Pan/Tap/Desktop-Mausrad-Zoom), FloatingText-Events (gespeicherte Delegate-Referenz), Workshop-Unlock-Tracking (_lastUnlockedCount → automatisches Grid-Reinit), Radial-Menü-Aktionen delegieren an MainViewModel, Upgrade-FloatingText ("Lv.X" in Craft-Orange am Menü-Position), Dispatcher.UIThread.Post() für Navigation-Aktionen (MiniGame/Info)
+
+**Grid-Layout (8x8 Diamond):**
+- Workshop-Positionen: (2,2)/(4,2)/(6,2)/(1,4)/(3,4)/(5,4)/(7,4)/(2,6)/(4,6)/(6,6)
+- Building-Positionen: (0,1)/(1,1)/(3,1)/(5,1)/(7,1)/(0,3)/(7,6)
+- Rest: Gras/Deko-Tiles
+
+**Render-Pipeline (9 Stufen):**
+1. Sky-Gradient (Tag/Nacht basierend auf DateTime.Now.Hour)
+2. Camera-Transform anwenden (Pan+Zoom Matrix)
+3. Terrain (Gras-Tiles, Wege, Dekorationen)
+4. Buildings sortiert nach col+row (Painter's Algorithm)
+5. Partikel (Workshop-Rauch, Wetter)
+6. Camera-Transform zurücksetzen
+7. Wetter-Overlay (Regen/Schnee/Blätter/Sonnenstrahlen)
+8. Radial-Menü (über allem, in Welt-Koordinaten)
+9. HUD-Elemente
+
+**Touch-Handling:**
+- Pan: Drag mit >10px Schwelle, Camera.Pan(dx, dy) mit Inertia
+- Tap: <10px Bewegung + <300ms → HitTest → Workshop (öffnet Radial-Menü), Building (Imperium-Tab), RadialMenu-Aktion (Upgrade bleibt offen + zeigt "Lv.X" FloatingText / Workers+MiniGame+Info schließen mit Dispatcher.UIThread.Post-Navigation), Locked (kein Verhalten), None (Menü schließen). Screen-Space HitTest: Klick innerhalb Menü-Backdrop ohne Button-Treffer → ignoriert (kein Close→Reopen). Klick außerhalb → Close ohne Building-Check
+- Desktop-Mausrad-Zoom: ScrollZoomFactor=1.1f, zoomt Richtung Mausposition (wie Google Maps)
+
+**Integration mit MainViewModel:**
+- `UpgradeWorkshopSilent(type)` → Stilles Upgrade + Audio + Grid-Refresh
+- `NavigateToWorkshopFromCity(type)` → Workshop-Detail-Seite
+- `SelectWorkerMarketTabCommand` → Arbeitermarkt
+- `SelectBuildingsTabCommand` → Imperium-Tab
+- `FloatingTextRequested` Event → Farbcodiert (money=grün, xp/golden_screws=gold, level=craft-orange)
+- `GetGameStateForRendering()` → GameState-Snapshot für Renderer
 
 ### Forschungs-Hintergrund (Graphics/ResearchBackgroundRenderer.cs)
 Warmer Werkstatt-Hintergrund hinter dem Forschungsbaum: Dunkles Nussholz (#1C140E), organische Holzmaserung (18 Sinus-Wellenlinien), feines Grid-Raster (24px, braune Linien), 4 Zahnrad-Wasserzeichen mit Craft-Orange-Akzent, radiale Vignette. Alle SKPaint-Objekte static readonly für GC-freie Performance. Gecachte Pfade/Shader bei Bounds-Änderung.
@@ -197,8 +263,8 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 | `OfflineProgressService` | Offline-Einnahmen (Brutto mit allen Modifikatoren - Kosten, * Saison-Multiplikator, Staffelung 100%/50%/25% für 2h/6h/Rest, Soft-Cap ab 2.0x) |
 | `GoalService` | Dynamisches Nächstes-Ziel-System: 4 Prioritäten (Meilenstein nahe, Prestige verfügbar, Workshop freischaltbar, Gebäude-Upgrade), Cache mit Dirty-Flag, alle 60 Ticks aktualisiert |
 | `OrderGeneratorService` | Aufträge generieren (4 OrderTypes: Standard/Large/Weekly/Cooperation, Kundennamen, Stammkunden-Zuweisung, Reputation beeinflusst Order-Qualität) |
-| `ReviewService` | In-App Review Prompts (Preferences-basiert, 14-Tage Cooldown, Trigger: Level 20/50/100, Prestige, 50 Aufträge) |
-| `AudioService` / `AndroidAudioService` | Sound-Effekte (SoundPool, 15 GameSounds) + Haptik (Vibrator, 7 VibrationType). Desktop-Stub / Android-Implementierung. Factory-Pattern in App.axaml.cs |
+| `ReviewService` | In-App Review Prompts (Preferences-basiert, 14-Tage Cooldown, Trigger: Level 20/50/100, Prestige, 50 Aufträge). Android: Nativer Play Store Review-Dialog via `Xamarin.Google.Android.Play.Review` (ReviewManagerFactory + ReviewRequestListener in MainActivity) |
+| `AudioService` / `AndroidAudioService` | Sound-Effekte (SoundPool, 15 GameSounds) + Haptik (Vibrator, 7 VibrationType) + Hintergrundmusik (MediaPlayer, Looping, Assets/Music/). Desktop-Stub / Android-Implementierung. Factory-Pattern in App.axaml.cs |
 | `NotificationService` / `AndroidNotificationService` | Lokale Push-Benachrichtigungen (4 Typen: Forschung fertig, Lieferant wartet, Rush verfügbar, Daily Reward). AlarmManager + BroadcastReceiver auf Android (NotificationReceiver in AndroidManifest.xml registriert). Lokalisierte Nachrichten (6 Sprachen). DateTime.UtcNow für Zeitplanung. In Einstellungen abschaltbar |
 | `PlayGamesService` / `AndroidPlayGamesService` | Google Play Games Integration: Sign-In (GamesSignInClient.IsAuthenticated), Score-Submit (LeaderboardsClient.SubmitScore), Leaderboard-UI (GetAllLeaderboardsIntent). Cloud-Save/PlayersClient/LoadTopScores NICHT verfügbar im NuGet v121.0.0.2 → Stub-Implementierungen (SupportsCloudSave=false). Desktop-Stub / Android-Implementierung. Factory-Pattern in App.axaml.cs |
 | `ManagerService` | 14 Vorarbeiter: Unlock-Prüfung (Level/Prestige), Upgrade (Lv.1-5, Goldschrauben), Workshop-Boni (Effizienz/Ermüdung/Stimmung/Einkommen) |
@@ -288,6 +354,11 @@ Alle 8 Mini-Games nutzen dedizierte SkiaSharp-Renderer (Graphics/) für das Spie
 | Verkabelungs-MiniGame Renderer | WiringGameRenderer (SkiaSharp): AAA-Sicherungskasten (#37474F) mit Schrauben-Ecken, Bezier-Kabel, elektrische Pulse entlang Verbindungen (SKPathMeasure), Verbindungs-Burst (12 Partikel in Kabelfarbe), goldene Celebration bei Komplett (Flash+Partikel), Fehler-Blitz (8 rote+Overlay+Zickzack), Struct-basierte Partikel (MAX_SPARKS=60, MAX_AMBIENT=8, kein GC), Touch-HitTest, 20fps Render-Loop |
 | Inspektions-MiniGame Renderer | InspectionGameRenderer (SkiaSharp): AAA-Beton-Baustelle, Defekt-Schimmern, pulsierende Lupe, Struct-basierter Staub (MAX_DUST=15), Entdeckungs-Funken (MAX_SPARKS=30, 10 grüne bei Defekt, 8 rote bei Fehlalarm), Zustandsverfolgung (MAX_TRACKED_CELLS=30), 16 Vektor-Icons (8 gut + 8 defekt), Struct-basierte Partikel (kein GC), Touch-HitTest mit DPI-Skalierung, 20fps Render-Loop |
 | Glücksrad Renderer | LuckySpinWheelRenderer (SkiaSharp): 8 farbige Segmente mit radialen Gradienten, dekorativer Nieten-Rand (24 Nieten), SkiaSharp-gezeichnete Icons pro Segment (Münze/Stern/Schraube/Blitz/Werkzeuge/Krone - keine Emojis), Naben-Gradient in der Mitte, goldener Zeiger-Dreieck oben, Glow-Effekt auf Gewinn-Segment. Spin-Animation via DispatcherTimer 16ms (~60fps), CubicEaseOut, ~3s Dauer, min 3 volle Umdrehungen. LuckySpinView als Bottom-Sheet Overlay in MainView |
+| Iso-Weltkarte | IsometricWorldView als Tab 0 (ersetzt DashboardView): Full-Screen SkiaSharp 2.5D-Welt mit 8x8 Diamond-Grid, 10 einzigartige Workshop-Gebäude (25+ Draw-Calls, Wandtexturen, Fenster, Türen, Dächer, Identity-Features), 7 Support-Gebäude, Tag/Nacht-Zyklus, Wetter (Regen/Schnee/Blätter/Sonne), Gras-Tiles mit Wind-Animation, Blumen/Büsche/Bäume-Dekorationen |
+| Iso-Kamera | Pan mit Inertia (Smooth-Follow), Pinch-Zoom 0.5x-2.0x, FocusOnBuilding mit Animation, Bounds-Clamping, StopMotion bei neuem Touch |
+| Iso-Radial-Menü | Pie-Menü mit 4 Aktionen (Upgrade/Workers/MiniGame/Info) bei Workshop-Tap, staggered EaseOutBack-Animation, Backdrop-Kreis, Icon-Zeichnung (Pfeil/Silhouette/Stern/Info-i), Fade-Out beim Schließen |
+| Iso-Partikel | 300 Struct-Pool Partikel (0 GC): Workshop-Rauch, Wasser-Tropfen, Funken, Blätter, Schneeflocken, Regentropfen, Sonnenstrahlen, Staub. LCG Pseudo-Random statt Random.Shared im Render-Loop |
+| Iso-Gebäude Details | Level-Rahmen (Bronze/Silber/Gold/Diamant), Worker-Count-Indikatoren, Locked-Slots mit Schloss+Level-Text, Rauch aus Schornsteinen, unterschiedliche Dachformen (Flach/Spitz/Giebel/Kuppel/Mansard) |
 
 ## Farbkonsistenz (Craft-Palette)
 
@@ -432,8 +503,59 @@ Effekte werden über `GuildMembership`-Properties gecacht und in folgenden Servi
 - GameState: `NextDeliveryTime`, `PendingDelivery`, `TotalDeliveriesClaimed`
 - Model: `SupplierDelivery` (Type, Amount, CreatedAt, ExpiresAt)
 
+### SKPath/SKFont-Caching in Game-Loop-Renderern
+
+5 Mini-Game-Renderer nutzen gecachte `_cachedPath` (SKPath) und `_cachedFont` (SKFont) Instanz-Felder statt `using var` pro Frame. `_cachedPath.Reset()` vor Wiederverwendung, `_cachedFont.Size` nur bei Bedarf aendern. Reduziert GC-Allokationen bei 60fps.
+
+| Renderer | Gecachte Felder | Betroffene Methoden |
+|----------|----------------|---------------------|
+| InventGameRenderer | `_cachedPath` | DrawErrorOverlay |
+| BlueprintGameRenderer | `_cachedPath` | DrawErrorOverlay |
+| SawingGameRenderer | `_cachedPath` | DrawWoodBoard (rissPath) |
+| WiringGameRenderer | `_cachedPath` + `_cachedFont` | DrawPanel, DrawWires, DrawBezierConnections, UpdateAndDrawBolts |
+| PipePuzzleRenderer | `_cachedPath` | DrawSourceIndicator, DrawDrainIndicator, DrawFlowArrows |
+
+| RewardCeremonyRenderer | `_iconPath` | DrawArrowUp, DrawStar, DrawCrown, DrawTrophy |
+
+**Nicht geaendert** (alle SKPath/SKFont in statischen Methoden): InspectionGameRenderer, BlueprintGameRenderer (Icon-Methoden), InventGameRenderer (Icon-Methoden), SawingGameRenderer (DrawWoodGrainCurved, DrawEndGrain), LuckySpinWheelRenderer, WorkerAvatarRenderer, PaintingGameRenderer, RoofTilingRenderer. **GameCardRenderer** und **ResearchIconRenderer** sind statische Klassen - `using var` bleibt.
+
+### IDisposable auf allen Renderern mit nativen Ressourcen
+
+Alle SkiaSharp-Renderer die Instanz-Felder (SKPaint, SKFont, SKPath, SKShader, SKMaskFilter) halten, implementieren `IDisposable` mit `_disposed`-Guard. Statische Felder (`static readonly`) werden NICHT disposed.
+
+| Renderer | Disposed Ressourcen |
+|----------|---------------------|
+| CityWeatherSystem | 3 SKPaint + 1 SKPath |
+| CoinFlyAnimation | 4 SKPaint |
+| ScreenTransitionRenderer | 3 SKPaint |
+| OdometerRenderer | 5 SKPaint + 3 SKFont |
+| ResearchTabRenderer | 1 SKFont + 1 SKPath |
+| ResearchCelebrationRenderer | 2 SKFont |
+| ResearchActiveRenderer | 4 SKFont |
+| ResearchBranchBannerRenderer | 2 SKFont + 1 SKPath |
+| GameBackgroundRenderer | 6 SKPaint + 1 SKShader |
+| GameJuiceEngine | 6 SKPaint + 1 SKFont + 1 SKPath |
+| GameTabBarRenderer | 5 SKPaint + 2 MaskFilter + 7 SKPath |
+| CityRenderer | 12 SKPaint + 2 SKFont + 3 SKPath + CityWeatherSystem |
+| GuildHallHeaderRenderer | 1 SKShader |
+| GuildResearchBackgroundRenderer | 1 SKShader + 4 SKPath |
+| ResearchBackgroundRenderer | 1 SKShader + 5 SKPath |
+| ResearchLabRenderer | 6 SKPaint |
+| ForgeGameRenderer | 10 SKPaint |
+| PipePuzzleRenderer | 2 SKMaskFilter + 1 SKPath |
+| SawingGameRenderer | 1 SKPath |
+| BlueprintGameRenderer | 1 SKPath |
+| InventGameRenderer | 1 SKPath |
+| WiringGameRenderer | 1 SKPath + 1 SKFont |
+| WorkshopSceneRenderer | 8 SKPaint (bereits vorhanden) |
+
 ## Changelog Highlights
 
+- **01.03.2026**: **Immersiver Ladebildschirm**: Neue `HandwerkerImperiumLoadingPipeline` in `Loading/`: 3 Steps (Shader weight 30, ViewModel weight 10, GameInit weight 40 via mainVm.InitializeAsync()). App.axaml.cs: Panel(MainView + SkiaLoadingSplash) Pattern mit RunLoadingAsync (min 800ms Anzeigedauer). Altes fire-and-forget `mainVm.InitTask = mainVm.InitializeAsync()` durch Pipeline-Step ersetzt. DataContext erst nach Pipeline-Abschluss gesetzt. Build 0 Fehler.
+- **v2.0.11 (28.02.2026)**: Swipe-selects-Workshop Bug behoben: Workshop-Karten im ScrollViewer wurden bei Scroll-Gesten fälschlich selektiert. **(1) PointerPressed→PointerReleased**: Aktionen (SelectWorkshop, RadialBurst) werden nicht mehr in OnWorkshopCardsPointerPressed ausgeführt, sondern erst in OnWorkshopCardsPointerReleased nach Tap-Prüfung. **(2) Tap-Distanz-Schwelle**: TapDistanceThreshold=15px - Finger-Bewegung >15px wird als Scroll erkannt, nicht als Tap. **(3) Tunnel-Routing**: PointerMoved+PointerReleased mit RoutingStrategies.Tunnel registriert, damit Scroll-Erkennung auch funktioniert wenn ScrollViewer den Pointer captured. **(4) Hold-to-Upgrade Scroll-Guard**: OnHoldTick prüft _workshopIsScrolling und bricht Hold-Upgrade bei Scroll ab. **(5) e.Handled entfernt**: PointerPressed setzt e.Handled nicht mehr auf true, sodass ScrollViewer die Geste korrekt verarbeiten kann.
+- **v2.0.11 (27.02.2026)**: Radial-Menü UX-Verbesserungen: **(1) Upgrade-FloatingText**: ShowUpgradeFeedback() zeigt "Lv.X" in Craft-Orange (#D97706) am Radial-Menü nach erfolgreichem Upgrade (Welt→Screen-Koordinaten-Konvertierung). **(2) MiniGame-Icon geändert**: Stern(★)→Pfeil-rechts(→) für "Werkstatt öffnen"-Kommunikation, _starPath+RebuildStarPath Dead Code entfernt. **(3) Dispatcher.UIThread.Post**: Navigation-Aktionen (MiniGame/Info) werden verzögert ausgeführt damit Close-State sauber verarbeitet wird.
+- **v2.0.11 (27.02.2026)**: IsometricWorld Render-Performance + Desktop-Steuerung + Radial-Menü-Fix: **(1) 0 SKPath-Allokationen pro Frame**: 18 static readonly SKPath in IsoBuildingRenderer (BodyFront/Side/Top, RoofPath1-4, StarPath, LockedFront/Side/Top/Arc, WsPathA/WsPathB) + 2 in IsoTerrainRenderer (_shadowPath/_arcPath), alle per Rewind() wiederverwendet statt `new SKPath()`. ~23 native Allokationen/Frame eliminiert (460/s bei 20fps). **(2) Shader-Caching**: Sky-Gradient und HUD-Shader in IsometricWorldRenderer gecacht, nur bei Farbwechsel/Bounds-Änderung neu erstellt (~40 Shader-Allokationen/s eliminiert). Manuelle Dispose() für nicht-cachbare Shader (farb-abhängig pro Gebäude). **(3) Desktop Mausrad-Zoom**: ScrollZoomFactor=1.1f in IsometricWorldView, OnPointerWheelChanged → Camera.PinchZoom (zoomt Richtung Mausposition wie Google Maps). **(4) Desktop Pan-Fix**: _isPointerDown Guard in OnPointerMoved (PointerMoved feuert auf Desktop auch ohne Maustaste). **(5) Gebäude-HitTest**: Bounding-Box statt Boden-Raute (Wände/Dach 45-100dp jetzt klickbar, vorderstes Gebäude per DrawOrder). **(6) Radial-Menü Screen-Space HitTest**: HitTestScreen (±45° Quadranten in Screen-Koordinaten statt 26dp Kreise in Welt-Koordinaten), IsPointInsideMenu für Close-Logik, Close→Reopen-Zyklus eliminiert (Klick im Menü-Bereich ohne Button → ignoriert, Klick außen → nur Close ohne Building-Check). **(7) Upgrade hält Menü offen**: Radial-Menü schließt bei Upgrade nicht mehr (schnelles Mehrfach-Upgrade möglich), nur Navigation-Aktionen (Workers/MiniGame/Info) schließen es.
+- **v2.0.11 (27.02.2026)**: Isometrische 2.5D-Weltkarte (8 Tasks): Full-Screen SkiaSharp-Weltkarte ersetzt DashboardView als Tab 0. **(1) IsoGridHelper**: 8x8 Diamond-Grid, IsoToScreen/ScreenToIso, TileWidth=96/TileHeight=48, Painter's Algorithm DrawOrder. **(2) IsoCameraSystem**: Pan+Inertia, PinchZoom 0.5x-2.0x, FocusOnBuilding, Bounds-Clamping. **(3) IsoTerrainRenderer**: 4 Grüntöne, Wege nach WorldTier, Wind-animiertes Gras, Dekorationen (Blumen/Büsche/Bäume/Steine). **(4) IsoBuildingRenderer**: 10 Workshop-Typen + 7 Support-Gebäude, 25+ Draw-Calls/Gebäude (Wände/Dach/Fenster/Türen/Identity-Features), Level-Rahmen, Worker-Indikatoren, Locked-Slots. **(5) IsoParticleManager**: 300 Struct-Pool (0 GC), 10 ParticleTypes, LCG Random. **(6) IsoRadialMenu**: 4 Aktionen (Upgrade/Workers/MiniGame/Info), EaseOutBack staggered, 6 static readonly SKPaint. **(7) IsometricWorldRenderer**: 9-Stage Render-Pipeline (Sky→Camera→Terrain→Buildings→Particles→Camera-reset→Weather→RadialMenu→HUD), GridCell Struct, HitTest. **(8) IsometricWorldView**: 20fps Render-Loop, Touch-Handling (Pan/Tap), FloatingText-Events, Workshop-Unlock-Tracking, Radial-Menü→MainViewModel-Delegation. Integration: MainView.axaml Tab 0 auf IsometricWorldView umgestellt.
 - **v2.0.11 (27.02.2026)**: Balancing-Redesign (12 Tasks, Idle-Game-Industrie-Recherche): **(1) Prestige-Anforderungen gesenkt**: GetRequiredPreviousTierCount von 3 für alle auf 0/1/1/2/2/2/3 (Gesamtprestiges für Legende: ~729→~48). **(2) Workshop Multiplikator-Meilensteine**: GetMilestoneMultiplier() in Workshop.cs (Lv25=×1.5, Lv50=×2, Lv100=×2, Lv250=×3, Lv500=×5, Lv1000=×10, kumulativ ×900), eingebaut in BaseIncomePerWorker. **(3) Hard-Cap→Soft-Cap**: GameLoopService + OfflineProgressService, logarithmischer Soft-Cap ab 2.0x: `softened = 2.0 + log2(1 + excess)`. **(4) Offline-Earnings Staffelung**: 100% erste 2h, 50% bis 6h, 25% danach. **(5) Meilenstein-Celebrations**: FloatingText + CeremonyRequested bei Workshop-Meilensteinen in MainViewModel. **(6) GoalService**: 3 neue Dateien (GameGoal.cs, IGoalService.cs, GoalService.cs), 4-Prioritäten-System (Meilenstein nahe/Prestige/Workshop/Gebäude), Cache mit Dirty-Flag. **(7) GoalService DI + MainViewModel**: Singleton-Registrierung, 6 neue Properties, RefreshCurrentGoal() alle 60 Ticks, NavigateToGoalCommand. **(8) Dashboard Ziel-Banner**: Gold-umrandeter "Nächstes Ziel"-Banner in DashboardView nach BannerStrip. **(9) Erweiterte Prestige-Preview**: 4 neue Properties (PrestigePreviewGains/Losses/SpeedUp/TierName) in MainViewModel, grüne Gewinne/rote Verluste/goldener Speed-Up in ImperiumView. **(10) RESX-Keys**: 15 neue Keys in 6 Sprachen (IncomeBoost, PermanentIncomeBonus, PrestigeKeeps*/Loses*, Faster, Unlock, BuildingUpgradeHint).
 - **v2.0.11 (27.02.2026)**: ImperiumView komplett redesignt: **(1)** Gebäude-Klicks öffnen KEINE separate Seite mehr (IsBuildingsDetailActive entfernt). Stattdessen Inline Build/Upgrade direkt in ImperiumView. **(2)** Full-Width Karten für freigeschaltete Gebäude mit Icon, Name, Level-Badge, Effekt-Text, und inline Build/Upgrade-Button (Preis farbcodiert: grün wenn leistbar, grau wenn nicht). **(3)** Kompaktes 2-Spalten-Grid für gesperrte Gebäude mit Lock-Icon + Level-Anforderung. **(4)** Geld-Anzeige im Header. **(5)** Crafting + Research nebeneinander als tippbare Karten (aktiver Status oder "Starten" CTA). **(6)** Quick-Access als 3-Spalten-Grid (Team/Vorarbeiter/Meisterwerkzeuge). **(7)** BuildingsViewModel: UnlockedBuildings/LockedBuildings computed Properties, BuildOrUpgrade-Command, FloatingText statt Alert bei Erfolg, erweiterte BuildingDisplayItem-Properties. **(8)** 2 neue RESX-Keys in 6 Sprachen (ActiveProcesses, Build).
 - **v2.0.11 (26.02.2026)**: ImperiumView UX-Fixes: **(1)** Gebäude-Regression: Button-Wrapper um ItemsControl entfernt (Avalonia rendert kein ItemsControl/UniformGrid in Button), stattdessen nur Header als tippbarer Button mit "Details >". **(2)** Prestige-Shop Quick-Access ab Level 500 gegattet (IsPrestigeShopUnlocked = Level>=500 oder TotalPrestigeCount>0). **(3)** Meisterwerkzeuge: Bonus-Prozent neben "x/12" Zähler angezeigt (MasterToolsBonusDisplay Property). **(4)** 1 neuer RESX-Key (Details) in 6 Sprachen.

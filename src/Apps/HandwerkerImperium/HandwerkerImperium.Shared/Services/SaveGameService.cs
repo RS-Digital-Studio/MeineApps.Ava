@@ -44,7 +44,7 @@ public class SaveGameService : ISaveGameService
 
         _jsonOptions = new JsonSerializerOptions
         {
-            WriteIndented = true,
+            WriteIndented = false,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
     }

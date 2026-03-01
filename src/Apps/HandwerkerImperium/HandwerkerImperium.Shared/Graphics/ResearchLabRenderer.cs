@@ -8,13 +8,16 @@ namespace HandwerkerImperium.Graphics;
 /// Dampf aus Kolben, rotierende Zahnräder, blinkende Glühbirne, Funkenpartikel.
 /// SKPaint-Objekte werden gecacht um Allokationen pro Frame zu vermeiden.
 /// </summary>
-public class ResearchLabRenderer
+public class ResearchLabRenderer : IDisposable
 {
+    private bool _disposed;
     // Animationszeit (wird intern hochgezählt)
     private float _time;
 
-    // Funkenpartikel für aktive Forschung
-    private readonly List<SparkParticle> _sparks = [];
+    // Funkenpartikel fuer aktive Forschung (Fixed-Size struct-Pool, 0 GC)
+    private const int MaxSparks = 35;
+    private readonly SparkParticle[] _sparks = new SparkParticle[MaxSparks];
+    private int _sparkCount;
     private float _sparkTimer;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -167,7 +170,7 @@ public class ResearchLabRenderer
         }
         else
         {
-            _sparks.Clear();
+            _sparkCount = 0;
         }
 
         // Fortschrittsbalken bei aktiver Forschung
@@ -488,13 +491,13 @@ public class ResearchLabRenderer
         _sparkTimer += deltaTime;
 
         // Alle ~0.15s neue Funken erzeugen
-        if (_sparkTimer >= 0.15f)
+        if (_sparkTimer >= 0.15f && _sparkCount < MaxSparks)
         {
             _sparkTimer = 0;
             float spawnX = left + w * 0.40f + Random.Shared.Next(0, (int)(w * 0.25f));
             float spawnY = top + h * 0.56f;
 
-            _sparks.Add(new SparkParticle
+            _sparks[_sparkCount++] = new SparkParticle
             {
                 X = spawnX,
                 Y = spawnY,
@@ -502,11 +505,12 @@ public class ResearchLabRenderer
                 VelocityY = -(20 + Random.Shared.NextSingle() * 30),
                 Life = 1.0f,
                 Size = 1.5f + Random.Shared.NextSingle() * 2
-            });
+            };
         }
 
-        // Partikel aktualisieren und zeichnen
-        for (int i = _sparks.Count - 1; i >= 0; i--)
+        // Partikel aktualisieren und zeichnen (Compact-Loop)
+        int aliveCount = 0;
+        for (int i = 0; i < _sparkCount; i++)
         {
             var spark = _sparks[i];
             spark.X += spark.VelocityX * deltaTime;
@@ -514,11 +518,9 @@ public class ResearchLabRenderer
             spark.VelocityY += 15 * deltaTime; // Leichte Gravitation
             spark.Life -= deltaTime * 1.2f;
 
-            if (spark.Life <= 0)
-            {
-                _sparks.RemoveAt(i);
-                continue;
-            }
+            if (spark.Life <= 0) continue;
+
+            _sparks[aliveCount++] = spark;
 
             // Farbe: Orange -> Gelb -> verblassend (in-place mutieren)
             byte alpha = (byte)(spark.Life * 255);
@@ -527,10 +529,7 @@ public class ResearchLabRenderer
             _sparkPaint.Color = new SKColor(red, green, 0x00, alpha);
             canvas.DrawCircle(spark.X, spark.Y, spark.Size * spark.Life, _sparkPaint);
         }
-
-        // Partikel-Limit (Performance)
-        if (_sparks.Count > 30)
-            _sparks.RemoveRange(0, _sparks.Count - 30);
+        _sparkCount = aliveCount;
     }
 
     /// <summary>
@@ -568,13 +567,23 @@ public class ResearchLabRenderer
     /// <summary>
     /// Funkenpartikel-Daten.
     /// </summary>
-    private class SparkParticle
+    private struct SparkParticle
     {
-        public float X { get; set; }
-        public float Y { get; set; }
-        public float VelocityX { get; set; }
-        public float VelocityY { get; set; }
-        public float Life { get; set; }
-        public float Size { get; set; }
+        public float X, Y, VelocityX, VelocityY, Life, Size;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _bulbGlowPaint?.Dispose();
+        _bulbCorePaint?.Dispose();
+        _bulbBodyPaint?.Dispose();
+        _steamPaint?.Dispose();
+        _sparkPaint?.Dispose();
+        _progressGlowPaint?.Dispose();
     }
 }

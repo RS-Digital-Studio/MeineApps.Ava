@@ -8,8 +8,9 @@ namespace HandwerkerImperium.Graphics;
 /// Rendert Münzen die von einer Quelle zum Währungs-HUD fliegen.
 /// Kann direkt in Views eingebettet werden.
 /// </summary>
-public class CoinFlyAnimation
+public class CoinFlyAnimation : IDisposable
 {
+    private bool _disposed;
     private const int MaxCoins = 16;
     private readonly FlyingCoin[] _coins = new FlyingCoin[MaxCoins];
     private int _coinCount;
@@ -224,5 +225,18 @@ public class CoinFlyAnimation
         public float Delay;
         public float Size;
         public bool IsActive;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _coinPaint?.Dispose();
+        _highlightPaint?.Dispose();
+        _edgePaint?.Dispose();
+        _trailPaint?.Dispose();
     }
 }

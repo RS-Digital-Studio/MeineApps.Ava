@@ -63,8 +63,9 @@ public class GuildChatService : IGuildChatService
             _lastMessageSent = DateTime.UtcNow;
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in SendMessageAsync: {ex.Message}");
             return false;
         }
     }
@@ -102,9 +103,9 @@ public class GuildChatService : IGuildChatService
                 });
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in GetRecentMessagesAsync: {ex.Message}");
         }
 
         return result;

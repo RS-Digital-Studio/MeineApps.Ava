@@ -9,20 +9,27 @@ namespace HandwerkerImperium.Graphics;
 /// blubbernde Blasen, aufsteigender Dampf, mechanische Countdown-Ziffern,
 /// Funkenregen bei >90% Fortschritt, goldene Abschluss-Partikel.
 /// </summary>
-public class ResearchActiveRenderer
+public class ResearchActiveRenderer : IDisposable
 {
+    private bool _disposed;
     private float _time;
 
-    // Blasen-Partikel (im Reagenzglas)
-    private readonly List<Bubble> _bubbles = [];
+    // Blasen-Partikel (im Reagenzglas, Fixed-Size struct-Pool, 0 GC)
+    private const int MaxBubbles = 10;
+    private readonly Bubble[] _bubbles = new Bubble[MaxBubbles];
+    private int _bubbleCount;
     private float _bubbleTimer;
 
-    // Dampf-Partikel (über dem Glas)
-    private readonly List<SteamParticle> _steamParticles = [];
+    // Dampf-Partikel (ueber dem Glas, Fixed-Size struct-Pool, 0 GC)
+    private const int MaxSteam = 8;
+    private readonly SteamParticle[] _steamParticles = new SteamParticle[MaxSteam];
+    private int _steamCount;
     private float _steamTimer;
 
-    // Funken bei >90%
-    private readonly List<SparkParticle> _sparks = [];
+    // Funken bei >90% (Fixed-Size struct-Pool, 0 GC)
+    private const int MaxSparks = 25;
+    private readonly SparkParticle[] _sparks = new SparkParticle[MaxSparks];
+    private int _sparkCount;
     private float _sparkTimer;
 
     // Farben
@@ -41,6 +48,12 @@ public class ResearchActiveRenderer
     private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true };
+
+    // Gecachte Font-Objekte (vermeidet Allokationen pro Frame)
+    private readonly SKFont _labelFont = new() { Edging = SKFontEdging.Antialias };
+    private readonly SKFont _nameFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
+    private readonly SKFont _percentFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
+    private readonly SKFont _digitFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
 
     /// <summary>
     /// Rendert das aktive Forschungs-Banner.
@@ -91,7 +104,7 @@ public class ResearchActiveRenderer
         }
         else
         {
-            _sparks.Clear();
+            _sparkCount = 0;
         }
     }
 
@@ -180,10 +193,10 @@ public class ResearchActiveRenderer
         _bubbleTimer += deltaTime;
 
         // Neue Blasen erzeugen
-        if (_bubbleTimer >= 0.25f && _bubbles.Count < 8)
+        if (_bubbleTimer >= 0.25f && _bubbleCount < MaxBubbles)
         {
             _bubbleTimer = 0;
-            _bubbles.Add(new Bubble
+            _bubbles[_bubbleCount++] = new Bubble
             {
                 X = x + w * 0.2f + Random.Shared.NextSingle() * w * 0.6f,
                 Y = topY + liquidH - 2,
@@ -191,22 +204,21 @@ public class ResearchActiveRenderer
                 Speed = 8 + Random.Shared.NextSingle() * 12,
                 WobbleOffset = Random.Shared.NextSingle() * MathF.Tau,
                 Life = 1.0f
-            });
+            };
         }
 
-        // Aktualisieren und zeichnen
-        for (int i = _bubbles.Count - 1; i >= 0; i--)
+        // Aktualisieren und zeichnen (Compact-Loop)
+        int aliveCount = 0;
+        for (int i = 0; i < _bubbleCount; i++)
         {
             var b = _bubbles[i];
             b.Y -= b.Speed * deltaTime;
             b.X += MathF.Sin(_time * 3 + b.WobbleOffset) * 0.3f;
             b.Life -= deltaTime * 0.8f;
 
-            if (b.Life <= 0 || b.Y < topY)
-            {
-                _bubbles.RemoveAt(i);
-                continue;
-            }
+            if (b.Life <= 0 || b.Y < topY) continue;
+
+            _bubbles[aliveCount++] = b;
 
             byte alpha = (byte)(b.Life * 180);
             _fill.Color = SKColors.White.WithAlpha(alpha);
@@ -216,6 +228,7 @@ public class ResearchActiveRenderer
             _fill.Color = SKColors.White.WithAlpha((byte)(alpha / 2));
             canvas.DrawCircle(b.X - b.Size * 0.3f, b.Y - b.Size * 0.3f, b.Size * 0.3f, _fill);
         }
+        _bubbleCount = aliveCount;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -226,19 +239,20 @@ public class ResearchActiveRenderer
     {
         _steamTimer += deltaTime;
 
-        if (_steamTimer >= 0.2f && _steamParticles.Count < 6)
+        if (_steamTimer >= 0.2f && _steamCount < MaxSteam)
         {
             _steamTimer = 0;
-            _steamParticles.Add(new SteamParticle
+            _steamParticles[_steamCount++] = new SteamParticle
             {
                 X = cx + (Random.Shared.NextSingle() - 0.5f) * 8,
                 Y = topY - 2,
                 Size = 2 + Random.Shared.NextSingle() * 3,
                 Life = 1.0f
-            });
+            };
         }
 
-        for (int i = _steamParticles.Count - 1; i >= 0; i--)
+        int steamAlive = 0;
+        for (int i = 0; i < _steamCount; i++)
         {
             var s = _steamParticles[i];
             s.Y -= 12 * deltaTime;
@@ -246,15 +260,14 @@ public class ResearchActiveRenderer
             s.Size += 3 * deltaTime;
             s.Life -= deltaTime * 0.7f;
 
-            if (s.Life <= 0)
-            {
-                _steamParticles.RemoveAt(i);
-                continue;
-            }
+            if (s.Life <= 0) continue;
+
+            _steamParticles[steamAlive++] = s;
 
             _fill.Color = SteamColor.WithAlpha((byte)(s.Life * 80));
             canvas.DrawCircle(s.X, s.Y, s.Size, _fill);
         }
+        _steamCount = steamAlive;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -265,34 +278,34 @@ public class ResearchActiveRenderer
         string name, string timeRemaining, float progress, SKColor branchColor, string runningLabel)
     {
         // "Aktive Forschung" Label
-        using var labelFont = new SKFont { Size = 10 };
+        _labelFont.Size = 10;
         _textPaint.Color = TextDim;
-        canvas.DrawText(runningLabel, x, y + 16, labelFont, _textPaint);
+        canvas.DrawText(runningLabel, x, y + 16, _labelFont, _textPaint);
 
         // Forschungsname
-        using var nameFont = new SKFont { Size = 15, Embolden = true };
+        _nameFont.Size = 15;
         _textPaint.Color = branchColor;
-        string displayName = TruncateText(name, nameFont, w);
-        canvas.DrawText(displayName, x, y + 34, nameFont, _textPaint);
+        string displayName = TruncateText(name, _nameFont, w);
+        canvas.DrawText(displayName, x, y + 34, _nameFont, _textPaint);
 
         // Countdown-Display (mechanische Ziffern)
         DrawCountdown(canvas, x, y + 42, timeRemaining, branchColor);
 
         // Prozent-Anzeige
-        using var percentFont = new SKFont { Size = 12, Embolden = true };
+        _percentFont.Size = 12;
         _textPaint.Color = branchColor;
         string percentText = $"{(int)(progress * 100)}%";
-        canvas.DrawText(percentText, x + w - percentFont.MeasureText(percentText) - 4, y + h - 16, percentFont, _textPaint);
+        canvas.DrawText(percentText, x + w - _percentFont.MeasureText(percentText) - 4, y + h - 16, _percentFont, _textPaint);
     }
 
     /// <summary>
     /// Zeichnet den Countdown als mechanische Flip-Clock-Ziffern.
     /// </summary>
-    private static void DrawCountdown(SKCanvas canvas, float x, float y, string timeText, SKColor branchColor)
+    private void DrawCountdown(SKCanvas canvas, float x, float y, string timeText, SKColor branchColor)
     {
         if (string.IsNullOrEmpty(timeText)) return;
 
-        using var digitFont = new SKFont { Size = 18, Embolden = true };
+        _digitFont.Size = 18;
         float charW = 14;
         float charH = 22;
 
@@ -303,7 +316,7 @@ public class ResearchActiveRenderer
             {
                 // Trennzeichen
                 _textPaint.Color = branchColor.WithAlpha(150);
-                canvas.DrawText(":", cx + 2, y + 17, digitFont, _textPaint);
+                canvas.DrawText(":", cx + 2, y + 17, _digitFont, _textPaint);
                 cx += 10;
             }
             else
@@ -320,7 +333,7 @@ public class ResearchActiveRenderer
 
                 // Ziffer
                 _textPaint.Color = branchColor;
-                canvas.DrawText(c.ToString(), cx + charW / 2, y + 17, SKTextAlign.Center, digitFont, _textPaint);
+                canvas.DrawText(c.ToString(), cx + charW / 2, y + 17, SKTextAlign.Center, _digitFont, _textPaint);
 
                 cx += charW + 2;
             }
@@ -363,10 +376,10 @@ public class ResearchActiveRenderer
     {
         _sparkTimer += deltaTime;
 
-        if (_sparkTimer >= 0.08f && _sparks.Count < 20)
+        if (_sparkTimer >= 0.08f && _sparkCount < MaxSparks)
         {
             _sparkTimer = 0;
-            _sparks.Add(new SparkParticle
+            _sparks[_sparkCount++] = new SparkParticle
             {
                 X = x + Random.Shared.NextSingle() * w,
                 Y = y + h,
@@ -374,10 +387,11 @@ public class ResearchActiveRenderer
                 VY = -(30 + Random.Shared.NextSingle() * 50),
                 Life = 1.0f,
                 Size = 1 + Random.Shared.NextSingle() * 2
-            });
+            };
         }
 
-        for (int i = _sparks.Count - 1; i >= 0; i--)
+        int sparkAlive = 0;
+        for (int i = 0; i < _sparkCount; i++)
         {
             var p = _sparks[i];
             p.X += p.VX * deltaTime;
@@ -385,18 +399,17 @@ public class ResearchActiveRenderer
             p.VY += 30 * deltaTime;
             p.Life -= deltaTime * 1.5f;
 
-            if (p.Life <= 0)
-            {
-                _sparks.RemoveAt(i);
-                continue;
-            }
+            if (p.Life <= 0) continue;
 
-            // Orange → Gold → verblassend
+            _sparks[sparkAlive++] = p;
+
+            // Orange -> Gold -> verblassend
             byte alpha = (byte)(p.Life * 255);
             byte green = (byte)(0x8B + (1.0f - p.Life) * 0x4C);
             _fill.Color = new SKColor(0xFF, green, 0x00, alpha);
             canvas.DrawCircle(p.X, p.Y, p.Size * p.Life, _fill);
         }
+        _sparkCount = sparkAlive;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -416,19 +429,32 @@ public class ResearchActiveRenderer
         return "...";
     }
 
-    // Partikel-Klassen
-    private class Bubble
+    // Partikel-Structs (vermeidet GC-Allokationen)
+    private struct Bubble
     {
         public float X, Y, Size, Speed, WobbleOffset, Life;
     }
 
-    private class SteamParticle
+    private struct SteamParticle
     {
         public float X, Y, Size, Life;
     }
 
-    private class SparkParticle
+    private struct SparkParticle
     {
         public float X, Y, VX, VY, Life, Size;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _labelFont?.Dispose();
+        _nameFont?.Dispose();
+        _percentFont?.Dispose();
+        _digitFont?.Dispose();
     }
 }

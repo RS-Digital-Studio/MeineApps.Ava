@@ -75,8 +75,9 @@ public class GuildWarService : IGuildWarService
             _lastWarCheck = DateTime.UtcNow;
             return war;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in GetOrCreateActiveWarAsync: {ex.Message}");
             return null;
         }
         finally
@@ -132,9 +133,9 @@ public class GuildWarService : IGuildWarService
                     _cachedWar.ScoreB += points;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fire-and-forget, Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in ContributeScoreAsync: {ex.Message}");
         }
     }
 
@@ -160,7 +161,7 @@ public class GuildWarService : IGuildWarService
                 ownContribution = score?.Score ?? 0;
             }
         }
-        catch { /* Ignorieren */ }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Fehler in GetWarStatusAsync: {ex.Message}"); }
 
         var endDate = DateTime.TryParse(war.EndDate, CultureInfo.InvariantCulture,
             DateTimeStyles.RoundtripKind, out var ed) ? ed : DateTime.UtcNow.AddDays(7);
@@ -209,9 +210,9 @@ public class GuildWarService : IGuildWarService
             _gameStateService.AddGoldenScrews(reward);
             await _saveGameService.SaveAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in CheckAndFinalizeWarAsync: {ex.Message}");
         }
     }
 
@@ -273,8 +274,9 @@ public class GuildWarService : IGuildWarService
             await _firebase.SetAsync($"guild_wars/{warId}", war);
             return war;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in TryCreateWarAsync: {ex.Message}");
             return null;
         }
     }

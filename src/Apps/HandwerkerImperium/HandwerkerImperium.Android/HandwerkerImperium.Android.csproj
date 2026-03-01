@@ -5,8 +5,8 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>HandwerkerImperium</RootNamespace>
     <ApplicationId>com.meineapps.handwerkerimperium</ApplicationId>
-    <ApplicationVersion>19</ApplicationVersion>
-    <ApplicationDisplayVersion>2.0.11</ApplicationDisplayVersion>
+    <ApplicationVersion>20</ApplicationVersion>
+    <ApplicationDisplayVersion>2.0.12</ApplicationDisplayVersion>
     <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
   </PropertyGroup>
@@ -17,6 +17,7 @@
     <PackageReference Include="Xamarin.Google.UserMessagingPlatform" />
     <PackageReference Include="Xamarin.Android.Google.BillingClient" />
     <PackageReference Include="Xamarin.GooglePlayServices.Games.V2" />
+    <PackageReference Include="Xamarin.Google.Android.Play.Review" />
   </ItemGroup>
 
   <ItemGroup>

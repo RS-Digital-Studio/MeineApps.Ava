@@ -40,6 +40,14 @@ public partial class DashboardView : UserControl
     private WorkshopType? _holdWorkshopType;
     private int _holdUpgradeCount;
 
+    // Tap vs. Scroll Erkennung (Workshop-Karten im ScrollViewer)
+    private Point _workshopPressPos;
+    private bool _workshopIsScrolling;
+    private WorkshopDisplayModel? _workshopPressedTarget;
+    private bool _workshopPressedIsUpgrade;
+    private float _workshopPressSkiaX, _workshopPressSkiaY;
+    private const double TapDistanceThreshold = 15.0;
+
     public DashboardView()
     {
         InitializeComponent();
@@ -50,7 +58,10 @@ public partial class DashboardView : UserControl
         if (scrollViewer != null)
             scrollViewer.ScrollChanged += OnScrollChanged;
 
-        // Hold-to-Upgrade wird jetzt direkt im WorkshopCardsCanvas behandelt (PointerPressed/Released)
+        // Tunnel-Routing für Scroll-Erkennung bei Workshop-Karten
+        // Tunnel-Events feuern auch wenn der ScrollViewer den Pointer captured
+        AddHandler(PointerMovedEvent, OnTunnelPointerMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        AddHandler(PointerReleasedEvent, OnTunnelPointerReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
     }
 
     /// <summary>
@@ -277,14 +288,20 @@ public partial class DashboardView : UserControl
     }
 
     /// <summary>
-    /// Touch auf Workshop-Karten: HitTest für Karten-Body (Navigation) oder
-    /// Upgrade-Button (Upgrade + Hold-to-Upgrade starten).
+    /// Touch auf Workshop-Karten: Position und Ziel merken, aber NICHT sofort ausführen.
+    /// Ausführung erst bei PointerReleased wenn kein Scroll erkannt wurde.
     /// </summary>
     private void OnWorkshopCardsPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (_vm?.Workshops == null || sender is not Avalonia.Labs.Controls.SKCanvasView canvasView) return;
 
         var pos = e.GetPosition(canvasView);
+
+        // Scroll-Tracking zurücksetzen
+        _workshopPressPos = e.GetPosition(this);
+        _workshopIsScrolling = false;
+        _workshopPressedTarget = null;
+        _workshopPressedIsUpgrade = false;
 
         // Avalonia → SkiaSharp Koordinaten (DPI-Skalierung)
         float scaleX = _lastWorkshopCardsBounds.Width / (float)canvasView.Bounds.Width;
@@ -315,6 +332,8 @@ public partial class DashboardView : UserControl
         if (!cardBounds.Contains(skiaX, skiaY)) return;
 
         var workshop = _vm.Workshops[index];
+        _workshopPressSkiaX = skiaX;
+        _workshopPressSkiaY = skiaY;
 
         // Prüfen ob der Tap auf dem Upgrade-Button liegt
         if (workshop.IsUnlocked && !workshop.IsMaxLevel)
@@ -322,33 +341,117 @@ public partial class DashboardView : UserControl
             var upgradeBounds = WorkshopGameCardRenderer.GetUpgradeButtonBounds(cardBounds);
             if (upgradeBounds.Contains(skiaX, skiaY))
             {
-                // Erstes Upgrade sofort ausführen (mit UI-Feedback)
-                _vm.UpgradeWorkshopCommand.Execute(workshop);
+                _workshopPressedTarget = workshop;
+                _workshopPressedIsUpgrade = true;
 
-                // Hold-to-Upgrade starten für schnelles Hochleveln
+                // Hold-to-Upgrade Timer starten (wird bei Scroll abgebrochen)
                 StartHoldUpgrade(workshop.Type);
-                e.Handled = true;
+
+                // e.Handled NICHT setzen - ScrollViewer darf entscheiden
                 return;
             }
         }
 
-        // Karten-Body: Navigation zum Workshop / Freischalten
-        _vm.SelectWorkshopCommand.Execute(workshop);
+        // Karten-Body: Nur merken, Ausführung bei PointerReleased
+        _workshopPressedTarget = workshop;
+        _workshopPressedIsUpgrade = false;
 
-        // RadialBurst-Effekt am Tap-Punkt
-        _juiceEngine?.RadialBurst(skiaX, skiaY, new SKColor(0xD9, 0x77, 0x06), maxRadius: 40f);
-
-        e.Handled = true;
+        // e.Handled NICHT setzen - ScrollViewer darf scrollen
     }
 
     /// <summary>
-    /// PointerReleased auf Workshop-Karten: Hold-to-Upgrade stoppen.
+    /// PointerReleased auf Workshop-Karten: Aktion ausführen wenn kein Scroll erkannt wurde.
     /// </summary>
     private void OnWorkshopCardsPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
+        var target = _workshopPressedTarget;
+        var isUpgrade = _workshopPressedIsUpgrade;
+        var wasScrolling = _workshopIsScrolling;
+
+        // Hold-Upgrade stoppen und Count sichern
+        int holdCount = _holdUpgradeCount;
         if (_holdTimer != null)
-        {
             StopHoldUpgrade();
+
+        // State zurücksetzen
+        _workshopPressedTarget = null;
+        _workshopPressedIsUpgrade = false;
+        _workshopIsScrolling = false;
+
+        // Wenn gescrollt wurde → keine Aktion
+        if (wasScrolling || target == null || _vm == null) return;
+
+        if (isUpgrade)
+        {
+            // Erstes Upgrade ausführen falls Hold-Timer noch nicht gefeuert hat
+            if (holdCount == 0)
+            {
+                _vm.UpgradeWorkshopCommand.Execute(target);
+            }
+            // Sonst hat StopHoldUpgrade() bereits die Zusammenfassung gezeigt
+        }
+        else
+        {
+            // Karten-Body: Navigation zum Workshop / Freischalten
+            _vm.SelectWorkshopCommand.Execute(target);
+
+            // RadialBurst-Effekt am Tap-Punkt
+            _juiceEngine?.RadialBurst(_workshopPressSkiaX, _workshopPressSkiaY,
+                new SKColor(0xD9, 0x77, 0x06), maxRadius: 40f);
+        }
+    }
+
+    /// <summary>
+    /// Tunnel-PointerMoved: Erkennt Scroll-Geste (>15px Bewegung) und bricht Hold-Upgrade ab.
+    /// Feuert auch wenn der ScrollViewer den Pointer captured hat.
+    /// </summary>
+    private void OnTunnelPointerMoved(object? sender, PointerEventArgs e)
+    {
+        // Nur relevant wenn wir ein Workshop-Ziel haben
+        if (_workshopPressedTarget == null || _workshopIsScrolling) return;
+
+        var current = e.GetPosition(this);
+        var dx = current.X - _workshopPressPos.X;
+        var dy = current.Y - _workshopPressPos.Y;
+        var distance = Math.Sqrt(dx * dx + dy * dy);
+
+        if (distance > TapDistanceThreshold)
+        {
+            _workshopIsScrolling = true;
+
+            // Hold-Upgrade sofort abbrechen bei Scroll
+            if (_holdTimer != null)
+            {
+                _holdTimer.Stop();
+                _holdTimer = null;
+                if (_vm != null) _vm.IsHoldingUpgrade = false;
+                _holdWorkshopType = null;
+                _holdUpgradeCount = 0;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Tunnel-PointerReleased: Aufräumen wenn ScrollViewer den Pointer captured hat
+    /// und das direkte PointerReleased auf dem Canvas nicht mehr feuert.
+    /// </summary>
+    private void OnTunnelPointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        // Wenn wir noch ein Ziel haben und gescrollt wurde, aufräumen
+        if (_workshopPressedTarget != null && _workshopIsScrolling)
+        {
+            if (_holdTimer != null)
+            {
+                _holdTimer.Stop();
+                _holdTimer = null;
+                if (_vm != null) _vm.IsHoldingUpgrade = false;
+                _holdWorkshopType = null;
+                _holdUpgradeCount = 0;
+            }
+
+            _workshopPressedTarget = null;
+            _workshopPressedIsUpgrade = false;
+            _workshopIsScrolling = false;
         }
     }
 
@@ -435,6 +538,9 @@ public partial class DashboardView : UserControl
     private void OnHoldTick(object? sender, EventArgs e)
     {
         if (_vm == null || _holdWorkshopType == null) return;
+
+        // Scroll erkannt → Hold-Upgrade sofort abbrechen
+        if (_workshopIsScrolling) { StopHoldUpgrade(); return; }
 
         if (_vm.UpgradeWorkshopSilent(_holdWorkshopType.Value))
         {

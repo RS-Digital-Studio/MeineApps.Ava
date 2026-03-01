@@ -145,6 +145,68 @@ public static class MeisterHansRenderer
     private static readonly SKMaskFilter ShadowFilter =
         SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
 
+    // --- Gecachte SKPath-Objekte (GC-frei, Wiederverwendung via Reset()) ---
+    private static readonly SKPath _mustachePath = new();
+    private static readonly SKPath _mouthPath = new();
+    private static readonly SKPath _helmPath = new();
+    private static readonly SKPath _helmHighlightPath = new();
+    private static readonly SKPath _dropPath = new();
+    private static readonly SKPath _starPath = new();
+
+    // --- Gecachte SKPaint-Objekte (Farbe wird vor Nutzung gesetzt) ---
+    private static readonly SKPaint _earInnerPaint = new()
+    {
+        Color = new SKColor(0xE0, 0xAC, 0x69, 0x80),
+        IsAntialias = true,
+        Style = SKPaintStyle.Fill
+    };
+
+    private static readonly SKPaint _noseHighlightPaint = new()
+    {
+        Color = new SKColor(0xFF, 0xDB, 0xAC, 0x60),
+        IsAntialias = true
+    };
+
+    private static readonly SKPaint _dynamicCheekPaint = new()
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Fill
+    };
+
+    private static readonly SKPaint _blinkPaint = new()
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeCap = SKStrokeCap.Round
+    };
+
+    private static readonly SKPaint _browPaint = new()
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeCap = SKStrokeCap.Round
+    };
+
+    private static readonly SKPaint _teethPaint = new()
+    {
+        Color = SKColors.White,
+        IsAntialias = true,
+        Style = SKPaintStyle.Fill
+    };
+
+    private static readonly SKPaint _ridgePaint = new()
+    {
+        Color = new SKColor(0xE0, 0xA0, 0x00, 0x80),
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke
+    };
+
+    private static readonly SKPaint _dynamicFillPaint = new()
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Fill
+    };
+
     /// <summary>
     /// Rendert das Meister Hans Portrait in den gegebenen Bereich.
     /// </summary>
@@ -224,14 +286,8 @@ public static class MeisterHansRenderer
         canvas.DrawCircle(cx - 30 * scale, cy + 6 * scale, earR, SkinPaint);
         canvas.DrawCircle(cx + 30 * scale, cy + 6 * scale, earR, SkinPaint);
         // Ohr-Innenseite
-        using var earInnerPaint = new SKPaint
-        {
-            Color = new SKColor(0xE0, 0xAC, 0x69, 0x80),
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill
-        };
-        canvas.DrawCircle(cx - 30 * scale, cy + 6 * scale, earR * 0.5f, earInnerPaint);
-        canvas.DrawCircle(cx + 30 * scale, cy + 6 * scale, earR * 0.5f, earInnerPaint);
+        canvas.DrawCircle(cx - 30 * scale, cy + 6 * scale, earR * 0.5f, _earInnerPaint);
+        canvas.DrawCircle(cx + 30 * scale, cy + 6 * scale, earR * 0.5f, _earInnerPaint);
     }
 
     private static void DrawBeard(SKCanvas canvas, float cx, float cy, float scale)
@@ -253,14 +309,14 @@ public static class MeisterHansRenderer
 
         // Schnurrbart
         float mustacheY = cy + 14 * scale;
-        using var path = new SKPath();
-        path.MoveTo(cx - 18 * scale, mustacheY);
-        path.QuadTo(cx - 6 * scale, mustacheY - 4 * scale, cx, mustacheY + 2 * scale);
-        path.QuadTo(cx + 6 * scale, mustacheY - 4 * scale, cx + 18 * scale, mustacheY);
-        path.QuadTo(cx + 6 * scale, mustacheY + 4 * scale, cx, mustacheY + 2 * scale);
-        path.QuadTo(cx - 6 * scale, mustacheY + 4 * scale, cx - 18 * scale, mustacheY);
-        path.Close();
-        canvas.DrawPath(path, BeardPaint);
+        _mustachePath.Reset();
+        _mustachePath.MoveTo(cx - 18 * scale, mustacheY);
+        _mustachePath.QuadTo(cx - 6 * scale, mustacheY - 4 * scale, cx, mustacheY + 2 * scale);
+        _mustachePath.QuadTo(cx + 6 * scale, mustacheY - 4 * scale, cx + 18 * scale, mustacheY);
+        _mustachePath.QuadTo(cx + 6 * scale, mustacheY + 4 * scale, cx, mustacheY + 2 * scale);
+        _mustachePath.QuadTo(cx - 6 * scale, mustacheY + 4 * scale, cx - 18 * scale, mustacheY);
+        _mustachePath.Close();
+        canvas.DrawPath(_mustachePath, BeardPaint);
     }
 
     private static void DrawNose(SKCanvas canvas, float cx, float cy, float scale)
@@ -269,26 +325,16 @@ public static class MeisterHansRenderer
         float noseY = cy + 8 * scale;
         canvas.DrawOval(cx, noseY, 6 * scale, 5 * scale, NosePaint);
         // Nasenrücken-Highlight
-        using var highlightPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0xDB, 0xAC, 0x60),
-            IsAntialias = true
-        };
-        canvas.DrawCircle(cx - 1 * scale, noseY - 2 * scale, 2 * scale, highlightPaint);
+        canvas.DrawCircle(cx - 1 * scale, noseY - 2 * scale, 2 * scale, _noseHighlightPaint);
     }
 
     private static void DrawCheeks(SKCanvas canvas, float cx, float cy, float scale, string mood)
     {
         // Wangenröte (stärker bei happy/excited)
         float cheekAlpha = mood is "happy" or "excited" ? 0.35f : 0.2f;
-        using var cheekPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0x8A, 0x65, (byte)(cheekAlpha * 255)),
-            IsAntialias = true,
-            Style = SKPaintStyle.Fill
-        };
-        canvas.DrawCircle(cx - 18 * scale, cy + 10 * scale, 7 * scale, cheekPaint);
-        canvas.DrawCircle(cx + 18 * scale, cy + 10 * scale, 7 * scale, cheekPaint);
+        _dynamicCheekPaint.Color = new SKColor(0xFF, 0x8A, 0x65, (byte)(cheekAlpha * 255));
+        canvas.DrawCircle(cx - 18 * scale, cy + 10 * scale, 7 * scale, _dynamicCheekPaint);
+        canvas.DrawCircle(cx + 18 * scale, cy + 10 * scale, 7 * scale, _dynamicCheekPaint);
     }
 
     private static void DrawEyes(SKCanvas canvas, float cx, float cy, float scale, string mood, bool isBlinking)
@@ -302,16 +348,10 @@ public static class MeisterHansRenderer
             // Blinzel: Nur schmale Linie
             eyeW = 6 * scale;
             eyeH = 1.5f * scale;
-            using var blinkPaint = new SKPaint
-            {
-                Color = EyePupilPaint.Color,
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 2 * scale,
-                StrokeCap = SKStrokeCap.Round
-            };
-            canvas.DrawLine(cx - eyeSpacing - eyeW / 2, eyeY, cx - eyeSpacing + eyeW / 2, eyeY, blinkPaint);
-            canvas.DrawLine(cx + eyeSpacing - eyeW / 2, eyeY, cx + eyeSpacing + eyeW / 2, eyeY, blinkPaint);
+            _blinkPaint.Color = EyePupilPaint.Color;
+            _blinkPaint.StrokeWidth = 2 * scale;
+            canvas.DrawLine(cx - eyeSpacing - eyeW / 2, eyeY, cx - eyeSpacing + eyeW / 2, eyeY, _blinkPaint);
+            canvas.DrawLine(cx + eyeSpacing - eyeW / 2, eyeY, cx + eyeSpacing + eyeW / 2, eyeY, _blinkPaint);
             return;
         }
 
@@ -357,37 +397,31 @@ public static class MeisterHansRenderer
         float browY = cy - 12 * scale;
         float eyeSpacing = 13 * scale;
 
-        using var browPaint = new SKPaint
-        {
-            Color = EyebrowPaint.Color,
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 2.5f * scale,
-            StrokeCap = SKStrokeCap.Round
-        };
+        _browPaint.Color = EyebrowPaint.Color;
+        _browPaint.StrokeWidth = 2.5f * scale;
 
         switch (mood)
         {
             case "concerned":
                 // Hochgezogene innere Brauen (besorgt)
                 canvas.DrawLine(cx - eyeSpacing - 6 * scale, browY - 1 * scale,
-                    cx - eyeSpacing + 6 * scale, browY + 3 * scale, browPaint);
+                    cx - eyeSpacing + 6 * scale, browY + 3 * scale, _browPaint);
                 canvas.DrawLine(cx + eyeSpacing + 6 * scale, browY - 1 * scale,
-                    cx + eyeSpacing - 6 * scale, browY + 3 * scale, browPaint);
+                    cx + eyeSpacing - 6 * scale, browY + 3 * scale, _browPaint);
                 break;
             case "excited":
                 // Hochgezogen (überrascht)
                 canvas.DrawLine(cx - eyeSpacing - 6 * scale, browY + 2 * scale,
-                    cx - eyeSpacing + 6 * scale, browY - 2 * scale, browPaint);
+                    cx - eyeSpacing + 6 * scale, browY - 2 * scale, _browPaint);
                 canvas.DrawLine(cx + eyeSpacing - 6 * scale, browY - 2 * scale,
-                    cx + eyeSpacing + 6 * scale, browY + 2 * scale, browPaint);
+                    cx + eyeSpacing + 6 * scale, browY + 2 * scale, _browPaint);
                 break;
             default:
                 // Normal/proud: Leicht gebogen
                 canvas.DrawLine(cx - eyeSpacing - 6 * scale, browY,
-                    cx - eyeSpacing + 6 * scale, browY - 1 * scale, browPaint);
+                    cx - eyeSpacing + 6 * scale, browY - 1 * scale, _browPaint);
                 canvas.DrawLine(cx + eyeSpacing - 6 * scale, browY - 1 * scale,
-                    cx + eyeSpacing + 6 * scale, browY, browPaint);
+                    cx + eyeSpacing + 6 * scale, browY, _browPaint);
                 break;
         }
     }
@@ -403,49 +437,35 @@ public static class MeisterHansRenderer
         {
             case "happy":
                 // Lächeln
-                using (var path = new SKPath())
-                {
-                    path.MoveTo(cx - 10 * scale, mouthY);
-                    path.QuadTo(cx, mouthY + 6 * scale, cx + 10 * scale, mouthY);
-                    canvas.DrawPath(path, MouthLinePaint);
-                }
+                _mouthPath.Reset();
+                _mouthPath.MoveTo(cx - 10 * scale, mouthY);
+                _mouthPath.QuadTo(cx, mouthY + 6 * scale, cx + 10 * scale, mouthY);
+                canvas.DrawPath(_mouthPath, MouthLinePaint);
                 break;
 
             case "proud":
                 // Breites Grinsen
-                using (var path = new SKPath())
-                {
-                    path.MoveTo(cx - 12 * scale, mouthY - 1 * scale);
-                    path.QuadTo(cx, mouthY + 8 * scale, cx + 12 * scale, mouthY - 1 * scale);
-                    path.QuadTo(cx, mouthY + 4 * scale, cx - 12 * scale, mouthY - 1 * scale);
-                    path.Close();
-                    canvas.DrawPath(path, MouthPaint);
-                }
+                _mouthPath.Reset();
+                _mouthPath.MoveTo(cx - 12 * scale, mouthY - 1 * scale);
+                _mouthPath.QuadTo(cx, mouthY + 8 * scale, cx + 12 * scale, mouthY - 1 * scale);
+                _mouthPath.QuadTo(cx, mouthY + 4 * scale, cx - 12 * scale, mouthY - 1 * scale);
+                _mouthPath.Close();
+                canvas.DrawPath(_mouthPath, MouthPaint);
                 break;
 
             case "concerned":
                 // Nach unten gezogener Mund
-                using (var path = new SKPath())
-                {
-                    path.MoveTo(cx - 8 * scale, mouthY + 2 * scale);
-                    path.QuadTo(cx, mouthY - 4 * scale, cx + 8 * scale, mouthY + 2 * scale);
-                    canvas.DrawPath(path, MouthLinePaint);
-                }
+                _mouthPath.Reset();
+                _mouthPath.MoveTo(cx - 8 * scale, mouthY + 2 * scale);
+                _mouthPath.QuadTo(cx, mouthY - 4 * scale, cx + 8 * scale, mouthY + 2 * scale);
+                canvas.DrawPath(_mouthPath, MouthLinePaint);
                 break;
 
             case "excited":
                 // Offener Mund (staunend)
                 canvas.DrawOval(cx, mouthY + 2 * scale, 7 * scale, 6 * scale, MouthPaint);
                 // Zähne oben
-                using (var teethPaint = new SKPaint
-                       {
-                           Color = SKColors.White,
-                           IsAntialias = true,
-                           Style = SKPaintStyle.Fill
-                       })
-                {
-                    canvas.DrawRect(cx - 4 * scale, mouthY - 2 * scale, 8 * scale, 3 * scale, teethPaint);
-                }
+                canvas.DrawRect(cx - 4 * scale, mouthY - 2 * scale, 8 * scale, 3 * scale, _teethPaint);
                 break;
         }
     }
@@ -455,13 +475,13 @@ public static class MeisterHansRenderer
         float helmY = cy - 18 * scale;
 
         // Helm-Körper (oberer Bogen)
-        using var helmPath = new SKPath();
-        helmPath.MoveTo(cx - 34 * scale, helmY + 8 * scale);
-        helmPath.QuadTo(cx - 34 * scale, helmY - 18 * scale, cx, helmY - 22 * scale);
-        helmPath.QuadTo(cx + 34 * scale, helmY - 18 * scale, cx + 34 * scale, helmY + 8 * scale);
-        helmPath.LineTo(cx - 34 * scale, helmY + 8 * scale);
-        helmPath.Close();
-        canvas.DrawPath(helmPath, HelmetPaint);
+        _helmPath.Reset();
+        _helmPath.MoveTo(cx - 34 * scale, helmY + 8 * scale);
+        _helmPath.QuadTo(cx - 34 * scale, helmY - 18 * scale, cx, helmY - 22 * scale);
+        _helmPath.QuadTo(cx + 34 * scale, helmY - 18 * scale, cx + 34 * scale, helmY + 8 * scale);
+        _helmPath.LineTo(cx - 34 * scale, helmY + 8 * scale);
+        _helmPath.Close();
+        canvas.DrawPath(_helmPath, HelmetPaint);
 
         // Helm-Rand (Schirm)
         var brimRect = new SKRect(cx - 38 * scale, helmY + 4 * scale, cx + 38 * scale, helmY + 14 * scale);
@@ -472,22 +492,16 @@ public static class MeisterHansRenderer
         canvas.DrawRoundRect(brimShadow, 3 * scale, 3 * scale, HelmetShadowPaint);
 
         // Helm-Highlight (Glanz oben)
-        using var highlightPath = new SKPath();
-        highlightPath.MoveTo(cx - 16 * scale, helmY - 10 * scale);
-        highlightPath.QuadTo(cx, helmY - 20 * scale, cx + 16 * scale, helmY - 10 * scale);
-        highlightPath.QuadTo(cx, helmY - 14 * scale, cx - 16 * scale, helmY - 10 * scale);
-        highlightPath.Close();
-        canvas.DrawPath(highlightPath, HelmetHighlightPaint);
+        _helmHighlightPath.Reset();
+        _helmHighlightPath.MoveTo(cx - 16 * scale, helmY - 10 * scale);
+        _helmHighlightPath.QuadTo(cx, helmY - 20 * scale, cx + 16 * scale, helmY - 10 * scale);
+        _helmHighlightPath.QuadTo(cx, helmY - 14 * scale, cx - 16 * scale, helmY - 10 * scale);
+        _helmHighlightPath.Close();
+        canvas.DrawPath(_helmHighlightPath, HelmetHighlightPaint);
 
         // Mittelgrat des Helms
-        using var ridgePaint = new SKPaint
-        {
-            Color = new SKColor(0xE0, 0xA0, 0x00, 0x80),
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 2 * scale
-        };
-        canvas.DrawLine(cx, helmY - 20 * scale, cx, helmY + 6 * scale, ridgePaint);
+        _ridgePaint.StrokeWidth = 2 * scale;
+        canvas.DrawLine(cx, helmY - 20 * scale, cx, helmY + 6 * scale, _ridgePaint);
     }
 
     private static void DrawMoodDecoration(SKCanvas canvas, float cx, float cy, float scale, string mood, float elapsed)
@@ -507,39 +521,25 @@ public static class MeisterHansRenderer
                 float exX = cx + 42 * scale;
                 float exY = cy - 28 * scale - bounce;
 
-                using (var exPaint = new SKPaint
-                       {
-                           Color = ExclamationPaint.Color,
-                           IsAntialias = true,
-                           Style = SKPaintStyle.Fill
-                       })
-                {
-                    // Strich
-                    canvas.DrawRoundRect(new SKRect(exX - 2.5f * scale, exY, exX + 2.5f * scale, exY + 14 * scale),
-                        2 * scale, 2 * scale, exPaint);
-                    // Punkt
-                    canvas.DrawCircle(exX, exY + 18 * scale, 2.5f * scale, exPaint);
-                }
+                _dynamicFillPaint.Color = ExclamationPaint.Color;
+                // Strich
+                canvas.DrawRoundRect(new SKRect(exX - 2.5f * scale, exY, exX + 2.5f * scale, exY + 14 * scale),
+                    2 * scale, 2 * scale, _dynamicFillPaint);
+                // Punkt
+                canvas.DrawCircle(exX, exY + 18 * scale, 2.5f * scale, _dynamicFillPaint);
                 break;
 
             case "concerned":
                 // Schweißtropfen
                 float dropY = cy - 24 * scale + MathF.Sin(elapsed * 2f) * 3 * scale;
-                using (var dropPaint = new SKPaint
-                       {
-                           Color = new SKColor(0x64, 0xB5, 0xF6, 0xCC),
-                           IsAntialias = true,
-                           Style = SKPaintStyle.Fill
-                       })
-                {
-                    using var dropPath = new SKPath();
-                    float dX = cx + 36 * scale;
-                    dropPath.MoveTo(dX, dropY - 4 * scale);
-                    dropPath.QuadTo(dX + 3 * scale, dropY, dX, dropY + 5 * scale);
-                    dropPath.QuadTo(dX - 3 * scale, dropY, dX, dropY - 4 * scale);
-                    dropPath.Close();
-                    canvas.DrawPath(dropPath, dropPaint);
-                }
+                _dynamicFillPaint.Color = new SKColor(0x64, 0xB5, 0xF6, 0xCC);
+                float dX = cx + 36 * scale;
+                _dropPath.Reset();
+                _dropPath.MoveTo(dX, dropY - 4 * scale);
+                _dropPath.QuadTo(dX + 3 * scale, dropY, dX, dropY + 5 * scale);
+                _dropPath.QuadTo(dX - 3 * scale, dropY, dX, dropY - 4 * scale);
+                _dropPath.Close();
+                canvas.DrawPath(_dropPath, _dynamicFillPaint);
                 break;
         }
     }
@@ -549,7 +549,7 @@ public static class MeisterHansRenderer
     /// </summary>
     private static void DrawStar(SKCanvas canvas, float cx, float cy, float radius, SKPaint paint)
     {
-        using var path = new SKPath();
+        _starPath.Reset();
         float innerR = radius * 0.4f;
 
         for (int i = 0; i < 10; i++)
@@ -560,11 +560,11 @@ public static class MeisterHansRenderer
             float y = cy - MathF.Sin(angle) * r;
 
             if (i == 0)
-                path.MoveTo(x, y);
+                _starPath.MoveTo(x, y);
             else
-                path.LineTo(x, y);
+                _starPath.LineTo(x, y);
         }
-        path.Close();
-        canvas.DrawPath(path, paint);
+        _starPath.Close();
+        canvas.DrawPath(_starPath, paint);
     }
 }

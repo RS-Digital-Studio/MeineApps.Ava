@@ -26,8 +26,9 @@ public enum TransitionType
 /// Rendert Overlay-Effekte (Verdunklung, Trennkanten, Vignetten) während einer Transition.
 /// Gecachte Paint-Objekte für GC-freie Performance im Render-Loop.
 /// </summary>
-public class ScreenTransitionRenderer
+public class ScreenTransitionRenderer : IDisposable
 {
+    private bool _disposed;
     // Dauer pro TransitionType in Sekunden
     private const float WipeRightDuration = 0.300f;
     private const float ZoomInDuration = 0.250f;
@@ -309,5 +310,17 @@ public class ScreenTransitionRenderer
                 _linePaint.MaskFilter = null;
             }
         }
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _overlayPaint?.Dispose();
+        _linePaint?.Dispose();
+        _vignettePaint?.Dispose();
     }
 }

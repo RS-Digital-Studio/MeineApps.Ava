@@ -42,8 +42,10 @@ public class ResearchTreeRenderer
     private const float TextHeight = 18;       // Höhe für Name + Prozent
     private const float TopPadding = 30;
 
-    // Linien-Partikel (fließen entlang erforschter Verbindungen)
-    private readonly List<FlowParticle> _flowParticles = [];
+    // Linien-Partikel (Fixed-Size struct-Pool, 0 GC)
+    private const int MaxFlowParticles = 25;
+    private readonly FlowParticle[] _flowParticles = new FlowParticle[MaxFlowParticles];
+    private int _flowParticleCount;
     private float _particleTimer;
 
     // Farben
@@ -57,6 +59,13 @@ public class ResearchTreeRenderer
     private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _text = new() { IsAntialias = true };
+
+    // Gecachte Font- und Path-Objekte (vermeidet Allokationen pro Frame)
+    private readonly SKFont _fontSmall = new() { Edging = SKFontEdging.Antialias };
+    private readonly SKFont _fontMedium = new() { Edging = SKFontEdging.Antialias };
+    private readonly SKFont _fontBold = new() { Embolden = true, Edging = SKFontEdging.Antialias };
+    private readonly SKPath _connectionPath = new();
+    private readonly SKPath _arrowPath = new();
 
     // Gecachter MaskFilter + Paint für Gold-Glow auf verfügbaren Nodes (statt pro Node neu erstellen)
     private static readonly SKMaskFilter _glowMaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
@@ -234,12 +243,12 @@ public class ResearchTreeRenderer
         float startY = from.Y + NodeSize / 2 + ProgressBarHeight + TextHeight + 4;
         float endY = to.Y - NodeSize / 2 - 4;
 
-        // Bezier-Kurve für geschwungene Verbindung
-        using var path = new SKPath();
-        path.MoveTo(from.X, startY);
+        // Bezier-Kurve für geschwungene Verbindung (gecachter Path)
+        _connectionPath.Reset();
+        _connectionPath.MoveTo(from.X, startY);
 
         float midY = (startY + endY) / 2;
-        path.CubicTo(from.X, midY, to.X, midY, to.X, endY);
+        _connectionPath.CubicTo(from.X, midY, to.X, midY, to.X, endY);
 
         if (fromResearched && (toResearched || toCanStart))
         {
@@ -248,12 +257,12 @@ public class ResearchTreeRenderer
             _stroke.Color = branchColor.WithAlpha(40);
             _stroke.StrokeWidth = 9f;
             _stroke.PathEffect = null;
-            canvas.DrawPath(path, _stroke);
+            canvas.DrawPath(_connectionPath, _stroke);
 
             // Hauptlinie
             _stroke.Color = branchColor.WithAlpha(toResearched ? (byte)220 : (byte)160);
             _stroke.StrokeWidth = 5f;
-            canvas.DrawPath(path, _stroke);
+            canvas.DrawPath(_connectionPath, _stroke);
 
             // Pfeilspitze
             DrawArrowHead(canvas, to.X, endY, branchColor.WithAlpha(220));
@@ -266,7 +275,7 @@ public class ResearchTreeRenderer
             // PathEffect mit dynamischem Phase-Offset (wird sofort nach Verwendung disposed)
             using var dashEffect = SKPathEffect.CreateDash([8, 5], _time * 15 % 13);
             _stroke.PathEffect = dashEffect;
-            canvas.DrawPath(path, _stroke);
+            canvas.DrawPath(_connectionPath, _stroke);
             _stroke.PathEffect = null;
 
             DrawArrowHead(canvas, to.X, endY, branchColor.WithAlpha(100));
@@ -277,20 +286,20 @@ public class ResearchTreeRenderer
             _stroke.Color = LineLocked;
             _stroke.StrokeWidth = 4f;
             _stroke.PathEffect = null;
-            canvas.DrawPath(path, _stroke);
+            canvas.DrawPath(_connectionPath, _stroke);
         }
     }
 
-    private static void DrawArrowHead(SKCanvas canvas, float x, float y, SKColor color)
+    private void DrawArrowHead(SKCanvas canvas, float x, float y, SKColor color)
     {
         float size = 8;
         _fill.Color = color;
-        using var arrow = new SKPath();
-        arrow.MoveTo(x, y);
-        arrow.LineTo(x - size, y - size * 1.5f);
-        arrow.LineTo(x + size, y - size * 1.5f);
-        arrow.Close();
-        canvas.DrawPath(arrow, _fill);
+        _arrowPath.Reset();
+        _arrowPath.MoveTo(x, y);
+        _arrowPath.LineTo(x - size, y - size * 1.5f);
+        _arrowPath.LineTo(x + size, y - size * 1.5f);
+        _arrowPath.Close();
+        canvas.DrawPath(_arrowPath, _fill);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -366,7 +375,7 @@ public class ResearchTreeRenderer
         }
     }
 
-    private static void DrawNodeProgressBar(SKCanvas canvas, float x, float y, float w, float h,
+    private void DrawNodeProgressBar(SKCanvas canvas, float x, float y, float w, float h,
         ResearchDisplayItem item, SKColor branchColor)
     {
         // Hintergrund
@@ -416,41 +425,44 @@ public class ResearchTreeRenderer
         if (item.IsResearched || item.IsActive)
         {
             string percentText = $"{(int)(progress * 100)}%";
-            using var font = new SKFont { Size = 9, Embolden = true };
+            _fontSmall.Size = 9;
+            _fontSmall.Embolden = true;
             _text.Color = SKColors.White.WithAlpha(220);
-            canvas.DrawText(percentText, x + w / 2, y + h - 1f, SKTextAlign.Center, font, _text);
+            canvas.DrawText(percentText, x + w / 2, y + h - 1f, SKTextAlign.Center, _fontSmall, _text);
         }
     }
 
-    private static void DrawNodeLabel(SKCanvas canvas, float cx, float y,
+    private void DrawNodeLabel(SKCanvas canvas, float cx, float y,
         ResearchDisplayItem item, SKColor branchColor)
     {
-        // Name
-        using var nameFont = new SKFont { Size = 14, Embolden = true };
+        // Name (gecachter Font)
+        _fontBold.Size = 14;
         _text.Color = item.IsLocked ? TextMuted : item.IsResearched ? branchColor : TextPrimary;
 
         // Text kürzen falls nötig
         string name = item.Name;
         float maxW = NodeSize * 1.8f;
-        if (nameFont.MeasureText(name) > maxW)
+        if (_fontBold.MeasureText(name) > maxW)
         {
-            while (name.Length > 3 && nameFont.MeasureText(name + "..") > maxW)
+            while (name.Length > 3 && _fontBold.MeasureText(name + "..") > maxW)
                 name = name[..^1];
             name += "..";
         }
 
-        canvas.DrawText(name, cx, y + 9, SKTextAlign.Center, nameFont, _text);
+        canvas.DrawText(name, cx, y + 9, SKTextAlign.Center, _fontBold, _text);
 
         // Kosten (wenn nicht erforscht und nicht gesperrt)
         if (!item.IsResearched && !item.IsLocked && !item.IsActive)
         {
-            using var costFont = new SKFont { Size = 12 };
+            _fontMedium.Size = 12;
+            _fontMedium.Embolden = false;
             _text.Color = TextSecondary;
-            canvas.DrawText($"\u20ac{item.CostDisplay}", cx, y + 19, SKTextAlign.Center, costFont, _text);
+            canvas.DrawText($"\u20ac{item.CostDisplay}", cx, y + 19, SKTextAlign.Center, _fontMedium, _text);
         }
 
         // Level-Badge oben links am Icon
-        using var levelFont = new SKFont { Size = 8, Embolden = true };
+        _fontSmall.Size = 8;
+        _fontSmall.Embolden = true;
         _fill.Color = branchColor;
         float badgeX = cx - NodeSize / 2 - 2;
         float badgeY = item.IsLocked ? cx - NodeSize / 2 + 2 : // Korrektur: badgeY berechnen
@@ -469,7 +481,7 @@ public class ResearchTreeRenderer
     {
         _particleTimer += deltaTime;
 
-        if (_particleTimer >= 0.4f && _flowParticles.Count < 20)
+        if (_particleTimer >= 0.4f && _flowParticleCount < MaxFlowParticles)
         {
             _particleTimer = 0;
 
@@ -478,8 +490,8 @@ public class ResearchTreeRenderer
             {
                 if (!items[i].IsResearched) continue;
 
-                // Finde verbundene Nodes in der nächsten Zeile
-                // (vereinfacht: nächsten 1-2 Items)
+                // Finde verbundene Nodes in der naechsten Zeile
+                // (vereinfacht: naechsten 1-2 Items)
                 int nextStart = i + 1;
                 int nextEnd = Math.Min(i + 3, items.Count);
 
@@ -489,7 +501,8 @@ public class ResearchTreeRenderer
 
                     if (Random.Shared.NextSingle() > 0.3f) continue; // Nicht alle Verbindungen
 
-                    _flowParticles.Add(new FlowParticle
+                    if (_flowParticleCount >= MaxFlowParticles) break;
+                    _flowParticles[_flowParticleCount++] = new FlowParticle
                     {
                         StartX = positions[i].X,
                         StartY = positions[i].Y + NodeSize / 2 + 8,
@@ -497,24 +510,23 @@ public class ResearchTreeRenderer
                         EndY = positions[j].Y - NodeSize / 2 - 4,
                         Progress = 0,
                         Life = 1.0f
-                    });
+                    };
                     break;
                 }
             }
         }
 
-        // Aktualisieren und zeichnen
-        for (int i = _flowParticles.Count - 1; i >= 0; i--)
+        // Aktualisieren und zeichnen (Compact-Loop)
+        int aliveCount = 0;
+        for (int i = 0; i < _flowParticleCount; i++)
         {
             var p = _flowParticles[i];
             p.Progress += deltaTime * 1.5f;
             p.Life -= deltaTime;
 
-            if (p.Progress > 1 || p.Life <= 0)
-            {
-                _flowParticles.RemoveAt(i);
-                continue;
-            }
+            if (p.Progress > 1 || p.Life <= 0) continue;
+
+            _flowParticles[aliveCount++] = p;
 
             // Position auf der Bezier-Kurve
             float t = p.Progress;
@@ -531,6 +543,7 @@ public class ResearchTreeRenderer
             _fill.Color = branchColor.WithAlpha((byte)(alpha / 3));
             canvas.DrawCircle(px, py, 10 * p.Life, _fill);
         }
+        _flowParticleCount = aliveCount;
     }
 
     private static float CubicBezierX(float p0, float p1, float p2, float p3, float t)
@@ -581,7 +594,7 @@ public class ResearchTreeRenderer
         return null;
     }
 
-    private class FlowParticle
+    private struct FlowParticle
     {
         public float StartX, StartY, EndX, EndY, Progress, Life;
     }

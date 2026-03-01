@@ -21,6 +21,10 @@ public class AndroidAudioService : IAudioService
     private readonly Dictionary<GameSound, int> _soundIds = new();
     private bool _initialized;
 
+    // Hintergrundmusik (MediaPlayer für Loop-Streaming)
+    private MediaPlayer? _musicPlayer;
+    private readonly object _musicLock = new();
+
     /// <summary>Mapping GameSound → Dateiname (ohne Pfad/Extension)</summary>
     private static readonly Dictionary<GameSound, string> SoundFileMap = new()
     {
@@ -168,13 +172,69 @@ public class AndroidAudioService : IAudioService
 
     public Task PlayMusicAsync(string musicFile)
     {
-        // TODO: Hintergrundmusik implementieren wenn gewünscht
+        if (!MusicEnabled) return Task.CompletedTask;
+
+        try
+        {
+            lock (_musicLock)
+            {
+                StopMusicInternal();
+
+                _musicPlayer = new MediaPlayer();
+            }
+
+            var afd = _assets.OpenFd($"Music/{musicFile}");
+            if (afd != null)
+            {
+                _musicPlayer.SetDataSource(afd.FileDescriptor, afd.StartOffset, afd.Length);
+                afd.Close();
+
+                _musicPlayer.Looping = true;
+                _musicPlayer.SetVolume(0.5f, 0.5f);
+
+                // Prepare() synchron (PrepareAsync() ist void im Java-Binding, kein Task)
+                _musicPlayer.Prepare();
+                _musicPlayer.Start();
+            }
+        }
+        catch
+        {
+            // Musik-Wiedergabe kann fehlschlagen (fehlende Datei, Codec-Problem)
+            lock (_musicLock)
+            {
+                StopMusicInternal();
+            }
+        }
+
         return Task.CompletedTask;
     }
 
     public void StopMusic()
     {
-        // TODO: Hintergrundmusik stoppen
+        lock (_musicLock)
+        {
+            StopMusicInternal();
+        }
+    }
+
+    /// <summary>Stoppt und released den MediaPlayer. Muss innerhalb von lock(_musicLock) aufgerufen werden.</summary>
+    private void StopMusicInternal()
+    {
+        try
+        {
+            if (_musicPlayer != null)
+            {
+                if (_musicPlayer.IsPlaying)
+                    _musicPlayer.Stop();
+
+                _musicPlayer.Release();
+                _musicPlayer = null;
+            }
+        }
+        catch
+        {
+            _musicPlayer = null;
+        }
     }
 
     public void Vibrate(VibrationType type)

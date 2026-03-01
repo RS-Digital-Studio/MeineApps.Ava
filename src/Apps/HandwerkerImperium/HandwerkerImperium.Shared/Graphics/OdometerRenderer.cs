@@ -7,8 +7,9 @@ namespace HandwerkerImperium.Graphics;
 /// Animierte Geld-Anzeige mit rollenden Ziffern (Odometer-Effekt).
 /// Pro Ziffer ein vertikaler Strip mit 0-9, kaskadierendes Rollen.
 /// </summary>
-public class OdometerRenderer
+public class OdometerRenderer : IDisposable
 {
+    private bool _disposed;
     private const int MaxDigits = 12;
     private const float DigitRollDuration = 0.4f;  // Sekunden pro Ziffer
     private const float CascadeDelay = 0.05f;       // Verzögerung zwischen Ziffern
@@ -60,6 +61,11 @@ public class OdometerRenderer
         IsAntialias = true,
         Color = new SKColor(0, 0, 0, 60)
     };
+
+    // Gecachte Font-Objekte (vermeidet Allokationen pro Frame)
+    private readonly SKFont _digitFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
+    private readonly SKFont _suffixFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
+    private readonly SKFont _euroFont = new() { Edging = SKFontEdging.Antialias };
 
     /// <summary>
     /// Neuen Zielwert setzen und Animation starten.
@@ -185,11 +191,12 @@ public class OdometerRenderer
         float startX = bounds.Left + (bounds.Width - totalWidth) * alignment;
         float centerY = bounds.MidY;
 
-        using var digitFont = new SKFont(SKTypeface.Default, digitHeight);
-        digitFont.Embolden = true;
-        using var suffixFont = new SKFont(SKTypeface.Default, digitHeight * 0.7f);
-        suffixFont.Embolden = true;
-        using var euroFont = new SKFont(SKTypeface.Default, digitHeight * 0.65f);
+        _digitFont.Size = digitHeight;
+        _suffixFont.Size = digitHeight * 0.7f;
+        _euroFont.Size = digitHeight * 0.65f;
+        var digitFont = _digitFont;
+        var suffixFont = _suffixFont;
+        var euroFont = _euroFont;
 
         // Hintergrund (abgerundetes Rechteck)
         float bgPadH = 6f, bgPadV = 4f;
@@ -341,5 +348,22 @@ public class OdometerRenderer
         string str = intValue.ToString();
         if (str.Length > 6) str = str[..6];
         return str.Length == 0 ? "0" : str;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _digitPaint?.Dispose();
+        _shadowPaint?.Dispose();
+        _suffixPaint?.Dispose();
+        _flashPaint?.Dispose();
+        _bgPaint?.Dispose();
+        _digitFont?.Dispose();
+        _suffixFont?.Dispose();
+        _euroFont?.Dispose();
     }
 }

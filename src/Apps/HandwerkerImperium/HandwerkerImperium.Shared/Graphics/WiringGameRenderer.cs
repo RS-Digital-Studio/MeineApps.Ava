@@ -8,8 +8,9 @@ namespace HandwerkerImperium.Graphics;
 /// Funken-Explosion bei Verbindung, Kurzschluss-Effekt bei Fehler,
 /// Completion-Blitz-Flash wenn alle Kabel verbunden sind.
 /// </summary>
-public class WiringGameRenderer
+public class WiringGameRenderer : IDisposable
 {
+    private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════
     // FARBEN
     // ═══════════════════════════════════════════════════════════════════
@@ -75,6 +76,10 @@ public class WiringGameRenderer
     private const int MAX_BOLTS = 8;
     private readonly LightningBolt[] _bolts = new LightningBolt[MAX_BOLTS];
     private int _boltCount;
+
+    // Gecachte SKPath/SKFont fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
+    private readonly SKPath _cachedPath = new();
+    private readonly SKFont _cachedFont = new(SKTypeface.Default, 11);
 
     private struct LightningBolt
     {
@@ -451,8 +456,8 @@ public class WiringGameRenderer
 
         // Label-Text
         using var textPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
-        using var font = new SKFont(SKTypeface.Default, 11);
-        canvas.DrawText(label, x + width / 2, y + 16, SKTextAlign.Center, font, textPaint);
+        _cachedFont.Size = 11;
+        canvas.DrawText(label, x + width / 2, y + 16, SKTextAlign.Center, _cachedFont, textPaint);
 
         // Schrauben in den Ecken (Phillips-Kreuzschlitz)
         DrawScrew(canvas, x + 7, y + 7);
@@ -602,11 +607,11 @@ public class WiringGameRenderer
                 };
                 float cx = x + width / 2;
                 float cy = cableY;
-                using var path = new SKPath();
-                path.MoveTo(cx - 5, cy);
-                path.LineTo(cx - 1, cy + 4);
-                path.LineTo(cx + 6, cy - 4);
-                canvas.DrawPath(path, checkPaint);
+                _cachedPath.Reset();
+                _cachedPath.MoveTo(cx - 5, cy);
+                _cachedPath.LineTo(cx - 1, cy + 4);
+                _cachedPath.LineTo(cx + 6, cy - 4);
+                canvas.DrawPath(_cachedPath, checkPaint);
             }
 
             // Isolierung-Streifen
@@ -657,11 +662,11 @@ public class WiringGameRenderer
                 float rightY = wireAreaTop + j * (wireHeight + 8) + wireHeight / 2;
 
                 // Bezier-Kurve statt gerader Linie
-                using var bezierPath = new SKPath();
+                _cachedPath.Reset();
                 float cp1X = leftEndX + gapWidth * 0.35f;
                 float cp2X = leftEndX + gapWidth * 0.65f;
-                bezierPath.MoveTo(leftEndX, leftY);
-                bezierPath.CubicTo(cp1X, leftY, cp2X, rightY, rightStartX, rightY);
+                _cachedPath.MoveTo(leftEndX, leftY);
+                _cachedPath.CubicTo(cp1X, leftY, cp2X, rightY, rightStartX, rightY);
 
                 // Glow-Linie (breit, transparent)
                 using var glowPaint = new SKPaint
@@ -671,7 +676,7 @@ public class WiringGameRenderer
                     Style = SKPaintStyle.Stroke,
                     StrokeWidth = 8
                 };
-                canvas.DrawPath(bezierPath, glowPaint);
+                canvas.DrawPath(_cachedPath, glowPaint);
 
                 // Kabel-Linie
                 using var linePaint = new SKPaint
@@ -681,7 +686,7 @@ public class WiringGameRenderer
                     Style = SKPaintStyle.Stroke,
                     StrokeWidth = 3
                 };
-                canvas.DrawPath(bezierPath, linePaint);
+                canvas.DrawPath(_cachedPath, linePaint);
 
                 // Glanz-Linie (dünn, hell)
                 using var shinePaint = new SKPaint
@@ -691,11 +696,11 @@ public class WiringGameRenderer
                     Style = SKPaintStyle.Stroke,
                     StrokeWidth = 1
                 };
-                canvas.DrawPath(bezierPath, shinePaint);
+                canvas.DrawPath(_cachedPath, shinePaint);
 
                 // Strom-Puls (wandernder Lichtpunkt entlang der Kurve)
                 float pulseT = i < _pulseProgress.Length ? _pulseProgress[i] : 0;
-                DrawElectricPulse(canvas, bezierPath, wireColor, pulseT);
+                DrawElectricPulse(canvas, _cachedPath, wireColor, pulseT);
 
                 // Verbindungs-Knoten in der Mitte
                 float midX = leftEndX + gapWidth / 2;
@@ -853,8 +858,8 @@ public class WiringGameRenderer
             var rng = Random.Shared;
             float prevX = b.X1, prevY = b.Y1;
 
-            using var path = new SKPath();
-            path.MoveTo(prevX, prevY);
+            _cachedPath.Reset();
+            _cachedPath.MoveTo(prevX, prevY);
 
             for (int seg = 1; seg <= 3; seg++)
             {
@@ -862,11 +867,11 @@ public class WiringGameRenderer
                 float nx = b.X1 + dx * t + (rng.Next(-8, 9));
                 float ny = b.Y1 + dy * t + (rng.Next(-8, 9));
                 if (seg == 3) { nx = b.X2; ny = b.Y2; }
-                path.LineTo(nx, ny);
+                _cachedPath.LineTo(nx, ny);
             }
 
-            canvas.DrawPath(path, boltGlow);
-            canvas.DrawPath(path, boltPaint);
+            canvas.DrawPath(_cachedPath, boltGlow);
+            canvas.DrawPath(_cachedPath, boltPaint);
         }
 
         // Komprimieren
@@ -925,6 +930,17 @@ public class WiringGameRenderer
             canvas.DrawRect(bounds.Left + 4, bounds.Top + 4,
                 bounds.Width - 8, bounds.Height - 8, borderGlow);
         }
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cachedPath?.Dispose();
+        _cachedFont?.Dispose();
     }
 }
 

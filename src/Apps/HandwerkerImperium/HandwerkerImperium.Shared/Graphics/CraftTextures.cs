@@ -53,6 +53,11 @@ public static class CraftTextures
         StrokeCap = SKStrokeCap.Round
     };
 
+    // Gecachte SKPath-Objekte (GC-frei, Wiederverwendung via Reset())
+    private static readonly SKPath _grainPath = new();
+    private static readonly SKPath _stonePath = new();
+    private static readonly SKPath _crackPath2 = new();
+
     // Gecachter MaskFilter fuer Stein-Schatten (lazy erstellt)
     private static SKMaskFilter? _stoneShadowFilter;
     private static SKMaskFilter StoneShadowFilter =>
@@ -144,17 +149,17 @@ public static class CraftTextures
             float amplitude = 1.5f + DeterministicRandom(seed, i + 20) * 2.5f;
             float frequency = 0.02f + DeterministicRandom(seed, i + 30) * 0.015f;
 
-            using var path = new SKPath();
-            path.MoveTo(rect.Left, baseY + yOffset);
+            _grainPath.Reset();
+            _grainPath.MoveTo(rect.Left, baseY + yOffset);
 
             for (float x = rect.Left + 2; x <= rect.Right; x += 3)
             {
                 float waveY = baseY + yOffset + MathF.Sin((x - rect.Left) * frequency + i * 0.7f) * amplitude;
-                path.LineTo(x, waveY);
+                _grainPath.LineTo(x, waveY);
             }
 
             _grainPaint.StrokeWidth = 0.8f + DeterministicRandom(seed, i + 40) * 1.2f;
-            canvas.DrawPath(path, _grainPaint);
+            canvas.DrawPath(_grainPath, _grainPaint);
         }
 
         // 2-3 Astloecher (dunkle Ovale)
@@ -375,7 +380,7 @@ public static class CraftTextures
                 int vertexCount = 4 + (int)(DeterministicRandom(seed, stoneIndex * 7 + 202) * 3);
                 float baseRadius = Math.Min(cellW, cellH) * 0.38f;
 
-                using var path = new SKPath();
+                _stonePath.Reset();
                 for (int v = 0; v < vertexCount; v++)
                 {
                     float angle = MathF.PI * 2f * v / vertexCount;
@@ -383,17 +388,17 @@ public static class CraftTextures
                     float px = cx + MathF.Cos(angle) * radiusVar;
                     float py = cy + MathF.Sin(angle) * radiusVar;
 
-                    if (v == 0) path.MoveTo(px, py);
-                    else path.LineTo(px, py);
+                    if (v == 0) _stonePath.MoveTo(px, py);
+                    else _stonePath.LineTo(px, py);
                 }
-                path.Close();
+                _stonePath.Close();
 
                 // Schatten
                 canvas.Save();
                 canvas.Translate(1f, 1f);
                 _fillPaint.Color = new SKColor(0, 0, 0, 40);
                 _fillPaint.MaskFilter = StoneShadowFilter;
-                canvas.DrawPath(path, _fillPaint);
+                canvas.DrawPath(_stonePath, _fillPaint);
                 _fillPaint.MaskFilter = null;
                 canvas.Restore();
 
@@ -401,12 +406,12 @@ public static class CraftTextures
                 float colorVar = (DeterministicRandom(seed, stoneIndex * 7 + 204) - 0.5f) * 0.15f;
                 var thisStoneColor = colorVar > 0 ? Lighten(stoneColor, colorVar) : Darken(stoneColor, -colorVar);
                 _fillPaint.Color = thisStoneColor;
-                canvas.DrawPath(path, _fillPaint);
+                canvas.DrawPath(_stonePath, _fillPaint);
 
                 // Fugen-Kontur
                 _strokePaint.Color = Darken(stoneColor, 0.3f);
                 _strokePaint.StrokeWidth = 2f;
-                canvas.DrawPath(path, _strokePaint);
+                canvas.DrawPath(_stonePath, _strokePaint);
 
                 stoneIndex++;
             }
@@ -463,8 +468,8 @@ public static class CraftTextures
             _crackPaint.Color = new SKColor(0x60, 0x60, 0x60, 140);
             _crackPaint.StrokeWidth = 1f + DeterministicRandom(seed, 314 + i * 5) * 0.5f;
 
-            using var crackPath = new SKPath();
-            crackPath.MoveTo(startX, startY);
+            _crackPath2.Reset();
+            _crackPath2.MoveTo(startX, startY);
 
             int segments = 3 + (int)DeterministicRandom(seed, 315 + i * 5);
             float segLen = length / segments;
@@ -476,10 +481,10 @@ public static class CraftTextures
                 float segAngle = angle + (DeterministicRandom(seed, 320 + i * 10 + s) - 0.5f) * 0.6f;
                 cx += MathF.Cos(segAngle) * segLen;
                 cy += MathF.Sin(segAngle) * segLen;
-                crackPath.LineTo(cx, cy);
+                _crackPath2.LineTo(cx, cy);
             }
 
-            canvas.DrawPath(crackPath, _crackPaint);
+            canvas.DrawPath(_crackPath2, _crackPaint);
         }
 
         // 3-4 Flecken

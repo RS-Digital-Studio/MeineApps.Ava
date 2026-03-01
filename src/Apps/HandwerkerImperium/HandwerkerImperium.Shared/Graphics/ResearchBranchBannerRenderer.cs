@@ -11,12 +11,15 @@ namespace HandwerkerImperium.Graphics;
 /// - Marketing: Megaphon mit Schallwellen + wachsendes Balkendiagramm
 /// Inkl. Branch-Name, Fortschrittsanzeige (x/15 erforscht).
 /// </summary>
-public class ResearchBranchBannerRenderer
+public class ResearchBranchBannerRenderer : IDisposable
 {
+    private bool _disposed;
     private float _time;
 
-    // Partikel (Funken für Tools-Branch)
-    private readonly List<BannerParticle> _particles = [];
+    // Partikel (Funken fuer Tools-Branch, Fixed-Size struct-Pool, 0 GC)
+    private const int MaxBannerParticles = 20;
+    private readonly BannerParticle[] _particles = new BannerParticle[MaxBannerParticles];
+    private int _particleCount;
     private float _particleTimer;
 
     // Farb-Palette
@@ -32,6 +35,11 @@ public class ResearchBranchBannerRenderer
     private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _text = new() { IsAntialias = true };
+
+    // Gecachte Font- und Path-Objekte (vermeidet Allokationen pro Frame)
+    private readonly SKFont _nameFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
+    private readonly SKFont _progressFont = new() { Edging = SKFontEdging.Antialias };
+    private readonly SKPath _megaPath = new();
 
     /// <summary>
     /// Rendert das Branch-Banner.
@@ -261,14 +269,14 @@ public class ResearchBranchBannerRenderer
         float megaH = h * 0.25f;
 
         // Trichter (Trapez)
-        using var megaPath = new SKPath();
-        megaPath.MoveTo(cx - megaW * 0.3f, cy - megaH * 0.3f);
-        megaPath.LineTo(cx + megaW, cy - megaH * 0.8f);
-        megaPath.LineTo(cx + megaW, cy + megaH * 0.8f);
-        megaPath.LineTo(cx - megaW * 0.3f, cy + megaH * 0.3f);
-        megaPath.Close();
+        _megaPath.Reset();
+        _megaPath.MoveTo(cx - megaW * 0.3f, cy - megaH * 0.3f);
+        _megaPath.LineTo(cx + megaW, cy - megaH * 0.8f);
+        _megaPath.LineTo(cx + megaW, cy + megaH * 0.8f);
+        _megaPath.LineTo(cx - megaW * 0.3f, cy + megaH * 0.3f);
+        _megaPath.Close();
         _fill.Color = branchColor;
-        canvas.DrawPath(megaPath, _fill);
+        canvas.DrawPath(_megaPath, _fill);
 
         // Griff
         _fill.Color = WoodDark;
@@ -321,18 +329,18 @@ public class ResearchBranchBannerRenderer
     // BRANCH-INFO (Name + Fortschritt)
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static void DrawBranchInfo(SKCanvas canvas, float x, float y, float w, float h,
+    private void DrawBranchInfo(SKCanvas canvas, float x, float y, float w, float h,
         SKColor branchColor, string branchName, int researchedCount, int totalCount)
     {
         // Branch-Name
-        using var nameFont = new SKFont { Size = 16, Embolden = true };
+        _nameFont.Size = 16;
         _text.Color = branchColor;
-        canvas.DrawText(branchName, x + 8, y + h * 0.38f, nameFont, _text);
+        canvas.DrawText(branchName, x + 8, y + h * 0.38f, _nameFont, _text);
 
         // Fortschritt "7/15 erforscht"
-        using var progressFont = new SKFont { Size = 11 };
+        _progressFont.Size = 11;
         _text.Color = new SKColor(0xA0, 0x90, 0x80);
-        canvas.DrawText($"{researchedCount}/{totalCount}", x + 8, y + h * 0.6f, progressFont, _text);
+        canvas.DrawText($"{researchedCount}/{totalCount}", x + 8, y + h * 0.6f, _progressFont, _text);
 
         // Fortschrittsbalken (breiter mit Gradient)
         float barX = x + 8;
@@ -377,9 +385,9 @@ public class ResearchBranchBannerRenderer
         if (_particleTimer >= 0.12f)
         {
             _particleTimer = 0;
-            if (_particles.Count < 15)
+            if (_particleCount < MaxBannerParticles)
             {
-                _particles.Add(new BannerParticle
+                _particles[_particleCount++] = new BannerParticle
                 {
                     X = spawnX + (Random.Shared.NextSingle() - 0.5f) * 10,
                     Y = spawnY,
@@ -387,12 +395,13 @@ public class ResearchBranchBannerRenderer
                     VY = -(15 + Random.Shared.NextSingle() * 25),
                     Life = 1.0f,
                     Size = 1 + Random.Shared.NextSingle() * 1.5f
-                });
+                };
             }
         }
 
-        // Aktualisieren und zeichnen
-        for (int i = _particles.Count - 1; i >= 0; i--)
+        // Aktualisieren und zeichnen (Compact-Loop)
+        int aliveCount = 0;
+        for (int i = 0; i < _particleCount; i++)
         {
             var p = _particles[i];
             p.X += p.VX * deltaTime;
@@ -400,20 +409,31 @@ public class ResearchBranchBannerRenderer
             p.VY += 20 * deltaTime; // Gravity
             p.Life -= deltaTime * 1.8f;
 
-            if (p.Life <= 0)
-            {
-                _particles.RemoveAt(i);
-                continue;
-            }
+            if (p.Life <= 0) continue;
+
+            _particles[aliveCount++] = p;
 
             byte alpha = (byte)(p.Life * 255);
             _fill.Color = color.WithAlpha(alpha);
             canvas.DrawCircle(p.X, p.Y, p.Size * p.Life, _fill);
         }
+        _particleCount = aliveCount;
     }
 
-    private class BannerParticle
+    private struct BannerParticle
     {
         public float X, Y, VX, VY, Life, Size;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _nameFont?.Dispose();
+        _progressFont?.Dispose();
+        _megaPath?.Dispose();
     }
 }

@@ -65,8 +65,9 @@ public class GiftService : IGiftService
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in SendGiftAsync: {ex.Message}");
             return false;
         }
     }
@@ -120,9 +121,9 @@ public class GiftService : IGiftService
                 });
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fehler ignorieren
+            System.Diagnostics.Debug.WriteLine($"Fehler in GetPendingGiftsAsync: {ex.Message}");
         }
 
         return result;
@@ -149,8 +150,9 @@ public class GiftService : IGiftService
             await _saveGameService.SaveAsync();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in ClaimGiftAsync: {ex.Message}");
             return false;
         }
     }

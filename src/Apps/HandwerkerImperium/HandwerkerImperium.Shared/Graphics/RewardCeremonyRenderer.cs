@@ -78,6 +78,9 @@ public class RewardCeremonyRenderer
     private static readonly SKPaint _confettiPaint = new() { IsAntialias = true };
     private static readonly SKPaint _iconPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
 
+    // Gecachter SKPath fuer Icon-Zeichnung (vermeidet GC-Allokationen pro Frame)
+    private readonly SKPath _iconPath = new();
+
     /// <summary>
     /// Ob die Zeremonie aktiv ist.
     /// </summary>
@@ -329,48 +332,48 @@ public class RewardCeremonyRenderer
 
     private void DrawArrowUp(SKCanvas canvas, float cx, float cy, float s)
     {
-        using var path = new SKPath();
-        path.MoveTo(cx, cy - s);            // Spitze
-        path.LineTo(cx + s * 0.6f, cy);     // Rechts
-        path.LineTo(cx + s * 0.2f, cy);
-        path.LineTo(cx + s * 0.2f, cy + s * 0.7f);
-        path.LineTo(cx - s * 0.2f, cy + s * 0.7f);
-        path.LineTo(cx - s * 0.2f, cy);
-        path.LineTo(cx - s * 0.6f, cy);     // Links
-        path.Close();
-        canvas.DrawPath(path, _iconPaint);
+        _iconPath.Reset();
+        _iconPath.MoveTo(cx, cy - s);            // Spitze
+        _iconPath.LineTo(cx + s * 0.6f, cy);     // Rechts
+        _iconPath.LineTo(cx + s * 0.2f, cy);
+        _iconPath.LineTo(cx + s * 0.2f, cy + s * 0.7f);
+        _iconPath.LineTo(cx - s * 0.2f, cy + s * 0.7f);
+        _iconPath.LineTo(cx - s * 0.2f, cy);
+        _iconPath.LineTo(cx - s * 0.6f, cy);     // Links
+        _iconPath.Close();
+        canvas.DrawPath(_iconPath, _iconPaint);
     }
 
     private void DrawStar(SKCanvas canvas, float cx, float cy, float s)
     {
-        using var path = new SKPath();
+        _iconPath.Reset();
         for (int i = 0; i < 10; i++)
         {
             float angle = (i * 36f - 90f) * MathF.PI / 180f;
             float r = (i % 2 == 0) ? s : s * 0.4f;
             float px = cx + MathF.Cos(angle) * r;
             float py = cy + MathF.Sin(angle) * r;
-            if (i == 0) path.MoveTo(px, py); else path.LineTo(px, py);
+            if (i == 0) _iconPath.MoveTo(px, py); else _iconPath.LineTo(px, py);
         }
-        path.Close();
-        canvas.DrawPath(path, _iconPaint);
+        _iconPath.Close();
+        canvas.DrawPath(_iconPath, _iconPaint);
     }
 
     private void DrawCrown(SKCanvas canvas, float cx, float cy, float s)
     {
-        using var path = new SKPath();
+        _iconPath.Reset();
         float w = s * 0.9f, h = s * 0.7f;
         // Basis
-        path.MoveTo(cx - w, cy + h * 0.4f);
+        _iconPath.MoveTo(cx - w, cy + h * 0.4f);
         // 3 Zacken nach oben
-        path.LineTo(cx - w * 0.6f, cy - h * 0.3f);
-        path.LineTo(cx - w * 0.3f, cy + h * 0.1f);
-        path.LineTo(cx, cy - h);
-        path.LineTo(cx + w * 0.3f, cy + h * 0.1f);
-        path.LineTo(cx + w * 0.6f, cy - h * 0.3f);
-        path.LineTo(cx + w, cy + h * 0.4f);
-        path.Close();
-        canvas.DrawPath(path, _iconPaint);
+        _iconPath.LineTo(cx - w * 0.6f, cy - h * 0.3f);
+        _iconPath.LineTo(cx - w * 0.3f, cy + h * 0.1f);
+        _iconPath.LineTo(cx, cy - h);
+        _iconPath.LineTo(cx + w * 0.3f, cy + h * 0.1f);
+        _iconPath.LineTo(cx + w * 0.6f, cy - h * 0.3f);
+        _iconPath.LineTo(cx + w, cy + h * 0.4f);
+        _iconPath.Close();
+        canvas.DrawPath(_iconPath, _iconPaint);
 
         // Juwelen auf Spitzen
         _iconPaint.Color = _accentColor;
@@ -384,13 +387,13 @@ public class RewardCeremonyRenderer
     {
         // Kelch-Körper
         float w = s * 0.7f, h = s * 0.6f;
-        using var cupPath = new SKPath();
-        cupPath.MoveTo(cx - w, cy - h);
-        cupPath.LineTo(cx + w, cy - h);
-        cupPath.LineTo(cx + w * 0.6f, cy + h * 0.3f);
-        cupPath.LineTo(cx - w * 0.6f, cy + h * 0.3f);
-        cupPath.Close();
-        canvas.DrawPath(cupPath, _iconPaint);
+        _iconPath.Reset();
+        _iconPath.MoveTo(cx - w, cy - h);
+        _iconPath.LineTo(cx + w, cy - h);
+        _iconPath.LineTo(cx + w * 0.6f, cy + h * 0.3f);
+        _iconPath.LineTo(cx - w * 0.6f, cy + h * 0.3f);
+        _iconPath.Close();
+        canvas.DrawPath(_iconPath, _iconPaint);
 
         // Fuß
         canvas.DrawRect(cx - s * 0.15f, cy + h * 0.3f, s * 0.3f, s * 0.3f, _iconPaint);

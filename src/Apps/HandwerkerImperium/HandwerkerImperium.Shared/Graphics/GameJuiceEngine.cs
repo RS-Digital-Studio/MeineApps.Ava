@@ -8,8 +8,10 @@ namespace HandwerkerImperium.Graphics;
 /// Singleton via DI, rendert Partikel, ScreenShake, Overlays etc.
 /// Struct-basierter Pool für GC-freie Performance.
 /// </summary>
-public class GameJuiceEngine
+public class GameJuiceEngine : IDisposable
 {
+    private bool _disposed;
+
     // Effekt-Pool (struct-basiert, kein GC)
     private const int MaxEffects = 200;
     private readonly JuiceEffect[] _effects = new JuiceEffect[MaxEffects];
@@ -40,6 +42,10 @@ public class GameJuiceEngine
     private readonly SKPaint _overlayPaint = new() { IsAntialias = true };
     private readonly SKPaint _vignettePaint = new() { IsAntialias = true };
     private readonly SKPaint _ringPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+    // Gecachte Font- und Path-Objekte (vermeidet Allokationen pro Frame)
+    private readonly SKFont _font = new() { Edging = SKFontEdging.Antialias };
+    private readonly SKPath _sparklePath = new();
 
     // Pseudo-Random für deterministische Effekte
     private uint _rngState = 42;
@@ -424,9 +430,10 @@ public class GameJuiceEngine
         // Euro-Prägung
         _particlePaint.Color = new SKColor(0xDA, 0xA5, 0x20); // DarkerGold
         float euroSize = coinSize * 0.5f;
-        using var font = new SKFont(SKTypeface.Default, euroSize * 2f);
+        _font.Size = euroSize * 2f;
+        _font.Embolden = false;
         _textPaint.Color = new SKColor(0xDA, 0xA5, 0x20);
-        canvas.DrawText("E", cx - euroSize * 0.4f, cy + euroSize * 0.4f, SKTextAlign.Left, font, _textPaint);
+        canvas.DrawText("E", cx - euroSize * 0.4f, cy + euroSize * 0.4f, SKTextAlign.Left, _font, _textPaint);
 
         // Glanz-Highlight
         _particlePaint.Color = new SKColor(0xFF, 0xFF, 0xFF, 80);
@@ -441,20 +448,19 @@ public class GameJuiceEngine
 
         _particlePaint.Color = e.Color.WithAlpha((byte)(alpha * 200));
 
-        // 4-zackiger Stern
-        var path = new SKPath();
-        path.MoveTo(e.X, e.Y - size);
-        path.LineTo(e.X + size * 0.3f, e.Y);
-        path.LineTo(e.X + size, e.Y);
-        path.LineTo(e.X + size * 0.3f, e.Y);
-        path.LineTo(e.X, e.Y + size);
-        path.LineTo(e.X - size * 0.3f, e.Y);
-        path.LineTo(e.X - size, e.Y);
-        path.LineTo(e.X - size * 0.3f, e.Y);
-        path.Close();
+        // 4-zackiger Stern (gecachter Path, Reset pro Aufruf)
+        _sparklePath.Reset();
+        _sparklePath.MoveTo(e.X, e.Y - size);
+        _sparklePath.LineTo(e.X + size * 0.3f, e.Y);
+        _sparklePath.LineTo(e.X + size, e.Y);
+        _sparklePath.LineTo(e.X + size * 0.3f, e.Y);
+        _sparklePath.LineTo(e.X, e.Y + size);
+        _sparklePath.LineTo(e.X - size * 0.3f, e.Y);
+        _sparklePath.LineTo(e.X - size, e.Y);
+        _sparklePath.LineTo(e.X - size * 0.3f, e.Y);
+        _sparklePath.Close();
 
-        canvas.DrawPath(path, _particlePaint);
-        path.Dispose();
+        canvas.DrawPath(_sparklePath, _particlePaint);
     }
 
     private void RenderNumberPop(SKCanvas canvas, ref JuiceEffect e, float progress)
@@ -467,16 +473,16 @@ public class GameJuiceEngine
         float alpha = progress < 0.6f ? 1f : 1f - (progress - 0.6f) / 0.4f;
 
         float fontSize = e.Size * scale;
-        using var font = new SKFont(SKTypeface.Default, fontSize);
-        font.Embolden = true;
+        _font.Size = fontSize;
+        _font.Embolden = true;
 
         // Schatten
         _textPaint.Color = new SKColor(0, 0, 0, (byte)(alpha * 120));
-        canvas.DrawText(e.Text ?? "", e.X + 1.5f, e.Y + 1.5f, SKTextAlign.Center, font, _textPaint);
+        canvas.DrawText(e.Text ?? "", e.X + 1.5f, e.Y + 1.5f, SKTextAlign.Center, _font, _textPaint);
 
         // Text
         _textPaint.Color = e.Color.WithAlpha((byte)(alpha * 255));
-        canvas.DrawText(e.Text ?? "", e.X, e.Y, SKTextAlign.Center, font, _textPaint);
+        canvas.DrawText(e.Text ?? "", e.X, e.Y, SKTextAlign.Center, _font, _textPaint);
     }
 
     private void RenderShockwave(SKCanvas canvas, ref JuiceEffect e, float progress)
@@ -605,5 +611,22 @@ public class GameJuiceEngine
         public float Phase;
         public float Delay;
         public string? Text;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _particlePaint?.Dispose();
+        _glowPaint?.Dispose();
+        _textPaint?.Dispose();
+        _overlayPaint?.Dispose();
+        _vignettePaint?.Dispose();
+        _ringPaint?.Dispose();
+        _font?.Dispose();
+        _sparklePath?.Dispose();
     }
 }

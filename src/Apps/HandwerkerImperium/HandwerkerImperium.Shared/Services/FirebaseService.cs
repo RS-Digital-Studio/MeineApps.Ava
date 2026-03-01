@@ -133,8 +133,9 @@ public class FirebaseService : IFirebaseService
 
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in TryRefreshTokenAsync: {ex.Message}");
             return false;
         }
     }
@@ -173,8 +174,9 @@ public class FirebaseService : IFirebaseService
             IsOnline = true;
             return JsonSerializer.Deserialize<T>(json);
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in GetAsync: {ex.Message}");
             IsOnline = false;
             return null;
         }
@@ -200,8 +202,9 @@ public class FirebaseService : IFirebaseService
 
             IsOnline = response.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in SetAsync: {ex.Message}");
             IsOnline = false;
         }
     }
@@ -228,8 +231,9 @@ public class FirebaseService : IFirebaseService
 
             IsOnline = response.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in UpdateAsync: {ex.Message}");
             IsOnline = false;
         }
     }
@@ -263,8 +267,9 @@ public class FirebaseService : IFirebaseService
             var result = JsonSerializer.Deserialize<Dictionary<string, string>>(responseJson);
             return result?.GetValueOrDefault("name");
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in PushAsync: {ex.Message}");
             IsOnline = false;
             return null;
         }
@@ -288,8 +293,9 @@ public class FirebaseService : IFirebaseService
 
             IsOnline = response.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in DeleteAsync: {ex.Message}");
             IsOnline = false;
         }
     }
@@ -324,8 +330,9 @@ public class FirebaseService : IFirebaseService
             IsOnline = true;
             return json;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"Fehler in QueryAsync: {ex.Message}");
             IsOnline = false;
             return null;
         }

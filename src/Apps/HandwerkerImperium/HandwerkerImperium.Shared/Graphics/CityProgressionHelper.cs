@@ -8,15 +8,11 @@ namespace HandwerkerImperium.Graphics;
 /// </summary>
 public static class CityProgressionHelper
 {
-    // Gecachte Paints für Dekorationen
-    private static readonly SKPaint _treeTrunkPaint = new() { Color = new SKColor(0x5D, 0x40, 0x37), IsAntialias = true };
-    private static readonly SKPaint _treeLeafPaint = new() { IsAntialias = true };
-    private static readonly SKPaint _lanternPolePaint = new() { Color = new SKColor(0x42, 0x42, 0x42), IsAntialias = true };
-    private static readonly SKPaint _lanternGlowPaint = new() { IsAntialias = true };
-    private static readonly SKPaint _benchPaint = new() { Color = new SKColor(0x6D, 0x4C, 0x41), IsAntialias = true };
-    private static readonly SKPaint _benchLegPaint = new() { Color = new SKColor(0x42, 0x42, 0x42), IsAntialias = true };
-    private static readonly SKPaint _flowerPaint = new() { IsAntialias = true };
-    private static readonly SKPaint _sidewalkPaint = new() { IsAntialias = true };
+    // Hinweis: Paints werden in den oeffentlichen Methoden lokal erstellt und per Parameter
+    // durchgereicht. Statische mutable Felder in Render-Methoden sind nicht thread-sicher.
+
+    // Gecachter Path für Laternen-Lichtkegel (vermeidet Allokation pro Frame)
+    private static readonly SKPath _conePath = new();
 
     // Blumen-Farben für Beete
     private static readonly SKColor[] FlowerColors =
@@ -29,7 +25,7 @@ public static class CityProgressionHelper
     ];
 
     /// <summary>
-    /// Zeichnet die Straße mit Progression (Schotter→Asphalt→Pflaster→Premium-Pflaster).
+    /// Zeichnet die Straße mit Progression (Schotter->Asphalt->Pflaster->Premium-Pflaster).
     /// </summary>
     public static void DrawProgressiveStreet(SKCanvas canvas, SKRect bounds, float streetY,
         float streetHeight, int worldTier, float nightDim, float time)
@@ -75,9 +71,9 @@ public static class CityProgressionHelper
         if (hasSidewalk)
         {
             var sidewalkColor = CityBuildingShapes.ApplyDim(new SKColor(0xBD, 0xB7, 0xAB), nightDim);
-            _sidewalkPaint.Color = sidewalkColor;
-            canvas.DrawRect(bounds.Left, streetY - 3, bounds.Width, 3, _sidewalkPaint);
-            canvas.DrawRect(bounds.Left, streetY + streetHeight, bounds.Width, 3, _sidewalkPaint);
+            using var sidewalkPaint = new SKPaint { Color = sidewalkColor, IsAntialias = true };
+            canvas.DrawRect(bounds.Left, streetY - 3, bounds.Width, 3, sidewalkPaint);
+            canvas.DrawRect(bounds.Left, streetY + streetHeight, bounds.Width, 3, sidewalkPaint);
         }
 
         // Straßenfläche
@@ -123,6 +119,15 @@ public static class CityProgressionHelper
     {
         if (worldTier < 2) return;
 
+        // Lokal erstellte Paints (thread-sicher statt statischer Felder)
+        using var treeTrunkPaint = new SKPaint { Color = new SKColor(0x5D, 0x40, 0x37), IsAntialias = true };
+        using var treeLeafPaint = new SKPaint { IsAntialias = true };
+        using var lanternPolePaint = new SKPaint { Color = new SKColor(0x42, 0x42, 0x42), IsAntialias = true };
+        using var lanternGlowPaint = new SKPaint { IsAntialias = true };
+        using var benchPaint = new SKPaint { Color = new SKColor(0x6D, 0x4C, 0x41), IsAntialias = true };
+        using var benchLegPaint = new SKPaint { Color = new SKColor(0x42, 0x42, 0x42), IsAntialias = true };
+        using var flowerPaint = new SKPaint { IsAntialias = true };
+
         float decoY = streetY - 6; // Über der Straße, auf dem Bürgersteig
         float spacing = bounds.Width / 8f; // 7 Deko-Slots
 
@@ -138,27 +143,30 @@ public static class CityProgressionHelper
             {
                 case 0 when worldTier >= 3:
                     // Baum
-                    DrawTree(canvas, x, decoY, worldTier, nightDim, time + i * 2.1f);
+                    DrawTree(canvas, x, decoY, worldTier, nightDim, time + i * 2.1f,
+                        treeTrunkPaint, treeLeafPaint);
                     break;
 
                 case 1 when worldTier >= 4:
                     // Laterne
-                    DrawLantern(canvas, x, decoY, nightDim, time);
+                    DrawLantern(canvas, x, decoY, nightDim, time,
+                        lanternPolePaint, lanternGlowPaint);
                     break;
 
                 case 2 when worldTier >= 5:
                     // Bank
-                    DrawBench(canvas, x, decoY, nightDim);
+                    DrawBench(canvas, x, decoY, nightDim, benchPaint, benchLegPaint);
                     break;
 
                 case 3 when worldTier >= 6:
                     // Blumenbeet
-                    DrawFlowerBed(canvas, x, decoY, nightDim, time + i);
+                    DrawFlowerBed(canvas, x, decoY, nightDim, time + i,
+                        treeTrunkPaint, flowerPaint);
                     break;
 
                 case 4 when worldTier >= 2:
                     // Busch
-                    DrawBush(canvas, x, decoY, nightDim);
+                    DrawBush(canvas, x, decoY, nightDim, treeLeafPaint);
                     break;
 
                 case 5 when worldTier >= 7:
@@ -200,15 +208,16 @@ public static class CityProgressionHelper
         return new SKColor(r, g, b, color.Alpha);
     }
 
-    // ═════════════════════════════════════════════════════════════════
+    // =================================================================
     // PRIVATE DEKORATIONS-ZEICHNER
-    // ═════════════════════════════════════════════════════════════════
+    // =================================================================
 
-    private static void DrawTree(SKCanvas canvas, float x, float y, int worldTier, float nightDim, float time)
+    private static void DrawTree(SKCanvas canvas, float x, float y, int worldTier, float nightDim,
+        float time, SKPaint treeTrunkPaint, SKPaint treeLeafPaint)
     {
         // Stamm
-        _treeTrunkPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x5D, 0x40, 0x37), nightDim);
-        canvas.DrawRect(x - 1, y - 8, 2, 8, _treeTrunkPaint);
+        treeTrunkPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x5D, 0x40, 0x37), nightDim);
+        canvas.DrawRect(x - 1, y - 8, 2, 8, treeTrunkPaint);
 
         // Krone (wird üppiger mit höherem Tier)
         float sway = MathF.Sin(time * 0.8f) * 0.5f; // Leichtes Schwanken im Wind
@@ -221,8 +230,8 @@ public static class CityProgressionHelper
             _ => new SKColor(0x2E, 0x7D, 0x32)
         };
 
-        _treeLeafPaint.Color = CityBuildingShapes.ApplyDim(leafColor, nightDim);
-        canvas.DrawCircle(x + sway, y - 8 - crownSize * 0.6f, crownSize, _treeLeafPaint);
+        treeLeafPaint.Color = CityBuildingShapes.ApplyDim(leafColor, nightDim);
+        canvas.DrawCircle(x + sway, y - 8 - crownSize * 0.6f, crownSize, treeLeafPaint);
 
         // Tier 6+: Zweite Krone oben (üppiger Baum)
         if (worldTier >= 6)
@@ -230,50 +239,51 @@ public static class CityProgressionHelper
             var lighterLeaf = CityBuildingShapes.ApplyDim(
                 new SKColor((byte)Math.Min(leafColor.Red + 20, 255), (byte)Math.Min(leafColor.Green + 15, 255), leafColor.Blue),
                 nightDim);
-            _treeLeafPaint.Color = lighterLeaf;
-            canvas.DrawCircle(x + sway * 0.5f, y - 8 - crownSize * 1.3f, crownSize * 0.7f, _treeLeafPaint);
+            treeLeafPaint.Color = lighterLeaf;
+            canvas.DrawCircle(x + sway * 0.5f, y - 8 - crownSize * 1.3f, crownSize * 0.7f, treeLeafPaint);
         }
     }
 
-    private static void DrawLantern(SKCanvas canvas, float x, float y, float nightDim, float time)
+    private static void DrawLantern(SKCanvas canvas, float x, float y, float nightDim, float time,
+        SKPaint lanternPolePaint, SKPaint lanternGlowPaint)
     {
         // Mast
-        _lanternPolePaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x42, 0x42, 0x42), nightDim);
-        canvas.DrawRect(x - 0.5f, y - 14, 1, 14, _lanternPolePaint);
+        lanternPolePaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x42, 0x42, 0x42), nightDim);
+        canvas.DrawRect(x - 0.5f, y - 14, 1, 14, lanternPolePaint);
 
         // Laternenkopf
-        canvas.DrawRect(x - 2, y - 16, 4, 2.5f, _lanternPolePaint);
+        canvas.DrawRect(x - 2, y - 16, 4, 2.5f, lanternPolePaint);
 
         // Licht (nachts heller)
         bool isNight = nightDim < 0.85f;
         float glowAlpha = isNight ? 0.9f : 0.3f;
         float pulseAlpha = glowAlpha + MathF.Sin(time * 3f) * 0.05f;
 
-        _lanternGlowPaint.Color = new SKColor(0xFF, 0xE0, 0x82, (byte)(pulseAlpha * 255));
-        canvas.DrawCircle(x, y - 14.5f, isNight ? 5 : 2.5f, _lanternGlowPaint);
+        lanternGlowPaint.Color = new SKColor(0xFF, 0xE0, 0x82, (byte)(pulseAlpha * 255));
+        canvas.DrawCircle(x, y - 14.5f, isNight ? 5 : 2.5f, lanternGlowPaint);
 
         // Lampe selbst (heller Punkt)
-        _lanternGlowPaint.Color = new SKColor(0xFF, 0xF1, 0xB8, (byte)(Math.Min(pulseAlpha + 0.2f, 1f) * 255));
-        canvas.DrawCircle(x, y - 14.5f, 1.5f, _lanternGlowPaint);
+        lanternGlowPaint.Color = new SKColor(0xFF, 0xF1, 0xB8, (byte)(Math.Min(pulseAlpha + 0.2f, 1f) * 255));
+        canvas.DrawCircle(x, y - 14.5f, 1.5f, lanternGlowPaint);
 
         // Cone-förmiger Lichtkegel nach unten (nachts)
         if (isNight)
         {
             byte coneAlpha = (byte)(pulseAlpha * 40);
-            using var conePath = new SKPath();
-            conePath.MoveTo(x - 2, y - 14);
-            conePath.LineTo(x - 8, y);
-            conePath.LineTo(x + 8, y);
-            conePath.LineTo(x + 2, y - 14);
-            conePath.Close();
+            _conePath.Reset();
+            _conePath.MoveTo(x - 2, y - 14);
+            _conePath.LineTo(x - 8, y);
+            _conePath.LineTo(x + 8, y);
+            _conePath.LineTo(x + 2, y - 14);
+            _conePath.Close();
 
             using var coneShader = SKShader.CreateLinearGradient(
                 new SKPoint(x, y - 14), new SKPoint(x, y),
                 [new SKColor(0xFF, 0xE0, 0x82, coneAlpha), new SKColor(0xFF, 0xE0, 0x82, 0x00)],
                 [0f, 1f], SKShaderTileMode.Clamp);
-            _lanternGlowPaint.Shader = coneShader;
-            canvas.DrawPath(conePath, _lanternGlowPaint);
-            _lanternGlowPaint.Shader = null;
+            lanternGlowPaint.Shader = coneShader;
+            canvas.DrawPath(_conePath, lanternGlowPaint);
+            lanternGlowPaint.Shader = null;
 
             // 2-3 Insekten die um die Laterne kreisen
             for (int insect = 0; insect < 3; insect++)
@@ -283,46 +293,49 @@ public static class CityProgressionHelper
                 float ix = x + MathF.Cos(angle) * radius;
                 float iy = y - 14.5f + MathF.Sin(angle) * radius * 0.6f;
                 byte insectAlpha = (byte)(120 + MathF.Sin(time * 8f + insect * 3f) * 60);
-                _lanternGlowPaint.Color = new SKColor(0xFF, 0xF5, 0xC0, insectAlpha);
-                canvas.DrawCircle(ix, iy, 0.6f, _lanternGlowPaint);
+                lanternGlowPaint.Color = new SKColor(0xFF, 0xF5, 0xC0, insectAlpha);
+                canvas.DrawCircle(ix, iy, 0.6f, lanternGlowPaint);
             }
         }
     }
 
-    private static void DrawBench(SKCanvas canvas, float x, float y, float nightDim)
+    private static void DrawBench(SKCanvas canvas, float x, float y, float nightDim,
+        SKPaint benchPaint, SKPaint benchLegPaint)
     {
-        _benchPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x6D, 0x4C, 0x41), nightDim);
-        _benchLegPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x42, 0x42, 0x42), nightDim);
+        benchPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x6D, 0x4C, 0x41), nightDim);
+        benchLegPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x42, 0x42, 0x42), nightDim);
 
         // Sitzfläche (3 Latten)
         for (int i = 0; i < 3; i++)
         {
-            canvas.DrawRect(x - 4, y - 3 - i * 1.2f, 8, 1, _benchPaint);
+            canvas.DrawRect(x - 4, y - 3 - i * 1.2f, 8, 1, benchPaint);
         }
 
         // Beine
-        canvas.DrawRect(x - 3.5f, y - 3, 1, 3, _benchLegPaint);
-        canvas.DrawRect(x + 2.5f, y - 3, 1, 3, _benchLegPaint);
+        canvas.DrawRect(x - 3.5f, y - 3, 1, 3, benchLegPaint);
+        canvas.DrawRect(x + 2.5f, y - 3, 1, 3, benchLegPaint);
     }
 
-    private static void DrawBush(SKCanvas canvas, float x, float y, float nightDim)
+    private static void DrawBush(SKCanvas canvas, float x, float y, float nightDim,
+        SKPaint treeLeafPaint)
     {
         var bushColor = CityBuildingShapes.ApplyDim(new SKColor(0x4C, 0x8C, 0x3C), nightDim);
-        _treeLeafPaint.Color = bushColor;
-        canvas.DrawOval(x, y - 2.5f, 4, 2.5f, _treeLeafPaint);
+        treeLeafPaint.Color = bushColor;
+        canvas.DrawOval(x, y - 2.5f, 4, 2.5f, treeLeafPaint);
 
         // Dunklere Mitte für Tiefe
         var darkBush = CityBuildingShapes.ApplyDim(new SKColor(0x38, 0x6B, 0x2C), nightDim);
-        _treeLeafPaint.Color = darkBush;
-        canvas.DrawOval(x, y - 2, 2.5f, 1.5f, _treeLeafPaint);
+        treeLeafPaint.Color = darkBush;
+        canvas.DrawOval(x, y - 2, 2.5f, 1.5f, treeLeafPaint);
     }
 
-    private static void DrawFlowerBed(SKCanvas canvas, float x, float y, float nightDim, float time)
+    private static void DrawFlowerBed(SKCanvas canvas, float x, float y, float nightDim, float time,
+        SKPaint treeTrunkPaint, SKPaint flowerPaint)
     {
         // Erde
         var earthColor = CityBuildingShapes.ApplyDim(new SKColor(0x5D, 0x40, 0x37), nightDim);
-        _treeTrunkPaint.Color = earthColor;
-        canvas.DrawRect(x - 5, y - 1, 10, 2, _treeTrunkPaint);
+        treeTrunkPaint.Color = earthColor;
+        canvas.DrawRect(x - 5, y - 1, 10, 2, treeTrunkPaint);
 
         // 5 Blumen
         for (int f = 0; f < 5; f++)
@@ -331,12 +344,12 @@ public static class CityProgressionHelper
             float fy = y - 2 - MathF.Abs(MathF.Sin(time * 1.2f + f * 1.5f)) * 1f;
             int colorIdx = f % FlowerColors.Length;
 
-            _flowerPaint.Color = CityBuildingShapes.ApplyDim(FlowerColors[colorIdx], nightDim);
-            canvas.DrawCircle(fx, fy, 1.2f, _flowerPaint);
+            flowerPaint.Color = CityBuildingShapes.ApplyDim(FlowerColors[colorIdx], nightDim);
+            canvas.DrawCircle(fx, fy, 1.2f, flowerPaint);
 
             // Stiel
-            _treeTrunkPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x4C, 0x8C, 0x3C), nightDim);
-            canvas.DrawRect(fx - 0.3f, fy + 1, 0.6f, y - 1 - fy - 1, _treeTrunkPaint);
+            treeTrunkPaint.Color = CityBuildingShapes.ApplyDim(new SKColor(0x4C, 0x8C, 0x3C), nightDim);
+            canvas.DrawRect(fx - 0.3f, fy + 1, 0.6f, y - 1 - fy - 1, treeTrunkPaint);
         }
     }
 
@@ -366,9 +379,9 @@ public static class CityProgressionHelper
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════
+    // =================================================================
     // STRASSENTEXTUREN
-    // ═════════════════════════════════════════════════════════════════
+    // =================================================================
 
     private static void DrawCobblestoneTexture(SKCanvas canvas, SKRect bounds, float streetY,
         float streetHeight, float nightDim, bool isPremium)

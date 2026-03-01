@@ -66,6 +66,12 @@ public class GuildResearchTreeRenderer
     private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _text = new() { IsAntialias = true };
 
+    // Gecachte Font- und Path-Objekte (vermeidet Allokationen pro Frame)
+    private readonly SKFont _percentFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
+    private readonly SKPath _connectionPath = new();
+    private readonly SKPath _arrowPath = new();
+    private readonly SKPath _arcPath = new();
+
     private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
     private static readonly SKPaint _glowPaint = new() { IsAntialias = true, MaskFilter = _glowFilter };
 
@@ -219,11 +225,11 @@ public class GuildResearchTreeRenderer
             float startY = fromPos.Y + NodeSize / 2 + 6;
             float endY = toPos.Y - NodeSize / 2 - 6;
 
-            // Bezier-Kurve
-            using var path = new SKPath();
-            path.MoveTo(fromPos.X, startY);
+            // Bezier-Kurve (gecachter Path)
+            _connectionPath.Reset();
+            _connectionPath.MoveTo(fromPos.X, startY);
             float midY = (startY + endY) / 2;
-            path.CubicTo(fromPos.X, midY, toPos.X, midY, toPos.X, endY);
+            _connectionPath.CubicTo(fromPos.X, midY, toPos.X, midY, toPos.X, endY);
 
             if (fromDone && (toDone || toActive))
             {
@@ -231,11 +237,11 @@ public class GuildResearchTreeRenderer
                 _stroke.Color = lineColor.WithAlpha(35);
                 _stroke.StrokeWidth = 8f;
                 _stroke.PathEffect = null;
-                canvas.DrawPath(path, _stroke);
+                canvas.DrawPath(_connectionPath, _stroke);
 
                 _stroke.Color = lineColor.WithAlpha(toDone ? (byte)200 : (byte)150);
                 _stroke.StrokeWidth = 3.5f;
-                canvas.DrawPath(path, _stroke);
+                canvas.DrawPath(_connectionPath, _stroke);
 
                 DrawArrowHead(canvas, toPos.X, endY, lineColor.WithAlpha(200));
             }
@@ -246,7 +252,7 @@ public class GuildResearchTreeRenderer
                 _stroke.StrokeWidth = 2.5f;
                 using var dash = SKPathEffect.CreateDash([6, 4], _time * 12 % 10);
                 _stroke.PathEffect = dash;
-                canvas.DrawPath(path, _stroke);
+                canvas.DrawPath(_connectionPath, _stroke);
                 _stroke.PathEffect = null;
 
                 DrawArrowHead(canvas, toPos.X, endY, lineColor.WithAlpha(80));
@@ -257,20 +263,20 @@ public class GuildResearchTreeRenderer
                 _stroke.Color = LineLocked;
                 _stroke.StrokeWidth = 2f;
                 _stroke.PathEffect = null;
-                canvas.DrawPath(path, _stroke);
+                canvas.DrawPath(_connectionPath, _stroke);
             }
         }
     }
 
-    private static void DrawArrowHead(SKCanvas canvas, float x, float y, SKColor color)
+    private void DrawArrowHead(SKCanvas canvas, float x, float y, SKColor color)
     {
         _fill.Color = color;
-        using var arrow = new SKPath();
-        arrow.MoveTo(x, y);
-        arrow.LineTo(x - 6, y - 9);
-        arrow.LineTo(x + 6, y - 9);
-        arrow.Close();
-        canvas.DrawPath(arrow, _fill);
+        _arrowPath.Reset();
+        _arrowPath.MoveTo(x, y);
+        _arrowPath.LineTo(x - 6, y - 9);
+        _arrowPath.LineTo(x + 6, y - 9);
+        _arrowPath.Close();
+        canvas.DrawPath(_arrowPath, _fill);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -377,7 +383,7 @@ public class GuildResearchTreeRenderer
     /// <summary>
     /// Kreisförmiger Fortschrittsring (Arc von 0 bis 360 Grad).
     /// </summary>
-    private static void DrawProgressRing(SKCanvas canvas, float cx, float cy, float radius,
+    private void DrawProgressRing(SKCanvas canvas, float cx, float cy, float radius,
         float progress, SKColor color)
     {
         // Hintergrund-Ring
@@ -386,7 +392,7 @@ public class GuildResearchTreeRenderer
         _stroke.PathEffect = null;
         canvas.DrawCircle(cx, cy, radius, _stroke);
 
-        // Fortschritts-Arc
+        // Fortschritts-Arc (gecachter Path)
         float sweepAngle = progress * 360f;
         if (sweepAngle > 0.5f)
         {
@@ -394,9 +400,9 @@ public class GuildResearchTreeRenderer
             _stroke.StrokeWidth = 3f;
             _stroke.StrokeCap = SKStrokeCap.Round;
             var arcRect = new SKRect(cx - radius, cy - radius, cx + radius, cy + radius);
-            using var arcPath = new SKPath();
-            arcPath.AddArc(arcRect, -90, sweepAngle);
-            canvas.DrawPath(arcPath, _stroke);
+            _arcPath.Reset();
+            _arcPath.AddArc(arcRect, -90, sweepAngle);
+            canvas.DrawPath(_arcPath, _stroke);
         }
     }
 
@@ -421,7 +427,7 @@ public class GuildResearchTreeRenderer
     /// <summary>
     /// Linearer Fortschrittsbalken unter dem Node.
     /// </summary>
-    private static void DrawProgressBar(SKCanvas canvas, float x, float y, float w, float h,
+    private void DrawProgressBar(SKCanvas canvas, float x, float y, float w, float h,
         GuildResearchDisplay item, SKColor color)
     {
         // Hintergrund
@@ -451,9 +457,9 @@ public class GuildResearchTreeRenderer
         if (item.IsActive || item.IsCompleted)
         {
             string pct = $"{(int)(progress * 100)}%";
-            using var font = new SKFont { Size = 8, Embolden = true };
+            _percentFont.Size = 8;
             _text.Color = SKColors.White.WithAlpha(200);
-            canvas.DrawText(pct, x + w / 2, y + h - 0.5f, SKTextAlign.Center, font, _text);
+            canvas.DrawText(pct, x + w / 2, y + h - 0.5f, SKTextAlign.Center, _percentFont, _text);
         }
     }
 

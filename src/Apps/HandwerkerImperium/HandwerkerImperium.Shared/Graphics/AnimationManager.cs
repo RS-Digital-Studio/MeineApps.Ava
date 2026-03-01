@@ -10,7 +10,8 @@ public class AnimationManager
 {
     private const int MaxParticles = 100;
 
-    private readonly List<Particle> _particles = new(MaxParticles);
+    private readonly Particle[] _particles = new Particle[MaxParticles];
+    private int _particleCount;
     private readonly Random _random = new();
     private readonly object _lock = new();
 
@@ -21,7 +22,7 @@ public class AnimationManager
     {
         get
         {
-            lock (_lock) return _particles.Count > 0;
+            lock (_lock) return _particleCount > 0;
         }
     }
 
@@ -34,13 +35,13 @@ public class AnimationManager
     {
         lock (_lock)
         {
-            if (_particles.Count >= MaxParticles) return;
+            if (_particleCount >= MaxParticles) return;
 
             // Leichte horizontale Streuung
             float vx = (_random.NextSingle() - 0.5f) * 30f;
             float vy = -60f - _random.NextSingle() * 40f; // Nach oben
 
-            _particles.Add(new Particle
+            _particles[_particleCount++] = new Particle
             {
                 X = x,
                 Y = y,
@@ -52,7 +53,7 @@ public class AnimationManager
                 RemainingLife = 1.2f,
                 Size = 4f + _random.NextSingle() * 2f,
                 Type = ParticleType.Coin
-            });
+            };
         }
     }
 
@@ -63,12 +64,12 @@ public class AnimationManager
     {
         lock (_lock)
         {
-            if (_particles.Count >= MaxParticles) return;
+            if (_particleCount >= MaxParticles) return;
 
             float vx = (_random.NextSingle() - 0.5f) * 40f;
             float vy = -30f - _random.NextSingle() * 30f;
 
-            _particles.Add(new Particle
+            _particles[_particleCount++] = new Particle
             {
                 X = x,
                 Y = y,
@@ -79,8 +80,8 @@ public class AnimationManager
                 Lifetime = 0.8f,
                 RemainingLife = 0.8f,
                 Size = 2f + _random.NextSingle() * 2f,
-                Type = ParticleType.Coin // Verhält sich wie Coin (leichte Gravity)
-            });
+                Type = ParticleType.Coin // Verhaelt sich wie Coin (leichte Gravity)
+            };
         }
     }
 
@@ -93,9 +94,9 @@ public class AnimationManager
     {
         lock (_lock)
         {
-            int particleCount = Math.Min(20, MaxParticles - _particles.Count);
+            int count = Math.Min(20, MaxParticles - _particleCount);
 
-            for (int i = 0; i < particleCount; i++)
+            for (int i = 0; i < count; i++)
             {
                 // Zufaellige Richtung (radial vom Zentrum)
                 float angle = _random.NextSingle() * MathF.Tau;
@@ -106,7 +107,7 @@ public class AnimationManager
                 // Zufaellige Festfarbe
                 var color = ConfettiColors[_random.Next(ConfettiColors.Length)];
 
-                _particles.Add(new Particle
+                _particles[_particleCount++] = new Particle
                 {
                     X = cx + (_random.NextSingle() - 0.5f) * 10f,
                     Y = cy + (_random.NextSingle() - 0.5f) * 10f,
@@ -118,7 +119,7 @@ public class AnimationManager
                     RemainingLife = 1.5f,
                     Size = 3f + _random.NextSingle() * 3f,
                     Type = ParticleType.Confetti
-                });
+                };
             }
         }
     }
@@ -133,7 +134,8 @@ public class AnimationManager
 
         lock (_lock)
         {
-            for (int i = _particles.Count - 1; i >= 0; i--)
+            int aliveCount = 0;
+            for (int i = 0; i < _particleCount; i++)
             {
                 var p = _particles[i];
 
@@ -163,12 +165,13 @@ public class AnimationManager
                     p.Alpha = Math.Clamp(p.RemainingLife / p.Lifetime, 0f, 1f);
                 }
 
-                // Entfernen wenn abgelaufen
-                if (p.RemainingLife <= 0 || p.Alpha <= 0)
+                // Nur lebende Partikel behalten
+                if (p.RemainingLife > 0 && p.Alpha > 0)
                 {
-                    _particles.RemoveAt(i);
+                    _particles[aliveCount++] = p;
                 }
             }
+            _particleCount = aliveCount;
         }
     }
 
@@ -180,12 +183,13 @@ public class AnimationManager
     {
         lock (_lock)
         {
-            if (_particles.Count == 0) return;
+            if (_particleCount == 0) return;
 
             using var paint = new SKPaint { IsAntialias = false };
 
-            foreach (var p in _particles)
+            for (int i = 0; i < _particleCount; i++)
             {
+                var p = _particles[i];
                 byte alpha = (byte)(p.Alpha * 255);
                 paint.Color = p.Color.WithAlpha(alpha);
 
@@ -219,7 +223,7 @@ public class AnimationManager
     {
         lock (_lock)
         {
-            _particles.Clear();
+            _particleCount = 0;
         }
     }
 
@@ -242,7 +246,7 @@ public class AnimationManager
         Confetti
     }
 
-    private class Particle
+    private struct Particle
     {
         public float X;
         public float Y;

@@ -322,7 +322,9 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
+#endif
         }
     }
 

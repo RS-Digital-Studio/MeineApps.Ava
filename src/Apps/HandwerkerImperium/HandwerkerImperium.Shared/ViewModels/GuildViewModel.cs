@@ -5,6 +5,7 @@ using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -595,7 +596,9 @@ public partial class GuildViewModel : ObservableObject
     {
         if (string.IsNullOrEmpty(GuildInviteCode)) return;
 
-        // TODO Phase 4: UriLauncher.ShareText() implementieren (Android Intent / Desktop Clipboard)
+        var shareText = $"{(_localizationService.GetString("InviteCode") ?? "Einladungs-Code")}: {GuildInviteCode}";
+        UriLauncher.ShareText(shareText, _localizationService.GetString("ShareCode") ?? "Code teilen");
+
         MessageRequested?.Invoke(
             _localizationService.GetString("Guild") ?? "Innung",
             $"{(_localizationService.GetString("CodeCopied") ?? "Code kopiert")}: {GuildInviteCode}");

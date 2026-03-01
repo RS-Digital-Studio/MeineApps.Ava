@@ -7,8 +7,9 @@ namespace HandwerkerImperium.Graphics;
 /// Dunkles Holz/Leder-Thema mit subtilen Maserungslinien und Zahnrad-Wasserzeichen.
 /// Alle SKPaint-Objekte sind static readonly für GC-freie Performance im Render-Loop.
 /// </summary>
-public class ResearchBackgroundRenderer
+public class ResearchBackgroundRenderer : IDisposable
 {
+    private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════
     // FARBEN (warme Werkstatt-Palette)
     // ═══════════════════════════════════════════════════════════════════════
@@ -375,5 +376,20 @@ public class ResearchBackgroundRenderer
         _vignettePaint.Shader = _vignetteShader;
         canvas.DrawRect(bounds, _vignettePaint);
         _vignettePaint.Shader = null;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _vignetteShader?.Dispose();
+        _gear1Path?.Dispose();
+        _gear2Path?.Dispose();
+        _gear3Path?.Dispose();
+        _gear4Path?.Dispose();
+        _grainPath?.Dispose();
     }
 }

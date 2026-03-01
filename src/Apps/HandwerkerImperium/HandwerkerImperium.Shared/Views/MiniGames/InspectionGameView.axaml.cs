@@ -226,7 +226,9 @@ public partial class InspectionGameView : UserControl
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"Fehler in OnGameCompleted: {ex.Message}");
+#endif
         }
     }
 }

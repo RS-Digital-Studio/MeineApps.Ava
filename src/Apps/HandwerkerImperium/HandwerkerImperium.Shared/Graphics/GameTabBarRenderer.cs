@@ -30,8 +30,9 @@ public struct TabBarState
 /// goldenen Indikator, Notification-Badges und Bounce-Animationen.
 /// Ersetzt die XAML-Tab-Bar durch eine visuell ansprechendere Darstellung.
 /// </summary>
-public class GameTabBarRenderer
+public class GameTabBarRenderer : IDisposable
 {
+    private bool _disposed;
     // Anzahl der Tabs
     private const int TabCount = 5;
 
@@ -123,6 +124,13 @@ public class GameTabBarRenderer
     // Gecachte Pfade für Icons (werden beim ersten Render erstellt)
     private SKPath? _shieldPath;
     private SKPath? _gearPath;
+
+    // Gecachte Pfade für wiederverwendbare Formen (vermeidet Allokationen pro Frame)
+    private readonly SKPath _roofPath = new();
+    private readonly SKPath _crownPath = new();
+    private readonly SKPath _laurelPathLeft = new();
+    private readonly SKPath _laurelPathRight = new();
+    private readonly SKPath _stripePath = new();
 
     // ═══════════════════════════════════════════════════════════════════
     // HAUPT-RENDER-METHODE
@@ -435,15 +443,15 @@ public class GameTabBarRenderer
         byte alpha = isActive ? (byte)255 : (byte)160;
 
         // --- Dach (Dreieck) ---
-        using var roofPath = new SKPath();
-        roofPath.MoveTo(cx, cy - s * 0.6f);              // Spitze
-        roofPath.LineTo(cx - s * 0.65f, cy - s * 0.05f); // Links unten
-        roofPath.LineTo(cx + s * 0.65f, cy - s * 0.05f); // Rechts unten
-        roofPath.Close();
+        _roofPath.Reset();
+        _roofPath.MoveTo(cx, cy - s * 0.6f);              // Spitze
+        _roofPath.LineTo(cx - s * 0.65f, cy - s * 0.05f); // Links unten
+        _roofPath.LineTo(cx + s * 0.65f, cy - s * 0.05f); // Rechts unten
+        _roofPath.Close();
 
         _fillPaint.Color = HouseRoof.WithAlpha(alpha);
         _fillPaint.Shader = null;
-        canvas.DrawPath(roofPath, _fillPaint);
+        canvas.DrawPath(_roofPath, _fillPaint);
 
         // Rote Dachkante
         _strokePaint.Color = HouseRoofEdge.WithAlpha(alpha);
@@ -605,16 +613,16 @@ public class GameTabBarRenderer
         // --- Krone (3 Zacken, über den Zinnen) ---
         float crownY = zinneY - s * 0.25f;
         _fillPaint.Color = CrownGold.WithAlpha(alpha);
-        using var crownPath = new SKPath();
-        crownPath.MoveTo(cx - s * 0.25f, zinneY);
-        crownPath.LineTo(cx - s * 0.2f, crownY + s * 0.05f);
-        crownPath.LineTo(cx - s * 0.07f, zinneY - s * 0.05f);
-        crownPath.LineTo(cx, crownY);
-        crownPath.LineTo(cx + s * 0.07f, zinneY - s * 0.05f);
-        crownPath.LineTo(cx + s * 0.2f, crownY + s * 0.05f);
-        crownPath.LineTo(cx + s * 0.25f, zinneY);
-        crownPath.Close();
-        canvas.DrawPath(crownPath, _fillPaint);
+        _crownPath.Reset();
+        _crownPath.MoveTo(cx - s * 0.25f, zinneY);
+        _crownPath.LineTo(cx - s * 0.2f, crownY + s * 0.05f);
+        _crownPath.LineTo(cx - s * 0.07f, zinneY - s * 0.05f);
+        _crownPath.LineTo(cx, crownY);
+        _crownPath.LineTo(cx + s * 0.07f, zinneY - s * 0.05f);
+        _crownPath.LineTo(cx + s * 0.2f, crownY + s * 0.05f);
+        _crownPath.LineTo(cx + s * 0.25f, zinneY);
+        _crownPath.Close();
+        canvas.DrawPath(_crownPath, _fillPaint);
 
         // Kronen-Schatten (dunklere Unterseite)
         _strokePaint.Color = CrownDark.WithAlpha(alpha);
@@ -761,16 +769,16 @@ public class GameTabBarRenderer
         _strokePaint.StrokeCap = SKStrokeCap.Round;
 
         // Linke Seite
-        using var leftLaurel = new SKPath();
-        leftLaurel.MoveTo(cx - s * 0.5f, cy + s * 0.35f);
-        leftLaurel.QuadTo(cx - s * 0.65f, cy - s * 0.1f, cx - s * 0.3f, cy - s * 0.5f);
-        canvas.DrawPath(leftLaurel, _strokePaint);
+        _laurelPathLeft.Reset();
+        _laurelPathLeft.MoveTo(cx - s * 0.5f, cy + s * 0.35f);
+        _laurelPathLeft.QuadTo(cx - s * 0.65f, cy - s * 0.1f, cx - s * 0.3f, cy - s * 0.5f);
+        canvas.DrawPath(_laurelPathLeft, _strokePaint);
 
         // Rechte Seite
-        using var rightLaurel = new SKPath();
-        rightLaurel.MoveTo(cx + s * 0.5f, cy + s * 0.35f);
-        rightLaurel.QuadTo(cx + s * 0.65f, cy - s * 0.1f, cx + s * 0.3f, cy - s * 0.5f);
-        canvas.DrawPath(rightLaurel, _strokePaint);
+        _laurelPathRight.Reset();
+        _laurelPathRight.MoveTo(cx + s * 0.5f, cy + s * 0.35f);
+        _laurelPathRight.QuadTo(cx + s * 0.65f, cy - s * 0.1f, cx + s * 0.3f, cy - s * 0.5f);
+        canvas.DrawPath(_laurelPathRight, _strokePaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -811,15 +819,15 @@ public class GameTabBarRenderer
 
         for (int i = 0; i < stripes; i++)
         {
-            using var stripePath = new SKPath();
+            _stripePath.Reset();
             float sx = shopLeft + i * stripeW;
-            stripePath.MoveTo(sx, awningY);
-            stripePath.LineTo(sx + stripeW, awningY);
-            stripePath.LineTo(sx + stripeW / 2f, awningY + awningH);
-            stripePath.Close();
+            _stripePath.MoveTo(sx, awningY);
+            _stripePath.LineTo(sx + stripeW, awningY);
+            _stripePath.LineTo(sx + stripeW / 2f, awningY + awningH);
+            _stripePath.Close();
 
             _fillPaint.Color = (i % 2 == 0 ? AwningRed : SKColors.White).WithAlpha(alpha);
-            canvas.DrawPath(stripePath, _fillPaint);
+            canvas.DrawPath(_stripePath, _fillPaint);
         }
 
         // Markisen-Stange
@@ -982,5 +990,32 @@ public class GameTabBarRenderer
 
         path.Close();
         return path;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        // Paints
+        _fillPaint?.Dispose();
+        _strokePaint?.Dispose();
+        _textPaint?.Dispose();
+        _shadowPaint.MaskFilter?.Dispose();
+        _shadowPaint?.Dispose();
+        _glowPaint.MaskFilter?.Dispose();
+        _glowPaint?.Dispose();
+
+        // Pfade
+        _shieldPath?.Dispose();
+        _gearPath?.Dispose();
+        _roofPath?.Dispose();
+        _crownPath?.Dispose();
+        _laurelPathLeft?.Dispose();
+        _laurelPathRight?.Dispose();
+        _stripePath?.Dispose();
     }
 }

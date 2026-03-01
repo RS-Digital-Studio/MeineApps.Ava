@@ -41,6 +41,11 @@ public static class ResearchItemRenderer
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true };
 
+    // Gecachte Font- und Path-Objekte (vermeidet Allokationen pro Frame, nur UI-Thread)
+    private static readonly SKFont _fontRegular = new() { Edging = SKFontEdging.Antialias };
+    private static readonly SKFont _fontBold = new() { Embolden = true, Edging = SKFontEdging.Antialias };
+    private static readonly SKPath _cachedPath = new();
+
     /// <summary>
     /// Rendert eine einzelne Forschungs-Karte.
     /// </summary>
@@ -310,8 +315,9 @@ public static class ResearchItemRenderer
         canvas.DrawCircle(cx - s * 0.15f, cy, s * 0.5f, _strokePaint);
 
         // Euro-Zeichen in der Münze
-        using var font = new SKFont { Size = s * 0.8f };
-        canvas.DrawText("\u20ac", cx - s * 0.35f, cy + s * 0.25f, SKTextAlign.Center, font, _fillPaint);
+        _fontRegular.Size = s * 0.8f;
+        _fontRegular.Embolden = false;
+        canvas.DrawText("\u20ac", cx - s * 0.35f, cy + s * 0.25f, SKTextAlign.Center, _fontRegular, _fillPaint);
 
         // Pfeil runter (rechts)
         float ax = cx + s * 0.5f;
@@ -443,7 +449,7 @@ public static class ResearchItemRenderer
     private static void DrawStarS(SKCanvas canvas, float cx, float cy, float s)
     {
         // 5-zackiger Stern
-        using var path = new SKPath();
+        _cachedPath.Reset();
         for (int i = 0; i < 5; i++)
         {
             float outerAngle = -MathF.PI / 2 + i * MathF.Tau / 5;
@@ -456,12 +462,12 @@ public static class ResearchItemRenderer
             float ix = cx + MathF.Cos(innerAngle) * innerR;
             float iy = cy + MathF.Sin(innerAngle) * innerR;
 
-            if (i == 0) path.MoveTo(ox, oy);
-            else path.LineTo(ox, oy);
-            path.LineTo(ix, iy);
+            if (i == 0) _cachedPath.MoveTo(ox, oy);
+            else _cachedPath.LineTo(ox, oy);
+            _cachedPath.LineTo(ix, iy);
         }
-        path.Close();
-        canvas.DrawPath(path, _fillPaint);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fillPaint);
     }
 
     /// <summary>Routing-Netz (UnlocksAutoAssign)</summary>
@@ -492,8 +498,9 @@ public static class ResearchItemRenderer
     /// <summary>Fragezeichen (Fallback)</summary>
     private static void DrawFallbackIcon(SKCanvas canvas, float cx, float cy, float s)
     {
-        using var font = new SKFont { Size = s * 1.4f };
-        canvas.DrawText("?", cx, cy + s * 0.35f, SKTextAlign.Center, font, _fillPaint);
+        _fontRegular.Size = s * 1.4f;
+        _fontRegular.Embolden = false;
+        canvas.DrawText("?", cx, cy + s * 0.35f, SKTextAlign.Center, _fontRegular, _fillPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -508,28 +515,29 @@ public static class ResearchItemRenderer
         canvas.DrawRoundRect(badgeRect, _fillPaint);
 
         // Level-Text
-        using var font = new SKFont { Size = 11, Embolden = true };
+        _fontBold.Size = 11;
         _textPaint.Color = SKColors.White;
-        canvas.DrawText($"Lv.{level}", x + 17, y + 13, SKTextAlign.Center, font, _textPaint);
+        canvas.DrawText($"Lv.{level}", x + 17, y + 13, SKTextAlign.Center, _fontBold, _textPaint);
     }
 
     private static void DrawName(SKCanvas canvas, float x, float y, float maxWidth, string name, bool isLocked)
     {
-        using var font = new SKFont { Size = 14, Embolden = true };
+        _fontBold.Size = 14;
         _textPaint.Color = isLocked ? TextMuted : TextPrimary;
 
         // Text abschneiden wenn zu lang
-        string displayText = TruncateText(name, font, maxWidth);
-        canvas.DrawText(displayText, x, y + 12, font, _textPaint);
+        string displayText = TruncateText(name, _fontBold, maxWidth);
+        canvas.DrawText(displayText, x, y + 12, _fontBold, _textPaint);
     }
 
     private static void DrawDescription(SKCanvas canvas, float x, float y, float maxWidth, string desc, bool isLocked)
     {
-        using var font = new SKFont { Size = 11 };
+        _fontRegular.Size = 11;
+        _fontRegular.Embolden = false;
         _textPaint.Color = isLocked ? TextMuted : TextSecondary;
 
-        string displayText = TruncateText(desc, font, maxWidth);
-        canvas.DrawText(displayText, x, y + 10, font, _textPaint);
+        string displayText = TruncateText(desc, _fontRegular, maxWidth);
+        canvas.DrawText(displayText, x, y + 10, _fontRegular, _textPaint);
     }
 
     private static void DrawStatusIcon(SKCanvas canvas, float x, float y, ResearchDisplayItem item, float time)
@@ -588,26 +596,27 @@ public static class ResearchItemRenderer
 
     private static void DrawCostAndDuration(SKCanvas canvas, float x, float y, ResearchDisplayItem item)
     {
-        using var font = new SKFont { Size = 11, Embolden = true };
-        using var smallFont = new SKFont { Size = 11 };
+        _fontBold.Size = 11;
+        _fontRegular.Size = 11;
+        _fontRegular.Embolden = false;
 
         // Kosten (Euro)
         _textPaint.Color = WarningColor;
         string costText = $"\u20ac {item.CostDisplay}";
-        canvas.DrawText(costText, x, y + 10, font, _textPaint);
+        canvas.DrawText(costText, x, y + 10, _fontBold, _textPaint);
 
-        float costWidth = font.MeasureText(costText);
+        float costWidth = _fontBold.MeasureText(costText);
 
         // Dauer (Uhr)
         _textPaint.Color = TextSecondary;
-        canvas.DrawText($"\u23f0 {item.DurationDisplay}", x + costWidth + 16, y + 10, smallFont, _textPaint);
+        canvas.DrawText($"\u23f0 {item.DurationDisplay}", x + costWidth + 16, y + 10, _fontRegular, _textPaint);
 
         // Goldschrauben für Sofort-Finish (wenn verfügbar)
         if (item.HasInstantFinishOption)
         {
-            float screwX = x + costWidth + 16 + smallFont.MeasureText($"\u23f0 {item.DurationDisplay}") + 16;
+            float screwX = x + costWidth + 16 + _fontRegular.MeasureText($"\u23f0 {item.DurationDisplay}") + 16;
             _textPaint.Color = GoldColor;
-            canvas.DrawText($"\ud83d\udd29 {item.InstantFinishScrewCost}", screwX, y + 10, smallFont, _textPaint);
+            canvas.DrawText($"\ud83d\udd29 {item.InstantFinishScrewCost}", screwX, y + 10, _fontRegular, _textPaint);
         }
     }
 

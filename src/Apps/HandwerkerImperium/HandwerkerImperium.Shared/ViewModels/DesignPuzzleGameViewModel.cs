@@ -353,7 +353,9 @@ public partial class DesignPuzzleGameViewModel : ObservableObject, IDisposable
         }
         catch (Exception ex)
         {
+#if DEBUG
             System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
+#endif
         }
     }
 

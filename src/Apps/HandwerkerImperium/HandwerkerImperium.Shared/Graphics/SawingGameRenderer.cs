@@ -8,8 +8,9 @@ namespace HandwerkerImperium.Graphics;
 /// Jahresringen, Rinden-Textur, Schneide-Animation mit Holzspaltung,
 /// Saegemehl-Explosion und Stirnholz-Sicht.
 /// </summary>
-public class SawingGameRenderer
+public class SawingGameRenderer : IDisposable
 {
+    private bool _disposed;
     // Holz-Farben (reicher/waermer)
     private static readonly SKColor WoodDark = new(0x5C, 0x3A, 0x21);
     private static readonly SKColor WoodMedium = new(0x8B, 0x5E, 0x3C);
@@ -37,18 +38,25 @@ public class SawingGameRenderer
     private static readonly SKColor MissZone = new(0xEF, 0x44, 0x44);
     private static readonly SKColor MarkerColor = SKColors.White;
 
-    // Saegemehl-Partikel
-    private readonly List<SawdustParticle> _sawdust = new();
+    // Saegemehl-Partikel (Fixed-Size struct-Pool, 0 GC)
+    private const int MaxSawdust = 50;
+    private readonly SawdustParticle[] _sawdust = new SawdustParticle[MaxSawdust];
+    private int _sawdustCount;
     private float _sawAnimTime;
 
-    // Holzsplitter-Partikel (beim Schneiden)
-    private readonly List<WoodChipParticle> _woodChips = new();
+    // Holzsplitter-Partikel (beim Schneiden, Fixed-Size struct-Pool, 0 GC)
+    private const int MaxWoodChips = 20;
+    private readonly WoodChipParticle[] _woodChips = new WoodChipParticle[MaxWoodChips];
+    private int _woodChipCount;
 
     // Schneide-Animation
     private bool _prevIsResultShown;
     private bool _cutStarted;
     private float _cutAnimTime;
     private bool _cutBurstDone;
+
+    // Gecachter SKPath fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
+    private readonly SKPath _cachedPath = new();
 
     private struct SawdustParticle
     {
@@ -83,6 +91,16 @@ public class SawingGameRenderer
         float deltaTime)
     {
         _sawAnimTime += deltaTime;
+
+        // Schneide-Animation zuruecksetzen wenn neues Spiel beginnt
+        if (!isResultShown && _prevIsResultShown && _cutStarted)
+        {
+            _cutStarted = false;
+            _cutAnimTime = 0;
+            _cutBurstDone = false;
+            _sawdustCount = 0;
+            _woodChipCount = 0;
+        }
 
         // Schneide-Animation starten wenn Ergebnis erstmals angezeigt wird
         if (isResultShown && !_prevIsResultShown)
@@ -194,14 +212,14 @@ public class SawingGameRenderer
             canvas.DrawLine(cutX, y, cutX, y + cutDepth, cutPaint);
 
             // Saegeriss-Splitter an der Schnittkante
-            using var rissPath = new SKPath();
+            _cachedPath.Reset();
             var rng = new Random(42); // Deterministisch
             for (int i = 0; i < 6; i++)
             {
                 float ry = y + cutDepth - 4 + rng.Next(0, 8);
                 float rx = cutX + (rng.Next(0, 2) == 0 ? -1 : 1) * (1 + rng.Next(0, 3));
-                rissPath.MoveTo(cutX, ry);
-                rissPath.LineTo(rx, ry + rng.Next(-2, 3));
+                _cachedPath.MoveTo(cutX, ry);
+                _cachedPath.LineTo(rx, ry + rng.Next(-2, 3));
             }
             using var rissPaint = new SKPaint
             {
@@ -210,14 +228,14 @@ public class SawingGameRenderer
                 StrokeWidth = 1,
                 Style = SKPaintStyle.Stroke
             };
-            canvas.DrawPath(rissPath, rissPaint);
+            canvas.DrawPath(_cachedPath, rissPaint);
         }
-        else if (!_cutStarted)
+        else if (!_cutStarted && isPlaying)
         {
-            // Markierungslinie wo geschnitten werden soll
+            // Markierungslinie nur waehrend des Spielens anzeigen
             using var markPaint = new SKPaint
             {
-                Color = new SKColor(0xFF, 0xFF, 0xFF, 70),
+                Color = new SKColor(0xFF, 0xFF, 0xFF, 50),
                 IsAntialias = false,
                 StrokeWidth = 1,
                 PathEffect = SKPathEffect.CreateDash([6, 4], 0)
@@ -635,9 +653,9 @@ public class SawingGameRenderer
         var random = Random.Shared;
 
         // Grosse Saegemehl-Wolke
-        for (int i = 0; i < 30; i++)
+        for (int i = 0; i < 30 && _sawdustCount < MaxSawdust; i++)
         {
-            _sawdust.Add(new SawdustParticle
+            _sawdust[_sawdustCount++] = new SawdustParticle
             {
                 X = cutX + random.Next(-12, 13),
                 Y = cutY + random.Next(-8, 8),
@@ -646,13 +664,13 @@ public class SawingGameRenderer
                 Life = 0,
                 MaxLife = 0.8f + (float)random.NextDouble() * 0.8f,
                 Size = 1 + random.Next(0, 4)
-            });
+            };
         }
 
         // Holzsplitter (groesser, drehen sich)
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < 8 && _woodChipCount < MaxWoodChips; i++)
         {
-            _woodChips.Add(new WoodChipParticle
+            _woodChips[_woodChipCount++] = new WoodChipParticle
             {
                 X = cutX + random.Next(-6, 7),
                 Y = cutY + random.Next(-4, 4),
@@ -670,7 +688,7 @@ public class SawingGameRenderer
                     1 => WoodMedium,
                     _ => WoodGrain
                 }
-            });
+            };
         }
     }
 
@@ -679,10 +697,10 @@ public class SawingGameRenderer
     /// </summary>
     private void SpawnCuttingSawdust(float cutX, float cutY)
     {
-        if (_sawdust.Count >= 40) return;
+        if (_sawdustCount >= MaxSawdust - 10) return;
         var random = Random.Shared;
 
-        _sawdust.Add(new SawdustParticle
+        _sawdust[_sawdustCount++] = new SawdustParticle
         {
             X = cutX + random.Next(-4, 5),
             Y = cutY + random.Next(-2, 3),
@@ -691,7 +709,7 @@ public class SawingGameRenderer
             Life = 0,
             MaxLife = 0.4f + (float)random.NextDouble() * 0.4f,
             Size = 1 + random.Next(0, 3)
-        });
+        };
     }
 
     /// <summary>
@@ -705,9 +723,9 @@ public class SawingGameRenderer
         float woodBottom = woodTop + woodHeight;
 
         // Waehrend des Spiels: Standard-Saegemehl an der Schnittstelle
-        if (isPlaying && _sawdust.Count < 20)
+        if (isPlaying && _sawdustCount < 20)
         {
-            _sawdust.Add(new SawdustParticle
+            _sawdust[_sawdustCount++] = new SawdustParticle
             {
                 X = cutX + random.Next(-8, 9),
                 Y = woodBottom - random.Next(0, 10),
@@ -716,12 +734,13 @@ public class SawingGameRenderer
                 Life = 0,
                 MaxLife = 0.5f + (float)random.NextDouble() * 0.5f,
                 Size = 1 + random.Next(0, 3)
-            });
+            };
         }
 
-        // Partikel aktualisieren und zeichnen
+        // Partikel aktualisieren und zeichnen (Compact-Loop: lebende Partikel nach vorne schieben)
         using var dustPaint = new SKPaint { IsAntialias = false };
-        for (int i = _sawdust.Count - 1; i >= 0; i--)
+        int aliveCount = 0;
+        for (int i = 0; i < _sawdustCount; i++)
         {
             var p = _sawdust[i];
             p.Life += deltaTime;
@@ -729,18 +748,15 @@ public class SawingGameRenderer
             p.Y += p.VelocityY * deltaTime;
             p.VelocityY += 60 * deltaTime; // Schwerkraft
 
-            if (p.Life >= p.MaxLife)
-            {
-                _sawdust.RemoveAt(i);
-                continue;
-            }
+            if (p.Life >= p.MaxLife) continue;
 
-            _sawdust[i] = p;
+            _sawdust[aliveCount++] = p;
 
             float alpha = 1 - (p.Life / p.MaxLife);
             dustPaint.Color = new SKColor(0xD2, 0xB4, 0x8C, (byte)(alpha * 220));
             canvas.DrawRect(p.X, p.Y, p.Size, p.Size, dustPaint);
         }
+        _sawdustCount = aliveCount;
     }
 
     /// <summary>
@@ -748,7 +764,9 @@ public class SawingGameRenderer
     /// </summary>
     private void UpdateAndDrawWoodChips(SKCanvas canvas, float deltaTime)
     {
-        for (int i = _woodChips.Count - 1; i >= 0; i--)
+        using var chipPaint = new SKPaint { IsAntialias = false };
+        int aliveCount = 0;
+        for (int i = 0; i < _woodChipCount; i++)
         {
             var p = _woodChips[i];
             p.Life += deltaTime;
@@ -757,20 +775,12 @@ public class SawingGameRenderer
             p.VelocityY += 80 * deltaTime; // Schwerkraft
             p.Rotation += p.RotSpeed * deltaTime;
 
-            if (p.Life >= p.MaxLife)
-            {
-                _woodChips.RemoveAt(i);
-                continue;
-            }
+            if (p.Life >= p.MaxLife) continue;
 
-            _woodChips[i] = p;
+            _woodChips[aliveCount++] = p;
 
             float alpha = 1 - (p.Life / p.MaxLife);
-            using var chipPaint = new SKPaint
-            {
-                Color = p.Color.WithAlpha((byte)(alpha * 255)),
-                IsAntialias = false
-            };
+            chipPaint.Color = p.Color.WithAlpha((byte)(alpha * 255));
 
             canvas.Save();
             canvas.Translate(p.X, p.Y);
@@ -778,6 +788,7 @@ public class SawingGameRenderer
             canvas.DrawRect(-p.Width / 2, -p.Height / 2, p.Width, p.Height, chipPaint);
             canvas.Restore();
         }
+        _woodChipCount = aliveCount;
     }
 
     /// <summary>
@@ -788,5 +799,15 @@ public class SawingGameRenderer
         const float c1 = 1.70158f;
         const float c3 = c1 + 1;
         return 1 + c3 * MathF.Pow(t - 1, 3) + c1 * MathF.Pow(t - 1, 2);
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _cachedPath?.Dispose();
     }
 }

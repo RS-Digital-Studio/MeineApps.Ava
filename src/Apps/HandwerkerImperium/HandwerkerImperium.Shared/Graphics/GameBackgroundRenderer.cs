@@ -38,8 +38,9 @@ public struct BackgroundParticle
 /// Jeder Screen hat einen eigenen visuellen Stil mit subtilen Partikeln.
 /// Gecachte SKPaint-Objekte fuer GC-freie Performance im Render-Loop.
 /// </summary>
-public class GameBackgroundRenderer
+public class GameBackgroundRenderer : IDisposable
 {
+    private bool _disposed;
     private const int MaxParticles = 20;
 
     // Gecachte Paints
@@ -55,6 +56,10 @@ public class GameBackgroundRenderer
 
     // Workshop-Tint fuer Workshop-Screens
     private SKColor _workshopTint = new(0x8B, 0x45, 0x13); // SaddleBrown Default
+
+    // Gecachte Paths (vermeidet Allokation pro Frame)
+    private readonly SKPath _wavePath = new();
+    private readonly SKPath _silhouettePath = new();
 
     // Gecachter Vignette-Shader (wird bei Bounds-Aenderung neu erstellt)
     private SKShader? _vignetteShader;
@@ -277,14 +282,14 @@ public class GameBackgroundRenderer
         for (int i = 0; i < 7; i++)
         {
             float yBase = bounds.Top + bounds.Height * (0.1f + i * 0.13f);
-            using var path = new SKPath();
-            path.MoveTo(bounds.Left, yBase);
+            _wavePath.Reset();
+            _wavePath.MoveTo(bounds.Left, yBase);
             for (float x = bounds.Left; x < bounds.Right; x += 20f)
             {
                 float wave = MathF.Sin(x * 0.02f + i * 0.7f) * 3f;
-                path.LineTo(x, yBase + wave);
+                _wavePath.LineTo(x, yBase + wave);
             }
-            canvas.DrawPath(path, _gridPaint);
+            canvas.DrawPath(_wavePath, _gridPaint);
         }
 
         // 4 Werkzeug-Silhouetten
@@ -338,14 +343,14 @@ public class GameBackgroundRenderer
         for (int i = 0; i < 10; i++)
         {
             float yBase = bounds.Top + bounds.Height * (0.08f + i * 0.09f);
-            using var path = new SKPath();
-            path.MoveTo(bounds.Left, yBase);
+            _wavePath.Reset();
+            _wavePath.MoveTo(bounds.Left, yBase);
             for (float x = bounds.Left; x < bounds.Right; x += 20f)
             {
                 float wave = MathF.Sin(x * 0.015f + i * 0.8f) * 4f;
-                path.LineTo(x, yBase + wave);
+                _wavePath.LineTo(x, yBase + wave);
             }
-            canvas.DrawPath(path, _gridPaint);
+            canvas.DrawPath(_wavePath, _gridPaint);
         }
 
         // 3 Zahnrad-Silhouetten (subtil, langsam rotierend)
@@ -681,20 +686,20 @@ public class GameBackgroundRenderer
     /// </summary>
     private void DrawShieldSilhouette(SKCanvas canvas, float x, float y, float size)
     {
-        using var path = new SKPath();
+        _silhouettePath.Reset();
         float halfW = size * 0.4f;
         float topH = size * 0.3f;
         float botH = size * 0.5f;
 
         // Oben abgerundet, unten spitz
-        path.MoveTo(x - halfW, y - topH);
-        path.LineTo(x + halfW, y - topH);
-        path.LineTo(x + halfW, y + botH * 0.3f);
-        path.LineTo(x, y + botH);
-        path.LineTo(x - halfW, y + botH * 0.3f);
-        path.Close();
+        _silhouettePath.MoveTo(x - halfW, y - topH);
+        _silhouettePath.LineTo(x + halfW, y - topH);
+        _silhouettePath.LineTo(x + halfW, y + botH * 0.3f);
+        _silhouettePath.LineTo(x, y + botH);
+        _silhouettePath.LineTo(x - halfW, y + botH * 0.3f);
+        _silhouettePath.Close();
 
-        canvas.DrawPath(path, _silhouettePaint);
+        canvas.DrawPath(_silhouettePath, _silhouettePaint);
     }
 
     /// <summary>
@@ -723,24 +728,24 @@ public class GameBackgroundRenderer
     /// </summary>
     private void DrawBuildingSilhouette(SKCanvas canvas, float x, float y, float size)
     {
-        using var path = new SKPath();
+        _silhouettePath.Reset();
         float halfW = size * 0.4f;
         float bodyH = size * 0.5f;
         float roofH = size * 0.35f;
 
         // Dach (Dreieck)
-        path.MoveTo(x - halfW - 4f, y);
-        path.LineTo(x, y - roofH);
-        path.LineTo(x + halfW + 4f, y);
+        _silhouettePath.MoveTo(x - halfW - 4f, y);
+        _silhouettePath.LineTo(x, y - roofH);
+        _silhouettePath.LineTo(x + halfW + 4f, y);
 
         // Körper (Rechteck)
-        path.LineTo(x + halfW, y);
-        path.LineTo(x + halfW, y + bodyH);
-        path.LineTo(x - halfW, y + bodyH);
-        path.LineTo(x - halfW, y);
-        path.Close();
+        _silhouettePath.LineTo(x + halfW, y);
+        _silhouettePath.LineTo(x + halfW, y + bodyH);
+        _silhouettePath.LineTo(x - halfW, y + bodyH);
+        _silhouettePath.LineTo(x - halfW, y);
+        _silhouettePath.Close();
 
-        canvas.DrawPath(path, _silhouettePaint);
+        canvas.DrawPath(_silhouettePath, _silhouettePaint);
 
         // Schornstein
         canvas.DrawRect(x + halfW * 0.3f, y - roofH * 0.8f, size * 0.1f, roofH * 0.5f, _silhouettePaint);
@@ -758,7 +763,7 @@ public class GameBackgroundRenderer
         float innerR = size * 0.35f;
         float outerR = size * 0.5f;
 
-        using var path = new SKPath();
+        _silhouettePath.Reset();
         for (int i = 0; i < teeth; i++)
         {
             float angle1 = rotation + i * MathF.Tau / teeth;
@@ -776,17 +781,17 @@ public class GameBackgroundRenderer
             float iy2 = y + innerR * MathF.Sin(angle4);
 
             if (i == 0)
-                path.MoveTo(ix1, iy1);
+                _silhouettePath.MoveTo(ix1, iy1);
             else
-                path.LineTo(ix1, iy1);
+                _silhouettePath.LineTo(ix1, iy1);
 
-            path.LineTo(ox1, oy1);
-            path.LineTo(ox2, oy2);
-            path.LineTo(ix2, iy2);
+            _silhouettePath.LineTo(ox1, oy1);
+            _silhouettePath.LineTo(ox2, oy2);
+            _silhouettePath.LineTo(ix2, iy2);
         }
-        path.Close();
+        _silhouettePath.Close();
 
-        canvas.DrawPath(path, _silhouettePaint);
+        canvas.DrawPath(_silhouettePath, _silhouettePaint);
 
         // Zentrales Loch
         canvas.DrawCircle(x, y, innerR * 0.4f, _silhouettePaint);
@@ -817,5 +822,21 @@ public class GameBackgroundRenderer
             radius * 2, radius * 2,
             _fillPaint);
         _fillPaint.Shader = null;
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _gradientPaint?.Dispose();
+        _silhouettePaint?.Dispose();
+        _particlePaint?.Dispose();
+        _vignettePaint?.Dispose();
+        _gridPaint?.Dispose();
+        _fillPaint?.Dispose();
+        _vignetteShader?.Dispose();
     }
 }

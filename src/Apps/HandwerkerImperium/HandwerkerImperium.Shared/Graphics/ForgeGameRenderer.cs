@@ -10,8 +10,9 @@ namespace HandwerkerImperium.Graphics;
 /// Completion-Celebration mit goldenem Glow.
 /// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
 /// </summary>
-public class ForgeGameRenderer
+public class ForgeGameRenderer : IDisposable
 {
+    private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════
     // Partikel-System (Struct-basiert, kein GC)
     // ═══════════════════════════════════════════════════════════════════════
@@ -63,33 +64,33 @@ public class ForgeGameRenderer
     private int _lastHitZone; // 0=Miss, 1=Ok, 2=Good, 3=Perfect
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Gecachte Paints (statisch fuer feste Farben)
+    // Gecachte Paints (Instanz-Felder statt statisch, da Color in Render-Methoden mutiert wird)
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static readonly SKPaint AnvilBodyPaint = new()
+    private readonly SKPaint AnvilBodyPaint = new()
     {
         IsAntialias = true,
         Style = SKPaintStyle.Fill
     };
-    private static readonly SKPaint AnvilEdgePaint = new()
+    private readonly SKPaint AnvilEdgePaint = new()
     {
         Color = new SKColor(0x25, 0x25, 0x25),
         IsAntialias = true,
         StrokeWidth = 2,
         Style = SKPaintStyle.Stroke
     };
-    private static readonly SKPaint HammerHandlePaint = new()
+    private readonly SKPaint HammerHandlePaint = new()
     {
         IsAntialias = true
     };
-    private static readonly SKPaint FramePaint = new()
+    private readonly SKPaint FramePaint = new()
     {
         Color = new SKColor(0x5D, 0x5D, 0x5D),
         IsAntialias = true,
         StrokeWidth = 2,
         Style = SKPaintStyle.Stroke
     };
-    private static readonly SKPaint TickPaint = new()
+    private readonly SKPaint TickPaint = new()
     {
         Color = new SKColor(255, 255, 255, 40),
         IsAntialias = false,
@@ -102,6 +103,12 @@ public class ForgeGameRenderer
     private readonly SKPaint _sparkPaint = new() { IsAntialias = true };
     private readonly SKPaint _smokePaint = new() { IsAntialias = true };
     private readonly SKPaint _textPaint = new() { IsAntialias = true, TextSize = 10 };
+
+    // Gecachte SKPath-Objekte (GC-frei, Wiederverwendung via Reset())
+    private readonly SKPath _anvilBodyPath = new();
+    private readonly SKPath _anvilReflectPath = new();
+    private readonly SKPath _hornPath = new();
+    private readonly SKPath _arrowPath = new();
 
     // Gecachte Blur-Filter
     private static readonly SKMaskFilter Blur4 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
@@ -301,19 +308,19 @@ public class ForgeGameRenderer
         float hornLen = 35;
 
         // Amboss-Koerper (Trapez) mit vertikalem Metall-Gradient
-        using var bodyPath = new SKPath();
-        bodyPath.MoveTo(cx - topW / 2, top);
-        bodyPath.LineTo(cx + topW / 2, top);
-        bodyPath.LineTo(cx + baseW / 2, top + height);
-        bodyPath.LineTo(cx - baseW / 2, top + height);
-        bodyPath.Close();
+        _anvilBodyPath.Reset();
+        _anvilBodyPath.MoveTo(cx - topW / 2, top);
+        _anvilBodyPath.LineTo(cx + topW / 2, top);
+        _anvilBodyPath.LineTo(cx + baseW / 2, top + height);
+        _anvilBodyPath.LineTo(cx - baseW / 2, top + height);
+        _anvilBodyPath.Close();
 
         AnvilBodyPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, top),
             new SKPoint(cx, top + height),
             new[] { new SKColor(0x78, 0x78, 0x78), new SKColor(0x3A, 0x3A, 0x3A) },
             null, SKShaderTileMode.Clamp);
-        canvas.DrawPath(bodyPath, AnvilBodyPaint);
+        canvas.DrawPath(_anvilBodyPath, AnvilBodyPaint);
         AnvilBodyPaint.Shader = null;
 
         // Metallglanz-Highlight oben
@@ -322,30 +329,30 @@ public class ForgeGameRenderer
 
         // Seiten-Reflexion (links heller)
         _fillPaint.Color = new SKColor(0x90, 0x90, 0x90, 50);
-        using var leftReflect = new SKPath();
-        leftReflect.MoveTo(cx - topW / 2, top);
-        leftReflect.LineTo(cx - topW / 2 + 12, top);
-        leftReflect.LineTo(cx - baseW / 2 + 12, top + height);
-        leftReflect.LineTo(cx - baseW / 2, top + height);
-        leftReflect.Close();
-        canvas.DrawPath(leftReflect, _fillPaint);
+        _anvilReflectPath.Reset();
+        _anvilReflectPath.MoveTo(cx - topW / 2, top);
+        _anvilReflectPath.LineTo(cx - topW / 2 + 12, top);
+        _anvilReflectPath.LineTo(cx - baseW / 2 + 12, top + height);
+        _anvilReflectPath.LineTo(cx - baseW / 2, top + height);
+        _anvilReflectPath.Close();
+        canvas.DrawPath(_anvilReflectPath, _fillPaint);
 
         // Kanten
-        canvas.DrawPath(bodyPath, AnvilEdgePaint);
+        canvas.DrawPath(_anvilBodyPath, AnvilEdgePaint);
 
         // Horn (links, konisch mit Gradient)
         float hornY = top + height * 0.28f;
-        using var hornPath = new SKPath();
-        hornPath.MoveTo(cx - topW / 2 - 2, hornY);
-        hornPath.LineTo(cx - topW / 2 - hornLen, hornY + 6);
-        hornPath.LineTo(cx - topW / 2 - 2, hornY + 14);
-        hornPath.Close();
+        _hornPath.Reset();
+        _hornPath.MoveTo(cx - topW / 2 - 2, hornY);
+        _hornPath.LineTo(cx - topW / 2 - hornLen, hornY + 6);
+        _hornPath.LineTo(cx - topW / 2 - 2, hornY + 14);
+        _hornPath.Close();
         _fillPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx - topW / 2, hornY),
             new SKPoint(cx - topW / 2 - hornLen, hornY + 7),
             new[] { new SKColor(0x70, 0x70, 0x70), new SKColor(0x55, 0x55, 0x55) },
             null, SKShaderTileMode.Clamp);
-        canvas.DrawPath(hornPath, _fillPaint);
+        canvas.DrawPath(_hornPath, _fillPaint);
         _fillPaint.Shader = null;
 
         // Sockel (2-stufig, dunkel)
@@ -752,13 +759,13 @@ public class ForgeGameRenderer
         canvas.DrawRect(markerX - 2, y, 4, h, _fillPaint);
 
         // Pfeil-Spitze oben
-        using var arrowPath = new SKPath();
-        arrowPath.MoveTo(markerX - 5, y - 5);
-        arrowPath.LineTo(markerX, y - 10);
-        arrowPath.LineTo(markerX + 5, y - 5);
-        arrowPath.Close();
+        _arrowPath.Reset();
+        _arrowPath.MoveTo(markerX - 5, y - 5);
+        _arrowPath.LineTo(markerX, y - 10);
+        _arrowPath.LineTo(markerX + 5, y - 5);
+        _arrowPath.Close();
         _fillPaint.Color = SKColors.White;
-        canvas.DrawPath(arrowPath, _fillPaint);
+        canvas.DrawPath(_arrowPath, _fillPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1144,4 +1151,23 @@ public class ForgeGameRenderer
         (byte)Math.Min(255, c.Red * factor),
         (byte)Math.Min(255, c.Green * factor),
         (byte)Math.Min(255, c.Blue * factor), c.Alpha);
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        AnvilBodyPaint?.Dispose();
+        AnvilEdgePaint?.Dispose();
+        HammerHandlePaint?.Dispose();
+        FramePaint?.Dispose();
+        TickPaint?.Dispose();
+        _glowPaint?.Dispose();
+        _fillPaint?.Dispose();
+        _sparkPaint?.Dispose();
+        _smokePaint?.Dispose();
+        _textPaint?.Dispose();
+    }
 }

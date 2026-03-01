@@ -32,8 +32,9 @@ public struct CityTapResult
 /// 5-Layer Parallax-Hintergrund, isometrische Gebäude, animierte Mini-Figuren,
 /// Schornstein-Rauch, Lieferwagen, Tag/Nacht-Palette, Workshop-Partikel.
 /// </summary>
-public class CityRenderer
+public class CityRenderer : IDisposable
 {
+    private bool _disposed;
     // Fortlaufende Animationszeit
     private float _time;
 
@@ -69,6 +70,14 @@ public class CityRenderer
     private readonly SKPaint _hillPaint = new() { IsAntialias = true };
     private readonly SKPaint _decoStrokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private readonly SKPaint _starPaint = new() { IsAntialias = true };
+
+    // Gecachte Paths (vermeidet Allokation pro Frame)
+    private readonly SKPath _hillPath = new();
+    private readonly SKPath _treePath = new();
+    private readonly SKPath _flagPath = new();
+
+    // Gecachter Font fuer Tap-Label (statt pro Frame neu erstellen)
+    private readonly SKFont _tapLabelFont = new(SKTypeface.Default, 11);
 
     // Gecachter PathEffect für gestricheltes Outline (statt pro Frame neu erstellen)
     private static readonly SKPathEffect _dashedEffect = SKPathEffect.CreateDash([4, 4], 0);
@@ -242,8 +251,8 @@ public class CityRenderer
         var hillColor = CityBuildingShapes.ApplyDim(new SKColor(0x6B, 0x8E, 0x6B), nightDim);
         _hillPaint.Color = hillColor;
 
-        using var path = new SKPath();
-        path.MoveTo(bounds.Left, hillBaseY + 20);
+        _hillPath.Reset();
+        _hillPath.MoveTo(bounds.Left, hillBaseY + 20);
 
         // Sanfte Hügelkurve
         for (float px = bounds.Left; px <= bounds.Right; px += 4)
@@ -252,12 +261,12 @@ public class CityRenderer
             float hill = MathF.Sin(normalizedX * 2.5f) * 12
                        + MathF.Sin(normalizedX * 5f + 1.3f) * 6
                        + MathF.Sin(normalizedX * 8f + 2.7f) * 3;
-            path.LineTo(px, hillBaseY + hill);
+            _hillPath.LineTo(px, hillBaseY + hill);
         }
 
-        path.LineTo(bounds.Right, hillBaseY + 20);
-        path.Close();
-        canvas.DrawPath(path, _hillPaint);
+        _hillPath.LineTo(bounds.Right, hillBaseY + 20);
+        _hillPath.Close();
+        canvas.DrawPath(_hillPath, _hillPaint);
     }
 
     /// <summary>
@@ -270,20 +279,20 @@ public class CityRenderer
         var hillColor = CityBuildingShapes.ApplyDim(new SKColor(0x4A, 0x7C, 0x4A), nightDim);
         _hillPaint.Color = hillColor;
 
-        using var path = new SKPath();
-        path.MoveTo(bounds.Left, hillBaseY + 15);
+        _hillPath.Reset();
+        _hillPath.MoveTo(bounds.Left, hillBaseY + 15);
 
         for (float px = bounds.Left; px <= bounds.Right; px += 3)
         {
             float normalizedX = (px - bounds.Left + parallaxOffset) / bounds.Width;
             float hill = MathF.Sin(normalizedX * 3f + 0.5f) * 8
                        + MathF.Sin(normalizedX * 7f + 2f) * 4;
-            path.LineTo(px, hillBaseY + hill);
+            _hillPath.LineTo(px, hillBaseY + hill);
         }
 
-        path.LineTo(bounds.Right, hillBaseY + 15);
-        path.Close();
-        canvas.DrawPath(path, _hillPaint);
+        _hillPath.LineTo(bounds.Right, hillBaseY + 15);
+        _hillPath.Close();
+        canvas.DrawPath(_hillPath, _hillPaint);
 
         // Bäume auf den Hügeln (kleine Dreiecke)
         var treeColor = CityBuildingShapes.ApplyDim(new SKColor(0x2E, 0x6B, 0x2E), nightDim);
@@ -307,12 +316,12 @@ public class CityRenderer
 
             // Krone (Dreieck)
             _hillPaint.Color = treeColor;
-            using var treePath = new SKPath();
-            treePath.MoveTo(tx, ty - treeH);
-            treePath.LineTo(tx - treeH * 0.4f, ty - treeH * 0.25f);
-            treePath.LineTo(tx + treeH * 0.4f, ty - treeH * 0.25f);
-            treePath.Close();
-            canvas.DrawPath(treePath, _hillPaint);
+            _treePath.Reset();
+            _treePath.MoveTo(tx, ty - treeH);
+            _treePath.LineTo(tx - treeH * 0.4f, ty - treeH * 0.25f);
+            _treePath.LineTo(tx + treeH * 0.4f, ty - treeH * 0.25f);
+            _treePath.Close();
+            canvas.DrawPath(_treePath, _hillPaint);
         }
     }
 
@@ -657,12 +666,12 @@ public class CityRenderer
         // Fahne (weht im Wind)
         float wave = MathF.Sin(_time * 2.5f) * 1.5f;
         _particlePaint.Color = flagColor;
-        using var flagPath = new SKPath();
-        flagPath.MoveTo(x + 1, y);
-        flagPath.LineTo(x + 6 + wave, y + 1.5f);
-        flagPath.LineTo(x + 1, y + 4);
-        flagPath.Close();
-        canvas.DrawPath(flagPath, _particlePaint);
+        _flagPath.Reset();
+        _flagPath.MoveTo(x + 1, y);
+        _flagPath.LineTo(x + 6 + wave, y + 1.5f);
+        _flagPath.LineTo(x + 1, y + 4);
+        _flagPath.Close();
+        canvas.DrawPath(_flagPath, _particlePaint);
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -998,8 +1007,7 @@ public class CityRenderer
         alpha = Math.Clamp(alpha, 0f, 1f);
 
         // Text messen
-        using var font = new SKFont(SKTypeface.Default, 11);
-        float textWidth = font.MeasureText(_tapLabel);
+        float textWidth = _tapLabelFont.MeasureText(_tapLabel);
         float pillW = textWidth + 14;
         float pillH = 18;
         float pillX = _tapLabelX - pillW / 2f;
@@ -1019,7 +1027,7 @@ public class CityRenderer
         // Text (weiß)
         _labelPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, (byte)(255 * alpha));
         canvas.DrawText(_tapLabel, _tapLabelX - textWidth / 2f, _tapLabelY + 4f,
-            SKTextAlign.Left, font, _labelPaint);
+            SKTextAlign.Left, _tapLabelFont, _labelPaint);
     }
 
     // ═════════════════════════════════════════════════════════════════
@@ -1135,5 +1143,40 @@ public class CityRenderer
         }
 
         return new CityTapResult { Target = CityTapTarget.None };
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        // Paints
+        _skyPaint?.Dispose();
+        _groundPaint?.Dispose();
+        _streetPaint?.Dispose();
+        _stripePaint?.Dispose();
+        _cloudPaint?.Dispose();
+        _smokePaint?.Dispose();
+        _particlePaint?.Dispose();
+        _vanPaint?.Dispose();
+        _labelPaint?.Dispose();
+        _hillPaint?.Dispose();
+        _decoStrokePaint?.Dispose();
+        _starPaint?.Dispose();
+
+        // Fonts
+        _labelFont?.Dispose();
+        _tapLabelFont?.Dispose();
+
+        // Pfade
+        _hillPath?.Dispose();
+        _treePath?.Dispose();
+        _flagPath?.Dispose();
+
+        // Wetter-System (besitzt eigene IDisposable-Ressourcen)
+        _weatherSystem?.Dispose();
     }
 }

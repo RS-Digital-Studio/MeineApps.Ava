@@ -1,3 +1,5 @@
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Models;
@@ -8,9 +10,10 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
-public partial class DrywallViewModel : ObservableObject
+public partial class DrywallViewModel : ObservableObject, IDisposable
 {
     private readonly CraftEngine _engine;
+    private Timer? _debounceTimer;
     private readonly IProjectService _projectService;
     private readonly ILocalizationService _localization;
     private readonly ICalculationHistoryService _historyService;
@@ -63,6 +66,11 @@ public partial class DrywallViewModel : ObservableObject
     [ObservableProperty] private double _wallHeight = 2.5;
     [ObservableProperty] private bool _doublePlated;
 
+    // Live-Berechnung: Debounce bei Eingabe-Änderungen
+    partial void OnWallLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnWallHeightChanged(double value) => ScheduleAutoCalculate();
+    partial void OnDoublePlatedChanged(bool value) => ScheduleAutoCalculate();
+
     // Save Dialog
     [ObservableProperty] private bool _showSaveDialog;
     [ObservableProperty] private string _saveProjectName = string.Empty;
@@ -81,6 +89,7 @@ public partial class DrywallViewModel : ObservableObject
     {
         ShowCost = value > 0;
         OnPropertyChanged(nameof(TotalCostDisplay));
+        ScheduleAutoCalculate();
     }
 
     // Results
@@ -105,6 +114,17 @@ public partial class DrywallViewModel : ObservableObject
         OnPropertyChanged(nameof(UwLengthNeeded));
         OnPropertyChanged(nameof(ScrewsNeeded));
         OnPropertyChanged(nameof(TotalCostDisplay));
+    }
+
+    /// <summary>
+    /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        if (_debounceTimer == null)
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
+        else
+            _debounceTimer.Change(300, Timeout.Infinite);
     }
 
     [RelayCommand]
@@ -160,15 +180,18 @@ public partial class DrywallViewModel : ObservableObject
 
             await _historyService.AddCalculationAsync("DrywallCalculator", title, data);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Silently ignore history save errors
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
     [RelayCommand]
     private void Reset()
     {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         WallLength = 3.0;
         WallHeight = 2.5;
         DoublePlated = false;
@@ -275,9 +298,9 @@ public partial class DrywallViewModel : ObservableObject
 
             await Calculate();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Silently ignore load errors
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -347,5 +370,16 @@ public partial class DrywallViewModel : ObservableObject
         {
             IsExporting = false;
         }
+    }
+
+    /// <summary>
+    /// Räumt Event-Subscriptions und Timer auf (wird von MainViewModel beim Navigieren aufgerufen)
+    /// </summary>
+    public void Cleanup() => _debounceTimer?.Dispose();
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 }

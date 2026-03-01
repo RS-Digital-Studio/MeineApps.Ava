@@ -8,6 +8,19 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class WallpaperVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _wallFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _wallStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKPaint _stripFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -19,6 +32,9 @@ public static class WallpaperVisualization
     {
         if (!hasResult || wallLengthM <= 0 || roomHeightM <= 0) return;
         if (rollWidthCm <= 0) return;
+
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
 
         SkiaBlueprintCanvas.DrawGrid(canvas, bounds, 20f);
 
@@ -52,8 +68,9 @@ public static class WallpaperVisualization
                 float x = ox + i * stripW;
                 float w = Math.Min(stripW, ox + ww - x);
 
-                // Abwechselnde Farben für Bahnen
-                byte alpha = (byte)(i % 2 == 0 ? 40 : 60);
+                // Abwechselnde Farben für Bahnen (Animation: Alpha Fade-In)
+                byte baseAlpha = (byte)(i % 2 == 0 ? 40 : 60);
+                byte alpha = (byte)(baseAlpha * progress);
                 _stripFill.Color = SkiaThemeHelper.WithAlpha(colors[i % 2], alpha);
                 canvas.DrawRect(x, oy, w, wh, _stripFill);
 

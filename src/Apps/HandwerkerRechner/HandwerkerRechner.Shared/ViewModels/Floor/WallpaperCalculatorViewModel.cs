@@ -1,3 +1,5 @@
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Models;
@@ -8,9 +10,10 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public partial class WallpaperCalculatorViewModel : ObservableObject
+public partial class WallpaperCalculatorViewModel : ObservableObject, IDisposable
 {
     private readonly CraftEngine _craftEngine;
+    private Timer? _debounceTimer;
     private readonly IProjectService _projectService;
     private readonly ILocalizationService _localization;
     private readonly ICalculationHistoryService _historyService;
@@ -86,8 +89,9 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
         {
             await LoadProjectAsync(projectId);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -107,6 +111,31 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
 
     [ObservableProperty]
     private double _patternRepeat = 0;
+
+    // Tür-/Fenster-Abzüge (optional)
+    [ObservableProperty] private bool _showDeductions;
+    [ObservableProperty] private int _doorCount;
+    [ObservableProperty] private double _doorWidth = 0.8;
+    [ObservableProperty] private double _doorHeight = 2.0;
+    [ObservableProperty] private int _windowCount;
+    [ObservableProperty] private double _windowWidth = 1.2;
+    [ObservableProperty] private double _windowHeight = 1.0;
+
+    // Live-Berechnung: Debounce bei Eingabe-Änderungen
+    partial void OnWallLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnRoomHeightChanged(double value) => ScheduleAutoCalculate();
+    partial void OnRollLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnRollWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnPatternRepeatChanged(double value) => ScheduleAutoCalculate();
+
+    // Live-Berechnung bei Abzugs-Änderungen
+    partial void OnShowDeductionsChanged(bool value) => ScheduleAutoCalculate();
+    partial void OnDoorCountChanged(int value) => ScheduleAutoCalculate();
+    partial void OnDoorWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnDoorHeightChanged(double value) => ScheduleAutoCalculate();
+    partial void OnWindowCountChanged(int value) => ScheduleAutoCalculate();
+    partial void OnWindowWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnWindowHeightChanged(double value) => ScheduleAutoCalculate();
 
     #endregion
 
@@ -148,6 +177,7 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
         ShowCost = value > 0;
         OnPropertyChanged(nameof(TotalCostDisplay));
         OnPropertyChanged(nameof(PricePerDisplay));
+        ScheduleAutoCalculate();
     }
 
     #endregion
@@ -165,6 +195,9 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isExporting;
+
+    [ObservableProperty]
+    private string _deductedAreaDisplay = "";
 
     public string AreaDisplay => Result != null
         ? _unitConverter.FormatArea(Result.WallArea)
@@ -188,6 +221,28 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
 
     #endregion
 
+    /// <summary>
+    /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        if (_debounceTimer == null)
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
+        else
+            _debounceTimer.Change(300, Timeout.Infinite);
+    }
+
+    /// <summary>
+    /// Berechnet die Gesamtfläche der Abzüge (Türen + Fenster)
+    /// </summary>
+    private double CalculateDeductionArea()
+    {
+        if (!ShowDeductions) return 0;
+        var doorArea = DoorCount * Math.Max(0, DoorWidth) * Math.Max(0, DoorHeight);
+        var windowArea = WindowCount * Math.Max(0, WindowWidth) * Math.Max(0, WindowHeight);
+        return doorArea + windowArea;
+    }
+
     [RelayCommand]
     private async Task Calculate()
     {
@@ -207,9 +262,20 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
             // Negativer Rapport ist nicht sinnvoll
             if (PatternRepeat < 0) PatternRepeat = 0;
 
+            // Abzugsfläche berechnen
+            var deduction = CalculateDeductionArea();
+            var grossArea = WallLength * RoomHeight;
+            var effectiveWallLength = WallLength;
+            if (deduction > 0 && grossArea > 0)
+            {
+                var netArea = Math.Max(0.1, grossArea - deduction);
+                effectiveWallLength = WallLength * (netArea / grossArea);
+            }
+            DeductedAreaDisplay = deduction > 0 ? $"-{deduction:F1} m²" : "";
+
             // WallLength = Raumumfang (gesamte Wandlänge). Engine erwartet roomLength+roomWidth
             // und berechnet perimeter = 2*(L+W). Mit L=Umfang/2, W=0 ergibt sich perimeter=Umfang.
-            Result = _craftEngine.CalculateWallpaper(WallLength / 2, 0, RoomHeight, RollLength, RollWidth, PatternRepeat);
+            Result = _craftEngine.CalculateWallpaper(effectiveWallLength / 2, 0, RoomHeight, RollLength, RollWidth, PatternRepeat);
             HasResult = true;
 
             await SaveToHistoryAsync();
@@ -241,22 +307,44 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
                 } : new Dictionary<string, object>()
             };
 
+            if (ShowDeductions)
+            {
+                data["DoorCount"] = DoorCount;
+                data["DoorWidth"] = DoorWidth;
+                data["DoorHeight"] = DoorHeight;
+                data["WindowCount"] = WindowCount;
+                data["WindowWidth"] = WindowWidth;
+                data["WindowHeight"] = WindowHeight;
+            }
+
             await _historyService.AddCalculationAsync("WallpaperCalculator", title, data);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
     [RelayCommand]
     private void Reset()
     {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         WallLength = 14.0;
         RoomHeight = 2.5;
         RollLength = 10.05;
         RollWidth = 53;
         PatternRepeat = 0;
         PricePerRoll = 0;
+        ShowDeductions = false;
+        DoorCount = 0;
+        DoorWidth = 0.8;
+        DoorHeight = 2.0;
+        WindowCount = 0;
+        WindowWidth = 1.2;
+        WindowHeight = 1.0;
+        DeductedAreaDisplay = "";
         Result = null;
         HasResult = false;
     }
@@ -307,6 +395,16 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
                 ["PatternRepeat"] = PatternRepeat,
                 ["PricePerRoll"] = PricePerRoll
             };
+
+            if (ShowDeductions)
+            {
+                data["DoorCount"] = DoorCount;
+                data["DoorWidth"] = DoorWidth;
+                data["DoorHeight"] = DoorHeight;
+                data["WindowCount"] = WindowCount;
+                data["WindowWidth"] = WindowWidth;
+                data["WindowHeight"] = WindowHeight;
+            }
 
             // Result-Daten mitspeichern für Export
             if (HasResult && Result != null)
@@ -361,10 +459,19 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
             PatternRepeat = project.GetValue("PatternRepeat", 0.0);
             PricePerRoll = project.GetValue("PricePerRoll", 0.0);
 
+            DoorCount = project.GetValue("DoorCount", 0);
+            DoorWidth = project.GetValue("DoorWidth", 0.8);
+            DoorHeight = project.GetValue("DoorHeight", 2.0);
+            WindowCount = project.GetValue("WindowCount", 0);
+            WindowWidth = project.GetValue("WindowWidth", 1.2);
+            WindowHeight = project.GetValue("WindowHeight", 1.0);
+            ShowDeductions = DoorCount > 0 || WindowCount > 0;
+
             await Calculate();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -379,6 +486,10 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
                    $"{_localization.GetString("WallArea") ?? "Wall area"}: {AreaDisplay}\n" +
                    $"{_localization.GetString("StripsNeeded") ?? "Strips"}: {StripsNeededDisplay}\n" +
                    $"{_localization.GetString("RollsNeeded") ?? "Rolls"}: {RollsNeededDisplay}";
+
+        var deduction = CalculateDeductionArea();
+        if (deduction > 0)
+            text += $"\n{_localization.GetString("DeductedArea") ?? "Deducted area"}: -{deduction:F1} m²";
 
         if (ShowCost && PricePerRoll > 0)
             text += $"\n{_localization.GetString("TotalCost") ?? "Total cost"}: {TotalCostDisplay}";
@@ -412,6 +523,11 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
                 [_localization.GetString("RollWidth") ?? "Roll width"] = $"{RollWidth} cm",
                 [_localization.GetString("PatternRepeat") ?? "Pattern repeat"] = $"{PatternRepeat} cm"
             };
+
+            var deduction = CalculateDeductionArea();
+            if (deduction > 0)
+                inputs[_localization.GetString("DeductedArea") ?? "Deducted area"] = $"-{deduction:F1} m²";
+
             var results = new Dictionary<string, string>
             {
                 [_localization.GetString("WallArea") ?? "Wall area"] = AreaDisplay,
@@ -440,5 +556,11 @@ public partial class WallpaperCalculatorViewModel : ObservableObject
     public void Cleanup()
     {
         _unitConverter.UnitSystemChanged -= OnUnitSystemChanged;
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 }

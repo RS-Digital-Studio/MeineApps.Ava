@@ -1446,11 +1446,23 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="TabHome" xml:space="preserve">
     <value>Start</value>
   </data>
+  <data name="TabHistory" xml:space="preserve">
+    <value>Verlauf</value>
+  </data>
   <data name="TabProjects" xml:space="preserve">
     <value>Projekte</value>
   </data>
   <data name="TabSettings" xml:space="preserve">
     <value>Einstellungen</value>
+  </data>
+  <data name="HistoryEmpty" xml:space="preserve">
+    <value>Noch keine Berechnungen. Deine Berechnungen erscheinen hier.</value>
+  </data>
+  <data name="HistoryExtendedHint" xml:space="preserve">
+    <value>Schau ein Video um bis zu 30 Einträge pro Rechner zu sehen!</value>
+  </data>
+  <data name="WatchAdForHistory" xml:space="preserve">
+    <value>Video ansehen</value>
   </data>
 
   <!-- Metal Types -->
@@ -1919,5 +1931,270 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   </data>
   <data name="PressBackToExit" xml:space="preserve">
     <value>Nochmal drücken zum Beenden</value>
+  </data>
+
+  <!-- Abzüge (Farbe + Tapete) -->
+  <data name="DeductedArea" xml:space="preserve">
+    <value>Abzugsfläche</value>
+  </data>
+  <data name="DeductionsOptional" xml:space="preserve">
+    <value>Abzüge (optional)</value>
+  </data>
+  <data name="DoorCount" xml:space="preserve">
+    <value>Anzahl</value>
+  </data>
+  <data name="DoorHeight" xml:space="preserve">
+    <value>Höhe (m)</value>
+  </data>
+  <data name="DoorWidth" xml:space="preserve">
+    <value>Breite (m)</value>
+  </data>
+  <data name="Doors" xml:space="preserve">
+    <value>Türen</value>
+  </data>
+  <data name="WindowCount" xml:space="preserve">
+    <value>Anzahl</value>
+  </data>
+  <data name="WindowHeight" xml:space="preserve">
+    <value>Höhe (m)</value>
+  </data>
+  <data name="WindowWidth" xml:space="preserve">
+    <value>Breite (m)</value>
+  </data>
+  <data name="Windows" xml:space="preserve">
+    <value>Fenster</value>
+  </data>
+
+  <!-- Putz-Rechner -->
+  <data name="CalcPlaster" xml:space="preserve">
+    <value>Putz-Rechner</value>
+  </data>
+  <data name="CalcPlasterDesc" xml:space="preserve">
+    <value>Wandfläche, Dicke &amp; Säcke</value>
+  </data>
+  <data name="PlasterThickness" xml:space="preserve">
+    <value>Putzdicke (mm)</value>
+  </data>
+  <data name="PlasterType" xml:space="preserve">
+    <value>Putzart</value>
+  </data>
+  <data name="PlasterTypeInterior" xml:space="preserve">
+    <value>Innenputz</value>
+  </data>
+  <data name="PlasterTypeExterior" xml:space="preserve">
+    <value>Außenputz</value>
+  </data>
+  <data name="PlasterTypeLime" xml:space="preserve">
+    <value>Kalkputz</value>
+  </data>
+  <data name="PlasterTypeGypsum" xml:space="preserve">
+    <value>Gipsputz</value>
+  </data>
+  <data name="PlasterAmount" xml:space="preserve">
+    <value>Putzmenge</value>
+  </data>
+  <data name="UnitBags" xml:space="preserve">
+    <value>Säcke</value>
+  </data>
+  <data name="CalcTypePlaster" xml:space="preserve">
+    <value>Putz</value>
+  </data>
+
+  <!-- Estrich-Rechner -->
+  <data name="CalcScreed" xml:space="preserve">
+    <value>Estrich-Rechner</value>
+  </data>
+  <data name="CalcScreedDesc" xml:space="preserve">
+    <value>Fläche, Volumen &amp; Trocknungszeit</value>
+  </data>
+  <data name="FloorArea" xml:space="preserve">
+    <value>Bodenfläche (m²)</value>
+  </data>
+  <data name="ScreedThickness" xml:space="preserve">
+    <value>Estrichdicke (cm)</value>
+  </data>
+  <data name="ScreedType" xml:space="preserve">
+    <value>Estrich-Typ</value>
+  </data>
+  <data name="ScreedTypeZement" xml:space="preserve">
+    <value>Zementestrich</value>
+  </data>
+  <data name="ScreedTypeFlow" xml:space="preserve">
+    <value>Fließestrich</value>
+  </data>
+  <data name="ScreedTypeAnhydrit" xml:space="preserve">
+    <value>Anhydritestrich</value>
+  </data>
+  <data name="ScreedVolume" xml:space="preserve">
+    <value>Volumen</value>
+  </data>
+  <data name="ScreedWeight" xml:space="preserve">
+    <value>Gewicht</value>
+  </data>
+  <data name="DryingTime" xml:space="preserve">
+    <value>Trocknungszeit</value>
+  </data>
+  <data name="UnitDays" xml:space="preserve">
+    <value>Tage</value>
+  </data>
+  <data name="CalcTypeScreed" xml:space="preserve">
+    <value>Estrich</value>
+  </data>
+
+  <!-- Fugenmasse (Fliesen-Rechner) -->
+  <data name="GroutWidth" xml:space="preserve">
+    <value>Fugenbreite (mm)</value>
+  </data>
+  <data name="GroutMass" xml:space="preserve">
+    <value>Fugenmasse</value>
+  </data>
+
+  <!-- Dämmung (Insulation Calculator) -->
+  <data name="CalcInsulation" xml:space="preserve">
+    <value>Dämmung</value>
+  </data>
+  <data name="CalcInsulationDesc" xml:space="preserve">
+    <value>Dämmstoffdicke berechnen</value>
+  </data>
+  <data name="InsulationArea" xml:space="preserve">
+    <value>Fläche</value>
+  </data>
+  <data name="CurrentUValue" xml:space="preserve">
+    <value>Ist-U-Wert</value>
+  </data>
+  <data name="TargetUValue" xml:space="preserve">
+    <value>Soll-U-Wert</value>
+  </data>
+  <data name="InsulationType" xml:space="preserve">
+    <value>Dämmstoff</value>
+  </data>
+  <data name="InsulationTypeEPS" xml:space="preserve">
+    <value>EPS (Styropor)</value>
+  </data>
+  <data name="InsulationTypeXPS" xml:space="preserve">
+    <value>XPS (Extrudiert)</value>
+  </data>
+  <data name="InsulationTypeMineralWool" xml:space="preserve">
+    <value>Mineralwolle</value>
+  </data>
+  <data name="InsulationTypeWoodFiber" xml:space="preserve">
+    <value>Holzfaser</value>
+  </data>
+  <data name="InsulationThickness" xml:space="preserve">
+    <value>Dämmdicke</value>
+  </data>
+  <data name="InsulationLambda" xml:space="preserve">
+    <value>Wärmeleitfähigkeit</value>
+  </data>
+  <data name="CalcTypeInsulation" xml:space="preserve">
+    <value>Dämmung</value>
+  </data>
+  <data name="TargetUValueMustBeLess" xml:space="preserve">
+    <value>Soll-U-Wert muss kleiner als Ist-U-Wert sein</value>
+  </data>
+  <data name="CalcCableSizing" xml:space="preserve">
+    <value>Leitungsquerschnitt</value>
+  </data>
+  <data name="CalcCableSizingDesc" xml:space="preserve">
+    <value>Kabelquerschnitt berechnen</value>
+  </data>
+  <data name="CableCurrent" xml:space="preserve">
+    <value>Strom (A)</value>
+  </data>
+  <data name="CableLength" xml:space="preserve">
+    <value>Kabellänge (m)</value>
+  </data>
+  <data name="CableVoltage" xml:space="preserve">
+    <value>Spannung</value>
+  </data>
+  <data name="CableVoltage230" xml:space="preserve">
+    <value>230 V (Einphasig)</value>
+  </data>
+  <data name="CableVoltage400" xml:space="preserve">
+    <value>400 V (Dreiphasig)</value>
+  </data>
+  <data name="CableMaterial" xml:space="preserve">
+    <value>Leitermaterial</value>
+  </data>
+  <data name="CableMaterialCopper" xml:space="preserve">
+    <value>Kupfer</value>
+  </data>
+  <data name="CableMaterialAluminum" xml:space="preserve">
+    <value>Aluminium</value>
+  </data>
+  <data name="MaxVoltageDrop" xml:space="preserve">
+    <value>Max. Spannungsabfall (%)</value>
+  </data>
+  <data name="RecommendedCrossSection" xml:space="preserve">
+    <value>Empfohlener Querschnitt</value>
+  </data>
+  <data name="MinCrossSection" xml:space="preserve">
+    <value>Mindest-Querschnitt</value>
+  </data>
+  <data name="VoltageDrop" xml:space="preserve">
+    <value>Spannungsabfall</value>
+  </data>
+  <data name="VdeCompliant" xml:space="preserve">
+    <value>VDE-konform</value>
+  </data>
+  <data name="VdeNotCompliant" xml:space="preserve">
+    <value>Nicht VDE-konform</value>
+  </data>
+  <data name="CalcTypeCableSizing" xml:space="preserve">
+    <value>Leitungsquerschnitt</value>
+  </data>
+  <data name="CalcGrout" xml:space="preserve">
+    <value>Fugenmasse</value>
+  </data>
+  <data name="CalcGroutDesc" xml:space="preserve">
+    <value>Fugenbreite, Tiefe → kg Masse, Eimer</value>
+  </data>
+  <data name="GroutInputs" xml:space="preserve">
+    <value>Eingaben</value>
+  </data>
+  <data name="GroutArea" xml:space="preserve">
+    <value>Bodenfläche (m²)</value>
+  </data>
+  <data name="GroutTileLength" xml:space="preserve">
+    <value>Fliesenlänge (cm)</value>
+  </data>
+  <data name="GroutTileWidth" xml:space="preserve">
+    <value>Fliesenbreite (cm)</value>
+  </data>
+  <data name="GroutDepth" xml:space="preserve">
+    <value>Fugentiefe (mm)</value>
+  </data>
+  <data name="GroutPricePerKg" xml:space="preserve">
+    <value>Preis pro kg (€)</value>
+  </data>
+  <data name="GroutConsumption" xml:space="preserve">
+    <value>Verbrauch pro m²</value>
+  </data>
+  <data name="GroutTotal" xml:space="preserve">
+    <value>Gesamtmenge</value>
+  </data>
+  <data name="GroutTotalWithReserve" xml:space="preserve">
+    <value>Gesamt (inkl. 10% Reserve)</value>
+  </data>
+  <data name="GroutTileSize" xml:space="preserve">
+    <value>Fliesengröße</value>
+  </data>
+  <data name="UnitBuckets" xml:space="preserve">
+    <value>Eimer (5 kg)</value>
+  </data>
+  <data name="CalcTypeGrout" xml:space="preserve">
+    <value>Fugenmasse</value>
+  </data>
+  <data name="LoadingShaders" xml:space="preserve">
+    <value>Grafik-Engine wird vorbereitet...</value>
+  </data>
+  <data name="LoadingDatabase" xml:space="preserve">
+    <value>Datenbank wird geladen...</value>
+  </data>
+  <data name="LoadingProjects" xml:space="preserve">
+    <value>Projekte werden geladen...</value>
+  </data>
+  <data name="LoadingHistory" xml:space="preserve">
+    <value>Verlauf wird geladen...</value>
   </data>
 </root>

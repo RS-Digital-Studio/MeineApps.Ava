@@ -8,9 +8,23 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class MetalVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _metalFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _metalStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKPaint _holeFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
 
     // Metall-Farben
     private static readonly SKColor _steelColor = new(0xA0, 0xA0, 0xAA);
@@ -29,11 +43,20 @@ public static class MetalVisualization
     {
         if (!hasResult) return;
 
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
+        // Global Alpha Fade-In
+        _layerPaint.Color = SKColors.White.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
+
         switch (subType)
         {
             case 0: RenderProfile(canvas, bounds, metalType, profileType, dim1Mm, dim2Mm, wallThickMm, weightKg); break;
             case 1: RenderThread(canvas, bounds, threadSize, drillSizeMm); break;
         }
+
+        canvas.Restore();
     }
 
     private static SKColor GetMetalColor(int metalType)

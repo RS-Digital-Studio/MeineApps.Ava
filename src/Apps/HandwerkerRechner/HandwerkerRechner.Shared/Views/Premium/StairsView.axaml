@@ -4,6 +4,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.StairsView"
              x:DataType="vm:StairsViewModel">
 
@@ -107,15 +109,21 @@
                        Foreground="{DynamicResource PrimaryBrush}"
                        AutomationProperties.AutomationId="Stairs_TxtResultHeader" />
 
-            <!-- Stufenanzahl -->
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="{loc:Translate ResultStepCount}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Grid.Column="1" Text="{Binding StepCountDisplay}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource AccentBrush}"
-                         AutomationProperties.AutomationId="Stairs_TxtStepCount" />
-            </Grid>
+            <!-- Hero-Value: Stufenanzahl -->
+            <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                    Margin="0,4,0,8">
+              <StackPanel>
+                <TextBlock Text="{loc:Translate ResultStepCount}" FontSize="12"
+                           Foreground="#CCFFFFFF" />
+                <TextBlock AutomationProperties.AutomationId="Stairs_TxtStepCount"
+                           Text="{Binding StepCountDisplay}" FontSize="28" FontWeight="Bold"
+                           Foreground="White">
+                  <i:Interaction.Behaviors>
+                    <behaviors:CountUpBehavior TargetValue="{Binding StairsResult.StepCount}" Format="F0" Duration="500" />
+                  </i:Interaction.Behaviors>
+                </TextBlock>
+              </StackPanel>
+            </Border>
 
             <!-- Stufenhöhe -->
             <Grid ColumnDefinitions="*,Auto">

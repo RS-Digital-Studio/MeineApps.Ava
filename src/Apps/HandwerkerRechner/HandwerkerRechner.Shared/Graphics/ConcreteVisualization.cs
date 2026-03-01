@@ -8,6 +8,19 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class ConcreteVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _concreteFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _concreteStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKPaint _topFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -17,6 +30,7 @@ public static class ConcreteVisualization
     private static readonly SKPaint _mixStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f };
     private static readonly SKFont _mixFont = new() { Size = 9f };
     private static readonly SKPaint _mixTextPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
 
     // Mischverhältnis-Farben
     private static readonly SKColor _cementColor = new(0x78, 0x85, 0x8C); // Grau (Zement)
@@ -34,7 +48,14 @@ public static class ConcreteVisualization
     {
         if (!hasResult) return;
 
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
         SkiaBlueprintCanvas.DrawGrid(canvas, bounds, 20f);
+
+        // Global Alpha Fade-In
+        _layerPaint.Color = SKColors.White.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
 
         // Hauptvisualisierung in oberen ~75% des Bereichs
         var mainBounds = new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom - 40f);
@@ -51,6 +72,8 @@ public static class ConcreteVisualization
         {
             DrawMixRatioBar(canvas, bounds, cementParts, sandParts, gravelParts);
         }
+
+        canvas.Restore();
     }
 
     /// <summary>

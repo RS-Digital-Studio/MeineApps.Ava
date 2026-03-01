@@ -5,6 +5,8 @@
              xmlns:conv="using:HandwerkerRechner.Converters"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.RoofSolarView"
              x:DataType="vm:RoofSolarViewModel">
 
@@ -107,22 +109,28 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="RoofSolar_TxtPitchResultHeader" />
 
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate UnitDegrees}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding PitchResult.PitchDegrees}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="RoofSolar_TxtPitchDegrees" />
-                </Grid>
+                <!-- Hero-Value: Dachneigung in Grad -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate UnitDegrees}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="RoofSolar_TxtPitchDegrees"
+                               Text="{Binding PitchResult.PitchDegrees}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding PitchResult.PitchDegrees}" Format="F1" Suffix="&#x00B0;" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate UnitPercent}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding PitchResult.PitchPercent}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtPitchPercent" />
                 </Grid>
@@ -214,34 +222,40 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="RoofSolar_TxtTilesResultHeader" />
 
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate UnitPieces}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding TilesResult.TilesNeeded}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="RoofSolar_TxtTilesNeeded" />
-                </Grid>
+                <!-- Hero-Value: Dachziegel inkl. Reserve -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate TilesWithReserve}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="RoofSolar_TxtTilesWithReserve"
+                               Text="{Binding TilesResult.TilesWithReserve}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding TilesResult.TilesWithReserve}" Format="F0" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
 
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate TilesWithReserve}"
-                             FontSize="13"
+                  <TextBlock Grid.Column="0" Text="{loc:Translate UnitPieces}"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding TilesResult.TilesWithReserve}"
-                             FontSize="15" FontWeight="SemiBold"
+                  <TextBlock Grid.Column="1" Text="{Binding TilesResult.TilesNeeded}"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="RoofSolar_TxtTilesWithReserve" />
+                             AutomationProperties.AutomationId="RoofSolar_TxtTilesNeeded" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowTileCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding RoofTileCostDisplay}"
-                             FontSize="17" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtTileCost" />
                 </Grid>
 
@@ -350,54 +364,60 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="RoofSolar_TxtSolarResultHeader" />
 
+                <!-- Hero-Value: Jahresertrag kWh -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate AnnualYield}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="RoofSolar_TxtAnnualYield"
+                               Text="{Binding SolarResult.AnnualYieldKwh}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding SolarResult.AnnualYieldKwh}" Format="F0" Suffix=" kWh" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
+
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate UsableArea}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding SolarResult.UsableArea}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtUsableArea" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate KwPeak}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding SolarResult.KwPeak}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtKwPeak" />
-                </Grid>
-
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate AnnualYield}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding SolarResult.AnnualYieldKwh}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="RoofSolar_TxtAnnualYield" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowSolarCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding SolarCostDisplay}"
-                             FontSize="17" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtSolarCost" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowSolarCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate PaybackTime}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding PaybackTimeDisplay}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="RoofSolar_TxtPaybackTime" />
                 </Grid>

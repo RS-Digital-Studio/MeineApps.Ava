@@ -1,3 +1,5 @@
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Models;
@@ -8,9 +10,10 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public partial class TileCalculatorViewModel : ObservableObject
+public partial class TileCalculatorViewModel : ObservableObject, IDisposable
 {
     private readonly CraftEngine _craftEngine;
+    private Timer? _debounceTimer;
     private readonly IProjectService _projectService;
     private readonly ILocalizationService _localization;
     private readonly ICalculationHistoryService _historyService;
@@ -87,8 +90,9 @@ public partial class TileCalculatorViewModel : ObservableObject
         {
             await LoadProjectAsync(projectId);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -108,6 +112,17 @@ public partial class TileCalculatorViewModel : ObservableObject
 
     [ObservableProperty]
     private double _wastePercentage = 10;
+
+    [ObservableProperty]
+    private double _groutWidthMm = 3.0;
+
+    // Live-Berechnung: Debounce bei Eingabe-Änderungen
+    partial void OnRoomLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnRoomWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnTileLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnTileWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnWastePercentageChanged(double value) => ScheduleAutoCalculate();
+    partial void OnGroutWidthMmChanged(double value) => ScheduleAutoCalculate();
 
     #endregion
 
@@ -150,6 +165,7 @@ public partial class TileCalculatorViewModel : ObservableObject
         ShowCost = value > 0;
         OnPropertyChanged(nameof(TotalCostDisplay));
         OnPropertyChanged(nameof(PricePerDisplay));
+        ScheduleAutoCalculate();
     }
 
     #endregion
@@ -167,6 +183,9 @@ public partial class TileCalculatorViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isExporting;
+
+    [ObservableProperty]
+    private string _groutMassDisplay = "";
 
     public string AreaDisplay => Result != null
         ? _unitConverter.FormatArea(Result.RoomArea)
@@ -190,6 +209,17 @@ public partial class TileCalculatorViewModel : ObservableObject
 
     #endregion
 
+    /// <summary>
+    /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        if (_debounceTimer == null)
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
+        else
+            _debounceTimer.Change(300, Timeout.Infinite);
+    }
+
     [RelayCommand]
     private async Task Calculate()
     {
@@ -211,6 +241,10 @@ public partial class TileCalculatorViewModel : ObservableObject
 
             Result = _craftEngine.CalculateTiles(RoomLength, RoomWidth, TileLength, TileWidth, WastePercentage);
             HasResult = true;
+
+            // Fugenmasse berechnen
+            var groutKg = CalculateGroutMass(Result.RoomArea, TileLength, TileWidth, GroutWidthMm);
+            GroutMassDisplay = groutKg > 0 ? $"{groutKg:F1} kg" : "";
 
             // Save to history
             await SaveToHistoryAsync();
@@ -234,30 +268,38 @@ public partial class TileCalculatorViewModel : ObservableObject
                 ["TileWidth"] = TileWidth,
                 ["WastePercentage"] = WastePercentage,
                 ["PricePerTile"] = PricePerTile,
+                ["GroutWidthMm"] = GroutWidthMm,
                 ["Result"] = Result != null ? new Dictionary<string, object>
                 {
                     ["RoomArea"] = Result.RoomArea,
                     ["TilesNeeded"] = Result.TilesNeeded,
-                    ["TilesWithWaste"] = Result.TilesWithWaste
+                    ["TilesWithWaste"] = Result.TilesWithWaste,
+                    ["GroutMass"] = GroutMassDisplay
                 } : new Dictionary<string, object>()
             };
 
             await _historyService.AddCalculationAsync("TileCalculator", title, data);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
     [RelayCommand]
     private void Reset()
     {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         RoomLength = 4.0;
         RoomWidth = 3.0;
         TileLength = 30;
         TileWidth = 30;
         WastePercentage = 10;
         PricePerTile = 0;
+        GroutWidthMm = 3.0;
+        GroutMassDisplay = "";
         Result = null;
         HasResult = false;
     }
@@ -306,7 +348,8 @@ public partial class TileCalculatorViewModel : ObservableObject
                 ["TileLength"] = TileLength,
                 ["TileWidth"] = TileWidth,
                 ["WastePercentage"] = WastePercentage,
-                ["PricePerTile"] = PricePerTile
+                ["PricePerTile"] = PricePerTile,
+                ["GroutWidthMm"] = GroutWidthMm
             };
 
             // Result-Daten mitspeichern für Export
@@ -320,6 +363,8 @@ public partial class TileCalculatorViewModel : ObservableObject
                 };
                 if (ShowCost && PricePerTile > 0)
                     resultData["TotalCost"] = (Result.TilesWithWaste * PricePerTile).ToString("F2");
+                if (!string.IsNullOrEmpty(GroutMassDisplay))
+                    resultData["GroutMass"] = GroutMassDisplay;
                 data["Result"] = resultData;
             }
 
@@ -361,11 +406,13 @@ public partial class TileCalculatorViewModel : ObservableObject
             TileWidth = project.GetValue("TileWidth", 30.0);
             WastePercentage = project.GetValue("WastePercentage", 10.0);
             PricePerTile = project.GetValue("PricePerTile", 0.0);
+            GroutWidthMm = project.GetValue("GroutWidthMm", 3.0);
 
             await Calculate();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -383,6 +430,9 @@ public partial class TileCalculatorViewModel : ObservableObject
 
         if (ShowCost && PricePerTile > 0)
             text += $"\n{_localization.GetString("TotalCost") ?? "Total cost"}: {TotalCostDisplay}";
+
+        if (!string.IsNullOrEmpty(GroutMassDisplay))
+            text += $"\n{_localization.GetString("GroutMass") ?? "Grout mass"}: {GroutMassDisplay}";
 
         ClipboardRequested?.Invoke(text);
         FloatingTextRequested?.Invoke(_localization.GetString("CopiedToClipboard") ?? "Copied!", "success");
@@ -412,7 +462,8 @@ public partial class TileCalculatorViewModel : ObservableObject
                 [_localization.GetString("RoomWidth") ?? "Room width"] = $"{RoomWidth:F1} m",
                 [_localization.GetString("TileLength") ?? "Tile length"] = $"{TileLength} cm",
                 [_localization.GetString("TileWidth") ?? "Tile width"] = $"{TileWidth} cm",
-                [_localization.GetString("Waste") ?? "Waste"] = $"{WastePercentage} %"
+                [_localization.GetString("Waste") ?? "Waste"] = $"{WastePercentage} %",
+                [_localization.GetString("GroutWidth") ?? "Grout width"] = $"{GroutWidthMm} mm"
             };
             var results = new Dictionary<string, string>
             {
@@ -422,6 +473,8 @@ public partial class TileCalculatorViewModel : ObservableObject
             };
             if (ShowCost && PricePerTile > 0)
                 results[_localization.GetString("TotalCost") ?? "Total cost"] = TotalCostDisplay;
+            if (!string.IsNullOrEmpty(GroutMassDisplay))
+                results[_localization.GetString("GroutMass") ?? "Grout mass"] = GroutMassDisplay;
 
             var path = await _exportService.ExportToPdfAsync(calcType, inputs, results);
             await _fileShareService.ShareFileAsync(path, _localization.GetString("ShareMaterialList") ?? "Share", "application/pdf");
@@ -438,10 +491,39 @@ public partial class TileCalculatorViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Fugenmasse berechnen (Industriestandard-Formel)
+    /// kg/m² = (L+B) / (L×B) × Fugenbreite(mm) × Fugentiefe(mm) × Dichte(g/cm³) / 1000
+    /// L,B in mm, Dichte = 1.6 g/cm³ (Standard-Fugenmörtel)
+    /// </summary>
+    private double CalculateGroutMass(double roomAreaM2, double tileLengthCm, double tileWidthCm, double groutWidthMm)
+    {
+        if (tileLengthCm <= 0 || tileWidthCm <= 0 || groutWidthMm <= 0) return 0;
+
+        const double groutDepthMm = 6.0; // Standard-Fugentiefe
+        const double groutDensityGPerCm3 = 1.6; // Fugenmörtel-Dichte
+
+        // Fliesenmaße in mm umrechnen
+        double tileLengthMm = tileLengthCm * 10;
+        double tileWidthMm = tileWidthCm * 10;
+
+        // Bedarf pro m² in kg: (L+B)/(L×B) × Breite × Tiefe × Dichte / 1000
+        double kgPerM2 = (tileLengthMm + tileWidthMm) / (tileLengthMm * tileWidthMm)
+                         * groutWidthMm * groutDepthMm * groutDensityGPerCm3;
+
+        return roomAreaM2 * kgPerM2;
+    }
+
+    /// <summary>
     /// Cleanup when ViewModel is disposed
     /// </summary>
     public void Cleanup()
     {
         _unitConverter.UnitSystemChanged -= OnUnitSystemChanged;
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 }

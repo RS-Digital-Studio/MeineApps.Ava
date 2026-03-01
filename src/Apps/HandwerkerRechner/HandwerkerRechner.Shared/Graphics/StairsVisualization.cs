@@ -8,6 +8,19 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class StairsVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _stairFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stairStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKPaint _dinPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -22,6 +35,9 @@ public static class StairsVisualization
         float angleDeg, bool isDinCompliant, bool isComfortable, bool hasResult)
     {
         if (!hasResult || stepCount <= 0 || stepHeightCm <= 0 || treadDepthCm <= 0) return;
+
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
 
         SkiaBlueprintCanvas.DrawGrid(canvas, bounds, 20f);
 
@@ -42,13 +58,16 @@ public static class StairsVisualization
         // DIN-Farbe bestimmen
         SKColor dinColor = isDinCompliant ? _dinGreen : (isComfortable ? _dinYellow : _dinRed);
 
+        // Animation: Stufen bauen sich von unten auf
+        int visibleSteps = (int)(stepCount * progress);
+
         // Stufen-Profil zeichnen (von unten-links nach oben-rechts)
         using var stairPath = new SKPath();
         float baseY = oy + totalH; // Unten
 
         stairPath.MoveTo(ox, baseY);
 
-        for (int i = 0; i < stepCount; i++)
+        for (int i = 0; i < visibleSteps; i++)
         {
             float x = ox + i * stepW;
             float y = baseY - (i + 1) * stepH;
@@ -62,7 +81,8 @@ public static class StairsVisualization
         }
 
         // Nach unten schließen
-        stairPath.LineTo(ox + totalW, baseY);
+        if (visibleSteps > 0)
+            stairPath.LineTo(ox + visibleSteps * stepW, baseY);
         stairPath.Close();
 
         // Füllung mit DIN-Farbe
@@ -73,10 +93,10 @@ public static class StairsVisualization
         _stairStroke.Color = SkiaThemeHelper.TextPrimary;
         canvas.DrawPath(stairPath, _stairStroke);
 
-        // Einzelne Stufen-Linien
+        // Einzelne Stufen-Linien (nur sichtbare Stufen)
         _stairStroke.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.TextSecondary, 100);
         _stairStroke.StrokeWidth = 1f;
-        for (int i = 0; i < stepCount; i++)
+        for (int i = 0; i < visibleSteps; i++)
         {
             float x = ox + i * stepW;
             float y = baseY - (i + 1) * stepH;

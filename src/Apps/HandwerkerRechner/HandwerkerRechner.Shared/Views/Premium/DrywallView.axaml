@@ -4,6 +4,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.DrywallView"
              x:DataType="vm:DrywallViewModel">
 
@@ -116,16 +118,21 @@
                        Foreground="{DynamicResource PrimaryBrush}"
                        AutomationProperties.AutomationId="Drywall_TxtResultHeader" />
 
-            <!-- Plates Needed -->
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="{loc:Translate DrywallSheets}"
-                         FontSize="13"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock Grid.Column="1" Text="{Binding PlatesNeeded}"
-                         FontSize="15" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}"
-                         AutomationProperties.AutomationId="Drywall_TxtPlatesNeeded" />
-            </Grid>
+            <!-- Hero-Value: Platten benötigt -->
+            <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                    Margin="0,4,0,8">
+              <StackPanel>
+                <TextBlock Text="{loc:Translate DrywallSheets}" FontSize="12"
+                           Foreground="#CCFFFFFF" />
+                <TextBlock AutomationProperties.AutomationId="Drywall_TxtPlatesNeeded"
+                           Text="{Binding PlatesNeeded}" FontSize="28" FontWeight="Bold"
+                           Foreground="White">
+                  <i:Interaction.Behaviors>
+                    <behaviors:CountUpBehavior TargetValue="{Binding Result.Plates}" Format="F0" Duration="500" />
+                  </i:Interaction.Behaviors>
+                </TextBlock>
+              </StackPanel>
+            </Border>
 
             <!-- CW Profiles Needed -->
             <Grid ColumnDefinitions="*,Auto">
@@ -133,7 +140,7 @@
                          FontSize="13"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding CwProfilesNeeded}"
-                         FontSize="15" FontWeight="SemiBold"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Drywall_TxtCwProfiles" />
             </Grid>
@@ -141,10 +148,10 @@
             <!-- UW Length Needed -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate UWProfilesTopBottom}"
-                         FontSize="13"
+                         FontSize="14"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding UwLengthNeeded}"
-                         FontSize="15" FontWeight="SemiBold"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Drywall_TxtUwLength" />
             </Grid>
@@ -152,10 +159,10 @@
             <!-- Screws Needed -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0" Text="{loc:Translate Screws}"
-                         FontSize="13"
+                         FontSize="14"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding ScrewsNeeded}"
-                         FontSize="15" FontWeight="SemiBold"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          AutomationProperties.AutomationId="Drywall_TxtScrews" />
             </Grid>
@@ -164,11 +171,11 @@
             <Grid ColumnDefinitions="*,Auto"
                   IsVisible="{Binding ShowCost}">
               <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                         FontSize="13"
+                         FontSize="14"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding TotalCostDisplay}"
-                         FontSize="17" FontWeight="Bold"
-                         Foreground="{DynamicResource AccentBrush}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource PrimaryBrush}"
                          AutomationProperties.AutomationId="Drywall_TxtTotalCost" />
             </Grid>
             <!-- Aktions-Buttons: Share + PDF Export -->

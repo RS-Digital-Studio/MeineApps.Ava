@@ -8,10 +8,25 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class GardenVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _stoneFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _stoneStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f };
     private static readonly SKPaint _soilFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _borderPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
+    private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
+    private static readonly Random _rng = new(42);
 
     // Erdfarben
     private static readonly SKColor _topsoilColor = new(0x5C, 0x3D, 0x2E); // Mutterboden
@@ -30,7 +45,14 @@ public static class GardenVisualization
     {
         if (!hasResult) return;
 
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
         SkiaBlueprintCanvas.DrawGrid(canvas, bounds, 20f);
+
+        // Global Alpha Fade-In
+        _layerPaint.Color = SKColors.White.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
 
         switch (subType)
         {
@@ -38,6 +60,8 @@ public static class GardenVisualization
             case 1: RenderSoil(canvas, bounds, soilArea, soilDepthCm, bagsNeeded); break;
             case 2: RenderPondLiner(canvas, bounds, pondLength, pondWidth, pondDepth, overlap, linerArea); break;
         }
+
+        canvas.Restore();
     }
 
     /// <summary>
@@ -74,7 +98,6 @@ public static class GardenVisualization
             _soilFill.Color = SkiaThemeHelper.WithAlpha(_sandColor, 80);
             canvas.DrawRect(ox, oy, areaW, areaH, _soilFill);
 
-            var rng = new Random(42); // Deterministisch
             for (int row = 0; row < rows; row++)
             {
                 float rowOffset = (row % 2) * (sw + jointW) / 2f; // Halbversatz
@@ -84,9 +107,9 @@ public static class GardenVisualization
                     float y = oy + row * (sh + jointW);
 
                     // Leichte Farbvariation
-                    byte r = (byte)(0x90 + rng.Next(40));
-                    byte g = (byte)(0x85 + rng.Next(30));
-                    byte b = (byte)(0x78 + rng.Next(20));
+                    byte r = (byte)(0x90 + _rng.Next(40));
+                    byte g = (byte)(0x85 + _rng.Next(30));
+                    byte b = (byte)(0x78 + _rng.Next(20));
                     _stoneFill.Color = new SKColor(r, g, b);
 
                     float drawW = Math.Min(sw, ox + areaW - x);
@@ -163,11 +186,10 @@ public static class GardenVisualization
 
         // Gras-Halme (kleine vertikale Striche)
         _stoneFill.Color = SkiaThemeHelper.WithAlpha(_grassColor, 150);
-        var rng = new Random(42);
         for (int i = 0; i < 20; i++)
         {
-            float gx = ox + (float)rng.NextDouble() * profileW;
-            float gh = 3f + (float)rng.NextDouble() * 4f;
+            float gx = ox + (float)_rng.NextDouble() * profileW;
+            float gh = 3f + (float)_rng.NextDouble() * 4f;
             canvas.DrawLine(gx, oy, gx, oy - gh, _borderPaint);
         }
 
@@ -179,13 +201,13 @@ public static class GardenVisualization
         _stoneFill.Color = SkiaThemeHelper.WithAlpha(new SKColor(0x8B, 0x5E, 0x3C), 100);
         for (int i = 0; i < 5; i++)
         {
-            float rx = ox + 15f + (float)rng.NextDouble() * (profileW - 30f);
+            float rx = ox + 15f + (float)_rng.NextDouble() * (profileW - 30f);
             float ry = oy + 4f;
-            float rLen = 8f + (float)rng.NextDouble() * (soilH * 0.6f);
+            float rLen = 8f + (float)_rng.NextDouble() * (soilH * 0.6f);
             using var rootPath = new SKPath();
             rootPath.MoveTo(rx, ry);
-            rootPath.QuadTo(rx + (float)(rng.NextDouble() - 0.5) * 10f, ry + rLen * 0.5f,
-                rx + (float)(rng.NextDouble() - 0.5) * 8f, ry + rLen);
+            rootPath.QuadTo(rx + (float)(_rng.NextDouble() - 0.5) * 10f, ry + rLen * 0.5f,
+                rx + (float)(_rng.NextDouble() - 0.5) * 8f, ry + rLen);
             _borderPaint.Color = SkiaThemeHelper.WithAlpha(new SKColor(0x8B, 0x5E, 0x3C), 60);
             _borderPaint.StrokeWidth = 1f;
             canvas.DrawPath(rootPath, _borderPaint);
@@ -196,9 +218,9 @@ public static class GardenVisualization
         _stoneFill.Color = SkiaThemeHelper.WithAlpha(_topsoilColor, 100);
         for (int i = 0; i < 30; i++)
         {
-            float px = ox + (float)rng.NextDouble() * profileW;
-            float py = oy + (float)rng.NextDouble() * soilH;
-            canvas.DrawCircle(px, py, 1f + (float)rng.NextDouble() * 1.5f, _stoneFill);
+            float px = ox + (float)_rng.NextDouble() * profileW;
+            float py = oy + (float)_rng.NextDouble() * soilH;
+            canvas.DrawCircle(px, py, 1f + (float)_rng.NextDouble() * 1.5f, _stoneFill);
         }
 
         // === Schicht 2: Sand (gelb/beige) ===
@@ -210,9 +232,9 @@ public static class GardenVisualization
         _stoneFill.Color = SkiaThemeHelper.WithAlpha(_sandColor, 100);
         for (int i = 0; i < 40; i++)
         {
-            float px = ox + (float)rng.NextDouble() * profileW;
-            float py = sandY + (float)rng.NextDouble() * sandH;
-            canvas.DrawCircle(px, py, 0.5f + (float)rng.NextDouble() * 0.8f, _stoneFill);
+            float px = ox + (float)_rng.NextDouble() * profileW;
+            float py = sandY + (float)_rng.NextDouble() * sandH;
+            canvas.DrawCircle(px, py, 0.5f + (float)_rng.NextDouble() * 0.8f, _stoneFill);
         }
 
         // === Schicht 3: Kies/Untergrund (grau, Schraffur) ===
@@ -228,9 +250,9 @@ public static class GardenVisualization
         _stoneFill.Color = SkiaThemeHelper.WithAlpha(_gravelColor, 80);
         for (int i = 0; i < 15; i++)
         {
-            float sx = ox + (float)rng.NextDouble() * profileW;
-            float sy = gravelY + (float)rng.NextDouble() * gravelH;
-            float sr = 1.5f + (float)rng.NextDouble() * 2f;
+            float sx = ox + (float)_rng.NextDouble() * profileW;
+            float sy = gravelY + (float)_rng.NextDouble() * gravelH;
+            float sr = 1.5f + (float)_rng.NextDouble() * 2f;
             canvas.DrawOval(sx, sy, sr, sr * 0.7f, _stoneFill);
         }
 

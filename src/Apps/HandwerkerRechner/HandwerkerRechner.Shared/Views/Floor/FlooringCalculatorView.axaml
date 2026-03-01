@@ -4,6 +4,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Floor.FlooringCalculatorView"
              x:DataType="vm:FlooringCalculatorViewModel">
 
@@ -154,6 +156,22 @@
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}" />
 
+            <!-- Hero-Value: Dielen inkl. Verschnitt -->
+            <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                    Margin="0,4,0,8">
+              <StackPanel>
+                <TextBlock Text="{loc:Translate BoardsWithWaste}" FontSize="12"
+                           Foreground="#CCFFFFFF" />
+                <TextBlock AutomationProperties.AutomationId="Flooring_TxtBoardsWithWaste"
+                           Text="{Binding BoardsWithWasteDisplay}" FontSize="28" FontWeight="Bold"
+                           Foreground="White">
+                  <i:Interaction.Behaviors>
+                    <behaviors:CountUpBehavior TargetValue="{Binding Result.BoardsWithWaste}" Format="F0" Duration="500" />
+                  </i:Interaction.Behaviors>
+                </TextBlock>
+              </StackPanel>
+            </Border>
+
             <!-- Area -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0"
@@ -178,18 +196,6 @@
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
-            <!-- Boards With Waste -->
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0"
-                         Text="{loc:Translate BoardsWithWaste}"
-                         FontSize="14"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock AutomationProperties.AutomationId="Flooring_TxtBoardsWithWaste" Grid.Column="1"
-                         Text="{Binding BoardsWithWasteDisplay}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource AccentBrush}" />
-            </Grid>
-
             <!-- Total Cost (only when ShowCost) -->
             <Grid ColumnDefinitions="*,Auto"
                   IsVisible="{Binding ShowCost}">
@@ -199,7 +205,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Flooring_TxtTotalCost" Grid.Column="1"
                          Text="{Binding TotalCostDisplay}"
-                         FontSize="16" FontWeight="Bold"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="{DynamicResource PrimaryBrush}" />
             </Grid>
             <!-- Aktions-Buttons: Share + PDF Export -->

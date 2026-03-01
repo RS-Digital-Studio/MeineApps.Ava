@@ -1,0 +1,348 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerRechner.ViewModels.Premium"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             x:Class="HandwerkerRechner.Views.Premium.InsulationView"
+             x:DataType="vm:InsulationViewModel">
+
+  <Grid RowDefinitions="Auto,*,Auto"
+        AutomationProperties.AutomationId="Insulation_RootGrid">
+
+    <!-- Header: Teal Gradient -->
+    <Border Grid.Row="0"
+            Padding="16,12,16,20"
+            CornerRadius="0,0,24,24"
+            AutomationProperties.AutomationId="Insulation_HeaderBorder">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#14B8A6" Offset="0" />
+          <GradientStop Color="#0D9488" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*">
+        <Button Command="{Binding GoBackCommand}"
+                Background="#33FFFFFF"
+                CornerRadius="20"
+                Width="40" Height="40"
+                Padding="0"
+                AutomationProperties.AutomationId="Insulation_BtnBack">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
+        </Button>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                    Margin="12,0,0,0" VerticalAlignment="Center">
+          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
+            <mi:MaterialIcon Kind="Snowflake" Width="22" Height="22"
+                             Foreground="White"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{loc:Translate CalcInsulation}"
+                     FontSize="20" FontWeight="Bold" Foreground="White"
+                     VerticalAlignment="Center"
+                     AutomationProperties.AutomationId="Insulation_TxtTitle" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Content -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                  AutomationProperties.AutomationId="Insulation_ScrollViewer">
+      <StackPanel Spacing="16" Margin="16,16,16,200">
+
+        <!-- Input Card -->
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Insulation_CardInput">
+          <StackPanel Spacing="12">
+            <TextBlock Text="{loc:Translate InsulationArea}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       AutomationProperties.AutomationId="Insulation_TxtInputHeader" />
+
+            <!-- Fläche -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate InsulationArea}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding Area}"
+                       Watermark="m&#178;"
+                       AutomationProperties.AutomationId="Insulation_TxtBoxArea" />
+            </StackPanel>
+
+            <!-- Ist-U-Wert -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate CurrentUValue}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding CurrentUValue}"
+                       Watermark="W/(m&#178;&#183;K)"
+                       AutomationProperties.AutomationId="Insulation_TxtBoxCurrentU" />
+            </StackPanel>
+
+            <!-- Soll-U-Wert -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate TargetUValue}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding TargetUValue}"
+                       Watermark="W/(m&#178;&#183;K)"
+                       AutomationProperties.AutomationId="Insulation_TxtBoxTargetU" />
+            </StackPanel>
+
+            <!-- Dämmstoff-Typ (ComboBox) -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate InsulationType}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <ComboBox SelectedIndex="{Binding SelectedInsulationType}"
+                        HorizontalAlignment="Stretch"
+                        AutomationProperties.AutomationId="Insulation_CbInsulationType">
+                <ComboBoxItem Content="{loc:Translate InsulationTypeEPS}" />
+                <ComboBoxItem Content="{loc:Translate InsulationTypeXPS}" />
+                <ComboBoxItem Content="{loc:Translate InsulationTypeMineralWool}" />
+                <ComboBoxItem Content="{loc:Translate InsulationTypeWoodFiber}" />
+              </ComboBox>
+            </StackPanel>
+
+            <!-- Preis pro m² (optional) -->
+            <StackPanel Spacing="4">
+              <TextBlock Text="{loc:Translate PricePerSqm}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBox Text="{Binding PricePerSqm}"
+                       Watermark="EUR"
+                       AutomationProperties.AutomationId="Insulation_TxtBoxPricePerSqm" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Visualisierung -->
+        <Border Classes="Card" Padding="0" Height="220" Margin="0,0,0,0"
+                IsVisible="{Binding HasResult}" ClipToBounds="True" CornerRadius="12"
+                AutomationProperties.AutomationId="Insulation_CardVisualization">
+          <skia:SKCanvasView x:Name="InsulationCanvas" PaintSurface="OnPaintVisualization"
+                             AutomationProperties.AutomationId="Insulation_Canvas" />
+        </Border>
+
+        <!-- Results Card -->
+        <Border Classes="Card Elevated StatsCard"
+                IsVisible="{Binding HasResult}"
+                AutomationProperties.AutomationId="Insulation_CardResult">
+          <StackPanel Spacing="10">
+            <TextBlock Text="{loc:Translate Result}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource PrimaryBrush}"
+                       AutomationProperties.AutomationId="Insulation_TxtResultHeader" />
+
+            <!-- Hero-Value: Dämmdicke -->
+            <Border CornerRadius="12" Padding="16,12"
+                    Margin="0,4,0,8">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#14B8A6" Offset="0" />
+                  <GradientStop Color="#0D9488" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <StackPanel>
+                <TextBlock Text="{loc:Translate InsulationThickness}" FontSize="12"
+                           Foreground="#CCFFFFFF" />
+                <TextBlock AutomationProperties.AutomationId="Insulation_TxtThickness"
+                           Text="{Binding ThicknessDisplay}" FontSize="28" FontWeight="Bold"
+                           Foreground="White">
+                  <i:Interaction.Behaviors>
+                    <behaviors:CountUpBehavior TargetValue="{Binding Result.ThicknessCm}" Format="F0" Suffix=" cm" Duration="500" />
+                  </i:Interaction.Behaviors>
+                </TextBlock>
+              </StackPanel>
+            </Border>
+
+            <!-- Fläche -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate InsulationArea}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding AreaDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="Insulation_TxtArea" />
+            </Grid>
+
+            <!-- Wärmeleitfähigkeit Lambda -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate InsulationLambda}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding LambdaDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="Insulation_TxtLambda" />
+            </Grid>
+
+            <!-- Dämmstoff-Typ -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate InsulationType}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding InsulationTypeDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="Insulation_TxtInsulationType" />
+            </Grid>
+
+            <!-- Stückzahl Platten -->
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Grid.Column="0" Text="{loc:Translate UnitPieces}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding PiecesDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         AutomationProperties.AutomationId="Insulation_TxtPieces" />
+            </Grid>
+
+            <!-- Gesamtkosten (wenn aktiviert) -->
+            <Grid ColumnDefinitions="*,Auto"
+                  IsVisible="{Binding ShowCost}">
+              <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
+                         FontSize="14"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding TotalCostDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="{DynamicResource PrimaryBrush}"
+                         AutomationProperties.AutomationId="Insulation_TxtTotalCost" />
+            </Grid>
+
+            <!-- Aktions-Buttons: Share + PDF Export -->
+            <Grid ColumnDefinitions="*,8,*" Margin="0,4,0,0">
+              <Button Grid.Column="0"
+                      Command="{Binding ShareResultCommand}"
+                      Classes="Outlined"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      AutomationProperties.AutomationId="Insulation_BtnShare">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ShareResult}"
+                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+              <Button Grid.Column="2"
+                      Command="{Binding ExportMaterialListCommand}"
+                      Classes="Outlined"
+                      IsEnabled="{Binding !IsExporting}"
+                      HorizontalAlignment="Stretch"
+                      HorizontalContentAlignment="Center"
+                      AutomationProperties.AutomationId="Insulation_BtnExport">
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                  <mi:MaterialIcon Kind="FilePdfBox" Width="16" Height="16"
+                                   Foreground="{DynamicResource AccentBrush}" />
+                  <TextBlock Text="{loc:Translate ExportMaterialList}"
+                             FontSize="12" TextTrimming="CharacterEllipsis"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </Grid>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+    <!-- Buttons -->
+    <Border Grid.Row="2" Padding="16,12" Background="{DynamicResource BackgroundBrush}"
+            AutomationProperties.AutomationId="Insulation_BottomBar">
+      <Grid ColumnDefinitions="*,8,*,8,*">
+        <Button Grid.Column="0"
+                Command="{Binding ResetCommand}"
+                Classes="Outlined"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                AutomationProperties.AutomationId="Insulation_BtnReset">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Refresh" Width="16" Height="16"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{loc:Translate Reset}"
+                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="2"
+                Command="{Binding CalculateCommand}"
+                Classes="Primary"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                AutomationProperties.AutomationId="Insulation_BtnCalculate">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="Calculator" Width="16" Height="16" />
+            <TextBlock Text="{loc:Translate Calculate}"
+                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+        <Button Grid.Column="4"
+                Classes="Secondary"
+                Command="{Binding SaveProjectCommand}"
+                IsVisible="{Binding HasResult}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                AutomationProperties.AutomationId="Insulation_BtnSave">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" />
+            <TextBlock Text="{loc:Translate Save}"
+                       FontSize="12" TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center" />
+          </StackPanel>
+        </Button>
+      </Grid>
+    </Border>
+
+    <!-- Save Project Dialog Overlay -->
+    <Border Grid.Row="0" Grid.RowSpan="3"
+            ZIndex="100"
+            Background="#80000000"
+            IsVisible="{Binding ShowSaveDialog}"
+            AutomationProperties.AutomationId="Insulation_SaveDialogOverlay">
+      <Border Background="{DynamicResource SurfaceBrush}"
+              CornerRadius="16"
+              Padding="24"
+              MaxWidth="340"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center"
+              AutomationProperties.AutomationId="Insulation_SaveDialogCard">
+        <StackPanel Spacing="16">
+          <TextBlock Text="{loc:Translate SaveProject}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Insulation_TxtSaveDialogTitle" />
+          <TextBox Text="{Binding SaveProjectName}"
+                   Watermark="{loc:Translate ProjectName}"
+                   Classes="Outlined"
+                   AutomationProperties.AutomationId="Insulation_TxtBoxProjectName" />
+          <Grid ColumnDefinitions="*,12,*">
+            <Button Grid.Column="0"
+                    Classes="Outlined"
+                    Command="{Binding CancelSaveProjectCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate Cancel}"
+                    AutomationProperties.AutomationId="Insulation_BtnCancelSave" />
+            <Button Grid.Column="2"
+                    Classes="Primary"
+                    Command="{Binding ConfirmSaveProjectCommand}"
+                    HorizontalAlignment="Stretch"
+                    HorizontalContentAlignment="Center"
+                    Content="{loc:Translate Save}"
+                    AutomationProperties.AutomationId="Insulation_BtnConfirmSave" />
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Border>
+
+  </Grid>
+
+</UserControl>

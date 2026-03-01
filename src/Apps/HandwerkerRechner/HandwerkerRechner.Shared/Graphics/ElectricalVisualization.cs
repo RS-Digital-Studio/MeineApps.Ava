@@ -8,10 +8,24 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class ElectricalVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _linePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2.5f };
     private static readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _barPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _axisPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f };
+    private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
 
     /// <summary>
     /// subType: 0=Spannungsabfall, 1=Stromkosten, 2=Ohmsches Gesetz
@@ -24,12 +38,21 @@ public static class ElectricalVisualization
     {
         if (!hasResult) return;
 
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
+        // Global Alpha Fade-In
+        _layerPaint.Color = SKColors.White.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
+
         switch (subType)
         {
             case 0: RenderVoltageDrop(canvas, bounds, voltage, voltageDrop, percentDrop, isAcceptable, cableLength); break;
             case 1: RenderPowerCost(canvas, bounds, costPerDay, costPerMonth, costPerYear); break;
             case 2: RenderOhmsLaw(canvas, bounds, ohmsV, ohmsI, ohmsR, ohmsP); break;
         }
+
+        canvas.Restore();
     }
 
     /// <summary>

@@ -4,6 +4,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Floor.ConcreteCalculatorView"
              x:DataType="vm:ConcreteCalculatorViewModel">
 
@@ -164,14 +166,21 @@
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}" />
 
-            <!-- Volumen -->
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0" Text="{loc:Translate ResultVolume}"
-                         FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock AutomationProperties.AutomationId="Concrete_TxtVolume" Grid.Column="1" Text="{Binding VolumeDisplay}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource AccentBrush}" />
-            </Grid>
+            <!-- Hero-Value: Betonvolumen -->
+            <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                    Margin="0,4,0,8">
+              <StackPanel>
+                <TextBlock Text="{loc:Translate ResultVolume}" FontSize="12"
+                           Foreground="#CCFFFFFF" />
+                <TextBlock AutomationProperties.AutomationId="Concrete_TxtVolume"
+                           Text="{Binding VolumeDisplay}" FontSize="28" FontWeight="Bold"
+                           Foreground="White">
+                  <i:Interaction.Behaviors>
+                    <behaviors:CountUpBehavior TargetValue="{Binding Result.VolumeM3}" Format="F2" Suffix=" m&#x00B3;" Duration="500" />
+                  </i:Interaction.Behaviors>
+                </TextBlock>
+              </StackPanel>
+            </Border>
 
             <!-- Fertigbeton-Säcke -->
             <Grid ColumnDefinitions="*,Auto">

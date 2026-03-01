@@ -8,6 +8,19 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class FlooringVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _boardFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _boardStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 0.8f };
     private static readonly SKPaint _roomStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
@@ -23,6 +36,9 @@ public static class FlooringVisualization
     {
         if (!hasResult || roomLengthM <= 0 || roomWidthM <= 0) return;
         if (boardLengthM <= 0 || boardWidthCm <= 0) return;
+
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
 
         SkiaBlueprintCanvas.DrawGrid(canvas, bounds, 20f);
 
@@ -46,7 +62,9 @@ public static class FlooringVisualization
             canvas.Save();
             canvas.ClipRect(new SKRect(ox, oy, ox + rw, oy + rh));
 
-            for (int row = 0; row < rows; row++)
+            // Animation: Dielenreihen erscheinen nacheinander
+            int visibleRows = (int)(rows * progress);
+            for (int row = 0; row < visibleRows; row++)
             {
                 float y = oy + row * bh;
                 float h = Math.Min(bh, oy + rh - y);

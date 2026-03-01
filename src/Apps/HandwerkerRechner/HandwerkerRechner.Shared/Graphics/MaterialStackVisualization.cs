@@ -10,6 +10,19 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class MaterialStackVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _iconFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _iconStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -62,6 +75,12 @@ public static class MaterialStackVisualization
     {
         if (items.Length == 0) return;
 
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
+        // Animation: Icons erscheinen sequentiell
+        int visibleItems = (int)Math.Ceiling(items.Length * progress);
+
         float iconSize = 28f;
         float spacing = 8f;
         float labelH = 14f;
@@ -72,7 +91,7 @@ public static class MaterialStackVisualization
         float startX = bounds.MidX - totalW / 2f;
         float iconY = bounds.MidY - totalH / 2f;
 
-        for (int i = 0; i < items.Length; i++)
+        for (int i = 0; i < visibleItems; i++)
         {
             float cx = startX + i * (iconSize + spacing) + iconSize / 2f;
             float cy = iconY + iconSize / 2f;

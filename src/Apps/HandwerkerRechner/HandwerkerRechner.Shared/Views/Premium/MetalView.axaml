@@ -5,6 +5,8 @@
              xmlns:conv="using:HandwerkerRechner.Converters"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.MetalView"
              x:DataType="vm:MetalViewModel">
 
@@ -152,22 +154,28 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Metal_TxtWeightResultHeader" />
 
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate UnitKilograms}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding WeightResult.Weight}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Metal_TxtWeight" />
-                </Grid>
+                <!-- Hero-Value: Gewicht -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate UnitKilograms}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="Metal_TxtWeight"
+                               Text="{Binding WeightResult.Weight}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding WeightResult.Weight}" Format="F2" Suffix=" kg" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate Volume}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding WeightResult.Volume}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Metal_TxtVolume" />
                 </Grid>
@@ -175,11 +183,11 @@
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowMetalCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding MetalCostDisplay}"
-                             FontSize="17" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="Metal_TxtMetalCost" />
                 </Grid>
 
@@ -255,24 +263,30 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Metal_TxtThreadResultHeader" />
 
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate ThreadDrill}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding ThreadResult.ThreadSize}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Metal_TxtThreadSize" />
-                </Grid>
+                <!-- Hero-Value: Bohrgröße -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate DrillSize}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="Metal_TxtDrillSize"
+                               Text="{Binding ThreadResult.DrillSize}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding ThreadResult.DrillSize}" Format="F1" Suffix=" mm" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
 
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate DrillSize}"
-                             FontSize="13"
+                  <TextBlock Grid.Column="0" Text="{loc:Translate ThreadDrill}"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding ThreadResult.DrillSize}"
-                             FontSize="17" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
-                             AutomationProperties.AutomationId="Metal_TxtDrillSize" />
+                  <TextBlock Grid.Column="1" Text="{Binding ThreadResult.ThreadSize}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
+                             AutomationProperties.AutomationId="Metal_TxtThreadSize" />
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->

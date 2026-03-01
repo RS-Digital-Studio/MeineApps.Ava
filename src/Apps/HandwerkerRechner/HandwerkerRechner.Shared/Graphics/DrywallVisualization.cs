@@ -8,10 +8,24 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class DrywallVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _plateFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _profileFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _profileStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
     private static readonly SKPaint _wallStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
+    private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
 
     // Profile-Farben
     private static readonly SKColor _cwColor = new(0x78, 0x90, 0xA8); // CW = stahlblau
@@ -24,7 +38,14 @@ public static class DrywallVisualization
     {
         if (!hasResult || wallLengthM <= 0 || wallHeightM <= 0) return;
 
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
         SkiaBlueprintCanvas.DrawGrid(canvas, bounds, 20f);
+
+        // Global Alpha Fade-In
+        _layerPaint.Color = SKColors.White.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
 
         var fit = SkiaBlueprintCanvas.FitToCanvas(bounds, wallLengthM, wallHeightM, 40f);
         float scale = fit.Scale;
@@ -121,5 +142,7 @@ public static class DrywallVisualization
             $"{cwProfiles} CW | {plates} Platten" + (doublePlated ? " (2×)" : ""),
             new SKPoint(ox + ww / 2f, legendY),
             SkiaThemeHelper.TextSecondary, 9f);
+
+        canvas.Restore();
     }
 }

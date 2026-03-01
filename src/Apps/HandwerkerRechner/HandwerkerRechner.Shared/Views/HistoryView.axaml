@@ -1,0 +1,168 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerRechner.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:core="using:MeineApps.Core.Ava.Services"
+             x:Class="HandwerkerRechner.Views.HistoryView"
+             x:DataType="vm:HistoryViewModel">
+
+  <Grid AutomationProperties.AutomationId="History_RootGrid" RowDefinitions="Auto,*" Margin="16">
+
+    <!-- Header -->
+    <TextBlock AutomationProperties.AutomationId="History_TxtTitle"
+               Grid.Row="0"
+               Text="{Binding HeaderText}"
+               FontSize="24" FontWeight="Bold"
+               Foreground="{DynamicResource TextPrimaryBrush}"
+               Margin="0,8,0,16" />
+
+    <!-- Content -->
+    <Panel Grid.Row="1">
+
+      <!-- Leerer Zustand -->
+      <controls:EmptyStateView
+          AutomationProperties.AutomationId="History_EmptyState"
+          IsVisible="{Binding IsEmpty}"
+          Icon="ClockOutline"
+          Title="{Binding EmptyText}" />
+
+      <!-- Gruppierte History-Liste -->
+      <ScrollViewer AutomationProperties.AutomationId="History_ScrollList"
+                    IsVisible="{Binding !IsEmpty}"
+                    VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12">
+
+          <!-- Hinweis-Banner: Extended History freischalten -->
+          <Border AutomationProperties.AutomationId="History_ExtendedHintBanner"
+                  IsVisible="{Binding ShowExtendedHint}"
+                  Classes="Card"
+                  CornerRadius="12"
+                  Padding="16"
+                  Margin="0,0,0,4">
+            <i:Interaction.Behaviors>
+              <behaviors:FadeInBehavior Duration="300" />
+            </i:Interaction.Behaviors>
+            <Grid ColumnDefinitions="*,Auto">
+              <StackPanel Spacing="4">
+                <TextBlock AutomationProperties.AutomationId="History_TxtExtendedHint"
+                           Text="{Binding ExtendedHintText}"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           FontSize="13"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <!-- Gruppen-Liste -->
+          <ItemsControl AutomationProperties.AutomationId="History_GroupList"
+                        ItemsSource="{Binding Groups}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:CalculationHistoryGroup">
+                <Border Classes="Card" CornerRadius="12" Padding="0" Margin="0,0,0,8">
+                  <i:Interaction.Behaviors>
+                    <behaviors:FadeInBehavior Duration="300" SlideFromBottom="True" SlideDistance="12" />
+                  </i:Interaction.Behaviors>
+
+                  <StackPanel>
+                    <!-- Gruppen-Header -->
+                    <Border AutomationProperties.AutomationId="History_GroupHeader"
+                            Padding="16,12"
+                            Background="{DynamicResource SurfaceBrush}"
+                            CornerRadius="12,12,0,0">
+                      <Grid ColumnDefinitions="Auto,*,Auto">
+                        <mi:MaterialIcon Grid.Column="0"
+                                         Kind="Calculator"
+                                         Width="22" Height="22"
+                                         Foreground="{DynamicResource PrimaryBrush}"
+                                         Margin="0,0,12,0" />
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding DisplayName}"
+                                   FontSize="16" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <Border Grid.Column="2"
+                                Background="{DynamicResource PrimaryBrush}"
+                                CornerRadius="10"
+                                Padding="8,2"
+                                VerticalAlignment="Center">
+                          <TextBlock Text="{Binding Count}"
+                                     FontSize="12" FontWeight="Bold"
+                                     Foreground="White"
+                                     HorizontalAlignment="Center" />
+                        </Border>
+                      </Grid>
+                    </Border>
+
+                    <!-- Einträge in der Gruppe -->
+                    <ItemsControl ItemsSource="{Binding Items}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="core:CalculationHistoryItem">
+                          <Panel>
+                            <!-- Löschen-Layer (dahinter) -->
+                            <Border Background="#EF4444"
+                                    HorizontalAlignment="Right"
+                                    Width="64"
+                                    CornerRadius="0">
+                              <Button AutomationProperties.AutomationId="History_BtnDeleteItem"
+                                      Classes="Text"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      Command="{Binding $parent[ItemsControl;1].((vm:HistoryViewModel)DataContext).DeleteItemCommand}"
+                                      CommandParameter="{Binding Id}">
+                                <mi:MaterialIcon Kind="Delete" Width="20" Height="20" Foreground="White" />
+                              </Button>
+                            </Border>
+
+                            <!-- Eintrag (verschiebbar) -->
+                            <Border AutomationProperties.AutomationId="History_ItemCard"
+                                    Background="{DynamicResource CardBrush}"
+                                    Padding="16,10"
+                                    ClipToBounds="True">
+                              <i:Interaction.Behaviors>
+                                <behaviors:SwipeToRevealBehavior SwipeThreshold="64" RevealWidth="64" />
+                              </i:Interaction.Behaviors>
+
+                              <Grid ColumnDefinitions="*,Auto">
+                                <StackPanel Grid.Column="0" Spacing="2" VerticalAlignment="Center">
+                                  <TextBlock AutomationProperties.AutomationId="History_TxtItemTitle"
+                                             Text="{Binding Title}"
+                                             FontSize="14"
+                                             Foreground="{DynamicResource TextPrimaryBrush}"
+                                             TextTrimming="CharacterEllipsis"
+                                             MaxLines="1" />
+                                  <TextBlock AutomationProperties.AutomationId="History_TxtItemDate"
+                                             Text="{Binding DisplayDate}"
+                                             FontSize="12"
+                                             Foreground="{DynamicResource TextMutedBrush}" />
+                                </StackPanel>
+
+                                <mi:MaterialIcon Grid.Column="1"
+                                                 Kind="ChevronRight"
+                                                 Width="18" Height="18"
+                                                 Foreground="{DynamicResource TextMutedBrush}"
+                                                 VerticalAlignment="Center" />
+                              </Grid>
+                            </Border>
+                          </Panel>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </StackPanel>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <!-- Abstand unten (200dp für Ad-Banner Overlay + Scroll-Komfort) -->
+          <Border Height="200" />
+
+        </StackPanel>
+      </ScrollViewer>
+
+    </Panel>
+  </Grid>
+
+</UserControl>

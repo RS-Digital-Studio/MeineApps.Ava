@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using HandwerkerRechner.Graphics;
@@ -7,9 +8,32 @@ namespace HandwerkerRechner.Views.Premium;
 
 public partial class RoofSolarView : UserControl
 {
+    private INotifyPropertyChanged? _currentVm;
+    private PropertyChangedEventHandler? _resultHandler;
+
     public RoofSolarView()
     {
         InitializeComponent();
+    }
+
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+
+        // Alten Handler abmelden
+        if (_currentVm != null && _resultHandler != null)
+            _currentVm.PropertyChanged -= _resultHandler;
+
+        _currentVm = DataContext as INotifyPropertyChanged;
+        if (_currentVm != null)
+        {
+            _resultHandler = (_, args) =>
+            {
+                if (args.PropertyName?.Contains("Result") == true)
+                    RoofSolarVisualization.StartAnimation();
+            };
+            _currentVm.PropertyChanged += _resultHandler;
+        }
     }
 
     private void OnPaintVisualization(object? sender, SKPaintSurfaceEventArgs e)
@@ -34,6 +58,14 @@ public partial class RoofSolarView : UserControl
                 vm.SelectedOrientation,
                 (float)vm.TiltDegrees,
                 vm.HasResult);
+
+            // Animation-Loop: weitere Frames anfordern
+            if (RoofSolarVisualization.NeedsRedraw)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                    (sender as Avalonia.Labs.Controls.SKCanvasView)?.InvalidateSurface(),
+                    Avalonia.Threading.DispatcherPriority.Render);
+            }
         }
     }
 }

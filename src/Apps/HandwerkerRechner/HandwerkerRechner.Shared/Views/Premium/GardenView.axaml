@@ -5,6 +5,8 @@
              xmlns:conv="using:HandwerkerRechner.Converters"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.GardenView"
              x:DataType="vm:GardenViewModel">
 
@@ -132,34 +134,40 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Garden_TxtPavingResultHeader" />
 
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate UnitPieces}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding PavingResult.StonesNeeded}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Garden_TxtStonesNeeded" />
-                </Grid>
+                <!-- Hero-Value: Steine inkl. Reserve -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate StonesWithReserve}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="Garden_TxtStonesWithReserve"
+                               Text="{Binding PavingResult.StonesWithReserve}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding PavingResult.StonesWithReserve}" Format="F0" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
 
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate StonesWithReserve}"
-                             FontSize="13"
+                  <TextBlock Grid.Column="0" Text="{loc:Translate UnitPieces}"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding PavingResult.StonesWithReserve}"
-                             FontSize="15" FontWeight="SemiBold"
+                  <TextBlock Grid.Column="1" Text="{Binding PavingResult.StonesNeeded}"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Garden_TxtStonesWithReserve" />
+                             AutomationProperties.AutomationId="Garden_TxtStonesNeeded" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowPavingCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding PavingCostDisplay}"
-                             FontSize="17" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="Garden_TxtPavingCost" />
                 </Grid>
 
@@ -258,34 +266,40 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Garden_TxtSoilResultHeader" />
 
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate UnitLiters}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding SoilResult.VolumeLiters}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Garden_TxtVolumeLiters" />
-                </Grid>
+                <!-- Hero-Value: Säcke Erde -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate BagsNeeded}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="Garden_TxtBagsNeeded"
+                               Text="{Binding SoilResult.BagsNeeded}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding SoilResult.BagsNeeded}" Format="F0" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
 
                 <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate BagsNeeded}"
-                             FontSize="13"
+                  <TextBlock Grid.Column="0" Text="{loc:Translate UnitLiters}"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding SoilResult.BagsNeeded}"
-                             FontSize="15" FontWeight="SemiBold"
+                  <TextBlock Grid.Column="1" Text="{Binding SoilResult.VolumeLiters}"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Garden_TxtBagsNeeded" />
+                             AutomationProperties.AutomationId="Garden_TxtVolumeLiters" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowSoilCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding SoilCostDisplay}"
-                             FontSize="17" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="Garden_TxtSoilCost" />
                 </Grid>
 
@@ -392,44 +406,50 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Garden_TxtPondResultHeader" />
 
+                <!-- Hero-Value: Folienfläche -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate UnitSquareMeters}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="Garden_TxtLinerArea"
+                               Text="{Binding PondResult.LinerArea}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding PondResult.LinerArea}" Format="F2" Suffix=" m&#x00B2;" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
+
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate LinerLength}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding PondResult.LinerLength}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Garden_TxtLinerLength" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate LinerWidth}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding PondResult.LinerWidth}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Garden_TxtLinerWidth" />
-                </Grid>
-
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate UnitSquareMeters}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding PondResult.LinerArea}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Garden_TxtLinerArea" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowLinerCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding LinerCostDisplay}"
-                             FontSize="17" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="Garden_TxtLinerCost" />
                 </Grid>
 

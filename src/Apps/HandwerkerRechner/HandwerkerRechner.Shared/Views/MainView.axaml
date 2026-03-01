@@ -107,8 +107,24 @@
     <DataTemplate DataType="premVm:StairsViewModel">
       <premViews:StairsView />
     </DataTemplate>
+    <DataTemplate DataType="premVm:PlasterViewModel">
+      <premViews:PlasterView />
+    </DataTemplate>
+    <DataTemplate DataType="premVm:ScreedViewModel">
+      <premViews:ScreedView />
+    </DataTemplate>
+    <DataTemplate DataType="premVm:InsulationViewModel">
+      <premViews:InsulationView />
+    </DataTemplate>
+    <DataTemplate DataType="premVm:CableSizingViewModel">
+      <premViews:CableSizingView />
+    </DataTemplate>
+    <DataTemplate DataType="premVm:GroutViewModel">
+      <premViews:GroutView />
+    </DataTemplate>
   </UserControl.DataTemplates>
 
+  <Panel>
   <Grid AutomationProperties.AutomationId="Main_RootGrid" RowDefinitions="*,Auto,Auto">
 
     <!-- Content Area -->
@@ -221,7 +237,7 @@
                   <!-- Fliesen -->
                   <Button AutomationProperties.AutomationId="Main_BtnTiles"
                           Grid.Row="0" Grid.Column="0"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToTilesCommand}">
                     <i:Interaction.Behaviors>
@@ -234,7 +250,7 @@
                         <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
                       </LinearGradientBrush>
                     </Button.Background>
-                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <StackPanel VerticalAlignment="Center" Spacing="4">
                       <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                         <Border.Background>
                           <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -250,13 +266,17 @@
                                  Text="{Binding CalcTilesLabel}"
                                  FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Text="{Binding CalcTilesDescLabel}"
+                                 FontSize="11" TextAlignment="Center" MaxLines="2"
+                                 TextTrimming="CharacterEllipsis"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
                   </Button>
 
                   <!-- Tapete -->
                   <Button AutomationProperties.AutomationId="Main_BtnWallpaper"
                           Grid.Row="0" Grid.Column="1"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToWallpaperCommand}">
                     <i:Interaction.Behaviors>
@@ -269,7 +289,7 @@
                         <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
                       </LinearGradientBrush>
                     </Button.Background>
-                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <StackPanel VerticalAlignment="Center" Spacing="4">
                       <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                         <Border.Background>
                           <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -285,13 +305,17 @@
                                  Text="{Binding CalcWallpaperLabel}"
                                  FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Text="{Binding CalcWallpaperDescLabel}"
+                                 FontSize="11" TextAlignment="Center" MaxLines="2"
+                                 TextTrimming="CharacterEllipsis"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
                   </Button>
 
                   <!-- Farbe -->
                   <Button AutomationProperties.AutomationId="Main_BtnPaint"
                           Grid.Row="1" Grid.Column="0"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToPaintCommand}">
                     <i:Interaction.Behaviors>
@@ -304,7 +328,7 @@
                         <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
                       </LinearGradientBrush>
                     </Button.Background>
-                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <StackPanel VerticalAlignment="Center" Spacing="4">
                       <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                         <Border.Background>
                           <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -320,13 +344,17 @@
                                  Text="{Binding CalcPaintLabel}"
                                  FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Text="{Binding CalcPaintDescLabel}"
+                                 FontSize="11" TextAlignment="Center" MaxLines="2"
+                                 TextTrimming="CharacterEllipsis"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
                   </Button>
 
                   <!-- Boden -->
                   <Button AutomationProperties.AutomationId="Main_BtnFlooring"
                           Grid.Row="1" Grid.Column="1"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToFlooringCommand}">
                     <i:Interaction.Behaviors>
@@ -339,7 +367,7 @@
                         <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
                       </LinearGradientBrush>
                     </Button.Background>
-                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <StackPanel VerticalAlignment="Center" Spacing="4">
                       <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                         <Border.Background>
                           <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -355,12 +383,16 @@
                                  Text="{Binding CalcFlooringLabel}"
                                  FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Text="{Binding CalcFlooringDescLabel}"
+                                 FontSize="11" TextAlignment="Center" MaxLines="2"
+                                 TextTrimming="CharacterEllipsis"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
                   </Button>
                   <!-- Beton -->
                   <Button AutomationProperties.AutomationId="Main_BtnConcrete"
                           Grid.Row="2" Grid.Column="0"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToConcreteCommand}">
                     <i:Interaction.Behaviors>
@@ -373,7 +405,7 @@
                         <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
                       </LinearGradientBrush>
                     </Button.Background>
-                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <StackPanel VerticalAlignment="Center" Spacing="4">
                       <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                         <Border.Background>
                           <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -389,6 +421,10 @@
                                  Text="{Binding CalcConcreteLabel}"
                                  FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                  Foreground="{DynamicResource TextPrimaryBrush}" />
+                      <TextBlock Text="{Binding CalcConcreteDescLabel}"
+                                 FontSize="11" TextAlignment="Center" MaxLines="2"
+                                 TextTrimming="CharacterEllipsis"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
                     </StackPanel>
                   </Button>
                 </Grid>
@@ -407,11 +443,11 @@
                              VerticalAlignment="Center" />
                 </StackPanel>
 
-                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="12">
                   <!-- Trockenbau -->
                   <Button AutomationProperties.AutomationId="Main_BtnDrywall"
                           Grid.Row="0" Grid.Column="0"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToDrywallCommand}">
                     <i:Interaction.Behaviors>
@@ -425,7 +461,7 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <Panel>
-                      <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
                         <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                           <Border.Background>
                             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -441,6 +477,10 @@
                                    Text="{Binding CategoryDrywallLabel}"
                                    FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CategoryDrywallDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
                               Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
@@ -453,7 +493,7 @@
                   <!-- Elektro -->
                   <Button AutomationProperties.AutomationId="Main_BtnElectrical"
                           Grid.Row="0" Grid.Column="1"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToElectricalCommand}">
                     <i:Interaction.Behaviors>
@@ -467,7 +507,7 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <Panel>
-                      <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
                         <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                           <Border.Background>
                             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -483,6 +523,10 @@
                                    Text="{Binding CategoryElectricalLabel}"
                                    FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CategoryElectricalDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
                               Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
@@ -495,7 +539,7 @@
                   <!-- Metall -->
                   <Button AutomationProperties.AutomationId="Main_BtnMetal"
                           Grid.Row="1" Grid.Column="0"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToMetalCommand}">
                     <i:Interaction.Behaviors>
@@ -509,7 +553,7 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <Panel>
-                      <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
                         <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                           <Border.Background>
                             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -525,6 +569,10 @@
                                    Text="{Binding CategoryMetalLabel}"
                                    FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CategoryMetalDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
                               Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
@@ -537,7 +585,7 @@
                   <!-- Garten -->
                   <Button AutomationProperties.AutomationId="Main_BtnGarden"
                           Grid.Row="1" Grid.Column="1"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToGardenCommand}">
                     <i:Interaction.Behaviors>
@@ -551,7 +599,7 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <Panel>
-                      <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
                         <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                           <Border.Background>
                             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -567,6 +615,10 @@
                                    Text="{Binding CategoryGardenLabel}"
                                    FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CategoryGardenDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
                               Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
@@ -579,7 +631,7 @@
                   <!-- Dach/Solar -->
                   <Button AutomationProperties.AutomationId="Main_BtnRoofSolar"
                           Grid.Row="2" Grid.Column="0"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToRoofSolarCommand}">
                     <i:Interaction.Behaviors>
@@ -593,7 +645,7 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <Panel>
-                      <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
                         <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                           <Border.Background>
                             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -609,6 +661,10 @@
                                    Text="{Binding CategoryRoofSolarLabel}"
                                    FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CategoryRoofSolarDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
                               Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
@@ -621,7 +677,7 @@
                   <!-- Treppen -->
                   <Button AutomationProperties.AutomationId="Main_BtnStairs"
                           Grid.Row="2" Grid.Column="1"
-                          CornerRadius="12" Height="120" Padding="8"
+                          CornerRadius="12" Height="140" Padding="8"
                           HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                           Command="{Binding NavigateToStairsCommand}">
                     <i:Interaction.Behaviors>
@@ -635,7 +691,7 @@
                       </LinearGradientBrush>
                     </Button.Background>
                     <Panel>
-                      <StackPanel VerticalAlignment="Center" Spacing="8">
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
                         <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
                           <Border.Background>
                             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -651,6 +707,240 @@
                                    Text="{Binding CalcStairsLabel}"
                                    FontSize="13" FontWeight="Bold" TextAlignment="Center"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CalcStairsDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </StackPanel>
+                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
+                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
+                              Margin="0,-2,-2,0">
+                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
+                      </Border>
+                    </Panel>
+                  </Button>
+
+                  <!-- Putz -->
+                  <Button AutomationProperties.AutomationId="Main_BtnPlaster"
+                          Grid.Row="3" Grid.Column="0"
+                          CornerRadius="12" Height="140" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToPlasterCommand}">
+                    <i:Interaction.Behaviors>
+                      <behaviors:TapScaleBehavior PressedScale="0.96"/>
+                      <behaviors:FadeInBehavior Delay="660" Duration="250"/>
+                    </i:Interaction.Behaviors>
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <Panel>
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                          <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                              <GradientStop Color="#F97316" Offset="0" />
+                              <GradientStop Color="#EA580C" Offset="1" />
+                            </LinearGradientBrush>
+                          </Border.Background>
+                          <mi:MaterialIcon Kind="FormatPaint" Width="24" Height="24"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock AutomationProperties.AutomationId="Main_TxtPlasterLabel"
+                                   Text="{Binding CalcPlasterLabel}"
+                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CalcPlasterDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </StackPanel>
+                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
+                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
+                              Margin="0,-2,-2,0">
+                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
+                      </Border>
+                    </Panel>
+                  </Button>
+
+                  <!-- Estrich -->
+                  <Button AutomationProperties.AutomationId="Main_BtnScreed"
+                          Grid.Row="3" Grid.Column="1"
+                          CornerRadius="12" Height="140" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToScreedCommand}">
+                    <i:Interaction.Behaviors>
+                      <behaviors:TapScaleBehavior PressedScale="0.96"/>
+                      <behaviors:FadeInBehavior Delay="720" Duration="250"/>
+                    </i:Interaction.Behaviors>
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <Panel>
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                          <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                              <GradientStop Color="#78716C" Offset="0" />
+                              <GradientStop Color="#57534E" Offset="1" />
+                            </LinearGradientBrush>
+                          </Border.Background>
+                          <mi:MaterialIcon Kind="Layers" Width="24" Height="24"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock AutomationProperties.AutomationId="Main_TxtScreedLabel"
+                                   Text="{Binding CalcScreedLabel}"
+                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CalcScreedDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </StackPanel>
+                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
+                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
+                              Margin="0,-2,-2,0">
+                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
+                      </Border>
+                    </Panel>
+                  </Button>
+
+                  <!-- Dämmung -->
+                  <Button AutomationProperties.AutomationId="Main_BtnInsulation"
+                          Grid.Row="4" Grid.Column="0"
+                          CornerRadius="12" Height="140" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToInsulationCommand}">
+                    <i:Interaction.Behaviors>
+                      <behaviors:TapScaleBehavior PressedScale="0.96"/>
+                      <behaviors:FadeInBehavior Delay="780" Duration="250"/>
+                    </i:Interaction.Behaviors>
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <Panel>
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                          <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                              <GradientStop Color="#14B8A6" Offset="0" />
+                              <GradientStop Color="#0D9488" Offset="1" />
+                            </LinearGradientBrush>
+                          </Border.Background>
+                          <mi:MaterialIcon Kind="Snowflake" Width="24" Height="24"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock AutomationProperties.AutomationId="Main_TxtInsulationLabel"
+                                   Text="{Binding CalcInsulationLabel}"
+                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CalcInsulationDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </StackPanel>
+                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
+                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
+                              Margin="0,-2,-2,0">
+                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
+                      </Border>
+                    </Panel>
+                  </Button>
+
+                  <!-- Leitungsquerschnitt -->
+                  <Button AutomationProperties.AutomationId="Main_BtnCableSizing"
+                          Grid.Row="4" Grid.Column="1"
+                          CornerRadius="12" Height="140" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToCableSizingCommand}">
+                    <i:Interaction.Behaviors>
+                      <behaviors:TapScaleBehavior PressedScale="0.96"/>
+                      <behaviors:FadeInBehavior Delay="840" Duration="250"/>
+                    </i:Interaction.Behaviors>
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <Panel>
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                          <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                              <GradientStop Color="#F59E0B" Offset="0" />
+                              <GradientStop Color="#D97706" Offset="1" />
+                            </LinearGradientBrush>
+                          </Border.Background>
+                          <mi:MaterialIcon Kind="CableData" Width="24" Height="24"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock AutomationProperties.AutomationId="Main_TxtCableSizingLabel"
+                                   Text="{Binding CalcCableSizingLabel}"
+                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CalcCableSizingDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </StackPanel>
+                      <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
+                              Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
+                              Margin="0,-2,-2,0">
+                        <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#92400E"/>
+                      </Border>
+                    </Panel>
+                  </Button>
+
+                  <!-- Fugenmasse -->
+                  <Button AutomationProperties.AutomationId="Main_BtnGrout"
+                          Grid.Row="5" Grid.Column="0"
+                          CornerRadius="12" Height="140" Padding="8"
+                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                          Command="{Binding NavigateToGroutCommand}">
+                    <i:Interaction.Behaviors>
+                      <behaviors:TapScaleBehavior PressedScale="0.96"/>
+                      <behaviors:FadeInBehavior Delay="900" Duration="250"/>
+                    </i:Interaction.Behaviors>
+                    <Button.Background>
+                      <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                        <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
+                        <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
+                      </LinearGradientBrush>
+                    </Button.Background>
+                    <Panel>
+                      <StackPanel VerticalAlignment="Center" Spacing="4">
+                        <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                          <Border.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                              <GradientStop Color="#EC4899" Offset="0" />
+                              <GradientStop Color="#DB2777" Offset="1" />
+                            </LinearGradientBrush>
+                          </Border.Background>
+                          <mi:MaterialIcon Kind="Texture" Width="24" Height="24"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <TextBlock AutomationProperties.AutomationId="Main_TxtGroutLabel"
+                                   Text="{Binding CalcGroutLabel}"
+                                   FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="{Binding CalcGroutDescLabel}"
+                                   FontSize="11" TextAlignment="Center" MaxLines="2"
+                                   TextTrimming="CharacterEllipsis"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
                       </StackPanel>
                       <Border Classes="GoldGlow" CornerRadius="6" Padding="4,2"
                               Background="#FFD700" HorizontalAlignment="Right" VerticalAlignment="Top"
@@ -722,7 +1012,14 @@
         <views:ProjectsView DataContext="{Binding ProjectsViewModel}" />
       </Border>
 
-      <!-- Tab 2: Settings -->
+      <!-- Tab 2: History -->
+      <Border AutomationProperties.AutomationId="Main_TabHistory"
+              Classes="TabContent"
+              Classes.Active="{Binding IsHistoryTab}">
+        <views:HistoryView DataContext="{Binding HistoryViewModel}" />
+      </Border>
+
+      <!-- Tab 3: Settings -->
       <Border AutomationProperties.AutomationId="Main_TabSettings"
               Classes="TabContent"
               Classes.Active="{Binding IsSettingsTab}">
@@ -881,7 +1178,7 @@
             BorderThickness="0,1,0,0"
             BorderBrush="{DynamicResource CardBorderBrush}"
             IsVisible="{Binding !IsCalculatorOpen}">
-      <Grid ColumnDefinitions="*,*,*" Margin="0,2">
+      <Grid ColumnDefinitions="*,*,*,*" Margin="0,2">
         <!-- Home Tab -->
         <Button AutomationProperties.AutomationId="Main_BtnTabHome"
                 Grid.Column="0" Classes="Text"
@@ -956,9 +1253,46 @@
           </StackPanel>
         </Button>
 
+        <!-- History Tab -->
+        <Button AutomationProperties.AutomationId="Main_BtnTabHistory"
+                Grid.Column="2" Classes="Text"
+                Command="{Binding SelectHistoryTabCommand}"
+                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                Padding="0" Height="56">
+          <StackPanel Spacing="2">
+            <Border Height="3" CornerRadius="2" Margin="12,0"
+                    IsVisible="{Binding IsHistoryTab}">
+              <Border.Background>
+                <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
+              </Border.Background>
+            </Border>
+            <Border Height="3" IsVisible="{Binding !IsHistoryTab}" />
+            <Panel>
+              <mi:MaterialIcon Kind="ClockOutline" Width="24" Height="24"
+                               Foreground="{DynamicResource PrimaryBrush}"
+                               IsVisible="{Binding IsHistoryTab}" />
+              <mi:MaterialIcon Kind="ClockOutline" Width="24" Height="24"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               IsVisible="{Binding !IsHistoryTab}" />
+            </Panel>
+            <Panel>
+              <TextBlock Text="{Binding TabHistoryText}" FontSize="11"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource PrimaryBrush}"
+                         FontWeight="Medium"
+                         IsVisible="{Binding IsHistoryTab}" />
+              <TextBlock Text="{Binding TabHistoryText}" FontSize="11"
+                         HorizontalAlignment="Center"
+                         Foreground="{DynamicResource TextMutedBrush}"
+                         IsVisible="{Binding !IsHistoryTab}" />
+            </Panel>
+          </StackPanel>
+        </Button>
+
         <!-- Settings Tab -->
         <Button AutomationProperties.AutomationId="Main_BtnTabSettings"
-                Grid.Column="2" Classes="Text"
+                Grid.Column="3" Classes="Text"
                 Command="{Binding SelectSettingsTabCommand}"
                 HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
@@ -1006,5 +1340,10 @@
                                      IsHitTestVisible="False" />
 
   </Grid>
+
+  <!-- Splash Overlay mit echtem Preloading -->
+  <controls:SplashOverlay x:Name="Splash"
+                           AppName="HandwerkerRechner" />
+  </Panel>
 
 </UserControl>

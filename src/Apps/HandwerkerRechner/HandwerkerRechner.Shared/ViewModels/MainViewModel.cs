@@ -37,6 +37,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     // Sub-ViewModels for embedded tabs
     public SettingsViewModel SettingsViewModel { get; }
     public ProjectsViewModel ProjectsViewModel { get; }
+    public HistoryViewModel HistoryViewModel { get; }
 
     public MainViewModel(
         IPurchaseService purchaseService,
@@ -45,6 +46,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IThemeService themeService,
         SettingsViewModel settingsViewModel,
         ProjectsViewModel projectsViewModel,
+        HistoryViewModel historyViewModel,
         IRewardedAdService rewardedAdService,
         IPremiumAccessService premiumAccessService)
     {
@@ -55,6 +57,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _premiumAccessService = premiumAccessService;
         SettingsViewModel = settingsViewModel;
         ProjectsViewModel = projectsViewModel;
+        HistoryViewModel = historyViewModel;
 
         IsAdBannerVisible = _adService.BannerVisible;
         _adService.AdsStateChanged += OnAdsStateChanged;
@@ -66,6 +69,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Wire Projects navigation und Messages
         ProjectsViewModel.NavigationRequested += OnProjectNavigation;
         ProjectsViewModel.MessageRequested += OnChildMessage;
+
+        // Wire History navigation und Messages
+        HistoryViewModel.NavigationRequested += OnHistoryNavigation;
+        HistoryViewModel.MessageRequested += OnChildMessage;
 
         // Wire Settings Messages
         SettingsViewModel.MessageRequested += OnChildMessage;
@@ -91,12 +98,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public bool IsHomeTab => SelectedTab == 0;
     public bool IsProjectsTab => SelectedTab == 1;
-    public bool IsSettingsTab => SelectedTab == 2;
+    public bool IsHistoryTab => SelectedTab == 2;
+    public bool IsSettingsTab => SelectedTab == 3;
 
     partial void OnSelectedTabChanged(int value)
     {
         OnPropertyChanged(nameof(IsHomeTab));
         OnPropertyChanged(nameof(IsProjectsTab));
+        OnPropertyChanged(nameof(IsHistoryTab));
         OnPropertyChanged(nameof(IsSettingsTab));
     }
 
@@ -113,7 +122,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private void SelectSettingsTab() { CurrentPage = null; SelectedTab = 2; }
+    private void SelectHistoryTab()
+    {
+        CurrentPage = null;
+        SelectedTab = 2;
+        HistoryViewModel.LoadHistoryCommand.Execute(null);
+    }
+
+    [RelayCommand]
+    private void SelectSettingsTab() { CurrentPage = null; SelectedTab = 3; }
 
     #endregion
 
@@ -126,53 +143,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _tabProjectsText = "Projects";
 
     [ObservableProperty]
+    private string _tabHistoryText = "History";
+
+    [ObservableProperty]
     private string _tabSettingsText = "Settings";
 
     private void UpdateNavTexts()
     {
         TabHomeText = _localization.GetString("TabHome") ?? "Home";
         TabProjectsText = _localization.GetString("TabProjects") ?? "Projects";
+        TabHistoryText = _localization.GetString("TabHistory") ?? "History";
         TabSettingsText = _localization.GetString("TabSettings") ?? "Settings";
     }
 
     private void UpdateHomeTexts()
     {
-        OnPropertyChanged(nameof(AppTitle));
-        OnPropertyChanged(nameof(AppDescription));
-        OnPropertyChanged(nameof(CategoryFloorWallLabel));
-        OnPropertyChanged(nameof(CalcTilesLabel));
-        OnPropertyChanged(nameof(CalcWallpaperLabel));
-        OnPropertyChanged(nameof(CalcPaintLabel));
-        OnPropertyChanged(nameof(CalcFlooringLabel));
-        OnPropertyChanged(nameof(MoreCategoriesLabel));
-        OnPropertyChanged(nameof(CategoryDrywallLabel));
-        OnPropertyChanged(nameof(CategoryElectricalLabel));
-        OnPropertyChanged(nameof(CategoryMetalLabel));
-        OnPropertyChanged(nameof(CategoryGardenLabel));
-        OnPropertyChanged(nameof(CategoryRoofSolarLabel));
-        OnPropertyChanged(nameof(CalcTilesDescLabel));
-        OnPropertyChanged(nameof(CalcWallpaperDescLabel));
-        OnPropertyChanged(nameof(CalcPaintDescLabel));
-        OnPropertyChanged(nameof(CalcFlooringDescLabel));
-        OnPropertyChanged(nameof(CategoryDrywallDescLabel));
-        OnPropertyChanged(nameof(CategoryElectricalDescLabel));
-        OnPropertyChanged(nameof(CategoryMetalDescLabel));
-        OnPropertyChanged(nameof(CategoryGardenDescLabel));
-        OnPropertyChanged(nameof(CategoryRoofSolarDescLabel));
-        OnPropertyChanged(nameof(SectionFloorWallText));
-        OnPropertyChanged(nameof(SectionPremiumToolsText));
-        OnPropertyChanged(nameof(CalculatorCountText));
-        OnPropertyChanged(nameof(GetPremiumText));
-        OnPropertyChanged(nameof(PremiumPriceText));
-        OnPropertyChanged(nameof(PremiumLockedText));
-        OnPropertyChanged(nameof(VideoFor30MinText));
-        OnPropertyChanged(nameof(PremiumLockedDescText));
-        OnPropertyChanged(nameof(ExtendedHistoryTitleText));
-        OnPropertyChanged(nameof(ExtendedHistoryDescText));
-        OnPropertyChanged(nameof(CalcConcreteLabel));
-        OnPropertyChanged(nameof(CalcConcreteDescLabel));
-        OnPropertyChanged(nameof(CalcStairsLabel));
-        OnPropertyChanged(nameof(CalcStairsDescLabel));
+        // Alle Home-Properties auf einmal invalidieren (statt 46 einzelne Aufrufe)
+        OnPropertyChanged(string.Empty);
     }
 
     private void OnLanguageChanged()
@@ -180,6 +167,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         UpdateNavTexts();
         UpdateHomeTexts();
         SettingsViewModel.UpdateLocalizedTexts();
+        HistoryViewModel.UpdateLocalizedTexts();
     }
 
     #endregion
@@ -210,11 +198,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         switch (CurrentCalculatorVm)
         {
+            // Free-Rechner
             case TileCalculatorViewModel t: t.Cleanup(); break;
             case WallpaperCalculatorViewModel w: w.Cleanup(); break;
             case PaintCalculatorViewModel p: p.Cleanup(); break;
             case FlooringCalculatorViewModel f: f.Cleanup(); break;
             case ConcreteCalculatorViewModel c: c.Cleanup(); break;
+            // Premium-Rechner
+            case DrywallViewModel dw: dw.Cleanup(); break;
+            case ElectricalViewModel e: e.Cleanup(); break;
+            case MetalViewModel m: m.Cleanup(); break;
+            case GardenViewModel g: g.Cleanup(); break;
+            case RoofSolarViewModel r: r.Cleanup(); break;
+            case StairsViewModel s: s.Cleanup(); break;
+            case PlasterViewModel pl: pl.Cleanup(); break;
+            case ScreedViewModel sc: sc.Cleanup(); break;
+            case InsulationViewModel ins: ins.Cleanup(); break;
+            case CableSizingViewModel cab: cab.Cleanup(); break;
+            case GroutViewModel gr: gr.Cleanup(); break;
         }
     }
 
@@ -245,6 +246,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
             "RoofSolarPage" => App.Services.GetRequiredService<RoofSolarViewModel>(),
             "ConcretePage" => App.Services.GetRequiredService<ConcreteCalculatorViewModel>(),
             "StairsPage" => App.Services.GetRequiredService<StairsViewModel>(),
+            "PlasterPage" => App.Services.GetRequiredService<PlasterViewModel>(),
+            "ScreedPage" => App.Services.GetRequiredService<ScreedViewModel>(),
+            "InsulationPage" => App.Services.GetRequiredService<InsulationViewModel>(),
+            "CableSizingPage" => App.Services.GetRequiredService<CableSizingViewModel>(),
+            "GroutPage" => App.Services.GetRequiredService<GroutViewModel>(),
             _ => null
         };
 
@@ -336,6 +342,41 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 s.ClipboardRequested += OnClipboardRequested;
                 if (projectId != null) _ = s.LoadFromProjectIdAsync(projectId);
                 break;
+            case PlasterViewModel pl:
+                pl.NavigationRequested += OnCalculatorGoBack;
+                pl.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+                pl.FloatingTextRequested += OnChildFloatingText;
+                pl.ClipboardRequested += OnClipboardRequested;
+                if (projectId != null) _ = pl.LoadFromProjectIdAsync(projectId);
+                break;
+            case ScreedViewModel sc:
+                sc.NavigationRequested += OnCalculatorGoBack;
+                sc.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+                sc.FloatingTextRequested += OnChildFloatingText;
+                sc.ClipboardRequested += OnClipboardRequested;
+                if (projectId != null) _ = sc.LoadFromProjectIdAsync(projectId);
+                break;
+            case InsulationViewModel ins:
+                ins.NavigationRequested += OnCalculatorGoBack;
+                ins.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+                ins.FloatingTextRequested += OnChildFloatingText;
+                ins.ClipboardRequested += OnClipboardRequested;
+                if (projectId != null) _ = ins.LoadFromProjectIdAsync(projectId);
+                break;
+            case CableSizingViewModel cab:
+                cab.NavigationRequested += OnCalculatorGoBack;
+                cab.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+                cab.FloatingTextRequested += OnChildFloatingText;
+                cab.ClipboardRequested += OnClipboardRequested;
+                if (projectId != null) _ = cab.LoadFromProjectIdAsync(projectId);
+                break;
+            case GroutViewModel gr:
+                gr.NavigationRequested += OnCalculatorGoBack;
+                gr.MessageRequested += (title, msg) => MessageRequested?.Invoke(title, msg);
+                gr.FloatingTextRequested += OnChildFloatingText;
+                gr.ClipboardRequested += OnClipboardRequested;
+                if (projectId != null) _ = gr.LoadFromProjectIdAsync(projectId);
+                break;
         }
     }
 
@@ -370,7 +411,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (qIdx >= 0)
             routeName = route[..qIdx];
 
-        return routeName is "DrywallPage" or "ElectricalPage" or "MetalPage" or "GardenPage" or "RoofSolarPage" or "StairsPage";
+        return routeName is "DrywallPage" or "ElectricalPage" or "MetalPage" or "GardenPage" or "RoofSolarPage" or "StairsPage" or "PlasterPage" or "ScreedPage" or "InsulationPage" or "CableSizingPage" or "GroutPage";
     }
 
     private void OnProjectNavigation(string route)
@@ -378,6 +419,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (route == "..") return;
 
         // Premium-Check: Projekt-Laden darf Premium-Sperre nicht umgehen
+        if (IsPremiumRoute(route) && !_premiumAccessService.HasAccess)
+        {
+            PendingPremiumRoute = route;
+            ShowPremiumAccessOverlay = true;
+            return;
+        }
+
+        CurrentPage = route;
+    }
+
+    private void OnHistoryNavigation(string route)
+    {
+        if (route == "..") return;
+
+        // Premium-Check: History-Navigation darf Premium-Sperre nicht umgehen
         if (IsPremiumRoute(route) && !_premiumAccessService.HasAccess)
         {
             PendingPremiumRoute = route;
@@ -420,6 +476,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public string CalcConcreteDescLabel => _localization.GetString("CalcConcreteDesc") ?? "";
     public string CalcStairsLabel => _localization.GetString("CalcStairs") ?? "Stairs";
     public string CalcStairsDescLabel => _localization.GetString("CalcStairsDesc") ?? "";
+    public string CalcPlasterLabel => _localization.GetString("CalcPlaster") ?? "Plaster";
+    public string CalcPlasterDescLabel => _localization.GetString("CalcPlasterDesc") ?? "";
+    public string CalcScreedLabel => _localization.GetString("CalcScreed") ?? "Screed";
+    public string CalcScreedDescLabel => _localization.GetString("CalcScreedDesc") ?? "";
+    public string CalcInsulationLabel => _localization.GetString("CalcInsulation") ?? "Insulation";
+    public string CalcInsulationDescLabel => _localization.GetString("CalcInsulationDesc") ?? "";
+    public string CalcCableSizingLabel => _localization.GetString("CalcCableSizing") ?? "Cable Sizing";
+    public string CalcCableSizingDescLabel => _localization.GetString("CalcCableSizingDesc") ?? "";
+    public string CalcGroutLabel => _localization.GetString("CalcGrout") ?? "Grout";
+    public string CalcGroutDescLabel => _localization.GetString("CalcGroutDesc") ?? "";
 
     // Design-Redesign Properties
     public string SectionFloorWallText => _localization.GetString("SectionFloorWall") ?? "Floor & Wall";
@@ -482,6 +548,21 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     [RelayCommand]
     private void NavigateToStairs() => NavigatePremium("StairsPage");
+
+    [RelayCommand]
+    private void NavigateToPlaster() => NavigatePremium("PlasterPage");
+
+    [RelayCommand]
+    private void NavigateToScreed() => NavigatePremium("ScreedPage");
+
+    [RelayCommand]
+    private void NavigateToInsulation() => NavigatePremium("InsulationPage");
+
+    [RelayCommand]
+    private void NavigateToCableSizing() => NavigatePremium("CableSizingPage");
+
+    [RelayCommand]
+    private void NavigateToGrout() => NavigatePremium("GroutPage");
 
     /// <summary>
     /// Prueft Premium-Zugang vor Navigation zu Premium-Rechnern.
@@ -675,6 +756,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 GardenViewModel g => g.ShowSaveDialog,
                 RoofSolarViewModel r => r.ShowSaveDialog,
                 StairsViewModel s => s.ShowSaveDialog,
+                PlasterViewModel pl => pl.ShowSaveDialog,
+                ScreedViewModel sc => sc.ShowSaveDialog,
+                InsulationViewModel ins => ins.ShowSaveDialog,
+                CableSizingViewModel cab => cab.ShowSaveDialog,
+                GroutViewModel gr => gr.ShowSaveDialog,
                 _ => false
             };
 
@@ -694,6 +780,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     case GardenViewModel g: g.ShowSaveDialog = false; break;
                     case RoofSolarViewModel r: r.ShowSaveDialog = false; break;
                     case StairsViewModel s: s.ShowSaveDialog = false; break;
+                    case PlasterViewModel pl: pl.ShowSaveDialog = false; break;
+                    case ScreedViewModel sc: sc.ShowSaveDialog = false; break;
+                    case InsulationViewModel ins: ins.ShowSaveDialog = false; break;
+                    case CableSizingViewModel cab: cab.ShowSaveDialog = false; break;
+                    case GroutViewModel gr: gr.ShowSaveDialog = false; break;
                 }
                 return true;
             }
@@ -735,6 +826,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         SettingsViewModel.MessageRequested -= OnChildMessage;
         ProjectsViewModel.NavigationRequested -= OnProjectNavigation;
         ProjectsViewModel.MessageRequested -= OnChildMessage;
+        HistoryViewModel.NavigationRequested -= OnHistoryNavigation;
+        HistoryViewModel.MessageRequested -= OnChildMessage;
 
         _disposed = true;
     }

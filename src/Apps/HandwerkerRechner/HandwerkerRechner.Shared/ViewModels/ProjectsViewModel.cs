@@ -240,6 +240,11 @@ public partial class ProjectsViewModel : ObservableObject
         CalculatorType.ConcreteStrip => "ConcretePage",
         CalculatorType.ConcreteColumn => "ConcretePage",
         CalculatorType.Stairs => "StairsPage",
+        CalculatorType.Plaster => "PlasterPage",
+        CalculatorType.Screed => "ScreedPage",
+        CalculatorType.Insulation => "InsulationPage",
+        CalculatorType.CableSizing => "CableSizingPage",
+        CalculatorType.Grout => "GroutPage",
 
         _ => string.Empty
     };

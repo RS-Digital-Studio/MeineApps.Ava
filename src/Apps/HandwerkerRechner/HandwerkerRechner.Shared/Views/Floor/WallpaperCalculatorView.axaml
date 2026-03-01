@@ -4,6 +4,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Floor.WallpaperCalculatorView"
              x:DataType="vm:WallpaperCalculatorViewModel">
 
@@ -69,6 +71,81 @@
               <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxRoomHeight" Text="{Binding RoomHeight}"
                        Watermark="m"
                        Classes="Outlined" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <!-- Abzüge (Türen + Fenster) -->
+        <Border AutomationProperties.AutomationId="Wallpaper_CardDeductions" Classes="Card StatsCard">
+          <StackPanel Spacing="12">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{loc:Translate DeductionsOptional}"
+                         FontSize="16" FontWeight="SemiBold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         VerticalAlignment="Center" />
+              <ToggleSwitch IsChecked="{Binding ShowDeductions}"
+                            OnContent="" OffContent=""
+                            Grid.Column="1" />
+            </Grid>
+
+            <StackPanel Spacing="12" IsVisible="{Binding ShowDeductions}">
+              <!-- Türen -->
+              <TextBlock Text="{loc:Translate Doors}"
+                         FontSize="14" FontWeight="Medium"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <Grid ColumnDefinitions="*,8,*,8,*">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{loc:Translate DoorCount}" FontSize="12"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxDoorCount"
+                           Text="{Binding DoorCount}" Classes="Outlined" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="4">
+                  <TextBlock Text="{loc:Translate DoorWidth}" FontSize="12"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxDoorWidth"
+                           Text="{Binding DoorWidth}" Watermark="m" Classes="Outlined" />
+                </StackPanel>
+                <StackPanel Grid.Column="4" Spacing="4">
+                  <TextBlock Text="{loc:Translate DoorHeight}" FontSize="12"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxDoorHeight"
+                           Text="{Binding DoorHeight}" Watermark="m" Classes="Outlined" />
+                </StackPanel>
+              </Grid>
+
+              <!-- Fenster -->
+              <TextBlock Text="{loc:Translate Windows}"
+                         FontSize="14" FontWeight="Medium"
+                         Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0" />
+              <Grid ColumnDefinitions="*,8,*,8,*">
+                <StackPanel Spacing="4">
+                  <TextBlock Text="{loc:Translate WindowCount}" FontSize="12"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxWindowCount"
+                           Text="{Binding WindowCount}" Classes="Outlined" />
+                </StackPanel>
+                <StackPanel Grid.Column="2" Spacing="4">
+                  <TextBlock Text="{loc:Translate WindowWidth}" FontSize="12"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxWindowWidth"
+                           Text="{Binding WindowWidth}" Watermark="m" Classes="Outlined" />
+                </StackPanel>
+                <StackPanel Grid.Column="4" Spacing="4">
+                  <TextBlock Text="{loc:Translate WindowHeight}" FontSize="12"
+                             Foreground="{DynamicResource TextMutedBrush}" />
+                  <TextBox AutomationProperties.AutomationId="Wallpaper_TxtBoxWindowHeight"
+                           Text="{Binding WindowHeight}" Watermark="m" Classes="Outlined" />
+                </StackPanel>
+              </Grid>
+
+              <!-- Abzugsfläche anzeigen -->
+              <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding DeductedAreaDisplay, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+                <TextBlock Text="{loc:Translate DeductedArea}" FontSize="13"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding DeductedAreaDisplay}" FontSize="13"
+                           FontWeight="SemiBold" Foreground="{DynamicResource ErrorBrush}" />
+              </Grid>
             </StackPanel>
           </StackPanel>
         </Border>
@@ -145,6 +222,22 @@
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource PrimaryBrush}" />
 
+            <!-- Hero-Value: Tapetenrollen -->
+            <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                    Margin="0,4,0,8">
+              <StackPanel>
+                <TextBlock Text="{loc:Translate RollsNeeded}" FontSize="12"
+                           Foreground="#CCFFFFFF" />
+                <TextBlock AutomationProperties.AutomationId="Wallpaper_TxtRollsNeeded"
+                           Text="{Binding RollsNeededDisplay}" FontSize="28" FontWeight="Bold"
+                           Foreground="White">
+                  <i:Interaction.Behaviors>
+                    <behaviors:CountUpBehavior TargetValue="{Binding Result.RollsNeeded}" Format="F0" Duration="500" />
+                  </i:Interaction.Behaviors>
+                </TextBlock>
+              </StackPanel>
+            </Border>
+
             <!-- Area -->
             <Grid ColumnDefinitions="*,Auto">
               <TextBlock Grid.Column="0"
@@ -169,18 +262,6 @@
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </Grid>
 
-            <!-- Rolls Needed -->
-            <Grid ColumnDefinitions="*,Auto">
-              <TextBlock Grid.Column="0"
-                         Text="{loc:Translate RollsNeeded}"
-                         FontSize="14"
-                         Foreground="{DynamicResource TextSecondaryBrush}" />
-              <TextBlock AutomationProperties.AutomationId="Wallpaper_TxtRollsNeeded" Grid.Column="1"
-                         Text="{Binding RollsNeededDisplay}"
-                         FontSize="16" FontWeight="Bold"
-                         Foreground="{DynamicResource AccentBrush}" />
-            </Grid>
-
             <!-- Total Cost (only when ShowCost) -->
             <Grid ColumnDefinitions="*,Auto"
                   IsVisible="{Binding ShowCost}">
@@ -190,7 +271,7 @@
                          Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock AutomationProperties.AutomationId="Wallpaper_TxtTotalCost" Grid.Column="1"
                          Text="{Binding TotalCostDisplay}"
-                         FontSize="16" FontWeight="Bold"
+                         FontSize="14" FontWeight="SemiBold"
                          Foreground="{DynamicResource PrimaryBrush}" />
             </Grid>
             <!-- Aktions-Buttons: Share + PDF Export -->

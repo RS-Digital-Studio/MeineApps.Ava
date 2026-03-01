@@ -642,6 +642,266 @@ public class CraftEngine
     }
 
     #endregion
+
+    #region Putz (PREMIUM)
+
+    /// <summary>
+    /// Berechnet den Putzbedarf für eine Wandfläche
+    /// </summary>
+    /// <param name="areaSqm">Wandfläche in m²</param>
+    /// <param name="thicknessMm">Putzdicke in mm</param>
+    /// <param name="plasterType">Putzart: Innen/Außen/Kalk/Gips</param>
+    public PlasterResult CalculatePlaster(double areaSqm, double thicknessMm, string plasterType)
+    {
+        if (areaSqm <= 0) areaSqm = 0.1;
+        if (thicknessMm <= 0) thicknessMm = 1;
+
+        // Verbrauch pro m² und mm Dicke (kg/m²/mm)
+        var densityPerMmPerSqm = plasterType switch
+        {
+            "Außen" => 1.2,  // Zementputz
+            "Kalk" => 0.9,   // Kalkputz
+            "Gips" => 0.8,   // Gipsputz
+            _ => 1.0          // Innenputz (Kalk-Zement)
+        };
+
+        var totalKg = areaSqm * thicknessMm * densityPerMmPerSqm;
+        var bagsNeeded = (int)Math.Ceiling(totalKg / 30.0); // 30kg Standardsäcke
+
+        return new PlasterResult
+        {
+            Area = areaSqm,
+            ThicknessMm = thicknessMm,
+            PlasterType = plasterType,
+            PlasterKg = totalKg,
+            BagsNeeded = bagsNeeded
+        };
+    }
+
+    #endregion
+
+    #region Estrich (PREMIUM)
+
+    /// <summary>
+    /// Berechnet den Estrichbedarf für eine Bodenfläche
+    /// </summary>
+    /// <param name="areaSqm">Bodenfläche in m²</param>
+    /// <param name="thicknessCm">Estrichdicke in cm</param>
+    /// <param name="screedType">Estrich-Typ: Zement/Fließ/Anhydrit</param>
+    public ScreedResult CalculateScreed(double areaSqm, double thicknessCm, string screedType)
+    {
+        if (areaSqm <= 0) areaSqm = 0.1;
+        if (thicknessCm <= 0) thicknessCm = 0.1;
+
+        var volumeM3 = areaSqm * thicknessCm / 100.0;
+
+        // Dichte je nach Estrich-Typ (kg/m³)
+        var density = screedType switch
+        {
+            "Fließ" => 2000.0,
+            "Anhydrit" => 2200.0,
+            _ => 2100.0  // Zement
+        };
+
+        var weightKg = volumeM3 * density;
+        var bagsNeeded = (int)Math.Ceiling(weightKg / 40.0); // 40kg Säcke
+
+        // Trocknungszeit: bis 40mm ca. 1 Tag/mm, darüber 2 Tage/mm
+        var thicknessMm = thicknessCm * 10;
+        int dryingDays;
+        if (thicknessMm <= 40)
+            dryingDays = (int)Math.Ceiling(thicknessMm);
+        else
+            dryingDays = 40 + (int)Math.Ceiling((thicknessMm - 40) * 2);
+
+        return new ScreedResult
+        {
+            Area = areaSqm,
+            ThicknessCm = thicknessCm,
+            ScreedType = screedType,
+            VolumeM3 = volumeM3,
+            WeightKg = weightKg,
+            BagsNeeded = bagsNeeded,
+            DryingDays = dryingDays
+        };
+    }
+
+    #endregion
+
+    #region Dämmung (PREMIUM)
+
+    /// <summary>
+    /// Berechnet die benötigte Dämmstoffdicke anhand von U-Werten
+    /// </summary>
+    /// <param name="areaSqm">Fläche in m²</param>
+    /// <param name="currentUValue">Ist-U-Wert in W/(m²·K)</param>
+    /// <param name="targetUValue">Soll-U-Wert in W/(m²·K)</param>
+    /// <param name="insulationType">0=EPS, 1=XPS, 2=Mineralwolle, 3=Holzfaser</param>
+    public InsulationResult CalculateInsulation(double areaSqm, double currentUValue, double targetUValue, int insulationType)
+    {
+        if (areaSqm <= 0) areaSqm = 0.1;
+        if (currentUValue <= 0) currentUValue = 0.01;
+        if (targetUValue <= 0) targetUValue = 0.01;
+        if (targetUValue >= currentUValue) targetUValue = currentUValue * 0.5; // Soll < Ist
+
+        // Wärmeleitfähigkeit Lambda (W/(m·K))
+        double lambda = insulationType switch
+        {
+            1 => 0.035,  // XPS
+            2 => 0.040,  // Mineralwolle
+            3 => 0.045,  // Holzfaser
+            _ => 0.032   // EPS (Styropor)
+        };
+
+        // Formel: d = lambda * (1/U_soll - 1/U_ist)
+        double thicknessM = lambda * (1.0 / targetUValue - 1.0 / currentUValue);
+        double thicknessCm = Math.Max(1, Math.Ceiling(thicknessM * 100));
+
+        // Platten/Rollen: Standard 120x60cm = 0.72 m²
+        double pieceArea = 0.72;
+        int piecesNeeded = (int)Math.Ceiling(areaSqm / pieceArea);
+
+        // Kosten pro m² je Material
+        double costPerSqm = insulationType switch
+        {
+            1 => 15.0,  // XPS
+            2 => 12.0,  // Mineralwolle
+            3 => 20.0,  // Holzfaser
+            _ => 8.0    // EPS
+        };
+        double estimatedCost = areaSqm * costPerSqm;
+
+        return new InsulationResult
+        {
+            Area = areaSqm,
+            CurrentUValue = currentUValue,
+            TargetUValue = targetUValue,
+            InsulationType = insulationType,
+            Lambda = lambda,
+            ThicknessCm = thicknessCm,
+            PiecesNeeded = piecesNeeded,
+            EstimatedCostPerSqm = costPerSqm,
+            EstimatedTotalCost = estimatedCost
+        };
+    }
+
+    #endregion
+
+    #region Leitungsquerschnitt (PREMIUM)
+
+    /// <summary>
+    /// Berechnet den mindestens benötigten Leitungsquerschnitt
+    /// </summary>
+    /// <param name="currentAmps">Strom in Ampere</param>
+    /// <param name="lengthM">Kabellänge (einfach) in Meter</param>
+    /// <param name="voltageV">Nennspannung (230 oder 400V)</param>
+    /// <param name="materialType">0=Kupfer, 1=Aluminium</param>
+    /// <param name="maxDropPercent">Maximaler Spannungsabfall in % (Standard 3%)</param>
+    public CableSizingResult CalculateCableSize(double currentAmps, double lengthM, double voltageV, int materialType, double maxDropPercent = 3.0)
+    {
+        if (currentAmps <= 0) currentAmps = 0.1;
+        if (lengthM <= 0) lengthM = 0.1;
+        if (voltageV <= 0) voltageV = 230;
+        if (maxDropPercent <= 0) maxDropPercent = 3.0;
+
+        // Spezifischer Widerstand (Ohm·mm²/m)
+        double resistivity = materialType switch
+        {
+            1 => 0.0287,  // Aluminium
+            _ => 0.0178   // Kupfer
+        };
+
+        // Formel: A = (2 × I × L × ρ) / (U × ΔU%/100)
+        double minCrossSection = (2 * currentAmps * lengthM * resistivity) / (voltageV * maxDropPercent / 100.0);
+
+        // Standardquerschnitte nach DIN VDE
+        double[] standardSizes = { 1.5, 2.5, 4.0, 6.0, 10.0, 16.0, 25.0, 35.0, 50.0, 70.0, 95.0, 120.0 };
+        double recommendedSize = standardSizes[^1]; // Fallback: größter
+        foreach (var size in standardSizes)
+        {
+            if (size >= minCrossSection)
+            {
+                recommendedSize = size;
+                break;
+            }
+        }
+
+        // Tatsächlicher Spannungsabfall mit empfohlenem Querschnitt
+        double actualDropV = (2 * currentAmps * lengthM * resistivity) / recommendedSize;
+        double actualDropPercent = (actualDropV / voltageV) * 100;
+
+        // VDE-konform: max 3% für Steckdosen, max 5% für Beleuchtung
+        bool isVdeCompliant = actualDropPercent <= maxDropPercent;
+
+        return new CableSizingResult
+        {
+            CurrentAmps = currentAmps,
+            LengthM = lengthM,
+            VoltageV = voltageV,
+            MaterialType = materialType,
+            Resistivity = resistivity,
+            MinCrossSection = minCrossSection,
+            RecommendedCrossSection = recommendedSize,
+            ActualDropV = actualDropV,
+            ActualDropPercent = actualDropPercent,
+            MaxDropPercent = maxDropPercent,
+            IsVdeCompliant = isVdeCompliant
+        };
+    }
+
+    #endregion
+
+    #region Fugenmasse (Grout)
+
+    /// <summary>
+    /// Berechnet den Fugenmasse-Bedarf
+    /// Formel: Masse = Fläche * ((L+B)/(L×B)) × Fugenbreite × Fugentiefe × Dichte
+    /// Alle Maße werden intern in mm umgerechnet
+    /// </summary>
+    public static GroutResult CalculateGrout(double areaSqm, double tileLengthCm, double tileWidthCm, double groutWidthMm, double groutDepthMm, double pricePerKg = 2.5)
+    {
+        if (areaSqm <= 0 || tileLengthCm <= 0 || tileWidthCm <= 0 || groutWidthMm <= 0 || groutDepthMm <= 0)
+            return new GroutResult();
+
+        // Fliesenmaße in mm umrechnen
+        double tileLMm = tileLengthCm * 10;
+        double tileWMm = tileWidthCm * 10;
+
+        // Industrieformel: V = Fläche × ((L+B)/(L×B)) × Fugenbreite × Fugentiefe
+        // Ergebnis in mm³ pro m² → umrechnen in cm³ → kg mit Dichte
+        double groutDensity = 1.6; // g/cm³ (Standard-Fugenmasse)
+
+        // Fugenmasse-Verbrauch in kg/m²
+        double consumptionPerSqm = ((tileLMm + tileWMm) / (tileLMm * tileWMm)) * groutWidthMm * groutDepthMm * groutDensity / 1000.0;
+
+        double totalKg = areaSqm * consumptionPerSqm;
+
+        // 10% Reserve
+        double totalWithReserve = totalKg * 1.10;
+
+        // Eimer à 5 kg
+        int bucketsNeeded = (int)Math.Ceiling(totalWithReserve / 5.0);
+
+        // Kosten
+        double totalCost = totalWithReserve * pricePerKg;
+
+        return new GroutResult
+        {
+            AreaSqm = areaSqm,
+            TileLengthCm = tileLengthCm,
+            TileWidthCm = tileWidthCm,
+            GroutWidthMm = groutWidthMm,
+            GroutDepthMm = groutDepthMm,
+            ConsumptionPerSqm = consumptionPerSqm,
+            TotalKg = totalKg,
+            TotalWithReserveKg = totalWithReserve,
+            BucketsNeeded = bucketsNeeded,
+            PricePerKg = pricePerKg,
+            TotalCost = totalCost
+        };
+    }
+
+    #endregion
 }
 
 #region Result Types
@@ -812,6 +1072,69 @@ public record StairsResult
     public double StairLength { get; init; }    // cm (Hypotenuse)
     public bool IsComfortable { get; init; }    // Schrittmaß 59-65
     public bool IsDinCompliant { get; init; }   // DIN 18065 konform
+}
+
+public record PlasterResult
+{
+    public double Area { get; init; }
+    public double ThicknessMm { get; init; }
+    public string PlasterType { get; init; } = "";
+    public double PlasterKg { get; init; }
+    public int BagsNeeded { get; init; }
+}
+
+public record ScreedResult
+{
+    public double Area { get; init; }
+    public double ThicknessCm { get; init; }
+    public string ScreedType { get; init; } = "";
+    public double VolumeM3 { get; init; }
+    public double WeightKg { get; init; }
+    public int BagsNeeded { get; init; }
+    public int DryingDays { get; init; }
+}
+
+public record InsulationResult
+{
+    public double Area { get; init; }
+    public double CurrentUValue { get; init; }
+    public double TargetUValue { get; init; }
+    public int InsulationType { get; init; }
+    public double Lambda { get; init; }
+    public double ThicknessCm { get; init; }
+    public int PiecesNeeded { get; init; }
+    public double EstimatedCostPerSqm { get; init; }
+    public double EstimatedTotalCost { get; init; }
+}
+
+public record CableSizingResult
+{
+    public double CurrentAmps { get; init; }
+    public double LengthM { get; init; }
+    public double VoltageV { get; init; }
+    public int MaterialType { get; init; }
+    public double Resistivity { get; init; }
+    public double MinCrossSection { get; init; }
+    public double RecommendedCrossSection { get; init; }
+    public double ActualDropV { get; init; }
+    public double ActualDropPercent { get; init; }
+    public double MaxDropPercent { get; init; }
+    public bool IsVdeCompliant { get; init; }
+}
+
+public record GroutResult
+{
+    public double AreaSqm { get; init; }
+    public double TileLengthCm { get; init; }
+    public double TileWidthCm { get; init; }
+    public double GroutWidthMm { get; init; }
+    public double GroutDepthMm { get; init; }
+    public double ConsumptionPerSqm { get; init; }
+    public double TotalKg { get; init; }
+    public double TotalWithReserveKg { get; init; }
+    public int BucketsNeeded { get; init; }
+    public double PricePerKg { get; init; }
+    public double TotalCost { get; init; }
 }
 
 #endregion

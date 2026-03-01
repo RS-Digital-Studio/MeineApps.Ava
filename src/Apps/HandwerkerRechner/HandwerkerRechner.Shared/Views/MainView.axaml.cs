@@ -1,7 +1,14 @@
+using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Input.Platform;
 using Avalonia.Media;
 using HandwerkerRechner.ViewModels;
+using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
+using MeineApps.UI.SkiaSharp.Shaders;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace HandwerkerRechner.Views;
 
@@ -14,6 +21,53 @@ public partial class MainView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+    }
+
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+
+        var loc = App.Services.GetService<ILocalizationService>();
+
+        // Preloading-Tasks im SplashOverlay konfigurieren
+        Splash.PreloadAction = async (reportProgress) =>
+        {
+            // Schritt 1: SkSL-Shader vorab kompilieren (auf ThreadPool)
+            reportProgress(0.0f, loc?.GetString("LoadingShaders") ?? "Grafik-Engine wird vorbereitet...");
+            await Task.Run(() => ShaderPreloader.PreloadAll());
+
+            // Schritt 2: History-Service warm machen (erstellt Verzeichnis, liest erste Datei)
+            reportProgress(0.50f, loc?.GetString("LoadingDatabase") ?? "Datenbank wird geladen...");
+            try
+            {
+                var historyService = App.Services.GetService<ICalculationHistoryService>();
+                if (historyService != null)
+                    await historyService.GetAllHistoryAsync(1);
+            }
+            catch (Exception ex) { Debug.WriteLine($"[SplashPreload] HistoryService: {ex.Message}"); }
+
+            // Schritt 3: Projekte vorladen (via DI statt _vm, da DataContext evtl. noch nicht gesetzt)
+            reportProgress(0.70f, loc?.GetString("LoadingProjects") ?? "Projekte werden geladen...");
+            try
+            {
+                var mainVm = App.Services.GetService<MainViewModel>();
+                if (mainVm?.ProjectsViewModel != null)
+                    await mainVm.ProjectsViewModel.LoadProjectsCommand.ExecuteAsync(null);
+            }
+            catch (Exception ex) { Debug.WriteLine($"[SplashPreload] Projekte: {ex.Message}"); }
+
+            // Schritt 4: History vorladen
+            reportProgress(0.90f, loc?.GetString("LoadingHistory") ?? "Verlauf wird geladen...");
+            try
+            {
+                var mainVm = App.Services.GetService<MainViewModel>();
+                if (mainVm?.HistoryViewModel != null)
+                    await mainVm.HistoryViewModel.LoadHistoryAsync();
+            }
+            catch (Exception ex) { Debug.WriteLine($"[SplashPreload] History: {ex.Message}"); }
+
+            reportProgress(1.0f, "");
+        };
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

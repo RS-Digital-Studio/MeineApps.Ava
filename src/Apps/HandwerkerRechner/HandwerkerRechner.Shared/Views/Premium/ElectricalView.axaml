@@ -5,6 +5,8 @@
              xmlns:conv="using:HandwerkerRechner.Converters"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:behaviors="using:MeineApps.UI.Behaviors"
              x:Class="HandwerkerRechner.Views.Premium.ElectricalView"
              x:DataType="vm:ElectricalViewModel">
 
@@ -144,44 +146,50 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Electrical_TxtVoltageDropResultHeader" />
 
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate Voltage}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding VoltageDropResult.VoltageDrop}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Electrical_TxtVoltageDrop" />
-                </Grid>
+                <!-- Hero-Value: Spannungsabfall -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate Voltage}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="Electrical_TxtVoltageDrop"
+                               Text="{Binding VoltageDropResult.VoltageDrop}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding VoltageDropResult.VoltageDrop}" Format="F2" Suffix=" V" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate Percentage}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding VoltageDropResult.PercentDrop}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Electrical_TxtPercentDrop" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate StatusMaxThreePercent}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding VoltageDropResult.IsAcceptable}"
-                             FontSize="15" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Electrical_TxtIsAcceptable" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto"
                       IsVisible="{Binding ShowCableCost}">
                   <TextBlock Grid.Column="0" Text="{loc:Translate TotalCost}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding CableCostDisplay}"
-                             FontSize="17" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
+                             FontSize="14" FontWeight="SemiBold"
+                             Foreground="{DynamicResource PrimaryBrush}"
                              AutomationProperties.AutomationId="Electrical_TxtCableCost" />
                 </Grid>
 
@@ -272,34 +280,40 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Electrical_TxtPowerCostResultHeader" />
 
+                <!-- Hero-Value: Jahreskosten -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate CostPerYear}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="Electrical_TxtCostPerYear"
+                               Text="{Binding PowerCostResult.CostPerYear}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding PowerCostResult.CostPerYear}" Format="F2" Suffix=" &#x20AC;" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
+
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate CostPerDay}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding PowerCostResult.CostPerDay}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Electrical_TxtCostPerDay" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate CostPerMonth}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding PowerCostResult.CostPerMonth}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Electrical_TxtCostPerMonth" />
-                </Grid>
-
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate CostPerYear}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding PowerCostResult.CostPerYear}"
-                             FontSize="17" FontWeight="Bold"
-                             Foreground="{DynamicResource AccentBrush}"
-                             AutomationProperties.AutomationId="Electrical_TxtCostPerYear" />
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->
@@ -402,44 +416,50 @@
                            Foreground="{DynamicResource PrimaryBrush}"
                            AutomationProperties.AutomationId="Electrical_TxtOhmsLawResultHeader" />
 
+                <!-- Hero-Value: Leistung (Hauptergebnis bei Ohm) -->
+                <Border Background="{DynamicResource AccentBrush}" CornerRadius="12" Padding="16,12"
+                        Margin="0,4,0,8">
+                  <StackPanel>
+                    <TextBlock Text="{loc:Translate PowerP}" FontSize="12"
+                               Foreground="#CCFFFFFF" />
+                    <TextBlock AutomationProperties.AutomationId="Electrical_TxtOhmsPower"
+                               Text="{Binding OhmsLawResult.Power}" FontSize="28" FontWeight="Bold"
+                               Foreground="White">
+                      <i:Interaction.Behaviors>
+                        <behaviors:CountUpBehavior TargetValue="{Binding OhmsLawResult.Power}" Format="F2" Suffix=" W" Duration="500" />
+                      </i:Interaction.Behaviors>
+                    </TextBlock>
+                  </StackPanel>
+                </Border>
+
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate VoltageU}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding OhmsLawResult.Voltage}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Electrical_TxtOhmsVoltage" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate CurrentI}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding OhmsLawResult.Current}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Electrical_TxtOhmsCurrent" />
                 </Grid>
 
                 <Grid ColumnDefinitions="*,Auto">
                   <TextBlock Grid.Column="0" Text="{loc:Translate ResistanceR}"
-                             FontSize="13"
+                             FontSize="14"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Grid.Column="1" Text="{Binding OhmsLawResult.Resistance}"
-                             FontSize="15" FontWeight="SemiBold"
+                             FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}"
                              AutomationProperties.AutomationId="Electrical_TxtOhmsResistance" />
-                </Grid>
-
-                <Grid ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{loc:Translate PowerP}"
-                             FontSize="13"
-                             Foreground="{DynamicResource TextSecondaryBrush}" />
-                  <TextBlock Grid.Column="1" Text="{Binding OhmsLawResult.Power}"
-                             FontSize="15" FontWeight="SemiBold"
-                             Foreground="{DynamicResource TextPrimaryBrush}"
-                             AutomationProperties.AutomationId="Electrical_TxtOhmsPower" />
                 </Grid>
 
                 <!-- Aktions-Buttons: Share + PDF Export -->

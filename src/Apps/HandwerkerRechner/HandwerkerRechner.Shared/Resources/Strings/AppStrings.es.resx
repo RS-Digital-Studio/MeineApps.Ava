@@ -944,11 +944,23 @@ La publicidad ha sido desactivada.</value>
   <data name="TabHome" xml:space="preserve">
     <value>Inicio</value>
   </data>
+  <data name="TabHistory" xml:space="preserve">
+    <value>Historial</value>
+  </data>
   <data name="TabProjects" xml:space="preserve">
     <value>Proyectos</value>
   </data>
   <data name="TabSettings" xml:space="preserve">
     <value>Ajustes</value>
+  </data>
+  <data name="HistoryEmpty" xml:space="preserve">
+    <value>Sin cálculos aún. Tus cálculos aparecerán aquí.</value>
+  </data>
+  <data name="HistoryExtendedHint" xml:space="preserve">
+    <value>¡Mira un anuncio para ver hasta 30 entradas por calculadora!</value>
+  </data>
+  <data name="WatchAdForHistory" xml:space="preserve">
+    <value>Ver vídeo</value>
   </data>
 
   <!-- Metal Types -->
@@ -1796,4 +1808,99 @@ Valores típicos:
   <data name="ShareResult" xml:space="preserve"><value>Copiar</value></data>
   <data name="CopiedToClipboard" xml:space="preserve"><value>¡Copiado!</value></data>
   <data name="PressBackToExit" xml:space="preserve"><value>Pulsa atrás de nuevo para salir</value></data>
+
+  <!-- Deducciones (Pintura + Papel) -->
+  <data name="DeductedArea" xml:space="preserve"><value>Área deducida</value></data>
+  <data name="DeductionsOptional" xml:space="preserve"><value>Deducciones (opcional)</value></data>
+  <data name="DoorCount" xml:space="preserve"><value>Cantidad</value></data>
+  <data name="DoorHeight" xml:space="preserve"><value>Alto (m)</value></data>
+  <data name="DoorWidth" xml:space="preserve"><value>Ancho (m)</value></data>
+  <data name="Doors" xml:space="preserve"><value>Puertas</value></data>
+  <data name="WindowCount" xml:space="preserve"><value>Cantidad</value></data>
+  <data name="WindowHeight" xml:space="preserve"><value>Alto (m)</value></data>
+  <data name="WindowWidth" xml:space="preserve"><value>Ancho (m)</value></data>
+  <data name="Windows" xml:space="preserve"><value>Ventanas</value></data>
+
+  <!-- Calculadora de yeso -->
+  <data name="CalcPlaster" xml:space="preserve"><value>Calculadora de yeso</value></data>
+  <data name="CalcPlasterDesc" xml:space="preserve"><value>Superficie, grosor y sacos</value></data>
+  <data name="PlasterThickness" xml:space="preserve"><value>Grosor del yeso (mm)</value></data>
+  <data name="PlasterType" xml:space="preserve"><value>Tipo de yeso</value></data>
+  <data name="PlasterTypeInterior" xml:space="preserve"><value>Yeso interior</value></data>
+  <data name="PlasterTypeExterior" xml:space="preserve"><value>Revoque exterior</value></data>
+  <data name="PlasterTypeLime" xml:space="preserve"><value>Yeso de cal</value></data>
+  <data name="PlasterTypeGypsum" xml:space="preserve"><value>Yeso</value></data>
+  <data name="PlasterAmount" xml:space="preserve"><value>Cantidad de yeso</value></data>
+  <data name="UnitBags" xml:space="preserve"><value>sacos</value></data>
+  <data name="CalcTypePlaster" xml:space="preserve"><value>Yeso</value></data>
+
+  <!-- Calculadora de solera -->
+  <data name="CalcScreed" xml:space="preserve"><value>Calculadora de solera</value></data>
+  <data name="CalcScreedDesc" xml:space="preserve"><value>Superficie, volumen y secado</value></data>
+  <data name="FloorArea" xml:space="preserve"><value>Superficie (m²)</value></data>
+  <data name="ScreedThickness" xml:space="preserve"><value>Grosor (cm)</value></data>
+  <data name="ScreedType" xml:space="preserve"><value>Tipo de solera</value></data>
+  <data name="ScreedTypeZement" xml:space="preserve"><value>Solera de cemento</value></data>
+  <data name="ScreedTypeFlow" xml:space="preserve"><value>Solera autonivelante</value></data>
+  <data name="ScreedTypeAnhydrit" xml:space="preserve"><value>Solera de anhidrita</value></data>
+  <data name="ScreedVolume" xml:space="preserve"><value>Volumen</value></data>
+  <data name="ScreedWeight" xml:space="preserve"><value>Peso</value></data>
+  <data name="DryingTime" xml:space="preserve"><value>Tiempo de secado</value></data>
+  <data name="UnitDays" xml:space="preserve"><value>días</value></data>
+  <data name="CalcTypeScreed" xml:space="preserve"><value>Solera</value></data>
+
+  <!-- Masa de lechada (Calculadora de azulejos) -->
+  <data name="GroutWidth" xml:space="preserve"><value>Ancho de lechada (mm)</value></data>
+  <data name="GroutMass" xml:space="preserve"><value>Masa de lechada</value></data>
+
+  <!-- Aislamiento (Insulation Calculator) -->
+  <data name="CalcInsulation" xml:space="preserve"><value>Aislamiento</value></data>
+  <data name="CalcInsulationDesc" xml:space="preserve"><value>Calcular espesor de aislamiento</value></data>
+  <data name="InsulationArea" xml:space="preserve"><value>Área</value></data>
+  <data name="CurrentUValue" xml:space="preserve"><value>Valor U actual</value></data>
+  <data name="TargetUValue" xml:space="preserve"><value>Valor U objetivo</value></data>
+  <data name="InsulationType" xml:space="preserve"><value>Tipo de aislamiento</value></data>
+  <data name="InsulationTypeEPS" xml:space="preserve"><value>EPS (Poliestireno)</value></data>
+  <data name="InsulationTypeXPS" xml:space="preserve"><value>XPS (Extruido)</value></data>
+  <data name="InsulationTypeMineralWool" xml:space="preserve"><value>Lana mineral</value></data>
+  <data name="InsulationTypeWoodFiber" xml:space="preserve"><value>Fibra de madera</value></data>
+  <data name="InsulationThickness" xml:space="preserve"><value>Espesor de aislamiento</value></data>
+  <data name="InsulationLambda" xml:space="preserve"><value>Conductividad térmica</value></data>
+  <data name="CalcTypeInsulation" xml:space="preserve"><value>Aislamiento</value></data>
+  <data name="TargetUValueMustBeLess" xml:space="preserve"><value>El valor U objetivo debe ser menor que el valor U actual</value></data>
+  <data name="CalcCableSizing" xml:space="preserve"><value>Sección de cable</value></data>
+  <data name="CalcCableSizingDesc" xml:space="preserve"><value>Calcular sección de cable</value></data>
+  <data name="CableCurrent" xml:space="preserve"><value>Corriente (A)</value></data>
+  <data name="CableLength" xml:space="preserve"><value>Longitud de cable (m)</value></data>
+  <data name="CableVoltage" xml:space="preserve"><value>Tensión</value></data>
+  <data name="CableVoltage230" xml:space="preserve"><value>230 V (Monofásico)</value></data>
+  <data name="CableVoltage400" xml:space="preserve"><value>400 V (Trifásico)</value></data>
+  <data name="CableMaterial" xml:space="preserve"><value>Material conductor</value></data>
+  <data name="CableMaterialCopper" xml:space="preserve"><value>Cobre</value></data>
+  <data name="CableMaterialAluminum" xml:space="preserve"><value>Aluminio</value></data>
+  <data name="MaxVoltageDrop" xml:space="preserve"><value>Caída de tensión máx. (%)</value></data>
+  <data name="RecommendedCrossSection" xml:space="preserve"><value>Sección recomendada</value></data>
+  <data name="MinCrossSection" xml:space="preserve"><value>Sección mínima</value></data>
+  <data name="VoltageDrop" xml:space="preserve"><value>Caída de tensión</value></data>
+  <data name="VdeCompliant" xml:space="preserve"><value>Conforme VDE</value></data>
+  <data name="VdeNotCompliant" xml:space="preserve"><value>No conforme VDE</value></data>
+  <data name="CalcTypeCableSizing" xml:space="preserve"><value>Sección de cable</value></data>
+  <data name="CalcGrout" xml:space="preserve"><value>Lechada</value></data>
+  <data name="CalcGroutDesc" xml:space="preserve"><value>Ancho de junta, profundidad → kg lechada, cubos</value></data>
+  <data name="GroutInputs" xml:space="preserve"><value>Entradas</value></data>
+  <data name="GroutArea" xml:space="preserve"><value>Superficie (m²)</value></data>
+  <data name="GroutTileLength" xml:space="preserve"><value>Largo de baldosa (cm)</value></data>
+  <data name="GroutTileWidth" xml:space="preserve"><value>Ancho de baldosa (cm)</value></data>
+  <data name="GroutDepth" xml:space="preserve"><value>Profundidad de junta (mm)</value></data>
+  <data name="GroutPricePerKg" xml:space="preserve"><value>Precio por kg (€)</value></data>
+  <data name="GroutConsumption" xml:space="preserve"><value>Consumo por m²</value></data>
+  <data name="GroutTotal" xml:space="preserve"><value>Cantidad total</value></data>
+  <data name="GroutTotalWithReserve" xml:space="preserve"><value>Total (incl. 10% reserva)</value></data>
+  <data name="GroutTileSize" xml:space="preserve"><value>Tamaño de baldosa</value></data>
+  <data name="UnitBuckets" xml:space="preserve"><value>Cubos (5 kg)</value></data>
+  <data name="CalcTypeGrout" xml:space="preserve"><value>Lechada</value></data>
+  <data name="LoadingShaders" xml:space="preserve"><value>Preparando motor gráfico...</value></data>
+  <data name="LoadingDatabase" xml:space="preserve"><value>Cargando base de datos...</value></data>
+  <data name="LoadingProjects" xml:space="preserve"><value>Cargando proyectos...</value></data>
+  <data name="LoadingHistory" xml:space="preserve"><value>Cargando historial...</value></data>
 </root>

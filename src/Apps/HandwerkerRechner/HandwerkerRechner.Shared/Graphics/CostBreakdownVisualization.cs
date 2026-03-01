@@ -10,6 +10,19 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class CostBreakdownVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _barPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _barStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f };
     private static readonly SKPaint _textPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -57,6 +70,9 @@ public static class CostBreakdownVisualization
     {
         if (items.Length == 0) return;
 
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
         float padding = 12f;
         float barHeight = 24f;
         float legendItemH = 20f;
@@ -95,7 +111,8 @@ public static class CostBreakdownVisualization
             float value = Math.Max(0, items[i].Value);
             if (value <= 0) continue;
 
-            float segWidth = (value / total) * barWidth;
+            // Animation: Segmentbreite wächst mit progress
+            float segWidth = (value / total) * barWidth * progress;
             if (segWidth < 1f) continue;
 
             var color = items[i].Color.Alpha > 0

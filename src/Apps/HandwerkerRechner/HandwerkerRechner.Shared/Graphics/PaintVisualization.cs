@@ -8,6 +8,19 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class PaintVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _wallFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _wallStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKPaint _coatPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -17,6 +30,9 @@ public static class PaintVisualization
         float areaSqm, int numberOfCoats, float litersNeeded, bool hasResult)
     {
         if (!hasResult || areaSqm <= 0) return;
+
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
 
         SkiaBlueprintCanvas.DrawGrid(canvas, bounds, 20f);
 
@@ -40,9 +56,9 @@ public static class PaintVisualization
         int coats = Math.Clamp(numberOfCoats, 1, 5);
         for (int i = 0; i < coats; i++)
         {
-            // Jede Schicht leicht versetzt (von unten nach oben wachsend)
+            // Jede Schicht leicht versetzt (von unten nach oben wachsend, Animation: Höhe mit progress)
             float coverage = (i + 1f) / coats;
-            float layerH = rh * coverage;
+            float layerH = rh * coverage * progress;
             float layerY = oy + rh - layerH;
 
             // Deckung steigt pro Anstrich

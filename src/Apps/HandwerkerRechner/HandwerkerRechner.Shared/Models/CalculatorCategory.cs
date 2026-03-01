@@ -62,5 +62,20 @@ public enum CalculatorType
     SolarYield,     // Solar-Ertrag
 
     // Treppen (PREMIUM)
-    Stairs          // Treppenberechnung
+    Stairs,         // Treppenberechnung
+
+    // Putz (PREMIUM)
+    Plaster,        // Putzbedarf
+
+    // Estrich (PREMIUM)
+    Screed,         // Estrichbedarf
+
+    // Dämmung (PREMIUM)
+    Insulation,     // Dämmstoffberechnung
+
+    // Leitungsquerschnitt (PREMIUM)
+    CableSizing,    // Leitungsquerschnitt
+
+    // Fugenmasse (PREMIUM)
+    Grout           // Fugenmasse
 }

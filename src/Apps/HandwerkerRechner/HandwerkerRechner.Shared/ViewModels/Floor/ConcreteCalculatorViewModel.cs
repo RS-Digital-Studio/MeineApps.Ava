@@ -1,3 +1,5 @@
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Models;
@@ -8,9 +10,10 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public partial class ConcreteCalculatorViewModel : ObservableObject
+public partial class ConcreteCalculatorViewModel : ObservableObject, IDisposable
 {
     private readonly CraftEngine _craftEngine;
+    private Timer? _debounceTimer;
     private readonly IProjectService _projectService;
     private readonly ILocalizationService _localization;
     private readonly ICalculationHistoryService _historyService;
@@ -87,8 +90,9 @@ public partial class ConcreteCalculatorViewModel : ObservableObject
         {
             await LoadProjectAsync(projectId);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -132,6 +136,17 @@ public partial class ConcreteCalculatorViewModel : ObservableObject
     #endregion
 
     #region Input Properties
+
+    // Live-Berechnung: Debounce bei Eingabe-Änderungen
+    partial void OnSlabLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnSlabWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnSlabHeightChanged(double value) => ScheduleAutoCalculate();
+    partial void OnStripLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnStripWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnStripDepthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnColumnDiameterChanged(double value) => ScheduleAutoCalculate();
+    partial void OnColumnHeightChanged(double value) => ScheduleAutoCalculate();
+    partial void OnBagWeightChanged(double value) => ScheduleAutoCalculate();
 
     // Platte (Länge m, Breite m, Höhe cm)
     [ObservableProperty]
@@ -214,12 +229,14 @@ public partial class ConcreteCalculatorViewModel : ObservableObject
     {
         ShowBagCost = value > 0;
         OnPropertyChanged(nameof(BagCostDisplay));
+        ScheduleAutoCalculate();
     }
 
     partial void OnPricePerCubicMeterChanged(double value)
     {
         ShowCubicMeterCost = value > 0;
         OnPropertyChanged(nameof(CubicMeterCostDisplay));
+        ScheduleAutoCalculate();
     }
 
     #endregion
@@ -275,6 +292,17 @@ public partial class ConcreteCalculatorViewModel : ObservableObject
     }
 
     #endregion
+
+    /// <summary>
+    /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        if (_debounceTimer == null)
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
+        else
+            _debounceTimer.Change(300, Timeout.Infinite);
+    }
 
     [RelayCommand]
     private async Task Calculate()
@@ -404,15 +432,18 @@ public partial class ConcreteCalculatorViewModel : ObservableObject
 
             await _historyService.AddCalculationAsync(calcType, title, data);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // History-Fehler still ignorieren
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
     [RelayCommand]
     private void Reset()
     {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         // Platte
         SlabLength = 4;
         SlabWidth = 3;
@@ -568,8 +599,9 @@ public partial class ConcreteCalculatorViewModel : ObservableObject
 
             await Calculate();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -675,5 +707,11 @@ public partial class ConcreteCalculatorViewModel : ObservableObject
     public void Cleanup()
     {
         _unitConverter.UnitSystemChanged -= OnUnitSystemChanged;
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 }

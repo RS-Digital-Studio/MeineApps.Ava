@@ -1,3 +1,5 @@
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Models;
@@ -8,9 +10,10 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
-public partial class GardenViewModel : ObservableObject
+public partial class GardenViewModel : ObservableObject, IDisposable
 {
     private readonly CraftEngine _engine;
+    private Timer? _debounceTimer;
     private readonly IProjectService _projectService;
     private readonly ILocalizationService _localization;
     private readonly ICalculationHistoryService _historyService;
@@ -96,6 +99,19 @@ public partial class GardenViewModel : ObservableObject
         _localization.GetString("PondLiner")
     ];
 
+    // Live-Berechnung: Debounce bei Eingabe-Änderungen
+    partial void OnPavingAreaChanged(double value) => ScheduleAutoCalculate();
+    partial void OnStoneLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnStoneWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnJointWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnSoilAreaChanged(double value) => ScheduleAutoCalculate();
+    partial void OnSoilDepthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnBagLitersChanged(double value) => ScheduleAutoCalculate();
+    partial void OnPondLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnPondWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnPondDepthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnOverlapChanged(double value) => ScheduleAutoCalculate();
+
     // Paving Inputs
     [ObservableProperty] private double _pavingArea = 20;
     [ObservableProperty] private double _stoneLength = 20;
@@ -130,6 +146,7 @@ public partial class GardenViewModel : ObservableObject
     {
         ShowPavingCost = value > 0;
         OnPropertyChanged(nameof(PavingCostDisplay));
+        ScheduleAutoCalculate();
     }
 
     // Erde/Mulch: Preis pro Sack
@@ -147,6 +164,7 @@ public partial class GardenViewModel : ObservableObject
     {
         ShowSoilCost = value > 0;
         OnPropertyChanged(nameof(SoilCostDisplay));
+        ScheduleAutoCalculate();
     }
 
     // Teichfolie: Preis pro m²
@@ -164,6 +182,7 @@ public partial class GardenViewModel : ObservableObject
     {
         ShowLinerCost = value > 0;
         OnPropertyChanged(nameof(LinerCostDisplay));
+        ScheduleAutoCalculate();
     }
 
     #endregion
@@ -193,6 +212,17 @@ public partial class GardenViewModel : ObservableObject
     partial void OnPondResultChanged(PondLinerResult? value)
     {
         OnPropertyChanged(nameof(LinerCostDisplay));
+    }
+
+    /// <summary>
+    /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        if (_debounceTimer == null)
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
+        else
+            _debounceTimer.Change(300, Timeout.Infinite);
     }
 
     [RelayCommand]
@@ -326,15 +356,18 @@ public partial class GardenViewModel : ObservableObject
 
             await _historyService.AddCalculationAsync(calcType, title, data);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Silently ignore history save errors
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
     [RelayCommand]
     private void Reset()
     {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         PavingArea = 20;
         StoneLength = 20;
         StoneWidth = 10;
@@ -522,9 +555,9 @@ public partial class GardenViewModel : ObservableObject
 
             await Calculate();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Silently ignore load errors
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -637,5 +670,16 @@ public partial class GardenViewModel : ObservableObject
         {
             IsExporting = false;
         }
+    }
+
+    /// <summary>
+    /// Räumt Event-Subscriptions und Timer auf (wird von MainViewModel beim Navigieren aufgerufen)
+    /// </summary>
+    public void Cleanup() => _debounceTimer?.Dispose();
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 }

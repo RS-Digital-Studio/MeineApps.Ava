@@ -1,3 +1,5 @@
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Models;
@@ -8,9 +10,10 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public partial class FlooringCalculatorViewModel : ObservableObject
+public partial class FlooringCalculatorViewModel : ObservableObject, IDisposable
 {
     private readonly CraftEngine _craftEngine;
+    private Timer? _debounceTimer;
     private readonly IProjectService _projectService;
     private readonly ILocalizationService _localization;
     private readonly ICalculationHistoryService _historyService;
@@ -86,8 +89,9 @@ public partial class FlooringCalculatorViewModel : ObservableObject
         {
             await LoadProjectAsync(projectId);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -107,6 +111,13 @@ public partial class FlooringCalculatorViewModel : ObservableObject
 
     [ObservableProperty]
     private double _wastePercentage = 10;
+
+    // Live-Berechnung: Debounce bei Eingabe-Änderungen
+    partial void OnRoomLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnRoomWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnBoardLengthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnBoardWidthChanged(double value) => ScheduleAutoCalculate();
+    partial void OnWastePercentageChanged(double value) => ScheduleAutoCalculate();
 
     #endregion
 
@@ -148,6 +159,7 @@ public partial class FlooringCalculatorViewModel : ObservableObject
         ShowCost = value > 0;
         OnPropertyChanged(nameof(TotalCostDisplay));
         OnPropertyChanged(nameof(PricePerDisplay));
+        ScheduleAutoCalculate();
     }
 
     #endregion
@@ -187,6 +199,17 @@ public partial class FlooringCalculatorViewModel : ObservableObject
     }
 
     #endregion
+
+    /// <summary>
+    /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        if (_debounceTimer == null)
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
+        else
+            _debounceTimer.Change(300, Timeout.Infinite);
+    }
 
     [RelayCommand]
     private async Task Calculate()
@@ -241,14 +264,18 @@ public partial class FlooringCalculatorViewModel : ObservableObject
 
             await _historyService.AddCalculationAsync("FlooringCalculator", title, data);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
     [RelayCommand]
     private void Reset()
     {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         RoomLength = 4.0;
         RoomWidth = 3.0;
         BoardLength = 2.0;
@@ -361,8 +388,9 @@ public partial class FlooringCalculatorViewModel : ObservableObject
 
             await Calculate();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -439,5 +467,11 @@ public partial class FlooringCalculatorViewModel : ObservableObject
     public void Cleanup()
     {
         _unitConverter.UnitSystemChanged -= OnUnitSystemChanged;
+    }
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 }

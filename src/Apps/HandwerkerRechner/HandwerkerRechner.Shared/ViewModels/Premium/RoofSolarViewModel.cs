@@ -1,3 +1,5 @@
+using System.Threading;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerRechner.Models;
@@ -8,9 +10,10 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
-public partial class RoofSolarViewModel : ObservableObject
+public partial class RoofSolarViewModel : ObservableObject, IDisposable
 {
     private readonly CraftEngine _engine;
+    private Timer? _debounceTimer;
     private readonly IProjectService _projectService;
     private readonly ILocalizationService _localization;
     private readonly ICalculationHistoryService _historyService;
@@ -94,6 +97,16 @@ public partial class RoofSolarViewModel : ObservableObject
         _localization.GetString("SolarYield")
     ];
 
+    // Live-Berechnung: Debounce bei Eingabe-Änderungen
+    partial void OnRunChanged(double value) => ScheduleAutoCalculate();
+    partial void OnRiseChanged(double value) => ScheduleAutoCalculate();
+    partial void OnRoofAreaChanged(double value) => ScheduleAutoCalculate();
+    partial void OnTilesPerSqmChanged(double value) => ScheduleAutoCalculate();
+    partial void OnSolarRoofAreaChanged(double value) => ScheduleAutoCalculate();
+    partial void OnPanelEfficiencyChanged(double value) => ScheduleAutoCalculate();
+    partial void OnSelectedOrientationChanged(int value) => ScheduleAutoCalculate();
+    partial void OnTiltDegreesChanged(double value) => ScheduleAutoCalculate();
+
     // Roof Pitch Inputs
     [ObservableProperty] private double _run = 5;
     [ObservableProperty] private double _rise = 2;
@@ -150,6 +163,7 @@ public partial class RoofSolarViewModel : ObservableObject
     {
         ShowTileCost = value > 0;
         OnPropertyChanged(nameof(RoofTileCostDisplay));
+        ScheduleAutoCalculate();
     }
 
     partial void OnTilesResultChanged(RoofTilesResult? value)
@@ -178,6 +192,7 @@ public partial class RoofSolarViewModel : ObservableObject
     partial void OnPricePerKwhChanged(double value)
     {
         OnPropertyChanged(nameof(PaybackTimeDisplay));
+        ScheduleAutoCalculate();
     }
 
     partial void OnSolarSystemCostChanged(double value)
@@ -185,6 +200,7 @@ public partial class RoofSolarViewModel : ObservableObject
         ShowSolarCost = value > 0;
         OnPropertyChanged(nameof(SolarCostDisplay));
         OnPropertyChanged(nameof(PaybackTimeDisplay));
+        ScheduleAutoCalculate();
     }
 
     partial void OnSolarResultChanged(SolarYieldResult? value)
@@ -193,6 +209,17 @@ public partial class RoofSolarViewModel : ObservableObject
     }
 
     #endregion
+
+    /// <summary>
+    /// Debounce: Berechnung 300ms nach letzter Eingabe-Änderung auslösen
+    /// </summary>
+    private void ScheduleAutoCalculate()
+    {
+        if (_debounceTimer == null)
+            _debounceTimer = new Timer(_ => Dispatcher.UIThread.Post(() => _ = Calculate()), null, 300, Timeout.Infinite);
+        else
+            _debounceTimer.Change(300, Timeout.Infinite);
+    }
 
     [RelayCommand]
     private async Task Calculate()
@@ -323,15 +350,18 @@ public partial class RoofSolarViewModel : ObservableObject
 
             await _historyService.AddCalculationAsync(calcType, title, data);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Silently ignore history save errors
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
     [RelayCommand]
     private void Reset()
     {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
+
         Run = 5;
         Rise = 2;
         RoofArea = 100;
@@ -510,9 +540,9 @@ public partial class RoofSolarViewModel : ObservableObject
 
             await Calculate();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Silently ignore load errors
+            System.Diagnostics.Debug.WriteLine($"[HandwerkerRechner] {ex.Message}");
         }
     }
 
@@ -624,5 +654,16 @@ public partial class RoofSolarViewModel : ObservableObject
         {
             IsExporting = false;
         }
+    }
+
+    /// <summary>
+    /// Räumt Event-Subscriptions und Timer auf (wird von MainViewModel beim Navigieren aufgerufen)
+    /// </summary>
+    public void Cleanup() => _debounceTimer?.Dispose();
+
+    public void Dispose()
+    {
+        _debounceTimer?.Dispose();
+        _debounceTimer = null;
     }
 }

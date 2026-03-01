@@ -8,12 +8,26 @@ namespace HandwerkerRechner.Graphics;
 /// </summary>
 public static class RoofSolarVisualization
 {
+    // Einschwing-Animation
+    private static readonly AnimatedVisualizationBase _animation = new()
+    {
+        AnimationDurationMs = 500f,
+        EasingFunction = EasingFunctions.EaseOutCubic
+    };
+
+    /// <summary>Startet die Einschwing-Animation.</summary>
+    public static void StartAnimation() => _animation.StartAnimation();
+
+    /// <summary>True wenn noch animiert wird (für InvalidateSurface-Loop).</summary>
+    public static bool NeedsRedraw => _animation.IsAnimating;
+
     private static readonly SKPaint _roofFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _roofStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2f };
     private static readonly SKPaint _tileFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _panelFill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _panelStroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1f };
     private static readonly SKPaint _compassPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1.5f };
+    private static readonly SKPaint _layerPaint = new() { IsAntialias = false };
 
     /// <summary>
     /// subType: 0=Dachneigung, 1=Dachziegel, 2=Solar
@@ -26,7 +40,14 @@ public static class RoofSolarVisualization
     {
         if (!hasResult) return;
 
+        _animation.UpdateAnimation();
+        float progress = _animation.AnimationProgress;
+
         SkiaBlueprintCanvas.DrawGrid(canvas, bounds, 20f);
+
+        // Global Alpha Fade-In
+        _layerPaint.Color = SKColors.White.WithAlpha((byte)(255 * progress));
+        canvas.SaveLayer(_layerPaint);
 
         switch (subType)
         {
@@ -34,6 +55,8 @@ public static class RoofSolarVisualization
             case 1: RenderTiles(canvas, bounds, roofArea, tilesPerSqm, tilesNeeded); break;
             case 2: RenderSolar(canvas, bounds, solarArea, kwPeak, annualYieldKwh, orientationIdx, tiltDeg); break;
         }
+
+        canvas.Restore();
     }
 
     private static void RenderPitch(SKCanvas canvas, SKRect bounds,

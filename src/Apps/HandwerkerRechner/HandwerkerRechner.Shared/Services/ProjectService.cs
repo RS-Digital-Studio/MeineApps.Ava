@@ -155,12 +155,13 @@ public class ProjectService : IProjectService
     /// <summary>
     /// Interner File-Write - MUSS innerhalb eines Semaphore-Locks aufgerufen werden
     /// </summary>
+    private static readonly JsonSerializerOptions _jsonOptions = new() { WriteIndented = true };
+
     private async Task SaveToFileInternalAsync()
     {
         try
         {
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            var json = JsonSerializer.Serialize(_cachedProjects, options);
+            var json = JsonSerializer.Serialize(_cachedProjects, _jsonOptions);
             await File.WriteAllTextAsync(_projectsFilePath, json);
         }
         catch (Exception)

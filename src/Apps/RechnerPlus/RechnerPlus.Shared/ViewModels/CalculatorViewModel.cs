@@ -32,6 +32,9 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     private char _decimalSep = '.';
     private char _thousandSep = ',';
 
+    // Gecachte Dezimalstellen-Einstellung (-1 = Auto, 0-10 = fest)
+    private int _cachedDecimalPlaces;
+
     // Für wiederholtes "=" (letzte Operation wiederholen, wie Windows-Rechner)
     private string? _lastOperator;
     private string? _lastOperand;
@@ -39,8 +42,8 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     // Letztes Ergebnis für ANS-Taste
     private double _lastResult;
 
-    // Undo/Redo State-Stacks
-    private readonly Stack<CalculatorState> _undoStack = new();
+    // Undo/Redo: LinkedList statt Stack (O(1) RemoveFirst beim Overflow, kein Array-Umkopieren)
+    private readonly LinkedList<CalculatorState> _undoList = new();
     private readonly Stack<CalculatorState> _redoStack = new();
     private const int MaxUndoStates = 50;
 
@@ -122,12 +125,15 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     public bool HasHistory => _historyService.History.Count > 0;
     public IReadOnlyList<CalculationHistoryEntry> HistoryEntries => _historyService.History;
 
+    // Gecachte History-Listen (werden bei OnHistoryChanged / OnLanguageChanged neu berechnet)
+    private IReadOnlyList<CalculationHistoryEntry> _cachedRecentHistory = [];
+    private List<HistoryGroup> _cachedGroupedHistory = [];
+
     /// <summary>Die letzten 2 Berechnungen für Mini-History unter dem Display.</summary>
-    public IReadOnlyList<CalculationHistoryEntry> RecentHistory =>
-        _historyService.History.Take(2).ToList();
+    public IReadOnlyList<CalculationHistoryEntry> RecentHistory => _cachedRecentHistory;
 
     /// <summary>Gruppierte History nach Datum (Heute/Gestern/Älter).</summary>
-    public List<HistoryGroup> GroupedHistory => BuildGroupedHistory();
+    public List<HistoryGroup> GroupedHistory => _cachedGroupedHistory;
 
     // Lokalisierte Gruppen-Header
     public string HistoryTodayText => _localization.GetString("HistoryToday") ?? "Heute";
@@ -142,9 +148,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         var today = DateTime.Today;
         var yesterday = today.AddDays(-1);
 
-        var todayEntries = _historyService.History.Where(e => e.Timestamp.Date == today).ToList();
-        var yesterdayEntries = _historyService.History.Where(e => e.Timestamp.Date == yesterday).ToList();
-        var olderEntries = _historyService.History.Where(e => e.Timestamp.Date < yesterday).ToList();
+        // Timestamp ist UTC → für Tages-Vergleich in Lokalzeit konvertieren
+        var todayEntries = _historyService.History.Where(e => e.Timestamp.ToLocalTime().Date == today).ToList();
+        var yesterdayEntries = _historyService.History.Where(e => e.Timestamp.ToLocalTime().Date == yesterday).ToList();
+        var olderEntries = _historyService.History.Where(e => e.Timestamp.ToLocalTime().Date < yesterday).ToList();
 
         if (todayEntries.Count > 0)
             groups.Add(new HistoryGroup(HistoryTodayText, todayEntries));
@@ -197,6 +204,70 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     /// <summary>Event nach erfolgreicher Berechnung (für Ergebnis-Animation im View).</summary>
     public event EventHandler? CalculationCompleted;
 
+    /// <summary>Event bei Fehler (für Shake-Animation im View).</summary>
+    public event EventHandler? ErrorShakeRequested;
+
+    /// <summary>Event nach erfolgreichem Copy (für Copy-Feedback-Animation im View).</summary>
+    public event EventHandler? CopyFeedbackRequested;
+
+    /// <summary>Event wenn sich die aktive Funktion ändert (für Funktionsgraph im View).</summary>
+    public event EventHandler? FunctionGraphChanged;
+
+    // Funktionsgraph-Daten
+    private string? _activeFunctionName;
+    private Func<float, float>? _activeFunction;
+    private float? _functionGraphCurrentX;
+
+    /// <summary>Name der aktiven wissenschaftlichen Funktion (null = kein Graph).</summary>
+    public string? ActiveFunctionName
+    {
+        get => _activeFunctionName;
+        private set
+        {
+            if (_activeFunctionName != value)
+            {
+                _activeFunctionName = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(ShowFunctionGraph));
+            }
+        }
+    }
+
+    /// <summary>Die aktive Funktion als Delegate für den Graph-Renderer.</summary>
+    public Func<float, float>? ActiveFunction
+    {
+        get => _activeFunction;
+        private set { _activeFunction = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>Aktueller X-Wert für den leuchtenden Punkt auf dem Funktionsgraph.</summary>
+    public float? FunctionGraphCurrentX
+    {
+        get => _functionGraphCurrentX;
+        private set { _functionGraphCurrentX = value; OnPropertyChanged(); }
+    }
+
+    /// <summary>Gibt an ob der Funktionsgraph sichtbar sein soll.</summary>
+    public bool ShowFunctionGraph => ActiveFunctionName != null;
+
+    /// <summary>Setzt die aktive Funktion und feuert das FunctionGraphChanged-Event.</summary>
+    private void SetActiveFunction(string name, Func<float, float> func, float currentX)
+    {
+        ActiveFunctionName = name;
+        ActiveFunction = func;
+        FunctionGraphCurrentX = currentX;
+        FunctionGraphChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Blendet den Funktionsgraph aus.</summary>
+    public void ClearFunctionGraph()
+    {
+        ActiveFunctionName = null;
+        ActiveFunction = null;
+        FunctionGraphCurrentX = null;
+        FunctionGraphChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     [ObservableProperty]
     private bool _showClearHistoryConfirm;
 
@@ -216,10 +287,11 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         // Gespeicherten Modus laden
         _currentMode = (CalculatorMode)_preferences.Get(ModeKey, 0);
 
-        // Zahlenformat initialisieren
+        // Zahlenformat und Dezimalstellen initialisieren
         _numberFormat = _preferences.Get(NumberFormatKey, 0);
         _decimalSep = _numberFormat == 1 ? ',' : '.';
         _thousandSep = _numberFormat == 1 ? '.' : ',';
+        _cachedDecimalPlaces = _preferences.Get("calculator_decimal_places", -1);
 
         LoadHistory();
         LoadMemory();
@@ -249,11 +321,15 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(HistoryTodayText));
         OnPropertyChanged(nameof(HistoryYesterdayText));
         OnPropertyChanged(nameof(HistoryOlderText));
+        // Gruppierte History neu bauen (Header-Texte haben sich geändert)
+        _cachedGroupedHistory = BuildGroupedHistory();
         OnPropertyChanged(nameof(GroupedHistory));
     }
 
     private void OnHistoryChanged(object? sender, EventArgs e)
     {
+        // Caches aktualisieren bevor PropertyChanged gefeuert wird
+        RebuildHistoryCaches();
         OnPropertyChanged(nameof(HistoryEntries));
         OnPropertyChanged(nameof(HasHistory));
         OnPropertyChanged(nameof(RecentHistory));
@@ -262,13 +338,30 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
             SaveHistory();
     }
 
+    /// <summary>Baut die gecachten History-Listen neu auf.</summary>
+    private void RebuildHistoryCaches()
+    {
+        _cachedRecentHistory = _historyService.History.Take(2).ToList();
+        _cachedGroupedHistory = BuildGroupedHistory();
+    }
+
     #region Hilfsmethoden
 
-    /// <summary>Zahlenformat aus den Einstellungen neu laden (nach Settings-Änderung).</summary>
+    /// <summary>Zahlenformat und Dezimalstellen aus den Einstellungen neu laden (nach Settings-Änderung).</summary>
     public void RefreshNumberFormat()
     {
+        // Dezimalstellen-Cache aktualisieren
+        _cachedDecimalPlaces = _preferences.Get("calculator_decimal_places", -1);
+
         var newFormat = _preferences.Get(NumberFormatKey, 0);
-        if (newFormat == _numberFormat) return;
+        if (newFormat == _numberFormat)
+        {
+            // Zahlenformat gleich, aber Dezimalstellen könnten sich geändert haben → Display aktualisieren
+            var parseOk = TryParseDisplay(out var val);
+            if (parseOk && !HasError && Display != "0")
+                Display = FormatResult(val);
+            return;
+        }
 
         // Aktuellen Display-Wert vor Format-Wechsel parsen
         var parseSuccess = TryParseDisplay(out var currentValue);
@@ -316,17 +409,20 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         return SetDisplayFromResult(result.Value);
     }
 
-    /// <summary>Zählt offene Klammern in der Expression.</summary>
-    private int CountOpenParentheses()
+    /// <summary>Zählt offene Klammern im gegebenen Ausdruck.</summary>
+    private static int CountOpenParentheses(string expr)
     {
         int count = 0;
-        foreach (char c in Expression)
+        foreach (char c in expr)
         {
             if (c == '(') count++;
             else if (c == ')') count--;
         }
         return count;
     }
+
+    /// <summary>Zählt offene Klammern in der aktuellen Expression.</summary>
+    private int CountOpenParentheses() => CountOpenParentheses(Expression);
 
     /// <summary>Prüft ob ein Zeichen ein Rechenoperator ist.</summary>
     private static bool IsOperatorChar(char c) =>
@@ -340,8 +436,8 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         // Floating-Point-Artefakte entfernen (0.1 + 0.2 = 0.3 statt 0.30000000000000004)
         value = Math.Round(value, 10);
 
-        // Dezimalstellen-Einstellung aus Preferences (-1 = Auto)
-        var decimalPlaces = _preferences.Get("calculator_decimal_places", -1);
+        // Dezimalstellen-Einstellung aus Cache (-1 = Auto)
+        var decimalPlaces = _cachedDecimalPlaces;
         string raw;
         if (decimalPlaces >= 0)
             raw = value.ToString($"F{decimalPlaces}", CultureInfo.InvariantCulture);
@@ -397,6 +493,7 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         ActiveOperator = null;
         PreviewResult = "";
         _haptic.HeavyClick();
+        ErrorShakeRequested?.Invoke(this, EventArgs.Empty);
     }
 
     private void ClearError() { HasError = false; ErrorMessage = ""; }
@@ -432,12 +529,7 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
             }
 
             // Offene Klammern automatisch schließen für Preview
-            int openCount = 0;
-            foreach (char c in previewExpr)
-            {
-                if (c == '(') openCount++;
-                else if (c == ')') openCount--;
-            }
+            var openCount = CountOpenParentheses(previewExpr);
             for (int i = 0; i < openCount; i++)
                 previewExpr += ")";
 
@@ -528,25 +620,23 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
 
     #region Undo/Redo
 
-    public bool CanUndo => _undoStack.Count > 0;
+    public bool CanUndo => _undoList.Count > 0;
     public bool CanRedo => _redoStack.Count > 0;
 
-    /// <summary>Speichert den aktuellen Zustand auf den Undo-Stack.</summary>
+    /// <summary>Erstellt einen Snapshot des aktuellen Rechner-Zustands.</summary>
+    private CalculatorState CreateCurrentState() => new(
+        Display, Expression, _isNewCalculation,
+        ActiveOperator, _lastOperator, _lastOperand,
+        HasError, ErrorMessage, PreviewResult, _lastResult);
+
+    /// <summary>Speichert den aktuellen Zustand auf den Undo-Stack (LinkedList, O(1)).</summary>
     private void SaveState()
     {
-        if (_undoStack.Count >= MaxUndoStates)
-        {
-            // Ältesten Eintrag entfernen (Stack → Array → neuer Stack)
-            var items = _undoStack.ToArray();
-            _undoStack.Clear();
-            for (int i = items.Length - 2; i >= 0; i--)
-                _undoStack.Push(items[i]);
-        }
+        // Ältesten Eintrag entfernen wenn Limit erreicht (O(1) statt Array-Umkopieren)
+        if (_undoList.Count >= MaxUndoStates)
+            _undoList.RemoveFirst();
 
-        _undoStack.Push(new CalculatorState(
-            Display, Expression, _isNewCalculation,
-            ActiveOperator, _lastOperator, _lastOperand,
-            HasError, ErrorMessage, PreviewResult, _lastResult));
+        _undoList.AddLast(CreateCurrentState());
 
         _redoStack.Clear();
         OnPropertyChanged(nameof(CanUndo));
@@ -571,15 +661,15 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Undo()
     {
-        if (_undoStack.Count == 0) return;
+        if (_undoList.Count == 0) return;
 
         // Aktuellen Zustand auf Redo-Stack sichern
-        _redoStack.Push(new CalculatorState(
-            Display, Expression, _isNewCalculation,
-            ActiveOperator, _lastOperator, _lastOperand,
-            HasError, ErrorMessage, PreviewResult, _lastResult));
+        _redoStack.Push(CreateCurrentState());
 
-        RestoreState(_undoStack.Pop());
+        // Letzten Eintrag aus LinkedList holen und entfernen (neuester = letzter Knoten)
+        var state = _undoList.Last!.Value;
+        _undoList.RemoveLast();
+        RestoreState(state);
         OnPropertyChanged(nameof(CanUndo));
         OnPropertyChanged(nameof(CanRedo));
         _haptic.Tick();
@@ -590,11 +680,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     {
         if (_redoStack.Count == 0) return;
 
-        // Aktuellen Zustand auf Undo-Stack sichern
-        _undoStack.Push(new CalculatorState(
-            Display, Expression, _isNewCalculation,
-            ActiveOperator, _lastOperator, _lastOperand,
-            HasError, ErrorMessage, PreviewResult, _lastResult));
+        // Aktuellen Zustand auf Undo-Liste sichern
+        if (_undoList.Count >= MaxUndoStates)
+            _undoList.RemoveFirst();
+        _undoList.AddLast(CreateCurrentState());
 
         RestoreState(_redoStack.Pop());
         OnPropertyChanged(nameof(CanUndo));
@@ -644,6 +733,7 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         if (ClipboardCopyRequested != null)
             await ClipboardCopyRequested.Invoke(Display);
         FloatingTextRequested?.Invoke(_localization.GetString("CopySuccess") ?? "Copied!", "info");
+        CopyFeedbackRequested?.Invoke(this, EventArgs.Empty);
         _haptic.Tick();
     }
 
@@ -992,12 +1082,7 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
                 return;
 
             // Offene Klammern automatisch schließen (wie Windows-Rechner)
-            int openCount = 0;
-            foreach (char c in fullExpression)
-            {
-                if (c == '(') openCount++;
-                else if (c == ')') openCount--;
-            }
+            var openCount = CountOpenParentheses(fullExpression);
             for (int i = 0; i < openCount; i++)
                 fullExpression += ")";
 
@@ -1148,13 +1233,8 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
                 var baseExpr = trimmedExpr[..lastOpIndex].TrimEnd();
                 if (!string.IsNullOrEmpty(baseExpr))
                 {
-                    // Offene Klammern für Auswertung schließen
-                    int openCount = 0;
-                    foreach (char c in baseExpr)
-                    {
-                        if (c == '(') openCount++;
-                        else if (c == ')') openCount--;
-                    }
+                    // Offene Klammern für Auswertung schließen (zentrale Hilfsmethode)
+                    var openCount = CountOpenParentheses(baseExpr);
                     for (int j = 0; j < openCount; j++)
                         baseExpr += ")";
 
@@ -1183,7 +1263,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         SaveState();
         if (!TryParseDisplay(out var value)) return;
         if (SetDisplayFromResult(_engine.SquareRoot(value)))
+        {
             _isNewCalculation = true;
+            SetActiveFunction("sqrt", x => x >= 0 ? (float)Math.Sqrt(x) : float.NaN, (float)value);
+        }
         _haptic.Click();
     }
 
@@ -1193,7 +1276,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         SaveState();
         if (!TryParseDisplay(out var value)) return;
         if (SetDisplayFromResult(_engine.Square(value)))
+        {
             _isNewCalculation = true;
+            SetActiveFunction("x\u00B2", x => x * x, (float)value);
+        }
         _haptic.Click();
     }
 
@@ -1203,7 +1289,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         SaveState();
         if (!TryParseDisplay(out var value)) return;
         if (SetDisplayFromResult(_engine.Reciprocal(value)))
+        {
             _isNewCalculation = true;
+            SetActiveFunction("1/x", x => MathF.Abs(x) < 0.001f ? float.NaN : 1f / x, (float)value);
+        }
         _haptic.Click();
     }
 
@@ -1296,7 +1385,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         if (!TryParseDisplay(out var value)) return;
         var angle = IsRadians ? value : _engine.DegreesToRadians(value);
         if (SetDisplayFromResult(_engine.Sin(angle)))
+        {
             _isNewCalculation = true;
+            SetActiveFunction("sin", x => (float)Math.Sin(x), (float)angle);
+        }
         _haptic.Click();
     }
 
@@ -1306,7 +1398,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         if (!TryParseDisplay(out var value)) return;
         var angle = IsRadians ? value : _engine.DegreesToRadians(value);
         if (SetDisplayFromResult(_engine.Cos(angle)))
+        {
             _isNewCalculation = true;
+            SetActiveFunction("cos", x => (float)Math.Cos(x), (float)angle);
+        }
         _haptic.Click();
     }
 
@@ -1324,7 +1419,14 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
             return;
         }
         if (SetDisplayFromResult(result.Value))
+        {
             _isNewCalculation = true;
+            SetActiveFunction("tan", x =>
+            {
+                var y = (float)Math.Tan(x);
+                return MathF.Abs(y) > 100f ? float.NaN : y;
+            }, (float)angle);
+        }
         _haptic.Click();
     }
 
@@ -1333,7 +1435,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         SaveState();
         if (!TryParseDisplay(out var value)) return;
         if (SetDisplayFromResult(_engine.Log(value)))
+        {
             _isNewCalculation = true;
+            SetActiveFunction("log", x => x > 0 ? (float)Math.Log10(x) : float.NaN, (float)value);
+        }
         _haptic.Click();
     }
 
@@ -1342,7 +1447,10 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
         SaveState();
         if (!TryParseDisplay(out var value)) return;
         if (SetDisplayFromResult(_engine.Ln(value)))
+        {
             _isNewCalculation = true;
+            SetActiveFunction("ln", x => x > 0 ? (float)Math.Log(x) : float.NaN, (float)value);
+        }
         _haptic.Click();
     }
 
@@ -1417,6 +1525,7 @@ public partial class CalculatorViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Abs()
     {
+        SaveState();
         if (!TryParseDisplay(out var value)) return;
         if (SetDisplayFromResult(_engine.Abs(value)))
             _isNewCalculation = true;

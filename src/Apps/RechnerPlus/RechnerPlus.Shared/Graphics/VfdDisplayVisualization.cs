@@ -10,9 +10,19 @@ namespace RechnerPlus.Graphics;
 public static class VfdDisplayVisualization
 {
     private static readonly SKPaint _segmentPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    private static readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    private static readonly SKPaint _ghostPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // _glowPaint hat den MaskFilter dauerhaft gesetzt – kein Set/Clear pro Segment
     private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+    private static readonly SKPaint _glowPaint = new()
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Fill,
+        MaskFilter = _glowFilter
+    };
+
+    // Separater Paint ohne MaskFilter für Partikel/Punkte die keinen Glow brauchen
+    private static readonly SKPaint _dotSegmentPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private static readonly SKPaint _ghostPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
 
     // Segment-Definitionen: 7 Segmente (a-g) pro Ziffer
     //   aaa
@@ -126,10 +136,8 @@ public static class VfdDisplayVisualization
         float halfH = h / 2f;
         float margin = segH * 0.3f;
 
-        // Glow-Effekt für aktive Segmente
+        // Glow-Effekt für aktive Segmente (_glowPaint hat MaskFilter dauerhaft gesetzt)
         _glowPaint.Color = color.WithAlpha(50);
-        _glowPaint.MaskFilter = _glowFilter;
-
         _segmentPaint.Color = color;
 
         // a: oben horizontal
@@ -195,11 +203,9 @@ public static class VfdDisplayVisualization
     {
         var rect = new SKRect(x, y, x + w, y + h);
 
-        // Glow
+        // Glow (_glowPaint.MaskFilter ist dauerhaft gesetzt)
         _glowPaint.Color = color.WithAlpha(40);
-        _glowPaint.MaskFilter = _glowFilter;
         canvas.DrawRoundRect(rect, h / 2f, h / 2f, _glowPaint);
-        _glowPaint.MaskFilter = null;
 
         // Segment
         _segmentPaint.Color = color;
@@ -213,11 +219,9 @@ public static class VfdDisplayVisualization
     {
         var rect = new SKRect(x, y, x + w, y + h);
 
-        // Glow
+        // Glow (_glowPaint.MaskFilter ist dauerhaft gesetzt)
         _glowPaint.Color = color.WithAlpha(40);
-        _glowPaint.MaskFilter = _glowFilter;
         canvas.DrawRoundRect(rect, w / 2f, w / 2f, _glowPaint);
-        _glowPaint.MaskFilter = null;
 
         // Segment
         _segmentPaint.Color = color;
@@ -229,14 +233,12 @@ public static class VfdDisplayVisualization
     /// </summary>
     private static void DrawDot(SKCanvas canvas, float x, float y, float size, SKColor color)
     {
-        // Glow
+        // Glow (_glowPaint.MaskFilter ist dauerhaft gesetzt)
         _glowPaint.Color = color.WithAlpha(50);
-        _glowPaint.MaskFilter = _glowFilter;
         canvas.DrawCircle(x, y - size, size * 1.5f, _glowPaint);
-        _glowPaint.MaskFilter = null;
 
-        // Punkt
-        _segmentPaint.Color = color;
-        canvas.DrawCircle(x, y - size, size * 0.7f, _segmentPaint);
+        // Punkt (kein Glow, _dotSegmentPaint ohne MaskFilter)
+        _dotSegmentPaint.Color = color;
+        canvas.DrawCircle(x, y - size, size * 0.7f, _dotSegmentPaint);
     }
 }

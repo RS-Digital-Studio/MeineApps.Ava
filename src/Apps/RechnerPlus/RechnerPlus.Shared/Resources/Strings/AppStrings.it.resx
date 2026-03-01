@@ -482,4 +482,11 @@
     <value>Ruota il dispositivo per la modalità scientifica</value>
   </data>
 
+  <data name="LoadingShaders" xml:space="preserve">
+    <value>Preparazione motore grafico...</value>
+  </data>
+  <data name="LoadingCalculator" xml:space="preserve">
+    <value>Inizializzazione calcolatrice...</value>
+  </data>
+
 </root>

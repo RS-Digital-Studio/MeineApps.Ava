@@ -22,6 +22,15 @@ public static class FunctionGraphVisualization
     private static readonly SKFont _labelFont = new() { Size = 9f };
     private static readonly SKFont _valueFont = new() { Size = 10f };
 
+    // Statische Filter/Effekte (einmal erstellt, nicht pro Frame)
+    private static readonly SKMaskFilter _curveGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+    private static readonly SKMaskFilter _dotGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
+    private static readonly SKPathEffect _dashEffect = SKPathEffect.CreateDash(new[] { 3f, 3f }, 0);
+
+    // Wiederverwendbare Arrays (nur bei Groessenänderung neu alloziert)
+    private static float[] _xValues = Array.Empty<float>();
+    private static float[] _yValues = Array.Empty<float>();
+
     // Vorgefertigte Funktions-Bereiche
     private static readonly Dictionary<string, (float minX, float maxX)> _functionRanges = new()
     {
@@ -83,8 +92,15 @@ public static class FunctionGraphVisualization
         // Y-Bereich durch Abtastung ermitteln
         int sampleCount = (int)plotW;
         sampleCount = Math.Clamp(sampleCount, 50, 300);
-        float[] yValues = new float[sampleCount];
-        float[] xValues = new float[sampleCount];
+
+        // Statische Arrays wiederverwenden, nur bei Größenänderung neu allozieren
+        if (_xValues.Length != sampleCount)
+        {
+            _xValues = new float[sampleCount];
+            _yValues = new float[sampleCount];
+        }
+        var xValues = _xValues;
+        var yValues = _yValues;
 
         float minY = float.MaxValue;
         float maxY = float.MinValue;
@@ -129,12 +145,16 @@ public static class FunctionGraphVisualization
         minY -= yPadding;
         maxY += yPadding;
 
+        // xStep und yStep einmal berechnen – DrawGrid und DrawLabels teilen dieselben Werte
+        float xStep = CalculateStep(maxX - minX);
+        float yStep = CalculateStep(maxY - minY);
+
         // Clip auf Plot-Bereich
         canvas.Save();
         canvas.ClipRect(new SKRect(plotLeft - 1, plotTop - 1, plotRight + 1, plotBottom + 1));
 
-        // Grid-Linien zeichnen
-        DrawGrid(canvas, plotLeft, plotTop, plotW, plotH, minX, maxX, minY, maxY);
+        // Grid-Linien zeichnen (vorberechnete Steps übergeben)
+        DrawGrid(canvas, plotLeft, plotTop, plotW, plotH, minX, maxX, minY, maxY, xStep, yStep);
 
         // Achsen zeichnen
         DrawAxes(canvas, plotLeft, plotTop, plotW, plotH, minX, maxX, minY, maxY);
@@ -144,8 +164,8 @@ public static class FunctionGraphVisualization
 
         canvas.Restore();
 
-        // Achsen-Labels (außerhalb des Clips)
-        DrawLabels(canvas, plotLeft, plotTop, plotW, plotH, plotBottom, minX, maxX, minY, maxY, functionName);
+        // Achsen-Labels (außerhalb des Clips, vorberechnete Steps übergeben)
+        DrawLabels(canvas, plotLeft, plotTop, plotW, plotH, plotBottom, minX, maxX, minY, maxY, functionName, xStep, yStep);
 
         // Aktuellen Punkt markieren
         if (currentX.HasValue)
@@ -156,16 +176,16 @@ public static class FunctionGraphVisualization
     }
 
     /// <summary>
-    /// Zeichnet dezente Grid-Linien.
+    /// Zeichnet dezente Grid-Linien. xStep/yStep werden vom Aufrufer übergeben (einmalige Berechnung).
     /// </summary>
     private static void DrawGrid(SKCanvas canvas, float left, float top,
-        float w, float h, float minX, float maxX, float minY, float maxY)
+        float w, float h, float minX, float maxX, float minY, float maxY,
+        float xStep, float yStep)
     {
         _gridPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Border, 20);
         _gridPaint.StrokeWidth = 0.5f;
 
         // Vertikale Grid-Linien (X-Achse)
-        float xStep = CalculateStep(maxX - minX);
         float xStart = MathF.Ceiling(minX / xStep) * xStep;
         for (float gx = xStart; gx <= maxX; gx += xStep)
         {
@@ -174,7 +194,6 @@ public static class FunctionGraphVisualization
         }
 
         // Horizontale Grid-Linien (Y-Achse)
-        float yStep = CalculateStep(maxY - minY);
         float yStart = MathF.Ceiling(minY / yStep) * yStep;
         for (float gy = yStart; gy <= maxY; gy += yStep)
         {
@@ -271,19 +290,22 @@ public static class FunctionGraphVisualization
         }
 
         // Gradient-Füllung (transparenter Verlauf unter der Kurve)
+        // Alten Shader disposen bevor neuer zugewiesen wird (Native Memory Leak)
+        _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(left, top),
             new SKPoint(left, top + h),
             new[] { curveColor.WithAlpha(25), curveColor.WithAlpha(5) },
             null, SKShaderTileMode.Clamp);
         canvas.DrawPath(fillPath, _fillPaint);
+        _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = null;
 
         // Glow unter der Kurve (breiterer, transparenter Strich)
         float pulse = 0.7f + 0.3f * MathF.Sin(animTime * 2f);
         _glowPaint.Color = curveColor.WithAlpha((byte)(pulse * 30));
         _glowPaint.StrokeWidth = 6f;
-        _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
+        _glowPaint.MaskFilter = _curveGlowFilter; // Statisches Filter-Objekt, kein Leak
         canvas.DrawPath(curvePath, _glowPaint);
         _glowPaint.MaskFilter = null;
 
@@ -293,17 +315,16 @@ public static class FunctionGraphVisualization
     }
 
     /// <summary>
-    /// Zeichnet Achsen-Beschriftungen.
+    /// Zeichnet Achsen-Beschriftungen. xStep/yStep werden vom Aufrufer übergeben (einmalige Berechnung).
     /// </summary>
     private static void DrawLabels(SKCanvas canvas, float left, float top,
         float w, float h, float plotBottom, float minX, float maxX, float minY, float maxY,
-        string functionName)
+        string functionName, float xStep, float yStep)
     {
         _textPaint.Color = SkiaThemeHelper.TextMuted;
         _labelFont.Size = 8f;
 
         // X-Achsen-Labels (unten)
-        float xStep = CalculateStep(maxX - minX);
         float xStart = MathF.Ceiling(minX / xStep) * xStep;
         for (float gx = xStart; gx <= maxX; gx += xStep)
         {
@@ -313,7 +334,6 @@ public static class FunctionGraphVisualization
         }
 
         // Y-Achsen-Labels (links)
-        float yStep = CalculateStep(maxY - minY);
         float yStart = MathF.Ceiling(minY / yStep) * yStep;
         for (float gy = yStart; gy <= maxY; gy += yStep)
         {
@@ -370,7 +390,7 @@ public static class FunctionGraphVisualization
         // Pulsierender Glow
         float pulse = 0.6f + 0.4f * MathF.Sin(animTime * 4f);
         _dotPaint.Color = SkiaThemeHelper.Accent.WithAlpha((byte)(pulse * 50));
-        _dotPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
+        _dotPaint.MaskFilter = _dotGlowFilter; // Statisches Filter-Objekt, kein Leak
         canvas.DrawCircle(px, py, 8f, _dotPaint);
         _dotPaint.MaskFilter = null;
 
@@ -387,7 +407,7 @@ public static class FunctionGraphVisualization
         zeroY = Math.Clamp(zeroY, top, top + h);
         _gridPaint.Color = SkiaThemeHelper.Accent.WithAlpha(40);
         _gridPaint.StrokeWidth = 1f;
-        _gridPaint.PathEffect = SKPathEffect.CreateDash(new[] { 3f, 3f }, 0);
+        _gridPaint.PathEffect = _dashEffect; // Statisches Effekt-Objekt, kein Leak
         canvas.DrawLine(px, py, px, zeroY, _gridPaint);
         _gridPaint.PathEffect = null;
 

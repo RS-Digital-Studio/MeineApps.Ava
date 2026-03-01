@@ -571,4 +571,11 @@
     <value>Drehe dein Gerät für den Wissenschaftsmodus</value>
   </data>
 
+  <data name="LoadingShaders" xml:space="preserve">
+    <value>Grafik-Engine wird vorbereitet...</value>
+  </data>
+  <data name="LoadingCalculator" xml:space="preserve">
+    <value>Rechner wird initialisiert...</value>
+  </data>
+
 </root>

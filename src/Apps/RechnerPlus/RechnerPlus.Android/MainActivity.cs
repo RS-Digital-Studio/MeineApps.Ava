@@ -46,6 +46,22 @@ public class MainActivity : AvaloniaMainActivity<App>
             }
         };
 
+        // Share-Text via natives Android Share-Sheet (Intent.ActionSend)
+        UriLauncher.PlatformShareText = (text, title) =>
+        {
+            try
+            {
+                var intent = new Intent(Intent.ActionSend);
+                intent.SetType("text/plain");
+                intent.PutExtra(Intent.ExtraText, text);
+                StartActivity(Intent.CreateChooser(intent, title));
+            }
+            catch
+            {
+                // Share-Sheet nicht verfügbar
+            }
+        };
+
         // Haptic Feedback für Android registrieren
         App.HapticServiceFactory = _ => new AndroidHapticService(this);
 

@@ -574,4 +574,11 @@
     <value>Rotate your device for Scientific mode</value>
   </data>
 
+  <data name="LoadingShaders" xml:space="preserve">
+    <value>Preparing graphics engine...</value>
+  </data>
+  <data name="LoadingCalculator" xml:space="preserve">
+    <value>Initializing calculator...</value>
+  </data>
+
 </root>

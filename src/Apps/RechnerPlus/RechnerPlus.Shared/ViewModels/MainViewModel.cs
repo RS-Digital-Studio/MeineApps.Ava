@@ -26,10 +26,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private SettingsViewModel _settingsViewModel;
 
-    // Localized tab labels
+    // Lokalisierte Tab-Labels
     public string NavCalculatorText => _localization.GetString("NavCalculator");
     public string NavConverterText => _localization.GetString("NavConverter");
     public string NavSettingsText => _localization.GetString("NavSettings");
+
+    /// <summary>Lokalisierter "Kopieren"-Text für ContextFlyout im History-Verlauf.</summary>
+    public string CopyText => _localization.GetString("Copy") ?? "Copy";
 
     // Active tab indicators
     public bool IsCalculatorActive => SelectedTabIndex == 0;
@@ -71,6 +74,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(NavCalculatorText));
         OnPropertyChanged(nameof(NavConverterText));
         OnPropertyChanged(nameof(NavSettingsText));
+        OnPropertyChanged(nameof(CopyText));
     }
 
     partial void OnSelectedTabIndexChanged(int value)

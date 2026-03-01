@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Labs.Controls;
 using Avalonia.Media;
 using Avalonia.Threading;
+using MeineApps.Core.Ava.Services;
 using MeineApps.UI.SkiaSharp;
 using RechnerPlus.Graphics;
 using RechnerPlus.ViewModels;
@@ -20,6 +21,12 @@ public partial class CalculatorView : UserControl
     private bool _isLandscapeLayout;
     private const double SwipeThreshold = 40;
 
+    // Gecachte FindControl-Ergebnisse (befüllt in OnAttachedToVisualTree)
+    private Border? _burstOverlay;
+    private Border? _displayBorder;
+    private Button? _equalsButton;
+    private Border? _functionGraphBorder;
+
     // VFD-Flicker-Animation
     private DispatcherTimer? _vfdTimer;
     private float _vfdAnimTime;
@@ -30,6 +37,17 @@ public partial class CalculatorView : UserControl
     private const float BurstDuration = 0.5f; // Sekunden
     private const float BurstStep = 33f / 1000f; // ~30fps
 
+    // Funktionsgraph Auto-Hide
+    private DispatcherTimer? _graphHideTimer;
+
+    // Error-Shake Animation
+    private DispatcherTimer? _shakeTimer;
+    private int _shakeStep;
+    private static readonly double[] ShakeOffsets = [0, 4, -4, 3, -3, 2, -2, 0];
+
+    // Copy-Feedback Animation
+    private DispatcherTimer? _copyFeedbackTimer;
+
     public CalculatorView()
     {
         InitializeComponent();
@@ -37,20 +55,32 @@ public partial class CalculatorView : UserControl
         KeyDown += OnKeyDown;
         DataContextChanged += OnDataContextChanged;
 
-        // Swipe-to-Backspace auf Display-Border
-        var displayBorder = this.FindControl<Border>("DisplayBorder");
-        if (displayBorder != null)
+        // Swipe-to-Backspace auf Display-Border (wird im Constructor registriert,
+        // Cache-Befüllung erst in OnAttachedToVisualTree wenn Controls sicher vorhanden sind)
+        this.AttachedToVisualTree += (_, _) =>
         {
-            displayBorder.PointerPressed += OnDisplayPointerPressed;
-            displayBorder.PointerReleased += OnDisplayPointerReleased;
-        }
+            if (_displayBorder != null) return; // Bereits gecacht
+            _displayBorder = this.FindControl<Border>("DisplayBorder");
+            if (_displayBorder != null)
+            {
+                _displayBorder.PointerPressed += OnDisplayPointerPressed;
+                _displayBorder.PointerReleased += OnDisplayPointerReleased;
+            }
+        };
 
-        // VFD-Flicker-Timer (subtiles ~7Hz Flackern)
+        // VFD-Flicker-Timer (subtiles ~7Hz Flackern) - auch für Funktionsgraph-Glow
         _vfdTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
         _vfdTimer.Tick += (_, _) =>
         {
+            // Keine Canvas-Invalidierung wenn View nicht sichtbar (z.B. anderer Tab aktiv)
+            if (!IsEffectivelyVisible) return;
+
             _vfdAnimTime += 0.033f;
             VfdCanvas?.InvalidateSurface();
+
+            // Funktionsgraph-Canvas mitaktualisieren (Glow-Pulsierung)
+            if (_currentVm?.ShowFunctionGraph == true)
+                FunctionGraphCanvas?.InvalidateSurface();
         };
     }
 
@@ -59,6 +89,11 @@ public partial class CalculatorView : UserControl
         base.OnAttachedToVisualTree(e);
         Focus();
         _vfdTimer?.Start();
+
+        // Controls einmalig cachen (FindControl ist teuer bei wiedeholten Aufrufen)
+        _burstOverlay ??= this.FindControl<Border>("BurstOverlay");
+        _equalsButton ??= this.FindControl<Button>("EqualsButton");
+        _functionGraphBorder ??= this.FindControl<Border>("FunctionGraphBorder");
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
@@ -66,6 +101,9 @@ public partial class CalculatorView : UserControl
         base.OnDetachedFromVisualTree(e);
         _vfdTimer?.Stop();
         _burstTimer?.Stop();
+        _graphHideTimer?.Stop();
+        _shakeTimer?.Stop();
+        _copyFeedbackTimer?.Stop();
     }
 
     protected override void OnSizeChanged(SizeChangedEventArgs e)
@@ -84,6 +122,9 @@ public partial class CalculatorView : UserControl
             _currentVm.ShareRequested -= OnShare;
             _currentVm.CalculationCompleted -= OnCalculationCompleted;
             _currentVm.PropertyChanged -= OnVmPropertyChanged;
+            _currentVm.FunctionGraphChanged -= OnFunctionGraphChanged;
+            _currentVm.ErrorShakeRequested -= OnErrorShakeRequested;
+            _currentVm.CopyFeedbackRequested -= OnCopyFeedbackRequested;
         }
 
         _currentVm = DataContext as CalculatorViewModel;
@@ -95,6 +136,9 @@ public partial class CalculatorView : UserControl
             _currentVm.ShareRequested += OnShare;
             _currentVm.CalculationCompleted += OnCalculationCompleted;
             _currentVm.PropertyChanged += OnVmPropertyChanged;
+            _currentVm.FunctionGraphChanged += OnFunctionGraphChanged;
+            _currentVm.ErrorShakeRequested += OnErrorShakeRequested;
+            _currentVm.CopyFeedbackRequested += OnCopyFeedbackRequested;
         }
     }
 
@@ -138,23 +182,30 @@ public partial class CalculatorView : UserControl
     private void StartBurstAnimation()
     {
         _burstProgress = 0;
-        var burstOverlay = this.FindControl<Border>("BurstOverlay");
-        if (burstOverlay != null) burstOverlay.IsVisible = true;
+        // Gecachtes Feld nutzen statt FindControl
+        if (_burstOverlay != null) _burstOverlay.IsVisible = true;
 
-        _burstTimer?.Stop();
-        _burstTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
-        _burstTimer.Tick += (_, _) =>
+        // Timer einmalig erstellen, bei weiteren Aufrufen nur Stop/Start
+        if (_burstTimer == null)
         {
-            _burstProgress += BurstStep / BurstDuration;
-            if (_burstProgress >= 1f)
+            _burstTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+            _burstTimer.Tick += (_, _) =>
             {
-                _burstProgress = 0;
-                _burstTimer?.Stop();
-                var overlay = this.FindControl<Border>("BurstOverlay");
-                if (overlay != null) overlay.IsVisible = false;
-            }
-            BurstCanvas?.InvalidateSurface();
-        };
+                _burstProgress += BurstStep / BurstDuration;
+                if (_burstProgress >= 1f)
+                {
+                    _burstProgress = 0;
+                    _burstTimer?.Stop();
+                    // Gecachtes Feld nutzen statt FindControl
+                    if (_burstOverlay != null) _burstOverlay.IsVisible = false;
+                }
+                BurstCanvas?.InvalidateSurface();
+            };
+        }
+        else
+        {
+            _burstTimer.Stop();
+        }
         _burstTimer.Start();
     }
 
@@ -171,6 +222,169 @@ public partial class CalculatorView : UserControl
         var bounds = canvas.LocalClipBounds;
         var burstColor = SkiaThemeHelper.Primary;
         ResultBurstVisualization.Render(canvas, bounds, _burstProgress, burstColor);
+    }
+
+    #endregion
+
+    #region Funktionsgraph (SkiaSharp)
+
+    /// <summary>
+    /// Wird aufgerufen wenn sich die aktive Funktion im ViewModel ändert.
+    /// </summary>
+    private void OnFunctionGraphChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            // Gecachtes Feld nutzen statt FindControl
+            var graphBorder = _functionGraphBorder;
+            if (graphBorder == null) return;
+
+            if (_currentVm?.ShowFunctionGraph == true)
+            {
+                // Graph einblenden
+                graphBorder.Opacity = 1;
+                graphBorder.MaxHeight = 200;
+                FunctionGraphCanvas?.InvalidateSurface();
+
+                // Auto-Hide Timer starten/neustarten (5 Sekunden)
+                if (_graphHideTimer == null)
+                {
+                    _graphHideTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+                    _graphHideTimer.Tick += (_, _) =>
+                    {
+                        _graphHideTimer?.Stop();
+                        // Graph ausblenden via ViewModel
+                        _currentVm?.ClearFunctionGraph();
+                    };
+                }
+                else
+                {
+                    _graphHideTimer.Stop();
+                }
+                _graphHideTimer.Start();
+            }
+            else
+            {
+                // Graph ausblenden (Transition übernimmt die Animation)
+                graphBorder.Opacity = 0;
+                graphBorder.MaxHeight = 0;
+                _graphHideTimer?.Stop();
+            }
+        });
+    }
+
+    /// <summary>
+    /// Zeichnet den Funktionsgraph.
+    /// </summary>
+    private void OnPaintFunctionGraph(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(new SKColor(10, 10, 10)); // Gleicher Hintergrund wie VFD
+
+        if (_currentVm?.ActiveFunction == null || _currentVm.ActiveFunctionName == null) return;
+
+        var bounds = canvas.LocalClipBounds;
+        FunctionGraphVisualization.Render(
+            canvas, bounds,
+            _currentVm.ActiveFunction,
+            _currentVm.ActiveFunctionName,
+            _currentVm.FunctionGraphCurrentX,
+            _vfdAnimTime);
+    }
+
+    #endregion
+
+    #region Error-Shake Animation
+
+    /// <summary>
+    /// Startet die Shake-Animation auf dem DisplayBorder bei Fehlern.
+    /// </summary>
+    private void OnErrorShakeRequested(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            // Gecachtes Feld nutzen statt FindControl
+            var border = _displayBorder;
+            if (border == null) return;
+
+            // TranslateTransform sicherstellen
+            if (border.RenderTransform is not TranslateTransform translateTransform)
+            {
+                translateTransform = new TranslateTransform();
+                border.RenderTransform = translateTransform;
+            }
+
+            _shakeStep = 0;
+            // Timer einmalig erstellen, bei weiteren Aufrufen nur Stop/Start
+            if (_shakeTimer == null)
+            {
+                _shakeTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(300.0 / ShakeOffsets.Length) };
+                _shakeTimer.Tick += (_, _) =>
+                {
+                    if (_shakeStep >= ShakeOffsets.Length)
+                    {
+                        _shakeTimer?.Stop();
+                        // Sicherstellen dass die Position zurückgesetzt ist
+                        if (border.RenderTransform is TranslateTransform tt)
+                            tt.X = 0;
+                        return;
+                    }
+
+                    if (border.RenderTransform is TranslateTransform t)
+                        t.X = ShakeOffsets[_shakeStep];
+
+                    _shakeStep++;
+                };
+            }
+            else
+            {
+                _shakeTimer.Stop();
+            }
+            _shakeTimer.Start();
+        });
+    }
+
+    #endregion
+
+    #region Copy-Feedback Animation
+
+    // Gespeicherte Original-Werte für Copy-Feedback-Restore
+    private IBrush? _copyIconOriginalForeground;
+    private double _copyIconOriginalOpacity;
+
+    /// <summary>
+    /// Zeigt visuelles Feedback beim Kopieren (Copy-Icon grün aufleuchten + zurück).
+    /// </summary>
+    private void OnCopyFeedbackRequested(object? sender, EventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            // CopyIcon hat x:Name im AXAML
+            if (CopyIcon == null) return;
+
+            _copyIconOriginalForeground = CopyIcon.Foreground;
+            _copyIconOriginalOpacity = CopyIcon.Opacity;
+            CopyIcon.Foreground = new SolidColorBrush(Color.Parse("#22C55E"));
+            CopyIcon.Opacity = 1.0;
+
+            // Timer einmalig erstellen, bei weiteren Aufrufen nur Stop/Start
+            if (_copyFeedbackTimer == null)
+            {
+                _copyFeedbackTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+                _copyFeedbackTimer.Tick += (_, _) =>
+                {
+                    _copyFeedbackTimer?.Stop();
+                    if (CopyIcon == null) return;
+                    CopyIcon.Foreground = _copyIconOriginalForeground;
+                    CopyIcon.Opacity = _copyIconOriginalOpacity;
+                };
+            }
+            else
+            {
+                _copyFeedbackTimer.Stop();
+            }
+            _copyFeedbackTimer.Start();
+        });
     }
 
     #endregion
@@ -213,14 +427,15 @@ public partial class CalculatorView : UserControl
         rootGrid.Margin = new Thickness(8, 4, 8, 4);
 
         // Landscape 2-Spalten-Layout:
-        // Spalte 0 (40%): Display, ModeSelector, ScientificPanel, Memory+Freiraum
-        // Spalte 1 (60%): BasicGrid (gesamte Höhe via RowSpan=4)
-        // Letzte Zeile * damit BasicGrid rechts die volle Höhe nutzt
-        rootGrid.RowDefinitions = new RowDefinitions("Auto,Auto,Auto,*");
+        // Spalte 0 (40%): Display, FunctionGraph, ModeSelector, ScientificPanel, Memory+Freiraum
+        // Spalte 1 (60%): BasicGrid (gesamte Höhe via RowSpan)
+        // FunctionGraph wird im Landscape ausgeblendet (Platz sparen)
+        rootGrid.RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,*");
         rootGrid.ColumnDefinitions = new ColumnDefinitions("2*,3*");
         rootGrid.ColumnSpacing = 8;
 
         var display = this.FindControl<Panel>("DisplayPanel");
+        var graphBorder = this.FindControl<Border>("FunctionGraphBorder");
         var mode = this.FindControl<Grid>("ModeSelector");
         var scientific = this.FindControl<Grid>("ScientificPanel");
         var memory = this.FindControl<Grid>("MemoryRowGrid");
@@ -234,41 +449,53 @@ public partial class CalculatorView : UserControl
             Grid.SetColumnSpan(display, 1);
         }
 
-        // Mode Selector: links, Zeile 1
+        // FunctionGraph: links, Zeile 1 (kompakter im Landscape)
+        if (graphBorder != null)
+        {
+            Grid.SetRow(graphBorder, 1);
+            Grid.SetColumn(graphBorder, 0);
+            Grid.SetColumnSpan(graphBorder, 1);
+        }
+
+        // SKCanvasView im Graph kompakter
+        if (FunctionGraphCanvas != null)
+            FunctionGraphCanvas.Height = 100;
+
+        // Mode Selector: links, Zeile 2
         if (mode != null)
         {
-            Grid.SetRow(mode, 1);
+            Grid.SetRow(mode, 2);
             Grid.SetColumn(mode, 0);
             Grid.SetColumnSpan(mode, 1);
         }
 
-        // Scientific Panel: links, Zeile 2 (füllt verfügbaren Platz)
+        // Scientific Panel: links, Zeile 3
         if (scientific != null)
         {
-            Grid.SetRow(scientific, 2);
+            Grid.SetRow(scientific, 3);
             Grid.SetColumn(scientific, 0);
             Grid.SetColumnSpan(scientific, 1);
-            scientific.RowDefinitions = new RowDefinitions("*,*,*");
+            scientific.RowDefinitions = new RowDefinitions("*,*,*,*");
             scientific.ColumnSpacing = 2;
             scientific.RowSpacing = 2;
         }
 
-        // Memory Row: links, Zeile 3 (*-Zeile), am unteren Rand
+        // Memory Row: links, Zeile 4 (*-Zeile), am unteren Rand
         if (memory != null)
         {
-            Grid.SetRow(memory, 3);
+            Grid.SetRow(memory, 4);
             Grid.SetColumn(memory, 0);
             Grid.SetColumnSpan(memory, 1);
             memory.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom;
         }
 
-        // Basic Grid: rechts, über alle 4 Zeilen (gesamte Höhe)
+        // Basic Grid: rechts, über alle 5 Zeilen (gesamte Höhe)
         if (basic != null)
         {
             Grid.SetRow(basic, 0);
             Grid.SetColumn(basic, 1);
             Grid.SetColumnSpan(basic, 1);
-            Grid.SetRowSpan(basic, 4);
+            Grid.SetRowSpan(basic, 5);
             basic.RowSpacing = 2;
             basic.ColumnSpacing = 2;
         }
@@ -282,11 +509,12 @@ public partial class CalculatorView : UserControl
 
         rootGrid.Classes.Remove("Landscape");
         rootGrid.Margin = new Thickness(16);
-        rootGrid.RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,*");
+        rootGrid.RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto,Auto,*");
         rootGrid.ColumnDefinitions = new ColumnDefinitions();
         rootGrid.ColumnSpacing = 0;
 
         var display = this.FindControl<Panel>("DisplayPanel");
+        var graphBorder = this.FindControl<Border>("FunctionGraphBorder");
         var mode = this.FindControl<Grid>("ModeSelector");
         var scientific = this.FindControl<Grid>("ScientificPanel");
         var memory = this.FindControl<Grid>("MemoryRowGrid");
@@ -300,38 +528,50 @@ public partial class CalculatorView : UserControl
             Grid.SetColumnSpan(display, 1);
         }
 
-        // Mode Selector: Zeile 1
+        // FunctionGraph: Zeile 1
+        if (graphBorder != null)
+        {
+            Grid.SetRow(graphBorder, 1);
+            Grid.SetColumn(graphBorder, 0);
+            Grid.SetColumnSpan(graphBorder, 1);
+        }
+
+        // SKCanvasView Höhe zurücksetzen
+        if (FunctionGraphCanvas != null)
+            FunctionGraphCanvas.Height = 140;
+
+        // Mode Selector: Zeile 2
         if (mode != null)
         {
-            Grid.SetRow(mode, 1);
+            Grid.SetRow(mode, 2);
             Grid.SetColumn(mode, 0);
             Grid.SetColumnSpan(mode, 1);
         }
 
-        // Scientific Panel: Zeile 2, Auto-Rows zurücksetzen
+        // Scientific Panel: Zeile 3, Auto-Rows zurücksetzen
         if (scientific != null)
         {
-            Grid.SetRow(scientific, 2);
+            Grid.SetRow(scientific, 3);
             Grid.SetColumn(scientific, 0);
             Grid.SetColumnSpan(scientific, 1);
-            scientific.RowDefinitions = new RowDefinitions("Auto,Auto,Auto");
+            scientific.RowDefinitions = new RowDefinitions("Auto,Auto,Auto,Auto");
             scientific.ColumnSpacing = 6;
             scientific.RowSpacing = 6;
         }
 
-        // Memory Row: Zeile 3
+        // Memory Row: Zeile 4
         if (memory != null)
         {
-            Grid.SetRow(memory, 3);
+            Grid.SetRow(memory, 4);
             Grid.SetColumn(memory, 0);
             Grid.SetColumnSpan(memory, 1);
             memory.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
         }
 
-        // Basic Grid: Zeile 4
+        // Basic Grid: Zeile 5
         if (basic != null)
         {
-            Grid.SetRow(basic, 4);
+            Grid.SetRow(basic, 5);
             Grid.SetColumn(basic, 0);
             Grid.SetColumnSpan(basic, 1);
             Grid.SetRowSpan(basic, 1);
@@ -388,12 +628,11 @@ public partial class CalculatorView : UserControl
         _currentVm.PasteValue(text);
     }
 
-    private async Task OnShare(string text)
+    private Task OnShare(string text)
     {
-        // Auf Desktop: In Zwischenablage kopieren als Fallback
-        var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel?.Clipboard != null)
-            await topLevel.Clipboard.SetTextAsync(text);
+        // Natives Share-Sheet (Android) oder Clipboard-Fallback (Desktop)
+        UriLauncher.ShareText(text, "RechnerPlus");
+        return Task.CompletedTask;
     }
 
     #endregion
@@ -410,16 +649,17 @@ public partial class CalculatorView : UserControl
             // Result-Burst-Animation starten
             StartBurstAnimation();
 
-            // Equals-Button: Kurzer Weiß-Flash (100ms)
-            var equalsBtn = this.FindControl<Button>("EqualsButton");
+            // Equals-Button: Kurzer Weiß-Flash (100ms) via CSS-Klasse
+            // (Kein direktes Background-Setzen, da das den Style-Setter neutralisiert)
+            // Gecachtes Feld nutzen statt FindControl
+            var equalsBtn = _equalsButton;
             if (equalsBtn != null)
             {
-                var originalBg = equalsBtn.Background;
-                equalsBtn.Background = new SolidColorBrush(Colors.White, 0.3);
+                equalsBtn.Classes.Add("Flashing");
 
                 DispatcherTimer.RunOnce(() =>
                 {
-                    equalsBtn.Background = originalBg;
+                    equalsBtn.Classes.Remove("Flashing");
                 }, TimeSpan.FromMilliseconds(100));
             }
         });

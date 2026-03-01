@@ -122,13 +122,15 @@ baseValue = value * ToBase + Offset
 - Offene Klammern automatisch schließen, trailing Operatoren entfernen für Preview
 - Nur angezeigt wenn sich der Wert vom Display unterscheidet
 
-### Landscape-Layout (CalculatorView.axaml.cs, 13.02.2026)
+### Landscape-Layout (CalculatorView.axaml.cs, 13.02.2026, aktualisiert 28.02.2026)
 - `OnSizeChanged` prueft Width > Height
 - Automatischer Wechsel zu Scientific Mode mit `_autoSwitchedToScientific` Flag
 - Zurueck zu Basic nur wenn automatisch gewechselt wurde (nicht manuell)
-- **2-Spalten-Layout**: Spalte 0 (40%): Display+ModeSelector+ScientificPanel+Memory | Spalte 1 (60%): BasicGrid (RowSpan=4)
-- RowDefinitions: `Auto,Auto,Auto,*` - letzte Zeile * fuer BasicGrid-Gesamthoehe
+- **2-Spalten-Layout**: Spalte 0 (40%): Display+FunctionGraph+ModeSelector+ScientificPanel+Memory | Spalte 1 (60%): BasicGrid (RowSpan=5)
+- RowDefinitions Portrait: `Auto,Auto,Auto,Auto,Auto,*` (Display, FunctionGraph, Mode, Scientific, Memory, BasicGrid)
+- RowDefinitions Landscape: `Auto,Auto,Auto,Auto,*` (Display, FunctionGraph, Mode, Scientific, Memory)
 - Memory-Row: `VerticalAlignment.Bottom` im Landscape (zurueckgesetzt auf Stretch in Portrait)
+- FunctionGraph: 140px Portrait, 100px Landscape
 - Kompaktere Landscape-Styles: CalcButton MinHeight 36, Function MinHeight 32, Memory MinHeight 28
 - ModeSelector-Buttons: FontSize 11, Padding 8,3 im Landscape
 - Scientific: ColumnSpacing/RowSpacing 4 statt 6
@@ -139,18 +141,25 @@ baseValue = value * ToBase + Offset
 - `RawDisplay`: Computed Property - entfernt Tausender-Trennzeichen und normalisiert Dezimaltrenner auf InvariantCulture
 - `FormatResult()`: Math.Round(10) → Dezimalstellen-Setting → locale-abhängige Tausender-/Dezimaltrenner
 - `RefreshNumberFormat()`: Aktualisiert Zahlenformat aus Preferences (aufgerufen beim Tab-Wechsel)
-- Undo/Redo: `_undoStack`/`_redoStack` (Stack<CalculatorState>), SaveState() vor zustandsändernden Operationen
-- `DisplayFontSize`: Automatisch angepasst bei Display-Änderungen (42/34/28/22/18)
+- `CreateCurrentState()`: Zentrale Hilfsmethode für CalculatorState-Snapshots (verwendet in SaveState/Undo/Redo)
+- `CountOpenParentheses(string expr)`: Parametrisierte statische Methode, parameterlose Variante delegiert an Expression. In Percent() für baseExpr genutzt
+- Undo/Redo: `_undoList` (LinkedList<CalculatorState>, O(1) Overflow ohne Array-Umkopieren) + `_redoStack` (Stack). SaveState() vor JEDER zustandsändernden Operation inkl. Abs()
+- `DisplayFontSize`: Automatisch angepasst bei Display-Änderungen (52/42/34/26/20)
 - Wissenschaftliche Funktionen delegieren an `_engine` (besseres Error-Handling via CalculationResult)
 - `CalculatorEngine.Factorial()` gibt `CalculationResult` zurück (statt double)
 - `ExpressionParser.ProcessUnaryMinus()`: Konsekutive Minus-Zeichen (--5=5, ---5=-5)
 - Alle ViewModels: IDisposable mit sauberem Event-Unsubscribe
+- `ExpressionHighlightControl`: Brushes gecacht (`_cachedPrimary`/`_cachedText`/`_cachedMuted`), invalidiert bei `ActualThemeVariantChanged`-Event
+- `CalculatorView`: `FindControl`-Ergebnisse (`_burstOverlay`, `_displayBorder`, `_equalsButton`, `_functionGraphBorder`) in `OnAttachedToVisualTree` gecacht
+- `ConverterViewModel.Convert()`: Leere Eingabe → `OutputValue = ""` statt Fehlertext
+- `VfdDisplayVisualization`: `_glowPaint.MaskFilter` dauerhaft im Field-Initializer gesetzt. `_dotSegmentPaint` für Punkte ohne Glow
+- `FunctionGraphVisualization`: `xStep`/`yStep` einmal in `Render()` berechnet, an `DrawGrid()` + `DrawLabels()` übergeben (kein doppeltes `CalculateStep()`)
 
 ### UI-Layout (12.02.2026)
 - **Display-Card**: Expression + Copy-Icon + Backspace-Icon (oben rechts) + Memory-Indikator mit ToolTip (oben links) + Live-Preview
 - **Mode-Selector**: Basic | Scientific | INV | RAD/DEG
 - **Basic Mode Grid (4×5)**: `C | () | % | ÷` / `789×` / `456−` / `123+` / `± 0 . =`
-- **Scientific Panel (3×5)**: Row 0: sin/cos/tan/log/ln (INV-abhängig), Row 1: ( ) x^y 1/x Ans, Row 2: π e x² √x x!
+- **Scientific Panel (4×5)**: Row 0: sin/cos/tan/log/ln (INV-abhängig), Row 1: ( ) x^y 1/x Ans, Row 2: π e x² √x x!, Row 3: |x| (Abs)
 - **Memory Row (5)**: MC MR M+ M- MS
 - CE entfernt (redundant mit C, nur noch per Delete-Taste)
 
@@ -201,12 +210,12 @@ baseValue = value * ToBase + Offset
 - Display-Bereich in Panel gewrappt (für Burst-Overlay)
 - VFD-Canvas: Border mit `#0A0A0A` Hintergrund, 56px Höhe, CornerRadius 8
 - Original-TextBlock unsichtbar (Opacity=0, für Layout-Referenz)
-- VFD-Flicker-Timer: DispatcherTimer 33ms, startet bei OnAttachedToVisualTree
+- VFD-Flicker-Timer: DispatcherTimer 33ms, startet bei OnAttachedToVisualTree (auch für FunctionGraph-Glow)
 - Burst-Timer: DispatcherTimer 33ms, startet bei CalculationCompleted, stoppt nach 500ms
 - PropertyChanged-Handler invalidiert VFD bei Display/HasError-Änderung
 
-### FunctionGraph
-- Mini-Funktionsgraph (200px) für sin, cos, tan, sqrt, log, ln, x², x³, 1/x, abs
+### FunctionGraph (28.02.2026 - in UI integriert)
+- Mini-Funktionsgraph (140px Portrait, 100px Landscape) für sin, cos, tan, sqrt, log, ln, x², 1/x
 - Smooth SKPath-Kurve mit Primary-Farbe + Glow-Effekt + Gradient-Füllung
 - Automatische X/Y-Achsen-Skalierung mit dezenten Grid-Linien
 - Aktueller Eingabewert als pulsierender Punkt auf der Kurve mit Tooltip "(x, y)"
@@ -214,10 +223,46 @@ baseValue = value * ToBase + Offset
 - Funktionsname als f(x)-Label oben links
 - `GetRange(functionName)` → vorkonfigurierte X-Bereiche pro Funktion
 - `Render(SKCanvas, SKRect, Func<float,float>, functionName, currentX, animTime)`
+- **ViewModel**: `ActiveFunctionName`, `ActiveFunction`, `FunctionGraphCurrentX`, `ShowFunctionGraph`, `FunctionGraphChanged` Event
+- **View**: FunctionGraphBorder (Row 1 im RootGrid, Auto), Opacity+MaxHeight Transition, 5s Auto-Hide-Timer
+- **Trigger**: Wird bei erfolgreicher Berechnung von sin/cos/tan/log/ln/sqrt/x²/1/x aktiviert
+- **Glow-Pulsierung**: Teilt den VFD-Timer (33ms Intervall), `_vfdAnimTime` als animTime
+
+### Error-Shake (28.02.2026)
+- `ErrorShakeRequested` Event im ViewModel, gefeuert in `ShowError()`
+- TranslateTransform auf DisplayBorder: 0→4→-4→3→-3→2→-2→0 px über 300ms
+- DispatcherTimer-basiert (8 Schritte, ~37ms pro Schritt)
+
+### Copy-Feedback (28.02.2026)
+- `CopyFeedbackRequested` Event im ViewModel, gefeuert in `CopyDisplay()`
+- CopyIcon Foreground kurz grün (#22C55E, volle Opacity), nach 500ms zurück
+
+### Memory-Indikator Puls (28.02.2026)
+- "M" TextBlock mit XAML KeyFrame-Animation (nur Opacity, KEIN RenderTransform)
+- Opacity 0.6→1.0→0.6, 2s Dauer, INFINITE, Alternate, CubicEaseInOut
 
 ## App-spezifische Abhängigkeiten
 
 - **MeineApps.CalcLib** - Calculator Engine + ExpressionParser + IHistoryService
+
+## Changelog
+
+- **01.03.2026**: **Immersiver Ladebildschirm**: Loading-Pipeline (`Loading/RechnerPlusLoadingPipeline.cs`) mit `ShaderPreloader` (weight 30) + ViewModel-Erstellung (weight 10). `App.axaml.cs` nutzt `Panel(MainView + SkiaLoadingSplash)`-Pattern mit `RunLoadingAsync`. `DataContext` wird erst nach Pipeline-Abschluss gesetzt (nicht mehr synchron beim Start). Partikel-Effekte via `SplashScreenRenderer` aus `MeineApps.UI`.
+- **28.02.2026 (5)**: Ladebildschirm mit echtem Preloading:
+  - SplashOverlay (MeineApps.UI) mit Task-basiertem Preloading integriert
+  - 2 Preload-Schritte: SkSL-Shader (12 Stück, ThreadPool), CalculatorEngine+ExpressionParser warm machen (erster Parse)
+  - Onboarding-Tooltips erst nach PreloadCompleted (statt direkt bei OnAttachedToVisualTree)
+  - Ladebalken zeigt echten Fortschritt mit Status-Text
+- **28.02.2026 (4)**: Performance-Optimierung (Tiefenanalyse):
+  - HOCH: VFD MaskFilter dauerhaft auf `_glowPaint` gesetzt, separater `_dotSegmentPaint` ohne Filter
+  - HOCH: Abs() ruft jetzt `SaveState()` vor Operation auf (Undo-Support)
+  - MITTEL: Undo-Stack `LinkedList<T>` statt `Stack<T>` → O(1) RemoveFirst bei Overflow
+  - MITTEL: ExpressionHighlightControl Brush-Cache mit `_cachedPrimary/Text/Muted`, invalidiert nur bei Theme-Wechsel
+  - MITTEL: ConverterViewModel: Leere Eingabe → leere Ausgabe statt "Invalid"
+  - MITTEL: Percent() nutzt `CountOpenParentheses()` statt Inline-Loop
+  - MITTEL: CalculatorView FindControl-Ergebnisse gecacht (4 Felder in OnAttachedToVisualTree)
+  - MITTEL: FunctionGraph CalculateStep() als Parameter an DrawGrid/DrawLabels durchgereicht
+- **28.02.2026 (3)**: Verbesserungen (Phase 2): (1) int.TryParse statt int.Parse in SettingsVM (Crash-Schutz). (2) Preferences-Wert für Dezimalstellen gecacht statt bei jedem FormatResult aus DB geladen. (3) Nativer Android-Share via UriLauncher.ShareText statt nur Clipboard-Copy. (4) GroupedHistory/RecentHistory gecacht statt bei jedem Zugriff neu berechnet. (5) CreateCurrentState() Hilfsmethode extrahiert (3x Duplikation eliminiert). (6) CountOpenParentheses(string) parametrisiert (4x Duplikation eliminiert). (7) |x| (Abs) Button im Scientific Panel angebunden. (8) CopyHistoryExpression über Flyout auf History-Einträgen zugänglich. (9) DispatcherTimer-Wiederverwendung statt Neuerstellen bei Burst/Graph/Shake/Copy.
 
 ## Wichtige Fixes
 
@@ -256,3 +301,19 @@ baseValue = value * ToBase + Offset
   - Phase 4: Mini-History Chips, gruppierter Verlauf (Heute/Gestern/Älter), Empty-State Puls-Animation, 6 neue RESX-Keys (6 Sprachen)
   - Phase 5: Converter Swap-Rotation (180° pro Klick), Equals Weiß-Flash, Result FontSize 32
   - Phase 6: TooltipBubble Control (MeineApps.UI), Onboarding-Flow (3 Tooltips, Preference onboarding_shown_v2), 6 neue RESX-Keys (6 Sprachen)
+- **Bugfix-Runde (28.02.2026)**: 8 Fixes:
+  - **4 Native Leaks in FunctionGraphVisualization.cs**: SKShader pro Frame (Dispose vor Neuzuweisung), SKMaskFilter pro Frame (statische _curveGlowFilter/_dotGlowFilter), SKPathEffect pro Frame (statisches _dashEffect)
+  - **1 Performance**: Array-Allokation pro Frame (statische _xValues/_yValues, nur bei Größenänderung neu alloziert)
+  - **2 Android-Crash**: Fehlender initialer RenderTransform auf CalcButton/Function-Styles (scale(1) + 50%,50% Origin)
+  - **1 UTC-Bug**: History-Gruppierung verglich UTC-Timestamp mit DateTime.Today (ToLocalTime().Date)
+  - **1 Style-Fix**: Equals-Button Flash via CSS-Klasse (.Flashing) statt direktem Background-Setzen
+  - **1 Performance**: VFD-Timer überspringt Canvas-Invalidierung wenn View nicht sichtbar (IsEffectivelyVisible)
+- **Code-Review-Fixes (28.02.2026)**: 8 Verbesserungen:
+  - **ROB-1**: SetNumberFormat() nutzt int.TryParse statt int.Parse (Crash-Schutz bei ungültigem XAML CommandParameter)
+  - **PERF-1**: FormatResult() liest Dezimalstellen aus `_cachedDecimalPlaces` statt bei jedem Aufruf aus Preferences
+  - **UX-6**: Share nutzt UriLauncher.ShareText() (natives Android Share-Sheet), PlatformShareText in MainActivity registriert
+  - **PERF-2/3**: GroupedHistory und RecentHistory werden in `_cachedGroupedHistory`/`_cachedRecentHistory` gecacht, nur bei OnHistoryChanged/OnLanguageChanged neu berechnet
+  - **CQ-2**: CreateCurrentState() als zentrale Hilfsmethode extrahiert (dreifache Duplikation in SaveState/Undo/Redo eliminiert)
+  - **CQ-3**: CountOpenParentheses(string expr) als parametrisierte statische Methode, 4x duplizierte Logik in Calculate/UpdatePreview ersetzt
+  - **CQ-4/5**: |x| (Abs) Button im Scientific Panel (Row 3), CopyHistoryExpression als ContextFlyout auf History-Einträgen
+  - **CQ-7**: 4 Timer (Burst/GraphHide/Shake/CopyFeedback) werden einmalig erstellt und wiederverwendet statt bei jeder Nutzung neu

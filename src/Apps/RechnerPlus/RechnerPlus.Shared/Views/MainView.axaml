@@ -56,7 +56,7 @@
   </UserControl.Styles>
 
   <Panel AutomationProperties.AutomationId="Main_RootPanel">
-    <Grid RowDefinitions="*,Auto">
+    <Grid RowDefinitions="*,Auto" x:Name="MainContent">
 
       <!-- Content Area -->
       <Panel Grid.Row="0" Name="ContentPanel" AutomationProperties.AutomationId="Main_ContentPanel">
@@ -391,6 +391,17 @@
                                     CornerRadius="0"
                                     Command="{Binding $parent[Border].((vm:MainViewModel)DataContext).CalculatorViewModel.SelectHistoryEntryCommand}"
                                     CommandParameter="{Binding}">
+                              <Button.ContextFlyout>
+                                <MenuFlyout>
+                                  <MenuItem Header="{Binding $parent[Border].((vm:MainViewModel)DataContext).CopyText}"
+                                            Command="{Binding $parent[Border].((vm:MainViewModel)DataContext).CalculatorViewModel.CopyHistoryExpressionCommand}"
+                                            CommandParameter="{Binding}">
+                                    <MenuItem.Icon>
+                                      <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16" />
+                                    </MenuItem.Icon>
+                                  </MenuItem>
+                                </MenuFlyout>
+                              </Button.ContextFlyout>
                               <StackPanel Spacing="4">
                                 <TextBlock Text="{Binding Expression}"
                                            FontSize="14"
@@ -461,6 +472,9 @@
       </Grid>
     </Border>
 
+    <!-- Splash Overlay mit echtem Preloading -->
+    <controls:SplashOverlay x:Name="Splash"
+                             AppName="RechnerPlus" />
   </Panel>
 
 </UserControl>

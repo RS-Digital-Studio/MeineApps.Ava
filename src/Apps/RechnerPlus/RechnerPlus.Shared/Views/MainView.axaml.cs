@@ -4,10 +4,15 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
+using MeineApps.CalcLib;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.UI.SkiaSharp.Shaders;
 using Microsoft.Extensions.DependencyInjection;
 using RechnerPlus.ViewModels;
+using System;
+using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace RechnerPlus.Views;
 
@@ -40,7 +45,41 @@ public partial class MainView : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        TryStartOnboarding();
+
+        var loc = App.Services.GetService<ILocalizationService>();
+
+        // Preloading-Tasks im SplashOverlay konfigurieren
+        Splash.PreloadAction = async (reportProgress) =>
+        {
+            // Schritt 1: SkSL-Shader vorab kompilieren (auf ThreadPool)
+            reportProgress(0.0f, loc?.GetString("LoadingShaders") ?? "Grafik-Engine wird vorbereitet...");
+            await Task.Run(() => ShaderPreloader.PreloadAll());
+
+            // Schritt 2: Calculator-Engine warm machen (erster Parse-Durchlauf)
+            reportProgress(0.60f, loc?.GetString("LoadingCalculator") ?? "Rechner wird initialisiert...");
+            await Task.Run(() =>
+            {
+                try
+                {
+                    var parser = App.Services.GetService<ExpressionParser>();
+                    // Einmal parsen um JIT/Caches aufzuwärmen
+                    parser?.Evaluate("1+1");
+                }
+                catch (Exception ex) { Debug.WriteLine($"[SplashPreload] Engine: {ex.Message}"); }
+            });
+
+            // History ist bereits im Constructor geladen (LoadHistory() in CalculatorVM)
+            reportProgress(1.0f, "");
+        };
+
+        // Benannter Handler für sauberes Unsubscribe (HOCH-2)
+        Splash.PreloadCompleted += OnSplashPreloadCompleted;
+    }
+
+    private void OnSplashPreloadCompleted(object? sender, EventArgs e)
+    {
+        Splash.PreloadCompleted -= OnSplashPreloadCompleted;
+        Dispatcher.UIThread.Post(TryStartOnboarding);
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -148,7 +187,7 @@ public partial class MainView : UserControl
 
             _onboardingStep = 0;
 
-            // 500ms Delay nach App-Start
+            // 500ms Delay nach Splash-Ende
             DispatcherTimer.RunOnce(ShowNextOnboardingStep, TimeSpan.FromMilliseconds(500));
         }
         catch

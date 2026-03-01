@@ -139,7 +139,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void SetNumberFormat(string format)
     {
-        NumberFormat = int.Parse(format);
+        if (int.TryParse(format, out var value))
+            NumberFormat = value;
     }
 
     [RelayCommand]

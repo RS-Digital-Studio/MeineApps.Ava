@@ -17,7 +17,8 @@
       <Setter Property="VerticalAlignment" Value="Stretch"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/>
       <Setter Property="VerticalContentAlignment" Value="Center"/>
-      <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+      <Setter Property="RenderTransform" Value="scale(1)"/>
+      <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
       <Setter Property="Transitions">
         <Transitions>
           <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08"/>
@@ -57,7 +58,8 @@
     <!-- Scientific function button styling -->
     <Style Selector="Button.Function">
       <Setter Property="FontSize" Value="13"/>
-      <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+      <Setter Property="RenderTransform" Value="scale(1)"/>
+      <Setter Property="RenderTransformOrigin" Value="50%,50%"/>
       <Setter Property="Transitions">
         <Transitions>
           <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.08"/>
@@ -82,6 +84,11 @@
       <Setter Property="Foreground" Value="{DynamicResource PrimaryContrastBrush}"/>
       <Setter Property="BorderBrush" Value="{DynamicResource PrimaryHoverBrush}"/>
       <Setter Property="BorderThickness" Value="1"/>
+    </Style>
+
+    <!-- Equals-Button Flash bei Berechnung (CSS-Klasse statt direktem Background-Setzen) -->
+    <Style Selector="Button.Flashing">
+      <Setter Property="Background" Value="#4DFFFFFF"/>
     </Style>
 
     <!-- Memory-Row: dezent wenn leer, volle Sichtbarkeit wenn aktiv -->
@@ -133,6 +140,10 @@
     <Style Selector="Grid.Landscape Button.Equals">
       <Setter Property="FontSize" Value="22"/>
     </Style>
+    <!-- Landscape: Funktionsgraph kompakter -->
+    <Style Selector="Grid.Landscape Border#FunctionGraphBorder">
+      <Setter Property="Margin" Value="0,0,0,4"/>
+    </Style>
     <!-- Landscape: Memory-Buttons kompakter -->
     <Style Selector="Grid.Landscape Grid#MemoryRowGrid Button">
       <Setter Property="FontSize" Value="12"/>
@@ -142,7 +153,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Grid x:Name="RootGrid" AutomationProperties.AutomationId="Calc_RootPanel" RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="16">
+  <Grid x:Name="RootGrid" AutomationProperties.AutomationId="Calc_RootPanel" RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="16">
 
     <!-- ============================================ -->
     <!-- 1. Display Area                              -->
@@ -157,6 +168,7 @@
           <!-- Expression line mit Copy + Backspace-Button -->
           <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto">
             <TextBlock Grid.Column="0"
+                       x:Name="MemoryIndicator"
                        AutomationProperties.AutomationId="Calc_MemoryIndicator"
                        Text="M"
                        FontSize="13"
@@ -165,7 +177,22 @@
                        IsVisible="{Binding HasMemory}"
                        VerticalAlignment="Center"
                        Margin="0,0,6,0"
-                       ToolTip.Tip="{Binding MemoryDisplay}"/>
+                       ToolTip.Tip="{Binding MemoryDisplay}">
+              <TextBlock.Styles>
+                <Style Selector="TextBlock#MemoryIndicator">
+                  <Style.Animations>
+                    <Animation Duration="0:0:2" IterationCount="INFINITE" PlaybackDirection="Alternate" Easing="CubicEaseInOut">
+                      <KeyFrame Cue="0%">
+                        <Setter Property="Opacity" Value="0.6"/>
+                      </KeyFrame>
+                      <KeyFrame Cue="100%">
+                        <Setter Property="Opacity" Value="1.0"/>
+                      </KeyFrame>
+                    </Animation>
+                  </Style.Animations>
+                </Style>
+              </TextBlock.Styles>
+            </TextBlock>
             <ctrl:ExpressionHighlightControl Grid.Column="1"
                        x:Name="ExpressionText"
                        AutomationProperties.AutomationId="Calc_ExpressionText"
@@ -189,6 +216,7 @@
                                Opacity="0.6"/>
             </Button>
             <Button Grid.Column="3"
+                    x:Name="CopyButton"
                     AutomationProperties.AutomationId="Calc_BtnCopy"
                     Classes="Text"
                     Padding="8,4"
@@ -196,7 +224,7 @@
                     MinHeight="0"
                     Command="{Binding CopyDisplayCommand}"
                     ToolTip.Tip="Copy">
-              <mi:MaterialIcon Kind="ContentCopy" Width="16" Height="16"
+              <mi:MaterialIcon x:Name="CopyIcon" Kind="ContentCopy" Width="16" Height="16"
                                Foreground="{DynamicResource TextMutedBrush}"
                                Opacity="0.6"/>
             </Button>
@@ -271,9 +299,27 @@
     </Panel>
 
     <!-- ============================================ -->
+    <!-- 1b. Function Graph (SkiaSharp)               -->
+    <!-- ============================================ -->
+    <Border x:Name="FunctionGraphBorder" Grid.Row="1"
+            CornerRadius="12" ClipToBounds="True"
+            Background="#0A0A0A"
+            Margin="0,0,0,8"
+            Opacity="0" MaxHeight="0"
+            IsHitTestVisible="False">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="0:0:0.3" Easing="CubicEaseOut"/>
+          <DoubleTransition Property="MaxHeight" Duration="0:0:0.3" Easing="CubicEaseOut"/>
+        </Transitions>
+      </Border.Transitions>
+      <skia:SKCanvasView x:Name="FunctionGraphCanvas" Height="140" PaintSurface="OnPaintFunctionGraph" />
+    </Border>
+
+    <!-- ============================================ -->
     <!-- 2. Mode Selector + INV + Angle Mode          -->
     <!-- ============================================ -->
-    <Grid x:Name="ModeSelector" Grid.Row="1"
+    <Grid x:Name="ModeSelector" Grid.Row="2"
           ColumnDefinitions="Auto,Auto,*,Auto,Auto"
           Margin="0,0,0,8">
 
@@ -332,8 +378,8 @@
     <!-- ============================================ -->
     <!-- 3. Scientific Functions Panel (Slide-Animation) -->
     <!-- ============================================ -->
-    <Grid x:Name="ScientificPanel" Grid.Row="2"
-          RowDefinitions="Auto,Auto,Auto"
+    <Grid x:Name="ScientificPanel" Grid.Row="3"
+          RowDefinitions="Auto,Auto,Auto,Auto"
           ColumnDefinitions="*,*,*,*,*"
           RowSpacing="6"
           ColumnSpacing="6"
@@ -427,12 +473,18 @@
               AutomationProperties.AutomationId="Calc_BtnFactorial"
               Classes="Outlined Small Function"
               Command="{Binding FactorialCommand}"/>
+
+      <!-- Row 3: |x| (Absolutwert) -->
+      <Button Grid.Row="3" Grid.Column="0" Content="|x|"
+              AutomationProperties.AutomationId="Calc_BtnAbs"
+              Classes="Outlined Small Function"
+              Command="{Binding AbsCommand}"/>
     </Grid>
 
     <!-- ============================================ -->
     <!-- 4. Memory Row (dezent wenn leer)             -->
     <!-- ============================================ -->
-    <Grid x:Name="MemoryRowGrid" Grid.Row="3"
+    <Grid x:Name="MemoryRowGrid" Grid.Row="4"
           Classes="MemoryRow"
           Classes.MemoryActive="{Binding HasMemory}"
           ColumnDefinitions="*,*,*,*,*"
@@ -464,7 +516,7 @@
     <!-- ============================================ -->
     <!-- 5. Main Calculator Button Grid               -->
     <!-- ============================================ -->
-    <Grid x:Name="BasicGrid" Grid.Row="4"
+    <Grid x:Name="BasicGrid" Grid.Row="5"
           RowDefinitions="*,*,*,*,*"
           ColumnDefinitions="*,*,*,*"
           RowSpacing="8"

@@ -482,4 +482,11 @@
     <value>Gira tu dispositivo para el modo científico</value>
   </data>
 
+  <data name="LoadingShaders" xml:space="preserve">
+    <value>Preparando motor gráfico...</value>
+  </data>
+  <data name="LoadingCalculator" xml:space="preserve">
+    <value>Inicializando calculadora...</value>
+  </data>
+
 </root>

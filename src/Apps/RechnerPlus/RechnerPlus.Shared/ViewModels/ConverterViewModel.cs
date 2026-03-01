@@ -89,8 +89,15 @@ public partial class ConverterViewModel : ObservableObject, IDisposable
     {
         if (FromUnit == null || ToUnit == null) return;
 
+        // Leere Eingabe → OutputValue leeren statt Fehlertext anzeigen
+        if (string.IsNullOrWhiteSpace(InputValue))
+        {
+            OutputValue = "";
+            return;
+        }
+
         // EU-Format unterstützen: Komma als Dezimaltrenner akzeptieren
-        var input = InputValue?.Replace(',', '.') ?? "";
+        var input = InputValue.Replace(',', '.');
         if (!double.TryParse(input, System.Globalization.NumberStyles.Any,
                 System.Globalization.CultureInfo.InvariantCulture, out var value))
         {

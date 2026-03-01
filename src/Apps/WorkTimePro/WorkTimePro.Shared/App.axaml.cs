@@ -1,11 +1,16 @@
+using System.Diagnostics;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Extensions;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.UI.Controls;
+using WorkTimePro.Loading;
 using WorkTimePro.Resources.Strings;
 using WorkTimePro.Services;
 using WorkTimePro.ViewModels;
@@ -59,67 +64,88 @@ public partial class App : Application
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
-        // Initialize localization
+        // Localization initialisieren
         var locService = Services.GetRequiredService<ILocalizationService>();
         locService.Initialize();
         LocalizationManager.Initialize(locService);
 
-        // Initialize theme (must be resolved to apply saved theme at startup)
+        // Theme initialisieren
         var themeService = Services.GetRequiredService<IThemeService>();
         SkiaThemeHelper.RefreshColors();
         themeService.ThemeChanged += (_, _) => SkiaThemeHelper.RefreshColors();
 
         // Window/View sofort erstellen (Avalonia braucht das synchron)
-        // DataContext wird erst nach DB-Init gesetzt
+        // DataContext wird erst nach Pipeline-Abschluss gesetzt
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
+            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = "v2.0.5" };
+            var panel = new Panel();
+            panel.Children.Add(new MainView());
+            panel.Children.Add(splash);
+            desktop.MainWindow.Content = panel;
+            _ = RunLoadingAsync(splash);
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            singleViewPlatform.MainView = new MainView();
+            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = "v2.0.5" };
+            var panel = new Panel();
+            panel.Children.Add(new MainView());
+            panel.Children.Add(splash);
+            singleViewPlatform.MainView = panel;
+            _ = RunLoadingAsync(splash);
         }
-
-        // DB + Reminder initialisieren, dann MainViewModel erstellen
-        _ = InitializeAndStartAsync();
 
         base.OnFrameworkInitializationCompleted();
     }
 
-    private async Task InitializeAndStartAsync()
+    /// <summary>
+    /// Führt die Loading-Pipeline aus und setzt nach Abschluss den DataContext.
+    /// </summary>
+    private async Task RunLoadingAsync(SkiaLoadingSplash splash)
     {
         try
         {
-            // 1. DB zuerst initialisieren (Tabellen + Indizes erstellen)
-            var db = Services.GetRequiredService<IDatabaseService>();
-            await db.InitializeAsync();
+            var pipeline = new WorkTimeProLoadingPipeline(Services);
+            pipeline.ProgressChanged += (progress, text) =>
+                Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+                {
+                    splash.Progress = progress;
+                    splash.StatusText = text;
+                });
 
-            // 2. Reminder-Service initialisieren
-            var reminderService = Services.GetRequiredService<IReminderService>();
-            await reminderService.InitializeAsync();
+            var sw = Stopwatch.StartNew();
+            await pipeline.ExecuteAsync();
+
+            // Mindestens 500ms anzeigen (Desktop ist zu schnell)
+            var remaining = 500 - (int)sw.ElapsedMilliseconds;
+            if (remaining > 0) await Task.Delay(remaining);
+
+            // DataContext setzen (ViewModel wurde in Pipeline erstellt)
+            var mainVm = Services.GetRequiredService<MainViewModel>();
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
+                    && desktop.MainWindow != null)
+                {
+                    desktop.MainWindow.DataContext = mainVm;
+                }
+                else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform
+                         && singleViewPlatform.MainView != null)
+                {
+                    singleViewPlatform.MainView.DataContext = mainVm;
+                }
+
+                splash.FadeOut();
+            });
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"InitializeServicesAsync Fehler: {ex.Message}");
+            Debug.WriteLine($"[WorkTimePro] Loading-Pipeline fehlgeschlagen: {ex}");
+            // Splash trotzdem ausblenden, damit App nicht blockiert
+            Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
         }
-
-        // 3. MainViewModel erstellen (DB ist jetzt garantiert bereit)
-        var mainVm = Services.GetRequiredService<MainViewModel>();
-
-        // 4. DataContext auf UI-Thread setzen
-        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
-        {
-            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop
-                && desktop.MainWindow != null)
-            {
-                desktop.MainWindow.DataContext = mainVm;
-            }
-            else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform
-                     && singleViewPlatform.MainView != null)
-            {
-                singleViewPlatform.MainView.DataContext = mainVm;
-            }
-        });
     }
 
     private static void ConfigureServices(IServiceCollection services)
@@ -166,6 +192,9 @@ public partial class App : Application
         services.AddSingleton<ICalendarSyncService, CalendarSyncService>();
         services.AddSingleton<IBackupService, BackupService>();
 
+        // Achievement Service
+        services.AddSingleton<IAchievementService, AchievementService>();
+
         // Notification + Reminder Services
         if (NotificationServiceFactory != null)
             services.AddSingleton(NotificationServiceFactory());
@@ -180,6 +209,7 @@ public partial class App : Application
             services.AddSingleton<IHapticService, NoOpHapticService>();
 
         // ViewModels (alle Singleton - MainVM hält Child-VMs per Constructor Injection)
+        services.AddSingleton<AchievementViewModel>();
         services.AddSingleton<WeekOverviewViewModel>();
         services.AddSingleton<CalendarViewModel>();
         services.AddSingleton<StatisticsViewModel>();

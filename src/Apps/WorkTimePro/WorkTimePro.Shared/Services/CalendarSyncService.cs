@@ -91,8 +91,8 @@ public class CalendarSyncService : ICalendarSyncService
     {
         try
         {
-            // TODO: Google OAuth with Google.Apis.Auth
-            // Placeholder for UI tests
+            // Benötigt Google OAuth mit Google.Apis.Auth (noch nicht integriert)
+            // Platzhalter für UI-Tests
             await Task.Delay(1000);
 
             IsConnected = true;
@@ -137,7 +137,7 @@ public class CalendarSyncService : ICalendarSyncService
             if (!IsConnected)
                 return calendars;
 
-            // TODO: Fetch real calendars from Google Calendar API
+            // Benötigt Google Calendar API v3 für echte Kalender-Abfrage
 
             // Placeholder
             calendars.Add(new CalendarInfo
@@ -263,7 +263,7 @@ public class CalendarSyncService : ICalendarSyncService
                 eventEnd = workDay.Date.AddDays(1);
             }
 
-            // TODO: Add event to Google Calendar
+            // Benötigt Google Calendar API v3: events.insert(calendarId, event)
 
             await Task.CompletedTask;
             return true;
@@ -287,7 +287,7 @@ public class CalendarSyncService : ICalendarSyncService
                 title += $": {vacation.Note}";
             }
 
-            // TODO: Add all-day event to Google Calendar
+            // Benötigt Google Calendar API v3: events.insert() mit date statt dateTime
 
             await Task.CompletedTask;
             return true;
@@ -305,7 +305,7 @@ public class CalendarSyncService : ICalendarSyncService
             if (!IsConnected || string.IsNullOrEmpty(_calendarId))
                 return false;
 
-            // TODO: Delete event from calendar
+            // Benötigt Google Calendar API v3: events.delete(calendarId, eventId)
             await Task.CompletedTask;
             return true;
         }
@@ -339,7 +339,7 @@ public class CalendarSyncService : ICalendarSyncService
 
         if (_options.ShowOvertimeInTitle && workDay.BalanceMinutes != 0)
         {
-            var sign = workDay.BalanceMinutes >= 0 ? "+" : "";
+            var sign = workDay.BalanceMinutes >= 0 ? "+" : "-";
             var balanceHours = Math.Abs(workDay.BalanceMinutes) / 60;
             var balanceMins = Math.Abs(workDay.BalanceMinutes) % 60;
             title += $" ({sign}{balanceHours}:{balanceMins:D2})";

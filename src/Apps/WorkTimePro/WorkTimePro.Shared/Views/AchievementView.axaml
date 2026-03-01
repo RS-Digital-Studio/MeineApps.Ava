@@ -1,0 +1,153 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:WorkTimePro.ViewModels"
+             xmlns:models="using:WorkTimePro.Models"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="WorkTimePro.Views.AchievementView"
+             x:DataType="vm:AchievementViewModel"
+             Background="{DynamicResource BackgroundBrush}">
+
+  <ScrollViewer AutomationProperties.AutomationId="Achievement_ScrollViewer">
+    <StackPanel Spacing="16" Margin="16" AutomationProperties.AutomationId="Achievement_RootPanel">
+
+      <!-- Header mit Zurück-Button -->
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Grid.Column="0" Classes="Text"
+                AutomationProperties.AutomationId="Achievement_BtnBack"
+                Command="{Binding GoBackCommand}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+                           Foreground="{DynamicResource PrimaryBrush}" />
+        </Button>
+
+        <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <TextBlock Text="{loc:Translate Achievements}"
+                     AutomationProperties.AutomationId="Achievement_TxtTitle"
+                     FontSize="20" FontWeight="Bold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Zähler -->
+        <Border Grid.Column="2" Background="{DynamicResource PrimaryBrush}"
+                CornerRadius="12" Padding="10,4"
+                VerticalAlignment="Center">
+          <TextBlock Text="{Binding SummaryText}"
+                     AutomationProperties.AutomationId="Achievement_TxtSummary"
+                     FontSize="14" FontWeight="Bold"
+                     Foreground="White" />
+        </Border>
+      </Grid>
+
+      <!-- Achievement-Grid (2 Spalten) -->
+      <ItemsControl ItemsSource="{Binding Achievements}" AutomationProperties.AutomationId="Achievement_Grid">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel Orientation="Horizontal" />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="models:Achievement">
+            <!-- Panel mit ueberlagerten Hintergruenden (Gold bei freigeschaltet, Standard bei gesperrt) -->
+            <Panel Width="170" Margin="4" MinHeight="160">
+              <!-- Gold-Tint Hintergrund fuer freigeschaltete Achievements -->
+              <Border CornerRadius="12"
+                      Background="#1AFFD700"
+                      BorderBrush="#60FFD700"
+                      BorderThickness="1"
+                      IsVisible="{Binding IsUnlocked}" />
+              <!-- Standard-Hintergrund fuer gesperrte Achievements -->
+              <Border CornerRadius="12"
+                      Background="{DynamicResource CardBrush}"
+                      BorderBrush="{DynamicResource CardBorderBrush}"
+                      BorderThickness="1"
+                      IsVisible="{Binding !IsUnlocked}" />
+              <!-- Inhalt (immer sichtbar, ueberlagert den Hintergrund) -->
+              <Border Padding="12" CornerRadius="12"
+                      MinHeight="160">
+
+              <StackPanel Spacing="8" HorizontalAlignment="Center">
+                <!-- Icon -->
+                <Border Width="48" Height="48" CornerRadius="24"
+                        HorizontalAlignment="Center">
+                  <Panel>
+                    <!-- Freigeschaltet: Gold-Kreis + Check -->
+                    <Border IsVisible="{Binding IsUnlocked}"
+                            Width="48" Height="48" CornerRadius="24"
+                            Background="#33FFD700">
+                      <mi:MaterialIcon Kind="CheckCircle" Width="28" Height="28"
+                                       Foreground="#FFD700"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                    </Border>
+                    <!-- Gesperrt: Grauer Kreis + Lock -->
+                    <Border IsVisible="{Binding !IsUnlocked}"
+                            Width="48" Height="48" CornerRadius="24"
+                            Background="{DynamicResource SurfaceBrush}">
+                      <mi:MaterialIcon Kind="Lock" Width="24" Height="24"
+                                       Foreground="{DynamicResource TextSecondaryBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
+                    </Border>
+                  </Panel>
+                </Border>
+
+                <!-- Name -->
+                <TextBlock Text="{Binding DisplayName}"
+                           FontSize="13" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="150" />
+
+                <!-- Beschreibung -->
+                <TextBlock Text="{Binding Description}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="Wrap"
+                           MaxWidth="150" />
+
+                <!-- Fortschritt (nur bei gesperrten) -->
+                <StackPanel IsVisible="{Binding !IsUnlocked}" Spacing="4">
+                  <!-- Progress-Bar -->
+                  <ProgressBar Value="{Binding ProgressPercent}"
+                               Minimum="0" Maximum="100"
+                               Height="6" CornerRadius="3"
+                               Foreground="{DynamicResource PrimaryBrush}"
+                               Background="{DynamicResource SurfaceBrush}" />
+                  <!-- Progress-Text -->
+                  <TextBlock Text="{Binding ProgressDisplay}"
+                             FontSize="11" FontWeight="SemiBold"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" />
+                </StackPanel>
+
+                <!-- Unlock-Datum (nur bei freigeschalteten) -->
+                <TextBlock IsVisible="{Binding IsUnlocked}"
+                           FontSize="10"
+                           Foreground="#FFD700"
+                           HorizontalAlignment="Center">
+                  <TextBlock.Text>
+                    <MultiBinding StringFormat="{}{0:dd.MM.yyyy}">
+                      <Binding Path="UnlockedAt" />
+                    </MultiBinding>
+                  </TextBlock.Text>
+                </TextBlock>
+
+              </StackPanel>
+            </Border>
+            </Panel>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+
+      <!-- Bottom Spacer (Ad-Banner) -->
+      <Border Height="60" />
+
+    </StackPanel>
+  </ScrollViewer>
+
+</UserControl>

@@ -514,4 +514,51 @@
   <data name="SettingsChangedWarning" xml:space="preserve"><value>Nota: {0} dias existentes mantêm suas configurações atuais. As novas configurações se aplicam a dias futuros.</value></data>
 
   <data name="AbsenceOverview" xml:space="preserve"><value>Resumo de ausências</value></data>
+
+  <!-- Conquistas -->
+  <data name="Achievements" xml:space="preserve"><value>Conquistas</value></data>
+  <data name="Achievement_hours_100_Name" xml:space="preserve"><value>100 Horas</value></data>
+  <data name="Achievement_hours_100_Desc" xml:space="preserve"><value>Trabalhe 100 horas no total</value></data>
+  <data name="Achievement_hours_500_Name" xml:space="preserve"><value>500 Horas</value></data>
+  <data name="Achievement_hours_500_Desc" xml:space="preserve"><value>Trabalhe 500 horas no total</value></data>
+  <data name="Achievement_hours_1000_Name" xml:space="preserve"><value>1000 Horas</value></data>
+  <data name="Achievement_hours_1000_Desc" xml:space="preserve"><value>Trabalhe 1000 horas no total</value></data>
+  <data name="Achievement_streak_7_Name" xml:space="preserve"><value>Sequência de 7 dias</value></data>
+  <data name="Achievement_streak_7_Desc" xml:space="preserve"><value>Trabalhe 7 dias consecutivos</value></data>
+  <data name="Achievement_streak_30_Name" xml:space="preserve"><value>Sequência de 30 dias</value></data>
+  <data name="Achievement_streak_30_Desc" xml:space="preserve"><value>Trabalhe 30 dias consecutivos</value></data>
+  <data name="Achievement_streak_100_Name" xml:space="preserve"><value>Sequência de 100 dias</value></data>
+  <data name="Achievement_streak_100_Desc" xml:space="preserve"><value>Trabalhe 100 dias consecutivos</value></data>
+  <data name="Achievement_perfect_week_Name" xml:space="preserve"><value>Semana perfeita</value></data>
+  <data name="Achievement_perfect_week_Desc" xml:space="preserve"><value>Complete uma semana exatamente na meta</value></data>
+  <data name="Achievement_no_absence_month_Name" xml:space="preserve"><value>Presença completa</value></data>
+  <data name="Achievement_no_absence_month_Desc" xml:space="preserve"><value>Zero dias de ausência num mês</value></data>
+  <data name="Achievement_early_bird_Name" xml:space="preserve"><value>Madrugador</value></data>
+  <data name="Achievement_early_bird_Desc" xml:space="preserve"><value>Registe entrada antes das 8:00 dez vezes</value></data>
+  <data name="Achievement_overtime_king_Name" xml:space="preserve"><value>Rei das horas extra</value></data>
+  <data name="Achievement_overtime_king_Desc" xml:space="preserve"><value>Acumule 50 horas extra</value></data>
+  <data name="Achievement_night_owl_Name" xml:space="preserve"><value>Coruja noturna</value></data>
+  <data name="Achievement_night_owl_Desc" xml:space="preserve"><value>Registrar saída após 20:00 dez vezes</value></data>
+  <data name="Achievement_marathon_Name" xml:space="preserve"><value>Dia maratona</value></data>
+  <data name="Achievement_marathon_Desc" xml:space="preserve"><value>Trabalhar mais de 10 horas em um dia</value></data>
+  <data name="Achievement_half_year_Name" xml:space="preserve"><value>Meio ano</value></data>
+  <data name="Achievement_half_year_Desc" xml:space="preserve"><value>Registrar 130 dias de trabalho</value></data>
+  <data name="Achievement_full_year_Name" xml:space="preserve"><value>Ano completo</value></data>
+  <data name="Achievement_full_year_Desc" xml:space="preserve"><value>Registrar 250 dias de trabalho</value></data>
+  <data name="Achievement_pause_master_Name" xml:space="preserve"><value>Mestre das pausas</value></data>
+  <data name="Achievement_pause_master_Desc" xml:space="preserve"><value>Registrar 50 pausas</value></data>
+  <data name="InsightRemainingWeek" xml:space="preserve"><value>{0}:{1:D2} restantes para meta semanal</value></data>
+  <data name="InsightMonthTrend" xml:space="preserve"><value>Tendência mensal: {0}{1}:{2:D2} horas extra</value></data>
+  <data name="WeekNumberFormat" xml:space="preserve"><value>S {0} / {1}</value></data>
+  <data name="WeekNumberShort" xml:space="preserve"><value>S {0}</value></data>
+  <data name="EstimatedEnd" xml:space="preserve"><value>Fim estimado</value></data>
+  <data name="RemainingTodayFormat" xml:space="preserve"><value>{0} {1}:{2:D2}</value></data>
+  <data name="Backup" xml:space="preserve"><value>Backup</value></data>
+  <data name="BackupExportSuccess" xml:space="preserve"><value>Backup exportado com sucesso</value></data>
+  <data name="BackupExportFailed" xml:space="preserve"><value>Falha ao exportar backup</value></data>
+  <data name="BackupImportSuccess" xml:space="preserve"><value>Backup importado com sucesso</value></data>
+  <data name="BackupImportFailed" xml:space="preserve"><value>Falha ao importar backup</value></data>
+  <data name="BackupNoBackupsFound" xml:space="preserve"><value>Nenhum backup encontrado</value></data>
+  <data name="ExportBackup" xml:space="preserve"><value>Exportar backup</value></data>
+  <data name="ImportBackup" xml:space="preserve"><value>Importar backup</value></data>
 </root>

@@ -13,7 +13,7 @@ namespace WorkTimePro.Services;
 /// 4. Überstunden-Warnung (Über MaxDailyHours)
 /// 5. Wochenzusammenfassung (Montag Morgen)
 /// </summary>
-public class ReminderService : IReminderService
+public class ReminderService : IReminderService, IDisposable
 {
     // Notification-IDs
     private const string MorningReminderId = "reminder_morning";
@@ -332,9 +332,11 @@ public class ReminderService : IReminderService
         var totalWorked = TimeSpan.Zero;
         var targetMinutes = 0.0;
 
+        // Batch-Query statt 7 einzelne GetWorkDayAsync-Aufrufe
+        var workDays = await _database.GetWorkDaysAsync(mondayThisWeek, sundayThisWeek);
         for (var day = mondayThisWeek; day <= sundayThisWeek; day = day.AddDays(1))
         {
-            var workDay = await _database.GetWorkDayAsync(day);
+            var workDay = workDays.FirstOrDefault(d => d.Date.Date == day.Date);
             if (workDay != null)
             {
                 totalWorked += TimeSpan.FromMinutes(workDay.ActualWorkMinutes);

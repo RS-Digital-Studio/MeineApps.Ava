@@ -18,7 +18,10 @@ public class CalculationService : ICalculationService
 
     public async Task RecalculateWorkDayAsync(WorkDay workDay)
     {
+        // Alle Daten einmal laden und durchreichen (statt mehrfacher DB-Queries)
         var entries = await _database.GetTimeEntriesAsync(workDay.Id);
+        var pauses = await _database.GetPauseEntriesAsync(workDay.Id);
+        var settings = await _database.GetSettingsAsync();
 
         if (entries.Count == 0)
         {
@@ -30,7 +33,7 @@ public class CalculationService : ICalculationService
             return;
         }
 
-        // Calculate work time
+        // Brutto-Arbeitszeit berechnen
         var totalMinutes = 0;
         TimeEntry? lastCheckIn = null;
         DateTime? firstCheckIn = null;
@@ -54,15 +57,15 @@ public class CalculationService : ICalculationService
         workDay.FirstCheckIn = firstCheckIn;
         workDay.LastCheckOut = lastCheckOut;
 
-        // Calculate pauses
-        await RecalculatePauseTimeAsync(workDay);
+        // Pausen berechnen (Daten durchreichen statt erneut laden)
+        RecalculatePauseTime(workDay, pauses);
+        await ApplyAutoPauseAsync(workDay, entries, pauses, settings);
 
         // Netto-Arbeitszeit (Brutto - Pausen)
         var totalPauseMinutes = workDay.ManualPauseMinutes + workDay.AutoPauseMinutes;
         var netMinutes = Math.Max(0, totalMinutes - totalPauseMinutes);
 
         // Zeitrundung anwenden (falls konfiguriert)
-        var settings = await _database.GetSettingsAsync();
         if (settings.RoundingMinutes > 0)
         {
             netMinutes = (int)(Math.Round((double)netMinutes / settings.RoundingMinutes) * settings.RoundingMinutes);
@@ -79,22 +82,36 @@ public class CalculationService : ICalculationService
     public async Task RecalculatePauseTimeAsync(WorkDay workDay)
     {
         var pauses = await _database.GetPauseEntriesAsync(workDay.Id);
+        RecalculatePauseTime(workDay, pauses);
+        await ApplyAutoPauseAsync(workDay);
+    }
 
-        // Sum manual pauses
+    /// <summary>
+    /// Berechnet manuelle Pausenzeit aus bereits geladenen Daten (kein DB-Zugriff).
+    /// </summary>
+    private static void RecalculatePauseTime(WorkDay workDay, List<PauseEntry> pauses)
+    {
         var manualMinutes = pauses
             .Where(p => !p.IsAutoPause && p.EndTime != null)
             .Sum(p => (int)p.Duration.TotalMinutes);
 
         workDay.ManualPauseMinutes = manualMinutes;
-
-        // Check and apply auto-pause
-        await ApplyAutoPauseAsync(workDay);
     }
 
     public async Task ApplyAutoPauseAsync(WorkDay workDay)
     {
         var settings = await _database.GetSettingsAsync();
+        var entries = await _database.GetTimeEntriesAsync(workDay.Id);
+        var pauses = await _database.GetPauseEntriesAsync(workDay.Id);
+        await ApplyAutoPauseAsync(workDay, entries, pauses, settings);
+    }
 
+    /// <summary>
+    /// Auto-Pause anwenden mit bereits geladenen Daten (kein DB-Zugriff für Entries/Settings/Pauses).
+    /// Reduziert DB-Queries von 7 auf 0 wenn aus RecalculateWorkDayAsync aufgerufen.
+    /// </summary>
+    private async Task ApplyAutoPauseAsync(WorkDay workDay, List<TimeEntry> entries, List<PauseEntry> pauses, WorkSettings settings)
+    {
         if (!settings.AutoPauseEnabled)
         {
             workDay.AutoPauseMinutes = 0;
@@ -102,7 +119,6 @@ public class CalculationService : ICalculationService
         }
 
         // Brutto-Arbeitszeit berechnen (ohne Pausen)
-        var entries = await _database.GetTimeEntriesAsync(workDay.Id);
         var bruttoMinutes = 0;
         TimeEntry? lastCheckIn = null;
 
@@ -123,20 +139,14 @@ public class CalculationService : ICalculationService
             bruttoMinutes += (int)(DateTime.Now - lastCheckIn.Timestamp).TotalMinutes;
         }
 
-        // Legally required pause
+        // Gesetzlich vorgeschriebene Pause
         var requiredPauseMinutes = settings.GetRequiredPauseMinutes(bruttoMinutes);
-
-        // Difference to manual pauses
         var difference = requiredPauseMinutes - workDay.ManualPauseMinutes;
+        var existingAutoPause = pauses.FirstOrDefault(p => p.IsAutoPause);
 
         if (difference > 0)
         {
-            // AutoPauseMinutes immer setzen (für korrekte Netto-Berechnung)
             workDay.AutoPauseMinutes = difference;
-
-            // PauseEntry nur erstellen/aktualisieren wenn CheckOut vorhanden
-            var existingAutoPause = (await _database.GetPauseEntriesAsync(workDay.Id))
-                .FirstOrDefault(p => p.IsAutoPause);
 
             if (existingAutoPause == null && workDay.LastCheckOut != null)
             {
@@ -151,23 +161,16 @@ public class CalculationService : ICalculationService
                 };
                 await _database.SavePauseEntryAsync(autoPause);
             }
-            else if (existingAutoPause != null)
+            else if (existingAutoPause != null && workDay.LastCheckOut != null)
             {
-                if (workDay.LastCheckOut != null)
-                {
-                    existingAutoPause.StartTime = workDay.LastCheckOut.Value.AddMinutes(-difference);
-                    existingAutoPause.EndTime = workDay.LastCheckOut.Value;
-                    await _database.SavePauseEntryAsync(existingAutoPause);
-                }
+                existingAutoPause.StartTime = workDay.LastCheckOut.Value.AddMinutes(-difference);
+                existingAutoPause.EndTime = workDay.LastCheckOut.Value;
+                await _database.SavePauseEntryAsync(existingAutoPause);
             }
         }
         else
         {
             workDay.AutoPauseMinutes = 0;
-
-            // Remove existing auto-pause
-            var existingAutoPause = (await _database.GetPauseEntriesAsync(workDay.Id))
-                .FirstOrDefault(p => p.IsAutoPause);
 
             if (existingAutoPause != null)
             {

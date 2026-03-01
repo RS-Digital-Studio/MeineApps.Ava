@@ -12,6 +12,7 @@ public class BackupService : IBackupService
 {
     private readonly IDatabaseService _database;
     private readonly IPreferencesService _preferences;
+    private readonly IFileShareService _fileShareService;
     private readonly string _backupFolder;
 
     /// <summary>
@@ -28,16 +29,22 @@ public class BackupService : IBackupService
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "WorkTimePro", "Cache");
 
+    private static string BackupDirectory => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "WorkTimePro", "Backups");
+
     private static string AppDataDirectory => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "WorkTimePro");
 
-    public BackupService(IDatabaseService database, IPreferencesService preferences)
+    public BackupService(IDatabaseService database, IPreferencesService preferences, IFileShareService fileShareService)
     {
         _database = database;
         _preferences = preferences;
+        _fileShareService = fileShareService;
         _backupFolder = "WorkTimeProBackups";
         Directory.CreateDirectory(CacheDirectory);
+        Directory.CreateDirectory(BackupDirectory);
         LoadSettings();
     }
 
@@ -99,8 +106,8 @@ public class BackupService : IBackupService
         {
             ProgressChanged?.Invoke(this, 10);
 
-            // TODO: Google Sign-In with Google.Apis.Auth
-            // Placeholder for UI tests
+            // Benötigt Google Sign-In mit Google.Apis.Auth (noch nicht integriert)
+            // Platzhalter für UI-Tests
             await Task.Delay(1000);
 
             ProgressChanged?.Invoke(this, 50);
@@ -129,7 +136,7 @@ public class BackupService : IBackupService
         {
             ProgressChanged?.Invoke(this, 10);
 
-            // TODO: Microsoft Sign-In with MSAL
+            // Benötigt Microsoft Sign-In mit MSAL (noch nicht integriert)
             await Task.Delay(1000);
 
             ProgressChanged?.Invoke(this, 50);
@@ -204,7 +211,7 @@ public class BackupService : IBackupService
 
             ProgressChanged?.Invoke(this, 60);
 
-            // TODO: Upload to Google Drive / OneDrive
+            // Benötigt Google Drive API / Microsoft Graph API für Cloud-Upload
             // var fileId = await UploadToCloudAsync(bytes, fileName);
 
             // Save locally as fallback
@@ -243,6 +250,7 @@ public class BackupService : IBackupService
         var projects = await _database.GetProjectsAsync(true);
         var employers = await _database.GetEmployersAsync(true);
         var shiftPatterns = await _database.GetShiftPatternsAsync();
+        var achievements = await _database.GetAllAchievementsAsync();
 
         return new BackupData
         {
@@ -258,7 +266,8 @@ public class BackupService : IBackupService
             VacationQuotas = vacationQuotas,
             Projects = projects,
             Employers = employers,
-            ShiftPatterns = shiftPatterns
+            ShiftPatterns = shiftPatterns,
+            Achievements = achievements
         };
     }
 
@@ -271,7 +280,7 @@ public class BackupService : IBackupService
             if (!IsAuthenticated)
                 return backups;
 
-            // TODO: Load backups from cloud
+            // Benötigt Google Drive API / Microsoft Graph API für Cloud-Backups
 
             // Local backups as fallback
             var localFiles = Directory.GetFiles(CacheDirectory, "worktime_backup_*.json");
@@ -306,7 +315,7 @@ public class BackupService : IBackupService
         {
             ProgressChanged?.Invoke(this, 10);
 
-            // TODO: Download backup from cloud
+            // Benötigt Google Drive API / Microsoft Graph API für Cloud-Download
 
             // Local file as fallback
             var localPath = Path.Combine(CacheDirectory, $"{backupId}.json");
@@ -367,9 +376,8 @@ public class BackupService : IBackupService
 
     private async Task RestoreDataAsync(BackupData data)
     {
-        // HINWEIS: Restore überschreibt bestehende Einträge mit gleicher ID.
-        // Einträge mit neuen IDs werden zusätzlich eingefügt.
-        // Für ein sauberes Restore sollte ClearAllDataAsync() implementiert werden.
+        // Alle bestehenden Daten löschen für sauberes Restore (keine Mischung alt+neu)
+        await _database.ClearAllDataAsync();
 
         if (data.Settings != null)
         {
@@ -439,13 +447,23 @@ public class BackupService : IBackupService
                 await _database.SaveShiftPatternAsync(item);
             }
         }
+
+        if (data.Achievements != null)
+        {
+            // Achievement-Tabelle sicherstellen (fuer aeltere Backups ohne Tabelle)
+            await _database.CreateAchievementTableAsync();
+            foreach (var item in data.Achievements)
+            {
+                await _database.SaveAchievementAsync(item);
+            }
+        }
     }
 
     public async Task<bool> DeleteBackupAsync(string backupId)
     {
         try
         {
-            // TODO: Delete from cloud
+            // Benötigt Google Drive API / Microsoft Graph API für Cloud-Löschung
 
             // Delete locally
             var localPath = Path.Combine(CacheDirectory, $"{backupId}.json");
@@ -462,6 +480,162 @@ public class BackupService : IBackupService
             System.Diagnostics.Debug.WriteLine($"BackupService.DeleteBackup Fehler: {ex.Message}");
             return false;
         }
+    }
+
+    // === Lokaler Export/Import (ohne Cloud-Auth) ===
+
+    public async Task<BackupResult> CreateLocalBackupAsync()
+    {
+        var result = new BackupResult { Timestamp = DateTime.UtcNow };
+
+        try
+        {
+            ProgressChanged?.Invoke(this, 10);
+
+            var backupData = await CreateBackupDataAsync();
+
+            ProgressChanged?.Invoke(this, 50);
+
+            var json = JsonSerializer.Serialize(backupData, new JsonSerializerOptions
+            {
+                WriteIndented = true,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+            var fileName = $"worktime_backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            var localPath = Path.Combine(BackupDirectory, fileName);
+
+            await File.WriteAllBytesAsync(localPath, bytes);
+
+            ProgressChanged?.Invoke(this, 90);
+
+            result.Success = true;
+            result.BackupId = Path.GetFileNameWithoutExtension(fileName);
+            result.FileName = fileName;
+            result.FileSizeBytes = bytes.Length;
+
+            LastBackupDate = DateTime.UtcNow;
+            SaveSettings();
+
+            ProgressChanged?.Invoke(this, 100);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.CreateLocalBackup Fehler: {ex.Message}");
+            result.ErrorMessage = ex.Message;
+            return result;
+        }
+    }
+
+    public async Task<BackupResult> ExportBackupAsync()
+    {
+        // Erstelle lokales Backup und teile es über Share-Sheet
+        var result = await CreateLocalBackupAsync();
+
+        if (!result.Success || string.IsNullOrEmpty(result.FileName))
+            return result;
+
+        try
+        {
+            var filePath = Path.Combine(BackupDirectory, result.FileName);
+            await _fileShareService.ShareFileAsync(filePath, "WorkTimePro Backup", "application/json");
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.ExportBackup Share-Fehler: {ex.Message}");
+            // Backup wurde erstellt, nur Share fehlgeschlagen - trotzdem Success
+        }
+
+        return result;
+    }
+
+    public async Task<bool> ImportBackupFromFileAsync(string filePath)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath))
+                return false;
+
+            ProgressChanged?.Invoke(this, 10);
+
+            var json = await File.ReadAllTextAsync(filePath);
+            var backupData = JsonSerializer.Deserialize<BackupData>(json, new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            });
+
+            if (backupData == null)
+                return false;
+
+            ProgressChanged?.Invoke(this, 30);
+
+            // Sicherheits-Backup der aktuellen Daten VOR dem Import
+            var safetyBackup = await CreateBackupDataAsync();
+            ProgressChanged?.Invoke(this, 50);
+
+            try
+            {
+                await RestoreDataAsync(backupData);
+            }
+            catch (Exception restoreEx)
+            {
+                // Import fehlgeschlagen → Sicherheits-Backup wiederherstellen
+                System.Diagnostics.Debug.WriteLine($"BackupService.Import fehlgeschlagen, stelle Sicherheits-Backup wieder her: {restoreEx.Message}");
+                try
+                {
+                    await RestoreDataAsync(safetyBackup);
+                }
+                catch (Exception rollbackEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($"BackupService.Rollback fehlgeschlagen: {rollbackEx.Message}");
+                }
+                return false;
+            }
+
+            ProgressChanged?.Invoke(this, 100);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.ImportBackup Fehler: {ex.Message}");
+            return false;
+        }
+    }
+
+    public Task<List<BackupInfo>> GetLocalBackupsAsync()
+    {
+        var backups = new List<BackupInfo>();
+
+        try
+        {
+            if (!Directory.Exists(BackupDirectory))
+                return Task.FromResult(backups);
+
+            var localFiles = Directory.GetFiles(BackupDirectory, "worktime_backup_*.json");
+
+            foreach (var file in localFiles.OrderByDescending(f => f))
+            {
+                var fileInfo = new FileInfo(file);
+                backups.Add(new BackupInfo
+                {
+                    Id = Path.GetFileNameWithoutExtension(file),
+                    FileName = fileInfo.Name,
+                    CreatedAt = fileInfo.CreationTime,
+                    SizeBytes = fileInfo.Length,
+                    DeviceName = Environment.MachineName,
+                    AppVersion = GetAppVersion()
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"BackupService.GetLocalBackups Fehler: {ex.Message}");
+        }
+
+        return Task.FromResult(backups);
     }
 
     // === Auto-Sync ===
@@ -491,7 +665,7 @@ public class BackupService : IBackupService
 
             ProgressChanged?.Invoke(this, 10);
 
-            // TODO: Real sync logic
+            // Echte Sync-Logik benötigt Cloud-API (aktuell Backup als Sync-Variante)
             await Task.Delay(500);
 
             ProgressChanged?.Invoke(this, 50);
@@ -543,4 +717,5 @@ public class BackupData
     public List<Project>? Projects { get; set; }
     public List<Employer>? Employers { get; set; }
     public List<ShiftPattern>? ShiftPatterns { get; set; }
+    public List<Achievement>? Achievements { get; set; }
 }

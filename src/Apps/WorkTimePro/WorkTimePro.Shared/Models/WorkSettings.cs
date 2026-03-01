@@ -257,6 +257,10 @@ public class WorkSettings
     private int[]? _cachedWorkDaysArray;
     private string? _cachedWorkDaysString;
 
+    // Cache für DailyHoursPerDay JSON (wird nur bei Änderung neu deserialisiert)
+    private Dictionary<string, double>? _dailyHoursCache;
+    private string? _cachedDailyHoursJson;
+
     /// <summary>
     /// Arbeitstage als int-Array (gecacht, da häufig aufgerufen)
     /// </summary>
@@ -313,7 +317,8 @@ public class WorkSettings
     }
 
     /// <summary>
-    /// Holt die Soll-Stunden für einen bestimmten Wochentag
+    /// Holt die Soll-Stunden für einen bestimmten Wochentag.
+    /// Gecacht: JSON wird nur bei Änderung von DailyHoursPerDay neu deserialisiert.
     /// </summary>
     public double GetHoursForDay(int dayOfWeek)
     {
@@ -322,8 +327,14 @@ public class WorkSettings
 
         try
         {
-            var dict = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, double>>(DailyHoursPerDay);
-            if (dict != null && dict.TryGetValue(dayOfWeek.ToString(), out var hours))
+            // Cache invalidieren wenn sich der JSON-String geändert hat
+            if (_dailyHoursCache == null || _cachedDailyHoursJson != DailyHoursPerDay)
+            {
+                _cachedDailyHoursJson = DailyHoursPerDay;
+                _dailyHoursCache = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, double>>(DailyHoursPerDay);
+            }
+
+            if (_dailyHoursCache != null && _dailyHoursCache.TryGetValue(dayOfWeek.ToString(), out var hours))
                 return hours;
         }
         catch (Exception ex)
@@ -354,6 +365,10 @@ public class WorkSettings
 
         dict[dayOfWeek.ToString()] = hours;
         DailyHoursPerDay = System.Text.Json.JsonSerializer.Serialize(dict);
+
+        // Cache aktualisieren
+        _dailyHoursCache = dict;
+        _cachedDailyHoursJson = DailyHoursPerDay;
     }
 
     /// <summary>

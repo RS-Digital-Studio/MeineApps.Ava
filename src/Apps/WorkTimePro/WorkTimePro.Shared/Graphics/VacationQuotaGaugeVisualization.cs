@@ -120,14 +120,17 @@ public static class VacationQuotaGaugeVisualization
         if (fraction <= 0) return;
 
         // Glow (breiterer, transparenter Arc)
+        float sweepAngle = MathF.Min(fraction * 360f, 360f);
         float glowWidth = width + 4f;
         _glowPaint.StrokeWidth = glowWidth;
         _glowPaint.StrokeCap = SKStrokeCap.Round;
         _glowPaint.Color = color.WithAlpha(30);
-        _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
-        float sweepAngle = MathF.Min(fraction * 360f, 360f);
-        canvas.DrawArc(trackRect, -90f, sweepAngle, false, _glowPaint);
-        _glowPaint.MaskFilter = null;
+        using (var blur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f))
+        {
+            _glowPaint.MaskFilter = blur;
+            canvas.DrawArc(trackRect, -90f, sweepAngle, false, _glowPaint);
+            _glowPaint.MaskFilter = null;
+        }
 
         // Fortschritts-Arc
         _arcPaint.StrokeWidth = width;

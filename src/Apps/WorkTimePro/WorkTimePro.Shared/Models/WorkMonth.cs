@@ -1,4 +1,5 @@
 using WorkTimePro.Resources.Strings;
+using static WorkTimePro.Helpers.TimeFormatter;
 
 namespace WorkTimePro.Models;
 
@@ -141,46 +142,32 @@ public class WorkMonth
     /// <summary>
     /// Formatierte Soll-Zeit
     /// </summary>
-    public string TargetWorkDisplay => FormatTimeSpan(TargetWorkTime);
+    public string TargetWorkDisplay => FormatMinutes(TargetWorkMinutes);
 
     /// <summary>
     /// Formatierte Ist-Zeit
     /// </summary>
-    public string ActualWorkDisplay => FormatTimeSpan(ActualWorkTime);
+    public string ActualWorkDisplay => FormatMinutes(ActualWorkMinutes);
 
     /// <summary>
     /// Formatierter Saldo
     /// </summary>
-    public string BalanceDisplay
-    {
-        get
-        {
-            var prefix = BalanceMinutes >= 0 ? "+" : "";
-            return $"{prefix}{FormatTimeSpan(Balance)}";
-        }
-    }
+    public string BalanceDisplay => FormatBalance(BalanceMinutes);
 
     /// <summary>
     /// Formatierter kumulierter Saldo
     /// </summary>
-    public string CumulativeBalanceDisplay
-    {
-        get
-        {
-            var prefix = CumulativeBalanceMinutes >= 0 ? "+" : "";
-            return $"{prefix}{FormatTimeSpan(CumulativeBalance)}";
-        }
-    }
+    public string CumulativeBalanceDisplay => FormatBalance(CumulativeBalanceMinutes);
 
     /// <summary>
     /// Farbe für Saldo
     /// </summary>
-    public string BalanceColor => BalanceMinutes >= 0 ? "#4CAF50" : "#F44336";
+    public string BalanceColor => BalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
 
     /// <summary>
     /// Farbe für kumulierten Saldo
     /// </summary>
-    public string CumulativeBalanceColor => CumulativeBalanceMinutes >= 0 ? "#4CAF50" : "#F44336";
+    public string CumulativeBalanceColor => CumulativeBalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
 
     /// <summary>
     /// Durchschnittliche tägliche Arbeitszeit
@@ -201,11 +188,4 @@ public class WorkMonth
         ? $"{Helpers.Icons.Lock} {AppStrings.MonthLocked}"
         : $"{Helpers.Icons.Pencil} {AppStrings.MonthOpen}";
 
-    private static string FormatTimeSpan(TimeSpan ts)
-    {
-        var totalHours = (int)Math.Abs(ts.TotalHours);
-        var minutes = Math.Abs(ts.Minutes);
-        var sign = ts.TotalMinutes < 0 ? "-" : "";
-        return $"{sign}{totalHours}:{minutes:D2}";
-    }
 }

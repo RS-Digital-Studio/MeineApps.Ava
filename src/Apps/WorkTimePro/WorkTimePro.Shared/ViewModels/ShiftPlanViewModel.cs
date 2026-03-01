@@ -95,7 +95,7 @@ public partial class ShiftPlanViewModel : ObservableObject
     private TimeSpan _patternEndTime = new(17, 0, 0);
 
     [ObservableProperty]
-    private string _patternColor = "#1565C0";
+    private string _patternColor = AppColors.Primary;
 
     // === Commands ===
 
@@ -202,7 +202,7 @@ public partial class ShiftPlanViewModel : ObservableObject
             await _shiftService.RemoveShiftAssignmentAsync(day.Date);
             day.AssignedPattern = null;
             day.PatternName = "\u2014";
-            day.PatternColor = "#9E9E9E";
+            day.PatternColor = AppColors.StatusIdle;
             day.WorkMinutes = 0;
 
             CalculateTotalHours();
@@ -263,7 +263,7 @@ public partial class ShiftPlanViewModel : ObservableObject
             PatternType = ShiftType.Normal;
             PatternStartTime = new TimeSpan(9, 0, 0);
             PatternEndTime = new TimeSpan(17, 0, 0);
-            PatternColor = "#1565C0";
+            PatternColor = AppColors.Primary;
         }
 
         IsPatternEditorVisible = true;
@@ -357,7 +357,7 @@ public partial class ShiftPlanViewModel : ObservableObject
                 IsWeekend = date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday,
                 AssignedPattern = assignment?.ShiftPattern,
                 PatternName = assignment?.ShiftPattern?.Name ?? "\u2014",
-                PatternColor = assignment?.ShiftPattern?.Color ?? "#9E9E9E",
+                PatternColor = assignment?.ShiftPattern?.Color ?? AppColors.StatusIdle,
                 WorkMinutes = assignment?.ShiftPattern != null
                     ? (int)assignment.ShiftPattern.WorkDuration.TotalMinutes
                     : 0
@@ -416,7 +416,7 @@ public partial class ShiftDayItem : ObservableObject
     private string _patternName = "\u2014";
 
     [ObservableProperty]
-    private string _patternColor = "#9E9E9E";
+    private string _patternColor = AppColors.StatusIdle;
 
     [ObservableProperty]
     private int _workMinutes;

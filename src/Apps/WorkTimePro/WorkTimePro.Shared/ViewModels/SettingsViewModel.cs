@@ -25,6 +25,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private readonly ITrialService _trialService;
     private readonly IPurchaseService _purchaseService;
     private readonly IReminderService _reminderService;
+    private readonly IBackupService _backupService;
 
     private WorkSettings? _settings;
     private bool _disposed;
@@ -39,7 +40,8 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         ILocalizationService localization,
         ITrialService trialService,
         IPurchaseService purchaseService,
-        IReminderService reminderService)
+        IReminderService reminderService,
+        IBackupService backupService)
     {
         _database = database;
         _themeService = themeService;
@@ -47,6 +49,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         _trialService = trialService;
         _purchaseService = purchaseService;
         _reminderService = reminderService;
+        _backupService = backupService;
 
         _purchaseService.PremiumStatusChanged += OnPurchaseStatusChanged;
     }
@@ -373,7 +376,7 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
     private string _premiumStatusText = "";
 
     [ObservableProperty]
-    private string _premiumStatusColor = "#9E9E9E";
+    private string _premiumStatusColor = AppColors.PremiumFree;
 
     [ObservableProperty]
     private double _trialProgress;
@@ -742,6 +745,93 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
         UriLauncher.OpenUri(PRIVACY_POLICY_URL);
     }
 
+    // === Backup Export/Import ===
+
+    [ObservableProperty]
+    private string _lastBackupDisplay = "";
+
+    [RelayCommand]
+    private async Task ExportBackupAsync()
+    {
+        try
+        {
+            IsLoading = true;
+            var result = await _backupService.ExportBackupAsync();
+
+            if (result.Success)
+            {
+                LastBackupDisplay = DateTime.Now.ToString("g");
+                MessageRequested?.Invoke(
+                    AppStrings.Backup ?? "Backup",
+                    AppStrings.BackupExportSuccess ?? "Backup erfolgreich exportiert");
+            }
+            else
+            {
+                MessageRequested?.Invoke(
+                    AppStrings.Error,
+                    result.ErrorMessage ?? AppStrings.BackupExportFailed ?? "Backup-Export fehlgeschlagen");
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ImportBackupAsync()
+    {
+        // TODO: Dateiauswahl-Dialog benötigt plattformspezifische Implementierung
+        // Aktuell wird das neueste lokale Backup importiert
+        try
+        {
+            IsLoading = true;
+            var backups = await _backupService.GetLocalBackupsAsync();
+
+            if (backups.Count == 0)
+            {
+                MessageRequested?.Invoke(
+                    AppStrings.Backup ?? "Backup",
+                    AppStrings.BackupNoBackupsFound ?? "Keine Backups gefunden");
+                return;
+            }
+
+            // Neuestes Backup importieren
+            var latest = backups[0];
+            var filePath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "WorkTimePro", "Backups", latest.FileName);
+
+            var success = await _backupService.ImportBackupFromFileAsync(filePath);
+
+            if (success)
+            {
+                MessageRequested?.Invoke(
+                    AppStrings.Backup ?? "Backup",
+                    AppStrings.BackupImportSuccess ?? "Backup erfolgreich importiert");
+                SettingsChanged?.Invoke(this, EventArgs.Empty);
+            }
+            else
+            {
+                MessageRequested?.Invoke(
+                    AppStrings.Error,
+                    AppStrings.BackupImportFailed ?? "Backup-Import fehlgeschlagen");
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
     // === Helper methods ===
 
     private void OnPurchaseStatusChanged(object? sender, EventArgs e)
@@ -757,48 +847,43 @@ public partial class SettingsViewModel : ObservableObject, IDisposable
 
         if (_purchaseService.HasLifetime)
         {
-            // Lifetime Premium
             PremiumStatusText = AppStrings.HasLifetime;
-            PremiumStatusColor = "#4CAF50"; // Green
+            PremiumStatusColor = AppColors.PremiumActive;
             TrialProgress = 1.0;
             TrialProgressText = "";
         }
         else if (_purchaseService.HasActiveSubscription)
         {
-            // Active subscription
             PremiumStatusText = AppStrings.HasSubscription;
-            PremiumStatusColor = "#4CAF50"; // Green
+            PremiumStatusColor = AppColors.PremiumActive;
             TrialProgress = 1.0;
             TrialProgressText = "";
         }
         else if (IsPremium)
         {
-            // Legacy Premium (remove_ads)
             PremiumStatusText = AppStrings.PremiumActive;
-            PremiumStatusColor = "#4CAF50"; // Green
+            PremiumStatusColor = AppColors.PremiumActive;
             TrialProgress = 1.0;
             TrialProgressText = "";
         }
         else if (IsInTrial)
         {
             PremiumStatusText = string.Format(AppStrings.TrialDaysLeft, TrialDaysLeft);
-            PremiumStatusColor = "#FF9800"; // Orange
+            PremiumStatusColor = AppColors.PremiumTrial;
             TrialProgress = TrialDaysLeft / 7.0;
             TrialProgressText = $"{TrialDaysLeft} / 7";
         }
         else if (_trialService.IsTrialExpired)
         {
-            // Trial was started and expired
             PremiumStatusText = AppStrings.FreeVersion;
-            PremiumStatusColor = "#F44336"; // Red - expired
+            PremiumStatusColor = AppColors.PremiumExpired;
             TrialProgress = 0;
             TrialProgressText = "";
         }
         else
         {
-            // Trial was never started
             PremiumStatusText = AppStrings.FreeVersion;
-            PremiumStatusColor = "#9E9E9E"; // Gray
+            PremiumStatusColor = AppColors.PremiumFree;
             TrialProgress = 0;
             TrialProgressText = "";
         }

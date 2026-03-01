@@ -35,6 +35,20 @@
     <Style Selector="Button.QuickNav:pointerover">
       <Setter Property="RenderTransform" Value="scale(1.03)" />
     </Style>
+
+    <!-- Balance-Puls bei negativer Balance (Opacity 0.6→1.0, 2s Zyklus) -->
+    <Style Selector="TextBlock.BalancePulse">
+      <Style.Animations>
+        <Animation Duration="0:0:2" IterationCount="INFINITE" PlaybackDirection="Alternate">
+          <KeyFrame Cue="0%">
+            <Setter Property="Opacity" Value="0.6" />
+          </KeyFrame>
+          <KeyFrame Cue="100%">
+            <Setter Property="Opacity" Value="1.0" />
+          </KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
   </UserControl.Styles>
 
   <ScrollViewer AutomationProperties.AutomationId="Today_ScrollViewer">
@@ -97,7 +111,9 @@
                     Background="{Binding StatusColor}"
                     Padding="0"
                     HorizontalContentAlignment="Center"
-                    VerticalContentAlignment="Center">
+                    VerticalContentAlignment="Center"
+                    RenderTransform="scale(1)"
+                    RenderTransformOrigin="50%,50%">
               <mi:MaterialIcon Kind="{Binding StatusIconKind}"
                                Width="48" Height="48"
                                Foreground="White" />
@@ -155,15 +171,10 @@
         <StackPanel Orientation="Horizontal" Spacing="6">
           <mi:MaterialIcon Kind="Fire" Width="20" Height="20"
                            Foreground="{DynamicResource WarningBrush}" />
-          <TextBlock FontSize="15" FontWeight="Bold"
+          <TextBlock Text="{Binding StreakDisplayText}"
+                     FontSize="15" FontWeight="Bold"
                      Foreground="{DynamicResource WarningBrush}"
-                     VerticalAlignment="Center">
-            <TextBlock.Text>
-              <MultiBinding StringFormat="{}{0} Tage">
-                <Binding Path="StreakCount" />
-              </MultiBinding>
-            </TextBlock.Text>
-          </TextBlock>
+                     VerticalAlignment="Center" />
         </StackPanel>
       </Border>
 
@@ -200,10 +211,11 @@
                        HorizontalAlignment="Center" />
           </StackPanel>
 
-          <!-- Balance -->
+          <!-- Balance (pulsiert bei negativer Balance) -->
           <StackPanel Grid.Column="2" Grid.Row="0"
                       HorizontalAlignment="Center">
-            <TextBlock Text="{Binding BalanceTime}"
+            <TextBlock x:Name="BalanceTextBlock"
+                       Text="{Binding BalanceTime}"
                        AutomationProperties.AutomationId="Today_TxtBalance"
                        FontSize="24" FontWeight="Bold"
                        Foreground="{Binding BalanceColor}"
@@ -246,6 +258,37 @@
         </Grid>
       </Border>
 
+      <!-- ==================== Predictive Insight Card (nur bei aktivem Tracking) ==================== -->
+      <Border AutomationProperties.AutomationId="Today_InsightCard"
+              Classes="Card StatsCard" Padding="12"
+              BorderBrush="{DynamicResource InfoBrush}"
+              BorderThickness="1"
+              CornerRadius="12"
+              IsVisible="{Binding HasInsight}">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <mi:MaterialIcon Grid.Column="0"
+                           Kind="ClockOutline"
+                           Width="28" Height="28"
+                           Foreground="{DynamicResource InfoBrush}"
+                           VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" Margin="12,0,0,0">
+            <TextBlock Text="{loc:Translate EstimatedEnd}"
+                       FontSize="12"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TextBlock Text="{Binding RemainingTodayText}"
+                       AutomationProperties.AutomationId="Today_TxtRemainingToday"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+          </StackPanel>
+          <TextBlock Grid.Column="2"
+                     Text="{Binding EstimatedEndTime}"
+                     AutomationProperties.AutomationId="Today_TxtEstimatedEnd"
+                     FontSize="24" FontWeight="Bold"
+                     Foreground="{DynamicResource InfoBrush}"
+                     VerticalAlignment="Center" />
+        </Grid>
+      </Border>
+
       <!-- ==================== Earnings Card (nur wenn Stundenlohn konfiguriert) ==================== -->
       <Border AutomationProperties.AutomationId="Today_EarningsCard" Classes="Card StatsCard" Padding="12"
               BorderBrush="{DynamicResource SuccessBrush}"
@@ -258,7 +301,8 @@
                            Width="28" Height="28"
                            Foreground="{DynamicResource SuccessBrush}" />
           <StackPanel>
-            <TextBlock Text="{Binding TodayEarnings}"
+            <TextBlock x:Name="EarningsTextBlock"
+                       Text="{Binding TodayEarnings}"
                        AutomationProperties.AutomationId="Today_TxtEarnings"
                        FontSize="24" FontWeight="Bold"
                        Foreground="{DynamicResource SuccessBrush}" />
@@ -317,7 +361,7 @@
                  Foreground="{DynamicResource TextPrimaryBrush}"
                  Margin="0,8,0,0" />
 
-      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
+      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto"
             ColumnSpacing="12" RowSpacing="12"
             Margin="0,0,0,16">
 
@@ -432,6 +476,36 @@
                              HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate ShiftPlan}"
                        FontSize="11" Foreground="White"
+                       HorizontalAlignment="Center"
+                       TextAlignment="Center" />
+          </StackPanel>
+        </Button>
+
+        <!-- Achievements -->
+        <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                AutomationProperties.AutomationId="Today_BtnAchievements"
+                Classes="QuickNav"
+                Command="{Binding NavigateToAchievementsCommand}"
+                HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center"
+                VerticalContentAlignment="Center"
+                Height="64"
+                CornerRadius="12"
+                Background="#FFD700"
+                RenderTransform="scale(1)">
+          <Button.Transitions>
+            <Transitions>
+              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.15" />
+            </Transitions>
+          </Button.Transitions>
+          <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="Trophy"
+                             Width="24" Height="24"
+                             Foreground="#1A1A2E"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:Translate Achievements}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="#1A1A2E"
                        HorizontalAlignment="Center"
                        TextAlignment="Center" />
           </StackPanel>

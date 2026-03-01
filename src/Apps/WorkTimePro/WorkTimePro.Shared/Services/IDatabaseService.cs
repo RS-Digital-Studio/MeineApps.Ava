@@ -94,6 +94,18 @@ public interface IDatabaseService
     Task<int> GetTotalOvertimeMinutesAsync(DateTime startDate, DateTime endDate);
     Task<Dictionary<int, double>> GetProjectHoursAsync(DateTime startDate, DateTime endDate);
 
+    // === Achievement ===
+    Task CreateAchievementTableAsync();
+    Task<List<Achievement>> GetAllAchievementsAsync();
+    Task SaveAchievementAsync(Achievement achievement);
+
+    // === Clear (für Restore) ===
+    /// <summary>
+    /// Löscht alle Daten aus allen Tabellen (für sauberes Restore).
+    /// Settings werden nicht gelöscht (werden überschrieben).
+    /// </summary>
+    Task ClearAllDataAsync();
+
     // === Backup methods ===
     Task<List<WorkDay>> GetAllWorkDaysAsync();
     Task<List<TimeEntry>> GetAllTimeEntriesAsync();

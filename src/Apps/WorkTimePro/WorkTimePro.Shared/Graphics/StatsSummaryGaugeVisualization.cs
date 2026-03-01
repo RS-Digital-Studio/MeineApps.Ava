@@ -110,9 +110,12 @@ public static class StatsSummaryGaugeVisualization
             _glowPaint.StrokeWidth = arcWidth + 4f;
             _glowPaint.StrokeCap = SKStrokeCap.Round;
             _glowPaint.Color = data.Color.WithAlpha(25);
-            _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
-            canvas.DrawArc(arcRect, 180f, sweepAngle, false, _glowPaint);
-            _glowPaint.MaskFilter = null;
+            using (var blur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f))
+            {
+                _glowPaint.MaskFilter = blur;
+                canvas.DrawArc(arcRect, 180f, sweepAngle, false, _glowPaint);
+                _glowPaint.MaskFilter = null;
+            }
 
             // Arc
             _arcPaint.StrokeWidth = arcWidth;

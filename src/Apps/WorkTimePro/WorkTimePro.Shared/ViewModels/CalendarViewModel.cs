@@ -67,7 +67,7 @@ public partial class CalendarViewModel : ObservableObject
     private string _balanceDisplay = "+0:00";
 
     [ObservableProperty]
-    private string _balanceColor = "#4CAF50";
+    private string _balanceColor = AppColors.BalancePositive;
 
     [ObservableProperty]
     private bool _isLoading;
@@ -137,7 +137,12 @@ public partial class CalendarViewModel : ObservableObject
         }
     }
 
-    public List<VacationTypeItem> AvailableStatusTypes => new()
+    /// <summary>
+    /// Gecachte Liste der verfügbaren Status-Typen (wird bei Daten-Reload invalidiert, z.B. nach Sprachwechsel)
+    /// </summary>
+    private List<VacationTypeItem>? _availableStatusTypes;
+
+    public List<VacationTypeItem> AvailableStatusTypes => _availableStatusTypes ??= new()
     {
         new() { Status = DayStatus.Vacation, Name = AppStrings.Vacation },
         new() { Status = DayStatus.Sick, Name = AppStrings.Illness },
@@ -159,11 +164,11 @@ public partial class CalendarViewModel : ObservableObject
         {
             IsLoading = true;
 
+            // Status-Typen-Cache invalidieren (für Sprachwechsel)
+            _availableStatusTypes = null;
+
             // MonthDisplay VOR DB-Zugriff setzen (Fallback bei Exception)
             MonthDisplay = SelectedMonth.ToString("MMMM yyyy");
-
-            // Kalender-Tage auch ohne DB generieren (leere Heatmap als Fallback)
-            await GenerateCalendarDaysAsync();
 
             // Load month summary
             MonthSummary = await _calculation.CalculateMonthAsync(SelectedMonth.Year, SelectedMonth.Month);
@@ -172,7 +177,7 @@ public partial class CalendarViewModel : ObservableObject
             BalanceDisplay = MonthSummary.BalanceDisplay;
             BalanceColor = MonthSummary.BalanceColor;
 
-            // Kalender-Tage nochmal mit DB-Daten regenerieren (überschreibt Fallback)
+            // Kalender-Tage mit DB-Daten generieren (ein Aufruf reicht, da CalculateMonth die DB bereits geladen hat)
             await GenerateCalendarDaysAsync();
 
             // Premium status
@@ -219,7 +224,7 @@ public partial class CalendarViewModel : ObservableObject
         OverlayEndDate = day.Date;
         OverlaySelectedType = AvailableStatusTypes[0];
         OverlayNote = "";
-        OverlayDateDisplay = day.Date.ToString("dddd, dd. MMMM yyyy");
+        OverlayDateDisplay = day.Date.ToString("D");
 
         // Check existing status
         var hasSpecialStatus = day.Status != DayStatus.WorkDay &&
@@ -445,18 +450,18 @@ public class CalendarDay
         get
         {
             if (!IsCurrentMonth)
-                return IsDarkTheme ? "#1E1E1E" : "#F5F5F5";
+                return IsDarkTheme ? AppColors.CalendarDarkInactive : AppColors.CalendarLightInactive;
 
             if (!HasData)
-                return IsDarkTheme ? "#2A2A2A" : "#EEEEEE";
+                return IsDarkTheme ? AppColors.CalendarDarkEmpty : AppColors.CalendarLightEmpty;
 
             return WorkMinutes switch
             {
-                < 240 => "#C8E6C9",  // < 4h (hellgrün - ok auf beiden)
-                < 360 => "#81C784",  // 4-6h
-                < 480 => "#4CAF50",  // 6-8h
-                < 600 => "#388E3C",  // 8-10h
-                _ => "#F44336"       // > 10h (Überstunden)
+                < 240 => AppColors.HeatmapLight,
+                < 360 => AppColors.HeatmapMedium,
+                < 480 => AppColors.HeatmapNormal,
+                < 600 => AppColors.HeatmapHigh,
+                _ => AppColors.HeatmapOvertime
             };
         }
     }
@@ -466,14 +471,14 @@ public class CalendarDay
         get
         {
             if (!IsCurrentMonth)
-                return IsDarkTheme ? "#555555" : "#BDBDBD";
+                return IsDarkTheme ? AppColors.CalendarTextDarkInactive : AppColors.CalendarTextLightInactive;
 
-            if (IsToday) return "#FFFFFF";
+            if (IsToday) return AppColors.White;
 
             if (Status == DayStatus.Weekend)
-                return IsDarkTheme ? "#757575" : "#9E9E9E";
+                return IsDarkTheme ? AppColors.CalendarTextDarkWeekend : AppColors.CalendarTextLightWeekend;
 
-            return IsDarkTheme ? "#E0E0E0" : "#212121";
+            return IsDarkTheme ? AppColors.CalendarTextDark : AppColors.CalendarTextLight;
         }
     }
 
@@ -481,7 +486,7 @@ public class CalendarDay
     {
         get
         {
-            if (IsToday) return "#1565C0";
+            if (IsToday) return AppColors.Primary;
             return HeatmapColor;
         }
     }

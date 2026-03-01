@@ -1,3 +1,6 @@
+using WorkTimePro.Resources.Strings;
+using static WorkTimePro.Helpers.TimeFormatter;
+
 namespace WorkTimePro.Models;
 
 /// <summary>
@@ -100,47 +103,42 @@ public class WorkWeek
     }
 
     /// <summary>
-    /// Formatierter Zeitraum (z.B. "20.01. - 26.01.")
+    /// Formatierter Zeitraum, kulturspezifisch (z.B. "20.01. - 26.01." oder "01/20 - 01/26")
     /// </summary>
-    public string DateRangeDisplay => $"{StartDate:dd.MM.} - {EndDate:dd.MM.}";
-
-    /// <summary>
-    /// Formatierte Woche (z.B. "KW 4 / 2026")
-    /// </summary>
-    public string WeekDisplay => $"KW {WeekNumber} / {Year}";
-
-    /// <summary>
-    /// Formatierte Soll-Zeit
-    /// </summary>
-    public string TargetWorkDisplay => FormatTimeSpan(TargetWorkTime);
-
-    /// <summary>
-    /// Formatierte Ist-Zeit
-    /// </summary>
-    public string ActualWorkDisplay => FormatTimeSpan(ActualWorkTime);
-
-    /// <summary>
-    /// Formatierter Saldo (mit +/-)
-    /// </summary>
-    public string BalanceDisplay
+    public string DateRangeDisplay
     {
         get
         {
-            var prefix = BalanceMinutes >= 0 ? "+" : "";
-            return $"{prefix}{FormatTimeSpan(Balance)}";
+            var start = StartDate.ToDateTime(TimeOnly.MinValue).ToString("d");
+            var end = EndDate.ToDateTime(TimeOnly.MinValue).ToString("d");
+            return $"{start} - {end}";
         }
     }
 
     /// <summary>
+    /// Formatierte Woche, lokalisiert (z.B. "KW 4 / 2026" oder "CW 4 / 2026")
+    /// </summary>
+    public string WeekDisplay => string.Format(
+        Resources.Strings.AppStrings.WeekNumberFormat ?? "CW {0} / {1}",
+        WeekNumber, Year);
+
+    /// <summary>
+    /// Formatierte Soll-Zeit
+    /// </summary>
+    public string TargetWorkDisplay => FormatMinutes(TargetWorkMinutes);
+
+    /// <summary>
+    /// Formatierte Ist-Zeit
+    /// </summary>
+    public string ActualWorkDisplay => FormatMinutes(ActualWorkMinutes);
+
+    /// <summary>
+    /// Formatierter Saldo (mit +/-)
+    /// </summary>
+    public string BalanceDisplay => FormatBalance(BalanceMinutes);
+
+    /// <summary>
     /// Farbe für Saldo
     /// </summary>
-    public string BalanceColor => BalanceMinutes >= 0 ? "#4CAF50" : "#F44336";
-
-    private static string FormatTimeSpan(TimeSpan ts)
-    {
-        var totalHours = (int)Math.Abs(ts.TotalHours);
-        var minutes = Math.Abs(ts.Minutes);
-        var sign = ts.TotalMinutes < 0 ? "-" : "";
-        return $"{sign}{totalHours}:{minutes:D2}";
-    }
+    public string BalanceColor => BalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
 }

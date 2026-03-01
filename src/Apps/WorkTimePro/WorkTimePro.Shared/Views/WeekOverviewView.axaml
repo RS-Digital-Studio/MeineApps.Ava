@@ -45,6 +45,25 @@
         </Grid>
       </Border>
 
+      <!-- Predictive Insight Card -->
+      <Border AutomationProperties.AutomationId="Week_InsightCard"
+              IsVisible="{Binding HasPredictiveInsight}"
+              Background="{DynamicResource PrimaryBrush}"
+              Opacity="0.85"
+              CornerRadius="12"
+              Padding="14,10">
+        <StackPanel Orientation="Horizontal" Spacing="10"
+                    HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="TrendingUp" Width="20" Height="20"
+                           Foreground="White" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding PredictiveInsightText}"
+                     AutomationProperties.AutomationId="Week_TxtInsight"
+                     FontSize="14" FontWeight="SemiBold"
+                     Foreground="White"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
       <!-- Today Button -->
       <Button Content="{Binding TodayButtonText}"
               AutomationProperties.AutomationId="Week_BtnToday"

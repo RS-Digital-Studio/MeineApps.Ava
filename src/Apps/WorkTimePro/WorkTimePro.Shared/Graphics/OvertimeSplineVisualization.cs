@@ -133,7 +133,7 @@ public static class OvertimeSplineVisualization
             // Fläche unter/über Baseline
             using var areaPath = CreateSmoothAreaPath(points, baselineY);
             // Gradient: Grün oben, Rot unten
-            _fillPaint.Shader = SKShader.CreateLinearGradient(
+            using (var shader = SKShader.CreateLinearGradient(
                 new SKPoint(0, chartTop),
                 new SKPoint(0, chartBottom),
                 new[]
@@ -144,9 +144,12 @@ public static class OvertimeSplineVisualization
                     SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Error, 50)
                 },
                 new float[] { 0f, 0.45f, 0.55f, 1f },
-                SKShaderTileMode.Clamp);
-            canvas.DrawPath(areaPath, _fillPaint);
-            _fillPaint.Shader = null;
+                SKShaderTileMode.Clamp))
+            {
+                _fillPaint.Shader = shader;
+                canvas.DrawPath(areaPath, _fillPaint);
+                _fillPaint.Shader = null;
+            }
 
             // Spline-Linie
             using var linePath = CreateSmoothPath(points);
@@ -159,9 +162,12 @@ public static class OvertimeSplineVisualization
             _dotPaint.Color = SkiaThemeHelper.Warning;
             canvas.DrawCircle(lastPt, 4f, _dotPaint);
             _dotPaint.Color = SkiaThemeHelper.WithAlpha(SkiaThemeHelper.Warning, 60);
-            _dotPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
-            canvas.DrawCircle(lastPt, 6f, _dotPaint);
-            _dotPaint.MaskFilter = null;
+            using (var blur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f))
+            {
+                _dotPaint.MaskFilter = blur;
+                canvas.DrawCircle(lastPt, 6f, _dotPaint);
+                _dotPaint.MaskFilter = null;
+            }
         }
 
         // X-Achsen-Labels (jeden n-ten anzeigen)

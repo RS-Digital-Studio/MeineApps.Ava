@@ -81,19 +81,18 @@ public class NullToBoolConverter : IValueConverter
 }
 
 /// <summary>
-/// Prüft ob ein String nicht null oder leer ist (Alias für StringToBoolConverter)
+/// Prüft ob ein String nicht null oder leer ist.
+/// Delegiert intern an StringToBoolConverter (identische Logik, existiert nur für XAML-Kompatibilität).
 /// </summary>
 public class StringNotNullConverter : IValueConverter
 {
+    private static readonly StringToBoolConverter _inner = new();
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        return !string.IsNullOrEmpty(value as string);
-    }
+        => _inner.Convert(value, targetType, parameter, culture);
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
-    {
-        throw new NotImplementedException();
-    }
+        => throw new NotImplementedException();
 }
 
 /// <summary>

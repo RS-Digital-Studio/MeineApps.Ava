@@ -441,7 +441,81 @@ public class TimeTrackingService : ITimeTrackingService
         if (CurrentStatus == TrackingStatus.Idle)
             return TimeSpan.Zero;
 
-        // Non-blocking: Return cached value (updated by GetCurrentWorkTimeAsync)
+        // Non-blocking: Return cached value (updated by GetLiveDataSnapshotAsync)
         return _cachedWorkTime;
+    }
+
+    /// <summary>
+    /// Lädt alle Live-Daten in einem einzigen Snapshot.
+    /// Ersetzt die separaten Aufrufe (GetCurrentWorkTimeAsync + GetCurrentPauseTimeAsync + GetTimeUntilEndAsync)
+    /// die zusammen 5+ DB-Queries pro Sekunde verursachten → jetzt nur noch 3 Queries total.
+    /// </summary>
+    public async Task<LiveDataSnapshot> GetLiveDataSnapshotAsync()
+    {
+        var today = await GetTodayAsync();
+        var entries = await _database.GetTimeEntriesAsync(today.Id);
+        var pauses = await _database.GetPauseEntriesAsync(today.Id);
+
+        // === Arbeitszeit berechnen (gleiche Logik wie GetCurrentWorkTimeAsync) ===
+        var totalWork = TimeSpan.Zero;
+        TimeEntry? lastCheckIn = null;
+
+        foreach (var entry in entries.OrderBy(e => e.Timestamp))
+        {
+            if (entry.Type == EntryType.CheckIn)
+            {
+                lastCheckIn = entry;
+            }
+            else if (entry.Type == EntryType.CheckOut && lastCheckIn != null)
+            {
+                totalWork += entry.Timestamp - lastCheckIn.Timestamp;
+                lastCheckIn = null;
+            }
+        }
+
+        // Noch eingecheckt? (auch während Pause die laufende Session zählen)
+        if (lastCheckIn != null && CurrentStatus != TrackingStatus.Idle)
+        {
+            totalWork += DateTime.Now - lastCheckIn.Timestamp;
+        }
+
+        // Abgeschlossene Pausen abziehen
+        var totalPauseMinutes = pauses
+            .Where(p => p.EndTime != null)
+            .Sum(p => p.Duration.TotalMinutes);
+
+        // Aktive Pause
+        var activePause = pauses.FirstOrDefault(p => p.EndTime == null);
+        if (activePause != null)
+        {
+            totalPauseMinutes += (DateTime.Now - activePause.StartTime).TotalMinutes;
+        }
+
+        var workTime = totalWork - TimeSpan.FromMinutes(totalPauseMinutes);
+        if (workTime < TimeSpan.Zero)
+            workTime = TimeSpan.Zero;
+        _cachedWorkTime = workTime;
+
+        // === Pausenzeit berechnen (gleiche Logik wie GetCurrentPauseTimeAsync) ===
+        var manualPauseMinutes = pauses
+            .Where(p => !p.IsAutoPause && p.EndTime != null)
+            .Sum(p => p.Duration.TotalMinutes);
+
+        if (activePause != null)
+        {
+            manualPauseMinutes += (DateTime.Now - activePause.StartTime).TotalMinutes;
+        }
+
+        var pauseTime = TimeSpan.FromMinutes(manualPauseMinutes);
+
+        // === Restzeit berechnen (gleiche Logik wie GetTimeUntilEndAsync) ===
+        TimeSpan? timeUntilEnd = null;
+        if (CurrentStatus != TrackingStatus.Idle)
+        {
+            var remaining = today.TargetWorkTime - workTime;
+            timeUntilEnd = remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+        }
+
+        return new LiveDataSnapshot(workTime, pauseTime, timeUntilEnd, today);
     }
 }

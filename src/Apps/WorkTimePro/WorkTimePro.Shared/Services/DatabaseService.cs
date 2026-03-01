@@ -807,6 +807,58 @@ public class DatabaseService : IDatabaseService
             .ToDictionary(g => g.Key, g => g.Sum(e => e.Minutes) / 60.0);
     }
 
+    // ==================== Achievement ====================
+
+    public async Task CreateAchievementTableAsync()
+    {
+        var db = await GetDatabaseAsync();
+        await db.CreateTableAsync<Achievement>();
+        await db.ExecuteAsync("CREATE UNIQUE INDEX IF NOT EXISTS idx_achievement_key ON Achievements([Key])");
+    }
+
+    public async Task<List<Achievement>> GetAllAchievementsAsync()
+    {
+        var db = await GetDatabaseAsync();
+        return await db.Table<Achievement>().ToListAsync();
+    }
+
+    public async Task SaveAchievementAsync(Achievement achievement)
+    {
+        var db = await GetDatabaseAsync();
+        if (achievement.Id == 0)
+        {
+            // sqlite-net setzt die ID direkt auf dem Objekt
+            await db.InsertAsync(achievement);
+        }
+        else
+        {
+            await db.UpdateAsync(achievement);
+        }
+    }
+
+    // ==================== Clear (für Restore) ====================
+
+    public async Task ClearAllDataAsync()
+    {
+        var db = await GetDatabaseAsync();
+        // Reihenfolge beachten: FK-abhängige Tabellen zuerst
+        await db.DeleteAllAsync<ProjectTimeEntry>();
+        await db.DeleteAllAsync<TimeEntry>();
+        await db.DeleteAllAsync<PauseEntry>();
+        await db.DeleteAllAsync<ShiftAssignment>();
+        await db.DeleteAllAsync<ShiftPattern>();
+        await db.DeleteAllAsync<VacationEntry>();
+        await db.DeleteAllAsync<VacationQuota>();
+        await db.DeleteAllAsync<HolidayEntry>();
+        await db.DeleteAllAsync<WorkDay>();
+        await db.DeleteAllAsync<Project>();
+        await db.DeleteAllAsync<Employer>();
+        // Achievement-Tabelle existiert möglicherweise nicht bei älteren DBs
+        try { await db.DeleteAllAsync<Achievement>(); }
+        catch { /* Tabelle existiert noch nicht */ }
+        // Settings werden NICHT gelöscht (werden beim Restore überschrieben)
+    }
+
     // ==================== Backup methods ====================
 
     public async Task<List<WorkDay>> GetAllWorkDaysAsync()

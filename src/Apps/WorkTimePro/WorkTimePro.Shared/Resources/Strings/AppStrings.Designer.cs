@@ -2568,6 +2568,198 @@ namespace WorkTimePro.Resources.Strings {
                 return ResourceManager.GetString("AbsenceOverview", resourceCulture);
             }
         }
+
+        internal static string Achievements {
+            get {
+                return ResourceManager.GetString("Achievements", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Night Owl ähnelt.
+        /// </summary>
+        internal static string Achievement_night_owl_Name {
+            get {
+                return ResourceManager.GetString("Achievement_night_owl_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Check out after 20:00 ten times ähnelt.
+        /// </summary>
+        internal static string Achievement_night_owl_Desc {
+            get {
+                return ResourceManager.GetString("Achievement_night_owl_Desc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Marathon Day ähnelt.
+        /// </summary>
+        internal static string Achievement_marathon_Name {
+            get {
+                return ResourceManager.GetString("Achievement_marathon_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Work 10+ hours in a single day ähnelt.
+        /// </summary>
+        internal static string Achievement_marathon_Desc {
+            get {
+                return ResourceManager.GetString("Achievement_marathon_Desc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Half Year ähnelt.
+        /// </summary>
+        internal static string Achievement_half_year_Name {
+            get {
+                return ResourceManager.GetString("Achievement_half_year_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Log 130 work days ähnelt.
+        /// </summary>
+        internal static string Achievement_half_year_Desc {
+            get {
+                return ResourceManager.GetString("Achievement_half_year_Desc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Full Year ähnelt.
+        /// </summary>
+        internal static string Achievement_full_year_Name {
+            get {
+                return ResourceManager.GetString("Achievement_full_year_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Log 250 work days ähnelt.
+        /// </summary>
+        internal static string Achievement_full_year_Desc {
+            get {
+                return ResourceManager.GetString("Achievement_full_year_Desc", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Pause Master ähnelt.
+        /// </summary>
+        internal static string Achievement_pause_master_Name {
+            get {
+                return ResourceManager.GetString("Achievement_pause_master_Name", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Take 50 breaks ähnelt.
+        /// </summary>
+        internal static string Achievement_pause_master_Desc {
+            get {
+                return ResourceManager.GetString("Achievement_pause_master_Desc", resourceCulture);
+            }
+        }
+
+        internal static string InsightRemainingWeek {
+            get {
+                return ResourceManager.GetString("InsightRemainingWeek", resourceCulture);
+            }
+        }
+
+        internal static string InsightMonthTrend {
+            get {
+                return ResourceManager.GetString("InsightMonthTrend", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die CW {0} / {1} ähnelt.
+        /// </summary>
+        internal static string WeekNumberFormat {
+            get {
+                return ResourceManager.GetString("WeekNumberFormat", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die CW {0} ähnelt.
+        /// </summary>
+        internal static string WeekNumberShort {
+            get {
+                return ResourceManager.GetString("WeekNumberShort", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die Estimated end ähnelt.
+        /// </summary>
+        internal static string EstimatedEnd {
+            get {
+                return ResourceManager.GetString("EstimatedEnd", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Sucht eine lokalisierte Zeichenfolge, die {0} {1}:{2:D2} ähnelt.
+        /// </summary>
+        internal static string RemainingTodayFormat {
+            get {
+                return ResourceManager.GetString("RemainingTodayFormat", resourceCulture);
+            }
+        }
+
+        internal static string Backup {
+            get {
+                return ResourceManager.GetString("Backup", resourceCulture);
+            }
+        }
+
+        internal static string BackupExportSuccess {
+            get {
+                return ResourceManager.GetString("BackupExportSuccess", resourceCulture);
+            }
+        }
+
+        internal static string BackupExportFailed {
+            get {
+                return ResourceManager.GetString("BackupExportFailed", resourceCulture);
+            }
+        }
+
+        internal static string BackupImportSuccess {
+            get {
+                return ResourceManager.GetString("BackupImportSuccess", resourceCulture);
+            }
+        }
+
+        internal static string BackupImportFailed {
+            get {
+                return ResourceManager.GetString("BackupImportFailed", resourceCulture);
+            }
+        }
+
+        internal static string BackupNoBackupsFound {
+            get {
+                return ResourceManager.GetString("BackupNoBackupsFound", resourceCulture);
+            }
+        }
+
+        internal static string ExportBackup {
+            get {
+                return ResourceManager.GetString("ExportBackup", resourceCulture);
+            }
+        }
+
+        internal static string ImportBackup {
+            get {
+                return ResourceManager.GetString("ImportBackup", resourceCulture);
+            }
+        }
     }
 }
 

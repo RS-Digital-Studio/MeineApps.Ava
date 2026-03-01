@@ -80,6 +80,31 @@ public interface IBackupService
     /// </summary>
     Task<bool> DeleteBackupAsync(string backupId);
 
+    // === Lokaler Export/Import (ohne Cloud-Auth) ===
+
+    /// <summary>
+    /// Erstellt ein lokales Backup und gibt den Dateipfad zurück.
+    /// Benötigt KEINE Cloud-Authentifizierung.
+    /// </summary>
+    Task<BackupResult> CreateLocalBackupAsync();
+
+    /// <summary>
+    /// Erstellt ein lokales Backup und teilt es über das Share-Sheet (Android) bzw. öffnet es (Desktop).
+    /// Benötigt KEINE Cloud-Authentifizierung.
+    /// </summary>
+    Task<BackupResult> ExportBackupAsync();
+
+    /// <summary>
+    /// Importiert ein Backup aus einer JSON-Datei.
+    /// Benötigt KEINE Cloud-Authentifizierung.
+    /// </summary>
+    Task<bool> ImportBackupFromFileAsync(string filePath);
+
+    /// <summary>
+    /// Listet alle lokalen Backups (ohne Cloud-Auth).
+    /// </summary>
+    Task<List<BackupInfo>> GetLocalBackupsAsync();
+
     // === Auto-Sync ===
 
     /// <summary>

@@ -72,7 +72,7 @@ public partial class DayDetailViewModel : ObservableObject
     private string _balanceDisplay = "+0:00";
 
     [ObservableProperty]
-    private string _balanceColor = "#4CAF50";
+    private string _balanceColor = AppColors.BalancePositive;
 
     [ObservableProperty]
     private string _statusDisplay = "";
@@ -193,7 +193,7 @@ public partial class DayDetailViewModel : ObservableObject
 
             WorkDay = await _database.GetOrCreateWorkDayAsync(SelectedDate);
 
-            DateDisplay = SelectedDate.ToString("dddd, dd. MMMM yyyy");
+            DateDisplay = SelectedDate.ToString("D");
             StatusDisplay = TimeFormatter.GetStatusName(WorkDay.Status);
             StatusIcon = WorkDay.StatusIcon;
             IsLocked = WorkDay.IsLocked;

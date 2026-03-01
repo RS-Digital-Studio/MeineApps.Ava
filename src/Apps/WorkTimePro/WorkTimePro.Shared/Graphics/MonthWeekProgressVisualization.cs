@@ -91,11 +91,12 @@ public static class MonthWeekProgressVisualization
                 var fillRect = new SKRect(barLeft, barY, barLeft + fillW, barY + barH);
 
                 // Gradient: Primary → Accent
-                _barPaint.Shader = SKShader.CreateLinearGradient(
+                using var barShader = SKShader.CreateLinearGradient(
                     new SKPoint(barLeft, barY),
                     new SKPoint(barLeft + fillW, barY),
                     new[] { SkiaThemeHelper.Primary, SkiaThemeHelper.Accent },
                     null, SKShaderTileMode.Clamp);
+                _barPaint.Shader = barShader;
 
                 // Clip auf abgerundetes Rechteck
                 canvas.Save();
@@ -110,9 +111,12 @@ public static class MonthWeekProgressVisualization
                 if (fillW > 10f)
                 {
                     _glowPaint.Color = SkiaThemeHelper.Accent.WithAlpha(60);
-                    _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
-                    canvas.DrawCircle(barLeft + fillW, barY + barH / 2f, barH, _glowPaint);
-                    _glowPaint.MaskFilter = null;
+                    using (var blur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f))
+                    {
+                        _glowPaint.MaskFilter = blur;
+                        canvas.DrawCircle(barLeft + fillW, barY + barH / 2f, barH, _glowPaint);
+                        _glowPaint.MaskFilter = null;
+                    }
                 }
 
                 // Überstunden-Markierung (>100%)

@@ -27,10 +27,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly IAdService _adService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IHapticService _haptic;
+    private readonly IAchievementService _achievementService;
 
     private System.Timers.Timer? _updateTimer;
     private bool _disposed;
     private Task? _initTask;
+
+    // Gecachte Settings (werden in LoadDataAsync und OnSettingsChanged aktualisiert)
+    private WorkSettings? _cachedSettings;
 
     // Undo-Mechanismus (5 Sekunden Fenster nach CheckIn/CheckOut)
     private CancellationTokenSource? _undoCts;
@@ -57,7 +61,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isShiftPlanActive;
 
-    public bool IsSubPageActive => IsDayDetailActive || IsMonthActive || IsYearActive || IsVacationActive || IsShiftPlanActive;
+    [ObservableProperty]
+    private bool _isAchievementActive;
+
+    public bool IsSubPageActive => IsDayDetailActive || IsMonthActive || IsYearActive || IsVacationActive || IsShiftPlanActive || IsAchievementActive;
 
     // === Child ViewModels (for tab pages and sub-pages) ===
     public WeekOverviewViewModel WeekVm { get; }
@@ -69,6 +76,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public YearOverviewViewModel YearVm { get; }
     public VacationViewModel VacationVm { get; }
     public ShiftPlanViewModel ShiftPlanVm { get; }
+    public AchievementViewModel AchievementVm { get; }
 
     [ObservableProperty]
     private bool _isAdBannerVisible;
@@ -94,8 +102,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         YearOverviewViewModel yearVm,
         VacationViewModel vacationVm,
         ShiftPlanViewModel shiftPlanVm,
+        AchievementViewModel achievementVm,
         IRewardedAdService rewardedAdService,
-        IHapticService haptic)
+        IHapticService haptic,
+        IAchievementService achievementService)
     {
         _timeTracking = timeTracking;
         _calculation = calculation;
@@ -106,6 +116,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _adService = adService;
         _rewardedAdService = rewardedAdService;
         _haptic = haptic;
+        _achievementService = achievementService;
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
 
         IsAdBannerVisible = _adService.BannerVisible;
@@ -125,6 +136,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         YearVm = yearVm;
         VacationVm = vacationVm;
         ShiftPlanVm = shiftPlanVm;
+        AchievementVm = achievementVm;
+
+        // Achievement-Events verdrahten
+        _achievementService.AchievementUnlocked += OnAchievementUnlocked;
 
         // Navigation-Events verdrahten (Sub-Pages + Tab-VMs die navigieren können)
         WireSubPageNavigation(dayDetailVm);
@@ -132,6 +147,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         WireSubPageNavigation(yearVm);
         WireSubPageNavigation(vacationVm);
         WireSubPageNavigation(shiftPlanVm);
+        WireSubPageNavigation(achievementVm);
         // Tab-VMs die DayDetail-Navigation auslösen können
         WireSubPageNavigation(weekVm);
         WireSubPageNavigation(calendarVm);
@@ -176,19 +192,30 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Stellt sicher, dass initiale Daten geladen sind bevor Commands ausgeführt werden
+    /// Wartet auf Abschluss der initialen Datenladung.
+    /// Wird von der Loading-Pipeline aufgerufen.
     /// </summary>
-    private async Task EnsureInitializedAsync()
+    public async Task WaitForInitializationAsync()
     {
         if (_initTask != null) await _initTask;
     }
+
+    /// <summary>
+    /// Stellt sicher, dass initiale Daten geladen sind bevor Commands ausgeführt werden
+    /// </summary>
+    private Task EnsureInitializedAsync() => WaitForInitializationAsync();
 
     /// <summary>
     /// Settings-Änderungen propagieren: aktiven Tab neu laden
     /// </summary>
     private async void OnSettingsChanged(object? sender, EventArgs e)
     {
-        try { await LoadTabDataAsync(CurrentTab); }
+        try
+        {
+            // Settings-Cache sofort invalidieren
+            _cachedSettings = await _database.GetSettingsAsync();
+            await LoadTabDataAsync(CurrentTab);
+        }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine($"Settings-Reload Fehler: {ex.Message}"); }
     }
 
@@ -239,6 +266,31 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 IsDayDetailActive = true;
                 OnPropertyChanged(nameof(IsSubPageActive));
                 await DayDetailVm.LoadDataAsync();
+                return;
+            }
+
+            // MonthOverview-Navigation (z.B. "month?date=2026-02-01" von YearOverview)
+            if (route.StartsWith("month", StringComparison.OrdinalIgnoreCase))
+            {
+                var dateParam = route.Split("date=", StringSplitOptions.RemoveEmptyEntries);
+                if (dateParam.Length > 1 && DateTime.TryParse(dateParam[1], out var monthDate))
+                {
+                    MonthVm.SelectedMonth = new DateTime(monthDate.Year, monthDate.Month, 1);
+                }
+                CloseAllSubPages();
+                IsMonthActive = true;
+                OnPropertyChanged(nameof(IsSubPageActive));
+                await MonthVm.LoadDataAsync();
+                return;
+            }
+
+            // WeekOverview-Navigation (von MonthOverview)
+            if (route.StartsWith("WeekOverviewPage", StringComparison.OrdinalIgnoreCase))
+            {
+                // Zur Wochen-Ansicht wechseln (Tab 1)
+                CloseAllSubPages();
+                CurrentTab = 1;
+                return;
             }
         }
         catch (Exception ex)
@@ -309,7 +361,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _statusIcon = Icons.Play;
 
     [ObservableProperty]
-    private IBrush _statusColor = SolidColorBrush.Parse("#9E9E9E");
+    private IBrush _statusColor = SolidColorBrush.Parse(AppColors.StatusIdle);
 
     [ObservableProperty]
     private string _currentWorkTime = "0:00";
@@ -324,7 +376,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _balanceTime = "+0:00";
 
     [ObservableProperty]
-    private IBrush _balanceColor = SolidColorBrush.Parse("#4CAF50");
+    private IBrush _balanceColor = SolidColorBrush.Parse(AppColors.BalancePositive);
+
+    /// <summary>
+    /// True wenn die Tagesbalance negativ ist (für pulsierende Animation).
+    /// </summary>
+    [ObservableProperty]
+    private bool _isBalanceNegative;
 
     [ObservableProperty]
     private string _timeUntilEnd = "--:--";
@@ -351,7 +409,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _weekProgressText = "0%";
 
     [ObservableProperty]
-    private string _todayDateDisplay = DateTime.Today.ToString("dddd, dd. MMMM");
+    private string _todayDateDisplay = DateTime.Today.ToString("D");
 
     [ObservableProperty]
     private ObservableCollection<TimeEntry> _todayEntries = new();
@@ -377,6 +435,26 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _showAds = true;
 
+    // === Predictive Insights (TodayView) ===
+
+    /// <summary>
+    /// Geschätztes Arbeitsende basierend auf CheckIn + Soll-Stunden (z.B. "~17:23")
+    /// </summary>
+    [ObservableProperty]
+    private string _estimatedEndTime = "";
+
+    /// <summary>
+    /// Verbleibende Zeit bis Soll erfüllt (z.B. "Noch 2:15")
+    /// </summary>
+    [ObservableProperty]
+    private string _remainingTodayText = "";
+
+    /// <summary>
+    /// True wenn Insight-Card angezeigt werden soll (nur bei aktivem Tracking)
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasInsight;
+
     // === Verdienst (Stundenlohn) ===
 
     [ObservableProperty]
@@ -400,7 +478,16 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public bool HasStreak => StreakCount >= 2;
 
-    partial void OnStreakCountChanged(int value) => OnPropertyChanged(nameof(HasStreak));
+    /// <summary>
+    /// Lokalisierter Streak-Text, z.B. "5 Tage" / "5 days"
+    /// </summary>
+    public string StreakDisplayText => $"{StreakCount} {AppStrings.DayStreak}";
+
+    partial void OnStreakCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(HasStreak));
+        OnPropertyChanged(nameof(StreakDisplayText));
+    }
 
     // Wochenziel-Celebration (einmal pro Session)
     private bool _weekGoalCelebrated;
@@ -469,6 +556,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
             }
 
             await LoadDataAsync();
+
+            // Achievements asynchron prüfen (nach CheckIn/CheckOut)
+            _ = _achievementService.CheckAchievementsAsync();
         }
         catch (Exception ex)
         {
@@ -534,7 +624,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             TodayPauses = new ObservableCollection<PauseEntry>(pauses);
 
             // Times
-            TargetWorkTime = FormatTimeSpan(today.TargetWorkTime);
+            TargetWorkTime = TimeFormatter.FormatMinutes(today.TargetWorkMinutes);
             FirstCheckIn = today.FirstCheckIn?.ToString("HH:mm") ?? "--:--";
             LastCheckOut = today.LastCheckOut?.ToString("HH:mm") ?? "--:--";
 
@@ -549,8 +639,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
             WeekProgress = await _calculation.GetWeekProgressAsync();
             WeekProgressText = $"{WeekProgress:F0}%";
 
-            // Streak berechnen (aufeinanderfolgende Arbeitstage)
-            StreakCount = await CalculateStreakAsync();
+            // Streak berechnen (zentralisiert in AchievementService, Batch-Query)
+            StreakCount = await _achievementService.GetCurrentStreakAsync();
+
+            // Settings cachen (für UpdateLiveDataAsync, wird nur hier und bei OnSettingsChanged aktualisiert)
+            _cachedSettings = await _database.GetSettingsAsync();
 
             // Premium status
             ShowAds = !_purchaseService.IsPremium && !_trialService.IsTrialActive;
@@ -621,6 +714,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    private async Task NavigateToAchievementsAsync()
+    {
+        CloseAllSubPages();
+        IsAchievementActive = true;
+        OnPropertyChanged(nameof(IsSubPageActive));
+        await AchievementVm.LoadDataAsync();
+    }
+
+    [RelayCommand]
     public void GoBack()
     {
         CloseAllSubPages();
@@ -633,6 +735,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsYearActive = false;
         IsVacationActive = false;
         IsShiftPlanActive = false;
+        IsAchievementActive = false;
         OnPropertyChanged(nameof(IsSubPageActive));
     }
 
@@ -744,6 +847,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     // === Helper methods ===
 
+    /// <summary>
+    /// Wird aufgerufen wenn ein Achievement freigeschaltet wird.
+    /// Zeigt FloatingText mit Gold-Farbe und Confetti.
+    /// </summary>
+    private void OnAchievementUnlocked(object? sender, Achievement achievement)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            FloatingTextRequested?.Invoke(achievement.DisplayName, "achievement");
+            CelebrationRequested?.Invoke();
+        });
+    }
+
     private void OnAdUnavailable()
     {
         MessageRequested?.Invoke(AppStrings.AdVideoNotAvailableTitle, AppStrings.AdVideoNotAvailableMessage);
@@ -761,7 +877,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             UpdateStatusDisplay();
             OnPropertyChanged(nameof(PauseButtonText));
             OnPropertyChanged(nameof(ShowDayDetailsText));
-            TodayDateDisplay = DateTime.Today.ToString("dddd, dd. MMMM");
+            TodayDateDisplay = DateTime.Today.ToString("D");
         });
     }
 
@@ -795,19 +911,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
             case TrackingStatus.Idle:
                 StatusText = _localization.GetString("Status_Idle") ?? AppStrings.Status_Idle;
                 StatusIcon = Icons.Play;
-                StatusColor = SolidColorBrush.Parse("#9E9E9E");
+                StatusColor = SolidColorBrush.Parse(AppColors.StatusIdle);
                 break;
 
             case TrackingStatus.Working:
                 StatusText = _localization.GetString("Status_Working") ?? AppStrings.Status_Working;
                 StatusIcon = Icons.Stop;
-                StatusColor = SolidColorBrush.Parse("#4CAF50");
+                StatusColor = SolidColorBrush.Parse(AppColors.StatusActive);
                 break;
 
             case TrackingStatus.OnBreak:
                 StatusText = _localization.GetString("Status_OnBreak") ?? AppStrings.Status_OnBreak;
                 StatusIcon = Icons.Play;
-                StatusColor = SolidColorBrush.Parse("#FF9800");
+                StatusColor = SolidColorBrush.Parse(AppColors.StatusPaused);
                 break;
         }
     }
@@ -818,23 +934,24 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         try
         {
-            var workTime = await _timeTracking.GetCurrentWorkTimeAsync();
-            var pauseTime = await _timeTracking.GetCurrentPauseTimeAsync();
-            var timeUntilEnd = await _timeTracking.GetTimeUntilEndAsync();
-
-            var today = await _timeTracking.GetTodayAsync();
+            // Ein einziger Snapshot statt 5+ separater DB-Queries pro Sekunde
+            var snapshot = await _timeTracking.GetLiveDataSnapshotAsync();
+            var workTime = snapshot.WorkTime;
+            var pauseTime = snapshot.PauseTime;
+            var timeUntilEnd = snapshot.TimeUntilEnd;
+            var today = snapshot.Today;
             var balance = workTime - today.TargetWorkTime;
-            var settings = await _database.GetSettingsAsync();
+            var settings = _cachedSettings ?? await _database.GetSettingsAsync();
 
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
-                CurrentWorkTime = FormatTimeSpan(workTime);
-                CurrentPauseTime = FormatTimeSpan(pauseTime);
-                TimeUntilEnd = timeUntilEnd.HasValue ? FormatTimeSpan(timeUntilEnd.Value) : "--:--";
+                CurrentWorkTime = TimeFormatter.FormatMinutes((int)workTime.TotalMinutes);
+                CurrentPauseTime = TimeFormatter.FormatMinutes((int)pauseTime.TotalMinutes);
+                TimeUntilEnd = timeUntilEnd.HasValue ? TimeFormatter.FormatMinutes((int)timeUntilEnd.Value.TotalMinutes) : "--:--";
 
-                var prefix = balance.TotalMinutes >= 0 ? "+" : "";
-                BalanceTime = $"{prefix}{FormatTimeSpan(balance)}";
-                BalanceColor = SolidColorBrush.Parse(balance.TotalMinutes >= 0 ? "#4CAF50" : "#F44336");
+                BalanceTime = TimeFormatter.FormatBalance((int)balance.TotalMinutes);
+                BalanceColor = SolidColorBrush.Parse(balance.TotalMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative);
+                IsBalanceNegative = balance.TotalMinutes < -1; // Nur bei deutlich negativer Balance
 
                 // Tages-Fortschritt
                 if (today.TargetWorkMinutes > 0)
@@ -848,6 +965,33 @@ public partial class MainViewModel : ObservableObject, IDisposable
                     _weekGoalCelebrated = true;
                     CelebrationRequested?.Invoke();
                     FloatingTextRequested?.Invoke(AppStrings.WeekGoalReached ?? "Wochenziel erreicht!", "success");
+                }
+
+                // Predictive Insights: Geschätztes Ende + verbleibende Zeit
+                if (CurrentStatus != TrackingStatus.Idle && today.FirstCheckIn.HasValue && today.TargetWorkMinutes > 0)
+                {
+                    var remainingMinutes = today.TargetWorkMinutes - workTime.TotalMinutes;
+                    if (remainingMinutes > 0)
+                    {
+                        // Geschätztes Ende = Jetzt + verbleibende Arbeitszeit
+                        var estimatedEnd = DateTime.Now.AddMinutes(remainingMinutes);
+                        EstimatedEndTime = $"~{estimatedEnd:HH:mm}";
+                        var remHours = (int)remainingMinutes / 60;
+                        var remMins = (int)remainingMinutes % 60;
+                        RemainingTodayText = string.Format(
+                            AppStrings.RemainingTodayFormat ?? "{0} {1}:{2:D2}",
+                            AppStrings.Remaining, remHours, remMins);
+                        HasInsight = true;
+                    }
+                    else
+                    {
+                        // Soll bereits erfüllt
+                        HasInsight = false;
+                    }
+                }
+                else
+                {
+                    HasInsight = false;
                 }
 
                 // Verdienst berechnen (falls Stundenlohn konfiguriert)
@@ -867,49 +1011,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             MessageRequested?.Invoke(AppStrings.Error, string.Format(AppStrings.ErrorGeneric, ex.Message));
         }
-    }
-
-    /// <summary>
-    /// Berechnet die Anzahl aufeinanderfolgender Arbeitstage (Streak).
-    /// Wochenenden (Sa/So) werden übersprungen.
-    /// </summary>
-    private async Task<int> CalculateStreakAsync()
-    {
-        var streak = 0;
-        var date = DateTime.Today;
-
-        // Maximal 60 Tage zurückschauen
-        for (int i = 0; i < 60; i++)
-        {
-            // Wochenende überspringen
-            if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
-            {
-                date = date.AddDays(-1);
-                continue;
-            }
-
-            var workDay = await _database.GetWorkDayAsync(date);
-
-            if (workDay != null && workDay.ActualWorkMinutes > 0)
-            {
-                streak++;
-                date = date.AddDays(-1);
-            }
-            else
-            {
-                break;
-            }
-        }
-
-        return streak;
-    }
-
-    private static string FormatTimeSpan(TimeSpan ts)
-    {
-        var totalHours = (int)Math.Abs(ts.TotalHours);
-        var minutes = Math.Abs(ts.Minutes);
-        var sign = ts.TotalMinutes < 0 ? "-" : "";
-        return $"{sign}{totalHours}:{minutes:D2}";
     }
 
     private async void OnUpdateTimerElapsed(object? sender, System.Timers.ElapsedEventArgs e)
@@ -939,6 +1040,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _localization.LanguageChanged -= OnLanguageChanged;
         _rewardedAdService.AdUnavailable -= OnAdUnavailable;
         _adService.AdsStateChanged -= OnAdsStateChanged;
+        _achievementService.AchievementUnlocked -= OnAchievementUnlocked;
         SettingsVm.SettingsChanged -= OnSettingsChanged;
 
         // Sub-Page Navigation Events abmelden

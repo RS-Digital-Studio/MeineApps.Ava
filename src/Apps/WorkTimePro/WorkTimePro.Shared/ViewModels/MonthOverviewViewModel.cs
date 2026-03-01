@@ -58,13 +58,13 @@ public partial class MonthOverviewViewModel : ObservableObject
     private string _balanceDisplay = "+0:00";
 
     [ObservableProperty]
-    private string _balanceColor = "#4CAF50";
+    private string _balanceColor = AppColors.BalancePositive;
 
     [ObservableProperty]
     private string _cumulativeBalanceDisplay = "+0:00";
 
     [ObservableProperty]
-    private string _cumulativeBalanceColor = "#4CAF50";
+    private string _cumulativeBalanceColor = AppColors.BalancePositive;
 
     [ObservableProperty]
     private int _workedDays;
@@ -118,21 +118,27 @@ public partial class MonthOverviewViewModel : ObservableObject
             HolidayDays = CurrentMonth.HolidayDays;
             IsLocked = CurrentMonth.IsLocked;
 
-            // Generate weeks
-            var weeksList = new List<WorkWeek>();
-            var seenWeeks = new HashSet<(int Year, int Week)>();
+            // Wochen-Starts sammeln und parallel berechnen (wie YearOverviewViewModel)
             var firstDay = new DateTime(SelectedMonth.Year, SelectedMonth.Month, 1);
             var lastDay = firstDay.AddMonths(1).AddDays(-1);
-
+            var weekStarts = new List<DateTime>();
             var currentDate = firstDay;
             while (currentDate <= lastDay)
             {
-                var week = await _calculation.CalculateWeekAsync(currentDate);
-                if (seenWeeks.Add((week.Year, week.WeekNumber)))
-                {
-                    weeksList.Add(week);
-                }
+                weekStarts.Add(currentDate);
                 currentDate = currentDate.AddDays(7);
+            }
+
+            var weekTasks = weekStarts.Select(date => _calculation.CalculateWeekAsync(date)).ToArray();
+            var weekResults = await Task.WhenAll(weekTasks);
+
+            // Duplikate entfernen (gleiche KW kann bei Monatsübergang doppelt vorkommen)
+            var seenWeeks = new HashSet<(int Year, int Week)>();
+            var weeksList = new List<WorkWeek>();
+            foreach (var week in weekResults)
+            {
+                if (seenWeeks.Add((week.Year, week.WeekNumber)))
+                    weeksList.Add(week);
             }
 
             Weeks = new ObservableCollection<WorkWeek>(weeksList);

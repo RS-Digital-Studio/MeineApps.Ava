@@ -1,5 +1,6 @@
 using SQLite;
 using WorkTimePro.Helpers;
+using static WorkTimePro.Helpers.TimeFormatter;
 
 namespace WorkTimePro.Models;
 
@@ -143,33 +144,25 @@ public class WorkDay
     /// Formatierte Soll-Zeit für Anzeige
     /// </summary>
     [Ignore]
-    public string TargetWorkDisplay => FormatTimeSpan(TargetWorkTime);
+    public string TargetWorkDisplay => FormatMinutes(TargetWorkMinutes);
 
     /// <summary>
     /// Formatierte Ist-Zeit für Anzeige
     /// </summary>
     [Ignore]
-    public string ActualWorkDisplay => FormatTimeSpan(ActualWorkTime);
+    public string ActualWorkDisplay => FormatMinutes(ActualWorkMinutes);
 
     /// <summary>
     /// Formatierter Saldo für Anzeige (mit +/-)
     /// </summary>
     [Ignore]
-    public string BalanceDisplay
-    {
-        get
-        {
-            var prefix = BalanceMinutes >= 0 ? "+" : "";
-            return $"{prefix}{FormatTimeSpan(Balance)}";
-        }
-    }
+    public string BalanceDisplay => FormatBalance(BalanceMinutes);
 
     /// <summary>
     /// Farbe für Saldo (grün = plus, rot = minus)
-    /// Material Design 500: gut lesbar auf Light + Dark Themes
     /// </summary>
     [Ignore]
-    public string BalanceColor => BalanceMinutes >= 0 ? "#4CAF50" : "#F44336";
+    public string BalanceColor => BalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
 
     /// <summary>
     /// Ist der Tag abgeschlossen? (Hat Check-Out)
@@ -200,12 +193,4 @@ public class WorkDay
         DayStatus.SpecialLeave => Icons.Gift,
         _ => Icons.CalendarMonth
     };
-
-    private static string FormatTimeSpan(TimeSpan ts)
-    {
-        var totalHours = (int)Math.Abs(ts.TotalHours);
-        var minutes = Math.Abs(ts.Minutes);
-        var sign = ts.TotalMinutes < 0 ? "-" : "";
-        return $"{sign}{totalHours}:{minutes:D2}";
-    }
 }

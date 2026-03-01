@@ -115,13 +115,16 @@ public static class DayTimelineVisualization
             else
             {
                 // Arbeit: Grün mit Gradient
-                _blockPaint.Shader = SKShader.CreateLinearGradient(
+                using (var shader = SKShader.CreateLinearGradient(
                     new SKPoint(x1, barTop),
                     new SKPoint(x1, barBottom),
                     new[] { SkiaThemeHelper.Success.WithAlpha(200), SkiaThemeHelper.Success.WithAlpha(140) },
-                    null, SKShaderTileMode.Clamp);
-                canvas.DrawRoundRect(blockRect, 2f, 2f, _blockPaint);
-                _blockPaint.Shader = null;
+                    null, SKShaderTileMode.Clamp))
+                {
+                    _blockPaint.Shader = shader;
+                    canvas.DrawRoundRect(blockRect, 2f, 2f, _blockPaint);
+                    _blockPaint.Shader = null;
+                }
             }
         }
 

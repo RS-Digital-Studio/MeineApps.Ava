@@ -38,12 +38,8 @@ public partial class StatisticsViewModel : ObservableObject
     /// <summary>Aufgeschobene Aktion nach erfolgreicher Ad-Wiedergabe</summary>
     private Func<Task>? _pendingAction;
 
-    // Farb-Palette für Charts
-    private static readonly string[] ChartColors = new[]
-    {
-        "#1565C0", "#2E7D32", "#F57C00", "#C62828", "#6A1B9A",
-        "#00838F", "#4527A0", "#AD1457", "#00695C", "#EF6C00"
-    };
+    // Farb-Palette für Charts (zentralisiert in AppColors)
+    private static string[] ChartColors => AppColors.ChartColors;
 
     public event Action<string, string>? MessageRequested;
 
@@ -104,7 +100,7 @@ public partial class StatisticsViewModel : ObservableObject
     private string _totalOvertimeDisplay = "+0:00";
 
     [ObservableProperty]
-    private string _overtimeColor = "#4CAF50";
+    private string _overtimeColor = AppColors.BalancePositive;
 
     [ObservableProperty]
     private string _averageDailyDisplay = "0:00";
@@ -382,7 +378,7 @@ public partial class StatisticsViewModel : ObservableObject
 
         TotalWorkDisplay = TimeFormatter.FormatMinutes(totalMinutes);
         TotalOvertimeDisplay = (totalOvertime >= 0 ? "+" : "") + TimeFormatter.FormatMinutes(totalOvertime);
-        OvertimeColor = totalOvertime >= 0 ? "#4CAF50" : "#F44336";
+        OvertimeColor = totalOvertime >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
 
         WorkedDays = workDays.Count(w => w.ActualWorkMinutes > 0);
         VacationDays = workDays.Count(w => w.Status == DayStatus.Vacation);
@@ -420,7 +416,8 @@ public partial class StatisticsViewModel : ObservableObject
                 var daysSinceMonday = ((int)today.DayOfWeek + 6) % 7;
                 StartDate = today.AddDays(-daysSinceMonday);
                 EndDate = StartDate.AddDays(6);
-                PeriodDisplay = $"KW {_calculation.GetIsoWeekNumber(today)}";
+                PeriodDisplay = string.Format(AppStrings.WeekNumberFormat ?? "CW {0} / {1}",
+                    _calculation.GetIsoWeekNumber(today), today.Year);
                 break;
 
             case StatisticsPeriod.Month:
@@ -458,7 +455,7 @@ public partial class StatisticsViewModel : ObservableObject
             .Take(12)
             .ToList();
 
-        WeeklyLabels = weeks.Select(g => $"KW {g.Key}").ToArray();
+        WeeklyLabels = weeks.Select(g => string.Format(AppStrings.WeekNumberShort ?? "CW {0}", g.Key)).ToArray();
         WeeklyHoursData = weeks.Select(g => (float)(g.Sum(w => w.ActualWorkMinutes) / 60.0)).ToArray();
         WeeklyTargetHours = (float)weeklyTarget;
     }
@@ -671,7 +668,7 @@ public partial class StatisticsViewModel : ObservableObject
                 WorkTime = TimeFormatter.FormatMinutes(w.ActualWorkMinutes),
                 PauseTime = TimeFormatter.FormatMinutes(w.ManualPauseMinutes + w.AutoPauseMinutes),
                 Balance = (w.BalanceMinutes >= 0 ? "+" : "") + TimeFormatter.FormatMinutes(w.BalanceMinutes),
-                BalanceColor = w.BalanceMinutes >= 0 ? "#4CAF50" : "#F44336",
+                BalanceColor = w.BalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative,
                 HasAutoBreak = w.AutoPauseMinutes > 0,
                 IsSpecialDay = w.Status != DayStatus.WorkDay && w.Status != DayStatus.HomeOffice && w.Status != DayStatus.Weekend
             })
@@ -710,7 +707,7 @@ public class WorkDayTableItem
     public string WorkTime { get; set; } = "0:00";
     public string PauseTime { get; set; } = "0:00";
     public string Balance { get; set; } = "+0:00";
-    public string BalanceColor { get; set; } = "#4CAF50";
+    public string BalanceColor { get; set; } = AppColors.BalancePositive;
     public bool HasAutoBreak { get; set; }
     public bool IsSpecialDay { get; set; }
 }

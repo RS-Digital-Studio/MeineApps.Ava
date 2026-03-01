@@ -61,7 +61,7 @@ public partial class YearOverviewViewModel : ObservableObject
     private string _totalBalanceDisplay = "+0:00";
 
     [ObservableProperty]
-    private string _balanceColor = "#4CAF50";
+    private string _balanceColor = AppColors.BalancePositive;
 
     [ObservableProperty]
     private int _vacationDaysTaken;
@@ -180,7 +180,7 @@ public partial class YearOverviewViewModel : ObservableObject
             TotalWorkTimeDisplay = TimeFormatter.FormatMinutes(yearWorkMinutes);
             TotalTargetTimeDisplay = TimeFormatter.FormatMinutes(yearTargetMinutes);
             TotalBalanceDisplay = TimeFormatter.FormatBalance(yearBalanceMinutes);
-            BalanceColor = yearBalanceMinutes >= 0 ? "#4CAF50" : "#F44336";
+            BalanceColor = yearBalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
 
             // Average
             AverageHoursPerDay = yearWorkDays > 0 ? (yearWorkMinutes / 60.0) / yearWorkDays : 0;
@@ -315,6 +315,6 @@ public class MonthSummary
     public string WorkTimeDisplay => TimeFormatter.FormatMinutes(WorkMinutes);
     public string TargetTimeDisplay => TimeFormatter.FormatMinutes(TargetMinutes);
     public string BalanceDisplay => TimeFormatter.FormatBalance(BalanceMinutes);
-    public string BalanceColor => BalanceMinutes >= 0 ? "#4CAF50" : "#F44336";
+    public string BalanceColor => BalanceMinutes >= 0 ? AppColors.BalancePositive : AppColors.BalanceNegative;
     public string LockIcon => IsLocked ? Icons.Lock : "";
 }

@@ -1,19 +1,8 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:views="using:WorkTimePro.Views"
-        xmlns:splash="using:MeineApps.UI.Controls"
         x:Class="WorkTimePro.Views.MainWindow"
         Title="WorkTimePro"
         Icon="avares://WorkTimePro.Shared/Assets/icon.png"
         Width="420" Height="800"
         MinWidth="360" MinHeight="600"
-        Background="{DynamicResource BackgroundBrush}">
-
-  <Panel AutomationProperties.AutomationId="MW_RootPanel">
-    <views:MainView AutomationProperties.AutomationId="MW_MainView" />
-    <splash:SplashOverlay AutomationProperties.AutomationId="MW_SplashOverlay"
-                          AppName="WorkTimePro"
-                          IconSource="avares://WorkTimePro.Shared/Assets/icon.png" />
-  </Panel>
-
-</Window>
+        Background="{DynamicResource BackgroundBrush}" />

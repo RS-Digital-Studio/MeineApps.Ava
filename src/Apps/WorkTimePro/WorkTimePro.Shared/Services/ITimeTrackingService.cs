@@ -86,4 +86,21 @@ public interface ITimeTrackingService
     /// Duration of current session (since check-in)
     /// </summary>
     TimeSpan GetCurrentSessionDuration();
+
+    /// <summary>
+    /// Lädt alle Live-Daten in einem einzigen Snapshot (1 WorkDay + 1 TimeEntries + 1 PauseEntries Query).
+    /// Ersetzt die separaten Aufrufe von GetCurrentWorkTimeAsync, GetCurrentPauseTimeAsync, GetTimeUntilEndAsync
+    /// die zusammen 5+ DB-Queries pro Aufruf verursachten.
+    /// </summary>
+    Task<LiveDataSnapshot> GetLiveDataSnapshotAsync();
 }
+
+/// <summary>
+/// Snapshot aller Live-Daten für die TodayView (eine einzige DB-Abfrage statt 5+).
+/// </summary>
+public record LiveDataSnapshot(
+    TimeSpan WorkTime,
+    TimeSpan PauseTime,
+    TimeSpan? TimeUntilEnd,
+    WorkDay Today
+);

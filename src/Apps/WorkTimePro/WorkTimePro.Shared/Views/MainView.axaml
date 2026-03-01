@@ -101,6 +101,9 @@
 
           <views:ShiftPlanView DataContext="{Binding ShiftPlanVm}"
                                 IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsShiftPlanActive}" />
+
+          <views:AchievementView DataContext="{Binding AchievementVm}"
+                                  IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsAchievementActive}" />
         </Panel>
       </Border>
     </Panel>

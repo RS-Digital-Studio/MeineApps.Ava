@@ -35,9 +35,13 @@ Zeiterfassung & Arbeitszeitmanagement mit Pausen, Kalender-Heatmap, Statistiken,
 - **Wochenziel-Celebration**: Confetti + FloatingText wenn WeekProgress >= 100%
 - **Tab-Indikator**: Animierter farbiger Balken unter aktivem Tab (TransformOperationsTransition)
 - **Tab-Highlighting**: Aktiver Tab-Icon+Label in PrimaryBrush, Rest TextSecondaryBrush
+- **Achievement/Badge-System**: 10 Achievements (Stunden, Streaks, Perfekte Woche, Frühaufsteher, Überstundenkönig), DB-persistiert, Celebration bei Unlock
+- **Predictive Insights**: Wochenziel-Restzeit und Monatstrend auf WeekOverviewView (Insight-Card)
+- **Earnings-Ticker**: CountUp-Animation auf TodayView (800ms EaseOut) bei Earnings-Änderung
+- **Balance-Glow**: Pulsierende Opacity-Animation auf Balance-TextBlock bei negativer Balance (2s Zyklus)
 
-### ViewModels & Views (10 VMs, 12 Views)
-MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOverview, YearOverview, Vacation, ShiftPlan
+### ViewModels & Views (12 VMs, 14 Views)
+MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOverview, YearOverview, Vacation, ShiftPlan, Achievement
 
 ## App-spezifische Services
 
@@ -52,6 +56,7 @@ MainViewModel, WeekOverview, Calendar, Statistics, Settings, DayDetail, MonthOve
 | IProjectService | Projekt-Verwaltung |
 | IShiftService | Schichtplanung |
 | IEmployerService | Arbeitgeber-Verwaltung |
+| IAchievementService | Achievement/Badge-System (10 Achievements, DB-Persistenz, Unlock-Events) |
 | ICalendarSyncService | Kalender-Export (ICS) |
 | IBackupService | Backup/Restore |
 | INotificationService | Plattform-Notifications (Desktop: Toast/notify-send, Android: NotificationChannel + AlarmManager) |
@@ -128,7 +133,8 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 
 - **Settings Auto-Save**: SettingsViewModel speichert automatisch per Debounce-Timer (800ms). Kein Speichern-Button. `ScheduleAutoSave()` wird von allen `OnXxxChanged` partial-Methods aufgerufen. `_isInitializing` Flag verhindert Speichern während `LoadDataAsync`.
 - **Tab-Reload**: MainViewModel.OnCurrentTabChanged lädt Daten für den jeweiligen Tab automatisch neu (LoadTabDataAsync). Stellt sicher, dass z.B. die Wochenansicht aktuelle Settings berücksichtigt.
-- **Initiale Datenladung**: MainViewModel-Konstruktor speichert `_initTask = InitializeAsync()`. `EnsureInitializedAsync()` wird in ToggleTracking/TogglePause aufgerufen um Race Conditions zu vermeiden.
+- **Loading-Pipeline**: `WorkTimeProLoadingPipeline` (in `Loading/`) führt echtes Preloading aus: DB-Init + Shader-Kompilierung parallel, dann Achievement, Reminder, ViewModel-Erstellung. `SkiaLoadingSplash` zeigt Fortschrittsring + Statustext. App.axaml.cs setzt DataContext erst nach Pipeline-Abschluss. MainViewModel exponiert `WaitForInitializationAsync()` für die Pipeline.
+- **Initiale Datenladung**: MainViewModel-Konstruktor speichert `_initTask = InitializeAsync()`. `WaitForInitializationAsync()` / `EnsureInitializedAsync()` wird in ToggleTracking/TogglePause und von der Loading-Pipeline aufgerufen um Race Conditions zu vermeiden.
 - **Sub-Seiten-Datenladung**: Alle Navigate-Commands (DayDetail, Month, Year, Vacation, ShiftPlan) sind async und awaiten `LoadDataAsync()` auf dem Ziel-VM.
 - **Settings-Propagation**: `SettingsViewModel.SettingsChanged` Event wird nach jedem `SaveSettingsAsync` gefeuert. MainViewModel subscribed darauf und lädt den aktiven Tab neu. Bei Arbeitszeit-relevanten Änderungen (DailyHours, WeeklyHours, Arbeitstage) wird eine Warnung angezeigt wenn bestehende WorkDays betroffen sind (`SettingsChangedWarning` RESX-Key).
 - **MessageRequested-Handler**: MainView.axaml.cs verdrahtet `MessageRequested` Event → Fehler werden als roter FloatingText angezeigt + Debug.WriteLine geloggt.
@@ -140,9 +146,10 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 - **Undo CheckIn/CheckOut**: MainViewModel zeigt nach CheckIn/CheckOut 5 Sekunden lang einen Undo-Button. `_lastUndoEntry` speichert den zu löschenden Eintrag. `UndoLastActionAsync` löscht den Eintrag, berechnet WorkDay neu und lädt Status. Ctrl+Z Shortcut. 3 RESX-Keys (Undo, UndoCheckIn, UndoCheckOut).
 - **Keyboard Shortcuts (Desktop)**: MainView.axaml.cs OnKeyDown: F5=Refresh, 1-5=Tabs, Escape=Sub-Page schließen, Ctrl+Z=Undo.
 - **CalendarVM Lazy-Load**: Konstruktor lädt keine Daten mehr (`_ = LoadDataAsync()` entfernt). Daten werden erst bei Tab-Wechsel geladen (MainViewModel.LoadTabDataAsync).
-- **TimeFormatter**: Zentraler Helper (`Helpers/TimeFormatter.cs`) für `FormatMinutes()`, `FormatBalance()`, `GetStatusName()` - eliminiert Code-Duplikation in 6 Dateien.
+- **TimeFormatter**: Zentraler Helper (`Helpers/TimeFormatter.cs`) für `FormatMinutes()`, `FormatBalance()`, `GetStatusName()` - eliminiert alle lokalen `FormatTimeSpan()`-Kopien (WorkDay, WorkMonth, WorkWeek, MainViewModel).
 - **DatabaseService Indizes**: UNIQUE auf WorkDay.Date, Indizes auf FK-Spalten (TimeEntry.WorkDayId, PauseEntry.WorkDayId, VacationEntry.Year, ShiftAssignment.Date).
 - **BackupService Sicherheits-Backup**: Vor Restore wird Sicherheits-Backup erstellt. Bei Fehler automatischer Rollback auf vorherigen Stand.
+- **BackupService Lokaler Export**: `CreateLocalBackupAsync()` erstellt JSON in `Backups/`-Ordner (kein Cloud-Auth nötig). `ExportBackupAsync()` = Backup + Share-Sheet via IFileShareService. `ImportBackupFromFileAsync()` importiert aus beliebiger Datei mit Safety-Backup. `GetLocalBackupsAsync()` listet lokale Backups.
 - **VacationVM Quota-Edit**: Overlay-Bearbeitung von Urlaubstagen pro Jahr + Resturlaub (`IsEditingQuota`, `EditTotalDays`, `EditCarryOverDays`).
 - **DesktopNotificationService**: PowerShell-Injection-sicher via Single-Quoted Here-String + `-EncodedCommand` (Base64).
 - **CircularProgressControl**: Custom Avalonia Control (`Controls/CircularProgressControl.cs`) für kreisförmigen Fortschrittsring. Zeichnet Track-Kreis + Progress-Arc via StreamGeometry. Properties: Progress (0-100), TrackBrush, ProgressBrush, StrokeWidth, IsPulsing. WICHTIG: Property heißt `IsPulsing` (nicht `IsAnimating`), da `AvaloniaObject.IsAnimating()` Methode kollidiert.
@@ -150,9 +157,43 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 - **Stundenlohn**: `WorkSettings.HourlyRate`, MainViewModel berechnet `TodayEarnings` in UpdateLiveDataAsync, TodayView zeigt Earnings-Card mit CurrencyEur-Icon.
 - **Haptic Feedback**: `IHapticService` (Click/HeavyClick), Desktop: `NoOpHapticService`, Android: `AndroidHapticService` (Vibrator API). MainViewModel: CheckIn=Click, CheckOut=HeavyClick, Pause=Click.
 - **WorkDaysArray Caching**: `WorkSettings.WorkDaysArray` nutzt jetzt Cache mit String-Vergleich statt bei jedem Zugriff neu zu parsen.
+- **DailyHoursPerDay Caching**: `WorkSettings.GetHoursForDay()` cached deserialisiertes JSON-Dictionary mit String-Vergleich. Cache wird in `SetHoursForDay()` mit-aktualisiert.
+- **Settings-Cache in MainViewModel**: `_cachedSettings` wird in `LoadDataAsync` und `OnSettingsChanged` aktualisiert. `UpdateLiveDataAsync` (1s Timer) nutzt Cache statt DB-Query.
+- **ClearAllDataAsync**: `IDatabaseService.ClearAllDataAsync()` löscht alle Tabellen-Inhalte (FK-Reihenfolge). Wird von `BackupService.RestoreDataAsync` vor dem Import aufgerufen.
+- **AppColors**: Statische Klasse (`AppColors.cs`) mit Farbkonstanten (StatusIdle, StatusActive, StatusPaused, BalancePositive, BalanceNegative). Ersetzt Magic Strings in allen ViewModels und Models (WorkDay, WorkMonth, WorkWeek).
+- **Predictive Insights TodayView**: `EstimatedEndTime` ("~17:23"), `RemainingTodayText` ("Noch 2:15"), `HasInsight` (nur bei aktivem Tracking + Soll nicht erfüllt). Berechnung in `UpdateLiveDataAsync`.
+- **Kulturspezifische Formate**: `ToString("D")` statt hardcoded "dddd, dd. MMMM". `WeekNumberFormat` RESX-Key statt "KW". `ToString("d")` für DateRange.
+- **LiveDataSnapshot**: `ITimeTrackingService.GetLiveDataSnapshotAsync()` liefert WorkTime, PauseTime, TimeUntilEnd, Today in einem Aufruf (3 DB-Queries statt 5+). `LiveDataSnapshot` Record in ITimeTrackingService.cs definiert. Eliminiert DB-Query-Sturm bei 1s-Timer in MainViewModel.
 
 ## Changelog Highlights
 
+- **01.03.2026**: **Immersiver Ladebildschirm**: SkiaLoadingSplash von Ring-basiert auf SplashScreenRenderer umgestellt (Gradient-BG, 24 Glow-Partikel, Fortschrittsbalken). MainWindow.axaml vereinfacht (selbstschließendes Window-Tag, Content wird in App.axaml.cs gesetzt). App.axaml.cs: Panel(MainView + Splash) Pattern einheitlich mit allen 8 Apps. IconSource-Property entfernt, AppVersion-Property hinzugefügt. Build 0 Fehler.
+- **28.02.2026 (8)**: Code-Review Fixes Loading-Pipeline: (1) **BUG-3**: Stream-Leak bei Icon-Laden (Android) behoben (`using var stream`). (2) **POT-3**: SKShader + SKMaskFilter in SkiaLoadingSplash.OnPaintSurface separat disposed. (3) **POT-1**: try/catch um `RunLoadingAsync` - bei Fehler wird Splash trotzdem ausgeblendet.
+- **28.02.2026 (7)**: Echter Ladebildschirm mit Preloading: (1) `WorkTimeProLoadingPipeline` in `Loading/` - führt DB-Init + Shader-Kompilierung parallel aus (statt sequentiell fire-and-forget), dann Achievement, Reminder, ViewModel. (2) `SkiaLoadingSplash` aus MeineApps.UI ersetzt `SplashOverlay` in MainWindow.axaml - SkiaSharp-Fortschrittsring mit Glow, smooth-interpolierter Progress, Statustext. (3) App.axaml.cs: `InitializeAndStartAsync()` entfernt, Pipeline-gesteuert. DataContext wird erst nach Pipeline-Abschluss gesetzt. (4) MainViewModel: `WaitForInitializationAsync()` als public API exponiert (für Pipeline). (5) Android: Panel-Wrapper mit SkiaLoadingSplash für SingleViewLifetime.
+- **28.02.2026 (6)**: Performance-Optimierung + Code-Cleanup: (1) LiveDataSnapshot-Pattern: `GetLiveDataSnapshotAsync()` in ITimeTrackingService/TimeTrackingService konsolidiert GetCurrentWorkTimeAsync + GetCurrentPauseTimeAsync + GetTimeUntilEndAsync in einen einzigen Aufruf (3 DB-Queries statt 8+/Sekunde). MainViewModel.UpdateLiveDataAsync nutzt Snapshot. (2) CalculationService: RecalculateWorkDayAsync lädt Entries/Pauses/Settings einmal und reicht sie durch (RecalculatePauseTime static helper, ApplyAutoPauseAsync Overload mit Pre-loaded Data - 7 redundante DB-Queries eliminiert). (3) ReminderService: IDisposable-Interface deklariert + N+1 Query in ScheduleWeeklyReminderAsync durch Batch-Query GetWorkDaysAsync ersetzt. (4) SkiaSharp MaskFilter/Shader Lifecycle: 4 MaskFilter-Leaks (OvertimeSpline, StatsSummaryGauge, VacationQuotaGauge, MonthWeekProgress) + 3 Shader-Leaks (OvertimeSpline, DayTimeline, MonthWeekProgress) mit using-Blöcken gefixt.
+- **28.02.2026 (5)**: Code-Cleanup: (1) WorkDay/WorkMonth hardcoded Farben (#4CAF50/#F44336) durch AppColors.BalancePositive/BalanceNegative ersetzt. (2) FormatTimeSpan-Duplikate in WorkDay, WorkMonth, WorkWeek, MainViewModel durch TimeFormatter.FormatMinutes/FormatBalance ersetzt (4 lokale Kopien entfernt). (3) CalendarViewModel.AvailableStatusTypes gecacht (lazy-initialisiert, invalidiert bei LoadDataAsync). (4) StringNotNullConverter delegiert intern an StringToBoolConverter (identische Logik, kein Duplikat mehr). (5) VacationQuotaGaugeVisualization: sweepAngle-Variable aus using-Block nach oben verschoben (Kompilierfehler behoben).
+- **28.02.2026 (4)**: Bugfix-Session (Phase 3): (1) 5 neue Achievements (night_owl, marathon, half_year, full_year, pause_master) mit SharedProgressData-Erweiterung + RESX in 6 Sprachen. (2) Lokaler Backup-Export ohne Cloud-Auth: `CreateLocalBackupAsync()`, `ExportBackupAsync()` (Share-Sheet), `ImportBackupFromFileAsync()`, `GetLocalBackupsAsync()`. BackupService erhält IFileShareService-Dependency. (3) SettingsVM: ExportBackup/ImportBackup Commands. (4) Hardcoded Farben in AppColors zentralisiert (CalendarVM, StatisticsVM, SettingsVM, ShiftPlanVM). (5) Datumsformate lokalisiert (ToString("D") statt "dddd, dd. MMMM yyyy"). (6) "KW" lokalisiert (WeekNumberFormat/WeekNumberShort RESX-Keys). (7) AchievementService: TotalPauseMinutes-Bug gefixt (ManualPauseMinutes + AutoPauseMinutes). 8 neue Backup-RESX-Keys + 10 Achievement-RESX-Keys in 6 Sprachen + Designer.
+- **28.02.2026 (3)**: Verbesserungen (Phase 2): (1) Settings-Cache in MainViewModel (DB-Query jede Sekunde eliminiert). (2) Backup-Restore: ClearAllDataAsync vor Import (kein Misch-Zustand mehr). (3) Tote Navigationsrouten gefixt (month?date= und WeekOverviewPage). (4) WorkSettings.DailyHoursPerDay JSON-Cache (keine Deserialisierung pro Aufruf). (5) CalendarView doppelte GenerateCalendarDaysAsync eliminiert. (6) Datumsformate lokalisiert (ToString("D") statt hardcoded "dd. MMMM"). (7) KW-Anzeige lokalisiert (RESX-Key WeekNumber). (8) Hardcoded Farben in AppColors-Klasse zentralisiert. (9) Predictive Insights auf TodayView (geschätzte Feierabendzeit + Restzeit). (10) MonthOverview Wochen-Berechnung parallelisiert (Task.WhenAll).
+- **28.02.2026 (2)**: Bugfix-Session (8 Fixes):
+  - FIX: AchievementView Gold-Tint funktionierte nicht (CSS-Klasse wurde nie gesetzt → Panel-Overlay-Pattern mit IsVisible-Binding)
+  - FIX: BigAction-Button fehlte `RenderTransform="scale(1)"` → Android-Crash bei TransformOperationsTransition
+  - FIX: Hardcoded "Tage" in Streak-Anzeige → lokalisierte `StreakDisplayText` Property (nutzt AppStrings.DayStreak)
+  - FIX: CalendarSyncService negatives Balance-Vorzeichen fehlte (`""` statt `"-"` bei negativer Balance)
+  - FIX: Duplizierte Streak-Berechnung in MainViewModel entfernt → nutzt jetzt `IAchievementService.GetCurrentStreakAsync()`
+  - FIX: Achievements fehlten im Backup/Restore → `BackupData.Achievements` Property + Backup/Restore-Logik
+  - FIX: Unbenutzte Variable `prefix` in WeekOverviewViewModel entfernt
+  - FIX: TodayView PropertyChanged Memory Leak → anonymes Lambda durch benannten Handler mit sauberem Lifecycle ersetzt
+  - PERF: AchievementService komplett ueberarbeitet: SharedProgressData-Pattern (gemeinsame Daten einmal laden), nur geaenderte Achievements speichern, HasPerfectWeekBulkAsync (1 Query statt 52), CalculateStreakFromDays (Batch statt N+1)
+- **28.02.2026**: Achievement-System + Predictive Insights + UI-Verbesserungen:
+  - NEU: Achievement/Badge-System (10 Achievements: Stunden-Meilensteine, Streak-Badges, Perfekte Woche, Volle Anwesenheit, Frühaufsteher, Überstundenkönig)
+  - NEU: `IAchievementService` + `AchievementService` mit DB-Persistenz (`Achievement`-Model, SQLite-Tabelle)
+  - NEU: `AchievementViewModel` + `AchievementView` (2-Spalten-Grid, Gold-Tint bei Unlock, Progress-Bars, Unlock-Datum)
+  - NEU: Achievement-Check nach CheckIn/CheckOut, Celebration + FloatingText bei Unlock
+  - NEU: Predictive Insights in WeekOverviewView (verbleibende Stunden bis Wochenziel, Monatstrend)
+  - NEU: Earnings-Ticker CountUp-Animation (800ms EaseOut, DispatcherTimer 30fps)
+  - NEU: Balance-Glow Pulse bei negativer Balance (Opacity 0.6→1.0, 2s Infinite)
+  - NEU: Achievements-Button in TodayView Quick-Nav (Gold-Hintergrund, Trophy-Icon)
+  - 24 RESX-Keys in 6 Sprachen (DE, EN, ES, FR, IT, PT) + Designer
 - **16.02.2026**: Phase 13 SkiaSharp-Erweiterungen:
   - NEU: CalendarHeatmapVisualization (GitHub-Style Heatmap, 5 Stufen-Gradient, Status-Punkte, pulsierender Heute-Ring, HitTest)
   - NEU: VacationQuotaGaugeVisualization (3 konzentrische Ringe: Genommen/Geplant/Rest, Endpunkt-Dots, Glow, grün→gelb→rot Legende)

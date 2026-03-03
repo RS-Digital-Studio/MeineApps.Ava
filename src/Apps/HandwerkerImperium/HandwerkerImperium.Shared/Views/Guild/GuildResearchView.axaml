@@ -7,7 +7,7 @@
              x:Class="HandwerkerImperium.Views.Guild.GuildResearchView"
              x:DataType="vm:GuildViewModel">
 
-  <Grid RowDefinitions="Auto,*"
+  <Grid RowDefinitions="Auto,Auto,*"
         AutomationProperties.AutomationId="GuildResearch_Grid_Root">
 
     <!-- ================================================================= -->
@@ -45,9 +45,44 @@
     </Border>
 
     <!-- ================================================================= -->
+    <!-- TIMER-BANNER (Aktive Forschung)                                   -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="1"
+            IsVisible="{Binding HasActiveResearch}"
+            Padding="12,8" Margin="0">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,50%" EndPoint="100%,50%">
+          <GradientStop Color="#44F59E0B" Offset="0" />
+          <GradientStop Color="#22F59E0B" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+        <!-- Zahnrad-Icon -->
+        <mi:MaterialIcon Kind="Cog" Width="20" Height="20"
+                         Foreground="#F59E0B" />
+        <!-- Forschungsname -->
+        <StackPanel Grid.Column="1" Spacing="1" VerticalAlignment="Center">
+          <TextBlock Text="{Binding ActiveResearchName}"
+                     FontSize="13" FontWeight="SemiBold"
+                     Foreground="#F59E0B" />
+          <TextBlock Text="{loc:Translate GuildResearchInProgress}"
+                     FontSize="11"
+                     Foreground="{DynamicResource TextSecondaryBrush}" />
+        </StackPanel>
+        <!-- Countdown -->
+        <Border Grid.Column="2" CornerRadius="8" Padding="10,4"
+                Background="#33F59E0B" VerticalAlignment="Center">
+          <TextBlock Text="{Binding ActiveResearchCountdown}"
+                     FontSize="14" FontWeight="Bold"
+                     Foreground="#F59E0B" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
     <!-- CONTENT: SkiaSharp-Forschungsbaum + Beitragsdialog                -->
     <!-- ================================================================= -->
-    <Grid Grid.Row="1">
+    <Grid Grid.Row="2">
 
       <!-- Forschungsbaum mit Header als SkiaSharp-Canvas in ScrollViewer -->
       <ScrollViewer x:Name="TreeScrollViewer"

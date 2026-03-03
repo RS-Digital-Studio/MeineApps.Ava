@@ -250,10 +250,11 @@
                    Foreground="{DynamicResource TextPrimaryBrush}"
                    HorizontalAlignment="Center" />
 
-        <!-- Belohnungen -->
+        <!-- Belohnungen (nur bei letzter Aufgabe als Gesamt-Belohnung) -->
         <StackPanel AutomationProperties.AutomationId="RoofTiling_Panel_Rewards"
                     Orientation="Horizontal" Spacing="20"
-                    HorizontalAlignment="Center">
+                    HorizontalAlignment="Center"
+                    IsVisible="{Binding IsLastTask}">
           <StackPanel Orientation="Horizontal" Spacing="4">
             <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_RewardMoney"
                              Kind="CashMultiple" Width="20" Height="20"

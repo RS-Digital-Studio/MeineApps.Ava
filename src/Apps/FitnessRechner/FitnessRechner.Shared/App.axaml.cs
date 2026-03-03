@@ -18,6 +18,7 @@ using FitnessRechner.Services;
 using FitnessRechner.ViewModels;
 using FitnessRechner.ViewModels.Calculators;
 using FitnessRechner.Views;
+using FitnessRechner.Graphics;
 using MeineApps.UI.SkiaSharp;
 
 namespace FitnessRechner;
@@ -117,7 +118,8 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "FitnessRechner",
-            AppVersion = "v2.0.5"
+            AppVersion = "v2.0.6",
+            Renderer = new FitnessRechnerSplashRenderer()
         };
     }
 

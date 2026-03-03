@@ -58,6 +58,9 @@ public interface IGuildService
     /// <summary>Berechnet max. Gilden-Mitglieder (20 + Forschungs-Boni).</summary>
     int GetMaxMembers();
 
+    /// <summary>Prüft ob eine laufende Forschung abgeschlossen ist (Timer abgelaufen).</summary>
+    Task<bool> CheckResearchCompletionAsync();
+
     // ── Einladungs-System ──
 
     /// <summary>Gibt den Einladungs-Code der aktuellen Gilde zurück (erstellt einen bei Bedarf).</summary>
@@ -74,4 +77,18 @@ public interface IGuildService
 
     /// <summary>Entfernt die Verfügbarkeits-Registrierung (wenn Gilde beigetreten).</summary>
     Task UnregisterAvailableAsync();
+
+    // ── Einladungs-Inbox ──
+
+    /// <summary>Sendet eine direkte Einladung an einen Spieler.</summary>
+    Task<bool> SendInviteAsync(string targetUid);
+
+    /// <summary>Lädt empfangene Einladungen für den aktuellen Spieler.</summary>
+    Task<List<(string guildId, GuildInvitation invite)>> GetReceivedInvitesAsync();
+
+    /// <summary>Nimmt eine Einladung an (beitritt Gilde, löscht alle anderen Einladungen).</summary>
+    Task<bool> AcceptInviteAsync(string guildId);
+
+    /// <summary>Lehnt eine einzelne Einladung ab.</summary>
+    Task<bool> DeclineInviteAsync(string guildId);
 }

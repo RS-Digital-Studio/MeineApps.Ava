@@ -11,6 +11,7 @@ namespace HandwerkerImperium.Graphics;
 public struct WorkshopCardData
 {
     public WorkshopType Type;
+    public string Name;
     public int Level;
     public int WorkerCount;
     public int MaxWorkers;
@@ -144,7 +145,7 @@ public static class WorkshopGameCardRenderer
         _textPaint.TextSize = 11f;
         _textPaint.TextAlign = SKTextAlign.Left;
         _textPaint.FakeBoldText = true;
-        canvas.DrawText(GetWorkshopName(data.Type), textX, statsTop + lineH * 0.8f, _textPaint);
+        canvas.DrawText(data.Name ?? "", textX, statsTop + lineH * 0.8f, _textPaint);
         _textPaint.FakeBoldText = false;
 
         // Zeile 2: Worker-Anzeige (Helm-Icons + Zahl)
@@ -253,7 +254,7 @@ public static class WorkshopGameCardRenderer
         _textPaint.TextSize = 13f;
         _textPaint.TextAlign = SKTextAlign.Center;
         _textPaint.FakeBoldText = true;
-        canvas.DrawText(GetWorkshopName(data.Type), inner.MidX, inner.Top + inner.Height * 0.25f, _textPaint);
+        canvas.DrawText(data.Name ?? "", inner.MidX, inner.Top + inner.Height * 0.25f, _textPaint);
         _textPaint.FakeBoldText = false;
 
         // Offenes Schloss
@@ -294,7 +295,7 @@ public static class WorkshopGameCardRenderer
         _textPaint.TextSize = 12f;
         _textPaint.TextAlign = SKTextAlign.Center;
         _textPaint.FakeBoldText = true;
-        canvas.DrawText(GetWorkshopName(data.Type), inner.MidX, inner.Top + inner.Height * 0.3f, _textPaint);
+        canvas.DrawText(data.Name ?? "", inner.MidX, inner.Top + inner.Height * 0.3f, _textPaint);
         _textPaint.FakeBoldText = false;
 
         // Grosses geschlossenes Schloss
@@ -338,20 +339,4 @@ public static class WorkshopGameCardRenderer
         canvas.DrawText($"{workerCount}/{maxWorkers}", textX, y + 2f, _textPaint);
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    // Workshop-Namen (kurz, fuer Karten)
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private static string GetWorkshopName(WorkshopType type) => type switch
-    {
-        WorkshopType.Carpenter => "Tischlerei",
-        WorkshopType.Plumber => "Sanit\u00e4r",
-        WorkshopType.Electrician => "Elektrik",
-        WorkshopType.Painter => "Malerei",
-        WorkshopType.Roofer => "Dachdeckerei",
-        WorkshopType.Contractor => "Renovierung",
-        WorkshopType.Architect => "Architektur",
-        WorkshopType.GeneralContractor => "Generalunternehmer",
-        _ => "Werkstatt"
-    };
 }

@@ -1,0 +1,154 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "guilds": {
+      ".read": "auth != null",
+      "$guildId": {
+        ".write": "auth != null"
+      }
+    },
+
+    "guild_members": {
+      "$guildId": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && (auth.uid == $uid || root.child('guild_members/' + $guildId + '/' + auth.uid + '/role').val() == 'leader')"
+        }
+      }
+    },
+
+    "player_guilds": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+
+    "leaderboards": {
+      "$boardId": {
+        ".read": "auth != null",
+        "entries": {
+          ".indexOn": ["score", "updatedAt"],
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid"
+          }
+        }
+      }
+    },
+
+    "guild_wars": {
+      ".read": "auth != null",
+      ".indexOn": ["endDate", "status"],
+      "$warId": {
+        ".write": "auth != null"
+      }
+    },
+
+    "guild_war_scores": {
+      "$warId": {
+        ".read": "auth != null",
+        "$guildId": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid && root.child('player_guilds/' + auth.uid).val() == $guildId"
+          }
+        }
+      }
+    },
+
+    "bounties": {
+      ".read": "auth != null",
+      ".indexOn": ["endDate", "status"],
+      "$bountyId": {
+        ".write": "auth != null",
+        "current": {
+          ".validate": "newData.isNumber() && newData.val() >= data.val()"
+        },
+        "target": {
+          ".validate": "newData.isNumber()"
+        },
+        "contributions": {
+          "$uid": {
+            ".write": "auth != null && auth.uid == $uid"
+          }
+        }
+      }
+    },
+
+    "friends": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "$friendUid": {
+          ".write": "auth != null && (auth.uid == $uid || auth.uid == $friendUid)"
+        }
+      }
+    },
+
+    "friend_requests": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "$fromUid": {
+          ".write": "auth != null && (auth.uid == $fromUid || auth.uid == $uid)"
+        }
+      }
+    },
+
+    "gifts": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        "$giftId": {
+          ".write": "auth != null && (!data.exists() || auth.uid == $uid)"
+        }
+      }
+    },
+
+    "guild_chat": {
+      "$guildId": {
+        ".read": "auth != null && root.child('guild_members/' + $guildId + '/' + auth.uid).exists()",
+        "messages": {
+          ".indexOn": ["timestamp"],
+          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + auth.uid).exists()"
+        }
+      }
+    },
+
+    "player_profiles": {
+      ".read": "auth != null",
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+
+    "guild_invite_codes": {
+      "$guildId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "invite_code_to_guild": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    },
+
+    "available_players": {
+      ".read": "auth != null",
+      ".indexOn": ["lastActive"],
+      "$uid": {
+        ".write": "auth != null && auth.uid == $uid"
+      }
+    },
+
+    "guild_research": {
+      "$guildId": {
+        ".read": "auth != null",
+        "$researchId": {
+          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + auth.uid).exists()"
+        }
+      }
+    }
+  }
+}

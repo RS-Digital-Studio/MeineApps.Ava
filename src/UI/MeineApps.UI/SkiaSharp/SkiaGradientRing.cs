@@ -258,7 +258,7 @@ public class SkiaGradientRing : Control
         {
             // Gelegentlich neue Partikel spawnen
             if (_time % 0.15f < 0.035f)
-                _particles.Add(SkiaParticlePresets.CreateGlow(new Random(), endX, endY, endColor2));
+                _particles.Add(SkiaParticlePresets.CreateGlow(Random.Shared, endX, endY, endColor2));
 
             _particles.Update(0.033f);
             _particles.Draw(canvas, withGlow: true);

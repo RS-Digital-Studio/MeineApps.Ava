@@ -19,6 +19,7 @@ using HandwerkerRechner.ViewModels;
 using HandwerkerRechner.ViewModels.Floor;
 using HandwerkerRechner.ViewModels.Premium;
 using HandwerkerRechner.Views;
+using HandwerkerRechner.Graphics;
 using MeineApps.UI.SkiaSharp;
 
 namespace HandwerkerRechner;
@@ -94,7 +95,8 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "HandwerkerRechner",
-            AppVersion = "v2.0.5"
+            AppVersion = "v2.0.6",
+            Renderer = new HandwerkerRechnerSplashRenderer()
         };
     }
 

@@ -231,6 +231,17 @@ public class GuildResearchDefinition
         GuildResearchCategory.Mastery => "GuildResearchCatMastery",
         _ => "GuildResearchCatInfrastructure"
     };
+
+    /// <summary>
+    /// Gibt die Forschungsdauer in Stunden zurück.
+    /// Tier 1 (weniger als 100M): 1h, Tier 2 (100M-2B): 4h, Tier 3 (mehr als 2B): 12h
+    /// </summary>
+    public static double GetResearchDurationHours(long cost)
+    {
+        if (cost < 100_000_000) return 1.0;
+        if (cost <= 2_000_000_000) return 4.0;
+        return 12.0;
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -251,6 +262,9 @@ public class GuildResearchState
 
     [JsonPropertyName("completedAt")]
     public string? CompletedAt { get; set; }
+
+    [JsonPropertyName("researchStartedAt")]
+    public string? ResearchStartedAt { get; set; }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -282,8 +296,20 @@ public class GuildResearchDisplay
     /// <summary>Erste nicht-abgeschlossene Forschung pro Kategorie = aktiv.</summary>
     public bool IsActive { get; set; }
 
-    /// <summary>Nicht aktiv und nicht abgeschlossen = gesperrt.</summary>
-    public bool IsLocked => !IsCompleted && !IsActive;
+    /// <summary>Forschung ist voll bezahlt und Timer läuft.</summary>
+    public bool IsResearching { get; set; }
+
+    /// <summary>Wann die Forschung gestartet wurde (UTC ISO 8601).</summary>
+    public string? ResearchStartedAt { get; set; }
+
+    /// <summary>Verbleibende Forschungszeit (berechnet im ViewModel).</summary>
+    public TimeSpan? RemainingTime { get; set; }
+
+    /// <summary>Forschungsdauer in Stunden (aus Definition).</summary>
+    public double DurationHours { get; set; }
+
+    /// <summary>Nicht aktiv und nicht abgeschlossen und nicht in Forschung = gesperrt.</summary>
+    public bool IsLocked => !IsCompleted && !IsActive && !IsResearching;
 }
 
 // ═══════════════════════════════════════════════════════════════════════

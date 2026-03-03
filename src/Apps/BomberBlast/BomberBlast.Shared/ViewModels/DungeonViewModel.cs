@@ -385,8 +385,7 @@ public partial class DungeonViewModel : ViewModelBase, INavigable, IGameJuiceEmi
             var extraChoices = _dungeonService.GenerateBuffChoices();
             if (extraChoices.Count > 0)
             {
-                var random = new Random();
-                var extraBuff = extraChoices[random.Next(extraChoices.Count)];
+                var extraBuff = extraChoices[Random.Shared.Next(extraChoices.Count)];
                 _dungeonService.ApplyBuff(extraBuff.Type);
 
                 var buffName = _localizationService.GetString(extraBuff.NameKey) ?? extraBuff.NameKey;

@@ -63,7 +63,8 @@ MeineApps.UI/
 │   ├── AnimatedVisualizationBase.cs # Basis für animierte Renderer (Einschwing-Animation)
 │   ├── SplashScreen/
 │   │   ├── SplashParticle.cs        # Struct für Partikel-Pool (kein GC-Druck)
-│   │   └── SplashScreenRenderer.cs  # Immersiver Splash: Gradient-BG, 24 Glow-Partikel, Fortschrittsbalken
+│   │   ├── SplashRendererBase.cs    # Abstrakte Basis für app-spezifische Splash-Renderer
+│   │   └── SplashScreenRenderer.cs  # Default-Renderer: Gradient-BG, 24 Glow-Partikel (Fallback)
 │   └── Shaders/
 │       ├── SkiaShimmerEffect.cs     # GPU-Shimmer (SkSL)
 │       ├── SkiaGlowEffect.cs        # GPU-Glow (SkSL)
@@ -311,11 +312,16 @@ Splash.PreloadCompleted += (_, _) => { /* Nach Splash */ };
 
 ## SkiaLoadingSplash (Immersiver Ladebildschirm)
 
-Vollbild-Ladebildschirm mit immersivem SkiaSharp-Partikel-Effekt. Nutzt `SplashScreenRenderer` für Gradient-Hintergrund, 24 schwebende Glow-Partikel, pulsierenden App-Namen, animierten Fortschrittsbalken und Statustext. Wird über alle 8 Apps einheitlich verwendet.
+Vollbild-Ladebildschirm mit immersivem SkiaSharp-Rendering. Jede App hat einen eigenen thematischen Splash-Renderer der von `SplashRendererBase` erbt. Ohne Renderer-Property wird der generische `SplashScreenRenderer` als Fallback verwendet.
 
 ```csharp
-// In App.axaml.cs - einheitliches Pattern für alle 8 Apps:
-var splash = new SkiaLoadingSplash { AppName = "MyApp", AppVersion = "v2.0.4" };
+// In App.axaml.cs - app-spezifischer Renderer:
+var splash = new SkiaLoadingSplash
+{
+    AppName = "MyApp",
+    AppVersion = "v2.0.6",
+    Renderer = new MyAppSplashRenderer()  // App-spezifischer Renderer
+};
 var panel = new Panel();
 panel.Children.Add(new MainView());
 panel.Children.Add(splash);
@@ -329,14 +335,24 @@ await pipeline.ExecuteAsync();
 splash.FadeOut(); // 200ms Pause + 300ms Opacity-Fade → dispose
 ```
 
-- **SplashScreenRenderer**: Gradient-Hintergrund (Background→Surface), 24 schwebende Glow-Partikel (Sinus-Oszillation, Alpha-Pulsation), pulsierender App-Name mit Glow-Kreis, Fortschrittsbalken (RoundRect, Gradient Primary→Accent, Glow am Ende), Statustext
+- **SplashRendererBase** (abstrakt): Progress-Interpolation (Lerp 0.12f), Time-Tracking, Helper-Methoden (DrawCenteredText, DrawStatusText, DrawVersion, DrawProgressBar). Gecachte Basis-Paints (StatusPaint, VersionPaint) + Fonts. IDisposable mit OnDispose()-Hook
+- **SplashScreenRenderer** (Default-Fallback): Gradient-Hintergrund (Background→Surface), 24 schwebende Glow-Partikel (Sinus-Oszillation, Alpha-Pulsation), pulsierender App-Name mit Glow-Kreis, Fortschrittsbalken
+- **Renderer-Property** (StyledProperty): `Renderer = new {App}SplashRenderer()` in App.axaml.cs setzen. Ohne Angabe → Fallback auf SplashScreenRenderer
+- **8 App-spezifische Renderer**: Jeweils in `{App}.Shared/Graphics/{App}SplashRenderer.cs`
+  - RechnerPlusSplashRenderer ("Die saubere Gleichung" - Taschenrechner-Matrix, Mathe-Zeichen)
+  - ZeitManagerSplashRenderer ("Die tickende Uhr" - Analog-Uhr, Zahnräder, Kreis-Progress)
+  - FinanzRechnerSplashRenderer ("Das wachsende Kapital" - Aktien-Chart, Euro-Münzen)
+  - FitnessRechnerSplashRenderer ("Der Herzschlag" - EKG-Linie, Ripple-Kreise)
+  - HandwerkerRechnerSplashRenderer ("Das Maßband" - Entrollendes Maßband als Progress)
+  - WorkTimeProSplashRenderer ("Die Stechuhr" - Stechuhr mit Karten-Animation)
+  - HandwerkerImperiumSplashRenderer ("Die Schmiede" - Zahnräder, Amboss, Hammer, Funken)
+  - BomberBlastSplashRenderer ("Die Bombe" - Cartoon-Bombe, brennende Lunte, Explosion)
 - **SplashParticle struct**: Fixed-Size-Pool, keine GC-Allokationen pro Frame
-- **Smooth-Interpolation**: Fortschritt interpoliert mit Lerp-Faktor 0.12f pro Frame
-- **Cached Rendering**: 9 SKPaints, 4 SKFonts, 1 SKPath, 2 SKMaskFilters - alles einmal alloziert
-- **IDisposable**: Sauberes Cleanup aller nativen SkiaSharp-Ressourcen
+- **Cached Rendering**: Alle SKPaints, SKFonts, SKPaths als Instanz-Felder (kein `new` pro Frame)
+- **IDisposable**: Sauberes Cleanup aller nativen SkiaSharp-Ressourcen via OnDispose()
 - **Fade-Out**: `FadeOut()` → 200ms Pause → 300ms Opacity 1→0 (CubicEaseOut) → IsVisible=false + Dispose
-- Properties: AppName (string), AppVersion (string), Progress (float 0-1), StatusText (string)
-- **Verwendet in**: Alle 8 Apps (mit LoadingPipeline)
+- Properties: AppName (string), AppVersion (string), Progress (float 0-1), StatusText (string), Renderer (SplashRendererBase?)
+- **Verwendet in**: Alle 8 Apps (mit LoadingPipeline + app-spezifischem Renderer)
 
 ### Loading-Pipeline (ILoadingPipeline + LoadingPipelineBase)
 

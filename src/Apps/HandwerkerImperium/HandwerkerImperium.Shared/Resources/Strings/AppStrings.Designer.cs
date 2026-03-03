@@ -1599,5 +1599,27 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string GuildResearchDesc_guild_mastery_2 => ResourceManager.GetString("GuildResearchDesc_guild_mastery_2", resourceCulture) ?? "";
 
         public static string MaxMembersLabel => ResourceManager.GetString("MaxMembersLabel", resourceCulture) ?? "";
+
+        public static string GuildResearchDone => ResourceManager.GetString("GuildResearchDone", resourceCulture) ?? "";
+
+        public static string GuildResearchInProgress => ResourceManager.GetString("GuildResearchInProgress", resourceCulture) ?? "";
+
+        public static string GuildResearchTimeRemaining => ResourceManager.GetString("GuildResearchTimeRemaining", resourceCulture) ?? "";
+
+        public static string GuildResearchBlocked => ResourceManager.GetString("GuildResearchBlocked", resourceCulture) ?? "";
+
+        public static string InvitationsHeader => ResourceManager.GetString("InvitationsHeader", resourceCulture) ?? "";
+
+        public static string InvitedByPrefix => ResourceManager.GetString("InvitedByPrefix", resourceCulture) ?? "";
+
+        public static string AcceptInvite => ResourceManager.GetString("AcceptInvite", resourceCulture) ?? "";
+
+        public static string DeclineInvite => ResourceManager.GetString("DeclineInvite", resourceCulture) ?? "";
+
+        public static string OrSearchGuild => ResourceManager.GetString("OrSearchGuild", resourceCulture) ?? "";
+
+        public static string InviteFailed => ResourceManager.GetString("InviteFailed", resourceCulture) ?? "";
+
+        public static string InvitePlayer => ResourceManager.GetString("InvitePlayer", resourceCulture) ?? "";
     }
 }

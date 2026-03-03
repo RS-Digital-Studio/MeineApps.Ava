@@ -12,7 +12,7 @@ namespace HandwerkerImperium.Graphics;
 /// IsAntialias = true für glatte Kanten auf allen Displays.
 /// Features: Schatten, Tool-Glow, Worker-Accessoires, Level-Progression, Ambient-Effekte.
 /// </summary>
-public class WorkshopSceneRenderer
+public class WorkshopSceneRenderer : IDisposable
 {
     // Gecachte Paints für GC-Optimierung (werden pro Frame wiederverwendet)
     private readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
@@ -1677,7 +1677,8 @@ public class WorkshopSceneRenderer
         // Seil mit Textur (gestrichelt fuer Seil-Look)
         _strokePaint.Color = new SKColor(0x50, 0x50, 0x50);
         _strokePaint.StrokeWidth = 1.5f;
-        _strokePaint.PathEffect = SKPathEffect.CreateDash([3, 2], 0);
+        using var seilDashEffect = SKPathEffect.CreateDash([3, 2], 0);
+        _strokePaint.PathEffect = seilDashEffect;
         float seilLen = 15 + MathF.Sin(phase * 1.5f) * 8;
         canvas.DrawLine(craneX - 20, craneTopY + 4, craneX - 20, craneTopY + 4 + seilLen, _strokePaint);
         _strokePaint.PathEffect = null;
@@ -1884,7 +1885,8 @@ public class WorkshopSceneRenderer
             byte snapAlpha = (byte)(70 * (1 - snapFlash / 0.8f));
             _strokePaint.Color = new SKColor(0x00, 0xE5, 0xFF, snapAlpha);
             _strokePaint.StrokeWidth = 0.8f;
-            _strokePaint.PathEffect = SKPathEffect.CreateDash([3, 4], phase * 2);
+            using var snapDashEffect = SKPathEffect.CreateDash([3, 4], phase * 2);
+            _strokePaint.PathEffect = snapDashEffect;
             canvas.DrawLine(pencilX, bpY + 2, pencilX, bpY + bpH - 2, _strokePaint);
             canvas.DrawLine(bpX + 2, pencilY, bpX + bpW - 2, pencilY, _strokePaint);
             _strokePaint.PathEffect = null;
@@ -2461,8 +2463,13 @@ public class WorkshopSceneRenderer
     /// <summary>
     /// Ressourcen freigeben.
     /// </summary>
+    private bool _disposed;
+
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+
         _fillPaint.Dispose();
         _strokePaint.Dispose();
         _glowPaint.Dispose();

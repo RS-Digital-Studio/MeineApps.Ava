@@ -83,6 +83,17 @@ public class MainActivity : AvaloniaMainActivity<App>
 
         base.OnCreate(savedInstanceState);
 
+        // POST_NOTIFICATIONS Runtime-Permission anfordern (Android 13+ / API 33)
+        // Ohne diese Permission werden Benachrichtigungen auf API 33+ still ignoriert
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu)
+        {
+            if (CheckSelfPermission(global::Android.Manifest.Permission.PostNotifications)
+                != Permission.Granted)
+            {
+                RequestPermissions([global::Android.Manifest.Permission.PostNotifications], 1001);
+            }
+        }
+
         // ViewModel holen und ExitHint-Event verdrahten
         _mainVm = App.Services.GetService<MainViewModel>();
         if (_mainVm != null)

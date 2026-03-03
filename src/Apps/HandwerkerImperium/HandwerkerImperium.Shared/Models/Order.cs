@@ -84,6 +84,18 @@ public class Order
     [JsonPropertyName("reputationBonus")]
     public decimal ReputationBonus { get; set; }
 
+    /// <summary>
+    /// Ob die Belohnung durch Rewarded Ad verdoppelt wurde.
+    /// </summary>
+    [JsonPropertyName("isScoreDoubled")]
+    public bool IsScoreDoubled { get; set; }
+
+    /// <summary>
+    /// Combo-Multiplikator aus PaintingGame (1.0 = kein Combo).
+    /// </summary>
+    [JsonPropertyName("comboMultiplier")]
+    public decimal ComboMultiplier { get; set; } = 1m;
+
     [JsonPropertyName("currentTaskIndex")]
     public int CurrentTaskIndex { get; set; }
 
@@ -177,6 +189,18 @@ public class Order
     {
         return (int)(BaseXp * Difficulty.GetXpMultiplier() * OrderType.GetXpMultiplier());
     }
+
+    /// <summary>
+    /// Geschätzte Belohnung inkl. Difficulty + OrderType (für Dashboard-Binding).
+    /// </summary>
+    [JsonIgnore]
+    public decimal EstimatedReward => CalculateEstimatedReward();
+
+    /// <summary>
+    /// Geschätzte XP inkl. Difficulty + OrderType (für Dashboard-Binding).
+    /// </summary>
+    [JsonIgnore]
+    public int EstimatedXp => CalculateEstimatedXp();
 
     public void RecordTaskResult(MiniGameRating rating)
     {

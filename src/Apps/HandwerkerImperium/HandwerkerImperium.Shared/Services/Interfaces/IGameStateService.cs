@@ -176,6 +176,12 @@ public interface IGameStateService
     void CompleteActiveOrder();
 
     /// <summary>
+    /// Berechnet den kombinierten Auftrags-Belohnungsmultiplikator aus Research, Gebäuden,
+    /// Reputation, Events und Stammkunden. Wird für korrekte Belohnungsanzeige in MiniGames verwendet.
+    /// </summary>
+    decimal GetOrderRewardMultiplier(Order order);
+
+    /// <summary>
     /// Cancels the active order without rewards.
     /// </summary>
     void CancelActiveOrder();

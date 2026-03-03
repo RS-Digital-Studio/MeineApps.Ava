@@ -18,6 +18,7 @@ using FinanzRechner.Services;
 using FinanzRechner.ViewModels;
 using FinanzRechner.ViewModels.Calculators;
 using FinanzRechner.Views;
+using FinanzRechner.Graphics;
 using MeineApps.UI.SkiaSharp;
 
 namespace FinanzRechner;
@@ -93,7 +94,8 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "FinanzRechner",
-            AppVersion = "v2.0.5"
+            AppVersion = "v2.0.6",
+            Renderer = new FinanzRechnerSplashRenderer()
         };
     }
 

@@ -108,7 +108,8 @@ public partial class App : Application
         return new SkiaLoadingSplash
         {
             AppName = "HandwerkerImperium",
-            AppVersion = "v2.0.12"
+            AppVersion = "v2.0.14",
+            Renderer = new HandwerkerImperiumSplashRenderer()
         };
     }
 

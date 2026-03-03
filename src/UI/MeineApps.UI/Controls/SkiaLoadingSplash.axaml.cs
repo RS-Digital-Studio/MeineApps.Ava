@@ -7,8 +7,8 @@ namespace MeineApps.UI.Controls;
 
 /// <summary>
 /// Immersiver Ladebildschirm mit SkiaSharp-Rendering.
-/// Zeigt Gradient-Hintergrund, schwebende Glow-Partikel, App-Name,
-/// animierten Fortschrittsbalken und Status-Text.
+/// Unterstützt app-spezifische Renderer via Renderer-Property.
+/// Fallback: Standard-SplashScreenRenderer (generisch, Theme-basiert).
 /// Progress + StatusText werden von aussen über die Loading-Pipeline gesteuert.
 /// Fade-Out nach Abschluss: 200ms Pause → 300ms Opacity 1.0→0.0.
 /// </summary>
@@ -27,6 +27,13 @@ public partial class SkiaLoadingSplash : UserControl
 
     public static readonly StyledProperty<string> StatusTextProperty =
         AvaloniaProperty.Register<SkiaLoadingSplash, string>(nameof(StatusText), "");
+
+    /// <summary>
+    /// App-spezifischer Splash-Renderer. Wenn null, wird der Standard-SplashScreenRenderer verwendet.
+    /// Muss VOR dem Anhängen an den Visual Tree gesetzt werden (z.B. direkt nach Konstruktion).
+    /// </summary>
+    public static readonly StyledProperty<SplashRendererBase?> RendererProperty =
+        AvaloniaProperty.Register<SkiaLoadingSplash, SplashRendererBase?>(nameof(Renderer));
 
     public string AppName
     {
@@ -55,8 +62,17 @@ public partial class SkiaLoadingSplash : UserControl
         set => SetValue(StatusTextProperty, value);
     }
 
+    /// <summary>
+    /// App-spezifischer Splash-Renderer. Null = Standard (SplashScreenRenderer).
+    /// </summary>
+    public SplashRendererBase? Renderer
+    {
+        get => GetValue(RendererProperty);
+        set => SetValue(RendererProperty, value);
+    }
+
     // --- Render-State ---
-    private SplashScreenRenderer? _renderer;
+    private SplashRendererBase? _renderer;
     private DispatcherTimer? _renderTimer;
     private bool _isFadingOut;
 
@@ -85,14 +101,12 @@ public partial class SkiaLoadingSplash : UserControl
     {
         base.OnAttachedToVisualTree(e);
 
-        // Renderer erstellen und initialisieren
-        _renderer = new SplashScreenRenderer
-        {
-            AppName = AppName,
-            AppVersion = AppVersion,
-            Progress = Progress,
-            StatusText = StatusText
-        };
+        // App-spezifischen oder Standard-Renderer verwenden
+        _renderer = Renderer ?? new SplashScreenRenderer();
+        _renderer.AppName = AppName;
+        _renderer.AppVersion = AppVersion;
+        _renderer.Progress = Progress;
+        _renderer.StatusText = StatusText;
 
         // SkiaSharp PaintSurface verdrahten
         SplashCanvas.PaintSurface += OnPaintSurface;
@@ -120,11 +134,13 @@ public partial class SkiaLoadingSplash : UserControl
         // 200ms Pause, dann Fade
         DispatcherTimer.RunOnce(() =>
         {
+            if (_renderer == null) return; // Bereits disposed (Detach vor Timer)
             Opacity = 0;
 
             // Nach Fade-Transition (300ms) verstecken + aufräumen
             DispatcherTimer.RunOnce(() =>
             {
+                if (_renderer == null) return; // Bereits disposed
                 IsVisible = false;
                 IsHitTestVisible = false;
                 StopAndDispose();
@@ -135,14 +151,22 @@ public partial class SkiaLoadingSplash : UserControl
 
     private void StopAndDispose()
     {
-        _renderTimer?.Stop();
-        _renderTimer = null;
+        _isFadingOut = false;
+
+        if (_renderTimer != null)
+        {
+            _renderTimer.Tick -= OnRenderTick;
+            _renderTimer.Stop();
+            _renderTimer = null;
+        }
 
         if (SplashCanvas != null)
             SplashCanvas.PaintSurface -= OnPaintSurface;
 
-        _renderer?.Dispose();
+        // Erst Referenz nullen, dann dispose (verhindert Zugriff auf disposed Renderer)
+        var renderer = _renderer;
         _renderer = null;
+        renderer?.Dispose();
     }
 
     private void OnRenderTick(object? sender, EventArgs e)

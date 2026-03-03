@@ -4,9 +4,9 @@ using HandwerkerImperium.Models.Enums;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// Generates deterministic pixel-art worker avatars from a seed string.
-/// Caches bitmaps by id+tier+mood_bucket to avoid re-rendering every frame.
-/// Caller is responsible for disposing returned SKBitmaps.
+/// Generiert deterministische Pixel-Art Worker-Avatare aus einem Seed-String.
+/// Bitmaps werden intern gecacht - Caller darf NICHT disposen!
+/// Das gecachte Bitmap wird direkt zurueckgegeben (kein Copy, keine Allokation).
 /// </summary>
 public class WorkerAvatarRenderer
 {
@@ -38,8 +38,8 @@ public class WorkerAvatarRenderer
 
     private enum MoodBucket { High, Mid, Low }
 
-    // Cache: "id|tier|moodBucket" -> weak reference (bitmap kann GC'd werden)
-    private static readonly Dictionary<string, WeakReference<SKBitmap>> _cache = new();
+    // Cache: "id|tier|moodBucket" -> direkte Referenz (Bitmap bleibt im Speicher, wird nie kopiert)
+    private static readonly Dictionary<string, SKBitmap> _cache = new();
     private static readonly object _cacheLock = new();
 
     // Haarfarben fuer weibliche/maennliche Worker
@@ -54,14 +54,9 @@ public class WorkerAvatarRenderer
     ];
 
     /// <summary>
-    /// Renders a deterministic pixel-art avatar for the given worker parameters.
-    /// Returns a new SKBitmap that the caller must dispose.
+    /// Rendert einen deterministischen Pixel-Art Avatar fuer die gegebenen Worker-Parameter.
+    /// Gibt ein gecachtes Bitmap zurueck - Caller darf NICHT disposen!
     /// </summary>
-    /// <param name="idSeed">Worker ID used as seed for deterministic generation.</param>
-    /// <param name="tier">Worker tier (determines hat color).</param>
-    /// <param name="mood">Worker mood (0-100, determines expression).</param>
-    /// <param name="size">Output size in pixels (32, 64, or 128).</param>
-    /// <param name="isFemale">Geschlecht: true = weiblich (laengere Haare, Lippen), false = maennlich (breiterer Kiefer).</param>
     public static SKBitmap RenderAvatar(string idSeed, WorkerTier tier, decimal mood, int size, bool isFemale = false)
     {
         // Groesse auf erlaubte Werte begrenzen
@@ -75,14 +70,12 @@ public class WorkerAvatarRenderer
         var moodBucket = GetMoodBucket(mood);
         string cacheKey = $"{idSeed}|{tier}|{moodBucket}|{size}|{(isFemale ? "f" : "m")}";
 
-        // Cache pruefen
+        // Cache pruefen - direkte Referenz, kein Copy
         lock (_cacheLock)
         {
-            if (_cache.TryGetValue(cacheKey, out var weakRef) &&
-                weakRef.TryGetTarget(out var cached))
+            if (_cache.TryGetValue(cacheKey, out var cached))
             {
-                // Kopie zurueckgeben (Caller verwaltet Disposal)
-                return cached.Copy();
+                return cached;
             }
         }
 
@@ -107,20 +100,26 @@ public class WorkerAvatarRenderer
             DrawAccessories(canvas, hash, scale, isFemale);
         }
 
-        // Im Cache speichern (als weak reference)
+        // Im Cache speichern (direkte Referenz, kein Copy)
         lock (_cacheLock)
         {
-            _cache[cacheKey] = new WeakReference<SKBitmap>(bitmap);
+            // Race-Condition: Anderer Thread koennte bereits gecacht haben
+            if (_cache.TryGetValue(cacheKey, out var existing))
+            {
+                bitmap.Dispose();
+                return existing;
+            }
 
-            // Cache-Groesse begrenzen
+            _cache[cacheKey] = bitmap;
+
+            // Cache-Groesse begrenzen (aelteste Eintraege entfernen)
             if (_cache.Count > 200)
             {
                 PruneCache();
             }
         }
 
-        // Kopie zurueckgeben
-        return bitmap.Copy();
+        return bitmap;
     }
 
     /// <summary>
@@ -758,19 +757,16 @@ public class WorkerAvatarRenderer
     }
 
     /// <summary>
-    /// Removes expired weak references from the cache.
+    /// Entfernt die aelteste Haelfte des Caches wenn er zu gross wird.
     /// </summary>
     private static void PruneCache()
     {
-        var deadKeys = new List<string>();
-        foreach (var kvp in _cache)
-        {
-            if (!kvp.Value.TryGetTarget(out _))
-            {
-                deadKeys.Add(kvp.Key);
-            }
-        }
-        foreach (var key in deadKeys)
+        // Haelfte der Eintraege entfernen (FIFO-aehnlich via Dictionary-Reihenfolge)
+        // NICHT disposen! Bitmaps koennten noch von WorkerAvatarControls referenziert werden.
+        // GC finalisiert sie wenn keine Referenzen mehr bestehen.
+        int toRemove = _cache.Count / 2;
+        var keysToRemove = _cache.Keys.Take(toRemove).ToList();
+        foreach (var key in keysToRemove)
         {
             _cache.Remove(key);
         }

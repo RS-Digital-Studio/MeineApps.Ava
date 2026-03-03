@@ -18,11 +18,11 @@ public sealed class RewardedAdHelper : IDisposable
     private const int MaxRetryAttempts = 3;
     private static readonly int[] RetryDelaysMs = [5000, 15000, 30000]; // Exponentieller Backoff: 5s, 15s, 30s
 
-    private RewardedAd? _rewardedAd;
-    private Activity? _activity;
+    private volatile RewardedAd? _rewardedAd;
+    private volatile Activity? _activity;
     private string _defaultAdUnitId = "";
-    private bool _isLoading;
-    private bool _disposed;
+    private volatile bool _isLoading;
+    private volatile bool _disposed;
     private int _retryCount;
 
     /// <summary>Ob eine Rewarded Ad geladen und bereit ist</summary>
@@ -65,9 +65,12 @@ public sealed class RewardedAdHelper : IDisposable
     /// <summary>Zeigt die vorgeladene Rewarded Ad. Gibt true zurueck wenn User Belohnung verdient hat.</summary>
     public Task<bool> ShowAsync()
     {
-        if (_rewardedAd == null || _activity == null)
+        // Lokale Kopien gegen Race Conditions (andere Threads koennen _rewardedAd/_activity nullen)
+        var ad = _rewardedAd;
+        var activity = _activity;
+        if (ad == null || activity == null)
         {
-            Android.Util.Log.Warn(Tag, $"ShowAsync abgebrochen: rewardedAd={_rewardedAd != null}, activity={_activity != null}");
+            Android.Util.Log.Warn(Tag, $"ShowAsync abgebrochen: rewardedAd={ad != null}, activity={activity != null}");
             return Task.FromResult(false);
         }
 
@@ -76,12 +79,12 @@ public sealed class RewardedAdHelper : IDisposable
         var rewardCallback = new RewardCallback(fullScreenCallback);
 
         Android.Util.Log.Info(Tag, "ShowAsync: Zeige vorgeladene Rewarded Ad");
-        _activity.RunOnUiThread(() =>
+        activity.RunOnUiThread(() =>
         {
             try
             {
-                _rewardedAd!.FullScreenContentCallback = fullScreenCallback;
-                _rewardedAd.Show(_activity!, rewardCallback);
+                ad.FullScreenContentCallback = fullScreenCallback;
+                ad.Show(activity, rewardCallback);
             }
             catch (Exception ex)
             {
@@ -97,6 +100,7 @@ public sealed class RewardedAdHelper : IDisposable
     /// Laedt eine Rewarded Ad mit einer bestimmten Ad-Unit-ID und zeigt sie sofort.
     /// Fuer Placements die nicht vorgeladen werden (On-Demand).
     /// Gibt true zurueck wenn User Belohnung verdient hat.
+    /// Timeout gilt NUR fuer die Lade-Phase - sobald die Ad angezeigt wird, wird der Timeout gecancelled.
     /// </summary>
     public async Task<bool> LoadAndShowAsync(string adUnitId)
     {
@@ -108,6 +112,8 @@ public sealed class RewardedAdHelper : IDisposable
 
         var tcs = new TaskCompletionSource<bool>();
         var activity = _activity;
+        // CTS wird gecancelled sobald die Ad geladen ist und angezeigt wird
+        var loadTimeoutCts = new CancellationTokenSource();
 
         try
         {
@@ -115,24 +121,38 @@ public sealed class RewardedAdHelper : IDisposable
             Android.Util.Log.Info(Tag, $"LoadAndShowAsync: Lade Ad on-demand: {adUnitId}");
             activity.RunOnUiThread(() =>
             {
-                RewardedAd.Load(activity, adUnitId, adRequest, new OnDemandLoadCallback(this, activity, tcs));
+                RewardedAd.Load(activity, adUnitId, adRequest, new OnDemandLoadCallback(this, activity, tcs, loadTimeoutCts));
             });
         }
         catch (Exception ex)
         {
             Android.Util.Log.Error(Tag, $"LoadAndShowAsync Exception: {ex.Message}");
+            // CTS wird im finally-Block disposed - hier NICHT disposen, sonst
+            // wirft Task.Delay(token) eine ObjectDisposedException
             tcs.TrySetResult(false);
         }
 
-        // Timeout damit der await nicht ewig haengt falls Callback nie feuert
-        var timeoutTask = Task.Delay(LoadTimeoutMs);
-        var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
-
-        if (completedTask == timeoutTask)
+        // Timeout NUR fuer die Lade-Phase - wird gecancelled wenn Ad geladen+gezeigt wird
+        try
         {
-            Android.Util.Log.Error(Tag, $"LoadAndShowAsync TIMEOUT nach {LoadTimeoutMs}ms fuer: {adUnitId}");
-            tcs.TrySetResult(false);
-            return false;
+            var timeoutTask = Task.Delay(LoadTimeoutMs, loadTimeoutCts.Token);
+            var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+
+            if (completedTask == timeoutTask && !loadTimeoutCts.IsCancellationRequested)
+            {
+                Android.Util.Log.Error(Tag, $"LoadAndShowAsync TIMEOUT nach {LoadTimeoutMs}ms fuer: {adUnitId}");
+                tcs.TrySetResult(false);
+                return false;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Timeout wurde gecancelled weil die Ad geladen wurde - das ist der Normalfall
+            Android.Util.Log.Info(Tag, "LoadAndShowAsync: Load-Timeout gecancellt (Ad wird angezeigt)");
+        }
+        finally
+        {
+            loadTimeoutCts.Dispose();
         }
 
         return await tcs.Task;
@@ -266,18 +286,32 @@ public sealed class RewardedAdHelper : IDisposable
         private readonly RewardedAdHelper _helper;
         private readonly Activity _activity;
         private readonly TaskCompletionSource<bool> _tcs;
+        private readonly CancellationTokenSource _loadTimeoutCts;
 
-        public OnDemandLoadCallback(RewardedAdHelper helper, Activity activity, TaskCompletionSource<bool> tcs)
+        public OnDemandLoadCallback(RewardedAdHelper helper, Activity activity, TaskCompletionSource<bool> tcs, CancellationTokenSource loadTimeoutCts)
         {
             _helper = helper;
             _activity = activity;
             _tcs = tcs;
+            _loadTimeoutCts = loadTimeoutCts;
         }
 
         public override void OnRewardedAdLoaded(RewardedAd ad)
         {
             Android.Util.Log.Info(Tag, "On-Demand: Rewarded Ad geladen, zeige sofort");
-            // Ad geladen → sofort zeigen
+            // Ad geladen → Load-Timeout cancellen (Video kann beliebig lange laufen)
+            try { _loadTimeoutCts.Cancel(); }
+            catch (ObjectDisposedException) { /* CTS bereits disposed */ }
+
+            // Pruefen ob Timeout bereits eingetreten ist (Race: Ad laedt genau am Timeout-Rand).
+            // Wenn TCS bereits mit false resolved wurde, Ad NICHT anzeigen - sonst schaut
+            // der User ein 30s Video umsonst ohne Belohnung zu bekommen.
+            if (_tcs.Task.IsCompleted)
+            {
+                Android.Util.Log.Warn(Tag, "On-Demand: Ad geladen aber Timeout bereits eingetreten, verwerfe Ad");
+                return;
+            }
+
             var fullScreenCallback = new FullScreenCallback(_tcs, null);
             var rewardCallback = new RewardCallback(fullScreenCallback);
             _activity.RunOnUiThread(() =>

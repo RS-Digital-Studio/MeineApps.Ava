@@ -447,6 +447,60 @@ public class GameStateService : IGameStateService
         MiniGameResultRecorded?.Invoke(this, new MiniGameResultRecordedEventArgs(rating));
     }
 
+    public decimal GetOrderRewardMultiplier(Order order)
+    {
+        lock (_stateLock)
+        {
+            return CalculateOrderRewardMultiplierUnlocked(order);
+        }
+    }
+
+    /// <summary>
+    /// Interne Berechnung ohne Lock - nur innerhalb bestehender lock(_stateLock)-Blöcke aufrufen.
+    /// </summary>
+    private decimal CalculateOrderRewardMultiplierUnlocked(Order order)
+    {
+        decimal multiplier = 1m;
+
+        // Research-RewardMultiplier
+        decimal researchRewardBonus = _state.Researches
+            .Where(r => r.IsResearched && r.Effect.RewardMultiplier > 0)
+            .Sum(r => r.Effect.RewardMultiplier);
+        if (researchRewardBonus > 0)
+            multiplier *= (1m + researchRewardBonus);
+
+        // VehicleFleet-Gebäude: Auftragsbelohnungs-Bonus
+        var vehicleFleet = _state.GetBuilding(BuildingType.VehicleFleet);
+        if (vehicleFleet != null && vehicleFleet.OrderRewardBonus > 0)
+            multiplier *= (1m + vehicleFleet.OrderRewardBonus);
+
+        // Reputation-Multiplikator: Höhere Reputation → bessere Belohnungen
+        multiplier *= _state.Reputation.ReputationMultiplier;
+
+        // Event-RewardMultiplier (HighDemand 1.5x, EconomicDownturn 0.7x)
+        var activeEvent = _state.ActiveEvent;
+        if (activeEvent?.IsActive == true && activeEvent.Effect.RewardMultiplier != 1.0m)
+        {
+            // AffectedWorkshop: Nur anwenden wenn Workshop-Typ passt oder kein spezifischer Typ gesetzt
+            if (activeEvent.Effect.AffectedWorkshop == null ||
+                activeEvent.Effect.AffectedWorkshop == order.WorkshopType)
+            {
+                multiplier *= activeEvent.Effect.RewardMultiplier;
+            }
+        }
+
+        // Stammkunden-Bonus
+        if (order.IsRegularCustomerOrder)
+        {
+            var customer = _state.Reputation.RegularCustomers
+                .FirstOrDefault(c => c.Id == order.CustomerId);
+            if (customer != null)
+                multiplier *= customer.BonusMultiplier;
+        }
+
+        return multiplier;
+    }
+
     public void CompleteActiveOrder()
     {
         Order? order;
@@ -461,45 +515,22 @@ public class GameStateService : IGameStateService
 
             // Prestige-Multiplikator ist bereits in BaseReward enthalten
             // (via NetIncomePerSecond in OrderGeneratorService), daher NICHT nochmal anwenden
-            moneyReward = order.FinalReward;
-
-            // Research-RewardMultiplier anwenden
-            decimal researchRewardBonus = _state.Researches
-                .Where(r => r.IsResearched && r.Effect.RewardMultiplier > 0)
-                .Sum(r => r.Effect.RewardMultiplier);
-            if (researchRewardBonus > 0)
-                moneyReward *= (1m + researchRewardBonus);
-
-            // VehicleFleet-Gebäude: Auftragsbelohnungs-Bonus
-            var vehicleFleet = _state.GetBuilding(BuildingType.VehicleFleet);
-            if (vehicleFleet != null && vehicleFleet.OrderRewardBonus > 0)
-                moneyReward *= (1m + vehicleFleet.OrderRewardBonus);
-
-            // Reputation-Multiplikator: Höhere Reputation → bessere Belohnungen
-            moneyReward *= _state.Reputation.ReputationMultiplier;
-
-            // Event-RewardMultiplier (HighDemand 1.5x, EconomicDownturn 0.7x)
-            var activeEvent = _state.ActiveEvent;
-            if (activeEvent?.IsActive == true && activeEvent.Effect.RewardMultiplier != 1.0m)
-            {
-                // AffectedWorkshop: Nur anwenden wenn Workshop-Typ passt oder kein spezifischer Typ gesetzt
-                if (activeEvent.Effect.AffectedWorkshop == null ||
-                    activeEvent.Effect.AffectedWorkshop == order.WorkshopType)
-                {
-                    moneyReward *= activeEvent.Effect.RewardMultiplier;
-                }
-            }
-
-            // Stammkunden-Bonus
-            if (order.IsRegularCustomerOrder)
-            {
-                var customer = _state.Reputation.RegularCustomers
-                    .FirstOrDefault(c => c.Id == order.CustomerId);
-                if (customer != null)
-                    moneyReward *= customer.BonusMultiplier;
-            }
-
+            moneyReward = order.FinalReward * CalculateOrderRewardMultiplierUnlocked(order);
             xpReward = order.FinalXp;
+
+            // Combo-Multiplikator (PaintingGame)
+            if (order.ComboMultiplier > 1m)
+            {
+                moneyReward *= order.ComboMultiplier;
+                xpReward = (int)(xpReward * order.ComboMultiplier);
+            }
+
+            // Rewarded-Ad-Verdopplung
+            if (order.IsScoreDoubled)
+            {
+                moneyReward *= 2m;
+                xpReward *= 2;
+            }
 
             var workshop = GetWorkshop(order.WorkshopType);
             if (workshop != null)

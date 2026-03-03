@@ -315,13 +315,13 @@ public class ForgeGameRenderer : IDisposable
         _anvilBodyPath.LineTo(cx - baseW / 2, top + height);
         _anvilBodyPath.Close();
 
-        AnvilBodyPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(AnvilBodyPaint, SKShader.CreateLinearGradient(
             new SKPoint(cx, top),
             new SKPoint(cx, top + height),
             new[] { new SKColor(0x78, 0x78, 0x78), new SKColor(0x3A, 0x3A, 0x3A) },
-            null, SKShaderTileMode.Clamp);
+            null, SKShaderTileMode.Clamp));
         canvas.DrawPath(_anvilBodyPath, AnvilBodyPaint);
-        AnvilBodyPaint.Shader = null;
+        SwapShader(AnvilBodyPaint, null);
 
         // Metallglanz-Highlight oben
         _fillPaint.Color = new SKColor(0xA0, 0xA0, 0xA0, 180);
@@ -347,13 +347,13 @@ public class ForgeGameRenderer : IDisposable
         _hornPath.LineTo(cx - topW / 2 - hornLen, hornY + 6);
         _hornPath.LineTo(cx - topW / 2 - 2, hornY + 14);
         _hornPath.Close();
-        _fillPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
             new SKPoint(cx - topW / 2, hornY),
             new SKPoint(cx - topW / 2 - hornLen, hornY + 7),
             new[] { new SKColor(0x70, 0x70, 0x70), new SKColor(0x55, 0x55, 0x55) },
-            null, SKShaderTileMode.Clamp);
+            null, SKShaderTileMode.Clamp));
         canvas.DrawPath(_hornPath, _fillPaint);
-        _fillPaint.Shader = null;
+        SwapShader(_fillPaint, null);
 
         // Sockel (2-stufig, dunkel)
         _fillPaint.Color = new SKColor(0x30, 0x30, 0x30);
@@ -379,13 +379,13 @@ public class ForgeGameRenderer : IDisposable
         SKColor metalColor = InterpolateMetalColor(temp);
 
         // Werkstueck-Koerper mit horizontalem Gradient
-        _fillPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
             new SKPoint(cx - pw / 2, py),
             new SKPoint(cx + pw / 2, py),
             new[] { Darken(metalColor, 0.85f), metalColor, Brighten(metalColor, 1.15f) },
-            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp);
+            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp));
         canvas.DrawRect(cx - pw / 2, py, pw, ph, _fillPaint);
-        _fillPaint.Shader = null;
+        SwapShader(_fillPaint, null);
 
         // Oberkanten-Glanz
         _fillPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, (byte)(temp > 0.5 ? 80 : 30));
@@ -462,26 +462,26 @@ public class ForgeGameRenderer : IDisposable
         canvas.RotateDegrees(rotation, hammerX, hammerY + 20);
 
         // Stiel mit Holz-Gradient
-        HammerHandlePaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(HammerHandlePaint, SKShader.CreateLinearGradient(
             new SKPoint(hammerX - 4, hammerY),
             new SKPoint(hammerX + 4, hammerY),
             new[] { new SKColor(0xA6, 0x7C, 0x52), new SKColor(0x8B, 0x5A, 0x2B), new SKColor(0x6D, 0x44, 0x1E) },
-            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp);
+            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp));
         canvas.DrawRoundRect(hammerX - 3.5f, hammerY + 2, 7, 42, 2, 2, HammerHandlePaint);
-        HammerHandlePaint.Shader = null;
+        SwapShader(HammerHandlePaint, null);
 
         // Stiel-Glanz (duenne helle Linie links)
         _fillPaint.Color = new SKColor(0xC8, 0xA0, 0x70, 120);
         canvas.DrawRect(hammerX - 2, hammerY + 4, 1.5f, 38, _fillPaint);
 
         // Hammerkopf mit Metall-Gradient
-        _fillPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
             new SKPoint(hammerX - 18, hammerY - 10),
             new SKPoint(hammerX - 18, hammerY + 4),
             new[] { new SKColor(0x80, 0x80, 0x80), new SKColor(0x50, 0x50, 0x50), new SKColor(0x3A, 0x3A, 0x3A) },
-            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp);
+            new[] { 0f, 0.5f, 1f }, SKShaderTileMode.Clamp));
         canvas.DrawRoundRect(hammerX - 18, hammerY - 10, 36, 14, 2, 2, _fillPaint);
-        _fillPaint.Shader = null;
+        SwapShader(_fillPaint, null);
 
         // Kopf-Highlight (Metallglanz oben)
         _fillPaint.Color = new SKColor(0xB0, 0xB0, 0xB0, 160);
@@ -507,13 +507,13 @@ public class ForgeGameRenderer : IDisposable
         float fH = areaH * 0.42f;
 
         // Steinrahmen mit Gradient (warme Toene)
-        _fillPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
             new SKPoint(fLeft, fTop),
             new SKPoint(fLeft, fTop + fH),
             new[] { new SKColor(0x6D, 0x56, 0x44), new SKColor(0x4A, 0x38, 0x2A) },
-            null, SKShaderTileMode.Clamp);
+            null, SKShaderTileMode.Clamp));
         canvas.DrawRoundRect(fLeft, fTop, fW, fH, 4, 4, _fillPaint);
-        _fillPaint.Shader = null;
+        SwapShader(_fillPaint, null);
 
         // Steinfugen (horizontal)
         _fillPaint.Color = new SKColor(0x3A, 0x2E, 0x22, 100);
@@ -528,13 +528,13 @@ public class ForgeGameRenderer : IDisposable
 
         // Glut-Bett am Boden (rote Kohlen)
         float coalY = fTop + fH - 14;
-        _fillPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
             new SKPoint(fLeft + 8, coalY),
             new SKPoint(fLeft + 8, coalY + 8),
             new[] { new SKColor(0xFF, 0x30, 0x00, 200), new SKColor(0x80, 0x10, 0x00, 150) },
-            null, SKShaderTileMode.Clamp);
+            null, SKShaderTileMode.Clamp));
         canvas.DrawRect(fLeft + 8, coalY, fW - 16, 8, _fillPaint);
-        _fillPaint.Shader = null;
+        SwapShader(_fillPaint, null);
 
         // Feuer (animiert, pulsierend, mehrere Schichten)
         if (isPlaying || temperature > 0.05)
@@ -546,22 +546,22 @@ public class ForgeGameRenderer : IDisposable
             float fireBase = fTop + fH - 14;
 
             // Aeussere Flamme (dunkelrot→orange)
-            _fillPaint.Shader = SKShader.CreateLinearGradient(
+            SwapShader(_fillPaint, SKShader.CreateLinearGradient(
                 new SKPoint(fireX, fireBase - fireH),
                 new SKPoint(fireX, fireBase),
                 new[] { FireDark.WithAlpha(0), FireDark.WithAlpha(200) },
-                null, SKShaderTileMode.Clamp);
+                null, SKShaderTileMode.Clamp));
             canvas.DrawRect(fireX, fireBase - fireH, fW - 20, fireH, _fillPaint);
 
             // Mittlere Flamme (orange→gelb)
             float midW = (fW - 20) * 0.7f;
             float midH = fireH * 0.75f;
             float midX = fireX + ((fW - 20) - midW) / 2;
-            _fillPaint.Shader = SKShader.CreateLinearGradient(
+            SwapShader(_fillPaint, SKShader.CreateLinearGradient(
                 new SKPoint(midX, fireBase - midH),
                 new SKPoint(midX, fireBase),
                 new[] { FireMedium.WithAlpha(0), FireMedium.WithAlpha(220) },
-                null, SKShaderTileMode.Clamp);
+                null, SKShaderTileMode.Clamp));
             canvas.DrawRect(midX, fireBase - midH, midW, midH, _fillPaint);
 
             // Innere Flamme (gelb→weiss, bei hoher Temp)
@@ -569,13 +569,13 @@ public class ForgeGameRenderer : IDisposable
             float innerH = fireH * 0.45f;
             float innerX = fireX + ((fW - 20) - innerW) / 2;
             byte innerAlpha = (byte)(tempFactor * 200);
-            _fillPaint.Shader = SKShader.CreateLinearGradient(
+            SwapShader(_fillPaint, SKShader.CreateLinearGradient(
                 new SKPoint(innerX, fireBase - innerH),
                 new SKPoint(innerX, fireBase),
                 new[] { FireLight.WithAlpha(0), FireLight.WithAlpha(innerAlpha) },
-                null, SKShaderTileMode.Clamp);
+                null, SKShaderTileMode.Clamp));
             canvas.DrawRect(innerX, fireBase - innerH, innerW, innerH, _fillPaint);
-            _fillPaint.Shader = null;
+            SwapShader(_fillPaint, null);
 
             // Weiss-heisser Kern bei sehr hoher Temperatur
             if (temperature > 0.7)
@@ -617,13 +617,13 @@ public class ForgeGameRenderer : IDisposable
         float bY = areaTop + areaH * 0.28f;
 
         // Blasebalg-Koerper
-        _fillPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
             new SKPoint(bX, bY),
             new SKPoint(bX, bY + 22),
             new[] { new SKColor(0x7D, 0x5C, 0x4B), new SKColor(0x5D, 0x3C, 0x2B) },
-            null, SKShaderTileMode.Clamp);
+            null, SKShaderTileMode.Clamp));
         canvas.DrawRoundRect(bX, bY, 32, 22, 3, 3, _fillPaint);
-        _fillPaint.Shader = null;
+        SwapShader(_fillPaint, null);
 
         // Blasebalg-Griff
         _fillPaint.Color = new SKColor(0x8B, 0x5A, 0x2B);
@@ -651,12 +651,12 @@ public class ForgeGameRenderer : IDisposable
         double oStart, double oWidth, bool isPlaying)
     {
         // Bar-Hintergrund (dunkel mit Gradient)
-        _fillPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
             new SKPoint(x, y), new SKPoint(x, y + h),
             new[] { new SKColor(0x20, 0x14, 0x08), new SKColor(0x30, 0x1E, 0x10) },
-            null, SKShaderTileMode.Clamp);
+            null, SKShaderTileMode.Clamp));
         canvas.DrawRoundRect(x, y, w, h, 4, 4, _fillPaint);
-        _fillPaint.Shader = null;
+        SwapShader(_fillPaint, null);
 
         // Rahmen
         canvas.DrawRoundRect(x, y, w, h, 4, 4, FramePaint);
@@ -693,22 +693,22 @@ public class ForgeGameRenderer : IDisposable
         // Good-Zone (orange) mit leichtem Gradient
         float goodLeft = innerX + (float)(gStart * innerW);
         float goodW = (float)(gWidth * innerW);
-        _fillPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
             new SKPoint(goodLeft, innerY), new SKPoint(goodLeft, innerY + innerH),
             new[] { GoodColor.WithAlpha(160), GoodColor.WithAlpha(120) },
-            null, SKShaderTileMode.Clamp);
+            null, SKShaderTileMode.Clamp));
         canvas.DrawRect(goodLeft, innerY, goodW, innerH, _fillPaint);
-        _fillPaint.Shader = null;
+        SwapShader(_fillPaint, null);
 
         // Perfect-Zone (glueh-orange, hell) mit Gradient
         float perfLeft = innerX + (float)(pStart * innerW);
         float perfW = (float)(pWidth * innerW);
-        _fillPaint.Shader = SKShader.CreateLinearGradient(
+        SwapShader(_fillPaint, SKShader.CreateLinearGradient(
             new SKPoint(perfLeft, innerY), new SKPoint(perfLeft, innerY + innerH),
             new[] { PerfectColor.WithAlpha(220), PerfectColor.WithAlpha(180) },
-            null, SKShaderTileMode.Clamp);
+            null, SKShaderTileMode.Clamp));
         canvas.DrawRect(perfLeft, innerY, perfW, innerH, _fillPaint);
-        _fillPaint.Shader = null;
+        SwapShader(_fillPaint, null);
 
         // Perfect-Zone Glow-Puls
         if (isPlaying)
@@ -1151,6 +1151,13 @@ public class ForgeGameRenderer : IDisposable
         (byte)Math.Min(255, c.Red * factor),
         (byte)Math.Min(255, c.Green * factor),
         (byte)Math.Min(255, c.Blue * factor), c.Alpha);
+
+    /// <summary>Disposed den aktuellen Shader und setzt den neuen (verhindert native Shader-Leaks).</summary>
+    private static void SwapShader(SKPaint paint, SKShader? newShader)
+    {
+        paint.Shader?.Dispose();
+        paint.Shader = newShader;
+    }
 
     /// <summary>
     /// Gibt native SkiaSharp-Ressourcen frei.

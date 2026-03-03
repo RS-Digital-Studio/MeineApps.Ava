@@ -166,6 +166,95 @@
             </StackPanel>
           </Button>
 
+          <!-- ── Einladungs-Inbox (nur sichtbar wenn Einladungen vorhanden) ── -->
+          <StackPanel IsVisible="{Binding HasReceivedInvites}" Spacing="8" Margin="0,0,0,4">
+
+            <!-- Header -->
+            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
+              <mi:MaterialIcon Kind="EmailPlus" Width="20" Height="20"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <TextBlock Text="{Binding InvitationsHeaderDisplay}"
+                         FontSize="15" FontWeight="Bold"
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
+            </StackPanel>
+
+            <!-- Einladungs-Liste -->
+            <ItemsControl ItemsSource="{Binding ReceivedInvites}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:GuildInvitationDisplay">
+                  <Border Classes="Card" Padding="12" Margin="0,0,0,8">
+                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,*" ColumnSpacing="12" RowSpacing="8">
+
+                      <!-- Gilden-Icon -->
+                      <Border Grid.RowSpan="2" CornerRadius="12" Width="52" Height="52"
+                              VerticalAlignment="Center"
+                              Background="{Binding GuildColor, Converter={StaticResource ColorBrushConverter}}">
+                        <mi:MaterialIcon Kind="{Binding GuildIcon, Converter={StaticResource IconKindConverter}}"
+                                         Width="28" Height="28"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      </Border>
+
+                      <!-- Name + Info -->
+                      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{Binding GuildName}"
+                                   FontSize="15" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                          <TextBlock Text="{Binding GuildLevel, StringFormat='Lv.{0}'}"
+                                     FontSize="12"
+                                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                          <TextBlock Text="{Binding MemberDisplay}"
+                                     FontSize="12"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                          <TextBlock Text="{Binding InvitedByDisplay}"
+                                     FontSize="12" FontStyle="Italic"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                      </StackPanel>
+
+                      <!-- Annehmen / Ablehnen Buttons -->
+                      <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                                  HorizontalAlignment="Right">
+                        <Button Classes="Primary"
+                                Padding="16,6"
+                                Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).AcceptInviteCommand}"
+                                CommandParameter="{Binding .}">
+                          <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="Check" Width="16" Height="16" />
+                            <TextBlock Text="{loc:Translate AcceptInvite}"
+                                       FontSize="12" FontWeight="Bold" />
+                          </StackPanel>
+                        </Button>
+                        <Button Padding="16,6"
+                                Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).DeclineInviteCommand}"
+                                CommandParameter="{Binding .}">
+                          <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+                            <TextBlock Text="{loc:Translate DeclineInvite}"
+                                       FontSize="12" />
+                          </StackPanel>
+                        </Button>
+                      </StackPanel>
+
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <!-- Trennlinie -->
+            <Grid ColumnDefinitions="*,Auto,*" Margin="0,4,0,8">
+              <Border Grid.Column="0" Height="1" VerticalAlignment="Center"
+                      Background="{DynamicResource TextSecondaryBrush}" Opacity="0.3" />
+              <TextBlock Grid.Column="1" Text="{loc:Translate OrSearchGuild}"
+                         FontSize="12" Margin="12,0"
+                         Foreground="{DynamicResource TextSecondaryBrush}" />
+              <Border Grid.Column="2" Height="1" VerticalAlignment="Center"
+                      Background="{DynamicResource TextSecondaryBrush}" Opacity="0.3" />
+            </Grid>
+          </StackPanel>
+
           <!-- Leere Liste -->
           <StackPanel Spacing="8" HorizontalAlignment="Center"
                       IsVisible="{Binding HasNoGuilds}"

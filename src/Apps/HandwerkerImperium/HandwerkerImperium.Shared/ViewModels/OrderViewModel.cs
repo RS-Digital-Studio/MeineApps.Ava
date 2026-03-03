@@ -145,8 +145,9 @@ public partial class OrderViewModel : ViewModelBase
         WorkshopIcon = GetWorkshopIcon(order.WorkshopType);
         WorkshopName = GetWorkshopName(order.WorkshopType);
 
-        // Zentralisierte Belohnungsberechnung über Order-Methoden
-        RewardText = $"~{FormatMoney(order.CalculateEstimatedReward())}";
+        // Belohnungsberechnung inkl. aller aktiven Multiplikatoren (Research, Gebäude, Reputation, Events, Stammkunden)
+        var rewardMultiplier = _gameStateService.GetOrderRewardMultiplier(order);
+        RewardText = $"~{FormatMoney(order.CalculateEstimatedReward() * rewardMultiplier)}";
         XpRewardText = $"~{order.CalculateEstimatedXp()} XP";
 
         RewardHintText = _localizationService.GetString("RewardDependsOnRating");

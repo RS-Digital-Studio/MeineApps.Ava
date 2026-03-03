@@ -10,8 +10,9 @@ namespace HandwerkerImperium.Graphics;
 /// Struct-basiertes Partikel-Array (kein GC-Druck auf Android).
 /// Completion-Celebration mit goldenem Flash und Extra-Spritzern.
 /// </summary>
-public class PaintingGameRenderer
+public class PaintingGameRenderer : IDisposable
 {
+    private bool _disposed;
     // Wand-Farben (hell/creme fuer maximalen Kontrast zu gestrichenen Zellen)
     private static readonly SKColor WallBg = new(0xF5, 0xF0, 0xE8);          // Helle Creme-Wand
     private static readonly SKColor WallLineH = new(0xE8, 0xE0, 0xD0);       // Horizontale Putzfugen
@@ -27,6 +28,39 @@ public class PaintingGameRenderer
     // Gold-Farben fuer Completion-Celebration
     private static readonly SKColor GoldLight = new(0xFF, 0xD7, 0x00);       // Gold hell
     private static readonly SKColor GoldDark = new(0xDA, 0xA5, 0x20);        // Gold dunkel
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Gecachte SKPaints (vermeidet 75+ Allokationen pro Frame)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Wand-Hintergrund
+    private static readonly SKPaint _wallBgPaint = new() { Color = WallBg, IsAntialias = true };
+    private static readonly SKPaint _lineHPaint = new() { Color = WallLineH.WithAlpha(20), IsAntialias = false, StrokeWidth = 1 };
+    private static readonly SKPaint _lineVPaint = new() { Color = WallLineV.WithAlpha(15), IsAntialias = false, StrokeWidth = 1 };
+
+    // Zellen
+    private static readonly SKPaint _cellNormalPaint = new() { Color = CellNormal, IsAntialias = true };
+    private static readonly SKPaint _cellBorderPaint = new() { Color = CellBorder, IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 1 };
+    private static readonly SKPaint _errorFlashPaint = new() { Color = ErrorFlash, IsAntialias = true };
+    private static readonly SKPaint _errorCrossPaint = new() { Color = ErrorCross, IsAntialias = true, StrokeWidth = 3, StrokeCap = SKStrokeCap.Round };
+    private static readonly SKPaint _wetHighlightPaint = new() { Color = new SKColor(0xFF, 0xFF, 0xFF, 40), IsAntialias = true, StrokeWidth = 3 };
+    private static readonly SKPaint _checkCirclePaint = new() { Color = new SKColor(0xFF, 0xFF, 0xFF, 150), IsAntialias = true };
+    private static readonly SKPaint _checkMarkPaint = new() { Color = CheckColor, IsAntialias = true, StrokeWidth = 3, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
+
+    // Wiederverwendbare Paints deren Farbe pro Aufruf geaendert wird
+    private readonly SKPaint _paintedCellPaint = new() { IsAntialias = true };
+    private readonly SKPaint _strokeTexturePaint = new() { IsAntialias = true, StrokeWidth = 2 };
+    private readonly SKPaint _flashPaint = new() { IsAntialias = true };
+    private readonly SKPaint _shimmerPaint = new() { IsAntialias = true };
+    private readonly SKPaint _ringPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 3 };
+    private readonly SKPaint _markPaint = new() { IsAntialias = true };
+    private readonly SKPaint _dashPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2 };
+    private readonly SKPaint _splatPaint = new() { IsAntialias = true };
+    private readonly SKPaint _vigPaint = new() { IsAntialias = true };
+    private readonly SKPaint _reflexPaint = new() { IsAntialias = true };
+    private readonly SKPaint _completionFlashPaint = new() { IsAntialias = true };
+    private readonly SKPaint _completionRingPaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 4 };
+    private readonly SKPaint _targetBgPaint = new() { Color = CellNormal, IsAntialias = true };
 
     // Struct-basiertes Partikel-Array (GC-frei auf Android)
     private const int MAX_SPLATTERS = 30;
@@ -53,6 +87,7 @@ public class PaintingGameRenderer
     public void Render(SKCanvas canvas, SKRect bounds, PaintCellData[] cells, int gridSize,
         SKColor paintColor, bool isPlaying, bool isAllPainted, float deltaTime)
     {
+        if (_disposed) return;
         _animTime += deltaTime;
 
         // Completion-Celebration erkennen (Flanke: war vorher nicht fertig, jetzt schon)
@@ -205,34 +240,30 @@ public class PaintingGameRenderer
     private void DrawWallBackground(SKCanvas canvas, SKRect bounds)
     {
         // Helle Putzwand-Flaeche
-        using var wallPaint = new SKPaint { Color = WallBg, IsAntialias = true };
-        canvas.DrawRect(bounds, wallPaint);
+        canvas.DrawRect(bounds, _wallBgPaint);
 
         // Kreuzschraffur-Putzstruktur (horizontal + vertikal, sehr subtil)
-        using var lineHPaint = new SKPaint { Color = WallLineH.WithAlpha(20), IsAntialias = false, StrokeWidth = 1 };
         for (float y = bounds.Top + 18; y < bounds.Bottom; y += 18)
         {
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, lineHPaint);
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, _lineHPaint);
         }
-        using var lineVPaint = new SKPaint { Color = WallLineV.WithAlpha(15), IsAntialias = false, StrokeWidth = 1 };
         for (float x = bounds.Left + 24; x < bounds.Right; x += 24)
         {
-            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, lineVPaint);
+            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, _lineVPaint);
         }
 
-        // Subtile radiale Vignette (Mitte heller)
+        // Subtile radiale Vignette (Mitte heller) - Shader pro Frame noetig (bounds-abhaengig)
         float vigCx = bounds.MidX;
         float vigCy = bounds.MidY;
         float vigR = Math.Max(bounds.Width, bounds.Height) * 0.7f;
-        using var vigPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Shader = SKShader.CreateRadialGradient(
-                new SKPoint(vigCx, vigCy), vigR,
-                [new SKColor(0xFF, 0xFF, 0xFF, 15), new SKColor(0x00, 0x00, 0x00, 12)],
-                SKShaderTileMode.Clamp)
-        };
-        canvas.DrawRect(bounds, vigPaint);
+        using var vigShader = SKShader.CreateRadialGradient(
+            new SKPoint(vigCx, vigCy), vigR,
+            [new SKColor(0xFF, 0xFF, 0xFF, 15), new SKColor(0x00, 0x00, 0x00, 12)],
+            SKShaderTileMode.Clamp);
+        _vigPaint.Shader?.Dispose();
+        _vigPaint.Shader = vigShader;
+        canvas.DrawRect(bounds, _vigPaint);
+        _vigPaint.Shader = null;
     }
 
     /// <summary>
@@ -250,52 +281,36 @@ public class PaintingGameRenderer
         if (cell.IsPainted)
         {
             // Gestrichen: Satte Farbflaeche als Basis
-            using var paintedPaint = new SKPaint { Color = paintColor, IsAntialias = true };
-            canvas.DrawRect(innerX, innerY, innerSize, innerSize, paintedPaint);
+            _paintedCellPaint.Color = paintColor;
+            canvas.DrawRect(innerX, innerY, innerSize, innerSize, _paintedCellPaint);
 
             // Diagonale Pinselstrich-Textur (realistischer als horizontal)
-            using var strokePaint = new SKPaint
-            {
-                Color = paintColor.WithAlpha(160),
-                IsAntialias = true,
-                StrokeWidth = 2
-            };
+            _strokeTexturePaint.Color = paintColor.WithAlpha(160);
+            canvas.Save();
+            canvas.ClipRect(new SKRect(innerX, innerY, innerX + innerSize, innerY + innerSize));
             for (float d = -innerSize; d < innerSize * 2; d += 5)
             {
                 float x1 = innerX + d;
                 float y1 = innerY;
                 float x2 = innerX + d + innerSize;
                 float y2 = innerY + innerSize;
-                // Clipping innerhalb der Zelle
-                canvas.Save();
-                canvas.ClipRect(new SKRect(innerX, innerY, innerX + innerSize, innerY + innerSize));
-                canvas.DrawLine(x1, y1, x2, y2, strokePaint);
-                canvas.Restore();
+                canvas.DrawLine(x1, y1, x2, y2, _strokeTexturePaint);
             }
+            canvas.Restore();
 
             // Nass-Effekt: Weißer Highlight-Streifen diagonal
-            using var wetPaint = new SKPaint
-            {
-                Color = new SKColor(0xFF, 0xFF, 0xFF, 40),
-                IsAntialias = true,
-                StrokeWidth = 3
-            };
             canvas.Save();
             canvas.ClipRect(new SKRect(innerX, innerY, innerX + innerSize, innerY + innerSize));
             canvas.DrawLine(innerX + innerSize * 0.2f, innerY + innerSize * 0.1f,
-                innerX + innerSize * 0.8f, innerY + innerSize * 0.6f, wetPaint);
+                innerX + innerSize * 0.8f, innerY + innerSize * 0.6f, _wetHighlightPaint);
             canvas.Restore();
 
             // Frisch-gestrichen-Flash (kurzer weißer Glow)
             if (cell.PaintedAge < 0.4f)
             {
                 float flashAlpha = (1f - cell.PaintedAge / 0.4f) * 0.3f;
-                using var flashPaint = new SKPaint
-                {
-                    Color = new SKColor(0xFF, 0xFF, 0xFF, (byte)(flashAlpha * 255)),
-                    IsAntialias = true
-                };
-                canvas.DrawRect(innerX, innerY, innerSize, innerSize, flashPaint);
+                _flashPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, (byte)(flashAlpha * 255));
+                canvas.DrawRect(innerX, innerY, innerSize, innerSize, _flashPaint);
             }
 
             // Korrekt-Markierung (Haekchen auf weißem Kreis)
@@ -305,96 +320,54 @@ public class PaintingGameRenderer
                 float ccy = innerY + innerSize / 2;
                 float checkR = innerSize * 0.22f;
 
-                // Weißer Kreis-Hintergrund
-                using var circlePaint = new SKPaint { Color = new SKColor(0xFF, 0xFF, 0xFF, 150), IsAntialias = true };
-                canvas.DrawCircle(ccx, ccy, checkR, circlePaint);
-
-                // Haekchen (dickere Linien)
-                using var checkPaint = new SKPaint
-                {
-                    Color = CheckColor,
-                    IsAntialias = true,
-                    StrokeWidth = 3,
-                    Style = SKPaintStyle.Stroke,
-                    StrokeCap = SKStrokeCap.Round
-                };
-                canvas.DrawLine(ccx - 6, ccy, ccx - 2, ccy + 5, checkPaint);
-                canvas.DrawLine(ccx - 2, ccy + 5, ccx + 6, ccy - 5, checkPaint);
+                canvas.DrawCircle(ccx, ccy, checkR, _checkCirclePaint);
+                canvas.DrawLine(ccx - 6, ccy, ccx - 2, ccy + 5, _checkMarkPaint);
+                canvas.DrawLine(ccx - 2, ccy + 5, ccx + 6, ccy - 5, _checkMarkPaint);
             }
         }
         else if (cell.IsTarget)
         {
             // Zielzelle: Subtiler farbiger Schimmer der Zielfarbe
-            using var targetBgPaint = new SKPaint { Color = CellNormal, IsAntialias = true };
-            canvas.DrawRect(innerX, innerY, innerSize, innerSize, targetBgPaint);
+            canvas.DrawRect(innerX, innerY, innerSize, innerSize, _targetBgPaint);
 
             // Farbiger Schimmer (paintColor mit niedrigem Alpha)
-            using var shimmerPaint = new SKPaint { Color = paintColor.WithAlpha(25), IsAntialias = true };
-            canvas.DrawRect(innerX, innerY, innerSize, innerSize, shimmerPaint);
+            _shimmerPaint.Color = paintColor.WithAlpha(25);
+            canvas.DrawRect(innerX, innerY, innerSize, innerSize, _shimmerPaint);
 
-            // Farbiger Ring um die Zelle (paintColor, dickere Linie)
-            using var ringPaint = new SKPaint
-            {
-                Color = paintColor.WithAlpha(120),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 3
-            };
-            canvas.DrawRect(innerX + 1, innerY + 1, innerSize - 2, innerSize - 2, ringPaint);
+            // Farbiger Ring um die Zelle
+            _ringPaint.Color = paintColor.WithAlpha(120);
+            canvas.DrawRect(innerX + 1, innerY + 1, innerSize - 2, innerSize - 2, _ringPaint);
 
-            // Groesserer pulsierender Markierungspunkt (12px statt 6px)
+            // Groesserer pulsierender Markierungspunkt
             float pulse = 0.5f + 0.3f * MathF.Sin(_animTime * 2.5f + x * 0.1f);
             float pointSize = 6;
-            using var markPaint = new SKPaint
-            {
-                Color = paintColor.WithAlpha((byte)(pulse * 200)),
-                IsAntialias = true
-            };
-            canvas.DrawCircle(innerX + innerSize / 2, innerY + innerSize / 2, pointSize, markPaint);
+            _markPaint.Color = paintColor.WithAlpha((byte)(pulse * 200));
+            canvas.DrawCircle(innerX + innerSize / 2, innerY + innerSize / 2, pointSize, _markPaint);
 
-            // Gestrichelter animierter Rand (hoehere Alpha)
-            using var dashPaint = new SKPaint
-            {
-                Color = paintColor.WithAlpha(120),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 2,
-                PathEffect = SKPathEffect.CreateDash([4, 4], _animTime * 10)
-            };
-            canvas.DrawRect(innerX + 4, innerY + 4, innerSize - 8, innerSize - 8, dashPaint);
+            // Gestrichelter animierter Rand
+            using var dashEffect = SKPathEffect.CreateDash([4, 4], _animTime * 10);
+            _dashPaint.PathEffect?.Dispose();
+            _dashPaint.PathEffect = dashEffect;
+            _dashPaint.Color = paintColor.WithAlpha(120);
+            canvas.DrawRect(innerX + 4, innerY + 4, innerSize - 8, innerSize - 8, _dashPaint);
+            _dashPaint.PathEffect = null;
         }
         else
         {
             // Normale Zelle (saubere helle Putzfarbe)
-            using var normalPaint = new SKPaint { Color = CellNormal, IsAntialias = true };
-            canvas.DrawRect(innerX, innerY, innerSize, innerSize, normalPaint);
+            canvas.DrawRect(innerX, innerY, innerSize, innerSize, _cellNormalPaint);
         }
 
         // Fehler-Flash (rotes Overlay mit X-Markierung)
         if (cell.HasError)
         {
-            using var errorPaint = new SKPaint { Color = ErrorFlash, IsAntialias = true };
-            canvas.DrawRect(innerX, innerY, innerSize, innerSize, errorPaint);
-
-            // X-Markierung
-            using var xPaint = new SKPaint
-            {
-                Color = ErrorCross, IsAntialias = true,
-                StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
-            };
-            canvas.DrawLine(innerX + 8, innerY + 8, innerX + innerSize - 8, innerY + innerSize - 8, xPaint);
-            canvas.DrawLine(innerX + innerSize - 8, innerY + 8, innerX + 8, innerY + innerSize - 8, xPaint);
+            canvas.DrawRect(innerX, innerY, innerSize, innerSize, _errorFlashPaint);
+            canvas.DrawLine(innerX + 8, innerY + 8, innerX + innerSize - 8, innerY + innerSize - 8, _errorCrossPaint);
+            canvas.DrawLine(innerX + innerSize - 8, innerY + 8, innerX + 8, innerY + innerSize - 8, _errorCrossPaint);
         }
 
         // Zell-Rand (subtil)
-        using var borderPaint = new SKPaint
-        {
-            Color = CellBorder,
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 1
-        };
-        canvas.DrawRect(innerX, innerY, innerSize, innerSize, borderPaint);
+        canvas.DrawRect(innerX, innerY, innerSize, innerSize, _cellBorderPaint);
     }
 
     /// <summary>
@@ -403,8 +376,6 @@ public class PaintingGameRenderer
     /// </summary>
     private void UpdateAndDrawSplatters(SKCanvas canvas, float deltaTime)
     {
-        using var splatPaint = new SKPaint { IsAntialias = true };
-
         for (int i = _splatterCount - 1; i >= 0; i--)
         {
             var s = _splatters[i];
@@ -422,8 +393,8 @@ public class PaintingGameRenderer
 
             // Alpha verblasst ueber Lebensdauer
             float alpha = 1 - (s.Life / s.MaxLife);
-            splatPaint.Color = s.Color.WithAlpha((byte)(alpha * 200));
-            canvas.DrawCircle(s.X, s.Y, s.Size, splatPaint);
+            _splatPaint.Color = s.Color.WithAlpha((byte)(alpha * 200));
+            canvas.DrawCircle(s.X, s.Y, s.Size, _splatPaint);
         }
     }
 
@@ -437,32 +408,31 @@ public class PaintingGameRenderer
         float reflexX = bounds.Right - reflexRadius * 0.6f;
         float reflexY = bounds.Top + reflexRadius * 0.4f;
 
-        // Regenbogen-Gradient als Halbkreis mit sehr niedrigem Alpha
-        using var reflexPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Shader = SKShader.CreateRadialGradient(
-                new SKPoint(reflexX, reflexY), reflexRadius,
-                [
-                    new SKColor(0xFF, 0x60, 0x60, 12),   // Rot (aussen)
-                    new SKColor(0xFF, 0xA0, 0x40, 10),   // Orange
-                    new SKColor(0xFF, 0xFF, 0x60, 10),   // Gelb
-                    new SKColor(0x60, 0xFF, 0x60, 8),    // Gruen
-                    new SKColor(0x60, 0x80, 0xFF, 8),    // Blau
-                    new SKColor(0xA0, 0x60, 0xFF, 6),    // Violett
-                    new SKColor(0x00, 0x00, 0x00, 0)     // Transparent (Mitte)
-                ],
-                [0.3f, 0.45f, 0.55f, 0.65f, 0.75f, 0.85f, 1.0f],
-                SKShaderTileMode.Clamp)
-        };
+        // Regenbogen-Gradient als Halbkreis mit sehr niedrigem Alpha - Shader pro Frame (bounds-abhaengig)
+        using var reflexShader = SKShader.CreateRadialGradient(
+            new SKPoint(reflexX, reflexY), reflexRadius,
+            [
+                new SKColor(0xFF, 0x60, 0x60, 12),
+                new SKColor(0xFF, 0xA0, 0x40, 10),
+                new SKColor(0xFF, 0xFF, 0x60, 10),
+                new SKColor(0x60, 0xFF, 0x60, 8),
+                new SKColor(0x60, 0x80, 0xFF, 8),
+                new SKColor(0xA0, 0x60, 0xFF, 6),
+                new SKColor(0x00, 0x00, 0x00, 0)
+            ],
+            [0.3f, 0.45f, 0.55f, 0.65f, 0.75f, 0.85f, 1.0f],
+            SKShaderTileMode.Clamp);
+        _reflexPaint.Shader?.Dispose();
+        _reflexPaint.Shader = reflexShader;
 
         // Nur obere rechte Ecke clippen fuer Halbkreis-Effekt
         canvas.Save();
         canvas.ClipRect(new SKRect(
             reflexX - reflexRadius, reflexY - reflexRadius * 0.3f,
             bounds.Right, reflexY + reflexRadius * 0.8f));
-        canvas.DrawCircle(reflexX, reflexY, reflexRadius, reflexPaint);
+        canvas.DrawCircle(reflexX, reflexY, reflexRadius, _reflexPaint);
         canvas.Restore();
+        _reflexPaint.Shader = null;
     }
 
     /// <summary>
@@ -484,31 +454,44 @@ public class PaintingGameRenderer
         // Expandierender Ring-Radius (von 30% auf 100%)
         float currentRadius = maxRadius * (0.3f + 0.7f * (1f - progress));
 
-        using var flashPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Shader = SKShader.CreateRadialGradient(
-                new SKPoint(centerX, centerY), currentRadius,
-                [
-                    GoldLight.WithAlpha((byte)(alpha * 255)),
-                    GoldDark.WithAlpha((byte)(alpha * 180)),
-                    new SKColor(0xFF, 0xD7, 0x00, 0) // Transparent am Rand
-                ],
-                [0f, 0.5f, 1.0f],
-                SKShaderTileMode.Clamp)
-        };
-        canvas.DrawRect(bounds, flashPaint);
+        using var flashShader = SKShader.CreateRadialGradient(
+            new SKPoint(centerX, centerY), currentRadius,
+            [
+                GoldLight.WithAlpha((byte)(alpha * 255)),
+                GoldDark.WithAlpha((byte)(alpha * 180)),
+                new SKColor(0xFF, 0xD7, 0x00, 0)
+            ],
+            [0f, 0.5f, 1.0f],
+            SKShaderTileMode.Clamp);
+        _completionFlashPaint.Shader?.Dispose();
+        _completionFlashPaint.Shader = flashShader;
+        canvas.DrawRect(bounds, _completionFlashPaint);
+        _completionFlashPaint.Shader = null;
 
-        // Goldener Ring am expandierenden Rand (staerkerer Kontrast)
+        // Goldener Ring am expandierenden Rand
         float ringAlpha = progress * 0.6f;
-        using var ringPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = 4,
-            Color = GoldLight.WithAlpha((byte)(ringAlpha * 255))
-        };
-        canvas.DrawCircle(centerX, centerY, currentRadius * 0.8f, ringPaint);
+        _completionRingPaint.Color = GoldLight.WithAlpha((byte)(ringAlpha * 255));
+        canvas.DrawCircle(centerX, centerY, currentRadius * 0.8f, _completionRingPaint);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _paintedCellPaint.Dispose();
+        _strokeTexturePaint.Dispose();
+        _flashPaint.Dispose();
+        _shimmerPaint.Dispose();
+        _ringPaint.Dispose();
+        _markPaint.Dispose();
+        _dashPaint.Dispose();
+        _splatPaint.Dispose();
+        _vigPaint.Dispose();
+        _reflexPaint.Dispose();
+        _completionFlashPaint.Dispose();
+        _completionRingPaint.Dispose();
+        _targetBgPaint.Dispose();
     }
 }
 

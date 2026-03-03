@@ -112,9 +112,8 @@ public class SkiaWaterGlass : Control
                 // Tropfen spawnen während Cooldown
                 if (_dropCooldown > 0 && _time % 0.1f < 0.035f)
                 {
-                    var rng = new Random();
                     var waterSk = SkiaThemeHelper.ToSKColor(WaterColor);
-                    _dropParticles.Add(SkiaParticlePresets.CreateWaterDrop(rng, 0, 0, waterSk));
+                    _dropParticles.Add(SkiaParticlePresets.CreateWaterDrop(Random.Shared, 0, 0, waterSk));
                 }
 
                 if (_dropCooldown <= 0 && !WaveEnabled && !ShowDrops)

@@ -508,18 +508,12 @@ public partial class ForgeGameViewModel : ViewModelBase, IDisposable
         var order = _gameStateService.GetActiveOrder();
         if (order != null && IsLastTask)
         {
-            RewardAmount = order.FinalReward;
+            RewardAmount = order.FinalReward * _gameStateService.GetOrderRewardMultiplier(order);
             XpAmount = order.FinalXp;
         }
         else if (order != null)
         {
-            int taskCount = Math.Max(1, order.Tasks.Count);
-            decimal basePerTask = order.BaseReward / taskCount;
-            RewardAmount = basePerTask * Result.GetRewardPercentage()
-                * order.Difficulty.GetRewardMultiplier() * order.OrderType.GetRewardMultiplier();
-            int baseXpPerTask = order.BaseXp / taskCount;
-            XpAmount = (int)(baseXpPerTask * Result.GetXpPercentage()
-                * order.Difficulty.GetXpMultiplier() * order.OrderType.GetXpMultiplier());
+            // Zwischen-Runde: Keine Belohnung anzeigen, nur Gesamt am Ende
         }
         else
         {
@@ -598,8 +592,11 @@ public partial class ForgeGameViewModel : ViewModelBase, IDisposable
         var success = await _rewardedAdService.ShowAdAsync("score_double");
         if (success)
         {
+            // Belohnungen verdoppeln (Anzeige + Flag für Auszahlung)
             RewardAmount *= 2;
             XpAmount *= 2;
+            var order = _gameStateService.GetActiveOrder();
+            if (order != null) order.IsScoreDoubled = true;
             AdWatched = true;
             CanWatchAd = false;
 

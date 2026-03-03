@@ -4356,4 +4356,35 @@
   <data name="BuildingUpgradeHint" xml:space="preserve">
     <value>Better bonuses!</value>
   </data>
+  <!-- Forschungs-Timer + Einladungs-Inbox -->
+  <data name="GuildResearchDone" xml:space="preserve">
+    <value>Done!</value>
+  </data>
+  <data name="GuildResearchInProgress" xml:space="preserve">
+    <value>Researching...</value>
+  </data>
+  <data name="GuildResearchTimeRemaining" xml:space="preserve">
+    <value>{0} remaining</value>
+  </data>
+  <data name="GuildResearchBlocked" xml:space="preserve">
+    <value>Research in progress</value>
+  </data>
+  <data name="InvitationsHeader" xml:space="preserve">
+    <value>Invitations ({0})</value>
+  </data>
+  <data name="InvitedByPrefix" xml:space="preserve">
+    <value>Invited by:</value>
+  </data>
+  <data name="AcceptInvite" xml:space="preserve">
+    <value>Accept</value>
+  </data>
+  <data name="DeclineInvite" xml:space="preserve">
+    <value>Decline</value>
+  </data>
+  <data name="OrSearchGuild" xml:space="preserve">
+    <value>or search guild</value>
+  </data>
+  <data name="InviteFailed" xml:space="preserve">
+    <value>Invite failed</value>
+  </data>
 </root>

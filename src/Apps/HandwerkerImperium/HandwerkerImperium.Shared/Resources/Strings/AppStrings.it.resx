@@ -4161,4 +4161,34 @@
   <data name="BuildingUpgradeHint" xml:space="preserve">
     <value>Bonus migliori!</value>
   </data>
+  <data name="GuildResearchDone" xml:space="preserve">
+    <value>Completato!</value>
+  </data>
+  <data name="GuildResearchInProgress" xml:space="preserve">
+    <value>Ricerca in corso...</value>
+  </data>
+  <data name="GuildResearchTimeRemaining" xml:space="preserve">
+    <value>{0} rimanente</value>
+  </data>
+  <data name="GuildResearchBlocked" xml:space="preserve">
+    <value>Ricerca in corso</value>
+  </data>
+  <data name="InvitationsHeader" xml:space="preserve">
+    <value>Inviti ({0})</value>
+  </data>
+  <data name="InvitedByPrefix" xml:space="preserve">
+    <value>Invitato da:</value>
+  </data>
+  <data name="AcceptInvite" xml:space="preserve">
+    <value>Accetta</value>
+  </data>
+  <data name="DeclineInvite" xml:space="preserve">
+    <value>Rifiuta</value>
+  </data>
+  <data name="OrSearchGuild" xml:space="preserve">
+    <value>o cerca gilda</value>
+  </data>
+  <data name="InviteFailed" xml:space="preserve">
+    <value>Invito fallito</value>
+  </data>
 </root>

@@ -15,6 +15,7 @@ using WorkTimePro.Resources.Strings;
 using WorkTimePro.Services;
 using WorkTimePro.ViewModels;
 using WorkTimePro.Views;
+using WorkTimePro.Graphics;
 using MeineApps.UI.SkiaSharp;
 
 namespace WorkTimePro;
@@ -79,7 +80,7 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
-            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = "v2.0.5" };
+            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = "v2.0.6", Renderer = new WorkTimeProSplashRenderer() };
             var panel = new Panel();
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);
@@ -88,7 +89,7 @@ public partial class App : Application
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
-            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = "v2.0.5" };
+            var splash = new SkiaLoadingSplash { AppName = "WorkTimePro", AppVersion = "v2.0.6", Renderer = new WorkTimeProSplashRenderer() };
             var panel = new Panel();
             panel.Children.Add(new MainView());
             panel.Children.Add(splash);

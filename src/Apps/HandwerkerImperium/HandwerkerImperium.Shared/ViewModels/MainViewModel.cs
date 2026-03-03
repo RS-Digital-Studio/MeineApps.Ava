@@ -1550,12 +1550,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
             UpdateNetIncomeHeader(state);
         }
 
-        // FloatingText: Nur alle 3 Ticks anzeigen, nur wenn Income > 0 und Dashboard aktiv
+        // Tick-Counter für zeitgesteuerte UI-Updates (Worker-Warnung, etc.)
         _floatingTextCounter++;
-        if (_floatingTextCounter % 3 == 0 && newIncome > 0 && IsDashboardActive)
-        {
-            FloatingTextRequested?.Invoke($"+{newIncome:N0}\u20AC", "money");
-        }
 
         // QuickJob-Timer aktualisieren + Rotation wenn abgelaufen
         if (_quickJobService.NeedsRotation())
@@ -1928,6 +1924,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
 
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
+
+        GuildViewModel.Dispose();
 
         _disposed = true;
         GC.SuppressFinalize(this);

@@ -29,10 +29,14 @@ public enum GuildViewState
 /// </summary>
 public partial class GuildViewModel : ViewModelBase
 {
+    private bool _disposed;
     private readonly IGameStateService _gameStateService;
     private readonly IGuildService _guildService;
     private readonly ILocalizationService _localizationService;
+    private readonly IGuildChatService _chatService;
+    private readonly IGuildWarService _warService;
     private bool _isBusy;
+    private DateTime _lastChatSend = DateTime.MinValue;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -106,6 +110,20 @@ public partial class GuildViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool _hasNoGuilds;
+
+    [ObservableProperty]
+    private ObservableCollection<GuildInvitationDisplay> _receivedInvites = [];
+
+    [ObservableProperty]
+    private bool _hasReceivedInvites;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(InvitationsHeaderDisplay))]
+    private int _receivedInviteCount;
+
+    /// <summary>Lokalisierter Header-Text für Einladungs-Inbox.</summary>
+    public string InvitationsHeaderDisplay =>
+        string.Format(_localizationService.GetString("InvitationsHeader") ?? "Einladungen ({0})", ReceivedInviteCount);
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES - Gilden-Detail (In Gilde)
@@ -198,6 +216,53 @@ public partial class GuildViewModel : ViewModelBase
     [ObservableProperty]
     private string _researchContributeDisplay = "";
 
+    [ObservableProperty]
+    private bool _hasActiveResearch;
+
+    [ObservableProperty]
+    private string _activeResearchName = "";
+
+    [ObservableProperty]
+    private string _activeResearchCountdown = "";
+
+    [ObservableProperty]
+    private string _activeResearchId = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROPERTIES - Chat
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private ObservableCollection<ChatMessageDisplay> _chatMessages = [];
+
+    [ObservableProperty]
+    private string _chatInput = "";
+
+    [ObservableProperty]
+    private bool _canSendChat = true;
+
+    [ObservableProperty]
+    private string _chatSubtitle = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROPERTIES - Gildenkrieg
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private GuildWarDisplayData? _activeWar;
+
+    [ObservableProperty]
+    private bool _hasActiveWar;
+
+    [ObservableProperty]
+    private string _warStatusText = "";
+
+    [ObservableProperty]
+    private string _warTimeRemaining = "";
+
+    [ObservableProperty]
+    private string _warSubtitle = "";
+
     // ═══════════════════════════════════════════════════════════════════════
     // ICON + FARB-AUSWAHL
     // ═══════════════════════════════════════════════════════════════════════
@@ -222,11 +287,15 @@ public partial class GuildViewModel : ViewModelBase
     public GuildViewModel(
         IGameStateService gameStateService,
         IGuildService guildService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IGuildChatService chatService,
+        IGuildWarService warService)
     {
         _gameStateService = gameStateService;
         _guildService = guildService;
         _localizationService = localizationService;
+        _chatService = chatService;
+        _warService = warService;
 
         _guildService.GuildUpdated += OnGuildUpdated;
 
@@ -289,6 +358,9 @@ public partial class GuildViewModel : ViewModelBase
             {
                 // Spieler als verfügbar registrieren (für Einladungs-Browser)
                 await _guildService.RegisterAsAvailableAsync();
+
+                // Einladungs-Inbox laden
+                await LoadReceivedInvitesAsync();
 
                 await LoadAvailableGuildsAsync();
                 ViewState = GuildViewState.Browse;
@@ -521,7 +593,7 @@ public partial class GuildViewModel : ViewModelBase
     [RelayCommand]
     private void ShowResearchContributeDialog(GuildResearchDisplay? research)
     {
-        if (research == null || !research.IsActive) return;
+        if (research == null || research.IsCompleted || research.IsResearching || !research.IsActive) return;
 
         SelectedResearchId = research.Id;
         SelectedResearchName = research.Name;
@@ -587,6 +659,12 @@ public partial class GuildViewModel : ViewModelBase
 
     [RelayCommand]
     private void NavigateBack() => NavigationRequested?.Invoke("..");
+
+    [RelayCommand]
+    private void NavigateToChat() => NavigationRequested?.Invoke("guild_chat");
+
+    [RelayCommand]
+    private void NavigateToWar() => NavigationRequested?.Invoke("guild_war");
 
     // ═══════════════════════════════════════════════════════════════════════
     // COMMANDS - Einladungs-System
@@ -677,25 +755,233 @@ public partial class GuildViewModel : ViewModelBase
         _isBusy = true;
         try
         {
-            // Einladungs-Code teilen (Spieler muss Code selbst eingeben)
-            // Wir markieren den Spieler als "eingeladen" als visuelles Feedback
-            player.IsInvited = true;
-
-            // Invite-Code sicherstellen
-            if (string.IsNullOrEmpty(GuildInviteCode))
+            // Direkte Einladung an den Spieler senden (Firebase-basiert)
+            var success = await _guildService.SendInviteAsync(player.Uid);
+            if (success)
             {
-                var code = await _guildService.GetOrCreateInviteCodeAsync();
-                if (!string.IsNullOrEmpty(code))
-                    GuildInviteCode = code;
+                player.IsInvited = true;
+                MessageRequested?.Invoke(
+                    _localizationService.GetString("Guild") ?? "Innung",
+                    _localizationService.GetString("InviteSent") ?? "Einladung gesendet");
             }
-
-            MessageRequested?.Invoke(
-                _localizationService.GetString("Guild") ?? "Innung",
-                _localizationService.GetString("InviteSent") ?? "Einladung gesendet");
+            else
+            {
+                MessageRequested?.Invoke(
+                    _localizationService.GetString("Guild") ?? "Innung",
+                    _localizationService.GetString("InviteFailed") ?? "Einladung fehlgeschlagen");
+            }
         }
         finally
         {
             _isBusy = false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMMANDS - Einladungs-Inbox
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private async Task LoadReceivedInvitesAsync()
+    {
+        try
+        {
+            var invites = await _guildService.GetReceivedInvitesAsync();
+            var maxMembers = _guildService.GetMaxMembers();
+            var displays = new ObservableCollection<GuildInvitationDisplay>();
+            foreach (var (guildId, invite) in invites)
+            {
+                displays.Add(new GuildInvitationDisplay
+                {
+                    GuildId = guildId,
+                    GuildName = invite.GuildName,
+                    GuildIcon = invite.GuildIcon,
+                    GuildColor = invite.GuildColor,
+                    GuildLevel = invite.GuildLevel,
+                    MemberDisplay = $"{invite.MemberCount}/{maxMembers}",
+                    InvitedByDisplay = $"{_localizationService.GetString("InvitedByPrefix") ?? "Eingeladen von:"} {invite.InvitedBy}"
+                });
+            }
+            ReceivedInvites = displays;
+            HasReceivedInvites = displays.Count > 0;
+            ReceivedInviteCount = displays.Count;
+        }
+        catch
+        {
+            ReceivedInvites = [];
+            HasReceivedInvites = false;
+            ReceivedInviteCount = 0;
+        }
+    }
+
+    [RelayCommand]
+    private async Task AcceptInviteAsync(GuildInvitationDisplay? invite)
+    {
+        if (invite == null || _isBusy) return;
+        _isBusy = true;
+        try
+        {
+            var success = await _guildService.AcceptInviteAsync(invite.GuildId);
+            if (success)
+            {
+                CelebrationRequested?.Invoke();
+                MessageRequested?.Invoke(
+                    _localizationService.GetString("Guild") ?? "Innung",
+                    _localizationService.GetString("GuildJoined") ?? "Gilde beigetreten!");
+                await LoadGuildDataInternalAsync();
+            }
+            else
+            {
+                MessageRequested?.Invoke(
+                    _localizationService.GetString("Guild") ?? "Innung",
+                    _localizationService.GetString("GuildFull") ?? "Gilde ist voll");
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task DeclineInviteAsync(GuildInvitationDisplay? invite)
+    {
+        if (invite == null || _isBusy) return;
+        _isBusy = true;
+        try
+        {
+            await _guildService.DeclineInviteAsync(invite.GuildId);
+            ReceivedInvites.Remove(invite);
+            HasReceivedInvites = ReceivedInvites.Count > 0;
+            ReceivedInviteCount = ReceivedInvites.Count;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMMANDS - Chat
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private async Task SendChatMessageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(ChatInput) || ChatInput.Length > 200) return;
+        if (!CanSendChat) return;
+        if ((DateTime.UtcNow - _lastChatSend).TotalSeconds < 5) return;
+
+        var membership = _gameStateService.State.GuildMembership;
+        if (membership == null) return;
+
+        CanSendChat = false;
+        try
+        {
+            var success = await _chatService.SendMessageAsync(membership.GuildId, ChatInput.Trim());
+            if (success)
+            {
+                ChatInput = "";
+                _lastChatSend = DateTime.UtcNow;
+                await LoadChatMessagesAsync();
+            }
+        }
+        finally
+        {
+            // Cooldown 5 Sekunden
+            _ = Task.Delay(5000).ContinueWith(_ =>
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => CanSendChat = true));
+        }
+    }
+
+    /// <summary>
+    /// Laedt die letzten 50 Chat-Nachrichten der Gilde.
+    /// </summary>
+    public async Task LoadChatMessagesAsync()
+    {
+        var membership = _gameStateService.State.GuildMembership;
+        if (membership == null) return;
+
+        try
+        {
+            var messages = await _chatService.GetRecentMessagesAsync(membership.GuildId);
+            ChatMessages = new ObservableCollection<ChatMessageDisplay>(messages.TakeLast(50));
+            ChatSubtitle = messages.Count > 0
+                ? messages[^1].Text
+                : (_localizationService.GetString("NoChatMessages") ?? "Noch keine Nachrichten");
+        }
+        catch
+        {
+            ChatSubtitle = _localizationService.GetString("NoChatMessages") ?? "Noch keine Nachrichten";
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMMANDS - Gildenkrieg
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [RelayCommand]
+    private async Task ContributeToWarAsync()
+    {
+        if (ActiveWar == null || !ActiveWar.IsActive) return;
+        if (_isBusy) return;
+        _isBusy = true;
+        try
+        {
+            // Beitrag: 10% des aktuellen Spieler-Levels als Score-Punkte
+            var level = _gameStateService.State.PlayerLevel;
+            var points = Math.Max(1, level * 10);
+            await _warService.ContributeScoreAsync(points);
+            await LoadWarStatusAsync();
+
+            MessageRequested?.Invoke(
+                _localizationService.GetString("GuildWarTitle") ?? "Gildenkrieg",
+                string.Format(
+                    _localizationService.GetString("WarContribute") ?? "+{0} Punkte beigetragen!",
+                    points));
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Laedt den aktuellen Kriegs-Status.
+    /// </summary>
+    public async Task LoadWarStatusAsync()
+    {
+        try
+        {
+            var status = await _warService.GetWarStatusAsync();
+            ActiveWar = status;
+            HasActiveWar = status is { IsActive: true };
+
+            if (status != null && status.IsActive)
+            {
+                var remaining = status.EndDate - DateTime.UtcNow;
+                WarTimeRemaining = remaining > TimeSpan.Zero
+                    ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}min"
+                    : (_localizationService.GetString("WarResult") ?? "Ergebnis steht fest");
+                WarStatusText = $"{MoneyFormatter.Format(status.OwnScore, 0)} vs {MoneyFormatter.Format(status.OpponentScore, 0)}";
+                WarSubtitle = WarStatusText;
+            }
+            else if (status != null && !status.IsActive)
+            {
+                HasActiveWar = false;
+                WarSubtitle = status.DidWin
+                    ? (_localizationService.GetString("WarResult") ?? "Sieg!")
+                    : (_localizationService.GetString("NoActiveWar") ?? "Kein aktiver Krieg");
+            }
+            else
+            {
+                HasActiveWar = false;
+                WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "Kein aktiver Krieg";
+            }
+        }
+        catch
+        {
+            HasActiveWar = false;
+            WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "Kein aktiver Krieg";
         }
     }
 
@@ -738,6 +1024,8 @@ public partial class GuildViewModel : ViewModelBase
     public void UpdateLocalizedTexts()
     {
         Title = _localizationService.GetString("Guild") ?? "Innung";
+        ChatSubtitle = _localizationService.GetString("NoChatMessages") ?? "Noch keine Nachrichten";
+        WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "Kein aktiver Krieg";
         RefreshFromLocalState();
     }
 
@@ -817,6 +1105,10 @@ public partial class GuildViewModel : ViewModelBase
         // Gilden-Forschungen laden
         await LoadGuildResearchAsync();
 
+        // Chat + War laden
+        await LoadChatMessagesAsync();
+        await LoadWarStatusAsync();
+
         // Einladungs-Code laden (für Invite-Seite)
         var code = await _guildService.GetOrCreateInviteCodeAsync();
         GuildInviteCode = code ?? "";
@@ -833,14 +1125,129 @@ public partial class GuildViewModel : ViewModelBase
             item.Description = _localizationService.GetString(item.Description) ?? item.Description;
         }
 
+        // RemainingTime für forschende Items berechnen (für SkiaSharp-Fortschrittsring)
+        var effects = _guildService.GetResearchEffects();
+        foreach (var item in items.Where(r => r.IsResearching && !string.IsNullOrEmpty(r.ResearchStartedAt)))
+        {
+            if (DateTime.TryParse(item.ResearchStartedAt,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind, out var startedAt))
+            {
+                var durH = item.DurationHours;
+                if (effects.ResearchSpeedBonus > 0)
+                    durH *= (double)(1m - effects.ResearchSpeedBonus);
+                var endTime = startedAt.AddHours(durH);
+                var remaining = endTime - DateTime.UtcNow;
+                item.RemainingTime = remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+            }
+        }
+
         GuildResearch = new ObservableCollection<GuildResearchDisplay>(items);
         HasGuildResearch = GuildResearch.Count > 0;
+
+        // Laufende Forschung finden
+        var researching = items.FirstOrDefault(r => r.IsResearching);
+        if (researching != null)
+        {
+            HasActiveResearch = true;
+            ActiveResearchName = researching.Name;
+            ActiveResearchId = researching.Id;
+            UpdateResearchCountdown(researching);
+        }
+        else
+        {
+            HasActiveResearch = false;
+            ActiveResearchName = "";
+            ActiveResearchCountdown = "";
+            ActiveResearchId = "";
+        }
 
         var completed = items.Count(i => i.IsCompleted);
         GuildResearchSummary = $"{completed}/{items.Count}";
 
         var maxMembers = _guildService.GetMaxMembers();
         MaxMembersDisplay = $"Max. {maxMembers}";
+    }
+
+    /// <summary>
+    /// Aktualisiert die Countdown-Anzeige für die laufende Forschung.
+    /// </summary>
+    private void UpdateResearchCountdown(GuildResearchDisplay research)
+    {
+        if (string.IsNullOrEmpty(research.ResearchStartedAt)) return;
+
+        if (!DateTime.TryParse(research.ResearchStartedAt,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.RoundtripKind, out var startedAt))
+            return;
+
+        var durationHours = research.DurationHours;
+        // Schnellforschung-Bonus
+        var effects = _guildService.GetResearchEffects();
+        if (effects.ResearchSpeedBonus > 0)
+            durationHours *= (double)(1m - effects.ResearchSpeedBonus);
+
+        var endTime = startedAt.AddHours(durationHours);
+        var remaining = endTime - DateTime.UtcNow;
+
+        // RemainingTime im Display-Objekt aktualisieren (für SkiaSharp-Renderer)
+        research.RemainingTime = remaining > TimeSpan.Zero ? remaining : TimeSpan.Zero;
+
+        if (remaining <= TimeSpan.Zero)
+        {
+            ActiveResearchCountdown = _localizationService.GetString("GuildResearchDone") ?? "Fertig!";
+        }
+        else
+        {
+            // Lokalisiertes Format: "Noch 3h 24min" / "3h 24min remaining"
+            var timeStr = remaining.TotalHours >= 1
+                ? $"{(int)remaining.TotalHours}h {remaining.Minutes:D2}min"
+                : $"{remaining.Minutes}min {remaining.Seconds:D2}s";
+            var template = _localizationService.GetString("GuildResearchTimeRemaining") ?? "{0}";
+            ActiveResearchCountdown = string.Format(template, timeStr);
+        }
+    }
+
+    /// <summary>
+    /// Öffentlicher Aufruf zur Countdown-Aktualisierung (für periodischen Refresh aus der View).
+    /// </summary>
+    public void RefreshActiveResearchCountdown()
+    {
+        if (!HasActiveResearch) return;
+
+        var researching = GuildResearch.FirstOrDefault(r => r.IsResearching);
+        if (researching != null)
+        {
+            UpdateResearchCountdown(researching);
+
+            // Timer abgelaufen → automatisch abschließen (einmalig)
+            if (researching.RemainingTime.HasValue && researching.RemainingTime.Value <= TimeSpan.Zero)
+            {
+                HasActiveResearch = false; // Guard: verhindert mehrfachen Aufruf bis Reload
+                _ = CompleteResearchTimerAsync();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Schließt eine abgelaufene Forschung in Firebase ab und lädt Forschungsdaten neu.
+    /// </summary>
+    private async Task CompleteResearchTimerAsync()
+    {
+        try
+        {
+            var completed = await _guildService.CheckResearchCompletionAsync();
+            if (completed)
+            {
+                CelebrationRequested?.Invoke();
+            }
+            // Forschungsdaten immer neu laden (auch wenn kein Completion - Daten könnten veraltet sein)
+            await LoadGuildResearchAsync();
+        }
+        catch
+        {
+            // Bei Fehler: HasActiveResearch wird durch LoadGuildResearchAsync korrekt gesetzt
+        }
     }
 
     private async Task LoadAvailableGuildsAsync()
@@ -853,6 +1260,13 @@ public partial class GuildViewModel : ViewModelBase
     private void OnGuildUpdated()
     {
         RefreshFromLocalState();
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _guildService.GuildUpdated -= OnGuildUpdated;
     }
 
     /// <summary>
@@ -897,13 +1311,16 @@ public class GuildMemberDisplay
 /// <summary>
 /// Anzeige-Modell für einen verfügbaren Spieler im Einladungs-Browser.
 /// </summary>
-public class AvailablePlayerDisplay
+public partial class AvailablePlayerDisplay : ObservableObject
 {
     public string Uid { get; set; } = "";
     public string Name { get; set; } = "";
     public string LevelDisplay { get; set; } = "";
     public string LastActiveDisplay { get; set; } = "";
-    public bool IsInvited { get; set; }
+
+    [ObservableProperty]
+    private bool _isInvited;
+
     public string InviteButtonText { get; set; } = "Invite";
     public string InvitedText { get; set; } = "Invited";
 }

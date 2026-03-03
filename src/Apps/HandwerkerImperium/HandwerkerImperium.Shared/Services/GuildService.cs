@@ -76,8 +76,9 @@ public class GuildService : IGuildService
             }
             else
             {
-                // Nicht in einer Gilde → lokalen Cache aufräumen
+                // Nicht in einer Gilde → lokalen Cache aufräumen + als verfügbar registrieren
                 ClearLocalCache();
+                await RegisterAsAvailableAsync();
             }
         }
         catch
@@ -245,6 +246,9 @@ public class GuildService : IGuildService
             // Lokalen Cache aktualisieren
             guildData.MemberCount++;
             UpdateLocalCache(guildId, guildData);
+
+            // Forschungs-Effekte der neuen Gilde laden und cachen
+            await RefreshResearchEffectsAsync(guildId);
 
             // Aus verfügbaren Spielern entfernen
             await UnregisterAvailableAsync();
@@ -489,6 +493,30 @@ public class GuildService : IGuildService
                 $"guild_research/{membership.GuildId}");
             var states = statesRaw ?? new Dictionary<string, GuildResearchState>();
 
+            // Definitionen einmal laden und als Dictionary cachen
+            var definitions = GuildResearchDefinition.GetAll();
+            var defLookup = definitions.ToDictionary(d => d.Id);
+
+            // Timer-Check: Abgelaufene Forschungen automatisch abschließen
+            var now = DateTime.UtcNow;
+            foreach (var (id, state) in states)
+            {
+                if (state.Completed || string.IsNullOrEmpty(state.ResearchStartedAt)) continue;
+                if (!DateTime.TryParse(state.ResearchStartedAt, CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind, out var startedAt))
+                    continue;
+                if (!defLookup.TryGetValue(id, out var def2)) continue;
+                var durH = GuildResearchDefinition.GetResearchDurationHours(def2.Cost);
+                if (_cachedResearchEffects.ResearchSpeedBonus > 0)
+                    durH *= (double)(1m - _cachedResearchEffects.ResearchSpeedBonus);
+                if (now >= startedAt.AddHours(durH))
+                {
+                    state.Completed = true;
+                    state.CompletedAt = now.ToString("O");
+                    await _firebaseService.SetAsync($"guild_research/{membership.GuildId}/{id}", state);
+                }
+            }
+
             // Abgeschlossene IDs sammeln für Effekt-Berechnung
             var completedIds = new HashSet<string>();
             foreach (var (id, state) in states)
@@ -502,7 +530,6 @@ public class GuildService : IGuildService
             _gameStateService.MarkDirty();
 
             // Definitionen mit Zuständen mergen, pro Kategorie aktive bestimmen
-            var definitions = GuildResearchDefinition.GetAll();
             var categoryFirstIncomplete = new Dictionary<GuildResearchCategory, bool>();
 
             foreach (var def in definitions.OrderBy(d => d.Category).ThenBy(d => d.Order))
@@ -510,11 +537,15 @@ public class GuildService : IGuildService
                 states.TryGetValue(def.Id, out var researchState);
                 var isCompleted = researchState?.Completed ?? false;
 
-                // Erste nicht-abgeschlossene pro Kategorie = aktiv
+                // IsResearching prüfen
+                var isResearching = !isCompleted && !string.IsNullOrEmpty(researchState?.ResearchStartedAt);
+
+                // Erste nicht-abgeschlossene pro Kategorie = aktiv (aber nur wenn nicht im Timer)
                 var isActive = false;
                 if (!isCompleted && !categoryFirstIncomplete.ContainsKey(def.Category))
                 {
-                    isActive = true;
+                    if (!isResearching)
+                        isActive = true;
                     categoryFirstIncomplete[def.Category] = true;
                 }
 
@@ -531,7 +562,10 @@ public class GuildService : IGuildService
                     EffectValue = def.EffectValue,
                     CategoryColor = GuildResearchDefinition.GetCategoryColor(def.Category),
                     IsCompleted = isCompleted,
-                    IsActive = isActive
+                    IsActive = isActive,
+                    IsResearching = isResearching,
+                    ResearchStartedAt = researchState?.ResearchStartedAt,
+                    DurationHours = GuildResearchDefinition.GetResearchDurationHours(def.Cost),
                 });
             }
         }
@@ -576,27 +610,88 @@ public class GuildService : IGuildService
             var actualAmount = Math.Min(amount, remaining);
             if (actualAmount <= 0) return false;
 
-            // Geld abziehen
-            _gameStateService.AddMoney(-actualAmount);
-
-            // Fortschritt erhöhen
+            // Fortschritt erhöhen (in-memory)
             researchState.Progress += actualAmount;
 
-            // Abschluss prüfen
-            if (researchState.Progress >= definition.Cost)
+            // Abschluss prüfen → Timer starten statt sofort abschließen
+            if (researchState.Progress >= definition.Cost && string.IsNullOrEmpty(researchState.ResearchStartedAt))
             {
-                researchState.Completed = true;
-                researchState.CompletedAt = DateTime.UtcNow.ToString("O");
+                researchState.ResearchStartedAt = DateTime.UtcNow.ToString("O");
+                // completed wird NICHT gesetzt - erst wenn Timer abläuft
             }
 
-            // Firebase aktualisieren
+            // Firebase ZUERST aktualisieren - Geld erst bei Erfolg abziehen
             await _firebaseService.SetAsync(path, researchState);
+
+            // Firebase-Write erfolgreich → Geld lokal abziehen
+            _gameStateService.AddMoney(-actualAmount);
 
             // Effekte neu berechnen
             await RefreshResearchEffectsAsync(guildId);
 
             GuildUpdated?.Invoke();
             return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> CheckResearchCompletionAsync()
+    {
+        try
+        {
+            var membership = _gameStateService.State.GuildMembership;
+            if (membership == null) return false;
+
+            await _firebaseService.EnsureAuthenticatedAsync();
+
+            var guildId = membership.GuildId;
+            var statesRaw = await _firebaseService.GetAsync<Dictionary<string, GuildResearchState>>(
+                $"guild_research/{guildId}");
+            if (statesRaw == null) return false;
+
+            var now = DateTime.UtcNow;
+            var anyCompleted = false;
+            var defLookup = GuildResearchDefinition.GetAll().ToDictionary(d => d.Id);
+
+            foreach (var (id, state) in statesRaw)
+            {
+                if (state.Completed || string.IsNullOrEmpty(state.ResearchStartedAt)) continue;
+
+                // Timer-Start parsen
+                if (!DateTime.TryParse(state.ResearchStartedAt, CultureInfo.InvariantCulture,
+                        DateTimeStyles.RoundtripKind, out var startedAt))
+                    continue;
+
+                // Forschungsdauer ermitteln
+                if (!defLookup.TryGetValue(id, out var definition)) continue;
+
+                var durationHours = GuildResearchDefinition.GetResearchDurationHours(definition.Cost);
+
+                // Schnellforschung-Bonus (guild_mastery_1: +20% Speed = -20% Dauer)
+                if (_cachedResearchEffects.ResearchSpeedBonus > 0)
+                    durationHours *= (double)(1m - _cachedResearchEffects.ResearchSpeedBonus);
+
+                var endTime = startedAt.AddHours(durationHours);
+                if (now >= endTime)
+                {
+                    // Timer abgelaufen → Forschung abschließen
+                    state.Completed = true;
+                    state.CompletedAt = now.ToString("O");
+                    await _firebaseService.SetAsync($"guild_research/{guildId}/{id}", state);
+                    anyCompleted = true;
+                }
+            }
+
+            if (anyCompleted)
+            {
+                await RefreshResearchEffectsAsync(guildId);
+                GuildUpdated?.Invoke();
+            }
+
+            return anyCompleted;
         }
         catch
         {
@@ -785,6 +880,122 @@ public class GuildService : IGuildService
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // EINLADUNGS-INBOX
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public async Task<bool> SendInviteAsync(string targetUid)
+    {
+        try
+        {
+            var uid = _firebaseService.Uid;
+            if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
+
+            var membership = _gameStateService.State.GuildMembership;
+            if (membership == null) return false;
+
+            var guildId = membership.GuildId;
+
+            // Gilden-Daten für die Einladung laden
+            var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
+            if (guildData == null) return false;
+
+            var invite = new GuildInvitation
+            {
+                GuildName = guildData.Name,
+                GuildIcon = guildData.Icon,
+                GuildColor = guildData.Color,
+                GuildLevel = guildData.Level,
+                MemberCount = guildData.MemberCount,
+                InvitedBy = PlayerName ?? "Spieler",
+                InvitedAt = DateTime.UtcNow.ToString("O")
+            };
+
+            // Max 10 Einladungen pro Spieler prüfen
+            var existing = await _firebaseService.GetAsync<Dictionary<string, GuildInvitation>>(
+                $"player_invites/{targetUid}");
+            if (existing != null && existing.Count >= 10)
+            {
+                // Älteste Einladung löschen
+                var oldest = existing.OrderBy(e => e.Value.InvitedAt).First();
+                await _firebaseService.DeleteAsync($"player_invites/{targetUid}/{oldest.Key}");
+            }
+
+            await _firebaseService.SetAsync($"player_invites/{targetUid}/{guildId}", invite);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<List<(string guildId, GuildInvitation invite)>> GetReceivedInvitesAsync()
+    {
+        try
+        {
+            var uid = _firebaseService.Uid;
+            if (string.IsNullOrEmpty(uid)) return [];
+
+            await _firebaseService.EnsureAuthenticatedAsync();
+
+            var invitesRaw = await _firebaseService.GetAsync<Dictionary<string, GuildInvitation>>(
+                $"player_invites/{uid}");
+            if (invitesRaw == null || invitesRaw.Count == 0) return [];
+
+            var result = new List<(string guildId, GuildInvitation invite)>();
+            foreach (var (guildId, invite) in invitesRaw)
+            {
+                result.Add((guildId, invite));
+            }
+
+            // Nach Datum sortieren (neueste zuerst)
+            result.Sort((a, b) => string.Compare(b.invite.InvitedAt, a.invite.InvitedAt, StringComparison.Ordinal));
+            return result;
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    public async Task<bool> AcceptInviteAsync(string guildId)
+    {
+        try
+        {
+            var uid = _firebaseService.Uid;
+            if (string.IsNullOrEmpty(uid)) return false;
+
+            // Gilde beitreten
+            var success = await JoinGuildAsync(guildId);
+            if (!success) return false;
+
+            // Alle Einladungen löschen
+            await _firebaseService.DeleteAsync($"player_invites/{uid}");
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> DeclineInviteAsync(string guildId)
+    {
+        try
+        {
+            var uid = _firebaseService.Uid;
+            if (string.IsNullOrEmpty(uid)) return false;
+
+            await _firebaseService.DeleteAsync($"player_invites/{uid}/{guildId}");
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // FORSCHUNGS-CACHE
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -885,14 +1096,31 @@ public class GuildService : IGuildService
     private void UpdateLocalCache(string guildId, FirebaseGuildData guildData)
     {
         var state = _gameStateService.State;
-        state.GuildMembership = new GuildMembership
+        var existing = state.GuildMembership;
+
+        // Bestehende Research-Effekte beibehalten wenn Membership bereits existiert
+        if (existing != null && existing.GuildId == guildId)
         {
-            GuildId = guildId,
-            GuildName = guildData.Name,
-            GuildLevel = guildData.Level,
-            GuildIcon = guildData.Icon,
-            GuildColor = guildData.Color
-        };
+            existing.GuildName = guildData.Name;
+            existing.GuildLevel = guildData.Level;
+            existing.GuildIcon = guildData.Icon;
+            existing.GuildColor = guildData.Color;
+        }
+        else
+        {
+            var membership = new GuildMembership
+            {
+                GuildId = guildId,
+                GuildName = guildData.Name,
+                GuildLevel = guildData.Level,
+                GuildIcon = guildData.Icon,
+                GuildColor = guildData.Color
+            };
+            // Bei neuer Gilde Research-Effekte übernehmen
+            membership.ApplyResearchEffects(_cachedResearchEffects);
+            state.GuildMembership = membership;
+        }
+
         _gameStateService.MarkDirty();
     }
 

@@ -33,8 +33,9 @@ namespace HandwerkerImperium.Graphics;
 ///     ↓
 /// [Arbeit 3]
 /// </summary>
-public class GuildResearchTreeRenderer
+public class GuildResearchTreeRenderer : IDisposable
 {
+    private bool _disposed;
     private float _time;
 
     // Layout-Konstanten
@@ -55,16 +56,17 @@ public class GuildResearchTreeRenderer
     private static readonly SKColor LogisticsColor = new(0xF5, 0x9E, 0x0B); // Amber
     private static readonly SKColor WorkforceColor = new(0xEF, 0x44, 0x44); // Rot
     private static readonly SKColor MasteryColor = new(0xFF, 0xD7, 0x00);   // Gold
+    private static readonly SKColor ResearchingColor = new(0xF5, 0x9E, 0x0B); // Amber (Timer-Phase)
 
     private static readonly SKColor LineLocked = new(0x5A, 0x48, 0x38);
     private static readonly SKColor TextPrimary = new(0xF5, 0xF0, 0xEB);
     private static readonly SKColor TextMuted = new(0x7A, 0x68, 0x58);
     private static readonly SKColor ProgressBg = new(0x30, 0x24, 0x1A);
 
-    // Gecachte Paints
-    private static readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
-    private static readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
-    private static readonly SKPaint _text = new() { IsAntialias = true };
+    // Gecachte Paints (Instanz-Felder - NICHT static, da Farbe/Style pro Frame mutiert wird)
+    private readonly SKPaint _fill = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+    private readonly SKPaint _stroke = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+    private readonly SKPaint _text = new() { IsAntialias = true };
 
     // Gecachte Font- und Path-Objekte (vermeidet Allokationen pro Frame)
     private readonly SKFont _percentFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
@@ -72,8 +74,12 @@ public class GuildResearchTreeRenderer
     private readonly SKPath _arrowPath = new();
     private readonly SKPath _arcPath = new();
 
+    // Gecachte Dash-Intervall-Arrays (vermeidet Array-Allokation pro Frame)
+    private static readonly float[] DashIntervals = [6, 4];
+    private static readonly float[] DotIntervals = [3, 3];
+
     private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
-    private static readonly SKPaint _glowPaint = new() { IsAntialias = true, MaskFilter = _glowFilter };
+    private readonly SKPaint _glowPaint = new() { IsAntialias = true, MaskFilter = _glowFilter };
 
     // ═══════════════════════════════════════════════════════════════════════
     // LAYOUT-MAP: 18 Forschungen → (Zeile, Spalte) Positionen
@@ -217,7 +223,7 @@ public class GuildResearchTreeRenderer
 
             bool fromDone = fromItem.IsCompleted;
             bool toDone = toItem.IsCompleted;
-            bool toActive = toItem.IsActive;
+            bool toActive = toItem.IsActive || toItem.IsResearching;
             bool toLocked = toItem.IsLocked;
 
             var lineColor = GetCategoryColor(toItem.Category);
@@ -226,7 +232,7 @@ public class GuildResearchTreeRenderer
             float endY = toPos.Y - NodeSize / 2 - 6;
 
             // Bezier-Kurve (gecachter Path)
-            _connectionPath.Reset();
+            _connectionPath.Rewind();
             _connectionPath.MoveTo(fromPos.X, startY);
             float midY = (startY + endY) / 2;
             _connectionPath.CubicTo(fromPos.X, midY, toPos.X, midY, toPos.X, endY);
@@ -250,7 +256,7 @@ public class GuildResearchTreeRenderer
                 // Nächstes verfügbar: Gestrichelt, pulsierend
                 _stroke.Color = lineColor.WithAlpha(90);
                 _stroke.StrokeWidth = 2.5f;
-                using var dash = SKPathEffect.CreateDash([6, 4], _time * 12 % 10);
+                using var dash = SKPathEffect.CreateDash(DashIntervals, _time * 12 % 10);
                 _stroke.PathEffect = dash;
                 canvas.DrawPath(_connectionPath, _stroke);
                 _stroke.PathEffect = null;
@@ -271,7 +277,7 @@ public class GuildResearchTreeRenderer
     private void DrawArrowHead(SKCanvas canvas, float x, float y, SKColor color)
     {
         _fill.Color = color;
-        _arrowPath.Reset();
+        _arrowPath.Rewind();
         _arrowPath.MoveTo(x, y);
         _arrowPath.LineTo(x - 6, y - 9);
         _arrowPath.LineTo(x + 6, y - 9);
@@ -306,7 +312,7 @@ public class GuildResearchTreeRenderer
             // Gepunkteter Rahmen
             _stroke.Color = LineLocked.WithAlpha(100);
             _stroke.StrokeWidth = 1.5f;
-            using var dotEffect = SKPathEffect.CreateDash([3, 3], _time * 4 % 6);
+            using var dotEffect = SKPathEffect.CreateDash(DotIntervals, _time * 4 % 6);
             _stroke.PathEffect = dotEffect;
             canvas.DrawCircle(cx, cy, NodeSize / 2 + 2, _stroke);
             _stroke.PathEffect = null;
@@ -317,6 +323,18 @@ public class GuildResearchTreeRenderer
             _fill.Color = catColor.WithAlpha(40);
             canvas.DrawCircle(cx, cy, NodeSize / 2, _fill);
             _stroke.Color = catColor.WithAlpha(180);
+            _stroke.StrokeWidth = 2.5f;
+            _stroke.PathEffect = null;
+            canvas.DrawCircle(cx, cy, NodeSize / 2, _stroke);
+        }
+        else if (item.IsResearching)
+        {
+            // Forschung läuft: Amber-Hintergrund mit pulsierendem Rahmen
+            _fill.Color = new SKColor(0x20, 0x18, 0x10, 200);
+            canvas.DrawCircle(cx, cy, NodeSize / 2, _fill);
+
+            float pulse = 0.5f + MathF.Sin(_time * 2.5f) * 0.35f;
+            _stroke.Color = ResearchingColor.WithAlpha((byte)(pulse * 220));
             _stroke.StrokeWidth = 2.5f;
             _stroke.PathEffect = null;
             canvas.DrawCircle(cx, cy, NodeSize / 2, _stroke);
@@ -335,10 +353,25 @@ public class GuildResearchTreeRenderer
         // Icon in der Mitte
         float iconSize = NodeSize * 0.55f;
         byte iconAlpha = item.IsLocked ? (byte)80 : (byte)220;
-        _fill.Color = item.IsLocked ? LineLocked.WithAlpha(iconAlpha) : catColor.WithAlpha(iconAlpha);
-        _stroke.Color = _fill.Color;
+        var iconColor = item.IsLocked ? LineLocked.WithAlpha(iconAlpha)
+            : item.IsResearching ? ResearchingColor.WithAlpha(iconAlpha)
+            : catColor.WithAlpha(iconAlpha);
+        _fill.Color = iconColor;
+        _stroke.Color = iconColor;
         _stroke.StrokeWidth = 1.5f;
-        GuildResearchIconRenderer.DrawIcon(canvas, cx, cy, iconSize, item.Category, _fill, _stroke);
+
+        if (item.IsResearching)
+        {
+            // Rotierendes Icon bei laufender Forschung
+            canvas.Save();
+            canvas.RotateDegrees(_time * 30f, cx, cy);
+            GuildResearchIconRenderer.DrawIcon(canvas, cx, cy, iconSize, item.Category, _fill, _stroke);
+            canvas.Restore();
+        }
+        else
+        {
+            GuildResearchIconRenderer.DrawIcon(canvas, cx, cy, iconSize, item.Category, _fill, _stroke);
+        }
 
         // Tier-Indikator (I, II, III, IV Punkte)
         int tier = GetTierInCategory(index);
@@ -348,8 +381,14 @@ public class GuildResearchTreeRenderer
             GuildResearchIconRenderer.DrawTierIndicator(canvas, cx, cy + NodeSize / 2 - 8, NodeSize, tier, _fill);
         }
 
-        // Fortschrittsring (nur aktiv, nicht abgeschlossen und nicht gesperrt)
-        if (item.IsActive && !item.IsCompleted)
+        // Fortschrittsring
+        if (item.IsResearching)
+        {
+            // Timer-Fortschrittsring (Amber)
+            float timerProgress = GetTimerProgress(item);
+            DrawProgressRing(canvas, cx, cy, NodeSize / 2 + 5, timerProgress, ResearchingColor);
+        }
+        else if (item.IsActive && !item.IsCompleted)
         {
             DrawProgressRing(canvas, cx, cy, NodeSize / 2 + 5, (float)item.ProgressPercent, catColor);
         }
@@ -365,8 +404,21 @@ public class GuildResearchTreeRenderer
         float barW = NodeSize * 1.0f;
         DrawProgressBar(canvas, cx - barW / 2, barY, barW, ProgressBarHeight, item, catColor);
 
-        // Gold-Glow auf nächstem freischaltbaren Node
-        if (item.IsActive && !item.IsCompleted)
+        // Glow-Effekt auf aktiven/forschenden Nodes
+        if (item.IsResearching)
+        {
+            // Amber-Glow bei laufender Forschung
+            float pulse = 0.3f + MathF.Sin(_time * 2.5f) * 0.3f;
+            _glowPaint.Color = ResearchingColor.WithAlpha((byte)(pulse * 50));
+            canvas.DrawCircle(cx, cy, NodeSize / 2 + 6, _glowPaint);
+
+            // Pulsierender Amber-Ring
+            _stroke.Color = ResearchingColor.WithAlpha((byte)(pulse * 140));
+            _stroke.StrokeWidth = 2f;
+            _stroke.PathEffect = null;
+            canvas.DrawCircle(cx, cy, NodeSize / 2 + 4 + pulse * 3, _stroke);
+        }
+        else if (item.IsActive && !item.IsCompleted)
         {
             float pulse = 0.4f + MathF.Sin(_time * 3f) * 0.3f;
             _glowPaint.Color = catColor.WithAlpha((byte)(pulse * 60));
@@ -394,13 +446,15 @@ public class GuildResearchTreeRenderer
 
         // Fortschritts-Arc (gecachter Path)
         float sweepAngle = progress * 360f;
+        // SkiaSharp ArcTo bei 360° erzeugt leeren Path (Start=Ende) → auf 359.5° begrenzen
+        if (sweepAngle >= 359.5f) sweepAngle = 359.5f;
         if (sweepAngle > 0.5f)
         {
             _stroke.Color = color.WithAlpha(200);
             _stroke.StrokeWidth = 3f;
             _stroke.StrokeCap = SKStrokeCap.Round;
             var arcRect = new SKRect(cx - radius, cy - radius, cx + radius, cy + radius);
-            _arcPath.Reset();
+            _arcPath.Rewind();
             _arcPath.AddArc(arcRect, -90, sweepAngle);
             canvas.DrawPath(_arcPath, _stroke);
         }
@@ -409,7 +463,7 @@ public class GuildResearchTreeRenderer
     /// <summary>
     /// Grünes Häkchen-Badge.
     /// </summary>
-    private static void DrawCheckmark(SKCanvas canvas, float cx, float cy, SKColor color)
+    private void DrawCheckmark(SKCanvas canvas, float cx, float cy, SKColor color)
     {
         // Grüner Kreis
         _fill.Color = new SKColor(0x4C, 0xAF, 0x50);
@@ -432,21 +486,37 @@ public class GuildResearchTreeRenderer
     {
         // Hintergrund
         _fill.Color = ProgressBg;
-        canvas.DrawRoundRect(new SKRoundRect(new SKRect(x, y, x + w, y + h), 3), _fill);
+        using (var bgRoundRect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 3))
+            canvas.DrawRoundRect(bgRoundRect, _fill);
 
-        float progress = item.IsCompleted ? 1f : (float)item.ProgressPercent;
+        float progress;
+        SKColor barColor;
+        if (item.IsResearching)
+        {
+            progress = GetTimerProgress(item);
+            barColor = ResearchingColor;
+        }
+        else
+        {
+            progress = item.IsCompleted ? 1f : (float)item.ProgressPercent;
+            barColor = color;
+        }
         float fillW = w * Math.Clamp(progress, 0, 1);
 
         if (fillW > 1)
         {
             var fillRect = new SKRect(x, y, x + fillW, y + h);
-            using var shader = SKShader.CreateLinearGradient(
-                new SKPoint(x, y), new SKPoint(x + fillW, y),
-                [color.WithAlpha(160), color],
-                SKShaderTileMode.Clamp);
-            _fill.Shader = shader;
-            canvas.DrawRoundRect(new SKRoundRect(fillRect, 3), _fill);
-            _fill.Shader = null;
+
+            // Basis-Füllung (dunklere Variante)
+            _fill.Color = barColor.WithAlpha(160);
+            using (var fillRoundRect = new SKRoundRect(fillRect, 3))
+                canvas.DrawRoundRect(fillRoundRect, _fill);
+
+            // Hellere Schicht rechts (simuliert Gradient ohne Shader-Allokation)
+            var halfRect = new SKRect(x + fillW * 0.4f, y, x + fillW, y + h);
+            _fill.Color = barColor;
+            using (var halfRoundRect = new SKRoundRect(halfRect, 3))
+                canvas.DrawRoundRect(halfRoundRect, _fill);
 
             // Glanz oben
             _fill.Color = SKColors.White.WithAlpha(35);
@@ -454,11 +524,20 @@ public class GuildResearchTreeRenderer
         }
 
         // Prozent-Text
-        if (item.IsActive || item.IsCompleted)
+        if (item.IsActive || item.IsCompleted || item.IsResearching)
         {
-            string pct = $"{(int)(progress * 100)}%";
+            string pct;
+            if (item.IsResearching)
+            {
+                float timerPct = GetTimerProgress(item);
+                pct = $"{(int)(timerPct * 100)}%";
+            }
+            else
+            {
+                pct = $"{(int)(progress * 100)}%";
+            }
             _percentFont.Size = 8;
-            _text.Color = SKColors.White.WithAlpha(200);
+            _text.Color = item.IsResearching ? ResearchingColor.WithAlpha(220) : SKColors.White.WithAlpha(200);
             canvas.DrawText(pct, x + w / 2, y + h - 0.5f, SKTextAlign.Center, _percentFont, _text);
         }
     }
@@ -541,6 +620,18 @@ public class GuildResearchTreeRenderer
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
+    /// Berechnet den Timer-Fortschritt (0.0 = gerade gestartet, 1.0 = fertig).
+    /// </summary>
+    private static float GetTimerProgress(GuildResearchDisplay item)
+    {
+        if (item.DurationHours <= 0 || item.RemainingTime == null) return 0f;
+        var totalDuration = TimeSpan.FromHours(item.DurationHours);
+        if (totalDuration.TotalSeconds <= 0) return 0f;
+        var elapsed = totalDuration - item.RemainingTime.Value;
+        return Math.Clamp((float)(elapsed.TotalSeconds / totalDuration.TotalSeconds), 0f, 1f);
+    }
+
+    /// <summary>
     /// Gibt die Kategorie-Farbe zurück (angepasste Palette für den Baum).
     /// </summary>
     private static SKColor GetCategoryColor(GuildResearchCategory category) => category switch
@@ -570,11 +661,25 @@ public class GuildResearchTreeRenderer
         _ => 0
     };
 
-    // Partikel-Struct (gleich wie in ResearchTreeRenderer)
-    private class FlowParticle
+    // Partikel-Struct (vermeidet Heap-Allokationen)
+    private struct FlowParticle
     {
         public float StartX, StartY, EndX, EndY;
         public float Progress;
         public float Life;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _fill.Dispose();
+        _stroke.Dispose();
+        _text.Dispose();
+        _glowPaint.Dispose();
+        _percentFont.Dispose();
+        _connectionPath.Dispose();
+        _arrowPath.Dispose();
+        _arcPath.Dispose();
     }
 }

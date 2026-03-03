@@ -29,6 +29,7 @@ public partial class DashboardView : UserControl
     private GameJuiceEngine? _juiceEngine;
     private DispatcherTimer? _renderTimer;
     private SKCanvasView? _cityCanvas;
+    private ScrollViewer? _dashboardScrollViewer;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private float _renderTime; // Fortlaufende Zeit für Shader-Effekte
 
@@ -46,7 +47,11 @@ public partial class DashboardView : UserControl
     private WorkshopDisplayModel? _workshopPressedTarget;
     private bool _workshopPressedIsUpgrade;
     private float _workshopPressSkiaX, _workshopPressSkiaY;
+    private DateTime _workshopPressTime;
+    private double _scrollOffsetAtPress;
     private const double TapDistanceThreshold = 15.0;
+    private const double TapMaxDurationMs = 400.0; // Tap muss innerhalb 400ms abgeschlossen sein
+    private const double ScrollOffsetThreshold = 2.0; // ScrollViewer hat sich bewegt → kein Tap
 
     public DashboardView()
     {
@@ -54,9 +59,9 @@ public partial class DashboardView : UserControl
         DataContextChanged += OnDataContextChanged;
 
         // Parallax: ScrollViewer-Event abonnieren
-        var scrollViewer = this.FindControl<ScrollViewer>("DashboardScrollViewer");
-        if (scrollViewer != null)
-            scrollViewer.ScrollChanged += OnScrollChanged;
+        _dashboardScrollViewer = this.FindControl<ScrollViewer>("DashboardScrollViewer");
+        if (_dashboardScrollViewer != null)
+            _dashboardScrollViewer.ScrollChanged += OnScrollChanged;
 
         // Tunnel-Routing für Scroll-Erkennung bei Workshop-Karten
         // Tunnel-Events feuern auch wenn der ScrollViewer den Pointer captured
@@ -299,6 +304,8 @@ public partial class DashboardView : UserControl
 
         // Scroll-Tracking zurücksetzen
         _workshopPressPos = e.GetPosition(this);
+        _workshopPressTime = DateTime.UtcNow;
+        _scrollOffsetAtPress = _dashboardScrollViewer?.Offset.Y ?? 0;
         _workshopIsScrolling = false;
         _workshopPressedTarget = null;
         _workshopPressedIsUpgrade = false;
@@ -381,6 +388,14 @@ public partial class DashboardView : UserControl
         // Wenn gescrollt wurde → keine Aktion
         if (wasScrolling || target == null || _vm == null) return;
 
+        // Zusätzliche Scroll-Erkennung: ScrollViewer-Offset hat sich verändert
+        var currentScrollOffset = _dashboardScrollViewer?.Offset.Y ?? 0;
+        if (Math.Abs(currentScrollOffset - _scrollOffsetAtPress) > ScrollOffsetThreshold) return;
+
+        // Zeitbasierte Erkennung: Tap muss schnell sein (nicht für Hold-Upgrade)
+        var elapsed = (DateTime.UtcNow - _workshopPressTime).TotalMilliseconds;
+        if (!isUpgrade && elapsed > TapMaxDurationMs) return;
+
         if (isUpgrade)
         {
             // Erstes Upgrade ausführen falls Hold-Timer noch nicht gefeuert hat
@@ -402,6 +417,26 @@ public partial class DashboardView : UserControl
     }
 
     /// <summary>
+    /// Direkte PointerMoved auf dem Workshop-Canvas: Erkennt Scroll-Geste zusätzlich zum Tunnel.
+    /// Auf Android wird der Tunnel-Event nicht immer zuverlässig weitergeleitet.
+    /// </summary>
+    private void OnWorkshopCardsPointerMoved(object? sender, PointerEventArgs e)
+    {
+        if (_workshopPressedTarget == null || _workshopIsScrolling) return;
+
+        var current = e.GetPosition(this);
+        var dx = current.X - _workshopPressPos.X;
+        var dy = current.Y - _workshopPressPos.Y;
+        var distance = Math.Sqrt(dx * dx + dy * dy);
+
+        if (distance > TapDistanceThreshold)
+        {
+            _workshopIsScrolling = true;
+            CancelHoldUpgradeOnScroll();
+        }
+    }
+
+    /// <summary>
     /// Tunnel-PointerMoved: Erkennt Scroll-Geste (>15px Bewegung) und bricht Hold-Upgrade ab.
     /// Feuert auch wenn der ScrollViewer den Pointer captured hat.
     /// </summary>
@@ -418,16 +453,22 @@ public partial class DashboardView : UserControl
         if (distance > TapDistanceThreshold)
         {
             _workshopIsScrolling = true;
+            CancelHoldUpgradeOnScroll();
+        }
+    }
 
-            // Hold-Upgrade sofort abbrechen bei Scroll
-            if (_holdTimer != null)
-            {
-                _holdTimer.Stop();
-                _holdTimer = null;
-                if (_vm != null) _vm.IsHoldingUpgrade = false;
-                _holdWorkshopType = null;
-                _holdUpgradeCount = 0;
-            }
+    /// <summary>
+    /// Bricht Hold-Upgrade ab wenn eine Scroll-Geste erkannt wurde.
+    /// </summary>
+    private void CancelHoldUpgradeOnScroll()
+    {
+        if (_holdTimer != null)
+        {
+            _holdTimer.Stop();
+            _holdTimer = null;
+            if (_vm != null) _vm.IsHoldingUpgrade = false;
+            _holdWorkshopType = null;
+            _holdUpgradeCount = 0;
         }
     }
 
@@ -440,15 +481,7 @@ public partial class DashboardView : UserControl
         // Wenn wir noch ein Ziel haben und gescrollt wurde, aufräumen
         if (_workshopPressedTarget != null && _workshopIsScrolling)
         {
-            if (_holdTimer != null)
-            {
-                _holdTimer.Stop();
-                _holdTimer = null;
-                if (_vm != null) _vm.IsHoldingUpgrade = false;
-                _holdWorkshopType = null;
-                _holdUpgradeCount = 0;
-            }
-
+            CancelHoldUpgradeOnScroll();
             _workshopPressedTarget = null;
             _workshopPressedIsUpgrade = false;
             _workshopIsScrolling = false;
@@ -463,6 +496,7 @@ public partial class DashboardView : UserControl
         return new WorkshopCardData
         {
             Type = model.Type,
+            Name = model.Name,
             Level = model.Level,
             WorkerCount = model.WorkerCount,
             MaxWorkers = model.MaxWorkers,

@@ -148,3 +148,45 @@ public class GuildMemberInfo
     public int PlayerLevel { get; set; }
     public bool IsCurrentPlayer { get; set; }
 }
+
+/// <summary>
+/// Firebase-Daten einer Gilden-Einladung.
+/// Pfad: /player_invites/{uid}/{guildId}
+/// </summary>
+public class GuildInvitation
+{
+    [JsonPropertyName("guildName")]
+    public string GuildName { get; set; } = "";
+
+    [JsonPropertyName("guildIcon")]
+    public string GuildIcon { get; set; } = "";
+
+    [JsonPropertyName("guildColor")]
+    public string GuildColor { get; set; } = "";
+
+    [JsonPropertyName("guildLevel")]
+    public int GuildLevel { get; set; }
+
+    [JsonPropertyName("memberCount")]
+    public int MemberCount { get; set; }
+
+    [JsonPropertyName("invitedBy")]
+    public string InvitedBy { get; set; } = "";
+
+    [JsonPropertyName("invitedAt")]
+    public string InvitedAt { get; set; } = "";
+}
+
+/// <summary>
+/// UI-Anzeige-Daten einer empfangenen Einladung.
+/// </summary>
+public class GuildInvitationDisplay
+{
+    public string GuildId { get; set; } = "";
+    public string GuildName { get; set; } = "";
+    public string GuildIcon { get; set; } = "";
+    public string GuildColor { get; set; } = "";
+    public int GuildLevel { get; set; }
+    public string MemberDisplay { get; set; } = "";
+    public string InvitedByDisplay { get; set; } = "";
+}

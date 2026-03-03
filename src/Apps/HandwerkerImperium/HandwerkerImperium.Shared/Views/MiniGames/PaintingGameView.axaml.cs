@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Labs.Controls;
@@ -19,16 +20,43 @@ public partial class PaintingGameView : UserControl
     private SKCanvasView? _gameCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
+    private bool _disposed;
 
     public PaintingGameView()
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        DetachedFromVisualTree += (_, _) => StopRenderLoop();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        if (_disposed) return;
+        _disposed = true;
+
+        // Event-Subscriptions abmelden
+        if (_vm != null)
+        {
+            _vm.ComboIncreased -= OnComboIncreased;
+            _vm.GameCompleted -= OnGameCompleted;
+            _vm = null;
+        }
+
+        if (_gameCanvas != null)
+        {
+            _gameCanvas.PaintSurface -= OnPaintSurface;
+            _gameCanvas.PointerPressed -= OnCanvasPointerPressed;
+        }
+
+        StopRenderLoop();
+        _renderer.Dispose();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_disposed) return;
+
         // Alte Events abhaengen
         if (_vm != null)
         {
@@ -87,7 +115,7 @@ public partial class PaintingGameView : UserControl
     /// </summary>
     private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
-        if (_vm == null) return;
+        if (_disposed || _vm == null) return;
 
         var now = DateTime.UtcNow;
         float deltaTime = (float)(now - _lastRenderTime).TotalSeconds;

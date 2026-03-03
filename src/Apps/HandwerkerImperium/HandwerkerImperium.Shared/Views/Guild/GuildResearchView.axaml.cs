@@ -18,6 +18,9 @@ public partial class GuildResearchView : UserControl
     private readonly GuildResearchBackgroundRenderer _bgRenderer = new();
     private readonly GuildResearchTreeRenderer _treeRenderer = new();
     private readonly GuildHallHeaderRenderer _headerRenderer = new();
+    // Gecachte Liste für Render-Loop (vermeidet ToList() pro Frame bei 20fps)
+    private List<GuildResearchDisplay> _cachedItems = [];
+    private object? _lastGuildResearchRef;
     private DispatcherTimer? _renderTimer;
     private SKCanvasView? _treeCanvas;
     private SKCanvasView? _headerCanvas;
@@ -31,6 +34,15 @@ public partial class GuildResearchView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        DetachedFromVisualTree += (_, _) => StopRenderLoop();
+    }
+
+    private void StopRenderLoop()
+    {
+        _renderTimer?.Stop();
+        _renderTimer = null;
+        // Renderer NICHT disposen - können bei Re-Attach wiederverwendet werden.
+        // Dispose erfolgt nur bei endgültigem Entfernen der View.
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -49,14 +61,25 @@ public partial class GuildResearchView : UserControl
         }
     }
 
+    private int _countdownRefreshCounter;
+
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
+        _countdownRefreshCounter = 0;
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
         _renderTimer.Tick += (_, _) =>
         {
             _headerCanvas?.InvalidateSurface();
             _treeCanvas?.InvalidateSurface();
+
+            // Countdown alle ~1s aktualisieren (20 Ticks × 50ms = 1000ms)
+            _countdownRefreshCounter++;
+            if (_countdownRefreshCounter >= 20)
+            {
+                _countdownRefreshCounter = 0;
+                _guildVm?.RefreshActiveResearchCountdown();
+            }
         };
         _renderTimer.Start();
     }
@@ -85,10 +108,14 @@ public partial class GuildResearchView : UserControl
         float deltaTime = (float)(now - _lastRenderTime).TotalSeconds;
         _lastRenderTime = now;
 
-        // Forschungsdaten aus ViewModel holen
-        List<GuildResearchDisplay> items = [];
-        if (_guildVm?.GuildResearch != null)
-            items = _guildVm.GuildResearch.ToList();
+        // Forschungsdaten aus ViewModel holen (nur bei Collection-Wechsel neu erstellen)
+        var currentRef = _guildVm?.GuildResearch;
+        if (currentRef != null && !ReferenceEquals(currentRef, _lastGuildResearchRef))
+        {
+            _cachedItems = currentRef.ToList();
+            _lastGuildResearchRef = currentRef;
+        }
+        var items = _cachedItems;
 
         // Canvas-Höhe an Baum-Größe anpassen
         float treeHeight = GuildResearchTreeRenderer.CalculateTotalHeight();

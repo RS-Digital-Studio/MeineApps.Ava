@@ -147,8 +147,7 @@ public class WorkerAvatarControl : Control
     /// </summary>
     private void InvalidateAvatar()
     {
-        // Altes Bitmap freigeben
-        _currentBitmap?.Dispose();
+        // Bitmap wird vom Cache verwaltet, NICHT hier disposen
         _currentBitmap = null;
 
         // Neues Bitmap generieren
@@ -309,7 +308,7 @@ public class WorkerAvatarControl : Control
     {
         base.OnDetachedFromVisualTree(e);
         StopAnimationTimer();
-        _currentBitmap?.Dispose();
+        // Bitmap wird vom Cache verwaltet, NICHT hier disposen
         _currentBitmap = null;
     }
 }

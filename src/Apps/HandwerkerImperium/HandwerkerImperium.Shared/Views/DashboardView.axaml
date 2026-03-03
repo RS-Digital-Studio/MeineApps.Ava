@@ -280,7 +280,8 @@
         <skia:SKCanvasView x:Name="WorkshopCardsCanvas" Height="800"
                            PaintSurface="OnWorkshopCardsPaintSurface"
                            PointerPressed="OnWorkshopCardsPointerPressed"
-                           PointerReleased="OnWorkshopCardsPointerReleased" />
+                           PointerReleased="OnWorkshopCardsPointerReleased"
+                           PointerMoved="OnWorkshopCardsPointerMoved" />
 
         <!-- Banner-Strip (kompakte Chips) -->
         <dashboard:BannerStrip Margin="0,8,0,0" />
@@ -467,14 +468,14 @@
                       <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="4">
                         <mi:MaterialIcon Kind="CashMultiple" Width="18" Height="18"
                                          Foreground="{DynamicResource SuccessBrush}" />
-                        <TextBlock Text="{Binding BaseReward, StringFormat='{}{0:N0}'}"
+                        <TextBlock Text="{Binding EstimatedReward, StringFormat='~{0:N0}'}"
                                    FontSize="14" FontWeight="Bold"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    VerticalAlignment="Center" />
                         <mi:MaterialIcon Kind="Star" Width="14" Height="14"
                                          Foreground="{StaticResource CraftGoldBrush}"
                                          Margin="8,0,0,0" />
-                        <TextBlock Text="{Binding BaseXp, StringFormat='{}{0} XP'}"
+                        <TextBlock Text="{Binding EstimatedXp, StringFormat='~{0} XP'}"
                                    FontSize="12"
                                    Foreground="{StaticResource CraftGoldBrush}"
                                    VerticalAlignment="Center" />

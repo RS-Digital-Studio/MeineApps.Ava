@@ -9,6 +9,7 @@ namespace HandwerkerImperium.Graphics;
 /// Completion-Burst-Partikel pro Kachel, goldene Celebration bei komplettem Bauplan,
 /// Fehler-Schock mit Blitz-Effekt, Memorisierungs-Scan-Linie, Fortschrittsbalken.
 /// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
+/// Gecachte SKPaint-Instanzen fuer 0 Allokationen pro Frame.
 /// </summary>
 public class BlueprintGameRenderer : IDisposable
 {
@@ -71,6 +72,390 @@ public class BlueprintGameRenderer : IDisposable
     private static readonly SKColor GoldenYellow = new(0xFF, 0xD7, 0x00);
     private static readonly SKColor ActiveYellow = new(0xFF, 0xD7, 0x00);
     private static readonly SKColor TextWhite = SKColors.White;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // GECACHTE SKPAINT-INSTANZEN (0 Allokationen pro Frame)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // --- Hintergrund ---
+    // bgPaint: Shader aendert sich bei Bounds-Aenderung → Instanz-Feld, Shader manuell
+    private readonly SKPaint _bgPaint = new() { IsAntialias = false };
+
+    private static readonly SKPaint _fineGridPaint = new()
+    {
+        Color = GridFine, IsAntialias = false,
+        StrokeWidth = 0.5f, Style = SKPaintStyle.Stroke
+    };
+
+    private static readonly SKPaint _coarseGridPaint = new()
+    {
+        Color = GridCoarse, IsAntialias = false,
+        StrokeWidth = 1f, Style = SKPaintStyle.Stroke
+    };
+
+    // dotPaint: Alpha aendert sich pro Frame (pulsierend)
+    private readonly SKPaint _dotPaint = new() { IsAntialias = true };
+
+    private static readonly SKPaint _cornerMarkerPaint = new()
+    {
+        Color = BlueprintBlue.WithAlpha(40),
+        IsAntialias = true, StrokeWidth = 1.5f,
+        Style = SKPaintStyle.Stroke
+    };
+
+    // --- Circuit-Verbindungen ---
+    // Glow: MaskFilter ist konstant, Farbe ist konstant
+    private static readonly SKMaskFilter _blur3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
+    private static readonly SKMaskFilter _blur4 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
+
+    private static readonly SKPaint _circuitGlowPaint = new()
+    {
+        Color = BlueprintBlue.WithAlpha(20),
+        IsAntialias = true,
+        StrokeWidth = 6f,
+        Style = SKPaintStyle.Stroke,
+        MaskFilter = _blur3
+    };
+
+    // linePaint: PathEffect aendert sich pro Frame (animierter Dash-Offset)
+    private readonly SKPaint _circuitLinePaint = new()
+    {
+        Color = BlueprintBlue.WithAlpha(60),
+        IsAntialias = true,
+        StrokeWidth = 2f,
+        Style = SKPaintStyle.Stroke
+    };
+
+    // --- Kachel-Schatten ---
+    private static readonly SKPaint _tileShadowPaint = new()
+    {
+        Color = new SKColor(0, 0, 0, 60),
+        IsAntialias = true,
+        MaskFilter = _blur4
+    };
+
+    // --- Kachel-Hintergrund (Shader aendert sich pro Kachel) ---
+    private readonly SKPaint _tileBgPaint = new() { IsAntialias = true };
+    private readonly SKPaint _tileHighlightPaint = new() { IsAntialias = true };
+
+    // --- Kachel-Raender ---
+    // Aktiver Schritt: aeusserer Glow (dynamisches Alpha)
+    private readonly SKPaint _activeOuterGlowPaint = new()
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 8,
+        MaskFilter = _blur4
+    };
+
+    // Aktiver Schritt: innerer Neon-Rand (dynamisches Alpha)
+    private readonly SKPaint _activeNeonBorderPaint = new()
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 2.5f
+    };
+
+    // Abgeschlossener Schritt: Glow
+    private static readonly SKPaint _completedGlowPaint = new()
+    {
+        Color = CompletedGreen.WithAlpha(30),
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 6,
+        MaskFilter = _blur3
+    };
+
+    // Abgeschlossener Schritt: Rand
+    private static readonly SKPaint _completedBorderPaint = new()
+    {
+        Color = CompletedGreen,
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 2.5f
+    };
+
+    // Fehler-Rand (dynamisches Alpha)
+    private readonly SKPaint _errorBorderPaint = new()
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 3
+    };
+
+    // Standard-Rand
+    private static readonly SKPaint _defaultBorderPaint = new()
+    {
+        Color = new SKColor(0xFF, 0xFF, 0xFF, 0x25),
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 1.5f
+    };
+
+    // --- Schaltkreis-Ecken (static, Farbe wird als Parameter uebergeben) ---
+    private static readonly SKPaint _circuitCornerPaint = new()
+    {
+        IsAntialias = true,
+        StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke,
+        StrokeCap = SKStrokeCap.Round
+    };
+
+    // --- Step-Badge ---
+    private static readonly SKPaint _stepBadgeBgPaint = new()
+    {
+        Color = CompletedGreen.WithAlpha(200),
+        IsAntialias = true
+    };
+
+    private static readonly SKPaint _stepBadgeTextPaint = new()
+    {
+        Color = SKColors.White,
+        IsAntialias = true,
+        TextSize = 11,
+        TextAlign = SKTextAlign.Center,
+        FakeBoldText = true
+    };
+
+    // --- Fehler-Overlay ---
+    // overlayPaint: dynamisches Alpha
+    private readonly SKPaint _errorOverlayPaint = new() { IsAntialias = true };
+    // boltPaint: dynamisches Alpha
+    private readonly SKPaint _errorBoltPaint = new()
+    {
+        IsAntialias = true,
+        StrokeWidth = 2.5f,
+        Style = SKPaintStyle.Stroke,
+        StrokeCap = SKStrokeCap.Round
+    };
+
+    // --- Scan-Linie ---
+    private readonly SKPaint _scanPaint = new() { IsAntialias = false };
+    private static readonly SKPaint _scanCorePaint = new()
+    {
+        Color = BlueprintCyan.WithAlpha(150),
+        IsAntialias = false,
+        StrokeWidth = 1
+    };
+
+    // --- Completion-Flash ---
+    private readonly SKPaint _flashPaint = new() { IsAntialias = false };
+    private readonly SKPaint _flashBorderPaint = new()
+    {
+        IsAntialias = true,
+        Style = SKPaintStyle.Stroke,
+        StrokeWidth = 3,
+        MaskFilter = _blur4
+    };
+
+    // --- Fortschrittsbalken ---
+    private static readonly SKPaint _progressBgPaint = new()
+    {
+        Color = new SKColor(0xFF, 0xFF, 0xFF, 0x15),
+        IsAntialias = true
+    };
+
+    private readonly SKPaint _progressFillPaint = new() { IsAntialias = true };
+
+    private readonly SKPaint _progressGlowPaint = new()
+    {
+        IsAntialias = true,
+        MaskFilter = _blur4
+    };
+
+    private static readonly SKPaint _progressTextPaint = new()
+    {
+        Color = new SKColor(0xFF, 0xFF, 0xFF, 0x90),
+        IsAntialias = true,
+        TextSize = 10,
+        TextAlign = SKTextAlign.Center
+    };
+
+    // --- Partikel ---
+    private readonly SKPaint _sparkPaint = new() { IsAntialias = true };
+    private readonly SKPaint _pulsePaint = new() { IsAntialias = true };
+    private readonly SKPaint _ambientPaint = new() { IsAntialias = false };
+
+    // --- Checkmark ---
+    private static readonly SKPaint _checkGlowPaint = new()
+    {
+        Color = CompletedGreen.WithAlpha(40),
+        IsAntialias = true,
+        MaskFilter = _blur3
+    };
+
+    private static readonly SKPaint _checkCirclePaint = new()
+    {
+        Color = CompletedGreen,
+        IsAntialias = true
+    };
+
+    private static readonly SKPaint _checkLinePaint = new()
+    {
+        Color = TextWhite,
+        IsAntialias = true,
+        StrokeWidth = 2,
+        StrokeCap = SKStrokeCap.Round,
+        Style = SKPaintStyle.Stroke
+    };
+
+    // --- Kachel-Nummer ---
+    private readonly SKPaint _numberShadowPaint = new()
+    {
+        Color = new SKColor(0, 0, 0, 80),
+        IsAntialias = true,
+        TextAlign = SKTextAlign.Center,
+        FakeBoldText = true
+    };
+
+    private readonly SKPaint _numberPaint = new()
+    {
+        IsAntialias = true,
+        TextAlign = SKTextAlign.Center
+    };
+
+    private readonly SKPaint _numberGlowPaint = new()
+    {
+        IsAntialias = true,
+        TextAlign = SKTextAlign.Center,
+        FakeBoldText = true
+    };
+
+    // --- Icon-Paints (statisch, konstante Properties) ---
+    // Fundament
+    private static readonly SKPaint _foundationFillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x90, 0xA4, 0xAE) };
+    private static readonly SKPaint _foundationLinePaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0x60, 0x7D, 0x8B), StrokeWidth = 1.5f
+    };
+
+    // Mauern
+    private static readonly SKPaint _wallsFillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xE5, 0x73, 0x73) };
+    private static readonly SKPaint _wallsBorderPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0xD4, 0xC5, 0xA9), StrokeWidth = 1.5f
+    };
+
+    // Rahmenwerk
+    private static readonly SKPaint _frameworkPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0xA1, 0x88, 0x7F), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+    };
+    private static readonly SKPaint _frameworkDiagPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0x8D, 0x6E, 0x63), StrokeWidth = 2, StrokeCap = SKStrokeCap.Round
+    };
+
+    // Elektrik
+    private static readonly SKPaint _electricsFillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xFF, 0xD5, 0x4F) };
+    private static readonly SKPaint _electricsStrokePaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0xFF, 0xA0, 0x00), StrokeWidth = 1.5f
+    };
+
+    // Sanitaer
+    private static readonly SKPaint _plumbingHandlePaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+    };
+    private static readonly SKPaint _plumbingHeadPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0xB0, 0xBE, 0xC5), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+    };
+
+    // Fenster
+    private static readonly SKPaint _windowGlassPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x42, 0xA5, 0xF5) };
+    private static readonly SKPaint _windowFramePaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = SKColors.White, StrokeWidth = 2
+    };
+
+    // Tuer
+    private static readonly SKPaint _doorFillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x8D, 0x6E, 0x63) };
+    private static readonly SKPaint _doorFramePaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0x6D, 0x4C, 0x41), StrokeWidth = 2
+    };
+    private static readonly SKPaint _doorKnobPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xFF, 0xD5, 0x4F) };
+
+    // Malerei
+    private static readonly SKPaint _paintingHandlePaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0x9E, 0x9E, 0x9E), StrokeWidth = 2.5f, StrokeCap = SKStrokeCap.Round
+    };
+    private static readonly SKPaint _paintingRollerPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xEF, 0x6C, 0x00) };
+    private static readonly SKPaint _paintingTexturePaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0xFF, 0x9E, 0x40, 0x80), StrokeWidth = 1
+    };
+
+    // Dach
+    private static readonly SKPaint _roofFillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xE5, 0x39, 0x35) };
+    private static readonly SKPaint _roofBorderPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0xC6, 0x28, 0x28), StrokeWidth = 1.5f
+    };
+    private static readonly SKPaint _roofChimneyPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x79, 0x55, 0x48) };
+
+    // Beschlaege
+    private static readonly SKPaint _fittingsHeadPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xB0, 0xBE, 0xC5) };
+    private static readonly SKPaint _fittingsBorderPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 2
+    };
+    private static readonly SKPaint _fittingsSlotPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0x54, 0x6E, 0x7A), StrokeWidth = 2, StrokeCap = SKStrokeCap.Round
+    };
+
+    // Messen
+    private static readonly SKPaint _measuringRulerPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0xFF, 0xCA, 0x28), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+    };
+    private static readonly SKPaint _measuringMarkPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0xFF, 0xA0, 0x00), StrokeWidth = 1.5f
+    };
+
+    // Geruest
+    private static readonly SKPaint _scaffoldingPolePaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
+    };
+    private static readonly SKPaint _scaffoldingRungPaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0x90, 0xA4, 0xAE), StrokeWidth = 2.5f, StrokeCap = SKStrokeCap.Round
+    };
+
+    // Default-Icon
+    private static readonly SKPaint _defaultIconCirclePaint = new()
+    {
+        IsAntialias = true, Style = SKPaintStyle.Stroke,
+        Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80), StrokeWidth = 2
+    };
+    private static readonly SKPaint _defaultIconTextPaint = new()
+    {
+        IsAntialias = true,
+        Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80), TextAlign = SKTextAlign.Center
+    };
 
     /// <summary>
     /// Daten-Struct fuer einen einzelnen Bauschritt (View-optimiert, keine VM-Referenz).
@@ -368,74 +753,52 @@ public class BlueprintGameRenderer : IDisposable
     private void DrawBlueprintBackground(SKCanvas canvas, SKRect bounds)
     {
         // Dunkelblauer Hintergrund mit radialer Vignette
-        using var bgPaint = new SKPaint
-        {
-            Shader = SKShader.CreateRadialGradient(
-                new SKPoint(bounds.MidX, bounds.MidY),
-                Math.Max(bounds.Width, bounds.Height) * 0.7f,
-                new[] { new SKColor(0x12, 0x1C, 0x50), BlueprintBg },
-                null, SKShaderTileMode.Clamp),
-            IsAntialias = false
-        };
-        canvas.DrawRect(bounds, bgPaint);
+        using var bgShader = SKShader.CreateRadialGradient(
+            new SKPoint(bounds.MidX, bounds.MidY),
+            Math.Max(bounds.Width, bounds.Height) * 0.7f,
+            new[] { new SKColor(0x12, 0x1C, 0x50), BlueprintBg },
+            null, SKShaderTileMode.Clamp);
+        _bgPaint.Shader = bgShader;
+        canvas.DrawRect(bounds, _bgPaint);
+        _bgPaint.Shader = null;
 
         // Feines Raster (20px Abstand)
-        using var fineGridPaint = new SKPaint
-        {
-            Color = GridFine, IsAntialias = false,
-            StrokeWidth = 0.5f, Style = SKPaintStyle.Stroke
-        };
         for (float x = bounds.Left; x < bounds.Right; x += 20)
-            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, fineGridPaint);
+            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, _fineGridPaint);
         for (float y = bounds.Top; y < bounds.Bottom; y += 20)
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, fineGridPaint);
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, _fineGridPaint);
 
         // Grobes Raster (80px Abstand)
-        using var coarseGridPaint = new SKPaint
-        {
-            Color = GridCoarse, IsAntialias = false,
-            StrokeWidth = 1f, Style = SKPaintStyle.Stroke
-        };
         for (float x = bounds.Left; x < bounds.Right; x += 80)
-            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, coarseGridPaint);
+            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, _coarseGridPaint);
         for (float y = bounds.Top; y < bounds.Bottom; y += 80)
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, coarseGridPaint);
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, _coarseGridPaint);
 
         // Pulsierende Kreuzungspunkte (technische Atmosphaere)
         float pulse = 0.3f + 0.7f * (0.5f + 0.5f * MathF.Sin(_animTime * 1.5f));
-        using var dotPaint = new SKPaint
-        {
-            Color = BlueprintBlue.WithAlpha((byte)(20 * pulse)),
-            IsAntialias = true
-        };
+        _dotPaint.Color = BlueprintBlue.WithAlpha((byte)(20 * pulse));
         for (float x = bounds.Left; x < bounds.Right; x += 80)
         {
             for (float y = bounds.Top; y < bounds.Bottom; y += 80)
             {
-                canvas.DrawCircle(x, y, 2.5f, dotPaint);
+                canvas.DrawCircle(x, y, 2.5f, _dotPaint);
             }
         }
 
         // L-foermige Eck-Markierungen (Blaupausen-Stil)
-        using var cornerPaint = new SKPaint
-        {
-            Color = BlueprintBlue.WithAlpha(40),
-            IsAntialias = true, StrokeWidth = 1.5f,
-            Style = SKPaintStyle.Stroke
-        };
         float cs = 25;
         // Oben links
-        canvas.DrawLine(bounds.Left + 4, bounds.Top + 4, bounds.Left + 4 + cs, bounds.Top + 4, cornerPaint);
-        canvas.DrawLine(bounds.Left + 4, bounds.Top + 4, bounds.Left + 4, bounds.Top + 4 + cs, cornerPaint);
+        canvas.DrawLine(bounds.Left + 4, bounds.Top + 4, bounds.Left + 4 + cs, bounds.Top + 4, _cornerMarkerPaint);
+        canvas.DrawLine(bounds.Left + 4, bounds.Top + 4, bounds.Left + 4, bounds.Top + 4 + cs, _cornerMarkerPaint);
         // Oben rechts
-        canvas.DrawLine(bounds.Right - 4, bounds.Top + 4, bounds.Right - 4 - cs, bounds.Top + 4, cornerPaint);
-        canvas.DrawLine(bounds.Right - 4, bounds.Top + 4, bounds.Right - 4, bounds.Top + 4 + cs, cornerPaint);
+        canvas.DrawLine(bounds.Right - 4, bounds.Top + 4, bounds.Right - 4 - cs, bounds.Top + 4, _cornerMarkerPaint);
+        canvas.DrawLine(bounds.Right - 4, bounds.Top + 4, bounds.Right - 4, bounds.Top + 4 + cs, _cornerMarkerPaint);
         // Unten links
-        canvas.DrawLine(bounds.Left + 4, bounds.Bottom - 4, bounds.Left + 4 + cs, bounds.Bottom - 4, cornerPaint);
-        canvas.DrawLine(bounds.Left + 4, bounds.Bottom - 4, bounds.Left + 4, bounds.Bottom - 4 - cs, cornerPaint);
+        canvas.DrawLine(bounds.Left + 4, bounds.Bottom - 4, bounds.Left + 4 + cs, bounds.Bottom - 4, _cornerMarkerPaint);
+        canvas.DrawLine(bounds.Left + 4, bounds.Bottom - 4, bounds.Left + 4, bounds.Bottom - 4 - cs, _cornerMarkerPaint);
         // Unten rechts
-        canvas.DrawLine(bounds.Right - 4, bounds.Bottom - 4, bounds.Right - 4 - cs, bounds.Bottom - 4, cornerPaint);
-        canvas.DrawLine(bounds.Right - 4, bounds.Bottom - 4, bounds.Right - 4, bounds.Bottom - 4 - cs, cornerPaint);
+        canvas.DrawLine(bounds.Right - 4, bounds.Bottom - 4, bounds.Right - 4 - cs, bounds.Bottom - 4, _cornerMarkerPaint);
+        canvas.DrawLine(bounds.Right - 4, bounds.Bottom - 4, bounds.Right - 4, bounds.Bottom - 4 - cs, _cornerMarkerPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -473,25 +836,9 @@ public class BlueprintGameRenderer : IDisposable
             completed[j + 1] = key;
         }
 
-        // Glow-Linie (breit, unscharf)
-        using var glowPaint = new SKPaint
-        {
-            Color = BlueprintBlue.WithAlpha(20),
-            IsAntialias = true,
-            StrokeWidth = 6f,
-            Style = SKPaintStyle.Stroke,
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
-        };
-
-        // Gestrichelte animierte Verbindungslinie
-        using var linePaint = new SKPaint
-        {
-            Color = BlueprintBlue.WithAlpha(60),
-            IsAntialias = true,
-            StrokeWidth = 2f,
-            Style = SKPaintStyle.Stroke,
-            PathEffect = SKPathEffect.CreateDash(new[] { 6f, 4f }, _animTime * 30)
-        };
+        // PathEffect pro Frame neu erstellen (animierter Dash-Offset aendert sich)
+        using var dashEffect = SKPathEffect.CreateDash(new[] { 6f, 4f }, _animTime * 30);
+        _circuitLinePaint.PathEffect = dashEffect;
 
         for (int i = 0; i < count - 1; i++)
         {
@@ -504,10 +851,12 @@ public class BlueprintGameRenderer : IDisposable
             var to = _tileCenters[toIdx];
 
             // Glow
-            canvas.DrawLine(from, to, glowPaint);
+            canvas.DrawLine(from, to, _circuitGlowPaint);
             // Gestrichelte Linie
-            canvas.DrawLine(from, to, linePaint);
+            canvas.DrawLine(from, to, _circuitLinePaint);
         }
+
+        _circuitLinePaint.PathEffect = null;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -531,38 +880,28 @@ public class BlueprintGameRenderer : IDisposable
         );
 
         // Kachel-Schatten (Tiefe)
-        using var shadowPaint = new SKPaint
-        {
-            Color = new SKColor(0, 0, 0, 60),
-            IsAntialias = true,
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
-        };
         var shadowRect = SKRect.Create(rect.Left + 2, rect.Top + 3, rect.Width, rect.Height);
-        canvas.DrawRoundRect(shadowRect, cr, cr, shadowPaint);
+        canvas.DrawRoundRect(shadowRect, cr, cr, _tileShadowPaint);
 
-        // Kachel-Hintergrund mit Gradient
-        using var bgPaint = new SKPaint
-        {
-            Shader = SKShader.CreateLinearGradient(
-                new SKPoint(rect.Left, rect.Top),
-                new SKPoint(rect.Right, rect.Bottom),
-                new[] { bgColor, bgColor.WithAlpha((byte)(bgColor.Alpha * 0.7f)) },
-                null, SKShaderTileMode.Clamp),
-            IsAntialias = true
-        };
-        canvas.DrawRoundRect(rect, cr, cr, bgPaint);
+        // Kachel-Hintergrund mit Gradient (Shader aendert sich pro Kachel)
+        using var bgShader = SKShader.CreateLinearGradient(
+            new SKPoint(rect.Left, rect.Top),
+            new SKPoint(rect.Right, rect.Bottom),
+            new[] { bgColor, bgColor.WithAlpha((byte)(bgColor.Alpha * 0.7f)) },
+            null, SKShaderTileMode.Clamp);
+        _tileBgPaint.Shader = bgShader;
+        canvas.DrawRoundRect(rect, cr, cr, _tileBgPaint);
+        _tileBgPaint.Shader = null;
 
-        // Oberer Highlight-Streifen (Glaseffekt)
-        using var highlightPaint = new SKPaint
-        {
-            Shader = SKShader.CreateLinearGradient(
-                new SKPoint(rect.Left, rect.Top),
-                new SKPoint(rect.Left, rect.Top + rect.Height * 0.4f),
-                new[] { new SKColor(0xFF, 0xFF, 0xFF, 0x18), SKColors.Transparent },
-                null, SKShaderTileMode.Clamp),
-            IsAntialias = true
-        };
-        canvas.DrawRoundRect(rect, cr, cr, highlightPaint);
+        // Oberer Highlight-Streifen (Glaseffekt, Shader aendert sich pro Kachel)
+        using var highlightShader = SKShader.CreateLinearGradient(
+            new SKPoint(rect.Left, rect.Top),
+            new SKPoint(rect.Left, rect.Top + rect.Height * 0.4f),
+            new[] { new SKColor(0xFF, 0xFF, 0xFF, 0x18), SKColors.Transparent },
+            null, SKShaderTileMode.Clamp);
+        _tileHighlightPaint.Shader = highlightShader;
+        canvas.DrawRoundRect(rect, cr, cr, _tileHighlightPaint);
+        _tileHighlightPaint.Shader = null;
 
         // Rahmen basierend auf Zustand
         DrawTileBorder(canvas, rect, step, cr);
@@ -598,26 +937,13 @@ public class BlueprintGameRenderer : IDisposable
             byte alpha = (byte)(160 + 95 * pulse);
 
             // Aeusserer Glow
-            using var outerGlow = new SKPaint
-            {
-                Color = ActiveYellow.WithAlpha((byte)(50 * pulse)),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 8,
-                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
-            };
+            _activeOuterGlowPaint.Color = ActiveYellow.WithAlpha((byte)(50 * pulse));
             var glowRect = SKRect.Create(rect.Left - 3, rect.Top - 3, rect.Width + 6, rect.Height + 6);
-            canvas.DrawRoundRect(glowRect, cr + 3, cr + 3, outerGlow);
+            canvas.DrawRoundRect(glowRect, cr + 3, cr + 3, _activeOuterGlowPaint);
 
             // Innerer Neon-Rand
-            using var borderPaint = new SKPaint
-            {
-                Color = ActiveYellow.WithAlpha(alpha),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 2.5f
-            };
-            canvas.DrawRoundRect(rect, cr, cr, borderPaint);
+            _activeNeonBorderPaint.Color = ActiveYellow.WithAlpha(alpha);
+            canvas.DrawRoundRect(rect, cr, cr, _activeNeonBorderPaint);
 
             // Schaltkreis-Ecken
             DrawCircuitCorners(canvas, rect, ActiveYellow.WithAlpha(alpha), cr);
@@ -625,49 +951,20 @@ public class BlueprintGameRenderer : IDisposable
         else if (step.IsCompleted)
         {
             // Gruener Rahmen mit leichtem Glow
-            using var glowPaint = new SKPaint
-            {
-                Color = CompletedGreen.WithAlpha(30),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 6,
-                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
-            };
-            canvas.DrawRoundRect(rect, cr, cr, glowPaint);
-
-            using var borderPaint = new SKPaint
-            {
-                Color = CompletedGreen,
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 2.5f
-            };
-            canvas.DrawRoundRect(rect, cr, cr, borderPaint);
+            canvas.DrawRoundRect(rect, cr, cr, _completedGlowPaint);
+            canvas.DrawRoundRect(rect, cr, cr, _completedBorderPaint);
         }
         else if (step.HasError)
         {
             // Roter Fehler-Rand (pulsierend)
             float errPulse = 0.6f + 0.4f * MathF.Sin(_animTime * 12);
-            using var borderPaint = new SKPaint
-            {
-                Color = ErrorRed.WithAlpha((byte)(200 * errPulse)),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 3
-            };
-            canvas.DrawRoundRect(rect, cr, cr, borderPaint);
+            _errorBorderPaint.Color = ErrorRed.WithAlpha((byte)(200 * errPulse));
+            canvas.DrawRoundRect(rect, cr, cr, _errorBorderPaint);
         }
         else
         {
             // Standard-Rahmen (dezent, technischer Stil)
-            using var borderPaint = new SKPaint
-            {
-                Color = new SKColor(0xFF, 0xFF, 0xFF, 0x25),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 1.5f
-            };
-            canvas.DrawRoundRect(rect, cr, cr, borderPaint);
+            canvas.DrawRoundRect(rect, cr, cr, _defaultBorderPaint);
 
             // Dezente Schaltkreis-Ecken
             DrawCircuitCorners(canvas, rect, new SKColor(0xFF, 0xFF, 0xFF, 0x15), cr);
@@ -680,26 +977,22 @@ public class BlueprintGameRenderer : IDisposable
     private static void DrawCircuitCorners(SKCanvas canvas, SKRect rect, SKColor color, float cr)
     {
         float len = Math.Min(rect.Width, rect.Height) * 0.18f;
-        using var paint = new SKPaint
-        {
-            Color = color, IsAntialias = true,
-            StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke,
-            StrokeCap = SKStrokeCap.Round
-        };
+        // Farbe pro Aufruf setzen (variiert je nach Zustand)
+        _circuitCornerPaint.Color = color;
 
         float inset = cr * 0.3f;
         // Oben links
-        canvas.DrawLine(rect.Left + inset, rect.Top + inset + len, rect.Left + inset, rect.Top + inset, paint);
-        canvas.DrawLine(rect.Left + inset, rect.Top + inset, rect.Left + inset + len, rect.Top + inset, paint);
+        canvas.DrawLine(rect.Left + inset, rect.Top + inset + len, rect.Left + inset, rect.Top + inset, _circuitCornerPaint);
+        canvas.DrawLine(rect.Left + inset, rect.Top + inset, rect.Left + inset + len, rect.Top + inset, _circuitCornerPaint);
         // Oben rechts
-        canvas.DrawLine(rect.Right - inset - len, rect.Top + inset, rect.Right - inset, rect.Top + inset, paint);
-        canvas.DrawLine(rect.Right - inset, rect.Top + inset, rect.Right - inset, rect.Top + inset + len, paint);
+        canvas.DrawLine(rect.Right - inset - len, rect.Top + inset, rect.Right - inset, rect.Top + inset, _circuitCornerPaint);
+        canvas.DrawLine(rect.Right - inset, rect.Top + inset, rect.Right - inset, rect.Top + inset + len, _circuitCornerPaint);
         // Unten links
-        canvas.DrawLine(rect.Left + inset, rect.Bottom - inset - len, rect.Left + inset, rect.Bottom - inset, paint);
-        canvas.DrawLine(rect.Left + inset, rect.Bottom - inset, rect.Left + inset + len, rect.Bottom - inset, paint);
+        canvas.DrawLine(rect.Left + inset, rect.Bottom - inset - len, rect.Left + inset, rect.Bottom - inset, _circuitCornerPaint);
+        canvas.DrawLine(rect.Left + inset, rect.Bottom - inset, rect.Left + inset + len, rect.Bottom - inset, _circuitCornerPaint);
         // Unten rechts
-        canvas.DrawLine(rect.Right - inset - len, rect.Bottom - inset, rect.Right - inset, rect.Bottom - inset, paint);
-        canvas.DrawLine(rect.Right - inset, rect.Bottom - inset, rect.Right - inset, rect.Bottom - inset - len, paint);
+        canvas.DrawLine(rect.Right - inset - len, rect.Bottom - inset, rect.Right - inset, rect.Bottom - inset, _circuitCornerPaint);
+        canvas.DrawLine(rect.Right - inset, rect.Bottom - inset, rect.Right - inset, rect.Bottom - inset - len, _circuitCornerPaint);
     }
 
     /// <summary>
@@ -711,22 +1004,8 @@ public class BlueprintGameRenderer : IDisposable
         float bx = rect.Left + badgeR + 4;
         float by = rect.Top + badgeR + 4;
 
-        using var bgPaint = new SKPaint
-        {
-            Color = CompletedGreen.WithAlpha(200),
-            IsAntialias = true
-        };
-        canvas.DrawCircle(bx, by, badgeR, bgPaint);
-
-        using var textPaint = new SKPaint
-        {
-            Color = SKColors.White,
-            IsAntialias = true,
-            TextSize = 11,
-            TextAlign = SKTextAlign.Center,
-            FakeBoldText = true
-        };
-        canvas.DrawText(step.ToString(), bx, by + 4, textPaint);
+        canvas.DrawCircle(bx, by, badgeR, _stepBadgeBgPaint);
+        canvas.DrawText(step.ToString(), bx, by + 4, _stepBadgeTextPaint);
     }
 
     /// <summary>
@@ -737,32 +1016,21 @@ public class BlueprintGameRenderer : IDisposable
         float errPulse = 0.4f + 0.6f * MathF.Sin(_animTime * 15);
 
         // Rotes pulsierendes Overlay
-        using var overlayPaint = new SKPaint
-        {
-            Color = ErrorRed.WithAlpha((byte)(80 * errPulse)),
-            IsAntialias = true
-        };
-        canvas.DrawRoundRect(rect, cr, cr, overlayPaint);
+        _errorOverlayPaint.Color = ErrorRed.WithAlpha((byte)(80 * errPulse));
+        canvas.DrawRoundRect(rect, cr, cr, _errorOverlayPaint);
 
         // Kleiner Zickzack-Blitz in der Mitte
         float cx = rect.MidX;
         float cy = rect.MidY;
         float boltH = rect.Height * 0.3f;
 
-        using var boltPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0x80, 0x80, (byte)(200 * errPulse)),
-            IsAntialias = true,
-            StrokeWidth = 2.5f,
-            Style = SKPaintStyle.Stroke,
-            StrokeCap = SKStrokeCap.Round
-        };
+        _errorBoltPaint.Color = new SKColor(0xFF, 0x80, 0x80, (byte)(200 * errPulse));
         _cachedPath.Reset();
         _cachedPath.MoveTo(cx - boltH * 0.15f, cy - boltH * 0.5f);
         _cachedPath.LineTo(cx + boltH * 0.1f, cy - boltH * 0.05f);
         _cachedPath.LineTo(cx - boltH * 0.1f, cy + boltH * 0.05f);
         _cachedPath.LineTo(cx + boltH * 0.15f, cy + boltH * 0.5f);
-        canvas.DrawPath(_cachedPath, boltPaint);
+        canvas.DrawPath(_cachedPath, _errorBoltPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -778,27 +1046,20 @@ public class BlueprintGameRenderer : IDisposable
         float progress = (_animTime % period) / period;
         float scanY = gridTop + progress * gridHeight;
 
-        using var scanPaint = new SKPaint
-        {
-            Shader = SKShader.CreateLinearGradient(
-                new SKPoint(bounds.Left, scanY - 8),
-                new SKPoint(bounds.Left, scanY + 8),
-                new[] { SKColors.Transparent, BlueprintCyan.WithAlpha(60), BlueprintCyan.WithAlpha(100),
-                        BlueprintCyan.WithAlpha(60), SKColors.Transparent },
-                new[] { 0f, 0.3f, 0.5f, 0.7f, 1f },
-                SKShaderTileMode.Clamp),
-            IsAntialias = false
-        };
-        canvas.DrawRect(bounds.Left, scanY - 8, bounds.Width, 16, scanPaint);
+        // Shader aendert sich pro Frame (Position-abhaengig)
+        using var scanShader = SKShader.CreateLinearGradient(
+            new SKPoint(bounds.Left, scanY - 8),
+            new SKPoint(bounds.Left, scanY + 8),
+            new[] { SKColors.Transparent, BlueprintCyan.WithAlpha(60), BlueprintCyan.WithAlpha(100),
+                    BlueprintCyan.WithAlpha(60), SKColors.Transparent },
+            new[] { 0f, 0.3f, 0.5f, 0.7f, 1f },
+            SKShaderTileMode.Clamp);
+        _scanPaint.Shader = scanShader;
+        canvas.DrawRect(bounds.Left, scanY - 8, bounds.Width, 16, _scanPaint);
+        _scanPaint.Shader = null;
 
         // Heller Kern
-        using var corePaint = new SKPaint
-        {
-            Color = BlueprintCyan.WithAlpha(150),
-            IsAntialias = false,
-            StrokeWidth = 1
-        };
-        canvas.DrawLine(bounds.Left + 20, scanY, bounds.Right - 20, scanY, corePaint);
+        canvas.DrawLine(bounds.Left + 20, scanY, bounds.Right - 20, scanY, _scanCorePaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -820,31 +1081,23 @@ public class BlueprintGameRenderer : IDisposable
         else
             alpha = (byte)(180 * t / 0.7f * 0.5f); // Langsames Ausblenden
 
-        using var flashPaint = new SKPaint
-        {
-            Shader = SKShader.CreateRadialGradient(
-                new SKPoint(bounds.MidX, bounds.MidY),
-                Math.Max(bounds.Width, bounds.Height) * 0.5f,
-                new[] { GoldenYellow.WithAlpha(alpha), SKColors.Transparent },
-                null, SKShaderTileMode.Clamp),
-            IsAntialias = false
-        };
-        canvas.DrawRect(bounds, flashPaint);
+        // Shader aendert sich pro Frame (Alpha-abhaengig)
+        using var flashShader = SKShader.CreateRadialGradient(
+            new SKPoint(bounds.MidX, bounds.MidY),
+            Math.Max(bounds.Width, bounds.Height) * 0.5f,
+            new[] { GoldenYellow.WithAlpha(alpha), SKColors.Transparent },
+            null, SKShaderTileMode.Clamp);
+        _flashPaint.Shader = flashShader;
+        canvas.DrawRect(bounds, _flashPaint);
+        _flashPaint.Shader = null;
 
         // Goldener Rahmen
         if (t > 0.5f)
         {
             byte borderAlpha = (byte)(200 * ((t - 0.5f) / 0.5f));
-            using var borderPaint = new SKPaint
-            {
-                Color = GoldenYellow.WithAlpha(borderAlpha),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 3,
-                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
-            };
+            _flashBorderPaint.Color = GoldenYellow.WithAlpha(borderAlpha);
             canvas.DrawRoundRect(new SKRect(bounds.Left + 4, bounds.Top + 4,
-                bounds.Right - 4, bounds.Bottom - 4), 12, 12, borderPaint);
+                bounds.Right - 4, bounds.Bottom - 4), 12, 12, _flashBorderPaint);
         }
     }
 
@@ -865,12 +1118,7 @@ public class BlueprintGameRenderer : IDisposable
         float barX = bounds.Left + (bounds.Width - barWidth) / 2;
 
         // Hintergrund
-        using var bgPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0xFF, 0xFF, 0x15),
-            IsAntialias = true
-        };
-        canvas.DrawRoundRect(barX, y, barWidth, barHeight, 3, 3, bgPaint);
+        canvas.DrawRoundRect(barX, y, barWidth, barHeight, 3, 3, _progressBgPaint);
 
         // Fortschritt
         float progress = (float)completed / total;
@@ -887,35 +1135,19 @@ public class BlueprintGameRenderer : IDisposable
             else
                 fillColor = CompletedGreen;
 
-            using var fillPaint = new SKPaint
-            {
-                Color = fillColor,
-                IsAntialias = true
-            };
-            canvas.DrawRoundRect(barX, y, fillWidth, barHeight, 3, 3, fillPaint);
+            _progressFillPaint.Color = fillColor;
+            canvas.DrawRoundRect(barX, y, fillWidth, barHeight, 3, 3, _progressFillPaint);
 
             // Glow am Ende des Balkens
             if (progress > 0 && progress < 1)
             {
-                using var glowPaint = new SKPaint
-                {
-                    Color = fillColor.WithAlpha(80),
-                    IsAntialias = true,
-                    MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
-                };
-                canvas.DrawCircle(barX + fillWidth, y + barHeight / 2, 5, glowPaint);
+                _progressGlowPaint.Color = fillColor.WithAlpha(80);
+                canvas.DrawCircle(barX + fillWidth, y + barHeight / 2, 5, _progressGlowPaint);
             }
         }
 
         // Text "X/Y"
-        using var textPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0xFF, 0xFF, 0x90),
-            IsAntialias = true,
-            TextSize = 10,
-            TextAlign = SKTextAlign.Center
-        };
-        canvas.DrawText($"{completed}/{total}", bounds.MidX, y + barHeight + 12, textPaint);
+        canvas.DrawText($"{completed}/{total}", bounds.MidX, y + barHeight + 12, _progressTextPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -928,8 +1160,6 @@ public class BlueprintGameRenderer : IDisposable
     /// </summary>
     private void UpdateAndDrawSparks(SKCanvas canvas, float deltaTime)
     {
-        using var paint = new SKPaint { IsAntialias = true };
-
         for (int i = _sparkCount - 1; i >= 0; i--)
         {
             ref var p = ref _sparks[i];
@@ -949,7 +1179,7 @@ public class BlueprintGameRenderer : IDisposable
             }
 
             float lifeRatio = p.Life / p.MaxLife;
-            float alpha = lifeRatio < 0.2f
+            float alphaVal = lifeRatio < 0.2f
                 ? lifeRatio / 0.2f
                 : 1f - (lifeRatio - 0.2f) / 0.8f;
 
@@ -959,14 +1189,14 @@ public class BlueprintGameRenderer : IDisposable
             {
                 // Goldene Partikel mit Shimmer
                 float shimmer = 0.7f + 0.3f * MathF.Sin(_animTime * 10 + i * 2);
-                paint.Color = new SKColor(p.R, p.G, p.B, (byte)(220 * alpha * shimmer));
+                _sparkPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(220 * alphaVal * shimmer));
             }
             else
             {
-                paint.Color = new SKColor(p.R, p.G, p.B, (byte)(200 * alpha));
+                _sparkPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(200 * alphaVal));
             }
 
-            canvas.DrawCircle(p.X, p.Y, size, paint);
+            canvas.DrawCircle(p.X, p.Y, size, _sparkPaint);
         }
     }
 
@@ -975,8 +1205,6 @@ public class BlueprintGameRenderer : IDisposable
     /// </summary>
     private void UpdateAndDrawCircuitPulses(SKCanvas canvas, BlueprintStepData[] steps, float deltaTime)
     {
-        using var paint = new SKPaint { IsAntialias = true };
-
         for (int i = _pulseCount - 1; i >= 0; i--)
         {
             ref var pulse = ref _pulses[i];
@@ -1002,14 +1230,14 @@ public class BlueprintGameRenderer : IDisposable
             float lifeAlpha = 1f - pulse.Life / pulse.MaxLife;
 
             // Glow
-            paint.Color = new SKColor(pulse.R, pulse.G, pulse.B, (byte)(40 * lifeAlpha));
-            paint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
-            canvas.DrawCircle(px, py, 6, paint);
+            _pulsePaint.Color = new SKColor(pulse.R, pulse.G, pulse.B, (byte)(40 * lifeAlpha));
+            _pulsePaint.MaskFilter = _blur4;
+            canvas.DrawCircle(px, py, 6, _pulsePaint);
 
             // Kern
-            paint.MaskFilter = null;
-            paint.Color = new SKColor(pulse.R, pulse.G, pulse.B, (byte)(200 * lifeAlpha));
-            canvas.DrawCircle(px, py, 3, paint);
+            _pulsePaint.MaskFilter = null;
+            _pulsePaint.Color = new SKColor(pulse.R, pulse.G, pulse.B, (byte)(200 * lifeAlpha));
+            canvas.DrawCircle(px, py, 3, _pulsePaint);
         }
     }
 
@@ -1039,8 +1267,6 @@ public class BlueprintGameRenderer : IDisposable
             };
         }
 
-        using var paint = new SKPaint { IsAntialias = false };
-
         for (int i = _ambientCount - 1; i >= 0; i--)
         {
             ref var p = ref _ambient[i];
@@ -1061,21 +1287,21 @@ public class BlueprintGameRenderer : IDisposable
 
             // Alpha: Einblenden -> Halten -> Ausblenden
             float lifeRatio = p.Life / p.MaxLife;
-            float alpha;
+            float alphaVal;
             if (lifeRatio < 0.2f)
-                alpha = lifeRatio / 0.2f;
+                alphaVal = lifeRatio / 0.2f;
             else if (lifeRatio > 0.7f)
-                alpha = (1 - lifeRatio) / 0.3f;
+                alphaVal = (1 - lifeRatio) / 0.3f;
             else
-                alpha = 1;
+                alphaVal = 1;
 
-            paint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 60));
-            canvas.DrawCircle(p.X, p.Y, p.Size, paint);
+            _ambientPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alphaVal * 60));
+            canvas.DrawCircle(p.X, p.Y, p.Size, _ambientPaint);
         }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // KACHEL-ICONS (12 Vektor-Icons, unveraendert)
+    // KACHEL-ICONS (12 Vektor-Icons, gecachte statische Paints)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
@@ -1112,28 +1338,22 @@ public class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        // Trapez-Fundament (unten breiter als oben)
-        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x90, 0xA4, 0xAE) };
+        // Trapez-Fundament (unten breiter als oben) - SKPath bleibt using (per-Frame verschieden)
         using var path = new SKPath();
-        path.MoveTo(cx - half * 0.6f, cy - half);      // Oben links
-        path.LineTo(cx + half * 0.6f, cy - half);      // Oben rechts
-        path.LineTo(cx + half, cy + half);              // Unten rechts
-        path.LineTo(cx - half, cy + half);              // Unten links
+        path.MoveTo(cx - half * 0.6f, cy - half);
+        path.LineTo(cx + half * 0.6f, cy - half);
+        path.LineTo(cx + half, cy + half);
+        path.LineTo(cx - half, cy + half);
         path.Close();
-        canvas.DrawPath(path, fillPaint);
+        canvas.DrawPath(path, _foundationFillPaint);
 
         // 3 horizontale Streifen
-        using var linePaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x60, 0x7D, 0x8B), StrokeWidth = 1.5f
-        };
         for (int i = 0; i < 3; i++)
         {
             float yOff = cy - half + (i + 1) * (size / 4);
-            float ratio = (yOff - (cy - half)) / size; // 0..1 von oben nach unten
-            float w = half * (0.6f + 0.4f * ratio);    // Breite interpolieren
-            canvas.DrawLine(cx - w, yOff, cx + w, yOff, linePaint);
+            float ratio = (yOff - (cy - half)) / size;
+            float w = half * (0.6f + 0.4f * ratio);
+            canvas.DrawLine(cx - w, yOff, cx + w, yOff, _foundationLinePaint);
         }
     }
 
@@ -1144,13 +1364,6 @@ public class BlueprintGameRenderer : IDisposable
         float brickW = size / 3;
         float brickH = size / 2.5f;
 
-        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xE5, 0x73, 0x73) };
-        using var borderPaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0xD4, 0xC5, 0xA9), StrokeWidth = 1.5f
-        };
-
         // 2 Reihen Ziegel (versetzt)
         for (int row = 0; row < 2; row++)
         {
@@ -1160,8 +1373,8 @@ public class BlueprintGameRenderer : IDisposable
             {
                 float x = cx - half + col * brickW + xOffset;
                 var r = SKRect.Create(x + 1, y + 1, brickW - 2, brickH - 2);
-                canvas.DrawRoundRect(r, 1, 1, fillPaint);
-                canvas.DrawRoundRect(r, 1, 1, borderPaint);
+                canvas.DrawRoundRect(r, 1, 1, _wallsFillPaint);
+                canvas.DrawRoundRect(r, 1, 1, _wallsBorderPaint);
             }
         }
     }
@@ -1170,39 +1383,22 @@ public class BlueprintGameRenderer : IDisposable
     private static void DrawFrameworkIcon(SKCanvas canvas, float cx, float cy, float size)
     {
         float half = size / 2;
-        using var paint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0xA1, 0x88, 0x7F), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
-        };
 
         // Zwei vertikale Balken
-        canvas.DrawLine(cx - half * 0.6f, cy - half, cx - half * 0.6f, cy + half, paint);
-        canvas.DrawLine(cx + half * 0.6f, cy - half, cx + half * 0.6f, cy + half, paint);
+        canvas.DrawLine(cx - half * 0.6f, cy - half, cx - half * 0.6f, cy + half, _frameworkPaint);
+        canvas.DrawLine(cx + half * 0.6f, cy - half, cx + half * 0.6f, cy + half, _frameworkPaint);
 
         // Querbalken in der Mitte
-        canvas.DrawLine(cx - half * 0.6f, cy, cx + half * 0.6f, cy, paint);
+        canvas.DrawLine(cx - half * 0.6f, cy, cx + half * 0.6f, cy, _frameworkPaint);
 
         // Diagonalstrebe
-        using var diagPaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x8D, 0x6E, 0x63), StrokeWidth = 2, StrokeCap = SKStrokeCap.Round
-        };
-        canvas.DrawLine(cx - half * 0.6f, cy - half, cx + half * 0.6f, cy, diagPaint);
+        canvas.DrawLine(cx - half * 0.6f, cy - half, cx + half * 0.6f, cy, _frameworkDiagPaint);
     }
 
     /// <summary>Elektrik: Blitzsymbol (Zickzack).</summary>
     private static void DrawElectricsIcon(SKCanvas canvas, float cx, float cy, float size)
     {
         float half = size / 2;
-
-        using var fillPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xFF, 0xD5, 0x4F) };
-        using var strokePaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0xFF, 0xA0, 0x00), StrokeWidth = 1.5f
-        };
 
         using var path = new SKPath();
         path.MoveTo(cx + half * 0.1f, cy - half);
@@ -1213,8 +1409,8 @@ public class BlueprintGameRenderer : IDisposable
         path.LineTo(cx - half * 0.05f, cy - half * 0.1f);
         path.Close();
 
-        canvas.DrawPath(path, fillPaint);
-        canvas.DrawPath(path, strokePaint);
+        canvas.DrawPath(path, _electricsFillPaint);
+        canvas.DrawPath(path, _electricsStrokePaint);
     }
 
     /// <summary>Sanitaer: Schraubenschluessel.</summary>
@@ -1223,19 +1419,9 @@ public class BlueprintGameRenderer : IDisposable
         float half = size / 2;
 
         // Griff (vertikale Linie)
-        using var handlePaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
-        };
-        canvas.DrawLine(cx, cy - half * 0.1f, cx, cy + half, handlePaint);
+        canvas.DrawLine(cx, cy - half * 0.1f, cx, cy + half, _plumbingHandlePaint);
 
         // Maulschluessel-Kopf (U-Form)
-        using var headPaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0xB0, 0xBE, 0xC5), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
-        };
         using var headPath = new SKPath();
         headPath.MoveTo(cx - half * 0.5f, cy - half * 0.1f);
         headPath.LineTo(cx - half * 0.5f, cy - half * 0.7f);
@@ -1243,7 +1429,7 @@ public class BlueprintGameRenderer : IDisposable
             SKRect.Create(cx - half * 0.5f, cy - half, half, half * 0.6f),
             180, -180, false);
         headPath.LineTo(cx + half * 0.5f, cy - half * 0.1f);
-        canvas.DrawPath(headPath, headPaint);
+        canvas.DrawPath(headPath, _plumbingHeadPaint);
     }
 
     /// <summary>Fenster: Blaues Rechteck mit weissem Kreuzrahmen.</summary>
@@ -1253,20 +1439,12 @@ public class BlueprintGameRenderer : IDisposable
         var r = SKRect.Create(cx - half * 0.8f, cy - half * 0.8f, size * 0.8f, size * 0.8f);
 
         // Blaues Glas
-        using var glassPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x42, 0xA5, 0xF5) };
-        canvas.DrawRoundRect(r, 3, 3, glassPaint);
+        canvas.DrawRoundRect(r, 3, 3, _windowGlassPaint);
 
-        // Weisser Rahmen
-        using var framePaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = SKColors.White, StrokeWidth = 2
-        };
-        canvas.DrawRoundRect(r, 3, 3, framePaint);
-
-        // Kreuz
-        canvas.DrawLine(r.MidX, r.Top, r.MidX, r.Bottom, framePaint);
-        canvas.DrawLine(r.Left, r.MidY, r.Right, r.MidY, framePaint);
+        // Weisser Rahmen + Kreuz
+        canvas.DrawRoundRect(r, 3, 3, _windowFramePaint);
+        canvas.DrawLine(r.MidX, r.Top, r.MidX, r.Bottom, _windowFramePaint);
+        canvas.DrawLine(r.Left, r.MidY, r.Right, r.MidY, _windowFramePaint);
     }
 
     /// <summary>Tuer: Braunes Rechteck mit kleinem Griff-Kreis.</summary>
@@ -1276,20 +1454,13 @@ public class BlueprintGameRenderer : IDisposable
         var r = SKRect.Create(cx - half * 0.6f, cy - half, size * 0.6f, size);
 
         // Tuerblatt
-        using var doorPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x8D, 0x6E, 0x63) };
-        canvas.DrawRoundRect(r, 3, 3, doorPaint);
+        canvas.DrawRoundRect(r, 3, 3, _doorFillPaint);
 
         // Rahmen
-        using var framePaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x6D, 0x4C, 0x41), StrokeWidth = 2
-        };
-        canvas.DrawRoundRect(r, 3, 3, framePaint);
+        canvas.DrawRoundRect(r, 3, 3, _doorFramePaint);
 
         // Tuergriff (kleiner Kreis rechts)
-        using var knobPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xFF, 0xD5, 0x4F) };
-        canvas.DrawCircle(r.Right - half * 0.25f, r.MidY + half * 0.1f, half * 0.12f, knobPaint);
+        canvas.DrawCircle(r.Right - half * 0.25f, r.MidY + half * 0.1f, half * 0.12f, _doorKnobPaint);
     }
 
     /// <summary>Malerei: Farbroller mit Stiel.</summary>
@@ -1298,30 +1469,19 @@ public class BlueprintGameRenderer : IDisposable
         float half = size / 2;
 
         // Stiel (diagonal)
-        using var handlePaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x9E, 0x9E, 0x9E), StrokeWidth = 2.5f, StrokeCap = SKStrokeCap.Round
-        };
-        canvas.DrawLine(cx + half * 0.1f, cy + half * 0.1f, cx + half * 0.1f, cy + half, handlePaint);
+        canvas.DrawLine(cx + half * 0.1f, cy + half * 0.1f, cx + half * 0.1f, cy + half, _paintingHandlePaint);
 
         // Roller-Halterung
-        canvas.DrawLine(cx + half * 0.1f, cy + half * 0.1f, cx - half * 0.3f, cy - half * 0.1f, handlePaint);
+        canvas.DrawLine(cx + half * 0.1f, cy + half * 0.1f, cx - half * 0.3f, cy - half * 0.1f, _paintingHandlePaint);
 
         // Farbroller (Rechteck)
-        using var rollerPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xEF, 0x6C, 0x00) };
         var rollerRect = SKRect.Create(cx - half * 0.8f, cy - half * 0.6f, size * 0.7f, half * 0.6f);
-        canvas.DrawRoundRect(rollerRect, 4, 4, rollerPaint);
+        canvas.DrawRoundRect(rollerRect, 4, 4, _paintingRollerPaint);
 
         // Roller-Textur (helle Streifen)
-        using var texturePaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0xFF, 0x9E, 0x40, 0x80), StrokeWidth = 1
-        };
         for (float lx = rollerRect.Left + 3; lx < rollerRect.Right - 2; lx += 4)
         {
-            canvas.DrawLine(lx, rollerRect.Top + 2, lx, rollerRect.Bottom - 2, texturePaint);
+            canvas.DrawLine(lx, rollerRect.Top + 2, lx, rollerRect.Bottom - 2, _paintingTexturePaint);
         }
     }
 
@@ -1331,26 +1491,19 @@ public class BlueprintGameRenderer : IDisposable
         float half = size / 2;
 
         // Dach-Dreieck
-        using var roofPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xE5, 0x39, 0x35) };
         using var path = new SKPath();
         path.MoveTo(cx, cy - half);
         path.LineTo(cx + half, cy + half * 0.5f);
         path.LineTo(cx - half, cy + half * 0.5f);
         path.Close();
-        canvas.DrawPath(path, roofPaint);
+        canvas.DrawPath(path, _roofFillPaint);
 
         // Rand
-        using var borderPaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0xC6, 0x28, 0x28), StrokeWidth = 1.5f
-        };
-        canvas.DrawPath(path, borderPaint);
+        canvas.DrawPath(path, _roofBorderPaint);
 
         // Schornstein (kleines Rechteck oben rechts)
-        using var chimneyPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0x79, 0x55, 0x48) };
         var chimneyRect = SKRect.Create(cx + half * 0.25f, cy - half * 0.7f, half * 0.25f, half * 0.55f);
-        canvas.DrawRect(chimneyRect, chimneyPaint);
+        canvas.DrawRect(chimneyRect, _roofChimneyPaint);
     }
 
     /// <summary>Beschlaege: Schraube mit Kreuzschlitz.</summary>
@@ -1360,26 +1513,15 @@ public class BlueprintGameRenderer : IDisposable
         float radius = half * 0.7f;
 
         // Schraubenkopf (Kreis)
-        using var headPaint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = new SKColor(0xB0, 0xBE, 0xC5) };
-        canvas.DrawCircle(cx, cy, radius, headPaint);
+        canvas.DrawCircle(cx, cy, radius, _fittingsHeadPaint);
 
         // Rand
-        using var borderPaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 2
-        };
-        canvas.DrawCircle(cx, cy, radius, borderPaint);
+        canvas.DrawCircle(cx, cy, radius, _fittingsBorderPaint);
 
         // Kreuzschlitz
-        using var slotPaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x54, 0x6E, 0x7A), StrokeWidth = 2, StrokeCap = SKStrokeCap.Round
-        };
         float slotLen = radius * 0.6f;
-        canvas.DrawLine(cx - slotLen, cy, cx + slotLen, cy, slotPaint);
-        canvas.DrawLine(cx, cy - slotLen, cx, cy + slotLen, slotPaint);
+        canvas.DrawLine(cx - slotLen, cy, cx + slotLen, cy, _fittingsSlotPaint);
+        canvas.DrawLine(cx, cy - slotLen, cx, cy + slotLen, _fittingsSlotPaint);
     }
 
     /// <summary>Messen: Winkellineal (90-Grad-Winkel mit Markierungen).</summary>
@@ -1387,28 +1529,17 @@ public class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        using var rulerPaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0xFF, 0xCA, 0x28), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
-        };
-
         // Vertikale Linie (links)
-        canvas.DrawLine(cx - half * 0.5f, cy - half, cx - half * 0.5f, cy + half * 0.5f, rulerPaint);
+        canvas.DrawLine(cx - half * 0.5f, cy - half, cx - half * 0.5f, cy + half * 0.5f, _measuringRulerPaint);
         // Horizontale Linie (unten)
-        canvas.DrawLine(cx - half * 0.5f, cy + half * 0.5f, cx + half, cy + half * 0.5f, rulerPaint);
+        canvas.DrawLine(cx - half * 0.5f, cy + half * 0.5f, cx + half, cy + half * 0.5f, _measuringRulerPaint);
 
         // Markierungen an der vertikalen Linie
-        using var markPaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0xFF, 0xA0, 0x00), StrokeWidth = 1.5f
-        };
         for (int i = 0; i < 4; i++)
         {
             float yMark = cy - half + (i + 1) * (size * 0.3f / 2);
             float markLen = (i % 2 == 0) ? half * 0.3f : half * 0.2f;
-            canvas.DrawLine(cx - half * 0.5f, yMark, cx - half * 0.5f + markLen, yMark, markPaint);
+            canvas.DrawLine(cx - half * 0.5f, yMark, cx - half * 0.5f + markLen, yMark, _measuringMarkPaint);
         }
 
         // Markierungen an der horizontalen Linie
@@ -1416,7 +1547,7 @@ public class BlueprintGameRenderer : IDisposable
         {
             float xMark = cx - half * 0.5f + (i + 1) * (size * 0.3f / 2);
             float markLen = (i % 2 == 0) ? half * 0.3f : half * 0.2f;
-            canvas.DrawLine(xMark, cy + half * 0.5f, xMark, cy + half * 0.5f - markLen, markPaint);
+            canvas.DrawLine(xMark, cy + half * 0.5f, xMark, cy + half * 0.5f - markLen, _measuringMarkPaint);
         }
     }
 
@@ -1425,26 +1556,15 @@ public class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        using var polePaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x78, 0x90, 0x9C), StrokeWidth = 3, StrokeCap = SKStrokeCap.Round
-        };
-
         // Zwei vertikale Stangen
-        canvas.DrawLine(cx - half * 0.4f, cy - half, cx - half * 0.4f, cy + half, polePaint);
-        canvas.DrawLine(cx + half * 0.4f, cy - half, cx + half * 0.4f, cy + half, polePaint);
+        canvas.DrawLine(cx - half * 0.4f, cy - half, cx - half * 0.4f, cy + half, _scaffoldingPolePaint);
+        canvas.DrawLine(cx + half * 0.4f, cy - half, cx + half * 0.4f, cy + half, _scaffoldingPolePaint);
 
         // 3 horizontale Sprossen
-        using var rungPaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0x90, 0xA4, 0xAE), StrokeWidth = 2.5f, StrokeCap = SKStrokeCap.Round
-        };
         for (int i = 0; i < 3; i++)
         {
             float yRung = cy - half * 0.6f + i * (size * 0.6f / 2);
-            canvas.DrawLine(cx - half * 0.4f, yRung, cx + half * 0.4f, yRung, rungPaint);
+            canvas.DrawLine(cx - half * 0.4f, yRung, cx + half * 0.4f, yRung, _scaffoldingRungPaint);
         }
     }
 
@@ -1453,19 +1573,11 @@ public class BlueprintGameRenderer : IDisposable
     {
         float half = size / 2;
 
-        using var circlePaint = new SKPaint
-        {
-            IsAntialias = true, Style = SKPaintStyle.Stroke,
-            Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80), StrokeWidth = 2
-        };
-        canvas.DrawCircle(cx, cy, half * 0.6f, circlePaint);
+        canvas.DrawCircle(cx, cy, half * 0.6f, _defaultIconCirclePaint);
 
-        using var textPaint = new SKPaint
-        {
-            IsAntialias = true, TextSize = size * 0.5f,
-            Color = new SKColor(0xFF, 0xFF, 0xFF, 0x80), TextAlign = SKTextAlign.Center
-        };
-        canvas.DrawText("?", cx, cy + size * 0.15f, textPaint);
+        // TextSize aendert sich je nach Kachel-Groesse → pro Aufruf setzen
+        _defaultIconTextPaint.TextSize = size * 0.5f;
+        canvas.DrawText("?", cx, cy + size * 0.15f, _defaultIconTextPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1490,43 +1602,25 @@ public class BlueprintGameRenderer : IDisposable
         // Schatten unter der Nummer
         if (!isQuestion)
         {
-            using var shadowPaint = new SKPaint
-            {
-                Color = new SKColor(0, 0, 0, 80),
-                TextSize = fontSize,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Center,
-                FakeBoldText = true
-            };
-            canvas.DrawText(displayNumber, x + 1, y + 1, shadowPaint);
+            _numberShadowPaint.TextSize = fontSize;
+            canvas.DrawText(displayNumber, x + 1, y + 1, _numberShadowPaint);
         }
 
         // Haupttext
-        using var numberPaint = new SKPaint
-        {
-            Color = isQuestion
-                ? new SKColor(0xFF, 0xFF, 0xFF, 0x80)
-                : new SKColor(0xFF, 0xFF, 0xFF, 0xE0),
-            TextSize = fontSize,
-            IsAntialias = true,
-            TextAlign = SKTextAlign.Center,
-            FakeBoldText = !isQuestion
-        };
-        canvas.DrawText(displayNumber, x, y, numberPaint);
+        _numberPaint.Color = isQuestion
+            ? new SKColor(0xFF, 0xFF, 0xFF, 0x80)
+            : new SKColor(0xFF, 0xFF, 0xFF, 0xE0);
+        _numberPaint.TextSize = fontSize;
+        _numberPaint.FakeBoldText = !isQuestion;
+        canvas.DrawText(displayNumber, x, y, _numberPaint);
 
         // Memorisierungsphase: Nummer pulsiert mit Glow
         if (isMemorizing && !isQuestion)
         {
             float glowPulse = 0.5f + 0.5f * MathF.Sin(_animTime * 4);
-            using var glowPaint = new SKPaint
-            {
-                Color = BlueprintCyan.WithAlpha((byte)(40 * glowPulse)),
-                TextSize = fontSize + 2,
-                IsAntialias = true,
-                TextAlign = SKTextAlign.Center,
-                FakeBoldText = true
-            };
-            canvas.DrawText(displayNumber, x, y, glowPaint);
+            _numberGlowPaint.Color = BlueprintCyan.WithAlpha((byte)(40 * glowPulse));
+            _numberGlowPaint.TextSize = fontSize + 2;
+            canvas.DrawText(displayNumber, x, y, _numberGlowPaint);
         }
     }
 
@@ -1543,44 +1637,50 @@ public class BlueprintGameRenderer : IDisposable
         float bCy = badgeY + badgeSize / 2;
 
         // Glow hinter dem Badge
-        using var glowPaint = new SKPaint
-        {
-            Color = CompletedGreen.WithAlpha(40),
-            IsAntialias = true,
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
-        };
-        canvas.DrawCircle(bCx, bCy, badgeSize / 2 + 2, glowPaint);
+        canvas.DrawCircle(bCx, bCy, badgeSize / 2 + 2, _checkGlowPaint);
 
         // Gruener Kreis-Hintergrund
-        using var circlePaint = new SKPaint
-        {
-            Color = CompletedGreen,
-            IsAntialias = true
-        };
-        canvas.DrawCircle(bCx, bCy, badgeSize / 2, circlePaint);
+        canvas.DrawCircle(bCx, bCy, badgeSize / 2, _checkCirclePaint);
 
         // Haekchen (zwei Linien)
-        using var checkPaint = new SKPaint
-        {
-            Color = TextWhite,
-            IsAntialias = true,
-            StrokeWidth = 2,
-            StrokeCap = SKStrokeCap.Round,
-            Style = SKPaintStyle.Stroke
-        };
-
         float s = badgeSize * 0.22f;
-        canvas.DrawLine(bCx - s * 1.2f, bCy, bCx - s * 0.1f, bCy + s, checkPaint);
-        canvas.DrawLine(bCx - s * 0.1f, bCy + s, bCx + s * 1.5f, bCy - s * 0.8f, checkPaint);
+        canvas.DrawLine(bCx - s * 1.2f, bCy, bCx - s * 0.1f, bCy + s, _checkLinePaint);
+        canvas.DrawLine(bCx - s * 0.1f, bCy + s, bCx + s * 1.5f, bCy - s * 0.8f, _checkLinePaint);
     }
 
     /// <summary>
     /// Gibt native SkiaSharp-Ressourcen frei.
+    /// Statische Felder (static readonly) werden NICHT disposed - leben fuer die gesamte App-Laufzeit.
     /// </summary>
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+
+        // Gecachter Pfad
         _cachedPath?.Dispose();
+
+        // Instanz-Paints (mit dynamischen Properties pro Frame)
+        _bgPaint?.Dispose();
+        _dotPaint?.Dispose();
+        _circuitLinePaint?.Dispose();
+        _tileBgPaint?.Dispose();
+        _tileHighlightPaint?.Dispose();
+        _activeOuterGlowPaint?.Dispose();
+        _activeNeonBorderPaint?.Dispose();
+        _errorBorderPaint?.Dispose();
+        _errorOverlayPaint?.Dispose();
+        _errorBoltPaint?.Dispose();
+        _scanPaint?.Dispose();
+        _flashPaint?.Dispose();
+        _flashBorderPaint?.Dispose();
+        _progressFillPaint?.Dispose();
+        _progressGlowPaint?.Dispose();
+        _sparkPaint?.Dispose();
+        _pulsePaint?.Dispose();
+        _ambientPaint?.Dispose();
+        _numberShadowPaint?.Dispose();
+        _numberPaint?.Dispose();
+        _numberGlowPaint?.Dispose();
     }
 }

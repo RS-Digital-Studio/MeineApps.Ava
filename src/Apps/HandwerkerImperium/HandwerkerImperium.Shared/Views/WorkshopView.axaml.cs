@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using Avalonia.Threading;
@@ -22,6 +23,7 @@ public partial class WorkshopView : UserControl
     private DispatcherTimer? _renderTimer;
     private SKCanvasView? _workshopCanvas;
     private DateTime _lastRenderTime = DateTime.UtcNow;
+    private bool _disposed;
     // Animations-Zustand fuer arbeitende Worker
     private float _workerAnimPhase;
 
@@ -36,8 +38,37 @@ public partial class WorkshopView : UserControl
         DataContextChanged += OnDataContextChanged;
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        if (_disposed) return;
+        _disposed = true;
+
+        _renderTimer?.Stop();
+        _renderTimer = null;
+
+        // Event-Subscriptions abmelden
+        if (_workshopVm != null)
+        {
+            _workshopVm.UpgradeEffectRequested -= OnUpgradeEffect;
+            _workshopVm = null;
+        }
+
+        if (_workshopCanvas != null)
+        {
+            _workshopCanvas.PaintSurface -= OnWorkshopPaintSurface;
+            _workshopCanvas = null;
+        }
+
+        _interiorRenderer.Dispose();
+        _sceneRenderer.Dispose();
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_disposed) return;
+
         // Altes VM abmelden
         if (_workshopVm != null)
         {
@@ -77,6 +108,8 @@ public partial class WorkshopView : UserControl
 
     private void OnWorkshopPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
     {
+        if (_disposed) return;
+
         var canvas = e.Surface.Canvas;
         var bounds = canvas.LocalClipBounds;
         canvas.Clear(SKColors.Transparent);

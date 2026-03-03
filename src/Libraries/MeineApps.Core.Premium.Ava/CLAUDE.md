@@ -176,6 +176,7 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 
 ### Changelog (Premium Library)
 
+- **03.03.2026**: **KRITISCHER FIX: Rewarded Ad Belohnungen kamen nicht an** – `LoadAndShowAsync()` hatte 8s-Timeout der BEIDE Phasen (Laden + Video-Anzeige) abdeckte. Rewarded Videos dauern 15-30s → Timeout feuerte während User das Video schaute → `tcs.TrySetResult(false)` → ViewModel bekam `false` → Belohnung wurde nicht vergeben. Fix: `CancellationTokenSource` im `OnDemandLoadCallback` – Timeout wird gecancellt sobald Ad geladen ist und `ad.Show()` aufgerufen wird. Betrifft ALLE placement-spezifischen Rewarded Ads in ALLEN 6 Apps.
 - **28.02.2026**: **KRITISCHER FIX: Rewarded Ads OnAdLoaded JNI-Callback** – FixedRewardedAdLoadCallback mit korrektem JNI Delegate-Wiring (GetOnAdLoadedHandler Connector statt leerer String). Behebt 0 Impressions trotz 100% Match Rate in ALLEN 6 Apps. + Retry mit exponentiellem Backoff (5s/15s/30s, max 3 Versuche). + 2 fehlende BomberBlast Placements (lucky_spin, dungeon_run) in AdConfig.cs.
 - **17.02.2026**: AndroidPurchaseService mit Google Play Billing Client v8.3.0.1 integriert. Ersetzt AIDL-basierte Billing. Alle 6 Premium-Apps verwenden jetzt echte Google Play Billing Library.
 - **10.02.2026**: TrialService DateTime.Now → DateTime.UtcNow + TryParse mit CultureInfo.InvariantCulture + DateTimeStyles.RoundtripKind. AdMobHelper TestDeviceId nur noch in DEBUG-Builds registriert.

@@ -3,8 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
-using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
@@ -14,6 +12,7 @@ using RechnerPlus.Resources.Strings;
 using RechnerPlus.Services;
 using RechnerPlus.ViewModels;
 using RechnerPlus.Views;
+using RechnerPlus.Graphics;
 using MeineApps.UI.SkiaSharp;
 
 namespace RechnerPlus;
@@ -72,19 +71,11 @@ public partial class App : Application
 
     private static SkiaLoadingSplash CreateSplash()
     {
-        IImage? icon = null;
-        try
-        {
-            var iconUri = new Uri("avares://RechnerPlus.Shared/Assets/icon.png");
-            using var stream = Avalonia.Platform.AssetLoader.Open(iconUri);
-            icon = new Bitmap(stream);
-        }
-        catch { /* Fallback: kein Icon */ }
-
         return new SkiaLoadingSplash
         {
             AppName = "RechnerPlus",
-            AppVersion = "v2.0.5"
+            AppVersion = "v2.0.6",
+            Renderer = new RechnerPlusSplashRenderer()
         };
     }
 

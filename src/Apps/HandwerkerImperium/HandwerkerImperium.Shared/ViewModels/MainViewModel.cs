@@ -11,7 +11,9 @@ using HandwerkerImperium.Models.Events;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
+using HandwerkerImperium.ViewModels.MiniGames;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -42,7 +44,7 @@ public class DailyRewardEventArgs : EventArgs
 ///   MainViewModel.Missions.cs   - Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin
 ///   MainViewModel.Init.cs       - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
 /// </summary>
-public partial class MainViewModel : ObservableObject, IDisposable
+public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IGameLoopService _gameLoopService;

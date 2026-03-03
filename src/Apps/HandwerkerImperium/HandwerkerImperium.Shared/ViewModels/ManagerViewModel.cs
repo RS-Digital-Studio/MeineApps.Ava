@@ -5,6 +5,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -12,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für die Vorarbeiter/Manager-Verwaltung.
 /// Zeigt alle Manager (freigeschaltete und gesperrte) mit Upgrade-Möglichkeiten.
 /// </summary>
-public partial class ManagerViewModel : ObservableObject
+public partial class ManagerViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly IManagerService _managerService;

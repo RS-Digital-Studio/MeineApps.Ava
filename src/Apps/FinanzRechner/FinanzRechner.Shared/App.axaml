@@ -1,6 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:FinanzRechner"
+             xmlns:core="using:MeineApps.Core.Ava"
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              x:Class="FinanzRechner.App">
 
@@ -11,6 +12,10 @@
     <SolidColorBrush x:Key="IncomeBrush" Color="{StaticResource IncomeColor}" />
     <SolidColorBrush x:Key="ExpenseBrush" Color="{StaticResource ExpenseColor}" />
   </Application.Resources>
+
+  <Application.DataTemplates>
+    <core:ViewLocator />
+  </Application.DataTemplates>
 
   <Application.Styles>
     <!-- Avalonia Fluent Theme as base -->

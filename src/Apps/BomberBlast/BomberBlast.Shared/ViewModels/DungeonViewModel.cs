@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Models.Dungeon;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
@@ -12,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für den Dungeon-Run Roguelike-Modus.
 /// 3 Zustände: PreRun (Start-Screen), BuffSelection (nach Floor-Abschluss), PostRun (Zusammenfassung).
 /// </summary>
-public partial class DungeonViewModel : ObservableObject, INavigable, IGameJuiceEmitter
+public partial class DungeonViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly IDungeonService _dungeonService;
     private readonly IDungeonUpgradeService _dungeonUpgradeService;

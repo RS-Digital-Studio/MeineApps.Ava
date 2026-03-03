@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:views="using:BomberBlast.Views"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:MeineApps.UI.Controls"
              x:Class="BomberBlast.Views.MainView"
@@ -33,19 +32,19 @@
       <!-- Main Menu -->
       <Border Classes="PageView" x:Name="MainMenuBorder"
               AutomationProperties.AutomationId="MainView_PageMainMenu">
-        <views:MainMenuView DataContext="{Binding MenuVm}" />
+        <ContentControl Content="{Binding MenuVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Game -->
       <Border Classes="PageView" x:Name="GameBorder"
               AutomationProperties.AutomationId="MainView_PageGame">
-        <views:GameView DataContext="{Binding GameVm}" />
+        <ContentControl Content="{Binding GameVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Level Select -->
       <Border Classes="PageView" x:Name="LevelSelectBorder"
               AutomationProperties.AutomationId="MainView_PageLevelSelect">
-        <views:LevelSelectView DataContext="{Binding LevelSelectVm}" />
+        <ContentControl Content="{Binding LevelSelectVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Einstellungen + Hilfe (kombiniert mit Tab-Bar) -->
@@ -80,10 +79,10 @@
           </Border>
           <Panel Grid.Row="1">
             <Border IsVisible="{Binding !IsSettingsHelpTab}">
-              <views:SettingsView DataContext="{Binding SettingsVm}" />
+              <ContentControl Content="{Binding SettingsVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
             <Border IsVisible="{Binding IsSettingsHelpTab}">
-              <views:HelpView DataContext="{Binding HelpVm}" />
+              <ContentControl Content="{Binding HelpVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
           </Panel>
         </Grid>
@@ -92,13 +91,13 @@
       <!-- High Scores -->
       <Border Classes="PageView" x:Name="HighScoresBorder"
               AutomationProperties.AutomationId="MainView_PageHighScores">
-        <views:HighScoresView DataContext="{Binding HighScoresVm}" />
+        <ContentControl Content="{Binding HighScoresVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Game Over -->
       <Border Classes="PageView" x:Name="GameOverBorder"
               AutomationProperties.AutomationId="MainView_PageGameOver">
-        <views:GameOverView DataContext="{Binding GameOverVm}" />
+        <ContentControl Content="{Binding GameOverVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Shop + Glücksrad (kombiniert mit Tab-Bar) -->
@@ -133,10 +132,10 @@
           </Border>
           <Panel Grid.Row="1">
             <Border IsVisible="{Binding !IsShopSpinTab}">
-              <views:ShopView DataContext="{Binding ShopVm}" />
+              <ContentControl Content="{Binding ShopVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
             <Border IsVisible="{Binding IsShopSpinTab}">
-              <views:LuckySpinView DataContext="{Binding LuckySpinVm}" />
+              <ContentControl Content="{Binding LuckySpinVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
           </Panel>
         </Grid>
@@ -174,10 +173,10 @@
           </Border>
           <Panel Grid.Row="1">
             <Border IsVisible="{Binding !IsProfileAchievementsTab}">
-              <views:ProfileView DataContext="{Binding ProfileVm}" />
+              <ContentControl Content="{Binding ProfileVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
             <Border IsVisible="{Binding IsProfileAchievementsTab}">
-              <views:AchievementsView DataContext="{Binding AchievementsVm}" />
+              <ContentControl Content="{Binding AchievementsVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
           </Panel>
         </Grid>
@@ -186,7 +185,7 @@
       <!-- Victory (alle 50 Level geschafft) -->
       <Border Classes="PageView" x:Name="VictoryBorder"
               AutomationProperties.AutomationId="MainView_PageVictory">
-        <views:VictoryView DataContext="{Binding VictoryVm}" />
+        <ContentControl Content="{Binding VictoryVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Herausforderungen: Daily Challenge + Missionen (kombiniert mit Tab-Bar) -->
@@ -221,10 +220,10 @@
           </Border>
           <Panel Grid.Row="1">
             <Border IsVisible="{Binding !IsChallengesMissionsTab}">
-              <views:DailyChallengeView DataContext="{Binding DailyChallengeVm}" />
+              <ContentControl Content="{Binding DailyChallengeVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
             <Border IsVisible="{Binding IsChallengesMissionsTab}">
-              <views:WeeklyChallengeView DataContext="{Binding WeeklyChallengeVm}" />
+              <ContentControl Content="{Binding WeeklyChallengeVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
           </Panel>
         </Grid>
@@ -233,13 +232,13 @@
       <!-- Statistics (Statistiken) -->
       <Border Classes="PageView" x:Name="StatisticsBorder"
               AutomationProperties.AutomationId="MainView_PageStatistics">
-        <views:StatisticsView DataContext="{Binding StatisticsVm}" />
+        <ContentControl Content="{Binding StatisticsVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Quick Play (Zufalls-Level) -->
       <Border Classes="PageView" x:Name="QuickPlayBorder"
               AutomationProperties.AutomationId="MainView_PageQuickPlay">
-        <views:QuickPlayView DataContext="{Binding QuickPlayVm}" />
+        <ContentControl Content="{Binding QuickPlayVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Karten: Deck + Sammlung (kombiniert mit Tab-Bar) -->
@@ -274,10 +273,10 @@
           </Border>
           <Panel Grid.Row="1">
             <Border IsVisible="{Binding !IsCardsCollectionTab}">
-              <views:DeckView DataContext="{Binding DeckVm}" />
+              <ContentControl Content="{Binding DeckVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
             <Border IsVisible="{Binding IsCardsCollectionTab}">
-              <views:CollectionView DataContext="{Binding CollectionVm}" />
+              <ContentControl Content="{Binding CollectionVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
             </Border>
           </Panel>
         </Grid>
@@ -286,25 +285,25 @@
       <!-- Dungeon Run (Roguelike-Modus) -->
       <Border Classes="PageView" x:Name="DungeonBorder"
               AutomationProperties.AutomationId="MainView_PageDungeon">
-        <views:DungeonView DataContext="{Binding DungeonVm}" />
+        <ContentControl Content="{Binding DungeonVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Battle Pass -->
       <Border Classes="PageView" x:Name="BattlePassBorder"
               AutomationProperties.AutomationId="MainView_PageBattlePass">
-        <views:BattlePassView DataContext="{Binding BattlePassVm}" />
+        <ContentControl Content="{Binding BattlePassVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Liga -->
       <Border Classes="PageView" x:Name="LeagueBorder"
               AutomationProperties.AutomationId="MainView_PageLeague">
-        <views:LeagueView DataContext="{Binding LeagueVm}" />
+        <ContentControl Content="{Binding LeagueVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Gem-Shop -->
       <Border Classes="PageView" x:Name="GemShopBorder"
               AutomationProperties.AutomationId="MainView_PageGemShop">
-        <views:GemShopView DataContext="{Binding GemShopVm}" />
+        <ContentControl Content="{Binding GemShopVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
     </Panel>
 

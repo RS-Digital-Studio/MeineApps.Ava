@@ -7,10 +7,11 @@ using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public partial class TileCalculatorViewModel : ObservableObject, IDisposable
+public partial class TileCalculatorViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _craftEngine;
     private Timer? _debounceTimer;

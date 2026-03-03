@@ -8,6 +8,7 @@ using FitnessRechner.Resources.Strings;
 using FitnessRechner.Services;
 using FitnessRechner.Graphics;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using SkiaSharp;
 
@@ -21,7 +22,7 @@ public enum ProgressTab
     Calories
 }
 
-public partial class ProgressViewModel : ObservableObject, IDisposable
+public partial class ProgressViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ITrackingService _trackingService;

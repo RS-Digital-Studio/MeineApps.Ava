@@ -4,16 +4,16 @@ using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
-/// ViewModel fuer das Schmiede-Minigame.
-/// Spieler muss bei richtiger Temperatur auf den Amboss haemmern.
-/// Temperatur steigt automatisch, kuehlt nach Hammer-Schlag ab.
+/// ViewModel for the Sawing mini-game.
+/// Player must stop a moving marker in the target zone.
 /// </summary>
-public partial class ForgeGameViewModel : ObservableObject, IDisposable
+public partial class SawingGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
@@ -23,19 +23,13 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private bool _isEnding;
 
-    // Spiel-Konfiguration
+    // Game configuration
     private const double TICK_INTERVAL_MS = 16; // ~60 FPS
-    private const double HEAT_RATE = 0.008;     // Aufheiz-Geschwindigkeit pro Tick
-    private const double COOL_RATE = 0.25;      // Abkuehl-Menge nach Hammer-Schlag
-    private const double COOL_DECAY = 0.003;    // Natuerliche Abkuehlung pro Tick (langsam)
+    private const double MARKER_SPEED = 0.017;  // Units pro Tick (0.0-1.0), reduziert für bessere Spielbarkeit
 
-    // Sinus-basierte Temperatur-Oszillation
-    private double _heatTime;
-    private double _heatDirection = 1.0;
-
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
 
     public event Action<string>? NavigationRequested;
 
@@ -48,9 +42,9 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     /// <summary>Wird bei Zonen-Treffer gefeuert (Zone-Name: "Perfect", "Good", "Ok", "Miss").</summary>
     public event EventHandler<string>? ZoneHit;
 
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
 
     [ObservableProperty]
     private string _orderId = string.Empty;
@@ -59,13 +53,13 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
-    private MiniGameType _gameType = MiniGameType.ForgeGame;
+    private MiniGameType _gameType = MiniGameType.Sawing;
 
     [ObservableProperty]
     private string _gameTitle = "";
 
     [ObservableProperty]
-    private string _gameIcon = "Anvil";
+    private string _gameIcon = "Saw";
 
     [ObservableProperty]
     private string _actionButtonText = "";
@@ -79,58 +73,26 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isResultShown;
 
-    // Temperatur des Werkstuecks (0.0 = kalt, 1.0 = weissglühend)
     [ObservableProperty]
-    private double _temperature;
-
-    // Zielzone (Perfect-Temperatur)
-    [ObservableProperty]
-    private double _targetTemperatureStart;
+    private double _markerPosition; // 0.0 to 1.0
 
     [ObservableProperty]
-    private double _targetTemperatureWidth;
-
-    // Gut-Zone (etwas breiter als Perfect)
-    [ObservableProperty]
-    private double _goodTemperatureStart;
+    private double _perfectZoneStart;
 
     [ObservableProperty]
-    private double _goodTemperatureWidth;
-
-    // Ok-Zone (noch breiter)
-    [ObservableProperty]
-    private double _okTemperatureStart;
+    private double _perfectZoneWidth;
 
     [ObservableProperty]
-    private double _okTemperatureWidth;
-
-    // Benoetigte und abgeschlossene Schlaege
-    [ObservableProperty]
-    private int _hitsRequired;
+    private double _goodZoneStart;
 
     [ObservableProperty]
-    private int _hitsCompleted;
-
-    // Treffer-Statistik pro Zone
-    [ObservableProperty]
-    private int _perfectHits;
+    private double _goodZoneWidth;
 
     [ObservableProperty]
-    private int _goodHits;
+    private double _okZoneStart;
 
     [ObservableProperty]
-    private int _okHits;
-
-    [ObservableProperty]
-    private int _missHits;
-
-    // Ob gerade aufgeheizt wird (fuer visuelle Effekte)
-    [ObservableProperty]
-    private bool _isHeating = true;
-
-    // Ob gerade gehaemmert wird (kurze Animation)
-    [ObservableProperty]
-    private bool _isHammering;
+    private double _okZoneWidth;
 
     [ObservableProperty]
     private MiniGameRating _result;
@@ -161,9 +123,39 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isLastTask;
 
-    /// <summary>Text fuer den Continue-Button ("Naechste Aufgabe" oder "Weiter").</summary>
+    /// <summary>Text für den Continue-Button ("Nächste Aufgabe" oder "Weiter").</summary>
     [ObservableProperty]
     private string _continueButtonText = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // COMPUTED PROPERTIES FOR VIEW BINDING
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Gets the difficulty as star display string.
+    /// </summary>
+    public string DifficultyStars => Difficulty switch
+    {
+        OrderDifficulty.Easy => "★☆☆",
+        OrderDifficulty.Medium => "★★☆",
+        OrderDifficulty.Hard => "★★★",
+        OrderDifficulty.Expert => "★★★★",
+        _ => "★☆☆"
+    };
+
+    // Timing bar zone pixel properties (assumes 300px bar width)
+    private const double BAR_WIDTH = 300.0;
+
+    public double OkZonePixelWidth => OkZoneWidth * BAR_WIDTH;
+    public Avalonia.Thickness OkZoneMargin => new(OkZoneStart * BAR_WIDTH, 0, 0, 0);
+
+    public double GoodZonePixelWidth => GoodZoneWidth * BAR_WIDTH;
+    public Avalonia.Thickness GoodZoneMargin => new(GoodZoneStart * BAR_WIDTH, 0, 0, 0);
+
+    public double PerfectZonePixelWidth => PerfectZoneWidth * BAR_WIDTH;
+    public Avalonia.Thickness PerfectZoneMargin => new(PerfectZoneStart * BAR_WIDTH, 0, 0, 0);
+
+    public Avalonia.Thickness MarkerMargin => new(MarkerPosition * BAR_WIDTH - 3, 0, 0, 0);
 
     [ObservableProperty]
     private bool _adWatched;
@@ -175,7 +167,7 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _countdownText = "";
 
-    // Sterne-Anzeige (staggered: 0 -> 1 mit Verzoegerung)
+    // Sterne-Anzeige (staggered: 0→1 mit Verzoegerung)
     [ObservableProperty]
     private double _star1Opacity;
 
@@ -195,37 +187,52 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _tutorialText = "";
 
-    // ===================================================================
-    // COMPUTED PROPERTIES
-    // ===================================================================
+    // Direction of marker movement (1 = right, -1 = left)
+    private int _direction = 1;
 
-    public string DifficultyStars => Difficulty switch
-    {
-        OrderDifficulty.Easy => "★☆☆",
-        OrderDifficulty.Medium => "★★☆",
-        OrderDifficulty.Hard => "★★★",
-        OrderDifficulty.Expert => "★★★★",
-        _ => "★☆☆"
-    };
-
-    /// <summary>Fortschritts-Anzeige fuer Schlaege: "3/5"</summary>
-    public string HitsProgressDisplay => $"{HitsCompleted}/{HitsRequired}";
-
-    // ===================================================================
-    // PROPERTY CHANGE HANDLERS
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROPERTY CHANGE HANDLERS (notify computed properties)
+    // ═══════════════════════════════════════════════════════════════════════
 
     partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
 
-    partial void OnHitsCompletedChanged(int value) => OnPropertyChanged(nameof(HitsProgressDisplay));
+    partial void OnMarkerPositionChanged(double value) => OnPropertyChanged(nameof(MarkerMargin));
 
-    partial void OnHitsRequiredChanged(int value) => OnPropertyChanged(nameof(HitsProgressDisplay));
+    partial void OnOkZoneStartChanged(double value)
+    {
+        OnPropertyChanged(nameof(OkZoneMargin));
+    }
 
-    // ===================================================================
+    partial void OnOkZoneWidthChanged(double value)
+    {
+        OnPropertyChanged(nameof(OkZonePixelWidth));
+    }
+
+    partial void OnGoodZoneStartChanged(double value)
+    {
+        OnPropertyChanged(nameof(GoodZoneMargin));
+    }
+
+    partial void OnGoodZoneWidthChanged(double value)
+    {
+        OnPropertyChanged(nameof(GoodZonePixelWidth));
+    }
+
+    partial void OnPerfectZoneStartChanged(double value)
+    {
+        OnPropertyChanged(nameof(PerfectZoneMargin));
+    }
+
+    partial void OnPerfectZoneWidthChanged(double value)
+    {
+        OnPropertyChanged(nameof(PerfectZonePixelWidth));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
 
-    public ForgeGameViewModel(
+    public SawingGameViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
@@ -237,22 +244,22 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
         _localizationService = localizationService;
     }
 
-    // ===================================================================
-    // INITIALIZATION
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
+    // INITIALIZATION (replaces IQueryAttributable)
+    // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Initialisiert das Spiel mit einer Auftrags-ID.
+    /// Initialize the game with an order ID.
     /// </summary>
     public void SetOrderId(string orderId)
     {
         OrderId = orderId;
 
-        // Zustand zuruecksetzen
+        // Zustand zurücksetzen (sonst bleibt Ergebnis-Screen stehen)
         IsPlaying = false;
         IsResultShown = false;
 
-        // Schwierigkeit und Spieltyp aus aktivem Auftrag
+        // Get difficulty and game type from active order
         var activeOrder = _gameStateService.GetActiveOrder();
         if (activeOrder != null)
         {
@@ -271,17 +278,18 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
                 TaskProgressDisplay = "";
             }
 
-            // Letzte Aufgabe?
+            // Letzte Aufgabe? (nach RecordTaskResult wird IsCompleted true)
             IsLastTask = currentTaskNum >= totalTasks;
             ContinueButtonText = IsLastTask
                 ? _localizationService.GetString("Continue")
                 : _localizationService.GetString("NextTask");
 
-            // Aktuellen Task-Typ pruefen
+            // Get current task's game type
             var currentTask = activeOrder.CurrentTask;
             if (currentTask != null)
             {
                 GameType = currentTask.GameType;
+                UpdateGameTypeVisuals();
             }
         }
         else
@@ -292,8 +300,9 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
             ContinueButtonText = _localizationService.GetString("Continue");
         }
 
-        UpdateGameTypeVisuals();
+        // Initialize zones based on difficulty
         InitializeZones();
+
         CheckAndShowTutorial(GameType);
     }
 
@@ -301,66 +310,50 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     {
         string L(string key) => _localizationService.GetString(key);
 
-        GameTitle = L("ForgeGameTitle");
-        GameIcon = "Anvil";
-        ActionButtonText = L("HammerNow");
-        InstructionText = L("HammerAtRightTemperature");
+        (GameTitle, GameIcon, ActionButtonText, InstructionText) = GameType switch
+        {
+            MiniGameType.Sawing => (L("SawingTitle"), "Saw", L("SawNow"), L("StopInGreenZone")),
+            MiniGameType.Planing => (L("PlaningTitle"), "Axe", L("PlaneNow"), L("StopForSmoothSurface")),
+            MiniGameType.TileLaying => (L("TileLayingTitle"), "ViewDashboard", L("LayNow"), L("StopAtPerfectMoment")),
+            MiniGameType.Measuring => (L("MeasuringTitle"), "Ruler", L("MeasureNow"), L("StopAtRightLength")),
+            _ => (L("SawingTitle"), "Saw", L("SawNow"), L("StopInGreenZone"))
+        };
     }
 
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
     // GAME LOGIC
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
 
     private void InitializeZones()
     {
-        // Zielzonen basierend auf Schwierigkeit
+        // Get zone sizes based on difficulty
         double perfectSize = Difficulty.GetPerfectZoneSize();
-
-        // Tool-Bonus: Hammer vergroessert die Zielzone
-        var hammerTool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Hammer);
-        if (hammerTool != null) perfectSize += perfectSize * hammerTool.ZoneBonus;
-
+        // Tool-Bonus: Saege vergroessert die Zielzone
+        var sawTool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Saw);
+        if (sawTool != null) perfectSize += perfectSize * sawTool.ZoneBonus;
         double goodSize = perfectSize * 2;
         double okSize = perfectSize * 3;
 
-        // Ziel-Temperatur zufaellig (zwischen 0.3 und 0.8)
+        // Randomize the target position (between 0.2 and 0.8)
         var random = Random.Shared;
-        double targetCenter = 0.35 + (random.NextDouble() * 0.3);
+        double targetCenter = 0.3 + (random.NextDouble() * 0.4);
 
-        // Zonen-Positionen (zentriert auf Ziel)
-        TargetTemperatureWidth = perfectSize;
-        TargetTemperatureStart = targetCenter - (perfectSize / 2);
+        // Calculate zone positions (centered on target)
+        PerfectZoneWidth = perfectSize;
+        PerfectZoneStart = targetCenter - (perfectSize / 2);
 
-        GoodTemperatureWidth = goodSize;
-        GoodTemperatureStart = targetCenter - (goodSize / 2);
+        GoodZoneWidth = goodSize;
+        GoodZoneStart = targetCenter - (goodSize / 2);
 
-        OkTemperatureWidth = okSize;
-        OkTemperatureStart = targetCenter - (okSize / 2);
+        OkZoneWidth = okSize;
+        OkZoneStart = targetCenter - (okSize / 2);
 
-        // Geschwindigkeit basierend auf Schwierigkeit
+        // Set speed based on difficulty
         SpeedMultiplier = Difficulty.GetSpeedMultiplier();
 
-        // Benoetigte Schlaege basierend auf Schwierigkeit
-        HitsRequired = Difficulty switch
-        {
-            OrderDifficulty.Easy => 3,
-            OrderDifficulty.Medium => 5,
-            OrderDifficulty.Hard => 7,
-            OrderDifficulty.Expert => 10,
-            _ => 5
-        };
-
-        // Zuruecksetzen
-        Temperature = 0;
-        HitsCompleted = 0;
-        PerfectHits = 0;
-        GoodHits = 0;
-        OkHits = 0;
-        MissHits = 0;
-        _heatTime = 0;
-        _heatDirection = 1.0;
-        IsHeating = true;
-        IsHammering = false;
+        // Reset marker
+        MarkerPosition = 0;
+        _direction = 1;
     }
 
     [RelayCommand]
@@ -370,14 +363,8 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
 
         IsResultShown = false;
         _isEnding = false;
-        Temperature = 0;
-        HitsCompleted = 0;
-        PerfectHits = 0;
-        GoodHits = 0;
-        OkHits = 0;
-        MissHits = 0;
-        _heatTime = 0;
-        _heatDirection = 1.0;
+        MarkerPosition = 0;
+        _direction = 1;
 
         // Countdown 3-2-1-Los!
         IsCountdownActive = true;
@@ -404,68 +391,42 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     {
         if (!IsPlaying) return;
 
-        _heatTime += TICK_INTERVAL_MS / 1000.0;
+        // Move marker
+        MarkerPosition += MARKER_SPEED * SpeedMultiplier * _direction;
 
-        // Temperatur steigt mit Sinus-Oszillation (natuerliches Auf und Ab der Esse)
-        double heatWave = Math.Sin(_heatTime * 2.5 * SpeedMultiplier) * 0.3;
-        double baseHeat = HEAT_RATE * SpeedMultiplier;
-
-        // Temperatur aendern: steigt tendenziell, mit Oszillation
-        Temperature += (baseHeat + heatWave * 0.005) * _heatDirection;
-
-        // Natuerliche Abkuehlung (immer leicht, staerker bei hoher Temperatur)
-        Temperature -= COOL_DECAY * Temperature * SpeedMultiplier;
-
-        // Grenzen einhalten
-        if (Temperature >= 1.0)
+        // Bounce at edges
+        if (MarkerPosition >= 1.0)
         {
-            Temperature = 1.0;
-            _heatDirection = -0.5; // Kehrt um, kuehlt langsam
+            MarkerPosition = 1.0;
+            _direction = -1;
         }
-        else if (Temperature <= 0.0)
+        else if (MarkerPosition <= 0.0)
         {
-            Temperature = 0.0;
-            _heatDirection = 1.0; // Heizt wieder auf
+            MarkerPosition = 0.0;
+            _direction = 1;
         }
-
-        // Richtung langsam normalisieren
-        if (_heatDirection < 1.0)
-        {
-            _heatDirection += 0.002 * SpeedMultiplier;
-            if (_heatDirection > 1.0) _heatDirection = 1.0;
-        }
-
-        IsHeating = _heatDirection > 0;
     }
 
     [RelayCommand]
-    private async Task HammerStrikeAsync()
+    private async Task StopMarkerAsync()
     {
-        if (!IsPlaying || _isEnding || IsHammering) return;
+        if (!IsPlaying || _isEnding) return;
+        _isEnding = true;
 
-        // Hammer-Animation starten
-        IsHammering = true;
+        IsPlaying = false;
+        _timer?.Stop();
 
-        // Aktuellen Treffer auswerten
-        var hitRating = CalculateHitRating(Temperature);
-        string zoneName = hitRating.GetLocalizationKey();
-
-        // Treffer zaehlen
-        switch (hitRating)
-        {
-            case MiniGameRating.Perfect: PerfectHits++; break;
-            case MiniGameRating.Good: GoodHits++; break;
-            case MiniGameRating.Ok: OkHits++; break;
-            default: MissHits++; break;
-        }
-
-        HitsCompleted++;
+        // Calculate result based on marker position
+        Result = CalculateRating(MarkerPosition);
 
         // Zonen-Treffer Event feuern
-        ZoneHit?.Invoke(this, zoneName);
+        ZoneHit?.Invoke(this, Result.GetLocalizationKey());
 
-        // Sound abspielen
-        var sound = hitRating switch
+        // Record result in game state
+        _gameStateService.RecordMiniGameResult(Result);
+
+        // Play sound
+        var sound = Result switch
         {
             MiniGameRating.Perfect => GameSound.Perfect,
             MiniGameRating.Good => GameSound.Good,
@@ -474,44 +435,17 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
         };
         await _audioService.PlaySoundAsync(sound);
 
-        // Temperatur sinkt nach Hammerschlag (Werkstueck kuehlt durch Verformung)
-        Temperature = Math.Max(0, Temperature - COOL_RATE);
-        _heatDirection = 1.0; // Sofort wieder aufheizen
-
-        // Kurze Hammer-Animation-Dauer
-        await Task.Delay(150);
-        IsHammering = false;
-
-        // Pruefen ob alle Schlaege erledigt
-        if (HitsCompleted >= HitsRequired)
-        {
-            await EndGameAsync();
-        }
-    }
-
-    private async Task EndGameAsync()
-    {
-        if (_isEnding) return;
-        _isEnding = true;
-
-        IsPlaying = false;
-        _timer?.Stop();
-
-        // Gesamt-Rating basierend auf Treffer-Verteilung
-        Result = CalculateOverallRating();
-
-        // Ergebnis im GameState speichern
-        _gameStateService.RecordMiniGameResult(Result);
-
         // Belohnungen berechnen
         var order = _gameStateService.GetActiveOrder();
         if (order != null && IsLastTask)
         {
+            // Gesamt-Belohnung aus allen bisherigen Ratings + aktuellem Ergebnis
             RewardAmount = order.FinalReward;
             XpAmount = order.FinalXp;
         }
         else if (order != null)
         {
+            // Teilbelohnung für diese Aufgabe anzeigen
             int taskCount = Math.Max(1, order.Tasks.Count);
             decimal basePerTask = order.BaseReward / taskCount;
             RewardAmount = basePerTask * Result.GetRewardPercentage()
@@ -522,25 +456,25 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
         }
         else
         {
-            // QuickJob
+            // QuickJob: Belohnung aus aktivem QuickJob lesen
             var quickJob = _gameStateService.State.ActiveQuickJob;
             RewardAmount = quickJob?.Reward ?? 0;
             XpAmount = quickJob?.XpReward ?? 0;
         }
 
-        // Ergebnis-Anzeige
+        // Set result display
         ResultText = _localizationService.GetString(Result.GetLocalizationKey());
         ResultEmoji = Result switch
         {
             MiniGameRating.Perfect => "★★★",
             MiniGameRating.Good => "★★",
             MiniGameRating.Ok => "★",
-            _ => "---"
+            _ => "💨"
         };
 
         IsResultShown = true;
 
-        // Sterne-Bewertung
+        // Sterne-Bewertung berechnen
         int starCount = Result switch
         {
             MiniGameRating.Perfect => 3,
@@ -579,7 +513,7 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
         }
         else
         {
-            // Zwischen-Runde: Sterne sofort setzen
+            // Zwischen-Runde: Sterne sofort setzen, keine Animation
             Star1Opacity = starCount >= 1 ? 1.0 : 0.3;
             Star2Opacity = starCount >= 2 ? 1.0 : 0.3;
             Star3Opacity = starCount >= 3 ? 1.0 : 0.3;
@@ -597,6 +531,7 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
         var success = await _rewardedAdService.ShowAdAsync("score_double");
         if (success)
         {
+            // Double the rewards
             RewardAmount *= 2;
             XpAmount *= 2;
             AdWatched = true;
@@ -606,54 +541,34 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
         }
     }
 
-    /// <summary>
-    /// Bewertet einen einzelnen Hammerschlag basierend auf der Temperatur.
-    /// </summary>
-    private MiniGameRating CalculateHitRating(double temp)
+    private MiniGameRating CalculateRating(double position)
     {
-        // Perfect-Zone pruefen
-        if (temp >= TargetTemperatureStart && temp <= TargetTemperatureStart + TargetTemperatureWidth)
+        // Check if in perfect zone
+        if (position >= PerfectZoneStart && position <= PerfectZoneStart + PerfectZoneWidth)
         {
             return MiniGameRating.Perfect;
         }
 
-        // Good-Zone pruefen
-        if (temp >= GoodTemperatureStart && temp <= GoodTemperatureStart + GoodTemperatureWidth)
+        // Check if in good zone
+        if (position >= GoodZoneStart && position <= GoodZoneStart + GoodZoneWidth)
         {
             return MiniGameRating.Good;
         }
 
-        // Ok-Zone pruefen
-        if (temp >= OkTemperatureStart && temp <= OkTemperatureStart + OkTemperatureWidth)
+        // Check if in OK zone
+        if (position >= OkZoneStart && position <= OkZoneStart + OkZoneWidth)
         {
             return MiniGameRating.Ok;
         }
 
-        // Daneben
-        return MiniGameRating.Miss;
-    }
-
-    /// <summary>
-    /// Berechnet das Gesamtergebnis basierend auf allen Schlaegen.
-    /// </summary>
-    private MiniGameRating CalculateOverallRating()
-    {
-        if (HitsRequired <= 0) return MiniGameRating.Miss;
-
-        // Punkte: Perfect=3, Good=2, Ok=1, Miss=0
-        int totalPoints = PerfectHits * 3 + GoodHits * 2 + OkHits * 1;
-        int maxPoints = HitsRequired * 3;
-        double ratio = (double)totalPoints / maxPoints;
-
-        if (ratio >= 0.85) return MiniGameRating.Perfect;
-        if (ratio >= 0.60) return MiniGameRating.Good;
-        if (ratio >= 0.35) return MiniGameRating.Ok;
+        // Missed
         return MiniGameRating.Miss;
     }
 
     [RelayCommand]
     private void Continue()
     {
+        // Check if there are more tasks in the order
         var order = _gameStateService.GetActiveOrder();
         if (order == null)
         {
@@ -663,14 +578,17 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
 
         if (order.IsCompleted)
         {
+            // Order complete - grant rewards and go back
             _gameStateService.CompleteActiveOrder();
             NavigationRequested?.Invoke("../..");
         }
         else
         {
+            // More tasks - go to next mini-game
             var nextTask = order.CurrentTask;
             if (nextTask != null)
             {
+                // Replace current page with next mini-game
                 NavigationRequested?.Invoke($"../{nextTask.GameType.GetRoute()}?orderId={order.Id}");
             }
             else
@@ -684,6 +602,7 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
     private void DismissTutorial()
     {
         ShowTutorial = false;
+        // Als gesehen markieren und speichern
         var state = _gameStateService.State;
         if (!state.SeenMiniGameTutorials.Contains(GameType))
         {
@@ -702,9 +621,9 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
         NavigationRequested?.Invoke("../..");
     }
 
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
     // HELPERS
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
 
     private void CheckAndShowTutorial(MiniGameType gameType)
     {
@@ -717,9 +636,9 @@ public partial class ForgeGameViewModel : ObservableObject, IDisposable
         }
     }
 
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
     // DISPOSAL
-    // ===================================================================
+    // ═══════════════════════════════════════════════════════════════════════
 
     public void Dispose()
     {

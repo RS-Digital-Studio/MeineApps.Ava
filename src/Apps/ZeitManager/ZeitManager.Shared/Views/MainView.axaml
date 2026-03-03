@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:ZeitManager.ViewModels"
-             xmlns:views="using:ZeitManager.Views"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:controls="using:MeineApps.UI.Controls"
              x:Class="ZeitManager.Views.MainView"
@@ -51,27 +50,27 @@
       <Border AutomationProperties.AutomationId="Main_TabTimer"
               Classes="TabContent"
               Classes.Active="{Binding IsTimerActive}">
-        <views:TimerView DataContext="{Binding TimerViewModel}" />
+        <ContentControl Content="{Binding TimerViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_TabStopwatch"
               Classes="TabContent"
               Classes.Active="{Binding IsStopwatchActive}">
-        <views:StopwatchView DataContext="{Binding StopwatchViewModel}" />
+        <ContentControl Content="{Binding StopwatchViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_TabPomodoro"
               Classes="TabContent"
               Classes.Active="{Binding IsPomodoroActive}">
-        <views:PomodoroView DataContext="{Binding PomodoroViewModel}" />
+        <ContentControl Content="{Binding PomodoroViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_TabAlarm"
               Classes="TabContent"
               Classes.Active="{Binding IsAlarmActive}">
-        <views:AlarmView DataContext="{Binding AlarmViewModel}" />
+        <ContentControl Content="{Binding AlarmViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_TabSettings"
               Classes="TabContent"
               Classes.Active="{Binding IsSettingsActive}">
-        <views:SettingsView DataContext="{Binding SettingsViewModel}" />
+        <ContentControl Content="{Binding SettingsViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
     </Panel>
 

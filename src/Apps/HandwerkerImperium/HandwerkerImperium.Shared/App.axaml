@@ -4,7 +4,12 @@
              xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:converters="using:MeineApps.Core.Ava.Converters"
              xmlns:localConverters="using:HandwerkerImperium.Converters"
+             xmlns:core="using:MeineApps.Core.Ava"
              x:Class="HandwerkerImperium.App">
+
+  <Application.DataTemplates>
+    <core:ViewLocator />
+  </Application.DataTemplates>
 
   <!-- App-lokale Handwerker-Farbpalette -->
   <Application.Resources>

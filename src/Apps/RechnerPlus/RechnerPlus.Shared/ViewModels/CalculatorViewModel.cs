@@ -5,11 +5,12 @@ using CommunityToolkit.Mvvm.Input;
 using MeineApps.CalcLib;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using RechnerPlus.Services;
 
 namespace RechnerPlus.ViewModels;
 
-public partial class CalculatorViewModel : ObservableObject, IDisposable
+public partial class CalculatorViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private bool _isLoading;

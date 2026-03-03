@@ -7,6 +7,7 @@ using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Models.Events;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
@@ -15,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the workshop detail page.
 /// Shows upgrade options, workers, and statistics.
 /// </summary>
-public partial class WorkshopViewModel : ObservableObject, IDisposable
+public partial class WorkshopViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

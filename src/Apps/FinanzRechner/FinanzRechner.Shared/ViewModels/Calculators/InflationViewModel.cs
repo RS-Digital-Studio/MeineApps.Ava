@@ -8,6 +8,7 @@ using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
@@ -15,7 +16,7 @@ namespace FinanzRechner.ViewModels.Calculators;
 /// ViewModel fuer den Inflationsrechner.
 /// Berechnet Kaufkraftverlust ueber die Jahre.
 /// </summary>
-public partial class InflationViewModel : ObservableObject, IDisposable
+public partial class InflationViewModel : ViewModelBase, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;

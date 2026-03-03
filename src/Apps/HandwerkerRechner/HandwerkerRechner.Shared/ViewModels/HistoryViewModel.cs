@@ -5,13 +5,14 @@ using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels;
 
 /// <summary>
 /// ViewModel für den History-Tab - zeigt Berechnungshistorie gruppiert nach Rechner-Typ
 /// </summary>
-public partial class HistoryViewModel : ObservableObject
+public partial class HistoryViewModel : ViewModelBase
 {
     private readonly ICalculationHistoryService _historyService;
     private readonly ILocalizationService _localization;

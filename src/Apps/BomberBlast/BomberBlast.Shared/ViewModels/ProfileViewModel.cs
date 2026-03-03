@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Models.League;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
@@ -9,7 +10,7 @@ namespace BomberBlast.ViewModels;
 /// <summary>
 /// Profil-Seite: Spielername editieren, aktiver Skin/Frame, Stats-Übersicht.
 /// </summary>
-public partial class ProfileViewModel : ObservableObject, INavigable
+public partial class ProfileViewModel : ViewModelBase, INavigable
 {
     private readonly ILeagueService _leagueService;
     private readonly ICustomizationService _customizationService;

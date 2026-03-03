@@ -4,7 +4,7 @@ using Avalonia.Labs.Controls;
 using Avalonia.Threading;
 using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
-using HandwerkerImperium.ViewModels;
+using HandwerkerImperium.ViewModels.MiniGames;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Views.MiniGames;

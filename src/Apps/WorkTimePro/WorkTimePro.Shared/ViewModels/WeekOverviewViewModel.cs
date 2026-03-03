@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Models;
 using WorkTimePro.Helpers;
@@ -13,7 +14,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for week overview
 /// </summary>
-public partial class WeekOverviewViewModel : ObservableObject
+public partial class WeekOverviewViewModel : ViewModelBase
 {
     private readonly ICalculationService _calculation;
     private readonly IDatabaseService _database;

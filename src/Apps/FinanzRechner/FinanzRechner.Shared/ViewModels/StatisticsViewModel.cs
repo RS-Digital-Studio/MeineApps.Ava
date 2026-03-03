@@ -7,13 +7,14 @@ using FinanzRechner.Models;
 using FinanzRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class StatisticsViewModel : ObservableObject, IDisposable
+public partial class StatisticsViewModel : ViewModelBase, IDisposable
 {
     private readonly IExpenseService _expenseService;
     private readonly IExportService _exportService;

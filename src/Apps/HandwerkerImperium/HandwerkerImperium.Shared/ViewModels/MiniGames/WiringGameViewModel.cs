@@ -5,15 +5,16 @@ using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
-/// ViewModel for the Painting mini-game.
-/// Player must paint all target cells without painting outside the lines.
+/// ViewModel for the Wiring mini-game.
+/// Player must connect colored wires from left to right.
 /// </summary>
-public partial class PaintingGameViewModel : ObservableObject, IDisposable
+public partial class WiringGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
@@ -43,19 +44,16 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
     private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
-    private ObservableCollection<PaintCell> _cells = [];
+    private ObservableCollection<Wire> _leftWires = [];
 
     [ObservableProperty]
-    private int _gridSize = 5;
+    private ObservableCollection<Wire> _rightWires = [];
 
     [ObservableProperty]
-    private int _targetCellCount;
+    private int _wireCount = 4;
 
     [ObservableProperty]
-    private int _paintedTargetCount;
-
-    [ObservableProperty]
-    private int _mistakeCount;
+    private int _connectedCount;
 
     [ObservableProperty]
     private int _timeRemaining;
@@ -70,7 +68,7 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
     private bool _isResultShown;
 
     [ObservableProperty]
-    private string _selectedColor = "#4169E1";
+    private Wire? _selectedLeftWire;
 
     [ObservableProperty]
     private MiniGameRating _result;
@@ -86,9 +84,6 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private int _xpAmount;
-
-    [ObservableProperty]
-    private double _paintProgress;
 
     [ObservableProperty]
     private bool _canWatchAd;
@@ -132,32 +127,6 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _tutorialText = "";
 
-    // Combo-System: Aufeinanderfolgende korrekte Treffer
-    [ObservableProperty]
-    private int _comboCount;
-
-    [ObservableProperty]
-    private string _comboDisplay = "";
-
-    [ObservableProperty]
-    private bool _isComboActive;
-
-    /// <summary>
-    /// Bester Combo im aktuellen Spiel (fuer Bonus-Berechnung).
-    /// </summary>
-    private int _bestCombo;
-
-    /// <summary>
-    /// Combo-Multiplikator: 1.0 + (bestCombo / 5) * 0.25
-    /// z.B. Combo 5 → 1.25x, Combo 10 → 1.5x, Combo 20 → 2.0x
-    /// </summary>
-    public decimal ComboMultiplier => 1.0m + (_bestCombo / 5) * 0.25m;
-
-    /// <summary>
-    /// Event fuer Combo-Animation in der View.
-    /// </summary>
-    public event EventHandler? ComboIncreased;
-
     // ═══════════════════════════════════════════════════════════════════════
     // COMPUTED PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -174,20 +143,13 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
         _ => "★☆☆"
     };
 
-    /// <summary>
-    /// Width of the paint grid in pixels for WrapPanel constraint.
-    /// Each cell is 50px + 4px margin = 54px.
-    /// </summary>
-    public double PaintGridWidth => GridSize * 54;
-
     partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
-    partial void OnGridSizeChanged(int value) => OnPropertyChanged(nameof(PaintGridWidth));
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public PaintingGameViewModel(
+    public WiringGameViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
@@ -234,7 +196,7 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
 
         InitializeGame();
 
-        CheckAndShowTutorial(MiniGameType.PaintingGame);
+        CheckAndShowTutorial(MiniGameType.WiringGame);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -243,148 +205,78 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
 
     private void InitializeGame()
     {
-        // Set grid size and time based on difficulty
-        (GridSize, MaxTime) = Difficulty switch
+        // Set wire count and time based on difficulty
+        (WireCount, MaxTime) = Difficulty switch
         {
-            OrderDifficulty.Easy => (4, 24),
-            OrderDifficulty.Medium => (5, 28),
-            OrderDifficulty.Hard => (5, 22),
-            OrderDifficulty.Expert => (6, 30),
-            _ => (5, 28)
+            OrderDifficulty.Easy => (3, 15),
+            OrderDifficulty.Medium => (4, 16),
+            OrderDifficulty.Hard => (5, 17),
+            OrderDifficulty.Expert => (7, 18),
+            _ => (4, 15)
         };
 
-        // Tool-Bonus: Pinsel gibt Extra-Sekunden
-        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Paintbrush);
+        // Tool-Bonus: Schraubendreher gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Screwdriver);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
-        PaintedTargetCount = 0;
-        MistakeCount = 0;
+        ConnectedCount = 0;
         IsPlaying = false;
         IsResultShown = false;
-        PaintProgress = 0;
-        ComboCount = 0;
-        _bestCombo = 0;
-        IsComboActive = false;
-        ComboDisplay = "";
+        SelectedLeftWire = null;
 
-        // Choose a random paint color
-        SelectedColor = GetRandomPaintColor();
-
-        GenerateCanvas();
+        GenerateWires();
     }
 
-    private void GenerateCanvas()
+    private void GenerateWires()
     {
-        Cells.Clear();
+        LeftWires.Clear();
+        RightWires.Clear();
 
-        // Generate a shape pattern for the target area
-        var targetPattern = GenerateTargetPattern();
+        var colors = GetWireColors();
+        var random = Random.Shared;
 
-        for (int row = 0; row < GridSize; row++)
+        // Create wires with colors
+        for (int i = 0; i < WireCount; i++)
         {
-            for (int col = 0; col < GridSize; col++)
+            var color = colors[i];
+
+            LeftWires.Add(new Wire
             {
-                bool isTarget = targetPattern[row, col];
+                Index = i,
+                WireColor = color,
+                IsLeft = true
+            });
 
-                Cells.Add(new PaintCell
-                {
-                    Row = row,
-                    Column = col,
-                    Index = row * GridSize + col,
-                    IsTarget = isTarget,
-                    TargetColor = SelectedColor
-                });
-            }
-        }
-
-        TargetCellCount = Cells.Count(c => c.IsTarget);
-    }
-
-    private bool[,] GenerateTargetPattern()
-    {
-        var pattern = new bool[GridSize, GridSize];
-
-        // Generate different shapes based on difficulty
-        int shapeType = Random.Shared.Next(3);
-
-        switch (shapeType)
-        {
-            case 0: // Rectangle
-                GenerateRectangle(pattern);
-                break;
-            case 1: // L-Shape
-                GenerateLShape(pattern);
-                break;
-            case 2: // T-Shape
-                GenerateTShape(pattern);
-                break;
-        }
-
-        return pattern;
-    }
-
-    private void GenerateRectangle(bool[,] pattern)
-    {
-        int startRow = Random.Shared.Next(0, GridSize / 2);
-        int startCol = Random.Shared.Next(0, GridSize / 2);
-        int height = Random.Shared.Next(2, GridSize - startRow);
-        int width = Random.Shared.Next(2, GridSize - startCol);
-
-        for (int r = startRow; r < startRow + height; r++)
-        {
-            for (int c = startCol; c < startCol + width; c++)
+            RightWires.Add(new Wire
             {
-                pattern[r, c] = true;
-            }
+                Index = i,
+                WireColor = color,
+                IsLeft = false
+            });
+        }
+
+        // Shuffle right wires (so they don't match positions)
+        var shuffledRight = RightWires.OrderBy(_ => random.Next()).ToList();
+        RightWires.Clear();
+        for (int i = 0; i < shuffledRight.Count; i++)
+        {
+            var wire = shuffledRight[i];
+            wire.Index = i;
+            RightWires.Add(wire);
         }
     }
 
-    private void GenerateLShape(bool[,] pattern)
+    private List<WireColor> GetWireColors()
     {
-        // Vertical part
-        int startCol = Random.Shared.Next(1, GridSize - 2);
-        for (int r = 0; r < GridSize - 1; r++)
-        {
-            pattern[r, startCol] = true;
-        }
-
-        // Horizontal part at bottom
-        for (int c = startCol; c < GridSize; c++)
-        {
-            pattern[GridSize - 2, c] = true;
-        }
-    }
-
-    private void GenerateTShape(bool[,] pattern)
-    {
-        int midRow = GridSize / 2;
-        int midCol = GridSize / 2;
-
-        // Vertical part
-        for (int r = 0; r < GridSize; r++)
-        {
-            pattern[r, midCol] = true;
-        }
-
-        // Horizontal part at top
-        for (int c = 1; c < GridSize - 1; c++)
-        {
-            pattern[1, c] = true;
-        }
-    }
-
-    private static string GetRandomPaintColor()
-    {
-        var colors = new[]
-        {
-            "#4169E1", // Royal Blue
-            "#32CD32", // Lime Green
-            "#FF6347", // Tomato
-            "#FFD700", // Gold
-            "#9370DB", // Medium Purple
-            "#20B2AA"  // Light Sea Green
-        };
-
-        return colors[Random.Shared.Next(colors.Length)];
+        return
+        [
+            WireColor.Red,
+            WireColor.Blue,
+            WireColor.Green,
+            WireColor.Yellow,
+            WireColor.Orange,
+            WireColor.Purple,
+            WireColor.Cyan
+        ];
     }
 
     [RelayCommand]
@@ -426,7 +318,7 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
 
             if (TimeRemaining <= 0)
             {
-                await EndGameAsync();
+                await EndGameAsync(false);
             }
         }
         catch (Exception ex)
@@ -438,62 +330,63 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
-    private async Task PaintCellAsync(PaintCell? cell)
+    private async Task SelectLeftWireAsync(Wire? wire)
     {
-        if (cell == null || !IsPlaying || IsResultShown || cell.IsPainted) return;
+        if (wire == null || !IsPlaying || IsResultShown || wire.IsConnected) return;
 
-        // Paint the cell
-        cell.IsPainted = true;
-        cell.PaintedAt = DateTime.UtcNow;
-        cell.PaintColor = SelectedColor;
-
-        if (cell.IsTarget)
+        // Deselect previous
+        if (SelectedLeftWire != null)
         {
-            PaintedTargetCount++;
+            SelectedLeftWire.IsSelected = false;
+        }
 
-            // Combo erhoehen
-            ComboCount++;
-            if (ComboCount > _bestCombo) _bestCombo = ComboCount;
+        // Select new wire
+        wire.IsSelected = true;
+        SelectedLeftWire = wire;
 
-            if (ComboCount >= 3)
+        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+    }
+
+    [RelayCommand]
+    private async Task SelectRightWireAsync(Wire? wire)
+    {
+        if (wire == null || !IsPlaying || IsResultShown || wire.IsConnected) return;
+        if (SelectedLeftWire == null) return;
+
+        // Check if colors match
+        if (SelectedLeftWire.WireColor == wire.WireColor)
+        {
+            // Correct match!
+            SelectedLeftWire.IsConnected = true;
+            SelectedLeftWire.IsSelected = false;
+            wire.IsConnected = true;
+            ConnectedCount++;
+
+            await _audioService.PlaySoundAsync(GameSound.Good);
+
+            // Check if all wires are connected
+            if (ConnectedCount >= WireCount)
             {
-                IsComboActive = true;
-                ComboDisplay = string.Format(
-                    _localizationService.GetString("ComboX"), ComboCount);
-                ComboIncreased?.Invoke(this, EventArgs.Empty);
-                await _audioService.PlaySoundAsync(GameSound.ComboHit);
-            }
-            else
-            {
-                await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+                await EndGameAsync(true);
             }
         }
         else
         {
-            MistakeCount++;
-            cell.HasError = true;
-
-            // Combo zuruecksetzen
-            ComboCount = 0;
-            IsComboActive = false;
-            ComboDisplay = "";
-
+            // Wrong match - flash error
+            wire.HasError = true;
             await _audioService.PlaySoundAsync(GameSound.Miss);
+
+            // Reset error state after a short delay
+            await Task.Delay(300);
+            wire.HasError = false;
         }
 
-        // Update progress (avoid division by zero)
-        PaintProgress = TargetCellCount > 0
-            ? (double)PaintedTargetCount / TargetCellCount
-            : 0;
-
-        // Check if all target cells are painted
-        if (PaintedTargetCount >= TargetCellCount)
-        {
-            await EndGameAsync();
-        }
+        // Deselect
+        SelectedLeftWire.IsSelected = false;
+        SelectedLeftWire = null;
     }
 
-    private async Task EndGameAsync()
+    private async Task EndGameAsync(bool completed)
     {
         if (_isEnding) return;
         _isEnding = true;
@@ -501,30 +394,27 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
         IsPlaying = false;
         _timer?.Stop();
 
-        // Calculate rating based on performance (avoid division by zero)
-        double completionRatio = TargetCellCount > 0
-            ? (double)PaintedTargetCount / TargetCellCount
-            : 0;
-        int totalAttempts = PaintedTargetCount + MistakeCount;
-        double accuracy = totalAttempts > 0
-            ? (double)PaintedTargetCount / totalAttempts
-            : 0;
+        // Calculate rating based on performance
+        if (completed)
+        {
+            double timeRatio = (double)TimeRemaining / MaxTime;
 
-        if (completionRatio >= 1.0 && MistakeCount == 0)
-        {
-            Result = MiniGameRating.Perfect;
-        }
-        else if (completionRatio >= 0.9 && accuracy >= 0.8)
-        {
-            Result = MiniGameRating.Good;
-        }
-        else if (completionRatio >= 0.7 && accuracy >= 0.6)
-        {
-            Result = MiniGameRating.Ok;
+            if (timeRatio > 0.6)
+                Result = MiniGameRating.Perfect;
+            else if (timeRatio > 0.3)
+                Result = MiniGameRating.Good;
+            else
+                Result = MiniGameRating.Ok;
         }
         else
         {
-            Result = MiniGameRating.Miss;
+            // Partial credit based on connections made
+            double completionRatio = (double)ConnectedCount / WireCount;
+
+            if (completionRatio >= 0.75)
+                Result = MiniGameRating.Ok;
+            else
+                Result = MiniGameRating.Miss;
         }
 
         // Record result
@@ -540,14 +430,13 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
         };
         await _audioService.PlaySoundAsync(sound);
 
-        // Belohnungen berechnen (Combo-Multiplikator anwenden)
-        var comboMult = ComboMultiplier;
+        // Belohnungen berechnen
         var order = _gameStateService.GetActiveOrder();
         if (order != null && IsLastTask)
         {
-            // Gesamt-Belohnung mit Combo-Multiplikator
-            RewardAmount = order.FinalReward * comboMult;
-            XpAmount = (int)(order.FinalXp * comboMult);
+            // Gesamt-Belohnung
+            RewardAmount = order.FinalReward;
+            XpAmount = order.FinalXp;
         }
         else if (order != null)
         {
@@ -555,17 +444,17 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
             int taskCount = Math.Max(1, order.Tasks.Count);
             decimal basePerTask = order.BaseReward / taskCount;
             RewardAmount = basePerTask * Result.GetRewardPercentage()
-                * order.Difficulty.GetRewardMultiplier() * order.OrderType.GetRewardMultiplier() * comboMult;
+                * order.Difficulty.GetRewardMultiplier() * order.OrderType.GetRewardMultiplier();
             int baseXpPerTask = order.BaseXp / taskCount;
             XpAmount = (int)(baseXpPerTask * Result.GetXpPercentage()
-                * order.Difficulty.GetXpMultiplier() * order.OrderType.GetXpMultiplier() * comboMult);
+                * order.Difficulty.GetXpMultiplier() * order.OrderType.GetXpMultiplier());
         }
         else
         {
-            // QuickJob: Belohnung aus aktivem QuickJob lesen mit Combo-Multiplikator
+            // QuickJob: Belohnung aus aktivem QuickJob lesen
             var quickJob = _gameStateService.State.ActiveQuickJob;
-            RewardAmount = (quickJob?.Reward ?? 0) * comboMult;
-            XpAmount = (int)((quickJob?.XpReward ?? 0) * comboMult);
+            RewardAmount = quickJob?.Reward ?? 0;
+            XpAmount = quickJob?.XpReward ?? 0;
         }
 
         // Set result display
@@ -681,9 +570,9 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
         ShowTutorial = false;
         // Als gesehen markieren und speichern
         var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.PaintingGame))
+        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.WiringGame))
         {
-            state.SeenMiniGameTutorials.Add(MiniGameType.PaintingGame);
+            state.SeenMiniGameTutorials.Add(MiniGameType.WiringGame);
             _gameStateService.MarkDirty();
         }
     }
@@ -737,57 +626,93 @@ public partial class PaintingGameViewModel : ObservableObject, IDisposable
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// <summary>
-/// Represents a single cell in the painting canvas.
+/// Colors for wires.
 /// </summary>
-public partial class PaintCell : ObservableObject
+public enum WireColor
 {
-    public int Row { get; set; }
-    public int Column { get; set; }
+    Red,
+    Blue,
+    Green,
+    Yellow,
+    Orange,
+    Purple,
+    Cyan
+}
+
+/// <summary>
+/// Represents a single wire in the wiring game.
+/// </summary>
+public partial class Wire : ObservableObject
+{
     public int Index { get; set; }
-    public bool IsTarget { get; set; }
-    public string TargetColor { get; set; } = "#FFFFFF";
+    public WireColor WireColor { get; set; }
+    public bool IsLeft { get; set; }
 
     [ObservableProperty]
-    private bool _isPainted;
-
-    /// <summary>Zeitpunkt des Streichens (fuer Frisch-Effekt im Renderer).</summary>
-    public DateTime PaintedAt { get; set; }
+    private bool _isSelected;
 
     [ObservableProperty]
-    private string _paintColor = "Transparent";
+    private bool _isConnected;
 
     [ObservableProperty]
     private bool _hasError;
 
-    // Notify computed display properties when paint state changes
-    partial void OnIsPaintedChanged(bool value)
+    // Notify visual properties when state changes
+    partial void OnIsSelectedChanged(bool value)
     {
-        OnPropertyChanged(nameof(DisplayColor));
-        OnPropertyChanged(nameof(IsPaintedCorrectly));
+        OnPropertyChanged(nameof(BackgroundColor));
+        OnPropertyChanged(nameof(BorderWidth));
     }
 
-    partial void OnPaintColorChanged(string value)
+    partial void OnIsConnectedChanged(bool value)
     {
-        OnPropertyChanged(nameof(DisplayColor));
+        OnPropertyChanged(nameof(BackgroundColor));
+        OnPropertyChanged(nameof(ContentOpacity));
+    }
+
+    partial void OnHasErrorChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BackgroundColor));
     }
 
     /// <summary>
-    /// Gets the background color for display.
-    /// Target cells show a faint outline, non-target cells are wall color.
+    /// Gets the hex color string for this wire.
     /// </summary>
-    public string DisplayColor => IsPainted
-        ? PaintColor
-        : IsTarget
-            ? "#30FFFFFF"  // Faint target indication
-            : "#4A5568";   // Wall color
+    public string ColorHex => WireColor switch
+    {
+        WireColor.Red => "#FF4444",
+        WireColor.Blue => "#4444FF",
+        WireColor.Green => "#44FF44",
+        WireColor.Yellow => "#FFFF44",
+        WireColor.Orange => "#FF8844",
+        WireColor.Purple => "#AA44FF",
+        WireColor.Cyan => "#00BCD4",
+        _ => "#888888"
+    };
 
     /// <summary>
-    /// Gets the border color.
+    /// Gibt die Anzeige-Farbe als Hex-String zurück (für XAML-Fallback).
     /// </summary>
-    public string BorderColor => IsTarget ? "#60FFFFFF" : "#2D3748";
+    public string DisplayColor => ColorHex;
 
     /// <summary>
-    /// Whether this cell is correctly painted (target cell that was painted).
+    /// Background color based on wire state (selected, connected, error).
     /// </summary>
-    public bool IsPaintedCorrectly => IsTarget && IsPainted;
+    public string BackgroundColor => HasError
+        ? "#40FF4444"    // Red tint for error
+        : IsConnected
+            ? "#3000FF00" // Green tint for connected
+            : IsSelected
+                ? "#30FFFFFF" // Light highlight for selected
+                : "Transparent";
+
+    /// <summary>
+    /// Content opacity (dimmed when connected).
+    /// </summary>
+    public double ContentOpacity => IsConnected ? 0.5 : 1.0;
+
+    /// <summary>
+    /// Border thickness (thicker when selected).
+    /// </summary>
+    public double BorderWidth => IsSelected ? 4 : 3;
 }

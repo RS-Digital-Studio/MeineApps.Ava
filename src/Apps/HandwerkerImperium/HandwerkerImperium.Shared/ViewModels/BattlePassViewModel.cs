@@ -5,13 +5,14 @@ using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerImperium.ViewModels;
 
 /// <summary>
 /// ViewModel für den Battle Pass (30 Tiers, Free + Premium Track, 30-Tage-Saison).
 /// </summary>
-public partial class BattlePassViewModel : ObservableObject
+public partial class BattlePassViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly IBattlePassService _battlePassService;

@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
@@ -10,7 +11,7 @@ using FinanzRechner.ViewModels.Calculators;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ViewModelBase
 {
     private readonly IPurchaseService _purchaseService;
     private readonly IAdService _adService;

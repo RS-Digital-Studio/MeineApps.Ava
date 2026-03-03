@@ -7,10 +7,11 @@ using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
-public partial class GardenViewModel : ObservableObject, IDisposable
+public partial class GardenViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

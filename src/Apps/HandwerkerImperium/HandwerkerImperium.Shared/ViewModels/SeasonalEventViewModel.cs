@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -11,7 +12,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für saisonale Events (4x pro Jahr, jeweils 2 Wochen).
 /// Zeigt Event-Info, Saison-Währung und den saisonalen Shop.
 /// </summary>
-public partial class SeasonalEventViewModel : ObservableObject
+public partial class SeasonalEventViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly ISeasonalEventService _seasonalEventService;

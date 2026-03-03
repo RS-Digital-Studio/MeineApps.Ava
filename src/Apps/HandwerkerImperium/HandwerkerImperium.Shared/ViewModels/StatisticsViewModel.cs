@@ -6,6 +6,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
@@ -14,7 +15,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the statistics page.
 /// Displays comprehensive game statistics and player progress.
 /// </summary>
-public partial class StatisticsViewModel : ObservableObject
+public partial class StatisticsViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly IPrestigeService _prestigeService;

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Services;
 using MeineApps.Core.Premium.Ava.Services;
 
@@ -11,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the high scores page.
 /// Zeigt die Top 10 Bestenlisten-Scores.
 /// </summary>
-public partial class HighScoresViewModel : ObservableObject, INavigable
+public partial class HighScoresViewModel : ViewModelBase, INavigable
 {
     private readonly IHighScoreService _highScoreService;
     private readonly IPurchaseService _purchaseService;

@@ -34,7 +34,7 @@
             <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" />
           </Transitions>
         </Border.Transitions>
-        <views:WeekOverviewView DataContext="{Binding WeekVm}" />
+        <ContentControl Content="{Binding WeekVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Calendar Tab -->
@@ -45,7 +45,7 @@
             <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" />
           </Transitions>
         </Border.Transitions>
-        <views:CalendarView DataContext="{Binding CalendarVm}" />
+        <ContentControl Content="{Binding CalendarVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Statistics Tab -->
@@ -56,7 +56,7 @@
             <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" />
           </Transitions>
         </Border.Transitions>
-        <views:StatisticsView DataContext="{Binding StatisticsVm}" />
+        <ContentControl Content="{Binding StatisticsVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Settings Tab -->
@@ -67,7 +67,7 @@
             <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" />
           </Transitions>
         </Border.Transitions>
-        <views:SettingsView DataContext="{Binding SettingsVm}" />
+        <ContentControl Content="{Binding SettingsVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- ============================================ -->
@@ -87,22 +87,22 @@
         </Border.Transitions>
 
         <Panel>
-          <views:DayDetailView DataContext="{Binding DayDetailVm}"
+          <ContentControl Content="{Binding DayDetailVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                                 IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsDayDetailActive}" />
 
-          <views:MonthOverviewView DataContext="{Binding MonthVm}"
+          <ContentControl Content="{Binding MonthVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                                     IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsMonthActive}" />
 
-          <views:YearOverviewView DataContext="{Binding YearVm}"
+          <ContentControl Content="{Binding YearVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                                    IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsYearActive}" />
 
-          <views:VacationView DataContext="{Binding VacationVm}"
+          <ContentControl Content="{Binding VacationVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                                IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsVacationActive}" />
 
-          <views:ShiftPlanView DataContext="{Binding ShiftPlanVm}"
+          <ContentControl Content="{Binding ShiftPlanVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                                 IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsShiftPlanActive}" />
 
-          <views:AchievementView DataContext="{Binding AchievementVm}"
+          <ContentControl Content="{Binding AchievementVm}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                                   IsVisible="{Binding $parent[views:MainView].((vm:MainViewModel)DataContext).IsAchievementActive}" />
         </Panel>
       </Border>

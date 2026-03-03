@@ -3,11 +3,12 @@ using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ViewModelBase
 {
     private readonly IThemeService _themeService;
     private readonly ILocalizationService _localizationService;

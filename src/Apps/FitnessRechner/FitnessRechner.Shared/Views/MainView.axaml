@@ -82,17 +82,17 @@
       <Border AutomationProperties.AutomationId="Main_TabContentProgress" Classes="TabContent"
               Classes.Active="{Binding IsProgressActive}"
               IsVisible="{Binding !IsCalculatorOpen}">
-        <views:ProgressView DataContext="{Binding ProgressViewModel}" />
+        <ContentControl Content="{Binding ProgressViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_TabContentFood" Classes="TabContent"
               Classes.Active="{Binding IsFoodActive}"
               IsVisible="{Binding !IsCalculatorOpen}">
-        <views:FoodSearchView DataContext="{Binding FoodSearchViewModel}" />
+        <ContentControl Content="{Binding FoodSearchViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_TabContentSettings" Classes="TabContent"
               Classes.Active="{Binding IsSettingsActive}"
               IsVisible="{Binding !IsCalculatorOpen}">
-        <views:SettingsView DataContext="{Binding SettingsViewModel}" />
+        <ContentControl Content="{Binding SettingsViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Calculator Page Overlay (Slide-In von rechts) -->

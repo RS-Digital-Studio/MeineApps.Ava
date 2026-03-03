@@ -3,11 +3,12 @@ using CommunityToolkit.Mvvm.Input;
 using FitnessRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace FitnessRechner.ViewModels;
 
-public partial class SettingsViewModel : ObservableObject, IDisposable
+public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IThemeService _themeService;

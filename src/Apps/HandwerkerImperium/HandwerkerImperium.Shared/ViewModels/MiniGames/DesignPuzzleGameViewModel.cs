@@ -6,15 +6,16 @@ using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using Material.Icons;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
 /// ViewModel fuer das Grundriss-Raetsel Mini-Game.
 /// Der Spieler muss Raeume einem Grundriss korrekt zuordnen.
 /// </summary>
-public partial class DesignPuzzleGameViewModel : ObservableObject, IDisposable
+public partial class DesignPuzzleGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

@@ -5,34 +5,45 @@ using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
-/// ViewModel für das Dachziegel-Muster-Puzzle.
-/// Der Spieler muss fehlende Dachziegel in korrekten Farben platzieren.
+/// ViewModel für das Bauplan-Reihenfolge-Minispiel.
+/// Der Spieler merkt sich die Reihenfolge der Bauschritte und tippt sie danach korrekt an.
 /// </summary>
-public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
+public partial class BlueprintGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly ILocalizationService _localizationService;
-    private DispatcherTimer? _timer;
+    private DispatcherTimer? _gameTimer;
     private bool _disposed;
     private bool _isEnding;
 
-    // Farb-Palette für Dachziegel (kontrastreich, gut unterscheidbar)
-    private static readonly string[] TileColors =
+    // Bauschritt-Icons (Vektor-Identifikatoren für SkiaSharp-Rendering)
+    private static readonly string[] StepIcons =
     {
-        "#C62828", // Klassisch Rot
-        "#D4763A", // Terrakotta
-        "#5D4037", // Dunkelbraun
-        "#F9A825", // Sandgelb
-        "#37474F", // Schiefer-Grau
-        "#6D4C41"  // Mittelbraun
+        "foundation",   // Fundament
+        "walls",        // Mauern
+        "framework",    // Rahmenwerk
+        "electrics",    // Elektrik
+        "plumbing",     // Sanitär
+        "windows",      // Fenster
+        "doors",        // Türen
+        "painting",     // Malerei
+        "roof",         // Dach
+        "fittings",     // Beschläge
+        "measuring",    // Messen
+        "scaffolding"   // Gerüst
     };
+
+    // Lokalisierte Bauschritt-Labels (Keys)
+    private static readonly string[] StepLabelKeys =
+        { "BlueprintFoundation", "BlueprintWalls", "BlueprintFramework", "BlueprintElectrics", "BlueprintPlumbing", "BlueprintWindows", "BlueprintDoors", "BlueprintPainting", "BlueprintRoof", "BlueprintFittings", "BlueprintMeasuring", "BlueprintScaffolding" };
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -54,34 +65,28 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
     private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
-    private ObservableCollection<RoofTile> _tiles = [];
+    private ObservableCollection<BlueprintStep> _steps = [];
 
     [ObservableProperty]
-    private ObservableCollection<string> _availableColors = [];
+    private bool _isMemorizing;
 
     [ObservableProperty]
-    private string _selectedColor = "";
+    private int _nextExpectedStep = 1;
 
     [ObservableProperty]
     private int _mistakeCount;
 
     [ObservableProperty]
-    private int _placedCount;
+    private int _completedSteps;
 
     [ObservableProperty]
-    private int _totalToPlace;
+    private int _totalSteps;
 
     [ObservableProperty]
     private int _timeRemaining;
 
     [ObservableProperty]
-    private int _maxTime = 45;
-
-    [ObservableProperty]
-    private int _gridColumns = 5;
-
-    [ObservableProperty]
-    private int _gridRows = 4;
+    private int _maxTime;
 
     [ObservableProperty]
     private bool _isPlaying;
@@ -136,10 +141,6 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private double _star3Opacity;
 
-    // Hinweis: Farbpalette pulsen wenn keine Farbe gewählt
-    [ObservableProperty]
-    private bool _selectColorHint;
-
     // Tutorial (beim ersten Spielstart anzeigen)
     [ObservableProperty]
     private bool _showTutorial;
@@ -155,7 +156,7 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Schwierigkeitsgrad als Sterne-Anzeige.
+    /// Schwierigkeit als Sterne-Anzeige.
     /// </summary>
     public string DifficultyStars => Difficulty switch
     {
@@ -167,19 +168,20 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
     };
 
     /// <summary>
-    /// Breite des Tile-Grids in Pixeln für WrapPanel.
-    /// Jeder Ziegel ist 50px + 4px Margin = 54px.
+    /// Breite des Grids in Pixeln für WrapPanel-Constraint.
+    /// Jeder Schritt: 68px + 6px Margin = 74px.
     /// </summary>
-    public double TileGridWidth => GridColumns * 54;
+    public double GridWidth => _gridColumns * 74;
+
+    private int _gridColumns = 3;
 
     partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
-    partial void OnGridColumnsChanged(int value) => OnPropertyChanged(nameof(TileGridWidth));
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public RoofTilingGameViewModel(
+    public BlueprintGameViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
@@ -205,6 +207,8 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
         // Zustand zurücksetzen (sonst bleibt Ergebnis-Screen stehen)
         IsPlaying = false;
         IsResultShown = false;
+        IsMemorizing = false;
+        _isEnding = false;
 
         var activeOrder = _gameStateService.GetActiveOrder();
         if (activeOrder != null)
@@ -230,7 +234,7 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
 
         InitializeGame();
 
-        CheckAndShowTutorial(MiniGameType.RoofTiling);
+        CheckAndShowTutorial(MiniGameType.Blueprint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -239,155 +243,76 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
 
     private void InitializeGame()
     {
-        // Grid-Größe, Zeit und Farbanzahl je nach Schwierigkeit
-        int colorCount;
-        double hintPercentage;
-
-        (GridColumns, GridRows, MaxTime, colorCount, hintPercentage) = Difficulty switch
+        // Schwierigkeit bestimmt Schrittanzahl, Grid-Spalten, Memorisierungs-Zeit und Spielzeit
+        (TotalSteps, _gridColumns, MaxTime) = Difficulty switch
         {
-            OrderDifficulty.Easy => (3, 3, 45, 3, 0.55),
-            OrderDifficulty.Medium => (4, 4, 50, 4, 0.40),
-            OrderDifficulty.Hard => (5, 4, 50, 5, 0.30),
-            OrderDifficulty.Expert => (5, 5, 45, 5, 0.25),
-            _ => (4, 4, 50, 4, 0.40)
+            OrderDifficulty.Easy => (6, 3, 45),
+            OrderDifficulty.Medium => (9, 3, 35),
+            OrderDifficulty.Hard => (12, 4, 25),
+            OrderDifficulty.Expert => (16, 4, 20),
+            _ => (9, 3, 35)
         };
 
-        // Tool-Bonus: Hammer gibt Extra-Sekunden
-        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Hammer);
+        // Tool-Bonus: Wasserwaage gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.SpiritLevel);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
-        PlacedCount = 0;
+        CompletedSteps = 0;
         MistakeCount = 0;
+        NextExpectedStep = 1;
         IsPlaying = false;
         IsResultShown = false;
-        SelectedColor = "";
+        IsMemorizing = false;
 
-        // Verfügbare Farben setzen
-        AvailableColors.Clear();
-        for (int i = 0; i < colorCount; i++)
-        {
-            AvailableColors.Add(TileColors[i]);
-        }
+        OnPropertyChanged(nameof(GridWidth));
 
-        GenerateGrid(colorCount, hintPercentage);
+        GenerateSteps();
     }
 
-    /// <summary>
-    /// Generiert das Dach-Gitter mit einem Muster aus farbigen Ziegeln.
-    /// Ein Teil der Ziegel wird als Hinweis vorplatziert.
-    /// </summary>
-    private void GenerateGrid(int colorCount, double hintPercentage)
+    private void GenerateSteps()
     {
-        Tiles.Clear();
-        int totalTiles = GridColumns * GridRows;
+        Steps.Clear();
 
-        // Muster generieren: Reihenweises Muster mit Versatz (wie echte Dachziegel)
-        var pattern = GenerateRoofPattern(colorCount);
-
-        // Bestimme welche Ziegel als Hinweis vorplatziert werden
-        int hintCount = (int)(totalTiles * hintPercentage);
-        var hintIndices = new HashSet<int>();
-
-        // Erst jede Reihe mindestens 1 Hint garantieren (Referenz in jedem Bereich)
-        for (int row = 0; row < GridRows; row++)
+        // Zufällige Auswahl und Anordnung der Schritte
+        var indices = Enumerable.Range(0, StepIcons.Length).ToList();
+        // Mischen
+        for (int i = indices.Count - 1; i > 0; i--)
         {
-            int startIdx = row * GridColumns;
-            int colIdx = Random.Shared.Next(GridColumns);
-            hintIndices.Add(startIdx + colIdx);
+            int j = Random.Shared.Next(i + 1);
+            (indices[i], indices[j]) = (indices[j], indices[i]);
         }
 
-        // Restliche Hints zufällig verteilen
-        while (hintIndices.Count < hintCount)
+        for (int i = 0; i < TotalSteps; i++)
         {
-            hintIndices.Add(Random.Shared.Next(totalTiles));
-        }
+            int iconIndex = indices[i % indices.Count];
+            string label = _localizationService.GetString(StepLabelKeys[iconIndex]) ?? StepLabelKeys[iconIndex];
 
-        // Ziegel erstellen
-        for (int i = 0; i < totalTiles; i++)
-        {
-            int row = i / GridColumns;
-            int col = i % GridColumns;
-            string correctColor = pattern[row, col];
-            bool isHint = hintIndices.Contains(i);
-
-            var tile = new RoofTile
+            Steps.Add(new BlueprintStep
             {
-                Row = row,
-                Column = col,
-                Index = i,
-                CorrectColor = correctColor,
-                IsHint = isHint,
-                IsPlaced = isHint,
-                CurrentColor = isHint ? correctColor : ""
-            };
-
-            Tiles.Add(tile);
+                StepNumber = i + 1,
+                Icon = StepIcons[iconIndex],
+                Label = label,
+                IsRevealed = false,
+                IsCompleted = false,
+                HasError = false
+            });
         }
 
-        TotalToPlace = totalTiles - hintCount;
-    }
-
-    /// <summary>
-    /// Generiert ein realistisches Dachziegel-Muster.
-    /// Jede Reihe hat ein versetztes Farbmuster (wie Ziegelverbund).
-    /// </summary>
-    private string[,] GenerateRoofPattern(int colorCount)
-    {
-        var pattern = new string[GridRows, GridColumns];
-        var colors = TileColors.Take(colorCount).ToArray();
-
-        // Verschiedene Muster-Typen zufällig wählen
-        int patternType = Random.Shared.Next(3);
-
-        switch (patternType)
+        // Positionen im Grid mischen (Nummern bleiben, aber physische Position variiert)
+        var shuffled = Steps.OrderBy(_ => Random.Shared.Next()).ToList();
+        Steps.Clear();
+        foreach (var step in shuffled)
         {
-            case 0: // Diagonales Streifenmuster
-                for (int row = 0; row < GridRows; row++)
-                {
-                    for (int col = 0; col < GridColumns; col++)
-                    {
-                        int index = (row + col) % colorCount;
-                        pattern[row, col] = colors[index];
-                    }
-                }
-                break;
-
-            case 1: // Schachbrett-ähnliches Muster mit Versatz
-                for (int row = 0; row < GridRows; row++)
-                {
-                    int offset = row % 2;
-                    for (int col = 0; col < GridColumns; col++)
-                    {
-                        int index = (col + offset) % colorCount;
-                        pattern[row, col] = colors[index];
-                    }
-                }
-                break;
-
-            case 2: // Blockmuster (2er-Blöcke)
-                for (int row = 0; row < GridRows; row++)
-                {
-                    int rowBlock = row / 2;
-                    for (int col = 0; col < GridColumns; col++)
-                    {
-                        int colBlock = col / 2;
-                        int index = (rowBlock + colBlock) % colorCount;
-                        pattern[row, col] = colors[index];
-                    }
-                }
-                break;
+            Steps.Add(step);
         }
-
-        return pattern;
     }
 
     [RelayCommand]
     private async Task StartGameAsync()
     {
-        if (IsPlaying || IsCountdownActive) return;
+        if (IsPlaying || IsCountdownActive || IsMemorizing) return;
 
         IsResultShown = false;
         _isEnding = false;
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
         // Countdown 3-2-1-Los!
         IsCountdownActive = true;
@@ -398,18 +323,44 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
         }
         IsCountdownActive = false;
 
-        // Spiel starten
+        // Memorisierungsphase: Alle Nummern aufdecken
+        IsMemorizing = true;
+        foreach (var step in Steps)
+        {
+            step.IsRevealed = true;
+        }
+
+        // Memorisierungszeit je nach Schwierigkeit
+        int memorizeMs = Difficulty switch
+        {
+            OrderDifficulty.Easy => 4000,
+            OrderDifficulty.Medium => 3000,
+            OrderDifficulty.Hard => 2500,
+            OrderDifficulty.Expert => 2000,
+            _ => 3000
+        };
+
+        await Task.Delay(memorizeMs);
+
+        // Nummern verstecken, Spiel starten
+        foreach (var step in Steps)
+        {
+            step.IsRevealed = false;
+        }
+        IsMemorizing = false;
+
+        // Spiel starten mit Timer
         IsPlaying = true;
-        if (_timer != null) { _timer.Stop(); _timer.Tick -= OnTimerTick; }
-        _timer = new DispatcherTimer
+        if (_gameTimer != null) { _gameTimer.Stop(); _gameTimer.Tick -= OnGameTimerTick; }
+        _gameTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
         };
-        _timer.Tick += OnTimerTick;
-        _timer.Start();
+        _gameTimer.Tick += OnGameTimerTick;
+        _gameTimer.Start();
     }
 
-    private async void OnTimerTick(object? sender, EventArgs e)
+    private async void OnGameTimerTick(object? sender, EventArgs e)
     {
         try
         {
@@ -425,118 +376,77 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
+            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameTimerTick: {ex}");
 #endif
         }
     }
 
-    /// <summary>
-    /// Wählt eine Farbe aus der Farbauswahl-Leiste.
-    /// </summary>
     [RelayCommand]
-    private void SelectColor(string? color)
+    private async Task SelectStepAsync(BlueprintStep? step)
     {
-        if (color == null || !IsPlaying) return;
-        SelectedColor = color;
-    }
+        if (step == null || !IsPlaying || IsResultShown || step.IsCompleted) return;
 
-    /// <summary>
-    /// Platziert einen Ziegel auf dem Gitter.
-    /// Prüft ob die gewählte Farbe korrekt ist.
-    /// </summary>
-    [RelayCommand]
-    private async Task PlaceTileAsync(RoofTile? tile)
-    {
-        if (tile == null || !IsPlaying || IsResultShown) return;
-
-        // Bereits platzierte/Hinweis-Ziegel ignorieren
-        if (tile.IsPlaced || tile.IsHint) return;
-
-        // Keine Farbe gewählt → Farbpalette pulsieren lassen
-        if (string.IsNullOrEmpty(SelectedColor))
+        if (step.StepNumber == NextExpectedStep)
         {
-            SelectColorHint = true;
-            _ = ResetSelectColorHintAsync();
-            return;
-        }
+            // Korrekt! Schritt als erledigt markieren
+            step.IsCompleted = true;
+            step.HasError = false;
+            CompletedSteps++;
+            NextExpectedStep++;
 
-        // Farbe setzen
-        tile.CurrentColor = SelectedColor;
+            await _audioService.PlaySoundAsync(GameSound.Good);
 
-        if (SelectedColor == tile.CorrectColor)
-        {
-            // Korrekt platziert
-            tile.IsPlaced = true;
-            tile.HasError = false;
-            PlacedCount++;
-
-            await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-
-            // Alle Ziegel platziert?
-            if (PlacedCount >= TotalToPlace)
+            // Alle Schritte erledigt?
+            if (CompletedSteps >= TotalSteps)
             {
                 await EndGameAsync();
             }
         }
         else
         {
-            // Falscher Ziegel
-            tile.HasError = true;
+            // Falsch! Kurzes rotes Blinken
             MistakeCount++;
+            step.HasError = true;
 
             await _audioService.PlaySoundAsync(GameSound.Miss);
 
             // Fehler nach kurzer Zeit zurücksetzen
-            await Task.Delay(400);
-            tile.HasError = false;
-            tile.CurrentColor = "";
+            _ = ResetErrorAsync(step);
         }
     }
 
-    /// <summary>
-    /// Beendet das Spiel und berechnet das Ergebnis.
-    /// </summary>
+    private static async Task ResetErrorAsync(BlueprintStep step)
+    {
+        await Task.Delay(500);
+        step.HasError = false;
+    }
+
     private async Task EndGameAsync()
     {
         if (_isEnding) return;
         _isEnding = true;
 
         IsPlaying = false;
-        _timer?.Stop();
+        _gameTimer?.Stop();
 
-        // Rating berechnen
-        bool allPlaced = PlacedCount >= TotalToPlace;
+        // Rating berechnen basierend auf Leistung
+        bool allCompleted = CompletedSteps >= TotalSteps;
         double timeRatio = MaxTime > 0 ? (double)TimeRemaining / MaxTime : 0;
 
-        if (allPlaced && MistakeCount == 0 && timeRatio > 0.50)
+        if (allCompleted && MistakeCount == 0 && timeRatio > 0.4)
         {
-            // Perfect: 0 Fehler + >50% Zeit übrig
             Result = MiniGameRating.Perfect;
         }
-        else if (allPlaced && MistakeCount <= 2 && timeRatio > 0.25)
+        else if (allCompleted && MistakeCount <= 2 && timeRatio > 0.2)
         {
-            // Good: <=2 Fehler + >25% Zeit übrig
             Result = MiniGameRating.Good;
         }
-        else if (allPlaced && MistakeCount <= 8)
+        else if (allCompleted)
         {
-            // Ok: <=8 Fehler + alle platziert
             Result = MiniGameRating.Ok;
-        }
-        else if (!allPlaced && TotalToPlace > 0)
-        {
-            // Teilbewertung bei Zeitablauf: basierend auf Platzierungs-Quote
-            double placedRatio = (double)PlacedCount / TotalToPlace;
-            if (placedRatio >= 0.90 && MistakeCount <= 2)
-                Result = MiniGameRating.Good;
-            else if (placedRatio >= 0.70 && MistakeCount <= 4)
-                Result = MiniGameRating.Ok;
-            else
-                Result = MiniGameRating.Miss;
         }
         else
         {
-            // >8 Fehler
             Result = MiniGameRating.Miss;
         }
 
@@ -580,14 +490,14 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
             XpAmount = quickJob?.XpReward ?? 0;
         }
 
-        // Ergebnis-Anzeige
+        // Ergebnis-Anzeige setzen
         ResultText = _localizationService.GetString(Result.GetLocalizationKey());
         ResultEmoji = Result switch
         {
-            MiniGameRating.Perfect => "★★★",
-            MiniGameRating.Good => "★★",
-            MiniGameRating.Ok => "★",
-            _ => "💨"
+            MiniGameRating.Perfect => "\u2B50\u2B50\u2B50",
+            MiniGameRating.Good => "\u2B50\u2B50",
+            MiniGameRating.Ok => "\u2B50",
+            _ => "\U0001F4A8"
         };
 
         IsResultShown = true;
@@ -662,7 +572,7 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Continue()
     {
-        // Prüfe ob weitere Aufgaben im Auftrag vorhanden
+        // Prüfen ob weitere Aufgaben in der Order sind
         var order = _gameStateService.GetActiveOrder();
         if (order == null)
         {
@@ -672,13 +582,13 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
 
         if (order.IsCompleted)
         {
-            // Auftrag abgeschlossen - Belohnungen vergeben und zurück
+            // Auftrag fertig - Belohnungen vergeben und zurück
             _gameStateService.CompleteActiveOrder();
             NavigationRequested?.Invoke("../..");
         }
         else
         {
-            // Weitere Aufgaben - zum nächsten Mini-Game
+            // Mehr Aufgaben - zum nächsten Mini-Game
             var nextTask = order.CurrentTask;
             if (nextTask != null)
             {
@@ -697,9 +607,9 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
         ShowTutorial = false;
         // Als gesehen markieren und speichern
         var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.RoofTiling))
+        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.Blueprint))
         {
-            state.SeenMiniGameTutorials.Add(MiniGameType.RoofTiling);
+            state.SeenMiniGameTutorials.Add(MiniGameType.Blueprint);
             _gameStateService.MarkDirty();
         }
     }
@@ -707,8 +617,9 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Cancel()
     {
-        _timer?.Stop();
+        _gameTimer?.Stop();
         IsPlaying = false;
+        IsMemorizing = false;
 
         _gameStateService.CancelActiveOrder();
         NavigationRequested?.Invoke("../..");
@@ -717,15 +628,6 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Setzt den SelectColorHint nach 1 Sekunde zurück.
-    /// </summary>
-    private async Task ResetSelectColorHintAsync()
-    {
-        await Task.Delay(1000);
-        SelectColorHint = false;
-    }
 
     private void CheckAndShowTutorial(MiniGameType gameType)
     {
@@ -746,10 +648,10 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
 
-        _timer?.Stop();
-        if (_timer != null)
+        _gameTimer?.Stop();
+        if (_gameTimer != null)
         {
-            _timer.Tick -= OnTimerTick;
+            _gameTimer.Tick -= OnGameTimerTick;
         }
 
         _disposed = true;
@@ -762,68 +664,53 @@ public partial class RoofTilingGameViewModel : ObservableObject, IDisposable
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// <summary>
-/// Repräsentiert einen einzelnen Dachziegel im Gitter.
+/// Repräsentiert einen einzelnen Bauschritt im Bauplan-Spiel.
 /// </summary>
-public partial class RoofTile : ObservableObject
+public partial class BlueprintStep : ObservableObject
 {
-    public int Row { get; set; }
-    public int Column { get; set; }
-    public int Index { get; set; }
+    [ObservableProperty]
+    private int _stepNumber; // Korrekte Reihenfolgenummer (1-basiert)
 
     [ObservableProperty]
-    private string _correctColor = "";
+    private string _icon = ""; // Vektor-Icon-Identifier
 
     [ObservableProperty]
-    private string _currentColor = "";
+    private bool _isRevealed; // Nummer sichtbar (Memorisierungsphase)
 
     [ObservableProperty]
-    private bool _isPlaced;
+    private bool _isCompleted; // Wurde korrekt angetippt
 
     [ObservableProperty]
-    private bool _isHint;
+    private bool _hasError; // Wurde falsch angetippt (kurzes Blinken)
 
     [ObservableProperty]
-    private bool _hasError;
+    private string _label = ""; // Beschreibungstext (z.B. "Fundament")
 
-    // Visuelle Properties bei Zustandsänderung aktualisieren
-    partial void OnIsPlacedChanged(bool value)
+    // Berechnete Anzeige-Properties aktualisieren bei Zustandsänderung
+    partial void OnIsRevealedChanged(bool value)
     {
-        OnPropertyChanged(nameof(DisplayColor));
-        OnPropertyChanged(nameof(BorderColor));
+        OnPropertyChanged(nameof(DisplayNumber));
+        OnPropertyChanged(nameof(BackgroundColor));
     }
 
-    partial void OnCurrentColorChanged(string value)
+    partial void OnIsCompletedChanged(bool value)
     {
-        OnPropertyChanged(nameof(DisplayColor));
+        OnPropertyChanged(nameof(DisplayNumber));
+        OnPropertyChanged(nameof(BackgroundColor));
     }
 
     partial void OnHasErrorChanged(bool value)
     {
-        OnPropertyChanged(nameof(BorderColor));
-    }
-
-    partial void OnIsHintChanged(bool value)
-    {
-        OnPropertyChanged(nameof(BorderColor));
+        OnPropertyChanged(nameof(BackgroundColor));
     }
 
     /// <summary>
-    /// Angezeigte Farbe: Platziert=korrekte Farbe, Temporär=aktuelle Farbe, Leer=Dunkelgrau.
+    /// Angezeigte Nummer: Sichtbar während Memorisierung und nach Abschluss, sonst "?".
     /// </summary>
-    public string DisplayColor => IsPlaced
-        ? CorrectColor
-        : !string.IsNullOrEmpty(CurrentColor)
-            ? CurrentColor
-            : "#3A3A3A";
+    public string DisplayNumber => IsRevealed || IsCompleted ? StepNumber.ToString() : "?";
 
     /// <summary>
-    /// Rahmenfarbe: Hinweis=Gold, Fehler=Rot, Standard=Grau.
+    /// Hintergrundfarbe basierend auf Zustand.
     /// </summary>
-    public string BorderColor => IsHint
-        ? "#FFD700"
-        : HasError
-            ? "#F44336"
-            : IsPlaced
-                ? "#4CAF50"
-                : "#555555";
+    public string BackgroundColor => IsCompleted ? "#4CAF50" : (HasError ? "#F44336" : "#2A2A2A");
 }

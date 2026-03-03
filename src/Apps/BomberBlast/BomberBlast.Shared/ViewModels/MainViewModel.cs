@@ -4,6 +4,7 @@ using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace BomberBlast.ViewModels;
@@ -13,7 +14,7 @@ namespace BomberBlast.ViewModels;
 /// Zeigt jeweils nur eine Child-View an.
 /// Hält alle Child-ViewModels für den korrekten DataContext.
 /// </summary>
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ViewModelBase
 {
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS (Game Juice)

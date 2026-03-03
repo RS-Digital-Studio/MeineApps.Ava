@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using Material.Icons;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
@@ -15,7 +16,7 @@ namespace BomberBlast.ViewModels;
 /// Power-Up Boost Overlay ab Level 20 (Rewarded Ad).
 /// Implementiert IDisposable fuer BalanceChanged-Unsubscription.
 /// </summary>
-public partial class LevelSelectViewModel : ObservableObject, INavigable, IGameJuiceEmitter, IDisposable
+public partial class LevelSelectViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
 {
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;

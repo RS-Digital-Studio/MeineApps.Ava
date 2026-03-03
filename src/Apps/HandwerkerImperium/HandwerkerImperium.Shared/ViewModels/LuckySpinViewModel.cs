@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -12,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Täglicher Gratis-Spin + kostenpflichtige Spins (5 Goldschrauben).
 /// Spin-Animation per DispatcherTimer mit Easing (schnell → langsam, ~3 Sekunden).
 /// </summary>
-public partial class LuckySpinViewModel : ObservableObject
+public partial class LuckySpinViewModel : ViewModelBase
 {
     private readonly ILuckySpinService _luckySpinService;
     private readonly IGameStateService _gameStateService;

@@ -1,6 +1,7 @@
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Models.League;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
@@ -11,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für die Profil- und Statistik-Seite.
 /// Zeigt Spielerprofil (Rahmen, Liga, Währungen) und aggregierte Statistiken.
 /// </summary>
-public partial class StatisticsViewModel : ObservableObject, INavigable
+public partial class StatisticsViewModel : ViewModelBase, INavigable
 {
     private readonly IProgressService _progressService;
     private readonly IHighScoreService _highScoreService;

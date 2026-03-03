@@ -3,13 +3,14 @@ using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels;
 
 /// <summary>
 /// ViewModel for the settings page (theme, language, units, premium)
 /// </summary>
-public partial class SettingsViewModel : ObservableObject, IDisposable
+public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IThemeService _themeService;

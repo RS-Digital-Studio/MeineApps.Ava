@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Helpers;
 using WorkTimePro.Models;
@@ -14,7 +15,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for settings
 /// </summary>
-public partial class SettingsViewModel : ObservableObject, IDisposable
+public partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     public event Action<string, string>? MessageRequested;
     public event EventHandler? SettingsChanged;

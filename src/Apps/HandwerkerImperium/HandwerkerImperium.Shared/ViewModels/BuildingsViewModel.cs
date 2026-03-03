@@ -5,6 +5,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -13,7 +14,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Zeigt alle 7 Gebäude-Typen mit Level, Kosten und Effekten.
 /// Erlaubt direktes Bauen (Lv.0→1) und Upgraden (Lv.1→5).
 /// </summary>
-public partial class BuildingsViewModel : ObservableObject
+public partial class BuildingsViewModel : ViewModelBase
 {
     private readonly IBuildingService _buildingService;
     private readonly IGameStateService _gameStateService;

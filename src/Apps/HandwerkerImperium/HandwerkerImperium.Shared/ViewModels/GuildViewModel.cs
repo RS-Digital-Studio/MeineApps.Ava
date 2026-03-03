@@ -6,6 +6,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -26,7 +27,7 @@ public enum GuildViewState
 /// ViewModel für das Multiplayer-Gildensystem via Firebase.
 /// Sechs UI-Zustände via GuildViewState Enum (flache Panels, keine verschachtelte IsVisible-Logik).
 /// </summary>
-public partial class GuildViewModel : ObservableObject
+public partial class GuildViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly IGuildService _guildService;

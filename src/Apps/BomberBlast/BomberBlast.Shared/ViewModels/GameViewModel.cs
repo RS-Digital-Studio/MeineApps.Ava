@@ -3,6 +3,7 @@ using Avalonia.Input;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Core;
 using BomberBlast.Services;
 using MeineApps.Core.Premium.Ava.Services;
@@ -14,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel fuer die Spielseite.
 /// Kapselt GameEngine, steuert den Game-Loop via render-getriebene Updates und besitzt SKCanvas-Rendering.
 /// </summary>
-public partial class GameViewModel : ObservableObject, INavigable, IDisposable
+public partial class GameViewModel : ViewModelBase, INavigable, IDisposable
 {
     private const float MAX_DELTA_TIME = 0.05f;
 

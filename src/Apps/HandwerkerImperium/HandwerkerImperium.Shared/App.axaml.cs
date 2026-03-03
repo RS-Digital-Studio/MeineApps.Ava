@@ -17,6 +17,7 @@ using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.Services.Interfaces;
 using HandwerkerImperium.ViewModels;
+using HandwerkerImperium.ViewModels.MiniGames;
 using HandwerkerImperium.Views;
 using MeineApps.UI.SkiaSharp;
 

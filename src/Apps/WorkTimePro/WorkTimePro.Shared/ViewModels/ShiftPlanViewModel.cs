@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
@@ -13,7 +14,7 @@ namespace WorkTimePro.ViewModels;
 /// ViewModel for shift plan page (Premium feature)
 /// Phase 9: Shift plan UI
 /// </summary>
-public partial class ShiftPlanViewModel : ObservableObject
+public partial class ShiftPlanViewModel : ViewModelBase
 {
     private readonly IShiftService _shiftService;
     private readonly IDatabaseService _database;

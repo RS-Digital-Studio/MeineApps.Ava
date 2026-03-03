@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Models;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
@@ -11,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Glücksrad (Lucky Spin).
 /// 9 Segmente (Coins + Gems), 1x gratis pro Tag, Extra-Spins per Rewarded Ad.
 /// </summary>
-public partial class LuckySpinViewModel : ObservableObject, INavigable, IGameJuiceEmitter
+public partial class LuckySpinViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly ILuckySpinService _spinService;
     private readonly ICoinService _coinService;

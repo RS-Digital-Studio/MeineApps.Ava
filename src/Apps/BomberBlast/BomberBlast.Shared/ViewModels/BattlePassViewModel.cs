@@ -3,6 +3,7 @@ using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace BomberBlast.ViewModels;
 
@@ -10,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für den Battle Pass (30-Tier Saison mit Free/Premium-Track).
 /// Zeigt Tier-Liste, XP-Fortschritt und ermöglicht Reward-Claims.
 /// </summary>
-public partial class BattlePassViewModel : ObservableObject, INavigable, IGameJuiceEmitter
+public partial class BattlePassViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly IBattlePassService _battlePassService;
     private readonly ILocalizationService _localizationService;

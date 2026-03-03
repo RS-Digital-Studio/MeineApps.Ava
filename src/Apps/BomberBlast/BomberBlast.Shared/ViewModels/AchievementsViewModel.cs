@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Models;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
@@ -10,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// <summary>
 /// ViewModel für die Achievements-Ansicht
 /// </summary>
-public partial class AchievementsViewModel : ObservableObject, INavigable
+public partial class AchievementsViewModel : ViewModelBase, INavigable
 {
     private readonly IAchievementService _achievementService;
     private readonly ILocalizationService _localizationService;

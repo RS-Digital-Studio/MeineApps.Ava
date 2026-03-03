@@ -3,7 +3,6 @@
              xmlns:vm="using:HandwerkerRechner.ViewModels"
              xmlns:floorVm="using:HandwerkerRechner.ViewModels.Floor"
              xmlns:premVm="using:HandwerkerRechner.ViewModels.Premium"
-             xmlns:views="using:HandwerkerRechner.Views"
              xmlns:floorViews="using:HandwerkerRechner.Views.Floor"
              xmlns:premViews="using:HandwerkerRechner.Views.Premium"
              xmlns:mi="using:Material.Icons.Avalonia"
@@ -1009,21 +1008,21 @@
       <Border AutomationProperties.AutomationId="Main_TabProjects"
               Classes="TabContent"
               Classes.Active="{Binding IsProjectsTab}">
-        <views:ProjectsView DataContext="{Binding ProjectsViewModel}" />
+        <ContentControl Content="{Binding ProjectsViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Tab 2: History -->
       <Border AutomationProperties.AutomationId="Main_TabHistory"
               Classes="TabContent"
               Classes.Active="{Binding IsHistoryTab}">
-        <views:HistoryView DataContext="{Binding HistoryViewModel}" />
+        <ContentControl Content="{Binding HistoryViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Tab 3: Settings -->
       <Border AutomationProperties.AutomationId="Main_TabSettings"
               Classes="TabContent"
               Classes.Active="{Binding IsSettingsTab}">
-        <views:SettingsView DataContext="{Binding SettingsViewModel}" />
+        <ContentControl Content="{Binding SettingsViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
       </Border>
 
       <!-- Calculator Overlay -->

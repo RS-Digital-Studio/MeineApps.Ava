@@ -2,10 +2,11 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using FitnessRechner.Models;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels.Calculators;
 
-public partial class IdealWeightViewModel : ObservableObject
+public partial class IdealWeightViewModel : ViewModelBase
 {
     private readonly IFitnessEngine _fitnessEngine;
     private readonly ILocalizationService _localization;

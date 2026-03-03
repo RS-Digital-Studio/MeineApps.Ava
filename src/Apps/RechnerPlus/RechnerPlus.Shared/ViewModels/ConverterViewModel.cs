@@ -1,10 +1,11 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace RechnerPlus.ViewModels;
 
-public partial class ConverterViewModel : ObservableObject, IDisposable
+public partial class ConverterViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ILocalizationService _localization;

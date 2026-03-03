@@ -6,6 +6,7 @@ using BomberBlast.Models.Levels;
 using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using Material.Icons;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
@@ -16,7 +17,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel fuer den Shop - zeigt Upgrades, PowerUp-Übersicht, Skins und Coin-Stand.
 /// Implementiert IDisposable fuer BalanceChanged-Unsubscription.
 /// </summary>
-public partial class ShopViewModel : ObservableObject, INavigable, IDisposable
+public partial class ShopViewModel : ViewModelBase, INavigable, IDisposable
 {
     private readonly IShopService _shopService;
     private readonly ICoinService _coinService;

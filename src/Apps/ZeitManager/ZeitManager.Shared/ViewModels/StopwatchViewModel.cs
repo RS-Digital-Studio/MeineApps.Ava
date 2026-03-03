@@ -4,12 +4,13 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using ZeitManager.Audio;
 using ZeitManager.Models;
 
 namespace ZeitManager.ViewModels;
 
-public partial class StopwatchViewModel : ObservableObject, IDisposable
+public partial class StopwatchViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ILocalizationService _localization;

@@ -1,6 +1,7 @@
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Core;
 using BomberBlast.Input;
 using BomberBlast.Services;
@@ -14,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// Verwaltet Input-Modus, Sound-Lautstärke, Sprache und Premium-Status.
 /// Persistiert alle Einstellungen via InputManager und SoundManager.
 /// </summary>
-public partial class SettingsViewModel : ObservableObject, INavigable
+public partial class SettingsViewModel : ViewModelBase, INavigable
 {
     private readonly IProgressService _progressService;
     private readonly IHighScoreService _highScoreService;

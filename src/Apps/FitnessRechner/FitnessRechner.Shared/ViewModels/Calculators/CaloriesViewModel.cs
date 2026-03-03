@@ -4,10 +4,11 @@ using FitnessRechner.Models;
 using FitnessRechner.Resources.Strings;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels.Calculators;
 
-public partial class CaloriesViewModel : ObservableObject
+public partial class CaloriesViewModel : ViewModelBase
 {
     private readonly IFitnessEngine _fitnessEngine;
     private readonly IPreferencesService _preferences;

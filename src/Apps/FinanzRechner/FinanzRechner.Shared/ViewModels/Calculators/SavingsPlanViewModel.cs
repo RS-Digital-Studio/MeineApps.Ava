@@ -8,10 +8,11 @@ using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
-public partial class SavingsPlanViewModel : ObservableObject, IDisposable
+public partial class SavingsPlanViewModel : ViewModelBase, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;

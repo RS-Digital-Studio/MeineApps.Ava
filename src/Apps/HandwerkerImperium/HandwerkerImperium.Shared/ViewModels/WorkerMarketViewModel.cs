@@ -6,6 +6,7 @@ using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using HandwerkerImperium.Services;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
@@ -15,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Shows available workers with tier badges, personality, talent stars, specialization, and wage.
 /// Pool rotates every 4 hours with countdown timer.
 /// </summary>
-public partial class WorkerMarketViewModel : ObservableObject
+public partial class WorkerMarketViewModel : ViewModelBase
 {
     private readonly IWorkerService _workerService;
     private readonly IGameStateService _gameStateService;

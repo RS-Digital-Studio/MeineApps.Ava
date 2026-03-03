@@ -6,6 +6,7 @@ using HandwerkerRechner.ViewModels.Premium;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using HandwerkerRechner.Resources.Strings;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -14,7 +15,7 @@ namespace HandwerkerRechner.ViewModels;
 /// <summary>
 /// ViewModel for the main navigation hub page with tab navigation
 /// </summary>
-public partial class MainViewModel : ObservableObject, IDisposable
+public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IPurchaseService _purchaseService;

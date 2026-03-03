@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Models;
 using WorkTimePro.Helpers;
@@ -14,7 +15,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for calendar view with heatmap and status overlay
 /// </summary>
-public partial class CalendarViewModel : ObservableObject
+public partial class CalendarViewModel : ViewModelBase
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;

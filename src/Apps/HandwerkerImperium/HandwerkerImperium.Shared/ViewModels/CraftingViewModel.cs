@@ -6,6 +6,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -13,7 +14,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für das Crafting-System (Produktionsketten mit Rezepten).
 /// Zeigt verfügbare Rezepte, aktive Aufträge und Inventar.
 /// </summary>
-public partial class CraftingViewModel : ObservableObject
+public partial class CraftingViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly ICraftingService _craftingService;

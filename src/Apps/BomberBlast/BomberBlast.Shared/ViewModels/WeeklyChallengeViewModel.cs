@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Models;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
@@ -11,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für die wöchentlichen Herausforderungen.
 /// Zeigt 5 Missionen mit Fortschritt, Bonus-Bereich und Countdown bis Reset.
 /// </summary>
-public partial class WeeklyChallengeViewModel : ObservableObject, INavigable, IGameJuiceEmitter
+public partial class WeeklyChallengeViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly IWeeklyChallengeService _weeklyService;
     private readonly IDailyMissionService _dailyMissionService;

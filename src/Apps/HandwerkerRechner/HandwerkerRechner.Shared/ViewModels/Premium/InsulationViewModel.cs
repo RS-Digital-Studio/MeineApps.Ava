@@ -7,13 +7,14 @@ using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
 /// <summary>
 /// ViewModel für den Dämmung-Rechner (Fläche, U-Werte, Dämmstofftyp → Dicke, Platten, Kosten)
 /// </summary>
-public partial class InsulationViewModel : ObservableObject, IDisposable
+public partial class InsulationViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

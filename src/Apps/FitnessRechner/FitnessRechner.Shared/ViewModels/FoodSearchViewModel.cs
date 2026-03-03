@@ -5,11 +5,12 @@ using FitnessRechner.Models;
 using FitnessRechner.Resources.Strings;
 using FitnessRechner.Services;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace FitnessRechner.ViewModels;
 
-public partial class FoodSearchViewModel : ObservableObject, IDisposable
+public partial class FoodSearchViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IFoodSearchService _foodSearchService;

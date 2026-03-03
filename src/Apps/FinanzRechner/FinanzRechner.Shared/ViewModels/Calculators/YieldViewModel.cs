@@ -6,12 +6,13 @@ using CommunityToolkit.Mvvm.Input;
 using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
-public partial class YieldViewModel : ObservableObject, IDisposable
+public partial class YieldViewModel : ViewModelBase, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;

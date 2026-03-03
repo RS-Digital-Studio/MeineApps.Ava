@@ -5,6 +5,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerImperium.ViewModels;
 
@@ -12,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für das wöchentliche MiniGame-Turnier.
 /// Zeigt Bestenliste, verbleibende Zeit und Belohnungen.
 /// </summary>
-public partial class TournamentViewModel : ObservableObject
+public partial class TournamentViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly ITournamentService _tournamentService;

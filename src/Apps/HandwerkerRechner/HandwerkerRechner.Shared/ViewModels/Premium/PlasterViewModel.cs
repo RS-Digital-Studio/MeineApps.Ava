@@ -7,13 +7,14 @@ using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
 /// <summary>
 /// ViewModel für den Putz-Rechner (Wandfläche, Dicke, Putzart → Säcke)
 /// </summary>
-public partial class PlasterViewModel : ObservableObject, IDisposable
+public partial class PlasterViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

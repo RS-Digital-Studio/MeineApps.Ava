@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Models.League;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
@@ -12,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Liga-System mit Firebase Online-Rangliste.
 /// Zeigt echte Spieler + NPC-Backfill, Saison-Countdown, Belohnungen.
 /// </summary>
-public partial class LeagueViewModel : ObservableObject, INavigable, IGameJuiceEmitter
+public partial class LeagueViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly ILeagueService _leagueService;
     private readonly ILocalizationService _localization;

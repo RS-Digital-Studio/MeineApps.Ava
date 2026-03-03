@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace BomberBlast.ViewModels;
 
@@ -7,7 +8,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the pause overlay.
 /// Provides commands for resume, restart, settings, and quit.
 /// </summary>
-public partial class PauseViewModel : ObservableObject, INavigable
+public partial class PauseViewModel : ViewModelBase, INavigable
 {
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
 using WorkTimePro.Services;
@@ -11,7 +12,7 @@ namespace WorkTimePro.ViewModels;
 /// ViewModel für die Achievement/Badge-Übersicht.
 /// Zeigt alle Achievements mit Fortschritt und Unlock-Status an.
 /// </summary>
-public partial class AchievementViewModel : ObservableObject
+public partial class AchievementViewModel : ViewModelBase
 {
     private readonly IAchievementService _achievementService;
 

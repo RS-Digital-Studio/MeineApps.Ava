@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Models;
 using WorkTimePro.Resources.Strings;
@@ -22,7 +23,7 @@ public class VacationTypeItem
 /// <summary>
 /// ViewModel for vacation management (Premium feature)
 /// </summary>
-public partial class VacationViewModel : ObservableObject
+public partial class VacationViewModel : ViewModelBase
 {
     private readonly IVacationService _vacationService;
     private readonly IHolidayService _holidayService;

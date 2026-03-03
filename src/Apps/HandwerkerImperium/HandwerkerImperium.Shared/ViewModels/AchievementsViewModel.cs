@@ -5,6 +5,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
@@ -12,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// ViewModel for the achievements page.
 /// </summary>
-public partial class AchievementsViewModel : ObservableObject
+public partial class AchievementsViewModel : ViewModelBase
 {
     private readonly IAchievementService _achievementService;
     private readonly ILocalizationService _localizationService;

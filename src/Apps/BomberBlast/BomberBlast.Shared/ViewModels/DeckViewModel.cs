@@ -6,6 +6,7 @@ using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace BomberBlast.ViewModels;
 
@@ -14,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// Karten upgraden. Landscape 2-Spalten-Layout (Sammlung links, Deck+Detail rechts).
 /// Zeigt ALLE 13 Karten (besessene + nicht-besessene als gesperrt).
 /// </summary>
-public partial class DeckViewModel : ObservableObject, INavigable, IGameJuiceEmitter
+public partial class DeckViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly ICardService _cardService;
     private readonly ICoinService _coinService;

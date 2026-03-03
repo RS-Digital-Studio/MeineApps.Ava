@@ -3,10 +3,11 @@ using CommunityToolkit.Mvvm.Input;
 using FitnessRechner.Models;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels.Calculators;
 
-public partial class WaterViewModel : ObservableObject
+public partial class WaterViewModel : ViewModelBase
 {
     private readonly IFitnessEngine _fitnessEngine;
     private readonly IPreferencesService _preferences;

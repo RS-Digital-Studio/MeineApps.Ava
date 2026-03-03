@@ -7,13 +7,14 @@ using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
 /// <summary>
 /// Treppen-Rechner ViewModel (Premium) - Berechnet Treppenmaße nach DIN 18065
 /// </summary>
-public partial class StairsViewModel : ObservableObject, IDisposable
+public partial class StairsViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

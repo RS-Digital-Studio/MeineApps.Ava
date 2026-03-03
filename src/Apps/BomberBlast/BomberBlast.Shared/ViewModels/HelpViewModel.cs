@@ -1,6 +1,7 @@
 using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace BomberBlast.ViewModels;
 
@@ -8,7 +9,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the help/tutorial page.
 /// Provides static help content, tutorial replay and navigation back.
 /// </summary>
-public partial class HelpViewModel : ObservableObject, INavigable
+public partial class HelpViewModel : ViewModelBase, INavigable
 {
     private readonly ITutorialService _tutorialService;
 

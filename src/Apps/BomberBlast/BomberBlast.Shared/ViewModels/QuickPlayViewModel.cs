@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace BomberBlast.ViewModels;
 
@@ -8,7 +9,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für Quick-Play Modus mit Schwierigkeits-Slider und Seed-Anzeige.
 /// Ermöglicht dem Spieler ein zufälliges Level mit einstellbarer Schwierigkeit zu starten.
 /// </summary>
-public partial class QuickPlayViewModel : ObservableObject, INavigable
+public partial class QuickPlayViewModel : ViewModelBase, INavigable
 {
     private readonly ILocalizationService _localizationService;
 

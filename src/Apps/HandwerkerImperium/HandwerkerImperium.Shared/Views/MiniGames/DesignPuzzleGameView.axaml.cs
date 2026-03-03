@@ -5,7 +5,7 @@ using Avalonia.Threading;
 using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Enums;
-using HandwerkerImperium.ViewModels;
+using HandwerkerImperium.ViewModels.MiniGames;
 using Material.Icons.Avalonia;
 using SkiaSharp;
 

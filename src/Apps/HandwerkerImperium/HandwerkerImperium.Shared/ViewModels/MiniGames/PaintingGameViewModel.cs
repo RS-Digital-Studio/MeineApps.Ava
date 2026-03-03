@@ -5,44 +5,24 @@ using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
-/// ViewModel für das Bauplan-Reihenfolge-Minispiel.
-/// Der Spieler merkt sich die Reihenfolge der Bauschritte und tippt sie danach korrekt an.
+/// ViewModel for the Painting mini-game.
+/// Player must paint all target cells without painting outside the lines.
 /// </summary>
-public partial class BlueprintGameViewModel : ObservableObject, IDisposable
+public partial class PaintingGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly ILocalizationService _localizationService;
-    private DispatcherTimer? _gameTimer;
+    private DispatcherTimer? _timer;
     private bool _disposed;
     private bool _isEnding;
-
-    // Bauschritt-Icons (Vektor-Identifikatoren für SkiaSharp-Rendering)
-    private static readonly string[] StepIcons =
-    {
-        "foundation",   // Fundament
-        "walls",        // Mauern
-        "framework",    // Rahmenwerk
-        "electrics",    // Elektrik
-        "plumbing",     // Sanitär
-        "windows",      // Fenster
-        "doors",        // Türen
-        "painting",     // Malerei
-        "roof",         // Dach
-        "fittings",     // Beschläge
-        "measuring",    // Messen
-        "scaffolding"   // Gerüst
-    };
-
-    // Lokalisierte Bauschritt-Labels (Keys)
-    private static readonly string[] StepLabelKeys =
-        { "BlueprintFoundation", "BlueprintWalls", "BlueprintFramework", "BlueprintElectrics", "BlueprintPlumbing", "BlueprintWindows", "BlueprintDoors", "BlueprintPainting", "BlueprintRoof", "BlueprintFittings", "BlueprintMeasuring", "BlueprintScaffolding" };
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -64,34 +44,34 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
     private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
-    private ObservableCollection<BlueprintStep> _steps = [];
+    private ObservableCollection<PaintCell> _cells = [];
 
     [ObservableProperty]
-    private bool _isMemorizing;
+    private int _gridSize = 5;
 
     [ObservableProperty]
-    private int _nextExpectedStep = 1;
+    private int _targetCellCount;
+
+    [ObservableProperty]
+    private int _paintedTargetCount;
 
     [ObservableProperty]
     private int _mistakeCount;
 
     [ObservableProperty]
-    private int _completedSteps;
-
-    [ObservableProperty]
-    private int _totalSteps;
-
-    [ObservableProperty]
     private int _timeRemaining;
 
     [ObservableProperty]
-    private int _maxTime;
+    private int _maxTime = 30;
 
     [ObservableProperty]
     private bool _isPlaying;
 
     [ObservableProperty]
     private bool _isResultShown;
+
+    [ObservableProperty]
+    private string _selectedColor = "#4169E1";
 
     [ObservableProperty]
     private MiniGameRating _result;
@@ -107,6 +87,9 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private int _xpAmount;
+
+    [ObservableProperty]
+    private double _paintProgress;
 
     [ObservableProperty]
     private bool _canWatchAd;
@@ -130,7 +113,7 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _countdownText = "";
 
-    // Sterne-Anzeige (staggered: 0→1 mit Verzögerung)
+    // Sterne-Anzeige
     [ObservableProperty]
     private double _star1Opacity;
 
@@ -150,12 +133,38 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _tutorialText = "";
 
+    // Combo-System: Aufeinanderfolgende korrekte Treffer
+    [ObservableProperty]
+    private int _comboCount;
+
+    [ObservableProperty]
+    private string _comboDisplay = "";
+
+    [ObservableProperty]
+    private bool _isComboActive;
+
+    /// <summary>
+    /// Bester Combo im aktuellen Spiel (fuer Bonus-Berechnung).
+    /// </summary>
+    private int _bestCombo;
+
+    /// <summary>
+    /// Combo-Multiplikator: 1.0 + (bestCombo / 5) * 0.25
+    /// z.B. Combo 5 → 1.25x, Combo 10 → 1.5x, Combo 20 → 2.0x
+    /// </summary>
+    public decimal ComboMultiplier => 1.0m + (_bestCombo / 5) * 0.25m;
+
+    /// <summary>
+    /// Event fuer Combo-Animation in der View.
+    /// </summary>
+    public event EventHandler? ComboIncreased;
+
     // ═══════════════════════════════════════════════════════════════════════
     // COMPUTED PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Schwierigkeit als Sterne-Anzeige.
+    /// Gets the difficulty as star display string.
     /// </summary>
     public string DifficultyStars => Difficulty switch
     {
@@ -167,20 +176,19 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
     };
 
     /// <summary>
-    /// Breite des Grids in Pixeln für WrapPanel-Constraint.
-    /// Jeder Schritt: 68px + 6px Margin = 74px.
+    /// Width of the paint grid in pixels for WrapPanel constraint.
+    /// Each cell is 50px + 4px margin = 54px.
     /// </summary>
-    public double GridWidth => _gridColumns * 74;
-
-    private int _gridColumns = 3;
+    public double PaintGridWidth => GridSize * 54;
 
     partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
+    partial void OnGridSizeChanged(int value) => OnPropertyChanged(nameof(PaintGridWidth));
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public BlueprintGameViewModel(
+    public PaintingGameViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
@@ -193,21 +201,15 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // INITIALIZATION
+    // INITIALIZATION (replaces IQueryAttributable)
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Initialisiert das Spiel mit einer Auftrags-ID.
+    /// Initialize the game with an order ID.
     /// </summary>
     public void SetOrderId(string orderId)
     {
         OrderId = orderId;
-
-        // Zustand zurücksetzen (sonst bleibt Ergebnis-Screen stehen)
-        IsPlaying = false;
-        IsResultShown = false;
-        IsMemorizing = false;
-        _isEnding = false;
 
         var activeOrder = _gameStateService.GetActiveOrder();
         if (activeOrder != null)
@@ -233,7 +235,7 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
 
         InitializeGame();
 
-        CheckAndShowTutorial(MiniGameType.Blueprint);
+        CheckAndShowTutorial(MiniGameType.PaintingGame);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -242,76 +244,158 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
 
     private void InitializeGame()
     {
-        // Schwierigkeit bestimmt Schrittanzahl, Grid-Spalten, Memorisierungs-Zeit und Spielzeit
-        (TotalSteps, _gridColumns, MaxTime) = Difficulty switch
+        // Set grid size and time based on difficulty
+        (GridSize, MaxTime) = Difficulty switch
         {
-            OrderDifficulty.Easy => (6, 3, 45),
-            OrderDifficulty.Medium => (9, 3, 35),
-            OrderDifficulty.Hard => (12, 4, 25),
-            OrderDifficulty.Expert => (16, 4, 20),
-            _ => (9, 3, 35)
+            OrderDifficulty.Easy => (4, 24),
+            OrderDifficulty.Medium => (5, 28),
+            OrderDifficulty.Hard => (5, 22),
+            OrderDifficulty.Expert => (6, 30),
+            _ => (5, 28)
         };
 
-        // Tool-Bonus: Wasserwaage gibt Extra-Sekunden
-        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.SpiritLevel);
+        // Tool-Bonus: Pinsel gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Paintbrush);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
-        CompletedSteps = 0;
+        PaintedTargetCount = 0;
         MistakeCount = 0;
-        NextExpectedStep = 1;
         IsPlaying = false;
         IsResultShown = false;
-        IsMemorizing = false;
+        PaintProgress = 0;
+        ComboCount = 0;
+        _bestCombo = 0;
+        IsComboActive = false;
+        ComboDisplay = "";
 
-        OnPropertyChanged(nameof(GridWidth));
+        // Choose a random paint color
+        SelectedColor = GetRandomPaintColor();
 
-        GenerateSteps();
+        GenerateCanvas();
     }
 
-    private void GenerateSteps()
+    private void GenerateCanvas()
     {
-        Steps.Clear();
+        Cells.Clear();
 
-        // Zufällige Auswahl und Anordnung der Schritte
-        var indices = Enumerable.Range(0, StepIcons.Length).ToList();
-        // Mischen
-        for (int i = indices.Count - 1; i > 0; i--)
+        // Generate a shape pattern for the target area
+        var targetPattern = GenerateTargetPattern();
+
+        for (int row = 0; row < GridSize; row++)
         {
-            int j = Random.Shared.Next(i + 1);
-            (indices[i], indices[j]) = (indices[j], indices[i]);
-        }
-
-        for (int i = 0; i < TotalSteps; i++)
-        {
-            int iconIndex = indices[i % indices.Count];
-            string label = _localizationService.GetString(StepLabelKeys[iconIndex]) ?? StepLabelKeys[iconIndex];
-
-            Steps.Add(new BlueprintStep
+            for (int col = 0; col < GridSize; col++)
             {
-                StepNumber = i + 1,
-                Icon = StepIcons[iconIndex],
-                Label = label,
-                IsRevealed = false,
-                IsCompleted = false,
-                HasError = false
-            });
+                bool isTarget = targetPattern[row, col];
+
+                Cells.Add(new PaintCell
+                {
+                    Row = row,
+                    Column = col,
+                    Index = row * GridSize + col,
+                    IsTarget = isTarget,
+                    TargetColor = SelectedColor
+                });
+            }
         }
 
-        // Positionen im Grid mischen (Nummern bleiben, aber physische Position variiert)
-        var shuffled = Steps.OrderBy(_ => Random.Shared.Next()).ToList();
-        Steps.Clear();
-        foreach (var step in shuffled)
+        TargetCellCount = Cells.Count(c => c.IsTarget);
+    }
+
+    private bool[,] GenerateTargetPattern()
+    {
+        var pattern = new bool[GridSize, GridSize];
+
+        // Generate different shapes based on difficulty
+        int shapeType = Random.Shared.Next(3);
+
+        switch (shapeType)
         {
-            Steps.Add(step);
+            case 0: // Rectangle
+                GenerateRectangle(pattern);
+                break;
+            case 1: // L-Shape
+                GenerateLShape(pattern);
+                break;
+            case 2: // T-Shape
+                GenerateTShape(pattern);
+                break;
         }
+
+        return pattern;
+    }
+
+    private void GenerateRectangle(bool[,] pattern)
+    {
+        int startRow = Random.Shared.Next(0, GridSize / 2);
+        int startCol = Random.Shared.Next(0, GridSize / 2);
+        int height = Random.Shared.Next(2, GridSize - startRow);
+        int width = Random.Shared.Next(2, GridSize - startCol);
+
+        for (int r = startRow; r < startRow + height; r++)
+        {
+            for (int c = startCol; c < startCol + width; c++)
+            {
+                pattern[r, c] = true;
+            }
+        }
+    }
+
+    private void GenerateLShape(bool[,] pattern)
+    {
+        // Vertical part
+        int startCol = Random.Shared.Next(1, GridSize - 2);
+        for (int r = 0; r < GridSize - 1; r++)
+        {
+            pattern[r, startCol] = true;
+        }
+
+        // Horizontal part at bottom
+        for (int c = startCol; c < GridSize; c++)
+        {
+            pattern[GridSize - 2, c] = true;
+        }
+    }
+
+    private void GenerateTShape(bool[,] pattern)
+    {
+        int midRow = GridSize / 2;
+        int midCol = GridSize / 2;
+
+        // Vertical part
+        for (int r = 0; r < GridSize; r++)
+        {
+            pattern[r, midCol] = true;
+        }
+
+        // Horizontal part at top
+        for (int c = 1; c < GridSize - 1; c++)
+        {
+            pattern[1, c] = true;
+        }
+    }
+
+    private static string GetRandomPaintColor()
+    {
+        var colors = new[]
+        {
+            "#4169E1", // Royal Blue
+            "#32CD32", // Lime Green
+            "#FF6347", // Tomato
+            "#FFD700", // Gold
+            "#9370DB", // Medium Purple
+            "#20B2AA"  // Light Sea Green
+        };
+
+        return colors[Random.Shared.Next(colors.Length)];
     }
 
     [RelayCommand]
     private async Task StartGameAsync()
     {
-        if (IsPlaying || IsCountdownActive || IsMemorizing) return;
+        if (IsPlaying || IsCountdownActive) return;
 
         IsResultShown = false;
         _isEnding = false;
+        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
         // Countdown 3-2-1-Los!
         IsCountdownActive = true;
@@ -322,44 +406,18 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         }
         IsCountdownActive = false;
 
-        // Memorisierungsphase: Alle Nummern aufdecken
-        IsMemorizing = true;
-        foreach (var step in Steps)
-        {
-            step.IsRevealed = true;
-        }
-
-        // Memorisierungszeit je nach Schwierigkeit
-        int memorizeMs = Difficulty switch
-        {
-            OrderDifficulty.Easy => 4000,
-            OrderDifficulty.Medium => 3000,
-            OrderDifficulty.Hard => 2500,
-            OrderDifficulty.Expert => 2000,
-            _ => 3000
-        };
-
-        await Task.Delay(memorizeMs);
-
-        // Nummern verstecken, Spiel starten
-        foreach (var step in Steps)
-        {
-            step.IsRevealed = false;
-        }
-        IsMemorizing = false;
-
-        // Spiel starten mit Timer
+        // Spiel starten
         IsPlaying = true;
-        if (_gameTimer != null) { _gameTimer.Stop(); _gameTimer.Tick -= OnGameTimerTick; }
-        _gameTimer = new DispatcherTimer
+        if (_timer != null) { _timer.Stop(); _timer.Tick -= OnTimerTick; }
+        _timer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
         };
-        _gameTimer.Tick += OnGameTimerTick;
-        _gameTimer.Start();
+        _timer.Tick += OnTimerTick;
+        _timer.Start();
     }
 
-    private async void OnGameTimerTick(object? sender, EventArgs e)
+    private async void OnTimerTick(object? sender, EventArgs e)
     {
         try
         {
@@ -375,49 +433,65 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         catch (Exception ex)
         {
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameTimerTick: {ex}");
+            System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
 #endif
         }
     }
 
     [RelayCommand]
-    private async Task SelectStepAsync(BlueprintStep? step)
+    private async Task PaintCellAsync(PaintCell? cell)
     {
-        if (step == null || !IsPlaying || IsResultShown || step.IsCompleted) return;
+        if (cell == null || !IsPlaying || IsResultShown || cell.IsPainted) return;
 
-        if (step.StepNumber == NextExpectedStep)
+        // Paint the cell
+        cell.IsPainted = true;
+        cell.PaintedAt = DateTime.UtcNow;
+        cell.PaintColor = SelectedColor;
+
+        if (cell.IsTarget)
         {
-            // Korrekt! Schritt als erledigt markieren
-            step.IsCompleted = true;
-            step.HasError = false;
-            CompletedSteps++;
-            NextExpectedStep++;
+            PaintedTargetCount++;
 
-            await _audioService.PlaySoundAsync(GameSound.Good);
+            // Combo erhoehen
+            ComboCount++;
+            if (ComboCount > _bestCombo) _bestCombo = ComboCount;
 
-            // Alle Schritte erledigt?
-            if (CompletedSteps >= TotalSteps)
+            if (ComboCount >= 3)
             {
-                await EndGameAsync();
+                IsComboActive = true;
+                ComboDisplay = string.Format(
+                    _localizationService.GetString("ComboX"), ComboCount);
+                ComboIncreased?.Invoke(this, EventArgs.Empty);
+                await _audioService.PlaySoundAsync(GameSound.ComboHit);
+            }
+            else
+            {
+                await _audioService.PlaySoundAsync(GameSound.ButtonTap);
             }
         }
         else
         {
-            // Falsch! Kurzes rotes Blinken
             MistakeCount++;
-            step.HasError = true;
+            cell.HasError = true;
+
+            // Combo zuruecksetzen
+            ComboCount = 0;
+            IsComboActive = false;
+            ComboDisplay = "";
 
             await _audioService.PlaySoundAsync(GameSound.Miss);
-
-            // Fehler nach kurzer Zeit zurücksetzen
-            _ = ResetErrorAsync(step);
         }
-    }
 
-    private static async Task ResetErrorAsync(BlueprintStep step)
-    {
-        await Task.Delay(500);
-        step.HasError = false;
+        // Update progress (avoid division by zero)
+        PaintProgress = TargetCellCount > 0
+            ? (double)PaintedTargetCount / TargetCellCount
+            : 0;
+
+        // Check if all target cells are painted
+        if (PaintedTargetCount >= TargetCellCount)
+        {
+            await EndGameAsync();
+        }
     }
 
     private async Task EndGameAsync()
@@ -426,21 +500,26 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         _isEnding = true;
 
         IsPlaying = false;
-        _gameTimer?.Stop();
+        _timer?.Stop();
 
-        // Rating berechnen basierend auf Leistung
-        bool allCompleted = CompletedSteps >= TotalSteps;
-        double timeRatio = MaxTime > 0 ? (double)TimeRemaining / MaxTime : 0;
+        // Calculate rating based on performance (avoid division by zero)
+        double completionRatio = TargetCellCount > 0
+            ? (double)PaintedTargetCount / TargetCellCount
+            : 0;
+        int totalAttempts = PaintedTargetCount + MistakeCount;
+        double accuracy = totalAttempts > 0
+            ? (double)PaintedTargetCount / totalAttempts
+            : 0;
 
-        if (allCompleted && MistakeCount == 0 && timeRatio > 0.4)
+        if (completionRatio >= 1.0 && MistakeCount == 0)
         {
             Result = MiniGameRating.Perfect;
         }
-        else if (allCompleted && MistakeCount <= 2 && timeRatio > 0.2)
+        else if (completionRatio >= 0.9 && accuracy >= 0.8)
         {
             Result = MiniGameRating.Good;
         }
-        else if (allCompleted)
+        else if (completionRatio >= 0.7 && accuracy >= 0.6)
         {
             Result = MiniGameRating.Ok;
         }
@@ -449,10 +528,10 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
             Result = MiniGameRating.Miss;
         }
 
-        // Ergebnis aufzeichnen
+        // Record result
         _gameStateService.RecordMiniGameResult(Result);
 
-        // Sound abspielen
+        // Play sound
         var sound = Result switch
         {
             MiniGameRating.Perfect => GameSound.Perfect,
@@ -462,13 +541,14 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         };
         await _audioService.PlaySoundAsync(sound);
 
-        // Belohnungen berechnen
+        // Belohnungen berechnen (Combo-Multiplikator anwenden)
+        var comboMult = ComboMultiplier;
         var order = _gameStateService.GetActiveOrder();
         if (order != null && IsLastTask)
         {
-            // Gesamt-Belohnung
-            RewardAmount = order.FinalReward;
-            XpAmount = order.FinalXp;
+            // Gesamt-Belohnung mit Combo-Multiplikator
+            RewardAmount = order.FinalReward * comboMult;
+            XpAmount = (int)(order.FinalXp * comboMult);
         }
         else if (order != null)
         {
@@ -476,27 +556,27 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
             int taskCount = Math.Max(1, order.Tasks.Count);
             decimal basePerTask = order.BaseReward / taskCount;
             RewardAmount = basePerTask * Result.GetRewardPercentage()
-                * order.Difficulty.GetRewardMultiplier() * order.OrderType.GetRewardMultiplier();
+                * order.Difficulty.GetRewardMultiplier() * order.OrderType.GetRewardMultiplier() * comboMult;
             int baseXpPerTask = order.BaseXp / taskCount;
             XpAmount = (int)(baseXpPerTask * Result.GetXpPercentage()
-                * order.Difficulty.GetXpMultiplier() * order.OrderType.GetXpMultiplier());
+                * order.Difficulty.GetXpMultiplier() * order.OrderType.GetXpMultiplier() * comboMult);
         }
         else
         {
-            // QuickJob: Belohnung aus aktivem QuickJob lesen
+            // QuickJob: Belohnung aus aktivem QuickJob lesen mit Combo-Multiplikator
             var quickJob = _gameStateService.State.ActiveQuickJob;
-            RewardAmount = quickJob?.Reward ?? 0;
-            XpAmount = quickJob?.XpReward ?? 0;
+            RewardAmount = (quickJob?.Reward ?? 0) * comboMult;
+            XpAmount = (int)((quickJob?.XpReward ?? 0) * comboMult);
         }
 
-        // Ergebnis-Anzeige setzen
+        // Set result display
         ResultText = _localizationService.GetString(Result.GetLocalizationKey());
         ResultEmoji = Result switch
         {
-            MiniGameRating.Perfect => "\u2B50\u2B50\u2B50",
-            MiniGameRating.Good => "\u2B50\u2B50",
-            MiniGameRating.Ok => "\u2B50",
-            _ => "\U0001F4A8"
+            MiniGameRating.Perfect => "★★★",
+            MiniGameRating.Good => "★★",
+            MiniGameRating.Ok => "★",
+            _ => "💨"
         };
 
         IsResultShown = true;
@@ -558,7 +638,6 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         var success = await _rewardedAdService.ShowAdAsync("score_double");
         if (success)
         {
-            // Belohnungen verdoppeln
             RewardAmount *= 2;
             XpAmount *= 2;
             AdWatched = true;
@@ -571,7 +650,6 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Continue()
     {
-        // Prüfen ob weitere Aufgaben in der Order sind
         var order = _gameStateService.GetActiveOrder();
         if (order == null)
         {
@@ -581,13 +659,11 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
 
         if (order.IsCompleted)
         {
-            // Auftrag fertig - Belohnungen vergeben und zurück
             _gameStateService.CompleteActiveOrder();
             NavigationRequested?.Invoke("../..");
         }
         else
         {
-            // Mehr Aufgaben - zum nächsten Mini-Game
             var nextTask = order.CurrentTask;
             if (nextTask != null)
             {
@@ -606,9 +682,9 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
         ShowTutorial = false;
         // Als gesehen markieren und speichern
         var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.Blueprint))
+        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.PaintingGame))
         {
-            state.SeenMiniGameTutorials.Add(MiniGameType.Blueprint);
+            state.SeenMiniGameTutorials.Add(MiniGameType.PaintingGame);
             _gameStateService.MarkDirty();
         }
     }
@@ -616,9 +692,8 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Cancel()
     {
-        _gameTimer?.Stop();
+        _timer?.Stop();
         IsPlaying = false;
-        IsMemorizing = false;
 
         _gameStateService.CancelActiveOrder();
         NavigationRequested?.Invoke("../..");
@@ -647,10 +722,10 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
 
-        _gameTimer?.Stop();
-        if (_gameTimer != null)
+        _timer?.Stop();
+        if (_timer != null)
         {
-            _gameTimer.Tick -= OnGameTimerTick;
+            _timer.Tick -= OnTimerTick;
         }
 
         _disposed = true;
@@ -663,53 +738,57 @@ public partial class BlueprintGameViewModel : ObservableObject, IDisposable
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// <summary>
-/// Repräsentiert einen einzelnen Bauschritt im Bauplan-Spiel.
+/// Represents a single cell in the painting canvas.
 /// </summary>
-public partial class BlueprintStep : ObservableObject
+public partial class PaintCell : ObservableObject
 {
-    [ObservableProperty]
-    private int _stepNumber; // Korrekte Reihenfolgenummer (1-basiert)
+    public int Row { get; set; }
+    public int Column { get; set; }
+    public int Index { get; set; }
+    public bool IsTarget { get; set; }
+    public string TargetColor { get; set; } = "#FFFFFF";
 
     [ObservableProperty]
-    private string _icon = ""; // Vektor-Icon-Identifier
+    private bool _isPainted;
+
+    /// <summary>Zeitpunkt des Streichens (fuer Frisch-Effekt im Renderer).</summary>
+    public DateTime PaintedAt { get; set; }
 
     [ObservableProperty]
-    private bool _isRevealed; // Nummer sichtbar (Memorisierungsphase)
+    private string _paintColor = "Transparent";
 
     [ObservableProperty]
-    private bool _isCompleted; // Wurde korrekt angetippt
+    private bool _hasError;
 
-    [ObservableProperty]
-    private bool _hasError; // Wurde falsch angetippt (kurzes Blinken)
-
-    [ObservableProperty]
-    private string _label = ""; // Beschreibungstext (z.B. "Fundament")
-
-    // Berechnete Anzeige-Properties aktualisieren bei Zustandsänderung
-    partial void OnIsRevealedChanged(bool value)
+    // Notify computed display properties when paint state changes
+    partial void OnIsPaintedChanged(bool value)
     {
-        OnPropertyChanged(nameof(DisplayNumber));
-        OnPropertyChanged(nameof(BackgroundColor));
+        OnPropertyChanged(nameof(DisplayColor));
+        OnPropertyChanged(nameof(IsPaintedCorrectly));
     }
 
-    partial void OnIsCompletedChanged(bool value)
+    partial void OnPaintColorChanged(string value)
     {
-        OnPropertyChanged(nameof(DisplayNumber));
-        OnPropertyChanged(nameof(BackgroundColor));
-    }
-
-    partial void OnHasErrorChanged(bool value)
-    {
-        OnPropertyChanged(nameof(BackgroundColor));
+        OnPropertyChanged(nameof(DisplayColor));
     }
 
     /// <summary>
-    /// Angezeigte Nummer: Sichtbar während Memorisierung und nach Abschluss, sonst "?".
+    /// Gets the background color for display.
+    /// Target cells show a faint outline, non-target cells are wall color.
     /// </summary>
-    public string DisplayNumber => IsRevealed || IsCompleted ? StepNumber.ToString() : "?";
+    public string DisplayColor => IsPainted
+        ? PaintColor
+        : IsTarget
+            ? "#30FFFFFF"  // Faint target indication
+            : "#4A5568";   // Wall color
 
     /// <summary>
-    /// Hintergrundfarbe basierend auf Zustand.
+    /// Gets the border color.
     /// </summary>
-    public string BackgroundColor => IsCompleted ? "#4CAF50" : (HasError ? "#F44336" : "#2A2A2A");
+    public string BorderColor => IsTarget ? "#60FFFFFF" : "#2D3748";
+
+    /// <summary>
+    /// Whether this cell is correctly painted (target cell that was painted).
+    /// </summary>
+    public bool IsPaintedCorrectly => IsTarget && IsPainted;
 }

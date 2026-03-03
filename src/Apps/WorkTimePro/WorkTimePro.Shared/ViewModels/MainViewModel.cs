@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Material.Icons;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Helpers;
 using WorkTimePro.Models;
@@ -16,7 +17,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for the main page (Today view)
 /// </summary>
-public partial class MainViewModel : ObservableObject, IDisposable
+public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private readonly ITimeTrackingService _timeTracking;
     private readonly ICalculationService _calculation;

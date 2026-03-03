@@ -5,7 +5,6 @@
              xmlns:conv="using:FinanzRechner.Converters"
              xmlns:controls="using:MeineApps.UI.Controls"
              xmlns:views="using:FinanzRechner.Views"
-             xmlns:calcViews="using:FinanzRechner.Views.Calculators"
              x:Class="FinanzRechner.Views.MainView"
              x:DataType="vm:MainViewModel"
              AutomationProperties.AutomationId="Main_Root"
@@ -194,17 +193,17 @@
       <Border Classes="TabContent"
               AutomationProperties.AutomationId="Main_TabTracker"
               Classes.Active="{Binding IsTrackerActive}">
-        <views:ExpenseTrackerView AutomationProperties.AutomationId="Main_View_ExpenseTracker" DataContext="{Binding ExpenseTrackerViewModel}" />
+        <ContentControl Content="{Binding ExpenseTrackerViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_ExpenseTracker" />
       </Border>
       <Border Classes="TabContent"
               AutomationProperties.AutomationId="Main_TabStats"
               Classes.Active="{Binding IsStatsActive}">
-        <views:StatisticsView AutomationProperties.AutomationId="Main_View_Statistics" DataContext="{Binding StatisticsViewModel}" />
+        <ContentControl Content="{Binding StatisticsViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_Statistics" />
       </Border>
       <Border Classes="TabContent"
               AutomationProperties.AutomationId="Main_TabSettings"
               Classes.Active="{Binding IsSettingsActive}">
-        <views:SettingsView AutomationProperties.AutomationId="Main_View_Settings" DataContext="{Binding SettingsViewModel}" />
+        <ContentControl Content="{Binding SettingsViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_Settings" />
       </Border>
     </Panel>
 
@@ -216,27 +215,27 @@
            Background="{DynamicResource BackgroundBrush}">
       <Border AutomationProperties.AutomationId="Main_CalcCompoundInterest"
               IsVisible="{Binding IsCompoundInterestActive}">
-        <calcViews:CompoundInterestView AutomationProperties.AutomationId="Main_View_CompoundInterest" DataContext="{Binding CompoundInterestViewModel}" />
+        <ContentControl Content="{Binding CompoundInterestViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_CompoundInterest" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_CalcSavingsPlan"
               IsVisible="{Binding IsSavingsPlanActive}">
-        <calcViews:SavingsPlanView AutomationProperties.AutomationId="Main_View_SavingsPlan" DataContext="{Binding SavingsPlanViewModel}" />
+        <ContentControl Content="{Binding SavingsPlanViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_SavingsPlan" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_CalcLoan"
               IsVisible="{Binding IsLoanActive}">
-        <calcViews:LoanView AutomationProperties.AutomationId="Main_View_Loan" DataContext="{Binding LoanViewModel}" />
+        <ContentControl Content="{Binding LoanViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_Loan" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_CalcAmortization"
               IsVisible="{Binding IsAmortizationActive}">
-        <calcViews:AmortizationView AutomationProperties.AutomationId="Main_View_Amortization" DataContext="{Binding AmortizationViewModel}" />
+        <ContentControl Content="{Binding AmortizationViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_Amortization" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_CalcYield"
               IsVisible="{Binding IsYieldActive}">
-        <calcViews:YieldView AutomationProperties.AutomationId="Main_View_Yield" DataContext="{Binding YieldViewModel}" />
+        <ContentControl Content="{Binding YieldViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_Yield" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_CalcInflation"
               IsVisible="{Binding IsInflationActive}">
-        <calcViews:InflationView AutomationProperties.AutomationId="Main_View_Inflation" DataContext="{Binding InflationViewModel}" />
+        <ContentControl Content="{Binding InflationViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_Inflation" />
       </Border>
     </Panel>
 
@@ -248,11 +247,11 @@
            Background="{DynamicResource BackgroundBrush}">
       <Border AutomationProperties.AutomationId="Main_SubPageBudgets"
               IsVisible="{Binding IsBudgetsPageActive}">
-        <views:BudgetsView AutomationProperties.AutomationId="Main_View_Budgets" DataContext="{Binding BudgetsViewModel}" />
+        <ContentControl Content="{Binding BudgetsViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_Budgets" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_SubPageRecurring"
               IsVisible="{Binding IsRecurringPageActive}">
-        <views:RecurringTransactionsView AutomationProperties.AutomationId="Main_View_RecurringTransactions" DataContext="{Binding RecurringTransactionsViewModel}" />
+        <ContentControl Content="{Binding RecurringTransactionsViewModel}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" AutomationProperties.AutomationId="Main_View_RecurringTransactions" />
       </Border>
     </Panel>
 

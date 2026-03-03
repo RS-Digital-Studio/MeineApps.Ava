@@ -2,6 +2,7 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services;
+using HandwerkerImperium.ViewModels.MiniGames;
 
 namespace HandwerkerImperium.ViewModels;
 

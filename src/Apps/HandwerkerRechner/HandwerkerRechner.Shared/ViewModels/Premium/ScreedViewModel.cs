@@ -7,13 +7,14 @@ using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
 /// <summary>
 /// ViewModel für den Estrich-Rechner (Fläche, Dicke, Typ → Volumen, Gewicht, Säcke, Trocknungszeit)
 /// </summary>
-public partial class ScreedViewModel : ObservableObject, IDisposable
+public partial class ScreedViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

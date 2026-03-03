@@ -1,12 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using ZeitManager.Models;
 using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class AlarmOverlayViewModel : ObservableObject, IDisposable
+public partial class AlarmOverlayViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ITimerService _timerService;

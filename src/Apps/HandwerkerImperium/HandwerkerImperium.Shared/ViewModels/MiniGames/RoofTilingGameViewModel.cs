@@ -5,15 +5,16 @@ using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
-/// ViewModel fuer das Inspektions-MiniGame (Baustelleninspektion / Fehlersuche).
-/// Spieler muss Fehler auf einer Baustelle finden, indem er fehlerhafte Felder antippt.
+/// ViewModel für das Dachziegel-Muster-Puzzle.
+/// Der Spieler muss fehlende Dachziegel in korrekten Farben platzieren.
 /// </summary>
-public partial class InspectionGameViewModel : ObservableObject, IDisposable
+public partial class RoofTilingGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
@@ -23,10 +24,16 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private bool _isEnding;
 
-    // Korrekte Baustellen-Elemente (gut → grün)
-    private static readonly string[] GoodIcons = { "brick", "wood", "bolt", "ladder", "crane", "wrench", "gear", "beam" };
-    // Fehlerhafte Elemente (Mängel → rot)
-    private static readonly string[] DefectIcons = { "warning", "barrier", "crack", "fire", "cross", "stop", "hole", "leak" };
+    // Farb-Palette für Dachziegel (kontrastreich, gut unterscheidbar)
+    private static readonly string[] TileColors =
+    {
+        "#C62828", // Klassisch Rot
+        "#D4763A", // Terrakotta
+        "#5D4037", // Dunkelbraun
+        "#F9A825", // Sandgelb
+        "#37474F", // Schiefer-Grau
+        "#6D4C41"  // Mittelbraun
+    };
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -48,22 +55,34 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
-    private ObservableCollection<InspectionCell> _cells = [];
+    private ObservableCollection<RoofTile> _tiles = [];
 
     [ObservableProperty]
-    private int _foundDefects;
+    private ObservableCollection<string> _availableColors = [];
 
     [ObservableProperty]
-    private int _totalDefects;
+    private string _selectedColor = "";
 
     [ObservableProperty]
-    private int _falseAlarms;
+    private int _mistakeCount;
+
+    [ObservableProperty]
+    private int _placedCount;
+
+    [ObservableProperty]
+    private int _totalToPlace;
 
     [ObservableProperty]
     private int _timeRemaining;
 
     [ObservableProperty]
-    private int _maxTime = 35;
+    private int _maxTime = 45;
+
+    [ObservableProperty]
+    private int _gridColumns = 5;
+
+    [ObservableProperty]
+    private int _gridRows = 4;
 
     [ObservableProperty]
     private bool _isPlaying;
@@ -108,7 +127,7 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _countdownText = "";
 
-    // Sterne-Anzeige (staggered: 0→1 mit Verzoegerung)
+    // Sterne-Anzeige (staggered: 0→1 mit Verzögerung)
     [ObservableProperty]
     private double _star1Opacity;
 
@@ -117,6 +136,10 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
 
     [ObservableProperty]
     private double _star3Opacity;
+
+    // Hinweis: Farbpalette pulsen wenn keine Farbe gewählt
+    [ObservableProperty]
+    private bool _selectColorHint;
 
     // Tutorial (beim ersten Spielstart anzeigen)
     [ObservableProperty]
@@ -128,16 +151,6 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _tutorialText = "";
 
-    // Grid-Dimensionen
-    private int _gridColumns = 4;
-    private int _gridRows = 4;
-
-    /// <summary>Spaltenanzahl (fuer SkiaSharp-Renderer).</summary>
-    public int GridColumns => _gridColumns;
-
-    /// <summary>Zeilenanzahl (fuer SkiaSharp-Renderer).</summary>
-    public int GridRows => _gridRows;
-
     // ═══════════════════════════════════════════════════════════════════════
     // COMPUTED PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
@@ -147,35 +160,27 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     /// </summary>
     public string DifficultyStars => Difficulty switch
     {
-        OrderDifficulty.Easy => "\u2605\u2606\u2606",
-        OrderDifficulty.Medium => "\u2605\u2605\u2606",
-        OrderDifficulty.Hard => "\u2605\u2605\u2605",
-        OrderDifficulty.Expert => "\u2605\u2605\u2605\u2605",
-        _ => "\u2605\u2606\u2606"
+        OrderDifficulty.Easy => "★☆☆",
+        OrderDifficulty.Medium => "★★☆",
+        OrderDifficulty.Hard => "★★★",
+        OrderDifficulty.Expert => "★★★★",
+        _ => "★☆☆"
     };
 
     /// <summary>
-    /// Breite des Inspektions-Grids in Pixeln fuer WrapPanel.
-    /// Jede Zelle ist 60px + 4px Margin = 64px.
+    /// Breite des Tile-Grids in Pixeln für WrapPanel.
+    /// Jeder Ziegel ist 50px + 4px Margin = 54px.
     /// </summary>
-    public double GridWidth => _gridColumns * 64;
-
-    /// <summary>
-    /// Fortschrittsanzeige als Prozent (0.0 bis 1.0).
-    /// </summary>
-    public double InspectionProgress => TotalDefects > 0
-        ? (double)FoundDefects / TotalDefects
-        : 0;
+    public double TileGridWidth => GridColumns * 54;
 
     partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
-    partial void OnFoundDefectsChanged(int value) => OnPropertyChanged(nameof(InspectionProgress));
-    partial void OnTotalDefectsChanged(int value) => OnPropertyChanged(nameof(InspectionProgress));
+    partial void OnGridColumnsChanged(int value) => OnPropertyChanged(nameof(TileGridWidth));
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public InspectionGameViewModel(
+    public RoofTilingGameViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
@@ -198,7 +203,7 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     {
         OrderId = orderId;
 
-        // Zustand zuruecksetzen (sonst bleibt Ergebnis-Screen stehen)
+        // Zustand zurücksetzen (sonst bleibt Ergebnis-Screen stehen)
         IsPlaying = false;
         IsResultShown = false;
 
@@ -226,7 +231,7 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
 
         InitializeGame();
 
-        CheckAndShowTutorial(MiniGameType.Inspection);
+        CheckAndShowTutorial(MiniGameType.RoofTiling);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -235,60 +240,145 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
 
     private void InitializeGame()
     {
-        // Grid-Groesse und Zeit je nach Schwierigkeit
-        (_gridColumns, _gridRows, MaxTime, var defectCount) = Difficulty switch
+        // Grid-Größe, Zeit und Farbanzahl je nach Schwierigkeit
+        int colorCount;
+        double hintPercentage;
+
+        (GridColumns, GridRows, MaxTime, colorCount, hintPercentage) = Difficulty switch
         {
-            OrderDifficulty.Easy => (4, 4, 45, 3),
-            OrderDifficulty.Medium => (5, 4, 35, 5),
-            OrderDifficulty.Hard => (5, 5, 28, 7),
-            OrderDifficulty.Expert => (6, 5, 28, 9),
-            _ => (5, 4, 35, 5)
+            OrderDifficulty.Easy => (3, 3, 45, 3, 0.55),
+            OrderDifficulty.Medium => (4, 4, 50, 4, 0.40),
+            OrderDifficulty.Hard => (5, 4, 50, 5, 0.30),
+            OrderDifficulty.Expert => (5, 5, 45, 5, 0.25),
+            _ => (4, 4, 50, 4, 0.40)
         };
 
-        OnPropertyChanged(nameof(GridWidth));
-
-        // Tool-Bonus: Lupe gibt Extra-Sekunden
-        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Magnifier);
+        // Tool-Bonus: Hammer gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Hammer);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
-        FoundDefects = 0;
-        TotalDefects = defectCount;
-        FalseAlarms = 0;
+        PlacedCount = 0;
+        MistakeCount = 0;
         IsPlaying = false;
         IsResultShown = false;
+        SelectedColor = "";
 
-        GenerateGrid(defectCount);
+        // Verfügbare Farben setzen
+        AvailableColors.Clear();
+        for (int i = 0; i < colorCount; i++)
+        {
+            AvailableColors.Add(TileColors[i]);
+        }
+
+        GenerateGrid(colorCount, hintPercentage);
     }
 
-    private void GenerateGrid(int defectCount)
+    /// <summary>
+    /// Generiert das Dach-Gitter mit einem Muster aus farbigen Ziegeln.
+    /// Ein Teil der Ziegel wird als Hinweis vorplatziert.
+    /// </summary>
+    private void GenerateGrid(int colorCount, double hintPercentage)
     {
-        Cells.Clear();
+        Tiles.Clear();
+        int totalTiles = GridColumns * GridRows;
 
-        int totalCells = _gridColumns * _gridRows;
-        var allIndices = Enumerable.Range(0, totalCells).ToList();
+        // Muster generieren: Reihenweises Muster mit Versatz (wie echte Dachziegel)
+        var pattern = GenerateRoofPattern(colorCount);
 
-        // Zufaellige Positionen fuer Fehler auswaehlen
-        var defectPositions = new HashSet<int>();
-        while (defectPositions.Count < defectCount && allIndices.Count > 0)
+        // Bestimme welche Ziegel als Hinweis vorplatziert werden
+        int hintCount = (int)(totalTiles * hintPercentage);
+        var hintIndices = new HashSet<int>();
+
+        // Erst jede Reihe mindestens 1 Hint garantieren (Referenz in jedem Bereich)
+        for (int row = 0; row < GridRows; row++)
         {
-            int randIndex = Random.Shared.Next(allIndices.Count);
-            defectPositions.Add(allIndices[randIndex]);
-            allIndices.RemoveAt(randIndex);
+            int startIdx = row * GridColumns;
+            int colIdx = Random.Shared.Next(GridColumns);
+            hintIndices.Add(startIdx + colIdx);
         }
 
-        for (int i = 0; i < totalCells; i++)
+        // Restliche Hints zufällig verteilen
+        while (hintIndices.Count < hintCount)
         {
-            bool hasDefect = defectPositions.Contains(i);
-            Cells.Add(new InspectionCell
+            hintIndices.Add(Random.Shared.Next(totalTiles));
+        }
+
+        // Ziegel erstellen
+        for (int i = 0; i < totalTiles; i++)
+        {
+            int row = i / GridColumns;
+            int col = i % GridColumns;
+            string correctColor = pattern[row, col];
+            bool isHint = hintIndices.Contains(i);
+
+            var tile = new RoofTile
             {
+                Row = row,
+                Column = col,
                 Index = i,
-                Row = i / _gridColumns,
-                Column = i % _gridColumns,
-                HasDefect = hasDefect,
-                Icon = hasDefect
-                    ? DefectIcons[Random.Shared.Next(DefectIcons.Length)]
-                    : GoodIcons[Random.Shared.Next(GoodIcons.Length)]
-            });
+                CorrectColor = correctColor,
+                IsHint = isHint,
+                IsPlaced = isHint,
+                CurrentColor = isHint ? correctColor : ""
+            };
+
+            Tiles.Add(tile);
         }
+
+        TotalToPlace = totalTiles - hintCount;
+    }
+
+    /// <summary>
+    /// Generiert ein realistisches Dachziegel-Muster.
+    /// Jede Reihe hat ein versetztes Farbmuster (wie Ziegelverbund).
+    /// </summary>
+    private string[,] GenerateRoofPattern(int colorCount)
+    {
+        var pattern = new string[GridRows, GridColumns];
+        var colors = TileColors.Take(colorCount).ToArray();
+
+        // Verschiedene Muster-Typen zufällig wählen
+        int patternType = Random.Shared.Next(3);
+
+        switch (patternType)
+        {
+            case 0: // Diagonales Streifenmuster
+                for (int row = 0; row < GridRows; row++)
+                {
+                    for (int col = 0; col < GridColumns; col++)
+                    {
+                        int index = (row + col) % colorCount;
+                        pattern[row, col] = colors[index];
+                    }
+                }
+                break;
+
+            case 1: // Schachbrett-ähnliches Muster mit Versatz
+                for (int row = 0; row < GridRows; row++)
+                {
+                    int offset = row % 2;
+                    for (int col = 0; col < GridColumns; col++)
+                    {
+                        int index = (col + offset) % colorCount;
+                        pattern[row, col] = colors[index];
+                    }
+                }
+                break;
+
+            case 2: // Blockmuster (2er-Blöcke)
+                for (int row = 0; row < GridRows; row++)
+                {
+                    int rowBlock = row / 2;
+                    for (int col = 0; col < GridColumns; col++)
+                    {
+                        int colBlock = col / 2;
+                        int index = (rowBlock + colBlock) % colorCount;
+                        pattern[row, col] = colors[index];
+                    }
+                }
+                break;
+        }
+
+        return pattern;
     }
 
     [RelayCommand]
@@ -342,37 +432,71 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Feld untersuchen - Spieler tippt auf ein Baustellen-Feld.
+    /// Wählt eine Farbe aus der Farbauswahl-Leiste.
     /// </summary>
     [RelayCommand]
-    private async Task InspectCellAsync(InspectionCell? cell)
+    private void SelectColor(string? color)
     {
-        if (cell == null || !IsPlaying || _isEnding || cell.IsInspected) return;
+        if (color == null || !IsPlaying) return;
+        SelectedColor = color;
+    }
 
-        cell.IsInspected = true;
+    /// <summary>
+    /// Platziert einen Ziegel auf dem Gitter.
+    /// Prüft ob die gewählte Farbe korrekt ist.
+    /// </summary>
+    [RelayCommand]
+    private async Task PlaceTileAsync(RoofTile? tile)
+    {
+        if (tile == null || !IsPlaying || IsResultShown) return;
 
-        if (cell.HasDefect)
+        // Bereits platzierte/Hinweis-Ziegel ignorieren
+        if (tile.IsPlaced || tile.IsHint) return;
+
+        // Keine Farbe gewählt → Farbpalette pulsieren lassen
+        if (string.IsNullOrEmpty(SelectedColor))
         {
-            // Fehler korrekt gefunden
-            cell.IsDefectFound = true;
-            FoundDefects++;
-            await _audioService.PlaySoundAsync(GameSound.Good);
+            SelectColorHint = true;
+            _ = ResetSelectColorHintAsync();
+            return;
+        }
+
+        // Farbe setzen
+        tile.CurrentColor = SelectedColor;
+
+        if (SelectedColor == tile.CorrectColor)
+        {
+            // Korrekt platziert
+            tile.IsPlaced = true;
+            tile.HasError = false;
+            PlacedCount++;
+
+            await _audioService.PlaySoundAsync(GameSound.ButtonTap);
+
+            // Alle Ziegel platziert?
+            if (PlacedCount >= TotalToPlace)
+            {
+                await EndGameAsync();
+            }
         }
         else
         {
-            // Falscher Alarm - kein Fehler vorhanden
-            cell.IsFalseAlarm = true;
-            FalseAlarms++;
-            await _audioService.PlaySoundAsync(GameSound.Miss);
-        }
+            // Falscher Ziegel
+            tile.HasError = true;
+            MistakeCount++;
 
-        // Pruefen ob alle Fehler gefunden wurden
-        if (FoundDefects >= TotalDefects)
-        {
-            await EndGameAsync();
+            await _audioService.PlaySoundAsync(GameSound.Miss);
+
+            // Fehler nach kurzer Zeit zurücksetzen
+            await Task.Delay(400);
+            tile.HasError = false;
+            tile.CurrentColor = "";
         }
     }
 
+    /// <summary>
+    /// Beendet das Spiel und berechnet das Ergebnis.
+    /// </summary>
     private async Task EndGameAsync()
     {
         if (_isEnding) return;
@@ -381,16 +505,43 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
         IsPlaying = false;
         _timer?.Stop();
 
-        // Alle nicht-gefundenen Fehler aufdecken
-        foreach (var cell in Cells.Where(c => c.HasDefect && !c.IsInspected))
+        // Rating berechnen
+        bool allPlaced = PlacedCount >= TotalToPlace;
+        double timeRatio = MaxTime > 0 ? (double)TimeRemaining / MaxTime : 0;
+
+        if (allPlaced && MistakeCount == 0 && timeRatio > 0.50)
         {
-            cell.IsInspected = true;
+            // Perfect: 0 Fehler + >50% Zeit übrig
+            Result = MiniGameRating.Perfect;
+        }
+        else if (allPlaced && MistakeCount <= 2 && timeRatio > 0.25)
+        {
+            // Good: <=2 Fehler + >25% Zeit übrig
+            Result = MiniGameRating.Good;
+        }
+        else if (allPlaced && MistakeCount <= 8)
+        {
+            // Ok: <=8 Fehler + alle platziert
+            Result = MiniGameRating.Ok;
+        }
+        else if (!allPlaced && TotalToPlace > 0)
+        {
+            // Teilbewertung bei Zeitablauf: basierend auf Platzierungs-Quote
+            double placedRatio = (double)PlacedCount / TotalToPlace;
+            if (placedRatio >= 0.90 && MistakeCount <= 2)
+                Result = MiniGameRating.Good;
+            else if (placedRatio >= 0.70 && MistakeCount <= 4)
+                Result = MiniGameRating.Ok;
+            else
+                Result = MiniGameRating.Miss;
+        }
+        else
+        {
+            // >8 Fehler
+            Result = MiniGameRating.Miss;
         }
 
-        // Rating berechnen
-        Result = CalculateRating();
-
-        // Ergebnis im GameState erfassen
+        // Ergebnis aufzeichnen
         _gameStateService.RecordMiniGameResult(Result);
 
         // Sound abspielen
@@ -434,10 +585,10 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
         ResultText = _localizationService.GetString(Result.GetLocalizationKey());
         ResultEmoji = Result switch
         {
-            MiniGameRating.Perfect => "\u2B50\u2B50\u2B50",
-            MiniGameRating.Good => "\u2B50\u2B50",
-            MiniGameRating.Ok => "\u2B50",
-            _ => "\U0001F4A8"
+            MiniGameRating.Perfect => "★★★",
+            MiniGameRating.Good => "★★",
+            MiniGameRating.Ok => "★",
+            _ => "💨"
         };
 
         IsResultShown = true;
@@ -491,36 +642,6 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
         CanWatchAd = IsLastTask && _rewardedAdService.IsAvailable;
     }
 
-    /// <summary>
-    /// Rating-Berechnung basierend auf gefundenen Fehlern, Fehl-Taps und verbleibender Zeit.
-    /// - Perfect: Alle Fehler + 0 Fehl-Taps + >40% Zeit uebrig
-    /// - Good: Alle Fehler + maximal 2 Fehl-Taps
-    /// - Ok: Mindestens 50% der Fehler gefunden
-    /// - Miss: Weniger als 50% gefunden oder Zeit abgelaufen ohne Ergebnis
-    /// </summary>
-    private MiniGameRating CalculateRating()
-    {
-        double timeRatio = MaxTime > 0 ? (double)TimeRemaining / MaxTime : 0;
-        double defectRatio = TotalDefects > 0 ? (double)FoundDefects / TotalDefects : 0;
-
-        if (defectRatio >= 1.0 && FalseAlarms == 0 && timeRatio > 0.4)
-        {
-            return MiniGameRating.Perfect;
-        }
-
-        if (defectRatio >= 1.0 && FalseAlarms <= 2)
-        {
-            return MiniGameRating.Good;
-        }
-
-        if (defectRatio >= 0.5)
-        {
-            return MiniGameRating.Ok;
-        }
-
-        return MiniGameRating.Miss;
-    }
-
     [RelayCommand]
     private async Task WatchAdAsync()
     {
@@ -542,7 +663,7 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Continue()
     {
-        // Pruefen ob weitere Tasks im Auftrag vorhanden sind
+        // Prüfe ob weitere Aufgaben im Auftrag vorhanden
         var order = _gameStateService.GetActiveOrder();
         if (order == null)
         {
@@ -552,13 +673,13 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
 
         if (order.IsCompleted)
         {
-            // Auftrag abgeschlossen - Belohnungen vergeben und zurueck
+            // Auftrag abgeschlossen - Belohnungen vergeben und zurück
             _gameStateService.CompleteActiveOrder();
             NavigationRequested?.Invoke("../..");
         }
         else
         {
-            // Weitere Tasks - zum naechsten Mini-Game
+            // Weitere Aufgaben - zum nächsten Mini-Game
             var nextTask = order.CurrentTask;
             if (nextTask != null)
             {
@@ -577,9 +698,9 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
         ShowTutorial = false;
         // Als gesehen markieren und speichern
         var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.Inspection))
+        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.RoofTiling))
         {
-            state.SeenMiniGameTutorials.Add(MiniGameType.Inspection);
+            state.SeenMiniGameTutorials.Add(MiniGameType.RoofTiling);
             _gameStateService.MarkDirty();
         }
     }
@@ -597,6 +718,15 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Setzt den SelectColorHint nach 1 Sekunde zurück.
+    /// </summary>
+    private async Task ResetSelectColorHintAsync()
+    {
+        await Task.Delay(1000);
+        SelectColorHint = false;
+    }
 
     private void CheckAndShowTutorial(MiniGameType gameType)
     {
@@ -633,61 +763,68 @@ public partial class InspectionGameViewModel : ObservableObject, IDisposable
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// <summary>
-/// Repraesentiert ein einzelnes Feld auf der Baustelle.
+/// Repräsentiert einen einzelnen Dachziegel im Gitter.
 /// </summary>
-public partial class InspectionCell : ObservableObject
+public partial class RoofTile : ObservableObject
 {
-    public int Index { get; set; }
     public int Row { get; set; }
     public int Column { get; set; }
+    public int Index { get; set; }
 
     [ObservableProperty]
-    private string _icon = "";
+    private string _correctColor = "";
 
     [ObservableProperty]
-    private bool _hasDefect;
+    private string _currentColor = "";
 
     [ObservableProperty]
-    private bool _isInspected;
+    private bool _isPlaced;
 
     [ObservableProperty]
-    private bool _isDefectFound;
+    private bool _isHint;
 
     [ObservableProperty]
-    private bool _isFalseAlarm;
+    private bool _hasError;
 
-    // Computed Properties fuer die View aktualisieren
-    partial void OnIsInspectedChanged(bool value)
+    // Visuelle Properties bei Zustandsänderung aktualisieren
+    partial void OnIsPlacedChanged(bool value)
     {
-        OnPropertyChanged(nameof(BackgroundColor));
-        OnPropertyChanged(nameof(BorderColor));
-        OnPropertyChanged(nameof(ContentOpacity));
-    }
-
-    partial void OnIsDefectFoundChanged(bool value)
-    {
-        OnPropertyChanged(nameof(BackgroundColor));
+        OnPropertyChanged(nameof(DisplayColor));
         OnPropertyChanged(nameof(BorderColor));
     }
 
-    partial void OnIsFalseAlarmChanged(bool value)
+    partial void OnCurrentColorChanged(string value)
     {
-        OnPropertyChanged(nameof(BackgroundColor));
+        OnPropertyChanged(nameof(DisplayColor));
+    }
+
+    partial void OnHasErrorChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BorderColor));
+    }
+
+    partial void OnIsHintChanged(bool value)
+    {
         OnPropertyChanged(nameof(BorderColor));
     }
 
     /// <summary>
-    /// Hintergrundfarbe: Gruen bei gefundenem Fehler, Rot bei Fehlalarm, Standard sonst.
+    /// Angezeigte Farbe: Platziert=korrekte Farbe, Temporär=aktuelle Farbe, Leer=Dunkelgrau.
     /// </summary>
-    public string BackgroundColor => IsDefectFound ? "#4CAF50" : (IsFalseAlarm ? "#F44336" : "#2A2A2A");
+    public string DisplayColor => IsPlaced
+        ? CorrectColor
+        : !string.IsNullOrEmpty(CurrentColor)
+            ? CurrentColor
+            : "#3A3A3A";
 
     /// <summary>
-    /// Rahmenfarbe: Gruen bei Fehler gefunden, Rot bei Fehlalarm, Standard-Grau sonst.
+    /// Rahmenfarbe: Hinweis=Gold, Fehler=Rot, Standard=Grau.
     /// </summary>
-    public string BorderColor => IsInspected ? (HasDefect ? "#4CAF50" : "#F44336") : "#555555";
-
-    /// <summary>
-    /// Deckkraft des Inhalts: Reduziert bei falsch inspiziertem Feld.
-    /// </summary>
-    public double ContentOpacity => IsInspected ? (IsDefectFound ? 1.0 : 0.5) : 1.0;
+    public string BorderColor => IsHint
+        ? "#FFD700"
+        : HasError
+            ? "#F44336"
+            : IsPlaced
+                ? "#4CAF50"
+                : "#555555";
 }

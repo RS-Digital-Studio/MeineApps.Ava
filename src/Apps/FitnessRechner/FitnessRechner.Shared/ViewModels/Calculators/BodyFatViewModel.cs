@@ -3,10 +3,11 @@ using CommunityToolkit.Mvvm.Input;
 using FitnessRechner.Models;
 using FitnessRechner.Services;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels.Calculators;
 
-public partial class BodyFatViewModel : ObservableObject
+public partial class BodyFatViewModel : ViewModelBase
 {
     private readonly IFitnessEngine _fitnessEngine;
     private readonly ITrackingService _trackingService;

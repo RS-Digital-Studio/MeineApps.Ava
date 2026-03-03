@@ -7,13 +7,14 @@ using HandwerkerRechner.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels;
 
 /// <summary>
 /// ViewModel for the project management page
 /// </summary>
-public partial class ProjectsViewModel : ObservableObject
+public partial class ProjectsViewModel : ViewModelBase
 {
     private readonly IProjectService _projectService;
     private readonly ILocalizationService _localization;

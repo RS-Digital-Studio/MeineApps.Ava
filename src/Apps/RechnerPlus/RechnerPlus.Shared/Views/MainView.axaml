@@ -1,7 +1,6 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:RechnerPlus.ViewModels"
-             xmlns:views="using:RechnerPlus.Views"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:calc="using:MeineApps.CalcLib"
              xmlns:controls="using:MeineApps.UI.Controls"
@@ -64,7 +63,8 @@
                 AutomationProperties.AutomationId="Main_TabContentCalculator"
                 Classes.Active="{Binding IsCalculatorActive}">
           <Grid RowDefinitions="*,Auto">
-            <views:CalculatorView Grid.Row="0" DataContext="{Binding CalculatorViewModel}" />
+            <ContentControl Grid.Row="0" Content="{Binding CalculatorViewModel}"
+                            HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
 
             <!-- Mini-History unter dem Calculator (letzte 2 Berechnungen) -->
             <ItemsControl Grid.Row="1"
@@ -105,12 +105,14 @@
         <Border Classes="TabContent"
                 AutomationProperties.AutomationId="Main_TabContentConverter"
                 Classes.Active="{Binding IsConverterActive}">
-          <views:ConverterView DataContext="{Binding ConverterViewModel}" />
+          <ContentControl Content="{Binding ConverterViewModel}"
+                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
         </Border>
         <Border Classes="TabContent"
                 AutomationProperties.AutomationId="Main_TabContentSettings"
                 Classes.Active="{Binding IsSettingsActive}">
-          <views:SettingsView DataContext="{Binding SettingsViewModel}" />
+          <ContentControl Content="{Binding SettingsViewModel}"
+                          HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" />
         </Border>
       </Panel>
 

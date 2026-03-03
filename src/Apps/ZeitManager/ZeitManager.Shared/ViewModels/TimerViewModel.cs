@@ -2,12 +2,13 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using ZeitManager.Models;
 using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class TimerViewModel : ObservableObject, IDisposable
+public partial class TimerViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ITimerService _timerService;

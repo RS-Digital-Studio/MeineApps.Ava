@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using WorkTimePro.Helpers;
 using WorkTimePro.Models;
@@ -12,7 +13,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for year overview (Premium feature)
 /// </summary>
-public partial class YearOverviewViewModel : ObservableObject
+public partial class YearOverviewViewModel : ViewModelBase
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;

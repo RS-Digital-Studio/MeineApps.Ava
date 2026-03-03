@@ -5,23 +5,49 @@ using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
-/// ViewModel for the Wiring mini-game.
-/// Player must connect colored wires from left to right.
+/// ViewModel für das Erfinder-Puzzle-Minispiel.
+/// Der Spieler merkt sich die Montage-Reihenfolge der Bauteile und tippt sie danach korrekt an.
 /// </summary>
-public partial class WiringGameViewModel : ObservableObject, IDisposable
+public partial class InventGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
     private readonly IRewardedAdService _rewardedAdService;
     private readonly ILocalizationService _localizationService;
-    private DispatcherTimer? _timer;
+    private DispatcherTimer? _gameTimer;
     private bool _disposed;
     private bool _isEnding;
+
+    // Bauteil-Icons (Vektor-Identifikatoren für SkiaSharp-Rendering)
+    private static readonly string[] PartIcons =
+    {
+        "gear",      // Zahnrad
+        "piston",    // Kolben
+        "wire",      // Kabel
+        "board",     // Platine
+        "screw",     // Schraube
+        "housing",   // Gehäuse
+        "spring",    // Feder
+        "lens",      // Linse
+        "motor",     // Motor
+        "battery",   // Batterie
+        "switch",    // Schalter
+        "antenna"    // Antenne
+    };
+
+    // Lokalisierte Bauteil-Labels (Keys)
+    private static readonly string[] PartLabelKeys =
+    {
+        "InventPartGear", "InventPartPiston", "InventPartWire", "InventPartBoard",
+        "InventPartScrew", "InventPartHousing", "InventPartSpring", "InventPartLens",
+        "InventPartMotor", "InventPartBattery", "InventPartSwitch", "InventPartAntenna"
+    };
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -43,31 +69,34 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
     private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
-    private ObservableCollection<Wire> _leftWires = [];
+    private ObservableCollection<InventPart> _parts = [];
 
     [ObservableProperty]
-    private ObservableCollection<Wire> _rightWires = [];
+    private bool _isMemorizing;
 
     [ObservableProperty]
-    private int _wireCount = 4;
+    private int _nextExpectedPart = 1;
 
     [ObservableProperty]
-    private int _connectedCount;
+    private int _mistakeCount;
+
+    [ObservableProperty]
+    private int _completedParts;
+
+    [ObservableProperty]
+    private int _totalParts;
 
     [ObservableProperty]
     private int _timeRemaining;
 
     [ObservableProperty]
-    private int _maxTime = 30;
+    private int _maxTime;
 
     [ObservableProperty]
     private bool _isPlaying;
 
     [ObservableProperty]
     private bool _isResultShown;
-
-    [ObservableProperty]
-    private Wire? _selectedLeftWire;
 
     [ObservableProperty]
     private MiniGameRating _result;
@@ -106,7 +135,7 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _countdownText = "";
 
-    // Sterne-Anzeige
+    // Sterne-Anzeige (staggered: 0→1 mit Verzögerung)
     [ObservableProperty]
     private double _star1Opacity;
 
@@ -131,7 +160,7 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Gets the difficulty as star display string.
+    /// Schwierigkeit als Sterne-Anzeige.
     /// </summary>
     public string DifficultyStars => Difficulty switch
     {
@@ -142,13 +171,21 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
         _ => "★☆☆"
     };
 
+    /// <summary>
+    /// Breite des Grids in Pixeln für WrapPanel-Constraint.
+    /// Jedes Teil: 68px + 6px Margin = 74px.
+    /// </summary>
+    public double GridWidth => _gridColumns * 74;
+
+    private int _gridColumns = 3;
+
     partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public WiringGameViewModel(
+    public InventGameViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
@@ -161,15 +198,21 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // INITIALIZATION (replaces IQueryAttributable)
+    // INITIALIZATION
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Initialize the game with an order ID.
+    /// Initialisiert das Spiel mit einer Auftrags-ID.
     /// </summary>
     public void SetOrderId(string orderId)
     {
         OrderId = orderId;
+
+        // Zustand zurücksetzen (sonst bleibt Ergebnis-Screen stehen)
+        IsPlaying = false;
+        IsResultShown = false;
+        IsMemorizing = false;
+        _isEnding = false;
 
         var activeOrder = _gameStateService.GetActiveOrder();
         if (activeOrder != null)
@@ -195,7 +238,7 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
 
         InitializeGame();
 
-        CheckAndShowTutorial(MiniGameType.WiringGame);
+        CheckAndShowTutorial(MiniGameType.InventGame);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -204,88 +247,76 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
 
     private void InitializeGame()
     {
-        // Set wire count and time based on difficulty
-        (WireCount, MaxTime) = Difficulty switch
+        // Schwierigkeit bestimmt Teileanzahl, Grid-Spalten und Spielzeit
+        (TotalParts, _gridColumns, MaxTime) = Difficulty switch
         {
-            OrderDifficulty.Easy => (3, 15),
-            OrderDifficulty.Medium => (4, 16),
-            OrderDifficulty.Hard => (5, 17),
-            OrderDifficulty.Expert => (7, 18),
-            _ => (4, 15)
+            OrderDifficulty.Easy => (6, 2, 25),
+            OrderDifficulty.Medium => (9, 3, 35),
+            OrderDifficulty.Hard => (12, 3, 40),
+            OrderDifficulty.Expert => (16, 4, 45),
+            _ => (9, 3, 35)
         };
 
-        // Tool-Bonus: Schraubendreher gibt Extra-Sekunden
-        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Screwdriver);
+        // Tool-Bonus: Kompass gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Compass);
         TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
-        ConnectedCount = 0;
+        CompletedParts = 0;
+        MistakeCount = 0;
+        NextExpectedPart = 1;
         IsPlaying = false;
         IsResultShown = false;
-        SelectedLeftWire = null;
+        IsMemorizing = false;
 
-        GenerateWires();
+        OnPropertyChanged(nameof(GridWidth));
+
+        GenerateParts();
     }
 
-    private void GenerateWires()
+    private void GenerateParts()
     {
-        LeftWires.Clear();
-        RightWires.Clear();
+        Parts.Clear();
 
-        var colors = GetWireColors();
-        var random = Random.Shared;
-
-        // Create wires with colors
-        for (int i = 0; i < WireCount; i++)
+        // Zufällige Auswahl der Bauteile
+        var indices = Enumerable.Range(0, PartIcons.Length).ToList();
+        // Mischen
+        for (int i = indices.Count - 1; i > 0; i--)
         {
-            var color = colors[i];
+            int j = Random.Shared.Next(i + 1);
+            (indices[i], indices[j]) = (indices[j], indices[i]);
+        }
 
-            LeftWires.Add(new Wire
-            {
-                Index = i,
-                WireColor = color,
-                IsLeft = true
-            });
+        for (int i = 0; i < TotalParts; i++)
+        {
+            int iconIndex = indices[i % indices.Count];
+            string label = _localizationService.GetString(PartLabelKeys[iconIndex]) ?? PartLabelKeys[iconIndex];
 
-            RightWires.Add(new Wire
+            Parts.Add(new InventPart
             {
-                Index = i,
-                WireColor = color,
-                IsLeft = false
+                StepNumber = i + 1,
+                Icon = PartIcons[iconIndex],
+                Label = label,
+                IsRevealed = false,
+                IsCompleted = false,
+                HasError = false
             });
         }
 
-        // Shuffle right wires (so they don't match positions)
-        var shuffledRight = RightWires.OrderBy(_ => random.Next()).ToList();
-        RightWires.Clear();
-        for (int i = 0; i < shuffledRight.Count; i++)
+        // Positionen im Grid mischen (Nummern bleiben, aber physische Position variiert)
+        var shuffled = Parts.OrderBy(_ => Random.Shared.Next()).ToList();
+        Parts.Clear();
+        foreach (var part in shuffled)
         {
-            var wire = shuffledRight[i];
-            wire.Index = i;
-            RightWires.Add(wire);
+            Parts.Add(part);
         }
-    }
-
-    private List<WireColor> GetWireColors()
-    {
-        return
-        [
-            WireColor.Red,
-            WireColor.Blue,
-            WireColor.Green,
-            WireColor.Yellow,
-            WireColor.Orange,
-            WireColor.Purple,
-            WireColor.Cyan
-        ];
     }
 
     [RelayCommand]
     private async Task StartGameAsync()
     {
-        if (IsPlaying || IsCountdownActive) return;
+        if (IsPlaying || IsCountdownActive || IsMemorizing) return;
 
         IsResultShown = false;
         _isEnding = false;
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
         // Countdown 3-2-1-Los!
         IsCountdownActive = true;
@@ -296,18 +327,44 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
         }
         IsCountdownActive = false;
 
-        // Spiel starten
+        // Memorisierungsphase: Alle Nummern aufdecken
+        IsMemorizing = true;
+        foreach (var part in Parts)
+        {
+            part.IsRevealed = true;
+        }
+
+        // Memorisierungszeit je nach Schwierigkeit
+        int memorizeMs = Difficulty switch
+        {
+            OrderDifficulty.Easy => 3000,
+            OrderDifficulty.Medium => 2500,
+            OrderDifficulty.Hard => 2000,
+            OrderDifficulty.Expert => 1500,
+            _ => 2500
+        };
+
+        await Task.Delay(memorizeMs);
+
+        // Nummern verstecken, Spiel starten
+        foreach (var part in Parts)
+        {
+            part.IsRevealed = false;
+        }
+        IsMemorizing = false;
+
+        // Spiel starten mit Timer
         IsPlaying = true;
-        if (_timer != null) { _timer.Stop(); _timer.Tick -= OnTimerTick; }
-        _timer = new DispatcherTimer
+        if (_gameTimer != null) { _gameTimer.Stop(); _gameTimer.Tick -= OnGameTimerTick; }
+        _gameTimer = new DispatcherTimer
         {
             Interval = TimeSpan.FromSeconds(1)
         };
-        _timer.Tick += OnTimerTick;
-        _timer.Start();
+        _gameTimer.Tick += OnGameTimerTick;
+        _gameTimer.Start();
     }
 
-    private async void OnTimerTick(object? sender, EventArgs e)
+    private async void OnGameTimerTick(object? sender, EventArgs e)
     {
         try
         {
@@ -317,109 +374,90 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
 
             if (TimeRemaining <= 0)
             {
-                await EndGameAsync(false);
+                await EndGameAsync();
             }
         }
         catch (Exception ex)
         {
 #if DEBUG
-            System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
+            System.Diagnostics.Debug.WriteLine($"Fehler in OnGameTimerTick: {ex}");
 #endif
         }
     }
 
     [RelayCommand]
-    private async Task SelectLeftWireAsync(Wire? wire)
+    private async Task SelectPartAsync(InventPart? part)
     {
-        if (wire == null || !IsPlaying || IsResultShown || wire.IsConnected) return;
+        if (part == null || !IsPlaying || IsResultShown || part.IsCompleted) return;
 
-        // Deselect previous
-        if (SelectedLeftWire != null)
+        if (part.StepNumber == NextExpectedPart)
         {
-            SelectedLeftWire.IsSelected = false;
-        }
-
-        // Select new wire
-        wire.IsSelected = true;
-        SelectedLeftWire = wire;
-
-        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
-    }
-
-    [RelayCommand]
-    private async Task SelectRightWireAsync(Wire? wire)
-    {
-        if (wire == null || !IsPlaying || IsResultShown || wire.IsConnected) return;
-        if (SelectedLeftWire == null) return;
-
-        // Check if colors match
-        if (SelectedLeftWire.WireColor == wire.WireColor)
-        {
-            // Correct match!
-            SelectedLeftWire.IsConnected = true;
-            SelectedLeftWire.IsSelected = false;
-            wire.IsConnected = true;
-            ConnectedCount++;
+            // Korrekt! Teil als erledigt markieren
+            part.IsCompleted = true;
+            part.HasError = false;
+            CompletedParts++;
+            NextExpectedPart++;
 
             await _audioService.PlaySoundAsync(GameSound.Good);
 
-            // Check if all wires are connected
-            if (ConnectedCount >= WireCount)
+            // Alle Teile erledigt?
+            if (CompletedParts >= TotalParts)
             {
-                await EndGameAsync(true);
+                await EndGameAsync();
             }
         }
         else
         {
-            // Wrong match - flash error
-            wire.HasError = true;
+            // Falsch! Kurzes rotes Blinken
+            MistakeCount++;
+            part.HasError = true;
+
             await _audioService.PlaySoundAsync(GameSound.Miss);
 
-            // Reset error state after a short delay
-            await Task.Delay(300);
-            wire.HasError = false;
+            // Fehler nach kurzer Zeit zurücksetzen
+            _ = ResetErrorAsync(part);
         }
-
-        // Deselect
-        SelectedLeftWire.IsSelected = false;
-        SelectedLeftWire = null;
     }
 
-    private async Task EndGameAsync(bool completed)
+    private static async Task ResetErrorAsync(InventPart part)
+    {
+        await Task.Delay(500);
+        part.HasError = false;
+    }
+
+    private async Task EndGameAsync()
     {
         if (_isEnding) return;
         _isEnding = true;
 
         IsPlaying = false;
-        _timer?.Stop();
+        _gameTimer?.Stop();
 
-        // Calculate rating based on performance
-        if (completed)
+        // Rating berechnen basierend auf Leistung
+        bool allCompleted = CompletedParts >= TotalParts;
+        double timeRatio = MaxTime > 0 ? (double)TimeRemaining / MaxTime : 0;
+
+        if (allCompleted && MistakeCount == 0 && timeRatio > 0.4)
         {
-            double timeRatio = (double)TimeRemaining / MaxTime;
-
-            if (timeRatio > 0.6)
-                Result = MiniGameRating.Perfect;
-            else if (timeRatio > 0.3)
-                Result = MiniGameRating.Good;
-            else
-                Result = MiniGameRating.Ok;
+            Result = MiniGameRating.Perfect;
+        }
+        else if (allCompleted && MistakeCount <= 2 && timeRatio > 0.2)
+        {
+            Result = MiniGameRating.Good;
+        }
+        else if (allCompleted)
+        {
+            Result = MiniGameRating.Ok;
         }
         else
         {
-            // Partial credit based on connections made
-            double completionRatio = (double)ConnectedCount / WireCount;
-
-            if (completionRatio >= 0.75)
-                Result = MiniGameRating.Ok;
-            else
-                Result = MiniGameRating.Miss;
+            Result = MiniGameRating.Miss;
         }
 
-        // Record result
+        // Ergebnis aufzeichnen
         _gameStateService.RecordMiniGameResult(Result);
 
-        // Play sound
+        // Sound abspielen
         var sound = Result switch
         {
             MiniGameRating.Perfect => GameSound.Perfect,
@@ -456,14 +494,14 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
             XpAmount = quickJob?.XpReward ?? 0;
         }
 
-        // Set result display
+        // Ergebnis-Anzeige setzen
         ResultText = _localizationService.GetString(Result.GetLocalizationKey());
         ResultEmoji = Result switch
         {
-            MiniGameRating.Perfect => "★★★",
-            MiniGameRating.Good => "★★",
-            MiniGameRating.Ok => "★",
-            _ => "💨"
+            MiniGameRating.Perfect => "\u2B50\u2B50\u2B50",
+            MiniGameRating.Good => "\u2B50\u2B50",
+            MiniGameRating.Ok => "\u2B50",
+            _ => "\U0001F4A8"
         };
 
         IsResultShown = true;
@@ -502,7 +540,7 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
             if (starCount >= 2) { await Task.Delay(200); Star2Opacity = 1.0; }
             if (starCount >= 3) { await Task.Delay(200); Star3Opacity = 1.0; }
 
-            // Visuelles Event fuer Result-Polish in der View
+            // Visuelles Event für Result-Polish in der View
             GameCompleted?.Invoke(this, starCount);
         }
         else
@@ -525,6 +563,7 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
         var success = await _rewardedAdService.ShowAdAsync("score_double");
         if (success)
         {
+            // Belohnungen verdoppeln
             RewardAmount *= 2;
             XpAmount *= 2;
             AdWatched = true;
@@ -537,6 +576,7 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Continue()
     {
+        // Prüfen ob weitere Aufgaben in der Order sind
         var order = _gameStateService.GetActiveOrder();
         if (order == null)
         {
@@ -546,11 +586,13 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
 
         if (order.IsCompleted)
         {
+            // Auftrag fertig - Belohnungen vergeben und zurück
             _gameStateService.CompleteActiveOrder();
             NavigationRequested?.Invoke("../..");
         }
         else
         {
+            // Mehr Aufgaben - zum nächsten Mini-Game
             var nextTask = order.CurrentTask;
             if (nextTask != null)
             {
@@ -569,9 +611,9 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
         ShowTutorial = false;
         // Als gesehen markieren und speichern
         var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.WiringGame))
+        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.InventGame))
         {
-            state.SeenMiniGameTutorials.Add(MiniGameType.WiringGame);
+            state.SeenMiniGameTutorials.Add(MiniGameType.InventGame);
             _gameStateService.MarkDirty();
         }
     }
@@ -579,8 +621,9 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Cancel()
     {
-        _timer?.Stop();
+        _gameTimer?.Stop();
         IsPlaying = false;
+        IsMemorizing = false;
 
         _gameStateService.CancelActiveOrder();
         NavigationRequested?.Invoke("../..");
@@ -609,10 +652,10 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
 
-        _timer?.Stop();
-        if (_timer != null)
+        _gameTimer?.Stop();
+        if (_gameTimer != null)
         {
-            _timer.Tick -= OnTimerTick;
+            _gameTimer.Tick -= OnGameTimerTick;
         }
 
         _disposed = true;
@@ -625,48 +668,39 @@ public partial class WiringGameViewModel : ObservableObject, IDisposable
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /// <summary>
-/// Colors for wires.
+/// Repräsentiert ein einzelnes Bauteil im Erfinder-Puzzle.
 /// </summary>
-public enum WireColor
+public partial class InventPart : ObservableObject
 {
-    Red,
-    Blue,
-    Green,
-    Yellow,
-    Orange,
-    Purple,
-    Cyan
-}
-
-/// <summary>
-/// Represents a single wire in the wiring game.
-/// </summary>
-public partial class Wire : ObservableObject
-{
-    public int Index { get; set; }
-    public WireColor WireColor { get; set; }
-    public bool IsLeft { get; set; }
+    [ObservableProperty]
+    private int _stepNumber; // Korrekte Montage-Reihenfolge (1-basiert)
 
     [ObservableProperty]
-    private bool _isSelected;
+    private string _icon = ""; // Vektor-Icon-Identifier (z.B. "gear", "piston")
 
     [ObservableProperty]
-    private bool _isConnected;
+    private bool _isRevealed; // Nummer sichtbar (Memorisierungsphase)
 
     [ObservableProperty]
-    private bool _hasError;
+    private bool _isCompleted; // Wurde korrekt angetippt
 
-    // Notify visual properties when state changes
-    partial void OnIsSelectedChanged(bool value)
+    [ObservableProperty]
+    private bool _hasError; // Wurde falsch angetippt (kurzes Blinken)
+
+    [ObservableProperty]
+    private string _label = ""; // Beschreibungstext (z.B. "Zahnrad")
+
+    // Berechnete Anzeige-Properties aktualisieren bei Zustandsänderung
+    partial void OnIsRevealedChanged(bool value)
     {
+        OnPropertyChanged(nameof(DisplayNumber));
         OnPropertyChanged(nameof(BackgroundColor));
-        OnPropertyChanged(nameof(BorderWidth));
     }
 
-    partial void OnIsConnectedChanged(bool value)
+    partial void OnIsCompletedChanged(bool value)
     {
+        OnPropertyChanged(nameof(DisplayNumber));
         OnPropertyChanged(nameof(BackgroundColor));
-        OnPropertyChanged(nameof(ContentOpacity));
     }
 
     partial void OnHasErrorChanged(bool value)
@@ -675,43 +709,12 @@ public partial class Wire : ObservableObject
     }
 
     /// <summary>
-    /// Gets the hex color string for this wire.
+    /// Angezeigte Nummer: Sichtbar während Memorisierung und nach Abschluss, sonst "?".
     /// </summary>
-    public string ColorHex => WireColor switch
-    {
-        WireColor.Red => "#FF4444",
-        WireColor.Blue => "#4444FF",
-        WireColor.Green => "#44FF44",
-        WireColor.Yellow => "#FFFF44",
-        WireColor.Orange => "#FF8844",
-        WireColor.Purple => "#AA44FF",
-        WireColor.Cyan => "#00BCD4",
-        _ => "#888888"
-    };
+    public string DisplayNumber => IsRevealed || IsCompleted ? StepNumber.ToString() : "?";
 
     /// <summary>
-    /// Gibt die Anzeige-Farbe als Hex-String zurück (für XAML-Fallback).
+    /// Hintergrundfarbe basierend auf Zustand.
     /// </summary>
-    public string DisplayColor => ColorHex;
-
-    /// <summary>
-    /// Background color based on wire state (selected, connected, error).
-    /// </summary>
-    public string BackgroundColor => HasError
-        ? "#40FF4444"    // Red tint for error
-        : IsConnected
-            ? "#3000FF00" // Green tint for connected
-            : IsSelected
-                ? "#30FFFFFF" // Light highlight for selected
-                : "Transparent";
-
-    /// <summary>
-    /// Content opacity (dimmed when connected).
-    /// </summary>
-    public double ContentOpacity => IsConnected ? 0.5 : 1.0;
-
-    /// <summary>
-    /// Border thickness (thicker when selected).
-    /// </summary>
-    public double BorderWidth => IsSelected ? 4 : 3;
+    public string BackgroundColor => IsCompleted ? "#4CAF50" : (HasError ? "#F44336" : "#2A1A40");
 }

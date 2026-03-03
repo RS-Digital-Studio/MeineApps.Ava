@@ -6,11 +6,12 @@ using FitnessRechner.Services;
 using FitnessRechner.ViewModels.Calculators;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace FitnessRechner.ViewModels;
 
-public partial class MainViewModel : ObservableObject, IDisposable
+public partial class MainViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IPurchaseService _purchaseService;

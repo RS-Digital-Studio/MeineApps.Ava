@@ -3,8 +3,7 @@
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:views="using:HandwerkerImperium.Views"
-             xmlns:miniGames="using:HandwerkerImperium.Views.MiniGames"
-             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:MeineApps.UI.Controls"
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:dialogs="using:HandwerkerImperium.Views.Dialogs"
@@ -78,39 +77,46 @@
       <views:DashboardView IsVisible="{Binding IsDashboardActive}" AutomationProperties.AutomationId="Main_View_Dashboard" />
 
       <!-- Shop Tab -->
-      <views:ShopView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsShopActive}"
-                      DataContext="{Binding ShopViewModel}"
+      <ContentControl Content="{Binding ShopViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsShopActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
                       AutomationProperties.AutomationId="Main_View_Shop" />
 
       <!-- Statistics Tab -->
-      <views:StatisticsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsStatisticsActive}"
-                            DataContext="{Binding StatisticsViewModel}"
-                            AutomationProperties.AutomationId="Main_View_Statistics" />
+      <ContentControl Content="{Binding StatisticsViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsStatisticsActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_Statistics" />
 
       <!-- Achievements Tab -->
-      <views:AchievementsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsAchievementsActive}"
-                              DataContext="{Binding AchievementsViewModel}"
-                              AutomationProperties.AutomationId="Main_View_Achievements" />
+      <ContentControl Content="{Binding AchievementsViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsAchievementsActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_Achievements" />
 
       <!-- Settings Tab -->
-      <views:SettingsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSettingsActive}"
-                          DataContext="{Binding SettingsViewModel}"
-                          AutomationProperties.AutomationId="Main_View_Settings" />
+      <ContentControl Content="{Binding SettingsViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSettingsActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_Settings" />
 
       <!-- Workshop Detail (overlay when selected) -->
-      <views:WorkshopView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkshopDetailActive}"
-                          DataContext="{Binding WorkshopViewModel}"
-                          AutomationProperties.AutomationId="Main_View_WorkshopDetail" />
+      <ContentControl Content="{Binding WorkshopViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkshopDetailActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_WorkshopDetail" />
 
       <!-- Order Detail (overlay when selected) -->
-      <views:OrderView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsOrderDetailActive}"
-                       DataContext="{Binding OrderViewModel}"
-                       AutomationProperties.AutomationId="Main_View_OrderDetail" />
+      <ContentControl Content="{Binding OrderViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsOrderDetailActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_OrderDetail" />
 
       <!-- Worker Market (overlay when selected) -->
-      <views:WorkerMarketView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkerMarketActive}"
-                              DataContext="{Binding WorkerMarketViewModel}"
-                              AutomationProperties.AutomationId="Main_View_WorkerMarket" />
+      <ContentControl Content="{Binding WorkerMarketViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWorkerMarketActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_WorkerMarket" />
 
       <!-- Worker Profile → als Bottom-Sheet (siehe unten) -->
 
@@ -123,26 +129,32 @@
                            AutomationProperties.AutomationId="Main_View_Missionen" />
 
       <!-- Research (overlay when selected) -->
-      <views:ResearchView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsResearchActive}"
-                          DataContext="{Binding ResearchViewModel}"
-                          AutomationProperties.AutomationId="Main_View_Research" />
+      <ContentControl Content="{Binding ResearchViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsResearchActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_Research" />
 
       <!-- Neue Feature-Views (Welle 1-8) -->
-      <views:ManagerView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsManagerActive}"
-                         DataContext="{Binding ManagerViewModel}"
-                         AutomationProperties.AutomationId="Main_View_Manager" />
-      <views:TournamentView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsTournamentActive}"
-                            DataContext="{Binding TournamentViewModel}"
-                            AutomationProperties.AutomationId="Main_View_Tournament" />
-      <views:SeasonalEventView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSeasonalEventActive}"
-                               DataContext="{Binding SeasonalEventViewModel}"
-                               AutomationProperties.AutomationId="Main_View_SeasonalEvent" />
-      <views:BattlePassView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBattlePassActive}"
-                            DataContext="{Binding BattlePassViewModel}"
-                            AutomationProperties.AutomationId="Main_View_BattlePass" />
-      <views:GuildView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildActive}"
-                       DataContext="{Binding GuildViewModel}"
-                       AutomationProperties.AutomationId="Main_View_Guild" />
+      <ContentControl Content="{Binding ManagerViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsManagerActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_Manager" />
+      <ContentControl Content="{Binding TournamentViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsTournamentActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_Tournament" />
+      <ContentControl Content="{Binding SeasonalEventViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSeasonalEventActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_SeasonalEvent" />
+      <ContentControl Content="{Binding BattlePassViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBattlePassActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_BattlePass" />
+      <ContentControl Content="{Binding GuildViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_Guild" />
       <!-- Gilden-Sub-Seiten (Hub-Navigation) -->
       <guild:GuildResearchView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildResearchActive}"
                                DataContext="{Binding GuildViewModel}"
@@ -153,41 +165,52 @@
       <guild:GuildInviteView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildInviteActive}"
                              DataContext="{Binding GuildViewModel}"
                              AutomationProperties.AutomationId="Main_View_GuildInvite" />
-      <views:CraftingView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsCraftingActive}"
-                          DataContext="{Binding CraftingViewModel}"
-                          AutomationProperties.AutomationId="Main_View_Crafting" />
+      <ContentControl Content="{Binding CraftingViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsCraftingActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_Crafting" />
 
       <!-- MiniGame Views (overlay when active) -->
-      <miniGames:SawingGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSawingGameActive}"
-                                DataContext="{Binding SawingGameViewModel}"
-                                AutomationProperties.AutomationId="Main_View_SawingGame" />
-      <miniGames:PipePuzzleView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsPipePuzzleActive}"
-                                DataContext="{Binding PipePuzzleViewModel}"
-                                AutomationProperties.AutomationId="Main_View_PipePuzzle" />
-      <miniGames:WiringGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWiringGameActive}"
-                                DataContext="{Binding WiringGameViewModel}"
-                                AutomationProperties.AutomationId="Main_View_WiringGame" />
-      <miniGames:PaintingGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsPaintingGameActive}"
-                                  DataContext="{Binding PaintingGameViewModel}"
-                                  AutomationProperties.AutomationId="Main_View_PaintingGame" />
-      <miniGames:RoofTilingGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsRoofTilingGameActive}"
-                                    DataContext="{Binding RoofTilingGameViewModel}"
-                                    AutomationProperties.AutomationId="Main_View_RoofTilingGame" />
-      <miniGames:BlueprintGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBlueprintGameActive}"
-                                   DataContext="{Binding BlueprintGameViewModel}"
-                                   AutomationProperties.AutomationId="Main_View_BlueprintGame" />
-      <miniGames:DesignPuzzleGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsDesignPuzzleGameActive}"
-                                      DataContext="{Binding DesignPuzzleGameViewModel}"
-                                      AutomationProperties.AutomationId="Main_View_DesignPuzzleGame" />
-      <miniGames:InspectionGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsInspectionGameActive}"
-                                    DataContext="{Binding InspectionGameViewModel}"
-                                    AutomationProperties.AutomationId="Main_View_InspectionGame" />
-      <miniGames:ForgeGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsForgeGameActive}"
-                               DataContext="{Binding ForgeGameViewModel}"
-                               AutomationProperties.AutomationId="Main_View_ForgeGame" />
-      <miniGames:InventGameView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsInventGameActive}"
-                                DataContext="{Binding InventGameViewModel}"
-                                AutomationProperties.AutomationId="Main_View_InventGame" />
+      <ContentControl Content="{Binding SawingGameViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsSawingGameActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_SawingGame" />
+      <ContentControl Content="{Binding PipePuzzleViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsPipePuzzleActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_PipePuzzle" />
+      <ContentControl Content="{Binding WiringGameViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsWiringGameActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_WiringGame" />
+      <ContentControl Content="{Binding PaintingGameViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsPaintingGameActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_PaintingGame" />
+      <ContentControl Content="{Binding RoofTilingGameViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsRoofTilingGameActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_RoofTilingGame" />
+      <ContentControl Content="{Binding BlueprintGameViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsBlueprintGameActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_BlueprintGame" />
+      <ContentControl Content="{Binding DesignPuzzleGameViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsDesignPuzzleGameActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_DesignPuzzleGame" />
+      <ContentControl Content="{Binding InspectionGameViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsInspectionGameActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_InspectionGame" />
+      <ContentControl Content="{Binding ForgeGameViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsForgeGameActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_ForgeGame" />
+      <ContentControl Content="{Binding InventGameViewModel}"
+                      IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsInventGameActive}"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      AutomationProperties.AutomationId="Main_View_InventGame" />
     </Panel>
 
     <!-- Ersatz-Spacer wenn Tab-Bar versteckt (Overlay/MiniGame offen) -->
@@ -245,8 +268,9 @@
               Padding="20,16,20,24"
               BoxShadow="0 -4 20 0 #40FFD700"
               AutomationProperties.AutomationId="Main_Border_LuckySpinSheet">
-        <views:LuckySpinView DataContext="{Binding LuckySpinViewModel}"
-                              AutomationProperties.AutomationId="Main_View_LuckySpin" />
+        <ContentControl Content="{Binding LuckySpinViewModel}"
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                        AutomationProperties.AutomationId="Main_View_LuckySpin" />
       </Border>
     </Border>
 

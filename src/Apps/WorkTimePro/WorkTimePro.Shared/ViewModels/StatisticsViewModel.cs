@@ -3,6 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
@@ -17,7 +18,7 @@ namespace WorkTimePro.ViewModels;
 /// ViewModel für die Statistik-Seite. Stellt Daten-Arrays für SkiaSharp-Renderer bereit.
 /// Phase 7: LiveCharts durch SkiaSharp-Visualisierungen ersetzt.
 /// </summary>
-public partial class StatisticsViewModel : ObservableObject
+public partial class StatisticsViewModel : ViewModelBase
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;

@@ -5,6 +5,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
@@ -14,7 +15,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Shows 3 branches (Tools, Management, Marketing) with 15 levels each.
 /// Handles starting/cancelling research and progress updates.
 /// </summary>
-public partial class ResearchViewModel : ObservableObject
+public partial class ResearchViewModel : ViewModelBase
 {
     private readonly IResearchService _researchService;
     private readonly IGameStateService _gameStateService;

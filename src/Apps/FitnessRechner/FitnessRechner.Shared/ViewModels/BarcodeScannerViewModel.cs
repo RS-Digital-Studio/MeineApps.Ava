@@ -3,10 +3,11 @@ using CommunityToolkit.Mvvm.Input;
 using FitnessRechner.Models;
 using FitnessRechner.Resources.Strings;
 using FitnessRechner.Services;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels;
 
-public partial class BarcodeScannerViewModel : ObservableObject, IDisposable
+public partial class BarcodeScannerViewModel : ViewModelBase, IDisposable
 {
     private readonly IBarcodeLookupService _barcodeLookupService;
     private CancellationTokenSource? _delayCancellation;

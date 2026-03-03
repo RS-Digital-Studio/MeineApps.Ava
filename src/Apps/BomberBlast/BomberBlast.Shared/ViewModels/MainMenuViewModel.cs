@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Models;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
@@ -14,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Hauptmenü.
 /// Navigation zu Spielmodi, Meta-Features und Utility-Seiten.
 /// </summary>
-public partial class MainMenuViewModel : ObservableObject, INavigable, IGameJuiceEmitter, IDisposable
+public partial class MainMenuViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
 {
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;

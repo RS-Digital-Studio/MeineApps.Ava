@@ -5,10 +5,11 @@ using FinanzRechner.Helpers;
 using FinanzRechner.Models;
 using FinanzRechner.Services;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class RecurringTransactionsViewModel : ObservableObject, IDisposable
+public partial class RecurringTransactionsViewModel : ViewModelBase, IDisposable
 {
     private readonly IExpenseService _expenseService;
     private readonly ILocalizationService _localizationService;

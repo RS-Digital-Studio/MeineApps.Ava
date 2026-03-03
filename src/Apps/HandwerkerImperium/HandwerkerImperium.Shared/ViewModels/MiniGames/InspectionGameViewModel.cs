@@ -1,18 +1,20 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
-/// ViewModel for the Sawing mini-game.
-/// Player must stop a moving marker in the target zone.
+/// ViewModel fuer das Inspektions-MiniGame (Baustelleninspektion / Fehlersuche).
+/// Spieler muss Fehler auf einer Baustelle finden, indem er fehlerhafte Felder antippt.
 /// </summary>
-public partial class SawingGameViewModel : ObservableObject, IDisposable
+public partial class InspectionGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;
@@ -22,9 +24,10 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private bool _isEnding;
 
-    // Game configuration
-    private const double TICK_INTERVAL_MS = 16; // ~60 FPS
-    private const double MARKER_SPEED = 0.017;  // Units pro Tick (0.0-1.0), reduziert für bessere Spielbarkeit
+    // Korrekte Baustellen-Elemente (gut → grün)
+    private static readonly string[] GoodIcons = { "brick", "wood", "bolt", "ladder", "crane", "wrench", "gear", "beam" };
+    // Fehlerhafte Elemente (Mängel → rot)
+    private static readonly string[] DefectIcons = { "warning", "barrier", "crack", "fire", "cross", "stop", "hole", "leak" };
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -32,14 +35,8 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
 
     public event Action<string>? NavigationRequested;
 
-    /// <summary>Wird beim Spielstart nach Countdown gefeuert.</summary>
-    public event EventHandler? GameStarted;
-
     /// <summary>Wird nach Spielende mit Rating (0-3 Sterne) gefeuert.</summary>
     public event EventHandler<int>? GameCompleted;
-
-    /// <summary>Wird bei Zonen-Treffer gefeuert (Zone-Name: "Perfect", "Good", "Ok", "Miss").</summary>
-    public event EventHandler<string>? ZoneHit;
 
     // ═══════════════════════════════════════════════════════════════════════
     // OBSERVABLE PROPERTIES
@@ -52,46 +49,28 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
     private OrderDifficulty _difficulty = OrderDifficulty.Medium;
 
     [ObservableProperty]
-    private MiniGameType _gameType = MiniGameType.Sawing;
+    private ObservableCollection<InspectionCell> _cells = [];
 
     [ObservableProperty]
-    private string _gameTitle = "";
+    private int _foundDefects;
 
     [ObservableProperty]
-    private string _gameIcon = "Saw";
+    private int _totalDefects;
 
     [ObservableProperty]
-    private string _actionButtonText = "";
+    private int _falseAlarms;
 
     [ObservableProperty]
-    private string _instructionText = "";
+    private int _timeRemaining;
+
+    [ObservableProperty]
+    private int _maxTime = 35;
 
     [ObservableProperty]
     private bool _isPlaying;
 
     [ObservableProperty]
     private bool _isResultShown;
-
-    [ObservableProperty]
-    private double _markerPosition; // 0.0 to 1.0
-
-    [ObservableProperty]
-    private double _perfectZoneStart;
-
-    [ObservableProperty]
-    private double _perfectZoneWidth;
-
-    [ObservableProperty]
-    private double _goodZoneStart;
-
-    [ObservableProperty]
-    private double _goodZoneWidth;
-
-    [ObservableProperty]
-    private double _okZoneStart;
-
-    [ObservableProperty]
-    private double _okZoneWidth;
 
     [ObservableProperty]
     private MiniGameRating _result;
@@ -109,55 +88,19 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
     private int _xpAmount;
 
     [ObservableProperty]
-    private double _speedMultiplier = 1.0;
-
-    [ObservableProperty]
     private bool _canWatchAd;
-
-    /// <summary>Fortschritts-Anzeige z.B. "Aufgabe 2/3" (leer bei QuickJobs/Einzelaufgaben).</summary>
-    [ObservableProperty]
-    private string _taskProgressDisplay = "";
-
-    /// <summary>Ob dies die letzte Aufgabe des Auftrags ist (bestimmt ob Belohnungen angezeigt werden).</summary>
-    [ObservableProperty]
-    private bool _isLastTask;
-
-    /// <summary>Text für den Continue-Button ("Nächste Aufgabe" oder "Weiter").</summary>
-    [ObservableProperty]
-    private string _continueButtonText = "";
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // COMPUTED PROPERTIES FOR VIEW BINDING
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Gets the difficulty as star display string.
-    /// </summary>
-    public string DifficultyStars => Difficulty switch
-    {
-        OrderDifficulty.Easy => "★☆☆",
-        OrderDifficulty.Medium => "★★☆",
-        OrderDifficulty.Hard => "★★★",
-        OrderDifficulty.Expert => "★★★★",
-        _ => "★☆☆"
-    };
-
-    // Timing bar zone pixel properties (assumes 300px bar width)
-    private const double BAR_WIDTH = 300.0;
-
-    public double OkZonePixelWidth => OkZoneWidth * BAR_WIDTH;
-    public Avalonia.Thickness OkZoneMargin => new(OkZoneStart * BAR_WIDTH, 0, 0, 0);
-
-    public double GoodZonePixelWidth => GoodZoneWidth * BAR_WIDTH;
-    public Avalonia.Thickness GoodZoneMargin => new(GoodZoneStart * BAR_WIDTH, 0, 0, 0);
-
-    public double PerfectZonePixelWidth => PerfectZoneWidth * BAR_WIDTH;
-    public Avalonia.Thickness PerfectZoneMargin => new(PerfectZoneStart * BAR_WIDTH, 0, 0, 0);
-
-    public Avalonia.Thickness MarkerMargin => new(MarkerPosition * BAR_WIDTH - 3, 0, 0, 0);
 
     [ObservableProperty]
     private bool _adWatched;
+
+    [ObservableProperty]
+    private string _taskProgressDisplay = "";
+
+    [ObservableProperty]
+    private bool _isLastTask;
+
+    [ObservableProperty]
+    private string _continueButtonText = "";
 
     // Countdown vor Spielstart
     [ObservableProperty]
@@ -186,52 +129,54 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _tutorialText = "";
 
-    // Direction of marker movement (1 = right, -1 = left)
-    private int _direction = 1;
+    // Grid-Dimensionen
+    private int _gridColumns = 4;
+    private int _gridRows = 4;
+
+    /// <summary>Spaltenanzahl (fuer SkiaSharp-Renderer).</summary>
+    public int GridColumns => _gridColumns;
+
+    /// <summary>Zeilenanzahl (fuer SkiaSharp-Renderer).</summary>
+    public int GridRows => _gridRows;
 
     // ═══════════════════════════════════════════════════════════════════════
-    // PROPERTY CHANGE HANDLERS (notify computed properties)
+    // COMPUTED PROPERTIES
     // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Schwierigkeitsgrad als Sterne-Anzeige.
+    /// </summary>
+    public string DifficultyStars => Difficulty switch
+    {
+        OrderDifficulty.Easy => "\u2605\u2606\u2606",
+        OrderDifficulty.Medium => "\u2605\u2605\u2606",
+        OrderDifficulty.Hard => "\u2605\u2605\u2605",
+        OrderDifficulty.Expert => "\u2605\u2605\u2605\u2605",
+        _ => "\u2605\u2606\u2606"
+    };
+
+    /// <summary>
+    /// Breite des Inspektions-Grids in Pixeln fuer WrapPanel.
+    /// Jede Zelle ist 60px + 4px Margin = 64px.
+    /// </summary>
+    public double GridWidth => _gridColumns * 64;
+
+    /// <summary>
+    /// Fortschrittsanzeige als Prozent (0.0 bis 1.0).
+    /// </summary>
+    public double InspectionProgress => TotalDefects > 0
+        ? (double)FoundDefects / TotalDefects
+        : 0;
 
     partial void OnDifficultyChanged(OrderDifficulty value) => OnPropertyChanged(nameof(DifficultyStars));
-
-    partial void OnMarkerPositionChanged(double value) => OnPropertyChanged(nameof(MarkerMargin));
-
-    partial void OnOkZoneStartChanged(double value)
-    {
-        OnPropertyChanged(nameof(OkZoneMargin));
-    }
-
-    partial void OnOkZoneWidthChanged(double value)
-    {
-        OnPropertyChanged(nameof(OkZonePixelWidth));
-    }
-
-    partial void OnGoodZoneStartChanged(double value)
-    {
-        OnPropertyChanged(nameof(GoodZoneMargin));
-    }
-
-    partial void OnGoodZoneWidthChanged(double value)
-    {
-        OnPropertyChanged(nameof(GoodZonePixelWidth));
-    }
-
-    partial void OnPerfectZoneStartChanged(double value)
-    {
-        OnPropertyChanged(nameof(PerfectZoneMargin));
-    }
-
-    partial void OnPerfectZoneWidthChanged(double value)
-    {
-        OnPropertyChanged(nameof(PerfectZonePixelWidth));
-    }
+    partial void OnFoundDefectsChanged(int value) => OnPropertyChanged(nameof(InspectionProgress));
+    partial void OnTotalDefectsChanged(int value) => OnPropertyChanged(nameof(InspectionProgress));
 
     // ═══════════════════════════════════════════════════════════════════════
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
-    public SawingGameViewModel(
+    public InspectionGameViewModel(
         IGameStateService gameStateService,
         IAudioService audioService,
         IRewardedAdService rewardedAdService,
@@ -244,115 +189,107 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // INITIALIZATION (replaces IQueryAttributable)
+    // INITIALIZATION
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Initialize the game with an order ID.
+    /// Initialisiert das Spiel mit einer Auftrags-ID.
     /// </summary>
     public void SetOrderId(string orderId)
     {
         OrderId = orderId;
 
-        // Zustand zurücksetzen (sonst bleibt Ergebnis-Screen stehen)
+        // Zustand zuruecksetzen (sonst bleibt Ergebnis-Screen stehen)
         IsPlaying = false;
         IsResultShown = false;
 
-        // Get difficulty and game type from active order
         var activeOrder = _gameStateService.GetActiveOrder();
         if (activeOrder != null)
         {
             Difficulty = activeOrder.Difficulty;
 
-            // Fortschritts-Anzeige: "Aufgabe X/Y"
             int totalTasks = activeOrder.Tasks.Count;
             int currentTaskNum = activeOrder.CurrentTaskIndex + 1;
-            if (totalTasks > 1)
-            {
-                var taskLabel = _localizationService.GetString("TaskProgress");
-                TaskProgressDisplay = string.Format(taskLabel, currentTaskNum, totalTasks);
-            }
-            else
-            {
-                TaskProgressDisplay = "";
-            }
-
-            // Letzte Aufgabe? (nach RecordTaskResult wird IsCompleted true)
+            TaskProgressDisplay = totalTasks > 1
+                ? string.Format(_localizationService.GetString("TaskProgress"), currentTaskNum, totalTasks)
+                : "";
             IsLastTask = currentTaskNum >= totalTasks;
             ContinueButtonText = IsLastTask
                 ? _localizationService.GetString("Continue")
                 : _localizationService.GetString("NextTask");
-
-            // Get current task's game type
-            var currentTask = activeOrder.CurrentTask;
-            if (currentTask != null)
-            {
-                GameType = currentTask.GameType;
-                UpdateGameTypeVisuals();
-            }
         }
         else
         {
-            // QuickJob: Immer letzte (einzige) Aufgabe
             TaskProgressDisplay = "";
             IsLastTask = true;
             ContinueButtonText = _localizationService.GetString("Continue");
         }
 
-        // Initialize zones based on difficulty
-        InitializeZones();
+        InitializeGame();
 
-        CheckAndShowTutorial(GameType);
-    }
-
-    private void UpdateGameTypeVisuals()
-    {
-        string L(string key) => _localizationService.GetString(key);
-
-        (GameTitle, GameIcon, ActionButtonText, InstructionText) = GameType switch
-        {
-            MiniGameType.Sawing => (L("SawingTitle"), "Saw", L("SawNow"), L("StopInGreenZone")),
-            MiniGameType.Planing => (L("PlaningTitle"), "Axe", L("PlaneNow"), L("StopForSmoothSurface")),
-            MiniGameType.TileLaying => (L("TileLayingTitle"), "ViewDashboard", L("LayNow"), L("StopAtPerfectMoment")),
-            MiniGameType.Measuring => (L("MeasuringTitle"), "Ruler", L("MeasureNow"), L("StopAtRightLength")),
-            _ => (L("SawingTitle"), "Saw", L("SawNow"), L("StopInGreenZone"))
-        };
+        CheckAndShowTutorial(MiniGameType.Inspection);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
     // GAME LOGIC
     // ═══════════════════════════════════════════════════════════════════════
 
-    private void InitializeZones()
+    private void InitializeGame()
     {
-        // Get zone sizes based on difficulty
-        double perfectSize = Difficulty.GetPerfectZoneSize();
-        // Tool-Bonus: Saege vergroessert die Zielzone
-        var sawTool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Saw);
-        if (sawTool != null) perfectSize += perfectSize * sawTool.ZoneBonus;
-        double goodSize = perfectSize * 2;
-        double okSize = perfectSize * 3;
+        // Grid-Groesse und Zeit je nach Schwierigkeit
+        (_gridColumns, _gridRows, MaxTime, var defectCount) = Difficulty switch
+        {
+            OrderDifficulty.Easy => (4, 4, 45, 3),
+            OrderDifficulty.Medium => (5, 4, 35, 5),
+            OrderDifficulty.Hard => (5, 5, 28, 7),
+            OrderDifficulty.Expert => (6, 5, 28, 9),
+            _ => (5, 4, 35, 5)
+        };
 
-        // Randomize the target position (between 0.2 and 0.8)
-        var random = Random.Shared;
-        double targetCenter = 0.3 + (random.NextDouble() * 0.4);
+        OnPropertyChanged(nameof(GridWidth));
 
-        // Calculate zone positions (centered on target)
-        PerfectZoneWidth = perfectSize;
-        PerfectZoneStart = targetCenter - (perfectSize / 2);
+        // Tool-Bonus: Lupe gibt Extra-Sekunden
+        var tool = _gameStateService.State.Tools.FirstOrDefault(t => t.Type == Models.ToolType.Magnifier);
+        TimeRemaining = MaxTime + (tool?.TimeBonus ?? 0);
+        FoundDefects = 0;
+        TotalDefects = defectCount;
+        FalseAlarms = 0;
+        IsPlaying = false;
+        IsResultShown = false;
 
-        GoodZoneWidth = goodSize;
-        GoodZoneStart = targetCenter - (goodSize / 2);
+        GenerateGrid(defectCount);
+    }
 
-        OkZoneWidth = okSize;
-        OkZoneStart = targetCenter - (okSize / 2);
+    private void GenerateGrid(int defectCount)
+    {
+        Cells.Clear();
 
-        // Set speed based on difficulty
-        SpeedMultiplier = Difficulty.GetSpeedMultiplier();
+        int totalCells = _gridColumns * _gridRows;
+        var allIndices = Enumerable.Range(0, totalCells).ToList();
 
-        // Reset marker
-        MarkerPosition = 0;
-        _direction = 1;
+        // Zufaellige Positionen fuer Fehler auswaehlen
+        var defectPositions = new HashSet<int>();
+        while (defectPositions.Count < defectCount && allIndices.Count > 0)
+        {
+            int randIndex = Random.Shared.Next(allIndices.Count);
+            defectPositions.Add(allIndices[randIndex]);
+            allIndices.RemoveAt(randIndex);
+        }
+
+        for (int i = 0; i < totalCells; i++)
+        {
+            bool hasDefect = defectPositions.Contains(i);
+            Cells.Add(new InspectionCell
+            {
+                Index = i,
+                Row = i / _gridColumns,
+                Column = i % _gridColumns,
+                HasDefect = hasDefect,
+                Icon = hasDefect
+                    ? DefectIcons[Random.Shared.Next(DefectIcons.Length)]
+                    : GoodIcons[Random.Shared.Next(GoodIcons.Length)]
+            });
+        }
     }
 
     [RelayCommand]
@@ -362,8 +299,7 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
 
         IsResultShown = false;
         _isEnding = false;
-        MarkerPosition = 0;
-        _direction = 1;
+        await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
         // Countdown 3-2-1-Los!
         IsCountdownActive = true;
@@ -375,56 +311,90 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         IsCountdownActive = false;
 
         // Spiel starten
-        GameStarted?.Invoke(this, EventArgs.Empty);
         IsPlaying = true;
         if (_timer != null) { _timer.Stop(); _timer.Tick -= OnTimerTick; }
         _timer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromMilliseconds(TICK_INTERVAL_MS)
+            Interval = TimeSpan.FromSeconds(1)
         };
         _timer.Tick += OnTimerTick;
         _timer.Start();
     }
 
-    private void OnTimerTick(object? sender, EventArgs e)
+    private async void OnTimerTick(object? sender, EventArgs e)
     {
-        if (!IsPlaying) return;
-
-        // Move marker
-        MarkerPosition += MARKER_SPEED * SpeedMultiplier * _direction;
-
-        // Bounce at edges
-        if (MarkerPosition >= 1.0)
+        try
         {
-            MarkerPosition = 1.0;
-            _direction = -1;
+            if (!IsPlaying || _isEnding) return;
+
+            TimeRemaining--;
+
+            if (TimeRemaining <= 0)
+            {
+                await EndGameAsync();
+            }
         }
-        else if (MarkerPosition <= 0.0)
+        catch (Exception ex)
         {
-            MarkerPosition = 0.0;
-            _direction = 1;
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"Fehler in OnTimerTick: {ex}");
+#endif
         }
     }
 
+    /// <summary>
+    /// Feld untersuchen - Spieler tippt auf ein Baustellen-Feld.
+    /// </summary>
     [RelayCommand]
-    private async Task StopMarkerAsync()
+    private async Task InspectCellAsync(InspectionCell? cell)
     {
-        if (!IsPlaying || _isEnding) return;
+        if (cell == null || !IsPlaying || _isEnding || cell.IsInspected) return;
+
+        cell.IsInspected = true;
+
+        if (cell.HasDefect)
+        {
+            // Fehler korrekt gefunden
+            cell.IsDefectFound = true;
+            FoundDefects++;
+            await _audioService.PlaySoundAsync(GameSound.Good);
+        }
+        else
+        {
+            // Falscher Alarm - kein Fehler vorhanden
+            cell.IsFalseAlarm = true;
+            FalseAlarms++;
+            await _audioService.PlaySoundAsync(GameSound.Miss);
+        }
+
+        // Pruefen ob alle Fehler gefunden wurden
+        if (FoundDefects >= TotalDefects)
+        {
+            await EndGameAsync();
+        }
+    }
+
+    private async Task EndGameAsync()
+    {
+        if (_isEnding) return;
         _isEnding = true;
 
         IsPlaying = false;
         _timer?.Stop();
 
-        // Calculate result based on marker position
-        Result = CalculateRating(MarkerPosition);
+        // Alle nicht-gefundenen Fehler aufdecken
+        foreach (var cell in Cells.Where(c => c.HasDefect && !c.IsInspected))
+        {
+            cell.IsInspected = true;
+        }
 
-        // Zonen-Treffer Event feuern
-        ZoneHit?.Invoke(this, Result.GetLocalizationKey());
+        // Rating berechnen
+        Result = CalculateRating();
 
-        // Record result in game state
+        // Ergebnis im GameState erfassen
         _gameStateService.RecordMiniGameResult(Result);
 
-        // Play sound
+        // Sound abspielen
         var sound = Result switch
         {
             MiniGameRating.Perfect => GameSound.Perfect,
@@ -438,7 +408,7 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         var order = _gameStateService.GetActiveOrder();
         if (order != null && IsLastTask)
         {
-            // Gesamt-Belohnung aus allen bisherigen Ratings + aktuellem Ergebnis
+            // Gesamt-Belohnung
             RewardAmount = order.FinalReward;
             XpAmount = order.FinalXp;
         }
@@ -461,14 +431,14 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
             XpAmount = quickJob?.XpReward ?? 0;
         }
 
-        // Set result display
+        // Ergebnis-Anzeige
         ResultText = _localizationService.GetString(Result.GetLocalizationKey());
         ResultEmoji = Result switch
         {
-            MiniGameRating.Perfect => "★★★",
-            MiniGameRating.Good => "★★",
-            MiniGameRating.Ok => "★",
-            _ => "💨"
+            MiniGameRating.Perfect => "\u2B50\u2B50\u2B50",
+            MiniGameRating.Good => "\u2B50\u2B50",
+            MiniGameRating.Ok => "\u2B50",
+            _ => "\U0001F4A8"
         };
 
         IsResultShown = true;
@@ -522,6 +492,36 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         CanWatchAd = IsLastTask && _rewardedAdService.IsAvailable;
     }
 
+    /// <summary>
+    /// Rating-Berechnung basierend auf gefundenen Fehlern, Fehl-Taps und verbleibender Zeit.
+    /// - Perfect: Alle Fehler + 0 Fehl-Taps + >40% Zeit uebrig
+    /// - Good: Alle Fehler + maximal 2 Fehl-Taps
+    /// - Ok: Mindestens 50% der Fehler gefunden
+    /// - Miss: Weniger als 50% gefunden oder Zeit abgelaufen ohne Ergebnis
+    /// </summary>
+    private MiniGameRating CalculateRating()
+    {
+        double timeRatio = MaxTime > 0 ? (double)TimeRemaining / MaxTime : 0;
+        double defectRatio = TotalDefects > 0 ? (double)FoundDefects / TotalDefects : 0;
+
+        if (defectRatio >= 1.0 && FalseAlarms == 0 && timeRatio > 0.4)
+        {
+            return MiniGameRating.Perfect;
+        }
+
+        if (defectRatio >= 1.0 && FalseAlarms <= 2)
+        {
+            return MiniGameRating.Good;
+        }
+
+        if (defectRatio >= 0.5)
+        {
+            return MiniGameRating.Ok;
+        }
+
+        return MiniGameRating.Miss;
+    }
+
     [RelayCommand]
     private async Task WatchAdAsync()
     {
@@ -530,7 +530,7 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         var success = await _rewardedAdService.ShowAdAsync("score_double");
         if (success)
         {
-            // Double the rewards
+            // Belohnungen verdoppeln
             RewardAmount *= 2;
             XpAmount *= 2;
             AdWatched = true;
@@ -540,34 +540,10 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         }
     }
 
-    private MiniGameRating CalculateRating(double position)
-    {
-        // Check if in perfect zone
-        if (position >= PerfectZoneStart && position <= PerfectZoneStart + PerfectZoneWidth)
-        {
-            return MiniGameRating.Perfect;
-        }
-
-        // Check if in good zone
-        if (position >= GoodZoneStart && position <= GoodZoneStart + GoodZoneWidth)
-        {
-            return MiniGameRating.Good;
-        }
-
-        // Check if in OK zone
-        if (position >= OkZoneStart && position <= OkZoneStart + OkZoneWidth)
-        {
-            return MiniGameRating.Ok;
-        }
-
-        // Missed
-        return MiniGameRating.Miss;
-    }
-
     [RelayCommand]
     private void Continue()
     {
-        // Check if there are more tasks in the order
+        // Pruefen ob weitere Tasks im Auftrag vorhanden sind
         var order = _gameStateService.GetActiveOrder();
         if (order == null)
         {
@@ -577,17 +553,16 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
 
         if (order.IsCompleted)
         {
-            // Order complete - grant rewards and go back
+            // Auftrag abgeschlossen - Belohnungen vergeben und zurueck
             _gameStateService.CompleteActiveOrder();
             NavigationRequested?.Invoke("../..");
         }
         else
         {
-            // More tasks - go to next mini-game
+            // Weitere Tasks - zum naechsten Mini-Game
             var nextTask = order.CurrentTask;
             if (nextTask != null)
             {
-                // Replace current page with next mini-game
                 NavigationRequested?.Invoke($"../{nextTask.GameType.GetRoute()}?orderId={order.Id}");
             }
             else
@@ -603,9 +578,9 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         ShowTutorial = false;
         // Als gesehen markieren und speichern
         var state = _gameStateService.State;
-        if (!state.SeenMiniGameTutorials.Contains(GameType))
+        if (!state.SeenMiniGameTutorials.Contains(MiniGameType.Inspection))
         {
-            state.SeenMiniGameTutorials.Add(GameType);
+            state.SeenMiniGameTutorials.Add(MiniGameType.Inspection);
             _gameStateService.MarkDirty();
         }
     }
@@ -652,4 +627,68 @@ public partial class SawingGameViewModel : ObservableObject, IDisposable
         _disposed = true;
         GC.SuppressFinalize(this);
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SUPPORTING TYPES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// <summary>
+/// Repraesentiert ein einzelnes Feld auf der Baustelle.
+/// </summary>
+public partial class InspectionCell : ObservableObject
+{
+    public int Index { get; set; }
+    public int Row { get; set; }
+    public int Column { get; set; }
+
+    [ObservableProperty]
+    private string _icon = "";
+
+    [ObservableProperty]
+    private bool _hasDefect;
+
+    [ObservableProperty]
+    private bool _isInspected;
+
+    [ObservableProperty]
+    private bool _isDefectFound;
+
+    [ObservableProperty]
+    private bool _isFalseAlarm;
+
+    // Computed Properties fuer die View aktualisieren
+    partial void OnIsInspectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BackgroundColor));
+        OnPropertyChanged(nameof(BorderColor));
+        OnPropertyChanged(nameof(ContentOpacity));
+    }
+
+    partial void OnIsDefectFoundChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BackgroundColor));
+        OnPropertyChanged(nameof(BorderColor));
+    }
+
+    partial void OnIsFalseAlarmChanged(bool value)
+    {
+        OnPropertyChanged(nameof(BackgroundColor));
+        OnPropertyChanged(nameof(BorderColor));
+    }
+
+    /// <summary>
+    /// Hintergrundfarbe: Gruen bei gefundenem Fehler, Rot bei Fehlalarm, Standard sonst.
+    /// </summary>
+    public string BackgroundColor => IsDefectFound ? "#4CAF50" : (IsFalseAlarm ? "#F44336" : "#2A2A2A");
+
+    /// <summary>
+    /// Rahmenfarbe: Gruen bei Fehler gefunden, Rot bei Fehlalarm, Standard-Grau sonst.
+    /// </summary>
+    public string BorderColor => IsInspected ? (HasDefect ? "#4CAF50" : "#F44336") : "#555555";
+
+    /// <summary>
+    /// Deckkraft des Inhalts: Reduziert bei falsch inspiziertem Feld.
+    /// </summary>
+    public double ContentOpacity => IsInspected ? (IsDefectFound ? 1.0 : 0.5) : 1.0;
 }

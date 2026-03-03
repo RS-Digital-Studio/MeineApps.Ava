@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using MeineApps.Core.Ava.ViewModels;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
 
@@ -9,7 +10,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für die Daily-Challenge-Übersicht.
 /// Zeigt Streak, Best-Score und ermöglicht Start der heutigen Challenge.
 /// </summary>
-public partial class DailyChallengeViewModel : ObservableObject, INavigable, IGameJuiceEmitter
+public partial class DailyChallengeViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly IDailyChallengeService _dailyChallengeService;
     private readonly ICoinService _coinService;

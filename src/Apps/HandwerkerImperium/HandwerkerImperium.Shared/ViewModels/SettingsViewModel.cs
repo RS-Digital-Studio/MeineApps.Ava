@@ -4,6 +4,7 @@ using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
@@ -12,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the settings page.
 /// Manages game settings like sound, language, and premium status.
 /// </summary>
-public partial class SettingsViewModel : ObservableObject
+public partial class SettingsViewModel : ViewModelBase
 {
     private readonly IAudioService _audioService;
     private readonly ILocalizationService _localizationService;

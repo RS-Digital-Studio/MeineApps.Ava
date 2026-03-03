@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
+using MeineApps.Core.Ava.ViewModels;
 using ZeitManager.Graphics;
 using ZeitManager.Models;
 using ZeitManager.Services;
@@ -13,7 +14,7 @@ using Timer = System.Timers.Timer;
 
 namespace ZeitManager.ViewModels;
 
-public partial class PomodoroViewModel : ObservableObject, IDisposable
+public partial class PomodoroViewModel : ViewModelBase, IDisposable
 {
     private readonly IDatabaseService _database;
     private readonly IAudioService _audioService;

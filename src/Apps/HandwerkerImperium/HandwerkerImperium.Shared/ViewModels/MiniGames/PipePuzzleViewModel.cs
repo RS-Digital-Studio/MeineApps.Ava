@@ -5,16 +5,17 @@ using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
-namespace HandwerkerImperium.ViewModels;
+namespace HandwerkerImperium.ViewModels.MiniGames;
 
 /// <summary>
 /// ViewModel for the Pipe Puzzle mini-game.
 /// Player must rotate pipe segments to connect water from source to drain.
 /// Grid is non-square (cols x rows), start/end positions are randomized and locked.
 /// </summary>
-public partial class PipePuzzleViewModel : ObservableObject, IDisposable
+public partial class PipePuzzleViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

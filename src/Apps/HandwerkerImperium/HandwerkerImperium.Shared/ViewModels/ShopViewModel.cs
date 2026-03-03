@@ -6,6 +6,7 @@ using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Events;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
@@ -14,7 +15,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the shop page.
 /// Manages in-app purchases and premium features.
 /// </summary>
-public partial class ShopViewModel : ObservableObject, IDisposable
+public partial class ShopViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private bool _isBusy;

@@ -11,7 +11,8 @@
              xmlns:uiControls="using:MeineApps.UI.Controls"
              x:Class="FitnessRechner.Views.FoodSearchView"
              x:DataType="vm:FoodSearchViewModel"
-             x:CompileBindings="True">
+             x:CompileBindings="True"
+             Background="Transparent">
 
   <UserControl.Resources>
     <conv:IsNotNullConverter x:Key="IsNotNullConverter" />
@@ -28,11 +29,12 @@
     <!-- ============================================ -->
     <!-- Row 0: Header with Title + Barcode Button    -->
     <!-- ============================================ -->
+    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
     <Border Grid.Row="0"
             AutomationProperties.AutomationId="Food_HeaderBorder"
-            Background="{DynamicResource SurfaceBrush}"
+            Background="#D90F1D32"
             BorderThickness="0,0,0,1"
-            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderBrush="#4D06B6D4"
             Padding="16,12">
       <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
         <TextBlock AutomationProperties.AutomationId="Food_TxtTitle"
@@ -50,10 +52,13 @@
             <TextBlock Text="kcal" FontSize="12" VerticalAlignment="Center" />
           </StackPanel>
         </Button>
+        <!-- Medical-Styling: Cyan-Glow Barcode-Button -->
         <Button Grid.Column="2"
                 AutomationProperties.AutomationId="Food_BtnBarcode"
                 Classes="Primary Small"
-                Command="{Binding OpenBarcodeScannerCommand}">
+                Command="{Binding OpenBarcodeScannerCommand}"
+                BorderBrush="#6606B6D4"
+                CornerRadius="12">
           <mi:MaterialIcon Kind="Barcode" Width="20" Height="20" />
         </Button>
       </Grid>
@@ -62,8 +67,12 @@
     <!-- ============================================ -->
     <!-- Row 1: Search Bar                            -->
     <!-- ============================================ -->
+    <!-- Medical-Styling: Surface 85% + Cyan-Rand für Suchleiste -->
     <Border Grid.Row="1" Classes="Card StatsCard" Margin="16,12,16,0" Padding="12"
-            AutomationProperties.AutomationId="Food_SearchBarBorder">
+            AutomationProperties.AutomationId="Food_SearchBarBorder"
+            Background="#D90F1D32"
+            BorderBrush="#4D06B6D4"
+            CornerRadius="12">
       <Grid ColumnDefinitions="Auto,*">
         <mi:MaterialIcon Kind="Magnify" Width="20" Height="20"
                          Foreground="{DynamicResource TextMutedBrush}"
@@ -92,10 +101,11 @@
             <mi:MaterialIcon Kind="Star" Width="16" Height="16"
                              Foreground="{DynamicResource WarningBrush}"
                              VerticalAlignment="Center" />
+            <!-- Medical-Styling: Cyan Section-Header -->
             <TextBlock AutomationProperties.AutomationId="Food_TxtFavoritesHeader"
                        Text="{loc:Translate Favorites}"
                        FontSize="16" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       Foreground="#06B6D4"
                        VerticalAlignment="Center" />
           </StackPanel>
           <ScrollViewer HorizontalScrollBarVisibility="Auto"
@@ -114,7 +124,11 @@
                     <i:Interaction.Behaviors>
                       <behaviors:TapScaleBehavior PressedScale="0.95" />
                     </i:Interaction.Behaviors>
+                    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
                     <Border Classes="Card Compact Interactive" Padding="12,8" MinWidth="100"
+                            Background="#D90F1D32"
+                            BorderBrush="#1A06B6D4"
+                            CornerRadius="12"
                             Cursor="Hand">
                       <StackPanel Spacing="4">
                         <TextBlock Text="{Binding Food.Name}" FontSize="12" FontWeight="SemiBold"
@@ -137,10 +151,11 @@
             <mi:MaterialIcon Kind="History" Width="16" Height="16"
                              Foreground="{DynamicResource TextMutedBrush}"
                              VerticalAlignment="Center" />
+            <!-- Medical-Styling: Cyan Section-Header -->
             <TextBlock AutomationProperties.AutomationId="Food_TxtRecentHeader"
                        Text="{loc:Translate RecentFoods}"
                        FontSize="14" FontWeight="SemiBold"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       Foreground="#06B6D4"
                        VerticalAlignment="Center" />
           </StackPanel>
           <ScrollViewer HorizontalScrollBarVisibility="Auto"
@@ -156,9 +171,10 @@
                   <Button Classes="Text" Padding="0" Height="NaN"
                           Command="{Binding $parent[ItemsControl].((vm:FoodSearchViewModel)DataContext).SelectRecentFoodCommand}"
                           CommandParameter="{Binding .}">
+                    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
                     <Border CornerRadius="16" Padding="10,6" MinWidth="60"
-                            Background="{DynamicResource SurfaceBrush}"
-                            BorderBrush="{DynamicResource BorderSubtleBrush}"
+                            Background="#D90F1D32"
+                            BorderBrush="#1A06B6D4"
                             BorderThickness="1"
                             Cursor="Hand">
                       <StackPanel Orientation="Horizontal" Spacing="6">
@@ -177,10 +193,13 @@
           </ScrollViewer>
         </StackPanel>
 
-        <!-- Quick-Add Panel -->
+        <!-- Quick-Add Panel - Medical-Styling: Holografischer Cyan-Rand -->
         <Border Classes="Card StatsCard" Padding="16"
                 AutomationProperties.AutomationId="Food_CardQuickAdd"
-                IsVisible="{Binding ShowQuickAddPanel}">
+                IsVisible="{Binding ShowQuickAddPanel}"
+                BorderBrush="#4D06B6D4"
+                BorderThickness="1"
+                CornerRadius="12">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
               <GradientStop Color="#F59E0B" Offset="0" />
@@ -248,11 +267,14 @@
           </StackPanel>
         </Border>
 
-        <!-- Add Food Panel (when food is selected) -->
+        <!-- Add Food Panel (when food is selected) - Medical-Styling: Cyan-Rand -->
         <Border Classes="Card StatsCard" Padding="16"
                 AutomationProperties.AutomationId="Food_CardAddFood"
                 Background="{DynamicResource PrimaryBrush}"
-                IsVisible="{Binding ShowAddPanel}">
+                IsVisible="{Binding ShowAddPanel}"
+                BorderBrush="#4D06B6D4"
+                BorderThickness="1"
+                CornerRadius="12">
           <StackPanel Spacing="12">
 
             <!-- Food Name + Favorite Toggle -->
@@ -371,15 +393,20 @@
 
         <!-- Search Results -->
         <StackPanel IsVisible="{Binding HasResults}" Spacing="8">
+          <!-- Medical-Styling: Cyan Section-Header -->
           <TextBlock AutomationProperties.AutomationId="Food_TxtSearchResultsHeader"
                      Text="{loc:Translate SearchResults}"
                      FontSize="16" FontWeight="SemiBold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="#06B6D4" />
 
           <ItemsControl ItemsSource="{Binding SearchResults}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="models:FoodSearchResult">
+                <!-- Medical-Styling: Surface 85% + Cyan-Rand für Ergebniskarte -->
                 <Border Classes="Card Interactive Compact" Margin="0,4" Padding="12"
+                        Background="#D90F1D32"
+                        BorderBrush="#1A06B6D4"
+                        CornerRadius="12"
                         Cursor="Hand">
                   <i:Interaction.Behaviors>
                     <behaviors:TapScaleBehavior PressedScale="0.95" />
@@ -441,9 +468,13 @@
         </StackPanel>
 
         <!-- Extended Database Hint (wenig lokale Ergebnisse) -->
+        <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
         <Border Classes="Card StatsCard" Padding="12" Margin="0,4"
                 AutomationProperties.AutomationId="Food_CardExtendedDbHint"
-                IsVisible="{Binding ShowExtendedDbHint}">
+                IsVisible="{Binding ShowExtendedDbHint}"
+                Background="#D90F1D32"
+                BorderBrush="#1A06B6D4"
+                CornerRadius="12">
           <Button AutomationProperties.AutomationId="Food_BtnExtendedDb"
                   Classes="Text" Padding="0" Height="NaN"
                   Command="{Binding RequestExtendedDbCommand}"
@@ -481,10 +512,11 @@
 
         <!-- Today's Food Log -->
         <StackPanel Spacing="8">
+          <!-- Medical-Styling: Cyan Section-Header -->
           <TextBlock AutomationProperties.AutomationId="Food_TxtTodayLogHeader"
                      Text="{loc:Translate TodayLog}"
                      FontSize="16" FontWeight="SemiBold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="#06B6D4" />
 
           <TextBlock AutomationProperties.AutomationId="Food_TxtNoEntries"
                      Text="{loc:Translate NoFoodEntries}" Classes="Caption"
@@ -495,7 +527,11 @@
                         IsVisible="{Binding HasLogEntries}">
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="models:FoodLogEntry">
-                <Border Classes="Card Compact" Margin="0,4" Padding="12">
+                <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+                <Border Classes="Card Compact" Margin="0,4" Padding="12"
+                        Background="#D90F1D32"
+                        BorderBrush="#1A06B6D4"
+                        CornerRadius="12">
                   <Grid ColumnDefinitions="*,Auto,Auto">
                     <StackPanel>
                       <TextBlock Text="{Binding FoodName}"
@@ -540,11 +576,12 @@
     <!-- ============================================ -->
     <!-- Row 3: Nutrition Summary Footer              -->
     <!-- ============================================ -->
+    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
     <Border Grid.Row="3"
             AutomationProperties.AutomationId="Food_FooterSummary"
-            Background="{DynamicResource SurfaceBrush}"
+            Background="#D90F1D32"
             BorderThickness="0,1,0,0"
-            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderBrush="#4D06B6D4"
             Padding="16,12"
             IsVisible="{Binding HasLogEntries}">
       <StackPanel Spacing="8">
@@ -650,12 +687,15 @@
     <!-- ============================================ -->
     <!-- Row 4: Undo Banner                           -->
     <!-- ============================================ -->
+    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
     <Border Grid.Row="4"
             AutomationProperties.AutomationId="Food_CardUndo"
-            Background="{DynamicResource SurfaceBrush}"
-            CornerRadius="8"
+            Background="#D90F1D32"
+            CornerRadius="12"
             Padding="16,12"
             Margin="16,8"
+            BorderBrush="#1A06B6D4"
+            BorderThickness="1"
             IsVisible="{Binding ShowUndoBanner}">
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock AutomationProperties.AutomationId="Food_TxtUndoMessage"
@@ -678,10 +718,13 @@
             Background="#CC000000"
             IsVisible="{Binding ShowScanLimitOverlay}"
             ZIndex="80">
-      <Border Background="{DynamicResource SurfaceBrush}"
+      <!-- Medical-Styling: Navy-Deep Overlay-Dialog + Cyan-Rand -->
+      <Border Background="#0A1A2E"
               CornerRadius="16"
               Padding="24"
               MaxWidth="350"
+              BorderBrush="#4D06B6D4"
+              BorderThickness="1"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16">
@@ -727,10 +770,13 @@
             Background="#CC000000"
             IsVisible="{Binding ShowExtendedDbOverlay}"
             ZIndex="80">
-      <Border Background="{DynamicResource SurfaceBrush}"
+      <!-- Medical-Styling: Navy-Deep Overlay-Dialog + Cyan-Rand -->
+      <Border Background="#0A1A2E"
               CornerRadius="16"
               Padding="24"
               MaxWidth="350"
+              BorderBrush="#4D06B6D4"
+              BorderThickness="1"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16">

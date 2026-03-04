@@ -13,35 +13,12 @@
   <Grid RowDefinitions="Auto,*,Auto"
         AutomationProperties.AutomationId="Bmi_RootPanel">
 
-    <!-- ═══════ Header Banner ═══════ -->
-    <Border Grid.Row="0"
-            AutomationProperties.AutomationId="Bmi_HeaderBanner"
-            Background="{DynamicResource AccentBrush}"
-            Padding="16,12,16,20"
-            CornerRadius="0,0,24,24">
-      <Grid ColumnDefinitions="Auto,*">
-        <Button AutomationProperties.AutomationId="Bmi_BtnBack"
-                Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
-                CornerRadius="20"
-                Width="40" Height="40"
-                Padding="0">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
-        </Button>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
-                    Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
-            <mi:MaterialIcon Kind="HumanMaleHeight" Width="22" Height="22"
-                             Foreground="White"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <TextBlock AutomationProperties.AutomationId="Bmi_TxtTitle"
-                     Text="{loc:Translate CalcBmi}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
-                     VerticalAlignment="Center" />
-        </StackPanel>
-      </Grid>
-    </Border>
+    <!-- ═══════ Header Banner (SkiaSharp Medical) ═══════ -->
+    <skia:SKCanvasView x:Name="HeaderCanvas" Grid.Row="0"
+                        AutomationProperties.AutomationId="Bmi_HeaderBanner"
+                        Height="68"
+                        PaintSurface="OnHeaderPaintSurface"
+                        PointerPressed="OnHeaderPointerPressed" />
 
     <!-- ═══════ Content ═══════ -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"

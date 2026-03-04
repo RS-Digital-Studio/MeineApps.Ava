@@ -41,8 +41,10 @@
                             PaintSurface="OnPaintLevel" />
 
         <!-- ========== Empty-State (wenn keine Tracking-Daten) ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardEmptyState" Classes="Card" CornerRadius="16" Padding="24,28"
+        <!-- Medical-Surface mit Cyan-Glow-Border -->
+        <Border AutomationProperties.AutomationId="Home_CardEmptyState" CornerRadius="16" Padding="24,28"
                 IsVisible="{Binding ShowEmptyState}"
+                Background="#D90F1D32" BorderBrush="#1A06B6D4" BorderThickness="1"
                 BoxShadow="{DynamicResource CardShadow}">
           <StackPanel Spacing="16" HorizontalAlignment="Center">
             <!-- Großes Icon mit Gradient-Hintergrund -->
@@ -126,7 +128,10 @@
         </Grid>
 
         <!-- ========== Weight Quick-Add Panel ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardWeightQuickAdd" Classes="Card StatsCard" Padding="16" BoxShadow="{DynamicResource CardShadow}"
+        <!-- Holografischer Rand für Weight Quick-Add -->
+        <Border AutomationProperties.AutomationId="Home_CardWeightQuickAdd" CornerRadius="12" Padding="16"
+                BorderBrush="#4D06B6D4" BorderThickness="1"
+                BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding ShowWeightQuickAdd}">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
@@ -178,7 +183,10 @@
                             PaintSurface="OnPaintStreak" />
 
         <!-- ========== Recent Badges ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardBadges" Classes="Card StatsCard" Padding="12" BoxShadow="{DynamicResource CardShadow}"
+        <!-- Medical-Surface für Badges -->
+        <Border AutomationProperties.AutomationId="Home_CardBadges" CornerRadius="12" Padding="12"
+                Background="#D90F1D32" BorderBrush="#1A06B6D4" BorderThickness="1"
+                BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasRecentAchievements}">
           <i:Interaction.Behaviors>
             <uiBehaviors:StaggerFadeInBehavior FixedIndex="6" StaggerDelay="80" BaseDuration="300" />
@@ -228,7 +236,10 @@
         </Border>
 
         <!-- ========== Aktivitäts-Heatmap ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardHeatmap" Classes="Card StatsCard" Padding="14" BoxShadow="{DynamicResource CardShadow}"
+        <!-- Medical-Surface für Heatmap -->
+        <Border AutomationProperties.AutomationId="Home_CardHeatmap" CornerRadius="12" Padding="14"
+                Background="#D90F1D32" BorderBrush="#1A06B6D4" BorderThickness="1"
+                BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasHeatmapData}">
           <i:Interaction.Behaviors>
             <uiBehaviors:StaggerFadeInBehavior FixedIndex="7" StaggerDelay="80" BaseDuration="300" />
@@ -282,7 +293,10 @@
         </Border>
 
         <!-- ========== Weekly Comparison Card ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardWeeklyComparison" Classes="Card StatsCard" Padding="14" BoxShadow="{DynamicResource CardShadow}"
+        <!-- Medical-Surface für Wochenvergleich -->
+        <Border AutomationProperties.AutomationId="Home_CardWeeklyComparison" CornerRadius="12" Padding="14"
+                Background="#D90F1D32" BorderBrush="#1A06B6D4" BorderThickness="1"
+                BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasWeeklyComparison}">
           <i:Interaction.Behaviors>
             <uiBehaviors:StaggerFadeInBehavior FixedIndex="8" StaggerDelay="80" BaseDuration="300" />
@@ -345,7 +359,10 @@
         </Border>
 
         <!-- ========== Abend-Zusammenfassung (nach 20 Uhr) ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardEveningSummary" Classes="Card StatsCard" IsVisible="{Binding ShowEveningSummary}" Margin="0,0,0,12">
+        <!-- Abend-Zusammenfassung mit holografischem Cyan-Rand -->
+        <Border AutomationProperties.AutomationId="Home_CardEveningSummary" CornerRadius="12" Padding="14"
+                BorderBrush="#4D06B6D4" BorderThickness="1"
+                IsVisible="{Binding ShowEveningSummary}" Margin="0,0,0,12">
           <i:Interaction.Behaviors>
             <behaviors:FadeInBehavior Duration="400" />
           </i:Interaction.Behaviors>
@@ -391,16 +408,14 @@
             <!-- BMI -->
             <Button AutomationProperties.AutomationId="Home_BtnBmi" Grid.Row="0" Grid.Column="0"
                     CornerRadius="12" Height="120" Padding="8"
+                    BorderBrush="#1A06B6D4" BorderThickness="1"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenBmiCommand}">
               <i:Interaction.Behaviors>
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
+                <SolidColorBrush Color="#D90F1D32" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -423,16 +438,14 @@
             <!-- Kalorien -->
             <Button AutomationProperties.AutomationId="Home_BtnCalories" Grid.Row="0" Grid.Column="1"
                     CornerRadius="12" Height="120" Padding="8"
+                    BorderBrush="#1A06B6D4" BorderThickness="1"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenCaloriesCommand}">
               <i:Interaction.Behaviors>
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
+                <SolidColorBrush Color="#D90F1D32" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -455,16 +468,14 @@
             <!-- Wasser -->
             <Button AutomationProperties.AutomationId="Home_BtnWater" Grid.Row="1" Grid.Column="0"
                     CornerRadius="12" Height="120" Padding="8"
+                    BorderBrush="#1A06B6D4" BorderThickness="1"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenWaterCommand}">
               <i:Interaction.Behaviors>
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
+                <SolidColorBrush Color="#D90F1D32" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -487,16 +498,14 @@
             <!-- Idealgewicht -->
             <Button AutomationProperties.AutomationId="Home_BtnIdealWeight" Grid.Row="1" Grid.Column="1"
                     CornerRadius="12" Height="120" Padding="8"
+                    BorderBrush="#1A06B6D4" BorderThickness="1"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenIdealWeightCommand}">
               <i:Interaction.Behaviors>
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
+                <SolidColorBrush Color="#D90F1D32" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -519,16 +528,14 @@
             <!-- Koerperfett -->
             <Button AutomationProperties.AutomationId="Home_BtnBodyFat" Grid.Row="2" Grid.Column="0"
                     CornerRadius="12" Height="120" Padding="8"
+                    BorderBrush="#1A06B6D4" BorderThickness="1"
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                     Command="{Binding OpenBodyFatCommand}">
               <i:Interaction.Behaviors>
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
+                <SolidColorBrush Color="#D90F1D32" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -591,9 +598,10 @@
         </Button>
 
         <!-- ========== Disclaimer ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardDisclaimer" Background="{DynamicResource SurfaceBrush}"
+        <!-- Medical-Surface für Disclaimer -->
+        <Border AutomationProperties.AutomationId="Home_CardDisclaimer" Background="#D90F1D32"
                 CornerRadius="8" Padding="12"
-                BoxShadow="{DynamicResource CardShadow}"
+                BorderBrush="#1A06B6D4" BorderThickness="1"
                 Margin="0,4,0,0">
           <Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
             <mi:MaterialIcon Kind="InformationOutline" Width="16" Height="16"

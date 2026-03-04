@@ -5,11 +5,22 @@ namespace FitnessRechner.Graphics;
 
 /// <summary>
 /// Körperfett-Visualisierung: Prozent-Ring mit Kategorie-Farbe + Körper-Silhouette.
+/// Medical-Ästhetik: Holographische Cyan-Kontur, Scan-Linie, Glow auf Prozent-Ring.
 /// Thread-safe: Verwendet lokale Paint-Objekte statt statischer Felder.
 /// </summary>
 public static class BodyFatRenderer
 {
-    public static void Render(SKCanvas canvas, SKRect bounds, float bodyFatPercent, bool isMale, bool hasResult)
+    // Holographische Kontur
+    private const float CyanContourAlpha = 0.25f; // 25% Opacity
+    private const float CyanContourStroke = 2f;
+    private const float CyanContourBlur = 3f;
+
+    // Scan-Linie (vertikal über den Körper)
+    private const float ScanLineCycleSeconds = 3f;
+    private const byte ScanLineAlpha = 64; // ~25% von 255
+    private const float ScanLineWidth = 2f;
+
+    public static void Render(SKCanvas canvas, SKRect bounds, float bodyFatPercent, bool isMale, bool hasResult, float time = 0f)
     {
         if (!hasResult || bodyFatPercent <= 0) return;
 
@@ -32,6 +43,12 @@ public static class BodyFatRenderer
 
         DrawSilhouette(canvas, silCx, silCy, silScale, bodyFatPercent, isMale, categoryColor);
 
+        // --- Holographische Cyan-Kontur um die Silhouette ---
+        DrawSilhouetteContour(canvas, silCx, silCy, silScale, bodyFatPercent, isMale);
+
+        // --- Vertikale Scan-Linie über den Silhouette-Bereich ---
+        RenderScanLine(canvas, silCx, silCy, silScale, bodyFatPercent, isMale, time);
+
         // === Prozent-Ring ===
         float strokeW = Math.Max(8f, ringW * 0.08f);
         float radius = Math.Min(ringW, h) * 0.38f;
@@ -52,8 +69,8 @@ public static class BodyFatRenderer
         float fraction = Math.Clamp(bodyFatPercent / 50f, 0f, 1f); // 50% = voller Ring
         float sweepAngle = fraction * 360f;
 
-        // Glow-Effekt auf dem Fortschritts-Arc
-        using var glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
+        // Glow-Effekt auf dem Fortschritts-Arc (mit MaskFilter.Blur)
+        using var glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
         using var glowPaint = new SKPaint
         {
             IsAntialias = true,
@@ -139,6 +156,106 @@ public static class BodyFatRenderer
         canvas.ClipRoundRect(new SKRoundRect(new SKRect(cx - bodyW / 2f, cy - bodyH * 0.35f, cx + bodyW / 2f, cy - bodyH * 0.35f + bodyH), 8f * scale));
         canvas.DrawRoundRect(cx - bodyW / 2f + 2f, fatY, bodyW - 4f, fatH, 6f * scale, 6f * scale, fillPaint);
         canvas.Restore();
+    }
+
+    /// <summary>
+    /// Holographische Cyan-Kontur um die Körper-Silhouette (20-30% Alpha, 2px Stroke, Blur 3px).
+    /// </summary>
+    private static void DrawSilhouetteContour(SKCanvas canvas, float cx, float cy, float scale, float bodyFatPercent, bool isMale)
+    {
+        float headR = 12f * scale;
+        float bodyW = (isMale ? 22f : 20f) * scale;
+        float bodyH = 45f * scale;
+
+        float fatFactor = 1f + (bodyFatPercent - 15f) / 100f;
+        fatFactor = Math.Clamp(fatFactor, 0.9f, 1.5f);
+        bodyW *= fatFactor;
+
+        float headY = cy - bodyH * 0.5f - headR - 2f * scale;
+
+        using var contourBlur = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, CyanContourBlur);
+        using var contourPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = CyanContourStroke,
+            Color = MedicalColors.Cyan.WithAlpha((byte)(255 * CyanContourAlpha)),
+            MaskFilter = contourBlur
+        };
+
+        // Kopf-Kontur
+        canvas.DrawCircle(cx, headY, headR + 1f, contourPaint);
+
+        // Körper-Kontur
+        canvas.DrawRoundRect(cx - bodyW / 2f - 1f, cy - bodyH * 0.35f - 1f,
+            bodyW + 2f, bodyH + 2f, 8f * scale, 8f * scale, contourPaint);
+
+        // Arm-Konturen
+        float armW = 6f * scale;
+        float armH = 30f * scale;
+        canvas.DrawRoundRect(cx - bodyW / 2f - armW - 2f * scale - 1f, cy - bodyH * 0.25f - 1f,
+            armW + 2f, armH + 2f, 3f * scale, 3f * scale, contourPaint);
+        canvas.DrawRoundRect(cx + bodyW / 2f + 2f * scale - 1f, cy - bodyH * 0.25f - 1f,
+            armW + 2f, armH + 2f, 3f * scale, 3f * scale, contourPaint);
+
+        // Bein-Konturen
+        float legW = 8f * scale * fatFactor;
+        float legH = 35f * scale;
+        canvas.DrawRoundRect(cx - legW - 1f * scale - 1f, cy + bodyH * 0.55f - 1f,
+            legW + 2f, legH + 2f, 4f * scale, 4f * scale, contourPaint);
+        canvas.DrawRoundRect(cx + 1f * scale - 1f, cy + bodyH * 0.55f - 1f,
+            legW + 2f, legH + 2f, 4f * scale, 4f * scale, contourPaint);
+    }
+
+    /// <summary>
+    /// Vertikale Scan-Linie die über den Körper fährt (3s Zyklus, Cyan 25% Alpha).
+    /// Bewegt sich horizontal über den Silhouette-Bereich.
+    /// </summary>
+    private static void RenderScanLine(SKCanvas canvas, float cx, float cy, float scale,
+        float bodyFatPercent, bool isMale, float time)
+    {
+        float bodyW = (isMale ? 22f : 20f) * scale;
+        float fatFactor = Math.Clamp(1f + (bodyFatPercent - 15f) / 100f, 0.9f, 1.5f);
+        bodyW *= fatFactor;
+        float armW = 6f * scale;
+
+        // Gesamtbreite der Silhouette inkl. Arme
+        float totalLeft = cx - bodyW / 2f - armW - 2f * scale;
+        float totalRight = cx + bodyW / 2f + armW + 2f * scale;
+        float totalWidth = totalRight - totalLeft;
+
+        // Oberkante (Kopf) bis Unterkante (Beine)
+        float bodyH = 45f * scale;
+        float headR = 12f * scale;
+        float topY = cy - bodyH * 0.5f - headR * 2f - 2f * scale;
+        float bottomY = cy + bodyH * 0.55f + 35f * scale;
+
+        // Horizontale Position berechnen: Ping-Pong (hin und zurück)
+        float progress = (time / ScanLineCycleSeconds) % 1f;
+        float pingPong = progress < 0.5f ? progress * 2f : 2f - progress * 2f;
+        float lineX = totalLeft + pingPong * totalWidth;
+
+        // Vertikaler Gradient-Streifen
+        using var scanShader = SKShader.CreateLinearGradient(
+            new SKPoint(lineX - ScanLineWidth, topY),
+            new SKPoint(lineX + ScanLineWidth, topY),
+            new[]
+            {
+                MedicalColors.Cyan.WithAlpha(0),
+                MedicalColors.Cyan.WithAlpha(ScanLineAlpha),
+                MedicalColors.Cyan.WithAlpha(0)
+            },
+            new[] { 0f, 0.5f, 1f },
+            SKShaderTileMode.Clamp);
+
+        using var scanPaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill,
+            Shader = scanShader
+        };
+
+        canvas.DrawRect(lineX - ScanLineWidth, topY, ScanLineWidth * 2f, bottomY - topY, scanPaint);
     }
 
     private static SKColor GetCategoryColor(float bodyFatPercent, bool isMale)

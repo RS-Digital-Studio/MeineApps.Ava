@@ -6,6 +6,7 @@ namespace FitnessRechner.Graphics;
 /// <summary>
 /// Kalorien-Aufschlüsselung als 3 konzentrische Ringe (BMR, TDEE, Ziele)
 /// plus Makro-Anteile als Kreissegmente.
+/// Medical-Ästhetik: Grid-Hintergrund, pulsierender Glow (72 BPM), Data-Stream Partikel.
 /// Thread-safe: Verwendet lokale Paint-Objekte statt statischer Felder.
 /// </summary>
 public static class CalorieRingRenderer
@@ -16,8 +17,16 @@ public static class CalorieRingRenderer
     private static readonly SKColor _lossColor = new(0x22, 0xC5, 0x5E);   // Grün
     private static readonly SKColor _gainColor = new(0xEF, 0x44, 0x44);   // Rot
 
+    // Medical Grid
+    private const float GridSpacing = 40f;
+    private const byte GridAlpha = 20; // ~8% von 255
+
+    // Data-Stream Partikel (kreisförmig zwischen den Ringen)
+    private const int ParticleCount = 5;
+    private const float ParticleRadius = 2.5f;
+
     public static void Render(SKCanvas canvas, SKRect bounds,
-        float bmr, float tdee, float weightLoss, float weightGain, bool hasResult)
+        float bmr, float tdee, float weightLoss, float weightGain, bool hasResult, float time = 0f)
     {
         if (!hasResult || tdee <= 0) return;
 
@@ -25,6 +34,9 @@ public static class CalorieRingRenderer
         float h = bounds.Height;
         float cx = bounds.MidX;
         float cy = bounds.MidY;
+
+        // --- Medical Grid im Hintergrund ---
+        RenderMedicalGrid(canvas, bounds);
 
         float maxRadius = Math.Min(w, h) * 0.42f;
         float strokeW = Math.Max(6f, maxRadius * 0.08f);
@@ -51,11 +63,17 @@ public static class CalorieRingRenderer
         canvas.DrawCircle(cx, cy, r2, trackPaint);
         canvas.DrawCircle(cx, cy, r3, trackPaint);
 
+        // Pulsierender Glow-Faktor (72 BPM synchron)
+        float beatPhase = (time * MedicalColors.BeatsPerSecond) % 1f;
+        // Sinuswelle 0→1→0 pro Beat, Alpha 30-60%
+        float pulseAlpha = 0.3f + 0.3f * MathF.Sin(beatPhase * MathF.PI * 2f) * 0.5f + 0.15f;
+        byte glowAlphaByte = (byte)(255 * Math.Clamp(pulseAlpha, 0.3f, 0.6f));
+
         // Ring 1: TDEE (außen, Orange)
-        DrawRing(canvas, cx, cy, r1, strokeW, tdee / maxVal, _tdeeColor);
+        DrawRing(canvas, cx, cy, r1, strokeW, tdee / maxVal, _tdeeColor, glowAlphaByte);
 
         // Ring 2: BMR (mitte, Blau)
-        DrawRing(canvas, cx, cy, r2, strokeW, bmr / maxVal, _bmrColor);
+        DrawRing(canvas, cx, cy, r2, strokeW, bmr / maxVal, _bmrColor, glowAlphaByte);
 
         // Ring 3: WeightLoss/WeightGain (innen, als Hälften)
         float lossAngle = (weightLoss / maxVal) * 180f;
@@ -87,6 +105,9 @@ public static class CalorieRingRenderer
             canvas.DrawPath(gainPath, arcPaint);
         }
 
+        // --- Data-Stream Partikel zwischen den Ringen ---
+        RenderDataStreamParticles(canvas, cx, cy, r2, r1, time);
+
         // TDEE-Text in der Mitte
         using var textPaint = new SKPaint { IsAntialias = true };
 
@@ -110,12 +131,67 @@ public static class CalorieRingRenderer
         DrawLegendDot(canvas, cx + legendSpacing * 1.2f, legendY, _gainColor, "+");
     }
 
-    private static void DrawRing(SKCanvas canvas, float cx, float cy, float radius, float strokeW, float fraction, SKColor color)
+    /// <summary>
+    /// Medical Grid: Feine Cyan-Linien im Hintergrund (8% Opacity).
+    /// </summary>
+    private static void RenderMedicalGrid(SKCanvas canvas, SKRect bounds)
+    {
+        using var gridPaint = new SKPaint
+        {
+            IsAntialias = false,
+            Style = SKPaintStyle.Stroke,
+            StrokeWidth = 0.5f,
+            Color = MedicalColors.Grid.WithAlpha(GridAlpha)
+        };
+
+        for (float x = bounds.Left + GridSpacing; x < bounds.Right; x += GridSpacing)
+            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, gridPaint);
+
+        for (float y = bounds.Top + GridSpacing; y < bounds.Bottom; y += GridSpacing)
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, gridPaint);
+    }
+
+    /// <summary>
+    /// Data-Stream Partikel: 5 kleine Cyan-Punkte die kreisförmig zwischen den Ringen fließen.
+    /// Position wird rein mathematisch aus time berechnet (keine persistenten Objekte nötig).
+    /// </summary>
+    private static void RenderDataStreamParticles(SKCanvas canvas, float cx, float cy,
+        float innerRadius, float outerRadius, float time)
+    {
+        float midRadius = (innerRadius + outerRadius) * 0.5f;
+
+        using var particlePaint = new SKPaint
+        {
+            IsAntialias = true,
+            Style = SKPaintStyle.Fill,
+            Color = MedicalColors.Cyan.WithAlpha(140)
+        };
+
+        for (int i = 0; i < ParticleCount; i++)
+        {
+            // Gleichmäßig verteilte Partikel, unterschiedliche Geschwindigkeiten
+            float speed = 0.3f + i * 0.08f; // leicht unterschiedlich schnell
+            float baseAngle = (float)(i * 2.0 * Math.PI / ParticleCount);
+            float angle = baseAngle + time * speed * MathF.PI * 2f;
+
+            // Leichtes radialer Wobble für organischen Look
+            float radialOffset = MathF.Sin(time * 1.5f + i * 1.2f) * (outerRadius - innerRadius) * 0.3f;
+            float r = midRadius + radialOffset;
+
+            float px = cx + MathF.Cos(angle) * r;
+            float py = cy + MathF.Sin(angle) * r;
+
+            canvas.DrawCircle(px, py, ParticleRadius, particlePaint);
+        }
+    }
+
+    private static void DrawRing(SKCanvas canvas, float cx, float cy, float radius,
+        float strokeW, float fraction, SKColor color, byte glowAlpha)
     {
         float sweepAngle = Math.Clamp(fraction, 0f, 1f) * 360f;
         var rect = new SKRect(cx - radius, cy - radius, cx + radius, cy + radius);
 
-        // Glow-Effekt
+        // Pulsierender Glow-Effekt (Alpha variiert mit Herzschlag)
         using var glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
         using var glowPaint = new SKPaint
         {
@@ -123,7 +199,7 @@ public static class CalorieRingRenderer
             Style = SKPaintStyle.Stroke,
             StrokeCap = SKStrokeCap.Round,
             StrokeWidth = strokeW + 3f,
-            Color = SkiaThemeHelper.WithAlpha(color, 60),
+            Color = color.WithAlpha(glowAlpha),
             MaskFilter = glowFilter
         };
         using var glowPath = new SKPath();

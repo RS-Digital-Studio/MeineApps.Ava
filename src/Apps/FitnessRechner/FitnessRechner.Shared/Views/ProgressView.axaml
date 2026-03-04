@@ -9,15 +9,17 @@
              xmlns:labs="using:Avalonia.Labs.Controls"
              x:Class="FitnessRechner.Views.ProgressView"
              x:DataType="vm:ProgressViewModel"
-             x:CompileBindings="True">
+             x:CompileBindings="True"
+             Background="Transparent">
 
   <UserControl.Resources>
     <conv:IsNotNullConverter x:Key="IsNotNullConverter" />
     <coreConv:BoolToStringConverter x:Key="BmiBodyFatConverter" TrueValue="BMI" FalseValue="{loc:Translate BodyFat}" />
 
-    <!-- Wiederverwendbares Mahlzeit-Item Template -->
+    <!-- Wiederverwendbares Mahlzeit-Item Template - Medical-Styling -->
     <DataTemplate x:Key="MealItemTemplate" x:DataType="models:FoodLogEntry">
-      <Border Classes="Card Compact" Margin="0,3" Padding="10">
+      <Border Classes="Card Compact" Margin="0,3" Padding="10"
+              Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
         <Grid ColumnDefinitions="*,Auto,Auto">
           <StackPanel>
             <TextBlock Text="{Binding FoodName}" FontSize="13" FontWeight="SemiBold"
@@ -47,10 +49,11 @@
     <!-- ============================================ -->
     <!-- Row 0: Header with Title + Action Buttons    -->
     <!-- ============================================ -->
+    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
     <Border AutomationProperties.AutomationId="Progress_Header" Grid.Row="0"
-            Background="{DynamicResource SurfaceBrush}"
+            Background="#D90F1D32"
             BorderThickness="0,0,0,1"
-            BorderBrush="{DynamicResource BorderSubtleBrush}"
+            BorderBrush="#4D06B6D4"
             Padding="16,12">
       <Grid ColumnDefinitions="*,Auto,Auto,Auto">
         <TextBlock AutomationProperties.AutomationId="Progress_TxtTitle" Text="{loc:Translate Progress}"
@@ -91,8 +94,9 @@
     <!-- ============================================ -->
     <!-- Row 1: Tab Bar (4 Tabs)                      -->
     <!-- ============================================ -->
+    <!-- Medical-Styling: Surface 85% für Sub-Tab-Bar -->
     <Border Grid.Row="1"
-            Background="{DynamicResource SurfaceBrush}"
+            Background="#D90F1D32"
             Padding="8,4">
       <ScrollViewer HorizontalScrollBarVisibility="Auto"
                     VerticalScrollBarVisibility="Disabled">
@@ -168,7 +172,9 @@
         <StackPanel Spacing="16" IsVisible="{Binding IsWeightTab}">
 
           <!-- Stats Card -->
-          <Border AutomationProperties.AutomationId="Progress_CardWeightStats" Classes="Card" Padding="0" ClipToBounds="True">
+          <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border AutomationProperties.AutomationId="Progress_CardWeightStats" Classes="Card" Padding="0" ClipToBounds="True"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel>
               <!-- Gradient Header -->
               <Border Padding="12,10" CornerRadius="12,12,0,0">
@@ -229,7 +235,9 @@
           </Border>
 
           <!-- Gewichtsziel-Karte (wenn Ziel gesetzt) -->
-          <Border AutomationProperties.AutomationId="Progress_CardWeightGoal" Classes="Card" Padding="14" IsVisible="{Binding HasWeightGoal}">
+          <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border AutomationProperties.AutomationId="Progress_CardWeightGoal" Classes="Card" Padding="14" IsVisible="{Binding HasWeightGoal}"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel Spacing="8">
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Orientation="Horizontal" Spacing="6">
@@ -251,7 +259,9 @@
           </Border>
 
           <!-- Gewichtsziel setzen (wenn noch kein Ziel) -->
-          <Border AutomationProperties.AutomationId="Progress_CardSetGoal" Classes="Card" Padding="14" IsVisible="{Binding !HasWeightGoal}">
+          <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border AutomationProperties.AutomationId="Progress_CardSetGoal" Classes="Card" Padding="14" IsVisible="{Binding !HasWeightGoal}"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel Spacing="6">
               <TextBlock Text="{loc:Translate SetWeightGoal}"
                          FontSize="13" Foreground="{DynamicResource TextMutedBrush}" />
@@ -269,8 +279,8 @@
             </StackPanel>
           </Border>
 
-          <!-- Chart-Zeitraum Auswahl (Pill-Chips) -->
-          <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="16" Padding="3" Margin="0,4,0,0">
+          <!-- Chart-Zeitraum Auswahl (Pill-Chips) - Medical-Styling -->
+          <Border Background="#D90F1D32" CornerRadius="16" Padding="3" Margin="0,4,0,0">
             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
               <Button Classes="Text" Padding="0" Height="NaN"
                       Command="{Binding SetChartRangeCommand}" CommandParameter="7">
@@ -299,8 +309,8 @@
             </StackPanel>
           </Border>
 
-          <!-- Chart Card -->
-          <Border Classes="StatsCard">
+          <!-- Chart Card - Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border Classes="StatsCard" Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Background="#208B5CF6" Width="28" Height="28" CornerRadius="8">
@@ -316,10 +326,11 @@
             </StackPanel>
           </Border>
 
-          <!-- Add Weight Form -->
+          <!-- Add Weight Form - Medical-Styling: Cyan-Rand -->
           <Border AutomationProperties.AutomationId="Progress_CardAddWeight" Classes="Card" Padding="16"
                   Background="{DynamicResource PrimaryBrush}"
-                  IsVisible="{Binding ShowAddForm}">
+                  IsVisible="{Binding ShowAddForm}"
+                  BorderBrush="#4D06B6D4" BorderThickness="1" CornerRadius="12">
             <StackPanel Spacing="12">
               <TextBlock Text="{loc:Translate AddWeight}"
                          FontSize="18" FontWeight="Bold" Foreground="White" />
@@ -382,7 +393,9 @@
             <ItemsControl ItemsSource="{Binding WeightEntries}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="models:TrackingEntry">
-                  <Border Classes="Card Compact" Margin="0,4" Padding="12">
+                  <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+                  <Border Classes="Card Compact" Margin="0,4" Padding="12"
+                          Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                       <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                         <TextBlock Text="{Binding Date, StringFormat='{}{0:dd}'}"
@@ -444,8 +457,8 @@
             </Button>
           </Grid>
 
-          <!-- Chart-Zeitraum Auswahl (Pill-Chips) -->
-          <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="16" Padding="3">
+          <!-- Chart-Zeitraum Auswahl (Pill-Chips) - Medical-Styling -->
+          <Border Background="#D90F1D32" CornerRadius="16" Padding="3">
             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
               <Button Classes="Text" Padding="0" Height="NaN"
                       Command="{Binding SetChartRangeCommand}" CommandParameter="7">
@@ -477,8 +490,9 @@
           <!-- BMI Content -->
           <StackPanel Spacing="16" IsVisible="{Binding IsBmiSelected}">
 
-            <!-- BMI Stats -->
-            <Border Classes="Card" Padding="0" ClipToBounds="True">
+            <!-- BMI Stats - Medical-Styling: Surface 85% + Cyan-Rand -->
+            <Border Classes="Card" Padding="0" ClipToBounds="True"
+                    Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
               <StackPanel>
                 <Border Padding="12,10" CornerRadius="12,12,0,0">
                   <Border.Background>
@@ -534,8 +548,8 @@
               </StackPanel>
             </Border>
 
-            <!-- BMI Chart -->
-            <Border Classes="StatsCard">
+            <!-- BMI Chart - Medical-Styling: Surface 85% + Cyan-Rand -->
+            <Border Classes="StatsCard" Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
               <StackPanel Spacing="8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Border Background="#203B82F6" Width="28" Height="28" CornerRadius="8">
@@ -579,7 +593,9 @@
               <ItemsControl ItemsSource="{Binding BmiEntries}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="models:TrackingEntry">
-                    <Border Classes="Card Compact" Margin="0,4" Padding="12">
+                    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+                    <Border Classes="Card Compact" Margin="0,4" Padding="12"
+                            Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
                       <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                         <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                           <TextBlock Text="{Binding Date, StringFormat='{}{0:dd}'}"
@@ -616,8 +632,9 @@
           <!-- Body Fat Content -->
           <StackPanel Spacing="16" IsVisible="{Binding IsBodyFatSelected}">
 
-            <!-- Body Fat Stats -->
-            <Border Classes="Card" Padding="0" ClipToBounds="True">
+            <!-- Body Fat Stats - Medical-Styling: Surface 85% + Cyan-Rand -->
+            <Border Classes="Card" Padding="0" ClipToBounds="True"
+                    Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
               <StackPanel>
                 <Border Padding="12,10" CornerRadius="12,12,0,0">
                   <Border.Background>
@@ -673,8 +690,8 @@
               </StackPanel>
             </Border>
 
-            <!-- Body Fat Chart -->
-            <Border Classes="StatsCard">
+            <!-- Body Fat Chart - Medical-Styling: Surface 85% + Cyan-Rand -->
+            <Border Classes="StatsCard" Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
               <StackPanel Spacing="8">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <Border Background="#20F59E0B" Width="28" Height="28" CornerRadius="8">
@@ -716,7 +733,9 @@
               <ItemsControl ItemsSource="{Binding BodyFatEntries}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="models:TrackingEntry">
-                    <Border Classes="Card Compact" Margin="0,4" Padding="12">
+                    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+                    <Border Classes="Card Compact" Margin="0,4" Padding="12"
+                            Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
                       <Grid ColumnDefinitions="Auto,*,Auto,Auto">
                         <StackPanel VerticalAlignment="Center" Margin="0,0,12,0">
                           <TextBlock Text="{Binding Date, StringFormat='{}{0:dd}'}"
@@ -750,10 +769,11 @@
             </StackPanel>
           </StackPanel>
 
-          <!-- Add Form for Body Tab -->
+          <!-- Add Form for Body Tab - Medical-Styling: Cyan-Rand -->
           <Border Classes="Card" Padding="16"
                   Background="{DynamicResource PrimaryBrush}"
-                  IsVisible="{Binding ShowAddForm}">
+                  IsVisible="{Binding ShowAddForm}"
+                  BorderBrush="#4D06B6D4" BorderThickness="1" CornerRadius="12">
             <StackPanel Spacing="12">
               <TextBlock Text="{Binding IsBmiSelected, Converter={StaticResource BmiBodyFatConverter}}"
                          FontSize="18" FontWeight="Bold" Foreground="White" />
@@ -788,7 +808,9 @@
         <StackPanel Spacing="16" IsVisible="{Binding IsWaterTab}">
 
           <!-- Water Progress Card -->
-          <Border AutomationProperties.AutomationId="Progress_CardWaterStats" Classes="Card" Padding="0" ClipToBounds="True">
+          <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border AutomationProperties.AutomationId="Progress_CardWaterStats" Classes="Card" Padding="0" ClipToBounds="True"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel>
               <!-- Gradient Header -->
               <Border Padding="12,10" CornerRadius="12,12,0,0">
@@ -855,7 +877,9 @@
           </Grid>
 
           <!-- Water Goal Input -->
-          <Border AutomationProperties.AutomationId="Progress_CardWaterGoal" Classes="Card" Padding="16">
+          <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border AutomationProperties.AutomationId="Progress_CardWaterGoal" Classes="Card" Padding="16"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel Spacing="8">
               <TextBlock Text="{loc:Translate WaterGoal}"
                          FontSize="14" FontWeight="SemiBold"
@@ -881,7 +905,9 @@
         <StackPanel Spacing="16" IsVisible="{Binding IsCaloriesTab}">
 
           <!-- Calorie Overview Card -->
-          <Border AutomationProperties.AutomationId="Progress_CardCalorieStats" Classes="Card" Padding="0" ClipToBounds="True">
+          <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border AutomationProperties.AutomationId="Progress_CardCalorieStats" Classes="Card" Padding="0" ClipToBounds="True"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel>
               <!-- Gradient Header -->
               <Border Padding="12,10" CornerRadius="12,12,0,0">
@@ -935,9 +961,10 @@
             </StackPanel>
           </Border>
 
-          <!-- Macro Progress Card -->
+          <!-- Macro Progress Card - Medical-Styling: Surface 85% + Cyan-Rand -->
           <Border Classes="StatsCard"
-                  IsVisible="{Binding HasMacroGoals}">
+                  IsVisible="{Binding HasMacroGoals}"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Background="#2022C55E" Width="28" Height="28" CornerRadius="8">
@@ -1096,8 +1123,9 @@
             </StackPanel>
           </StackPanel>
 
-          <!-- Wochen-Kalorien Chart -->
-          <Border Classes="StatsCard" IsVisible="{Binding HasWeeklyData}">
+          <!-- Wochen-Kalorien Chart - Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border Classes="StatsCard" IsVisible="{Binding HasWeeklyData}"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
                 <Border Background="#20F59E0B" Width="28" Height="28" CornerRadius="8">
@@ -1128,8 +1156,9 @@
           <!-- ==================== INLINE FOOD SEARCH ==================== -->
           <StackPanel Spacing="12" IsVisible="{Binding ShowFoodSearch}">
 
-            <!-- Suchleiste -->
-            <Border Classes="Card" Padding="12">
+            <!-- Suchleiste - Medical-Styling: Surface 85% + Cyan-Rand -->
+            <Border Classes="Card" Padding="12"
+                    Background="#D90F1D32" BorderBrush="#4D06B6D4" CornerRadius="12">
               <Grid ColumnDefinitions="Auto,*,Auto">
                 <mi:MaterialIcon Kind="Magnify" Width="20" Height="20"
                                  Foreground="{DynamicResource TextMutedBrush}"
@@ -1150,8 +1179,10 @@
             </Border>
 
             <!-- Ausgewähltes Lebensmittel - Portion & Hinzufügen -->
+            <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
             <Border AutomationProperties.AutomationId="Progress_CardAddFood" Classes="Card" Padding="16"
-                    IsVisible="{Binding ShowAddFoodPanel}">
+                    IsVisible="{Binding ShowAddFoodPanel}"
+                    Background="#D90F1D32" BorderBrush="#4D06B6D4" CornerRadius="12">
               <StackPanel Spacing="12">
                 <TextBlock Text="{Binding SelectedFood.Name}"
                            FontSize="18" FontWeight="Bold"
@@ -1239,7 +1270,9 @@
                           CommandParameter="{Binding .}"
                           HorizontalAlignment="Stretch"
                           HorizontalContentAlignment="Stretch">
-                    <Border Classes="Card Compact" Padding="12" Cursor="Hand">
+                    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+                    <Border Classes="Card Compact" Padding="12" Cursor="Hand"
+                            Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
                       <Grid ColumnDefinitions="*,Auto">
                         <StackPanel Spacing="2">
                           <TextBlock Text="{Binding Food.Name}"
@@ -1267,7 +1300,9 @@
           </StackPanel>
 
           <!-- Calorie Goal Input -->
-          <Border AutomationProperties.AutomationId="Progress_CardCalorieGoal" Classes="Card" Padding="16">
+          <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border AutomationProperties.AutomationId="Progress_CardCalorieGoal" Classes="Card" Padding="16"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <StackPanel Spacing="8">
               <TextBlock Text="{loc:Translate SetCalorieGoal}"
                          FontSize="14" FontWeight="SemiBold"
@@ -1301,11 +1336,14 @@
     <!-- ============================================ -->
     <!-- Row 3: Undo Banner                           -->
     <!-- ============================================ -->
+    <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
     <Border AutomationProperties.AutomationId="Progress_UndoBanner" Grid.Row="3"
-            Background="{DynamicResource SurfaceBrush}"
-            CornerRadius="8"
+            Background="#D90F1D32"
+            CornerRadius="12"
             Padding="16,12"
             Margin="16,8"
+            BorderBrush="#1A06B6D4"
+            BorderThickness="1"
             IsVisible="{Binding ShowUndoBanner}">
       <Grid ColumnDefinitions="*,Auto">
         <TextBlock AutomationProperties.AutomationId="Progress_TxtUndoMessage" Text="{Binding UndoMessage}"
@@ -1325,10 +1363,13 @@
             Background="#CC000000"
             IsVisible="{Binding ShowAnalysisAdOverlay}"
             ZIndex="80">
-      <Border Background="{DynamicResource SurfaceBrush}"
+      <!-- Medical-Styling: Navy-Deep Overlay-Dialog + Cyan-Rand -->
+      <Border Background="#0A1A2E"
               CornerRadius="16"
               Padding="24"
               MaxWidth="350"
+              BorderBrush="#4D06B6D4"
+              BorderThickness="1"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16">
@@ -1369,10 +1410,13 @@
             Background="#CC000000"
             IsVisible="{Binding ShowAnalysisOverlay}"
             ZIndex="80">
-      <Border Background="{DynamicResource SurfaceBrush}"
+      <!-- Medical-Styling: Navy-Deep Overlay-Dialog + Cyan-Rand -->
+      <Border Background="#0A1A2E"
               CornerRadius="16"
               Padding="24"
               MaxWidth="400"
+              BorderBrush="#4D06B6D4"
+              BorderThickness="1"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16">
@@ -1381,8 +1425,9 @@
                      Foreground="{DynamicResource TextPrimaryBrush}"
                      HorizontalAlignment="Center" />
 
-          <!-- Report-Daten -->
-          <Border Classes="Card" Padding="16">
+          <!-- Report-Daten - Medical-Styling: Surface 85% + Cyan-Rand -->
+          <Border Classes="Card" Padding="16"
+                  Background="#D90F1D32" BorderBrush="#1A06B6D4" CornerRadius="12">
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="16" RowSpacing="12">
               <!-- Durchschn. Gewicht -->
               <StackPanel>
@@ -1443,10 +1488,13 @@
             Background="#CC000000"
             IsVisible="{Binding ShowExportAdOverlay}"
             ZIndex="80">
-      <Border Background="{DynamicResource SurfaceBrush}"
+      <!-- Medical-Styling: Navy-Deep Overlay-Dialog + Cyan-Rand -->
+      <Border Background="#0A1A2E"
               CornerRadius="16"
               Padding="24"
               MaxWidth="350"
+              BorderBrush="#4D06B6D4"
+              BorderThickness="1"
               HorizontalAlignment="Center"
               VerticalAlignment="Center">
         <StackPanel Spacing="16">

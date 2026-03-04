@@ -5,6 +5,7 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FitnessRechner.Views.Calculators.IdealWeightView"
              x:DataType="vm:IdealWeightViewModel"
              x:CompileBindings="True">
@@ -12,35 +13,12 @@
   <Grid RowDefinitions="Auto,*,Auto"
         AutomationProperties.AutomationId="Ideal_RootPanel">
 
-    <!-- ═══════ Header Banner ═══════ -->
-    <Border Grid.Row="0"
-            AutomationProperties.AutomationId="Ideal_HeaderBanner"
-            Background="{DynamicResource IncomeBrush}"
-            Padding="16,12,16,20"
-            CornerRadius="0,0,24,24">
-      <Grid ColumnDefinitions="Auto,*">
-        <Button AutomationProperties.AutomationId="Ideal_BtnBack"
-                Command="{Binding GoBackCommand}"
-                Background="#33FFFFFF"
-                CornerRadius="20"
-                Width="40" Height="40"
-                Padding="0">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22" Foreground="White" />
-        </Button>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
-                    Margin="12,0,0,0" VerticalAlignment="Center">
-          <Border Background="#33FFFFFF" CornerRadius="12" Width="40" Height="40">
-            <mi:MaterialIcon Kind="ScaleBalance" Width="22" Height="22"
-                             Foreground="White"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-          </Border>
-          <TextBlock AutomationProperties.AutomationId="Ideal_TxtTitle"
-                     Text="{loc:Translate CalcIdealWeight}"
-                     FontSize="20" FontWeight="Bold" Foreground="White"
-                     VerticalAlignment="Center" />
-        </StackPanel>
-      </Grid>
-    </Border>
+    <!-- ═══════ Header Banner (SkiaSharp Medical) ═══════ -->
+    <skia:SKCanvasView x:Name="HeaderCanvas" Grid.Row="0"
+                        AutomationProperties.AutomationId="Ideal_HeaderBanner"
+                        Height="68"
+                        PaintSurface="OnHeaderPaintSurface"
+                        PointerPressed="OnHeaderPointerPressed" />
 
     <!-- ═══════ Content ═══════ -->
     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"

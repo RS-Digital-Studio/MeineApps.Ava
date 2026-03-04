@@ -19,25 +19,6 @@
     <conv:LocalizeKeyConverter x:Key="LocalizeKey" />
   </UserControl.Resources>
 
-  <UserControl.Styles>
-    <!-- Streak-Flamme Puls-Animation (nur wenn HasStreak=true) -->
-    <Style Selector="Border.StreakFlame">
-      <Style.Animations>
-        <Animation Duration="0:0:2" IterationCount="Infinite" PlaybackDirection="Alternate">
-          <KeyFrame Cue="0%">
-            <Setter Property="Opacity" Value="1.0" />
-          </KeyFrame>
-          <KeyFrame Cue="50%">
-            <Setter Property="Opacity" Value="0.7" />
-          </KeyFrame>
-          <KeyFrame Cue="100%">
-            <Setter Property="Opacity" Value="1.0" />
-          </KeyFrame>
-        </Animation>
-      </Style.Animations>
-    </Style>
-  </UserControl.Styles>
-
   <ScrollViewer AutomationProperties.AutomationId="Home_ScrollViewer" VerticalScrollBarVisibility="Auto">
     <StackPanel AutomationProperties.AutomationId="Home_RootPanel" Spacing="0" Margin="0,0,0,80">
 
@@ -52,28 +33,12 @@
                             PaintSurface="OnVitalSignsPaintSurface"
                             PointerPressed="OnVitalSignsPointerPressed" />
 
-        <!-- ========== XP / Level Bar (nur bei vorhandenen Daten) ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardXpLevel" Classes="Card StatsCard" Padding="10,8" BoxShadow="{DynamicResource CardShadow}"
-                IsVisible="{Binding HasDashboardData}">
-          <i:Interaction.Behaviors>
-            <uiBehaviors:StaggerFadeInBehavior FixedIndex="1" StaggerDelay="80" BaseDuration="300" />
-          </i:Interaction.Behaviors>
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-            <!-- Level-Badge -->
-            <Border Background="{DynamicResource PrimaryBrush}" CornerRadius="10" Padding="8,2"
-                    VerticalAlignment="Center">
-              <TextBlock AutomationProperties.AutomationId="Home_TxtLevelBadge" Text="{Binding LevelLabel}"
-                         FontSize="11" FontWeight="Bold" Foreground="White" />
-            </Border>
-            <!-- XP ProgressBar (SkiaSharp) -->
-            <labs:SKCanvasView AutomationProperties.AutomationId="Home_CanvasXpBar" Grid.Column="1" Height="14" VerticalAlignment="Center"
-                                PaintSurface="OnPaintLevelProgress" />
-            <!-- XP Text -->
-            <TextBlock AutomationProperties.AutomationId="Home_TxtXpDisplay" Grid.Column="2" Text="{Binding XpDisplay}"
-                       FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
-                       VerticalAlignment="Center" />
-          </Grid>
-        </Border>
+        <!-- ========== XP / Level Bar (VitalOS Medical-Style) ========== -->
+        <labs:SKCanvasView x:Name="LevelCanvas"
+                            AutomationProperties.AutomationId="Home_CardXpLevel"
+                            Height="34" Margin="0"
+                            IsVisible="{Binding HasDashboardData}"
+                            PaintSurface="OnPaintLevel" />
 
         <!-- ========== Empty-State (wenn keine Tracking-Daten) ========== -->
         <Border AutomationProperties.AutomationId="Home_CardEmptyState" Classes="Card" CornerRadius="16" Padding="24,28"
@@ -198,86 +163,19 @@
           </StackPanel>
         </Border>
 
-        <!-- ========== Daily Challenge Card (nur bei vorhandenen Daten) ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardChallenge" CornerRadius="12" Padding="14" BoxShadow="{DynamicResource CardShadow}"
-                IsVisible="{Binding HasDashboardData}">
-          <i:Interaction.Behaviors>
-            <uiBehaviors:StaggerFadeInBehavior FixedIndex="4" StaggerDelay="80" BaseDuration="300" />
-          </i:Interaction.Behaviors>
-          <Border.Background>
-            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-              <GradientStop Color="#6366F1" Offset="0" />
-              <GradientStop Color="#8B5CF6" Offset="1" />
-            </LinearGradientBrush>
-          </Border.Background>
-          <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-            <!-- Challenge Icon -->
-            <Border Width="40" Height="40" CornerRadius="20" Background="#33FFFFFF"
-                    VerticalAlignment="Center">
-              <mi:MaterialIcon Kind="{Binding TodayChallenge.Icon}" Width="22" Height="22"
-                               Foreground="White"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Border>
-            <!-- Challenge Info -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
-              <TextBlock Text="{Binding DailyChallengeLabel}"
-                         FontSize="10" Foreground="#BBFFFFFF" />
-              <TextBlock AutomationProperties.AutomationId="Home_TxtChallengeTitle" Text="{Binding ChallengeTitleText}"
-                         FontSize="14" FontWeight="Bold" Foreground="White" />
-              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                <labs:SKCanvasView AutomationProperties.AutomationId="Home_CanvasChallengeProgress" Height="12"
-                                    PaintSurface="OnPaintChallengeProgress" />
-                <TextBlock Grid.Column="1" Text="{Binding ChallengeProgressText}"
-                           FontSize="10" Foreground="#CCFFFFFF" VerticalAlignment="Center" />
-              </Grid>
-            </StackPanel>
-            <!-- XP Badge -->
-            <Border AutomationProperties.AutomationId="Home_BadgeChallengeXp" Grid.Column="2" CornerRadius="8" Padding="6,2"
-                    Background="#33FFFFFF" VerticalAlignment="Top">
-              <TextBlock AutomationProperties.AutomationId="Home_TxtChallengeXp" Text="{Binding ChallengeXpText}"
-                         FontSize="10" FontWeight="Bold" Foreground="White" />
-            </Border>
-          </Grid>
-        </Border>
+        <!-- ========== Daily Challenge Card (VitalOS Medical-Style) ========== -->
+        <labs:SKCanvasView x:Name="ChallengeCanvas"
+                            AutomationProperties.AutomationId="Home_CardChallenge"
+                            Height="72" Margin="0"
+                            IsVisible="{Binding HasDashboardData}"
+                            PaintSurface="OnPaintChallenge" />
 
-        <!-- ========== Streak Card (nur bei vorhandenen Daten) ========== -->
-        <Border AutomationProperties.AutomationId="Home_CardStreak" Classes="Card StatsCard" Padding="14" BoxShadow="{DynamicResource CardShadow}"
-                IsVisible="{Binding HasDashboardData}">
-          <i:Interaction.Behaviors>
-            <uiBehaviors:StaggerFadeInBehavior FixedIndex="5" StaggerDelay="80" BaseDuration="300" />
-          </i:Interaction.Behaviors>
-          <Grid ColumnDefinitions="Auto,*,Auto">
-            <!-- Flammen-Icon mit Gradient + Puls-Animation -->
-            <Border Grid.Column="0" Width="44" Height="44" CornerRadius="12" Margin="0,0,12,0"
-                    Classes.StreakFlame="{Binding HasStreak}">
-              <Border.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="#F59E0B" Offset="0" />
-                  <GradientStop Color="#EF4444" Offset="1" />
-                </LinearGradientBrush>
-              </Border.Background>
-              <mi:MaterialIcon Kind="Fire" Width="24" Height="24"
-                               Foreground="White"
-                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Border>
-            <!-- Streak-Text -->
-            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-              <TextBlock Text="{Binding StreakTitleText}"
-                         FontSize="13" Foreground="{DynamicResource TextMutedBrush}" />
-              <TextBlock AutomationProperties.AutomationId="Home_TxtStreakDisplay" Text="{Binding StreakDisplay}"
-                         FontSize="18" FontWeight="Bold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-            </StackPanel>
-            <!-- Best-Streak Badge -->
-            <Border Grid.Column="2" VerticalAlignment="Center"
-                    Background="{DynamicResource SurfaceBrush}"
-                    CornerRadius="8" Padding="8,4"
-                    IsVisible="{Binding HasStreak}">
-              <TextBlock Text="{Binding StreakBestDisplay}"
-                         FontSize="11" Foreground="{DynamicResource TextMutedBrush}" />
-            </Border>
-          </Grid>
-        </Border>
+        <!-- ========== Streak Card (VitalOS Medical-Style) ========== -->
+        <labs:SKCanvasView x:Name="StreakCanvas"
+                            AutomationProperties.AutomationId="Home_CardStreak"
+                            Height="68" Margin="0"
+                            IsVisible="{Binding HasDashboardData}"
+                            PaintSurface="OnPaintStreak" />
 
         <!-- ========== Recent Badges ========== -->
         <Border AutomationProperties.AutomationId="Home_CardBadges" Classes="Card StatsCard" Padding="12" BoxShadow="{DynamicResource CardShadow}"

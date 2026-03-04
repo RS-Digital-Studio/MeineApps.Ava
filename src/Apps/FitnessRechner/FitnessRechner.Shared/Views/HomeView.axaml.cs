@@ -1,9 +1,9 @@
+using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
 using FitnessRechner.Graphics;
 using FitnessRechner.ViewModels;
-using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 
 namespace FitnessRechner.Views;
@@ -137,6 +137,11 @@ public partial class HomeView : UserControl
         BtnQuickWeight?.InvalidateSurface();
         BtnQuickWater?.InvalidateSurface();
         BtnQuickCalories?.InvalidateSurface();
+
+        // Dashboard Cards (animierte Scan-Lines, Puls, EKG)
+        LevelCanvas?.InvalidateSurface();
+        ChallengeCanvas?.InvalidateSurface();
+        StreakCanvas?.InvalidateSurface();
     }
 
     // =====================================================================
@@ -208,42 +213,83 @@ public partial class HomeView : UserControl
     }
 
     // =====================================================================
-    // SkiaSharp Progress-Bars
+    // Dashboard Card Paint-Handler
     // =====================================================================
 
     /// <summary>
-    /// XP-Level-Fortschritt zeichnen (grün → accent).
+    /// Zeichnet die XP/Level-Bar im Medical-Design.
     /// </summary>
-    private void OnPaintLevelProgress(object? sender, SKPaintSurfaceEventArgs e)
+    private void OnPaintLevel(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
         var bounds = canvas.LocalClipBounds;
-
         if (DataContext is not MainViewModel vm) return;
 
-        LinearProgressVisualization.Render(canvas, bounds,
-            (float)vm.LevelProgress,
-            new SKColor(0x22, 0xC5, 0x5E), // Grün Start
-            new SKColor(0x16, 0xA3, 0x4A), // Grün End
-            showText: false, glowEnabled: true);
+        // Level aus LevelLabel parsen (Format: "Lv. X")
+        int level = 0;
+        if (vm.LevelLabel is { } label)
+        {
+            var numStr = label.Replace("Lv.", "").Replace("Lv", "").Trim();
+            int.TryParse(numStr, out level);
+        }
+
+        LevelProgressRenderer.Render(canvas, bounds,
+            level, (float)vm.LevelProgress, vm.XpDisplay ?? "", _renderTime);
     }
 
     /// <summary>
-    /// Challenge-Fortschritt zeichnen (indigo → lila).
+    /// Zeichnet die Challenge-Card im Medical-Design.
     /// </summary>
-    private void OnPaintChallengeProgress(object? sender, SKPaintSurfaceEventArgs e)
+    private void OnPaintChallenge(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
         var bounds = canvas.LocalClipBounds;
-
         if (DataContext is not MainViewModel vm) return;
 
-        LinearProgressVisualization.Render(canvas, bounds,
+        ChallengeCardRenderer.Render(canvas, bounds,
+            vm.ChallengeTitleText ?? "",
             (float)vm.ChallengeProgressValue,
-            new SKColor(0x63, 0x66, 0xF1), // Indigo Start
-            new SKColor(0x8B, 0x5C, 0xF6), // Lila End
-            showText: false, glowEnabled: false);
+            ParseXpReward(vm.ChallengeXpText),
+            vm.IsChallengeCompleted,
+            _renderTime);
+    }
+
+    /// <summary>
+    /// Zeichnet die Streak-Card im Medical-Design.
+    /// </summary>
+    private void OnPaintStreak(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+        if (DataContext is not MainViewModel vm) return;
+
+        int currentStreak = ParseIntFromDisplay(vm.StreakDisplay);
+        int bestStreak = ParseIntFromDisplay(vm.StreakBestDisplay);
+
+        StreakCardRenderer.Render(canvas, bounds,
+            currentStreak, bestStreak, vm.HasStreak, _renderTime);
+    }
+
+    /// <summary>
+    /// Parst die XP-Belohnung aus dem ChallengeXpText (Format: "+25 XP").
+    /// </summary>
+    private static int ParseXpReward(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return 0;
+        var numStr = new string(text.Where(c => char.IsDigit(c)).ToArray());
+        return int.TryParse(numStr, out int val) ? val : 0;
+    }
+
+    /// <summary>
+    /// Parst eine Ganzzahl aus einem Display-Text (z.B. "7 Tage" → 7).
+    /// </summary>
+    private static int ParseIntFromDisplay(string? text)
+    {
+        if (string.IsNullOrEmpty(text)) return 0;
+        var numStr = new string(text.Where(c => char.IsDigit(c)).ToArray());
+        return int.TryParse(numStr, out int val) ? val : 0;
     }
 }

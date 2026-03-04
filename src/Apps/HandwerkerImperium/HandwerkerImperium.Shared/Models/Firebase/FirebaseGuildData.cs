@@ -40,4 +40,26 @@ public class FirebaseGuildData
 
     [JsonPropertyName("createdAt")]
     public string CreatedAt { get; set; } = "";
+
+    // ── Neue Properties für Gilden-Überarbeitung ──
+
+    /// <summary>Maximale Mitgliederzahl (Basis, ohne Boni).</summary>
+    [JsonPropertyName("maxMembers")]
+    public int MaxMembers { get; set; } = 20;
+
+    /// <summary>Aktuelle Liga-ID: "bronze", "silver", "gold", "diamond".</summary>
+    [JsonPropertyName("leagueId")]
+    public string LeagueId { get; set; } = "bronze";
+
+    /// <summary>Gesammelte Liga-Punkte in der aktuellen Saison.</summary>
+    [JsonPropertyName("leaguePoints")]
+    public int LeaguePoints { get; set; }
+
+    /// <summary>Aktuelles Hallen-Level (bestimmt Gebäude-Freischaltungen).</summary>
+    [JsonPropertyName("hallLevel")]
+    public int HallLevel { get; set; } = 1;
+
+    /// <summary>Gilden-Beschreibung (vom Leader editierbar).</summary>
+    [JsonPropertyName("description")]
+    public string Description { get; set; } = "";
 }

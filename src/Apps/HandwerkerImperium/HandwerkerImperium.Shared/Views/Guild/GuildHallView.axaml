@@ -1,0 +1,145 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:models="using:HandwerkerImperium.Models"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Guild.GuildHallView"
+             x:DataType="vm:GuildHallViewModel">
+
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="GuildHall_Grid_Root">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0" Padding="16,12" CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#92400E" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+        <!-- Zurück -->
+        <Button Grid.Column="0" Classes="Text" Padding="4"
+                Command="{Binding NavigateBackCommand}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+        </Button>
+        <!-- Titel -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="OfficeBuildingCog" Width="24" Height="24"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          <TextBlock Text="{loc:Translate GuildHallTitle}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+        <!-- Level-Badge -->
+        <Border Grid.Column="2" CornerRadius="8" Padding="8,4">
+          <Border.Background>
+            <SolidColorBrush Color="#D97706" Opacity="0.3" />
+          </Border.Background>
+          <TextBlock Text="{Binding HallLevelDisplay}"
+                     FontSize="12" FontWeight="Bold"
+                     Foreground="{StaticResource CraftGoldBrush}" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- CONTENT                                                           -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12" Margin="16,16,16,80">
+
+        <!-- Loading -->
+        <StackPanel Spacing="8" HorizontalAlignment="Center"
+                    IsVisible="{Binding IsLoading}" Margin="0,40,0,0">
+          <mi:MaterialIcon Kind="Loading" Width="32" Height="32"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Effekte-Zusammenfassung -->
+        <Border Classes="Card StatsCard"
+                IsVisible="{Binding HallEffectsSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+          <StackPanel Spacing="6">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="ShieldStar" Width="18" Height="18"
+                               Foreground="{StaticResource CraftGoldBrush}" />
+              <TextBlock Text="{loc:Translate ActiveEffects}"
+                         FontSize="14" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}" />
+            </StackPanel>
+            <TextBlock Text="{Binding HallEffectsSummary}"
+                       FontSize="12"
+                       Foreground="{DynamicResource SuccessBrush}"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <!-- Gebäude-Liste -->
+        <ItemsControl ItemsSource="{Binding Buildings}"
+                      IsVisible="{Binding HasBuildings}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="models:GuildBuildingDisplay">
+              <Border Classes="Card" Padding="12" Margin="0,0,0,8">
+                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+
+                  <!-- Gebäude-Icon -->
+                  <Border Width="48" Height="48" CornerRadius="12"
+                          VerticalAlignment="Center">
+                    <Border.Background>
+                      <SolidColorBrush Color="{Binding Color}" Opacity="0.15" />
+                    </Border.Background>
+                    <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                     Width="26" Height="26"
+                                     Foreground="{Binding Color}"
+                                     HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Border>
+
+                  <!-- Name + Info -->
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding Name}"
+                               FontSize="14" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimaryBrush}" />
+                    <TextBlock FontSize="11"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}">
+                      <TextBlock.Text>
+                        <MultiBinding StringFormat="Lv.{0}/{1}">
+                          <Binding Path="CurrentLevel" />
+                          <Binding Path="MaxLevel" />
+                        </MultiBinding>
+                      </TextBlock.Text>
+                    </TextBlock>
+                    <TextBlock Text="{Binding EffectDescription}"
+                               FontSize="11"
+                               Foreground="{DynamicResource SuccessBrush}"
+                               TextTrimming="CharacterEllipsis" />
+                  </StackPanel>
+
+                  <!-- Upgrade-Button (nur wenn freigeschaltet, nicht Max-Level, nicht am Upgraden) -->
+                  <Button Grid.Column="2" Classes="Primary"
+                          Padding="10,6"
+                          VerticalAlignment="Center"
+                          IsVisible="{Binding IsUnlocked}"
+                          IsEnabled="{Binding !IsMaxLevel}"
+                          Command="{Binding $parent[ItemsControl].((vm:GuildHallViewModel)DataContext).UpgradeBuildingCommand}"
+                          CommandParameter="{Binding BuildingIdStr}">
+                    <mi:MaterialIcon Kind="ArrowUpBold" Width="16" Height="16" />
+                  </Button>
+
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

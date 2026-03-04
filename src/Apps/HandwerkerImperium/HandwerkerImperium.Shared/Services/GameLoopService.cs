@@ -12,7 +12,7 @@ namespace HandwerkerImperium.Services;
 /// worker state updates, research timers, and event checks.
 /// Auto-saves every 30 seconds.
 /// </summary>
-public class GameLoopService : IGameLoopService, IDisposable
+public sealed class GameLoopService : IGameLoopService, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
@@ -31,6 +31,10 @@ public class GameLoopService : IGameLoopService, IDisposable
     private readonly ILeaderboardService? _leaderboardService;
     private readonly IBountyService? _bountyService;
     private readonly IGuildWarService? _guildWarService;
+    private readonly IGuildWarSeasonService? _guildWarSeasonService;
+    private readonly IGuildBossService? _guildBossService;
+    private readonly IGuildHallService? _guildHallService;
+    private readonly IGuildAchievementService? _guildAchievementService;
     private DispatcherTimer? _timer;
     private DateTime _sessionStart;
     private bool _isPaused;
@@ -57,6 +61,10 @@ public class GameLoopService : IGameLoopService, IDisposable
     private const int BountyCheckIntervalTicks = 120; // Bounty-Fortschritt alle 2 Minuten prüfen
     private const int GuildWarCheckIntervalTicks = 300; // Guild-War alle 5 Minuten prüfen
     private const int QuickJobCheckIntervalTicks = 60; // QuickJob Rotation + Deadline-Check alle 60 Ticks
+    private const int GuildBossCheckIntervalTicks = 60; // Boss-Status alle 60s prüfen
+    private const int GuildHallCheckIntervalTicks = 60; // Gebäude-Upgrades alle 60s prüfen
+    private const int GuildAchievementCheckIntervalTicks = 300; // Achievements alle 5 Minuten prüfen
+    private const int GuildWarSeasonCheckIntervalTicks = 300; // War-Saison Phasen alle 5 Minuten prüfen
 
     // Tier-1-Crafting-Materialien für MasterSmith (static readonly, keine Allokation pro Aufruf)
     private static readonly string[] Tier1CraftingProducts = ["planks", "pipes", "cables", "paint_mix", "roof_tiles"];
@@ -104,7 +112,11 @@ public class GameLoopService : IGameLoopService, IDisposable
         ICraftingService? craftingService = null,
         ILeaderboardService? leaderboardService = null,
         IBountyService? bountyService = null,
-        IGuildWarService? guildWarService = null)
+        IGuildWarService? guildWarService = null,
+        IGuildWarSeasonService? guildWarSeasonService = null,
+        IGuildBossService? guildBossService = null,
+        IGuildHallService? guildHallService = null,
+        IGuildAchievementService? guildAchievementService = null)
     {
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
@@ -123,6 +135,10 @@ public class GameLoopService : IGameLoopService, IDisposable
         _leaderboardService = leaderboardService;
         _bountyService = bountyService;
         _guildWarService = guildWarService;
+        _guildWarSeasonService = guildWarSeasonService;
+        _guildBossService = guildBossService;
+        _guildHallService = guildHallService;
+        _guildAchievementService = guildAchievementService;
     }
 
     public void Start()
@@ -475,6 +491,28 @@ public class GameLoopService : IGameLoopService, IDisposable
         // 9p. Guild-War Prüfung (alle 5 Minuten, Offset 240)
         if (_tickCount % GuildWarCheckIntervalTicks == 240 && _guildWarService != null)
             _guildWarService.CheckAndFinalizeWarAsync().FireAndForget();
+
+        // 9q. Gilden-Boss Status prüfen (alle 60s, Offset 20)
+        if (_tickCount % GuildBossCheckIntervalTicks == 20 && _guildBossService != null)
+        {
+            _guildBossService.CheckBossStatusAsync().FireAndForget();
+            _guildBossService.SpawnBossIfNeededAsync().FireAndForget();
+        }
+
+        // 9r. Gilden-Hauptquartier Upgrade-Completion prüfen (alle 60s, Offset 40)
+        if (_tickCount % GuildHallCheckIntervalTicks == 40 && _guildHallService != null)
+            _guildHallService.CheckUpgradeCompletionAsync().FireAndForget();
+
+        // 9s. Gilden-Achievements prüfen (alle 5 Minuten, Offset 200)
+        if (_tickCount % GuildAchievementCheckIntervalTicks == 200 && _guildAchievementService != null)
+            _guildAchievementService.CheckAllAchievementsAsync().FireAndForget();
+
+        // 9t. War-Saison Phasenwechsel + Saisonende prüfen (alle 5 Minuten, Offset 260)
+        if (_tickCount % GuildWarSeasonCheckIntervalTicks == 260 && _guildWarSeasonService != null)
+        {
+            _guildWarSeasonService.CheckPhaseTransitionAsync().FireAndForget();
+            _guildWarSeasonService.CheckSeasonEndAsync().FireAndForget();
+        }
 
         // 9c. Reputation: Showroom-DailyReputationGain + Decay (einmal pro Tag, persistiert)
         if ((now - state.LastReputationDecay).TotalHours >= 24)

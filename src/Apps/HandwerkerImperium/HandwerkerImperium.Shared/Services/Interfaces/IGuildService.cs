@@ -44,22 +44,8 @@ public interface IGuildService
     /// <summary>Setzt den Spielernamen (wird in Preferences gespeichert).</summary>
     void SetPlayerName(string name);
 
-    // ── Gilden-Forschung ──
-
-    /// <summary>Lädt alle Gilden-Forschungen mit aktuellem Fortschritt von Firebase.</summary>
-    Task<List<GuildResearchDisplay>> GetGuildResearchAsync();
-
-    /// <summary>Leistet einen Geldbeitrag zu einer bestimmten Forschung.</summary>
-    Task<bool> ContributeToResearchAsync(string researchId, long amount);
-
-    /// <summary>Gibt die gecachten Forschungs-Effekte zurück (kein Firebase-Request).</summary>
-    GuildResearchEffects GetResearchEffects();
-
-    /// <summary>Berechnet max. Gilden-Mitglieder (20 + Forschungs-Boni).</summary>
+    /// <summary>Berechnet max. Gilden-Mitglieder (20 + Forschungs-Boni aus GuildMembership-Cache).</summary>
     int GetMaxMembers();
-
-    /// <summary>Prüft ob eine laufende Forschung abgeschlossen ist (Timer abgelaufen).</summary>
-    Task<bool> CheckResearchCompletionAsync();
 
     // ── Einladungs-System ──
 
@@ -91,4 +77,21 @@ public interface IGuildService
 
     /// <summary>Lehnt eine einzelne Einladung ab.</summary>
     Task<bool> DeclineInviteAsync(string guildId);
+
+    // ── Rollen-Management (3 Stufen: Leader/Officer/Member) ──
+
+    /// <summary>Befördert ein Mitglied zum Offizier (nur Leader/Officer).</summary>
+    Task<bool> PromoteToOfficerAsync(string targetUid);
+
+    /// <summary>Degradiert einen Offizier zum normalen Mitglied (nur Leader).</summary>
+    Task<bool> DemoteToMemberAsync(string targetUid);
+
+    /// <summary>Entfernt ein Mitglied aus der Gilde (nur Leader/Officer).</summary>
+    Task<bool> KickMemberAsync(string targetUid);
+
+    /// <summary>Überträgt die Gildenleitung an ein anderes Mitglied (nur Leader).</summary>
+    Task<bool> TransferLeadershipAsync(string targetUid);
+
+    /// <summary>Aktualisiert den lastActive-Zeitstempel des aktuellen Spielers.</summary>
+    Task UpdateLastActiveAsync();
 }

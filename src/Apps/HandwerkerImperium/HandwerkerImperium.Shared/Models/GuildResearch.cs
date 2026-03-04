@@ -61,9 +61,9 @@ public class GuildResearchDefinition
     public decimal EffectValue { get; init; }
 
     /// <summary>
-    /// Gibt alle 18 Gilden-Forschungen in 6 Kategorien zurück.
+    /// Gibt alle 18 Gilden-Forschungen in 6 Kategorien zurück (gecacht).
     /// </summary>
-    public static List<GuildResearchDefinition> GetAll() =>
+    private static readonly List<GuildResearchDefinition> _allDefinitions =
     [
         // ── Infrastruktur (Gilden-Ausbau) ──
         new()
@@ -203,6 +203,8 @@ public class GuildResearchDefinition
             EffectType = GuildResearchEffectType.PrestigePointBonus, EffectValue = 0.10m
         }
     ];
+
+    public static List<GuildResearchDefinition> GetAll() => _allDefinitions;
 
     /// <summary>
     /// Kategorie-Farbe für UI-Darstellung.

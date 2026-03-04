@@ -4,49 +4,46 @@ using SkiaSharp;
 namespace HandwerkerImperium.Graphics;
 
 /// <summary>
-/// Rendert den Gilden-Forschungsbaum als 2D-Netzwerk.
-/// 18 Items in 6 Kategorien, festes Baum-Layout:
+/// Rendert die Gilden-Forschung als 2-Spalten-Layout.
+/// 18 Items in 6 unabhängigen Kategorien (3 Paare à 2 Spalten):
 ///
-///      [Infra 1]
-///          ↓
-///      [Infra 2]
-///          ↓
-///      [Infra 3]
-///     ╱         ╲
-/// [Wirt 1]   [Wiss 1]
-///     ↓          ↓
-/// [Wirt 2]   [Wiss 2]
-///     ↓          ↓
-/// [Wirt 3]   [Wiss 3]
-///     ↓          ╱
-/// [Wirt 4]──╱
-///     ╲ ╱
-///  [Logistik 1]
-///       ↓
-///  [Logistik 2]
-///       ↓
-///  [Logistik 3]
-///     ╱         ╲
-/// [Arbeit 1] [Meister 1]
-///     ↓          ↓
-/// [Arbeit 2] [Meister 2]
+/// [Infra 1]   [Wirt 1]
+///     ↓           ↓
+/// [Infra 2]   [Wirt 2]
+///     ↓           ↓
+/// [Infra 3]   [Wirt 3]
+///                 ↓
+///             [Wirt 4]
+///    ─ ─ ─ ─ ─ ─ ─ ─ ─
+/// [Wiss 1]    [Log 1]
+///     ↓           ↓
+/// [Wiss 2]    [Log 2]
+///     ↓           ↓
+/// [Wiss 3]    [Log 3]
+///    ─ ─ ─ ─ ─ ─ ─ ─ ─
+/// [Arbeit 1]  [Meister 1]
+///     ↓           ↓
+/// [Arbeit 2]  [Meister 2]
 ///     ↓
 /// [Arbeit 3]
 /// </summary>
-public class GuildResearchTreeRenderer : IDisposable
+public sealed class GuildResearchTreeRenderer : IDisposable
 {
     private bool _disposed;
     private float _time;
 
     // Layout-Konstanten
     private const float NodeSize = 68;
-    private const float RowHeight = 110;
-    private const float ProgressBarHeight = 7;
-    private const float TopPadding = 24;
-    private const int TotalRows = 13;
+    private const float RowHeight = 120;         // Platz für Name + Kosten unter Nodes
+    private const float SectionGap = 50;         // Abstand zwischen Kategorie-Paaren
+    private const float ProgressBarHeight = 10;  // Größerer Balken für bessere Lesbarkeit
+    private const float TopPadding = 55;         // Platz für Kategorie-Header
+    private const int TotalRows = 12;            // 0-11 (3 Sektionen à 4 Zeilen)
 
-    // Fließende Partikel entlang erforschter Verbindungen
-    private readonly List<FlowParticle> _flowParticles = [];
+    // Fließende Partikel entlang erforschter Verbindungen (Array + Swap-Remove, 0 GC)
+    private const int MaxFlowParticles = 16;
+    private readonly FlowParticle[] _flowParticles = new FlowParticle[MaxFlowParticles];
+    private int _flowParticleCount;
     private float _particleTimer;
 
     // Farben pro Kategorie
@@ -70,6 +67,8 @@ public class GuildResearchTreeRenderer : IDisposable
 
     // Gecachte Font- und Path-Objekte (vermeidet Allokationen pro Frame)
     private readonly SKFont _percentFont = new() { Embolden = true, Edging = SKFontEdging.Antialias };
+    private readonly SKFont _nameFont = new() { Edging = SKFontEdging.Antialias };
+    private readonly SKFont _costFont = new() { Edging = SKFontEdging.Antialias };
     private readonly SKPath _connectionPath = new();
     private readonly SKPath _arrowPath = new();
     private readonly SKPath _arcPath = new();
@@ -81,49 +80,57 @@ public class GuildResearchTreeRenderer : IDisposable
     private static readonly SKMaskFilter _glowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
     private readonly SKPaint _glowPaint = new() { IsAntialias = true, MaskFilter = _glowFilter };
 
+    // Gecachte Positionen (vermeidet List-Allokation pro Frame)
+    private readonly List<SKPoint> _cachedPositions = new(18);
+    private float _lastCenterX = float.NaN;
+    private float _lastStartY = float.NaN;
+
+    // Gecachter Namenscache (TruncateName erstellt sonst Strings pro Frame)
+    private readonly Dictionary<string, string> _truncatedNameCache = new();
+
     // ═══════════════════════════════════════════════════════════════════════
     // LAYOUT-MAP: 18 Forschungen → (Zeile, Spalte) Positionen
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
     /// Feste Zuordnung: Index in GetAll()-Liste → (row, column).
-    /// Column: 0 = links, 1 = mitte, 2 = rechts.
+    /// 2-Spalten-Layout: col 0 = links, col 2 = rechts.
+    /// 3 Sektionen mit Lücke dazwischen (Zeilen 4, 8 sind leer).
     /// </summary>
     private static readonly (int row, int col)[] NodeLayout =
     [
-        // Infrastruktur 1-3 (Indices 0-2)
-        (0, 1), (1, 1), (2, 1),
-        // Wirtschaft 1-4 (Indices 3-6)
-        (3, 0), (4, 0), (5, 0), (6, 0),
-        // Wissen 1-3 (Indices 7-9)
-        (3, 2), (4, 2), (5, 2),
-        // Logistik 1-3 (Indices 10-12)
-        (7, 1), (8, 1), (9, 1),
-        // Arbeitsmarkt 1-3 (Indices 13-15)
-        (10, 0), (11, 0), (12, 0),
-        // Meisterschaft 1-2 (Indices 16-17)
-        (10, 2), (11, 2)
+        // ── Sektion 1 ──
+        // Infrastruktur 1-3 (Indices 0-2, links)
+        (0, 0), (1, 0), (2, 0),
+        // Wirtschaft 1-4 (Indices 3-6, rechts)
+        (0, 2), (1, 2), (2, 2), (3, 2),
+
+        // ── Sektion 2 ──
+        // Wissen 1-3 (Indices 7-9, links)
+        (5, 0), (6, 0), (7, 0),
+        // Logistik 1-3 (Indices 10-12, rechts)
+        (5, 2), (6, 2), (7, 2),
+
+        // ── Sektion 3 ──
+        // Arbeitsmarkt 1-3 (Indices 13-15, links)
+        (9, 0), (10, 0), (11, 0),
+        // Meisterschaft 1-2 (Indices 16-17, rechts)
+        (9, 2), (10, 2)
     ];
 
     /// <summary>
-    /// Verbindungen zwischen Nodes (von-Index → nach-Index).
+    /// Verbindungen zwischen Nodes (NUR innerhalb einer Kategorie - Kategorien sind unabhängig).
     /// </summary>
     private static readonly (int from, int to)[] Connections =
     [
         // Infrastruktur linear
         (0, 1), (1, 2),
-        // Infrastruktur 3 verzweigt
-        (2, 3), (2, 7),
         // Wirtschaft linear
         (3, 4), (4, 5), (5, 6),
         // Wissen linear
         (7, 8), (8, 9),
-        // Wirtschaft 4 + Wissen 3 → Logistik 1 (Zusammenführung)
-        (6, 10), (9, 10),
         // Logistik linear
         (10, 11), (11, 12),
-        // Logistik 3 verzweigt
-        (12, 13), (12, 16),
         // Arbeitsmarkt linear
         (13, 14), (14, 15),
         // Meisterschaft linear
@@ -131,10 +138,23 @@ public class GuildResearchTreeRenderer : IDisposable
     ];
 
     /// <summary>
+    /// Erste Indizes jeder Kategorie (für Header-Rendering).
+    /// </summary>
+    private static readonly (int firstIndex, GuildResearchCategory cat)[] CategorySections =
+    [
+        (0, GuildResearchCategory.Infrastructure),
+        (3, GuildResearchCategory.Economy),
+        (7, GuildResearchCategory.Knowledge),
+        (10, GuildResearchCategory.Logistics),
+        (13, GuildResearchCategory.Workforce),
+        (16, GuildResearchCategory.Mastery),
+    ];
+
+    /// <summary>
     /// Gesamthöhe des Baums in Pixeln.
     /// </summary>
     public static float CalculateTotalHeight() =>
-        TopPadding + TotalRows * RowHeight + 40;
+        TopPadding + TotalRows * RowHeight + 2 * SectionGap + 60;
 
     /// <summary>
     /// Rendert den gesamten Gilden-Forschungsbaum.
@@ -150,13 +170,19 @@ public class GuildResearchTreeRenderer : IDisposable
         var positions = CalculatePositions(centerX, bounds.Top + TopPadding);
         if (positions.Count != items.Count) return; // Sicherheitscheck
 
-        // 1. Verbindungslinien (hinter den Nodes)
+        // 0. Sektions-Trennlinien
+        DrawSectionDividers(canvas, centerX, bounds.Top + TopPadding, bounds.Width);
+
+        // 1. Kategorie-Header (Icon-Badges über jeder Spalte)
+        DrawCategoryHeaders(canvas, positions, items);
+
+        // 2. Verbindungslinien (hinter den Nodes)
         DrawConnections(canvas, items, positions);
 
-        // 2. Fließende Partikel
+        // 3. Fließende Partikel
         UpdateAndDrawFlowParticles(canvas, items, positions, deltaTime);
 
-        // 3. Nodes
+        // 4. Nodes
         for (int i = 0; i < items.Count && i < positions.Count; i++)
         {
             DrawNode(canvas, items[i], positions[i], GetCategoryColor(items[i].Category), i);
@@ -182,13 +208,104 @@ public class GuildResearchTreeRenderer : IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // SEKTIONS-TRENNLINIEN & KATEGORIE-HEADER
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeichnet horizontale Trennlinien zwischen den 3 Sektions-Paaren.
+    /// </summary>
+    private void DrawSectionDividers(SKCanvas canvas, float centerX, float startY, float width)
+    {
+        float halfW = width * 0.35f;
+        float left = centerX - halfW;
+        float right = centerX + halfW;
+
+        // Trennlinie nach Sektion 1 (zwischen Zeile 3 und 5)
+        float divY1 = startY + 4 * RowHeight + SectionGap * 0.5f;
+        // Trennlinie nach Sektion 2 (zwischen Zeile 7 und 9)
+        float divY2 = startY + 8 * RowHeight + SectionGap * 1.5f;
+
+        // Dezente gestrichelte Linien (kein Array-Allokation pro Frame)
+        _stroke.Color = LineLocked.WithAlpha(40);
+        _stroke.StrokeWidth = 1f;
+        using var dash = SKPathEffect.CreateDash(DashIntervals, 0);
+        _stroke.PathEffect = dash;
+        canvas.DrawLine(left, divY1, right, divY1, _stroke);
+        canvas.DrawLine(left, divY2, right, divY2, _stroke);
+        _stroke.PathEffect = null;
+    }
+
+    /// <summary>
+    /// Zeichnet Kategorie-Badges über der ersten Node jeder Kategorie.
+    /// </summary>
+    private void DrawCategoryHeaders(SKCanvas canvas, List<SKPoint> positions, List<GuildResearchDisplay> items)
+    {
+        _nameFont.Size = 11;
+        _nameFont.Embolden = true;
+
+        foreach (var (firstIndex, cat) in CategorySections)
+        {
+            if (firstIndex >= positions.Count || firstIndex >= items.Count) continue;
+
+            var pos = positions[firstIndex];
+            var color = GetCategoryColor(cat);
+            float headerY = pos.Y - NodeSize / 2 - 22;
+
+            // Hintergrund-Pill
+            string label = GetCategoryLabel(cat);
+            float textW = _nameFont.MeasureText(label);
+            float pillW = textW + 18;
+            float pillH = 20;
+            float pillX = pos.X - pillW / 2;
+
+            _fill.Color = color.WithAlpha(30);
+            canvas.DrawRoundRect(pillX, headerY - pillH / 2, pillW, pillH, 10, 10, _fill);
+            _stroke.Color = color.WithAlpha(70);
+            _stroke.StrokeWidth = 1f;
+            _stroke.PathEffect = null;
+            canvas.DrawRoundRect(pillX, headerY - pillH / 2, pillW, pillH, 10, 10, _stroke);
+
+            // Textschatten für Lesbarkeit
+            _text.Color = new SKColor(0, 0, 0, 60);
+            canvas.DrawText(label, pos.X + 0.5f, headerY + 4.5f, SKTextAlign.Center, _nameFont, _text);
+            // Label-Text
+            _text.Color = color.WithAlpha(220);
+            canvas.DrawText(label, pos.X, headerY + 4, SKTextAlign.Center, _nameFont, _text);
+        }
+
+        _nameFont.Embolden = false;
+    }
+
+    /// <summary>
+    /// Kurzer deutscher Kategorie-Name.
+    /// </summary>
+    private static string GetCategoryLabel(GuildResearchCategory cat) => cat switch
+    {
+        GuildResearchCategory.Infrastructure => "Infrastruktur",
+        GuildResearchCategory.Economy => "Wirtschaft",
+        GuildResearchCategory.Knowledge => "Wissen",
+        GuildResearchCategory.Logistics => "Logistik",
+        GuildResearchCategory.Workforce => "Arbeitsmarkt",
+        GuildResearchCategory.Mastery => "Meisterschaft",
+        _ => ""
+    };
+
+    // ═══════════════════════════════════════════════════════════════════════
     // POSITIONEN
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static List<SKPoint> CalculatePositions(float centerX, float startY)
+    private List<SKPoint> CalculatePositions(float centerX, float startY)
     {
-        var positions = new List<SKPoint>(18);
-        float spread = NodeSize * 1.6f; // Horizontaler Abstand links/rechts
+        // Nur neu berechnen wenn sich die Parameter geändert haben
+        if (_cachedPositions.Count == NodeLayout.Length &&
+            MathF.Abs(_lastCenterX - centerX) < 0.5f &&
+            MathF.Abs(_lastStartY - startY) < 0.5f)
+            return _cachedPositions;
+
+        _lastCenterX = centerX;
+        _lastStartY = startY;
+        _cachedPositions.Clear();
+        float spread = NodeSize * 1.7f; // Spalten-Abstand (links/rechts vom Zentrum)
 
         for (int i = 0; i < NodeLayout.Length; i++)
         {
@@ -200,9 +317,12 @@ public class GuildResearchTreeRenderer : IDisposable
                 _ => centerX
             };
             float y = startY + row * RowHeight;
-            positions.Add(new SKPoint(x, y));
+            // Sektions-Abstände zwischen Kategorie-Paaren
+            if (row >= 5) y += SectionGap;
+            if (row >= 9) y += SectionGap;
+            _cachedPositions.Add(new SKPoint(x, y));
         }
-        return positions;
+        return _cachedPositions;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -228,28 +348,24 @@ public class GuildResearchTreeRenderer : IDisposable
 
             var lineColor = GetCategoryColor(toItem.Category);
 
+            // Innerhalb einer Spalte → gerade vertikale Linie
+            float lineX = fromPos.X;
             float startY = fromPos.Y + NodeSize / 2 + 6;
             float endY = toPos.Y - NodeSize / 2 - 6;
-
-            // Bezier-Kurve (gecachter Path)
-            _connectionPath.Rewind();
-            _connectionPath.MoveTo(fromPos.X, startY);
-            float midY = (startY + endY) / 2;
-            _connectionPath.CubicTo(fromPos.X, midY, toPos.X, midY, toPos.X, endY);
 
             if (fromDone && (toDone || toActive))
             {
                 // Erforschte Verbindung: Farbig mit Glow
-                _stroke.Color = lineColor.WithAlpha(35);
+                _stroke.Color = lineColor.WithAlpha(30);
                 _stroke.StrokeWidth = 8f;
                 _stroke.PathEffect = null;
-                canvas.DrawPath(_connectionPath, _stroke);
+                canvas.DrawLine(lineX, startY, lineX, endY, _stroke);
 
                 _stroke.Color = lineColor.WithAlpha(toDone ? (byte)200 : (byte)150);
-                _stroke.StrokeWidth = 3.5f;
-                canvas.DrawPath(_connectionPath, _stroke);
+                _stroke.StrokeWidth = 3f;
+                canvas.DrawLine(lineX, startY, lineX, endY, _stroke);
 
-                DrawArrowHead(canvas, toPos.X, endY, lineColor.WithAlpha(200));
+                DrawArrowHead(canvas, lineX, endY, lineColor.WithAlpha(200));
             }
             else if (fromDone && toLocked)
             {
@@ -258,18 +374,18 @@ public class GuildResearchTreeRenderer : IDisposable
                 _stroke.StrokeWidth = 2.5f;
                 using var dash = SKPathEffect.CreateDash(DashIntervals, _time * 12 % 10);
                 _stroke.PathEffect = dash;
-                canvas.DrawPath(_connectionPath, _stroke);
+                canvas.DrawLine(lineX, startY, lineX, endY, _stroke);
                 _stroke.PathEffect = null;
 
-                DrawArrowHead(canvas, toPos.X, endY, lineColor.WithAlpha(80));
+                DrawArrowHead(canvas, lineX, endY, lineColor.WithAlpha(80));
             }
             else
             {
                 // Gesperrt: Dezentes Grau
-                _stroke.Color = LineLocked;
-                _stroke.StrokeWidth = 2f;
+                _stroke.Color = LineLocked.WithAlpha(60);
+                _stroke.StrokeWidth = 1.5f;
                 _stroke.PathEffect = null;
-                canvas.DrawPath(_connectionPath, _stroke);
+                canvas.DrawLine(lineX, startY, lineX, endY, _stroke);
             }
         }
     }
@@ -295,6 +411,10 @@ public class GuildResearchTreeRenderer : IDisposable
         float cx = pos.X;
         float cy = pos.Y;
 
+        // Schatten unter dem Node für Tiefenwirkung
+        _fill.Color = new SKColor(0, 0, 0, 25);
+        canvas.DrawCircle(cx + 1, cy + 3, NodeSize / 2 + 1, _fill);
+
         // Glow für abgeschlossene Nodes
         if (item.IsCompleted)
         {
@@ -306,11 +426,11 @@ public class GuildResearchTreeRenderer : IDisposable
         // Hintergrundkreis
         if (item.IsLocked)
         {
-            _fill.Color = new SKColor(0x28, 0x20, 0x18, 160);
+            _fill.Color = new SKColor(0x22, 0x1A, 0x12, 180);
             canvas.DrawCircle(cx, cy, NodeSize / 2, _fill);
 
             // Gepunkteter Rahmen
-            _stroke.Color = LineLocked.WithAlpha(100);
+            _stroke.Color = LineLocked.WithAlpha(80);
             _stroke.StrokeWidth = 1.5f;
             using var dotEffect = SKPathEffect.CreateDash(DotIntervals, _time * 4 % 6);
             _stroke.PathEffect = dotEffect;
@@ -350,9 +470,16 @@ public class GuildResearchTreeRenderer : IDisposable
             canvas.DrawCircle(cx, cy, NodeSize / 2, _stroke);
         }
 
+        // Innerer Licht-Effekt (fake Highlight für Tiefe)
+        if (!item.IsLocked)
+        {
+            _fill.Color = SKColors.White.WithAlpha(12);
+            canvas.DrawCircle(cx, cy - NodeSize * 0.1f, NodeSize * 0.25f, _fill);
+        }
+
         // Icon in der Mitte
         float iconSize = NodeSize * 0.55f;
-        byte iconAlpha = item.IsLocked ? (byte)80 : (byte)220;
+        byte iconAlpha = item.IsLocked ? (byte)60 : (byte)220;
         var iconColor = item.IsLocked ? LineLocked.WithAlpha(iconAlpha)
             : item.IsResearching ? ResearchingColor.WithAlpha(iconAlpha)
             : catColor.WithAlpha(iconAlpha);
@@ -371,6 +498,12 @@ public class GuildResearchTreeRenderer : IDisposable
         else
         {
             GuildResearchIconRenderer.DrawIcon(canvas, cx, cy, iconSize, item.Category, _fill, _stroke);
+        }
+
+        // Lock-Badge für gesperrte Nodes (oben rechts, analog zum Häkchen)
+        if (item.IsLocked)
+        {
+            DrawLockBadge(canvas, cx + NodeSize / 2 - 4, cy - NodeSize / 2 + 4);
         }
 
         // Tier-Indikator (I, II, III, IV Punkte)
@@ -401,8 +534,40 @@ public class GuildResearchTreeRenderer : IDisposable
 
         // Fortschrittsbalken unter dem Icon
         float barY = cy + NodeSize / 2 + 6;
-        float barW = NodeSize * 1.0f;
+        float barW = NodeSize * 1.1f;
         DrawProgressBar(canvas, cx - barW / 2, barY, barW, ProgressBarHeight, item, catColor);
+
+        // Forschungsname unter dem Fortschrittsbalken
+        float nameY = barY + ProgressBarHeight + 13;
+        _nameFont.Size = 11;
+        _nameFont.Embolden = true;
+        string displayName = TruncateName(item.Name, 16);
+        // Textschatten für Lesbarkeit auf dem Pergament
+        _text.Color = new SKColor(0, 0, 0, 60);
+        canvas.DrawText(displayName, cx + 0.5f, nameY + 0.5f, SKTextAlign.Center, _nameFont, _text);
+        // Name in heller Farbe
+        _text.Color = item.IsLocked ? TextMuted.WithAlpha(150) :
+            item.IsCompleted ? catColor.WithAlpha(240) : TextPrimary;
+        canvas.DrawText(displayName, cx, nameY, SKTextAlign.Center, _nameFont, _text);
+        _nameFont.Embolden = false;
+
+        // Kosten (offen) oder Effekt (abgeschlossen) unter dem Namen
+        float infoY = nameY + 13;
+        _costFont.Size = 10;
+        if (item.IsCompleted)
+        {
+            // Abgeschlossen: Effekt in Kategorie-Farbe
+            _text.Color = catColor.WithAlpha(200);
+            canvas.DrawText(FormatEffect(item.EffectType, item.EffectValue),
+                cx, infoY, SKTextAlign.Center, _costFont, _text);
+        }
+        else
+        {
+            // Offen: Kosten-Anzeige
+            _text.Color = item.IsLocked ? TextMuted.WithAlpha(120) : new SKColor(0xD4, 0xA3, 0x73);
+            canvas.DrawText(FormatCost(item.Cost, item.Progress),
+                cx, infoY, SKTextAlign.Center, _costFont, _text);
+        }
 
         // Glow-Effekt auf aktiven/forschenden Nodes
         if (item.IsResearching)
@@ -479,6 +644,34 @@ public class GuildResearchTreeRenderer : IDisposable
     }
 
     /// <summary>
+    /// Lock-Badge für gesperrte Nodes (dunkler Kreis mit Schloss-Symbol).
+    /// </summary>
+    private void DrawLockBadge(SKCanvas canvas, float cx, float cy)
+    {
+        // Dunkler Hintergrund-Kreis
+        _fill.Color = new SKColor(0x35, 0x28, 0x1A);
+        canvas.DrawCircle(cx, cy, 8, _fill);
+        _stroke.Color = LineLocked.WithAlpha(120);
+        _stroke.StrokeWidth = 1f;
+        _stroke.PathEffect = null;
+        canvas.DrawCircle(cx, cy, 8, _stroke);
+
+        // Schloss-Symbol
+        _stroke.Color = LineLocked.WithAlpha(200);
+        _stroke.StrokeWidth = 1.2f;
+        float s = 3f;
+
+        // Bügel (Halbkreis oben)
+        _arcPath.Rewind();
+        _arcPath.AddArc(new SKRect(cx - s * 0.6f, cy - s * 1.1f, cx + s * 0.6f, cy + s * 0.1f), 180, 180);
+        canvas.DrawPath(_arcPath, _stroke);
+
+        // Schloss-Körper (Rechteck unten)
+        _fill.Color = LineLocked.WithAlpha(160);
+        canvas.DrawRect(cx - s * 0.8f, cy - s * 0.05f, s * 1.6f, s * 1.2f, _fill);
+    }
+
+    /// <summary>
     /// Linearer Fortschrittsbalken unter dem Node.
     /// </summary>
     private void DrawProgressBar(SKCanvas canvas, float x, float y, float w, float h,
@@ -486,8 +679,7 @@ public class GuildResearchTreeRenderer : IDisposable
     {
         // Hintergrund
         _fill.Color = ProgressBg;
-        using (var bgRoundRect = new SKRoundRect(new SKRect(x, y, x + w, y + h), 3))
-            canvas.DrawRoundRect(bgRoundRect, _fill);
+        canvas.DrawRoundRect(new SKRect(x, y, x + w, y + h), 4, 4, _fill);
 
         float progress;
         SKColor barColor;
@@ -509,21 +701,19 @@ public class GuildResearchTreeRenderer : IDisposable
 
             // Basis-Füllung (dunklere Variante)
             _fill.Color = barColor.WithAlpha(160);
-            using (var fillRoundRect = new SKRoundRect(fillRect, 3))
-                canvas.DrawRoundRect(fillRoundRect, _fill);
+            canvas.DrawRoundRect(fillRect, 4, 4, _fill);
 
             // Hellere Schicht rechts (simuliert Gradient ohne Shader-Allokation)
             var halfRect = new SKRect(x + fillW * 0.4f, y, x + fillW, y + h);
             _fill.Color = barColor;
-            using (var halfRoundRect = new SKRoundRect(halfRect, 3))
-                canvas.DrawRoundRect(halfRoundRect, _fill);
+            canvas.DrawRoundRect(halfRect, 4, 4, _fill);
 
             // Glanz oben
             _fill.Color = SKColors.White.WithAlpha(35);
             canvas.DrawRect(x + 1, y, fillW - 2, h * 0.4f, _fill);
         }
 
-        // Prozent-Text
+        // Prozent-Text (größer und lesbarer)
         if (item.IsActive || item.IsCompleted || item.IsResearching)
         {
             string pct;
@@ -536,7 +726,7 @@ public class GuildResearchTreeRenderer : IDisposable
             {
                 pct = $"{(int)(progress * 100)}%";
             }
-            _percentFont.Size = 8;
+            _percentFont.Size = 10;
             _text.Color = item.IsResearching ? ResearchingColor.WithAlpha(220) : SKColors.White.WithAlpha(200);
             canvas.DrawText(pct, x + w / 2, y + h - 0.5f, SKTextAlign.Center, _percentFont, _text);
         }
@@ -552,7 +742,7 @@ public class GuildResearchTreeRenderer : IDisposable
         _particleTimer += deltaTime;
 
         // Neue Partikel spawnen auf abgeschlossenen Verbindungen
-        if (_particleTimer >= 0.5f && _flowParticles.Count < 15)
+        if (_particleTimer >= 0.5f && _flowParticleCount < MaxFlowParticles)
         {
             _particleTimer = 0;
             foreach (var (from, to) in Connections)
@@ -562,7 +752,7 @@ public class GuildResearchTreeRenderer : IDisposable
                 if (!items[to].IsCompleted && !items[to].IsActive) continue;
                 if (Random.Shared.NextSingle() > 0.25f) continue;
 
-                _flowParticles.Add(new FlowParticle
+                _flowParticles[_flowParticleCount++] = new FlowParticle
                 {
                     StartX = positions[from].X,
                     StartY = positions[from].Y + NodeSize / 2 + 6,
@@ -570,13 +760,13 @@ public class GuildResearchTreeRenderer : IDisposable
                     EndY = positions[to].Y - NodeSize / 2 - 6,
                     Progress = 0,
                     Life = 1.2f
-                });
+                };
                 break; // Nur 1 pro Tick
             }
         }
 
-        // Partikel aktualisieren und zeichnen
-        for (int i = _flowParticles.Count - 1; i >= 0; i--)
+        // Partikel aktualisieren und zeichnen (Swap-Remove, 0 GC)
+        for (int i = _flowParticleCount - 1; i >= 0; i--)
         {
             var p = _flowParticles[i];
             p.Progress += deltaTime * 1.2f;
@@ -584,7 +774,8 @@ public class GuildResearchTreeRenderer : IDisposable
 
             if (p.Progress > 1 || p.Life <= 0)
             {
-                _flowParticles.RemoveAt(i);
+                // Swap-Remove: Letztes Element an diese Stelle, Count verringern
+                _flowParticles[i] = _flowParticles[--_flowParticleCount];
                 continue;
             }
 
@@ -661,6 +852,62 @@ public class GuildResearchTreeRenderer : IDisposable
         _ => 0
     };
 
+    /// <summary>
+    /// Kompakte Kosten-Anzeige mit Fortschritt (z.B. "15M / 50M").
+    /// </summary>
+    private static string FormatCost(long cost, long progress)
+    {
+        if (progress > 0)
+            return $"{FormatCompact(progress)} / {FormatCompact(cost)}";
+        return FormatCompact(cost);
+    }
+
+    /// <summary>
+    /// Kompakte Zahl mit B/M/K-Suffix.
+    /// </summary>
+    private static string FormatCompact(long value)
+    {
+        if (value >= 1_000_000_000) return $"{value / 1_000_000_000.0:0.#}B";
+        if (value >= 1_000_000) return $"{value / 1_000_000.0:0.#}M";
+        if (value >= 1_000) return $"{value / 1_000.0:0.#}K";
+        return value.ToString("N0");
+    }
+
+    /// <summary>
+    /// Kompakte Effekt-Zusammenfassung für abgeschlossene Forschungen.
+    /// </summary>
+    private static string FormatEffect(GuildResearchEffectType type, decimal value) => type switch
+    {
+        GuildResearchEffectType.MaxMembers => $"+{(int)value} Slots",
+        GuildResearchEffectType.IncomeBonus => $"+{value * 100:0}%",
+        GuildResearchEffectType.CostReduction => $"-{value * 100:0}%",
+        GuildResearchEffectType.RewardBonus => $"+{value * 100:0}%",
+        GuildResearchEffectType.XpBonus => $"+{value * 100:0}% XP",
+        GuildResearchEffectType.EfficiencyBonus => $"+{value * 100:0}%",
+        GuildResearchEffectType.MiniGameBonus => $"+{value * 100:0}%",
+        GuildResearchEffectType.OrderSlotBonus => $"+{(int)value} Slot",
+        GuildResearchEffectType.OrderQualityBonus => $"+{value * 100:0}%",
+        GuildResearchEffectType.WorkerSlotBonus => $"+{(int)value} Slot",
+        GuildResearchEffectType.TrainingSpeedBonus => $"+{value * 100:0}%",
+        GuildResearchEffectType.FatigueReduction => $"-{value * 100:0}%",
+        GuildResearchEffectType.ResearchSpeedBonus => $"+{value * 100:0}%",
+        GuildResearchEffectType.PrestigePointBonus => $"+{value * 100:0}%",
+        _ => ""
+    };
+
+    /// <summary>
+    /// Kürzt einen Namen auf maxChars Zeichen mit Ellipsis (gecacht).
+    /// </summary>
+    private string TruncateName(string name, int maxChars)
+    {
+        if (string.IsNullOrEmpty(name)) return "";
+        if (name.Length <= maxChars) return name;
+        if (_truncatedNameCache.TryGetValue(name, out var cached)) return cached;
+        var truncated = string.Concat(name.AsSpan(0, maxChars - 1), "\u2026");
+        _truncatedNameCache[name] = truncated;
+        return truncated;
+    }
+
     // Partikel-Struct (vermeidet Heap-Allokationen)
     private struct FlowParticle
     {
@@ -678,6 +925,8 @@ public class GuildResearchTreeRenderer : IDisposable
         _text.Dispose();
         _glowPaint.Dispose();
         _percentFont.Dispose();
+        _nameFont.Dispose();
+        _costFont.Dispose();
         _connectionPath.Dispose();
         _arrowPath.Dispose();
         _arcPath.Dispose();

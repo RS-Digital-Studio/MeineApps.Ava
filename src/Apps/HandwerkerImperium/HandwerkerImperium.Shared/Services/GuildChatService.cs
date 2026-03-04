@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// Letzte 50 Nachrichten, Polling bei Tab-Wechsel.
 /// Spam-Schutz: 5 Sekunden Cooldown, max 200 Zeichen.
 /// </summary>
-public class GuildChatService : IGuildChatService
+public sealed class GuildChatService : IGuildChatService
 {
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;

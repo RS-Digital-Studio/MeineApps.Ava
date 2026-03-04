@@ -585,6 +585,18 @@
   <data name="PrestigeCompleted" xml:space="preserve">
     <value>Prestigio!</value>
   </data>
+  <data name="BestValue" xml:space="preserve">
+    <value>Miglior Valore</value>
+  </data>
+  <data name="RequiredLevel" xml:space="preserve">
+    <value>Livello Richiesto</value>
+  </data>
+  <data name="Rewards" xml:space="preserve">
+    <value>Ricompense</value>
+  </data>
+  <data name="Completed" xml:space="preserve">
+    <value>Completato</value>
+  </data>
   <data name="CloudSave" xml:space="preserve">
     <value>Salvataggio cloud</value>
   </data>
@@ -1608,6 +1620,36 @@
   <data name="AchPrestigePoints100Desc" xml:space="preserve">
     <value>Spendi 100 punti prestigio</value>
   </data>
+  <data name="AchPrestigeTotal5" xml:space="preserve">
+    <value>Veterano del Prestigio</value>
+  </data>
+  <data name="AchPrestigeTotal5Desc" xml:space="preserve">
+    <value>Completa 5 prestigi in totale</value>
+  </data>
+  <data name="AchPrestigeTotal10" xml:space="preserve">
+    <value>Dipendente dal Prestigio</value>
+  </data>
+  <data name="AchPrestigeTotal10Desc" xml:space="preserve">
+    <value>Completa 10 prestigi in totale</value>
+  </data>
+  <data name="AchPrestigeTotal25" xml:space="preserve">
+    <value>Maestro del Prestigio</value>
+  </data>
+  <data name="AchPrestigeTotal25Desc" xml:space="preserve">
+    <value>Completa 25 prestigi in totale</value>
+  </data>
+  <data name="AchPrestigeTotal50" xml:space="preserve">
+    <value>Leggenda del Prestigio</value>
+  </data>
+  <data name="AchPrestigeTotal50Desc" xml:space="preserve">
+    <value>Completa 50 prestigi in totale</value>
+  </data>
+  <data name="AchPrestigePoints1000" xml:space="preserve">
+    <value>Accumulatore di Punti</value>
+  </data>
+  <data name="AchPrestigePoints1000Desc" xml:space="preserve">
+    <value>Spendi 1000 punti prestigio nel negozio</value>
+  </data>
   <data name="AchMoney10m" xml:space="preserve">
     <value>Multi-Milionario</value>
   </data>
@@ -2382,6 +2424,132 @@
   <data name="AchMoney10bDesc" xml:space="preserve">
     <value>Guadagna 10.000.000.000 EUR in totale</value>
   </data>
+  <data name="AchWorkersMaxLevel" xml:space="preserve">
+    <value>Lavoratori esperti</value>
+  </data>
+  <data name="AchWorkersMaxLevelDesc" xml:space="preserve">
+    <value>Addestra 10 lavoratori al livello 10</value>
+  </data>
+  <data name="AchCanteenBuilt" xml:space="preserve">
+    <value>Lavoratori felici</value>
+  </data>
+  <data name="AchCanteenBuiltDesc" xml:space="preserve">
+    <value>Costruisci la mensa</value>
+  </data>
+  <data name="AchPrestigePlatin" xml:space="preserve">
+    <value>Artigiano platino</value>
+  </data>
+  <data name="AchPrestigePlatinDesc" xml:space="preserve">
+    <value>Completa il tuo primo prestigio platino</value>
+  </data>
+  <data name="AchPrestigeDiamant" xml:space="preserve">
+    <value>Dinastia di diamante</value>
+  </data>
+  <data name="AchPrestigeDiamantDesc" xml:space="preserve">
+    <value>Completa il tuo primo prestigio diamante</value>
+  </data>
+  <data name="AchPrestigeMeister" xml:space="preserve">
+    <value>Maestro dei maestri</value>
+  </data>
+  <data name="AchPrestigeMeisterDesc" xml:space="preserve">
+    <value>Completa il tuo primo prestigio maestro</value>
+  </data>
+  <data name="AchPrestigeLegende" xml:space="preserve">
+    <value>Leggenda vivente</value>
+  </data>
+  <data name="AchPrestigeLegendeDesc" xml:space="preserve">
+    <value>Completa il tuo primo prestigio leggenda</value>
+  </data>
+  <data name="AchPerfect100" xml:space="preserve">
+    <value>Maestro della perfezione</value>
+  </data>
+  <data name="AchPerfect100Desc" xml:space="preserve">
+    <value>Ottieni 100 valutazioni perfette</value>
+  </data>
+  <data name="AchGames500" xml:space="preserve">
+    <value>Leggenda dei minigiochi</value>
+  </data>
+  <data name="AchGames500Desc" xml:space="preserve">
+    <value>Gioca 500 minigiochi</value>
+  </data>
+  <data name="AchAllMiniGamesPerfect" xml:space="preserve">
+    <value>Talento universale</value>
+  </data>
+  <data name="AchAllMiniGamesPerfectDesc" xml:space="preserve">
+    <value>Ottieni Perfetto in tutti gli 8 tipi di minigiochi</value>
+  </data>
+  <data name="AchAllWsLevel100" xml:space="preserve">
+    <value>Potenza massima</value>
+  </data>
+  <data name="AchAllWsLevel100Desc" xml:space="preserve">
+    <value>Porta tutti gli 8 laboratori al livello 100</value>
+  </data>
+  <data name="AchGuildFounder" xml:space="preserve">
+    <value>Fondatore della gilda</value>
+  </data>
+  <data name="AchGuildFounderDesc" xml:space="preserve">
+    <value>Crea una gilda</value>
+  </data>
+  <data name="AchGuildMember" xml:space="preserve">
+    <value>Giocatore di squadra</value>
+  </data>
+  <data name="AchGuildMemberDesc" xml:space="preserve">
+    <value>Unisciti o crea una gilda</value>
+  </data>
+  <data name="AchGuildWeeklyGoal" xml:space="preserve">
+    <value>Lavoro di squadra</value>
+  </data>
+  <data name="AchGuildWeeklyGoalDesc" xml:space="preserve">
+    <value>Completa un obiettivo settimanale della gilda</value>
+  </data>
+  <data name="AchGuildLevel10" xml:space="preserve">
+    <value>Gilda leggendaria</value>
+  </data>
+  <data name="AchGuildLevel10Desc" xml:space="preserve">
+    <value>Raggiungi il livello 10 della gilda</value>
+  </data>
+  <data name="AchWorkersTrained50" xml:space="preserve">
+    <value>Maestro di addestramento</value>
+  </data>
+  <data name="AchWorkersTrained50Desc" xml:space="preserve">
+    <value>Completa 50 sessioni di addestramento</value>
+  </data>
+  <data name="AchCrafting100" xml:space="preserve">
+    <value>Produttore di massa</value>
+  </data>
+  <data name="AchCrafting100Desc" xml:space="preserve">
+    <value>Fabbrica 100 oggetti</value>
+  </data>
+  <data name="AchAllRecipes" xml:space="preserve">
+    <value>Maestro delle ricette</value>
+  </data>
+  <data name="AchAllRecipesDesc" xml:space="preserve">
+    <value>Fabbrica tutte le 13 ricette almeno una volta</value>
+  </data>
+  <data name="AchTournamentGold" xml:space="preserve">
+    <value>Campione del torneo</value>
+  </data>
+  <data name="AchTournamentGoldDesc" xml:space="preserve">
+    <value>Vinci una medaglia d'oro in un torneo</value>
+  </data>
+  <data name="AchTournaments10" xml:space="preserve">
+    <value>Vincitore seriale</value>
+  </data>
+  <data name="AchTournaments10Desc" xml:space="preserve">
+    <value>Vinci 10 tornei</value>
+  </data>
+  <data name="AchAllMastertools" xml:space="preserve">
+    <value>Collezionista di utensili</value>
+  </data>
+  <data name="AchAllMastertoolsDesc" xml:space="preserve">
+    <value>Colleziona tutti i 12 utensili del maestro</value>
+  </data>
+  <data name="AchEquipmentAllRarities" xml:space="preserve">
+    <value>Collezionista di rarità</value>
+  </data>
+  <data name="AchEquipmentAllRaritiesDesc" xml:space="preserve">
+    <value>Colleziona equipaggiamento di tutte le 4 rarità</value>
+  </data>
   <data name="ShopCashSmallDescScaled" xml:space="preserve">
     <value>Ricevi {0} istantaneamente</value>
   </data>
@@ -2412,10 +2580,10 @@
     <value>Costo di sblocco</value>
   </data>
   <data name="WatchAdForHalfPrice" xml:space="preserve">
-    <value>Con video (50% sconto)</value>
+    <value>Con video (30% sconto)</value>
   </data>
   <data name="WatchAdForDiscount" xml:space="preserve">
-    <value>Guarda video (-50%)</value>
+    <value>Guarda video (-30%)</value>
   </data>
   <data name="BuyFull" xml:space="preserve">
     <value>Acquista</value>
@@ -3930,6 +4098,102 @@
   <data name="EventShop" xml:space="preserve">
     <value>Negozio evento</value>
   </data>
+  <data name="SeasonalSpringIncomeBoost" xml:space="preserve">
+    <value>Boost entrate primaverile</value>
+  </data>
+  <data name="SeasonalSpringIncomeBoostDesc" xml:space="preserve">
+    <value>+10% entrate per il resto della stagione</value>
+  </data>
+  <data name="SeasonalSpringXpPack" xml:space="preserve">
+    <value>Pacchetto XP primaverile</value>
+  </data>
+  <data name="SeasonalSpringXpPackDesc" xml:space="preserve">
+    <value>Ricevi subito 500 XP</value>
+  </data>
+  <data name="SeasonalSpringScrewBundle" xml:space="preserve">
+    <value>Pacchetto viti primaverile</value>
+  </data>
+  <data name="SeasonalSpringScrewBundleDesc" xml:space="preserve">
+    <value>Ricevi 15 viti dorate</value>
+  </data>
+  <data name="SeasonalSpringSpeedBoost" xml:space="preserve">
+    <value>Boost velocità primaverile</value>
+  </data>
+  <data name="SeasonalSpringSpeedBoostDesc" xml:space="preserve">
+    <value>2x velocità di produzione per 2 ore</value>
+  </data>
+  <data name="SeasonalSummerIncomeBoost" xml:space="preserve">
+    <value>Boost entrate estivo</value>
+  </data>
+  <data name="SeasonalSummerIncomeBoostDesc" xml:space="preserve">
+    <value>+10% entrate per il resto della stagione</value>
+  </data>
+  <data name="SeasonalSummerXpPack" xml:space="preserve">
+    <value>Pacchetto XP estivo</value>
+  </data>
+  <data name="SeasonalSummerXpPackDesc" xml:space="preserve">
+    <value>Ricevi subito 500 XP</value>
+  </data>
+  <data name="SeasonalSummerScrewBundle" xml:space="preserve">
+    <value>Pacchetto viti estivo</value>
+  </data>
+  <data name="SeasonalSummerScrewBundleDesc" xml:space="preserve">
+    <value>Ricevi 15 viti dorate</value>
+  </data>
+  <data name="SeasonalSummerSpeedBoost" xml:space="preserve">
+    <value>Boost velocità estivo</value>
+  </data>
+  <data name="SeasonalSummerSpeedBoostDesc" xml:space="preserve">
+    <value>2x velocità di produzione per 2 ore</value>
+  </data>
+  <data name="SeasonalAutumnIncomeBoost" xml:space="preserve">
+    <value>Boost entrate autunnale</value>
+  </data>
+  <data name="SeasonalAutumnIncomeBoostDesc" xml:space="preserve">
+    <value>+10% entrate per il resto della stagione</value>
+  </data>
+  <data name="SeasonalAutumnXpPack" xml:space="preserve">
+    <value>Pacchetto XP autunnale</value>
+  </data>
+  <data name="SeasonalAutumnXpPackDesc" xml:space="preserve">
+    <value>Ricevi subito 500 XP</value>
+  </data>
+  <data name="SeasonalAutumnScrewBundle" xml:space="preserve">
+    <value>Pacchetto viti autunnale</value>
+  </data>
+  <data name="SeasonalAutumnScrewBundleDesc" xml:space="preserve">
+    <value>Ricevi 15 viti dorate</value>
+  </data>
+  <data name="SeasonalAutumnSpeedBoost" xml:space="preserve">
+    <value>Boost velocità autunnale</value>
+  </data>
+  <data name="SeasonalAutumnSpeedBoostDesc" xml:space="preserve">
+    <value>2x velocità di produzione per 2 ore</value>
+  </data>
+  <data name="SeasonalWinterIncomeBoost" xml:space="preserve">
+    <value>Boost entrate invernale</value>
+  </data>
+  <data name="SeasonalWinterIncomeBoostDesc" xml:space="preserve">
+    <value>+10% entrate per il resto della stagione</value>
+  </data>
+  <data name="SeasonalWinterXpPack" xml:space="preserve">
+    <value>Pacchetto XP invernale</value>
+  </data>
+  <data name="SeasonalWinterXpPackDesc" xml:space="preserve">
+    <value>Ricevi subito 500 XP</value>
+  </data>
+  <data name="SeasonalWinterScrewBundle" xml:space="preserve">
+    <value>Pacchetto viti invernale</value>
+  </data>
+  <data name="SeasonalWinterScrewBundleDesc" xml:space="preserve">
+    <value>Ricevi 15 viti dorate</value>
+  </data>
+  <data name="SeasonalWinterSpeedBoost" xml:space="preserve">
+    <value>Boost velocità invernale</value>
+  </data>
+  <data name="SeasonalWinterSpeedBoostDesc" xml:space="preserve">
+    <value>2x velocità di produzione per 2 ore</value>
+  </data>
   <data name="FreeReward" xml:space="preserve">
     <value>Ricompensa gratuita</value>
   </data>
@@ -4140,6 +4404,24 @@
   <data name="PrestigeKeepsWorkers" xml:space="preserve">
     <value>Migliori lavoratori conservati!</value>
   </data>
+  <data name="PrestigeKeepsEquipment" xml:space="preserve">
+    <value>Equipaggiamento conservato!</value>
+  </data>
+  <data name="ShopCatIncome" xml:space="preserve">
+    <value>Entrate e Costi</value>
+  </data>
+  <data name="ShopCatWorker" xml:space="preserve">
+    <value>Lavoratori e Umore</value>
+  </data>
+  <data name="ShopCatSpeed" xml:space="preserve">
+    <value>Velocità e Automazione</value>
+  </data>
+  <data name="ShopCatCurrency" xml:space="preserve">
+    <value>Valuta e Inizio</value>
+  </data>
+  <data name="PrestigeResetNote" xml:space="preserve">
+    <value>Livello, denaro e laboratori verranno ripristinati.</value>
+  </data>
   <data name="PrestigeLosesLevel" xml:space="preserve">
     <value>Livello giocatore → 1</value>
   </data>
@@ -4190,5 +4472,265 @@
   </data>
   <data name="InviteFailed" xml:space="preserve">
     <value>Invito fallito</value>
+  </data>
+  <data name="GuildWarTitle" xml:space="preserve">
+    <value>Guerra di gilda</value>
+  </data>
+  <data name="Money" xml:space="preserve">
+    <value>Denaro</value>
+  </data>
+  <data name="NoActiveWar" xml:space="preserve">
+    <value>Nessuna guerra attiva</value>
+  </data>
+  <data name="NoChatMessages" xml:space="preserve">
+    <value>Nessun messaggio</value>
+  </data>
+  <data name="SplashStep_Workshop" xml:space="preserve">
+    <value>Caricamento officine</value>
+  </data>
+  <data name="SplashStep_GameState" xml:space="preserve">
+    <value>Caricamento stato del gioco</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Avvio del gioco</value>
+  </data>
+  <data name="WarContribute" xml:space="preserve">
+    <value>+{0} punti contribuiti!</value>
+  </data>
+  <data name="WarResult" xml:space="preserve">
+    <value>Risultato deciso</value>
+  </data>
+  <data name="WorkshopsTab" xml:space="preserve">
+    <value>Laboratori</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Caricamento grafiche</value>
+  </data>
+
+  <!-- Suggerimenti tutorial contestuali -->
+  <data name="HintDismissButton" xml:space="preserve">
+    <value>Capito</value>
+  </data>
+  <data name="HintWelcomeTitle" xml:space="preserve">
+    <value>Benvenuto!</value>
+  </data>
+  <data name="HintWelcomeText" xml:space="preserve">
+    <value>Costruisci il tuo impero artigiano! Ti mostreremo tutto passo dopo passo.</value>
+  </data>
+  <data name="HintFirstWorkshopTitle" xml:space="preserve">
+    <value>Il tuo primo laboratorio</value>
+  </data>
+  <data name="HintFirstWorkshopText" xml:space="preserve">
+    <value>Tocca la scheda del laboratorio per migliorarlo e guadagnare più soldi.</value>
+  </data>
+  <data name="HintWorkshopDetailTitle" xml:space="preserve">
+    <value>Migliorare il laboratorio</value>
+  </data>
+  <data name="HintWorkshopDetailText" xml:space="preserve">
+    <value>Ben fatto! Continua a migliorare i tuoi laboratori per aumentare le tue entrate.</value>
+  </data>
+  <data name="HintFirstOrderTitle" xml:space="preserve">
+    <value>Primo ordine</value>
+  </data>
+  <data name="HintFirstOrderText" xml:space="preserve">
+    <value>Accetta ordini e completa i minigiochi per guadagnare soldi e esperienza.</value>
+  </data>
+  <data name="HintOrderCompletedTitle" xml:space="preserve">
+    <value>Ordine completato!</value>
+  </data>
+  <data name="HintOrderCompletedText" xml:space="preserve">
+    <value>Ottimo! Hai completato il tuo primo ordine. Migliore è la tua valutazione, più soldi guadagni.</value>
+  </data>
+  <data name="HintWorkerUnlockTitle" xml:space="preserve">
+    <value>Lavoratori</value>
+  </data>
+  <data name="HintWorkerUnlockText" xml:space="preserve">
+    <value>Dal livello 3 puoi assumere lavoratori che lavorano automaticamente per te.</value>
+  </data>
+  <data name="HintShopTitle" xml:space="preserve">
+    <value>Negozio</value>
+  </data>
+  <data name="HintShopText" xml:space="preserve">
+    <value>Nel negozio troverai pacchetti di viti dorate e offerte speciali.</value>
+  </data>
+  <data name="HintResearchTitle" xml:space="preserve">
+    <value>Ricerca</value>
+  </data>
+  <data name="HintResearchText" xml:space="preserve">
+    <value>Ricerca nuove tecnologie per rendere i tuoi laboratori più efficienti.</value>
+  </data>
+  <data name="HintBuildingTitle" xml:space="preserve">
+    <value>Edifici</value>
+  </data>
+  <data name="HintBuildingText" xml:space="preserve">
+    <value>Costruisci edifici per bonus permanenti come più spazio di stoccaggio o addestramento più veloce.</value>
+  </data>
+  <data name="HintDailyChallengeTitle" xml:space="preserve">
+    <value>Sfide giornaliere</value>
+  </data>
+  <data name="HintDailyChallengeText" xml:space="preserve">
+    <value>Completa 3 sfide giornaliere per ottenere viti dorate e esperienza.</value>
+  </data>
+  <data name="HintQuickJobsTitle" xml:space="preserve">
+    <value>Lavori veloci</value>
+  </data>
+  <data name="HintQuickJobsText" xml:space="preserve">
+    <value>I lavori veloci sono brevi minigiochi per ricompense rapide nel frattempo.</value>
+  </data>
+  <data name="HintPrestigeTitle" xml:space="preserve">
+    <value>Prestigio</value>
+  </data>
+  <data name="HintPrestigeText" xml:space="preserve">
+    <value>Con il prestigio ricominci con bonus permanenti. Più alto il tuo livello, più forte sarai!</value>
+  </data>
+  <data name="HintGuildTitle" xml:space="preserve">
+    <value>Gilde</value>
+  </data>
+  <data name="HintGuildText" xml:space="preserve">
+    <value>Unisciti a una gilda o creane una tua! Insieme ricercate potenti bonus.</value>
+  </data>
+  <data name="HintCraftingTitle" xml:space="preserve">
+    <value>Artigianato</value>
+  </data>
+  <data name="HintCraftingText" xml:space="preserve">
+    <value>Crea strumenti e materiali e vendili per un reddito extra.</value>
+  </data>
+  <data name="HintBattlePassTitle" xml:space="preserve">
+    <value>Pass battaglia</value>
+  </data>
+  <data name="HintBattlePassText" xml:space="preserve">
+    <value>Guadagna ricompense giocando ogni giorno. Percorso premium con ancora più ricompense!</value>
+  </data>
+  <data name="HintLuckySpinTitle" xml:space="preserve">
+    <value>Ruota della fortuna</value>
+  </data>
+  <data name="HintLuckySpinText" xml:space="preserve">
+    <value>Gira la ruota gratis ogni giorno per vincere soldi, viti e altro!</value>
+  </data>
+  <data name="HintAutomationTitle" xml:space="preserve">
+    <value>Automazione</value>
+  </data>
+  <data name="HintAutomationText" xml:space="preserve">
+    <value>Dal livello 15 puoi raccogliere automaticamente le consegne!</value>
+  </data>
+  <data name="ResetTutorialHints" xml:space="preserve">
+    <value>Ripristina tutorial</value>
+  </data>
+  <data name="ResetTutorialHintsTitle" xml:space="preserve">
+    <value>Tutorial ripristinato</value>
+  </data>
+  <data name="ResetTutorialHintsMessage" xml:space="preserve">
+    <value>Tutti i suggerimenti del tutorial verranno mostrati di nuovo al prossimo avvio del gioco.</value>
+  </data>
+  <data name="GuildHallTitle" xml:space="preserve">
+    <value>Quartier Generale</value>
+  </data>
+  <data name="BossHits" xml:space="preserve">
+    <value>Colpi</value>
+  </data>
+  <data name="GuildBossTitle" xml:space="preserve">
+    <value>Boss della Gilda</value>
+  </data>
+  <data name="GuildAchievementsTitle" xml:space="preserve">
+    <value>Successi della Gilda</value>
+  </data>
+  <data name="GuildAchievementsSubtitle" xml:space="preserve">
+    <value>Obiettivi condivisi</value>
+  </data>
+  <data name="ActiveEffects" xml:space="preserve">
+    <value>Effetti Attivi</value>
+  </data>
+  <data name="YourDamage" xml:space="preserve">
+    <value>Il Tuo Danno</value>
+  </data>
+  <data name="YourRank" xml:space="preserve">
+    <value>Il Tuo Grado</value>
+  </data>
+  <data name="DamageLeaderboard" xml:space="preserve">
+    <value>Classifica Danni</value>
+  </data>
+  <data name="GuildWarByeWeek" xml:space="preserve">
+    <value>Settimana libera - nessun avversario questo turno</value>
+  </data>
+  <data name="OurGuild" xml:space="preserve">
+    <value>La Nostra Gilda</value>
+  </data>
+  <data name="BonusMissions" xml:space="preserve">
+    <value>Missioni Bonus</value>
+  </data>
+  <data name="WarLog" xml:space="preserve">
+    <value>Registro di Guerra</value>
+  </data>
+  <data name="NoGuildAchievements" xml:space="preserve">
+    <value>Ancora nessun successo della gilda</value>
+  </data>
+  <data name="GuildBossNone" xml:space="preserve">
+    <value>Nessun boss attivo</value>
+  </data>
+  <data name="GuildBossExpiring" xml:space="preserve">
+    <value>In scadenza...</value>
+  </data>
+  <data name="GuildBossLoadError" xml:space="preserve">
+    <value>Impossibile caricare i dati del boss.</value>
+  </data>
+  <data name="GuildHallLevel" xml:space="preserve">
+    <value>Sala Lv.{0}</value>
+  </data>
+  <data name="OrderReward" xml:space="preserve">
+    <value>Ricompensa ordine</value>
+  </data>
+  <data name="Everything" xml:space="preserve">
+    <value>Tutto</value>
+  </data>
+  <data name="GuildHallLoadError" xml:space="preserve">
+    <value>Impossibile caricare il quartier generale.</value>
+  </data>
+  <data name="GuildHallUpgradeFailed" xml:space="preserve">
+    <value>Upgrade non possibile (costi o requisiti non soddisfatti).</value>
+  </data>
+  <data name="GuildHallShort" xml:space="preserve">
+    <value>Sala</value>
+  </data>
+  <data name="GuildWarSeason" xml:space="preserve">
+    <value>Stagione</value>
+  </data>
+  <data name="GuildWarWeek" xml:space="preserve">
+    <value>Settimana {0}</value>
+  </data>
+  <data name="GuildWarNoSeason" xml:space="preserve">
+    <value>Nessuna stagione</value>
+  </data>
+  <data name="PhaseEnding" xml:space="preserve">
+    <value>In chiusura...</value>
+  </data>
+  <data name="GuildWarMvp" xml:space="preserve">
+    <value>MVP</value>
+  </data>
+  <data name="GuildWarLoadError" xml:space="preserve">
+    <value>Impossibile caricare i dati di guerra.</value>
+  </data>
+  <data name="LeagueBronze" xml:space="preserve">
+    <value>Lega Bronzo</value>
+  </data>
+  <data name="LeagueSilver" xml:space="preserve">
+    <value>Lega Argento</value>
+  </data>
+  <data name="LeagueGold" xml:space="preserve">
+    <value>Lega Oro</value>
+  </data>
+  <data name="LeagueDiamond" xml:space="preserve">
+    <value>Lega Diamante</value>
+  </data>
+  <data name="WarPhaseAttack" xml:space="preserve">
+    <value>Attacco</value>
+  </data>
+  <data name="WarPhaseDefense" xml:space="preserve">
+    <value>Difesa</value>
+  </data>
+  <data name="WarPhaseEvaluation" xml:space="preserve">
+    <value>Valutazione</value>
+  </data>
+  <data name="WarPhaseCompleted" xml:space="preserve">
+    <value>Completato</value>
   </data>
 </root>

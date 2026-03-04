@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// Gilden werden automatisch gematcht (ähnliches Level).
 /// Gesamtpunkte aller Mitglieder entscheiden über Sieg/Niederlage.
 /// </summary>
-public class GuildWarService : IGuildWarService
+public sealed class GuildWarService : IGuildWarService
 {
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;

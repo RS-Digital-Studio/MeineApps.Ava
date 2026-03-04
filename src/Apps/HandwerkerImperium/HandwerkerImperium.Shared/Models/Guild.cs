@@ -74,6 +74,61 @@ public class GuildMembership
     [JsonPropertyName("researchPrestigePointBonus")]
     public decimal ResearchPrestigePointBonus { get; set; }
 
+    // ── Neue Properties für Gilden-Überarbeitung ──
+
+    /// <summary>Aktuelles Hallen-Level der Gilde.</summary>
+    [JsonPropertyName("guildHallLevel")]
+    public int GuildHallLevel { get; set; } = 1;
+
+    /// <summary>Aktuelle Liga-ID: "bronze", "silver", "gold", "diamond".</summary>
+    [JsonPropertyName("leagueId")]
+    public string LeagueId { get; set; } = "bronze";
+
+    // ── Gecachte Hall-Boni (werden bei Refresh aktualisiert) ──
+
+    [JsonPropertyName("hallCraftingSpeedBonus")]
+    public decimal HallCraftingSpeedBonus { get; set; }
+
+    [JsonPropertyName("hallIncomeBonus")]
+    public decimal HallIncomeBonus { get; set; }
+
+    [JsonPropertyName("hallOrderRewardBonus")]
+    public decimal HallOrderRewardBonus { get; set; }
+
+    [JsonPropertyName("hallWarPointsBonus")]
+    public decimal HallWarPointsBonus { get; set; }
+
+    [JsonPropertyName("hallDefenseBonus")]
+    public decimal HallDefenseBonus { get; set; }
+
+    [JsonPropertyName("hallEverythingBonus")]
+    public decimal HallEverythingBonus { get; set; }
+
+    [JsonPropertyName("hallResearchTimeReduction")]
+    public decimal HallResearchTimeReduction { get; set; }
+
+    [JsonPropertyName("hallWeeklyRewardBonus")]
+    public decimal HallWeeklyRewardBonus { get; set; }
+
+    [JsonPropertyName("hallMaxMembersBonus")]
+    public int HallMaxMembersBonus { get; set; }
+
+    /// <summary>
+    /// Aktualisiert alle gecachten Hall-Effekte aus berechneten Effekten.
+    /// </summary>
+    public void ApplyHallEffects(GuildHallEffects effects)
+    {
+        HallCraftingSpeedBonus = effects.CraftingSpeedBonus;
+        HallIncomeBonus = effects.IncomeBonus;
+        HallOrderRewardBonus = effects.OrderRewardBonus;
+        HallWarPointsBonus = effects.WarPointsBonus;
+        HallDefenseBonus = effects.DefenseBonus;
+        HallEverythingBonus = effects.EverythingBonus;
+        HallResearchTimeReduction = effects.ResearchTimeReduction;
+        HallWeeklyRewardBonus = effects.WeeklyRewardBonus;
+        HallMaxMembersBonus = effects.MaxMembersBonus;
+    }
+
     /// <summary>
     /// Aktualisiert alle gecachten Forschungs-Effekte aus berechneten Effekten.
     /// </summary>

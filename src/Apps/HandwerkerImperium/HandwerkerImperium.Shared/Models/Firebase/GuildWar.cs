@@ -33,6 +33,24 @@ public class GuildWar
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = "active"; // "active" oder "completed"
+
+    // ── Neue Properties für Saison-System ──
+
+    /// <summary>Level von Gilde A (für Anzeige ohne zusätzlichen Firebase-Abruf).</summary>
+    [JsonPropertyName("guildALevel")]
+    public int GuildALevel { get; set; }
+
+    /// <summary>Level von Gilde B (für Anzeige ohne zusätzlichen Firebase-Abruf).</summary>
+    [JsonPropertyName("guildBLevel")]
+    public int GuildBLevel { get; set; }
+
+    /// <summary>Aktuelle Kriegsphase: "attack", "defense", "evaluation", "completed".</summary>
+    [JsonPropertyName("phase")]
+    public string Phase { get; set; } = "attack";
+
+    /// <summary>Wann die aktuelle Phase endet (UTC ISO 8601).</summary>
+    [JsonPropertyName("phaseEndsAt")]
+    public string PhaseEndsAt { get; set; } = "";
 }
 
 /// <summary>

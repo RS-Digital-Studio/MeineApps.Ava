@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Graphics;
 /// Dunkles Pergament-Thema mit Faserlinien, Gilden-Siegel-Wasserzeichen und goldener Bordüre.
 /// Alle SKPaint-Objekte sind static readonly für GC-freie Performance im Render-Loop.
 /// </summary>
-public class GuildResearchBackgroundRenderer : IDisposable
+public sealed class GuildResearchBackgroundRenderer : IDisposable
 {
     private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════

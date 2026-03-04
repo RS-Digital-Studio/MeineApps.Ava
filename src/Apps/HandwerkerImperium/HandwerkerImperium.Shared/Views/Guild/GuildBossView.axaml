@@ -1,0 +1,176 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:models="using:HandwerkerImperium.Models"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Guild.GuildBossView"
+             x:DataType="vm:GuildBossViewModel">
+
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="GuildBoss_Grid_Root">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0" Padding="16,12" CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#7C2D12" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+        <!-- Zurück -->
+        <Button Grid.Column="0" Classes="Text" Padding="4"
+                Command="{Binding NavigateBackCommand}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+        </Button>
+        <!-- Titel -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="Skull" Width="24" Height="24"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          <TextBlock Text="{loc:Translate GuildBossTitle}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- CONTENT                                                           -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12" Margin="16,16,16,80">
+
+        <!-- Loading -->
+        <StackPanel Spacing="8" HorizontalAlignment="Center"
+                    IsVisible="{Binding IsLoading}" Margin="0,40,0,0">
+          <mi:MaterialIcon Kind="Loading" Width="32" Height="32"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Kein Boss aktiv -->
+        <Border Classes="CardElevated" Padding="20"
+                IsVisible="{Binding !HasActiveBoss}">
+          <StackPanel Spacing="8" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="ShieldOff" Width="48" Height="48"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" Opacity="0.5" />
+            <TextBlock Text="{Binding StatusMessage}"
+                       FontSize="14"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap" TextAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Aktiver Boss -->
+        <StackPanel Spacing="12" IsVisible="{Binding HasActiveBoss}">
+
+          <!-- Boss-Karte -->
+          <Border Classes="CardElevated" Padding="16">
+            <StackPanel Spacing="10" HorizontalAlignment="Center">
+              <!-- Boss-Icon -->
+              <Border Width="64" Height="64" CornerRadius="32"
+                      HorizontalAlignment="Center">
+                <Border.Background>
+                  <SolidColorBrush Color="{Binding BossColor}" Opacity="0.2" />
+                </Border.Background>
+                <mi:MaterialIcon Kind="{Binding BossIcon, Converter={StaticResource IconKindConverter}}"
+                                 Width="36" Height="36"
+                                 Foreground="{Binding BossColor}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+
+              <!-- Boss-Name -->
+              <TextBlock Text="{Binding BossName}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center" />
+
+              <!-- HP-Anzeige -->
+              <TextBlock Text="{Binding BossHpDisplay}"
+                         FontSize="14" FontWeight="SemiBold"
+                         Foreground="#DC2626"
+                         HorizontalAlignment="Center" Margin="0,4,0,0" />
+
+              <!-- Countdown -->
+              <StackPanel Orientation="Horizontal" Spacing="6"
+                          HorizontalAlignment="Center">
+                <mi:MaterialIcon Kind="ClockOutline" Width="14" Height="14"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock Text="{Binding BossCountdown}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Eigener Beitrag -->
+          <Border Classes="Card StatsCard">
+            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" RowSpacing="8">
+              <StackPanel HorizontalAlignment="Center" Spacing="2">
+                <TextBlock Text="{loc:Translate YourDamage}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding OwnDamageDisplay}"
+                           FontSize="15" FontWeight="Bold"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" HorizontalAlignment="Center" Spacing="2">
+                <TextBlock Text="{loc:Translate YourRank}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding OwnRankDisplay}"
+                           FontSize="15" FontWeight="Bold"
+                           Foreground="{StaticResource CraftGoldBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Border>
+
+          <!-- Schadens-Leaderboard -->
+          <Border Classes="Card StatsCard" IsVisible="{Binding HasLeaderboard}">
+            <StackPanel Spacing="8">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="TrophyOutline" Width="18" Height="18"
+                                 Foreground="{StaticResource CraftGoldBrush}" />
+                <TextBlock Text="{loc:Translate DamageLeaderboard}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding Leaderboard}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:BossDamageEntry">
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                      <TextBlock Text="{Binding PlayerName}"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 TextTrimming="CharacterEllipsis"
+                                 VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Damage, StringFormat='{}{0:N0}'}"
+                                 FontSize="12" FontWeight="Bold"
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+        </StackPanel>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

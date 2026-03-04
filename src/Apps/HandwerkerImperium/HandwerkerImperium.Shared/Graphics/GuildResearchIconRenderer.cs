@@ -62,8 +62,8 @@ public static class GuildResearchIconRenderer
     {
         if (tier < 1 || tier > 4) return;
 
-        float dotRadius = size * 0.04f;
-        float spacing = size * 0.10f;
+        float dotRadius = size * 0.055f;
+        float spacing = size * 0.11f;
         float totalWidth = (tier - 1) * spacing;
         float startX = cx - totalWidth / 2f;
         float dotY = cy + size * 0.52f;

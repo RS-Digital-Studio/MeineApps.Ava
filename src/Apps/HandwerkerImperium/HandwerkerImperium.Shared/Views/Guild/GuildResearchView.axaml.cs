@@ -34,15 +34,19 @@ public partial class GuildResearchView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        DetachedFromVisualTree += (_, _) => StopRenderLoop();
+        DetachedFromVisualTree += (_, _) =>
+        {
+            StopRenderLoop();
+            _bgRenderer.Dispose();
+            _treeRenderer.Dispose();
+            _headerRenderer.Dispose();
+        };
     }
 
     private void StopRenderLoop()
     {
         _renderTimer?.Stop();
         _renderTimer = null;
-        // Renderer NICHT disposen - können bei Re-Attach wiederverwendet werden.
-        // Dispose erfolgt nur bei endgültigem Entfernen der View.
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -154,8 +158,8 @@ public partial class GuildResearchView : UserControl
         float tapX = (float)point.X * scaleX;
         float tapY = (float)point.Y * scaleY;
 
-        var items = _guildVm.GuildResearch?.ToList();
-        if (items == null || items.Count == 0) return;
+        var items = _cachedItems;
+        if (items.Count == 0) return;
 
         // HitTest über TreeRenderer
         int hitIndex = _treeRenderer.HitTest(tapX, tapY, _lastBounds.MidX, _lastBounds.Top, items.Count);

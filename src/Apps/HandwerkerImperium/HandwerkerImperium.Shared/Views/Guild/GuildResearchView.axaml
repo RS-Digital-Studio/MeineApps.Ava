@@ -96,7 +96,7 @@
                              HorizontalAlignment="Stretch" />
           <!-- Forschungsbaum (MinHeight nötig, da StackPanel sonst 0-Höhe ergibt → PaintSurface feuert nie) -->
           <skia:SKCanvasView x:Name="TreeCanvas"
-                             MinHeight="1500"
+                             MinHeight="1650"
                              PaintSurface="OnTreePaintSurface"
                              PointerPressed="OnTreePointerPressed"
                              HorizontalAlignment="Stretch" />

@@ -1058,6 +1058,16 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string AchWorkerLegendaryDesc => ResourceManager.GetString("AchWorkerLegendaryDesc", resourceCulture) ?? "";
         public static string AchMoney10b => ResourceManager.GetString("AchMoney10b", resourceCulture) ?? "";
         public static string AchMoney10bDesc => ResourceManager.GetString("AchMoney10bDesc", resourceCulture) ?? "";
+        public static string AchPrestigeTotal5 => ResourceManager.GetString("AchPrestigeTotal5", resourceCulture) ?? "";
+        public static string AchPrestigeTotal5Desc => ResourceManager.GetString("AchPrestigeTotal5Desc", resourceCulture) ?? "";
+        public static string AchPrestigeTotal10 => ResourceManager.GetString("AchPrestigeTotal10", resourceCulture) ?? "";
+        public static string AchPrestigeTotal10Desc => ResourceManager.GetString("AchPrestigeTotal10Desc", resourceCulture) ?? "";
+        public static string AchPrestigeTotal25 => ResourceManager.GetString("AchPrestigeTotal25", resourceCulture) ?? "";
+        public static string AchPrestigeTotal25Desc => ResourceManager.GetString("AchPrestigeTotal25Desc", resourceCulture) ?? "";
+        public static string AchPrestigeTotal50 => ResourceManager.GetString("AchPrestigeTotal50", resourceCulture) ?? "";
+        public static string AchPrestigeTotal50Desc => ResourceManager.GetString("AchPrestigeTotal50Desc", resourceCulture) ?? "";
+        public static string AchPrestigePoints1000 => ResourceManager.GetString("AchPrestigePoints1000", resourceCulture) ?? "";
+        public static string AchPrestigePoints1000Desc => ResourceManager.GetString("AchPrestigePoints1000Desc", resourceCulture) ?? "";
 
         // Updated Shop Items
         public static string ShopCashSmallDescScaled => ResourceManager.GetString("ShopCashSmallDescScaled", resourceCulture) ?? "";
@@ -1072,8 +1082,8 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string RequiresLevel => ResourceManager.GetString("RequiresLevel", resourceCulture) ?? "Requires";
         public static string UnlockWorkshop => ResourceManager.GetString("UnlockWorkshop", resourceCulture) ?? "Unlock Workshop";
         public static string UnlockWorkshopCost => ResourceManager.GetString("UnlockWorkshopCost", resourceCulture) ?? "Unlock cost";
-        public static string WatchAdForHalfPrice => ResourceManager.GetString("WatchAdForHalfPrice", resourceCulture) ?? "With video ad (50% off)";
-        public static string WatchAdForDiscount => ResourceManager.GetString("WatchAdForDiscount", resourceCulture) ?? "Watch Ad (-50%)";
+        public static string WatchAdForHalfPrice => ResourceManager.GetString("WatchAdForHalfPrice", resourceCulture) ?? "With video ad (30% off)";
+        public static string WatchAdForDiscount => ResourceManager.GetString("WatchAdForDiscount", resourceCulture) ?? "Watch Ad (-30%)";
         public static string BuyFull => ResourceManager.GetString("BuyFull", resourceCulture) ?? "Buy";
         public static string WorkshopUnlocked => ResourceManager.GetString("WorkshopUnlocked", resourceCulture) ?? "Workshop Unlocked!";
         public static string Required => ResourceManager.GetString("Required", resourceCulture) ?? "Required";
@@ -1621,5 +1631,89 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string InviteFailed => ResourceManager.GetString("InviteFailed", resourceCulture) ?? "";
 
         public static string InvitePlayer => ResourceManager.GetString("InvitePlayer", resourceCulture) ?? "";
+
+        public static string WarContribute => ResourceManager.GetString("WarContribute", resourceCulture) ?? "";
+
+        public static string WarResult => ResourceManager.GetString("WarResult", resourceCulture) ?? "";
+
+        public static string WorkshopsTab => ResourceManager.GetString("WorkshopsTab", resourceCulture) ?? "";
+
+        public static string SplashStep_Graphics => ResourceManager.GetString("SplashStep_Graphics", resourceCulture) ?? "";
+
+        public static string HintDismissButton => ResourceManager.GetString("HintDismissButton", resourceCulture) ?? "";
+
+        public static string HintWelcomeTitle => ResourceManager.GetString("HintWelcomeTitle", resourceCulture) ?? "";
+
+        public static string HintWelcomeText => ResourceManager.GetString("HintWelcomeText", resourceCulture) ?? "";
+
+        public static string HintFirstWorkshopTitle => ResourceManager.GetString("HintFirstWorkshopTitle", resourceCulture) ?? "";
+
+        public static string HintFirstWorkshopText => ResourceManager.GetString("HintFirstWorkshopText", resourceCulture) ?? "";
+
+        public static string HintWorkshopDetailTitle => ResourceManager.GetString("HintWorkshopDetailTitle", resourceCulture) ?? "";
+
+        public static string HintWorkshopDetailText => ResourceManager.GetString("HintWorkshopDetailText", resourceCulture) ?? "";
+
+        public static string HintFirstOrderTitle => ResourceManager.GetString("HintFirstOrderTitle", resourceCulture) ?? "";
+
+        public static string HintFirstOrderText => ResourceManager.GetString("HintFirstOrderText", resourceCulture) ?? "";
+
+        public static string HintOrderCompletedTitle => ResourceManager.GetString("HintOrderCompletedTitle", resourceCulture) ?? "";
+
+        public static string HintOrderCompletedText => ResourceManager.GetString("HintOrderCompletedText", resourceCulture) ?? "";
+
+        public static string HintWorkerUnlockTitle => ResourceManager.GetString("HintWorkerUnlockTitle", resourceCulture) ?? "";
+
+        public static string HintWorkerUnlockText => ResourceManager.GetString("HintWorkerUnlockText", resourceCulture) ?? "";
+
+        public static string HintShopTitle => ResourceManager.GetString("HintShopTitle", resourceCulture) ?? "";
+
+        public static string HintShopText => ResourceManager.GetString("HintShopText", resourceCulture) ?? "";
+
+        public static string HintResearchTitle => ResourceManager.GetString("HintResearchTitle", resourceCulture) ?? "";
+
+        public static string HintResearchText => ResourceManager.GetString("HintResearchText", resourceCulture) ?? "";
+
+        public static string HintBuildingTitle => ResourceManager.GetString("HintBuildingTitle", resourceCulture) ?? "";
+
+        public static string HintBuildingText => ResourceManager.GetString("HintBuildingText", resourceCulture) ?? "";
+
+        public static string HintDailyChallengeTitle => ResourceManager.GetString("HintDailyChallengeTitle", resourceCulture) ?? "";
+
+        public static string HintDailyChallengeText => ResourceManager.GetString("HintDailyChallengeText", resourceCulture) ?? "";
+
+        public static string HintQuickJobsTitle => ResourceManager.GetString("HintQuickJobsTitle", resourceCulture) ?? "";
+
+        public static string HintQuickJobsText => ResourceManager.GetString("HintQuickJobsText", resourceCulture) ?? "";
+
+        public static string HintPrestigeTitle => ResourceManager.GetString("HintPrestigeTitle", resourceCulture) ?? "";
+
+        public static string HintPrestigeText => ResourceManager.GetString("HintPrestigeText", resourceCulture) ?? "";
+
+        public static string HintGuildTitle => ResourceManager.GetString("HintGuildTitle", resourceCulture) ?? "";
+
+        public static string HintGuildText => ResourceManager.GetString("HintGuildText", resourceCulture) ?? "";
+
+        public static string HintCraftingTitle => ResourceManager.GetString("HintCraftingTitle", resourceCulture) ?? "";
+
+        public static string HintCraftingText => ResourceManager.GetString("HintCraftingText", resourceCulture) ?? "";
+
+        public static string HintBattlePassTitle => ResourceManager.GetString("HintBattlePassTitle", resourceCulture) ?? "";
+
+        public static string HintBattlePassText => ResourceManager.GetString("HintBattlePassText", resourceCulture) ?? "";
+
+        public static string HintLuckySpinTitle => ResourceManager.GetString("HintLuckySpinTitle", resourceCulture) ?? "";
+
+        public static string HintLuckySpinText => ResourceManager.GetString("HintLuckySpinText", resourceCulture) ?? "";
+
+        public static string HintAutomationTitle => ResourceManager.GetString("HintAutomationTitle", resourceCulture) ?? "";
+
+        public static string HintAutomationText => ResourceManager.GetString("HintAutomationText", resourceCulture) ?? "";
+
+        public static string ResetTutorialHints => ResourceManager.GetString("ResetTutorialHints", resourceCulture) ?? "";
+
+        public static string ResetTutorialHintsTitle => ResourceManager.GetString("ResetTutorialHintsTitle", resourceCulture) ?? "";
+
+        public static string ResetTutorialHintsMessage => ResourceManager.GetString("ResetTutorialHintsMessage", resourceCulture) ?? "";
     }
 }

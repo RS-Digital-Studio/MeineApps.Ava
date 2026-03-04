@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Graphics;
 /// Steinmauer-Hintergrund, 2 Fackeln mit Flammen-Animation, großes Gilden-Wappen in der Mitte,
 /// warmer Fackelschein. Alle SKPaint-Objekte gecacht für GC-freie Performance.
 /// </summary>
-public class GuildHallHeaderRenderer : IDisposable
+public sealed class GuildHallHeaderRenderer : IDisposable
 {
     private bool _disposed;
     private float _time;
@@ -52,6 +52,11 @@ public class GuildHallHeaderRenderer : IDisposable
     private static readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private static readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
     private static readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // Fackelschein-Shader (gecacht, nur bei Bounds-Änderung neu)
+    private SKShader? _torchGlowShader;
+    private float _lastGlowW, _lastGlowH;
+    private float _lastGlowCx, _lastGlowCy;
 
     // Vignette
     private SKShader? _vignetteShader;
@@ -188,22 +193,37 @@ public class GuildHallHeaderRenderer : IDisposable
     {
         // Warmer Lichtkreis von der Fackel
         float pulse = 0.85f + MathF.Sin(_time * 5f) * 0.1f + MathF.Sin(_time * 7.3f) * 0.05f;
-        float radius = w * 0.35f * pulse;
+        float radius = w * 0.35f;
 
-        using var shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy),
-            radius,
-            [
-                new SKColor(0xFF, 0x8C, 0x00, (byte)(20 * pulse)),
-                new SKColor(0xFF, 0x8C, 0x00, (byte)(8 * pulse)),
-                SKColors.Transparent
-            ],
-            [0f, 0.5f, 1f],
-            SKShaderTileMode.Clamp);
+        // Shader nur bei Position-/Größenänderung neu erstellen (nicht pro Frame)
+        // ReSharper disable CompareOfFloatsByEqualityOperator
+        if (_torchGlowShader == null || _lastGlowW != w || _lastGlowH != h ||
+            _lastGlowCx != cx || _lastGlowCy != cy)
+        {
+            _torchGlowShader?.Dispose();
+            _torchGlowShader = SKShader.CreateRadialGradient(
+                new SKPoint(cx, cy),
+                radius,
+                [
+                    new SKColor(0xFF, 0x8C, 0x00, 20),
+                    new SKColor(0xFF, 0x8C, 0x00, 8),
+                    SKColors.Transparent
+                ],
+                [0f, 0.5f, 1f],
+                SKShaderTileMode.Clamp);
+            _lastGlowCx = cx;
+            _lastGlowCy = cy;
+            _lastGlowW = w;
+            _lastGlowH = h;
+        }
+        // ReSharper restore CompareOfFloatsByEqualityOperator
 
-        _glowPaint.Shader = shader;
+        // Pulse über Paint-Alpha statt Shader-Neuerstellung
+        _glowPaint.Shader = _torchGlowShader;
+        _glowPaint.Color = _glowPaint.Color.WithAlpha((byte)(255 * pulse));
         canvas.DrawRect(0, 0, w, h, _glowPaint);
         _glowPaint.Shader = null;
+        _glowPaint.Color = SKColors.White;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -473,6 +493,7 @@ public class GuildHallHeaderRenderer : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        _torchGlowShader?.Dispose();
         _vignetteShader?.Dispose();
     }
 }

@@ -22,4 +22,18 @@ public class FirebaseGuildMember
 
     [JsonPropertyName("joinedAt")]
     public string JoinedAt { get; set; } = "";
+
+    // ── Neue Properties für Gilden-Überarbeitung ──
+
+    /// <summary>Letzte Aktivität des Spielers (UTC ISO 8601).</summary>
+    [JsonPropertyName("lastActiveAt")]
+    public string LastActiveAt { get; set; } = "";
+
+    /// <summary>Kriegs-Punkte in der aktuellen Woche.</summary>
+    [JsonPropertyName("weeklyWarScore")]
+    public long WeeklyWarScore { get; set; }
+
+    /// <summary>Gesamte Kriegs-Punkte aller Saisons.</summary>
+    [JsonPropertyName("totalWarScore")]
+    public long TotalWarScore { get; set; }
 }

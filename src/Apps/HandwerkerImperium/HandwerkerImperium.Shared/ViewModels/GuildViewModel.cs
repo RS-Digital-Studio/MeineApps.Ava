@@ -20,21 +20,32 @@ public enum GuildViewState
     NameDialog,
     CreateDialog,
     Browse,
-    InGuild
+    InGuild,
+    // Neue Sub-Seiten (Phase C Gilden-Overhaul)
+    WarSeason,
+    Boss,
+    Hall,
+    Achievements
 }
 
 /// <summary>
 /// ViewModel für das Multiplayer-Gildensystem via Firebase.
 /// Sechs UI-Zustände via GuildViewState Enum (flache Panels, keine verschachtelte IsVisible-Logik).
 /// </summary>
-public partial class GuildViewModel : ViewModelBase
+public sealed partial class GuildViewModel : ViewModelBase
 {
     private bool _disposed;
     private readonly IGameStateService _gameStateService;
     private readonly IGuildService _guildService;
+    private readonly IGuildResearchService _researchService;
     private readonly ILocalizationService _localizationService;
     private readonly IGuildChatService _chatService;
     private readonly IGuildWarService _warService;
+    private readonly IGuildWarSeasonService _warSeasonService;
+    private readonly IGuildBossService _bossService;
+    private readonly IGuildHallService _hallService;
+    private readonly IGuildTipService _tipService;
+    private readonly IGuildAchievementService _achievementService;
     private bool _isBusy;
     private DateTime _lastChatSend = DateTime.MinValue;
 
@@ -61,6 +72,10 @@ public partial class GuildViewModel : ViewModelBase
     [NotifyPropertyChangedFor(nameof(IsCreateDialogState))]
     [NotifyPropertyChangedFor(nameof(IsBrowseState))]
     [NotifyPropertyChangedFor(nameof(IsInGuildState))]
+    [NotifyPropertyChangedFor(nameof(IsWarSeasonState))]
+    [NotifyPropertyChangedFor(nameof(IsBossState))]
+    [NotifyPropertyChangedFor(nameof(IsHallState))]
+    [NotifyPropertyChangedFor(nameof(IsAchievementsState))]
     private GuildViewState _viewState = GuildViewState.Loading;
 
     /// <summary>Lade-Spinner sichtbar.</summary>
@@ -80,6 +95,18 @@ public partial class GuildViewModel : ViewModelBase
 
     /// <summary>Gilden-Detail sichtbar (Spieler ist Mitglied).</summary>
     public bool IsInGuildState => ViewState == GuildViewState.InGuild;
+
+    /// <summary>Kriegs-Saison-Übersicht sichtbar.</summary>
+    public bool IsWarSeasonState => ViewState == GuildViewState.WarSeason;
+
+    /// <summary>Boss-Ansicht sichtbar.</summary>
+    public bool IsBossState => ViewState == GuildViewState.Boss;
+
+    /// <summary>Hauptquartier-Ansicht sichtbar.</summary>
+    public bool IsHallState => ViewState == GuildViewState.Hall;
+
+    /// <summary>Achievements-Ansicht sichtbar.</summary>
+    public bool IsAchievementsState => ViewState == GuildViewState.Achievements;
 
     // ═══════════════════════════════════════════════════════════════════════
     // PROPERTIES - Spielername-Dialog
@@ -264,6 +291,45 @@ public partial class GuildViewModel : ViewModelBase
     private string _warSubtitle = "";
 
     // ═══════════════════════════════════════════════════════════════════════
+    // PROPERTIES - Quick-Status (Hub-Übersicht)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private string _warQuickStatus = "";
+
+    [ObservableProperty]
+    private string _bossQuickStatus = "";
+
+    [ObservableProperty]
+    private string _leagueQuickStatus = "";
+
+    [ObservableProperty]
+    private string _researchQuickStatus = "";
+
+    [ObservableProperty]
+    private string _hallQuickStatus = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROPERTIES - Gilden-Achievements
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private ObservableCollection<GuildAchievementDisplay> _guildAchievements = [];
+
+    [ObservableProperty]
+    private bool _hasGuildAchievements;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROPERTIES - Kontextuelle Tipps
+    // ═══════════════════════════════════════════════════════════════════════
+
+    [ObservableProperty]
+    private bool _hasActiveTip;
+
+    [ObservableProperty]
+    private string _activeTipText = "";
+
+    // ═══════════════════════════════════════════════════════════════════════
     // ICON + FARB-AUSWAHL
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -284,20 +350,54 @@ public partial class GuildViewModel : ViewModelBase
     // CONSTRUCTOR
     // ═══════════════════════════════════════════════════════════════════════
 
+    /// <summary>Sub-ViewModel für Gilden-Krieg (Saison-System).</summary>
+    public GuildWarSeasonViewModel WarSeasonViewModel { get; }
+
+    /// <summary>Sub-ViewModel für kooperative Bosse.</summary>
+    public GuildBossViewModel BossViewModel { get; }
+
+    /// <summary>Sub-ViewModel für das Gilden-Hauptquartier.</summary>
+    public GuildHallViewModel HallViewModel { get; }
+
     public GuildViewModel(
         IGameStateService gameStateService,
         IGuildService guildService,
+        IGuildResearchService researchService,
         ILocalizationService localizationService,
         IGuildChatService chatService,
-        IGuildWarService warService)
+        IGuildWarService warService,
+        IGuildWarSeasonService warSeasonService,
+        IGuildBossService bossService,
+        IGuildHallService hallService,
+        IGuildTipService tipService,
+        IGuildAchievementService achievementService,
+        GuildWarSeasonViewModel warSeasonViewModel,
+        GuildBossViewModel bossViewModel,
+        GuildHallViewModel hallViewModel)
     {
         _gameStateService = gameStateService;
         _guildService = guildService;
+        _researchService = researchService;
         _localizationService = localizationService;
         _chatService = chatService;
         _warService = warService;
+        _warSeasonService = warSeasonService;
+        _bossService = bossService;
+        _hallService = hallService;
+        _tipService = tipService;
+        _achievementService = achievementService;
+
+        WarSeasonViewModel = warSeasonViewModel;
+        BossViewModel = bossViewModel;
+        HallViewModel = hallViewModel;
+
+        // Sub-VM Navigation-Events an GuildViewModel weiterleiten
+        WarSeasonViewModel.NavigationRequested += route => NavigationRequested?.Invoke(route);
+        BossViewModel.NavigationRequested += route => NavigationRequested?.Invoke(route);
+        HallViewModel.NavigationRequested += route => NavigationRequested?.Invoke(route);
 
         _guildService.GuildUpdated += OnGuildUpdated;
+        _achievementService.AchievementCompleted += OnGuildAchievementCompleted;
 
         UpdateLocalizedTexts();
         RefreshFromLocalState();
@@ -623,7 +723,7 @@ public partial class GuildViewModel : ViewModelBase
             IsResearchContributeDialogVisible = false;
             ViewState = GuildViewState.Loading;
 
-            var success = await _guildService.ContributeToResearchAsync(SelectedResearchId, amount);
+            var success = await _researchService.ContributeToResearchAsync(SelectedResearchId, amount);
             if (success)
             {
                 MessageRequested?.Invoke(
@@ -665,6 +765,25 @@ public partial class GuildViewModel : ViewModelBase
 
     [RelayCommand]
     private void NavigateToWar() => NavigationRequested?.Invoke("guild_war");
+
+    [RelayCommand]
+    private void NavigateToWarSeason() => NavigationRequested?.Invoke("guild_war_season");
+
+    [RelayCommand]
+    private void NavigateToBoss() => NavigationRequested?.Invoke("guild_boss");
+
+    [RelayCommand]
+    private void NavigateToHall() => NavigationRequested?.Invoke("guild_hall");
+
+    [RelayCommand]
+    private void NavigateToAchievements() => NavigationRequested?.Invoke("guild_achievements");
+
+    [RelayCommand]
+    private void DismissTip()
+    {
+        HasActiveTip = false;
+        _tipService.MarkTipSeen("guild_hub");
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // COMMANDS - Einladungs-System
@@ -731,7 +850,7 @@ public partial class GuildViewModel : ViewModelBase
                 {
                     Uid = p.Uid,
                     Name = p.Name,
-                    LevelDisplay = $"Lv. {p.Level}",
+                    LevelDisplay = $"Lv.{p.Level}",
                     LastActiveDisplay = FormatLastActive(p.LastActive),
                     IsInvited = false,
                     InviteButtonText = inviteText,
@@ -1016,6 +1135,8 @@ public partial class GuildViewModel : ViewModelBase
     {
         RefreshFromLocalState();
         _ = LoadGuildDataCommand.ExecuteAsync(null);
+        // Quick-Status für Hub parallel laden
+        _ = RefreshQuickStatusAsync();
     }
 
     /// <summary>
@@ -1026,6 +1147,9 @@ public partial class GuildViewModel : ViewModelBase
         Title = _localizationService.GetString("Guild") ?? "Innung";
         ChatSubtitle = _localizationService.GetString("NoChatMessages") ?? "Noch keine Nachrichten";
         WarSubtitle = _localizationService.GetString("NoActiveWar") ?? "Kein aktiver Krieg";
+        WarSeasonViewModel.UpdateLocalizedTexts();
+        BossViewModel.UpdateLocalizedTexts();
+        HallViewModel.UpdateLocalizedTexts();
         RefreshFromLocalState();
     }
 
@@ -1116,7 +1240,7 @@ public partial class GuildViewModel : ViewModelBase
 
     private async Task LoadGuildResearchAsync()
     {
-        var items = await _guildService.GetGuildResearchAsync();
+        var items = await _researchService.GetGuildResearchAsync();
 
         // Namen und Beschreibungen lokalisieren
         foreach (var item in items)
@@ -1126,7 +1250,7 @@ public partial class GuildViewModel : ViewModelBase
         }
 
         // RemainingTime für forschende Items berechnen (für SkiaSharp-Fortschrittsring)
-        var effects = _guildService.GetResearchEffects();
+        var effects = _researchService.GetCachedEffects();
         foreach (var item in items.Where(r => r.IsResearching && !string.IsNullOrEmpty(r.ResearchStartedAt)))
         {
             if (DateTime.TryParse(item.ResearchStartedAt,
@@ -1183,7 +1307,7 @@ public partial class GuildViewModel : ViewModelBase
 
         var durationHours = research.DurationHours;
         // Schnellforschung-Bonus
-        var effects = _guildService.GetResearchEffects();
+        var effects = _researchService.GetCachedEffects();
         if (effects.ResearchSpeedBonus > 0)
             durationHours *= (double)(1m - effects.ResearchSpeedBonus);
 
@@ -1236,7 +1360,7 @@ public partial class GuildViewModel : ViewModelBase
     {
         try
         {
-            var completed = await _guildService.CheckResearchCompletionAsync();
+            var completed = await _researchService.CheckResearchCompletionAsync();
             if (completed)
             {
                 CelebrationRequested?.Invoke();
@@ -1267,6 +1391,76 @@ public partial class GuildViewModel : ViewModelBase
         if (_disposed) return;
         _disposed = true;
         _guildService.GuildUpdated -= OnGuildUpdated;
+        _achievementService.AchievementCompleted -= OnGuildAchievementCompleted;
+    }
+
+    /// <summary>
+    /// Aktualisiert die Quick-Status-Anzeigen im Guild-Hub.
+    /// Wird nach dem Laden der Gilden-Daten aufgerufen.
+    /// </summary>
+    public async Task RefreshQuickStatusAsync()
+    {
+        try
+        {
+            // War Quick-Status
+            WarQuickStatus = WarSeasonViewModel.GetQuickStatus();
+
+            // Boss Quick-Status
+            BossQuickStatus = BossViewModel.GetQuickStatus();
+
+            // Liga Quick-Status
+            var league = _warSeasonService.GetCurrentLeague();
+            LeagueQuickStatus = league switch
+            {
+                GuildLeague.Bronze => _localizationService.GetString("LeagueBronze") ?? "Bronze",
+                GuildLeague.Silver => _localizationService.GetString("LeagueSilver") ?? "Silber",
+                GuildLeague.Gold => _localizationService.GetString("LeagueGold") ?? "Gold",
+                GuildLeague.Diamond => _localizationService.GetString("LeagueDiamond") ?? "Diamant",
+                _ => "Bronze"
+            };
+
+            // Research Quick-Status
+            var research = await _researchService.GetGuildResearchAsync();
+            var completed = research.Count(r => r.IsCompleted);
+            ResearchQuickStatus = $"{completed}/{research.Count}";
+
+            // Hall Quick-Status
+            HallQuickStatus = HallViewModel.GetQuickStatus();
+
+            // Tipp prüfen
+            var tip = _tipService.GetTipForContext("guild_hub");
+            HasActiveTip = tip != null;
+            ActiveTipText = tip ?? "";
+        }
+        catch
+        {
+            // Quick-Status-Fehler sind nicht kritisch
+        }
+    }
+
+    /// <summary>
+    /// Lädt die Gilden-Achievements (für die Achievements-Sub-Seite).
+    /// </summary>
+    public async Task LoadGuildAchievementsAsync()
+    {
+        try
+        {
+            var achievements = await _achievementService.GetAchievementsAsync();
+            GuildAchievements = new ObservableCollection<GuildAchievementDisplay>(achievements);
+            HasGuildAchievements = GuildAchievements.Count > 0;
+        }
+        catch
+        {
+            // Fehler beim Laden der Achievements ist nicht kritisch
+        }
+    }
+
+    private void OnGuildAchievementCompleted(GuildAchievementDisplay achievement)
+    {
+        CelebrationRequested?.Invoke();
+        MessageRequested?.Invoke(
+            _localizationService.GetString("GuildAchievementUnlocked") ?? "Gilden-Erfolg!",
+            $"{achievement.Name} (+{achievement.GoldenScrewReward} GS)");
     }
 
     /// <summary>
@@ -1321,6 +1515,6 @@ public partial class AvailablePlayerDisplay : ObservableObject
     [ObservableProperty]
     private bool _isInvited;
 
-    public string InviteButtonText { get; set; } = "Invite";
-    public string InvitedText { get; set; } = "Invited";
+    public string InviteButtonText { get; set; } = "Einladen";
+    public string InvitedText { get; set; } = "Eingeladen";
 }

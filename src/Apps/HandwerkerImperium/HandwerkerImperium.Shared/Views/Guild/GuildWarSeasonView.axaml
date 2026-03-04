@@ -1,0 +1,230 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:models="using:HandwerkerImperium.Models"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Guild.GuildWarSeasonView"
+             x:DataType="vm:GuildWarSeasonViewModel">
+
+  <Grid RowDefinitions="Auto,*"
+        AutomationProperties.AutomationId="GuildWarSeason_Grid_Root">
+
+    <!-- ================================================================= -->
+    <!-- HEADER                                                            -->
+    <!-- ================================================================= -->
+    <Border Grid.Row="0" Padding="16,12" CornerRadius="0,0,12,12">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+          <GradientStop Color="#7C2D12" Offset="0" />
+          <GradientStop Color="#451A03" Offset="1" />
+        </LinearGradientBrush>
+      </Border.Background>
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+        <!-- Zurück -->
+        <Button Grid.Column="0" Classes="Text" Padding="4"
+                Command="{Binding NavigateBackCommand}">
+          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+        </Button>
+        <!-- Titel -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
+                    HorizontalAlignment="Center">
+          <mi:MaterialIcon Kind="Sword" Width="24" Height="24"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}" />
+          <TextBlock Text="{loc:Translate GuildWarTitle}"
+                     FontSize="18" FontWeight="Bold"
+                     Foreground="{StaticResource CraftPrimaryLightBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+        <!-- Liga-Badge -->
+        <Border Grid.Column="2" CornerRadius="8" Padding="8,4"
+                IsVisible="{Binding HasActiveWar}">
+          <Border.Background>
+            <SolidColorBrush Color="{Binding LeagueColor}" Opacity="0.3" />
+          </Border.Background>
+          <TextBlock Text="{Binding LeagueDisplay}"
+                     FontSize="12" FontWeight="Bold"
+                     Foreground="{Binding LeagueColor}" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <!-- ================================================================= -->
+    <!-- CONTENT                                                           -->
+    <!-- ================================================================= -->
+    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+      <StackPanel Spacing="12" Margin="16,16,16,80">
+
+        <!-- Loading -->
+        <StackPanel Spacing="8" HorizontalAlignment="Center"
+                    IsVisible="{Binding IsLoading}" Margin="0,40,0,0">
+          <mi:MaterialIcon Kind="Loading" Width="32" Height="32"
+                           Foreground="{StaticResource CraftPrimaryLightBrush}"
+                           HorizontalAlignment="Center" />
+        </StackPanel>
+
+        <!-- Saison-Info -->
+        <Border Classes="Card StatsCard" IsVisible="{Binding !IsLoading}">
+          <StackPanel Spacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+              <TextBlock Text="{Binding SeasonTitle}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{StaticResource CraftPrimaryLightBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding WeekDisplay}"
+                         FontSize="13"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         VerticalAlignment="Center" />
+            </Grid>
+          </StackPanel>
+        </Border>
+
+        <!-- Bye-Week Anzeige -->
+        <Border Classes="CardElevated" Padding="20"
+                IsVisible="{Binding IsByeWeek}">
+          <StackPanel Spacing="8" HorizontalAlignment="Center">
+            <mi:MaterialIcon Kind="ShieldOff" Width="40" Height="40"
+                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             HorizontalAlignment="Center" />
+            <TextBlock Text="{loc:Translate GuildWarByeWeek}"
+                       FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+        </Border>
+
+        <!-- Aktiver Krieg -->
+        <StackPanel Spacing="12" IsVisible="{Binding HasActiveWar}">
+
+          <!-- Score-Vergleich -->
+          <Border Classes="CardElevated" Padding="16">
+            <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto,*">
+              <!-- Eigener Score -->
+              <StackPanel HorizontalAlignment="Center" Spacing="4">
+                <TextBlock Text="{loc:Translate OurGuild}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="{Binding OwnScore, StringFormat='{}{0:N0}'}"
+                           FontSize="24" FontWeight="Bold"
+                           Foreground="{DynamicResource SuccessBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+
+              <!-- VS -->
+              <TextBlock Grid.Column="1" Text="VS"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         VerticalAlignment="Center" Margin="12,0" />
+
+              <!-- Gegner Score -->
+              <StackPanel Grid.Column="2" HorizontalAlignment="Center" Spacing="4">
+                <TextBlock Text="{Binding OpponentName}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           HorizontalAlignment="Center"
+                           TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding OpponentScore, StringFormat='{}{0:N0}'}"
+                           FontSize="24" FontWeight="Bold"
+                           Foreground="{DynamicResource ErrorBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+
+              <!-- Phase + Countdown -->
+              <StackPanel Grid.Row="1" Grid.ColumnSpan="3"
+                          Orientation="Horizontal" Spacing="8"
+                          HorizontalAlignment="Center" Margin="0,12,0,0">
+                <Border CornerRadius="6" Padding="8,4">
+                  <Border.Background>
+                    <SolidColorBrush Color="#EA580C" Opacity="0.15" />
+                  </Border.Background>
+                  <TextBlock Text="{Binding PhaseDisplay}"
+                             FontSize="12" FontWeight="Bold"
+                             Foreground="{StaticResource CraftPrimaryBrush}" />
+                </Border>
+                <TextBlock Text="{Binding PhaseTimeRemaining}"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+
+              <!-- MVP -->
+              <TextBlock Grid.Row="2" Grid.ColumnSpan="3"
+                         Text="{Binding MvpDisplay}"
+                         FontSize="11" FontStyle="Italic"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         HorizontalAlignment="Center"
+                         Margin="0,8,0,0" />
+            </Grid>
+          </Border>
+
+          <!-- Bonus-Missionen -->
+          <Border Classes="Card StatsCard" IsVisible="{Binding HasBonusMissions}">
+            <StackPanel Spacing="8">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <mi:MaterialIcon Kind="StarOutline" Width="18" Height="18"
+                                 Foreground="{StaticResource CraftGoldBrush}" />
+                <TextBlock Text="{loc:Translate BonusMissions}"
+                           FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource CraftGoldBrush}" />
+              </StackPanel>
+              <ItemsControl ItemsSource="{Binding BonusMissions}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="models:WarBonusMission">
+                    <Grid ColumnDefinitions="*,Auto,Auto" Margin="0,4">
+                      <TextBlock Text="{Binding NameKey}"
+                                 FontSize="12"
+                                 Foreground="{DynamicResource TextPrimaryBrush}"
+                                 VerticalAlignment="Center"
+                                 TextTrimming="CharacterEllipsis" />
+                      <TextBlock Grid.Column="1"
+                                 Text="{Binding Progress, StringFormat='{}{0}'}"
+                                 FontSize="11" Margin="8,0"
+                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                      <TextBlock Grid.Column="2"
+                                 Text="{Binding BonusPoints, StringFormat='+{0}'}"
+                                 FontSize="12" FontWeight="Bold"
+                                 Foreground="{DynamicResource SuccessBrush}" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </Border>
+
+        </StackPanel>
+
+        <!-- Kriegs-Log -->
+        <Border Classes="Card StatsCard" IsVisible="{Binding HasWarLog}">
+          <StackPanel Spacing="8">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+              <mi:MaterialIcon Kind="History" Width="18" Height="18"
+                               Foreground="{DynamicResource TextSecondaryBrush}" />
+              <TextBlock Text="{loc:Translate WarLog}"
+                         FontSize="14" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+            <ItemsControl ItemsSource="{Binding WarLog}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:GuildWarLogEntry">
+                  <Grid ColumnDefinitions="*,Auto" Margin="0,4">
+                    <TextBlock Text="{Binding Message}"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextSecondaryBrush}"
+                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Text="{Binding Points, StringFormat='+{0}'}"
+                               FontSize="10" FontWeight="Bold"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}"
+                               Margin="8,0,0,0" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
+      </StackPanel>
+    </ScrollViewer>
+
+  </Grid>
+
+</UserControl>

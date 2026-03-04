@@ -15,6 +15,9 @@ namespace FinanzRechner.Converters;
 /// </summary>
 public class TransactionTypeToggleColorConverter : IValueConverter
 {
+    private static readonly IBrush ExpenseToggleBrush = ExpenseToggleBrush;
+    private static readonly IBrush IncomeToggleBrush = IncomeToggleBrush;
+
     public TransactionType TargetType { get; set; }
     public string SelectedColorKey { get; set; } = "ExpenseColor";
     public string UnselectedColorKey { get; set; } = "ButtonBackgroundColor";
@@ -36,8 +39,8 @@ public class TransactionTypeToggleColorConverter : IValueConverter
             // Fallback colors
             return isSelected
                 ? (TargetType == TransactionType.Expense
-                    ? new SolidColorBrush(Color.Parse("#F44336"))
-                    : new SolidColorBrush(Color.Parse("#4CAF50")))
+                    ? ExpenseToggleBrush
+                    : IncomeToggleBrush)
                 : Brushes.Transparent;
         }
         return Brushes.Transparent;

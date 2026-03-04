@@ -99,6 +99,7 @@ public static class WeeklyWorkChartVisualization
                     ? SkiaThemeHelper.Success
                     : SkiaThemeHelper.Primary;
 
+                _barPaint.Shader?.Dispose();
                 _barPaint.Shader = SKShader.CreateLinearGradient(
                     new SKPoint(x, barTop),
                     new SKPoint(x, chartBottom),

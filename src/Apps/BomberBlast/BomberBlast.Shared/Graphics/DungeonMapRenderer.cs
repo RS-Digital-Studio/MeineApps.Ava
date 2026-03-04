@@ -114,6 +114,7 @@ public static class DungeonMapRenderer
                     {
                         // Unerreicht: Grau, gestrichelt
                         _linePaint.Color = COLOR_LINE_DASHED;
+                        _linePaint.PathEffect?.Dispose();
                         _linePaint.PathEffect = SKPathEffect.CreateDash(new[] { 6f, 4f }, 0);
                         canvas.DrawLine(nodeX, nodeY, targetX, targetY, _linePaint);
                         _linePaint.PathEffect = null;

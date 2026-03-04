@@ -12,6 +12,10 @@ namespace FinanzRechner.Converters;
 /// </summary>
 public class AlertLevelToColorConverter : IValueConverter
 {
+    private static readonly IBrush SafeBrush = SafeBrush;
+    private static readonly IBrush WarningBrush = WarningBrush;
+    private static readonly IBrush ExceededBrush = ExceededBrush;
+
     public static readonly AlertLevelToColorConverter Instance = new();
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -33,10 +37,10 @@ public class AlertLevelToColorConverter : IValueConverter
             // Fallback-Farben
             return alertLevel switch
             {
-                BudgetAlertLevel.Safe => new SolidColorBrush(Color.Parse("#4CAF50")),
-                BudgetAlertLevel.Warning => new SolidColorBrush(Color.Parse("#FF9800")),
-                BudgetAlertLevel.Exceeded => new SolidColorBrush(Color.Parse("#F44336")),
-                _ => new SolidColorBrush(Color.Parse("#4CAF50"))
+                BudgetAlertLevel.Safe => SafeBrush,
+                BudgetAlertLevel.Warning => WarningBrush,
+                BudgetAlertLevel.Exceeded => ExceededBrush,
+                _ => SafeBrush
             };
         }
 
@@ -44,7 +48,7 @@ public class AlertLevelToColorConverter : IValueConverter
         var application = Application.Current;
         if (application != null && application.TryGetResource("IncomeColor", application.ActualThemeVariant, out var defaultBrush) && defaultBrush is IBrush db)
             return db;
-        return new SolidColorBrush(Color.Parse("#4CAF50"));
+        return SafeBrush;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

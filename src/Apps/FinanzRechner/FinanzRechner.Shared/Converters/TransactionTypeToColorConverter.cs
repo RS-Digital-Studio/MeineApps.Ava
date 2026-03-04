@@ -12,6 +12,9 @@ namespace FinanzRechner.Converters;
 /// </summary>
 public class TransactionTypeToColorConverter : IValueConverter
 {
+    private static readonly IBrush ExpenseBrush = ExpenseBrush;
+    private static readonly IBrush IncomeBrush = IncomeBrush;
+
     public static readonly TransactionTypeToColorConverter Instance = new();
 
     private static readonly IBrush FallbackGray = new SolidColorBrush(Color.Parse("#9E9E9E"));
@@ -29,8 +32,8 @@ public class TransactionTypeToColorConverter : IValueConverter
 
         // Fallback colors
         return type == TransactionType.Expense
-            ? new SolidColorBrush(Color.Parse("#F44336"))
-            : new SolidColorBrush(Color.Parse("#4CAF50"));
+            ? ExpenseBrush
+            : IncomeBrush;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

@@ -11,6 +11,8 @@ namespace FinanzRechner.Views;
 
 public partial class HomeView : UserControl
 {
+    private MainViewModel? _vm;
+
     // --- Dashboard-Hintergrund Animation ---
     private DispatcherTimer? _dashboardTimer;
     private float _dashboardTime;
@@ -27,26 +29,35 @@ public partial class HomeView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         if (DataContext is MainViewModel vm)
         {
-            vm.PropertyChanged += (_, args) =>
-            {
-                switch (args.PropertyName)
-                {
-                    case nameof(vm.HomeExpenseSegments):
-                    case nameof(vm.HasHomeChartData):
-                        ExpenseDonutCanvas?.InvalidateSurface();
-                        break;
-                    case nameof(vm.SparklineValues):
-                    case nameof(vm.HasSparklineData):
-                        SparklineCanvas?.InvalidateSurface();
-                        break;
-                    case nameof(vm.BudgetRings):
-                    case nameof(vm.HasBudgetRings):
-                        BudgetMiniRingCanvas?.InvalidateSurface();
-                        break;
-                }
-            };
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        switch (args.PropertyName)
+        {
+            case nameof(_vm.HomeExpenseSegments):
+            case nameof(_vm.HasHomeChartData):
+                ExpenseDonutCanvas?.InvalidateSurface();
+                break;
+            case nameof(_vm.SparklineValues):
+            case nameof(_vm.HasSparklineData):
+                SparklineCanvas?.InvalidateSurface();
+                break;
+            case nameof(_vm.BudgetRings):
+            case nameof(_vm.HasBudgetRings):
+                BudgetMiniRingCanvas?.InvalidateSurface();
+                break;
         }
     }
 

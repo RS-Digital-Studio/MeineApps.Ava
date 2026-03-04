@@ -27,24 +27,32 @@ public partial class DungeonView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         _vm = DataContext as DungeonViewModel;
         if (_vm != null)
         {
-            _vm.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName == nameof(DungeonViewModel.IsMapSelection))
-                {
-                    if (_vm.IsMapSelection)
-                        StartMapTimer();
-                    else
-                        StopMapTimer();
-                }
-
-                // MapData geändert → Canvas-Höhe aktualisieren
-                if (args.PropertyName == nameof(DungeonViewModel.MapData))
-                    UpdateMapCanvasHeight();
-            };
+            _vm.PropertyChanged += OnVmPropertyChanged;
         }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(DungeonViewModel.IsMapSelection))
+        {
+            if (_vm.IsMapSelection)
+                StartMapTimer();
+            else
+                StopMapTimer();
+        }
+
+        // MapData geändert → Canvas-Höhe aktualisieren
+        if (args.PropertyName == nameof(DungeonViewModel.MapData))
+            UpdateMapCanvasHeight();
     }
 
     protected override void OnLoaded(global::Avalonia.Interactivity.RoutedEventArgs e)
@@ -85,7 +93,12 @@ public partial class DungeonView : UserControl
 
     private void StopMapTimer()
     {
-        _mapTimer?.Stop();
+        if (_mapTimer != null)
+        {
+            _mapTimer.Stop();
+            _mapTimer.Tick -= OnMapTimerTick;
+            _mapTimer = null;
+        }
     }
 
     private void OnMapTimerTick(object? sender, EventArgs e)

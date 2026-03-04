@@ -122,6 +122,7 @@ public static class TornMetalRenderer
         var midColor = baseColor;
 
         // Metallischer Gradient (oben hell → unten dunkel)
+        MetalFillPaint.Shader?.Dispose();
         MetalFillPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(0, 0),
             new SKPoint(0, h),
@@ -395,6 +396,7 @@ public static class TornMetalRenderer
             canvas.DrawCircle(cx + 0.5f, cy + 1f, rivetRadius + 0.5f, MetalFillPaint);
 
             // Nieten-Koerper (Gradient: oben hell → unten dunkel)
+            MetalFillPaint.Shader?.Dispose();
             MetalFillPaint.Shader = SKShader.CreateLinearGradient(
                 new SKPoint(cx, cy - rivetRadius),
                 new SKPoint(cx, cy + rivetRadius),
@@ -423,6 +425,7 @@ public static class TornMetalRenderer
         var highlightColor = LightenColor(baseColor, 0.6f);
         float highlightHeight = h * 0.4f;
 
+        GlowPaint.Shader?.Dispose();
         GlowPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(0, 0),
             new SKPoint(0, highlightHeight),

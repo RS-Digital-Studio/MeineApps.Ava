@@ -212,6 +212,7 @@ public class SkiaGradientRing : Control
         // SweepGradient für den Bogen
         var gradientColors = new[] { startColor, endColor };
         var gradientPositions = new[] { 0f, 1f };
+        _arcPaint.Shader?.Dispose();
         _arcPaint.Shader = SKShader.CreateSweepGradient(
             new SKPoint(cx, cy), gradientColors, gradientPositions,
             SKShaderTileMode.Clamp, startAngle, startAngle + sweepAngle);

@@ -82,6 +82,7 @@ public static class WeekBarVisualization
                     barColor = SkiaThemeHelper.Warning; // Unter Soll
 
                 // Gradient von oben nach unten
+                _barPaint.Shader?.Dispose();
                 _barPaint.Shader = SKShader.CreateLinearGradient(
                     new SKPoint(barCx, barTop),
                     new SKPoint(barCx, chartBottom),

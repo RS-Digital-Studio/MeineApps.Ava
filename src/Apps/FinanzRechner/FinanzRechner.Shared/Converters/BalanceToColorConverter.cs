@@ -14,6 +14,8 @@ public class BalanceToColorConverter : IValueConverter
     public static readonly BalanceToColorConverter Instance = new();
 
     private static readonly IBrush FallbackGray = new SolidColorBrush(Color.Parse("#9E9E9E"));
+    private static readonly IBrush FallbackIncome = FallbackIncome;
+    private static readonly IBrush FallbackExpense = FallbackExpense;
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
@@ -26,14 +28,14 @@ public class BalanceToColorConverter : IValueConverter
         {
             if (app != null && app.TryGetResource("IncomeColor", app.ActualThemeVariant, out var incomeBrush) && incomeBrush is IBrush ib)
                 return ib;
-            return new SolidColorBrush(Color.Parse("#4CAF50"));
+            return FallbackIncome;
         }
 
         if (balance < 0)
         {
             if (app != null && app.TryGetResource("ExpenseColor", app.ActualThemeVariant, out var expenseBrush) && expenseBrush is IBrush eb)
                 return eb;
-            return new SolidColorBrush(Color.Parse("#F44336"));
+            return FallbackExpense;
         }
 
         return FallbackGray;

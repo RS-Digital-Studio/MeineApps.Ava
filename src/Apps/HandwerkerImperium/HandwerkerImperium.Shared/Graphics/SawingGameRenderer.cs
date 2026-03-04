@@ -248,6 +248,7 @@ public sealed class SawingGameRenderer : IDisposable
             // Markierungslinie nur waehrend des Spielens anzeigen
             _strokePaint.Color = new SKColor(0xFF, 0xFF, 0xFF, 50);
             _strokePaint.StrokeWidth = 1;
+            _strokePaint.PathEffect?.Dispose();
             _strokePaint.PathEffect = SKPathEffect.CreateDash([6, 4], 0);
             canvas.DrawLine(cutX, y + 2, cutX, y + height - 2, _strokePaint);
             _strokePaint.PathEffect = null;
@@ -280,6 +281,7 @@ public sealed class SawingGameRenderer : IDisposable
         canvas.DrawRect(x, y, width, height, _fillPaint);
 
         // Subtiler Farbverlauf (Mitte heller, Raender dunkler)
+        _shaderPaint.Shader?.Dispose();
         _shaderPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(x, y), new SKPoint(x, y + height),
             [WoodDark.WithAlpha(60), SKColors.Transparent, WoodDark.WithAlpha(40)],
@@ -482,6 +484,7 @@ public sealed class SawingGameRenderer : IDisposable
         float toothH = 4;
 
         // Saegeblatt (metallischer Gradient)
+        _shaderPaint.Shader?.Dispose();
         _shaderPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(x - sawHalfWidth, y),
             new SKPoint(x - sawHalfWidth, y + bladeH),
@@ -511,6 +514,7 @@ public sealed class SawingGameRenderer : IDisposable
         float handleX = x - handleW / 2;
         float handleY = y - handleH;
 
+        _shaderPaint.Shader?.Dispose();
         _shaderPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(handleX, handleY),
             new SKPoint(handleX, handleY + handleH),

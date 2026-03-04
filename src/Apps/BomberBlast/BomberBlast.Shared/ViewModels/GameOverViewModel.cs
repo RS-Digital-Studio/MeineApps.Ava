@@ -503,6 +503,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable
     [RelayCommand]
     private void TryAgain()
     {
+        _coinAnimTimer?.Stop();
         ClaimCoins();
 
         if (IsSurvivalMode)
@@ -518,6 +519,7 @@ public sealed partial class GameOverViewModel : ViewModelBase, INavigable
     [RelayCommand]
     private void MainMenu()
     {
+        _coinAnimTimer?.Stop();
         ClaimCoins();
         NavigationRequested?.Invoke(new GoResetThen(new GoMainMenu()));
     }

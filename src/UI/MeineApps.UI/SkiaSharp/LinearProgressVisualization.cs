@@ -52,6 +52,7 @@ public static class LinearProgressVisualization
         {
             float fillRight = barLeft + fillW;
 
+            _fillPaint.Shader?.Dispose();
             _fillPaint.Shader = SKShader.CreateLinearGradient(
                 new SKPoint(barLeft, barTop),
                 new SKPoint(fillRight, barTop),

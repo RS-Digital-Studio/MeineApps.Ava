@@ -57,6 +57,7 @@ public static class ShopIconRenderer
 
         // Bomben-Koerper (Gradient: oben heller, unten dunkler)
         var bodyRect = new SKRect(cx - s, cy - s * 0.6f, cx + s, cy + s * 0.8f);
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateRadialGradient(
             new SKPoint(cx - s * 0.25f, cy - s * 0.1f), s * 1.2f,
             [Lighten(color, 40), color, Darken(color, 60)],
@@ -115,6 +116,7 @@ public static class ShopIconRenderer
                           cx + s * 0.6f, cy + s * 0.6f);
         outerFlame.Close();
 
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - s * 1.1f), new SKPoint(cx, cy + s * 0.6f),
             [new SKColor(255, 200, 50), color, Darken(color, 40)],
@@ -133,6 +135,7 @@ public static class ShopIconRenderer
                           cx + s * 0.25f, cy + s * 0.4f);
         innerFlame.Close();
 
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - s * 0.6f), new SKPoint(cx, cy + s * 0.4f),
             [SKColors.White, new SKColor(255, 230, 100)],
@@ -179,6 +182,7 @@ public static class ShopIconRenderer
         _glow.MaskFilter = null;
 
         // Blitz-Fuellung
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - s), new SKPoint(cx, cy + s),
             [Lighten(color, 60), color],
@@ -205,6 +209,7 @@ public static class ShopIconRenderer
         _glow.MaskFilter = null;
 
         // Herz mit Gradient
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateRadialGradient(
             new SKPoint(cx - s * 0.15f, cy - s * 0.15f), s * 1.5f,
             [Lighten(color, 50), color, Darken(color, 50)],
@@ -249,6 +254,7 @@ public static class ShopIconRenderer
         _glow.MaskFilter = null;
 
         // Stern mit Gradient
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateRadialGradient(
             new SKPoint(cx - s * 0.15f, cy - s * 0.2f), s * 1.5f,
             [Lighten(color, 60), color, Darken(color, 40)],
@@ -280,6 +286,7 @@ public static class ShopIconRenderer
         _glow.MaskFilter = null;
 
         // Uhr-Koerper
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateRadialGradient(
             new SKPoint(cx - s * 0.2f, cy - s * 0.2f), s * 1.5f,
             [Lighten(color, 50), color, Darken(color, 50)],
@@ -342,6 +349,7 @@ public static class ShopIconRenderer
         _glow.MaskFilter = null;
 
         // Schild-Koerper mit Gradient
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx - s, cy - s), new SKPoint(cx + s * 0.5f, cy + s),
             [Lighten(color, 50), color, Darken(color, 40)],
@@ -386,6 +394,7 @@ public static class ShopIconRenderer
             canvas.DrawOval(coinX, coinY + s * 0.04f, s * 0.45f, s * 0.14f, _fill);
 
             // Muenz-Oberseite
+            _fill.Shader?.Dispose();
             _fill.Shader = SKShader.CreateRadialGradient(
                 new SKPoint(coinX - s * 0.1f, coinY - s * 0.05f), s * 0.6f,
                 [Lighten(color, 60), color, Darken(color, 30)],
@@ -463,6 +472,7 @@ public static class ShopIconRenderer
         _glow.MaskFilter = null;
 
         // Bomben-Koerper (eisblau)
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateRadialGradient(
             new SKPoint(cx - s * 0.2f, cy - s * 0.1f), s * 1.3f,
             [Lighten(color, 40), color, Darken(color, 50)],
@@ -523,6 +533,7 @@ public static class ShopIconRenderer
         }
 
         // Bomben-Koerper (dunkelrot)
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateRadialGradient(
             new SKPoint(cx - s * 0.15f, cy - s * 0.1f), s * 1.2f,
             [Lighten(color, 30), color, Darken(color, 50)],
@@ -566,6 +577,7 @@ public static class ShopIconRenderer
         DrawSlimeDrop(canvas, cx + s * 0.05f, cy + s * 0.5f, s * 0.12f, color);
 
         // Bomben-Koerper (gruen)
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateRadialGradient(
             new SKPoint(cx - s * 0.15f, cy - s * 0.1f), s * 1.2f,
             [Lighten(color, 40), color, Darken(color, 50)],
@@ -743,6 +755,7 @@ public static class ShopIconRenderer
                      cx, cy + size * 0.4f);
         path.Close();
 
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - size * 0.5f), new SKPoint(cx, cy + size * 0.4f),
             [lightColor, mainColor],
@@ -772,6 +785,7 @@ public static class ShopIconRenderer
                      cx + size * 0.4f, cy + size * 0.3f);
         path.Close();
 
+        _fill.Shader?.Dispose();
         _fill.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - size * 0.8f), new SKPoint(cx, cy + size * 0.3f),
             [inner, outer],

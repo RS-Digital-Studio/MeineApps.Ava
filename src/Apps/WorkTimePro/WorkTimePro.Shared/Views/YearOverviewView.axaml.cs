@@ -12,29 +12,37 @@ public partial class YearOverviewView : UserControl
     public YearOverviewView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+    }
 
-        // DataContext-Wechsel: Canvas invalidieren
-        DataContextChanged += (_, _) =>
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (_vm != null)
         {
-            _vm = DataContext as YearOverviewViewModel;
-            if (_vm != null)
-            {
-                _vm.PropertyChanged += (_, e) =>
-                {
-                    switch (e.PropertyName)
-                    {
-                        case nameof(YearOverviewViewModel.MonthlyWorkHoursData):
-                        case nameof(YearOverviewViewModel.MonthlyTargetHoursData):
-                        case nameof(YearOverviewViewModel.MonthLabels):
-                            MonthlyChartCanvas?.InvalidateSurface();
-                            break;
-                        case nameof(YearOverviewViewModel.CumulativeBalanceData):
-                            BalanceChartCanvas?.InvalidateSurface();
-                            break;
-                    }
-                };
-            }
-        };
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
+        if (DataContext is YearOverviewViewModel vm)
+        {
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        switch (e.PropertyName)
+        {
+            case nameof(YearOverviewViewModel.MonthlyWorkHoursData):
+            case nameof(YearOverviewViewModel.MonthlyTargetHoursData):
+            case nameof(YearOverviewViewModel.MonthLabels):
+                MonthlyChartCanvas?.InvalidateSurface();
+                break;
+            case nameof(YearOverviewViewModel.CumulativeBalanceData):
+                BalanceChartCanvas?.InvalidateSurface();
+                break;
+        }
     }
 
     // === PaintSurface Handler ===

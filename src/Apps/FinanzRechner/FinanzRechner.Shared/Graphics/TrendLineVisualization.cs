@@ -126,6 +126,7 @@ public static class TrendLineVisualization
         fillPath.LineTo(points[0].X, chartBottom);
         fillPath.Close();
 
+        _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(0, points.Min(p => p.Y)),
             new SKPoint(0, chartBottom),

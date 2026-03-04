@@ -169,6 +169,7 @@ public static class ElectricalVisualization
             float y = graphB - barH;
 
             // Balken mit Gradient
+            _barPaint.Shader?.Dispose();
             _barPaint.Shader = SKShader.CreateLinearGradient(
                 new SKPoint(x, y), new SKPoint(x, graphB),
                 new[] { colors[i], SkiaThemeHelper.AdjustBrightness(colors[i], 0.6f) },

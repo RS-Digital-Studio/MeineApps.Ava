@@ -420,6 +420,7 @@ public sealed class DesignPuzzleRenderer : IDisposable
         // Gestrichelter Rahmen in Hint-Farbe
         _strokePaint.Color = hintColor.WithAlpha(100);
         _strokePaint.StrokeWidth = 2;
+        _strokePaint.PathEffect?.Dispose();
         _strokePaint.PathEffect = SKPathEffect.CreateDash([6, 4], _time * 8);
         canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, _strokePaint);
         _strokePaint.PathEffect = null; // Zuruecksetzen fuer andere Nutzungen

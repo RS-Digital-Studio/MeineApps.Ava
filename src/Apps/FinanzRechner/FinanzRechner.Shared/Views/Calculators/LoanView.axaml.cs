@@ -11,6 +11,8 @@ namespace FinanzRechner.Views.Calculators;
 
 public partial class LoanView : UserControl
 {
+    private LoanViewModel? _vm;
+
     // --- Header-Animation ---
     private DispatcherTimer? _headerTimer;
     private float _headerTime;
@@ -27,18 +29,27 @@ public partial class LoanView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         if (DataContext is LoanViewModel vm)
         {
-            vm.PropertyChanged += (_, args) =>
-            {
-                switch (args.PropertyName)
-                {
-                    case nameof(vm.DonutSegments):
-                    case nameof(vm.HasResult):
-                        DonutCanvas?.InvalidateSurface();
-                        break;
-                }
-            };
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        switch (args.PropertyName)
+        {
+            case nameof(_vm.DonutSegments):
+            case nameof(_vm.HasResult):
+                DonutCanvas?.InvalidateSurface();
+                break;
         }
     }
 

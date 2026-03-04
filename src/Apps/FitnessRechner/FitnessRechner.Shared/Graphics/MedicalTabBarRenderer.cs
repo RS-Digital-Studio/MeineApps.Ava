@@ -172,6 +172,7 @@ public sealed class MedicalTabBarRenderer : IDisposable
         var cyanEdge = MedicalColors.Cyan.WithAlpha(80);
         var transparent = MedicalColors.Cyan.WithAlpha(0);
 
+        _edgePaint.Shader?.Dispose();
         _edgePaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(bounds.Left, bounds.Top),
             new SKPoint(bounds.Right, bounds.Top),

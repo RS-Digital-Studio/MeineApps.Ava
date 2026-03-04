@@ -98,6 +98,7 @@ public static class BudgetGaugeVisualization
             // Gradient-Arc
             _arcPaint.StrokeWidth = strokeW;
             _arcPaint.Color = arcColor;
+            _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = SKShader.CreateSweepGradient(
                 new SKPoint(cx, cy),
                 new[] { _greenColor, arcColor },

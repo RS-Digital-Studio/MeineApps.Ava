@@ -169,6 +169,7 @@ public static class RarityRenderer
             _ => 15
         };
 
+        FillPaint.Shader?.Dispose();
         FillPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(rect.Left, rect.MidY),
             new SKPoint(rect.Right, rect.MidY),

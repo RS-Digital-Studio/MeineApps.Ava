@@ -46,17 +46,25 @@ public partial class LuckySpinView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         _vm = DataContext as LuckySpinViewModel;
         if (_vm != null)
         {
-            _vm.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName == nameof(LuckySpinViewModel.IsSpinning) && _vm.IsSpinning)
-                    StartAnimationTimer();
-                if (args.PropertyName == nameof(LuckySpinViewModel.CurrentAngle))
-                    WheelCanvas.InvalidateSurface();
-            };
+            _vm.PropertyChanged += OnVmPropertyChanged;
         }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(LuckySpinViewModel.IsSpinning) && _vm.IsSpinning)
+            StartAnimationTimer();
+        if (args.PropertyName == nameof(LuckySpinViewModel.CurrentAngle))
+            WheelCanvas.InvalidateSurface();
     }
 
     protected override void OnLoaded(global::Avalonia.Interactivity.RoutedEventArgs e)

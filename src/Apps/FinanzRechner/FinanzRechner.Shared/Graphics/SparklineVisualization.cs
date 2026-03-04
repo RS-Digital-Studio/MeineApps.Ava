@@ -75,6 +75,7 @@ public static class SparklineVisualization
             fillPath.LineTo(points[^1].X, chartBottom);
             fillPath.Close();
 
+            _fillPaint.Shader?.Dispose();
             _fillPaint.Shader = SKShader.CreateLinearGradient(
                 new SKPoint(0, chartTop),
                 new SKPoint(0, chartBottom),

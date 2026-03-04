@@ -106,6 +106,7 @@ public static class WeekdayRadialVisualization
                 cx + MathF.Cos(midRad) * barRadius,
                 cy + MathF.Sin(midRad) * barRadius);
 
+            _barPaint.Shader?.Dispose();
             _barPaint.Shader = SKShader.CreateLinearGradient(
                 gradStart, gradEnd,
                 new[] { SkiaThemeHelper.WithAlpha(barColor, 150), barColor },

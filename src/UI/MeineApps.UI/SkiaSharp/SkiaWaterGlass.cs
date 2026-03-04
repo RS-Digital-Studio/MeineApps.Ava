@@ -194,6 +194,7 @@ public class SkiaWaterGlass : Control
             // Wasser-Gradient (hell oben, dunkel unten)
             var waterLight = waterColor.WithAlpha(200);
             var waterDark = SkiaThemeHelper.AdjustBrightness(waterColor, 0.6f).WithAlpha(220);
+            _waterPaint.Shader?.Dispose();
             _waterPaint.Shader = SKShader.CreateLinearGradient(
                 new SKPoint(w / 2f, waterTop),
                 new SKPoint(w / 2f, glassBottom),
@@ -224,6 +225,7 @@ public class SkiaWaterGlass : Control
         // 3. Glas-Glanz (weißer Gradient-Streifen links)
         float shineX = glassLeft + 6f;
         float shineW = 4f;
+        _shinePaint.Shader?.Dispose();
         _shinePaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(shineX, glassTop + 10f),
             new SKPoint(shineX + shineW, glassTop + 10f),

@@ -13,47 +13,55 @@ public partial class StatisticsView : UserControl
     public StatisticsView()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+    }
 
-        // DataContext-Wechsel: Canvas invalidieren
-        DataContextChanged += (_, _) =>
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (_vm != null)
         {
-            _vm = DataContext as StatisticsViewModel;
-            if (_vm != null)
-            {
-                _vm.PropertyChanged += (_, e) =>
-                {
-                    // Bei Datenänderungen alle Canvas invalidieren
-                    switch (e.PropertyName)
-                    {
-                        case nameof(StatisticsViewModel.PauseSegments):
-                            PauseDonutCanvas?.InvalidateSurface();
-                            break;
-                        case nameof(StatisticsViewModel.WeeklyHoursData):
-                        case nameof(StatisticsViewModel.WeeklyLabels):
-                            WeeklyChartCanvas?.InvalidateSurface();
-                            break;
-                        case nameof(StatisticsViewModel.OvertimeDailyBalance):
-                        case nameof(StatisticsViewModel.OvertimeCumulativeBalance):
-                            OvertimeChartCanvas?.InvalidateSurface();
-                            break;
-                        case nameof(StatisticsViewModel.WeekdayAvgHours):
-                        case nameof(StatisticsViewModel.WeekdayLabels):
-                            WeekdayRadialCanvas?.InvalidateSurface();
-                            break;
-                        case nameof(StatisticsViewModel.ProjectSegments):
-                            ProjectDonutCanvas?.InvalidateSurface();
-                            break;
-                        case nameof(StatisticsViewModel.EmployerSegments):
-                            EmployerDonutCanvas?.InvalidateSurface();
-                            break;
-                        case nameof(StatisticsViewModel.ShowTable):
-                            // Beim Wechsel zu Charts alle Canvas invalidieren
-                            InvalidateAllCanvases();
-                            break;
-                    }
-                };
-            }
-        };
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
+        if (DataContext is StatisticsViewModel vm)
+        {
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // Bei Datenänderungen alle Canvas invalidieren
+        switch (e.PropertyName)
+        {
+            case nameof(StatisticsViewModel.PauseSegments):
+                PauseDonutCanvas?.InvalidateSurface();
+                break;
+            case nameof(StatisticsViewModel.WeeklyHoursData):
+            case nameof(StatisticsViewModel.WeeklyLabels):
+                WeeklyChartCanvas?.InvalidateSurface();
+                break;
+            case nameof(StatisticsViewModel.OvertimeDailyBalance):
+            case nameof(StatisticsViewModel.OvertimeCumulativeBalance):
+                OvertimeChartCanvas?.InvalidateSurface();
+                break;
+            case nameof(StatisticsViewModel.WeekdayAvgHours):
+            case nameof(StatisticsViewModel.WeekdayLabels):
+                WeekdayRadialCanvas?.InvalidateSurface();
+                break;
+            case nameof(StatisticsViewModel.ProjectSegments):
+                ProjectDonutCanvas?.InvalidateSurface();
+                break;
+            case nameof(StatisticsViewModel.EmployerSegments):
+                EmployerDonutCanvas?.InvalidateSurface();
+                break;
+            case nameof(StatisticsViewModel.ShowTable):
+            // Beim Wechsel zu Charts alle Canvas invalidieren
+                InvalidateAllCanvases();
+                break;
+        }
     }
 
     private void InvalidateAllCanvases()

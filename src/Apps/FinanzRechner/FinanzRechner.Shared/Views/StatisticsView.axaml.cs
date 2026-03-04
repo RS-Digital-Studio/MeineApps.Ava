@@ -10,6 +10,8 @@ namespace FinanzRechner.Views;
 
 public partial class StatisticsView : UserControl
 {
+    private StatisticsViewModel? _vm;
+
     public StatisticsView()
     {
         InitializeComponent();
@@ -20,25 +22,34 @@ public partial class StatisticsView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         if (DataContext is StatisticsViewModel vm)
         {
-            vm.PropertyChanged += (_, args) =>
-            {
-                switch (args.PropertyName)
-                {
-                    case nameof(vm.ExpenseDonutSegments):
-                        ExpenseDonutCanvas?.InvalidateSurface();
-                        break;
-                    case nameof(vm.IncomeDonutSegments):
-                        IncomeDonutCanvas?.InvalidateSurface();
-                        break;
-                    case nameof(vm.TrendMonthLabels):
-                    case nameof(vm.TrendIncomeData):
-                    case nameof(vm.TrendExpenseData):
-                        TrendChartCanvas?.InvalidateSurface();
-                        break;
-                }
-            };
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        switch (args.PropertyName)
+        {
+            case nameof(_vm.ExpenseDonutSegments):
+                ExpenseDonutCanvas?.InvalidateSurface();
+                break;
+            case nameof(_vm.IncomeDonutSegments):
+                IncomeDonutCanvas?.InvalidateSurface();
+                break;
+            case nameof(_vm.TrendMonthLabels):
+            case nameof(_vm.TrendIncomeData):
+            case nameof(_vm.TrendExpenseData):
+                TrendChartCanvas?.InvalidateSurface();
+                break;
         }
     }
 

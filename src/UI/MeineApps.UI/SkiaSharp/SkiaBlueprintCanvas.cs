@@ -212,6 +212,7 @@ public static class SkiaBlueprintCanvas
     {
         var dashColor = color ?? SkiaThemeHelper.TextMuted;
         _dashedPaint.Color = dashColor;
+        _dashedPaint.PathEffect?.Dispose();
         _dashedPaint.PathEffect = SKPathEffect.CreateDash(new[] { dashLength, gapLength }, 0);
 
         canvas.DrawLine(start, end, _dashedPaint);

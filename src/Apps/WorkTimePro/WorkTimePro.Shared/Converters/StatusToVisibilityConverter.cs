@@ -74,15 +74,19 @@ public class TimeSpanToStringConverter : IValueConverter
 /// </summary>
 public class BalanceToColorConverter : IValueConverter
 {
+    private static readonly IBrush PositiveBrush = SolidColorBrush.Parse("#4CAF50");
+    private static readonly IBrush NegativeBrush = SolidColorBrush.Parse("#F44336");
+    private static readonly IBrush NeutralBrush = SolidColorBrush.Parse("#9E9E9E");
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is int minutes)
         {
             return minutes >= 0
-                ? SolidColorBrush.Parse("#4CAF50")
-                : SolidColorBrush.Parse("#F44336");
+                ? PositiveBrush
+                : NegativeBrush;
         }
-        return SolidColorBrush.Parse("#9E9E9E");
+        return NeutralBrush;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -96,23 +100,32 @@ public class BalanceToColorConverter : IValueConverter
 /// </summary>
 public class DayStatusToColorConverter : IValueConverter
 {
+    private static readonly IBrush WorkDayBrush = SolidColorBrush.Parse("#4CAF50");
+    private static readonly IBrush WeekendBrush = SolidColorBrush.Parse("#9E9E9E");
+    private static readonly IBrush VacationBrush = SolidColorBrush.Parse("#2196F3");
+    private static readonly IBrush HolidayBrush = SolidColorBrush.Parse("#FF9800");
+    private static readonly IBrush SickBrush = SolidColorBrush.Parse("#F44336");
+    private static readonly IBrush HomeOfficeBrush = SolidColorBrush.Parse("#9C27B0");
+    private static readonly IBrush BusinessTripBrush = SolidColorBrush.Parse("#00BCD4");
+    private static readonly IBrush DayStatusDefaultBrush = SolidColorBrush.Parse("#757575");
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is DayStatus status)
         {
             return status switch
             {
-                DayStatus.WorkDay => SolidColorBrush.Parse("#4CAF50"),
-                DayStatus.Weekend => SolidColorBrush.Parse("#9E9E9E"),
-                DayStatus.Vacation => SolidColorBrush.Parse("#2196F3"),
-                DayStatus.Holiday => SolidColorBrush.Parse("#FF9800"),
-                DayStatus.Sick => SolidColorBrush.Parse("#F44336"),
-                DayStatus.HomeOffice => SolidColorBrush.Parse("#9C27B0"),
-                DayStatus.BusinessTrip => SolidColorBrush.Parse("#00BCD4"),
-                _ => SolidColorBrush.Parse("#757575")
+                DayStatus.WorkDay => WorkDayBrush,
+                DayStatus.Weekend => WeekendBrush,
+                DayStatus.Vacation => VacationBrush,
+                DayStatus.Holiday => HolidayBrush,
+                DayStatus.Sick => SickBrush,
+                DayStatus.HomeOffice => HomeOfficeBrush,
+                DayStatus.BusinessTrip => BusinessTripBrush,
+                _ => DayStatusDefaultBrush
             };
         }
-        return SolidColorBrush.Parse("#757575");
+        return DayStatusDefaultBrush;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -146,34 +159,41 @@ public class AutoPauseToIconConverter : IValueConverter
 /// </summary>
 public class HeatmapValueToColorConverter : IValueConverter
 {
+    private static readonly IBrush EmptyBrush = SolidColorBrush.Parse("#EEEEEE");
+    private static readonly IBrush LightGreenBrush = SolidColorBrush.Parse("#C8E6C9");
+    private static readonly IBrush MediumGreenBrush = SolidColorBrush.Parse("#81C784");
+    private static readonly IBrush DarkGreenBrush = SolidColorBrush.Parse("#4CAF50");
+    private static readonly IBrush NormalGreenBrush = SolidColorBrush.Parse("#388E3C");
+    private static readonly IBrush OvertimeBrush = SolidColorBrush.Parse("#F44336");
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is int minutes)
         {
             // 0 Minuten = keine Farbe
             if (minutes == 0)
-                return SolidColorBrush.Parse("#EEEEEE");
+                return EmptyBrush;
 
             // Bis 4h = hellgrün
             if (minutes < 240)
-                return SolidColorBrush.Parse("#C8E6C9");
+                return LightGreenBrush;
 
             // 4-6h = mittelgrün
             if (minutes < 360)
-                return SolidColorBrush.Parse("#81C784");
+                return MediumGreenBrush;
 
             // 6-8h = dunkelgrün
             if (minutes < 480)
-                return SolidColorBrush.Parse("#4CAF50");
+                return DarkGreenBrush;
 
             // 8-10h = normal
             if (minutes < 600)
-                return SolidColorBrush.Parse("#388E3C");
+                return NormalGreenBrush;
 
             // Über 10h = rot (Überstunden)
-            return SolidColorBrush.Parse("#F44336");
+            return OvertimeBrush;
         }
-        return SolidColorBrush.Parse("#EEEEEE");
+        return EmptyBrush;
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

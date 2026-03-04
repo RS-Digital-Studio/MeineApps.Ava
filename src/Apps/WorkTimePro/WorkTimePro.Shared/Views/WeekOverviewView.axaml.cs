@@ -10,6 +10,8 @@ namespace WorkTimePro.Views;
 
 public partial class WeekOverviewView : UserControl
 {
+    private WeekOverviewViewModel? _vm;
+
     public WeekOverviewView()
     {
         InitializeComponent();
@@ -19,25 +21,33 @@ public partial class WeekOverviewView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         if (DataContext is WeekOverviewViewModel vm)
         {
-            // Bei Daten-Änderungen Canvas invalidieren
-            vm.PropertyChanged += (_, args) =>
-            {
-                switch (args.PropertyName)
-                {
-                    case nameof(vm.Days):
-                    case nameof(vm.WorkTimeDisplay):
-                    case nameof(vm.TargetTimeDisplay):
-                    case nameof(vm.IsLoading):
-                        WeekBarCanvas?.InvalidateSurface();
-                        WeekProgressCanvas?.InvalidateSurface();
-                        break;
-                    case nameof(vm.ProgressPercent):
-                        WeekProgressCanvas?.InvalidateSurface();
-                        break;
-                }
-            };
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        switch (args.PropertyName)
+        {
+            case nameof(_vm.Days):
+            case nameof(_vm.WorkTimeDisplay):
+            case nameof(_vm.TargetTimeDisplay):
+            case nameof(_vm.IsLoading):
+                WeekBarCanvas?.InvalidateSurface();
+                WeekProgressCanvas?.InvalidateSurface();
+                break;
+            case nameof(_vm.ProgressPercent):
+                WeekProgressCanvas?.InvalidateSurface();
+                break;
         }
     }
 

@@ -10,6 +10,8 @@ namespace FinanzRechner.Views.Calculators;
 
 public partial class CompoundInterestView : UserControl
 {
+    private CompoundInterestViewModel? _vm;
+
     // --- Header-Animation ---
     private DispatcherTimer? _headerTimer;
     private float _headerTime;
@@ -26,20 +28,29 @@ public partial class CompoundInterestView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         if (DataContext is CompoundInterestViewModel vm)
         {
-            vm.PropertyChanged += (_, args) =>
-            {
-                switch (args.PropertyName)
-                {
-                    case nameof(vm.ChartXLabels):
-                    case nameof(vm.ChartArea1Data):
-                    case nameof(vm.ChartArea2Data):
-                    case nameof(vm.HasResult):
-                        StackedAreaCanvas?.InvalidateSurface();
-                        break;
-                }
-            };
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        switch (args.PropertyName)
+        {
+            case nameof(_vm.ChartXLabels):
+            case nameof(_vm.ChartArea1Data):
+            case nameof(_vm.ChartArea2Data):
+            case nameof(_vm.HasResult):
+                StackedAreaCanvas?.InvalidateSurface();
+                break;
         }
     }
 

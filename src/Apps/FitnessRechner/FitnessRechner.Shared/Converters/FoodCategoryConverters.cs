@@ -46,6 +46,20 @@ public class FoodCategoryToIconConverter : IValueConverter
 /// </summary>
 public class FoodCategoryToColorConverter : IValueConverter
 {
+    private static readonly IBrush FruitBrush = FruitBrush;
+    private static readonly IBrush VegetableBrush = VegetableBrush;
+    private static readonly IBrush MeatBrush = MeatBrush;
+    private static readonly IBrush FishBrush = FishBrush;
+    private static readonly IBrush DairyBrush = DairyBrush;
+    private static readonly IBrush GrainBrush = GrainBrush;
+    private static readonly IBrush BeverageBrush = BeverageBrush;
+    private static readonly IBrush SnackBrush = SnackBrush;
+    private static readonly IBrush FastFoodBrush = FastFoodBrush;
+    private static readonly IBrush SweetBrush = SweetBrush;
+    private static readonly IBrush NutBrush = NutBrush;
+    private static readonly IBrush LegumeBrush = LegumeBrush;
+    private static readonly IBrush FoodDefaultBrush = FoodDefaultBrush;
+
     public static readonly FoodCategoryToColorConverter Instance = new();
 
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -70,7 +84,7 @@ public class FoodCategoryToColorConverter : IValueConverter
             };
             return new SolidColorBrush(color);
         }
-        return new SolidColorBrush(Color.Parse("#6B7280"));
+        return FoodDefaultBrush;
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)

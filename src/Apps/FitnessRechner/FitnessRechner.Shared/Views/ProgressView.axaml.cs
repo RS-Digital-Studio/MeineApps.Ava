@@ -9,6 +9,8 @@ namespace FitnessRechner.Views;
 
 public partial class ProgressView : UserControl
 {
+    private ProgressViewModel? _vm;
+
     public ProgressView()
     {
         InitializeComponent();
@@ -18,40 +20,49 @@ public partial class ProgressView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         if (DataContext is ProgressViewModel vm)
         {
-            vm.PropertyChanged += (_, args) =>
-            {
-                switch (args.PropertyName)
-                {
-                    case nameof(vm.WeightChartData):
-                    case nameof(vm.WeightMilestoneLines):
-                        WeightChartCanvas?.InvalidateSurface();
-                        break;
-                    case nameof(vm.BmiChartData):
-                        BmiChartCanvas?.InvalidateSurface();
-                        break;
-                    case nameof(vm.BodyFatChartData):
-                        BodyFatChartCanvas?.InvalidateSurface();
-                        break;
-                    case nameof(vm.WeeklyCaloriesValues):
-                    case nameof(vm.WeeklyDayLabels):
-                        WeeklyCaloriesCanvas?.InvalidateSurface();
-                        break;
-                    // ProgressBars invalidieren bei Datenänderung
-                    case nameof(vm.WeightGoalProgress):
-                        InvalidateAllCanvases("WeightGoalProgress");
-                        break;
-                    case nameof(vm.WaterProgress):
-                        InvalidateAllCanvases("WaterProgress");
-                        break;
-                    case nameof(vm.ProteinConsumed):
-                    case nameof(vm.CarbsConsumed):
-                    case nameof(vm.FatConsumed):
-                        InvalidateAllCanvases("MacroProgress");
-                        break;
-                }
-            };
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        switch (args.PropertyName)
+        {
+            case nameof(_vm.WeightChartData):
+            case nameof(_vm.WeightMilestoneLines):
+                WeightChartCanvas?.InvalidateSurface();
+                break;
+            case nameof(_vm.BmiChartData):
+                BmiChartCanvas?.InvalidateSurface();
+                break;
+            case nameof(_vm.BodyFatChartData):
+                BodyFatChartCanvas?.InvalidateSurface();
+                break;
+            case nameof(_vm.WeeklyCaloriesValues):
+            case nameof(_vm.WeeklyDayLabels):
+                WeeklyCaloriesCanvas?.InvalidateSurface();
+                break;
+            // ProgressBars invalidieren bei Datenänderung
+            case nameof(_vm.WeightGoalProgress):
+                InvalidateAllCanvases("WeightGoalProgress");
+                break;
+            case nameof(_vm.WaterProgress):
+                InvalidateAllCanvases("WaterProgress");
+                break;
+            case nameof(_vm.ProteinConsumed):
+            case nameof(_vm.CarbsConsumed):
+            case nameof(_vm.FatConsumed):
+                InvalidateAllCanvases("MacroProgress");
+                break;
         }
     }
 

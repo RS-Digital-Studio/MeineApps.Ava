@@ -10,6 +10,8 @@ namespace FinanzRechner.Views.Calculators;
 
 public partial class AmortizationView : UserControl
 {
+    private AmortizationViewModel? _vm;
+
     // --- Header-Animation ---
     private DispatcherTimer? _headerTimer;
     private float _headerTime;
@@ -26,20 +28,29 @@ public partial class AmortizationView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         if (DataContext is AmortizationViewModel vm)
         {
-            vm.PropertyChanged += (_, args) =>
-            {
-                switch (args.PropertyName)
-                {
-                    case nameof(vm.AmortYearLabels):
-                    case nameof(vm.AmortPrincipalData):
-                    case nameof(vm.AmortInterestData):
-                    case nameof(vm.HasResult):
-                        AmortBarCanvas?.InvalidateSurface();
-                        break;
-                }
-            };
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        switch (args.PropertyName)
+        {
+            case nameof(_vm.AmortYearLabels):
+            case nameof(_vm.AmortPrincipalData):
+            case nameof(_vm.AmortInterestData):
+            case nameof(_vm.HasResult):
+                AmortBarCanvas?.InvalidateSurface();
+                break;
         }
     }
 

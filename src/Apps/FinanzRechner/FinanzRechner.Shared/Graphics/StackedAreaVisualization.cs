@@ -150,6 +150,7 @@ public static class StackedAreaVisualization
         path.Close();
 
         float minY = points.Min(p => p.Y);
+        _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(0, minY),
             new SKPoint(0, chartBottom),
@@ -179,6 +180,7 @@ public static class StackedAreaVisualization
 
         float minY = topPoints.Min(p => p.Y);
         float maxY = bottomPoints.Max(p => p.Y);
+        _fillPaint.Shader?.Dispose();
         _fillPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(0, minY),
             new SKPoint(0, maxY),

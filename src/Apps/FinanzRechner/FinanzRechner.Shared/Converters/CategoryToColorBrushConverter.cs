@@ -12,12 +12,14 @@ namespace FinanzRechner.Converters;
 /// </summary>
 public class CategoryToColorBrushConverter : IValueConverter
 {
+    private static readonly IBrush FallbackGrayBrush = FallbackGrayBrush;
+
     public static readonly CategoryToColorBrushConverter Instance = new();
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not ExpenseCategory category)
-            return new SolidColorBrush(Colors.Gray);
+            return FallbackGrayBrush;
 
         var skColor = CategoryLocalizationHelper.GetCategoryColor(category);
         byte alpha = 255;

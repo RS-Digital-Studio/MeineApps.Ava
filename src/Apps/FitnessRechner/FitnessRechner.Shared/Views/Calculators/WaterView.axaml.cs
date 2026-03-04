@@ -89,6 +89,7 @@ public partial class WaterView : UserControl
 
         // Wasser füllen (Cyan-Gradient)
         var waterColor = new SKColor(0x22, 0xC5, 0x5E);
+        _waterPaint.Shader?.Dispose();
         _waterPaint.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, waterTop), new SKPoint(cx, bottom),
             new[] { SkiaThemeHelper.WithAlpha(waterColor, 160), SkiaThemeHelper.WithAlpha(new SKColor(0x06, 0xB6, 0xD4), 200) },

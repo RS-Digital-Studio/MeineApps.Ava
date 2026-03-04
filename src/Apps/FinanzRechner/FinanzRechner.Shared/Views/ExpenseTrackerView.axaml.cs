@@ -9,6 +9,8 @@ namespace FinanzRechner.Views;
 
 public partial class ExpenseTrackerView : UserControl
 {
+    private ExpenseTrackerViewModel? _vm;
+
     public ExpenseTrackerView()
     {
         InitializeComponent();
@@ -19,18 +21,27 @@ public partial class ExpenseTrackerView : UserControl
     {
         base.OnDataContextChanged(e);
 
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
         if (DataContext is ExpenseTrackerViewModel vm)
         {
-            vm.PropertyChanged += (_, args) =>
-            {
-                switch (args.PropertyName)
-                {
-                    case nameof(vm.CategoryDonutSegments):
-                    case nameof(vm.HasCategoryChartData):
-                        CategoryDonutCanvas?.InvalidateSurface();
-                        break;
-                }
-            };
+            _vm = vm;
+            _vm.PropertyChanged += OnVmPropertyChanged;
+        }
+    }
+
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        switch (args.PropertyName)
+        {
+            case nameof(_vm.CategoryDonutSegments):
+            case nameof(_vm.HasCategoryChartData):
+                CategoryDonutCanvas?.InvalidateSurface();
+                break;
         }
     }
 

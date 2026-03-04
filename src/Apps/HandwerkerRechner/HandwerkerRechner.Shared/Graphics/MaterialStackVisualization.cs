@@ -313,6 +313,7 @@ public static class MaterialStackVisualization
         var barRect = new SKRect(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f);
 
         // Gradient für metallischen Look
+        _iconFill.Shader?.Dispose();
         _iconFill.Shader = SKShader.CreateLinearGradient(
             new SKPoint(cx, cy - h / 2f),
             new SKPoint(cx, cy + h / 2f),

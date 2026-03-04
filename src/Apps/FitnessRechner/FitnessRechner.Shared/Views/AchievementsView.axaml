@@ -12,30 +12,37 @@
     <conv:LocalizeKeyConverter x:Key="LocalizeKey" />
   </UserControl.Resources>
 
-  <Grid AutomationProperties.AutomationId="Achievements_RootPanel" RowDefinitions="Auto,*">
+  <!-- Navy Deep Hintergrund (Medical-Style) -->
+  <Grid AutomationProperties.AutomationId="Achievements_RootPanel" RowDefinitions="Auto,*"
+        Background="#0A1A2E">
 
-    <!-- Header -->
-    <Border AutomationProperties.AutomationId="Achievements_Header" Grid.Row="0" Padding="16,12" Background="{DynamicResource SurfaceBrush}"
-            BorderBrush="{DynamicResource BorderSubtleBrush}" BorderThickness="0,0,0,1">
+    <!-- Header (Medical-Style mit Cyan-Akzenten) -->
+    <Border AutomationProperties.AutomationId="Achievements_Header" Grid.Row="0" Padding="16,12"
+            Background="#0F1D32"
+            BorderBrush="#4D06B6D4" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Zurück-Button Cyan -->
         <Button AutomationProperties.AutomationId="Achievements_BtnBack" Grid.Column="0" Classes="Text" Command="{Binding CloseAchievementsCommand}">
           <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="#06B6D4" />
         </Button>
         <StackPanel Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <!-- Titel in Cyan -->
           <TextBlock AutomationProperties.AutomationId="Achievements_TxtTitle" Text="{Binding AchievementsTitleLabel}"
                      FontSize="18" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"
+                     Foreground="#06B6D4"
                      HorizontalAlignment="Center" />
+          <!-- Zähler gedimmt -->
           <TextBlock AutomationProperties.AutomationId="Achievements_TxtCount" Text="{Binding AchievementCountDisplay}"
-                     FontSize="12" Foreground="{DynamicResource TextMutedBrush}"
+                     FontSize="12" Foreground="#64748B"
                      HorizontalAlignment="Center" />
         </StackPanel>
-        <!-- Level-Badge rechts -->
+        <!-- Level-Badge: Holografischer Kreis-Style -->
         <Border AutomationProperties.AutomationId="Achievements_BadgeLevel" Grid.Column="2" CornerRadius="12" Padding="10,4"
-                Background="{DynamicResource PrimaryBrush}">
+                Background="#1A06B6D4"
+                BorderBrush="#06B6D4" BorderThickness="1">
           <TextBlock AutomationProperties.AutomationId="Achievements_TxtLevel" Text="{Binding LevelLabel}"
-                     FontSize="12" FontWeight="Bold" Foreground="White" />
+                     FontSize="12" FontWeight="Bold" Foreground="#06B6D4" />
         </Border>
       </Grid>
     </Border>
@@ -50,33 +57,41 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate DataType="models:FitnessAchievement" x:DataType="models:FitnessAchievement">
+            <!-- Achievement-Card: Medical Surface mit Cyan-Rand -->
             <Border Width="170" Margin="4" Padding="12" CornerRadius="12"
+                    Background="#D90F1D32"
                     BoxShadow="{DynamicResource CardShadow}">
-              <Border.Background>
-                <SolidColorBrush Color="{DynamicResource CardColor}" />
-              </Border.Background>
+              <Border.BorderBrush>
+                <!-- Feature-Gradient Cyan→Teal für Unlocked-Cards -->
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#4D06B6D4" Offset="0" />
+                  <GradientStop Color="#4D0D9488" Offset="1" />
+                </LinearGradientBrush>
+              </Border.BorderBrush>
+              <Border.BorderThickness>1</Border.BorderThickness>
               <StackPanel Spacing="8">
-                <!-- Icon: Farbig wenn freigeschaltet, grau wenn gesperrt -->
+                <!-- Icon: Cyan-Gradient wenn freigeschaltet, gedimmt wenn gesperrt -->
                 <Panel HorizontalAlignment="Center">
-                  <!-- Freigeschaltet: Gradient-Background -->
+                  <!-- Freigeschaltet: Cyan-Teal Gradient-Background -->
                   <Border Width="48" Height="48" CornerRadius="24"
                           IsVisible="{Binding IsUnlocked}">
                     <Border.Background>
                       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                        <GradientStop Color="{DynamicResource PrimaryColor}" Offset="0" />
-                        <GradientStop Color="{DynamicResource AccentColor}" Offset="1" />
+                        <GradientStop Color="#06B6D4" Offset="0" />
+                        <GradientStop Color="#0D9488" Offset="1" />
                       </LinearGradientBrush>
                     </Border.Background>
                     <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24"
                                      Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
-                  <!-- Gesperrt: Grauer Background -->
+                  <!-- Gesperrt: Gedimmter Surface-Background -->
                   <Border Width="48" Height="48" CornerRadius="24"
-                          Background="{DynamicResource SurfaceBrush}"
+                          Background="#1A06B6D4"
                           IsVisible="{Binding !IsUnlocked}">
+                    <!-- Icon gedimmt (TextMuted) -->
                     <mi:MaterialIcon Kind="{Binding Icon}" Width="24" Height="24"
-                                     Foreground="{DynamicResource TextMutedBrush}"
+                                     Foreground="#64748B"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Border>
                 </Panel>
@@ -85,12 +100,12 @@
                 <TextBlock Text="{Binding TitleKey, Converter={StaticResource LocalizeKey}}"
                            FontSize="12" FontWeight="SemiBold"
                            TextAlignment="Center" TextWrapping="Wrap"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                           Foreground="#E2E8F0" />
 
                 <!-- Beschreibung (lokalisiert) -->
                 <TextBlock Text="{Binding DescriptionKey, Converter={StaticResource LocalizeKey}}"
                            FontSize="10" TextAlignment="Center" TextWrapping="Wrap"
-                           Foreground="{DynamicResource TextMutedBrush}" />
+                           Foreground="#64748B" />
 
                 <!-- Fortschritt oder Freigeschaltet -->
                 <Panel>
@@ -103,16 +118,16 @@
                                FontSize="10" FontWeight="Bold" Foreground="#22C55E" />
                   </StackPanel>
 
-                  <!-- Fortschrittsbalken -->
+                  <!-- Fortschrittsbalken in Cyan -->
                   <StackPanel IsVisible="{Binding !IsUnlocked}" Spacing="4"
                               HorizontalAlignment="Stretch">
                     <ProgressBar Value="{Binding Progress}" Maximum="1.0"
                                  Height="4" CornerRadius="2"
                                  HorizontalAlignment="Stretch"
-                                 Foreground="{DynamicResource PrimaryBrush}"
+                                 Foreground="#06B6D4"
                                  Background="{DynamicResource BorderSubtleBrush}" />
                     <TextBlock Text="{Binding CurrentValue, StringFormat='{}{0}'}"
-                               FontSize="9" Foreground="{DynamicResource TextMutedBrush}"
+                               FontSize="9" Foreground="#64748B"
                                HorizontalAlignment="Center" />
                   </StackPanel>
                 </Panel>

@@ -1,4 +1,5 @@
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.Loading;
 using MeineApps.UI.SkiaSharp.Shaders;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,7 @@ namespace FinanzRechner.Loading;
 /// FinanzRechner Lade-Pipeline: Shader + DB-Init + ViewModel.
 /// ExpenseService.InitializeAsync() wird vorab ausgeführt (statt lazy in MainView).
 /// </summary>
-public class FinanzRechnerLoadingPipeline : LoadingPipelineBase
+public sealed class FinanzRechnerLoadingPipeline : LoadingPipelineBase
 {
     public FinanzRechnerLoadingPipeline(IServiceProvider services)
     {
@@ -27,7 +28,9 @@ public class FinanzRechnerLoadingPipeline : LoadingPipelineBase
             {
                 var dbTask = services.GetRequiredService<IExpenseService>().InitializeAsync();
                 var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
-                await Task.WhenAll(dbTask, shaderTask);
+                // Käufe mit Google Play abgleichen (Geräte-/Datenwechsel → Premium-Status wiederherstellen)
+                var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
+                await Task.WhenAll(dbTask, shaderTask, purchaseTask);
             }
         });
 

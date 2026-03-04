@@ -11,7 +11,7 @@ namespace FinanzRechner.Services;
 /// <summary>
 /// Service fuer den Export von Transaktionen (CSV + PDF).
 /// </summary>
-public class ExportService : IExportService
+public sealed class ExportService : IExportService
 {
     private readonly IExpenseService _expenseService;
     private readonly ILocalizationService _localizationService;

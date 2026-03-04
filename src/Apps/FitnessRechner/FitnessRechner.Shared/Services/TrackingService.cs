@@ -6,7 +6,7 @@ namespace FitnessRechner.Services;
 /// <summary>
 /// JSON-based tracking service
 /// </summary>
-public class TrackingService : ITrackingService, IDisposable
+public sealed class TrackingService : ITrackingService, IDisposable
 {
     private bool _disposed;
     private const string TRACKING_FILE = "tracking.json";

@@ -6,7 +6,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels.Calculators;
 
-public partial class IdealWeightViewModel : ViewModelBase
+public sealed partial class IdealWeightViewModel : ViewModelBase
 {
     private readonly IFitnessEngine _fitnessEngine;
     private readonly ILocalizationService _localization;

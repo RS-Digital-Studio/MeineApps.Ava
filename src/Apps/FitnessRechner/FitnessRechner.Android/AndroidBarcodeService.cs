@@ -11,7 +11,7 @@ namespace FitnessRechner.Android;
 /// Android-Implementation des IBarcodeService.
 /// Startet BarcodeScannerActivity (CameraX + ML Kit) und gibt das Ergebnis zurueck.
 /// </summary>
-public class AndroidBarcodeService : Services.IBarcodeService
+public sealed class AndroidBarcodeService : Services.IBarcodeService
 {
     private readonly Activity _activity;
     private TaskCompletionSource<string?>? _tcs;

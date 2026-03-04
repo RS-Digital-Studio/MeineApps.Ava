@@ -10,7 +10,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class BudgetsViewModel : ViewModelBase, IDisposable
+public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
 {
     private readonly IExpenseService _expenseService;
     private readonly ILocalizationService _localizationService;

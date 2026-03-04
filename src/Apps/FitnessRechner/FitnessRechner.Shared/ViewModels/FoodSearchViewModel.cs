@@ -10,7 +10,7 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace FitnessRechner.ViewModels;
 
-public partial class FoodSearchViewModel : ViewModelBase, IDisposable
+public sealed partial class FoodSearchViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IFoodSearchService _foodSearchService;

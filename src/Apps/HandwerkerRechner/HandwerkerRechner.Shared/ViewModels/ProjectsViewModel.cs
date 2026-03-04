@@ -14,7 +14,7 @@ namespace HandwerkerRechner.ViewModels;
 /// <summary>
 /// ViewModel for the project management page
 /// </summary>
-public partial class ProjectsViewModel : ViewModelBase
+public sealed partial class ProjectsViewModel : ViewModelBase
 {
     private readonly IProjectService _projectService;
     private readonly ILocalizationService _localization;

@@ -9,7 +9,6 @@
     <!-- Avalonia Core -->
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
-    <PackageReference Include="Avalonia.Fonts.Inter" />
 
     <!-- Icons -->
     <PackageReference Include="Material.Icons.Avalonia" />

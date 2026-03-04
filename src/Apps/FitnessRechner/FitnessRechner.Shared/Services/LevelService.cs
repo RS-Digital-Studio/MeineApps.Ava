@@ -7,7 +7,7 @@ namespace FitnessRechner.Services;
 /// Level-Formel: XpForLevel(n) = 100 * n * (n+1) / 2
 /// Level 1=100, 2=300, 3=600, 4=1000, ..., Max Level 50.
 /// </summary>
-public class LevelService : ILevelService
+public sealed class LevelService : ILevelService
 {
     private const string XpKey = "fitness_xp";
     private const string LevelKey = "fitness_level";

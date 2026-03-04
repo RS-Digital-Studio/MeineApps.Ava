@@ -3,7 +3,7 @@ namespace FinanzRechner.Models;
 /// <summary>
 /// Berechnungsengine für alle Finanzrechner.
 /// </summary>
-public class FinanceEngine
+public sealed class FinanceEngine
 {
     /// <summary>
     /// Prüft ob ein Berechnungsergebnis gültig ist (kein Infinity/NaN).

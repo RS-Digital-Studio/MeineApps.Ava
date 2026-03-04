@@ -51,6 +51,11 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 ### ProgressView Sub-Tabs
 - 4 Sub-Tabs: Weight, BMI, BodyFat, Water/Calories
 - `ProgressViewModel.OnAppearingAsync()` wird beim Tab-Wechsel aufgerufen
+- **Partial-Class-Aufteilung** (4 Dateien):
+  - `ProgressViewModel.cs` → Felder, Constructor, Properties, Events, Lifecycle, Navigation Commands
+  - `ProgressViewModel.Tracking.cs` → Add/Delete/Undo, Load/Refresh, Ziele, Weekly Analysis, Export
+  - `ProgressViewModel.Charts.cs` → Chart-Daten, Statistik, Meilensteine, Status-Updates, Meal Grouping
+  - `ProgressViewModel.Food.cs` → Food-Search, Add Food, "Gestern kopieren"
 
 ### Extended Food DB (24h Zugang)
 - **Ablauf-Key**: `extended_food_db_expiry` mit ISO 8601 UTC + `DateTimeStyles.RoundtripKind`

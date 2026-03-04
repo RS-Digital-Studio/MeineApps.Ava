@@ -10,7 +10,7 @@ namespace FitnessRechner.Android;
 /// Android-Implementierung für Erinnerungs-Notifications.
 /// Nutzt AlarmManager + NotificationChannel.
 /// </summary>
-public class AndroidReminderService : ReminderService
+public sealed class AndroidReminderService : ReminderService
 {
     private readonly Context _context;
     private const string ChannelId = "fitness_reminders";

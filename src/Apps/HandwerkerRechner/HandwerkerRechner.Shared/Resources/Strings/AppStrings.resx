@@ -2181,4 +2181,31 @@ Coverage decreases on rough surfaces!</value>
   <data name="LoadingHistory" xml:space="preserve">
     <value>Loading history...</value>
   </data>
+  <data name="AlertError" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="BrowserError" xml:space="preserve">
+    <value>Could not open browser</value>
+  </data>
+  <data name="ResultAcceptable" xml:space="preserve">
+    <value>Acceptable</value>
+  </data>
+  <data name="ResultCost" xml:space="preserve">
+    <value>Cost</value>
+  </data>
+  <data name="ResultPercentDrop" xml:space="preserve">
+    <value>Voltage drop</value>
+  </data>
+  <data name="UnitStrips" xml:space="preserve">
+    <value>Strips</value>
+  </data>
+  <data name="WallThicknessTooLarge" xml:space="preserve">
+    <value>Wall thickness too large</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Loading graphics</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Starting app</value>
+  </data>
 </root>

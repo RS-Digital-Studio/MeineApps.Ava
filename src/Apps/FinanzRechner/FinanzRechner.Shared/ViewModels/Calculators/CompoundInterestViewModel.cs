@@ -12,7 +12,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
-public partial class CompoundInterestViewModel : ViewModelBase, IDisposable
+public sealed partial class CompoundInterestViewModel : ViewModelBase, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;

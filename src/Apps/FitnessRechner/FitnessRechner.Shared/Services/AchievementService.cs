@@ -9,7 +9,7 @@ namespace FitnessRechner.Services;
 /// Preferences-basierter Achievement-Service.
 /// Speichert freigeschaltete IDs und Fortschritt als JSON.
 /// </summary>
-public class AchievementService : IAchievementService
+public sealed class AchievementService : IAchievementService
 {
     private const string UnlockedKey = "achievements_unlocked";
     private const string ProgressKey = "achievements_progress";

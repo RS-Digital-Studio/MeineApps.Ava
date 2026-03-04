@@ -645,36 +645,6 @@ namespace HandwerkerRechner.Resources.Strings {
             }
         }
 
-        internal static string TrialOfferTitle {
-            get {
-                return ResourceManager.GetString("TrialOfferTitle", resourceCulture);
-            }
-        }
-
-        internal static string TrialOfferStart {
-            get {
-                return ResourceManager.GetString("TrialOfferStart", resourceCulture);
-            }
-        }
-
-        internal static string TrialOfferBuyNow {
-            get {
-                return ResourceManager.GetString("TrialOfferBuyNow", resourceCulture);
-            }
-        }
-
-        internal static string TrialStartedTitle {
-            get {
-                return ResourceManager.GetString("TrialStartedTitle", resourceCulture);
-            }
-        }
-
-        internal static string TrialStartedMessage {
-            get {
-                return ResourceManager.GetString("TrialStartedMessage", resourceCulture);
-            }
-        }
-
         internal static string Cancel {
             get {
                 return ResourceManager.GetString("Cancel", resourceCulture);
@@ -877,6 +847,60 @@ namespace HandwerkerRechner.Resources.Strings {
         internal static string AdVideoNotAvailableMessage {
             get {
                 return ResourceManager.GetString("AdVideoNotAvailableMessage", resourceCulture);
+            }
+        }
+
+        internal static string AlertError {
+            get {
+                return ResourceManager.GetString("AlertError", resourceCulture);
+            }
+        }
+
+        internal static string BrowserError {
+            get {
+                return ResourceManager.GetString("BrowserError", resourceCulture);
+            }
+        }
+
+        internal static string ResultAcceptable {
+            get {
+                return ResourceManager.GetString("ResultAcceptable", resourceCulture);
+            }
+        }
+
+        internal static string ResultCost {
+            get {
+                return ResourceManager.GetString("ResultCost", resourceCulture);
+            }
+        }
+
+        internal static string ResultPercentDrop {
+            get {
+                return ResourceManager.GetString("ResultPercentDrop", resourceCulture);
+            }
+        }
+
+        internal static string UnitStrips {
+            get {
+                return ResourceManager.GetString("UnitStrips", resourceCulture);
+            }
+        }
+
+        internal static string WallThicknessTooLarge {
+            get {
+                return ResourceManager.GetString("WallThicknessTooLarge", resourceCulture);
+            }
+        }
+
+        internal static string SplashStep_Graphics {
+            get {
+                return ResourceManager.GetString("SplashStep_Graphics", resourceCulture);
+            }
+        }
+
+        internal static string SplashStep_Starting {
+            get {
+                return ResourceManager.GetString("SplashStep_Starting", resourceCulture);
             }
         }
     }

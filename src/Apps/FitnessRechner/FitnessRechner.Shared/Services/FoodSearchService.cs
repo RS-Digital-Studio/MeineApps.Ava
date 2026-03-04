@@ -6,7 +6,7 @@ namespace FitnessRechner.Services;
 /// <summary>
 /// Implementation of intelligent food search with fuzzy matching
 /// </summary>
-public class FoodSearchService : IFoodSearchService, IDisposable
+public sealed class FoodSearchService : IFoodSearchService, IDisposable
 {
     private bool _disposed;
     public event Action? FoodLogAdded;

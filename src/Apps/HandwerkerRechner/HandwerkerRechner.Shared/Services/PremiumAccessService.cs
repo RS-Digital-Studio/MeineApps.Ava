@@ -9,7 +9,7 @@ namespace HandwerkerRechner.Services;
 /// Verwaltet temporaeren Premium-Zugang nach Rewarded Ad.
 /// Speichert Ablaufzeit persistent in Preferences.
 /// </summary>
-public class PremiumAccessService : IPremiumAccessService, IDisposable
+public sealed class PremiumAccessService : IPremiumAccessService, IDisposable
 {
     private const string PrefKey = "PremiumAccessExpiry";
     private const string ExtendedHistoryPrefKey = "ExtendedHistoryExpiry";

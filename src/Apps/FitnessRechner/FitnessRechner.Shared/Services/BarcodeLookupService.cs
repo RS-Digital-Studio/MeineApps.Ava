@@ -6,7 +6,7 @@ using FitnessRechner.Resources.Strings;
 
 namespace FitnessRechner.Services;
 
-public class BarcodeLookupService : IBarcodeLookupService
+public sealed class BarcodeLookupService : IBarcodeLookupService
 {
     // Static HttpClient for efficient socket usage (Microsoft Best Practice)
     private static readonly HttpClient _httpClient = new()

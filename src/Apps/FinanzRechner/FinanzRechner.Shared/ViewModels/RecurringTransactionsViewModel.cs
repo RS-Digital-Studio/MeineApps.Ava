@@ -9,7 +9,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class RecurringTransactionsViewModel : ViewModelBase, IDisposable
+public sealed partial class RecurringTransactionsViewModel : ViewModelBase, IDisposable
 {
     private readonly IExpenseService _expenseService;
     private readonly ILocalizationService _localizationService;

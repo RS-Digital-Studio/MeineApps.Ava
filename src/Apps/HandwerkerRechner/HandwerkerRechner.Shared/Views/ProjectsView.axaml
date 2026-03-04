@@ -42,9 +42,9 @@
 
       <!-- Project List -->
       <ScrollViewer AutomationProperties.AutomationId="Projects_ScrollList"
-                    IsVisible="{Binding HasProjects}"
-                    Padding="0,0,0,200">
-        <ItemsControl ItemsSource="{Binding Projects}">
+                    IsVisible="{Binding HasProjects}">
+        <ItemsControl ItemsSource="{Binding Projects}"
+                      Margin="0,0,0,200">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:Project">
               <Border Classes="Card" Margin="0,0,0,12" CornerRadius="12">

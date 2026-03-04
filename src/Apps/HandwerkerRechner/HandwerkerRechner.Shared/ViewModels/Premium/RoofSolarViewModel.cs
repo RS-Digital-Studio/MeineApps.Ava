@@ -11,7 +11,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
-public partial class RoofSolarViewModel : ViewModelBase, IDisposable
+public sealed partial class RoofSolarViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

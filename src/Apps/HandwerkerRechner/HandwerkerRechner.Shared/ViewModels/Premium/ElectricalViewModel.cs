@@ -11,7 +11,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Premium;
 
-public partial class ElectricalViewModel : ViewModelBase, IDisposable
+public sealed partial class ElectricalViewModel : ViewModelBase, IDisposable
 {
     private Timer? _debounceTimer;
     #region Default Values

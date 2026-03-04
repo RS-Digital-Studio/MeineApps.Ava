@@ -11,7 +11,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace HandwerkerRechner.ViewModels.Floor;
 
-public partial class FlooringCalculatorViewModel : ViewModelBase, IDisposable
+public sealed partial class FlooringCalculatorViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _craftEngine;
     private Timer? _debounceTimer;

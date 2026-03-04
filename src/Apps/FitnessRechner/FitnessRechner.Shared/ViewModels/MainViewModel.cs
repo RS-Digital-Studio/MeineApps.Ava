@@ -11,7 +11,7 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace FitnessRechner.ViewModels;
 
-public partial class MainViewModel : ViewModelBase, IDisposable
+public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IPurchaseService _purchaseService;
@@ -133,6 +133,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _achievementService.AchievementUnlocked += OnAchievementUnlocked;
         _levelService.LevelUp += OnLevelUp;
         _challengeService.ChallengeCompleted += OnChallengeCompleted;
+
+        // Back-Press Helper verdrahten
+        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
     }
 
     private void OnLanguageChanged()
@@ -840,8 +843,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     #region Back-Navigation (Double-Back-to-Exit)
 
-    private DateTime _lastBackPress = DateTime.MinValue;
-    private const int BackPressIntervalMs = 2000;
+    private readonly BackPressHelper _backPressHelper = new();
 
     /// <summary>
     /// Behandelt die Zurück-Taste. Gibt true zurück wenn konsumiert (App bleibt offen),
@@ -891,14 +893,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
 
         // 6. Auf Startseite: Double-Back-to-Exit
-        var now = DateTime.UtcNow;
-        if ((now - _lastBackPress).TotalMilliseconds < BackPressIntervalMs)
-            return false; // App beenden lassen
-
-        _lastBackPress = now;
         var msg = _localization.GetString("PressBackAgainToExit") ?? "Erneut drücken zum Beenden";
-        ExitHintRequested?.Invoke(msg);
-        return true; // Konsumiert
+        return _backPressHelper.HandleDoubleBack(msg);
     }
 
     #endregion

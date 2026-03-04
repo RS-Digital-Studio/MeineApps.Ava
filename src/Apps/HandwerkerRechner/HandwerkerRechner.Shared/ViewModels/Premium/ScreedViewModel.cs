@@ -14,7 +14,7 @@ namespace HandwerkerRechner.ViewModels.Premium;
 /// <summary>
 /// ViewModel für den Estrich-Rechner (Fläche, Dicke, Typ → Volumen, Gewicht, Säcke, Trocknungszeit)
 /// </summary>
-public partial class ScreedViewModel : ViewModelBase, IDisposable
+public sealed partial class ScreedViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

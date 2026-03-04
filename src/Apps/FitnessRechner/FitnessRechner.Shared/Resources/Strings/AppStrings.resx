@@ -554,4 +554,13 @@
   <data name="EmptyStateTitle" xml:space="preserve"><value>Start your fitness journey!</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Track your weight, water and calories to unlock all dashboard features.</value></data>
   <data name="EmptyStateHint" xml:space="preserve"><value>Use the buttons above to get started</value></data>
+  <data name="BrowserError" xml:space="preserve">
+    <value>Could not open browser</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Loading graphics</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Starting app</value>
+  </data>
 </root>

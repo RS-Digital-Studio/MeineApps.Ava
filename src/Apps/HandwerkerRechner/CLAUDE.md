@@ -95,6 +95,12 @@ Handwerker-App mit 16 Rechnern (5 Free Floor + 11 Premium), Projektverwaltung un
 - **Tab 2**: History (Berechnungshistorie, gruppiert nach Rechner-Typ)
 - **Tab 3**: Settings (Einstellungen)
 
+### Calculator-VM Factory Pattern
+- 16 Calculator-VMs als Transient registriert in DI
+- MainViewModel erhält `Func<T>` Factories per Constructor Injection (kein Service-Locator)
+- Jedes Öffnen eines Rechners erzeugt eine frische VM-Instanz via `_xxxVmFactory()`
+- Func<T> Factories als Singleton registriert in `App.axaml.cs` (analog FitnessRechner)
+
 ### Calculator Overlay via DataTemplates
 - `MainViewModel`: `CurrentPage` + `CurrentCalculatorVm` Properties
 - `MainView`: DataTemplates fuer automatische View-Zuordnung per VM-Typ (16 VMs)

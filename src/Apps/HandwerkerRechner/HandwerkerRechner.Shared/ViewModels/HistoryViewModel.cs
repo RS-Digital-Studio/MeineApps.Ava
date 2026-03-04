@@ -12,7 +12,7 @@ namespace HandwerkerRechner.ViewModels;
 /// <summary>
 /// ViewModel für den History-Tab - zeigt Berechnungshistorie gruppiert nach Rechner-Typ
 /// </summary>
-public partial class HistoryViewModel : ViewModelBase
+public sealed partial class HistoryViewModel : ViewModelBase
 {
     private readonly ICalculationHistoryService _historyService;
     private readonly ILocalizationService _localization;

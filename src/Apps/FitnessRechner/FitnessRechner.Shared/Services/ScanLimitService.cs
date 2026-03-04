@@ -7,7 +7,7 @@ namespace FitnessRechner.Services;
 /// Begrenzt kostenlose Barcode-Scans auf 3 pro Tag.
 /// Rewarded Ad gibt +5 Scans. Premium-Nutzer haben keine Begrenzung.
 /// </summary>
-public class ScanLimitService : IScanLimitService
+public sealed class ScanLimitService : IScanLimitService
 {
     private readonly IPurchaseService _purchaseService;
     private readonly IPreferencesService _preferences;

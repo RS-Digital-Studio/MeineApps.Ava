@@ -1106,4 +1106,10 @@
   <data name="DueTomorrow" xml:space="preserve">
     <value>Scade domani</value>
   </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Caricamento grafica</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Avvio dell'app</value>
+  </data>
 </root>

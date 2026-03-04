@@ -9,7 +9,7 @@ namespace FitnessRechner.Android;
 /// Android-Implementierung für Erfolgs-Sounds.
 /// Nutzt System-Notification-Sound (kein eigenes Asset nötig).
 /// </summary>
-public class AndroidFitnessSoundService : IFitnessSoundService
+public sealed class AndroidFitnessSoundService : IFitnessSoundService
 {
     private readonly Context _context;
     private MediaPlayer? _mediaPlayer;

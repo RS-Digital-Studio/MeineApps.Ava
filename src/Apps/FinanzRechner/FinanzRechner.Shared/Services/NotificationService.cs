@@ -1,6 +1,6 @@
 namespace FinanzRechner.Services;
 
-public class NotificationService : INotificationService
+public sealed class NotificationService : INotificationService
 {
     public Task SendBudgetAlertAsync(string categoryName, double percentageUsed, double spent, double limit)
     {

@@ -13,7 +13,7 @@ using SkiaSharp;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
+public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
 {
     private readonly IExpenseService _expenseService;
     private readonly ILocalizationService _localizationService;

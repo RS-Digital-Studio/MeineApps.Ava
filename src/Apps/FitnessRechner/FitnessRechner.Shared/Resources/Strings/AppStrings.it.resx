@@ -552,4 +552,13 @@
   <data name="EmptyStateTitle" xml:space="preserve"><value>Inizia il tuo percorso fitness!</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Registra peso, acqua e calorie per sbloccare tutte le funzioni della dashboard.</value></data>
   <data name="EmptyStateHint" xml:space="preserve"><value>Usa i pulsanti sopra per iniziare</value></data>
+  <data name="BrowserError" xml:space="preserve">
+    <value>Impossibile aprire il browser</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Caricamento grafica</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Avvio dell'app</value>
+  </data>
 </root>

@@ -2197,4 +2197,31 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   <data name="LoadingHistory" xml:space="preserve">
     <value>Verlauf wird geladen...</value>
   </data>
+  <data name="AlertError" xml:space="preserve">
+    <value>Fehler</value>
+  </data>
+  <data name="BrowserError" xml:space="preserve">
+    <value>Browser konnte nicht geöffnet werden</value>
+  </data>
+  <data name="ResultAcceptable" xml:space="preserve">
+    <value>Akzeptabel</value>
+  </data>
+  <data name="ResultCost" xml:space="preserve">
+    <value>Kosten</value>
+  </data>
+  <data name="ResultPercentDrop" xml:space="preserve">
+    <value>Spannungsabfall</value>
+  </data>
+  <data name="UnitStrips" xml:space="preserve">
+    <value>Streifen</value>
+  </data>
+  <data name="WallThicknessTooLarge" xml:space="preserve">
+    <value>Wandstärke zu groß</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Grafiken laden</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>App starten</value>
+  </data>
 </root>

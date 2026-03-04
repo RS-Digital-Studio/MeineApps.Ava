@@ -16,7 +16,7 @@ public interface IFitnessSoundService
 /// <summary>
 /// Desktop-Implementierung: Kein Sound verfügbar.
 /// </summary>
-public class NoOpFitnessSoundService : IFitnessSoundService
+public sealed class NoOpFitnessSoundService : IFitnessSoundService
 {
     public bool IsEnabled { get; set; } = true;
     public void PlaySuccess() { }

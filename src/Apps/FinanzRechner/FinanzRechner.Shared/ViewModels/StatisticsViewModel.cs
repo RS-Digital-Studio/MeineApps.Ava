@@ -14,7 +14,7 @@ using SkiaSharp;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class StatisticsViewModel : ViewModelBase, IDisposable
+public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
 {
     private readonly IExpenseService _expenseService;
     private readonly IExportService _exportService;

@@ -8,7 +8,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels.Calculators;
 
-public partial class CaloriesViewModel : ViewModelBase
+public sealed partial class CaloriesViewModel : ViewModelBase
 {
     private readonly IFitnessEngine _fitnessEngine;
     private readonly IPreferencesService _preferences;

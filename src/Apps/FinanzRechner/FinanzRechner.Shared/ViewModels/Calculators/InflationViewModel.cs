@@ -16,7 +16,7 @@ namespace FinanzRechner.ViewModels.Calculators;
 /// ViewModel fuer den Inflationsrechner.
 /// Berechnet Kaufkraftverlust ueber die Jahre.
 /// </summary>
-public partial class InflationViewModel : ViewModelBase, IDisposable
+public sealed partial class InflationViewModel : ViewModelBase, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;

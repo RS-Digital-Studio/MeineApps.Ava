@@ -12,7 +12,7 @@ using SkiaSharp;
 
 namespace FinanzRechner.ViewModels.Calculators;
 
-public partial class LoanViewModel : ViewModelBase, IDisposable
+public sealed partial class LoanViewModel : ViewModelBase, IDisposable
 {
     private readonly FinanceEngine _financeEngine;
     private readonly ILocalizationService _localizationService;

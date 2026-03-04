@@ -552,4 +552,13 @@
   <data name="EmptyStateTitle" xml:space="preserve"><value>Starte deine Fitness-Reise!</value></data>
   <data name="EmptyStateSubtitle" xml:space="preserve"><value>Trage dein Gewicht, Wasser und Kalorien ein, um alle Dashboard-Features freizuschalten.</value></data>
   <data name="EmptyStateHint" xml:space="preserve"><value>Nutze die Buttons oben, um loszulegen</value></data>
+  <data name="BrowserError" xml:space="preserve">
+    <value>Browser konnte nicht geöffnet werden</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Grafiken laden</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>App starten</value>
+  </data>
 </root>

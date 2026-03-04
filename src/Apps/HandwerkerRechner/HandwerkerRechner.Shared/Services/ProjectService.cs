@@ -6,7 +6,7 @@ namespace HandwerkerRechner.Services;
 /// <summary>
 /// JSON-file-based project storage (thread-safe)
 /// </summary>
-public class ProjectService : IProjectService
+public sealed class ProjectService : IProjectService
 {
     private readonly string _projectsFilePath;
     private readonly SemaphoreSlim _semaphore = new(1, 1);

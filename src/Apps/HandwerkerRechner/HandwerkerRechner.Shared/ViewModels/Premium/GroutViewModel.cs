@@ -14,7 +14,7 @@ namespace HandwerkerRechner.ViewModels.Premium;
 /// <summary>
 /// ViewModel für den Fugenmasse-Rechner (Fläche, Fliesenmaße, Fugenbreite, Fugentiefe → kg, Eimer, Kosten)
 /// </summary>
-public partial class GroutViewModel : ViewModelBase, IDisposable
+public sealed partial class GroutViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

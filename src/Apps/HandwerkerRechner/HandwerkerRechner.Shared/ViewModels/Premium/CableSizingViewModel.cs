@@ -14,7 +14,7 @@ namespace HandwerkerRechner.ViewModels.Premium;
 /// <summary>
 /// ViewModel für den Leitungsquerschnitt-Rechner (Strom, Länge, Spannung → Querschnitt, Spannungsabfall, VDE)
 /// </summary>
-public partial class CableSizingViewModel : ViewModelBase, IDisposable
+public sealed partial class CableSizingViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

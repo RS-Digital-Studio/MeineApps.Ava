@@ -14,7 +14,7 @@ namespace HandwerkerRechner.ViewModels.Premium;
 /// <summary>
 /// Treppen-Rechner ViewModel (Premium) - Berechnet Treppenmaße nach DIN 18065
 /// </summary>
-public partial class StairsViewModel : ViewModelBase, IDisposable
+public sealed partial class StairsViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

@@ -8,7 +8,7 @@ namespace FinanzRechner.Services;
 /// <summary>
 /// Implementierung des ExpenseService mit lokalem JSON-Speicher.
 /// </summary>
-public class ExpenseService : IExpenseService, IDisposable
+public sealed class ExpenseService : IExpenseService, IDisposable
 {
     private const string ExpensesFile = "expenses.json";
     private const string BudgetsFile = "budgets.json";

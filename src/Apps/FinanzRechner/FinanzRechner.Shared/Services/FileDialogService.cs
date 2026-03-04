@@ -5,7 +5,7 @@ using Avalonia.Platform.Storage;
 
 namespace FinanzRechner.Services;
 
-public class FileDialogService : IFileDialogService
+public sealed class FileDialogService : IFileDialogService
 {
     public async Task<string?> SaveFileAsync(string suggestedFileName, string title, string filterName, params string[] extensions)
     {

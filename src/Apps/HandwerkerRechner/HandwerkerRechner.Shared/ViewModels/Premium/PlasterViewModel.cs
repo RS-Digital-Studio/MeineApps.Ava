@@ -14,7 +14,7 @@ namespace HandwerkerRechner.ViewModels.Premium;
 /// <summary>
 /// ViewModel für den Putz-Rechner (Wandfläche, Dicke, Putzart → Säcke)
 /// </summary>
-public partial class PlasterViewModel : ViewModelBase, IDisposable
+public sealed partial class PlasterViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

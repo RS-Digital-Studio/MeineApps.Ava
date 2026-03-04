@@ -8,7 +8,7 @@ using MeineApps.Core.Premium.Ava.Services;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class SettingsViewModel : ViewModelBase
+public sealed partial class SettingsViewModel : ViewModelBase
 {
     private readonly IThemeService _themeService;
     private readonly ILocalizationService _localizationService;

@@ -3,7 +3,7 @@ namespace HandwerkerRechner.Models;
 /// <summary>
 /// Berechnungs-Engine für alle Handwerker-Rechner
 /// </summary>
-public class CraftEngine
+public sealed class CraftEngine
 {
     #region Boden & Wand (FREE)
 

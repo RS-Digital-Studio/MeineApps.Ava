@@ -214,7 +214,7 @@
               </Grid>
             </Border>
 
-            <TextBlock Text="pro 100g" FontSize="11"
+            <TextBlock Text="{Binding Per100gText}" FontSize="11"
                        Foreground="{DynamicResource TextMutedBrush}"
                        HorizontalAlignment="Right"
                        Margin="0,-4,4,0" />

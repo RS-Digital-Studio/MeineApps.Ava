@@ -8,7 +8,7 @@ namespace FitnessRechner.Services;
 /// Preferences-basierter Challenge-Service.
 /// 10 Challenges rotierend nach DayOfYear.
 /// </summary>
-public class ChallengeService : IChallengeService
+public sealed class ChallengeService : IChallengeService
 {
     private const string CompletedDateKey = "challenge_completed_date";
 

@@ -115,7 +115,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            var remaining = 500 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();
@@ -201,5 +202,23 @@ public partial class App : Application
         services.AddTransient<InsulationViewModel>();
         services.AddTransient<CableSizingViewModel>();
         services.AddTransient<GroutViewModel>();
+
+        // Func<T> Factories fuer Calculator-VMs (Constructor Injection statt Service-Locator)
+        services.AddSingleton<Func<TileCalculatorViewModel>>(sp => () => sp.GetRequiredService<TileCalculatorViewModel>());
+        services.AddSingleton<Func<WallpaperCalculatorViewModel>>(sp => () => sp.GetRequiredService<WallpaperCalculatorViewModel>());
+        services.AddSingleton<Func<PaintCalculatorViewModel>>(sp => () => sp.GetRequiredService<PaintCalculatorViewModel>());
+        services.AddSingleton<Func<FlooringCalculatorViewModel>>(sp => () => sp.GetRequiredService<FlooringCalculatorViewModel>());
+        services.AddSingleton<Func<ConcreteCalculatorViewModel>>(sp => () => sp.GetRequiredService<ConcreteCalculatorViewModel>());
+        services.AddSingleton<Func<DrywallViewModel>>(sp => () => sp.GetRequiredService<DrywallViewModel>());
+        services.AddSingleton<Func<ElectricalViewModel>>(sp => () => sp.GetRequiredService<ElectricalViewModel>());
+        services.AddSingleton<Func<MetalViewModel>>(sp => () => sp.GetRequiredService<MetalViewModel>());
+        services.AddSingleton<Func<GardenViewModel>>(sp => () => sp.GetRequiredService<GardenViewModel>());
+        services.AddSingleton<Func<RoofSolarViewModel>>(sp => () => sp.GetRequiredService<RoofSolarViewModel>());
+        services.AddSingleton<Func<StairsViewModel>>(sp => () => sp.GetRequiredService<StairsViewModel>());
+        services.AddSingleton<Func<PlasterViewModel>>(sp => () => sp.GetRequiredService<PlasterViewModel>());
+        services.AddSingleton<Func<ScreedViewModel>>(sp => () => sp.GetRequiredService<ScreedViewModel>());
+        services.AddSingleton<Func<InsulationViewModel>>(sp => () => sp.GetRequiredService<InsulationViewModel>());
+        services.AddSingleton<Func<CableSizingViewModel>>(sp => () => sp.GetRequiredService<CableSizingViewModel>());
+        services.AddSingleton<Func<GroutViewModel>>(sp => () => sp.GetRequiredService<GroutViewModel>());
     }
 }

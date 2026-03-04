@@ -8,14 +8,13 @@ using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using HandwerkerRechner.Resources.Strings;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace HandwerkerRechner.ViewModels;
 
 /// <summary>
 /// ViewModel for the main navigation hub page with tab navigation
 /// </summary>
-public partial class MainViewModel : ViewModelBase, IDisposable
+public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IPurchaseService _purchaseService;
@@ -24,8 +23,26 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IPremiumAccessService _premiumAccessService;
 
+    // Factories fuer Calculator-VMs (statt Service-Locator via App.Services)
+    private readonly Func<TileCalculatorViewModel> _tileVmFactory;
+    private readonly Func<WallpaperCalculatorViewModel> _wallpaperVmFactory;
+    private readonly Func<PaintCalculatorViewModel> _paintVmFactory;
+    private readonly Func<FlooringCalculatorViewModel> _flooringVmFactory;
+    private readonly Func<ConcreteCalculatorViewModel> _concreteVmFactory;
+    private readonly Func<DrywallViewModel> _drywallVmFactory;
+    private readonly Func<ElectricalViewModel> _electricalVmFactory;
+    private readonly Func<MetalViewModel> _metalVmFactory;
+    private readonly Func<GardenViewModel> _gardenVmFactory;
+    private readonly Func<RoofSolarViewModel> _roofSolarVmFactory;
+    private readonly Func<StairsViewModel> _stairsVmFactory;
+    private readonly Func<PlasterViewModel> _plasterVmFactory;
+    private readonly Func<ScreedViewModel> _screedVmFactory;
+    private readonly Func<InsulationViewModel> _insulationVmFactory;
+    private readonly Func<CableSizingViewModel> _cableSizingVmFactory;
+    private readonly Func<GroutViewModel> _groutVmFactory;
+
     /// <summary>
-    /// Event for showing alerts/messages to the user (title, message)
+    /// Event für Alerts/Nachrichten an den Benutzer (Titel, Nachricht)
     /// </summary>
     [ObservableProperty]
     private bool _isAdBannerVisible;
@@ -49,13 +66,45 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         ProjectsViewModel projectsViewModel,
         HistoryViewModel historyViewModel,
         IRewardedAdService rewardedAdService,
-        IPremiumAccessService premiumAccessService)
+        IPremiumAccessService premiumAccessService,
+        Func<TileCalculatorViewModel> tileVmFactory,
+        Func<WallpaperCalculatorViewModel> wallpaperVmFactory,
+        Func<PaintCalculatorViewModel> paintVmFactory,
+        Func<FlooringCalculatorViewModel> flooringVmFactory,
+        Func<ConcreteCalculatorViewModel> concreteVmFactory,
+        Func<DrywallViewModel> drywallVmFactory,
+        Func<ElectricalViewModel> electricalVmFactory,
+        Func<MetalViewModel> metalVmFactory,
+        Func<GardenViewModel> gardenVmFactory,
+        Func<RoofSolarViewModel> roofSolarVmFactory,
+        Func<StairsViewModel> stairsVmFactory,
+        Func<PlasterViewModel> plasterVmFactory,
+        Func<ScreedViewModel> screedVmFactory,
+        Func<InsulationViewModel> insulationVmFactory,
+        Func<CableSizingViewModel> cableSizingVmFactory,
+        Func<GroutViewModel> groutVmFactory)
     {
         _purchaseService = purchaseService;
         _adService = adService;
         _localization = localization;
         _rewardedAdService = rewardedAdService;
         _premiumAccessService = premiumAccessService;
+        _tileVmFactory = tileVmFactory;
+        _wallpaperVmFactory = wallpaperVmFactory;
+        _paintVmFactory = paintVmFactory;
+        _flooringVmFactory = flooringVmFactory;
+        _concreteVmFactory = concreteVmFactory;
+        _drywallVmFactory = drywallVmFactory;
+        _electricalVmFactory = electricalVmFactory;
+        _metalVmFactory = metalVmFactory;
+        _gardenVmFactory = gardenVmFactory;
+        _roofSolarVmFactory = roofSolarVmFactory;
+        _stairsVmFactory = stairsVmFactory;
+        _plasterVmFactory = plasterVmFactory;
+        _screedVmFactory = screedVmFactory;
+        _insulationVmFactory = insulationVmFactory;
+        _cableSizingVmFactory = cableSizingVmFactory;
+        _groutVmFactory = groutVmFactory;
         SettingsViewModel = settingsViewModel;
         ProjectsViewModel = projectsViewModel;
         HistoryViewModel = historyViewModel;
@@ -87,6 +136,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         // Wire feedback to open email
         SettingsViewModel.FeedbackRequested += OnFeedbackRequested;
+
+        // Back-Press Helper verdrahten
+        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
         UpdateStatus();
         UpdateNavTexts();
@@ -236,22 +288,22 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         ObservableObject? vm = route switch
         {
-            "TileCalculatorPage" => App.Services.GetRequiredService<TileCalculatorViewModel>(),
-            "WallpaperCalculatorPage" => App.Services.GetRequiredService<WallpaperCalculatorViewModel>(),
-            "PaintCalculatorPage" => App.Services.GetRequiredService<PaintCalculatorViewModel>(),
-            "FlooringCalculatorPage" => App.Services.GetRequiredService<FlooringCalculatorViewModel>(),
-            "DrywallPage" => App.Services.GetRequiredService<DrywallViewModel>(),
-            "ElectricalPage" => App.Services.GetRequiredService<ElectricalViewModel>(),
-            "MetalPage" => App.Services.GetRequiredService<MetalViewModel>(),
-            "GardenPage" => App.Services.GetRequiredService<GardenViewModel>(),
-            "RoofSolarPage" => App.Services.GetRequiredService<RoofSolarViewModel>(),
-            "ConcretePage" => App.Services.GetRequiredService<ConcreteCalculatorViewModel>(),
-            "StairsPage" => App.Services.GetRequiredService<StairsViewModel>(),
-            "PlasterPage" => App.Services.GetRequiredService<PlasterViewModel>(),
-            "ScreedPage" => App.Services.GetRequiredService<ScreedViewModel>(),
-            "InsulationPage" => App.Services.GetRequiredService<InsulationViewModel>(),
-            "CableSizingPage" => App.Services.GetRequiredService<CableSizingViewModel>(),
-            "GroutPage" => App.Services.GetRequiredService<GroutViewModel>(),
+            "TileCalculatorPage" => _tileVmFactory(),
+            "WallpaperCalculatorPage" => _wallpaperVmFactory(),
+            "PaintCalculatorPage" => _paintVmFactory(),
+            "FlooringCalculatorPage" => _flooringVmFactory(),
+            "DrywallPage" => _drywallVmFactory(),
+            "ElectricalPage" => _electricalVmFactory(),
+            "MetalPage" => _metalVmFactory(),
+            "GardenPage" => _gardenVmFactory(),
+            "RoofSolarPage" => _roofSolarVmFactory(),
+            "ConcretePage" => _concreteVmFactory(),
+            "StairsPage" => _stairsVmFactory(),
+            "PlasterPage" => _plasterVmFactory(),
+            "ScreedPage" => _screedVmFactory(),
+            "InsulationPage" => _insulationVmFactory(),
+            "CableSizingPage" => _cableSizingVmFactory(),
+            "GroutPage" => _groutVmFactory(),
             _ => null
         };
 
@@ -729,7 +781,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     /// </summary>
     public event Action<string>? ExitHintRequested;
 
-    private DateTime _lastBackPress = DateTime.MinValue;
+    private readonly BackPressHelper _backPressHelper = new();
 
     /// <summary>
     /// Behandelt Android-Zurücktaste. Gibt true zurück wenn die App NICHT beendet werden soll.
@@ -803,13 +855,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
 
         // 5. Auf Home-Tab: Double-Tap-Exit
-        var now = DateTime.UtcNow;
-        if ((now - _lastBackPress).TotalMilliseconds < 2000)
-            return false; // App beenden
-
-        _lastBackPress = now;
-        ExitHintRequested?.Invoke(_localization.GetString("PressBackToExit") ?? "Press back again to exit");
-        return true;
+        var msg = _localization.GetString("PressBackToExit") ?? "Press back again to exit";
+        return _backPressHelper.HandleDoubleBack(msg);
     }
 
     #endregion

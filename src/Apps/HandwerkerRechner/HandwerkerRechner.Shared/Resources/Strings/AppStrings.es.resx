@@ -1903,4 +1903,31 @@ Valores típicos:
   <data name="LoadingDatabase" xml:space="preserve"><value>Cargando base de datos...</value></data>
   <data name="LoadingProjects" xml:space="preserve"><value>Cargando proyectos...</value></data>
   <data name="LoadingHistory" xml:space="preserve"><value>Cargando historial...</value></data>
+  <data name="AlertError" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="BrowserError" xml:space="preserve">
+    <value>No se pudo abrir el navegador</value>
+  </data>
+  <data name="ResultAcceptable" xml:space="preserve">
+    <value>Aceptable</value>
+  </data>
+  <data name="ResultCost" xml:space="preserve">
+    <value>Coste</value>
+  </data>
+  <data name="ResultPercentDrop" xml:space="preserve">
+    <value>Caída de tensión</value>
+  </data>
+  <data name="UnitStrips" xml:space="preserve">
+    <value>Tiras</value>
+  </data>
+  <data name="WallThicknessTooLarge" xml:space="preserve">
+    <value>Grosor de pared demasiado grande</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Cargando gráficos</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Iniciando app</value>
+  </data>
 </root>

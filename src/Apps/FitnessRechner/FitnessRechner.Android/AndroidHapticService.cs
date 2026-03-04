@@ -1,7 +1,7 @@
 using Android.App;
 using Android.Content;
 using Android.OS;
-using FitnessRechner.Services;
+using MeineApps.Core.Ava.Services;
 
 namespace FitnessRechner.Android;
 
@@ -9,7 +9,7 @@ namespace FitnessRechner.Android;
 /// Android-Implementierung für haptisches Feedback über den Vibrator-Service.
 /// Dual-Fallback: Android Q+ nutzt VibrationEffect, darunter HapticFeedback auf DecorView.
 /// </summary>
-public class AndroidHapticService : IHapticService
+public sealed class AndroidHapticService : IHapticService
 {
     private readonly Activity _activity;
     private readonly Vibrator? _vibrator;

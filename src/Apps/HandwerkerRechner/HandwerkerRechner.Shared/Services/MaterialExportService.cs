@@ -9,7 +9,7 @@ namespace HandwerkerRechner.Services;
 /// Erstellt PDF-Dokumente fuer Materiallisten und Projektberichte.
 /// Nutzt PdfSharpCore fuer plattformuebergreifende PDF-Generierung.
 /// </summary>
-public class MaterialExportService : IMaterialExportService
+public sealed class MaterialExportService : IMaterialExportService
 {
     private readonly ILocalizationService _localization;
     private readonly IFileShareService _fileShareService;

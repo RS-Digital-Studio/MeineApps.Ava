@@ -714,17 +714,11 @@ Você economiza 0,96 € em comparação com a compra individual!</value>
   <data name="LabelJointWidthMm" xml:space="preserve">
     <value>Larg. junta (mm)</value>
   </data>
-  <data name="LabelWastePercent" xml:space="preserve">
-    <value>Desperdício (%)</value>
-  </data>
   <data name="LabelPricePerStone" xml:space="preserve">
     <value>Preço/pedra (€)</value>
   </data>
   <data name="ResultStonesNeeded" xml:space="preserve">
     <value>Pedras necessárias</value>
-  </data>
-  <data name="ResultWithReserve" xml:space="preserve">
-    <value>Com reserva</value>
   </data>
   <data name="VisPavingStonesDescription" xml:space="preserve">
     <value>Visualização do padrão de pavimentação com juntas</value>
@@ -741,38 +735,14 @@ Você economiza 0,96 € em comparação com a compra individual!</value>
   <data name="LabelPricePerBag" xml:space="preserve">
     <value>Preço/saco (€)</value>
   </data>
-  <data name="ResultVolumeCbm" xml:space="preserve">
-    <value>Volume (m³)</value>
-  </data>
   <data name="ResultBagsNeeded" xml:space="preserve">
     <value>Sacos necessários</value>
   </data>
   <data name="VisSoilMulchDescription" xml:space="preserve">
     <value>Corte transversal de canteiro elevado com camadas</value>
   </data>
-  <data name="LabelPondLengthM" xml:space="preserve">
-    <value>Compr. lago (m)</value>
-  </data>
-  <data name="LabelPondWidthM" xml:space="preserve">
-    <value>Larg. lago (m)</value>
-  </data>
-  <data name="LabelPondDepthM" xml:space="preserve">
-    <value>Prof. lago (m)</value>
-  </data>
   <data name="LabelOverlapM" xml:space="preserve">
     <value>Sobreposição (m)</value>
-  </data>
-  <data name="LabelPricePerSqm" xml:space="preserve">
-    <value>Preço/m² (€)</value>
-  </data>
-  <data name="ResultLinerLengthM" xml:space="preserve">
-    <value>Compr. lona (m)</value>
-  </data>
-  <data name="ResultLinerWidthM" xml:space="preserve">
-    <value>Larg. lona (m)</value>
-  </data>
-  <data name="ResultLinerAreaSqm" xml:space="preserve">
-    <value>Área lona (m²)</value>
   </data>
   <data name="VisPondLinerDescription" xml:space="preserve">
     <value>Corte transversal do lago com lona e sobreposição</value>
@@ -782,47 +752,17 @@ Você economiza 0,96 € em comparação com a compra individual!</value>
   <data name="CalcMetalWeight" xml:space="preserve">
     <value>Calcular peso de metal</value>
   </data>
-  <data name="CalcCoreDrill" xml:space="preserve">
-    <value>Tabela de broca de núcleo</value>
-  </data>
   <data name="LabelProfile" xml:space="preserve">
     <value>Perfil</value>
   </data>
-  <data name="LabelMaterial" xml:space="preserve">
-    <value>Material</value>
-  </data>
-  <data name="LabelDimensionAMm" xml:space="preserve">
-    <value>Dimensão A (mm)</value>
-  </data>
-  <data name="LabelDimensionBMm" xml:space="preserve">
-    <value>Dimensão B (mm)</value>
-  </data>
-  <data name="LabelWallThicknessMm" xml:space="preserve">
-    <value>Esp. parede (mm)</value>
-  </data>
-  <data name="LabelProfileLengthM" xml:space="preserve">
-    <value>Comprimento (m)</value>
-  </data>
   <data name="LabelPricePerKg" xml:space="preserve">
     <value>Preço/kg (€)</value>
-  </data>
-  <data name="ResultWeightKg" xml:space="preserve">
-    <value>Peso (kg)</value>
-  </data>
-  <data name="ResultWeightPerMeter" xml:space="preserve">
-    <value>Peso/metro</value>
   </data>
   <data name="VisMetalWeightDescription" xml:space="preserve">
     <value>Perfil de metal com dimensões e peso</value>
   </data>
   <data name="LabelThreadSize" xml:space="preserve">
     <value>Tamanho rosca</value>
-  </data>
-  <data name="ResultCoreDrillDiameter" xml:space="preserve">
-    <value>Diâmetro broca</value>
-  </data>
-  <data name="ResultThreadPitch" xml:space="preserve">
-    <value>Passo da rosca</value>
   </data>
   <data name="VisCoreDrillDescription" xml:space="preserve">
     <value>Broca de núcleo com especificações da rosca</value>
@@ -838,21 +778,6 @@ Você economiza 0,96 € em comparação com a compra individual!</value>
   <data name="CalcSolarYield" xml:space="preserve">
     <value>Calcular rendimento solar</value>
   </data>
-  <data name="LabelRoofRunM" xml:space="preserve">
-    <value>Base (m)</value>
-  </data>
-  <data name="LabelRoofRiseM" xml:space="preserve">
-    <value>Altura (m)</value>
-  </data>
-  <data name="ResultRoofPitchDegrees" xml:space="preserve">
-    <value>Inclinação (°)</value>
-  </data>
-  <data name="ResultRoofPitchPercent" xml:space="preserve">
-    <value>Inclinação (%)</value>
-  </data>
-  <data name="ResultRafterLengthM" xml:space="preserve">
-    <value>Compr. viga (m)</value>
-  </data>
   <data name="VisRoofPitchDescription" xml:space="preserve">
     <value>Perfil do telhado com ângulo e dimensões</value>
   </data>
@@ -862,9 +787,6 @@ Você economiza 0,96 € em comparação com a compra individual!</value>
   <data name="LabelTilesPerSqm" xml:space="preserve">
     <value>Telhas/m²</value>
   </data>
-  <data name="LabelPricePerTile" xml:space="preserve">
-    <value>Preço/telha (€)</value>
-  </data>
   <data name="ResultTilesNeeded" xml:space="preserve">
     <value>Telhas necessárias</value>
   </data>
@@ -873,30 +795,6 @@ Você economiza 0,96 € em comparação com a compra individual!</value>
   </data>
   <data name="VisRoofTilesDescription" xml:space="preserve">
     <value>Superfície do telhado com padrão de telhas</value>
-  </data>
-  <data name="LabelSystemPowerKwp" xml:space="preserve">
-    <value>Potência (kWp)</value>
-  </data>
-  <data name="LabelRoofOrientationDegrees" xml:space="preserve">
-    <value>Orientação (°)</value>
-  </data>
-  <data name="LabelRoofPitchDegrees" xml:space="preserve">
-    <value>Inclinação (°)</value>
-  </data>
-  <data name="LabelLocationFactor" xml:space="preserve">
-    <value>Fator localização</value>
-  </data>
-  <data name="LabelElectricityPrice" xml:space="preserve">
-    <value>Preço elect. (€/kWh)</value>
-  </data>
-  <data name="ResultYearlyYieldKwh" xml:space="preserve">
-    <value>Rendimento/ano (kWh)</value>
-  </data>
-  <data name="ResultYearlySavings" xml:space="preserve">
-    <value>Poupança/ano (€)</value>
-  </data>
-  <data name="ResultSpecificYield" xml:space="preserve">
-    <value>Rend. específico (kWh/kWp)</value>
   </data>
   <data name="VisSolarYieldDescription" xml:space="preserve">
     <value>Sistema fotovoltaico com rendimento esperado</value>
@@ -2007,4 +1905,31 @@ O rendimento diminui em superfícies rugosas!</value>
   <data name="LoadingDatabase" xml:space="preserve"><value>Carregando banco de dados...</value></data>
   <data name="LoadingProjects" xml:space="preserve"><value>Carregando projetos...</value></data>
   <data name="LoadingHistory" xml:space="preserve"><value>Carregando histórico...</value></data>
+  <data name="AlertError" xml:space="preserve">
+    <value>Erro</value>
+  </data>
+  <data name="BrowserError" xml:space="preserve">
+    <value>Não foi possível abrir o navegador</value>
+  </data>
+  <data name="ResultAcceptable" xml:space="preserve">
+    <value>Aceitável</value>
+  </data>
+  <data name="ResultCost" xml:space="preserve">
+    <value>Custo</value>
+  </data>
+  <data name="ResultPercentDrop" xml:space="preserve">
+    <value>Queda de tensão</value>
+  </data>
+  <data name="UnitStrips" xml:space="preserve">
+    <value>Tiras</value>
+  </data>
+  <data name="WallThicknessTooLarge" xml:space="preserve">
+    <value>Espessura da parede muito grande</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Carregando gráficos</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Iniciando app</value>
+  </data>
 </root>

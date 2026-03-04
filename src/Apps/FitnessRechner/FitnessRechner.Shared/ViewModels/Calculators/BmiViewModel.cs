@@ -7,7 +7,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels.Calculators;
 
-public partial class BmiViewModel : ViewModelBase
+public sealed partial class BmiViewModel : ViewModelBase
 {
     private readonly IFitnessEngine _fitnessEngine;
     private readonly ITrackingService _trackingService;

@@ -1903,4 +1903,31 @@ Le rendement diminue sur les surfaces rugueuses !</value>
   <data name="LoadingDatabase" xml:space="preserve"><value>Chargement de la base de données...</value></data>
   <data name="LoadingProjects" xml:space="preserve"><value>Chargement des projets...</value></data>
   <data name="LoadingHistory" xml:space="preserve"><value>Chargement de l'historique...</value></data>
+  <data name="AlertError" xml:space="preserve">
+    <value>Erreur</value>
+  </data>
+  <data name="BrowserError" xml:space="preserve">
+    <value>Impossible d'ouvrir le navigateur</value>
+  </data>
+  <data name="ResultAcceptable" xml:space="preserve">
+    <value>Acceptable</value>
+  </data>
+  <data name="ResultCost" xml:space="preserve">
+    <value>Coût</value>
+  </data>
+  <data name="ResultPercentDrop" xml:space="preserve">
+    <value>Chute de tension</value>
+  </data>
+  <data name="UnitStrips" xml:space="preserve">
+    <value>Bandes</value>
+  </data>
+  <data name="WallThicknessTooLarge" xml:space="preserve">
+    <value>Épaisseur de paroi trop grande</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Chargement des graphiques</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Démarrage de l'app</value>
+  </data>
 </root>

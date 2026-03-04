@@ -11,7 +11,7 @@ using FinanzRechner.Models;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class MainViewModel
+public sealed partial class MainViewModel
 {
     #region Dashboard
 

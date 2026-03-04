@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 using FinanzRechner.Helpers;
@@ -11,7 +12,7 @@ using FinanzRechner.ViewModels.Calculators;
 
 namespace FinanzRechner.ViewModels;
 
-public partial class MainViewModel : ViewModelBase
+public sealed partial class MainViewModel : ViewModelBase
 {
     private readonly IPurchaseService _purchaseService;
     private readonly IAdService _adService;
@@ -129,6 +130,8 @@ public partial class MainViewModel : ViewModelBase
         BudgetsViewModel.NavigationRequested += OnSubPageGoBack;
         RecurringTransactionsViewModel.NavigationRequested += OnSubPageGoBack;
 
+        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+
         // Set default tab
         _selectedTab = 0;
         UpdateNavTexts();
@@ -155,7 +158,7 @@ public partial class MainViewModel : ViewModelBase
 
     #region Back-Navigation (Double-Back-to-Exit)
 
-    private DateTime _lastBackPressTime = DateTime.MinValue;
+    private readonly BackPressHelper _backPressHelper = new();
 
     /// <summary>
     /// Verarbeitet den Zurück-Button. Gibt true zurück wenn behandelt,
@@ -203,15 +206,9 @@ public partial class MainViewModel : ViewModelBase
         // Nicht auf Home-Tab → zu Home wechseln
         if (SelectedTab != 0) { SelectedTab = 0; return true; }
 
-        // Home-Tab, kein Overlay → Double-Back-to-Exit (2s Fenster)
-        var now = DateTime.UtcNow;
-        if ((now - _lastBackPressTime).TotalSeconds < 2)
-            return false;
-
-        _lastBackPressTime = now;
-        ExitHintRequested?.Invoke(
-            _localizationService.GetString("PressBackToExit") ?? "Press back again to exit");
-        return true;
+        // Home-Tab, kein Overlay → Double-Back-to-Exit
+        var msg = _localizationService.GetString("PressBackToExit") ?? "Press back again to exit";
+        return _backPressHelper.HandleDoubleBack(msg);
     }
 
     #endregion

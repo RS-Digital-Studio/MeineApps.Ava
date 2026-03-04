@@ -14,7 +14,7 @@ namespace HandwerkerRechner.ViewModels.Premium;
 /// <summary>
 /// ViewModel für den Dämmung-Rechner (Fläche, U-Werte, Dämmstofftyp → Dicke, Platten, Kosten)
 /// </summary>
-public partial class InsulationViewModel : ViewModelBase, IDisposable
+public sealed partial class InsulationViewModel : ViewModelBase, IDisposable
 {
     private readonly CraftEngine _engine;
     private Timer? _debounceTimer;

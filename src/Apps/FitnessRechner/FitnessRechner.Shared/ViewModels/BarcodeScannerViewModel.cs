@@ -7,7 +7,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace FitnessRechner.ViewModels;
 
-public partial class BarcodeScannerViewModel : ViewModelBase, IDisposable
+public sealed partial class BarcodeScannerViewModel : ViewModelBase, IDisposable
 {
     private readonly IBarcodeLookupService _barcodeLookupService;
     private CancellationTokenSource? _delayCancellation;
@@ -38,6 +38,9 @@ public partial class BarcodeScannerViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private bool _hasIncompleteData;
     [ObservableProperty] private string _dataWarningMessage = "";
     [ObservableProperty] private string _manualBarcodeInput = "";
+
+    /// <summary>Lokalisierter Text "pro 100g"</summary>
+    public string Per100gText => AppStrings.Per100g;
 
     partial void OnIsScanningChanged(bool value)
     {

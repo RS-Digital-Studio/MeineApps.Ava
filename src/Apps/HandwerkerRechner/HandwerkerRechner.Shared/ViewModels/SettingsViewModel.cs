@@ -10,7 +10,7 @@ namespace HandwerkerRechner.ViewModels;
 /// <summary>
 /// ViewModel for the settings page (theme, language, units, premium)
 /// </summary>
-public partial class SettingsViewModel : ViewModelBase, IDisposable
+public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IThemeService _themeService;

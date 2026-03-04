@@ -51,7 +51,7 @@ dotnet run --project tools/SocialPostGenerator all
 
 ## Packages
 
-- SkiaSharp 3.119.1 + SkiaSharp.NativeAssets.Win32
+- SkiaSharp 3.119.2 + SkiaSharp.NativeAssets.Win32
 - TextCopy 6.2.1
 - ManagePackageVersionsCentrally=false (eigenständiges Tool)
 

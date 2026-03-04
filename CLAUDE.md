@@ -109,19 +109,19 @@ Implementierung: `MeineApps.Core.Ava/Themes/` - ThemeService laedt dynamisch via
 
 ---
 
-## Packages (Avalonia 11.3.11)
+## Packages (Avalonia 11.3.12)
 
 | Package | Version | Zweck |
 |---------|---------|-------|
-| Avalonia | 11.3.11 | UI Framework |
-| Material.Icons.Avalonia | 2.4.1 | 7000+ SVG Icons |
+| Avalonia | 11.3.12 | UI Framework |
+| Material.Icons.Avalonia | 3.0.0 | 7000+ SVG Icons (Auto-Sizing, Caching) |
 | CommunityToolkit.Mvvm | 8.4.0 | MVVM |
-| Xaml.Behaviors.Avalonia | 11.3.9.3 | Behaviors |
+| Xaml.Behaviors.Avalonia | 11.3.9.5 | Behaviors |
 | SkiaSharp | 3.119.2 | 2D Graphics + SkSL GPU-Shader |
 | SkiaSharp.Skottie | 3.119.2 | Lottie-Animations-Backend |
 | Avalonia.Labs.Lottie | 11.3.1 | Lottie-Animationen (JSON) |
 | Xamarin.Android.Google.BillingClient | 8.3.0.1 | Google Play Billing |
-| Xamarin.Google.Android.Play.Review | 2.0.2.5 | Google In-App Review |
+| Xamarin.Google.Android.Play.Review | 2.0.2.6 | Google In-App Review |
 | sqlite-net-pcl | 1.9.172 | Database |
 
 ---
@@ -194,21 +194,22 @@ _childVM.NavigationRequested += route => CurrentPage = route;
 ### Android Back-Button Pattern (einheitlich, alle 8 Apps)
 
 ```csharp
-// MainViewModel: Double-Back-to-Exit Logik
+// MainViewModel: Double-Back-to-Exit via BackPressHelper (MeineApps.Core.Ava.Services)
 public event Action<string>? ExitHintRequested;
-private DateTime _lastBackPress = DateTime.MinValue;
-private const int BackPressIntervalMs = 2000;
+private readonly BackPressHelper _backPressHelper = new();
+
+// Im Konstruktor:
+_backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+// WorkTimePro Sonderfall: nutzt FloatingTextRequested statt ExitHintRequested
+// _backPressHelper.ExitHintRequested += msg => FloatingTextRequested?.Invoke(msg, "info");
 
 public bool HandleBackPressed()
 {
     // 1. App-spezifische Overlays/Dialoge schließen
     // 2. Sub-Navigation zurueck
-    // 3. Double-Back-to-Exit
-    var now = DateTime.UtcNow;
-    if ((now - _lastBackPress).TotalMilliseconds < BackPressIntervalMs) return false;
-    _lastBackPress = now;
-    ExitHintRequested?.Invoke(_localization.GetString("PressBackAgainToExit") ?? "...");
-    return true;
+    // 3. Double-Back-to-Exit (am Ende):
+    var msg = _localization.GetString("PressBackAgainToExit") ?? "...";
+    return _backPressHelper.HandleDoubleBack(msg);
 }
 ```
 
@@ -370,6 +371,7 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | Rewarded Ad Belohnung kommt nicht an | `LoadAndShowAsync()` Timeout (8s) deckt Laden UND Video-Anzeige ab → feuert während User Video schaut → `false` zurück | `CancellationTokenSource` im Callback: Timeout nur für Lade-Phase, wird gecancellt wenn Ad geladen+gezeigt wird |
 | Play Review Namespace falsch | `Com.Google.Android.Play.Core.Review` existiert nicht | `Xamarin.Google.Android.Play.Core.Review` verwenden. Task/IOnCompleteListener aus `Android.Gms.Tasks`. `ReviewInfo` (Klasse), NICHT `IReviewInfo` |
 | MediaPlayer.PrepareAsync() gibt void zurück | Android Java-Binding: PrepareAsync() ist void, nicht Task | `Prepare()` synchron verwenden oder TaskCompletionSource mit Prepared-Event |
+| Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel | `PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium` Key fehlt | `IPurchaseService.InitializeAsync()` in Loading-Pipeline aufrufen (parallel zum ersten Schritt). Stellt Käufe + Abos via Google Play Billing wieder her |
 
 ---
 

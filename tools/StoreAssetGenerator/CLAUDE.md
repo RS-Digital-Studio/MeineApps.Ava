@@ -59,5 +59,5 @@ Releases/
 ## Abhaengigkeiten
 
 - .NET 10.0
-- SkiaSharp 3.119.1
+- SkiaSharp 3.119.2
 - SkiaSharp.NativeAssets.Win32 3.119.1

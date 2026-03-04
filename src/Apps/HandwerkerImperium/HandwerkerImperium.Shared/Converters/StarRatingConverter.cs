@@ -10,6 +10,11 @@ namespace HandwerkerImperium.Converters;
 /// </summary>
 public class StarRatingConverter : IValueConverter
 {
+    // Vorberechnete Strings vermeiden String-Concatenation bei jedem Convert-Aufruf
+    private static readonly string OneStar = Icons.Star;
+    private static readonly string TwoStars = Icons.Star + Icons.Star;
+    private static readonly string ThreeStars = Icons.Star + Icons.Star + Icons.Star;
+
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
         if (value is not int stars)
@@ -17,9 +22,9 @@ public class StarRatingConverter : IValueConverter
 
         return stars switch
         {
-            1 => Icons.Star,
-            2 => Icons.Star + Icons.Star,
-            3 => Icons.Star + Icons.Star + Icons.Star,
+            1 => OneStar,
+            2 => TwoStars,
+            3 => ThreeStars,
             _ => ""
         };
     }

@@ -118,35 +118,58 @@
         <!-- ============================================================= -->
         <!-- STATE: NameDialog                                             -->
         <!-- ============================================================= -->
-        <Border Classes="CardElevated"
-                IsVisible="{Binding IsNameDialogState}"
-                Padding="16" Margin="0,20,0,0">
-          <StackPanel Spacing="12">
-            <mi:MaterialIcon Kind="AccountEdit" Width="36" Height="36"
-                             Foreground="{StaticResource CraftPrimaryLightBrush}"
-                             HorizontalAlignment="Center" />
-            <TextBlock Text="{loc:Translate GuildEnterName}"
-                       FontSize="16" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimaryBrush}"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap" TextAlignment="Center" />
-            <TextBlock Text="{loc:Translate GuildNameHint}"
-                       FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center"
-                       TextWrapping="Wrap" TextAlignment="Center" />
-            <TextBox Text="{Binding NameInput}"
-                     Watermark="{loc:Translate GuildNamePlaceholder}"
-                     MaxLength="20"
-                     HorizontalAlignment="Stretch" />
-            <Button Classes="Primary"
-                    HorizontalAlignment="Center"
-                    Command="{Binding ConfirmNameCommand}"
-                    Padding="24,8">
-              <TextBlock Text="OK" FontSize="14" FontWeight="Bold" />
-            </Button>
-          </StackPanel>
-        </Border>
+        <StackPanel Spacing="16"
+                    IsVisible="{Binding IsNameDialogState}"
+                    Margin="0,20,0,0">
+
+          <!-- Willkommens-Intro: Erklärt warum Gilde und Spielername -->
+          <Border Classes="CardElevated" Padding="16">
+            <StackPanel Spacing="10">
+              <mi:MaterialIcon Kind="AccountGroup" Width="44" Height="44"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{loc:Translate GuildWelcomeTitle}"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Text="{loc:Translate GuildWelcomeIntro}"
+                         FontSize="13" LineHeight="20"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap" TextAlignment="Center" />
+            </StackPanel>
+          </Border>
+
+          <!-- Spielername-Eingabe -->
+          <Border Classes="CardElevated" Padding="16">
+            <StackPanel Spacing="12">
+              <mi:MaterialIcon Kind="AccountEdit" Width="32" Height="32"
+                               Foreground="{StaticResource CraftPrimaryLightBrush}"
+                               HorizontalAlignment="Center" />
+              <TextBlock Text="{loc:Translate GuildEnterName}"
+                         FontSize="16" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBlock Text="{loc:Translate GuildNameHint}"
+                         FontSize="12"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center"
+                         TextWrapping="Wrap" TextAlignment="Center" />
+              <TextBox Text="{Binding NameInput}"
+                       Watermark="{loc:Translate GuildPlayerNamePlaceholder}"
+                       MaxLength="20"
+                       HorizontalAlignment="Stretch" />
+              <Button Classes="Primary"
+                      HorizontalAlignment="Center"
+                      Command="{Binding ConfirmNameCommand}"
+                      Padding="24,8">
+                <TextBlock Text="OK" FontSize="14" FontWeight="Bold" />
+              </Button>
+            </StackPanel>
+          </Border>
+        </StackPanel>
 
         <!-- ============================================================= -->
         <!-- STATE: Browse (Nicht in Gilde, kein Dialog offen)             -->

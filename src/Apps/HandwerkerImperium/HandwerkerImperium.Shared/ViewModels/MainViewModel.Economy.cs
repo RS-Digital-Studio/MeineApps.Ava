@@ -886,7 +886,8 @@ public sealed partial class MainViewModel
     private void RefreshOrders()
     {
         var state = _gameStateService.State;
-        AvailableOrders.Clear();
+        // Collection-Referenz ersetzen statt Clear()+Add() → 1 statt N+1 Change-Notifications
+        var newOrders = new ObservableCollection<Order>();
 
         foreach (var order in state.AvailableOrders)
         {
@@ -908,9 +909,10 @@ public sealed partial class MainViewModel
             };
             order.ShowOrderTypeBadge = order.OrderType != OrderType.Standard && order.OrderType != OrderType.Quick;
 
-            AvailableOrders.Add(order);
+            newOrders.Add(order);
         }
 
+        AvailableOrders = newOrders;
         // Empty State (Task #8)
         HasNoOrders = AvailableOrders.Count == 0;
     }

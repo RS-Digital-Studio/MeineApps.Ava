@@ -3658,10 +3658,19 @@
     <value>Miembro</value>
   </data>
   <data name="GuildEnterName" xml:space="preserve">
-    <value>Elige tu nombre de jugador</value>
+    <value>Primero: Tu nombre de jugador</value>
   </data>
   <data name="GuildNameHint" xml:space="preserve">
-    <value>Este nombre será visible para otros jugadores.</value>
+    <value>Otros miembros del gremio verán este nombre. No podrás cambiarlo después.</value>
+  </data>
+  <data name="GuildPlayerNamePlaceholder" xml:space="preserve">
+    <value>Tu nombre de jugador</value>
+  </data>
+  <data name="GuildWelcomeTitle" xml:space="preserve">
+    <value>¡Bienvenido al Gremio!</value>
+  </data>
+  <data name="GuildWelcomeIntro" xml:space="preserve">
+    <value>En el gremio, colaboras con otros jugadores: Investigan juntos, luchan en guerras de gremio y desbloquean bonificaciones. Para empezar, elige un nombre de jugador.</value>
   </data>
   <data name="Retry" xml:space="preserve">
     <value>Reintentar</value>

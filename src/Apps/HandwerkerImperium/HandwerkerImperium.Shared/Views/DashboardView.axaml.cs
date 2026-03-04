@@ -57,6 +57,7 @@ public partial class DashboardView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
 
         // Parallax: ScrollViewer-Event abonnieren
         _dashboardScrollViewer = this.FindControl<ScrollViewer>("DashboardScrollViewer");
@@ -67,6 +68,27 @@ public partial class DashboardView : UserControl
         // Tunnel-Events feuern auch wenn der ScrollViewer den Pointer captured
         AddHandler(PointerMovedEvent, OnTunnelPointerMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         AddHandler(PointerReleasedEvent, OnTunnelPointerReleased, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+    }
+
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        _renderTimer?.Stop();
+        _renderTimer = null;
+        _holdTimer?.Stop();
+        _holdTimer = null;
+
+        if (_vm != null)
+        {
+            _vm.FloatingTextRequested -= OnFloatingTextRequested;
+            _vm.FloatingTextRequested -= OnFloatingTextForParticles;
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm = null;
+        }
+
+        _cityRenderer.Dispose();
+        _weatherSystem.Dispose();
+        _coinFlyAnimation.Dispose();
+        _juiceEngine?.Dispose();
     }
 
     /// <summary>
@@ -96,6 +118,7 @@ public partial class DashboardView : UserControl
         {
             _vm.FloatingTextRequested -= OnFloatingTextRequested;
             _vm.FloatingTextRequested -= OnFloatingTextForParticles;
+            _vm.PropertyChanged -= OnVmPropertyChanged;
             _vm = null;
         }
 
@@ -108,6 +131,7 @@ public partial class DashboardView : UserControl
             _vm = vm;
             _vm.FloatingTextRequested += OnFloatingTextRequested;
             _vm.FloatingTextRequested += OnFloatingTextForParticles;
+            _vm.PropertyChanged += OnVmPropertyChanged;
 
             // GameJuiceEngine über MainViewModel (kein Service Locator)
             _juiceEngine = vm.GameJuiceEngine;
@@ -116,7 +140,7 @@ public partial class DashboardView : UserControl
             // Wetter-System nach aktuellem Monat initialisieren
             _weatherSystem.SetWeatherByMonth();
 
-            // City-Canvas finden und Render-Loop starten
+            // City-Canvas finden und Render-Loop nur starten wenn Dashboard aktiv
             _cityCanvas = this.FindControl<SKCanvasView>("CityCanvas");
             if (_cityCanvas != null)
             {
@@ -127,7 +151,8 @@ public partial class DashboardView : UserControl
                 _cityCanvas.PointerPressed -= OnCityCanvasTapped;
                 _cityCanvas.PointerPressed += OnCityCanvasTapped;
 
-                StartCityRenderLoop();
+                if (_vm.IsDashboardActive)
+                    StartCityRenderLoop();
             }
         }
     }
@@ -594,9 +619,12 @@ public partial class DashboardView : UserControl
 
     /// <summary>
     /// Startet den Render-Timer für die City-Skyline (20 fps).
+    /// Guard gegen Doppelstart wenn Timer bereits läuft.
     /// </summary>
     private void StartCityRenderLoop()
     {
+        if (_renderTimer is { IsEnabled: true }) return;
+
         _renderTimer?.Stop();
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20 fps
         _renderTimer.Tick += (_, _) =>
@@ -605,6 +633,31 @@ public partial class DashboardView : UserControl
             WorkshopCardsCanvas?.InvalidateSurface(); // Workshop-Karten mit animierten Headern
         };
         _renderTimer.Start();
+    }
+
+    private void StopCityRenderLoop()
+    {
+        _renderTimer?.Stop();
+    }
+
+    /// <summary>
+    /// Render-Timer nur laufen lassen wenn Dashboard sichtbar ist.
+    /// Spart ~40 InvalidateSurface-Aufrufe/Sek wenn andere Tabs aktiv sind.
+    /// </summary>
+    private void OnVmPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.IsDashboardActive))
+        {
+            if (_vm?.IsDashboardActive == true)
+            {
+                _lastRenderTime = DateTime.UtcNow;
+                StartCityRenderLoop();
+            }
+            else
+            {
+                StopCityRenderLoop();
+            }
+        }
     }
 
     /// <summary>

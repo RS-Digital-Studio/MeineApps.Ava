@@ -3947,10 +3947,19 @@
     <value>Mitglied</value>
   </data>
   <data name="GuildEnterName" xml:space="preserve">
-    <value>Wähle deinen Spielernamen</value>
+    <value>Zuerst: Dein Spielername</value>
   </data>
   <data name="GuildNameHint" xml:space="preserve">
-    <value>Dieser Name ist für andere Spieler sichtbar.</value>
+    <value>Andere Gildenmitglieder sehen diesen Namen. Du kannst ihn später nicht ändern.</value>
+  </data>
+  <data name="GuildPlayerNamePlaceholder" xml:space="preserve">
+    <value>Dein Spielername</value>
+  </data>
+  <data name="GuildWelcomeTitle" xml:space="preserve">
+    <value>Willkommen in der Innung!</value>
+  </data>
+  <data name="GuildWelcomeIntro" xml:space="preserve">
+    <value>In der Innung arbeitest du mit anderen Spielern zusammen: Gemeinsam forschen, im Gildenkrieg kämpfen und Boni freischalten. Um loszulegen, brauchst du einen Spielernamen.</value>
   </data>
   <data name="Retry" xml:space="preserve">
     <value>Erneut versuchen</value>

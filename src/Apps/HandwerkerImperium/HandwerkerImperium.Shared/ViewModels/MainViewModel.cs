@@ -86,12 +86,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     // Zaehler fuer Ziel-Aktualisierung (alle 60 Ticks)
     private int _tickForGoal;
 
-    // Phase 9: Smooth Money-Counter Animation
+    // Phase 9: Smooth Money-Counter Animation (vom MainView Render-Timer getrieben)
     private decimal _displayedMoney;
     private decimal _targetMoney;
-    private DispatcherTimer? _moneyAnimTimer;
-    private const int MoneyAnimIntervalMs = 33; // ~30fps fuer Counter
+    private bool _moneyAnimActive;
     private const decimal MoneyAnimSpeed = 0.15m; // Interpolations-Faktor pro Frame
+
+    // Wiederverwendbarer Timer für Level-Up Pulse (verhindert Timer-Leak bei rapidem Level-Up)
+    private DispatcherTimer? _levelPulseTimer;
 
     // EventHandler wrappers for new VMs (EventHandler<string> vs Action<string>)
     private readonly EventHandler<string> _workerMarketNavHandler;
@@ -1289,13 +1291,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
 
         // Pulse-Animation bei JEDEM Level-Up (dezent, kein Dialog)
         IsLevelUpPulsing = true;
-        var pulseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
-        pulseTimer.Tick += (_, _) =>
-        {
-            IsLevelUpPulsing = false;
-            pulseTimer.Stop();
-        };
-        pulseTimer.Start();
+        _levelPulseTimer?.Stop();
+        _levelPulseTimer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        _levelPulseTimer.Tick -= OnLevelPulseTimeout;
+        _levelPulseTimer.Tick += OnLevelPulseTimeout;
+        _levelPulseTimer.Start();
 
         // Sound + FloatingText bei jedem Level-Up
         _audioService.PlaySoundAsync(GameSound.ButtonTap).FireAndForget();
@@ -1344,6 +1344,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Leaderboard-Score aktualisieren (fire-and-forget)
         if (_playGamesService?.IsSignedIn == true)
             _ = _playGamesService.SubmitScoreAsync("leaderboard_player_level", e.NewLevel);
+    }
+
+    private void OnLevelPulseTimeout(object? sender, EventArgs e)
+    {
+        IsLevelUpPulsing = false;
+        _levelPulseTimer?.Stop();
     }
 
     private void OnPrestigeCompleted(object? sender, EventArgs e)
@@ -1844,30 +1850,28 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             _displayedMoney = _targetMoney;
             MoneyDisplay = FormatMoney(_displayedMoney);
+            _moneyAnimActive = false;
             return;
         }
 
-        // Timer starten falls noch nicht laeuft
-        if (_moneyAnimTimer == null)
-        {
-            _moneyAnimTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(MoneyAnimIntervalMs) };
-            _moneyAnimTimer.Tick += OnMoneyAnimTick;
-        }
-
-        if (!_moneyAnimTimer.IsEnabled)
-            _moneyAnimTimer.Start();
+        _moneyAnimActive = true;
     }
 
-    private void OnMoneyAnimTick(object? sender, EventArgs e)
+    /// <summary>
+    /// Wird vom MainView Render-Timer aufgerufen (20fps).
+    /// Ersetzt den separaten 30fps-Timer und reduziert UI-Thread-Callbacks.
+    /// </summary>
+    public void UpdateMoneyAnimation()
     {
+        if (!_moneyAnimActive) return;
+
         var diff = _targetMoney - _displayedMoney;
 
         if (Math.Abs(diff) < 1m)
         {
-            // Ziel erreicht → stoppen
             _displayedMoney = _targetMoney;
             MoneyDisplay = FormatMoney(_displayedMoney);
-            _moneyAnimTimer?.Stop();
+            _moneyAnimActive = false;
             return;
         }
 
@@ -1934,8 +1938,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     {
         if (_disposed) return;
 
-        // Phase 9: Money-Animation Timer stoppen
-        _moneyAnimTimer?.Stop();
+        // Phase 9: Money-Animation Flag zurücksetzen
+        _moneyAnimActive = false;
+        _levelPulseTimer?.Stop();
 
         // Stop the game loop and save
         _gameLoopService.Stop();

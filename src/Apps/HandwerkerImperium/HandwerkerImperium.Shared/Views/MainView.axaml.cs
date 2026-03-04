@@ -40,6 +40,25 @@ public partial class MainView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
+    }
+
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        _renderTimer?.Stop();
+        _renderTimer = null;
+
+        if (_vm != null)
+        {
+            _vm.PropertyChanged -= OnVmPropertyChanged;
+            _vm.CelebrationRequested -= OnCelebrationRequested;
+            _vm.CeremonyRequested -= OnCeremonyRequested;
+            _vm = null;
+        }
+
+        _tabBarRenderer.Dispose();
+        _transitionRenderer.Dispose();
+        _backgroundRenderer.Dispose();
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -88,12 +107,16 @@ public partial class MainView : UserControl
     {
         _renderTime += 0.05f;
 
+        // Money-Animation aktualisieren (ersetzt separaten 30fps-Timer)
+        _vm?.UpdateMoneyAnimation();
+
         // Animierten Hintergrund aktualisieren (Partikel + Repaint)
         _backgroundRenderer.UpdateParticles(0.05f, _currentScreenType, _lastBackgroundBounds);
         BackgroundCanvas?.InvalidateSurface();
 
-        // Tab-Bar aktualisieren
-        TabBarCanvas?.InvalidateSurface();
+        // Tab-Bar nur aktualisieren wenn sichtbar
+        if (_vm?.IsTabBarVisible == true)
+            TabBarCanvas?.InvalidateSurface();
 
         // Screen-Transition aktualisieren (wenn aktiv)
         if (_transitionRenderer.IsActive)

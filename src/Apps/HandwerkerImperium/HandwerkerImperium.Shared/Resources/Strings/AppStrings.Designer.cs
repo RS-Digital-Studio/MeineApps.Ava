@@ -1418,6 +1418,9 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string GuildMemberRole => ResourceManager.GetString("GuildMemberRole", resourceCulture) ?? "";
         public static string GuildEnterName => ResourceManager.GetString("GuildEnterName", resourceCulture) ?? "";
         public static string GuildNameHint => ResourceManager.GetString("GuildNameHint", resourceCulture) ?? "";
+        public static string GuildPlayerNamePlaceholder => ResourceManager.GetString("GuildPlayerNamePlaceholder", resourceCulture) ?? "";
+        public static string GuildWelcomeTitle => ResourceManager.GetString("GuildWelcomeTitle", resourceCulture) ?? "";
+        public static string GuildWelcomeIntro => ResourceManager.GetString("GuildWelcomeIntro", resourceCulture) ?? "";
         public static string Retry => ResourceManager.GetString("Retry", resourceCulture) ?? "";
         public static string Loading => ResourceManager.GetString("Loading", resourceCulture) ?? "";
         public static string PrestigePassTitle => ResourceManager.GetString("PrestigePassTitle", resourceCulture) ?? "";

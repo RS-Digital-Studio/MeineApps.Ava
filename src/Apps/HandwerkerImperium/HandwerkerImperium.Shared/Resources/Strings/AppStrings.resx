@@ -3951,10 +3951,19 @@
     <value>Member</value>
   </data>
   <data name="GuildEnterName" xml:space="preserve">
-    <value>Choose your player name</value>
+    <value>First: Your player name</value>
   </data>
   <data name="GuildNameHint" xml:space="preserve">
-    <value>This name will be visible to other players.</value>
+    <value>Other guild members will see this name. You cannot change it later.</value>
+  </data>
+  <data name="GuildPlayerNamePlaceholder" xml:space="preserve">
+    <value>Your player name</value>
+  </data>
+  <data name="GuildWelcomeTitle" xml:space="preserve">
+    <value>Welcome to the Guild!</value>
+  </data>
+  <data name="GuildWelcomeIntro" xml:space="preserve">
+    <value>In the guild, you team up with other players: Research together, fight in guild wars, and unlock bonuses. To get started, choose a player name.</value>
   </data>
   <data name="Retry" xml:space="preserve">
     <value>Retry</value>

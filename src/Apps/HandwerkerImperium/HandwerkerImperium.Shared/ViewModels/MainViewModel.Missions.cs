@@ -358,11 +358,26 @@ public sealed partial class MainViewModel
 
     /// <summary>
     /// Berechnet die Anzahl claimbarer Daily Challenges + Weekly Missions.
+    /// For-Loop statt LINQ um GC-Allokationen (Lambda-Closures) zu vermeiden.
     /// </summary>
     private void UpdateClaimableMissionsCount()
     {
-        var dailyClaimable = DailyChallenges.Count(c => c.IsCompleted && !c.IsClaimed);
-        var weeklyClaimable = WeeklyMissions.Count(m => m.IsCompleted && !m.IsClaimed);
+        int dailyClaimable = 0;
+        var dailies = DailyChallenges;
+        for (int i = 0; i < dailies.Count; i++)
+        {
+            var c = dailies[i];
+            if (c.IsCompleted && !c.IsClaimed) dailyClaimable++;
+        }
+
+        int weeklyClaimable = 0;
+        var weeklies = WeeklyMissions;
+        for (int i = 0; i < weeklies.Count; i++)
+        {
+            var m = weeklies[i];
+            if (m.IsCompleted && !m.IsClaimed) weeklyClaimable++;
+        }
+
         ClaimableMissionsCount = dailyClaimable + weeklyClaimable;
     }
 }

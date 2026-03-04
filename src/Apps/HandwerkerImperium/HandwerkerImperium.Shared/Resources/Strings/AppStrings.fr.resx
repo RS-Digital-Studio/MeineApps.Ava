@@ -3658,10 +3658,19 @@
     <value>Membre</value>
   </data>
   <data name="GuildEnterName" xml:space="preserve">
-    <value>Choisissez votre nom de joueur</value>
+    <value>D'abord : Votre nom de joueur</value>
   </data>
   <data name="GuildNameHint" xml:space="preserve">
-    <value>Ce nom sera visible par les autres joueurs.</value>
+    <value>Les autres membres de la guilde verront ce nom. Vous ne pourrez pas le modifier plus tard.</value>
+  </data>
+  <data name="GuildPlayerNamePlaceholder" xml:space="preserve">
+    <value>Votre nom de joueur</value>
+  </data>
+  <data name="GuildWelcomeTitle" xml:space="preserve">
+    <value>Bienvenue dans la Guilde !</value>
+  </data>
+  <data name="GuildWelcomeIntro" xml:space="preserve">
+    <value>Dans la guilde, vous collaborez avec d'autres joueurs : recherche commune, guerres de guilde et bonus à débloquer. Pour commencer, choisissez un nom de joueur.</value>
   </data>
   <data name="Retry" xml:space="preserve">
     <value>Réessayer</value>

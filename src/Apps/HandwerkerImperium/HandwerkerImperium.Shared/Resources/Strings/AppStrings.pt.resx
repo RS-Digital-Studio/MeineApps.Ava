@@ -3659,10 +3659,19 @@
     <value>Membro</value>
   </data>
   <data name="GuildEnterName" xml:space="preserve">
-    <value>Escolha seu nome de jogador</value>
+    <value>Primeiro: Seu nome de jogador</value>
   </data>
   <data name="GuildNameHint" xml:space="preserve">
-    <value>Este nome será visível para outros jogadores.</value>
+    <value>Outros membros da guilda verão este nome. Você não poderá alterá-lo depois.</value>
+  </data>
+  <data name="GuildPlayerNamePlaceholder" xml:space="preserve">
+    <value>Seu nome de jogador</value>
+  </data>
+  <data name="GuildWelcomeTitle" xml:space="preserve">
+    <value>Bem-vindo à Guilda!</value>
+  </data>
+  <data name="GuildWelcomeIntro" xml:space="preserve">
+    <value>Na guilda, você colabora com outros jogadores: pesquisem juntos, lutem em guerras de guilda e desbloqueiem bônus. Para começar, escolha um nome de jogador.</value>
   </data>
   <data name="Retry" xml:space="preserve">
     <value>Tentar novamente</value>

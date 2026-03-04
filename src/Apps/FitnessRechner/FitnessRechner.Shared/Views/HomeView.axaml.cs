@@ -14,6 +14,12 @@ public partial class HomeView : UserControl
     private readonly VitalSignsHeroRenderer _heroRenderer = new();
     private SKRect _lastHeroBounds;
 
+    // Render-Zeit für Quick-Action Button Puls-Animation
+    private float _renderTime;
+
+    // Pressed-State für Quick-Action Buttons
+    private bool _weightPressed, _waterPressed, _caloriesPressed;
+
     public HomeView()
     {
         InitializeComponent();
@@ -123,8 +129,82 @@ public partial class HomeView : UserControl
     /// </summary>
     public void OnRenderTick(float renderTime)
     {
+        _renderTime += 0.05f;
         _heroRenderer.Update(0.05f);
         VitalSignsCanvas?.InvalidateSurface();
+
+        // Quick-Action Buttons für Puls-Animation
+        BtnQuickWeight?.InvalidateSurface();
+        BtnQuickWater?.InvalidateSurface();
+        BtnQuickCalories?.InvalidateSurface();
+    }
+
+    // =====================================================================
+    // Quick-Action Buttons Paint + Touch
+    // =====================================================================
+
+    private void OnQuickWeightPaint(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+        QuickActionButtonRenderer.Render(canvas, bounds, "+kg", "weight",
+            MedicalColors.WeightPurple, _renderTime, _weightPressed);
+    }
+
+    private void OnQuickWaterPaint(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+        QuickActionButtonRenderer.Render(canvas, bounds, "+250 ml", "water",
+            MedicalColors.WaterGreen, _renderTime, _waterPressed);
+    }
+
+    private void OnQuickCaloriesPaint(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+        QuickActionButtonRenderer.Render(canvas, bounds, "+kcal", "fire",
+            MedicalColors.CalorieAmber, _renderTime, _caloriesPressed);
+    }
+
+    private void OnQuickWeightPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        _weightPressed = true;
+        BtnQuickWeight?.InvalidateSurface();
+        if (DataContext is MainViewModel vm)
+            vm.OpenWeightQuickAddCommand.Execute(null);
+        e.Handled = true;
+    }
+
+    private void OnQuickWaterPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        _waterPressed = true;
+        BtnQuickWater?.InvalidateSurface();
+        if (DataContext is MainViewModel vm)
+            vm.QuickAddWaterCommand.Execute("250"); // XAML CommandParameter ist immer string
+        e.Handled = true;
+    }
+
+    private void OnQuickCaloriesPressed(object? sender, Avalonia.Input.PointerPressedEventArgs e)
+    {
+        _caloriesPressed = true;
+        BtnQuickCalories?.InvalidateSurface();
+        if (DataContext is MainViewModel vm)
+            vm.OpenFoodQuickAddCommand.Execute(null);
+        e.Handled = true;
+    }
+
+    private void OnQuickButtonReleased(object? sender, Avalonia.Input.PointerReleasedEventArgs e)
+    {
+        _weightPressed = false;
+        _waterPressed = false;
+        _caloriesPressed = false;
+        BtnQuickWeight?.InvalidateSurface();
+        BtnQuickWater?.InvalidateSurface();
+        BtnQuickCalories?.InvalidateSurface();
     }
 
     // =====================================================================

@@ -138,70 +138,26 @@
           </StackPanel>
         </Border>
 
-        <!-- ========== Quick Actions Row ========== -->
+        <!-- ========== Quick Actions Row (VitalOS Holographic Buttons) ========== -->
         <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
-          <i:Interaction.Behaviors>
-            <uiBehaviors:StaggerFadeInBehavior FixedIndex="3" StaggerDelay="80" BaseDuration="300" />
-          </i:Interaction.Behaviors>
-          <!-- +kg Button (lila) -->
-          <Button AutomationProperties.AutomationId="Home_BtnQuickWeight" Grid.Column="0" CornerRadius="12" Height="48" Padding="6"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                  Command="{Binding OpenWeightQuickAddCommand}">
-            <i:Interaction.Behaviors>
-              <behaviors:TapScaleBehavior PressedScale="0.95" />
-            </i:Interaction.Behaviors>
-            <Button.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Color="#8B5CF6" Offset="0" />
-                <GradientStop Color="#7C3AED" Offset="1" />
-              </LinearGradientBrush>
-            </Button.Background>
-            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="ScaleBathroom" Width="18" Height="18" Foreground="White" />
-              <TextBlock Text="+kg" FontSize="14" FontWeight="Bold" Foreground="White"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
-
-          <!-- +250 ml Button (grün) -->
-          <Button AutomationProperties.AutomationId="Home_BtnQuickWater" Grid.Column="1" CornerRadius="12" Height="48" Padding="6"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                  Command="{Binding QuickAddWaterCommand}" CommandParameter="250">
-            <i:Interaction.Behaviors>
-              <behaviors:TapScaleBehavior PressedScale="0.95" />
-            </i:Interaction.Behaviors>
-            <Button.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Color="#22C55E" Offset="0" />
-                <GradientStop Color="#16A34A" Offset="1" />
-              </LinearGradientBrush>
-            </Button.Background>
-            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Water" Width="18" Height="18" Foreground="White" />
-              <TextBlock Text="+250 ml" FontSize="14" FontWeight="Bold" Foreground="White"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
-
-          <!-- +kcal Button (orange) -->
-          <Button AutomationProperties.AutomationId="Home_BtnQuickCalories" Grid.Column="2" CornerRadius="12" Height="48" Padding="6"
-                  HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                  Command="{Binding OpenFoodQuickAddCommand}">
-            <i:Interaction.Behaviors>
-              <behaviors:TapScaleBehavior PressedScale="0.95" />
-            </i:Interaction.Behaviors>
-            <Button.Background>
-              <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                <GradientStop Color="#F59E0B" Offset="0" />
-                <GradientStop Color="#D97706" Offset="1" />
-              </LinearGradientBrush>
-            </Button.Background>
-            <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Fire" Width="18" Height="18" Foreground="White" />
-              <TextBlock Text="+kcal" FontSize="14" FontWeight="Bold" Foreground="White"
-                         VerticalAlignment="Center" />
-            </StackPanel>
-          </Button>
+          <labs:SKCanvasView x:Name="BtnQuickWeight"
+                              AutomationProperties.AutomationId="Home_BtnQuickWeight"
+                              Grid.Column="0" Height="48"
+                              PaintSurface="OnQuickWeightPaint"
+                              PointerPressed="OnQuickWeightPressed"
+                              PointerReleased="OnQuickButtonReleased" />
+          <labs:SKCanvasView x:Name="BtnQuickWater"
+                              AutomationProperties.AutomationId="Home_BtnQuickWater"
+                              Grid.Column="1" Height="48"
+                              PaintSurface="OnQuickWaterPaint"
+                              PointerPressed="OnQuickWaterPressed"
+                              PointerReleased="OnQuickButtonReleased" />
+          <labs:SKCanvasView x:Name="BtnQuickCalories"
+                              AutomationProperties.AutomationId="Home_BtnQuickCalories"
+                              Grid.Column="2" Height="48"
+                              PaintSurface="OnQuickCaloriesPaint"
+                              PointerPressed="OnQuickCaloriesPressed"
+                              PointerReleased="OnQuickButtonReleased" />
         </Grid>
 
         <!-- ========== Weight Quick-Add Panel ========== -->

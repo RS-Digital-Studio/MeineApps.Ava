@@ -1,13 +1,15 @@
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels.MiniGames;
+using MeineApps.Core.Ava.Services;
 
 namespace HandwerkerImperium.ViewModels;
 
 // Partielle Klasse: Tab-Auswahl, Navigation, Back-Button, Child-Navigation-Routing
-public partial class MainViewModel
+public sealed partial class MainViewModel
 {
     // ═══════════════════════════════════════════════════════════════════════
     // TAB SELECTION COMMANDS
@@ -54,6 +56,7 @@ public partial class MainViewModel
         // Geldpakete-Beträge aktualisieren (basieren auf aktuellem Einkommen)
         ShopViewModel.LoadShopData();
         NotifyTabBarVisibility();
+        _contextualHintService.TryShowHint(ContextualHints.ShopHint);
     }
 
     [RelayCommand]
@@ -82,6 +85,7 @@ public partial class MainViewModel
         CraftingViewModel.RefreshCrafting();
         ResearchViewModel.LoadResearchTree();
         NotifyTabBarVisibility();
+        _contextualHintService.TryShowHint(ContextualHints.BuildingHint);
     }
 
     [RelayCommand]
@@ -90,6 +94,7 @@ public partial class MainViewModel
         DeactivateAllTabs();
         IsMissionenActive = true;
         NotifyTabBarVisibility();
+        _contextualHintService.TryShowHint(ContextualHints.DailyChallenge);
     }
 
     /// <summary>
@@ -110,6 +115,7 @@ public partial class MainViewModel
     {
         IsOrdersTabActive = false;
         IsQuickJobsTabActive = true;
+        _contextualHintService.TryShowHint(ContextualHints.QuickJobs);
     }
 
     [RelayCommand]
@@ -119,6 +125,7 @@ public partial class MainViewModel
         IsResearchActive = true;
         ResearchViewModel.LoadResearchTree();
         NotifyTabBarVisibility();
+        _contextualHintService.TryShowHint(ContextualHints.ResearchHint);
     }
 
     [RelayCommand]
@@ -128,6 +135,7 @@ public partial class MainViewModel
         IsGuildActive = true;
         GuildViewModel.RefreshGuild();
         NotifyTabBarVisibility();
+        _contextualHintService.TryShowHint(ContextualHints.GuildHint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -204,8 +212,7 @@ public partial class MainViewModel
     // BACK-NAVIGATION (Double-Back-to-Exit)
     // ═══════════════════════════════════════════════════════════════════════
 
-    private DateTime _lastBackPress = DateTime.MinValue;
-    private const int BackPressIntervalMs = 2000;
+    private readonly BackPressHelper _backPressHelper = new();
 
     /// <summary>
     /// Behandelt die Zurück-Taste. Gibt true zurück wenn konsumiert (App bleibt offen),
@@ -215,10 +222,12 @@ public partial class MainViewModel
     public bool HandleBackPressed()
     {
         // 1. Offene Dialoge/Overlays schließen (höchste Priorität)
+        if (IsHintVisible) { DismissHint(); return true; }
         if (IsLuckySpinVisible) { HideLuckySpin(); return true; }
         if (IsCombinedWelcomeDialogVisible) { DismissCombinedDialog(); return true; }
         if (IsWelcomeOfferVisible) { DismissWelcomeOffer(); return true; }
         if (IsConfirmDialogVisible) { ConfirmDialogCancel(); return true; }
+        if (IsPrestigeSummaryVisible) { DismissPrestigeSummary(); return true; }
         if (IsAlertDialogVisible) { DismissAlertDialog(); return true; }
         if (IsAchievementDialogVisible) { DismissAchievementDialog(); return true; }
         if (IsLevelUpDialogVisible) { DismissLevelUpDialog(); return true; }
@@ -251,7 +260,9 @@ public partial class MainViewModel
         }
 
         // 5a. Guild-Sub-Seiten → zurück zum Guild-Hub
-        if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive)
+        if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive ||
+            IsGuildWarSeasonActive || IsGuildBossActive || IsGuildHallActive ||
+            IsGuildAchievementsActive)
         {
             SelectGuildTab();
             return true;
@@ -287,14 +298,8 @@ public partial class MainViewModel
         }
 
         // 7. Auf Dashboard: Double-Back-to-Exit
-        var now = DateTime.UtcNow;
-        if ((now - _lastBackPress).TotalMilliseconds < BackPressIntervalMs)
-            return false; // App beenden lassen
-
-        _lastBackPress = now;
         var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Erneut drücken zum Beenden";
-        ExitHintRequested?.Invoke(msg);
-        return true; // Konsumiert
+        return _backPressHelper.HandleDoubleBack(msg);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -340,7 +345,9 @@ public partial class MainViewModel
             }
 
             // Gilden-Sub-Seiten → zurück zum Guild-Hub
-            if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive)
+            if (IsGuildResearchActive || IsGuildMembersActive || IsGuildInviteActive ||
+                IsGuildWarSeasonActive || IsGuildBossActive || IsGuildHallActive ||
+                IsGuildAchievementsActive)
             {
                 SelectGuildTab();
                 return;
@@ -373,6 +380,27 @@ public partial class MainViewModel
         {
             SelectDashboardTab();
             RefreshFromState();
+            return;
+        }
+
+        // "dashboard" = zum Werkstatt-Tab (z.B. von GoalService für Workshop-Meilensteine)
+        if (route == "dashboard")
+        {
+            SelectDashboardTab();
+            return;
+        }
+
+        // "imperium" = zum Imperium-Tab (z.B. von GoalService für Gebäude-Ziele)
+        if (route == "imperium")
+        {
+            SelectBuildingsTab();
+            return;
+        }
+
+        // "prestige" = Prestige-Bestätigung öffnen (von GoalService wenn Prestige verfügbar)
+        if (route == "prestige")
+        {
+            _ = NavigateToPrestigeAsync();
             return;
         }
 
@@ -413,16 +441,25 @@ public partial class MainViewModel
                 case "manager": IsManagerActive = true; ManagerViewModel.RefreshManagers(); break;
                 case "tournament": IsTournamentActive = true; TournamentViewModel.RefreshTournament(); break;
                 case "seasonal_event": IsSeasonalEventActive = true; SeasonalEventViewModel.RefreshEvent(); break;
-                case "battle_pass": IsBattlePassActive = true; BattlePassViewModel.RefreshBattlePass(); break;
+                case "battle_pass":
+                    IsBattlePassActive = true;
+                    BattlePassViewModel.RefreshBattlePass();
+                    _contextualHintService.TryShowHint(ContextualHints.BattlePass);
+                    break;
                 case "guild": IsGuildActive = true; GuildViewModel.RefreshGuild(); break;
-                case "crafting": IsCraftingActive = true; CraftingViewModel.RefreshCrafting(); break;
+                case "crafting":
+                    IsCraftingActive = true;
+                    CraftingViewModel.RefreshCrafting();
+                    _contextualHintService.TryShowHint(ContextualHints.CraftingHint);
+                    break;
             }
             NotifyTabBarVisibility();
             return;
         }
 
         // Gilden-Sub-Seiten (von GuildView-Hub aus)
-        if (route is "guild_research" or "guild_members" or "guild_invite")
+        if (route is "guild_research" or "guild_members" or "guild_invite" or
+            "guild_war_season" or "guild_boss" or "guild_hall" or "guild_achievements")
         {
             DeactivateAllTabs();
             switch (route)
@@ -430,6 +467,21 @@ public partial class MainViewModel
                 case "guild_research": IsGuildResearchActive = true; break;
                 case "guild_members": IsGuildMembersActive = true; break;
                 case "guild_invite": IsGuildInviteActive = true; break;
+                case "guild_war_season":
+                    IsGuildWarSeasonActive = true;
+                    GuildViewModel.WarSeasonViewModel.RefreshWar();
+                    break;
+                case "guild_boss":
+                    IsGuildBossActive = true;
+                    GuildViewModel.BossViewModel.RefreshBoss();
+                    break;
+                case "guild_hall":
+                    IsGuildHallActive = true;
+                    GuildViewModel.HallViewModel.RefreshHall();
+                    break;
+                case "guild_achievements":
+                    IsGuildAchievementsActive = true;
+                    break;
             }
             NotifyTabBarVisibility();
             return;

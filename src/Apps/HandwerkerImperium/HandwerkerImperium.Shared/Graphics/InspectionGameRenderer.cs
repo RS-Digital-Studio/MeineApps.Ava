@@ -23,9 +23,12 @@ public struct InspectionCellData
 /// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
 /// Entdeckungs-Effekte (gruene/rote Partikel), pulsierende Lupe,
 /// Completion-Effekt wenn alle Defekte gefunden.
+/// Wiederverwendbare SKPaint-Instanzen statt per-Frame Allokationen.
 /// </summary>
-public class InspectionGameRenderer
+public sealed class InspectionGameRenderer : IDisposable
 {
+    private bool _disposed;
+
     // Animationszeit
     private float _time;
 
@@ -55,6 +58,37 @@ public class InspectionGameRenderer
     private static readonly SKColor MagnifierRing = new(0xB0, 0xBE, 0xC5);
     private static readonly SKColor MagnifierGlass = new(0x42, 0xA5, 0xF5, 40);
     private static readonly SKColor MagnifierHandle = new(0x5D, 0x40, 0x37);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Wiederverwendbare Paint-Instanzen (kein GC pro Frame)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>Flaechenfuellung ohne Antialiasing (Hintergrund, Zellen, Partikel, Lupe).</summary>
+    private readonly SKPaint _fillNoAA = new() { IsAntialias = false, Style = SKPaintStyle.Fill };
+
+    /// <summary>Flaechenfuellung mit Antialiasing (Icons, Formen).</summary>
+    private readonly SKPaint _fillAA = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    /// <summary>Zweite Flaechenfuellung mit Antialiasing (Icons mit mehreren Farben gleichzeitig).</summary>
+    private readonly SKPaint _fillAA2 = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    /// <summary>Dritte Flaechenfuellung mit Antialiasing (Icons mit 3 Farben gleichzeitig).</summary>
+    private readonly SKPaint _fillAA3 = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    /// <summary>Linienmodus ohne Antialiasing (Grid-Linien, Hintergrund-Risse, Beton-Fugen).</summary>
+    private readonly SKPaint _strokeNoAA = new() { IsAntialias = false, Style = SKPaintStyle.Stroke };
+
+    /// <summary>Linienmodus mit Antialiasing (Icon-Konturen, Rahmen).</summary>
+    private readonly SKPaint _strokeAA = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+    /// <summary>Zweiter Linienmodus mit Antialiasing (fuer Methoden mit 2+ Stroke-Paints).</summary>
+    private readonly SKPaint _strokeAA2 = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+    /// <summary>Dritter Linienmodus mit Antialiasing (fuer Methoden mit 3 Stroke-Paints).</summary>
+    private readonly SKPaint _strokeAA3 = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+    // Gecachter SKPath fuer wiederholte Nutzung (vermeidet ~11 SKPath-Allokationen pro Frame)
+    private readonly SKPath _cachedPath = new();
 
     // ═══════════════════════════════════════════════════════════════════════
     // Partikel-System (Struct-basiert, kein GC)
@@ -193,63 +227,65 @@ public class InspectionGameRenderer
     private void DrawBackground(SKCanvas canvas, SKRect bounds)
     {
         // Grundfarbe: Betongrau
-        using var bgPaint = new SKPaint { Color = ConcreteBase, IsAntialias = false };
-        canvas.DrawRect(bounds, bgPaint);
+        _fillNoAA.Color = ConcreteBase;
+        canvas.DrawRect(bounds, _fillNoAA);
 
         // Beton-Textur: Horizontale Streifen fuer Fugen
-        using var stripePaint = new SKPaint { Color = ConcreteDark, IsAntialias = false, StrokeWidth = 1 };
+        _strokeNoAA.Color = ConcreteDark;
+        _strokeNoAA.StrokeWidth = 1;
         for (float y = bounds.Top + 30; y < bounds.Bottom; y += 40)
         {
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, stripePaint);
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, _strokeNoAA);
         }
 
         // Risse im Beton (deterministische Positionen)
-        using var crackPaint = new SKPaint { Color = CrackColor, IsAntialias = false, StrokeWidth = 1 };
+        _strokeNoAA.Color = CrackColor;
 
         // Riss 1: Oben links
         float cx1 = bounds.Left + bounds.Width * 0.15f;
         float cy1 = bounds.Top + bounds.Height * 0.2f;
-        canvas.DrawLine(cx1, cy1, cx1 + 18, cy1 + 12, crackPaint);
-        canvas.DrawLine(cx1 + 18, cy1 + 12, cx1 + 14, cy1 + 28, crackPaint);
-        canvas.DrawLine(cx1 + 18, cy1 + 12, cx1 + 30, cy1 + 8, crackPaint);
+        canvas.DrawLine(cx1, cy1, cx1 + 18, cy1 + 12, _strokeNoAA);
+        canvas.DrawLine(cx1 + 18, cy1 + 12, cx1 + 14, cy1 + 28, _strokeNoAA);
+        canvas.DrawLine(cx1 + 18, cy1 + 12, cx1 + 30, cy1 + 8, _strokeNoAA);
 
         // Riss 2: Unten rechts
         float cx2 = bounds.Right - bounds.Width * 0.2f;
         float cy2 = bounds.Bottom - bounds.Height * 0.25f;
-        canvas.DrawLine(cx2, cy2, cx2 - 10, cy2 + 16, crackPaint);
-        canvas.DrawLine(cx2, cy2, cx2 + 12, cy2 + 10, crackPaint);
+        canvas.DrawLine(cx2, cy2, cx2 - 10, cy2 + 16, _strokeNoAA);
+        canvas.DrawLine(cx2, cy2, cx2 + 12, cy2 + 10, _strokeNoAA);
 
         // Riss 3: Mitte oben
         float cx3 = bounds.MidX + 20;
         float cy3 = bounds.Top + 10;
-        canvas.DrawLine(cx3, cy3, cx3 + 8, cy3 + 14, crackPaint);
-        canvas.DrawLine(cx3 + 8, cy3 + 14, cx3 + 20, cy3 + 18, crackPaint);
+        canvas.DrawLine(cx3, cy3, cx3 + 8, cy3 + 14, _strokeNoAA);
+        canvas.DrawLine(cx3 + 8, cy3 + 14, cx3 + 20, cy3 + 18, _strokeNoAA);
 
         // Kleine Beton-Kratzer
-        using var scratchPaint = new SKPaint { Color = new SKColor(0x50, 0x60, 0x68, 60), IsAntialias = false, StrokeWidth = 1 };
-        canvas.DrawLine(bounds.Left + 40, bounds.Bottom - 20, bounds.Left + 70, bounds.Bottom - 22, scratchPaint);
-        canvas.DrawLine(bounds.Right - 60, bounds.Top + 50, bounds.Right - 30, bounds.Top + 48, scratchPaint);
+        _strokeNoAA.Color = new SKColor(0x50, 0x60, 0x68, 60);
+        canvas.DrawLine(bounds.Left + 40, bounds.Bottom - 20, bounds.Left + 70, bounds.Bottom - 22, _strokeNoAA);
+        canvas.DrawLine(bounds.Right - 60, bounds.Top + 50, bounds.Right - 30, bounds.Top + 48, _strokeNoAA);
     }
 
     /// <summary>
     /// Zeichnet subtile Hilfslinien fuer das Grid.
     /// </summary>
-    private static void DrawGridLines(SKCanvas canvas, float gridLeft, float gridTop, float gridWidth, float gridHeight, int cols, int rows, float cellSize)
+    private void DrawGridLines(SKCanvas canvas, float gridLeft, float gridTop, float gridWidth, float gridHeight, int cols, int rows, float cellSize)
     {
-        using var linePaint = new SKPaint { Color = GridLineColor, IsAntialias = false, StrokeWidth = 1 };
+        _strokeNoAA.Color = GridLineColor;
+        _strokeNoAA.StrokeWidth = 1;
 
         // Vertikale Linien
         for (int c = 0; c <= cols; c++)
         {
             float x = gridLeft + c * cellSize;
-            canvas.DrawLine(x, gridTop, x, gridTop + gridHeight, linePaint);
+            canvas.DrawLine(x, gridTop, x, gridTop + gridHeight, _strokeNoAA);
         }
 
         // Horizontale Linien
         for (int r = 0; r <= rows; r++)
         {
             float y = gridTop + r * cellSize;
-            canvas.DrawLine(gridLeft, y, gridLeft + gridWidth, y, linePaint);
+            canvas.DrawLine(gridLeft, y, gridLeft + gridWidth, y, _strokeNoAA);
         }
     }
 
@@ -276,9 +312,9 @@ public class InspectionGameRenderer
             bgColor = CellNormal;
 
         // Zellen-Hintergrund (abgerundet)
-        using var bgPaint = new SKPaint { Color = bgColor, IsAntialias = false };
+        _fillNoAA.Color = bgColor;
         var cellRect = new SKRect(x, y, x + w, y + h);
-        canvas.DrawRoundRect(cellRect, cornerRadius, cornerRadius, bgPaint);
+        canvas.DrawRoundRect(cellRect, cornerRadius, cornerRadius, _fillNoAA);
 
         // Rahmenfarbe bestimmen
         SKColor borderColor;
@@ -291,16 +327,17 @@ public class InspectionGameRenderer
 
         // Rahmen zeichnen (2px bei inspiziert, 1px sonst)
         float borderWidth = cell.IsInspected ? 2.5f : 1;
-        using var borderPaint = new SKPaint { Color = borderColor, IsAntialias = false, StrokeWidth = borderWidth, Style = SKPaintStyle.Stroke };
-        canvas.DrawRoundRect(cellRect, cornerRadius, cornerRadius, borderPaint);
+        _strokeNoAA.Color = borderColor;
+        _strokeNoAA.StrokeWidth = borderWidth;
+        canvas.DrawRoundRect(cellRect, cornerRadius, cornerRadius, _strokeNoAA);
 
         // Subtiles Mangel-Schimmern (nur fuer unentdeckte Defekte, leicht pulsierend)
         if (cell.IsDefect && !cell.IsInspected && isPlaying)
         {
             float shimmerPulse = (float)(0.3 + 0.7 * Math.Sin(_time * 2.5 + x * 0.1));
             byte shimmerAlpha = (byte)(DefectShimmer.Alpha * shimmerPulse);
-            using var shimmerPaint = new SKPaint { Color = DefectShimmer.WithAlpha(shimmerAlpha), IsAntialias = false };
-            canvas.DrawRoundRect(cellRect, cornerRadius, cornerRadius, shimmerPaint);
+            _fillNoAA.Color = DefectShimmer.WithAlpha(shimmerAlpha);
+            canvas.DrawRoundRect(cellRect, cornerRadius, cornerRadius, _fillNoAA);
         }
 
         // Icon zeichnen (zentriert in der Zelle)
@@ -329,39 +366,43 @@ public class InspectionGameRenderer
     /// <summary>
     /// Zeichnet ein Pixel-Art Haekchen (gruener Kreis mit weissem Check).
     /// </summary>
-    private static void DrawCheckmark(SKCanvas canvas, float x, float y, float size)
+    private void DrawCheckmark(SKCanvas canvas, float x, float y, float size)
     {
         // Gruener Kreis-Hintergrund
         float centerX = x + size / 2;
         float centerY = y + size / 2;
         float radius = size / 2;
-        using var circlePaint = new SKPaint { Color = CheckmarkGreen, IsAntialias = false };
-        canvas.DrawCircle(centerX, centerY, radius, circlePaint);
+        _fillNoAA.Color = CheckmarkGreen;
+        canvas.DrawCircle(centerX, centerY, radius, _fillNoAA);
 
         // Weisses Haekchen (2 Linien: kurz links, lang rechts)
-        using var checkPaint = new SKPaint { Color = SKColors.White, IsAntialias = false, StrokeWidth = 2, StrokeCap = SKStrokeCap.Square };
+        _strokeNoAA.Color = SKColors.White;
+        _strokeNoAA.StrokeWidth = 2;
+        _strokeNoAA.StrokeCap = SKStrokeCap.Square;
         float s = size * 0.25f; // Skalierungsfaktor
-        canvas.DrawLine(centerX - s * 1.2f, centerY, centerX - s * 0.2f, centerY + s, checkPaint);
-        canvas.DrawLine(centerX - s * 0.2f, centerY + s, centerX + s * 1.5f, centerY - s * 0.8f, checkPaint);
+        canvas.DrawLine(centerX - s * 1.2f, centerY, centerX - s * 0.2f, centerY + s, _strokeNoAA);
+        canvas.DrawLine(centerX - s * 0.2f, centerY + s, centerX + s * 1.5f, centerY - s * 0.8f, _strokeNoAA);
     }
 
     /// <summary>
     /// Zeichnet eine Pixel-Art X-Markierung (roter Kreis mit weissem X).
     /// </summary>
-    private static void DrawCrossMark(SKCanvas canvas, float x, float y, float size)
+    private void DrawCrossMark(SKCanvas canvas, float x, float y, float size)
     {
         // Roter Kreis-Hintergrund
         float centerX = x + size / 2;
         float centerY = y + size / 2;
         float radius = size / 2;
-        using var circlePaint = new SKPaint { Color = CrossRed, IsAntialias = false };
-        canvas.DrawCircle(centerX, centerY, radius, circlePaint);
+        _fillNoAA.Color = CrossRed;
+        canvas.DrawCircle(centerX, centerY, radius, _fillNoAA);
 
         // Weisses X (2 diagonale Linien)
-        using var xPaint = new SKPaint { Color = SKColors.White, IsAntialias = false, StrokeWidth = 2, StrokeCap = SKStrokeCap.Square };
+        _strokeNoAA.Color = SKColors.White;
+        _strokeNoAA.StrokeWidth = 2;
+        _strokeNoAA.StrokeCap = SKStrokeCap.Square;
         float offset = size * 0.25f;
-        canvas.DrawLine(centerX - offset, centerY - offset, centerX + offset, centerY + offset, xPaint);
-        canvas.DrawLine(centerX + offset, centerY - offset, centerX - offset, centerY + offset, xPaint);
+        canvas.DrawLine(centerX - offset, centerY - offset, centerX + offset, centerY + offset, _strokeNoAA);
+        canvas.DrawLine(centerX + offset, centerY - offset, centerX - offset, centerY + offset, _strokeNoAA);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -372,7 +413,7 @@ public class InspectionGameRenderer
     /// Zeichnet ein Vektor-Icon zentriert an (cx, cy) mit gegebener Groesse.
     /// 16 Icons: 8 gute (Baustellen-Elemente) + 8 defekte (Maengel).
     /// </summary>
-    private static void DrawCellIcon(SKCanvas canvas, float cx, float cy, float size, string iconId, byte alpha)
+    private void DrawCellIcon(SKCanvas canvas, float cx, float cy, float size, string iconId, byte alpha)
     {
         float half = size / 2;
 
@@ -437,121 +478,139 @@ public class InspectionGameRenderer
     // -- Gute Icons --
 
     /// <summary>Ziegel-Muster (2x3 orange/braune Rechtecke).</summary>
-    private static void DrawBrickIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawBrickIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float bw = half * 0.6f;
         float bh = half * 0.35f;
         float gap = half * 0.08f;
 
-        using var brickPaint = new SKPaint { Color = new SKColor(0xCC, 0x66, 0x33, alpha), IsAntialias = true };
-        using var brickDark = new SKPaint { Color = new SKColor(0x8B, 0x45, 0x13, alpha), IsAntialias = true };
-        using var mortarPaint = new SKPaint { Color = new SKColor(0xD2, 0xB4, 0x8C, alpha), IsAntialias = true, StrokeWidth = 1, Style = SKPaintStyle.Stroke };
+        _fillAA.Color = new SKColor(0xCC, 0x66, 0x33, alpha);
+        _fillAA2.Color = new SKColor(0x8B, 0x45, 0x13, alpha);
+        _strokeAA.Color = new SKColor(0xD2, 0xB4, 0x8C, alpha);
+        _strokeAA.StrokeWidth = 1;
+        _strokeAA.StrokeCap = SKStrokeCap.Butt;
 
         float topY = cy - bh - gap / 2;
-        canvas.DrawRect(cx - bw - gap / 2, topY, bw, bh, brickPaint);
-        canvas.DrawRect(cx + gap / 2, topY, bw, bh, brickDark);
+        canvas.DrawRect(cx - bw - gap / 2, topY, bw, bh, _fillAA);
+        canvas.DrawRect(cx + gap / 2, topY, bw, bh, _fillAA2);
 
         float midY = cy - bh / 2 + gap / 2;
-        canvas.DrawRect(cx - bw * 0.5f - gap / 2, midY, bw, bh, brickDark);
-        canvas.DrawRect(cx + bw * 0.5f + gap / 2, midY, bw * 0.5f, bh, brickPaint);
-        canvas.DrawRect(cx - bw - gap / 2, midY, bw * 0.5f, bh, brickPaint);
+        canvas.DrawRect(cx - bw * 0.5f - gap / 2, midY, bw, bh, _fillAA2);
+        canvas.DrawRect(cx + bw * 0.5f + gap / 2, midY, bw * 0.5f, bh, _fillAA);
+        canvas.DrawRect(cx - bw - gap / 2, midY, bw * 0.5f, bh, _fillAA);
 
         float botY = cy + gap / 2 + bh * 0.5f;
-        canvas.DrawRect(cx - bw - gap / 2, botY, bw, bh, brickPaint);
-        canvas.DrawRect(cx + gap / 2, botY, bw, bh, brickDark);
+        canvas.DrawRect(cx - bw - gap / 2, botY, bw, bh, _fillAA);
+        canvas.DrawRect(cx + gap / 2, botY, bw, bh, _fillAA2);
 
-        canvas.DrawLine(cx - bw - gap, topY + bh, cx + bw + gap, topY + bh, mortarPaint);
-        canvas.DrawLine(cx - bw - gap, midY + bh, cx + bw + gap, midY + bh, mortarPaint);
+        canvas.DrawLine(cx - bw - gap, topY + bh, cx + bw + gap, topY + bh, _strokeAA);
+        canvas.DrawLine(cx - bw - gap, midY + bh, cx + bw + gap, midY + bh, _strokeAA);
     }
 
     /// <summary>Holzbalken (braunes Rechteck mit Maserungslinien).</summary>
-    private static void DrawWoodIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawWoodIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float w = half * 1.6f;
         float h = half * 0.7f;
 
-        using var woodPaint = new SKPaint { Color = new SKColor(0x8B, 0x6B, 0x3D, alpha), IsAntialias = true };
-        using var grainPaint = new SKPaint { Color = new SKColor(0x6B, 0x4B, 0x2D, alpha), IsAntialias = true, StrokeWidth = 1 };
-        using var lightPaint = new SKPaint { Color = new SKColor(0xA0, 0x80, 0x50, alpha), IsAntialias = true, StrokeWidth = 1 };
+        _fillAA.Color = new SKColor(0x8B, 0x6B, 0x3D, alpha);
+        _strokeAA.Color = new SKColor(0x6B, 0x4B, 0x2D, alpha);
+        _strokeAA.StrokeWidth = 1;
+        _strokeAA.StrokeCap = SKStrokeCap.Butt;
+        _strokeAA2.Color = new SKColor(0xA0, 0x80, 0x50, alpha);
+        _strokeAA2.StrokeWidth = 1;
+        _strokeAA2.StrokeCap = SKStrokeCap.Butt;
 
         var rect = new SKRect(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2);
-        canvas.DrawRoundRect(rect, 2, 2, woodPaint);
+        canvas.DrawRoundRect(rect, 2, 2, _fillAA);
 
         float left = cx - w / 2 + 3;
         float right = cx + w / 2 - 3;
-        canvas.DrawLine(left, cy - h * 0.25f, right, cy - h * 0.2f, grainPaint);
-        canvas.DrawLine(left, cy + h * 0.05f, right, cy, grainPaint);
-        canvas.DrawLine(left, cy + h * 0.3f, right, cy + h * 0.25f, grainPaint);
-        canvas.DrawLine(left + w * 0.1f, cy - h * 0.1f, right - w * 0.1f, cy - h * 0.08f, lightPaint);
-        canvas.DrawLine(left + w * 0.15f, cy + h * 0.18f, right - w * 0.05f, cy + h * 0.15f, lightPaint);
+        canvas.DrawLine(left, cy - h * 0.25f, right, cy - h * 0.2f, _strokeAA);
+        canvas.DrawLine(left, cy + h * 0.05f, right, cy, _strokeAA);
+        canvas.DrawLine(left, cy + h * 0.3f, right, cy + h * 0.25f, _strokeAA);
+        canvas.DrawLine(left + w * 0.1f, cy - h * 0.1f, right - w * 0.1f, cy - h * 0.08f, _strokeAA2);
+        canvas.DrawLine(left + w * 0.15f, cy + h * 0.18f, right - w * 0.05f, cy + h * 0.15f, _strokeAA2);
     }
 
     /// <summary>Schraube/Bolzen (Kreis mit Kreuzschlitz + kurzer Schaft).</summary>
-    private static void DrawBoltIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawBoltIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float headR = half * 0.45f;
         float shaftW = half * 0.25f;
         float shaftH = half * 0.7f;
 
-        using var metalPaint = new SKPaint { Color = new SKColor(0xB0, 0xB0, 0xB8, alpha), IsAntialias = true };
-        using var slotPaint = new SKPaint { Color = new SKColor(0x50, 0x50, 0x58, alpha), IsAntialias = true, StrokeWidth = 2, Style = SKPaintStyle.Stroke };
-        using var shaftPaint = new SKPaint { Color = new SKColor(0x90, 0x90, 0x98, alpha), IsAntialias = true };
+        _fillAA.Color = new SKColor(0xB0, 0xB0, 0xB8, alpha);
+        _strokeAA.Color = new SKColor(0x50, 0x50, 0x58, alpha);
+        _strokeAA.StrokeWidth = 2;
+        _strokeAA.StrokeCap = SKStrokeCap.Butt;
+        _fillAA2.Color = new SKColor(0x90, 0x90, 0x98, alpha);
 
-        canvas.DrawRect(cx - shaftW / 2, cy, shaftW, shaftH, shaftPaint);
-        canvas.DrawCircle(cx, cy - half * 0.1f, headR, metalPaint);
+        canvas.DrawRect(cx - shaftW / 2, cy, shaftW, shaftH, _fillAA2);
+        canvas.DrawCircle(cx, cy - half * 0.1f, headR, _fillAA);
 
         float slotLen = headR * 0.6f;
         float scy = cy - half * 0.1f;
-        canvas.DrawLine(cx - slotLen, scy, cx + slotLen, scy, slotPaint);
-        canvas.DrawLine(cx, scy - slotLen, cx, scy + slotLen, slotPaint);
+        canvas.DrawLine(cx - slotLen, scy, cx + slotLen, scy, _strokeAA);
+        canvas.DrawLine(cx, scy - slotLen, cx, scy + slotLen, _strokeAA);
     }
 
     /// <summary>Leiter (2 vertikale + 3 horizontale Linien).</summary>
-    private static void DrawLadderIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawLadderIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float lw = half * 0.7f;
         float lh = half * 0.9f;
 
-        using var railPaint = new SKPaint { Color = new SKColor(0xA0, 0x7B, 0x50, alpha), IsAntialias = true, StrokeWidth = 3, StrokeCap = SKStrokeCap.Round };
-        using var rungPaint = new SKPaint { Color = new SKColor(0xC0, 0x95, 0x60, alpha), IsAntialias = true, StrokeWidth = 2, StrokeCap = SKStrokeCap.Round };
+        _strokeAA.Color = new SKColor(0xA0, 0x7B, 0x50, alpha);
+        _strokeAA.StrokeWidth = 3;
+        _strokeAA.StrokeCap = SKStrokeCap.Round;
+        _strokeAA2.Color = new SKColor(0xC0, 0x95, 0x60, alpha);
+        _strokeAA2.StrokeWidth = 2;
+        _strokeAA2.StrokeCap = SKStrokeCap.Round;
 
-        canvas.DrawLine(cx - lw, cy + lh, cx - lw * 0.7f, cy - lh, railPaint);
-        canvas.DrawLine(cx + lw, cy + lh, cx + lw * 0.7f, cy - lh, railPaint);
+        canvas.DrawLine(cx - lw, cy + lh, cx - lw * 0.7f, cy - lh, _strokeAA);
+        canvas.DrawLine(cx + lw, cy + lh, cx + lw * 0.7f, cy - lh, _strokeAA);
 
         for (int i = 0; i < 3; i++)
         {
             float t = 0.2f + i * 0.3f;
             float ry = cy - lh + 2 * lh * t;
             float rOffset = lw * (1.0f - t * 0.15f);
-            canvas.DrawLine(cx - rOffset, ry, cx + rOffset, ry, rungPaint);
+            canvas.DrawLine(cx - rOffset, ry, cx + rOffset, ry, _strokeAA2);
         }
     }
 
     /// <summary>Kran-Arm (L-Form mit Haken).</summary>
-    private static void DrawCraneIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawCraneIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
-        using var cranePaint = new SKPaint { Color = new SKColor(0xFF, 0xB3, 0x00, alpha), IsAntialias = true, StrokeWidth = 3, StrokeCap = SKStrokeCap.Square };
-        using var cablePaint = new SKPaint { Color = new SKColor(0x90, 0x90, 0x90, alpha), IsAntialias = true, StrokeWidth = 1.5f };
-        using var hookPaint = new SKPaint { Color = new SKColor(0xD0, 0xD0, 0xD0, alpha), IsAntialias = true, StrokeWidth = 2, Style = SKPaintStyle.Stroke, StrokeCap = SKStrokeCap.Round };
+        _strokeAA.Color = new SKColor(0xFF, 0xB3, 0x00, alpha);
+        _strokeAA.StrokeWidth = 3;
+        _strokeAA.StrokeCap = SKStrokeCap.Square;
+        _strokeAA2.Color = new SKColor(0x90, 0x90, 0x90, alpha);
+        _strokeAA2.StrokeWidth = 1.5f;
+        _strokeAA2.StrokeCap = SKStrokeCap.Butt;
+        _strokeAA3.Color = new SKColor(0xD0, 0xD0, 0xD0, alpha);
+        _strokeAA3.StrokeWidth = 2;
+        _strokeAA3.StrokeCap = SKStrokeCap.Round;
 
         float mastX = cx - half * 0.4f;
-        canvas.DrawLine(mastX, cy + half, mastX, cy - half * 0.7f, cranePaint);
-        canvas.DrawLine(mastX, cy - half * 0.7f, cx + half * 0.8f, cy - half * 0.7f, cranePaint);
+        canvas.DrawLine(mastX, cy + half, mastX, cy - half * 0.7f, _strokeAA);
+        canvas.DrawLine(mastX, cy - half * 0.7f, cx + half * 0.8f, cy - half * 0.7f, _strokeAA);
 
         float hookX = cx + half * 0.6f;
-        canvas.DrawLine(hookX, cy - half * 0.7f, hookX, cy + half * 0.1f, cablePaint);
+        canvas.DrawLine(hookX, cy - half * 0.7f, hookX, cy + half * 0.1f, _strokeAA2);
 
-        using var hookPath = new SKPath();
-        hookPath.MoveTo(hookX, cy + half * 0.1f);
-        hookPath.ArcTo(new SKRect(hookX - half * 0.2f, cy + half * 0.05f, hookX + half * 0.2f, cy + half * 0.45f), 0, 180, false);
-        canvas.DrawPath(hookPath, hookPaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(hookX, cy + half * 0.1f);
+        _cachedPath.ArcTo(new SKRect(hookX - half * 0.2f, cy + half * 0.05f, hookX + half * 0.2f, cy + half * 0.45f), 0, 180, false);
+        canvas.DrawPath(_cachedPath, _strokeAA3);
     }
 
     /// <summary>Schraubenschluessel (U-Form oben + gerader Griff).</summary>
-    private static void DrawWrenchIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawWrenchIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
-        using var metalPaint = new SKPaint { Color = new SKColor(0xA0, 0xA0, 0xA8, alpha), IsAntialias = true };
-        using var handlePaint = new SKPaint { Color = new SKColor(0x80, 0x80, 0x88, alpha), IsAntialias = true };
+        _fillAA.Color = new SKColor(0xA0, 0xA0, 0xA8, alpha);
+        _fillAA2.Color = new SKColor(0x80, 0x80, 0x88, alpha);
 
         float gw = half * 0.22f;
         float gh = half * 1.2f;
@@ -559,37 +618,37 @@ public class InspectionGameRenderer
         canvas.Save();
         canvas.RotateDegrees(-20, cx, cy);
 
-        canvas.DrawRoundRect(new SKRect(cx - gw / 2, cy - gh * 0.1f, cx + gw / 2, cy + gh), 2, 2, handlePaint);
+        canvas.DrawRoundRect(new SKRect(cx - gw / 2, cy - gh * 0.1f, cx + gw / 2, cy + gh), 2, 2, _fillAA2);
 
         float jawW = half * 0.5f;
         float jawH = half * 0.4f;
-        using var jawPath = new SKPath();
-        jawPath.MoveTo(cx - jawW, cy - gh * 0.1f);
-        jawPath.LineTo(cx - jawW, cy - gh * 0.1f - jawH);
-        jawPath.LineTo(cx - jawW * 0.3f, cy - gh * 0.1f - jawH);
-        jawPath.LineTo(cx - jawW * 0.3f, cy - gh * 0.1f - jawH * 0.4f);
-        jawPath.LineTo(cx + jawW * 0.3f, cy - gh * 0.1f - jawH * 0.4f);
-        jawPath.LineTo(cx + jawW * 0.3f, cy - gh * 0.1f - jawH);
-        jawPath.LineTo(cx + jawW, cy - gh * 0.1f - jawH);
-        jawPath.LineTo(cx + jawW, cy - gh * 0.1f);
-        jawPath.Close();
-        canvas.DrawPath(jawPath, metalPaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - jawW, cy - gh * 0.1f);
+        _cachedPath.LineTo(cx - jawW, cy - gh * 0.1f - jawH);
+        _cachedPath.LineTo(cx - jawW * 0.3f, cy - gh * 0.1f - jawH);
+        _cachedPath.LineTo(cx - jawW * 0.3f, cy - gh * 0.1f - jawH * 0.4f);
+        _cachedPath.LineTo(cx + jawW * 0.3f, cy - gh * 0.1f - jawH * 0.4f);
+        _cachedPath.LineTo(cx + jawW * 0.3f, cy - gh * 0.1f - jawH);
+        _cachedPath.LineTo(cx + jawW, cy - gh * 0.1f - jawH);
+        _cachedPath.LineTo(cx + jawW, cy - gh * 0.1f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fillAA);
 
         canvas.Restore();
     }
 
     /// <summary>Zahnrad (Kreis mit 6 Zacken).</summary>
-    private static void DrawGearIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawGearIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float outerR = half * 0.85f;
         float innerR = half * 0.55f;
         float holeR = half * 0.2f;
         int teeth = 6;
 
-        using var gearPaint = new SKPaint { Color = new SKColor(0x90, 0x90, 0x98, alpha), IsAntialias = true };
-        using var holePaint = new SKPaint { Color = new SKColor(0x37, 0x47, 0x4F, alpha), IsAntialias = true };
+        _fillAA.Color = new SKColor(0x90, 0x90, 0x98, alpha);
+        _fillAA2.Color = new SKColor(0x37, 0x47, 0x4F, alpha);
 
-        using var path = new SKPath();
+        _cachedPath.Rewind();
         float angleStep = 360f / teeth;
         float toothHalf = angleStep * 0.25f;
 
@@ -604,209 +663,211 @@ public class InspectionGameRenderer
             float radGap2 = (baseAngle + angleStep - toothHalf - 2) * MathF.PI / 180;
 
             if (i == 0)
-                path.MoveTo(cx + innerR * MathF.Cos(rad1), cy + innerR * MathF.Sin(rad1));
+                _cachedPath.MoveTo(cx + innerR * MathF.Cos(rad1), cy + innerR * MathF.Sin(rad1));
             else
-                path.LineTo(cx + innerR * MathF.Cos(rad1), cy + innerR * MathF.Sin(rad1));
+                _cachedPath.LineTo(cx + innerR * MathF.Cos(rad1), cy + innerR * MathF.Sin(rad1));
 
-            path.LineTo(cx + outerR * MathF.Cos(radM1), cy + outerR * MathF.Sin(radM1));
-            path.LineTo(cx + outerR * MathF.Cos(radM2), cy + outerR * MathF.Sin(radM2));
-            path.LineTo(cx + innerR * MathF.Cos(rad2), cy + innerR * MathF.Sin(rad2));
-            path.LineTo(cx + innerR * MathF.Cos(radGap1), cy + innerR * MathF.Sin(radGap1));
-            path.LineTo(cx + innerR * MathF.Cos(radGap2), cy + innerR * MathF.Sin(radGap2));
+            _cachedPath.LineTo(cx + outerR * MathF.Cos(radM1), cy + outerR * MathF.Sin(radM1));
+            _cachedPath.LineTo(cx + outerR * MathF.Cos(radM2), cy + outerR * MathF.Sin(radM2));
+            _cachedPath.LineTo(cx + innerR * MathF.Cos(rad2), cy + innerR * MathF.Sin(rad2));
+            _cachedPath.LineTo(cx + innerR * MathF.Cos(radGap1), cy + innerR * MathF.Sin(radGap1));
+            _cachedPath.LineTo(cx + innerR * MathF.Cos(radGap2), cy + innerR * MathF.Sin(radGap2));
         }
-        path.Close();
-        canvas.DrawPath(path, gearPaint);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fillAA);
 
-        canvas.DrawCircle(cx, cy, holeR, holePaint);
+        canvas.DrawCircle(cx, cy, holeR, _fillAA2);
     }
 
     /// <summary>I-Traeger (breite Flansche oben/unten + schmaler Steg).</summary>
-    private static void DrawBeamIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawBeamIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float flangeW = half * 1.2f;
         float flangeH = half * 0.25f;
         float webW = half * 0.3f;
         float webH = half * 1.0f;
 
-        using var steelPaint = new SKPaint { Color = new SKColor(0x78, 0x90, 0x9C, alpha), IsAntialias = true };
-        using var highlightPaint = new SKPaint { Color = new SKColor(0x90, 0xA4, 0xAE, alpha), IsAntialias = true };
+        _fillAA.Color = new SKColor(0x78, 0x90, 0x9C, alpha);
+        _fillAA2.Color = new SKColor(0x90, 0xA4, 0xAE, alpha);
 
-        canvas.DrawRect(cx - webW / 2, cy - webH / 2, webW, webH, steelPaint);
-        canvas.DrawRect(cx - flangeW / 2, cy - webH / 2 - flangeH / 2, flangeW, flangeH, steelPaint);
-        canvas.DrawRect(cx - flangeW / 2, cy - webH / 2 - flangeH / 2, flangeW, flangeH * 0.3f, highlightPaint);
-        canvas.DrawRect(cx - flangeW / 2, cy + webH / 2 - flangeH / 2, flangeW, flangeH, steelPaint);
+        canvas.DrawRect(cx - webW / 2, cy - webH / 2, webW, webH, _fillAA);
+        canvas.DrawRect(cx - flangeW / 2, cy - webH / 2 - flangeH / 2, flangeW, flangeH, _fillAA);
+        canvas.DrawRect(cx - flangeW / 2, cy - webH / 2 - flangeH / 2, flangeW, flangeH * 0.3f, _fillAA2);
+        canvas.DrawRect(cx - flangeW / 2, cy + webH / 2 - flangeH / 2, flangeW, flangeH, _fillAA);
     }
 
     // -- Defekt-Icons --
 
     /// <summary>Warndreieck (gelbes Dreieck mit schwarzem "!").</summary>
-    private static void DrawWarningIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawWarningIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
-        using var triPaint = new SKPaint { Color = new SKColor(0xFF, 0xC1, 0x07, alpha), IsAntialias = true };
-        using var borderPaint = new SKPaint { Color = new SKColor(0xE6, 0x9C, 0x00, alpha), IsAntialias = true, StrokeWidth = 1.5f, Style = SKPaintStyle.Stroke };
-        using var exclPaint = new SKPaint { Color = new SKColor(0x33, 0x33, 0x33, alpha), IsAntialias = true, StrokeWidth = 2.5f, StrokeCap = SKStrokeCap.Round };
+        _fillAA.Color = new SKColor(0xFF, 0xC1, 0x07, alpha);
+        _strokeAA.Color = new SKColor(0xE6, 0x9C, 0x00, alpha);
+        _strokeAA.StrokeWidth = 1.5f;
+        _strokeAA.StrokeCap = SKStrokeCap.Butt;
+        _strokeAA2.Color = new SKColor(0x33, 0x33, 0x33, alpha);
+        _strokeAA2.StrokeWidth = 2.5f;
+        _strokeAA2.StrokeCap = SKStrokeCap.Round;
 
-        using var triPath = new SKPath();
-        triPath.MoveTo(cx, cy - half * 0.85f);
-        triPath.LineTo(cx - half * 0.9f, cy + half * 0.7f);
-        triPath.LineTo(cx + half * 0.9f, cy + half * 0.7f);
-        triPath.Close();
-        canvas.DrawPath(triPath, triPaint);
-        canvas.DrawPath(triPath, borderPaint);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, cy - half * 0.85f);
+        _cachedPath.LineTo(cx - half * 0.9f, cy + half * 0.7f);
+        _cachedPath.LineTo(cx + half * 0.9f, cy + half * 0.7f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fillAA);
+        canvas.DrawPath(_cachedPath, _strokeAA);
 
-        canvas.DrawLine(cx, cy - half * 0.3f, cx, cy + half * 0.2f, exclPaint);
-        canvas.DrawCircle(cx, cy + half * 0.45f, 1.5f, exclPaint);
+        canvas.DrawLine(cx, cy - half * 0.3f, cx, cy + half * 0.2f, _strokeAA2);
+        canvas.DrawCircle(cx, cy + half * 0.45f, 1.5f, _strokeAA2);
     }
 
     /// <summary>Absperrung (rot-weiss gestreifter Balken auf 2 Fuessen).</summary>
-    private static void DrawBarrierIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawBarrierIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float barW = half * 1.6f;
         float barH = half * 0.35f;
         float barY = cy - half * 0.15f;
 
-        using var redPaint = new SKPaint { Color = new SKColor(0xE5, 0x39, 0x35, alpha), IsAntialias = true };
-        using var whitePaint = new SKPaint { Color = new SKColor(0xF5, 0xF5, 0xF5, alpha), IsAntialias = true };
-        using var legPaint = new SKPaint { Color = new SKColor(0x90, 0x90, 0x90, alpha), IsAntialias = true, StrokeWidth = 2.5f };
+        _fillAA.Color = new SKColor(0xE5, 0x39, 0x35, alpha);
+        _fillAA2.Color = new SKColor(0xF5, 0xF5, 0xF5, alpha);
+        _strokeAA.Color = new SKColor(0x90, 0x90, 0x90, alpha);
+        _strokeAA.StrokeWidth = 2.5f;
+        _strokeAA.StrokeCap = SKStrokeCap.Butt;
 
-        canvas.DrawLine(cx - half * 0.55f, barY + barH, cx - half * 0.55f, cy + half * 0.8f, legPaint);
-        canvas.DrawLine(cx + half * 0.55f, barY + barH, cx + half * 0.55f, cy + half * 0.8f, legPaint);
+        canvas.DrawLine(cx - half * 0.55f, barY + barH, cx - half * 0.55f, cy + half * 0.8f, _strokeAA);
+        canvas.DrawLine(cx + half * 0.55f, barY + barH, cx + half * 0.55f, cy + half * 0.8f, _strokeAA);
 
         var barRect = new SKRect(cx - barW / 2, barY, cx + barW / 2, barY + barH);
-        canvas.DrawRoundRect(barRect, 2, 2, redPaint);
+        canvas.DrawRoundRect(barRect, 2, 2, _fillAA);
 
         canvas.Save();
         canvas.ClipRect(barRect);
         float stripeW = barH * 0.6f;
         for (float sx = cx - barW / 2 - barH; sx < cx + barW / 2 + barH; sx += stripeW * 2)
         {
-            using var stripePath = new SKPath();
-            stripePath.MoveTo(sx, barY + barH);
-            stripePath.LineTo(sx + barH, barY);
-            stripePath.LineTo(sx + barH + stripeW, barY);
-            stripePath.LineTo(sx + stripeW, barY + barH);
-            stripePath.Close();
-            canvas.DrawPath(stripePath, whitePaint);
+            _cachedPath.Rewind();
+            _cachedPath.MoveTo(sx, barY + barH);
+            _cachedPath.LineTo(sx + barH, barY);
+            _cachedPath.LineTo(sx + barH + stripeW, barY);
+            _cachedPath.LineTo(sx + stripeW, barY + barH);
+            _cachedPath.Close();
+            canvas.DrawPath(_cachedPath, _fillAA2);
         }
         canvas.Restore();
     }
 
     /// <summary>Riss (Zickzack-Linie von oben nach unten).</summary>
-    private static void DrawCrackIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawCrackIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
-        using var crackPaint = new SKPaint
-        {
-            Color = new SKColor(0x40, 0x40, 0x40, alpha),
-            IsAntialias = true,
-            StrokeWidth = 2.5f,
-            Style = SKPaintStyle.Stroke,
-            StrokeCap = SKStrokeCap.Round,
-            StrokeJoin = SKStrokeJoin.Round
-        };
-        using var lightPaint = new SKPaint
-        {
-            Color = new SKColor(0xA0, 0xA0, 0xA0, alpha),
-            IsAntialias = true,
-            StrokeWidth = 1,
-            Style = SKPaintStyle.Stroke
-        };
+        _strokeAA.Color = new SKColor(0x40, 0x40, 0x40, alpha);
+        _strokeAA.StrokeWidth = 2.5f;
+        _strokeAA.StrokeCap = SKStrokeCap.Round;
+        _strokeAA.StrokeJoin = SKStrokeJoin.Round;
+        _strokeAA2.Color = new SKColor(0xA0, 0xA0, 0xA0, alpha);
+        _strokeAA2.StrokeWidth = 1;
+        _strokeAA2.StrokeCap = SKStrokeCap.Butt;
 
-        using var path = new SKPath();
-        path.MoveTo(cx - half * 0.1f, cy - half * 0.9f);
-        path.LineTo(cx + half * 0.3f, cy - half * 0.5f);
-        path.LineTo(cx - half * 0.25f, cy - half * 0.15f);
-        path.LineTo(cx + half * 0.2f, cy + half * 0.2f);
-        path.LineTo(cx - half * 0.15f, cy + half * 0.5f);
-        path.LineTo(cx + half * 0.1f, cy + half * 0.9f);
-        canvas.DrawPath(path, crackPaint);
+        // Hauptriss
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - half * 0.1f, cy - half * 0.9f);
+        _cachedPath.LineTo(cx + half * 0.3f, cy - half * 0.5f);
+        _cachedPath.LineTo(cx - half * 0.25f, cy - half * 0.15f);
+        _cachedPath.LineTo(cx + half * 0.2f, cy + half * 0.2f);
+        _cachedPath.LineTo(cx - half * 0.15f, cy + half * 0.5f);
+        _cachedPath.LineTo(cx + half * 0.1f, cy + half * 0.9f);
+        canvas.DrawPath(_cachedPath, _strokeAA);
 
-        using var lightPath = new SKPath();
-        lightPath.MoveTo(cx - half * 0.1f + 3, cy - half * 0.9f);
-        lightPath.LineTo(cx + half * 0.3f + 3, cy - half * 0.5f);
-        lightPath.LineTo(cx - half * 0.25f + 3, cy - half * 0.15f);
-        canvas.DrawPath(lightPath, lightPaint);
+        // Lichtreflex (teilweise parallel zum Hauptriss)
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx - half * 0.1f + 3, cy - half * 0.9f);
+        _cachedPath.LineTo(cx + half * 0.3f + 3, cy - half * 0.5f);
+        _cachedPath.LineTo(cx - half * 0.25f + 3, cy - half * 0.15f);
+        canvas.DrawPath(_cachedPath, _strokeAA2);
     }
 
     /// <summary>Flamme (orange/rote Tropfen-Form mit innerem gelben Kern).</summary>
-    private static void DrawFireIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawFireIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
-        using var outerPaint = new SKPaint { Color = new SKColor(0xE5, 0x50, 0x00, alpha), IsAntialias = true };
-        using var outerPath = new SKPath();
-        outerPath.MoveTo(cx, cy - half * 0.9f);
-        outerPath.CubicTo(cx + half * 0.6f, cy - half * 0.3f, cx + half * 0.7f, cy + half * 0.3f, cx + half * 0.4f, cy + half * 0.8f);
-        outerPath.CubicTo(cx + half * 0.1f, cy + half, cx - half * 0.1f, cy + half, cx - half * 0.4f, cy + half * 0.8f);
-        outerPath.CubicTo(cx - half * 0.7f, cy + half * 0.3f, cx - half * 0.6f, cy - half * 0.3f, cx, cy - half * 0.9f);
-        outerPath.Close();
-        canvas.DrawPath(outerPath, outerPaint);
+        // Aeussere Flamme (rot-orange)
+        _fillAA.Color = new SKColor(0xE5, 0x50, 0x00, alpha);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, cy - half * 0.9f);
+        _cachedPath.CubicTo(cx + half * 0.6f, cy - half * 0.3f, cx + half * 0.7f, cy + half * 0.3f, cx + half * 0.4f, cy + half * 0.8f);
+        _cachedPath.CubicTo(cx + half * 0.1f, cy + half, cx - half * 0.1f, cy + half, cx - half * 0.4f, cy + half * 0.8f);
+        _cachedPath.CubicTo(cx - half * 0.7f, cy + half * 0.3f, cx - half * 0.6f, cy - half * 0.3f, cx, cy - half * 0.9f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fillAA);
 
-        using var midPaint = new SKPaint { Color = new SKColor(0xFF, 0x8F, 0x00, alpha), IsAntialias = true };
-        using var midPath = new SKPath();
-        midPath.MoveTo(cx, cy - half * 0.5f);
-        midPath.CubicTo(cx + half * 0.35f, cy - half * 0.1f, cx + half * 0.4f, cy + half * 0.3f, cx + half * 0.2f, cy + half * 0.7f);
-        midPath.CubicTo(cx, cy + half * 0.8f, cx - half * 0.05f, cy + half * 0.8f, cx - half * 0.2f, cy + half * 0.7f);
-        midPath.CubicTo(cx - half * 0.4f, cy + half * 0.3f, cx - half * 0.35f, cy - half * 0.1f, cx, cy - half * 0.5f);
-        midPath.Close();
-        canvas.DrawPath(midPath, midPaint);
+        // Mittlere Flamme (orange)
+        _fillAA2.Color = new SKColor(0xFF, 0x8F, 0x00, alpha);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, cy - half * 0.5f);
+        _cachedPath.CubicTo(cx + half * 0.35f, cy - half * 0.1f, cx + half * 0.4f, cy + half * 0.3f, cx + half * 0.2f, cy + half * 0.7f);
+        _cachedPath.CubicTo(cx, cy + half * 0.8f, cx - half * 0.05f, cy + half * 0.8f, cx - half * 0.2f, cy + half * 0.7f);
+        _cachedPath.CubicTo(cx - half * 0.4f, cy + half * 0.3f, cx - half * 0.35f, cy - half * 0.1f, cx, cy - half * 0.5f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fillAA2);
 
-        using var innerPaint = new SKPaint { Color = new SKColor(0xFF, 0xEB, 0x3B, alpha), IsAntialias = true };
-        using var innerPath = new SKPath();
-        innerPath.MoveTo(cx, cy + half * 0.05f);
-        innerPath.CubicTo(cx + half * 0.15f, cy + half * 0.25f, cx + half * 0.12f, cy + half * 0.55f, cx, cy + half * 0.65f);
-        innerPath.CubicTo(cx - half * 0.12f, cy + half * 0.55f, cx - half * 0.15f, cy + half * 0.25f, cx, cy + half * 0.05f);
-        innerPath.Close();
-        canvas.DrawPath(innerPath, innerPaint);
+        // Innerer Kern (gelb)
+        _fillAA3.Color = new SKColor(0xFF, 0xEB, 0x3B, alpha);
+        _cachedPath.Rewind();
+        _cachedPath.MoveTo(cx, cy + half * 0.05f);
+        _cachedPath.CubicTo(cx + half * 0.15f, cy + half * 0.25f, cx + half * 0.12f, cy + half * 0.55f, cx, cy + half * 0.65f);
+        _cachedPath.CubicTo(cx - half * 0.12f, cy + half * 0.55f, cx - half * 0.15f, cy + half * 0.25f, cx, cy + half * 0.05f);
+        _cachedPath.Close();
+        canvas.DrawPath(_cachedPath, _fillAA3);
     }
 
     /// <summary>X-Kreuz (2 rote diagonale Linien).</summary>
-    private static void DrawCrossIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawCrossIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float len = half * 0.7f;
-        using var crossPaint = new SKPaint
-        {
-            Color = new SKColor(0xEF, 0x53, 0x50, alpha),
-            IsAntialias = true,
-            StrokeWidth = 4,
-            StrokeCap = SKStrokeCap.Round
-        };
+        _strokeAA.Color = new SKColor(0xEF, 0x53, 0x50, alpha);
+        _strokeAA.StrokeWidth = 4;
+        _strokeAA.StrokeCap = SKStrokeCap.Round;
 
-        canvas.DrawLine(cx - len, cy - len, cx + len, cy + len, crossPaint);
-        canvas.DrawLine(cx + len, cy - len, cx - len, cy + len, crossPaint);
+        canvas.DrawLine(cx - len, cy - len, cx + len, cy + len, _strokeAA);
+        canvas.DrawLine(cx + len, cy - len, cx - len, cy + len, _strokeAA);
     }
 
     /// <summary>Stoppschild (roter Kreis mit weissem horizontalem Strich).</summary>
-    private static void DrawStopIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawStopIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float radius = half * 0.75f;
-        using var circlePaint = new SKPaint { Color = new SKColor(0xE5, 0x39, 0x35, alpha), IsAntialias = true };
-        using var borderPaint = new SKPaint { Color = new SKColor(0xB7, 0x1C, 0x1C, alpha), IsAntialias = true, StrokeWidth = 2, Style = SKPaintStyle.Stroke };
-        using var linePaint = new SKPaint { Color = new SKColor(0xFF, 0xFF, 0xFF, alpha), IsAntialias = true, StrokeWidth = 3, StrokeCap = SKStrokeCap.Round };
+        _fillAA.Color = new SKColor(0xE5, 0x39, 0x35, alpha);
+        _strokeAA.Color = new SKColor(0xB7, 0x1C, 0x1C, alpha);
+        _strokeAA.StrokeWidth = 2;
+        _strokeAA.StrokeCap = SKStrokeCap.Butt;
+        _strokeAA2.Color = new SKColor(0xFF, 0xFF, 0xFF, alpha);
+        _strokeAA2.StrokeWidth = 3;
+        _strokeAA2.StrokeCap = SKStrokeCap.Round;
 
-        canvas.DrawCircle(cx, cy, radius, circlePaint);
-        canvas.DrawCircle(cx, cy, radius, borderPaint);
-        canvas.DrawLine(cx - radius * 0.55f, cy, cx + radius * 0.55f, cy, linePaint);
+        canvas.DrawCircle(cx, cy, radius, _fillAA);
+        canvas.DrawCircle(cx, cy, radius, _strokeAA);
+        canvas.DrawLine(cx - radius * 0.55f, cy, cx + radius * 0.55f, cy, _strokeAA2);
     }
 
     /// <summary>Loch (dunkler Kreis mit hellem Rand - perspektivisch).</summary>
-    private static void DrawHoleIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawHoleIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
         float outerR = half * 0.7f;
         float innerR = half * 0.5f;
 
-        using var rimPaint = new SKPaint { Color = new SKColor(0x90, 0x9D, 0xA5, alpha), IsAntialias = true };
-        canvas.DrawOval(cx, cy, outerR, outerR * 0.75f, rimPaint);
+        _fillAA.Color = new SKColor(0x90, 0x9D, 0xA5, alpha);
+        canvas.DrawOval(cx, cy, outerR, outerR * 0.75f, _fillAA);
 
-        using var holePaint = new SKPaint { Color = new SKColor(0x1A, 0x1A, 0x1A, alpha), IsAntialias = true };
-        canvas.DrawOval(cx, cy + 1, innerR, innerR * 0.7f, holePaint);
+        _fillAA2.Color = new SKColor(0x1A, 0x1A, 0x1A, alpha);
+        canvas.DrawOval(cx, cy + 1, innerR, innerR * 0.7f, _fillAA2);
 
-        using var shadowPaint = new SKPaint { Color = new SKColor(0x30, 0x30, 0x30, (byte)(alpha * 0.5f)), IsAntialias = true };
-        canvas.DrawOval(cx, cy - 1, innerR * 0.8f, innerR * 0.3f, shadowPaint);
+        _fillAA3.Color = new SKColor(0x30, 0x30, 0x30, (byte)(alpha * 0.5f));
+        canvas.DrawOval(cx, cy - 1, innerR * 0.8f, innerR * 0.3f, _fillAA3);
     }
 
     /// <summary>Wasserleck (3 blaue Tropfen fallend).</summary>
-    private static void DrawLeakIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
+    private void DrawLeakIcon(SKCanvas canvas, float cx, float cy, float half, byte alpha)
     {
-        using var waterPaint = new SKPaint { Color = new SKColor(0x42, 0xA5, 0xF5, alpha), IsAntialias = true };
-        using var lightPaint = new SKPaint { Color = new SKColor(0x90, 0xCA, 0xF9, alpha), IsAntialias = true };
+        _fillAA.Color = new SKColor(0x42, 0xA5, 0xF5, alpha);
+        _fillAA2.Color = new SKColor(0x90, 0xCA, 0xF9, alpha);
 
         float[] dropXOffsets = { -half * 0.35f, half * 0.1f, half * 0.4f };
         float[] dropYOffsets = { -half * 0.4f, half * 0.1f, -half * 0.1f };
@@ -818,14 +879,14 @@ public class InspectionGameRenderer
             float dy = cy + dropYOffsets[i];
             float ds = dropSizes[i];
 
-            using var dropPath = new SKPath();
-            dropPath.MoveTo(dx, dy - ds * 1.2f);
-            dropPath.CubicTo(dx + ds * 0.7f, dy - ds * 0.2f, dx + ds * 0.7f, dy + ds * 0.5f, dx, dy + ds * 0.7f);
-            dropPath.CubicTo(dx - ds * 0.7f, dy + ds * 0.5f, dx - ds * 0.7f, dy - ds * 0.2f, dx, dy - ds * 1.2f);
-            dropPath.Close();
-            canvas.DrawPath(dropPath, waterPaint);
+            _cachedPath.Rewind();
+            _cachedPath.MoveTo(dx, dy - ds * 1.2f);
+            _cachedPath.CubicTo(dx + ds * 0.7f, dy - ds * 0.2f, dx + ds * 0.7f, dy + ds * 0.5f, dx, dy + ds * 0.7f);
+            _cachedPath.CubicTo(dx - ds * 0.7f, dy + ds * 0.5f, dx - ds * 0.7f, dy - ds * 0.2f, dx, dy - ds * 1.2f);
+            _cachedPath.Close();
+            canvas.DrawPath(_cachedPath, _fillAA);
 
-            canvas.DrawCircle(dx - ds * 0.15f, dy - ds * 0.1f, ds * 0.15f, lightPaint);
+            canvas.DrawCircle(dx - ds * 0.15f, dy - ds * 0.1f, ds * 0.15f, _fillAA2);
         }
     }
 
@@ -857,26 +918,31 @@ public class InspectionGameRenderer
         canvas.Translate(-cx, -cy);
 
         // Glasflaeche (halbtransparent blau)
-        using var glassPaint = new SKPaint { Color = MagnifierGlass, IsAntialias = false };
-        canvas.DrawCircle(cx, cy, baseRadius, glassPaint);
+        _fillNoAA.Color = MagnifierGlass;
+        canvas.DrawCircle(cx, cy, baseRadius, _fillNoAA);
 
         // Metallring
-        using var ringPaint = new SKPaint { Color = MagnifierRing, IsAntialias = false, StrokeWidth = 3, Style = SKPaintStyle.Stroke };
-        canvas.DrawCircle(cx, cy, baseRadius, ringPaint);
+        _strokeNoAA.Color = MagnifierRing;
+        _strokeNoAA.StrokeWidth = 3;
+        _strokeNoAA.StrokeCap = SKStrokeCap.Butt;
+        canvas.DrawCircle(cx, cy, baseRadius, _strokeNoAA);
 
         // Glanz auf dem Glas (kleiner heller Punkt)
-        using var glintPaint = new SKPaint { Color = new SKColor(255, 255, 255, 80), IsAntialias = false };
-        canvas.DrawCircle(cx - 3, cy - 3, 3, glintPaint);
+        _fillNoAA.Color = new SKColor(255, 255, 255, 80);
+        canvas.DrawCircle(cx - 3, cy - 3, 3, _fillNoAA);
 
         // Griff (diagonal nach unten rechts)
-        using var handlePaint = new SKPaint { Color = MagnifierHandle, IsAntialias = false, StrokeWidth = 4, StrokeCap = SKStrokeCap.Round };
+        _strokeNoAA.Color = MagnifierHandle;
+        _strokeNoAA.StrokeWidth = 4;
+        _strokeNoAA.StrokeCap = SKStrokeCap.Round;
         float handleStartX = cx + baseRadius * 0.6f;
         float handleStartY = cy + baseRadius * 0.6f;
-        canvas.DrawLine(handleStartX, handleStartY, handleStartX + 10, handleStartY + 10, handlePaint);
+        canvas.DrawLine(handleStartX, handleStartY, handleStartX + 10, handleStartY + 10, _strokeNoAA);
 
-        // Griff-Akzent (hellere Kante)
-        using var handleAccent = new SKPaint { Color = new SKColor(0x8D, 0x6E, 0x63), IsAntialias = false, StrokeWidth = 2, StrokeCap = SKStrokeCap.Round };
-        canvas.DrawLine(handleStartX + 1, handleStartY, handleStartX + 9, handleStartY + 8, handleAccent);
+        // Griff-Akzent (hellere Kante, sequentiell nach Griff)
+        _strokeNoAA.Color = new SKColor(0x8D, 0x6E, 0x63);
+        _strokeNoAA.StrokeWidth = 2;
+        canvas.DrawLine(handleStartX + 1, handleStartY, handleStartX + 9, handleStartY + 8, _strokeNoAA);
 
         canvas.Restore();
     }
@@ -909,7 +975,6 @@ public class InspectionGameRenderer
         }
 
         // Partikel aktualisieren und zeichnen
-        using var dustPaint = new SKPaint { IsAntialias = false };
         for (int i = 0; i < _dustCount; i++)
         {
             var p = _dust[i];
@@ -937,8 +1002,8 @@ public class InspectionGameRenderer
                 : 1.0f - (lifeRatio - 0.2f) / 0.8f; // Fade-Out
             byte finalAlpha = (byte)(p.Alpha * alpha);
 
-            dustPaint.Color = new SKColor(0xB0, 0xBE, 0xC5, finalAlpha);
-            canvas.DrawRect(p.X, p.Y, p.Size, p.Size, dustPaint);
+            _fillNoAA.Color = new SKColor(0xB0, 0xBE, 0xC5, finalAlpha);
+            canvas.DrawRect(p.X, p.Y, p.Size, p.Size, _fillNoAA);
         }
     }
 
@@ -1010,8 +1075,6 @@ public class InspectionGameRenderer
     {
         if (_sparkCount == 0) return;
 
-        using var sparkPaint = new SKPaint { IsAntialias = false };
-
         for (int i = 0; i < _sparkCount; i++)
         {
             var p = _sparks[i];
@@ -1032,8 +1095,27 @@ public class InspectionGameRenderer
             _sparks[i] = p;
 
             float alpha = 1 - (p.Life / p.MaxLife);
-            sparkPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
-            canvas.DrawRect(p.X - p.Size / 2, p.Y - p.Size / 2, p.Size, p.Size, sparkPaint);
+            _fillNoAA.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
+            canvas.DrawRect(p.X - p.Size / 2, p.Y - p.Size / 2, p.Size, p.Size, _fillNoAA);
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // IDisposable
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _fillNoAA.Dispose();
+        _fillAA.Dispose();
+        _fillAA2.Dispose();
+        _fillAA3.Dispose();
+        _strokeNoAA.Dispose();
+        _strokeAA.Dispose();
+        _strokeAA2.Dispose();
+        _strokeAA3.Dispose();
+        _cachedPath.Dispose();
     }
 }

@@ -10,7 +10,7 @@ using MeineApps.Core.Ava.Localization;
 namespace HandwerkerImperium.ViewModels;
 
 // Partielle Klasse: Initialisierung, Offline-Earnings, Daily Reward, Cloud-Save
-public partial class MainViewModel
+public sealed partial class MainViewModel
 {
     // ═══════════════════════════════════════════════════════════════════════
     // INITIALIZATION
@@ -106,11 +106,8 @@ public partial class MainViewModel
         // Story-Kapitel prüfen (z.B. pending aus letzter Session oder Sofort-Freischaltung)
         CheckForNewStoryChapter();
 
-        // Tutorial starten wenn noch nicht abgeschlossen
-        if (_tutorialService != null && !_tutorialService.IsCompleted)
-        {
-            _tutorialService.StartTutorial();
-        }
+        // Willkommens-Hint beim allerersten Start (kontextuelles Tutorial)
+        _contextualHintService.TryShowHint(ContextualHints.Welcome);
 
         // Start the game loop for idle earnings
         _gameLoopService.Start();

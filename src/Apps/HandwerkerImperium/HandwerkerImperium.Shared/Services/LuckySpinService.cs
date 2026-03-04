@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Services;
 /// Verwaltet das Glücksrad: Täglicher Gratis-Spin, kostenpflichtige Spins (5 Goldschrauben),
 /// gewichtete Zufallsgewinne basierend auf aktuellem Einkommen.
 /// </summary>
-public class LuckySpinService : ILuckySpinService
+public sealed class LuckySpinService : ILuckySpinService
 {
     private readonly IGameStateService _gameStateService;
 

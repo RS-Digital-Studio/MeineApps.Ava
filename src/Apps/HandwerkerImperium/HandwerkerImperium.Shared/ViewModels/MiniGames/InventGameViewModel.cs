@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// ViewModel für das Erfinder-Puzzle-Minispiel.
 /// Der Spieler merkt sich die Montage-Reihenfolge der Bauteile und tippt sie danach korrekt an.
 /// </summary>
-public partial class InventGameViewModel : ViewModelBase, IDisposable
+public sealed partial class InventGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

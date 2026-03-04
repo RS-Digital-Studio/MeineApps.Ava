@@ -12,7 +12,7 @@ namespace HandwerkerImperium.Android;
 /// Android-Implementierung für Audio-Wiedergabe und Haptik.
 /// Nutzt SoundPool für SFX (Assets/Sounds/*.ogg) und Vibrator für Haptik.
 /// </summary>
-public class AndroidAudioService : IAudioService
+public sealed class AndroidAudioService : IAudioService
 {
     private readonly Activity _activity;
     private readonly AssetManager _assets;

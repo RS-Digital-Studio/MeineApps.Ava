@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Graphics;
 /// Completion-Celebration mit goldenem Glow.
 /// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
 /// </summary>
-public class ForgeGameRenderer : IDisposable
+public sealed class ForgeGameRenderer : IDisposable
 {
     private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════

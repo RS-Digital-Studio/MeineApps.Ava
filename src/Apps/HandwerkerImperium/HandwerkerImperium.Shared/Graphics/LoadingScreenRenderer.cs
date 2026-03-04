@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Graphics;
 /// animierter Fortschrittsbalken und rotierende Tipps.
 /// Wird als SkiaSharp-Overlay über dem Loading-Screen gerendert.
 /// </summary>
-public class LoadingScreenRenderer
+public sealed class LoadingScreenRenderer
 {
     // Gecachte Paints
     private static readonly SKPaint _bgPaint = new() { IsAntialias = true };

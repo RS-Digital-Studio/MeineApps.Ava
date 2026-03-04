@@ -8,8 +8,8 @@ using MeineApps.Core.Ava.Localization;
 
 namespace HandwerkerImperium.ViewModels;
 
-// Partielle Klasse: Alert/Confirm-Dialoge, Story-Dialog, Tutorial-Overlay, Prestige-Bestätigung
-public partial class MainViewModel
+// Partielle Klasse: Alert/Confirm-Dialoge, Story-Dialog, Kontextuelle Hints, Prestige-Bestätigung
+public sealed partial class MainViewModel
 {
     // ═══════════════════════════════════════════════════════════════════════
     // DISMISS COMMANDS
@@ -34,9 +34,24 @@ public partial class MainViewModel
     }
 
     [RelayCommand]
+    private void DismissPrestigeSummary()
+    {
+        IsPrestigeSummaryVisible = false;
+    }
+
+    [RelayCommand]
+    private void PrestigeSummaryGoToShop()
+    {
+        IsPrestigeSummaryVisible = false;
+        // Zum Statistik-Tab navigieren (Prestige-Shop ist dort)
+        SelectStatisticsTab();
+    }
+
+    [RelayCommand]
     private void ConfirmDialogAccept()
     {
         IsConfirmDialogVisible = false;
+        IsPrestigeTierSelectionVisible = false;
         _confirmDialogTcs?.TrySetResult(true);
     }
 
@@ -44,6 +59,7 @@ public partial class MainViewModel
     private void ConfirmDialogCancel()
     {
         IsConfirmDialogVisible = false;
+        IsPrestigeTierSelectionVisible = false;
         _confirmDialogTcs?.TrySetResult(false);
     }
 
@@ -65,6 +81,7 @@ public partial class MainViewModel
         ConfirmDialogMessage = message;
         ConfirmDialogAcceptText = acceptText;
         ConfirmDialogCancelText = cancelText;
+        IsPrestigeTierSelectionVisible = false; // Tier-Chips ausblenden bei generischen Dialogen
         _confirmDialogTcs = new TaskCompletionSource<bool>();
         IsConfirmDialogVisible = true;
 
@@ -78,16 +95,89 @@ public partial class MainViewModel
     // PRESTIGE-BESTÄTIGUNG
     // ═══════════════════════════════════════════════════════════════════════
 
+    // Merkt sich den aktuell ausgewählten Tier im Prestige-Dialog
+    private PrestigeTier _dialogSelectedTier = PrestigeTier.None;
+
+    /// <summary>
+    /// Tier-Auswahl im Prestige-Dialog: Aktualisiert die Vorschau beim Wechsel.
+    /// Parameter ist der Tier-Name als String (z.B. "Bronze", "Silver").
+    /// </summary>
+    [RelayCommand]
+    private void SelectPrestigeTier(string tierName)
+    {
+        if (!Enum.TryParse<PrestigeTier>(tierName, out var tier)) return;
+
+        var idx = AvailablePrestigeTierOptions.FindIndex(o => o.Tier == tier);
+        if (idx < 0) return;
+
+        SelectedPrestigeTierIndex = idx;
+
+        // IsSelected aktualisieren
+        for (int i = 0; i < AvailablePrestigeTierOptions.Count; i++)
+            AvailablePrestigeTierOptions[i].IsSelected = i == idx;
+        OnPropertyChanged(nameof(AvailablePrestigeTierOptions));
+
+        _dialogSelectedTier = tier;
+
+        // Dialog-Inhalt dynamisch aktualisieren
+        UpdatePrestigeDialogContent(tier);
+    }
+
+    /// <summary>
+    /// Baut die Dialog-Texte für einen bestimmten Tier auf.
+    /// </summary>
+    private void UpdatePrestigeDialogContent(PrestigeTier tier)
+    {
+        var state = _gameStateService.State;
+        var tierName = _localizationService.GetString(tier.GetLocalizationKey()) ?? tier.ToString();
+        var potentialPoints = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
+        int tierPoints = (int)(potentialPoints * tier.GetPointMultiplier());
+
+        // 1. GEWINNE (prominent, oben)
+        var gains = new List<string>();
+        gains.Add($"\u2b06 +{tierPoints} PP ({tierName} x{tier.GetPointMultiplier()})");
+        gains.Add($"\u2b06 +{tier.GetPermanentMultiplierBonus():P0} {_localizationService.GetString("PermanentIncomeBonus") ?? "permanenter Einkommens-Bonus"}");
+
+        // Speed-Up Prognose
+        decimal currentMult = state.Prestige.PermanentMultiplier;
+        decimal newMult = currentMult + tier.GetPermanentMultiplierBonus();
+        if (currentMult > 0)
+        {
+            int speedUp = (int)((newMult / currentMult - 1m) * 100);
+            gains.Add($"\u26a1 ~{speedUp}% {_localizationService.GetString("Faster") ?? "schneller als vorher"}");
+        }
+
+        // 2. BEWAHRUNG (positiv formuliert)
+        if (tier.KeepsResearch())
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsResearch") ?? "Forschung bleibt erhalten"}");
+        if (tier.KeepsMasterTools())
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsTools") ?? "Meisterwerkzeuge bleiben"}");
+        if (tier.KeepsBuildings())
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsBuildings") ?? "Gebäude bleiben (Lv.1)"}");
+        if (tier.KeepsManagers())
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsManagers") ?? "Manager bleiben (Lv.1)"}");
+        if (tier.KeepsBestWorkers())
+            gains.Add($"\u2713 {_localizationService.GetString("PrestigeKeepsWorkers") ?? "Beste Worker pro Workshop bleiben"}");
+
+        // 3. VERLUSTE (kompakt, unten, neutral formuliert)
+        var resetNote = _localizationService.GetString("PrestigeResetNote")
+                        ?? "Level, Geld und Workshops werden zurückgesetzt.";
+
+        ConfirmDialogTitle = $"{_localizationService.GetString("Prestige") ?? "Prestige"} \u2192 {tierName}";
+        ConfirmDialogMessage = string.Join("\n", gains) + $"\n\n{resetNote}";
+    }
+
     /// <summary>
     /// Zeigt den Prestige-Bestätigungsdialog und führt bei Bestätigung Prestige durch.
     /// Wird sowohl vom Dashboard-Banner als auch vom Statistik-Tab aufgerufen.
+    /// Bei mehreren verfügbaren Tiers zeigt der Dialog Auswahl-Chips.
     /// </summary>
     private async Task ShowPrestigeConfirmationAsync()
     {
         var state = _gameStateService.State;
-        var highestTier = state.Prestige.GetHighestAvailableTier(state.PlayerLevel);
+        var availableTiers = state.Prestige.GetAllAvailableTiers(state.PlayerLevel);
 
-        if (highestTier == PrestigeTier.None)
+        if (availableTiers.Count == 0)
         {
             var minLevel = PrestigeTier.Bronze.GetRequiredLevel();
             ShowAlertDialog(
@@ -101,35 +191,56 @@ public partial class MainViewModel
 
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
-        // Prestige-Info zusammenstellen
-        var tierName = _localizationService.GetString(highestTier.GetLocalizationKey()) ?? highestTier.ToString();
+        // Höchster Tier als Standard vorauswählen
+        var highestTier = availableTiers[^1];
+        _dialogSelectedTier = highestTier;
+
+        // Tier-Optionen für Auswahl-Chips aufbauen
         var potentialPoints = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
-        int tierPoints = (int)(potentialPoints * highestTier.GetPointMultiplier());
+        var options = new List<PrestigeTierOption>();
+        for (int i = 0; i < availableTiers.Count; i++)
+        {
+            var t = availableTiers[i];
+            var tName = _localizationService.GetString(t.GetLocalizationKey()) ?? t.ToString();
+            int tPoints = (int)(potentialPoints * t.GetPointMultiplier());
+            var preservations = new List<string>();
+            if (t.KeepsResearch()) preservations.Add(_localizationService.GetString("Research") ?? "Forschung");
+            if (t.KeepsMasterTools()) preservations.Add(_localizationService.GetString("MasterTools") ?? "Werkzeuge");
+            if (t.KeepsBuildings()) preservations.Add(_localizationService.GetString("Buildings") ?? "Gebäude");
+            if (t.KeepsManagers()) preservations.Add(_localizationService.GetString("Managers") ?? "Manager");
+            if (t.KeepsBestWorkers()) preservations.Add(_localizationService.GetString("Workers") ?? "Worker");
 
-        var keepInfo = "";
-        if (highestTier.KeepsResearch())
-            keepInfo += $"\n\u2713 {_localizationService.GetString("Research") ?? "Forschung"}";
-        if (highestTier.KeepsMasterTools())
-            keepInfo += $"\n\u2713 {_localizationService.GetString("MasterTools") ?? "Meisterwerkzeuge"}";
-        if (highestTier.KeepsBuildings())
-            keepInfo += $"\n\u2713 {_localizationService.GetString("Buildings") ?? "Gebäude"}";
-        if (highestTier.KeepsManagers())
-            keepInfo += $"\n\u2713 {_localizationService.GetString("Managers") ?? "Vorarbeiter"}";
+            options.Add(new PrestigeTierOption
+            {
+                Tier = t,
+                Name = tName,
+                Icon = t.GetIcon(),
+                Color = t.GetColorKey(),
+                Points = tPoints,
+                PointsText = $"+{tPoints} PP",
+                BonusText = $"+{t.GetPermanentMultiplierBonus():P0}",
+                PreservationText = preservations.Count > 0 ? string.Join(", ", preservations) : "",
+                IsSelected = t == highestTier,
+                IsRecommended = t == highestTier,
+            });
+        }
+        AvailablePrestigeTierOptions = options;
+        SelectedPrestigeTierIndex = availableTiers.Count - 1;
+        HasMultiplePrestigeTiers = availableTiers.Count > 1;
 
-        var message = $"{highestTier.GetIcon()} {tierName}\n"
-                    + $"+{tierPoints} PP | +{highestTier.GetPermanentMultiplierBonus():P0} {_localizationService.GetString("IncomeBonus") ?? "Einkommen"}\n\n"
-                    + (_localizationService.GetString("PrestigeWarning") ?? "Dein Fortschritt wird zurückgesetzt!")
-                    + (keepInfo.Length > 0 ? $"\n\n{_localizationService.GetString("PrestigeKeeps") ?? "Wird behalten:"}{keepInfo}" : "");
+        // Dialog-Inhalt für den höchsten Tier aufbauen
+        UpdatePrestigeDialogContent(highestTier);
 
-        var confirmed = await ShowConfirmDialog(
-            _localizationService.GetString("Prestige") ?? "Prestige",
-            message,
-            _localizationService.GetString("PrestigeConfirm") ?? "Prestige durchführen",
-            _localizationService.GetString("Cancel") ?? "Abbrechen");
+        var confirmed = await ShowPrestigeConfirmDialogInternal();
 
         if (!confirmed) return;
 
-        var success = await _prestigeService.DoPrestige(highestTier);
+        // Den vom Spieler ausgewählten Tier verwenden
+        var selectedTier = _dialogSelectedTier;
+        var tierName = _localizationService.GetString(selectedTier.GetLocalizationKey()) ?? selectedTier.ToString();
+        int tierPoints = (int)(potentialPoints * selectedTier.GetPointMultiplier());
+
+        var success = await _prestigeService.DoPrestige(selectedTier);
         if (success)
         {
             // Prestige-Effekt-Cache invalidieren (Shop-Items zurückgesetzt)
@@ -142,11 +253,68 @@ public partial class MainViewModel
             OnStateLoaded(this, EventArgs.Empty);
 
             // Celebration
-            FloatingTextRequested?.Invoke($"{highestTier.GetIcon()} {tierName}!", "level");
+            FloatingTextRequested?.Invoke($"{selectedTier.GetIcon()} {tierName}!", "level");
 
             // Ziel-Cache invalidieren (Prestige ändert den gesamten Spielzustand)
             _goalService.Invalidate();
+
+            // Post-Prestige Zusammenfassung anzeigen
+            ShowPrestigeSummary(selectedTier, tierPoints);
         }
+
+        // Tier-Optionen zurücksetzen
+        HasMultiplePrestigeTiers = false;
+        AvailablePrestigeTierOptions = [];
+    }
+
+    /// <summary>
+    /// Interner Prestige-Confirm-Dialog der Tier-Auswahl unterstützt.
+    /// Nutzt den generischen ConfirmDialog + IsPrestigeTierSelectionVisible Flag.
+    /// </summary>
+    private Task<bool> ShowPrestigeConfirmDialogInternal()
+    {
+        ConfirmDialogAcceptText = _localizationService.GetString("PrestigeConfirm") ?? "Prestige durchführen";
+        ConfirmDialogCancelText = _localizationService.GetString("Cancel") ?? "Abbrechen";
+        IsPrestigeTierSelectionVisible = HasMultiplePrestigeTiers;
+
+        _confirmDialogTcs = new TaskCompletionSource<bool>();
+        IsConfirmDialogVisible = true;
+
+        // Ad-Banner ausblenden damit es nicht den Dialog verdeckt
+        _adService.HideBanner();
+
+        return _confirmDialogTcs.Task;
+    }
+
+    /// <summary>
+    /// Zeigt die Post-Prestige Zusammenfassung mit PP, Multiplikator und Shop-Link.
+    /// </summary>
+    private void ShowPrestigeSummary(PrestigeTier tier, int pointsEarned)
+    {
+        var state = _gameStateService.State;
+        var tierName = _localizationService.GetString(tier.GetLocalizationKey()) ?? tier.ToString();
+
+        PrestigeSummaryTier = tierName;
+        PrestigeSummaryTierIcon = tier.GetIcon();
+        PrestigeSummaryTierColor = tier.GetColorKey();
+        PrestigeSummaryPoints = $"+{pointsEarned} PP";
+        PrestigeSummaryMultiplier = $"{state.Prestige.PermanentMultiplier:F1}x";
+
+        // Tier-spezifischer Count
+        var count = tier switch
+        {
+            PrestigeTier.Bronze => state.Prestige.BronzeCount,
+            PrestigeTier.Silver => state.Prestige.SilverCount,
+            PrestigeTier.Gold => state.Prestige.GoldCount,
+            PrestigeTier.Platin => state.Prestige.PlatinCount,
+            PrestigeTier.Diamant => state.Prestige.DiamantCount,
+            PrestigeTier.Meister => state.Prestige.MeisterCount,
+            PrestigeTier.Legende => state.Prestige.LegendeCount,
+            _ => state.Prestige.TotalPrestigeCount
+        };
+        PrestigeSummaryCount = $"#{count}";
+
+        IsPrestigeSummaryVisible = true;
     }
 
     /// <summary>
@@ -247,38 +415,52 @@ public partial class MainViewModel
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // TUTORIAL COMMANDS
+    // KONTEXTUELLER HINT COMMANDS
     // ═══════════════════════════════════════════════════════════════════════
 
     [RelayCommand]
-    private void TutorialNext()
+    private void DismissHint()
     {
-        _tutorialService?.NextStep();
+        var currentHintId = _contextualHintService.ActiveHint?.Id;
+        _contextualHintService.DismissHint();
+
+        // Nach Welcome-Dialog → FirstWorkshop-Hint zeigen (Kette)
+        if (currentHintId == ContextualHints.Welcome.Id)
+        {
+            _contextualHintService.TryShowHint(ContextualHints.FirstWorkshop);
+        }
     }
 
-    [RelayCommand]
-    private void TutorialSkip()
-    {
-        _tutorialService?.SkipTutorial();
-    }
-
-    private void OnTutorialStep(object? sender, TutorialStep step)
+    /// <summary>
+    /// Reagiert auf HintChanged-Event vom ContextualHintService.
+    /// Aktualisiert die UI-Properties für die Tooltip-Bubble / den Dialog.
+    /// </summary>
+    private void OnHintChanged(object? sender, ContextualHint? hint)
     {
         Dispatcher.UIThread.Post(() =>
         {
-            TutorialTitle = _localizationService.GetString(step.TitleKey) ?? step.TitleKey;
-            TutorialDescription = _localizationService.GetString(step.DescriptionKey) ?? step.DescriptionKey;
-            TutorialIcon = step.Icon;
-            TutorialStepDisplay = $"{(_tutorialService?.CurrentStepIndex ?? 0) + 1}/{_tutorialService?.TotalSteps ?? 0}";
-            IsTutorialVisible = true;
+            if (hint == null)
+            {
+                // Hint dismissed
+                IsHintVisible = false;
+                IsHintDialog = false;
+                IsHintTooltipAbove = false;
+                IsHintTooltipBelow = false;
+                return;
+            }
+
+            // Texte aus RESX laden
+            ActiveHintTitle = _localizationService.GetString(hint.TitleKey) ?? hint.TitleKey;
+            ActiveHintText = _localizationService.GetString(hint.TextKey) ?? hint.TextKey;
+            HintDismissButtonText = _localizationService.GetString("HintDismissButton") ?? "Verstanden";
+
+            // Positionierung: Dialog (zentriert) oder Tooltip (oben/unten)
+            IsHintDialog = hint.IsDialog;
+            IsHintTooltipAbove = !hint.IsDialog && hint.Position == HintPosition.Below;
+            IsHintTooltipBelow = !hint.IsDialog && hint.Position == HintPosition.Above;
+
+            IsHintVisible = true;
         });
     }
 
-    private void OnTutorialDone(object? sender, EventArgs e)
-    {
-        Dispatcher.UIThread.Post(() =>
-        {
-            IsTutorialVisible = false;
-        });
-    }
 }

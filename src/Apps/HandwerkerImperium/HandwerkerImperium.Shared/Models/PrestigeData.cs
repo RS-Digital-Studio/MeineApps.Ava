@@ -54,6 +54,20 @@ public class PrestigeData
     public List<string> PurchasedShopItems { get; set; } = [];
 
     /// <summary>
+    /// Gespeicherte beste Worker pro Workshop-Typ (Legende-Prestige).
+    /// Key = WorkshopType-Name, Value = Worker-Instanz.
+    /// Wird beim Workshop-Unlock angewendet und dann entfernt.
+    /// </summary>
+    [JsonPropertyName("keptWorkers")]
+    public Dictionary<string, Worker> KeptWorkers { get; set; } = [];
+
+    /// <summary>
+    /// Chronologische Aufzeichnung aller Prestige-Durchläufe (max. 20, neueste zuerst).
+    /// </summary>
+    [JsonPropertyName("history")]
+    public List<PrestigeHistoryEntry> History { get; set; } = [];
+
+    /// <summary>
     /// Cumulative permanent income multiplier from all prestiges.
     /// Starts at 1.0 (no bonus).
     /// </summary>
@@ -110,5 +124,27 @@ public class PrestigeData
         if (CanPrestige(PrestigeTier.Silver, playerLevel)) return PrestigeTier.Silver;
         if (CanPrestige(PrestigeTier.Bronze, playerLevel)) return PrestigeTier.Bronze;
         return PrestigeTier.None;
+    }
+
+    /// <summary>
+    /// Gibt alle verfügbaren Tiers zurück (aufsteigend sortiert).
+    /// </summary>
+    public List<PrestigeTier> GetAllAvailableTiers(int playerLevel)
+    {
+        var tiers = new List<PrestigeTier>();
+        PrestigeTier[] allTiers =
+        [
+            PrestigeTier.Bronze, PrestigeTier.Silver, PrestigeTier.Gold,
+            PrestigeTier.Platin, PrestigeTier.Diamant, PrestigeTier.Meister,
+            PrestigeTier.Legende
+        ];
+
+        foreach (var tier in allTiers)
+        {
+            if (CanPrestige(tier, playerLevel))
+                tiers.Add(tier);
+        }
+
+        return tiers;
     }
 }

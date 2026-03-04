@@ -147,4 +147,20 @@ public static class PrestigeTierExtensions
     /// Localization key for tier name.
     /// </summary>
     public static string GetLocalizationKey(this PrestigeTier tier) => $"Prestige{tier}";
+
+    /// <summary>
+    /// Gibt den nächsthöheren Prestige-Tier zurück.
+    /// Gibt None zurück wenn bereits auf Legende.
+    /// </summary>
+    public static PrestigeTier GetNextTier(this PrestigeTier tier) => tier switch
+    {
+        PrestigeTier.None => PrestigeTier.Bronze,
+        PrestigeTier.Bronze => PrestigeTier.Silver,
+        PrestigeTier.Silver => PrestigeTier.Gold,
+        PrestigeTier.Gold => PrestigeTier.Platin,
+        PrestigeTier.Platin => PrestigeTier.Diamant,
+        PrestigeTier.Diamant => PrestigeTier.Meister,
+        PrestigeTier.Meister => PrestigeTier.Legende,
+        _ => PrestigeTier.None
+    };
 }

@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// Verwaltet wöchentliche Missionen (5 pro Woche) mit höheren Belohnungen als Daily Challenges.
 /// Subscribes auf GameState-Events für automatisches Tracking.
 /// </summary>
-public class WeeklyMissionService : IWeeklyMissionService, IDisposable
+public sealed class WeeklyMissionService : IWeeklyMissionService, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;

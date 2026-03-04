@@ -12,7 +12,7 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// ViewModel für den Battle Pass (30 Tiers, Free + Premium Track, 30-Tage-Saison).
 /// </summary>
-public partial class BattlePassViewModel : ViewModelBase
+public sealed partial class BattlePassViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly IBattlePassService _battlePassService;
@@ -252,7 +252,7 @@ public partial class BattlePassViewModel : ViewModelBase
         if (reward.XpReward > 0)
             parts.Add($"{reward.XpReward} XP");
         if (reward.GoldenScrewReward > 0)
-            parts.Add($"{reward.GoldenScrewReward} GS");
+            parts.Add($"{reward.GoldenScrewReward} \u2699");
 
         return parts.Count > 0 ? string.Join(" + ", parts) : "-";
     }

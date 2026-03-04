@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Graphics;
 /// - Branch-farbige Icons (Hammer/Aktentasche/Megaphon)
 /// - Smooth-Sliding Unterstrich beim Tab-Wechsel
 /// </summary>
-public class ResearchTabRenderer : IDisposable
+public sealed class ResearchTabRenderer : IDisposable
 {
     private bool _disposed;
     private float _time;

@@ -7,9 +7,9 @@ namespace HandwerkerImperium.Services;
 
 /// <summary>
 /// Verwaltet globale Leaderboards via Firebase Realtime Database.
-/// Unterstützt 5 Boards: 3 permanente + 2 wöchentliche.
+/// Unterstuetzt 5 Boards: 3 permanente + 2 woechentliche.
 /// </summary>
-public class LeaderboardService : ILeaderboardService
+public sealed class LeaderboardService : ILeaderboardService
 {
     // Board-IDs (Firebase-Pfade unter leaderboards/)
     public const string BoardPlayerLevel = "player_level";
@@ -57,8 +57,8 @@ public class LeaderboardService : ILeaderboardService
     /// </summary>
     public async Task SubmitScoresAsync()
     {
-        if (!await _submitLock.WaitAsync(0))
-            return; // Bereits am Submiten, überspringen
+        if (!await _submitLock.WaitAsync(0).ConfigureAwait(false))
+            return; // Bereits am Submiten, ueberspringen
 
         try
         {
@@ -72,16 +72,16 @@ public class LeaderboardService : ILeaderboardService
             var weekId = GetCurrentWeekId();
 
             // Permanente Boards
-            await SubmitEntryAsync(BoardPlayerLevel, uid, playerName, state.PlayerLevel, now);
-            await SubmitEntryAsync(BoardTotalEarnings, uid, playerName, (long)state.TotalMoneyEarned, now);
-            await SubmitEntryAsync(BoardPrestigePoints, uid, playerName, state.Prestige.TotalPrestigeCount, now);
+            await SubmitEntryAsync(BoardPlayerLevel, uid, playerName, state.PlayerLevel, now).ConfigureAwait(false);
+            await SubmitEntryAsync(BoardTotalEarnings, uid, playerName, (long)state.TotalMoneyEarned, now).ConfigureAwait(false);
+            await SubmitEntryAsync(BoardPrestigePoints, uid, playerName, state.Prestige.TotalPrestigeCount, now).ConfigureAwait(false);
 
-            // Wöchentliche Boards (mit weekId)
-            await SubmitWeeklyEntryAsync(BoardWeeklyEarnings, uid, playerName, (long)state.TotalMoneyEarned, now, weekId);
-            await SubmitWeeklyEntryAsync(BoardWeeklyMinigame, uid, playerName, state.TotalMiniGamesPlayed, now, weekId);
+            // Woechentliche Boards (mit weekId)
+            await SubmitWeeklyEntryAsync(BoardWeeklyEarnings, uid, playerName, (long)state.TotalMoneyEarned, now, weekId).ConfigureAwait(false);
+            await SubmitWeeklyEntryAsync(BoardWeeklyMinigame, uid, playerName, state.TotalMiniGamesPlayed, now, weekId).ConfigureAwait(false);
 
             // Spieler-Profil aktualisieren
-            await UpdatePlayerProfileAsync();
+            await UpdatePlayerProfileAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -98,7 +98,7 @@ public class LeaderboardService : ILeaderboardService
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Lädt die Top-50 eines Leaderboards, sortiert nach Score absteigend.
+    /// Laedt die Top-50 eines Leaderboards, sortiert nach Score absteigend.
     /// </summary>
     public async Task<List<LeaderboardDisplayEntry>> GetTopEntriesAsync(string boardId)
     {
@@ -108,9 +108,9 @@ public class LeaderboardService : ILeaderboardService
         {
             var uid = _firebase.Uid;
 
-            // Firebase REST API: orderBy + limitToLast für Top-Einträge
+            // Firebase REST API: orderBy + limitToLast fuer Top-Eintraege
             var queryParams = "orderBy=\"score\"&limitToLast=50";
-            var json = await _firebase.QueryAsync($"leaderboards/{boardId}/entries", queryParams);
+            var json = await _firebase.QueryAsync($"leaderboards/{boardId}/entries", queryParams).ConfigureAwait(false);
 
             if (string.IsNullOrEmpty(json))
                 return result;
@@ -119,7 +119,7 @@ public class LeaderboardService : ILeaderboardService
             if (entries == null || entries.Count == 0)
                 return result;
 
-            // Wöchentliche Boards: Nur Einträge der aktuellen Woche
+            // Woechentliche Boards: Nur Eintraege der aktuellen Woche
             var currentWeekId = GetCurrentWeekId();
             var isWeekly = WeeklyBoards.Contains(boardId);
 
@@ -150,7 +150,7 @@ public class LeaderboardService : ILeaderboardService
     }
 
     /// <summary>
-    /// Lädt den eigenen Eintrag auf einem Board.
+    /// Laedt den eigenen Eintrag auf einem Board.
     /// </summary>
     public async Task<LeaderboardDisplayEntry?> GetOwnEntryAsync(string boardId)
     {
@@ -160,18 +160,18 @@ public class LeaderboardService : ILeaderboardService
             if (string.IsNullOrEmpty(uid))
                 return null;
 
-            var entry = await _firebase.GetAsync<FirebaseLeaderboardEntry>($"leaderboards/{boardId}/entries/{uid}");
+            var entry = await _firebase.GetAsync<FirebaseLeaderboardEntry>($"leaderboards/{boardId}/entries/{uid}").ConfigureAwait(false);
             if (entry == null)
                 return null;
 
-            // Wöchentliche Boards: Prüfen ob aktuelle Woche
+            // Woechentliche Boards: Pruefen ob aktuelle Woche
             var isWeekly = WeeklyBoards.Contains(boardId);
             if (isWeekly && entry.WeekId != GetCurrentWeekId())
                 return null;
 
-            // Rang muss über GetTopEntriesAsync ermittelt werden
+            // Rang muss ueber GetTopEntriesAsync ermittelt werden
             // (Firebase REST API hat keine direkte Rang-Abfrage)
-            var topEntries = await GetTopEntriesAsync(boardId);
+            var topEntries = await GetTopEntriesAsync(boardId).ConfigureAwait(false);
             var ownInTop = topEntries.FirstOrDefault(e => e.IsCurrentPlayer);
 
             return new LeaderboardDisplayEntry
@@ -194,7 +194,7 @@ public class LeaderboardService : ILeaderboardService
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Aktualisiert das öffentliche Spieler-Profil in Firebase.
+    /// Aktualisiert das oeffentliche Spieler-Profil in Firebase.
     /// </summary>
     public async Task UpdatePlayerProfileAsync()
     {
@@ -214,7 +214,7 @@ public class LeaderboardService : ILeaderboardService
                 LastSeen = DateTime.UtcNow.ToString("O")
             };
 
-            await _firebase.SetAsync($"player_profiles/{uid}", profile);
+            await _firebase.SetAsync($"player_profiles/{uid}", profile).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -238,11 +238,11 @@ public class LeaderboardService : ILeaderboardService
             UpdatedAt = updatedAt
         };
 
-        await _firebase.SetAsync($"leaderboards/{boardId}/entries/{uid}", entry);
+        await _firebase.SetAsync($"leaderboards/{boardId}/entries/{uid}", entry).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Schreibt einen Eintrag auf ein wöchentliches Board (mit weekId).
+    /// Schreibt einen Eintrag auf ein woechentliches Board (mit weekId).
     /// </summary>
     private async Task SubmitWeeklyEntryAsync(string boardId, string uid, string name, long score, string updatedAt, string weekId)
     {
@@ -254,7 +254,7 @@ public class LeaderboardService : ILeaderboardService
             WeekId = weekId
         };
 
-        await _firebase.SetAsync($"leaderboards/{boardId}/entries/{uid}", entry);
+        await _firebase.SetAsync($"leaderboards/{boardId}/entries/{uid}", entry).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -262,7 +262,7 @@ public class LeaderboardService : ILeaderboardService
     /// </summary>
     private string GetPlayerName()
     {
-        // Gilden-Name hat Priorität (wurde vom Spieler eingegeben)
+        // Gilden-Name hat Prioritaet (wurde vom Spieler eingegeben)
         if (!string.IsNullOrEmpty(_guildService.PlayerName))
             return _guildService.PlayerName;
 
@@ -271,7 +271,7 @@ public class LeaderboardService : ILeaderboardService
     }
 
     /// <summary>
-    /// Berechnet die ISO-Wochennummer für wöchentliche Boards.
+    /// Berechnet die ISO-Wochennummer fuer woechentliche Boards.
     /// Format: "2026-W08"
     /// </summary>
     private static string GetCurrentWeekId()

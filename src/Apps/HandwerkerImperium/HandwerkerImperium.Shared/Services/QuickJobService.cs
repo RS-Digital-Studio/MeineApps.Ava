@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Services;
 /// <summary>
 /// Verwaltet Schnell-Auftraege die alle 15 Minuten rotieren.
 /// </summary>
-public class QuickJobService : IQuickJobService
+public sealed class QuickJobService : IQuickJobService
 {
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;

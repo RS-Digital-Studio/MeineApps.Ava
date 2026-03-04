@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services;
 /// Berechnet dynamisch das nächste empfohlene Ziel für den Spieler.
 /// Priorisiert nach: Meilenstein nahe → Prestige verfügbar → Neuer Workshop → Gebäude.
 /// </summary>
-public class GoalService : IGoalService
+public sealed class GoalService : IGoalService
 {
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;
@@ -78,7 +78,7 @@ public class GoalService : IGoalService
                 Description = _localizationService.GetString("PrestigeAvailable") ?? "Prestige verfügbar!",
                 RewardHint = $"+{tierPoints} {_localizationService.GetString("PrestigePointsShort") ?? "PP"}",
                 Progress = 1.0,
-                NavigationRoute = "imperium",
+                NavigationRoute = "prestige",
                 IconKind = "StarFourPoints",
                 Priority = 2
             });

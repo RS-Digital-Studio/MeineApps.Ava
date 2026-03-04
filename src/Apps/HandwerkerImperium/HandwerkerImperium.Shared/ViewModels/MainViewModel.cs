@@ -44,7 +44,7 @@ public class DailyRewardEventArgs : EventArgs
 ///   MainViewModel.Missions.cs   - Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin
 ///   MainViewModel.Init.cs       - InitializeAsync, Offline-Earnings, Daily Reward, Cloud-Save
 /// </summary>
-public partial class MainViewModel : ViewModelBase, IDisposable
+public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IGameLoopService _gameLoopService;
@@ -62,7 +62,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private readonly IRewardedAdService _rewardedAdService;
     private readonly IEventService _eventService;
     private readonly IStoryService? _storyService;
-    private readonly ITutorialService? _tutorialService;
+    private readonly IContextualHintService _contextualHintService;
     private readonly IReviewService? _reviewService;
     private readonly IPrestigeService _prestigeService;
     private readonly INotificationService? _notificationService;
@@ -283,6 +283,34 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     [ObservableProperty]
     private string _prestigePreviewTierName = "";
+
+    /// <summary>Ob ein nächsthöherer Prestige-Tier existiert (für Fortschritts-Anzeige).</summary>
+    [ObservableProperty]
+    private bool _hasNextPrestigeTier;
+
+    /// <summary>Kompakter Fortschrittstext zum nächsten Tier (z.B. "Lv. 45/100 → Silver").</summary>
+    [ObservableProperty]
+    private string _nextPrestigeTierHint = "";
+
+    /// <summary>Fortschritt zum nächsten Tier (0.0 - 1.0).</summary>
+    [ObservableProperty]
+    private double _nextPrestigeTierProgress;
+
+    /// <summary>Ob mehrere Prestige-Tiers verfügbar sind (für Tier-Auswahl im Dialog).</summary>
+    [ObservableProperty]
+    private bool _hasMultiplePrestigeTiers;
+
+    /// <summary>Anzahl verfügbarer Prestige-Tiers.</summary>
+    [ObservableProperty]
+    private int _availablePrestigeTierCount;
+
+    /// <summary>Aktuell ausgewählter Tier im Bestätigungsdialog (Index in AvailableTiers).</summary>
+    [ObservableProperty]
+    private int _selectedPrestigeTierIndex;
+
+    /// <summary>Tier-Auswahl-Chips für den Dialog.</summary>
+    [ObservableProperty]
+    private List<PrestigeTierOption> _availablePrestigeTierOptions = [];
 
     // ═══════════════════════════════════════════════════════════════════════
     // NÄCHSTES ZIEL (GoalService)
@@ -606,23 +634,38 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private string _storyChapterBadge = "";
 
     // ═══════════════════════════════════════════════════════════════════════
-    // TUTORIAL OVERLAY (interaktives Tutorial)
+    // KONTEXTUELLER HINT (Tooltip-Bubbles / Dialog)
     // ═══════════════════════════════════════════════════════════════════════
 
     [ObservableProperty]
-    private bool _isTutorialVisible;
+    private bool _isHintVisible;
 
     [ObservableProperty]
-    private string _tutorialTitle = "";
+    private string _activeHintTitle = "";
 
     [ObservableProperty]
-    private string _tutorialDescription = "";
+    private string _activeHintText = "";
+
+    /// <summary>
+    /// True wenn der Hint als zentrierter Dialog angezeigt wird (z.B. Welcome).
+    /// </summary>
+    [ObservableProperty]
+    private bool _isHintDialog;
+
+    /// <summary>
+    /// True wenn Tooltip-Bubble oben positioniert ist (HintPosition.Below → Bubble zeigt von oben nach unten).
+    /// </summary>
+    [ObservableProperty]
+    private bool _isHintTooltipAbove;
+
+    /// <summary>
+    /// True wenn Tooltip-Bubble unten positioniert ist (HintPosition.Above → Bubble zeigt von unten nach oben).
+    /// </summary>
+    [ObservableProperty]
+    private bool _isHintTooltipBelow;
 
     [ObservableProperty]
-    private string _tutorialIcon = "";
-
-    [ObservableProperty]
-    private string _tutorialStepDisplay = "";
+    private string _hintDismissButtonText = "Verstanden";
 
     // Generic Alert/Confirm Dialog
     [ObservableProperty]
@@ -653,6 +696,32 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private string _confirmDialogCancelText = "";
 
     private TaskCompletionSource<bool>? _confirmDialogTcs;
+
+    /// <summary>Ob die Tier-Auswahl-Chips im Bestätigungsdialog sichtbar sind.</summary>
+    [ObservableProperty]
+    private bool _isPrestigeTierSelectionVisible;
+
+    // Post-Prestige Zusammenfassung
+    [ObservableProperty]
+    private bool _isPrestigeSummaryVisible;
+
+    [ObservableProperty]
+    private string _prestigeSummaryTier = "";
+
+    [ObservableProperty]
+    private string _prestigeSummaryTierIcon = "";
+
+    [ObservableProperty]
+    private string _prestigeSummaryTierColor = "#FFD700";
+
+    [ObservableProperty]
+    private string _prestigeSummaryPoints = "";
+
+    [ObservableProperty]
+    private string _prestigeSummaryMultiplier = "";
+
+    [ObservableProperty]
+    private string _prestigeSummaryCount = "";
 
     /// <summary>
     /// Indicates whether ads should be shown (not premium).
@@ -822,6 +891,18 @@ public partial class MainViewModel : ViewModelBase, IDisposable
     private bool _isGuildInviteActive;
 
     [ObservableProperty]
+    private bool _isGuildWarSeasonActive;
+
+    [ObservableProperty]
+    private bool _isGuildBossActive;
+
+    [ObservableProperty]
+    private bool _isGuildHallActive;
+
+    [ObservableProperty]
+    private bool _isGuildAchievementsActive;
+
+    [ObservableProperty]
     private bool _isCraftingActive;
 
     [ObservableProperty]
@@ -844,7 +925,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                                     !IsTournamentActive && !IsSeasonalEventActive &&
                                     !IsBattlePassActive && !IsCraftingActive &&
                                     !IsGuildResearchActive && !IsGuildMembersActive &&
-                                    !IsGuildInviteActive;
+                                    !IsGuildInviteActive && !IsGuildWarSeasonActive &&
+                                    !IsGuildBossActive && !IsGuildHallActive &&
+                                    !IsGuildAchievementsActive;
 
     private void DeactivateAllTabs()
     {
@@ -876,6 +959,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         IsGuildResearchActive = false;
         IsGuildMembersActive = false;
         IsGuildInviteActive = false;
+        IsGuildWarSeasonActive = false;
+        IsGuildBossActive = false;
+        IsGuildHallActive = false;
+        IsGuildAchievementsActive = false;
         IsCraftingActive = false;
         IsForgeGameActive = false;
         IsInventGameActive = false;
@@ -976,8 +1063,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         InventGameViewModel inventGameViewModel,
         GameJuiceEngine gameJuiceEngine,
         IGoalService goalService,
+        IContextualHintService contextualHintService,
         IStoryService? storyService = null,
-        ITutorialService? tutorialService = null,
         IReviewService? reviewService = null,
         IPrestigeService? prestigeService = null,
         INotificationService? notificationService = null,
@@ -1140,13 +1227,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _weeklyMissionService.MissionProgressChanged += OnWeeklyMissionProgressChanged;
         _welcomeBackService.OfferGenerated += OnWelcomeOfferGenerated;
 
-        // Tutorial verdrahten (per Constructor Injection statt Service Locator)
-        _tutorialService = tutorialService;
-        if (_tutorialService != null)
-        {
-            _tutorialService.StepChanged += OnTutorialStep;
-            _tutorialService.TutorialCompleted += OnTutorialDone;
-        }
+        // Kontextuelles Hint-System verdrahten
+        _contextualHintService = contextualHintService;
+        _contextualHintService.HintChanged += OnHintChanged;
 
         // ReviewService + PrestigeService verdrahten (per Constructor Injection)
         _reviewService = reviewService;
@@ -1157,6 +1240,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         // Notification + PlayGames Services (per Constructor Injection)
         _notificationService = notificationService;
         _playGamesService = playGamesService;
+
+        // Back-Press Helper verdrahten
+        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1233,10 +1319,20 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
                 // FloatingText mit Level + Goldschrauben-Bonus
                 FloatingTextRequested?.Invoke(
-                    $"Level {e.NewLevel}! +{screws} GS", "level");
+                    $"Level {e.NewLevel}! +{screws} \u2699", "level");
                 break;
             }
         }
+
+        // Kontextuelle Hints bei Level-Meilensteinen
+        if (e.NewLevel == 3)
+            _contextualHintService.TryShowHint(ContextualHints.WorkerUnlock);
+        else if (e.NewLevel == 10)
+            _contextualHintService.TryShowHint(ContextualHints.QuickJobs);
+        else if (e.NewLevel == 15)
+            _contextualHintService.TryShowHint(ContextualHints.Automation);
+        else if (e.NewLevel == 30)
+            _contextualHintService.TryShowHint(ContextualHints.PrestigeHint);
 
         // Story-Kapitel prüfen
         CheckForNewStoryChapter();
@@ -1287,12 +1383,11 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         // Nur den betroffenen Workshop aktualisieren statt alle
         RefreshSingleWorkshop(e.WorkshopType);
 
-        // Tutorial-Hint nach erstem Upgrade ausblenden
-        if (ShowTutorialHint)
+        // Workshop-Detail-Hint nach erstem Upgrade zeigen
+        if (!_contextualHintService.HasSeenHint(ContextualHints.WorkshopDetail.Id))
         {
             ShowTutorialHint = false;
-            _gameStateService.State.HasSeenTutorialHint = true;
-            _gameStateService.MarkDirty();
+            _contextualHintService.TryShowHint(ContextualHints.WorkshopDetail);
         }
 
         // Multiplikator-Meilensteine (Bumpy Progression)
@@ -1327,7 +1422,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
                     _gameStateService.AddGoldenScrews(screws);
                     var workshopName = _localizationService.GetString(e.WorkshopType.GetLocalizationKey());
                     FloatingTextRequested?.Invoke(
-                        $"{workshopName} Lv.{e.NewLevel}! +{screws} GS", "level");
+                        $"{workshopName} Lv.{e.NewLevel}! +{screws} \u2699", "level");
                     CelebrationRequested?.Invoke();
                     CeremonyRequested?.Invoke(CeremonyType.WorkshopMilestone,
                         $"{workshopName} Lv.{e.NewLevel}!", $"+{screws} Goldschrauben");
@@ -1365,6 +1460,10 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
 
         RefreshOrders();
+
+        // Hint beim ersten Auftragsabschluss
+        if (_gameStateService.State.TotalOrdersCompleted == 1)
+            _contextualHintService.TryShowHint(ContextualHints.OrderCompleted);
 
         // Story-Kapitel prüfen
         CheckForNewStoryChapter();
@@ -1917,11 +2016,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _weeklyMissionService.MissionProgressChanged -= OnWeeklyMissionProgressChanged;
         _welcomeBackService.OfferGenerated -= OnWelcomeOfferGenerated;
 
-        if (_tutorialService != null)
-        {
-            _tutorialService.StepChanged -= OnTutorialStep;
-            _tutorialService.TutorialCompleted -= OnTutorialDone;
-        }
+        _contextualHintService.HintChanged -= OnHintChanged;
 
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
 

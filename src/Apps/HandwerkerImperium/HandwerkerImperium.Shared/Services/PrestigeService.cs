@@ -5,11 +5,11 @@ using HandwerkerImperium.Services.Interfaces;
 namespace HandwerkerImperium.Services;
 
 /// <summary>
-/// Implements the 3-tier prestige system (Bronze / Silver / Gold).
-/// Each tier resets progress but grants permanent multipliers and prestige points.
-/// Bronze: Basic reset. Silver: Preserves research. Gold: Preserves shop items.
+/// Implementiert das 7-Tier Prestige-System (Bronze bis Legende).
+/// Jeder Tier setzt Fortschritt zurück, gewährt permanente Multiplikatoren und Prestige-Punkte.
+/// Höhere Tiers bewahren progressiv mehr Spielfortschritt.
 /// </summary>
-public class PrestigeService : IPrestigeService
+public sealed class PrestigeService : IPrestigeService
 {
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
@@ -62,6 +62,21 @@ public class PrestigeService : IPrestigeService
         prestige.PrestigePoints += tierPoints;
         prestige.TotalPrestigePoints += tierPoints;
 
+        // History-Eintrag VOR dem Reset erstellen (damit Level/Geld noch stimmen)
+        prestige.History.Insert(0, new PrestigeHistoryEntry
+        {
+            Tier = tier,
+            Date = DateTime.UtcNow,
+            PointsEarned = tierPoints,
+            PlayerLevel = state.PlayerLevel,
+            MultiplierAfter = prestige.PermanentMultiplier + tier.GetPermanentMultiplierBonus(),
+            TotalMoneyEarned = state.TotalMoneyEarned,
+        });
+
+        // Auf 20 Einträge begrenzen
+        if (prestige.History.Count > 20)
+            prestige.History.RemoveRange(20, prestige.History.Count - 20);
+
         // Tier-Zähler erhöhen
         switch (tier)
         {
@@ -92,7 +107,7 @@ public class PrestigeService : IPrestigeService
         if (tier > prestige.CurrentTier)
             prestige.CurrentTier = tier;
 
-        // Permanenten Multiplier erhoehen (Tier-Bonus), Cap bei 20x
+        // Permanenten Multiplier erhöhen (Tier-Bonus), Cap bei 200x
         prestige.PermanentMultiplier += tier.GetPermanentMultiplierBonus();
         prestige.PermanentMultiplier = Math.Min(Math.Round(prestige.PermanentMultiplier, 3), MaxPermanentMultiplier);
 
@@ -217,10 +232,9 @@ public class PrestigeService : IPrestigeService
     }
 
     /// <summary>
-    /// Resets game progress based on prestige tier.
-    /// Bronze: Full reset (keep achievements, premium, settings, prestige, tutorial, TotalMoneyEarned, TotalPlayTimeSeconds).
-    /// Silver: Additionally preserves research.
-    /// Gold: Additionally preserves prestige shop items (already in PrestigeData, so no extra handling needed).
+    /// Setzt den Spielfortschritt basierend auf dem Prestige-Tier zurück.
+    /// Höhere Tiers bewahren progressiv mehr: Silver=Research, Gold=ShopItems,
+    /// Platin=MasterTools, Diamant=Buildings+Equipment, Meister=Manager, Legende=BestWorkers.
     /// </summary>
     private static void ResetProgress(GameState state, PrestigeTier tier)
     {
@@ -249,6 +263,27 @@ public class PrestigeService : IPrestigeService
             }
         }
 
+        // === LEGENDE: Beste Worker VOR dem Reset sichern ===
+        if (tier.KeepsBestWorkers())
+        {
+            state.Prestige.KeptWorkers.Clear();
+            foreach (var ws in state.Workshops)
+            {
+                if (ws.Workers.Count > 0)
+                {
+                    var bestWorker = ws.Workers.OrderByDescending(w => w.Efficiency).First();
+                    // Worker zurücksetzen für neuen Durchlauf (Mood/Fatigue/Training)
+                    bestWorker.Mood = 80m;
+                    bestWorker.Fatigue = 0m;
+                    bestWorker.IsResting = false;
+                    bestWorker.IsTraining = false;
+                    bestWorker.RestStartedAt = null;
+                    bestWorker.TrainingStartedAt = null;
+                    state.Prestige.KeptWorkers[ws.Type.ToString()] = bestWorker;
+                }
+            }
+        }
+
         // === RESET: Player Progress ===
         state.PlayerLevel = 1;
         state.CurrentXp = 0;
@@ -265,7 +300,19 @@ public class PrestigeService : IPrestigeService
 
         var carpenter = Workshop.Create(WorkshopType.Carpenter);
         carpenter.IsUnlocked = true;
-        carpenter.Workers.Add(Worker.CreateForTier(startWorkerTier));
+
+        // Legende: Gesicherten Carpenter-Worker wiederverwenden (wenn besser als Start-Tier)
+        if (state.Prestige.KeptWorkers.TryGetValue(WorkshopType.Carpenter.ToString(), out var keptCarpenterWorker)
+            && keptCarpenterWorker.Tier >= startWorkerTier)
+        {
+            carpenter.Workers.Add(keptCarpenterWorker);
+            state.Prestige.KeptWorkers.Remove(WorkshopType.Carpenter.ToString());
+        }
+        else
+        {
+            carpenter.Workers.Add(Worker.CreateForTier(startWorkerTier));
+        }
+
         state.Workshops.Add(carpenter);
 
         // === RESET: Workers ===
@@ -394,20 +441,8 @@ public class PrestigeService : IPrestigeService
             }
         }
 
-        // === BEDINGT: Legende behält 1 besten Worker pro Workshop ===
-        if (tier.KeepsBestWorkers())
-        {
-            // Pro Workshop nur den Worker mit der höchsten Efficiency behalten
-            foreach (var ws in state.Workshops)
-            {
-                if (ws.Workers.Count > 1)
-                {
-                    var bestWorker = ws.Workers.OrderByDescending(w => w.Efficiency).First();
-                    ws.Workers.Clear();
-                    ws.Workers.Add(bestWorker);
-                }
-            }
-        }
+        // Legende-Worker werden bereits VOR dem Workshop-Reset gesichert (s.o.)
+        // und beim Workshop-Unlock via GetOrCreateWorkshop() angewendet.
 
         // === RESET: Gebäude (Diamant+ behält sie mit Level→1) ===
         if (tier.KeepsBuildings())
@@ -423,7 +458,7 @@ public class PrestigeService : IPrestigeService
         // - state.Prestige (PrestigeData mit Punkten, Shop-Items, Tier-Counts)
         // - state.UnlockedAchievements
         // - state.IsPremium
-        // - state.TutorialCompleted, state.TutorialStep
+        // - state.SeenHints (kontextuelles Tutorial)
         // - state.TotalMoneyEarned
         // - state.TotalPlayTimeSeconds
         // - state.SoundEnabled, state.MusicEnabled, state.HapticsEnabled, state.Language

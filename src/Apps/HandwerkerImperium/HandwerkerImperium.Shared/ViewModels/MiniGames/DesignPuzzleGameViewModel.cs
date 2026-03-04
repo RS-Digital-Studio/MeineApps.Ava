@@ -15,7 +15,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// ViewModel fuer das Grundriss-Raetsel Mini-Game.
 /// Der Spieler muss Raeume einem Grundriss korrekt zuordnen.
 /// </summary>
-public partial class DesignPuzzleGameViewModel : ViewModelBase, IDisposable
+public sealed partial class DesignPuzzleGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

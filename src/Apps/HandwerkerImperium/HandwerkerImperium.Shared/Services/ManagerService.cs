@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Services;
 /// Verwaltet Vorarbeiter/Manager: Prüft Freischalt-Bedingungen (Level, Prestige, Perfect-Ratings),
 /// ermöglicht Upgrades (max Level 5) und berechnet Workshop-spezifische sowie globale Boni.
 /// </summary>
-public class ManagerService : IManagerService
+public sealed class ManagerService : IManagerService
 {
     private readonly IGameStateService _gameStateService;
 

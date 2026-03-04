@@ -6,7 +6,7 @@ namespace HandwerkerImperium.Services;
 /// <summary>
 /// Manages daily login rewards with a 30-day cycle and streak tracking.
 /// </summary>
-public class DailyRewardService : IDailyRewardService
+public sealed class DailyRewardService : IDailyRewardService
 {
     private readonly IGameStateService _gameStateService;
 

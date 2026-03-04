@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Graphics;
 /// Rendert Münzen die von einer Quelle zum Währungs-HUD fliegen.
 /// Kann direkt in Views eingebettet werden.
 /// </summary>
-public class CoinFlyAnimation : IDisposable
+public sealed class CoinFlyAnimation : IDisposable
 {
     private bool _disposed;
     private const int MaxCoins = 16;

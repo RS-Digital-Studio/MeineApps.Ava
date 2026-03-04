@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// Verwaltet taegliche Herausforderungen mit Belohnungen.
 /// Subscribes auf GameState-Events fuer automatisches Tracking.
 /// </summary>
-public class DailyChallengeService : IDailyChallengeService, IDisposable
+public sealed class DailyChallengeService : IDailyChallengeService, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly ILocalizationService _localizationService;

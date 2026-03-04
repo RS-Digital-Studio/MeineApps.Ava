@@ -4,7 +4,7 @@ using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
 
-public class BuildingService : IBuildingService
+public sealed class BuildingService : IBuildingService
 {
     private readonly IGameStateService _gameState;
 

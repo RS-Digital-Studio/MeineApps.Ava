@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// Simulierte Freunde: 5 NPCs mit täglichen Goldschrauben-Geschenken.
 /// Echte Freunde: Firebase-basiert über Gildenmitgliederliste, max 50.
 /// </summary>
-public class FriendService : IFriendService
+public sealed class FriendService : IFriendService
 {
     private readonly IGameStateService _gameState;
     private readonly IFirebaseService _firebase;

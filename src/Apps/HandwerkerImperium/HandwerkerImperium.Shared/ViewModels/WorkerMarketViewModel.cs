@@ -16,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Shows available workers with tier badges, personality, talent stars, specialization, and wage.
 /// Pool rotates every 4 hours with countdown timer.
 /// </summary>
-public partial class WorkerMarketViewModel : ViewModelBase
+public sealed partial class WorkerMarketViewModel : ViewModelBase
 {
     private readonly IWorkerService _workerService;
     private readonly IGameStateService _gameStateService;

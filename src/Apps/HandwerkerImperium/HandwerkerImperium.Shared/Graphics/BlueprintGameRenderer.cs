@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Graphics;
 /// Struct-basierte Partikel-Arrays fuer GC-freie Android-Performance.
 /// Gecachte SKPaint-Instanzen fuer 0 Allokationen pro Frame.
 /// </summary>
-public class BlueprintGameRenderer : IDisposable
+public sealed class BlueprintGameRenderer : IDisposable
 {
     private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════

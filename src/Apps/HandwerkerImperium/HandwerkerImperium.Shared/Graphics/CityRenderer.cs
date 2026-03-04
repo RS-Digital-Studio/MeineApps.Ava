@@ -32,7 +32,7 @@ public struct CityTapResult
 /// 5-Layer Parallax-Hintergrund, isometrische Gebäude, animierte Mini-Figuren,
 /// Schornstein-Rauch, Lieferwagen, Tag/Nacht-Palette, Workshop-Partikel.
 /// </summary>
-public class CityRenderer : IDisposable
+public sealed class CityRenderer : IDisposable
 {
     private bool _disposed;
     // Fortlaufende Animationszeit

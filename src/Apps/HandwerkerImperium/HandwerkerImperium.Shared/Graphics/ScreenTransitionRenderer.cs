@@ -26,7 +26,7 @@ public enum TransitionType
 /// Rendert Overlay-Effekte (Verdunklung, Trennkanten, Vignetten) während einer Transition.
 /// Gecachte Paint-Objekte für GC-freie Performance im Render-Loop.
 /// </summary>
-public class ScreenTransitionRenderer : IDisposable
+public sealed class ScreenTransitionRenderer : IDisposable
 {
     private bool _disposed;
     // Dauer pro TransitionType in Sekunden

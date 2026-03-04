@@ -3,6 +3,24 @@ using System.Text.Json.Serialization;
 namespace HandwerkerImperium.Models;
 
 /// <summary>
+/// Prestige-Shop Kategorien für die gruppierte Anzeige.
+/// </summary>
+public enum PrestigeShopCategory
+{
+    /// <summary>Einkommen-Boosts und Kostenreduzierung</summary>
+    IncomeAndCosts,
+
+    /// <summary>Arbeiter-Upgrades und Stimmung</summary>
+    WorkerAndMood,
+
+    /// <summary>Rush, Lieferant, Crafting, Offline, QuickJobs</summary>
+    SpeedAndAutomation,
+
+    /// <summary>Startkapital, Goldschrauben, XP</summary>
+    CurrencyAndStart
+}
+
+/// <summary>
 /// An item purchasable with prestige points.
 /// </summary>
 public class PrestigeShopItem
@@ -30,6 +48,12 @@ public class PrestigeShopItem
 
     [JsonPropertyName("effect")]
     public PrestigeEffect Effect { get; set; } = new();
+
+    /// <summary>
+    /// Kategorie für die gruppierte Shop-Anzeige.
+    /// </summary>
+    [JsonIgnore]
+    public PrestigeShopCategory Category { get; set; }
 }
 
 /// <summary>

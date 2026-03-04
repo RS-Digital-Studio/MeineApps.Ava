@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// Spieler kann 3x täglich gratis teilnehmen, danach für 5 Goldschrauben.
 /// Wenn Play Games nicht angemeldet: Fallback auf simulierte Gegner.
 /// </summary>
-public class TournamentService : ITournamentService
+public sealed class TournamentService : ITournamentService
 {
     private readonly IGameStateService _gameState;
     private readonly IPlayGamesService? _playGamesService;

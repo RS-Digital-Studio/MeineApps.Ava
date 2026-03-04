@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Graphics;
 /// Struct-basiertes Partikel-Array (kein GC-Druck auf Android).
 /// Completion-Celebration mit goldenem Flash und Extra-Spritzern.
 /// </summary>
-public class PaintingGameRenderer : IDisposable
+public sealed class PaintingGameRenderer : IDisposable
 {
     private bool _disposed;
     // Wand-Farben (hell/creme fuer maximalen Kontrast zu gestrichenen Zellen)

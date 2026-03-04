@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Services;
 using HandwerkerImperium.Services.Interfaces;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
@@ -12,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für saisonale Events (4x pro Jahr, jeweils 2 Wochen).
 /// Zeigt Event-Info, Saison-Währung und den saisonalen Shop.
 /// </summary>
-public partial class SeasonalEventViewModel : ViewModelBase
+public sealed partial class SeasonalEventViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly ISeasonalEventService _seasonalEventService;
@@ -142,8 +143,8 @@ public partial class SeasonalEventViewModel : ViewModelBase
     {
         var items = new ObservableCollection<SeasonalShopItemDisplay>();
 
-        // Statische Shop-Items pro Saison generieren
-        var shopItemDefs = GetSeasonalShopItems(seasonalEvent.Season);
+        // Shop-Items vom Service holen (gleiche IDs wie bei BuySeasonalItem)
+        var shopItemDefs = SeasonalEventService.GetShopItems(seasonalEvent.Season);
         foreach (var def in shopItemDefs)
         {
             bool isPurchased = seasonalEvent.PurchasedItems.Contains(def.Id);
@@ -172,20 +173,6 @@ public partial class SeasonalEventViewModel : ViewModelBase
         _ => season.ToString()
     };
 
-    /// <summary>
-    /// Gibt die statischen Shop-Item-Definitionen für eine Saison zurück.
-    /// </summary>
-    private static List<SeasonalShopItem> GetSeasonalShopItems(Season season)
-    {
-        string prefix = season.ToString().ToLower();
-        return
-        [
-            new() { Id = $"{prefix}_boost_income", NameKey = $"Seasonal{season}Income", DescriptionKey = $"Seasonal{season}IncomeDesc", Cost = 50, Icon = "CurrencyEur" },
-            new() { Id = $"{prefix}_boost_xp", NameKey = $"Seasonal{season}Xp", DescriptionKey = $"Seasonal{season}XpDesc", Cost = 30, Icon = "Star" },
-            new() { Id = $"{prefix}_screws", NameKey = $"Seasonal{season}Screws", DescriptionKey = $"Seasonal{season}ScrewsDesc", Cost = 80, Icon = "Cog" },
-            new() { Id = $"{prefix}_speed", NameKey = $"Seasonal{season}Speed", DescriptionKey = $"Seasonal{season}SpeedDesc", Cost = 100, Icon = "RocketLaunch" },
-        ];
-    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -207,7 +194,7 @@ public class SeasonalShopItemDisplay
     /// <summary>
     /// Kosten-Anzeige mit Saison-Währungs-Symbol.
     /// </summary>
-    public string CostDisplay => $"{Cost} SP";
+    public string CostDisplay => $"{Cost} \u2605";
 
     /// <summary>
     /// Kosten-Farbe: Grün wenn leistbar, Rot wenn nicht, Grau wenn gekauft.

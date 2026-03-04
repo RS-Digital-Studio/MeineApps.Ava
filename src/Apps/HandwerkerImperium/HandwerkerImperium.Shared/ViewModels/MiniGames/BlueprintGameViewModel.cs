@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// ViewModel für das Bauplan-Reihenfolge-Minispiel.
 /// Der Spieler merkt sich die Reihenfolge der Bauschritte und tippt sie danach korrekt an.
 /// </summary>
-public partial class BlueprintGameViewModel : ViewModelBase, IDisposable
+public sealed partial class BlueprintGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für das Crafting-System (Produktionsketten mit Rezepten).
 /// Zeigt verfügbare Rezepte, aktive Aufträge und Inventar.
 /// </summary>
-public partial class CraftingViewModel : ViewModelBase
+public sealed partial class CraftingViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly ICraftingService _craftingService;

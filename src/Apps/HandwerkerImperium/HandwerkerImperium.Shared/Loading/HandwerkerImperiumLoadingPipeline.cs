@@ -1,4 +1,5 @@
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.Loading;
 using MeineApps.UI.SkiaSharp.Shaders;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,35 +12,29 @@ namespace HandwerkerImperium.Loading;
 /// Übernimmt die gesamte Initialisierung die bisher in MainViewModel.InitializeAsync() war.
 /// Die Pipeline meldet Fortschritt an den Splash-Screen.
 /// </summary>
-public class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
+public sealed class HandwerkerImperiumLoadingPipeline : LoadingPipelineBase
 {
     public HandwerkerImperiumLoadingPipeline(IServiceProvider services)
     {
         var loc = services.GetRequiredService<ILocalizationService>();
 
-        // Schritt 1: GPU-Shader vorab kompilieren (12 SkSL-Shader)
+        // Schritt 1: Shader + ViewModel parallel (unabhängig voneinander)
         AddStep(new LoadingStep
         {
-            Name = "Shader",
+            Name = "Shader+ViewModel",
             DisplayName = loc.GetString("SplashStep_Graphics") ?? "Grafik-Engine laden...",
-            Weight = 30,
-            ExecuteAsync = () => Task.Run(() => ShaderPreloader.PreloadAll())
-        });
-
-        // Schritt 2: ViewModel erstellen (DI, noch ohne InitializeAsync)
-        AddStep(new LoadingStep
-        {
-            Name = "ViewModel",
-            DisplayName = loc.GetString("SplashStep_GameState") ?? "Spielstand laden...",
-            Weight = 10,
-            ExecuteAsync = () =>
+            Weight = 40,
+            ExecuteAsync = async () =>
             {
-                services.GetRequiredService<MainViewModel>();
-                return Task.CompletedTask;
+                var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
+                var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
+                // Käufe mit Google Play abgleichen (Geräte-/Datenwechsel → Premium-Status wiederherstellen)
+                var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
+                await Task.WhenAll(shaderTask, vmTask, purchaseTask);
             }
         });
 
-        // Schritt 3: Spielstand laden + initialisieren (SaveGame, Orders, Rewards etc.)
+        // Schritt 2: Spielstand laden + initialisieren (SaveGame, Orders, Rewards etc.)
         AddStep(new LoadingStep
         {
             Name = "GameInit",

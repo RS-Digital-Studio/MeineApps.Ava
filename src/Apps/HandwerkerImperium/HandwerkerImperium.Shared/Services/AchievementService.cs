@@ -7,17 +7,19 @@ namespace HandwerkerImperium.Services;
 /// <summary>
 /// Manages achievements and tracks progress.
 /// </summary>
-public class AchievementService : IAchievementService, IDisposable
+public sealed class AchievementService : IAchievementService, IDisposable
 {
     private bool _disposed;
     private readonly IGameStateService _gameStateService;
+    private readonly IPrestigeService _prestigeService;
     private readonly List<Achievement> _achievements;
 
     public event EventHandler<Achievement>? AchievementUnlocked;
 
-    public AchievementService(IGameStateService gameStateService)
+    public AchievementService(IGameStateService gameStateService, IPrestigeService prestigeService)
     {
         _gameStateService = gameStateService;
+        _prestigeService = prestigeService;
         _achievements = Achievements.GetAll();
 
         // Load unlocked status from game state
@@ -29,6 +31,7 @@ public class AchievementService : IAchievementService, IDisposable
         _gameStateService.WorkerHired += OnWorkerHired;
         _gameStateService.WorkshopUpgraded += OnWorkshopUpgraded;
         _gameStateService.MoneyChanged += OnMoneyChanged;
+        _prestigeService.PrestigeCompleted += OnPrestigeCompleted;
     }
 
     private int _unlockedCount;
@@ -231,11 +234,23 @@ public class AchievementService : IAchievementService, IDisposable
 
                 // === NEUE ACHIEVEMENTS (Phase 2.2) ===
 
-                // Prestige-Tier
+                // Prestige-Tier (erste Stufe jedes Tiers)
+                "prestige_bronze" => state.Prestige.BronzeCount,
+                "prestige_silver" => state.Prestige.SilverCount,
+                "prestige_gold" => state.Prestige.GoldCount,
                 "prestige_platin" => state.Prestige.PlatinCount,
                 "prestige_diamant" => state.Prestige.DiamantCount,
                 "prestige_meister" => state.Prestige.MeisterCount,
                 "prestige_legende" => state.Prestige.LegendeCount,
+
+                // Prestige-Meilensteine (Gesamtanzahl)
+                "prestige_total_5" or "prestige_total_10"
+                or "prestige_total_25" or "prestige_total_50"
+                    => state.Prestige.TotalPrestigeCount,
+
+                // Prestige-Punkte ausgegeben (Lifetime - aktuell verfügbar)
+                "prestige_points_100" or "prestige_points_1000"
+                    => state.Prestige.TotalPrestigePoints - state.Prestige.PrestigePoints,
 
                 // MiniGame-Mastery
                 "perfect_100" => state.PerfectRatings,
@@ -337,6 +352,12 @@ public class AchievementService : IAchievementService, IDisposable
         }
     }
 
+    private void OnPrestigeCompleted(object? sender, EventArgs e)
+    {
+        // Sofort Prestige-Achievements prüfen (Tier-Counts, Total, Punkte)
+        CheckAchievements();
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -346,6 +367,7 @@ public class AchievementService : IAchievementService, IDisposable
         _gameStateService.WorkerHired -= OnWorkerHired;
         _gameStateService.WorkshopUpgraded -= OnWorkshopUpgraded;
         _gameStateService.MoneyChanged -= OnMoneyChanged;
+        _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
 
         _disposed = true;
         GC.SuppressFinalize(this);

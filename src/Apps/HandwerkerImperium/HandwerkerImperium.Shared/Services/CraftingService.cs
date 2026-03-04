@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services;
 /// Rezepte haben 3 Tiers (ab Workshop-Level 50/150/300).
 /// Höhere Tiers benötigen Produkte niedrigerer Tiers als Input.
 /// </summary>
-public class CraftingService : ICraftingService
+public sealed class CraftingService : ICraftingService
 {
     private readonly IGameStateService _gameState;
 

@@ -89,6 +89,9 @@ public partial class App : Application
             panel.Children.Add(splash);
             desktop.MainWindow.Content = panel;
             _ = RunLoadingAsync(splash);
+
+            // Desktop: Beim Herunterfahren alle IDisposable-Singletons disposen
+            desktop.ShutdownRequested += (_, _) => DisposeServices();
         }
         else if (ApplicationLifetime is ISingleViewApplicationLifetime singleViewPlatform)
         {
@@ -128,7 +131,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            var remaining = 800 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();
@@ -149,6 +153,37 @@ public partial class App : Application
         {
             Debug.WriteLine($"[HandwerkerImperium] Loading-Pipeline fehlgeschlagen: {ex}");
             Avalonia.Threading.Dispatcher.UIThread.Post(() => splash.FadeOut());
+        }
+    }
+
+    /// <summary>
+    /// Disposed alle IDisposable-Singletons (GameLoopService, GameJuiceEngine, MainViewModel, FirebaseService etc.).
+    /// Wird bei Desktop-Shutdown aufgerufen, auf Android via MainActivity.OnDestroy().
+    /// </summary>
+    public static void DisposeServices()
+    {
+        if (Services == null) return;
+
+        try
+        {
+            // GameLoopService hält den 1s-Takt DispatcherTimer
+            (Services.GetService<IGameLoopService>() as IDisposable)?.Dispose();
+
+            // GameJuiceEngine hält SKPaint/SKFont/SKPath Instanzen
+            (Services.GetService<GameJuiceEngine>() as IDisposable)?.Dispose();
+
+            // MainViewModel hält Referenzen auf alle Child-VMs und Event-Subscriptions
+            (Services.GetService<MainViewModel>() as IDisposable)?.Dispose();
+
+            // SeasonalEventService hält OrderCompleted-Subscription
+            (Services.GetService<ISeasonalEventService>() as IDisposable)?.Dispose();
+
+            // FirebaseService hält HttpClient
+            (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
+        }
+        catch
+        {
+            // Fehler beim Dispose beim Herunterfahren sind unkritisch
         }
     }
 
@@ -198,7 +233,7 @@ public partial class App : Application
         services.AddSingleton<IOfflineProgressService, OfflineProgressService>();
         services.AddSingleton<IOrderGeneratorService, OrderGeneratorService>();
         services.AddSingleton<IPrestigeService, PrestigeService>();
-        services.AddSingleton<ITutorialService, TutorialService>();
+        services.AddSingleton<IContextualHintService, ContextualHintService>();
 
         // New Game Services (v2.0)
         services.AddSingleton<IWorkerService, WorkerService>();
@@ -237,6 +272,14 @@ public partial class App : Application
         services.AddSingleton<ICosmeticService, CosmeticService>();
         services.AddSingleton<IGoalService, GoalService>();
 
+        // Gilden-Overhaul Services (AAA-System)
+        services.AddSingleton<IGuildResearchService, GuildResearchService>();
+        services.AddSingleton<IGuildWarSeasonService, GuildWarSeasonService>();
+        services.AddSingleton<IGuildHallService, GuildHallService>();
+        services.AddSingleton<IGuildBossService, GuildBossService>();
+        services.AddSingleton<IGuildTipService, GuildTipService>();
+        services.AddSingleton<IGuildAchievementService, GuildAchievementService>();
+
         // ViewModels (Singleton because MainViewModel holds references to child VMs)
         services.AddSingleton<MainViewModel>();
         services.AddSingleton<AchievementsViewModel>();
@@ -264,6 +307,9 @@ public partial class App : Application
         services.AddSingleton<SeasonalEventViewModel>();
         services.AddSingleton<BattlePassViewModel>();
         services.AddSingleton<GuildViewModel>();
+        services.AddSingleton<GuildWarSeasonViewModel>();
+        services.AddSingleton<GuildBossViewModel>();
+        services.AddSingleton<GuildHallViewModel>();
         services.AddSingleton<CraftingViewModel>();
         services.AddSingleton<LuckySpinViewModel>();
     }

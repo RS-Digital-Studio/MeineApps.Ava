@@ -13,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the settings page.
 /// Manages game settings like sound, language, and premium status.
 /// </summary>
-public partial class SettingsViewModel : ViewModelBase
+public sealed partial class SettingsViewModel : ViewModelBase
 {
     private readonly IAudioService _audioService;
     private readonly ILocalizationService _localizationService;
@@ -21,6 +21,7 @@ public partial class SettingsViewModel : ViewModelBase
     private readonly IGameStateService _gameStateService;
     private readonly IPurchaseService _purchaseService;
     private readonly IPlayGamesService _playGamesService;
+    private readonly IContextualHintService _contextualHintService;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -125,7 +126,8 @@ public partial class SettingsViewModel : ViewModelBase
         ISaveGameService saveGameService,
         IGameStateService gameStateService,
         IPurchaseService purchaseService,
-        IPlayGamesService playGamesService)
+        IPlayGamesService playGamesService,
+        IContextualHintService contextualHintService)
     {
         _audioService = audioService;
         _localizationService = localizationService;
@@ -133,6 +135,7 @@ public partial class SettingsViewModel : ViewModelBase
         _gameStateService = gameStateService;
         _purchaseService = purchaseService;
         _playGamesService = playGamesService;
+        _contextualHintService = contextualHintService;
 
         // Don't load settings here - GameState is not initialized yet.
         // MainViewModel.InitializeAsync() will call ReloadSettings() after loading the save.
@@ -516,6 +519,16 @@ public partial class SettingsViewModel : ViewModelBase
         {
             _isBusy = false;
         }
+    }
+
+    [RelayCommand]
+    private void ResetHints()
+    {
+        _contextualHintService.ResetAllHints();
+        ShowAlert(
+            _localizationService.GetString("ResetTutorialHintsTitle") ?? "Tutorial zurückgesetzt",
+            _localizationService.GetString("ResetTutorialHintsMessage") ?? "Alle Tutorial-Hinweise werden beim nächsten Spielstart erneut angezeigt.",
+            _localizationService.GetString("OK") ?? "OK");
     }
 
     [RelayCommand]

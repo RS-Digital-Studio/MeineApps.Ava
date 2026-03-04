@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Services;
 /// Freigeschaltete Kosmetiken werden im GameState persistiert.
 /// Quellen: BattlePass-Capstone, Ascension, Gilden-Krieg, Prestige-Shop.
 /// </summary>
-public class CosmeticService : ICosmeticService
+public sealed class CosmeticService : ICosmeticService
 {
     private readonly IGameStateService _gameState;
 

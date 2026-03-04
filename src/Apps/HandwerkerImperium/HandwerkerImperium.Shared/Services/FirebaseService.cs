@@ -12,7 +12,7 @@ namespace HandwerkerImperium.Services;
 /// Firebase REST API Client: Anonymous Auth + Realtime Database.
 /// Funktioniert auf Android und Desktop ohne native SDKs.
 /// </summary>
-public class FirebaseService : IFirebaseService
+public sealed class FirebaseService : IFirebaseService
 {
     // Firebase-Projekt: handwerkerimperium-487917
     private const string ApiKey = "AIzaSyCyfSD0g7TZR1CNgjPlc9L3SyfNwbEst9k";

@@ -4,7 +4,7 @@ using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
 
-public class ResearchService : IResearchService
+public sealed class ResearchService : IResearchService
 {
     private readonly IGameStateService _gameState;
     private ResearchEffect? _cachedEffects;

@@ -30,7 +30,7 @@ public struct TabBarState
 /// goldenen Indikator, Notification-Badges und Bounce-Animationen.
 /// Ersetzt die XAML-Tab-Bar durch eine visuell ansprechendere Darstellung.
 /// </summary>
-public class GameTabBarRenderer : IDisposable
+public sealed class GameTabBarRenderer : IDisposable
 {
     private bool _disposed;
     // Anzahl der Tabs

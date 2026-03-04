@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Services;
 /// Audio playback and haptic feedback are not available on desktop platforms.
 /// Sound/music settings are still persisted via game state.
 /// </summary>
-public class AudioService : IAudioService
+public sealed class AudioService : IAudioService
 {
     private readonly IGameStateService _gameStateService;
 

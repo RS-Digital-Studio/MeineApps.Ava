@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Graphics;
 /// Zeichnet Metall-Rohre auf Beton-Kacheln mit progressiver Wasser-Animation,
 /// Blasen-Partikeln und Splash-Effekt beim Lösen.
 /// </summary>
-public class PipePuzzleRenderer : IDisposable
+public sealed class PipePuzzleRenderer : IDisposable
 {
     private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════
@@ -65,9 +65,32 @@ public class PipePuzzleRenderer : IDisposable
     // Gecachte Filter
     private readonly SKMaskFilter _indicatorGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
     private readonly SKMaskFilter _waterGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
+    private readonly SKMaskFilter _completionGlow = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8);
 
     // Gecachter SKPath fuer wiederholte Nutzung (vermeidet GC-Allokationen pro Frame)
     private readonly SKPath _cachedPath = new();
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WIEDERVERWENDBARE PAINTS (vermeidet ~28 Allokationen pro Frame)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Allgemein: Fill-Paint ohne AA (Color wird vor Verwendung gesetzt)
+    private readonly SKPaint _fillPaint = new() { IsAntialias = false };
+
+    // Allgemein: Fill-Paint mit Antialiasing (fuer Kreise, Glow, Indikatoren)
+    private readonly SKPaint _fillPaintAA = new() { IsAntialias = true };
+
+    // Stroke-Paint ohne AA (Color, StrokeWidth werden vor Verwendung gesetzt)
+    private readonly SKPaint _strokePaint = new() { IsAntialias = false, Style = SKPaintStyle.Stroke };
+
+    // Stroke-Paint mit Antialiasing (fuer Indikatoren, Wellen)
+    private readonly SKPaint _strokePaintAA = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+    // Glow-Paint (MaskFilter wird vor Verwendung gesetzt)
+    private readonly SKPaint _glowPaint = new() { IsAntialias = true };
+
+    // Shader-Paint fuer radiale Gradienten (Shader wird pro Aufruf gesetzt/disposed)
+    private readonly SKPaint _shaderPaint = new() { IsAntialias = true };
 
     // ═══════════════════════════════════════════════════════════════════════
     // HAUPT-RENDER
@@ -81,7 +104,7 @@ public class PipePuzzleRenderer : IDisposable
     {
         _waterAnimTime += deltaTime;
 
-        // Wasser-Durchfluss erkennen (Transition false→true)
+        // Wasser-Durchfluss erkennen (Transition false->true)
         if (isPuzzleSolved && !_prevIsSolved)
         {
             _flowStarted = true;
@@ -106,12 +129,12 @@ public class PipePuzzleRenderer : IDisposable
         float startY = bounds.Top + padding;
 
         // Hintergrund
-        using var bgPaint = new SKPaint { Color = BackgroundColor, IsAntialias = false };
-        canvas.DrawRect(bounds, bgPaint);
+        _fillPaint.Color = BackgroundColor;
+        canvas.DrawRect(bounds, _fillPaint);
 
         // Grid-Schatten
-        using var gridShadowPaint = new SKPaint { Color = new SKColor(0x00, 0x00, 0x00, 60), IsAntialias = false };
-        canvas.DrawRect(startX + 3, startY + 3, gridWidth, gridHeight, gridShadowPaint);
+        _fillPaint.Color = new SKColor(0x00, 0x00, 0x00, 60);
+        canvas.DrawRect(startX + 3, startY + 3, gridWidth, gridHeight, _fillPaint);
 
         // Grid-Kacheln zeichnen
         for (int i = 0; i < tiles.Length && i < cols * rows; i++)
@@ -130,7 +153,7 @@ public class PipePuzzleRenderer : IDisposable
         {
             UpdateAndDrawBubbles(canvas, startX, startY, tileSize, tiles, cols, rows, deltaTime);
 
-            // Splash am Abfluss prüfen
+            // Splash am Abfluss pruefen
             if (!_splashFired)
             {
                 for (int i = 0; i < tiles.Length; i++)
@@ -156,7 +179,7 @@ public class PipePuzzleRenderer : IDisposable
                 UpdateAndDrawSplash(canvas, deltaTime);
             }
 
-            // Komplett-Glow wenn alle Tiles gefüllt
+            // Komplett-Glow wenn alle Tiles gefuellt
             float totalFillTime = maxDistance * FILL_DELAY + FILL_DURATION + 0.5f;
             if (_flowAnimTime > totalFillTime)
             {
@@ -202,21 +225,18 @@ public class PipePuzzleRenderer : IDisposable
         float innerY = y + margin;
 
         // Kachel-Hintergrund (Betonboden)
-        using var tilePaint = new SKPaint { Color = TileBg, IsAntialias = false };
-        canvas.DrawRect(innerX, innerY, innerSize, innerSize, tilePaint);
+        _fillPaint.Color = TileBg;
+        canvas.DrawRect(innerX, innerY, innerSize, innerSize, _fillPaint);
 
         // Leichter Highlight-Streifen oben (3D-Effekt)
-        using var highlightPaint = new SKPaint { Color = TileHighlight, IsAntialias = false };
-        canvas.DrawRect(innerX, innerY, innerSize, 2, highlightPaint);
+        _fillPaint.Color = TileHighlight;
+        canvas.DrawRect(innerX, innerY, innerSize, 2, _fillPaint);
 
         // Kachel-Rand (blau bei verbunden)
         bool hasWater = tile.IsConnected || fillProgress > 0;
-        using var borderPaint = new SKPaint
-        {
-            Color = hasWater ? WaterDark.WithAlpha(120) : TileBorder,
-            IsAntialias = false, Style = SKPaintStyle.Stroke, StrokeWidth = 1
-        };
-        canvas.DrawRect(innerX, innerY, innerSize, innerSize, borderPaint);
+        _strokePaint.Color = hasWater ? WaterDark.WithAlpha(120) : TileBorder;
+        _strokePaint.StrokeWidth = 1;
+        canvas.DrawRect(innerX, innerY, innerSize, innerSize, _strokePaint);
 
         // Rohre zeichnen
         var openings = GetOpenings(tile.PipeType, tile.Rotation);
@@ -237,7 +257,7 @@ public class PipePuzzleRenderer : IDisposable
             DrawPipeCenter(canvas, innerX, innerY, center, halfPipe, useWaterColor);
         }
 
-        // Wasser-Füll-Overlay bei progressivem Durchfluss
+        // Wasser-Fuell-Overlay bei progressivem Durchfluss
         if (fillProgress > 0 && fillProgress < 1)
         {
             DrawWaterFillFrontier(canvas, innerX, innerY, innerSize, center, halfPipe, openings, fillProgress);
@@ -248,7 +268,7 @@ public class PipePuzzleRenderer : IDisposable
         if (tile.IsDrain) DrawDrainIndicator(canvas, innerX, innerY, innerSize, center, fillProgress);
         if (tile.IsLocked && !tile.IsSource && !tile.IsDrain) DrawLockIndicator(canvas, innerX, innerY, innerSize);
 
-        // Subtiler Wasser-Puls auf verbundenen Rohren (während Gameplay)
+        // Subtiler Wasser-Puls auf verbundenen Rohren (waehrend Gameplay)
         if (tile.IsConnected && !_flowStarted)
         {
             DrawWaterPulse(canvas, innerX, innerY, innerSize, x);
@@ -256,8 +276,8 @@ public class PipePuzzleRenderer : IDisposable
     }
 
     /// <summary>
-    /// Zeichnet die Wasser-Front am Rand des sich füllenden Tiles.
-    /// Glühender weißer Streifen der sich durch das Rohr bewegt.
+    /// Zeichnet die Wasser-Front am Rand des sich fuellenden Tiles.
+    /// Gluehender weisser Streifen der sich durch das Rohr bewegt.
     /// </summary>
     private void DrawWaterFillFrontier(SKCanvas canvas, float tileX, float tileY, float tileSize,
         float center, float halfPipe, int[] openings, float fillProgress)
@@ -266,83 +286,91 @@ public class PipePuzzleRenderer : IDisposable
         float frontierAlpha = 0.4f + 0.3f * MathF.Sin(_waterAnimTime * 8.0f);
         byte alpha = (byte)(frontierAlpha * fillProgress * 255);
 
-        using var frontierPaint = new SKPaint
-        {
-            Color = WaterLight.WithAlpha(alpha),
-            IsAntialias = true,
-            MaskFilter = _waterGlow
-        };
+        _glowPaint.Color = WaterLight.WithAlpha(alpha);
+        _glowPaint.MaskFilter = _waterGlow;
 
         float cx = tileX + center;
         float cy = tileY + center;
 
         // Wasser-Front als leuchtender Kreis in der Mitte
         float radius = halfPipe * 1.5f * fillProgress;
-        canvas.DrawCircle(cx, cy, radius, frontierPaint);
+        canvas.DrawCircle(cx, cy, radius, _glowPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
     // ROHR-SEGMENTE
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static void DrawPipeSegment(SKCanvas canvas, float tileX, float tileY, float tileSize,
+    private void DrawPipeSegment(SKCanvas canvas, float tileX, float tileY, float tileSize,
         float center, float halfPipe, int direction, bool waterColor)
     {
         var mainColor = waterColor ? WaterColor : PipeColor;
         var shadowColor = waterColor ? WaterDark : PipeShadow;
         var lightColor = waterColor ? WaterLight : PipeHighlight;
 
-        using var pipePaint = new SKPaint { Color = mainColor, IsAntialias = false };
-        using var shadowPaint = new SKPaint { Color = shadowColor, IsAntialias = false };
-        using var lightPaint = new SKPaint { Color = lightColor.WithAlpha(100), IsAntialias = false };
-
         switch (direction)
         {
             case 0: // Oben
-                canvas.DrawRect(tileX + center - halfPipe, tileY, halfPipe * 2, center + halfPipe, pipePaint);
-                canvas.DrawRect(tileX + center - halfPipe, tileY, 2, center + halfPipe, shadowPaint);
-                canvas.DrawRect(tileX + center + halfPipe - 2, tileY, 2, center + halfPipe, lightPaint);
-                canvas.DrawRect(tileX + center - halfPipe - 1, tileY, halfPipe * 2 + 2, 3, shadowPaint);
+                _fillPaint.Color = mainColor;
+                canvas.DrawRect(tileX + center - halfPipe, tileY, halfPipe * 2, center + halfPipe, _fillPaint);
+                _fillPaint.Color = shadowColor;
+                canvas.DrawRect(tileX + center - halfPipe, tileY, 2, center + halfPipe, _fillPaint);
+                _fillPaint.Color = lightColor.WithAlpha(100);
+                canvas.DrawRect(tileX + center + halfPipe - 2, tileY, 2, center + halfPipe, _fillPaint);
+                _fillPaint.Color = shadowColor;
+                canvas.DrawRect(tileX + center - halfPipe - 1, tileY, halfPipe * 2 + 2, 3, _fillPaint);
                 break;
             case 1: // Unten
-                canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, halfPipe * 2, center + halfPipe, pipePaint);
-                canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, 2, center + halfPipe, shadowPaint);
-                canvas.DrawRect(tileX + center + halfPipe - 2, tileY + center - halfPipe, 2, center + halfPipe, lightPaint);
-                canvas.DrawRect(tileX + center - halfPipe - 1, tileY + tileSize - 3, halfPipe * 2 + 2, 3, shadowPaint);
+                _fillPaint.Color = mainColor;
+                canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, halfPipe * 2, center + halfPipe, _fillPaint);
+                _fillPaint.Color = shadowColor;
+                canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, 2, center + halfPipe, _fillPaint);
+                _fillPaint.Color = lightColor.WithAlpha(100);
+                canvas.DrawRect(tileX + center + halfPipe - 2, tileY + center - halfPipe, 2, center + halfPipe, _fillPaint);
+                _fillPaint.Color = shadowColor;
+                canvas.DrawRect(tileX + center - halfPipe - 1, tileY + tileSize - 3, halfPipe * 2 + 2, 3, _fillPaint);
                 break;
             case 2: // Links
-                canvas.DrawRect(tileX, tileY + center - halfPipe, center + halfPipe, halfPipe * 2, pipePaint);
-                canvas.DrawRect(tileX, tileY + center - halfPipe, center + halfPipe, 2, shadowPaint);
-                canvas.DrawRect(tileX, tileY + center + halfPipe - 2, center + halfPipe, 2, lightPaint);
-                canvas.DrawRect(tileX, tileY + center - halfPipe - 1, 3, halfPipe * 2 + 2, shadowPaint);
+                _fillPaint.Color = mainColor;
+                canvas.DrawRect(tileX, tileY + center - halfPipe, center + halfPipe, halfPipe * 2, _fillPaint);
+                _fillPaint.Color = shadowColor;
+                canvas.DrawRect(tileX, tileY + center - halfPipe, center + halfPipe, 2, _fillPaint);
+                _fillPaint.Color = lightColor.WithAlpha(100);
+                canvas.DrawRect(tileX, tileY + center + halfPipe - 2, center + halfPipe, 2, _fillPaint);
+                _fillPaint.Color = shadowColor;
+                canvas.DrawRect(tileX, tileY + center - halfPipe - 1, 3, halfPipe * 2 + 2, _fillPaint);
                 break;
             case 3: // Rechts
-                canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, center + halfPipe, halfPipe * 2, pipePaint);
-                canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, center + halfPipe, 2, shadowPaint);
-                canvas.DrawRect(tileX + center - halfPipe, tileY + center + halfPipe - 2, center + halfPipe, 2, lightPaint);
-                canvas.DrawRect(tileX + tileSize - 3, tileY + center - halfPipe - 1, 3, halfPipe * 2 + 2, shadowPaint);
+                _fillPaint.Color = mainColor;
+                canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, center + halfPipe, halfPipe * 2, _fillPaint);
+                _fillPaint.Color = shadowColor;
+                canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, center + halfPipe, 2, _fillPaint);
+                _fillPaint.Color = lightColor.WithAlpha(100);
+                canvas.DrawRect(tileX + center - halfPipe, tileY + center + halfPipe - 2, center + halfPipe, 2, _fillPaint);
+                _fillPaint.Color = shadowColor;
+                canvas.DrawRect(tileX + tileSize - 3, tileY + center - halfPipe - 1, 3, halfPipe * 2 + 2, _fillPaint);
                 break;
         }
     }
 
-    private static void DrawPipeCenter(SKCanvas canvas, float tileX, float tileY, float center, float halfPipe,
+    private void DrawPipeCenter(SKCanvas canvas, float tileX, float tileY, float center, float halfPipe,
         bool waterColor)
     {
         var mainColor = waterColor ? WaterColor : PipeColor;
         var shadowColor = waterColor ? WaterDark : PipeShadow;
         var lightColor = waterColor ? WaterLight : PipeHighlight;
 
-        using var centerPaint = new SKPaint { Color = mainColor, IsAntialias = false };
-        canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, halfPipe * 2, halfPipe * 2, centerPaint);
+        _fillPaint.Color = mainColor;
+        canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, halfPipe * 2, halfPipe * 2, _fillPaint);
 
         // Niet-Detail in der Mitte
-        using var nietPaint = new SKPaint { Color = shadowColor, IsAntialias = false };
+        _fillPaint.Color = shadowColor;
         float nietSize = Math.Max(2, halfPipe * 0.35f);
-        canvas.DrawRect(tileX + center - nietSize / 2, tileY + center - nietSize / 2, nietSize, nietSize, nietPaint);
+        canvas.DrawRect(tileX + center - nietSize / 2, tileY + center - nietSize / 2, nietSize, nietSize, _fillPaint);
 
         // Highlight oben
-        using var lightPaint = new SKPaint { Color = lightColor.WithAlpha(80), IsAntialias = false };
-        canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, halfPipe * 2, 2, lightPaint);
+        _fillPaint.Color = lightColor.WithAlpha(80);
+        canvas.DrawRect(tileX + center - halfPipe, tileY + center - halfPipe, halfPipe * 2, 2, _fillPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -356,37 +384,32 @@ public class PipePuzzleRenderer : IDisposable
 
         DrawIndicatorGlow(canvas, tileX, tileY, tileSize, SourceColor, 0f);
 
-        using var tileBorderPaint = new SKPaint
-        {
-            Color = SourceColor, IsAntialias = true,
-            Style = SKPaintStyle.Stroke, StrokeWidth = 3
-        };
-        canvas.DrawRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2, tileBorderPaint);
+        _strokePaintAA.Color = SourceColor;
+        _strokePaintAA.StrokeWidth = 3;
+        canvas.DrawRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2, _strokePaintAA);
 
         float iconRadius = tileSize * 0.25f;
-        using var bgPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Shader = SKShader.CreateRadialGradient(
-                new SKPoint(cx, cy), iconRadius,
-                [SourceColor.WithAlpha(220), SourceDark.WithAlpha(200)],
-                SKShaderTileMode.Clamp)
-        };
-        canvas.DrawCircle(cx, cy, iconRadius, bgPaint);
+        using var shader = SKShader.CreateRadialGradient(
+            new SKPoint(cx, cy), iconRadius,
+            [SourceColor.WithAlpha(220), SourceDark.WithAlpha(200)],
+            SKShaderTileMode.Clamp);
+        _shaderPaint.Shader = shader;
+        canvas.DrawCircle(cx, cy, iconRadius, _shaderPaint);
+        _shaderPaint.Shader = null;
 
         // Wassertropfen-Symbol
         float dropH = iconRadius * 1.2f;
         float dropW = iconRadius * 0.7f;
-        using var dropPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
+        _fillPaintAA.Color = SKColors.White;
         _cachedPath.Reset();
         _cachedPath.MoveTo(cx, cy - dropH * 0.5f);
         _cachedPath.CubicTo(cx - dropW, cy, cx - dropW * 0.6f, cy + dropH * 0.4f, cx, cy + dropH * 0.35f);
         _cachedPath.CubicTo(cx + dropW * 0.6f, cy + dropH * 0.4f, cx + dropW, cy, cx, cy - dropH * 0.5f);
         _cachedPath.Close();
-        canvas.DrawPath(_cachedPath, dropPaint);
+        canvas.DrawPath(_cachedPath, _fillPaintAA);
 
-        using var glanzPaint = new SKPaint { Color = SourceColor.WithAlpha(180), IsAntialias = true };
-        canvas.DrawCircle(cx - dropW * 0.2f, cy - dropH * 0.1f, dropW * 0.2f, glanzPaint);
+        _fillPaintAA.Color = SourceColor.WithAlpha(180);
+        canvas.DrawCircle(cx - dropW * 0.2f, cy - dropH * 0.1f, dropW * 0.2f, _fillPaintAA);
 
         DrawFlowArrows(canvas, tileX, tileY, tileSize, center, SourceColor, true);
     }
@@ -399,28 +422,23 @@ public class PipePuzzleRenderer : IDisposable
 
         DrawIndicatorGlow(canvas, tileX, tileY, tileSize, DrainColor, MathF.PI);
 
-        using var tileBorderPaint = new SKPaint
-        {
-            Color = DrainColor, IsAntialias = true,
-            Style = SKPaintStyle.Stroke, StrokeWidth = 3
-        };
-        canvas.DrawRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2, tileBorderPaint);
+        _strokePaintAA.Color = DrainColor;
+        _strokePaintAA.StrokeWidth = 3;
+        canvas.DrawRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2, _strokePaintAA);
 
         float iconRadius = tileSize * 0.25f;
-        using var bgPaint = new SKPaint
-        {
-            IsAntialias = true,
-            Shader = SKShader.CreateRadialGradient(
-                new SKPoint(cx, cy), iconRadius,
-                [DrainColor.WithAlpha(220), DrainDark.WithAlpha(200)],
-                SKShaderTileMode.Clamp)
-        };
-        canvas.DrawCircle(cx, cy, iconRadius, bgPaint);
+        using var shader = SKShader.CreateRadialGradient(
+            new SKPoint(cx, cy), iconRadius,
+            [DrainColor.WithAlpha(220), DrainDark.WithAlpha(200)],
+            SKShaderTileMode.Clamp);
+        _shaderPaint.Shader = shader;
+        canvas.DrawCircle(cx, cy, iconRadius, _shaderPaint);
+        _shaderPaint.Shader = null;
 
         // Trichter-Symbol
         float funnelW = iconRadius * 0.8f;
         float funnelH = iconRadius * 0.9f;
-        using var funnelPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
+        _fillPaintAA.Color = SKColors.White;
         _cachedPath.Reset();
         _cachedPath.MoveTo(cx - funnelW, cy - funnelH * 0.4f);
         _cachedPath.LineTo(cx + funnelW, cy - funnelH * 0.4f);
@@ -429,8 +447,8 @@ public class PipePuzzleRenderer : IDisposable
         _cachedPath.LineTo(cx - funnelW * 0.25f, cy + funnelH * 0.4f);
         _cachedPath.LineTo(cx - funnelW * 0.25f, cy + funnelH * 0.2f);
         _cachedPath.Close();
-        canvas.DrawPath(_cachedPath, funnelPaint);
-        canvas.DrawCircle(cx, cy + funnelH * 0.55f, funnelW * 0.2f, funnelPaint);
+        canvas.DrawPath(_cachedPath, _fillPaintAA);
+        canvas.DrawCircle(cx, cy + funnelH * 0.55f, funnelW * 0.2f, _fillPaintAA);
 
         // Wenn Wasser angekommen: Wellen-Ringe am Abfluss
         if (fillProgress >= 1.0f)
@@ -442,12 +460,9 @@ public class PipePuzzleRenderer : IDisposable
                 if (waveProgress > 1.5f) continue;
                 float waveRadius = iconRadius * (0.8f + waveProgress * 0.6f);
                 byte waveAlpha = (byte)(Math.Max(0, 1.0f - waveProgress / 1.5f) * 100);
-                using var wavePaint = new SKPaint
-                {
-                    Color = WaterLight.WithAlpha(waveAlpha),
-                    IsAntialias = true, Style = SKPaintStyle.Stroke, StrokeWidth = 2
-                };
-                canvas.DrawCircle(cx, cy, waveRadius, wavePaint);
+                _strokePaintAA.Color = WaterLight.WithAlpha(waveAlpha);
+                _strokePaintAA.StrokeWidth = 2;
+                canvas.DrawCircle(cx, cy, waveRadius, _strokePaintAA);
             }
         }
 
@@ -464,11 +479,9 @@ public class PipePuzzleRenderer : IDisposable
         float pulse = 0.16f + 0.3f * MathF.Sin(_waterAnimTime * 3.0f + phaseOffset);
         byte alpha = (byte)(pulse * 255);
 
-        using var glowPaint = new SKPaint
-        {
-            Color = color.WithAlpha(alpha), IsAntialias = true, MaskFilter = _indicatorGlow
-        };
-        canvas.DrawRect(tileX - 2, tileY - 2, tileSize + 4, tileSize + 4, glowPaint);
+        _glowPaint.Color = color.WithAlpha(alpha);
+        _glowPaint.MaskFilter = _indicatorGlow;
+        canvas.DrawRect(tileX - 2, tileY - 2, tileSize + 4, tileSize + 4, _glowPaint);
     }
 
     private void DrawFlowArrows(SKCanvas canvas, float tileX, float tileY, float tileSize,
@@ -481,10 +494,7 @@ public class PipePuzzleRenderer : IDisposable
         float cx = tileX + center;
         float cy = tileY + center;
 
-        using var arrowPaint = new SKPaint
-        {
-            Color = color.WithAlpha(alpha), IsAntialias = true, Style = SKPaintStyle.Fill
-        };
+        _fillPaintAA.Color = color.WithAlpha(alpha);
 
         float[][] positions =
         [
@@ -506,25 +516,22 @@ public class PipePuzzleRenderer : IDisposable
             _cachedPath.LineTo(px - dy * arrowSize * 0.5f, py + dx * arrowSize * 0.5f);
             _cachedPath.LineTo(px + dy * arrowSize * 0.5f, py - dx * arrowSize * 0.5f);
             _cachedPath.Close();
-            canvas.DrawPath(_cachedPath, arrowPaint);
+            canvas.DrawPath(_cachedPath, _fillPaintAA);
         }
     }
 
-    private static void DrawLockIndicator(SKCanvas canvas, float tileX, float tileY, float tileSize)
+    private void DrawLockIndicator(SKCanvas canvas, float tileX, float tileY, float tileSize)
     {
         float lockSize = 8;
         float lockX = tileX + tileSize - lockSize - 3;
         float lockY = tileY + 3;
 
-        using var lockPaint = new SKPaint { Color = LockColor.WithAlpha(180), IsAntialias = false };
-        canvas.DrawRect(lockX, lockY + 3, lockSize, lockSize - 3, lockPaint);
+        _fillPaint.Color = LockColor.WithAlpha(180);
+        canvas.DrawRect(lockX, lockY + 3, lockSize, lockSize - 3, _fillPaint);
 
-        using var buegelPaint = new SKPaint
-        {
-            Color = LockColor.WithAlpha(180), IsAntialias = false,
-            Style = SKPaintStyle.Stroke, StrokeWidth = 2
-        };
-        canvas.DrawRect(lockX + 2, lockY, lockSize - 4, 4, buegelPaint);
+        _strokePaint.Color = LockColor.WithAlpha(180);
+        _strokePaint.StrokeWidth = 2;
+        canvas.DrawRect(lockX + 2, lockY, lockSize - 4, 4, _strokePaint);
     }
 
     private void DrawWaterPulse(SKCanvas canvas, float tileX, float tileY, float tileSize, float posX)
@@ -532,12 +539,12 @@ public class PipePuzzleRenderer : IDisposable
         float pulse = 0.15f + 0.15f * MathF.Sin(_waterAnimTime * 3.5f + posX * 0.08f);
         byte alpha = (byte)(pulse * 255);
 
-        using var waterGlow = new SKPaint { Color = WaterColor.WithAlpha(alpha), IsAntialias = false };
-        canvas.DrawRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2, waterGlow);
+        _fillPaint.Color = WaterColor.WithAlpha(alpha);
+        canvas.DrawRect(tileX + 1, tileY + 1, tileSize - 2, tileSize - 2, _fillPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // PROGRESSIVE WASSER-FÜLLUNG
+    // PROGRESSIVE WASSER-FUELLUNG
     // ═══════════════════════════════════════════════════════════════════════
 
     private float GetTileFillProgress(int connectionDistance)
@@ -554,13 +561,11 @@ public class PipePuzzleRenderer : IDisposable
     private void UpdateAndDrawBubbles(SKCanvas canvas, float startX, float startY, float tileSize,
         PipeTileData[] tiles, int cols, int rows, float deltaTime)
     {
-        // Neue Blasen spawnen an gefüllten Tiles
+        // Neue Blasen spawnen an gefuellten Tiles
         if (_flowAnimTime > 0.3f)
         {
             SpawnBubbles(startX, startY, tileSize, tiles, cols, rows);
         }
-
-        using var bubblePaint = new SKPaint { IsAntialias = true };
 
         for (int i = 0; i < MAX_BUBBLES; i++)
         {
@@ -589,14 +594,14 @@ public class PipePuzzleRenderer : IDisposable
             else
                 alpha = 1.0f;
 
-            bubblePaint.Color = WaterLight.WithAlpha((byte)(alpha * 180));
-            canvas.DrawCircle(b.X, b.Y, b.Size, bubblePaint);
+            _fillPaintAA.Color = WaterLight.WithAlpha((byte)(alpha * 180));
+            canvas.DrawCircle(b.X, b.Y, b.Size, _fillPaintAA);
 
             // Kleiner Glanz-Punkt oben links
             if (b.Size > 2.5f)
             {
-                bubblePaint.Color = SKColors.White.WithAlpha((byte)(alpha * 120));
-                canvas.DrawCircle(b.X - b.Size * 0.25f, b.Y - b.Size * 0.25f, b.Size * 0.3f, bubblePaint);
+                _fillPaintAA.Color = SKColors.White.WithAlpha((byte)(alpha * 120));
+                canvas.DrawCircle(b.X - b.Size * 0.25f, b.Y - b.Size * 0.25f, b.Size * 0.3f, _fillPaintAA);
             }
         }
     }
@@ -608,7 +613,7 @@ public class PipePuzzleRenderer : IDisposable
         int spawnHash = (int)(_flowAnimTime * 40) ^ (int)(_flowAnimTime * 17);
         if (spawnHash % 3 != 0) return;
 
-        // Zufälliges gefülltes Tile wählen
+        // Zufaelliges gefuelltes Tile waehlen
         int seed = (int)(_flowAnimTime * 1000);
         for (int attempt = 0; attempt < 3; attempt++)
         {
@@ -676,8 +681,6 @@ public class PipePuzzleRenderer : IDisposable
 
     private void UpdateAndDrawSplash(SKCanvas canvas, float deltaTime)
     {
-        using var splashPaint = new SKPaint { IsAntialias = true };
-
         for (int i = 0; i < MAX_SPLASH; i++)
         {
             ref var d = ref _splashDrops[i];
@@ -699,11 +702,11 @@ public class PipePuzzleRenderer : IDisposable
             float size = d.Size * (1.0f - lifeRatio * 0.5f);
 
             // Wasser-Tropfen: Blau mit hellem Kern
-            splashPaint.Color = WaterColor.WithAlpha((byte)(alpha * 200));
-            canvas.DrawCircle(d.X, d.Y, size, splashPaint);
+            _fillPaintAA.Color = WaterColor.WithAlpha((byte)(alpha * 200));
+            canvas.DrawCircle(d.X, d.Y, size, _fillPaintAA);
 
-            splashPaint.Color = WaterLight.WithAlpha((byte)(alpha * 120));
-            canvas.DrawCircle(d.X - size * 0.2f, d.Y - size * 0.2f, size * 0.4f, splashPaint);
+            _fillPaintAA.Color = WaterLight.WithAlpha((byte)(alpha * 120));
+            canvas.DrawCircle(d.X - size * 0.2f, d.Y - size * 0.2f, size * 0.4f, _fillPaintAA);
         }
     }
 
@@ -712,24 +715,20 @@ public class PipePuzzleRenderer : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Leuchtender Glow um das gesamte Grid wenn alle Rohre gefüllt sind.
+    /// Leuchtender Glow um das gesamte Grid wenn alle Rohre gefuellt sind.
     /// </summary>
     private void DrawCompletionGlow(SKCanvas canvas, float startX, float startY, float gridWidth, float gridHeight)
     {
         float pulse = 0.08f + 0.06f * MathF.Sin(_waterAnimTime * 2.5f);
         byte alpha = (byte)(pulse * 255);
 
-        using var glowPaint = new SKPaint
-        {
-            Color = WaterColor.WithAlpha(alpha),
-            IsAntialias = true,
-            MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 8)
-        };
-        canvas.DrawRect(startX - 4, startY - 4, gridWidth + 8, gridHeight + 8, glowPaint);
+        _glowPaint.Color = WaterColor.WithAlpha(alpha);
+        _glowPaint.MaskFilter = _completionGlow;
+        canvas.DrawRect(startX - 4, startY - 4, gridWidth + 8, gridHeight + 8, _glowPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // ROHR-ÖFFNUNGEN
+    // ROHR-OEFFNUNGEN
     // ═══════════════════════════════════════════════════════════════════════
 
     private static int[] GetOpenings(int pipeType, int rotation)
@@ -787,7 +786,14 @@ public class PipePuzzleRenderer : IDisposable
         _disposed = true;
         _indicatorGlow?.Dispose();
         _waterGlow?.Dispose();
+        _completionGlow?.Dispose();
         _cachedPath?.Dispose();
+        _fillPaint?.Dispose();
+        _fillPaintAA?.Dispose();
+        _strokePaint?.Dispose();
+        _strokePaintAA?.Dispose();
+        _glowPaint?.Dispose();
+        _shaderPaint?.Dispose();
     }
 }
 

@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services;
 /// Täglich 1 Geschenk an einen echten Freund: 3 Goldschrauben.
 /// Geschenke verfallen nach 7 Tagen.
 /// </summary>
-public class GiftService : IGiftService
+public sealed class GiftService : IGiftService
 {
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;

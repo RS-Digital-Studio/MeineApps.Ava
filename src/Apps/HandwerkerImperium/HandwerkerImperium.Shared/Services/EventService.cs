@@ -4,7 +4,7 @@ using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
 
-public class EventService : IEventService
+public sealed class EventService : IEventService
 {
     private readonly IGameStateService _gameState;
 

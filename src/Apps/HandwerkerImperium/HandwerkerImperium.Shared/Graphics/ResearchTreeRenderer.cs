@@ -31,7 +31,7 @@ namespace HandwerkerImperium.Graphics;
 ///    ↓
 /// [14] [15]       → Zeile 9: Letzte Verzweigung (Meisterforschungen)
 /// </summary>
-public class ResearchTreeRenderer
+public sealed class ResearchTreeRenderer
 {
     private float _time;
 

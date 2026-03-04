@@ -4,6 +4,7 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.StatisticsView"
              x:DataType="vm:StatisticsViewModel">
 
@@ -287,6 +288,21 @@
                          Foreground="{DynamicResource TextPrimaryBrush}" />
             </StackPanel>
 
+            <!-- Tier-Roadmap (SkiaSharp: 7 Medaillen mit Verbindungslinien) -->
+            <Border CornerRadius="8" Margin="0,4,0,8" ClipToBounds="True"
+                    AutomationProperties.AutomationId="Statistics_Border_TierRoadmap">
+              <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                  <GradientStop Color="#15FFD700" Offset="0" />
+                  <GradientStop Color="#08FFD700" Offset="1" />
+                </LinearGradientBrush>
+              </Border.Background>
+              <skia:SKCanvasView x:Name="RoadmapCanvas" Height="80"
+                                 AutomationProperties.AutomationId="Statistics_Canvas_Roadmap"
+                                 PaintSurface="OnRoadmapPaintSurface"
+                                 PointerPressed="OnRoadmapTapped" />
+            </Border>
+
             <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto"
                   ColumnSpacing="16" RowSpacing="8">
               <!-- Prestige Level -->
@@ -325,6 +341,58 @@
                 </TextBlock>
               </StackPanel>
             </Grid>
+
+            <!-- Fortschritt zum nächsten Prestige-Tier -->
+            <Border IsVisible="{Binding HasNextTier}" Margin="0,8,0,0" CornerRadius="8" Padding="10,8"
+                    AutomationProperties.AutomationId="Statistics_Border_NextTierProgress">
+              <Border.Background>
+                <SolidColorBrush Color="{Binding NextTierColor}" Opacity="0.12" />
+              </Border.Background>
+              <StackPanel Spacing="6">
+                <!-- Header: Icon + Tier-Name + Level-Text -->
+                <Grid ColumnDefinitions="Auto,*,Auto">
+                  <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
+                    <mi:MaterialIcon Kind="{Binding NextTierIcon, Converter={StaticResource IconKindConverter}}"
+                                     Width="18" Height="18"
+                                     AutomationProperties.AutomationId="Statistics_Icon_NextTier">
+                      <mi:MaterialIcon.Foreground>
+                        <SolidColorBrush Color="{Binding NextTierColor}" />
+                      </mi:MaterialIcon.Foreground>
+                    </mi:MaterialIcon>
+                    <TextBlock Text="{Binding NextTierName}"
+                               FontSize="13" FontWeight="Bold"
+                               AutomationProperties.AutomationId="Statistics_Txt_NextTierName">
+                      <TextBlock.Foreground>
+                        <SolidColorBrush Color="{Binding NextTierColor}" />
+                      </TextBlock.Foreground>
+                    </TextBlock>
+                  </StackPanel>
+                  <TextBlock Grid.Column="2" Text="{Binding NextTierProgressText}"
+                             FontSize="12" FontWeight="SemiBold"
+                             AutomationProperties.AutomationId="Statistics_Txt_NextTierLevel"
+                             Foreground="{DynamicResource TextSecondaryBrush}" />
+                </Grid>
+
+                <!-- Fortschrittsbalken -->
+                <ProgressBar Minimum="0" Maximum="1" Value="{Binding NextTierProgress}"
+                             Height="8" CornerRadius="4"
+                             AutomationProperties.AutomationId="Statistics_ProgressBar_NextTier">
+                  <ProgressBar.Foreground>
+                    <SolidColorBrush Color="{Binding NextTierColor}" />
+                  </ProgressBar.Foreground>
+                  <ProgressBar.Background>
+                    <SolidColorBrush Color="#FFFFFF" Opacity="0.12" />
+                  </ProgressBar.Background>
+                </ProgressBar>
+
+                <!-- Was der nächste Tier freischaltet -->
+                <TextBlock Text="{Binding NextTierUnlockText}"
+                           FontSize="11"
+                           Foreground="{DynamicResource TextSecondaryBrush}"
+                           TextWrapping="Wrap"
+                           AutomationProperties.AutomationId="Statistics_Txt_NextTierUnlock" />
+              </StackPanel>
+            </Border>
 
             <!-- Prestige Keep/Lose Übersicht -->
             <StackPanel IsVisible="{Binding CanPrestige}" Margin="0,8,0,0" Spacing="4"
@@ -418,6 +486,89 @@
           </StackPanel>
         </Border>
 
+        <!-- PRESTIGE HISTORY -->
+        <Border Classes="Card StatsCard"
+                AutomationProperties.AutomationId="Statistics_Border_PrestigeHistory"
+                IsVisible="{Binding HasPrestigeHistory}">
+          <StackPanel Spacing="10">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        AutomationProperties.AutomationId="Statistics_Panel_HistoryHeader">
+              <mi:MaterialIcon Kind="History" Width="20" Height="20"
+                               AutomationProperties.AutomationId="Statistics_Icon_History"
+                               Foreground="{StaticResource CraftGoldBrush}" />
+              <TextBlock Text="{loc:Translate PrestigeHistory}"
+                         AutomationProperties.AutomationId="Statistics_Txt_HistoryTitle"
+                         FontSize="18" FontWeight="Bold"
+                         Foreground="{DynamicResource TextPrimaryBrush}" />
+            </StackPanel>
+
+            <ItemsControl ItemsSource="{Binding PrestigeHistory}"
+                          AutomationProperties.AutomationId="Statistics_Items_History">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:PrestigeHistoryDisplay">
+                  <Border Background="{DynamicResource SurfaceBrush}"
+                          AutomationProperties.AutomationId="Statistics_Border_HistoryItem"
+                          CornerRadius="8" Padding="10,8" Margin="0,3">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                      <!-- Tier-Badge -->
+                      <Border CornerRadius="6" Width="36" Height="36"
+                              VerticalAlignment="Center"
+                              AutomationProperties.AutomationId="Statistics_Border_HistoryBadge">
+                        <Border.Background>
+                          <SolidColorBrush Color="{Binding TierColor}" Opacity="0.2" />
+                        </Border.Background>
+                        <mi:MaterialIcon Kind="{Binding TierIcon, Converter={StaticResource IconKindConverter}}"
+                                         Width="18" Height="18"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"
+                                         AutomationProperties.AutomationId="Statistics_Icon_HistoryTier">
+                          <mi:MaterialIcon.Foreground>
+                            <SolidColorBrush Color="{Binding TierColor}" />
+                          </mi:MaterialIcon.Foreground>
+                        </mi:MaterialIcon>
+                      </Border>
+
+                      <!-- Tier + Level + Datum -->
+                      <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                          <TextBlock FontSize="13" FontWeight="SemiBold"
+                                     AutomationProperties.AutomationId="Statistics_Txt_HistoryTierName">
+                            <TextBlock.Foreground>
+                              <SolidColorBrush Color="{Binding TierColor}" />
+                            </TextBlock.Foreground>
+                            <TextBlock.Text>
+                              <MultiBinding StringFormat="{}{0}  {1}">
+                                <Binding Path="TierName" />
+                                <Binding Path="LevelText" />
+                              </MultiBinding>
+                            </TextBlock.Text>
+                          </TextBlock>
+                        </StackPanel>
+                        <TextBlock Text="{Binding DateText}" FontSize="11"
+                                   AutomationProperties.AutomationId="Statistics_Txt_HistoryDate"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </StackPanel>
+
+                      <!-- Punkte + Multiplikator -->
+                      <StackPanel Grid.Column="2" Spacing="1" VerticalAlignment="Center"
+                                  HorizontalAlignment="Right">
+                        <TextBlock Text="{Binding PointsText}" FontSize="13" FontWeight="Bold"
+                                   AutomationProperties.AutomationId="Statistics_Txt_HistoryPoints"
+                                   HorizontalAlignment="Right"
+                                   Foreground="{StaticResource CraftGoldBrush}" />
+                        <TextBlock Text="{Binding MultiplierText}" FontSize="11"
+                                   AutomationProperties.AutomationId="Statistics_Txt_HistoryMultiplier"
+                                   HorizontalAlignment="Right"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" />
+                      </StackPanel>
+                    </Grid>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+
         <!-- PRESTIGE SHOP -->
         <Border Classes="Card StatsCard"
                 AutomationProperties.AutomationId="Statistics_Border_PrestigeShop">
@@ -459,74 +610,104 @@
               </Border>
             </Grid>
 
-            <!-- Shop Items -->
+            <!-- Shop Items (nach Kategorie gruppiert) -->
             <ItemsControl ItemsSource="{Binding PrestigeShopItems}"
                           AutomationProperties.AutomationId="Statistics_Items_ShopList">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:PrestigeShopItemDisplay">
-                  <Border Background="{DynamicResource SurfaceBrush}"
-                          AutomationProperties.AutomationId="Statistics_Border_ShopItem"
-                          CornerRadius="8"
-                          Padding="12,8"
-                          Margin="0,3"
-                          Opacity="{Binding DisplayOpacity}">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <!-- Icon -->
-                      <Border Background="{Binding IconBackground, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
-                              AutomationProperties.AutomationId="Statistics_Border_ShopItemIcon"
-                              CornerRadius="8"
-                              Width="40" Height="40"
-                              VerticalAlignment="Center">
-                        <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
-                                         AutomationProperties.AutomationId="Statistics_Icon_ShopItemIcon"
-                                         Width="20" Height="20"
-                                         Foreground="White"
-                                         HorizontalAlignment="Center"
-                                         VerticalAlignment="Center" />
-                      </Border>
-
-                      <!-- Name + Beschreibung -->
-                      <StackPanel Grid.Column="1" Spacing="2"
-                                  VerticalAlignment="Center">
-                        <TextBlock Text="{Binding Name}"
-                                   AutomationProperties.AutomationId="Statistics_Txt_ShopItemName"
-                                   FontSize="13" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                        <TextBlock Text="{Binding Description}"
-                                   AutomationProperties.AutomationId="Statistics_Txt_ShopItemDescription"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextSecondaryBrush}"
-                                   TextWrapping="Wrap" MaxLines="2" />
+                  <Panel>
+                    <!-- Kategorie-Header -->
+                    <Border IsVisible="{Binding IsHeader}"
+                            Margin="0,8,0,4" Padding="0,4"
+                            AutomationProperties.AutomationId="Statistics_Border_ShopCategoryHeader">
+                      <StackPanel Orientation="Horizontal" Spacing="6">
+                        <mi:MaterialIcon Kind="{Binding CategoryIcon, Converter={StaticResource IconKindConverter}}"
+                                         Width="16" Height="16"
+                                         Foreground="{StaticResource CraftGoldBrush}" />
+                        <TextBlock Text="{Binding CategoryName}"
+                                   FontSize="13" FontWeight="Bold"
+                                   Foreground="{StaticResource CraftGoldBrush}" />
                       </StackPanel>
+                    </Border>
 
-                      <!-- Kauf-Button oder Check -->
-                      <Button Grid.Column="2"
-                              Classes="Primary"
-                              AutomationProperties.AutomationId="Statistics_Btn_ShopItemBuy"
-                              Padding="10,6"
-                              MinWidth="60"
-                              IsVisible="{Binding !IsPurchased}"
-                              IsEnabled="{Binding CanAfford}"
-                              Command="{Binding $parent[ItemsControl].((vm:StatisticsViewModel)DataContext).BuyPrestigeItemCommand}"
-                              CommandParameter="{Binding .}"
-                              VerticalAlignment="Center">
-                        <StackPanel Orientation="Horizontal" Spacing="3">
-                          <mi:MaterialIcon Kind="Creation" Width="12" Height="12"
-                                           AutomationProperties.AutomationId="Statistics_Icon_ShopItemCost" />
-                          <TextBlock Text="{Binding CostDisplay}"
-                                     AutomationProperties.AutomationId="Statistics_Txt_ShopItemCost"
-                                     FontSize="11" FontWeight="Bold" />
+                    <!-- Shop-Item -->
+                    <Border IsVisible="{Binding !IsHeader}"
+                            Background="{DynamicResource SurfaceBrush}"
+                            AutomationProperties.AutomationId="Statistics_Border_ShopItem"
+                            CornerRadius="8"
+                            Padding="12,8"
+                            Margin="0,3"
+                            Opacity="{Binding DisplayOpacity}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                        <!-- Icon -->
+                        <Border Background="{Binding IconBackground, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
+                                AutomationProperties.AutomationId="Statistics_Border_ShopItemIcon"
+                                CornerRadius="8"
+                                Width="40" Height="40"
+                                VerticalAlignment="Center">
+                          <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                                           AutomationProperties.AutomationId="Statistics_Icon_ShopItemIcon"
+                                           Width="20" Height="20"
+                                           Foreground="White"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                        </Border>
+
+                        <!-- Name + Beschreibung + Empfohlen-Badge -->
+                        <StackPanel Grid.Column="1" Spacing="2"
+                                    VerticalAlignment="Center">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="{Binding Name}"
+                                       AutomationProperties.AutomationId="Statistics_Txt_ShopItemName"
+                                       FontSize="13" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <Border IsVisible="{Binding IsRecommended}"
+                                    AutomationProperties.AutomationId="Statistics_Border_ShopRecommended"
+                                    Background="#30FFD700"
+                                    CornerRadius="4"
+                                    Padding="5,1">
+                              <TextBlock Text="{loc:Translate BestValue}"
+                                         AutomationProperties.AutomationId="Statistics_Txt_ShopRecommended"
+                                         FontSize="9" FontWeight="Bold"
+                                         Foreground="{StaticResource CraftGoldBrush}" />
+                            </Border>
+                          </StackPanel>
+                          <TextBlock Text="{Binding Description}"
+                                     AutomationProperties.AutomationId="Statistics_Txt_ShopItemDescription"
+                                     FontSize="11"
+                                     Foreground="{DynamicResource TextSecondaryBrush}"
+                                     TextWrapping="Wrap" MaxLines="2" />
                         </StackPanel>
-                      </Button>
 
-                      <mi:MaterialIcon Grid.Column="2"
-                                       AutomationProperties.AutomationId="Statistics_Icon_ShopItemPurchased"
-                                       Kind="CheckCircle" Width="24" Height="24"
-                                       Foreground="{DynamicResource SuccessBrush}"
-                                       VerticalAlignment="Center"
-                                       IsVisible="{Binding IsPurchased}" />
-                    </Grid>
-                  </Border>
+                        <!-- Kauf-Button oder Check -->
+                        <Button Grid.Column="2"
+                                Classes="Primary"
+                                AutomationProperties.AutomationId="Statistics_Btn_ShopItemBuy"
+                                Padding="10,6"
+                                MinWidth="60"
+                                IsVisible="{Binding !IsPurchased}"
+                                IsEnabled="{Binding CanAfford}"
+                                Command="{Binding $parent[ItemsControl].((vm:StatisticsViewModel)DataContext).BuyPrestigeItemCommand}"
+                                CommandParameter="{Binding .}"
+                                VerticalAlignment="Center">
+                          <StackPanel Orientation="Horizontal" Spacing="3">
+                            <mi:MaterialIcon Kind="Creation" Width="12" Height="12"
+                                             AutomationProperties.AutomationId="Statistics_Icon_ShopItemCost" />
+                            <TextBlock Text="{Binding CostDisplay}"
+                                       AutomationProperties.AutomationId="Statistics_Txt_ShopItemCost"
+                                       FontSize="11" FontWeight="Bold" />
+                          </StackPanel>
+                        </Button>
+
+                        <mi:MaterialIcon Grid.Column="2"
+                                         AutomationProperties.AutomationId="Statistics_Icon_ShopItemPurchased"
+                                         Kind="CheckCircle" Width="24" Height="24"
+                                         Foreground="{DynamicResource SuccessBrush}"
+                                         VerticalAlignment="Center"
+                                         IsVisible="{Binding IsPurchased}" />
+                      </Grid>
+                    </Border>
+                  </Panel>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>

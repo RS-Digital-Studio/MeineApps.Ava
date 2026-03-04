@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services;
 /// Fordert Review an nach bestimmten Meilensteinen
 /// mit 14-Tage-Cooldown zwischen Anfragen.
 /// </summary>
-public class ReviewService : IReviewService
+public sealed class ReviewService : IReviewService
 {
     private const string ReviewPromptedDateKey = "ReviewPromptedDate";
     private const int CooldownDays = 14;

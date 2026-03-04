@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Services;
 /// Verwaltet die Story-Kapitel von Meister Hans (35 Kapitel).
 /// Tutorial (1-5), Early Game (6-12), Mid Game (13-17), Prestige (18-21), Endgame (22-25), Endgame-Expansion (26-35).
 /// </summary>
-public class StoryService : IStoryService
+public sealed class StoryService : IStoryService
 {
     private readonly IGameStateService _gameStateService;
     private readonly List<StoryChapter> _chapters;

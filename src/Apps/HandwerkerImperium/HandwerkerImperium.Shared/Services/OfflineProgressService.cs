@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// Research-Effizienz, Prestige-Shop-Income, Meisterwerkzeuge, Saison-Multiplikator.
 /// Kosten werden ebenfalls berücksichtigt (Research/Prestige-Shop CostReduction).
 /// </summary>
-public class OfflineProgressService : IOfflineProgressService
+public sealed class OfflineProgressService : IOfflineProgressService
 {
     private readonly IGameStateService _gameStateService;
     private readonly IEventService? _eventService;

@@ -13,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für die Vorarbeiter/Manager-Verwaltung.
 /// Zeigt alle Manager (freigeschaltete und gesperrte) mit Upgrade-Möglichkeiten.
 /// </summary>
-public partial class ManagerViewModel : ViewModelBase
+public sealed partial class ManagerViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly IManagerService _managerService;

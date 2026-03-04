@@ -13,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// <summary>
 /// ViewModel for the achievements page.
 /// </summary>
-public partial class AchievementsViewModel : ViewModelBase
+public sealed partial class AchievementsViewModel : ViewModelBase
 {
     private readonly IAchievementService _achievementService;
     private readonly ILocalizationService _localizationService;

@@ -14,7 +14,7 @@ namespace HandwerkerImperium.Graphics;
 /// Statische Paints fuer konstante Properties, Instanz-Paints fuer dynamische Farben.
 /// Shader werden separat als using var erstellt (SKPaint.Dispose() disposed NICHT den Shader).
 /// </summary>
-public class InventGameRenderer : IDisposable
+public sealed class InventGameRenderer : IDisposable
 {
     private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════

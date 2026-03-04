@@ -16,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the workshop detail page.
 /// Shows upgrade options, workers, and statistics.
 /// </summary>
-public partial class WorkshopViewModel : ViewModelBase, IDisposable
+public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

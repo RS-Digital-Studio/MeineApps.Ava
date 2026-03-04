@@ -390,14 +390,24 @@ public class GameState
     public int TotalDeliveriesClaimed { get; set; }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // TUTORIAL
+    // TUTORIAL (kontextuelles Hint-System)
     // ═══════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Abwärtskompatibilität: Altes Tutorial abgeschlossen (wird bei Migration auf true gesetzt).
+    /// </summary>
     [JsonPropertyName("tutorialCompleted")]
     public bool TutorialCompleted { get; set; }
 
     [JsonPropertyName("tutorialStep")]
     public int TutorialStep { get; set; }
+
+    /// <summary>
+    /// IDs der bereits gesehenen kontextuellen Hints.
+    /// Ersetzt das alte lineare Tutorial-System.
+    /// </summary>
+    [JsonPropertyName("seenHints")]
+    public HashSet<string> SeenHints { get; set; } = [];
 
     // ═══════════════════════════════════════════════════════════════════════
     // STORY-SYSTEM
@@ -807,6 +817,15 @@ public class GameState
         if (workshop == null)
         {
             workshop = Workshop.Create(type);
+
+            // Legende-Prestige: Gesicherten besten Worker wiederverwenden
+            var typeKey = type.ToString();
+            if (Prestige.KeptWorkers.TryGetValue(typeKey, out var keptWorker))
+            {
+                workshop.Workers.Add(keptWorker);
+                Prestige.KeptWorkers.Remove(typeKey);
+            }
+
             Workshops.Add(workshop);
         }
         return workshop;

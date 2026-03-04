@@ -8,9 +8,43 @@ namespace HandwerkerImperium.Graphics;
 /// Funken-Explosion bei Verbindung, Kurzschluss-Effekt bei Fehler,
 /// Completion-Blitz-Flash wenn alle Kabel verbunden sind.
 /// </summary>
-public class WiringGameRenderer : IDisposable
+public sealed class WiringGameRenderer : IDisposable
 {
     private bool _disposed;
+
+    // ═══════════════════════════════════════════════════════════════════
+    // WIEDERVERWENDBARE SKPAINT-INSTANZEN (vermeidet per-Frame Allokationen)
+    // ═══════════════════════════════════════════════════════════════════
+
+    // Allgemeiner Fill-Paint (ohne Antialiasing)
+    private readonly SKPaint _fillPaint = new() { IsAntialias = false, Style = SKPaintStyle.Fill };
+
+    // Fill-Paint mit Antialiasing (fuer Kreise, LEDs, Dots)
+    private readonly SKPaint _fillPaintAA = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // Allgemeiner Stroke-Paint (ohne Antialiasing)
+    private readonly SKPaint _strokePaint = new() { IsAntialias = false, Style = SKPaintStyle.Stroke };
+
+    // Stroke-Paint mit Antialiasing (fuer Bezier-Kurven, Haekchen, Blitze)
+    private readonly SKPaint _strokePaintAA = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+    // Duenne Linien (Fugen, Schrauben-Schlitze - StrokeWidth=1)
+    private readonly SKPaint _thinStrokePaint = new() { IsAntialias = false, StrokeWidth = 1 };
+
+    // Text-Paint (immer AA)
+    private readonly SKPaint _textPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // Shader-basierter Fill (Gradient fuer Wand, Panel, Stecker)
+    private readonly SKPaint _shaderPaint = new() { IsAntialias = false };
+
+    // Glow-Paint mit MaskFilter (fuer LED-Glow, Node-Glow, Completion-Glow)
+    private readonly SKPaint _glowPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // Gecachte MaskFilter (haeufigste Blur-Radien)
+    private readonly SKMaskFilter _blur3 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3);
+    private readonly SKMaskFilter _blur4 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4);
+    private readonly SKMaskFilter _blur5 = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5);
+
     // ═══════════════════════════════════════════════════════════════════
     // FARBEN
     // ═══════════════════════════════════════════════════════════════════
@@ -134,7 +168,7 @@ public class WiringGameRenderer : IDisposable
         // 1. Betonwand-Hintergrund
         DrawWallBackground(canvas, bounds);
 
-        // 2. Panels (Sicherungskästen)
+        // 2. Panels (Sicherungskaesten)
         DrawPanel(canvas, leftPanelX, panelY, panelWidth, panelHeight, "IN", isAllConnected);
         DrawPanel(canvas, rightPanelX, panelY, panelWidth, panelHeight, "OUT", isAllConnected);
 
@@ -211,7 +245,7 @@ public class WiringGameRenderer : IDisposable
         {
             _completionStarted = true;
             _completionTime = 0;
-            // Großer Funken-Burst
+            // Grosser Funken-Burst
             SpawnCompletionSparks();
         }
         _prevAllConnected = isAllConnected;
@@ -226,7 +260,7 @@ public class WiringGameRenderer : IDisposable
         if (wireCount == 0) return;
         float wireHeight = Math.Min(50, (wireAreaHeight - (wireCount - 1) * 8) / wireCount);
 
-        // Rechte Seite prüfen (dort wird HasError gesetzt)
+        // Rechte Seite pruefen (dort wird HasError gesetzt)
         for (int i = 0; i < Math.Min(rightWires.Length, _prevHasError.Length); i++)
         {
             bool hasError = rightWires[i].HasError;
@@ -369,30 +403,27 @@ public class WiringGameRenderer : IDisposable
     private void DrawWallBackground(SKCanvas canvas, SKRect bounds)
     {
         // Dunklere Betonwand mit Gradient
-        using var wallPaint = new SKPaint
-        {
-            Shader = SKShader.CreateLinearGradient(
-                new SKPoint(bounds.Left, bounds.Top),
-                new SKPoint(bounds.Left, bounds.Bottom),
-                new[] { new SKColor(0x42, 0x42, 0x42), new SKColor(0x35, 0x35, 0x35) },
-                null, SKShaderTileMode.Clamp),
-            IsAntialias = false
-        };
-        canvas.DrawRect(bounds, wallPaint);
+        _shaderPaint.Shader?.Dispose();
+        _shaderPaint.Shader = SKShader.CreateLinearGradient(
+            new SKPoint(bounds.Left, bounds.Top),
+            new SKPoint(bounds.Left, bounds.Bottom),
+            new[] { new SKColor(0x42, 0x42, 0x42), new SKColor(0x35, 0x35, 0x35) },
+            null, SKShaderTileMode.Clamp);
+        canvas.DrawRect(bounds, _shaderPaint);
 
-        // Fugenlinien (horizontal + vertikal, versetzt)
-        using var linePaint = new SKPaint { Color = WallLine, StrokeWidth = 1, IsAntialias = false };
+        // Fugenlinien (horizontal)
+        _thinStrokePaint.Color = WallLine;
         for (float y = bounds.Top + 24; y < bounds.Bottom; y += 24)
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, linePaint);
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, _thinStrokePaint);
 
         // Vertikale Fugen (versetzt pro Reihe)
-        using var vLinePaint = new SKPaint { Color = new SKColor(0x3C, 0x3C, 0x3C), StrokeWidth = 1, IsAntialias = false };
+        _thinStrokePaint.Color = new SKColor(0x3C, 0x3C, 0x3C);
         int row = 0;
         for (float y = bounds.Top; y < bounds.Bottom; y += 24)
         {
             float offset = (row % 2 == 0) ? 0 : 30;
             for (float x = bounds.Left + offset; x < bounds.Right; x += 60)
-                canvas.DrawLine(x, y, x, y + 24, vLinePaint);
+                canvas.DrawLine(x, y, x, y + 24, _thinStrokePaint);
             row++;
         }
     }
@@ -404,60 +435,45 @@ public class WiringGameRenderer : IDisposable
     private void DrawPanel(SKCanvas canvas, float x, float y, float width, float height,
         string label, bool isAllConnected)
     {
-        // Panel-Körper mit leichtem Gradient
-        using var panelPaint = new SKPaint
-        {
-            Shader = SKShader.CreateLinearGradient(
-                new SKPoint(x, y), new SKPoint(x, y + height),
-                new[] { PanelAccent, PanelBg },
-                null, SKShaderTileMode.Clamp),
-            IsAntialias = false
-        };
-        canvas.DrawRect(x, y, width, height, panelPaint);
+        // Panel-Koerper mit leichtem Gradient
+        _shaderPaint.Shader?.Dispose();
+        _shaderPaint.Shader = SKShader.CreateLinearGradient(
+            new SKPoint(x, y), new SKPoint(x, y + height),
+            new[] { PanelAccent, PanelBg },
+            null, SKShaderTileMode.Clamp);
+        canvas.DrawRect(x, y, width, height, _shaderPaint);
 
         // Rand (bei Completion gruen leuchtend)
-        using var borderPaint = new SKPaint
-        {
-            Color = isAllConnected && _completionStarted
-                ? new SKColor(0x4C, 0xAF, 0x50, (byte)(180 + 75 * Math.Sin(_time * 4)))
-                : PanelBorder,
-            IsAntialias = false,
-            Style = SKPaintStyle.Stroke,
-            StrokeWidth = isAllConnected && _completionStarted ? 3 : 2
-        };
-        canvas.DrawRect(x, y, width, height, borderPaint);
+        _strokePaint.Color = isAllConnected && _completionStarted
+            ? new SKColor(0x4C, 0xAF, 0x50, (byte)(180 + 75 * Math.Sin(_time * 4)))
+            : PanelBorder;
+        _strokePaint.StrokeWidth = isAllConnected && _completionStarted ? 3 : 2;
+        canvas.DrawRect(x, y, width, height, _strokePaint);
 
         // Header-Leiste
-        using var headerPaint = new SKPaint { Color = PanelHighlight, IsAntialias = false };
-        canvas.DrawRect(x + 2, y + 2, width - 4, 22, headerPaint);
+        _fillPaint.Color = PanelHighlight;
+        canvas.DrawRect(x + 2, y + 2, width - 4, 22, _fillPaint);
 
         // LED-Indikator im Header (gruen wenn fertig, rot sonst)
         float ledX = x + 10;
         float ledY = y + 13;
-        using var ledPaint = new SKPaint
-        {
-            Color = isAllConnected ? new SKColor(0x4C, 0xAF, 0x50) : new SKColor(0xCC, 0x33, 0x33),
-            IsAntialias = true
-        };
-        canvas.DrawCircle(ledX, ledY, 4, ledPaint);
+        _fillPaintAA.Color = isAllConnected ? new SKColor(0x4C, 0xAF, 0x50) : new SKColor(0xCC, 0x33, 0x33);
+        canvas.DrawCircle(ledX, ledY, 4, _fillPaintAA);
 
         // LED-Glow
         if (isAllConnected)
         {
             float glow = (float)(0.3 + 0.2 * Math.Sin(_time * 6));
-            using var glowPaint = new SKPaint
-            {
-                Color = new SKColor(0x4C, 0xAF, 0x50, (byte)(glow * 255)),
-                IsAntialias = true,
-                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
-            };
-            canvas.DrawCircle(ledX, ledY, 8, glowPaint);
+            _glowPaint.Color = new SKColor(0x4C, 0xAF, 0x50, (byte)(glow * 255));
+            _glowPaint.MaskFilter = _blur4;
+            canvas.DrawCircle(ledX, ledY, 8, _glowPaint);
+            _glowPaint.MaskFilter = null;
         }
 
         // Label-Text
-        using var textPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
+        _textPaint.Color = SKColors.White;
         _cachedFont.Size = 11;
-        canvas.DrawText(label, x + width / 2, y + 16, SKTextAlign.Center, _cachedFont, textPaint);
+        canvas.DrawText(label, x + width / 2, y + 16, SKTextAlign.Center, _cachedFont, _textPaint);
 
         // Schrauben in den Ecken (Phillips-Kreuzschlitz)
         DrawScrew(canvas, x + 7, y + 7);
@@ -466,16 +482,13 @@ public class WiringGameRenderer : IDisposable
         DrawScrew(canvas, x + width - 7, y + height - 7);
     }
 
-    private static void DrawScrew(SKCanvas canvas, float cx, float cy)
+    private void DrawScrew(SKCanvas canvas, float cx, float cy)
     {
-        using var screwPaint = new SKPaint { Color = new SKColor(0x78, 0x78, 0x78), IsAntialias = false };
-        canvas.DrawCircle(cx, cy, 4, screwPaint);
-        using var slotPaint = new SKPaint
-        {
-            Color = new SKColor(0x55, 0x55, 0x55), IsAntialias = false, StrokeWidth = 1
-        };
-        canvas.DrawLine(cx - 3, cy, cx + 3, cy, slotPaint);
-        canvas.DrawLine(cx, cy - 3, cx, cy + 3, slotPaint);
+        _fillPaint.Color = new SKColor(0x78, 0x78, 0x78);
+        canvas.DrawCircle(cx, cy, 4, _fillPaint);
+        _thinStrokePaint.Color = new SKColor(0x55, 0x55, 0x55);
+        canvas.DrawLine(cx - 3, cy, cx + 3, cy, _thinStrokePaint);
+        canvas.DrawLine(cx, cy - 3, cx, cy + 3, _thinStrokePaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -497,135 +510,106 @@ public class WiringGameRenderer : IDisposable
             // Status-Hintergrund
             if (wire.IsConnected)
             {
-                // Grüner Hintergrund + leichter Puls
+                // Gruener Hintergrund + leichter Puls
                 float connAlpha = 40 + 15 * (float)Math.Sin(_time * 3 + i);
-                using var connPaint = new SKPaint { Color = new SKColor(0x2E, 0x7D, 0x32, (byte)connAlpha), IsAntialias = false };
-                canvas.DrawRect(x, wy, width, wireHeight, connPaint);
+                _fillPaint.Color = new SKColor(0x2E, 0x7D, 0x32, (byte)connAlpha);
+                canvas.DrawRect(x, wy, width, wireHeight, _fillPaint);
             }
             else if (wire.HasError)
             {
                 // Intensiveres rotes Blinken (schnell pulsierend)
                 float errAlpha = 40 + 80 * Math.Abs((float)Math.Sin(_time * 12));
-                using var errPaint = new SKPaint { Color = new SKColor(0xFF, 0x22, 0x22, (byte)errAlpha), IsAntialias = false };
-                canvas.DrawRect(x, wy, width, wireHeight, errPaint);
+                _fillPaint.Color = new SKColor(0xFF, 0x22, 0x22, (byte)errAlpha);
+                canvas.DrawRect(x, wy, width, wireHeight, _fillPaint);
             }
             else if (isLeft && selectedIndex == i)
             {
-                // Ausgewählt: Pulsierender Kabelfarben-Glow
+                // Ausgewaehlt: Pulsierender Kabelfarben-Glow
                 float pulse = (float)(0.15 + 0.25 * Math.Sin(_time * 6));
-                using var selPaint = new SKPaint
-                {
-                    Color = wireColor.WithAlpha((byte)(pulse * 255)),
-                    IsAntialias = false
-                };
-                canvas.DrawRect(x - 2, wy - 2, width + 4, wireHeight + 4, selPaint);
+                _fillPaint.Color = wireColor.WithAlpha((byte)(pulse * 255));
+                canvas.DrawRect(x - 2, wy - 2, width + 4, wireHeight + 4, _fillPaint);
 
-                using var selBg = new SKPaint { Color = SelectedBg, IsAntialias = false };
-                canvas.DrawRect(x, wy, width, wireHeight, selBg);
+                _fillPaint.Color = SelectedBg;
+                canvas.DrawRect(x, wy, width, wireHeight, _fillPaint);
             }
 
             // Kabel-Rahmen
-            using var framePaint = new SKPaint
-            {
-                Color = wireColor.WithAlpha(wire.IsConnected ? (byte)255 : (byte)180),
-                IsAntialias = false,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 2
-            };
-            canvas.DrawRect(x + 2, wy + 2, width - 4, wireHeight - 4, framePaint);
+            _strokePaint.Color = wireColor.WithAlpha(wire.IsConnected ? (byte)255 : (byte)180);
+            _strokePaint.StrokeWidth = 2;
+            canvas.DrawRect(x + 2, wy + 2, width - 4, wireHeight - 4, _strokePaint);
 
             // Kabelstrang
             float cableY = wy + wireHeight / 2;
             float cableThickness = 5;
-            using var cablePaint = new SKPaint { Color = wireColor, IsAntialias = false };
-            using var cableHighlight = new SKPaint
-            {
-                Color = new SKColor(
-                    (byte)Math.Min(255, wireColor.Red + 60),
-                    (byte)Math.Min(255, wireColor.Green + 60),
-                    (byte)Math.Min(255, wireColor.Blue + 60), 100),
-                IsAntialias = false
-            };
+            _fillPaint.Color = wireColor;
+            var highlightColor = new SKColor(
+                (byte)Math.Min(255, wireColor.Red + 60),
+                (byte)Math.Min(255, wireColor.Green + 60),
+                (byte)Math.Min(255, wireColor.Blue + 60), 100);
 
             if (isLeft)
             {
                 canvas.DrawRect(x + width * 0.2f, cableY - cableThickness / 2,
-                    width * 0.8f, cableThickness, cablePaint);
+                    width * 0.8f, cableThickness, _fillPaint);
                 // Glanz-Linie oben auf dem Kabel
+                _fillPaint.Color = highlightColor;
                 canvas.DrawRect(x + width * 0.2f, cableY - cableThickness / 2,
-                    width * 0.8f, 1, cableHighlight);
+                    width * 0.8f, 1, _fillPaint);
                 // Stecker-Ende (metallisch)
-                using var plugPaint = new SKPaint
-                {
-                    Shader = SKShader.CreateLinearGradient(
-                        new SKPoint(x + width - 6, cableY - cableThickness),
-                        new SKPoint(x + width, cableY + cableThickness),
-                        new[] { new SKColor(0x90, 0x90, 0x90), new SKColor(0x60, 0x60, 0x60) },
-                        null, SKShaderTileMode.Clamp),
-                    IsAntialias = false
-                };
-                canvas.DrawRect(x + width - 6, cableY - cableThickness - 1, 6, cableThickness * 2 + 2, plugPaint);
+                _shaderPaint.Shader?.Dispose();
+                _shaderPaint.Shader = SKShader.CreateLinearGradient(
+                    new SKPoint(x + width - 6, cableY - cableThickness),
+                    new SKPoint(x + width, cableY + cableThickness),
+                    new[] { new SKColor(0x90, 0x90, 0x90), new SKColor(0x60, 0x60, 0x60) },
+                    null, SKShaderTileMode.Clamp);
+                canvas.DrawRect(x + width - 6, cableY - cableThickness - 1, 6, cableThickness * 2 + 2, _shaderPaint);
             }
             else
             {
                 canvas.DrawRect(x, cableY - cableThickness / 2,
-                    width * 0.8f, cableThickness, cablePaint);
+                    width * 0.8f, cableThickness, _fillPaint);
+                _fillPaint.Color = highlightColor;
                 canvas.DrawRect(x, cableY - cableThickness / 2,
-                    width * 0.8f, 1, cableHighlight);
-                using var plugPaint = new SKPaint
-                {
-                    Shader = SKShader.CreateLinearGradient(
-                        new SKPoint(x, cableY - cableThickness),
-                        new SKPoint(x + 6, cableY + cableThickness),
-                        new[] { new SKColor(0x60, 0x60, 0x60), new SKColor(0x90, 0x90, 0x90) },
-                        null, SKShaderTileMode.Clamp),
-                    IsAntialias = false
-                };
-                canvas.DrawRect(x, cableY - cableThickness - 1, 6, cableThickness * 2 + 2, plugPaint);
+                    width * 0.8f, 1, _fillPaint);
+                _shaderPaint.Shader?.Dispose();
+                _shaderPaint.Shader = SKShader.CreateLinearGradient(
+                    new SKPoint(x, cableY - cableThickness),
+                    new SKPoint(x + 6, cableY + cableThickness),
+                    new[] { new SKColor(0x60, 0x60, 0x60), new SKColor(0x90, 0x90, 0x90) },
+                    null, SKShaderTileMode.Clamp);
+                canvas.DrawRect(x, cableY - cableThickness - 1, 6, cableThickness * 2 + 2, _shaderPaint);
             }
 
             // Farbiger Indikator-Kreis
             float dotX = isLeft ? x + 12 : x + width - 12;
-            using var dotPaint = new SKPaint { Color = wireColor, IsAntialias = true };
-            canvas.DrawCircle(dotX, cableY, 7, dotPaint);
-            using var dotHL = new SKPaint
-            {
-                Color = new SKColor(255, 255, 255, 100), IsAntialias = true
-            };
-            canvas.DrawCircle(dotX - 1, cableY - 2, 3, dotHL);
+            _fillPaintAA.Color = wireColor;
+            canvas.DrawCircle(dotX, cableY, 7, _fillPaintAA);
+            _fillPaintAA.Color = new SKColor(255, 255, 255, 100);
+            canvas.DrawCircle(dotX - 1, cableY - 2, 3, _fillPaintAA);
 
-            // Verbunden: Häkchen-Icon
+            // Verbunden: Haekchen-Icon
             if (wire.IsConnected)
             {
-                using var checkPaint = new SKPaint
-                {
-                    Color = new SKColor(0x4C, 0xAF, 0x50),
-                    IsAntialias = true,
-                    StrokeWidth = 2.5f,
-                    Style = SKPaintStyle.Stroke,
-                    StrokeCap = SKStrokeCap.Round
-                };
+                _strokePaintAA.Color = new SKColor(0x4C, 0xAF, 0x50);
+                _strokePaintAA.StrokeWidth = 2.5f;
+                _strokePaintAA.StrokeCap = SKStrokeCap.Round;
                 float cx = x + width / 2;
                 float cy = cableY;
                 _cachedPath.Reset();
                 _cachedPath.MoveTo(cx - 5, cy);
                 _cachedPath.LineTo(cx - 1, cy + 4);
                 _cachedPath.LineTo(cx + 6, cy - 4);
-                canvas.DrawPath(_cachedPath, checkPaint);
+                canvas.DrawPath(_cachedPath, _strokePaintAA);
             }
 
             // Isolierung-Streifen
             if (!wire.IsConnected)
             {
-                using var stripePaint = new SKPaint
-                {
-                    Color = wireColor.WithAlpha(100),
-                    IsAntialias = false
-                };
+                _fillPaint.Color = wireColor.WithAlpha(100);
                 float stripeStart = isLeft ? x + width * 0.3f : x + width * 0.1f;
                 float stripeEnd = isLeft ? x + width * 0.7f : x + width * 0.5f;
                 for (float sx = stripeStart; sx < stripeEnd; sx += 10)
-                    canvas.DrawRect(sx, cableY - cableThickness / 2 - 1, 2, cableThickness + 2, stripePaint);
+                    canvas.DrawRect(sx, cableY - cableThickness / 2 - 1, 2, cableThickness + 2, _fillPaint);
             }
         }
     }
@@ -669,34 +653,20 @@ public class WiringGameRenderer : IDisposable
                 _cachedPath.CubicTo(cp1X, leftY, cp2X, rightY, rightStartX, rightY);
 
                 // Glow-Linie (breit, transparent)
-                using var glowPaint = new SKPaint
-                {
-                    Color = wireColor.WithAlpha(40),
-                    IsAntialias = true,
-                    Style = SKPaintStyle.Stroke,
-                    StrokeWidth = 8
-                };
-                canvas.DrawPath(_cachedPath, glowPaint);
+                _strokePaintAA.Color = wireColor.WithAlpha(40);
+                _strokePaintAA.StrokeWidth = 8;
+                _strokePaintAA.StrokeCap = SKStrokeCap.Butt;
+                canvas.DrawPath(_cachedPath, _strokePaintAA);
 
                 // Kabel-Linie
-                using var linePaint = new SKPaint
-                {
-                    Color = wireColor.WithAlpha(200),
-                    IsAntialias = true,
-                    Style = SKPaintStyle.Stroke,
-                    StrokeWidth = 3
-                };
-                canvas.DrawPath(_cachedPath, linePaint);
+                _strokePaintAA.Color = wireColor.WithAlpha(200);
+                _strokePaintAA.StrokeWidth = 3;
+                canvas.DrawPath(_cachedPath, _strokePaintAA);
 
-                // Glanz-Linie (dünn, hell)
-                using var shinePaint = new SKPaint
-                {
-                    Color = new SKColor(255, 255, 255, 50),
-                    IsAntialias = true,
-                    Style = SKPaintStyle.Stroke,
-                    StrokeWidth = 1
-                };
-                canvas.DrawPath(_cachedPath, shinePaint);
+                // Glanz-Linie (duenn, hell)
+                _strokePaintAA.Color = new SKColor(255, 255, 255, 50);
+                _strokePaintAA.StrokeWidth = 1;
+                canvas.DrawPath(_cachedPath, _strokePaintAA);
 
                 // Strom-Puls (wandernder Lichtpunkt entlang der Kurve)
                 float pulseT = i < _pulseProgress.Length ? _pulseProgress[i] : 0;
@@ -705,15 +675,12 @@ public class WiringGameRenderer : IDisposable
                 // Verbindungs-Knoten in der Mitte
                 float midX = leftEndX + gapWidth / 2;
                 float midY = leftY + (rightY - leftY) / 2;
-                using var nodePaint = new SKPaint { Color = wireColor, IsAntialias = true };
-                canvas.DrawCircle(midX, midY, 4, nodePaint);
-                using var nodeGlow = new SKPaint
-                {
-                    Color = wireColor.WithAlpha(60),
-                    IsAntialias = true,
-                    MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3)
-                };
-                canvas.DrawCircle(midX, midY, 8, nodeGlow);
+                _fillPaintAA.Color = wireColor;
+                canvas.DrawCircle(midX, midY, 4, _fillPaintAA);
+                _glowPaint.Color = wireColor.WithAlpha(60);
+                _glowPaint.MaskFilter = _blur3;
+                canvas.DrawCircle(midX, midY, 8, _glowPaint);
+                _glowPaint.MaskFilter = null;
 
                 break;
             }
@@ -722,8 +689,9 @@ public class WiringGameRenderer : IDisposable
 
     /// <summary>
     /// Zeichnet einen wandernden Strom-Puls entlang einer Bezier-Kurve.
+    /// SKPathMeasure muss lokal bleiben (abhaengig vom uebergebenen Path).
     /// </summary>
-    private static void DrawElectricPulse(SKCanvas canvas, SKPath bezierPath, SKColor wireColor, float t)
+    private void DrawElectricPulse(SKCanvas canvas, SKPath bezierPath, SKColor wireColor, float t)
     {
         // Position auf der Bezier-Kurve bei t ermitteln
         using var measure = new SKPathMeasure(bezierPath, false);
@@ -738,21 +706,14 @@ public class WiringGameRenderer : IDisposable
             if (measure.GetPositionAndTangent(pulseT * totalLength, out var pos, out _))
             {
                 // Leuchtpunkt
-                using var pulsePaint = new SKPaint
-                {
-                    Color = new SKColor(255, 255, 255, 220),
-                    IsAntialias = true
-                };
-                canvas.DrawCircle(pos.X, pos.Y, 3, pulsePaint);
+                _fillPaintAA.Color = new SKColor(255, 255, 255, 220);
+                canvas.DrawCircle(pos.X, pos.Y, 3, _fillPaintAA);
 
                 // Glow um den Punkt
-                using var pulseGlow = new SKPaint
-                {
-                    Color = wireColor.WithAlpha(120),
-                    IsAntialias = true,
-                    MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 5)
-                };
-                canvas.DrawCircle(pos.X, pos.Y, 7, pulseGlow);
+                _glowPaint.Color = wireColor.WithAlpha(120);
+                _glowPaint.MaskFilter = _blur5;
+                canvas.DrawCircle(pos.X, pos.Y, 7, _glowPaint);
+                _glowPaint.MaskFilter = null;
             }
         }
     }
@@ -763,8 +724,6 @@ public class WiringGameRenderer : IDisposable
 
     private void UpdateAndDrawSparks(SKCanvas canvas, float deltaTime)
     {
-        using var sparkPaint = new SKPaint { IsAntialias = false };
-
         for (int i = 0; i < _sparkCount; i++)
         {
             ref var p = ref _sparks[i];
@@ -785,14 +744,14 @@ public class WiringGameRenderer : IDisposable
             float size = p.Size * (0.5f + 0.5f * alpha);
 
             // Funke zeichnen
-            sparkPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
-            canvas.DrawRect(p.X - size / 2, p.Y - size / 2, size, size, sparkPaint);
+            _fillPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
+            canvas.DrawRect(p.X - size / 2, p.Y - size / 2, size, size, _fillPaint);
 
             // Heller Kern
             if (alpha > 0.4f)
             {
-                sparkPaint.Color = new SKColor(255, 255, 255, (byte)(alpha * 150));
-                canvas.DrawRect(p.X, p.Y, 1, 1, sparkPaint);
+                _fillPaint.Color = new SKColor(255, 255, 255, (byte)(alpha * 150));
+                canvas.DrawRect(p.X, p.Y, 1, 1, _fillPaint);
             }
         }
 
@@ -821,21 +780,6 @@ public class WiringGameRenderer : IDisposable
 
     private void UpdateAndDrawBolts(SKCanvas canvas, float deltaTime)
     {
-        using var boltPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0x44, 0x44),
-            IsAntialias = true,
-            StrokeWidth = 2,
-            Style = SKPaintStyle.Stroke
-        };
-        using var boltGlow = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0x44, 0x44, 80),
-            IsAntialias = true,
-            StrokeWidth = 5,
-            Style = SKPaintStyle.Stroke
-        };
-
         for (int i = 0; i < _boltCount; i++)
         {
             ref var b = ref _bolts[i];
@@ -849,17 +793,14 @@ public class WiringGameRenderer : IDisposable
             }
 
             float alpha = 1 - (b.Life / b.MaxLife);
-            boltPaint.Color = new SKColor(0xFF, 0x55, 0x33, (byte)(alpha * 255));
-            boltGlow.Color = new SKColor(0xFF, 0x33, 0x11, (byte)(alpha * 100));
 
             // Zick-Zack-Blitz zeichnen (3 Segmente)
             float dx = b.X2 - b.X1;
             float dy = b.Y2 - b.Y1;
             var rng = Random.Shared;
-            float prevX = b.X1, prevY = b.Y1;
 
             _cachedPath.Reset();
-            _cachedPath.MoveTo(prevX, prevY);
+            _cachedPath.MoveTo(b.X1, b.Y1);
 
             for (int seg = 1; seg <= 3; seg++)
             {
@@ -870,8 +811,15 @@ public class WiringGameRenderer : IDisposable
                 _cachedPath.LineTo(nx, ny);
             }
 
-            canvas.DrawPath(_cachedPath, boltGlow);
-            canvas.DrawPath(_cachedPath, boltPaint);
+            // Glow-Blitz (breit)
+            _strokePaintAA.Color = new SKColor(0xFF, 0x33, 0x11, (byte)(alpha * 100));
+            _strokePaintAA.StrokeWidth = 5;
+            canvas.DrawPath(_cachedPath, _strokePaintAA);
+
+            // Blitz-Linie (schmal)
+            _strokePaintAA.Color = new SKColor(0xFF, 0x55, 0x33, (byte)(alpha * 255));
+            _strokePaintAA.StrokeWidth = 2;
+            canvas.DrawPath(_cachedPath, _strokePaintAA);
         }
 
         // Komprimieren
@@ -896,7 +844,7 @@ public class WiringGameRenderer : IDisposable
     {
         if (_completionTime > 1.5f) return;
 
-        // Phase 1 (0-0.3s): Weißer Flash (quick in, slow out)
+        // Phase 1 (0-0.3s): Weisser Flash (quick in, slow out)
         if (_completionTime < 0.3f)
         {
             float flashAlpha = _completionTime < 0.08f
@@ -904,31 +852,24 @@ public class WiringGameRenderer : IDisposable
                 : 1 - (_completionTime - 0.08f) / 0.22f;
             flashAlpha = Math.Clamp(flashAlpha, 0, 1);
 
-            using var flashPaint = new SKPaint
-            {
-                Color = new SKColor(255, 255, 255, (byte)(flashAlpha * 120)),
-                IsAntialias = false
-            };
-            canvas.DrawRect(bounds, flashPaint);
+            _fillPaint.Color = new SKColor(255, 255, 255, (byte)(flashAlpha * 120));
+            canvas.DrawRect(bounds, _fillPaint);
         }
 
-        // Phase 2 (0.1-1.5s): Grüner Rand-Glow (pulsierend, abklingend)
+        // Phase 2 (0.1-1.5s): Gruener Rand-Glow (pulsierend, abklingend)
         if (_completionTime > 0.1f)
         {
             float fade = Math.Clamp(1 - (_completionTime - 0.1f) / 1.4f, 0, 1);
             float pulse = (float)(0.5 + 0.5 * Math.Sin(_completionTime * 8));
             byte alpha = (byte)(fade * pulse * 60);
 
-            using var borderGlow = new SKPaint
-            {
-                Color = new SKColor(0x4C, 0xAF, 0x50, alpha),
-                IsAntialias = true,
-                Style = SKPaintStyle.Stroke,
-                StrokeWidth = 6,
-                MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4)
-            };
+            _strokePaintAA.Color = new SKColor(0x4C, 0xAF, 0x50, alpha);
+            _strokePaintAA.StrokeWidth = 6;
+            // Temporaer MaskFilter setzen fuer Glow-Rand
+            _strokePaintAA.MaskFilter = _blur4;
             canvas.DrawRect(bounds.Left + 4, bounds.Top + 4,
-                bounds.Width - 8, bounds.Height - 8, borderGlow);
+                bounds.Width - 8, bounds.Height - 8, _strokePaintAA);
+            _strokePaintAA.MaskFilter = null; // Zuruecksetzen
         }
     }
 
@@ -939,8 +880,20 @@ public class WiringGameRenderer : IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        _cachedPath?.Dispose();
-        _cachedFont?.Dispose();
+
+        _fillPaint.Dispose();
+        _fillPaintAA.Dispose();
+        _strokePaint.Dispose();
+        _strokePaintAA.Dispose();
+        _thinStrokePaint.Dispose();
+        _textPaint.Dispose();
+        _shaderPaint.Dispose();
+        _glowPaint.Dispose();
+        _blur3.Dispose();
+        _blur4.Dispose();
+        _blur5.Dispose();
+        _cachedPath.Dispose();
+        _cachedFont.Dispose();
     }
 }
 

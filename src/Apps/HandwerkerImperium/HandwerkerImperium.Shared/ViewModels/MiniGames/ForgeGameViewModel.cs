@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// Spieler muss bei richtiger Temperatur auf den Amboss haemmern.
 /// Temperatur steigt automatisch, kuehlt nach Hammer-Schlag ab.
 /// </summary>
-public partial class ForgeGameViewModel : ViewModelBase, IDisposable
+public sealed partial class ForgeGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

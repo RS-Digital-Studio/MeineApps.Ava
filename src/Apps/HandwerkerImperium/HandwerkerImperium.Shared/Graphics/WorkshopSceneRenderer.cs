@@ -12,7 +12,7 @@ namespace HandwerkerImperium.Graphics;
 /// IsAntialias = true für glatte Kanten auf allen Displays.
 /// Features: Schatten, Tool-Glow, Worker-Accessoires, Level-Progression, Ambient-Effekte.
 /// </summary>
-public class WorkshopSceneRenderer : IDisposable
+public sealed class WorkshopSceneRenderer : IDisposable
 {
     // Gecachte Paints für GC-Optimierung (werden pro Frame wiederverwendet)
     private readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };

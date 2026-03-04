@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services;
 /// Handles saving and loading game state to persistent storage.
 /// Uses atomic writes (temp file + rename) and backup for crash safety.
 /// </summary>
-public class SaveGameService : ISaveGameService
+public sealed class SaveGameService : ISaveGameService
 {
     private readonly IGameStateService _gameStateService;
     private readonly IPlayGamesService? _playGamesService;

@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services;
 /// Central service for managing the game state.
 /// Thread-safe for access from UI thread and GameLoopService timer.
 /// </summary>
-public class GameStateService : IGameStateService
+public sealed class GameStateService : IGameStateService
 {
     private GameState _state = new();
     private readonly object _stateLock = new();

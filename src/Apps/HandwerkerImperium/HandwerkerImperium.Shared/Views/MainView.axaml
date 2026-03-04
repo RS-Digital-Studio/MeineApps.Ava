@@ -165,6 +165,18 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
       <guild:GuildInviteView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildInviteActive}"
                              DataContext="{Binding GuildViewModel}"
                              AutomationProperties.AutomationId="Main_View_GuildInvite" />
+      <guild:GuildWarSeasonView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildWarSeasonActive}"
+                                DataContext="{Binding GuildViewModel.WarSeasonViewModel}"
+                                AutomationProperties.AutomationId="Main_View_GuildWarSeason" />
+      <guild:GuildBossView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildBossActive}"
+                           DataContext="{Binding GuildViewModel.BossViewModel}"
+                           AutomationProperties.AutomationId="Main_View_GuildBoss" />
+      <guild:GuildHallView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildHallActive}"
+                           DataContext="{Binding GuildViewModel.HallViewModel}"
+                           AutomationProperties.AutomationId="Main_View_GuildHall" />
+      <guild:GuildAchievementsView IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsGuildAchievementsActive}"
+                                   DataContext="{Binding GuildViewModel}"
+                                   AutomationProperties.AutomationId="Main_View_GuildAchievements" />
       <ContentControl Content="{Binding CraftingViewModel}"
                       IsVisible="{Binding #ContentPanel.((vm:MainViewModel)DataContext).IsCraftingActive}"
                       HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
@@ -277,11 +289,14 @@ xmlns:loc="using:MeineApps.Core.Ava.Localization"
     <!-- Achievement Unlocked Dialog (extrahiert in UserControl) -->
     <dialogs:AchievementDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
-    <!-- Tutorial Overlay (extrahiert in UserControl) -->
-    <dialogs:TutorialDialog Grid.RowSpan="2" DataContext="{Binding}" />
+    <!-- Kontextueller Hint (Tooltip-Bubble / Dialog, ersetzt altes Tutorial) -->
+    <dialogs:ContextualHintDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Story Dialog mit Meister Hans (extrahiert in UserControl) -->
     <dialogs:StoryDialog x:Name="StoryDialogControl" Grid.RowSpan="2" DataContext="{Binding}" />
+
+    <!-- Prestige Zusammenfassung (nach Prestige-Durchführung) -->
+    <dialogs:PrestigeSummaryDialog Grid.RowSpan="2" DataContext="{Binding}" />
 
     <!-- Alert Dialog (extrahiert in UserControl) -->
     <dialogs:AlertDialog Grid.RowSpan="2" DataContext="{Binding}" />

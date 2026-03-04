@@ -6,7 +6,7 @@ namespace HandwerkerImperium.Graphics;
 /// Manages UI particle effects (coins, confetti).
 /// Max 100 particles to prevent memory issues.
 /// </summary>
-public class AnimationManager
+public sealed class AnimationManager
 {
     private const int MaxParticles = 100;
 

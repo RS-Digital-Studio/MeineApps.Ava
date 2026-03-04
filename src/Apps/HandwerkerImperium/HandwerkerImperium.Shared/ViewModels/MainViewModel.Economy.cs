@@ -10,7 +10,7 @@ using MeineApps.Core.Ava.Localization;
 namespace HandwerkerImperium.ViewModels;
 
 // Partielle Klasse: Workshop-Kauf/Upgrade, Orders, Rush, Delivery, Prestige-Banner, Bulk-Buy
-public partial class MainViewModel
+public sealed partial class MainViewModel
 {
     // ═══════════════════════════════════════════════════════════════════════
     // WORKSHOP SELECTION + KAUF
@@ -41,25 +41,25 @@ public partial class MainViewModel
             var unlockCost = workshop.Type.GetUnlockCost();
             var costDisplay = MoneyFormatter.FormatCompact(unlockCost);
 
-            // Video-Rabatt: 50% Kosten (nur wenn Werbung aktiv)
+            // Video-Rabatt: 30% Kosten-Reduktion (Spieler zahlt 70%)
             if (ShowAds)
             {
-                var halfCost = unlockCost / 2m;
-                var halfCostDisplay = MoneyFormatter.FormatCompact(halfCost);
+                var discountedCost = unlockCost * 0.70m;
+                var discountDisplay = MoneyFormatter.FormatCompact(discountedCost);
 
                 var watchAd = await ShowConfirmDialog(
                     _localizationService.GetString("UnlockWorkshop"),
-                    $"{_localizationService.GetString("UnlockWorkshopCost")}: {costDisplay}\n{_localizationService.GetString("WatchAdForHalfPrice")}: {halfCostDisplay}",
+                    $"{_localizationService.GetString("UnlockWorkshopCost")}: {costDisplay}\n{_localizationService.GetString("WatchAdForHalfPrice")}: {discountDisplay}",
                     _localizationService.GetString("WatchAdForDiscount"),
                     $"{_localizationService.GetString("BuyFull")} ({costDisplay})");
 
                 if (watchAd)
                 {
-                    // Video schauen → 50% Rabatt
+                    // Video schauen → 30% Rabatt
                     var success = await _rewardedAdService.ShowAdAsync("workshop_unlock");
                     if (success)
                     {
-                        TryPurchaseWorkshopAndNotify(workshop.Type, halfCost);
+                        TryPurchaseWorkshopAndNotify(workshop.Type, discountedCost);
                     }
                 }
                 else
@@ -270,6 +270,9 @@ public partial class MainViewModel
         _gameStateService.StartOrder(order);
         await _audioService.PlaySoundAsync(GameSound.ButtonTap);
 
+        // Hint beim ersten Auftrag
+        _contextualHintService.TryShowHint(ContextualHints.FirstOrder);
+
         // Show order detail
         OrderViewModel.SetOrder(order);
         DeactivateAllTabs();
@@ -377,7 +380,7 @@ public partial class MainViewModel
 
             case Models.Enums.DeliveryType.GoldenScrews:
                 _gameStateService.AddGoldenScrews((int)delivery.Amount);
-                FloatingTextRequested?.Invoke($"+{(int)delivery.Amount} GS", "screw");
+                FloatingTextRequested?.Invoke($"+{(int)delivery.Amount} \u2699", "screw");
                 break;
 
             case Models.Enums.DeliveryType.Experience:
@@ -425,7 +428,7 @@ public partial class MainViewModel
         DeliveryAmountText = delivery.Type switch
         {
             Models.Enums.DeliveryType.Money => MoneyFormatter.FormatCompact(delivery.Amount),
-            Models.Enums.DeliveryType.GoldenScrews => $"{(int)delivery.Amount} GS",
+            Models.Enums.DeliveryType.GoldenScrews => $"{(int)delivery.Amount} \u2699",
             Models.Enums.DeliveryType.Experience => $"{(int)delivery.Amount} XP",
             Models.Enums.DeliveryType.MoodBoost => $"+{(int)delivery.Amount} Mood",
             Models.Enums.DeliveryType.SpeedBoost => $"{(int)delivery.Amount}min 2x",
@@ -484,8 +487,11 @@ public partial class MainViewModel
         // Refresh workshops
         RefreshWorkshops();
 
-        // Tutorial-Hint: Pulsierender Rahmen wenn noch nie ein Upgrade gemacht wurde
-        ShowTutorialHint = !state.HasSeenTutorialHint && state.PlayerLevel < 3;
+        // Tutorial-Hint: Pulsierender Rahmen solange FirstWorkshop-Hint noch nicht gesehen
+        // Nach Prestige (Level zurück auf 1) nicht erneut anzeigen
+        ShowTutorialHint = !_contextualHintService.HasSeenHint(ContextualHints.FirstWorkshop.Id)
+                           && state.PlayerLevel < 3
+                           && state.Prestige.TotalPrestigeCount == 0;
 
         // Refresh orders
         RefreshOrders();
@@ -808,6 +814,39 @@ public partial class MainViewModel
             PrestigePreviewSpeedUp = "";
             PrestigePreviewTierName = "";
         }
+
+        // Fortschritt zum nächsten Tier (auch anzeigen wenn aktuell kein Prestige verfügbar)
+        var nextTier = highestTier.GetNextTier();
+        if (nextTier != PrestigeTier.None)
+        {
+            HasNextPrestigeTier = true;
+            var reqLevel = nextTier.GetRequiredLevel();
+            var currentTierLevel = highestTier != PrestigeTier.None ? highestTier.GetRequiredLevel() : 0;
+            var range = reqLevel - currentTierLevel;
+            var progress = range > 0
+                ? Math.Clamp((double)(state.PlayerLevel - currentTierLevel) / range, 0.0, 1.0)
+                : 0.0;
+            NextPrestigeTierProgress = progress;
+            var tierName = _localizationService.GetString(nextTier.GetLocalizationKey()) ?? nextTier.ToString();
+
+            // PP-Prognose: "Bei Gold: +400 PP"
+            var potentialPP = _prestigeService.GetPrestigePoints(state.TotalMoneyEarned);
+            int nextTierPoints = (int)(potentialPP * nextTier.GetPointMultiplier());
+            NextPrestigeTierHint = nextTierPoints > 0
+                ? $"Lv. {state.PlayerLevel}/{reqLevel} \u2192 {tierName} (+{nextTierPoints} PP)"
+                : $"Lv. {state.PlayerLevel}/{reqLevel} \u2192 {tierName}";
+        }
+        else
+        {
+            HasNextPrestigeTier = false;
+            NextPrestigeTierHint = "";
+            NextPrestigeTierProgress = 0;
+        }
+
+        // Tier-Auswahl: Verfügbare Tiers für den Dialog setzen
+        var availableTiers = state.Prestige.GetAllAvailableTiers(state.PlayerLevel);
+        HasMultiplePrestigeTiers = availableTiers.Count > 1;
+        AvailablePrestigeTierCount = availableTiers.Count;
     }
 
     private void UpdateWorkshopDisplay(WorkshopDisplayModel model, GameState state, WorkshopType type)

@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Graphics;
 /// Singleton via DI, rendert Partikel, ScreenShake, Overlays etc.
 /// Struct-basierter Pool für GC-freie Performance.
 /// </summary>
-public class GameJuiceEngine : IDisposable
+public sealed class GameJuiceEngine : IDisposable
 {
     private bool _disposed;
 

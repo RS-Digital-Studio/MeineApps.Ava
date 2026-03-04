@@ -230,6 +230,9 @@ public class MainActivity : AvaloniaMainActivity<App>
 
     protected override void OnDestroy()
     {
+        // Zuerst alle DI-verwalteten IDisposable-Services freigeben (SkiaSharp, Timer, HttpClient etc.)
+        App.DisposeServices();
+
         _rewardedAdHelper?.Dispose();
         _adMobHelper?.Dispose();
         base.OnDestroy();

@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services;
 /// Ascension setzt alle Prestige-Fortschritte zurück und vergibt Ascension-Punkte
 /// für permanente Perks die über Prestiges hinweg bestehen bleiben.
 /// </summary>
-public class AscensionService : IAscensionService
+public sealed class AscensionService : IAscensionService
 {
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
@@ -279,7 +279,7 @@ public class AscensionService : IAscensionService
         // - state.Ascension (AscensionData mit Perks und Punkten)
         // - state.UnlockedAchievements
         // - state.IsPremium
-        // - state.TutorialCompleted, state.TutorialStep
+        // - state.SeenHints (kontextuelles Tutorial)
         // - state.TotalMoneyEarned
         // - state.TotalPlayTimeSeconds
         // - state.GoldenScrews, state.TotalGoldenScrewsEarned, state.TotalGoldenScrewsSpent

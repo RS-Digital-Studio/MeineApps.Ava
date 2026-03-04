@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Services;
 /// Automatische XP-Vergabe bei Aufträgen, MiniGames und Workshop-Upgrades.
 /// Premium-Track kann per IAP freigeschaltet werden.
 /// </summary>
-public class BattlePassService : IBattlePassService
+public sealed class BattlePassService : IBattlePassService
 {
     private readonly IGameStateService _gameState;
     private readonly IPurchaseService _purchaseService;

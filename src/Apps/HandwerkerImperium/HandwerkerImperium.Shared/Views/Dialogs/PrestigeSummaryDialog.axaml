@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:loc="using:MeineApps.Core.Ava.Localization"
+             x:Class="HandwerkerImperium.Views.Dialogs.PrestigeSummaryDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Post-Prestige Zusammenfassung -->
+  <Border Background="{StaticResource DialogOverlayBrush}"
+          IsVisible="{Binding IsPrestigeSummaryVisible}"
+          PointerPressed="OnOverlayPressed"
+          AutomationProperties.AutomationId="Main_Overlay_PrestigeSummary">
+    <Border Background="{DynamicResource SurfaceBrush}"
+            CornerRadius="16" Padding="24,20"
+            MaxWidth="320"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            BoxShadow="0 8 24 0 #40000000"
+            PointerPressed="OnDialogContentPressed"
+            AutomationProperties.AutomationId="Main_Border_PrestigeSummary">
+      <StackPanel Spacing="16" HorizontalAlignment="Stretch">
+
+        <!-- Tier-Badge -->
+        <StackPanel HorizontalAlignment="Center" Spacing="4">
+          <TextBlock Text="{Binding PrestigeSummaryTierIcon}"
+                     FontSize="32" HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Main_Txt_SummaryIcon" />
+          <TextBlock FontSize="22" FontWeight="Bold"
+                     HorizontalAlignment="Center"
+                     AutomationProperties.AutomationId="Main_Txt_SummaryTier">
+            <TextBlock.Foreground>
+              <SolidColorBrush Color="{Binding PrestigeSummaryTierColor}" />
+            </TextBlock.Foreground>
+            <TextBlock.Text>
+              <MultiBinding StringFormat="{}{0} {1}">
+                <Binding Path="PrestigeSummaryTier" />
+                <Binding Path="PrestigeSummaryCount" />
+              </MultiBinding>
+            </TextBlock.Text>
+          </TextBlock>
+        </StackPanel>
+
+        <!-- Punkte + Multiplikator -->
+        <Border CornerRadius="10" Padding="16,12">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+              <GradientStop Color="#20FFD700" Offset="0" />
+              <GradientStop Color="#08FFD700" Offset="1" />
+            </LinearGradientBrush>
+          </Border.Background>
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+            <!-- PP gewonnen -->
+            <StackPanel HorizontalAlignment="Center">
+              <TextBlock Text="{loc:Translate PrestigePointsShort}" FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="Main_Txt_SummaryPPLabel" />
+              <TextBlock Text="{Binding PrestigeSummaryPoints}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="Main_Txt_SummaryPP" />
+            </StackPanel>
+
+            <!-- Neuer Multiplikator -->
+            <StackPanel Grid.Column="1" HorizontalAlignment="Center">
+              <TextBlock Text="{loc:Translate IncomeBonus}" FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="Main_Txt_SummaryMultLabel" />
+              <TextBlock Text="{Binding PrestigeSummaryMultiplier}"
+                         FontSize="20" FontWeight="Bold"
+                         Foreground="{StaticResource CraftGoldBrush}"
+                         HorizontalAlignment="Center"
+                         AutomationProperties.AutomationId="Main_Txt_SummaryMult" />
+            </StackPanel>
+          </Grid>
+        </Border>
+
+        <!-- Buttons -->
+        <StackPanel Spacing="8">
+          <!-- Zum Shop -->
+          <Button Classes="Primary"
+                  Command="{Binding PrestigeSummaryGoToShopCommand}"
+                  HorizontalAlignment="Stretch"
+                  HorizontalContentAlignment="Center"
+                  AutomationProperties.AutomationId="Main_Btn_SummaryShop">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <mi:MaterialIcon Kind="StorefrontOutline" Width="16" Height="16" />
+              <TextBlock Text="{loc:Translate PrestigeShop}" FontSize="14" FontWeight="Bold" />
+            </StackPanel>
+          </Button>
+
+          <!-- Weiter spielen -->
+          <Button Classes="Text"
+                  Command="{Binding DismissPrestigeSummaryCommand}"
+                  HorizontalAlignment="Center"
+                  AutomationProperties.AutomationId="Main_Btn_SummaryContinue">
+            <TextBlock Text="{loc:Translate Continue}" FontSize="13"
+                       Foreground="{DynamicResource TextSecondaryBrush}" />
+          </Button>
+        </StackPanel>
+
+      </StackPanel>
+    </Border>
+  </Border>
+
+</UserControl>

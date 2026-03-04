@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// ViewModel fuer das Inspektions-MiniGame (Baustelleninspektion / Fehlersuche).
 /// Spieler muss Fehler auf einer Baustelle finden, indem er fehlerhafte Felder antippt.
 /// </summary>
-public partial class InspectionGameViewModel : ViewModelBase, IDisposable
+public sealed partial class InspectionGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

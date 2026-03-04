@@ -1,4 +1,6 @@
 using HandwerkerImperium.Models;
+using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Models.Events;
 using HandwerkerImperium.Services.Interfaces;
 
 namespace HandwerkerImperium.Services;
@@ -6,17 +8,47 @@ namespace HandwerkerImperium.Services;
 /// <summary>
 /// Verwaltet saisonale Events (4x pro Jahr, jeweils 1.-14. des Monats).
 /// Frühling (März), Sommer (Juni), Herbst (September), Winter (Dezember).
-/// Jedes Event hat eigene Währung und einen Shop mit exklusiven Items.
+/// Jedes Event hat eigene Währung (SP) und einen Shop mit exklusiven Items.
+/// SP-Verdienst: 5 SP pro Auftrag (Basis), +3 bei Good, +5 bei Perfect.
 /// </summary>
-public class SeasonalEventService : ISeasonalEventService
+public sealed class SeasonalEventService : ISeasonalEventService, IDisposable
 {
     private readonly IGameStateService _gameState;
+
+    // SP-Belohnungen pro Auftragsabschluss
+    private const int BaseSpPerOrder = 5;
+    private const int GoodBonusSp = 3;
+    private const int PerfectBonusSp = 5;
 
     public event Action? SeasonalEventChanged;
 
     public SeasonalEventService(IGameStateService gameState)
     {
         _gameState = gameState;
+        _gameState.OrderCompleted += OnOrderCompleted;
+    }
+
+    /// <summary>
+    /// Vergibt SP bei Auftragsabschluss (nur wenn Event aktiv).
+    /// </summary>
+    private void OnOrderCompleted(object? sender, OrderCompletedEventArgs e)
+    {
+        if (!IsEventActive) return;
+
+        int sp = BaseSpPerOrder;
+        sp += e.AverageRating switch
+        {
+            MiniGameRating.Perfect => PerfectBonusSp,
+            MiniGameRating.Good => GoodBonusSp,
+            _ => 0
+        };
+
+        AddSeasonalCurrency(sp);
+    }
+
+    public void Dispose()
+    {
+        _gameState.OrderCompleted -= OnOrderCompleted;
     }
 
     public bool IsEventActive =>

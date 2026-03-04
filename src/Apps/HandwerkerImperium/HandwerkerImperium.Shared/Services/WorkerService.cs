@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Services;
 /// <summary>
 /// Manages worker lifecycle: hiring, firing, training, resting, mood, fatigue.
 /// </summary>
-public class WorkerService : IWorkerService
+public sealed class WorkerService : IWorkerService
 {
     private readonly IGameStateService _gameState;
     private readonly IPrestigeService? _prestigeService;

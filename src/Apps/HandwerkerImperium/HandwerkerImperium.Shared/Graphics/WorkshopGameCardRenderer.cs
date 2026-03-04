@@ -266,11 +266,17 @@ public static class WorkshopGameCardRenderer
         canvas.DrawText("Tippe zum Freischalten", inner.MidX, inner.Top + inner.Height * 0.68f, _textPaint);
 
         // Kosten-Anzeige
-        float costY = inner.Top + inner.Height * 0.78f;
+        float costY = inner.Top + inner.Height * 0.75f;
         GameCardRenderer.DrawCoinIcon(canvas, inner.MidX - 20f, costY, 6f);
         _textPaint.Color = data.CanAffordUnlock ? new SKColor(0x22, 0xC5, 0x5E) : new SKColor(0xEF, 0x44, 0x44);
         _textPaint.TextSize = 11f;
         canvas.DrawText(data.UpgradeCostText ?? "", inner.MidX, costY + 4f, _textPaint);
+
+        // Rabatt-Hinweis: "-30% mit Video" (nur wenn ShowAds aktiv → immer anzeigen, Monetarisierungs-Anreiz)
+        float discountY = inner.Top + inner.Height * 0.88f;
+        _textPaint.Color = new SKColor(0xFF, 0xD7, 0x00, 180); // Gold
+        _textPaint.TextSize = 8f;
+        canvas.DrawText("\u25B6 -30%", inner.MidX, discountY + 3f, _textPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

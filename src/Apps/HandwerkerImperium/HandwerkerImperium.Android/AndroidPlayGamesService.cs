@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Android;
 /// → Stub-Implementierung die false/null zurückgibt.
 /// PlayGamesSdk.Initialize() muss VOR dem ersten Aufruf erfolgen (in MainActivity).
 /// </summary>
-public class AndroidPlayGamesService : IPlayGamesService
+public sealed class AndroidPlayGamesService : IPlayGamesService
 {
     private const string Tag = "PlayGames";
 

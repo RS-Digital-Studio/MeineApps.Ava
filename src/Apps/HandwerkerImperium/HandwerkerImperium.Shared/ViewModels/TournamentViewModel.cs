@@ -13,7 +13,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel für das wöchentliche MiniGame-Turnier.
 /// Zeigt Bestenliste, verbleibende Zeit und Belohnungen.
 /// </summary>
-public partial class TournamentViewModel : ViewModelBase
+public sealed partial class TournamentViewModel : ViewModelBase
 {
     private readonly IGameStateService _gameStateService;
     private readonly ITournamentService _tournamentService;
@@ -136,7 +136,7 @@ public partial class TournamentViewModel : ViewModelBase
 
             AlertRequested?.Invoke(
                 _localizationService.GetString("TournamentReward") ?? "Turnier-Belohnung",
-                $"{tierName}: {screws} GS",
+                $"{tierName}: {screws} \u2699",
                 _localizationService.GetString("OK") ?? "OK");
 
             RefreshTournament();
@@ -192,7 +192,7 @@ public partial class TournamentViewModel : ViewModelBase
             int cost = _tournamentService.EntryCost;
             EntryCostDisplay = cost == 0
                 ? _localizationService.GetString("Free") ?? "Gratis"
-                : $"{cost} GS";
+                : $"{cost} \u2699";
 
             // Bester Score
             BestScore = tournament.BestScores.Count > 0 ? tournament.BestScores[0] : 0;

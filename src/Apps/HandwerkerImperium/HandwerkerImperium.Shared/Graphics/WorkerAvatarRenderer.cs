@@ -7,9 +7,31 @@ namespace HandwerkerImperium.Graphics;
 /// Generiert deterministische Pixel-Art Worker-Avatare aus einem Seed-String.
 /// Bitmaps werden intern gecacht - Caller darf NICHT disposen!
 /// Das gecachte Bitmap wird direkt zurueckgegeben (kein Copy, keine Allokation).
+/// Statische wiederverwendbare SKPaint-Instanzen vermeiden Allokationen bei Cache-Miss.
 /// </summary>
-public class WorkerAvatarRenderer
+public sealed class WorkerAvatarRenderer
 {
+    // ═══════════════════════════════════════════════════════════════════
+    // WIEDERVERWENDBARE STATISCHE SKPAINT-INSTANZEN
+    // Sicher weil alle Aufrufe auf dem UI-Thread stattfinden.
+    // ═══════════════════════════════════════════════════════════════════
+
+    // Fill-Paint ohne Antialiasing (Pixel-Art: Koerper, Haare, Helm, Augen, Accessoires)
+    private static readonly SKPaint s_fillNoAA = new() { IsAntialias = false, Style = SKPaintStyle.Fill };
+
+    // Fill-Paint mit Antialiasing (Ovale, Kreise bei groesseren Scales: Kopf, Augen, Wangen)
+    private static readonly SKPaint s_fillAA = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // Stroke-Paint ohne Antialiasing (Brille, Pflaster-Kreuz, Schutzbrille)
+    private static readonly SKPaint s_strokeNoAA = new() { IsAntialias = false, Style = SKPaintStyle.Stroke };
+
+    // Wiederverwendbarer SKPath (fuer DrawSadEye, DrawMouth)
+    private static readonly SKPath s_cachedPath = new();
+
+    // ═══════════════════════════════════════════════════════════════════
+    // FARB-PALETTEN
+    // ═══════════════════════════════════════════════════════════════════
+
     // 6 Hauttoene
     private static readonly SKColor[] SkinTones =
     [
@@ -51,6 +73,17 @@ public class WorkerAvatarRenderer
         new SKColor(0x21, 0x21, 0x21), // Schwarz
         new SKColor(0xBF, 0x36, 0x0C), // Rot
         new SKColor(0xF9, 0xA8, 0x25)  // Blond
+    ];
+
+    // 6 verschiedene Arbeitskleidungs-Farben (gecacht statt pro Aufruf alloziert)
+    private static readonly SKColor[] WorkColors =
+    [
+        new(0x42, 0xA5, 0xF5), // Blau (Mechaniker)
+        new(0x66, 0xBB, 0x6A), // Gruen (Gaertner)
+        new(0xEF, 0x6C, 0x00), // Orange (Bauarbeiter)
+        new(0x78, 0x90, 0x9C), // Blaugrau (Installateur)
+        new(0x8D, 0x6E, 0x63), // Braun (Schreiner)
+        new(0x5C, 0x6B, 0xC0), // Indigo (Elektriker)
     ];
 
     /// <summary>
@@ -123,25 +156,12 @@ public class WorkerAvatarRenderer
     }
 
     /// <summary>
-    /// Zeichnet Schultern/Koerperansatz am unteren Rand (für ein vollständigeres Bild).
+    /// Zeichnet Schultern/Koerperansatz am unteren Rand (fuer ein vollstaendigeres Bild).
     /// </summary>
     private static void DrawBody(SKCanvas canvas, int hash, float scale, bool isFemale)
     {
-        // Kleidungsfarbe aus Hash (6 verschiedene Arbeitskleidungs-Farben)
-        var workColors = new SKColor[]
-        {
-            new(0x42, 0xA5, 0xF5), // Blau (Mechaniker)
-            new(0x66, 0xBB, 0x6A), // Gruen (Gaertner)
-            new(0xEF, 0x6C, 0x00), // Orange (Bauarbeiter)
-            new(0x78, 0x90, 0x9C), // Blaugrau (Installateur)
-            new(0x8D, 0x6E, 0x63), // Braun (Schreiner)
-            new(0x5C, 0x6B, 0xC0), // Indigo (Elektriker)
-        };
-        var clothColor = workColors[Math.Abs(hash / 13) % workColors.Length];
+        var clothColor = WorkColors[Math.Abs(hash / 13) % WorkColors.Length];
         var clothDark = DarkenColor(clothColor, 0.15f);
-
-        using var bodyPaint = new SKPaint { Color = clothColor, IsAntialias = false };
-        using var bodyDarkPaint = new SKPaint { Color = clothDark, IsAntialias = false };
 
         float cx = 16 * scale;
         float shoulderY = 27 * scale;
@@ -149,16 +169,20 @@ public class WorkerAvatarRenderer
         if (isFemale)
         {
             // Schmalere Schultern
-            canvas.DrawRect(cx - 10 * scale, shoulderY, 20 * scale, 5 * scale, bodyPaint);
+            s_fillNoAA.Color = clothColor;
+            canvas.DrawRect(cx - 10 * scale, shoulderY, 20 * scale, 5 * scale, s_fillNoAA);
             // Kragen (V-Ausschnitt)
-            canvas.DrawRect(cx - 2 * scale, shoulderY, 4 * scale, 2 * scale, bodyDarkPaint);
+            s_fillNoAA.Color = clothDark;
+            canvas.DrawRect(cx - 2 * scale, shoulderY, 4 * scale, 2 * scale, s_fillNoAA);
         }
         else
         {
             // Breitere Schultern
-            canvas.DrawRect(cx - 12 * scale, shoulderY, 24 * scale, 5 * scale, bodyPaint);
+            s_fillNoAA.Color = clothColor;
+            canvas.DrawRect(cx - 12 * scale, shoulderY, 24 * scale, 5 * scale, s_fillNoAA);
             // Kragen (rund)
-            canvas.DrawRect(cx - 3 * scale, shoulderY, 6 * scale, 1.5f * scale, bodyDarkPaint);
+            s_fillNoAA.Color = clothDark;
+            canvas.DrawRect(cx - 3 * scale, shoulderY, 6 * scale, 1.5f * scale, s_fillNoAA);
         }
     }
 
@@ -168,55 +192,49 @@ public class WorkerAvatarRenderer
         int skinIndex = Math.Abs(hash) % SkinTones.Length;
         var skinColor = SkinTones[skinIndex];
 
-        using (var headPaint = new SKPaint { Color = skinColor, IsAntialias = false })
+        s_fillNoAA.Color = skinColor;
+        float cx = 16 * scale;
+        float cy = 18 * scale;
+
+        if (isFemale)
         {
-            float cx = 16 * scale;
-            float cy = 18 * scale;
+            // Weiblich: Schmalerer, runderer Kopf
+            float radiusX = 9.5f * scale;
+            float radiusY = 10 * scale;
+            canvas.DrawOval(cx, cy, radiusX, radiusY, s_fillNoAA);
 
-            if (isFemale)
-            {
-                // Weiblich: Schmalerer, runderer Kopf
-                float radiusX = 9.5f * scale;
-                float radiusY = 10 * scale;
-                canvas.DrawOval(cx, cy, radiusX, radiusY, headPaint);
+            // Kinn: Spitzer zulaufend (schmaler nach unten)
+            canvas.DrawOval(cx, cy + 3 * scale, 7 * scale, 6 * scale, s_fillNoAA);
+        }
+        else
+        {
+            // Maennlich: Breiterer, kantigerer Kopf
+            float radius = 10 * scale;
+            canvas.DrawCircle(cx, cy, radius, s_fillNoAA);
 
-                // Kinn: Spitzer zulaufend (schmaler nach unten)
-                using var chinPaint = new SKPaint { Color = skinColor, IsAntialias = false };
-                canvas.DrawOval(cx, cy + 3 * scale, 7 * scale, 6 * scale, chinPaint);
-            }
-            else
-            {
-                // Maennlich: Breiterer, kantigerer Kopf
-                float radius = 10 * scale;
-                canvas.DrawCircle(cx, cy, radius, headPaint);
+            // Kantiger Kiefer (2px breiter auf jeder Seite)
+            float jawWidth = 2 * scale;
+            float jawTop = 19 * scale;
+            float jawHeight = 6 * scale;
+            canvas.DrawRect(cx - radius - jawWidth, jawTop, jawWidth + 1 * scale, jawHeight, s_fillNoAA);
+            canvas.DrawRect(cx + radius - 1 * scale, jawTop, jawWidth + 1 * scale, jawHeight, s_fillNoAA);
 
-                // Kantiger Kiefer (2px breiter auf jeder Seite)
-                float jawWidth = 2 * scale;
-                float jawTop = 19 * scale;
-                float jawHeight = 6 * scale;
-                canvas.DrawRect(cx - radius - jawWidth, jawTop, jawWidth + 1 * scale, jawHeight, headPaint);
-                canvas.DrawRect(cx + radius - 1 * scale, jawTop, jawWidth + 1 * scale, jawHeight, headPaint);
-
-                // Kinn-Kante (breiter als weiblich)
-                canvas.DrawRect(cx - 8 * scale, cy + 8 * scale, 16 * scale, 2 * scale, headPaint);
-            }
+            // Kinn-Kante (breiter als weiblich)
+            canvas.DrawRect(cx - 8 * scale, cy + 8 * scale, 16 * scale, 2 * scale, s_fillNoAA);
         }
 
-        // Ohren
-        using (var earPaint = new SKPaint { Color = SkinTones[Math.Abs(hash) % SkinTones.Length], IsAntialias = false })
-        {
-            float earRadius = isFemale ? 2 * scale : 2.5f * scale;
-            canvas.DrawCircle(5 * scale, 18 * scale, earRadius, earPaint);
-            canvas.DrawCircle(27 * scale, 18 * scale, earRadius, earPaint);
+        // Ohren (gleiche Hautfarbe, bereits gesetzt)
+        float earRadius = isFemale ? 2 * scale : 2.5f * scale;
+        canvas.DrawCircle(5 * scale, 18 * scale, earRadius, s_fillNoAA);
+        canvas.DrawCircle(27 * scale, 18 * scale, earRadius, s_fillNoAA);
 
-            // Weiblich: Ohrring-Punkte (dezentes Gold)
-            if (isFemale)
-            {
-                using var earringPaint = new SKPaint { Color = new SKColor(0xFF, 0xD7, 0x00), IsAntialias = false };
-                float earringSize = 1 * scale;
-                canvas.DrawCircle(4.5f * scale, 20 * scale, earringSize, earringPaint);
-                canvas.DrawCircle(27.5f * scale, 20 * scale, earringSize, earringPaint);
-            }
+        // Weiblich: Ohrring-Punkte (dezentes Gold)
+        if (isFemale)
+        {
+            s_fillNoAA.Color = new SKColor(0xFF, 0xD7, 0x00);
+            float earringSize = 1 * scale;
+            canvas.DrawCircle(4.5f * scale, 20 * scale, earringSize, s_fillNoAA);
+            canvas.DrawCircle(27.5f * scale, 20 * scale, earringSize, s_fillNoAA);
         }
     }
 
@@ -231,39 +249,42 @@ public class WorkerAvatarRenderer
         var hairColor = HairColors[hairIndex];
         var hairDark = DarkenColor(hairColor, 0.2f);
 
-        using var hairPaint = new SKPaint { Color = hairColor, IsAntialias = false };
-        using var hairDarkPaint = new SKPaint { Color = hairDark, IsAntialias = false };
-
         if (isFemale)
         {
             // ===== Langes wallendes Haar =====
 
             // Haarvolumen oben am Kopf (unter dem Helm herausschauend)
+            s_fillNoAA.Color = hairColor;
             float topY = 13 * scale;
-            canvas.DrawRect(6 * scale, topY, 20 * scale, 3 * scale, hairPaint);
+            canvas.DrawRect(6 * scale, topY, 20 * scale, 3 * scale, s_fillNoAA);
 
             // Linke Seite: Langes Haar bis zur Schulter
             float leftX = 3 * scale;
             float strandTop = 14 * scale;
-            canvas.DrawRect(leftX, strandTop, 3 * scale, 14 * scale, hairPaint);
-            canvas.DrawRect(leftX - 1 * scale, strandTop + 2 * scale, 2 * scale, 10 * scale, hairPaint);
-            // Wellung (hellere Strähne)
-            canvas.DrawRect(leftX + 1 * scale, strandTop + 4 * scale, 1 * scale, 3 * scale, hairDarkPaint);
+            canvas.DrawRect(leftX, strandTop, 3 * scale, 14 * scale, s_fillNoAA);
+            canvas.DrawRect(leftX - 1 * scale, strandTop + 2 * scale, 2 * scale, 10 * scale, s_fillNoAA);
+            // Wellung (dunklere Straehne)
+            s_fillNoAA.Color = hairDark;
+            canvas.DrawRect(leftX + 1 * scale, strandTop + 4 * scale, 1 * scale, 3 * scale, s_fillNoAA);
 
             // Rechte Seite: Langes Haar bis zur Schulter
+            s_fillNoAA.Color = hairColor;
             float rightX = 26 * scale;
-            canvas.DrawRect(rightX, strandTop, 3 * scale, 14 * scale, hairPaint);
-            canvas.DrawRect(rightX + 1 * scale, strandTop + 2 * scale, 2 * scale, 10 * scale, hairPaint);
-            // Wellung (dunklere Strähne)
-            canvas.DrawRect(rightX + 1 * scale, strandTop + 5 * scale, 1 * scale, 3 * scale, hairDarkPaint);
+            canvas.DrawRect(rightX, strandTop, 3 * scale, 14 * scale, s_fillNoAA);
+            canvas.DrawRect(rightX + 1 * scale, strandTop + 2 * scale, 2 * scale, 10 * scale, s_fillNoAA);
+            // Wellung (dunklere Straehne)
+            s_fillNoAA.Color = hairDark;
+            canvas.DrawRect(rightX + 1 * scale, strandTop + 5 * scale, 1 * scale, 3 * scale, s_fillNoAA);
 
             // Pony (kurze Fransen ueber der Stirn)
             bool hasBangs = (hash % 3) != 0; // 66% Chance auf Pony
             if (hasBangs)
             {
-                canvas.DrawRect(8 * scale, 14 * scale, 4 * scale, 2 * scale, hairPaint);
-                canvas.DrawRect(20 * scale, 14 * scale, 4 * scale, 2 * scale, hairPaint);
-                canvas.DrawRect(12 * scale, 14.5f * scale, 8 * scale, 1.5f * scale, hairDarkPaint);
+                s_fillNoAA.Color = hairColor;
+                canvas.DrawRect(8 * scale, 14 * scale, 4 * scale, 2 * scale, s_fillNoAA);
+                canvas.DrawRect(20 * scale, 14 * scale, 4 * scale, 2 * scale, s_fillNoAA);
+                s_fillNoAA.Color = hairDark;
+                canvas.DrawRect(12 * scale, 14.5f * scale, 8 * scale, 1.5f * scale, s_fillNoAA);
             }
         }
         else
@@ -271,25 +292,25 @@ public class WorkerAvatarRenderer
             // ===== Kurzhaar mit markanter Form =====
 
             // Seitliche Haare (kurz, unter dem Helm)
+            s_fillNoAA.Color = hairColor;
             float hairTop = 13 * scale;
-            canvas.DrawRect(6 * scale, hairTop, 4 * scale, 3 * scale, hairPaint);
-            canvas.DrawRect(22 * scale, hairTop, 4 * scale, 3 * scale, hairPaint);
+            canvas.DrawRect(6 * scale, hairTop, 4 * scale, 3 * scale, s_fillNoAA);
+            canvas.DrawRect(22 * scale, hairTop, 4 * scale, 3 * scale, s_fillNoAA);
 
             // Koteletten (seitliche Haar-Ansaetze neben Ohren)
-            canvas.DrawRect(6 * scale, 15 * scale, 2 * scale, 4 * scale, hairPaint);
-            canvas.DrawRect(24 * scale, 15 * scale, 2 * scale, 4 * scale, hairPaint);
+            canvas.DrawRect(6 * scale, 15 * scale, 2 * scale, 4 * scale, s_fillNoAA);
+            canvas.DrawRect(24 * scale, 15 * scale, 2 * scale, 4 * scale, s_fillNoAA);
 
             // Bart-Schatten (50% Chance, nur bei dunkleren Haaren)
             bool hasStubble = (hash % 2) == 0 && hairIndex <= 3;
             if (hasStubble)
             {
-                var stubbleColor = new SKColor(hairColor.Red, hairColor.Green, hairColor.Blue, 60);
-                using var stubblePaint = new SKPaint { Color = stubbleColor, IsAntialias = false };
+                s_fillNoAA.Color = new SKColor(hairColor.Red, hairColor.Green, hairColor.Blue, 60);
                 // Kinn-Bereich
-                canvas.DrawRect(11 * scale, 24 * scale, 10 * scale, 3 * scale, stubblePaint);
+                canvas.DrawRect(11 * scale, 24 * scale, 10 * scale, 3 * scale, s_fillNoAA);
                 // Wangen
-                canvas.DrawRect(8 * scale, 22 * scale, 3 * scale, 4 * scale, stubblePaint);
-                canvas.DrawRect(21 * scale, 22 * scale, 3 * scale, 4 * scale, stubblePaint);
+                canvas.DrawRect(8 * scale, 22 * scale, 3 * scale, 4 * scale, s_fillNoAA);
+                canvas.DrawRect(21 * scale, 22 * scale, 3 * scale, 4 * scale, s_fillNoAA);
             }
         }
     }
@@ -304,62 +325,63 @@ public class WorkerAvatarRenderer
         var brimColor = DarkenColor(hatColor, 0.2f);
         int hatStyle = Math.Abs(hash / 11) % 3; // 3 Hut-Varianten
 
-        using var hatPaint = new SKPaint { Color = hatColor, IsAntialias = false };
-        using var brimPaint = new SKPaint { Color = brimColor, IsAntialias = false };
-
         float cx = 16 * scale;
 
         switch (hatStyle)
         {
             case 0:
                 // Variante 1: Klassischer Bauhelm (abgerundet)
-                canvas.DrawRect(8 * scale, 5 * scale, 16 * scale, 10 * scale, hatPaint);
-                canvas.DrawRect(6 * scale, 13 * scale, 20 * scale, 3 * scale, brimPaint);
+                s_fillNoAA.Color = hatColor;
+                canvas.DrawRect(8 * scale, 5 * scale, 16 * scale, 10 * scale, s_fillNoAA);
+                s_fillNoAA.Color = brimColor;
+                canvas.DrawRect(6 * scale, 13 * scale, 20 * scale, 3 * scale, s_fillNoAA);
                 break;
 
             case 1:
                 // Variante 2: Muetze/Kappe (flacher, mit Schirm nach vorne)
-                canvas.DrawRect(7 * scale, 7 * scale, 18 * scale, 8 * scale, hatPaint);
+                s_fillNoAA.Color = hatColor;
+                canvas.DrawRect(7 * scale, 7 * scale, 18 * scale, 8 * scale, s_fillNoAA);
                 // Muetzen-Knopf oben
-                using (var knobPaint = new SKPaint { Color = brimColor, IsAntialias = false })
-                    canvas.DrawCircle(cx, 7 * scale, 1.5f * scale, knobPaint);
+                s_fillNoAA.Color = brimColor;
+                canvas.DrawCircle(cx, 7 * scale, 1.5f * scale, s_fillNoAA);
                 // Schirm (nach rechts geneigt fuer Charakter)
-                canvas.DrawRect(8 * scale, 14 * scale, 14 * scale, 2.5f * scale, brimPaint);
+                canvas.DrawRect(8 * scale, 14 * scale, 14 * scale, 2.5f * scale, s_fillNoAA);
                 break;
 
             case 2:
                 // Variante 3: Schutzhelm mit hoher Kuppel
-                canvas.DrawOval(cx, 10 * scale, 9 * scale, 7 * scale, hatPaint);
+                s_fillNoAA.Color = hatColor;
+                canvas.DrawOval(cx, 10 * scale, 9 * scale, 7 * scale, s_fillNoAA);
                 // Breite Krempe
-                canvas.DrawRect(5 * scale, 14 * scale, 22 * scale, 2.5f * scale, brimPaint);
+                s_fillNoAA.Color = brimColor;
+                canvas.DrawRect(5 * scale, 14 * scale, 22 * scale, 2.5f * scale, s_fillNoAA);
                 // Mittelstreifen (Helmnaht)
-                using (var stripePaint = new SKPaint { Color = DarkenColor(hatColor, 0.1f), IsAntialias = false })
-                    canvas.DrawRect(cx - 0.5f * scale, 4 * scale, 1 * scale, 10 * scale, stripePaint);
+                s_fillNoAA.Color = DarkenColor(hatColor, 0.1f);
+                canvas.DrawRect(cx - 0.5f * scale, 4 * scale, 1 * scale, 10 * scale, s_fillNoAA);
                 break;
         }
 
         // Helm-Glanz (nur bei scale >= 2)
         if (scale >= 2)
         {
-            var highlightColor = new SKColor(0xFF, 0xFF, 0xFF, 45);
-            using var glossPaint = new SKPaint { Color = highlightColor, IsAntialias = true };
+            s_fillAA.Color = new SKColor(0xFF, 0xFF, 0xFF, 45);
             // Glanz-Streifen auf dem Helm (schraeg, oben)
-            canvas.DrawRect(10 * scale, 8 * scale, 8 * scale, 2 * scale, glossPaint);
+            canvas.DrawRect(10 * scale, 8 * scale, 8 * scale, 2 * scale, s_fillAA);
         }
 
         // S+ Tiers: Stern-Markierung auf dem Helm
         if (tier >= WorkerTier.S)
         {
-            using var starPaint = new SKPaint { Color = SKColors.White, IsAntialias = false };
+            s_fillNoAA.Color = SKColors.White;
             float sy = 9 * scale;
             float starSize = 2 * scale;
-            canvas.DrawRect(cx - starSize / 2, sy - starSize / 2, starSize, starSize, starPaint);
+            canvas.DrawRect(cx - starSize / 2, sy - starSize / 2, starSize, starSize, s_fillNoAA);
 
             if (tier >= WorkerTier.SS)
-                canvas.DrawRect(cx + 2 * scale, sy - starSize / 2, starSize, starSize, starPaint);
+                canvas.DrawRect(cx + 2 * scale, sy - starSize / 2, starSize, starSize, s_fillNoAA);
 
             if (tier == WorkerTier.Legendary)
-                canvas.DrawRect(cx - 4 * scale, sy - starSize / 2, starSize, starSize, starPaint);
+                canvas.DrawRect(cx - 4 * scale, sy - starSize / 2, starSize, starSize, s_fillNoAA);
         }
     }
 
@@ -380,128 +402,126 @@ public class WorkerAvatarRenderer
             _ => new SKColor(0x5D, 0x40, 0x37)  // Braun (Fallback)
         };
 
-        using (var eyePaint = new SKPaint { Color = eyeColor, IsAntialias = false })
+        s_fillNoAA.Color = eyeColor;
+        float dotSize = isFemale ? 2.2f * scale : 2 * scale; // Weiblich: etwas groessere Augen
+
+        switch (mood)
         {
-            float dotSize = isFemale ? 2.2f * scale : 2 * scale; // Weiblich: etwas groessere Augen
+            case MoodBucket.High:
+                if (scale >= 2)
+                {
+                    // Augenweiss (ovaler Hintergrund)
+                    s_fillAA.Color = new SKColor(0xF0, 0xF0, 0xF0);
+                    float highWhiteRx = dotSize * 1.3f;
+                    float highWhiteRy = dotSize * 1.1f;
+                    canvas.DrawOval(leftEyeX, eyeY, highWhiteRx, highWhiteRy, s_fillAA);
+                    canvas.DrawOval(rightEyeX, eyeY, highWhiteRx, highWhiteRy, s_fillAA);
 
-            switch (mood)
-            {
-                case MoodBucket.High:
-                    if (scale >= 2)
-                    {
-                        // Augenweiß (ovaler Hintergrund)
-                        using var highWhitePaint = new SKPaint { Color = new SKColor(0xF0, 0xF0, 0xF0), IsAntialias = true };
-                        float highWhiteRx = dotSize * 1.3f;
-                        float highWhiteRy = dotSize * 1.1f;
-                        canvas.DrawOval(leftEyeX, eyeY, highWhiteRx, highWhiteRy, highWhitePaint);
-                        canvas.DrawOval(rightEyeX, eyeY, highWhiteRx, highWhiteRy, highWhitePaint);
+                    // Pupille (kleiner als vorher)
+                    s_fillNoAA.Color = eyeColor;
+                    float highPupilSize = dotSize * 0.7f;
+                    canvas.DrawCircle(leftEyeX, eyeY, highPupilSize, s_fillNoAA);
+                    canvas.DrawCircle(rightEyeX, eyeY, highPupilSize, s_fillNoAA);
 
-                        // Pupille (kleiner als vorher)
-                        eyePaint.Color = eyeColor;
-                        float highPupilSize = dotSize * 0.7f;
-                        canvas.DrawCircle(leftEyeX, eyeY, highPupilSize, eyePaint);
-                        canvas.DrawCircle(rightEyeX, eyeY, highPupilSize, eyePaint);
+                    // Weisser Glanzpunkt (oben-rechts der Pupille)
+                    s_fillAA.Color = SKColors.White;
+                    float highHlSize = scale * 0.6f;
+                    canvas.DrawCircle(leftEyeX + 0.7f * scale, eyeY - 0.6f * scale, highHlSize, s_fillAA);
+                    canvas.DrawCircle(rightEyeX + 0.7f * scale, eyeY - 0.6f * scale, highHlSize, s_fillAA);
+                }
+                else
+                {
+                    // Pixel-Art bei 32px
+                    canvas.DrawCircle(leftEyeX, eyeY, dotSize, s_fillNoAA);
+                    canvas.DrawCircle(rightEyeX, eyeY, dotSize, s_fillNoAA);
+                }
+                break;
 
-                        // Weißer Glanzpunkt (oben-rechts der Pupille)
-                        using var highHlPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
-                        float highHlSize = scale * 0.6f;
-                        canvas.DrawCircle(leftEyeX + 0.7f * scale, eyeY - 0.6f * scale, highHlSize, highHlPaint);
-                        canvas.DrawCircle(rightEyeX + 0.7f * scale, eyeY - 0.6f * scale, highHlSize, highHlPaint);
-                    }
-                    else
-                    {
-                        // Pixel-Art bei 32px
-                        canvas.DrawCircle(leftEyeX, eyeY, dotSize, eyePaint);
-                        canvas.DrawCircle(rightEyeX, eyeY, dotSize, eyePaint);
-                    }
-                    break;
+            case MoodBucket.Mid:
+                if (scale >= 2)
+                {
+                    // Augenweiss (ovaler Hintergrund)
+                    s_fillAA.Color = new SKColor(0xF0, 0xF0, 0xF0);
+                    float midWhiteRx = dotSize * 1.3f * 1.1f;
+                    float midWhiteRy = dotSize * 1.1f * 1.1f;
+                    canvas.DrawOval(leftEyeX, eyeY, midWhiteRx, midWhiteRy, s_fillAA);
+                    canvas.DrawOval(rightEyeX, eyeY, midWhiteRx, midWhiteRy, s_fillAA);
 
-                case MoodBucket.Mid:
-                    if (scale >= 2)
-                    {
-                        // Augenweiß (ovaler Hintergrund)
-                        using var midWhitePaint = new SKPaint { Color = new SKColor(0xF0, 0xF0, 0xF0), IsAntialias = true };
-                        float midWhiteRx = dotSize * 1.3f * 1.1f;
-                        float midWhiteRy = dotSize * 1.1f * 1.1f;
-                        canvas.DrawOval(leftEyeX, eyeY, midWhiteRx, midWhiteRy, midWhitePaint);
-                        canvas.DrawOval(rightEyeX, eyeY, midWhiteRx, midWhiteRy, midWhitePaint);
+                    // Pupille (kleiner als vorher)
+                    s_fillNoAA.Color = eyeColor;
+                    float midPupilSize = dotSize * 1.1f * 0.7f;
+                    canvas.DrawCircle(leftEyeX, eyeY, midPupilSize, s_fillNoAA);
+                    canvas.DrawCircle(rightEyeX, eyeY, midPupilSize, s_fillNoAA);
 
-                        // Pupille (kleiner als vorher)
-                        eyePaint.Color = eyeColor;
-                        float midPupilSize = dotSize * 1.1f * 0.7f;
-                        canvas.DrawCircle(leftEyeX, eyeY, midPupilSize, eyePaint);
-                        canvas.DrawCircle(rightEyeX, eyeY, midPupilSize, eyePaint);
+                    // Weisser Glanzpunkt (oben-rechts der Pupille)
+                    s_fillAA.Color = SKColors.White;
+                    float midHlSize = scale * 0.6f;
+                    canvas.DrawCircle(leftEyeX + 0.7f * scale, eyeY - 0.6f * scale, midHlSize, s_fillAA);
+                    canvas.DrawCircle(rightEyeX + 0.7f * scale, eyeY - 0.6f * scale, midHlSize, s_fillAA);
+                }
+                else
+                {
+                    // Pixel-Art bei 32px
+                    canvas.DrawCircle(leftEyeX, eyeY, dotSize * 1.1f, s_fillNoAA);
+                    canvas.DrawCircle(rightEyeX, eyeY, dotSize * 1.1f, s_fillNoAA);
+                }
+                break;
 
-                        // Weißer Glanzpunkt (oben-rechts der Pupille)
-                        using var midHlPaint = new SKPaint { Color = SKColors.White, IsAntialias = true };
-                        float midHlSize = scale * 0.6f;
-                        canvas.DrawCircle(leftEyeX + 0.7f * scale, eyeY - 0.6f * scale, midHlSize, midHlPaint);
-                        canvas.DrawCircle(rightEyeX + 0.7f * scale, eyeY - 0.6f * scale, midHlSize, midHlPaint);
-                    }
-                    else
-                    {
-                        // Pixel-Art bei 32px
-                        canvas.DrawCircle(leftEyeX, eyeY, dotSize * 1.1f, eyePaint);
-                        canvas.DrawCircle(rightEyeX, eyeY, dotSize * 1.1f, eyePaint);
-                    }
-                    break;
-
-                case MoodBucket.Low:
-                    if (scale >= 2)
-                    {
-                        // Augenweiß vor den traurigen Dreiecken
-                        using var lowWhitePaint = new SKPaint { Color = new SKColor(0xF0, 0xF0, 0xF0), IsAntialias = true };
-                        float lowWhiteRx = dotSize * 1.3f;
-                        float lowWhiteRy = dotSize * 1.1f;
-                        canvas.DrawOval(leftEyeX, eyeY, lowWhiteRx, lowWhiteRy, lowWhitePaint);
-                        canvas.DrawOval(rightEyeX, eyeY, lowWhiteRx, lowWhiteRy, lowWhitePaint);
-                    }
-                    DrawSadEye(canvas, leftEyeX, eyeY, dotSize, eyePaint);
-                    DrawSadEye(canvas, rightEyeX, eyeY, dotSize, eyePaint);
-                    break;
-            }
+            case MoodBucket.Low:
+                if (scale >= 2)
+                {
+                    // Augenweiss vor den traurigen Dreiecken
+                    s_fillAA.Color = new SKColor(0xF0, 0xF0, 0xF0);
+                    float lowWhiteRx = dotSize * 1.3f;
+                    float lowWhiteRy = dotSize * 1.1f;
+                    canvas.DrawOval(leftEyeX, eyeY, lowWhiteRx, lowWhiteRy, s_fillAA);
+                    canvas.DrawOval(rightEyeX, eyeY, lowWhiteRx, lowWhiteRy, s_fillAA);
+                }
+                s_fillNoAA.Color = eyeColor;
+                DrawSadEye(canvas, leftEyeX, eyeY, dotSize);
+                DrawSadEye(canvas, rightEyeX, eyeY, dotSize);
+                break;
         }
 
         if (isFemale)
         {
             // Wimpern (2 kleine Striche nach oben-aussen pro Auge)
-            using var lashPaint = new SKPaint
-            {
-                Color = new SKColor(0x21, 0x21, 0x21),
-                IsAntialias = false,
-                StrokeWidth = Math.Max(1, 0.8f * scale),
-                Style = SKPaintStyle.Stroke
-            };
+            s_strokeNoAA.Color = new SKColor(0x21, 0x21, 0x21);
+            s_strokeNoAA.StrokeWidth = Math.Max(1, 0.8f * scale);
             // Linkes Auge
-            canvas.DrawLine(leftEyeX - 1.5f * scale, eyeY - 2 * scale, leftEyeX - 2.5f * scale, eyeY - 3.5f * scale, lashPaint);
-            canvas.DrawLine(leftEyeX + 0.5f * scale, eyeY - 2.2f * scale, leftEyeX + 0.5f * scale, eyeY - 3.5f * scale, lashPaint);
+            canvas.DrawLine(leftEyeX - 1.5f * scale, eyeY - 2 * scale, leftEyeX - 2.5f * scale, eyeY - 3.5f * scale, s_strokeNoAA);
+            canvas.DrawLine(leftEyeX + 0.5f * scale, eyeY - 2.2f * scale, leftEyeX + 0.5f * scale, eyeY - 3.5f * scale, s_strokeNoAA);
             // Rechtes Auge
-            canvas.DrawLine(rightEyeX + 1.5f * scale, eyeY - 2 * scale, rightEyeX + 2.5f * scale, eyeY - 3.5f * scale, lashPaint);
-            canvas.DrawLine(rightEyeX - 0.5f * scale, eyeY - 2.2f * scale, rightEyeX - 0.5f * scale, eyeY - 3.5f * scale, lashPaint);
+            canvas.DrawLine(rightEyeX + 1.5f * scale, eyeY - 2 * scale, rightEyeX + 2.5f * scale, eyeY - 3.5f * scale, s_strokeNoAA);
+            canvas.DrawLine(rightEyeX - 0.5f * scale, eyeY - 2.2f * scale, rightEyeX - 0.5f * scale, eyeY - 3.5f * scale, s_strokeNoAA);
         }
         else
         {
-            // Maennlich: Kräftige Augenbrauen
+            // Maennlich: Kraeftige Augenbrauen
             int hairIndex = Math.Abs(hash / 7) % HairColors.Length;
             var browColor = DarkenColor(HairColors[hairIndex], 0.1f);
-            using var browPaint = new SKPaint { Color = browColor, IsAntialias = false };
+            s_fillNoAA.Color = browColor;
             float browY = eyeY - 3 * scale;
             float browWidth = 4 * scale;
             float browHeight = 1.2f * scale;
-            canvas.DrawRect(leftEyeX - browWidth / 2, browY, browWidth, browHeight, browPaint);
-            canvas.DrawRect(rightEyeX - browWidth / 2, browY, browWidth, browHeight, browPaint);
+            canvas.DrawRect(leftEyeX - browWidth / 2, browY, browWidth, browHeight, s_fillNoAA);
+            canvas.DrawRect(rightEyeX - browWidth / 2, browY, browWidth, browHeight, s_fillNoAA);
         }
     }
 
-    private static void DrawSadEye(SKCanvas canvas, float cx, float cy, float size, SKPaint paint)
+    /// <summary>
+    /// Zeichnet ein trauriges Auge (Dreieck nach unten).
+    /// Nutzt s_fillNoAA (Farbe muss vorher gesetzt sein).
+    /// </summary>
+    private static void DrawSadEye(SKCanvas canvas, float cx, float cy, float size)
     {
         // Dreieck: nach unten zeigend fuer traurigen Ausdruck
-        using var path = new SKPath();
-        path.MoveTo(cx - size, cy - size);
-        path.LineTo(cx + size, cy - size);
-        path.LineTo(cx, cy + size);
-        path.Close();
-        canvas.DrawPath(path, paint);
+        s_cachedPath.Rewind();
+        s_cachedPath.MoveTo(cx - size, cy - size);
+        s_cachedPath.LineTo(cx + size, cy - size);
+        s_cachedPath.LineTo(cx, cy + size);
+        s_cachedPath.Close();
+        canvas.DrawPath(s_cachedPath, s_fillNoAA);
     }
 
     /// <summary>
@@ -514,11 +534,11 @@ public class WorkerAvatarRenderer
         int skinIndex = Math.Abs(hash) % SkinTones.Length;
         var noseColor = DarkenColor(SkinTones[skinIndex], 0.12f);
 
-        using var nosePaint = new SKPaint { Color = noseColor, IsAntialias = true };
+        s_fillAA.Color = noseColor;
         float cx = 16 * scale;
         float noseY = 20 * scale;
 
-        canvas.DrawOval(cx, noseY, 1.8f * scale, 1.2f * scale, nosePaint);
+        canvas.DrawOval(cx, noseY, 1.8f * scale, 1.2f * scale, s_fillAA);
     }
 
     private static void DrawMouth(SKCanvas canvas, MoodBucket mood, float scale, bool isFemale = false)
@@ -532,70 +552,62 @@ public class WorkerAvatarRenderer
             var lipColor = new SKColor(0xE0, 0x6B, 0x7A);
             var lipDark = new SKColor(0xC4, 0x55, 0x65);
 
-            using var lipFillPaint = new SKPaint { Color = lipColor, IsAntialias = false, Style = SKPaintStyle.Fill };
-            using var lipOutlinePaint = new SKPaint
-            {
-                Color = lipDark, IsAntialias = false, StrokeWidth = Math.Max(1, 0.8f * scale), Style = SKPaintStyle.Stroke
-            };
-
             float halfWidth = 3.5f * scale;
 
             switch (mood)
             {
                 case MoodBucket.High:
                     // Laecheln: Gefuellter Bogen
-                    using (var path = new SKPath())
-                    {
-                        path.MoveTo(cx - halfWidth, mouthY);
-                        path.QuadTo(cx, mouthY + 3 * scale, cx + halfWidth, mouthY);
-                        path.Close();
-                        canvas.DrawPath(path, lipFillPaint);
-                        canvas.DrawPath(path, lipOutlinePaint);
-                    }
+                    s_cachedPath.Rewind();
+                    s_cachedPath.MoveTo(cx - halfWidth, mouthY);
+                    s_cachedPath.QuadTo(cx, mouthY + 3 * scale, cx + halfWidth, mouthY);
+                    s_cachedPath.Close();
+                    s_fillNoAA.Color = lipColor;
+                    canvas.DrawPath(s_cachedPath, s_fillNoAA);
+                    s_strokeNoAA.Color = lipDark;
+                    s_strokeNoAA.StrokeWidth = Math.Max(1, 0.8f * scale);
+                    canvas.DrawPath(s_cachedPath, s_strokeNoAA);
                     break;
 
                 case MoodBucket.Mid:
                     // Neutral: Dezente Lippen
-                    canvas.DrawRect(cx - halfWidth, mouthY - 0.5f * scale, halfWidth * 2, 1.5f * scale, lipFillPaint);
+                    s_fillNoAA.Color = lipColor;
+                    canvas.DrawRect(cx - halfWidth, mouthY - 0.5f * scale, halfWidth * 2, 1.5f * scale, s_fillNoAA);
                     break;
 
                 case MoodBucket.Low:
                     // Traurig: Bogen nach unten
-                    using (var path = new SKPath())
-                    {
-                        path.MoveTo(cx - halfWidth, mouthY);
-                        path.QuadTo(cx, mouthY - 2 * scale, cx + halfWidth, mouthY);
-                        canvas.DrawPath(path, lipOutlinePaint);
-                    }
+                    s_cachedPath.Rewind();
+                    s_cachedPath.MoveTo(cx - halfWidth, mouthY);
+                    s_cachedPath.QuadTo(cx, mouthY - 2 * scale, cx + halfWidth, mouthY);
+                    s_strokeNoAA.Color = lipDark;
+                    s_strokeNoAA.StrokeWidth = Math.Max(1, 0.8f * scale);
+                    canvas.DrawPath(s_cachedPath, s_strokeNoAA);
                     break;
             }
         }
         else
         {
             // Maennlich: Einfachere, breitere Mundlinien
-            var mouthColor = new SKColor(0x5D, 0x40, 0x37);
-            using var mouthPaint = new SKPaint
-            {
-                Color = mouthColor, IsAntialias = false,
-                StrokeWidth = Math.Max(1, 1.2f * scale), Style = SKPaintStyle.Stroke
-            };
+            s_strokeNoAA.Color = new SKColor(0x5D, 0x40, 0x37);
+            s_strokeNoAA.StrokeWidth = Math.Max(1, 1.2f * scale);
 
             float halfWidth = 3.5f * scale;
 
             switch (mood)
             {
                 case MoodBucket.High:
-                    canvas.DrawLine(cx - halfWidth, mouthY, cx, mouthY + 2 * scale, mouthPaint);
-                    canvas.DrawLine(cx, mouthY + 2 * scale, cx + halfWidth, mouthY, mouthPaint);
+                    canvas.DrawLine(cx - halfWidth, mouthY, cx, mouthY + 2 * scale, s_strokeNoAA);
+                    canvas.DrawLine(cx, mouthY + 2 * scale, cx + halfWidth, mouthY, s_strokeNoAA);
                     break;
 
                 case MoodBucket.Mid:
-                    canvas.DrawLine(cx - halfWidth, mouthY, cx + halfWidth, mouthY, mouthPaint);
+                    canvas.DrawLine(cx - halfWidth, mouthY, cx + halfWidth, mouthY, s_strokeNoAA);
                     break;
 
                 case MoodBucket.Low:
-                    canvas.DrawLine(cx - halfWidth, mouthY + 2 * scale, cx, mouthY, mouthPaint);
-                    canvas.DrawLine(cx, mouthY, cx + halfWidth, mouthY + 2 * scale, mouthPaint);
+                    canvas.DrawLine(cx - halfWidth, mouthY + 2 * scale, cx, mouthY, s_strokeNoAA);
+                    canvas.DrawLine(cx, mouthY, cx + halfWidth, mouthY + 2 * scale, s_strokeNoAA);
                     break;
             }
         }
@@ -610,13 +622,13 @@ public class WorkerAvatarRenderer
         if (scale < 2) return;
 
         byte alpha = isFemale ? (byte)50 : (byte)30;
-        using var blushPaint = new SKPaint { Color = new SKColor(0xFF, 0x99, 0x99, alpha), IsAntialias = true };
+        s_fillAA.Color = new SKColor(0xFF, 0x99, 0x99, alpha);
         float cx = 16 * scale;
         float cheekY = 21 * scale;
         float radius = isFemale ? 2.5f * scale : 2 * scale;
 
-        canvas.DrawCircle(cx - 6 * scale, cheekY, radius, blushPaint);
-        canvas.DrawCircle(cx + 6 * scale, cheekY, radius, blushPaint);
+        canvas.DrawCircle(cx - 6 * scale, cheekY, radius, s_fillAA);
+        canvas.DrawCircle(cx + 6 * scale, cheekY, radius, s_fillAA);
     }
 
     /// <summary>
@@ -629,11 +641,11 @@ public class WorkerAvatarRenderer
         int skinIndex = Math.Abs(hash) % SkinTones.Length;
         var shadowColor = DarkenColor(SkinTones[skinIndex], 0.2f).WithAlpha(60);
 
-        using var shadowPaint = new SKPaint { Color = shadowColor, IsAntialias = true };
+        s_fillAA.Color = shadowColor;
         float cx = 16 * scale;
         float chinY = 26 * scale;
 
-        canvas.DrawOval(cx, chinY, 7 * scale, 2.5f * scale, shadowPaint);
+        canvas.DrawOval(cx, chinY, 7 * scale, 2.5f * scale, s_fillAA);
     }
 
     /// <summary>
@@ -650,71 +662,53 @@ public class WorkerAvatarRenderer
         {
             case 1:
                 // Brille (runde Glaeser)
-                using (var glassPaint = new SKPaint
-                {
-                    Color = new SKColor(0x60, 0x60, 0x60), IsAntialias = false,
-                    StrokeWidth = Math.Max(1, 0.8f * scale), Style = SKPaintStyle.Stroke
-                })
-                {
-                    canvas.DrawCircle(13 * scale, 17 * scale, 2.8f * scale, glassPaint);
-                    canvas.DrawCircle(19 * scale, 17 * scale, 2.8f * scale, glassPaint);
-                    // Nasenstueck
-                    canvas.DrawLine(15.5f * scale, 17 * scale, 16.5f * scale, 17 * scale, glassPaint);
-                    // Buegel
-                    canvas.DrawLine(10 * scale, 17 * scale, 7 * scale, 16.5f * scale, glassPaint);
-                    canvas.DrawLine(22 * scale, 17 * scale, 25 * scale, 16.5f * scale, glassPaint);
-                }
+                s_strokeNoAA.Color = new SKColor(0x60, 0x60, 0x60);
+                s_strokeNoAA.StrokeWidth = Math.Max(1, 0.8f * scale);
+                canvas.DrawCircle(13 * scale, 17 * scale, 2.8f * scale, s_strokeNoAA);
+                canvas.DrawCircle(19 * scale, 17 * scale, 2.8f * scale, s_strokeNoAA);
+                // Nasenstueck
+                canvas.DrawLine(15.5f * scale, 17 * scale, 16.5f * scale, 17 * scale, s_strokeNoAA);
+                // Buegel
+                canvas.DrawLine(10 * scale, 17 * scale, 7 * scale, 16.5f * scale, s_strokeNoAA);
+                canvas.DrawLine(22 * scale, 17 * scale, 25 * scale, 16.5f * scale, s_strokeNoAA);
                 break;
 
             case 2:
                 // Schutzbrille oben auf dem Kopf (orange Band)
-                using (var gogglePaint = new SKPaint
-                {
-                    Color = new SKColor(0xFF, 0x98, 0x00, 180), IsAntialias = false,
-                    StrokeWidth = Math.Max(1, 1.5f * scale), Style = SKPaintStyle.Stroke
-                })
-                {
-                    canvas.DrawLine(6 * scale, 14 * scale, 26 * scale, 14 * scale, gogglePaint);
-                }
+                s_strokeNoAA.Color = new SKColor(0xFF, 0x98, 0x00, 180);
+                s_strokeNoAA.StrokeWidth = Math.Max(1, 1.5f * scale);
+                canvas.DrawLine(6 * scale, 14 * scale, 26 * scale, 14 * scale, s_strokeNoAA);
                 break;
 
             case 3:
                 if (isFemale)
                 {
                     // Wangenroetung (dezent rosa)
-                    using var blushPaint = new SKPaint { Color = new SKColor(0xFF, 0xAB, 0xAB, 80), IsAntialias = false };
-                    canvas.DrawCircle(10 * scale, 20 * scale, 2 * scale, blushPaint);
-                    canvas.DrawCircle(22 * scale, 20 * scale, 2 * scale, blushPaint);
+                    s_fillNoAA.Color = new SKColor(0xFF, 0xAB, 0xAB, 80);
+                    canvas.DrawCircle(10 * scale, 20 * scale, 2 * scale, s_fillNoAA);
+                    canvas.DrawCircle(22 * scale, 20 * scale, 2 * scale, s_fillNoAA);
                 }
                 else
                 {
                     // Narbe / Pflaster auf Wange
-                    using var patchPaint = new SKPaint
-                    {
-                        Color = new SKColor(0xF5, 0xE6, 0xCC), IsAntialias = false
-                    };
-                    canvas.DrawRect(21 * scale, 20 * scale, 3 * scale, 3 * scale, patchPaint);
+                    s_fillNoAA.Color = new SKColor(0xF5, 0xE6, 0xCC);
+                    canvas.DrawRect(21 * scale, 20 * scale, 3 * scale, 3 * scale, s_fillNoAA);
                     // Pflaster-Kreuz
-                    using var crossPaint = new SKPaint
-                    {
-                        Color = new SKColor(0xCC, 0xAA, 0x88), IsAntialias = false,
-                        StrokeWidth = Math.Max(1, 0.5f * scale), Style = SKPaintStyle.Stroke
-                    };
-                    canvas.DrawLine(21.5f * scale, 21.5f * scale, 23.5f * scale, 21.5f * scale, crossPaint);
-                    canvas.DrawLine(22.5f * scale, 20.5f * scale, 22.5f * scale, 22.5f * scale, crossPaint);
+                    s_strokeNoAA.Color = new SKColor(0xCC, 0xAA, 0x88);
+                    s_strokeNoAA.StrokeWidth = Math.Max(1, 0.5f * scale);
+                    canvas.DrawLine(21.5f * scale, 21.5f * scale, 23.5f * scale, 21.5f * scale, s_strokeNoAA);
+                    canvas.DrawLine(22.5f * scale, 20.5f * scale, 22.5f * scale, 22.5f * scale, s_strokeNoAA);
                 }
                 break;
 
             case 4:
                 // Bleistift hinterm Ohr
-                using (var pencilPaint = new SKPaint { Color = new SKColor(0xFF, 0xD5, 0x4F), IsAntialias = false })
-                {
-                    // Stift-Koerper
-                    canvas.DrawRect(26 * scale, 12 * scale, 1.5f * scale, 7 * scale, pencilPaint);
-                    // Spitze
-                    using var tipPaint = new SKPaint { Color = new SKColor(0x4E, 0x34, 0x2E), IsAntialias = false };
-                    canvas.DrawRect(26 * scale, 19 * scale, 1.5f * scale, 1.5f * scale, tipPaint);
-                }
+                s_fillNoAA.Color = new SKColor(0xFF, 0xD5, 0x4F);
+                // Stift-Koerper
+                canvas.DrawRect(26 * scale, 12 * scale, 1.5f * scale, 7 * scale, s_fillNoAA);
+                // Spitze
+                s_fillNoAA.Color = new SKColor(0x4E, 0x34, 0x2E);
+                canvas.DrawRect(26 * scale, 19 * scale, 1.5f * scale, 1.5f * scale, s_fillNoAA);
                 break;
 
                 // case 0, 5: Keine Accessoires
@@ -729,7 +723,7 @@ public class WorkerAvatarRenderer
     }
 
     /// <summary>
-    /// Stable hash from string (deterministic, not GetHashCode which varies per runtime).
+    /// Stabiler Hash aus String (deterministisch, nicht GetHashCode der per Runtime variiert).
     /// </summary>
     private static int GetStableHash(string input)
     {

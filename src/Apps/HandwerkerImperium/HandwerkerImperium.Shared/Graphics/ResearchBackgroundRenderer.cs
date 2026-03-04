@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Graphics;
 /// Dunkles Holz/Leder-Thema mit subtilen Maserungslinien und Zahnrad-Wasserzeichen.
 /// Alle SKPaint-Objekte sind static readonly für GC-freie Performance im Render-Loop.
 /// </summary>
-public class ResearchBackgroundRenderer : IDisposable
+public sealed class ResearchBackgroundRenderer : IDisposable
 {
     private bool _disposed;
     // ═══════════════════════════════════════════════════════════════════════

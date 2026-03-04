@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Services;
 /// Generiert und verwaltet Welcome-Back-Angebote basierend auf Abwesenheitsdauer.
 /// Standard (24-72h), Premium (72h+) und StarterPack (einmalig ab Level 5).
 /// </summary>
-public class WelcomeBackService : IWelcomeBackService
+public sealed class WelcomeBackService : IWelcomeBackService
 {
     private readonly IGameStateService _gameStateService;
 

@@ -25,7 +25,7 @@ public enum CeremonyType
 /// Eigene Instanz (kein Singleton), wird beim Auslösen erstellt und nach Ablauf entsorgt.
 /// Gecachte SKPaint-Objekte, struct-basiertes Confetti.
 /// </summary>
-public class RewardCeremonyRenderer
+public sealed class RewardCeremonyRenderer
 {
     // --- Konfig ---
     private const float TotalDuration = 4.0f;       // Gesamtdauer in Sekunden

@@ -16,7 +16,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Shows worker stats (tier, mood, fatigue, efficiency, XP) and allows
 /// training, resting, giving bonuses, firing, and transferring workers.
 /// </summary>
-public partial class WorkerProfileViewModel : ViewModelBase
+public sealed partial class WorkerProfileViewModel : ViewModelBase
 {
     private readonly IWorkerService _workerService;
     private readonly IGameStateService _gameStateService;

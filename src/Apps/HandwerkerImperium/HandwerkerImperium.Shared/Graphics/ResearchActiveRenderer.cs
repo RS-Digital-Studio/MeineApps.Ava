@@ -9,7 +9,7 @@ namespace HandwerkerImperium.Graphics;
 /// blubbernde Blasen, aufsteigender Dampf, mechanische Countdown-Ziffern,
 /// Funkenregen bei >90% Fortschritt, goldene Abschluss-Partikel.
 /// </summary>
-public class ResearchActiveRenderer : IDisposable
+public sealed class ResearchActiveRenderer : IDisposable
 {
     private bool _disposed;
     private float _time;

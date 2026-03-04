@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// ViewModel for the Wiring mini-game.
 /// Player must connect colored wires from left to right.
 /// </summary>
-public partial class WiringGameViewModel : ViewModelBase, IDisposable
+public sealed partial class WiringGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

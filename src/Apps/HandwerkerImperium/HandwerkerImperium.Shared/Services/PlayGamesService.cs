@@ -5,7 +5,7 @@ namespace HandwerkerImperium.Services;
 /// <summary>
 /// Desktop-Stub für Google Play Games (nicht verfügbar auf Desktop).
 /// </summary>
-public class PlayGamesService : IPlayGamesService
+public sealed class PlayGamesService : IPlayGamesService
 {
     public bool IsSignedIn => false;
     public bool SupportsCloudSave => false;

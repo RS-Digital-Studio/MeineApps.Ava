@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// ViewModel for the Painting mini-game.
 /// Player must paint all target cells without painting outside the lines.
 /// </summary>
-public partial class PaintingGameViewModel : ViewModelBase, IDisposable
+public sealed partial class PaintingGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

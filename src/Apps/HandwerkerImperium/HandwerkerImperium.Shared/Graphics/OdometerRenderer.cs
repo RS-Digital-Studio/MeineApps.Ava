@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Graphics;
 /// Animierte Geld-Anzeige mit rollenden Ziffern (Odometer-Effekt).
 /// Pro Ziffer ein vertikaler Strip mit 0-9, kaskadierendes Rollen.
 /// </summary>
-public class OdometerRenderer : IDisposable
+public sealed class OdometerRenderer : IDisposable
 {
     private bool _disposed;
     private const int MaxDigits = 12;

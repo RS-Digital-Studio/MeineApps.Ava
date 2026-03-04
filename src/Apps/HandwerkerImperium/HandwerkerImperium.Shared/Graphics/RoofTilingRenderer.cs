@@ -24,8 +24,10 @@ public struct RoofTileData
 /// Platzierungs-Partikel (Funken in Ziegelfarbe), Holzstaub-Atmosphaere,
 /// Completion-Celebration mit goldenem Flash.
 /// </summary>
-public class RoofTilingRenderer
+public sealed class RoofTilingRenderer : IDisposable
 {
+    private bool _disposed;
+
     // Dachstuhl-Farben
     private static readonly SKColor RoofFrameColor = new(0x5D, 0x40, 0x37);   // Holz-Dachstuhl
     private static readonly SKColor RoofFrameLight = new(0x7B, 0x5B, 0x4C);   // Helle Sparren
@@ -78,6 +80,25 @@ public class RoofTilingRenderer
 
     // Animationszeit
     private float _time;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // WIEDERVERWENDBARE PAINTS (vermeidet ~19 Allokationen pro Frame)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Allgemein: Fill-Paint ohne AA (Color wird vor Verwendung gesetzt)
+    private readonly SKPaint _fillPaint = new() { IsAntialias = false };
+
+    // Fill-Paint mit Antialiasing (fuer Kreise, Sterne)
+    private readonly SKPaint _fillPaintAA = new() { IsAntialias = true };
+
+    // Stroke-Paint ohne AA (Color, StrokeWidth werden vor Verwendung gesetzt)
+    private readonly SKPaint _strokePaint = new() { IsAntialias = false, Style = SKPaintStyle.Stroke };
+
+    // Icon-Paint (fuer Schloss/Haekchen, StrokeWidth wird vor Verwendung gesetzt)
+    private readonly SKPaint _iconPaint = new() { IsAntialias = false, StrokeWidth = 2 };
+
+    // Tile-Border-Paint (Stroke, StrokeWidth=2)
+    private readonly SKPaint _borderPaint = new() { IsAntialias = false, Style = SKPaintStyle.Stroke, StrokeWidth = 2 };
 
     /// <summary>
     /// Rendert das gesamte Dach-Grid auf das Canvas.
@@ -211,47 +232,35 @@ public class RoofTilingRenderer
         float frameWidth = gridWidth + 16;
         float frameHeight = gridHeight + ridgeHeight + 16;
 
-        using var framePaint = new SKPaint { Color = RoofFrameColor, IsAntialias = false };
-        canvas.DrawRect(frameLeft, frameTop, frameWidth, frameHeight, framePaint);
+        _fillPaint.Color = RoofFrameColor;
+        canvas.DrawRect(frameLeft, frameTop, frameWidth, frameHeight, _fillPaint);
 
         // Diagonale Sparren (links-oben nach rechts-unten)
-        using var sparrenPaint = new SKPaint
-        {
-            Color = RoofFrameLight,
-            IsAntialias = false,
-            StrokeWidth = 4
-        };
+        _strokePaint.Color = RoofFrameLight;
+        _strokePaint.StrokeWidth = 4;
 
         float sparrenSpacing = gridWidth / Math.Max(2, cols - 1);
         for (float sx = frameLeft - frameHeight; sx < frameLeft + frameWidth; sx += sparrenSpacing)
         {
-            canvas.DrawLine(sx, frameTop, sx + frameHeight * 0.7f, frameTop + frameHeight, sparrenPaint);
+            canvas.DrawLine(sx, frameTop, sx + frameHeight * 0.7f, frameTop + frameHeight, _strokePaint);
         }
 
         // Gegenlaueufige Sparren (rechts-oben nach links-unten)
-        using var sparrenPaint2 = new SKPaint
-        {
-            Color = RoofFrameDark.WithAlpha(80),
-            IsAntialias = false,
-            StrokeWidth = 2
-        };
+        _strokePaint.Color = RoofFrameDark.WithAlpha(80);
+        _strokePaint.StrokeWidth = 2;
 
         for (float sx = frameLeft; sx < frameLeft + frameWidth + frameHeight; sx += sparrenSpacing * 1.5f)
         {
-            canvas.DrawLine(sx, frameTop, sx - frameHeight * 0.5f, frameTop + frameHeight, sparrenPaint2);
+            canvas.DrawLine(sx, frameTop, sx - frameHeight * 0.5f, frameTop + frameHeight, _strokePaint);
         }
 
         // Horizontale Dachlatten
-        using var lattenPaint = new SKPaint
-        {
-            Color = RoofFrameLight.WithAlpha(60),
-            IsAntialias = false,
-            StrokeWidth = 2
-        };
+        _strokePaint.Color = RoofFrameLight.WithAlpha(60);
+        _strokePaint.StrokeWidth = 2;
 
         for (float ly = frameTop + 20; ly < frameTop + frameHeight; ly += 24)
         {
-            canvas.DrawLine(frameLeft, ly, frameLeft + frameWidth, ly, lattenPaint);
+            canvas.DrawLine(frameLeft, ly, frameLeft + frameWidth, ly, _strokePaint);
         }
     }
 
@@ -261,36 +270,32 @@ public class RoofTilingRenderer
     private void DrawRidge(SKCanvas canvas, float x, float y, float width, float height)
     {
         // Hauptkoerper des Firsts
-        using var ridgePaint = new SKPaint { Color = RidgeColor, IsAntialias = false };
-        canvas.DrawRect(x - 4, y, width + 8, height, ridgePaint);
+        _fillPaint.Color = RidgeColor;
+        canvas.DrawRect(x - 4, y, width + 8, height, _fillPaint);
 
         // Obere Kante (heller Glanz)
-        using var highlightPaint = new SKPaint { Color = RidgeHighlight, IsAntialias = false };
-        canvas.DrawRect(x - 4, y, width + 8, 4, highlightPaint);
+        _fillPaint.Color = RidgeHighlight;
+        canvas.DrawRect(x - 4, y, width + 8, 4, _fillPaint);
 
         // Untere Schattenkante
-        using var shadowPaint = new SKPaint { Color = RoofFrameDark, IsAntialias = false };
-        canvas.DrawRect(x - 4, y + height - 2, width + 8, 2, shadowPaint);
+        _fillPaint.Color = RoofFrameDark;
+        canvas.DrawRect(x - 4, y + height - 2, width + 8, 2, _fillPaint);
 
         // First-Ziegel Segmente (vertikale Trennlinien)
-        using var segmentPaint = new SKPaint
-        {
-            Color = RoofFrameDark.WithAlpha(80),
-            IsAntialias = false,
-            StrokeWidth = 1
-        };
+        _strokePaint.Color = RoofFrameDark.WithAlpha(80);
+        _strokePaint.StrokeWidth = 1;
 
         float segmentWidth = width / 8;
         for (float sx = x + segmentWidth; sx < x + width; sx += segmentWidth)
         {
-            canvas.DrawLine(sx, y + 2, sx, y + height - 2, segmentPaint);
+            canvas.DrawLine(sx, y + 2, sx, y + height - 2, _strokePaint);
         }
 
         // Dekorative Firstkappe-Punkte
-        using var capPaint = new SKPaint { Color = new SKColor(0xBC, 0x8F, 0x6B), IsAntialias = false };
+        _fillPaint.Color = new SKColor(0xBC, 0x8F, 0x6B);
         for (float cx = x + segmentWidth / 2; cx < x + width; cx += segmentWidth)
         {
-            canvas.DrawRect(cx - 2, y + height / 2 - 2, 4, 4, capPaint);
+            canvas.DrawRect(cx - 2, y + height / 2 - 2, 4, 4, _fillPaint);
         }
     }
 
@@ -304,12 +309,6 @@ public class RoofTilingRenderer
     private void DrawTiles(SKCanvas canvas, RoofTileData[] tiles, int cols, int rows,
         float gridLeft, float gridTop, float tileWidth, float tileHeight, float spacing, float deltaTime)
     {
-        using var tilePaint = new SKPaint { IsAntialias = false };
-        using var borderPaint = new SKPaint { IsAntialias = false, Style = SKPaintStyle.Stroke, StrokeWidth = 2 };
-        using var highlightPaint = new SKPaint { IsAntialias = false };
-        using var shadowPaint = new SKPaint { IsAntialias = false };
-        using var iconPaint = new SKPaint { IsAntialias = false, StrokeWidth = 2 };
-
         for (int i = 0; i < tiles.Length && i < cols * rows; i++)
         {
             int row = i / cols;
@@ -350,60 +349,57 @@ public class RoofTilingRenderer
             // --- Dachziegel zeichnen (leicht gebogene Optik) ---
 
             // Hauptflaeche des Ziegels
-            tilePaint.Color = tileColor;
-            canvas.DrawRect(tx, ty, tileWidth, tileHeight, tilePaint);
+            _fillPaint.Color = tileColor;
+            canvas.DrawRect(tx, ty, tileWidth, tileHeight, _fillPaint);
 
             // Obere Kante heller (Glanz-Highlight wie gebogener Ziegel)
             if (!tile.IsEmpty)
             {
                 float highlightHeight = Math.Max(3, tileHeight * 0.2f);
-                highlightPaint.Color = tileColor.WithAlpha(255);
                 var lighter = LightenColor(tileColor, 0.25f);
-                highlightPaint.Color = lighter;
-                canvas.DrawRect(tx + 1, ty, tileWidth - 2, highlightHeight, highlightPaint);
+                _fillPaint.Color = lighter;
+                canvas.DrawRect(tx + 1, ty, tileWidth - 2, highlightHeight, _fillPaint);
 
                 // Zweiter Glanz-Streifen (subtiler, fuer gewoelbte Optik)
-                highlightPaint.Color = lighter.WithAlpha(100);
-                canvas.DrawRect(tx + 2, ty + 1, tileWidth - 4, 2, highlightPaint);
+                _fillPaint.Color = lighter.WithAlpha(100);
+                canvas.DrawRect(tx + 2, ty + 1, tileWidth - 4, 2, _fillPaint);
             }
 
             // Untere Kante dunkler (Schatten)
             if (!tile.IsEmpty)
             {
                 float shadowHeight = Math.Max(2, tileHeight * 0.12f);
-                var darker = DarkenColor(tileColor, 0.3f);
-                shadowPaint.Color = darker;
-                canvas.DrawRect(tx, ty + tileHeight - shadowHeight, tileWidth, shadowHeight, shadowPaint);
+                _fillPaint.Color = DarkenColor(tileColor, 0.3f);
+                canvas.DrawRect(tx, ty + tileHeight - shadowHeight, tileWidth, shadowHeight, _fillPaint);
             }
 
             // Seitliche Kanten (leichter Schatten links/rechts)
             if (!tile.IsEmpty)
             {
-                var sideShadow = DarkenColor(tileColor, 0.15f);
-                shadowPaint.Color = sideShadow;
-                canvas.DrawRect(tx, ty, 2, tileHeight, shadowPaint);
-                canvas.DrawRect(tx + tileWidth - 2, ty, 2, tileHeight, shadowPaint);
+                _fillPaint.Color = DarkenColor(tileColor, 0.15f);
+                canvas.DrawRect(tx, ty, 2, tileHeight, _fillPaint);
+                canvas.DrawRect(tx + tileWidth - 2, ty, 2, tileHeight, _fillPaint);
             }
 
             // Rand-Farbe je nach Zustand
             if (tile.IsHint)
             {
-                borderPaint.Color = HintBorder;
+                _borderPaint.Color = HintBorder;
             }
             else if (tile.HasError)
             {
-                borderPaint.Color = ErrorFlashColor;
+                _borderPaint.Color = ErrorFlashColor;
             }
             else if (tile.IsPlaced)
             {
-                borderPaint.Color = PlacedBorder;
+                _borderPaint.Color = PlacedBorder;
             }
             else
             {
-                borderPaint.Color = DefaultBorder;
+                _borderPaint.Color = DefaultBorder;
             }
 
-            canvas.DrawRect(tx, ty, tileWidth, tileHeight, borderPaint);
+            canvas.DrawRect(tx, ty, tileWidth, tileHeight, _borderPaint);
 
             // --- Icons auf dem Ziegel ---
 
@@ -414,18 +410,18 @@ public class RoofTilingRenderer
             if (tile.IsHint)
             {
                 // Schloss-Symbol fuer vorplatzierte Ziegel
-                DrawLockIcon(canvas, centerX, centerY, iconSize, iconPaint);
+                DrawLockIcon(canvas, centerX, centerY, iconSize);
             }
             else if (tile.IsPlaced && !tile.HasError)
             {
                 // Haekchen fuer korrekt platzierte Ziegel
-                DrawCheckIcon(canvas, centerX, centerY, iconSize, iconPaint);
+                DrawCheckIcon(canvas, centerX, centerY, iconSize);
             }
             else if (tile.IsEmpty)
             {
                 // Leerer Platz: Dezenter Punkt als Hinweis
-                tilePaint.Color = new SKColor(0x60, 0x60, 0x60);
-                canvas.DrawCircle(centerX, centerY, 3, tilePaint);
+                _fillPaint.Color = new SKColor(0x60, 0x60, 0x60);
+                canvas.DrawCircle(centerX, centerY, 3, _fillPaint);
             }
         }
     }
@@ -433,49 +429,49 @@ public class RoofTilingRenderer
     /// <summary>
     /// Zeichnet ein kleines Schloss-Symbol (Pixel-Art).
     /// </summary>
-    private static void DrawLockIcon(SKCanvas canvas, float cx, float cy, float size, SKPaint paint)
+    private void DrawLockIcon(SKCanvas canvas, float cx, float cy, float size)
     {
-        paint.Color = LockColor;
-        paint.Style = SKPaintStyle.Fill;
+        _iconPaint.Color = LockColor;
+        _iconPaint.Style = SKPaintStyle.Fill;
 
         // Schloss-Koerper (Rechteck)
         float bodyW = size * 1.2f;
         float bodyH = size * 0.9f;
-        canvas.DrawRect(cx - bodyW / 2, cy - bodyH / 4, bodyW, bodyH, paint);
+        canvas.DrawRect(cx - bodyW / 2, cy - bodyH / 4, bodyW, bodyH, _iconPaint);
 
         // Schloss-Buegel (oben, halbkreisfoermig per Pixel-Bloecke)
         float buegelW = size * 0.7f;
         float buegelH = size * 0.6f;
-        paint.Style = SKPaintStyle.Stroke;
-        paint.StrokeWidth = 2;
-        canvas.DrawRect(cx - buegelW / 2, cy - bodyH / 4 - buegelH, buegelW, buegelH, paint);
+        _iconPaint.Style = SKPaintStyle.Stroke;
+        _iconPaint.StrokeWidth = 2;
+        canvas.DrawRect(cx - buegelW / 2, cy - bodyH / 4 - buegelH, buegelW, buegelH, _iconPaint);
 
         // Schlueselloch (dunkler Punkt in der Mitte)
-        paint.Style = SKPaintStyle.Fill;
-        paint.Color = new SKColor(0x00, 0x00, 0x00, 0x60);
-        canvas.DrawCircle(cx, cy + bodyH * 0.15f, 2, paint);
+        _iconPaint.Style = SKPaintStyle.Fill;
+        _iconPaint.Color = new SKColor(0x00, 0x00, 0x00, 0x60);
+        canvas.DrawCircle(cx, cy + bodyH * 0.15f, 2, _iconPaint);
     }
 
     /// <summary>
     /// Zeichnet ein Haekchen-Symbol (Pixel-Art).
     /// </summary>
-    private static void DrawCheckIcon(SKCanvas canvas, float cx, float cy, float size, SKPaint paint)
+    private void DrawCheckIcon(SKCanvas canvas, float cx, float cy, float size)
     {
-        paint.Color = CheckColor;
-        paint.Style = SKPaintStyle.Stroke;
-        paint.StrokeWidth = Math.Max(2, size * 0.3f);
-        paint.StrokeCap = SKStrokeCap.Square;
+        _iconPaint.Color = CheckColor;
+        _iconPaint.Style = SKPaintStyle.Stroke;
+        _iconPaint.StrokeWidth = Math.Max(2, size * 0.3f);
+        _iconPaint.StrokeCap = SKStrokeCap.Square;
 
         // Haekchen: zwei Linien
         float halfSize = size * 0.6f;
         canvas.DrawLine(
             cx - halfSize * 0.5f, cy,
             cx - halfSize * 0.1f, cy + halfSize * 0.5f,
-            paint);
+            _iconPaint);
         canvas.DrawLine(
             cx - halfSize * 0.1f, cy + halfSize * 0.5f,
             cx + halfSize * 0.5f, cy - halfSize * 0.4f,
-            paint);
+            _iconPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -579,8 +575,6 @@ public class RoofTilingRenderer
     {
         if (_sparkCount == 0) return;
 
-        using var sparkPaint = new SKPaint { IsAntialias = false };
-
         for (int i = 0; i < _sparkCount; i++)
         {
             var p = _sparks[i];
@@ -601,8 +595,8 @@ public class RoofTilingRenderer
             _sparks[i] = p;
 
             float alpha = 1 - (p.Life / p.MaxLife);
-            sparkPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
-            canvas.DrawRect(p.X - p.Size / 2, p.Y - p.Size / 2, p.Size, p.Size, sparkPaint);
+            _fillPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
+            canvas.DrawRect(p.X - p.Size / 2, p.Y - p.Size / 2, p.Size, p.Size, _fillPaint);
         }
     }
 
@@ -634,8 +628,6 @@ public class RoofTilingRenderer
             };
         }
 
-        using var dustPaint = new SKPaint { IsAntialias = false };
-
         for (int i = 0; i < _dustCount; i++)
         {
             var p = _dust[i];
@@ -663,8 +655,8 @@ public class RoofTilingRenderer
             byte finalAlpha = (byte)(p.Alpha * alpha);
 
             // Warme Holzstaub-Farbe
-            dustPaint.Color = new SKColor(0xA0, 0x8B, 0x70, finalAlpha);
-            canvas.DrawRect(p.X, p.Y, p.Size, p.Size, dustPaint);
+            _fillPaint.Color = new SKColor(0xA0, 0x8B, 0x70, finalAlpha);
+            canvas.DrawRect(p.X, p.Y, p.Size, p.Size, _fillPaint);
         }
     }
 
@@ -683,34 +675,21 @@ public class RoofTilingRenderer
 
         // Goldener Glow ueber das gesamte Dach
         byte alpha = (byte)(intensity * pulse * 80);
-        using var glowPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0xD7, 0x00, alpha),
-            IsAntialias = false
-        };
+        _fillPaint.Color = new SKColor(0xFF, 0xD7, 0x00, alpha);
         canvas.DrawRect(gridLeft - 8, gridTop - ridgeHeight - 8,
-            gridWidth + 16, gridHeight + ridgeHeight + 16, glowPaint);
+            gridWidth + 16, gridHeight + ridgeHeight + 16, _fillPaint);
 
         // Goldene Randlinie (staerker)
         byte borderAlpha = (byte)(intensity * 180);
-        using var borderPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0xD7, 0x00, borderAlpha),
-            IsAntialias = false,
-            StrokeWidth = 3,
-            Style = SKPaintStyle.Stroke
-        };
+        _strokePaint.Color = new SKColor(0xFF, 0xD7, 0x00, borderAlpha);
+        _strokePaint.StrokeWidth = 3;
         canvas.DrawRect(gridLeft - 10, gridTop - ridgeHeight - 10,
-            gridWidth + 20, gridHeight + ridgeHeight + 20, borderPaint);
+            gridWidth + 20, gridHeight + ridgeHeight + 20, _strokePaint);
 
         // Goldene Sterne oben (3 Stueck, versetzt animiert)
         if (intensity > 0.3f)
         {
-            using var starPaint = new SKPaint
-            {
-                Color = new SKColor(0xFF, 0xD7, 0x00, (byte)(intensity * 220)),
-                IsAntialias = true
-            };
+            _fillPaintAA.Color = new SKColor(0xFF, 0xD7, 0x00, (byte)(intensity * 220));
 
             float centerX = gridLeft + gridWidth / 2;
             float starY = gridTop - ridgeHeight - 20;
@@ -721,7 +700,7 @@ public class RoofTilingRenderer
             {
                 float sx = centerX + s * 25;
                 float sOffset = (float)Math.Sin(_time * 4 + s * 1.2f) * 2;
-                DrawStar(canvas, sx, starY + sOffset, starSize, starPaint);
+                DrawStar(canvas, sx, starY + sOffset, starSize);
             }
         }
     }
@@ -729,17 +708,17 @@ public class RoofTilingRenderer
     /// <summary>
     /// Zeichnet einen einfachen 4-zackigen Stern.
     /// </summary>
-    private static void DrawStar(SKCanvas canvas, float cx, float cy, float size, SKPaint paint)
+    private void DrawStar(SKCanvas canvas, float cx, float cy, float size)
     {
         // 4-zackiger Stern aus Rauten
-        canvas.DrawRect(cx - size / 2, cy - 1, size, 2, paint);
-        canvas.DrawRect(cx - 1, cy - size / 2, 2, size, paint);
+        canvas.DrawRect(cx - size / 2, cy - 1, size, 2, _fillPaintAA);
+        canvas.DrawRect(cx - 1, cy - size / 2, 2, size, _fillPaintAA);
         // Diagonale Zacken (kleiner)
         float d = size * 0.35f;
-        canvas.DrawRect(cx - d, cy - d, d * 0.7f, d * 0.7f, paint);
-        canvas.DrawRect(cx + d * 0.3f, cy - d, d * 0.7f, d * 0.7f, paint);
-        canvas.DrawRect(cx - d, cy + d * 0.3f, d * 0.7f, d * 0.7f, paint);
-        canvas.DrawRect(cx + d * 0.3f, cy + d * 0.3f, d * 0.7f, d * 0.7f, paint);
+        canvas.DrawRect(cx - d, cy - d, d * 0.7f, d * 0.7f, _fillPaintAA);
+        canvas.DrawRect(cx + d * 0.3f, cy - d, d * 0.7f, d * 0.7f, _fillPaintAA);
+        canvas.DrawRect(cx - d, cy + d * 0.3f, d * 0.7f, d * 0.7f, _fillPaintAA);
+        canvas.DrawRect(cx + d * 0.3f, cy + d * 0.3f, d * 0.7f, d * 0.7f, _fillPaintAA);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -779,5 +758,19 @@ public class RoofTilingRenderer
         byte g = (byte)(color.Green * (1 - amount));
         byte b = (byte)(color.Blue * (1 - amount));
         return new SKColor(r, g, b, color.Alpha);
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+        _fillPaint?.Dispose();
+        _fillPaintAA?.Dispose();
+        _strokePaint?.Dispose();
+        _iconPaint?.Dispose();
+        _borderPaint?.Dispose();
     }
 }

@@ -13,7 +13,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// ViewModel for the Sawing mini-game.
 /// Player must stop a moving marker in the target zone.
 /// </summary>
-public partial class SawingGameViewModel : ViewModelBase, IDisposable
+public sealed partial class SawingGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

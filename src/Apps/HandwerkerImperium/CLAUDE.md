@@ -18,8 +18,8 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 - **7 Gebaeude** (Canteen, Storage, Office, Showroom, TrainingCenter, VehicleFleet, WorkshopExtension)
 - **Daily Challenges** (3/Tag) + **Weekly Missions** (5/Woche, 50 Goldschrauben Komplett-Bonus)
 - **Daily Login Rewards** (30-Tage-Zyklus) + **Streak-Rettung** (5 Goldschrauben)
-- **Achievements** (33 Erfolge) + **Milestone-Celebrations** (Spieler-Level + Workshop-Level)
-- **Prestige-System** (7 Stufen Bronze-Legende, progressive Bewahrung, Soft-Cap ab 2.0x)
+- **Achievements** (94 Erfolge) + **Milestone-Celebrations** (Spieler-Level + Workshop-Level)
+- **Prestige-System** (7 Stufen Bronze-Legende, progressive Bewahrung, Hard-Cap bei 200x)
 - **Events** (8 zufaellige + saisonaler Multiplikator, Intervall skaliert mit Prestige)
 - **Auftragstypen** (Standard/Large 1.8x/Weekly 4x/Cooperation 2.5x) + **Stammkunden** (bis 1.5x Bonus)
 - **Bulk Buy** (x1/x10/x100/Max) + **Hold-to-Upgrade** (schnelles Hochleveln)
@@ -28,9 +28,9 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 - **Feierabend-Rush** (2h 2x-Boost, 1x taeglich gratis, danach 10 Goldschrauben)
 - **Meisterwerkzeuge** (12 Artefakte, 5 Seltenheiten, passive Einkommens-Boni)
 - **Lieferant-System** (Variable Rewards alle 2-5 Min: Geld, Schrauben, XP, Mood, Speed)
-- **Prestige-Shop** (13 Items) + **Prestige-Pass** (2,99 EUR IAP, +50% Prestige-Punkte)
+- **Prestige-Shop** (22 Items in 4 Kategorien) + **Prestige-Pass** (2,99 EUR IAP, +50% Prestige-Punkte)
 - **Story-System** (25 Kapitel von NPC "Meister Hans" mit SkiaSharp-Portrait)
-- **Tutorial** (8 Schritte, Bottom-Sheet Overlay, ueberspringbar)
+- **Kontextuelles Tutorial** (17 Tooltip-Bubbles + Welcome-Dialog, ContextualHintService, SeenHints-Tracking)
 - **In-App Review** (Level 20/50/100, erstes Prestige, 50 Auftraege)
 - **Benachrichtigungen** (4 Typen, AlarmManager + BroadcastReceiver, BootReceiver, 6 Sprachen)
 - **Google Play Games** (Leaderboards, kein Cloud-Save im NuGet v121.0.0.2)
@@ -65,6 +65,13 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 
 ## Architektur-Besonderheiten
 
+### Dispose / Memory Leak Prevention
+
+`App.DisposeServices()` gibt alle IDisposable-Singletons frei (IGameLoopService, GameJuiceEngine, MainViewModel, IFirebaseService).
+- **Desktop**: `desktop.ShutdownRequested += (_, _) => DisposeServices();`
+- **Android**: `MainActivity.OnDestroy()` ruft `App.DisposeServices()` als ERSTE Zeile auf (vor AdMob-Dispose)
+- Pattern identisch mit BomberBlast
+
 ### MainViewModel Partial-Class-Split
 
 MainViewModel ist in 6 partielle Dateien aufgeteilt:
@@ -73,7 +80,7 @@ MainViewModel ist in 6 partielle Dateien aufgeteilt:
 |-------|--------|
 | `MainViewModel.cs` | Felder, Constructor, ~120 ObservableProperties, Event-Handler, GameTick, Dispose |
 | `MainViewModel.Navigation.cs` | Tab-Auswahl, NavigateTo-Commands, HandleBackPressed, MiniGame-Navigation |
-| `MainViewModel.Dialogs.cs` | Alert/Confirm, Prestige-Bestaetigung, Story-Dialog, Tutorial-Overlay |
+| `MainViewModel.Dialogs.cs` | Alert/Confirm, Prestige-Bestaetigung, Story-Dialog, Kontextuelle Hints |
 | `MainViewModel.Economy.cs` | Workshop-Kauf/Upgrade, Auftraege, Rush, Lieferant, BulkBuy, Hold-to-Upgrade |
 | `MainViewModel.Missions.cs` | Weekly Missions, Welcome-Back, Lucky Spin, Streak-Rettung, Quick Jobs, Daily Challenges, Meisterwerkzeuge |
 | `MainViewModel.Init.cs` | InitializeAsync, Cloud-Save, Offline-Earnings, Daily Reward |
@@ -83,7 +90,7 @@ MainViewModel ist in 6 partielle Dateien aufgeteilt:
 ### Dialog-UserControls (Views/Dialogs/)
 
 MainView-Dialoge in eigenstaendige UserControls extrahiert (reduziert MainView.axaml um ~650 Zeilen):
-`OfflineEarningsDialog`, `DailyRewardDialog`, `WelcomeBackOfferDialog`, `AchievementDialog`, `TutorialDialog`, `StoryDialog` (Hans-Blinzel-Animation via StoryDialogControl.UpdateHansAnimation()), `AlertDialog`, `ConfirmDialog`, `WorkerProfileDialog`.
+`OfflineEarningsDialog`, `DailyRewardDialog`, `WelcomeBackOfferDialog`, `AchievementDialog`, `ContextualHintDialog` (Tooltip-Bubble/Dialog, ersetzt TutorialDialog), `StoryDialog` (Hans-Blinzel-Animation via StoryDialogControl.UpdateHansAnimation()), `AlertDialog`, `ConfirmDialog`, `WorkerProfileDialog`.
 Alle erben `DataContext="{Binding}"` vom MainViewModel. Backdrop-Dismiss im Code-Behind wo noetig.
 
 ### 5-Tab Navigation
@@ -104,12 +111,18 @@ Alle erben `DataContext="{Binding}"` vom MainViewModel. Backdrop-Dismiss im Code
 
 ### Gilden-Sub-Seiten (Views/Guild/)
 
-GuildView als Hub mit 3 Navigations-Karten:
+GuildView als Hub mit Sub-ViewModel-Delegation. GuildViewModel leitet an 3 Sub-VMs weiter:
+- `GuildWarSeasonViewModel` → `GuildWarSeasonView` (War-Dashboard, Log, Bonus-Missionen)
+- `GuildBossViewModel` → `GuildBossView` (Boss-Silhouette, HP, Damage-Feed, Leaderboard)
+- `GuildHallViewModel` → `GuildHallView` (Isometrisches HQ, 10 Gebäude, Upgrades)
+
+Weitere Sub-Seiten:
 - `GuildResearchView` - SkiaSharp 2D-Forschungsbaum (18 Items, 6 Kategorien, Bezier-Verbindungen)
 - `GuildMembersView` - Mitglieder-Liste mit Avatar/Name/Rolle/Beitrag
 - `GuildInviteView` - 6-stelliger Invite-Code, Spieler-Browser
+- `GuildAchievementsView` - 30 Achievements (10 Typen x 3 Tiers) mit SkiaSharp-Renderer
 
-Navigation via `NavigationRequested` Events. Zurueck-Navigation (".." oder Android-Back) fuehrt zum Guild-Hub.
+Navigation via `NavigationRequested` Events. Sub-VM-Events werden an GuildViewModel propagiert. Zurueck-Navigation (".." oder Android-Back) fuehrt zum Guild-Hub.
 
 ### Isometrische Weltkarte (Graphics/IsometricWorld/)
 
@@ -214,7 +227,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 20fps Render-Loop.
 | `DailyRewardService` | 30-Tage Login-Zyklus |
 | `QuickJobService` | Schnelle MiniGame-Jobs (Rotation 8-15min, Limit 20-40/Tag) |
 | `StoryService` | 25 Kapitel von Meister Hans, fortschrittsbasiert |
-| `AchievementService` | 33 Erfolge + Goldschrauben-Rewards |
+| `AchievementService` | 94 Erfolge + Goldschrauben-Rewards, PrestigeCompleted-Event |
 | `OfflineProgressService` | Offline-Einnahmen (Staffelung 100%/50%/25%) |
 | `GoalService` | Dynamisches Naechstes-Ziel-System (4 Prioritaeten, Cache mit Dirty-Flag) |
 | `OrderGeneratorService` | 4 OrderTypes, Stammkunden-Zuweisung, Reputation beeinflusst Qualitaet |
@@ -225,8 +238,14 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 20fps Render-Loop.
 | `ManagerService` | 14 Vorarbeiter: Unlock/Upgrade (Lv.1-5), Workshop-Boni |
 | `TournamentService` | Woechentliche MiniGame-Turniere, 9 simulierte Gegner |
 | `BattlePassService` | 30-Tier Battle Pass, Free/Premium, 30-Tage-Saisons |
-| `SeasonalEventService` | 4 Events/Jahr, Saisonwaehrung, Event-Shop |
-| `GuildService` | Firebase REST API, Gilden-CRUD, Wochenziele, 18 Forschungen, Einladungen |
+| `SeasonalEventService` | 4 Events/Jahr (Mär/Jun/Sep/Dez, 1.-14.), SP-Waehrung (5+Bonus pro Auftrag), Event-Shop (4 Items/Saison), IDisposable (OrderCompleted-Subscription) |
+| `GuildService` | Firebase REST API, Gilden-CRUD, Wochenziele, Einladungen, GetMaxMembers() |
+| `GuildResearchService` | 18 Gilden-Forschungen (6 Kategorien), Timer, Effekt-Cache, SemaphoreSlim |
+| `GuildWarSeasonService` | Gilden-Krieg Saison-System (Matchmaking, Scoring, Ligen) |
+| `GuildHallService` | Interaktives Gilden-HQ mit 10 Gebäuden (Level 1-5), Upgrade-Timer, Effekt-Cache |
+| `GuildBossService` | Kooperative Gilden-Bosse (6 Typen), Schaden-Tracking, Spawn/Despawn, Belohnungen |
+| `GuildTipService` | Kontextuelle Gilden-Tipps (Preferences-basiert, 24h Cooldown) |
+| `GuildAchievementService` | 30 Gilden-Achievements (10 Typen x 3 Tiers), Firebase-Tracking |
 | `FirebaseService` | Anonymous Auth, Token-Refresh (55min), CRUD, 5s Timeout, SemaphoreSlim |
 | `CraftingService` | 13 Rezepte in 3 Tiers, Produktionsketten, Echtzeit-Timer |
 | `WeeklyMissionService` | 5 Wochenmissionen, Montag-Reset, 50 Goldschrauben Bonus |
@@ -273,7 +292,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 20fps Render-Loop.
 | Splash-Screen | "Die Schmiede": Zahnraeder, Amboss, Hammer-Animation, Glut-Partikel |
 | Gluecksrad | LuckySpinWheelRenderer: 8 Segmente, Nieten-Rand, SkiaSharp-Icons, Spin-Animation ~60fps |
 | Iso-Weltkarte | 2.5D 8x8 Diamond-Grid, 10 Workshop-Gebaeude, Kamera, Radial-Menue, Partikel, Tag/Nacht |
-| Gilden-Forschungsbaum | 18 Items, Bezier-Verbindungen, Flow-Partikel, GuildHallHeader (Steinmauer, Fackeln, Emblem) |
+| Gilden-Forschungsbaum | 18 Items, Bezier-Verbindungen, Flow-Partikel, GuildHallHeader (Steinmauer, Fackeln, Emblem), Node-Namen+Kosten/Effekt-Labels, Lock-Badges, Drop-Shadow, Inner-Highlight |
 | Research-Labor | ResearchLabRenderer: Werkstatt-Szene, Zahnraeder, Dampf, Gluehbirne |
 | Research-Baum | 2D Top-Heroes-Style, Branch-Farben, Flow-Partikel, Branch-Banner, Celebration-Confetti |
 | Forschungs-Hintergrund | ResearchBackgroundRenderer: Nussholz, Holzmaserung, Zahnrad-Wasserzeichen, Vignette |
@@ -361,15 +380,53 @@ Effekte ueber `GuildMembership`-Properties gecacht:
 
 ### Gilden-Dateien
 
+#### Models
+- `Models/GuildEnums.cs`: Zentrale Enums (GuildRole, GuildLeague, WarPhase, BossStatus, GuildBuildingId, GuildBossType, GuildAchievementCategory, AchievementTier)
 - `Models/GuildResearch.cs`: Kategorien, Effekt-Typen, Definitionen, States, Display
-- `Models/Guild.cs`: GuildMembership +14 Research-Properties + ApplyResearchEffects()
-- `Services/GuildService.cs`: GetGuildResearchAsync(), ContributeToResearchAsync(), GetResearchEffects(), CheckResearchCompletionAsync(), SendInviteAsync(), GetReceivedInvitesAsync(), AcceptInviteAsync(), DeclineInviteAsync()
-- `ViewModels/GuildViewModel.cs`: Research + Timer auto-completion, ContributeDialog, Einladungs-Inbox, LoadGuildResearchAsync()
+- `Models/GuildWarSeason.cs`: Saison-System (GuildWarSeasonData, GuildLeagueEntry, GuildWarPlayerScore, GuildWarLogEntry, WarBonusMission, WarSeasonDisplayData)
+- `Models/GuildBoss.cs`: Boss-System (FirebaseGuildBoss, GuildBossDamage, GuildBossDefinition mit 6 Bossen, GuildBossDisplayData, BossDamageEntry)
+- `Models/GuildHall.cs`: Hauptquartier (GuildBuildingState, GuildBuildingCost, GuildBuildingDefinition mit 10 Gebaeuden, GuildBuildingDisplay, GuildHallEffects)
+- `Models/GuildAchievement.cs`: Achievements (GuildAchievementState, GuildAchievementDefinition mit 30 Achievements = 10 Typen x 3 Tiers, GuildAchievementDisplay)
+- `Models/Guild.cs`: GuildMembership +14 Research-Properties + ApplyResearchEffects() + 6 Hall-Properties + ApplyHallEffects() + guildHallLevel + leagueId
+- `Models/Firebase/FirebaseGuildData.cs`: +maxMembers, leagueId, leaguePoints, hallLevel, description
+- `Models/Firebase/FirebaseGuildMember.cs`: +lastActiveAt, weeklyWarScore, totalWarScore
+- `Models/Firebase/GuildWar.cs`: +guildALevel, guildBLevel, phase, phaseEndsAt
+
+#### Services & Views
+- `Services/GuildService.cs`: Gilden-CRUD, Wochenziele, Einladungen (SendInvite, AcceptInvite, DeclineInvite), GetMaxMembers(). Research-Logik nach GuildResearchService extrahiert
+- `Services/GuildResearchService.cs`: Extrahierte Research-Logik (IGuildResearchService). GetGuildResearchAsync(), ContributeToResearchAsync(), CheckResearchCompletionAsync(), GetCachedEffects(), RefreshResearchCacheAsync(). SemaphoreSlim Thread-Safety
+- `Services/GuildWarSeasonService.cs`: Saison-basierter Gilden-Krieg (Matchmaking, Scoring, Ligen-Auf/Abstieg, Bonus-Missionen)
+- `Services/GuildHallService.cs`: 10 Gebäude mit Upgrade-Timer (1-12h), Kosten (GS+Gildengeld), Effekt-Cache auf GuildMembership
+- `Services/GuildBossService.cs`: 6 Boss-Typen, Schadensbeitrag (Crafting/Orders/MiniGames/Donations), Spawn/Despawn-Logik, Belohnungen
+- `Services/GuildTipService.cs`: Kontextuelle Tipps (Preferences-basiert, 24h Cooldown, IsBusy-Guard)
+- `Services/GuildAchievementService.cs`: 30 Achievements (10 Typen x 3 Tiers), Firebase-State-Tracking, Fortschrittsberechnung
+- `ViewModels/GuildViewModel.cs`: Research + Timer auto-completion, ContributeDialog, Einladungs-Inbox, nutzt IGuildResearchService
 - `Views/Guild/GuildResearchView.axaml(.cs)`: 3 Renderer, 20fps, DPI-skalierter HitTest, ToList-Cache
 - `Graphics/GuildResearchBackgroundRenderer.cs`: Pergament + Zahnrad-Wasserzeichen
 - `Graphics/GuildResearchTreeRenderer.cs`: 18 Items, Bezier, Flow-Partikel, HitTest, Instanz-Paints, struct FlowParticle
 - `Graphics/GuildResearchIconRenderer.cs`: 18 Vektor-Icons
-- `Graphics/GuildHallHeaderRenderer.cs`: Steinmauer, Fackeln-Partikelsystem, Emblem
+- `Graphics/GuildHallHeaderRenderer.cs`: Steinmauer, Fackeln-Partikelsystem, Emblem, Shader-Cache
+- `Graphics/GuildLeagueBadgeRenderer.cs`: Liga-Wappen mit Schild, Tier-Farben (Bronze/Silber/Gold/Diamant), Gold-Shimmer
+- `Graphics/GuildBossRenderer.cs`: Boss-Silhouette mit Atem-Animation, HP-Balken mit Trail-Effekt, Damage-Feed (Swap-Remove, max 8)
+- `Graphics/GuildWarDashboardRenderer.cs`: Versus-Anzeige, Score-Balken, Phasen-Timeline (ATK/DEF/END), Bonus-Missionen, eingebetteter GuildLeagueBadgeRenderer
+- `Graphics/GuildWarLogRenderer.cs`: Kriegs-Log mit Zebra-Streifen, Glow für neue Einträge
+- `Graphics/GuildAchievementRenderer.cs`: Achievement-Karten mit Tier-Akzent, Fortschrittsbalken, Checkmark, Gold-Shimmer
+- `Graphics/GuildHallSceneRenderer.cs`: Isometrisches 8x6 Grid, 10 Gebäude-Positionen, Offscreen-Cache, Rauch-Partikel, Fenster-Glow, Fahne
+- `ViewModels/GuildWarSeasonViewModel.cs`: Sub-VM für War-Dashboard, Log, Bonus-Missionen
+- `ViewModels/GuildBossViewModel.cs`: Sub-VM für Boss-Anzeige, Schadens-Leaderboard
+- `ViewModels/GuildHallViewModel.cs`: Sub-VM für Hauptquartier-Gebäude, Upgrade-Aktionen
+- `Views/Guild/GuildWarSeasonView.axaml`: War-Dashboard mit SkiaSharp-Renderern
+- `Views/Guild/GuildBossView.axaml`: Boss-Anzeige mit SkiaSharp-Renderer
+- `Views/Guild/GuildHallView.axaml`: Hauptquartier-Szene mit SkiaSharp-Renderer
+- `Views/Guild/GuildAchievementsView.axaml`: Achievement-Liste mit SkiaSharp-Renderer
+
+### GameLoop-Integration (neue Gilden-Services)
+
+4 neue Services im GameLoopService (1s-Takt) mit gestaffelten Offsets:
+- `GuildBossService.CheckBossStatusAsync()` + `SpawnBossIfNeededAsync()` alle 60s (Offset 20)
+- `GuildHallService.CheckUpgradeCompletionAsync()` alle 60s (Offset 40)
+- `GuildAchievementService.CheckAllAchievementsAsync()` alle 300s (Offset 200)
+- `GuildWarSeasonService.CheckPhaseTransitionAsync()` + `CheckSeasonEndAsync()` alle 300s (Offset 260)
 
 ## Feierabend-Rush
 
@@ -406,18 +463,20 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 
 ## SKPath/SKFont-Caching
 
-5 Renderer nutzen gecachte Instanz-Felder statt `using var` pro Frame (GC-Reduktion bei 60fps):
+6 Renderer nutzen gecachte Instanz-Felder statt `using var` pro Frame (GC-Reduktion bei 60fps):
 
 | Renderer | Gecachte Felder |
 |----------|----------------|
 | InventGameRenderer | `_cachedPath` |
 | BlueprintGameRenderer | `_cachedPath` |
 | SawingGameRenderer | `_cachedPath` |
-| WiringGameRenderer | `_cachedPath` + `_cachedFont` |
+| InspectionGameRenderer | `_cachedPath` |
+| WiringGameRenderer | 8 SKPaint + 3 MaskFilter + `_cachedPath` + `_cachedFont` |
+| DesignPuzzleRenderer | 7 SKPaint + `_cachedFont` |
 | PipePuzzleRenderer | `_cachedPath` |
 | RewardCeremonyRenderer | `_iconPath` |
 
-**Nicht geaendert** (statische Methoden): InspectionGameRenderer, LuckySpinWheelRenderer, WorkerAvatarRenderer, PaintingGameRenderer, RoofTilingRenderer. **GameCardRenderer** und **ResearchIconRenderer** sind statische Klassen.
+**WorkerAvatarRenderer**: Statische wiederverwendbare Paints (s_fillNoAA, s_fillAA, s_strokeNoAA) + s_cachedPath. Kein IDisposable (static readonly Felder leben bis Prozessende). **GameCardRenderer** und **ResearchIconRenderer** sind statische Klassen.
 
 ## IDisposable auf allen Renderern
 
@@ -437,18 +496,27 @@ Alle SkiaSharp-Renderer mit Instanz-Feldern (SKPaint, SKFont, SKPath, SKShader, 
 | GameJuiceEngine | 6 SKPaint + 1 SKFont + 1 SKPath |
 | GameTabBarRenderer | 5 SKPaint + 2 MaskFilter + 7 SKPath |
 | CityRenderer | 12 SKPaint + 2 SKFont + 3 SKPath + CityWeatherSystem |
-| GuildResearchTreeRenderer | 4 SKPaint (_fill, _stroke, _text, _glowPaint) + 3 SKPath |
+| GuildResearchTreeRenderer | 4 SKPaint (_fill, _stroke, _text, _glowPaint) + 3 SKFont + 3 SKPath |
 | GuildHallHeaderRenderer | 1 SKShader |
+| GuildLeagueBadgeRenderer | 3 SKPaint + 2 SKFont + 1 SKPath |
+| GuildBossRenderer | 4 SKPaint + 3 SKFont + 1 SKPath |
+| GuildWarDashboardRenderer | 2 SKPaint + 3 SKFont + GuildLeagueBadgeRenderer |
+| GuildWarLogRenderer | 1 SKPaint + 2 SKFont |
+| GuildAchievementRenderer | 2 SKPaint + 3 SKFont + 1 SKPath |
+| GuildHallSceneRenderer | 2 SKPaint + 1 SKFont + 1 SKPath + 1 SKBitmap (Cache) |
 | GuildResearchBackgroundRenderer | 1 SKShader + 4 SKPath |
 | ResearchBackgroundRenderer | 1 SKShader + 5 SKPath |
 | ResearchLabRenderer | 6 SKPaint |
 | ForgeGameRenderer | 10 SKPaint |
-| PipePuzzleRenderer | 2 SKMaskFilter + 1 SKPath |
-| SawingGameRenderer | 1 SKPath |
+| PipePuzzleRenderer | 6 SKPaint + 3 SKMaskFilter + 1 SKPath |
+| SawingGameRenderer | 10 SKPaint + 1 SKPath |
 | BlueprintGameRenderer | 1 SKPath + 21 SKPaint (Instanz) + ~40 static readonly + 2 static MaskFilter |
 | InventGameRenderer | 23 SKPaint + 1 SKPath |
-| WiringGameRenderer | 1 SKPath + 1 SKFont |
+| WiringGameRenderer | 8 SKPaint + 3 SKMaskFilter + 1 SKPath + 1 SKFont |
+| DesignPuzzleRenderer | 7 SKPaint + 1 SKFont |
 | WorkshopSceneRenderer | 8 SKPaint |
 | WorkshopInteriorRenderer | 10 SKPaint |
 | PaintingGameRenderer | 13 SKPaint |
-| LuckySpinWheelRenderer | 6 SKPaint |
+| InspectionGameRenderer | 8 SKPaint + 1 SKPath (_fillNoAA, _fillAA, _fillAA2, _fillAA3, _strokeNoAA, _strokeAA, _strokeAA2, _strokeAA3, _cachedPath) |
+| RoofTilingRenderer | 5 SKPaint (_fillPaint, _strokePaint, _iconPaint, _fillPaintAA, _borderPaint) |
+| LuckySpinWheelRenderer | 11 SKPaint (_shadowPaint, _glintPaint, _segFillPaint, _segGlowPaint, _hubFillPaint, _pointerFillPaint, _iconShaderPaint, _iconBorderPaint, _iconFillPaint, _iconStrokePaint, _iconTextPaint) |

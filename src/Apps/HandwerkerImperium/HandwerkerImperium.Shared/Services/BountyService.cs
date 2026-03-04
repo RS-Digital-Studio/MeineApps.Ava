@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Services;
 /// Alle Spieler arbeiten gemeinsam an einem Ziel.
 /// Bounties rotieren alle 3 Tage.
 /// </summary>
-public class BountyService : IBountyService
+public sealed class BountyService : IBountyService
 {
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;

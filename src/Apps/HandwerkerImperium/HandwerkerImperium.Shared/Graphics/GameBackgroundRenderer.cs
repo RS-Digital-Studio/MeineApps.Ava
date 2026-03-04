@@ -38,7 +38,7 @@ public struct BackgroundParticle
 /// Jeder Screen hat einen eigenen visuellen Stil mit subtilen Partikeln.
 /// Gecachte SKPaint-Objekte fuer GC-freie Performance im Render-Loop.
 /// </summary>
-public class GameBackgroundRenderer : IDisposable
+public sealed class GameBackgroundRenderer : IDisposable
 {
     private bool _disposed;
     private const int MaxParticles = 20;

@@ -15,7 +15,7 @@ namespace HandwerkerImperium.ViewModels;
 /// Shows 3 branches (Tools, Management, Marketing) with 15 levels each.
 /// Handles starting/cancelling research and progress updates.
 /// </summary>
-public partial class ResearchViewModel : ViewModelBase
+public sealed partial class ResearchViewModel : ViewModelBase
 {
     private readonly IResearchService _researchService;
     private readonly IGameStateService _gameStateService;

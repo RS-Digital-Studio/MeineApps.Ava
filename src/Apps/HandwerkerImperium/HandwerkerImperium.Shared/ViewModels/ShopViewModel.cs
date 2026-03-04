@@ -15,7 +15,7 @@ namespace HandwerkerImperium.ViewModels;
 /// ViewModel for the shop page.
 /// Manages in-app purchases and premium features.
 /// </summary>
-public partial class ShopViewModel : ViewModelBase, IDisposable
+public sealed partial class ShopViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private bool _isBusy;

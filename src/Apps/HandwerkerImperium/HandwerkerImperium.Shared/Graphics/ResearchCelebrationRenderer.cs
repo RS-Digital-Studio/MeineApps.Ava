@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Graphics;
 /// - Aufsteigende Bonus-Texte ("+5% Effizienz")
 /// - Leuchtende Verbindungslinie zum nächsten Item
 /// </summary>
-public class ResearchCelebrationRenderer : IDisposable
+public sealed class ResearchCelebrationRenderer : IDisposable
 {
     private bool _disposed;
     // Celebration-State

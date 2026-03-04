@@ -1,0 +1,183 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:HandwerkerImperium.ViewModels"
+             x:Class="HandwerkerImperium.Views.Dialogs.ContextualHintDialog"
+             x:DataType="vm:MainViewModel">
+
+  <!-- Kontextueller Hint: Dialog-Modus (zentriert) oder Tooltip-Modus (oben/unten) -->
+
+  <!-- Dialog-Modus (Welcome etc.) - zentrierter Dialog mit vollem Overlay -->
+  <Panel IsVisible="{Binding IsHintVisible}">
+
+    <!-- Backdrop -->
+    <Border Background="{StaticResource DialogOverlayBrush}"
+            IsVisible="{Binding IsHintDialog}"
+            IsHitTestVisible="{Binding IsHintDialog}"
+            AutomationProperties.AutomationId="Main_Overlay_HintDialog" />
+
+    <!-- Leichtes Backdrop fuer Tooltip-Modus (nicht blockierend, aber Aufmerksamkeit lenkend) -->
+    <Border Background="#55000000"
+            IsVisible="{Binding !IsHintDialog}"
+            PointerPressed="OnBackdropPressed"
+            AutomationProperties.AutomationId="Main_Overlay_HintTooltip" />
+
+    <!-- Dialog-Modus: Zentrierte Bubble -->
+    <Border IsVisible="{Binding IsHintDialog}"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
+            MaxWidth="340" Margin="24"
+            Background="{DynamicResource SurfaceBrush}"
+            BorderBrush="{StaticResource CraftPrimaryBrush}"
+            BorderThickness="2"
+            CornerRadius="20"
+            Padding="24"
+            BoxShadow="0 0 32 0 #50D97706"
+            PointerPressed="OnBubblePressed"
+            RenderTransform="scale(1)"
+            RenderTransformOrigin="50%,50%"
+            AutomationProperties.AutomationId="Main_Border_HintDialogBubble">
+      <Border.Transitions>
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+        </Transitions>
+      </Border.Transitions>
+      <StackPanel Spacing="16">
+        <!-- Titel -->
+        <TextBlock Text="{Binding ActiveHintTitle}"
+                   FontSize="20" FontWeight="Bold"
+                   Foreground="{StaticResource CraftPrimaryLightBrush}"
+                   HorizontalAlignment="Center"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   AutomationProperties.AutomationId="Main_Txt_HintDialogTitle" />
+
+        <!-- Beschreibung -->
+        <TextBlock Text="{Binding ActiveHintText}"
+                   FontSize="14"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   TextWrapping="Wrap"
+                   TextAlignment="Center"
+                   LineHeight="22"
+                   AutomationProperties.AutomationId="Main_Txt_HintDialogText" />
+
+        <!-- Verstanden-Button -->
+        <Button Classes="Primary"
+                Content="{Binding HintDismissButtonText}"
+                Command="{Binding DismissHintCommand}"
+                HorizontalAlignment="Center" MinWidth="140"
+                AutomationProperties.AutomationId="Main_Btn_HintDialogDismiss" />
+      </StackPanel>
+    </Border>
+
+    <!-- Tooltip-Modus: Bubble oben (Position=Below → Bubble oben, Pfeil nach unten) -->
+    <Panel IsVisible="{Binding IsHintTooltipAbove}">
+      <StackPanel VerticalAlignment="Top" HorizontalAlignment="Center"
+                  MaxWidth="320" Margin="16,24,16,0">
+        <!-- Bubble -->
+        <Border Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{StaticResource CraftPrimaryBrush}"
+                BorderThickness="2"
+                CornerRadius="16"
+                Padding="20,16"
+                BoxShadow="0 4 20 0 #40D97706"
+                PointerPressed="OnBubblePressed"
+                RenderTransform="scale(1)"
+                RenderTransformOrigin="50%,50%"
+                AutomationProperties.AutomationId="Main_Border_HintTooltipAbove">
+          <Border.Transitions>
+            <Transitions>
+              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+            </Transitions>
+          </Border.Transitions>
+          <StackPanel Spacing="10">
+            <TextBlock Text="{Binding ActiveHintTitle}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{StaticResource CraftPrimaryLightBrush}"
+                       TextWrapping="Wrap"
+                       AutomationProperties.AutomationId="Main_Txt_HintTooltipAboveTitle" />
+            <TextBlock Text="{Binding ActiveHintText}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       TextWrapping="Wrap"
+                       LineHeight="20"
+                       AutomationProperties.AutomationId="Main_Txt_HintTooltipAboveText" />
+            <Button Classes="Primary"
+                    Content="{Binding HintDismissButtonText}"
+                    Command="{Binding DismissHintCommand}"
+                    HorizontalAlignment="Right" MinWidth="120"
+                    Padding="16,8"
+                    FontSize="13"
+                    AutomationProperties.AutomationId="Main_Btn_HintTooltipAboveDismiss" />
+          </StackPanel>
+        </Border>
+        <!-- Pfeil nach unten -->
+        <Border Width="20" Height="12"
+                HorizontalAlignment="Center" Margin="0,-2,0,0"
+                AutomationProperties.AutomationId="Main_Border_HintArrowDown">
+          <Border.Background>
+            <SolidColorBrush Color="{StaticResource CraftPrimaryColor}" />
+          </Border.Background>
+          <Border.Clip>
+            <StreamGeometry>M 0,0 L 10,12 L 20,0 Z</StreamGeometry>
+          </Border.Clip>
+        </Border>
+      </StackPanel>
+    </Panel>
+
+    <!-- Tooltip-Modus: Bubble unten (Position=Above → Bubble unten, Pfeil nach oben) -->
+    <Panel IsVisible="{Binding IsHintTooltipBelow}">
+      <StackPanel VerticalAlignment="Bottom" HorizontalAlignment="Center"
+                  MaxWidth="320" Margin="16,0,16,100">
+        <!-- Pfeil nach oben -->
+        <Border Width="20" Height="12"
+                HorizontalAlignment="Center" Margin="0,0,0,-2"
+                AutomationProperties.AutomationId="Main_Border_HintArrowUp">
+          <Border.Background>
+            <SolidColorBrush Color="{StaticResource CraftPrimaryColor}" />
+          </Border.Background>
+          <Border.Clip>
+            <StreamGeometry>M 0,12 L 10,0 L 20,12 Z</StreamGeometry>
+          </Border.Clip>
+        </Border>
+        <!-- Bubble -->
+        <Border Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{StaticResource CraftPrimaryBrush}"
+                BorderThickness="2"
+                CornerRadius="16"
+                Padding="20,16"
+                BoxShadow="0 -4 20 0 #40D97706"
+                PointerPressed="OnBubblePressed"
+                RenderTransform="scale(1)"
+                RenderTransformOrigin="50%,50%"
+                AutomationProperties.AutomationId="Main_Border_HintTooltipBelow">
+          <Border.Transitions>
+            <Transitions>
+              <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut" />
+            </Transitions>
+          </Border.Transitions>
+          <StackPanel Spacing="10">
+            <TextBlock Text="{Binding ActiveHintTitle}"
+                       FontSize="16" FontWeight="Bold"
+                       Foreground="{StaticResource CraftPrimaryLightBrush}"
+                       TextWrapping="Wrap"
+                       AutomationProperties.AutomationId="Main_Txt_HintTooltipBelowTitle" />
+            <TextBlock Text="{Binding ActiveHintText}"
+                       FontSize="13"
+                       Foreground="{DynamicResource TextPrimaryBrush}"
+                       TextWrapping="Wrap"
+                       LineHeight="20"
+                       AutomationProperties.AutomationId="Main_Txt_HintTooltipBelowText" />
+            <Button Classes="Primary"
+                    Content="{Binding HintDismissButtonText}"
+                    Command="{Binding DismissHintCommand}"
+                    HorizontalAlignment="Right" MinWidth="120"
+                    Padding="16,8"
+                    FontSize="13"
+                    AutomationProperties.AutomationId="Main_Btn_HintTooltipBelowDismiss" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Panel>
+
+  </Panel>
+
+</UserControl>

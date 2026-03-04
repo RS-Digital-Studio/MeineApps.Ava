@@ -14,7 +14,7 @@ namespace HandwerkerImperium.ViewModels.MiniGames;
 /// ViewModel für das Dachziegel-Muster-Puzzle.
 /// Der Spieler muss fehlende Dachziegel in korrekten Farben platzieren.
 /// </summary>
-public partial class RoofTilingGameViewModel : ViewModelBase, IDisposable
+public sealed partial class RoofTilingGameViewModel : ViewModelBase, IDisposable
 {
     private readonly IGameStateService _gameStateService;
     private readonly IAudioService _audioService;

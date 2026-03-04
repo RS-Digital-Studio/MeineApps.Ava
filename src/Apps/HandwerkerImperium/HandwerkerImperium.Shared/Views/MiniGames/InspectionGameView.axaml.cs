@@ -25,7 +25,11 @@ public partial class InspectionGameView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
-        DetachedFromVisualTree += (_, _) => StopRenderLoop();
+        DetachedFromVisualTree += (_, _) =>
+        {
+            StopRenderLoop();
+            _renderer.Dispose();
+        };
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

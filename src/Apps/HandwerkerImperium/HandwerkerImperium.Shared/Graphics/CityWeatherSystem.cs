@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Graphics;
 /// fallende Blätter (Herbst), Schnee (Winter).
 /// Wetter ändert sich nach aktuellem Monat oder aktivem SeasonalEvent.
 /// </summary>
-public class CityWeatherSystem : IDisposable
+public sealed class CityWeatherSystem : IDisposable
 {
     private bool _disposed;
     // Wetter-Typ

@@ -11,7 +11,7 @@ namespace HandwerkerImperium.ViewModels;
 
 // Partielle Klasse: Daily Challenges, Weekly Missions, Quick Jobs, Lucky Spin,
 // Streak-Rettung, Welcome-Back-Angebote, Meisterwerkzeuge-Info
-public partial class MainViewModel
+public sealed partial class MainViewModel
 {
     // ═══════════════════════════════════════════════════════════════════════
     // WEEKLY MISSIONS COMMANDS
@@ -31,7 +31,7 @@ public partial class MainViewModel
         _weeklyMissionService.ClaimAllCompletedBonus();
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         CelebrationRequested?.Invoke();
-        FloatingTextRequested?.Invoke($"+50 GS", "golden_screws");
+        FloatingTextRequested?.Invoke("+50 \u2699", "golden_screws");
         RefreshWeeklyMissions();
     }
 
@@ -68,7 +68,7 @@ public partial class MainViewModel
             if (mission.XpReward > 0)
                 rewardParts.Add($"{mission.XpReward} XP");
             if (mission.GoldenScrewReward > 0)
-                rewardParts.Add($"{mission.GoldenScrewReward} GS");
+                rewardParts.Add($"{mission.GoldenScrewReward} \u2699");
             mission.RewardDisplay = string.Join(" + ", rewardParts);
 
             // Fortschritts-Anzeige
@@ -167,6 +167,7 @@ public partial class MainViewModel
         LuckySpinViewModel.StartCountdownTimer();
         IsLuckySpinVisible = true;
         _adService.HideBanner();
+        _contextualHintService.TryShowHint(ContextualHints.LuckySpin);
     }
 
     [RelayCommand]

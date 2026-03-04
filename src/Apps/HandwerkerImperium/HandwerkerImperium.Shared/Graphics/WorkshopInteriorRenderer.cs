@@ -10,7 +10,7 @@ namespace HandwerkerImperium.Graphics;
 /// Die eigentliche Szene wird vom WorkshopSceneRenderer darüber gezeichnet.
 /// Gecachte SKPaint-Instanzen fuer 0 Allokationen pro Frame.
 /// </summary>
-public class WorkshopInteriorRenderer : IDisposable
+public sealed class WorkshopInteriorRenderer : IDisposable
 {
     private bool _disposed;
 

@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Android;
 /// Nutzt AlarmManager + BroadcastReceiver für zeitgesteuerte Notifications.
 /// Persistiert geplante Alarme in SharedPreferences für Boot-Recovery.
 /// </summary>
-public class AndroidNotificationService : INotificationService
+public sealed class AndroidNotificationService : INotificationService
 {
     private readonly Context _context;
     private const string ChannelId = "handwerker_game";

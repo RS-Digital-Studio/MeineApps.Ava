@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Services;
 /// Verwaltet Ausrüstungsgegenstände: Drops nach MiniGames (10% Chance),
 /// Inventar-Verwaltung, Zuweisung an Arbeiter, Shop-Rotation.
 /// </summary>
-public class EquipmentService : IEquipmentService
+public sealed class EquipmentService : IEquipmentService
 {
     private readonly IGameStateService _gameStateService;
 

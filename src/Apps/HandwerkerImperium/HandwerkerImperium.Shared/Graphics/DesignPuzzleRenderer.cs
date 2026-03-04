@@ -11,10 +11,37 @@ namespace HandwerkerImperium.Graphics;
 /// Platzierungs-Partikel (gruene Funken bei korrekt), Completion-Celebration
 /// mit goldenem Grundriss-Glow.
 /// </summary>
-public class DesignPuzzleRenderer
+public sealed class DesignPuzzleRenderer : IDisposable
 {
+    private bool _disposed;
+
     // Animationszeit (wird intern hochgezaehlt)
     private float _time;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // Wiederverwendbare SKPaint-Instanzen (vermeidet per-Frame Allokationen)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Allgemeiner Fill-Paint (ohne Antialiasing)
+    private readonly SKPaint _fillPaint = new() { IsAntialias = false, Style = SKPaintStyle.Fill };
+
+    // Fill-Paint mit Antialiasing (fuer Kreise, Glow-Effekte)
+    private readonly SKPaint _fillPaintAA = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // Allgemeiner Stroke-Paint (ohne Antialiasing, variable Breite)
+    private readonly SKPaint _strokePaint = new() { IsAntialias = false, Style = SKPaintStyle.Stroke };
+
+    // Stroke-Paint mit Antialiasing (fuer Haekchen, runde Linien)
+    private readonly SKPaint _strokePaintAA = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
+
+    // Duenne Linien (Raster, Massstab, Textur - StrokeWidth=1)
+    private readonly SKPaint _thinStrokePaint = new() { IsAntialias = false, StrokeWidth = 1 };
+
+    // Text-Paint (immer AA)
+    private readonly SKPaint _textPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
+
+    // Gecachte Font-Instanz fuer Text-Rendering
+    private readonly SKFont _cachedFont = new(SKTypeface.Default, 12);
 
     // ═══════════════════════════════════════════════════════════════════════
     // Fehler-Flash (Array-basiert statt Dictionary)
@@ -216,31 +243,22 @@ public class DesignPuzzleRenderer
     private void DrawPaperBackground(SKCanvas canvas, SKRect bounds)
     {
         // Basis-Papierfarbe
-        using var paperPaint = new SKPaint { Color = PaperWhite, IsAntialias = false };
-        canvas.DrawRect(bounds, paperPaint);
+        _fillPaint.Color = PaperWhite;
+        canvas.DrawRect(bounds, _fillPaint);
 
         // Leichte Papier-Textur (subtile horizontale Linien)
-        using var texturePaint = new SKPaint
-        {
-            Color = new SKColor(0xE8, 0xE0, 0xD5, 30),
-            IsAntialias = false,
-            StrokeWidth = 1
-        };
+        _thinStrokePaint.Color = new SKColor(0xE8, 0xE0, 0xD5, 30);
         for (float y = bounds.Top + 8; y < bounds.Bottom; y += 12)
         {
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, texturePaint);
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, _thinStrokePaint);
         }
 
         // Papier-Schatten am Rand (dunkler Streifen)
-        using var shadowPaint = new SKPaint
-        {
-            Color = new SKColor(0x00, 0x00, 0x00, 15),
-            IsAntialias = false
-        };
-        canvas.DrawRect(bounds.Left, bounds.Top, bounds.Width, 3, shadowPaint);
-        canvas.DrawRect(bounds.Left, bounds.Top, 3, bounds.Height, shadowPaint);
-        canvas.DrawRect(bounds.Right - 3, bounds.Top, 3, bounds.Height, shadowPaint);
-        canvas.DrawRect(bounds.Left, bounds.Bottom - 3, bounds.Width, 3, shadowPaint);
+        _fillPaint.Color = new SKColor(0x00, 0x00, 0x00, 15);
+        canvas.DrawRect(bounds.Left, bounds.Top, bounds.Width, 3, _fillPaint);
+        canvas.DrawRect(bounds.Left, bounds.Top, 3, bounds.Height, _fillPaint);
+        canvas.DrawRect(bounds.Right - 3, bounds.Top, 3, bounds.Height, _fillPaint);
+        canvas.DrawRect(bounds.Left, bounds.Bottom - 3, bounds.Width, 3, _fillPaint);
     }
 
     /// <summary>
@@ -248,23 +266,18 @@ public class DesignPuzzleRenderer
     /// </summary>
     private void DrawBlueprintGrid(SKCanvas canvas, SKRect bounds)
     {
-        using var gridPaint = new SKPaint
-        {
-            Color = BlueprintGrid.WithAlpha(40),
-            IsAntialias = false,
-            StrokeWidth = 1
-        };
+        _thinStrokePaint.Color = BlueprintGrid.WithAlpha(40);
 
         // Vertikale Linien
         for (float x = bounds.Left + 20; x < bounds.Right; x += 20)
         {
-            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, gridPaint);
+            canvas.DrawLine(x, bounds.Top, x, bounds.Bottom, _thinStrokePaint);
         }
 
         // Horizontale Linien
         for (float y = bounds.Top + 20; y < bounds.Bottom; y += 20)
         {
-            canvas.DrawLine(bounds.Left, y, bounds.Right, y, gridPaint);
+            canvas.DrawLine(bounds.Left, y, bounds.Right, y, _thinStrokePaint);
         }
     }
 
@@ -273,32 +286,27 @@ public class DesignPuzzleRenderer
     /// </summary>
     private void DrawScaleMarks(SKCanvas canvas, SKRect bounds, float innerLeft, float innerTop, float innerWidth, float innerHeight)
     {
-        using var scalePaint = new SKPaint
-        {
-            Color = ScaleLineColor,
-            IsAntialias = false,
-            StrokeWidth = 1
-        };
+        _thinStrokePaint.Color = ScaleLineColor;
 
         // Linker Rand: vertikale Massstab-Striche
         for (float y = innerTop + 10; y < innerTop + innerHeight; y += 15)
         {
             float tickLen = ((int)((y - innerTop) / 15) % 5 == 0) ? 8 : 4;
-            canvas.DrawLine(innerLeft + 2, y, innerLeft + 2 + tickLen, y, scalePaint);
+            canvas.DrawLine(innerLeft + 2, y, innerLeft + 2 + tickLen, y, _thinStrokePaint);
         }
 
         // Oberer Rand: horizontale Massstab-Striche
         for (float x = innerLeft + 20; x < innerLeft + innerWidth; x += 15)
         {
             float tickLen = ((int)((x - innerLeft - 20) / 15) % 5 == 0) ? 8 : 4;
-            canvas.DrawLine(x, innerTop + 2, x, innerTop + 2 + tickLen, scalePaint);
+            canvas.DrawLine(x, innerTop + 2, x, innerTop + 2 + tickLen, _thinStrokePaint);
         }
 
         // Massstab-Linie links (durchgehend)
-        canvas.DrawLine(innerLeft + 2, innerTop + 10, innerLeft + 2, innerTop + innerHeight - 10, scalePaint);
+        canvas.DrawLine(innerLeft + 2, innerTop + 10, innerLeft + 2, innerTop + innerHeight - 10, _thinStrokePaint);
 
         // Massstab-Linie oben (durchgehend)
-        canvas.DrawLine(innerLeft + 20, innerTop + 2, innerLeft + innerWidth - 10, innerTop + 2, scalePaint);
+        canvas.DrawLine(innerLeft + 20, innerTop + 2, innerLeft + innerWidth - 10, innerTop + 2, _thinStrokePaint);
     }
 
     /// <summary>
@@ -307,24 +315,14 @@ public class DesignPuzzleRenderer
     private void DrawFloorplanOutline(SKCanvas canvas, float x, float y, float w, float h)
     {
         // Aeussere Wand (dick)
-        using var wallPaint = new SKPaint
-        {
-            Color = BlueprintLine,
-            IsAntialias = false,
-            StrokeWidth = 4,
-            Style = SKPaintStyle.Stroke
-        };
-        canvas.DrawRect(x - 4, y - 4, w + 8, h + 8, wallPaint);
+        _strokePaint.Color = BlueprintLine;
+        _strokePaint.StrokeWidth = 4;
+        canvas.DrawRect(x - 4, y - 4, w + 8, h + 8, _strokePaint);
 
         // Schatten-Effekt (dezent)
-        using var shadowPaint = new SKPaint
-        {
-            Color = BlueprintLine.WithAlpha(30),
-            IsAntialias = false,
-            StrokeWidth = 2,
-            Style = SKPaintStyle.Stroke
-        };
-        canvas.DrawRect(x - 7, y - 7, w + 14, h + 14, shadowPaint);
+        _strokePaint.Color = BlueprintLine.WithAlpha(30);
+        _strokePaint.StrokeWidth = 2;
+        canvas.DrawRect(x - 7, y - 7, w + 14, h + 14, _strokePaint);
     }
 
     /// <summary>
@@ -333,29 +331,25 @@ public class DesignPuzzleRenderer
     private void DrawInnerWalls(SKCanvas canvas, float gridLeft, float gridTop, float totalW, float totalH,
         int cols, int rows, float slotSize, float spacing)
     {
-        using var wallPaint = new SKPaint
-        {
-            Color = BlueprintLine,
-            IsAntialias = false,
-            StrokeWidth = 2
-        };
+        _strokePaint.Color = BlueprintLine;
+        _strokePaint.StrokeWidth = 2;
 
         // Vertikale Waende
         for (int c = 1; c < cols; c++)
         {
             float wx = gridLeft + c * (slotSize + spacing) - spacing / 2;
-            canvas.DrawLine(wx, gridTop - 4, wx, gridTop + totalH + 4, wallPaint);
+            canvas.DrawLine(wx, gridTop - 4, wx, gridTop + totalH + 4, _strokePaint);
         }
 
         // Horizontale Waende
         for (int r = 1; r < rows; r++)
         {
             float wy = gridTop + r * (slotSize + spacing) - spacing / 2;
-            canvas.DrawLine(gridLeft - 4, wy, gridLeft + totalW + 4, wy, wallPaint);
+            canvas.DrawLine(gridLeft - 4, wy, gridLeft + totalW + 4, wy, _strokePaint);
         }
 
         // Tuer-Oeffnungen (kleine Luecken in den Waenden fuer optisches Detail)
-        using var doorPaint = new SKPaint { Color = PaperWhite, IsAntialias = false };
+        _fillPaint.Color = PaperWhite;
         float doorWidth = slotSize * 0.3f;
 
         // Horizontale Tuer-Luecken (in vertikalen Waenden)
@@ -365,7 +359,7 @@ public class DesignPuzzleRenderer
             for (int r = 0; r < rows; r++)
             {
                 float doorY = gridTop + r * (slotSize + spacing) + slotSize / 2 - doorWidth / 2;
-                canvas.DrawRect(wx - 2, doorY, 4, doorWidth, doorPaint);
+                canvas.DrawRect(wx - 2, doorY, 4, doorWidth, _fillPaint);
             }
         }
 
@@ -376,7 +370,7 @@ public class DesignPuzzleRenderer
             for (int c = 0; c < cols; c++)
             {
                 float doorX = gridLeft + c * (slotSize + spacing) + slotSize / 2 - doorWidth / 2;
-                canvas.DrawRect(doorX, wy - 2, doorWidth, 4, doorPaint);
+                canvas.DrawRect(doorX, wy - 2, doorWidth, 4, _fillPaint);
             }
         }
     }
@@ -409,40 +403,32 @@ public class DesignPuzzleRenderer
     private void DrawEmptySlot(SKCanvas canvas, float x, float y, float w, float h, RoomSlotData slot)
     {
         // Hintergrund (leicht gefuellt)
-        using var bgPaint = new SKPaint { Color = SlotFillEmpty, IsAntialias = false };
-        canvas.DrawRect(x, y, w, h, bgPaint);
+        _fillPaint.Color = SlotFillEmpty;
+        canvas.DrawRect(x, y, w, h, _fillPaint);
 
         // Farbiger Hinweis-Streifen am oberen Rand (zeigt welcher Raum hierhin gehoert)
         var hintColor = new SKColor(slot.HintColor);
-        using var hintBarPaint = new SKPaint { Color = hintColor.WithAlpha(120), IsAntialias = false };
-        canvas.DrawRect(x, y, w, 5, hintBarPaint);
+        _fillPaint.Color = hintColor.WithAlpha(120);
+        canvas.DrawRect(x, y, w, 5, _fillPaint);
 
         // Farbiger Punkt in der Mitte als Hinweis
         float pulse = (float)(0.5 + 0.3 * Math.Sin(_time * 2.5));
-        using var hintDotPaint = new SKPaint
-        {
-            Color = hintColor.WithAlpha((byte)(pulse * 100)),
-            IsAntialias = true
-        };
+        _fillPaintAA.Color = hintColor.WithAlpha((byte)(pulse * 100));
         float dotRadius = Math.Min(w, h) * 0.15f;
-        canvas.DrawCircle(x + w / 2, y + h / 2, dotRadius, hintDotPaint);
+        canvas.DrawCircle(x + w / 2, y + h / 2, dotRadius, _fillPaintAA);
 
         // Gestrichelter Rahmen in Hint-Farbe
-        using var borderPaint = new SKPaint
-        {
-            Color = hintColor.WithAlpha(100),
-            IsAntialias = false,
-            StrokeWidth = 2,
-            Style = SKPaintStyle.Stroke,
-            PathEffect = SKPathEffect.CreateDash(new float[] { 6, 4 }, _time * 8)
-        };
-        canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, borderPaint);
+        _strokePaint.Color = hintColor.WithAlpha(100);
+        _strokePaint.StrokeWidth = 2;
+        _strokePaint.PathEffect = SKPathEffect.CreateDash([6, 4], _time * 8);
+        canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, _strokePaint);
+        _strokePaint.PathEffect = null; // Zuruecksetzen fuer andere Nutzungen
 
         // "?" unter dem Punkt
         float qSize = Math.Min(w, h) * 0.2f;
-        using var questionFont = new SKFont(SKTypeface.Default, qSize);
-        using var questionPaint = new SKPaint { Color = hintColor.WithAlpha(140), IsAntialias = true };
-        canvas.DrawText("?", x + w / 2, y + h / 2 + dotRadius + qSize, SKTextAlign.Center, questionFont, questionPaint);
+        _cachedFont.Size = qSize;
+        _textPaint.Color = hintColor.WithAlpha(140);
+        canvas.DrawText("?", x + w / 2, y + h / 2 + dotRadius + qSize, SKTextAlign.Center, _cachedFont, _textPaint);
     }
 
     /// <summary>
@@ -452,26 +438,17 @@ public class DesignPuzzleRenderer
     {
         // Raum-Farbe als Hintergrund
         var roomColor = slot.FilledColor != 0 ? new SKColor(slot.FilledColor) : new SKColor(slot.BackgroundColor);
-        using var bgPaint = new SKPaint { Color = roomColor, IsAntialias = false };
-        canvas.DrawRect(x, y, w, h, bgPaint);
+        _fillPaint.Color = roomColor;
+        canvas.DrawRect(x, y, w, h, _fillPaint);
 
         // Hellerer Innenbereich (leichte Tiefe)
-        using var innerPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0xFF, 0xFF, 35),
-            IsAntialias = false
-        };
-        canvas.DrawRect(x + 3, y + 3, w - 6, h - 6, innerPaint);
+        _fillPaint.Color = new SKColor(0xFF, 0xFF, 0xFF, 35);
+        canvas.DrawRect(x + 3, y + 3, w - 6, h - 6, _fillPaint);
 
         // Rahmen
-        using var borderPaint = new SKPaint
-        {
-            Color = new SKColor(slot.BorderColor),
-            IsAntialias = false,
-            StrokeWidth = 2,
-            Style = SKPaintStyle.Stroke
-        };
-        canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, borderPaint);
+        _strokePaint.Color = new SKColor(slot.BorderColor);
+        _strokePaint.StrokeWidth = 2;
+        canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, _strokePaint);
 
         // Raumname in der Mitte
         if (!string.IsNullOrEmpty(slot.DisplayLabel))
@@ -481,9 +458,11 @@ public class DesignPuzzleRenderer
             float fontSize = Math.Min(maxFontSize, w * 0.8f / Math.Max(slot.DisplayLabel.Length * 0.55f, 1));
             fontSize = Math.Max(fontSize, 8); // Minimum 8px
 
-            using var nameFont = new SKFont(SKTypeface.Default, fontSize) { Embolden = true };
-            using var namePaint = new SKPaint { Color = CheckmarkWhite, IsAntialias = true };
-            canvas.DrawText(slot.DisplayLabel, x + w / 2, y + h / 2 + fontSize / 3, SKTextAlign.Center, nameFont, namePaint);
+            _cachedFont.Size = fontSize;
+            _cachedFont.Embolden = true;
+            _textPaint.Color = CheckmarkWhite;
+            canvas.DrawText(slot.DisplayLabel, x + w / 2, y + h / 2 + fontSize / 3, SKTextAlign.Center, _cachedFont, _textPaint);
+            _cachedFont.Embolden = false; // Zuruecksetzen
         }
 
         // Korrekt-Haekchen unten rechts (gruener Kreis + weisses Haekchen)
@@ -494,30 +473,21 @@ public class DesignPuzzleRenderer
             float cy = y + h - checkSize - 4;
 
             // Gruener Kreis
-            using var checkBgPaint = new SKPaint { Color = CorrectGreen, IsAntialias = true };
-            canvas.DrawCircle(cx + checkSize / 2, cy + checkSize / 2, checkSize / 2, checkBgPaint);
+            _fillPaintAA.Color = CorrectGreen;
+            canvas.DrawCircle(cx + checkSize / 2, cy + checkSize / 2, checkSize / 2, _fillPaintAA);
 
             // Weisses Haekchen (vereinfacht als 2 Linien)
-            using var checkPaint = new SKPaint
-            {
-                Color = CheckmarkWhite,
-                IsAntialias = true,
-                StrokeWidth = 2,
-                Style = SKPaintStyle.Stroke,
-                StrokeCap = SKStrokeCap.Round
-            };
+            _strokePaintAA.Color = CheckmarkWhite;
+            _strokePaintAA.StrokeWidth = 2;
+            _strokePaintAA.StrokeCap = SKStrokeCap.Round;
             float midX = cx + checkSize / 2;
             float midY = cy + checkSize / 2;
-            canvas.DrawLine(midX - checkSize * 0.2f, midY, midX - checkSize * 0.05f, midY + checkSize * 0.2f, checkPaint);
-            canvas.DrawLine(midX - checkSize * 0.05f, midY + checkSize * 0.2f, midX + checkSize * 0.25f, midY - checkSize * 0.15f, checkPaint);
+            canvas.DrawLine(midX - checkSize * 0.2f, midY, midX - checkSize * 0.05f, midY + checkSize * 0.2f, _strokePaintAA);
+            canvas.DrawLine(midX - checkSize * 0.05f, midY + checkSize * 0.2f, midX + checkSize * 0.25f, midY - checkSize * 0.15f, _strokePaintAA);
 
             // Subtiler Glow
-            using var glowPaint = new SKPaint
-            {
-                Color = CorrectGreen.WithAlpha(40),
-                IsAntialias = true
-            };
-            canvas.DrawCircle(cx + checkSize / 2, cy + checkSize / 2, checkSize / 2 + 3, glowPaint);
+            _fillPaintAA.Color = CorrectGreen.WithAlpha(40);
+            canvas.DrawCircle(cx + checkSize / 2, cy + checkSize / 2, checkSize / 2 + 3, _fillPaintAA);
         }
     }
 
@@ -531,41 +501,32 @@ public class DesignPuzzleRenderer
         float flashPulse = (float)(0.5 + 0.5 * Math.Sin(_time * 20)); // Schnelles Blinken
         byte alpha = (byte)(intensity * flashPulse * 180);
 
-        using var errorBgPaint = new SKPaint { Color = ErrorRed.WithAlpha(alpha), IsAntialias = false };
-        canvas.DrawRect(x, y, w, h, errorBgPaint);
+        _fillPaint.Color = ErrorRed.WithAlpha(alpha);
+        canvas.DrawRect(x, y, w, h, _fillPaint);
 
         // Basis-Slot darunter (leerer Slot Hintergrund)
-        using var basePaint = new SKPaint { Color = SlotFillEmpty.WithAlpha((byte)(255 - alpha)), IsAntialias = false };
-        canvas.DrawRect(x, y, w, h, basePaint);
+        _fillPaint.Color = SlotFillEmpty.WithAlpha((byte)(255 - alpha));
+        canvas.DrawRect(x, y, w, h, _fillPaint);
 
         // Roter Rahmen
-        using var borderPaint = new SKPaint
-        {
-            Color = ErrorRed.WithAlpha((byte)(100 + intensity * 155)),
-            IsAntialias = false,
-            StrokeWidth = 3,
-            Style = SKPaintStyle.Stroke
-        };
-        canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, borderPaint);
+        _strokePaint.Color = ErrorRed.WithAlpha((byte)(100 + intensity * 155));
+        _strokePaint.StrokeWidth = 3;
+        canvas.DrawRect(x + 1, y + 1, w - 2, h - 2, _strokePaint);
 
         // "X" in der Mitte
         float xSize = Math.Min(w, h) * 0.2f;
         float cx = x + w / 2;
         float cy = y + h / 2;
-        using var xPaint = new SKPaint
-        {
-            Color = ErrorRed.WithAlpha((byte)(intensity * 255)),
-            IsAntialias = false,
-            StrokeWidth = 3,
-            StrokeCap = SKStrokeCap.Round
-        };
-        canvas.DrawLine(cx - xSize, cy - xSize, cx + xSize, cy + xSize, xPaint);
-        canvas.DrawLine(cx + xSize, cy - xSize, cx - xSize, cy + xSize, xPaint);
+        _strokePaint.Color = ErrorRed.WithAlpha((byte)(intensity * 255));
+        _strokePaint.StrokeCap = SKStrokeCap.Round;
+        canvas.DrawLine(cx - xSize, cy - xSize, cx + xSize, cy + xSize, _strokePaint);
+        canvas.DrawLine(cx + xSize, cy - xSize, cx - xSize, cy + xSize, _strokePaint);
+        _strokePaint.StrokeCap = SKStrokeCap.Butt; // Zuruecksetzen
 
         // Farbiger Hinweis-Streifen oben (dezent durch Flash sichtbar)
         var hintColor = new SKColor(slot.HintColor);
-        using var hintBarPaint = new SKPaint { Color = hintColor.WithAlpha((byte)(40 * (1 - intensity))), IsAntialias = false };
-        canvas.DrawRect(x, y, w, 5, hintBarPaint);
+        _fillPaint.Color = hintColor.WithAlpha((byte)(40 * (1 - intensity)));
+        canvas.DrawRect(x, y, w, 5, _fillPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -659,8 +620,6 @@ public class DesignPuzzleRenderer
     {
         if (_sparkCount == 0) return;
 
-        using var sparkPaint = new SKPaint { IsAntialias = false };
-
         for (int i = 0; i < _sparkCount; i++)
         {
             var p = _sparks[i];
@@ -681,8 +640,8 @@ public class DesignPuzzleRenderer
             _sparks[i] = p;
 
             float alpha = 1 - (p.Life / p.MaxLife);
-            sparkPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
-            canvas.DrawRect(p.X - p.Size / 2, p.Y - p.Size / 2, p.Size, p.Size, sparkPaint);
+            _fillPaint.Color = new SKColor(p.R, p.G, p.B, (byte)(alpha * 255));
+            canvas.DrawRect(p.X - p.Size / 2, p.Y - p.Size / 2, p.Size, p.Size, _fillPaint);
         }
     }
 
@@ -701,23 +660,14 @@ public class DesignPuzzleRenderer
 
         // Goldener Overlay ueber den Grundriss
         byte glowAlpha = (byte)(intensity * pulse * 60);
-        using var glowPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0xD7, 0x00, glowAlpha),
-            IsAntialias = false
-        };
-        canvas.DrawRect(gridLeft - 4, gridTop - 4, totalW + 8, totalH + 8, glowPaint);
+        _fillPaint.Color = new SKColor(0xFF, 0xD7, 0x00, glowAlpha);
+        canvas.DrawRect(gridLeft - 4, gridTop - 4, totalW + 8, totalH + 8, _fillPaint);
 
         // Goldener Rahmen (pulsierend)
         byte borderAlpha = (byte)(intensity * 200);
-        using var borderPaint = new SKPaint
-        {
-            Color = new SKColor(0xFF, 0xD7, 0x00, borderAlpha),
-            IsAntialias = false,
-            StrokeWidth = 3,
-            Style = SKPaintStyle.Stroke
-        };
-        canvas.DrawRect(gridLeft - 8, gridTop - 8, totalW + 16, totalH + 16, borderPaint);
+        _strokePaint.Color = new SKColor(0xFF, 0xD7, 0x00, borderAlpha);
+        _strokePaint.StrokeWidth = 3;
+        canvas.DrawRect(gridLeft - 8, gridTop - 8, totalW + 16, totalH + 16, _strokePaint);
 
         // Goldene Completion-Partikel entlang des Randes spawnen
         if (intensity > 0.2f)
@@ -753,5 +703,22 @@ public class DesignPuzzleRenderer
                 };
             }
         }
+    }
+
+    /// <summary>
+    /// Gibt native SkiaSharp-Ressourcen frei.
+    /// </summary>
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _disposed = true;
+
+        _fillPaint.Dispose();
+        _fillPaintAA.Dispose();
+        _strokePaint.Dispose();
+        _strokePaintAA.Dispose();
+        _thinStrokePaint.Dispose();
+        _textPaint.Dispose();
+        _cachedFont.Dispose();
     }
 }

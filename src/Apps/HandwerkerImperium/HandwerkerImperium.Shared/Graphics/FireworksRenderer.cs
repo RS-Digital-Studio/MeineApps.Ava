@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Graphics;
 /// Struct-basierter Pool (max 400 Partikel), keine GC-Allokationen im Render-Loop.
 /// Raketen steigen auf, explodieren in farbige Burst-Muster.
 /// </summary>
-public class FireworksRenderer
+public sealed class FireworksRenderer
 {
     // --- Konstanten ---
     private const int MaxParticles = 400;

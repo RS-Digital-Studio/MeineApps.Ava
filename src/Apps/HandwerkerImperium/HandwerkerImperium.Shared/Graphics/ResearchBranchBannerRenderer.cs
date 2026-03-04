@@ -11,7 +11,7 @@ namespace HandwerkerImperium.Graphics;
 /// - Marketing: Megaphon mit Schallwellen + wachsendes Balkendiagramm
 /// Inkl. Branch-Name, Fortschrittsanzeige (x/15 erforscht).
 /// </summary>
-public class ResearchBranchBannerRenderer : IDisposable
+public sealed class ResearchBranchBannerRenderer : IDisposable
 {
     private bool _disposed;
     private float _time;

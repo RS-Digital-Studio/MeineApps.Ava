@@ -7,7 +7,7 @@ namespace HandwerkerImperium.Services;
 /// <summary>
 /// Generates new orders/contracts for the player.
 /// </summary>
-public class OrderGeneratorService : IOrderGeneratorService
+public sealed class OrderGeneratorService : IOrderGeneratorService
 {
     private readonly IGameStateService _gameStateService;
     private readonly IResearchService? _researchService;

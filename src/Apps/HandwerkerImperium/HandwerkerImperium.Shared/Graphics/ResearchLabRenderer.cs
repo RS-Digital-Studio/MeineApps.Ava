@@ -8,7 +8,7 @@ namespace HandwerkerImperium.Graphics;
 /// Dampf aus Kolben, rotierende Zahnräder, blinkende Glühbirne, Funkenpartikel.
 /// SKPaint-Objekte werden gecacht um Allokationen pro Frame zu vermeiden.
 /// </summary>
-public class ResearchLabRenderer : IDisposable
+public sealed class ResearchLabRenderer : IDisposable
 {
     private bool _disposed;
     // Animationszeit (wird intern hochgezählt)

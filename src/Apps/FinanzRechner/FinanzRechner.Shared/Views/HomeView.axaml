@@ -5,6 +5,9 @@
              xmlns:conv="using:FinanzRechner.Converters"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:skiaControls="using:MeineApps.UI.SkiaSharp"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.HomeView"
              x:DataType="vm:MainViewModel"
              AutomationProperties.AutomationId="Home_Root">
@@ -16,7 +19,7 @@
                 AutomationProperties.AutomationId="Home_Panel_MainContent">
 
       <!-- ========== A) Hero-Header (Gradient passend zum Bilanz-Status) ========== -->
-      <Border CornerRadius="0,0,16,16" Padding="20,20,20,16"
+      <Border CornerRadius="0,0,16,16" ClipToBounds="True"
               Cursor="Hand"
               AutomationProperties.AutomationId="Home_CardHeroHeader">
         <Border.Background>
@@ -40,8 +43,16 @@
           </Style>
         </Border.Styles>
 
-        <StackPanel Spacing="10" HorizontalAlignment="Center"
-                    AutomationProperties.AutomationId="Home_Panel_HeroContent">
+        <Panel>
+          <!-- Animierter SkiaSharp-Hintergrund (Gradient-Mesh, Grid, Glow-Dots, Symbole) -->
+          <skia:SKCanvasView x:Name="DashboardBgCanvas"
+                              PaintSurface="OnPaintDashboardBg"
+                              IsHitTestVisible="False"
+                              AutomationProperties.AutomationId="Home_CanvasDashboardBg" />
+
+          <!-- Hero-Content darüber -->
+          <StackPanel Spacing="10" HorizontalAlignment="Center" Margin="20,20,20,16"
+                      AutomationProperties.AutomationId="Home_Panel_HeroContent">
 
           <!-- Monat zentriert -->
           <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center"
@@ -63,10 +74,15 @@
           <StackPanel Spacing="6" IsVisible="{Binding HasTransactions}"
                       HorizontalAlignment="Center"
                       AutomationProperties.AutomationId="Home_Panel_BalanceSection">
-            <TextBlock Text="{Binding MonthlyBalanceDisplay}"
-                       FontSize="30" FontWeight="Bold" Foreground="White"
+            <TextBlock FontSize="30" FontWeight="Bold" Foreground="White"
                        HorizontalAlignment="Center"
-                       AutomationProperties.AutomationId="Home_TxtBalance" />
+                       AutomationProperties.AutomationId="Home_TxtBalance">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:CountUpBehavior TargetValue="{Binding MonthlyBalance}"
+                                             Duration="800" Format="N2" Suffix=" €"
+                                             CultureName="de-DE" UseSignedPrefix="True" />
+              </i:Interaction.Behaviors>
+            </TextBlock>
 
             <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center"
                         AutomationProperties.AutomationId="Home_Panel_IncomeExpenseChips">
@@ -75,9 +91,14 @@
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14" Foreground="#22C55E"
                                    AutomationProperties.AutomationId="Home_Icon_IncomeArrow" />
-                  <TextBlock Text="{Binding MonthlyIncomeDisplay}"
-                             FontSize="13" FontWeight="SemiBold" Foreground="#22C55E"
-                             AutomationProperties.AutomationId="Home_TxtIncome" />
+                  <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#22C55E"
+                             AutomationProperties.AutomationId="Home_TxtIncome">
+                    <i:Interaction.Behaviors>
+                      <uiBehaviors:CountUpBehavior TargetValue="{Binding MonthlyIncome}"
+                                                   Duration="800" Format="N2" Prefix="+"
+                                                   Suffix=" €" CultureName="de-DE" />
+                    </i:Interaction.Behaviors>
+                  </TextBlock>
                 </StackPanel>
               </Border>
               <Border Background="#44EF4444" CornerRadius="12" Padding="10,4"
@@ -85,9 +106,14 @@
                 <StackPanel Orientation="Horizontal" Spacing="4">
                   <mi:MaterialIcon Kind="ArrowDownBold" Width="14" Height="14" Foreground="#EF4444"
                                    AutomationProperties.AutomationId="Home_Icon_ExpenseArrow" />
-                  <TextBlock Text="{Binding MonthlyExpensesDisplay}"
-                             FontSize="13" FontWeight="SemiBold" Foreground="#EF4444"
-                             AutomationProperties.AutomationId="Home_TxtExpenses" />
+                  <TextBlock FontSize="13" FontWeight="SemiBold" Foreground="#EF4444"
+                             AutomationProperties.AutomationId="Home_TxtExpenses">
+                    <i:Interaction.Behaviors>
+                      <uiBehaviors:CountUpBehavior TargetValue="{Binding MonthlyExpenses}"
+                                                   Duration="800" Format="N2" Prefix="-"
+                                                   Suffix=" €" CultureName="de-DE" />
+                    </i:Interaction.Behaviors>
+                  </TextBlock>
                 </StackPanel>
               </Border>
             </StackPanel>
@@ -117,6 +143,7 @@
           </StackPanel>
 
         </StackPanel>
+        </Panel>
       </Border>
 
       <!-- ========== Monatsreport Button ========== -->
@@ -124,6 +151,9 @@
               CornerRadius="12" Padding="14,10"
               Command="{Binding RequestBudgetAnalysisCommand}"
               AutomationProperties.AutomationId="Home_BtnMonthlyReport">
+        <i:Interaction.Behaviors>
+          <uiBehaviors:TapScaleBehavior PressedScale="0.97" />
+        </i:Interaction.Behaviors>
         <Button.Background>
           <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
             <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
@@ -183,12 +213,18 @@
                          AutomationProperties.AutomationId="Home_TxtSectionBudget" />
             </StackPanel>
 
-            <!-- SkiaSharp Budget-Gauge (Halbkreis-Tachometer) -->
-            <Border Height="110" ClipToBounds="True" Margin="0,0,0,4"
-                    AutomationProperties.AutomationId="Home_Border_GaugeContainer">
-              <skia:SKCanvasView x:Name="BudgetGaugeCanvas" PaintSurface="OnPaintBudgetGauge"
-                                 AutomationProperties.AutomationId="Home_CanvasBudgetGauge" />
-            </Border>
+            <!-- SkiaGradientRing für Gesamt-Budget -->
+            <skiaControls:SkiaGradientRing
+                Width="140" Height="140"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,4"
+                Value="{Binding BudgetUsagePercent}"
+                StartColor="#22C55E"
+                EndColor="#EF4444"
+                GlowEnabled="True"
+                ShowTickMarks="False"
+                IsPulsing="{Binding IsBudgetCritical}"
+                AutomationProperties.AutomationId="Home_GradientRingBudget" />
 
             <!-- Mini-Ringe für Budget-Kategorien -->
             <Border Height="60" ClipToBounds="True"
@@ -282,7 +318,11 @@
               <Button Grid.Column="1" Classes="Flat"
                       Content="{Binding ViewAllText}" FontSize="12"
                       Command="{Binding NavigateToTrackerCommand}"
-                      AutomationProperties.AutomationId="Home_BtnViewAll" />
+                      AutomationProperties.AutomationId="Home_BtnViewAll">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                </i:Interaction.Behaviors>
+              </Button>
             </Grid>
 
             <ItemsControl ItemsSource="{Binding RecentTransactions}"
@@ -293,6 +333,9 @@
                           CornerRadius="10"
                           Background="{DynamicResource SurfaceBrush}"
                           AutomationProperties.AutomationId="Home_Border_TransactionItem">
+                    <i:Interaction.Behaviors>
+                      <uiBehaviors:StaggerFadeInBehavior StaggerDelay="40" BaseDuration="300" />
+                    </i:Interaction.Behaviors>
                     <Grid ColumnDefinitions="Auto,*,Auto"
                           AutomationProperties.AutomationId="Home_Panel_TransactionItemGrid">
                       <!-- Farbiges Kategorie-Icon -->
@@ -360,196 +403,220 @@
                 AutomationProperties.AutomationId="Home_Panel_CalculatorGrid">
 
             <!-- Zinseszins -->
-            <Button Grid.Row="0" Grid.Column="0"
-                    CornerRadius="12" Height="120" Padding="8"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    Command="{Binding OpenCompoundInterestCommand}"
-                    AutomationProperties.AutomationId="Home_BtnCompoundInterest">
-              <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
-              </Button.Background>
-              <StackPanel VerticalAlignment="Center" Spacing="8">
-                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#22C55E" Offset="0" />
-                      <GradientStop Color="#16A34A" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <mi:MaterialIcon Kind="TrendingUp" Width="24" Height="24"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Home_Icon_CompoundInterest" />
-                </Border>
-                <TextBlock Text="{Binding CalcCompoundInterestText}"
-                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Home_TxtCompoundInterest" />
-              </StackPanel>
-            </Button>
+            <Panel Grid.Row="0" Grid.Column="0">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:StaggerFadeInBehavior StaggerDelay="60" BaseDuration="300" FixedIndex="0" />
+              </i:Interaction.Behaviors>
+              <Border Classes="FintechCardAccent" BorderBrush="#22C55E" Margin="0" Padding="0">
+                <Button CornerRadius="12" Height="120" Padding="8"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Background="Transparent"
+                        Command="{Binding OpenCompoundInterestCommand}"
+                        AutomationProperties.AutomationId="Home_BtnCompoundInterest">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#22C55E" Offset="0" />
+                          <GradientStop Color="#16A34A" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <mi:MaterialIcon Kind="TrendingUp" Width="24" Height="24"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Home_Icon_CompoundInterest" />
+                    </Border>
+                    <TextBlock Text="{Binding CalcCompoundInterestText}"
+                               FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Home_TxtCompoundInterest" />
+                  </StackPanel>
+                </Button>
+              </Border>
+            </Panel>
 
             <!-- Sparplan -->
-            <Button Grid.Row="0" Grid.Column="1"
-                    CornerRadius="12" Height="120" Padding="8"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    Command="{Binding OpenSavingsPlanCommand}"
-                    AutomationProperties.AutomationId="Home_BtnSavingsPlan">
-              <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
-              </Button.Background>
-              <StackPanel VerticalAlignment="Center" Spacing="8">
-                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#3B82F6" Offset="0" />
-                      <GradientStop Color="#2563EB" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <mi:MaterialIcon Kind="Safe" Width="24" Height="24"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Home_Icon_SavingsPlan" />
-                </Border>
-                <TextBlock Text="{Binding CalcSavingsPlanText}"
-                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Home_TxtSavingsPlan" />
-              </StackPanel>
-            </Button>
+            <Panel Grid.Row="0" Grid.Column="1">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:StaggerFadeInBehavior StaggerDelay="60" BaseDuration="300" FixedIndex="1" />
+              </i:Interaction.Behaviors>
+              <Border Classes="FintechCardAccent" BorderBrush="#3B82F6" Margin="0" Padding="0">
+                <Button CornerRadius="12" Height="120" Padding="8"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Background="Transparent"
+                        Command="{Binding OpenSavingsPlanCommand}"
+                        AutomationProperties.AutomationId="Home_BtnSavingsPlan">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#3B82F6" Offset="0" />
+                          <GradientStop Color="#2563EB" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <mi:MaterialIcon Kind="Safe" Width="24" Height="24"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Home_Icon_SavingsPlan" />
+                    </Border>
+                    <TextBlock Text="{Binding CalcSavingsPlanText}"
+                               FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Home_TxtSavingsPlan" />
+                  </StackPanel>
+                </Button>
+              </Border>
+            </Panel>
 
             <!-- Kredit -->
-            <Button Grid.Row="1" Grid.Column="0"
-                    CornerRadius="12" Height="120" Padding="8"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    Command="{Binding OpenLoanCommand}"
-                    AutomationProperties.AutomationId="Home_BtnLoan">
-              <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
-              </Button.Background>
-              <StackPanel VerticalAlignment="Center" Spacing="8">
-                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#F59E0B" Offset="0" />
-                      <GradientStop Color="#D97706" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <mi:MaterialIcon Kind="Bank" Width="24" Height="24"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Home_Icon_Loan" />
-                </Border>
-                <TextBlock Text="{Binding CalcLoanText}"
-                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Home_TxtLoan" />
-              </StackPanel>
-            </Button>
+            <Panel Grid.Row="1" Grid.Column="0">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:StaggerFadeInBehavior StaggerDelay="60" BaseDuration="300" FixedIndex="2" />
+              </i:Interaction.Behaviors>
+              <Border Classes="FintechCardAccent" BorderBrush="#F59E0B" Margin="0" Padding="0">
+                <Button CornerRadius="12" Height="120" Padding="8"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Background="Transparent"
+                        Command="{Binding OpenLoanCommand}"
+                        AutomationProperties.AutomationId="Home_BtnLoan">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#F59E0B" Offset="0" />
+                          <GradientStop Color="#D97706" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <mi:MaterialIcon Kind="Bank" Width="24" Height="24"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Home_Icon_Loan" />
+                    </Border>
+                    <TextBlock Text="{Binding CalcLoanText}"
+                               FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Home_TxtLoan" />
+                  </StackPanel>
+                </Button>
+              </Border>
+            </Panel>
 
             <!-- Tilgungsplan -->
-            <Button Grid.Row="1" Grid.Column="1"
-                    CornerRadius="12" Height="120" Padding="8"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    Command="{Binding OpenAmortizationCommand}"
-                    AutomationProperties.AutomationId="Home_BtnAmortization">
-              <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
-              </Button.Background>
-              <StackPanel VerticalAlignment="Center" Spacing="8">
-                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#8B5CF6" Offset="0" />
-                      <GradientStop Color="#7C3AED" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <mi:MaterialIcon Kind="ListStatus" Width="24" Height="24"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Home_Icon_Amortization" />
-                </Border>
-                <TextBlock Text="{Binding CalcAmortizationText}"
-                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Home_TxtAmortization" />
-              </StackPanel>
-            </Button>
+            <Panel Grid.Row="1" Grid.Column="1">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:StaggerFadeInBehavior StaggerDelay="60" BaseDuration="300" FixedIndex="3" />
+              </i:Interaction.Behaviors>
+              <Border Classes="FintechCardAccent" BorderBrush="#EF4444" Margin="0" Padding="0">
+                <Button CornerRadius="12" Height="120" Padding="8"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Background="Transparent"
+                        Command="{Binding OpenAmortizationCommand}"
+                        AutomationProperties.AutomationId="Home_BtnAmortization">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#8B5CF6" Offset="0" />
+                          <GradientStop Color="#7C3AED" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <mi:MaterialIcon Kind="ListStatus" Width="24" Height="24"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Home_Icon_Amortization" />
+                    </Border>
+                    <TextBlock Text="{Binding CalcAmortizationText}"
+                               FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Home_TxtAmortization" />
+                  </StackPanel>
+                </Button>
+              </Border>
+            </Panel>
 
             <!-- Rendite -->
-            <Button Grid.Row="2" Grid.Column="0"
-                    CornerRadius="12" Height="120" Padding="8"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    Command="{Binding OpenYieldCommand}"
-                    AutomationProperties.AutomationId="Home_BtnYield">
-              <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
-              </Button.Background>
-              <StackPanel VerticalAlignment="Center" Spacing="8">
-                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#EF4444" Offset="0" />
-                      <GradientStop Color="#DC2626" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <mi:MaterialIcon Kind="ChartArc" Width="24" Height="24"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Home_Icon_Yield" />
-                </Border>
-                <TextBlock Text="{Binding CalcYieldText}"
-                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Home_TxtYield" />
-              </StackPanel>
-            </Button>
+            <Panel Grid.Row="2" Grid.Column="0">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:StaggerFadeInBehavior StaggerDelay="60" BaseDuration="300" FixedIndex="4" />
+              </i:Interaction.Behaviors>
+              <Border Classes="FintechCardAccent" BorderBrush="#8B5CF6" Margin="0" Padding="0">
+                <Button CornerRadius="12" Height="120" Padding="8"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Background="Transparent"
+                        Command="{Binding OpenYieldCommand}"
+                        AutomationProperties.AutomationId="Home_BtnYield">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#EF4444" Offset="0" />
+                          <GradientStop Color="#DC2626" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <mi:MaterialIcon Kind="ChartArc" Width="24" Height="24"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Home_Icon_Yield" />
+                    </Border>
+                    <TextBlock Text="{Binding CalcYieldText}"
+                               FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Home_TxtYield" />
+                  </StackPanel>
+                </Button>
+              </Border>
+            </Panel>
 
             <!-- Inflation -->
-            <Button Grid.Row="2" Grid.Column="1"
-                    CornerRadius="12" Height="120" Padding="8"
-                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
-                    Command="{Binding OpenInflationCommand}"
-                    AutomationProperties.AutomationId="Home_BtnInflation">
-              <Button.Background>
-                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                  <GradientStop Color="{DynamicResource CardColor}" Offset="0" />
-                  <GradientStop Color="{DynamicResource CardHoverColor}" Offset="1" />
-                </LinearGradientBrush>
-              </Button.Background>
-              <StackPanel VerticalAlignment="Center" Spacing="8">
-                <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
-                  <Border.Background>
-                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                      <GradientStop Color="#F97316" Offset="0" />
-                      <GradientStop Color="#EA580C" Offset="1" />
-                    </LinearGradientBrush>
-                  </Border.Background>
-                  <mi:MaterialIcon Kind="CurrencyUsd" Width="24" Height="24"
-                                   Foreground="White"
-                                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                                   AutomationProperties.AutomationId="Home_Icon_Inflation" />
-                </Border>
-                <TextBlock Text="{Binding CalcInflationText}"
-                           FontSize="13" FontWeight="Bold" TextAlignment="Center"
-                           Foreground="{DynamicResource TextPrimaryBrush}"
-                           AutomationProperties.AutomationId="Home_TxtInflation" />
-              </StackPanel>
-            </Button>
+            <Panel Grid.Row="2" Grid.Column="1">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:StaggerFadeInBehavior StaggerDelay="60" BaseDuration="300" FixedIndex="5" />
+              </i:Interaction.Behaviors>
+              <Border Classes="FintechCardAccent" BorderBrush="#14B8A6" Margin="0" Padding="0">
+                <Button CornerRadius="12" Height="120" Padding="8"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Background="Transparent"
+                        Command="{Binding OpenInflationCommand}"
+                        AutomationProperties.AutomationId="Home_BtnInflation">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <StackPanel VerticalAlignment="Center" Spacing="8">
+                    <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
+                      <Border.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                          <GradientStop Color="#F97316" Offset="0" />
+                          <GradientStop Color="#EA580C" Offset="1" />
+                        </LinearGradientBrush>
+                      </Border.Background>
+                      <mi:MaterialIcon Kind="CurrencyUsd" Width="24" Height="24"
+                                       Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       AutomationProperties.AutomationId="Home_Icon_Inflation" />
+                    </Border>
+                    <TextBlock Text="{Binding CalcInflationText}"
+                               FontSize="13" FontWeight="Bold" TextAlignment="Center"
+                               Foreground="{DynamicResource TextPrimaryBrush}"
+                               AutomationProperties.AutomationId="Home_TxtInflation" />
+                  </StackPanel>
+                </Button>
+              </Border>
+            </Panel>
 
           </Grid>
         </StackPanel>
@@ -560,6 +627,9 @@
                 IsVisible="{Binding !IsPremium}"
                 Command="{Binding NavigateToSettingsCommand}"
                 AutomationProperties.AutomationId="Home_BtnPremium">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:TapScaleBehavior PressedScale="0.97" />
+          </i:Interaction.Behaviors>
           <Border Classes="PremiumShimmer" CornerRadius="16" Padding="16" ClipToBounds="True"
                   AutomationProperties.AutomationId="Home_CardPremium">
             <Border.Background>
@@ -655,6 +725,9 @@
                   HorizontalContentAlignment="Center"
                   Padding="16,12"
                   AutomationProperties.AutomationId="Home_BtnWatchVideo">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+            </i:Interaction.Behaviors>
             <StackPanel Orientation="Horizontal" Spacing="8"
                         AutomationProperties.AutomationId="Home_Panel_WatchVideoContent">
               <mi:MaterialIcon Kind="Video" Width="20" Height="20"
@@ -671,6 +744,9 @@
                   HorizontalContentAlignment="Center"
                   Padding="12,10"
                   AutomationProperties.AutomationId="Home_BtnCancelBudgetAd">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding CloseText}"
                        FontSize="14"
                        Foreground="{DynamicResource TextSecondaryBrush}"
@@ -848,6 +924,9 @@
                   HorizontalContentAlignment="Center"
                   Padding="14,10" Margin="0,4,0,0"
                   AutomationProperties.AutomationId="Home_BtnCloseAnalysis">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).CloseText}"
                        FontSize="15" FontWeight="SemiBold"
                        AutomationProperties.AutomationId="Home_TxtCloseAnalysis" />

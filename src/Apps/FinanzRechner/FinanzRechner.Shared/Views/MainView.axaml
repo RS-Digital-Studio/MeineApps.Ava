@@ -5,26 +5,33 @@
              xmlns:conv="using:FinanzRechner.Converters"
              xmlns:controls="using:MeineApps.UI.Controls"
              xmlns:views="using:FinanzRechner.Views"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.MainView"
              x:DataType="vm:MainViewModel"
              AutomationProperties.AutomationId="Main_Root"
              Background="{DynamicResource BackgroundBrush}">
 
   <UserControl.Styles>
-    <!-- Fade transition for tab content switching -->
+    <!-- Fade + subtiler Slide-Up Transition für Tab-Content -->
     <Style Selector="Border.TabContent">
+      <Setter Property="RenderTransform" Value="translateY(0px)" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
       <Setter Property="Transitions">
         <Transitions>
-          <DoubleTransition Property="Opacity" Duration="0:0:0.15" />
+          <DoubleTransition Property="Opacity" Duration="0:0:0.15" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
         </Transitions>
       </Setter>
     </Style>
     <Style Selector="Border.TabContent:not(.Active)">
       <Setter Property="Opacity" Value="0" />
+      <Setter Property="RenderTransform" Value="translateY(8px)" />
       <Setter Property="IsHitTestVisible" Value="False" />
     </Style>
     <Style Selector="Border.TabContent.Active">
       <Setter Property="Opacity" Value="1" />
+      <Setter Property="RenderTransform" Value="translateY(0px)" />
       <Setter Property="IsHitTestVisible" Value="True" />
     </Style>
 
@@ -176,6 +183,51 @@
     <Style Selector="Border.ThemePreview:pointerover">
       <Setter Property="RenderTransform" Value="scale(1.03,1.03)" />
     </Style>
+
+    <!-- ====== Fintech Premium Card ====== -->
+    <Style Selector="Border.FintechCard">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="BorderBrush" Value="{DynamicResource BorderSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="Margin" Value="16,8" />
+      <Setter Property="BoxShadow" Value="0 2 8 0 #20000000" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
+          <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.2" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.FintechCard:pointerover">
+      <Setter Property="RenderTransform" Value="translateY(-2px)" />
+      <Setter Property="BoxShadow" Value="0 4 16 0 #30000000" />
+    </Style>
+
+    <!-- ====== Fintech Card mit farbigem Akzent-Streifen links ====== -->
+    <Style Selector="Border.FintechCardAccent">
+      <Setter Property="Background" Value="{DynamicResource CardBrush}" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="BorderThickness" Value="4,0,0,0" />
+      <Setter Property="Padding" Value="16" />
+      <Setter Property="Margin" Value="16,8" />
+      <Setter Property="BoxShadow" Value="0 2 8 0 #20000000" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.2" Easing="CubicEaseOut" />
+          <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.2" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.FintechCardAccent:pointerover">
+      <Setter Property="RenderTransform" Value="translateY(-2px)" />
+      <Setter Property="BoxShadow" Value="0 4 16 0 #30000000" />
+    </Style>
   </UserControl.Styles>
 
   <Panel>
@@ -297,6 +349,9 @@
               HorizontalAlignment="Center"
               Margin="24">
         <StackPanel AutomationProperties.AutomationId="Main_Panel_QuickAddContent" Spacing="16">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
           <TextBlock AutomationProperties.AutomationId="Main_TxtQuickAddTitle"
                      Text="{Binding QuickAddTitleText}"
                      FontSize="18" FontWeight="Bold"
@@ -311,7 +366,11 @@
                       Padding="12,18"
                       Background="#33EF4444" BorderBrush="#EF4444" BorderThickness="2"
                       CornerRadius="12"
-                      IsVisible="{Binding IsQuickExpenseSelected}">
+                      IsVisible="{Binding IsQuickExpenseSelected}"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon AutomationProperties.AutomationId="Main_Icon_QuickExpenseSelected" Kind="ArrowDownBold" Width="20" Height="20" Foreground="#EF4444" />
                   <TextBlock AutomationProperties.AutomationId="Main_Txt_QuickExpenseSelected" Text="{Binding QuickExpenseText}" FontSize="15" FontWeight="Bold" Foreground="#EF4444" />
@@ -324,7 +383,11 @@
                       Background="{DynamicResource SurfaceBrush}" BorderThickness="1"
                       BorderBrush="{DynamicResource BorderSubtleBrush}"
                       CornerRadius="12"
-                      IsVisible="{Binding !IsQuickExpenseSelected}">
+                      IsVisible="{Binding !IsQuickExpenseSelected}"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon AutomationProperties.AutomationId="Main_Icon_QuickExpenseUnselected" Kind="ArrowDownBold" Width="20" Height="20"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -340,7 +403,11 @@
                       Padding="12,18"
                       Background="#3322C55E" BorderBrush="#22C55E" BorderThickness="2"
                       CornerRadius="12"
-                      IsVisible="{Binding IsQuickIncomeSelected}">
+                      IsVisible="{Binding IsQuickIncomeSelected}"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon AutomationProperties.AutomationId="Main_Icon_QuickIncomeSelected" Kind="ArrowUpBold" Width="20" Height="20" Foreground="#22C55E" />
                   <TextBlock AutomationProperties.AutomationId="Main_Txt_QuickIncomeSelected" Text="{Binding QuickIncomeText}" FontSize="15" FontWeight="Bold" Foreground="#22C55E" />
@@ -353,7 +420,11 @@
                       Background="{DynamicResource SurfaceBrush}" BorderThickness="1"
                       BorderBrush="{DynamicResource BorderSubtleBrush}"
                       CornerRadius="12"
-                      IsVisible="{Binding !IsQuickIncomeSelected}">
+                      IsVisible="{Binding !IsQuickIncomeSelected}"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                   <mi:MaterialIcon AutomationProperties.AutomationId="Main_Icon_QuickIncomeUnselected" Kind="ArrowUpBold" Width="20" Height="20"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -393,7 +464,11 @@
                           BorderThickness="2"
                           IsVisible="{Binding IsSelected}"
                           Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectQuickCategoryCommand}"
-                          CommandParameter="{Binding}">
+                          CommandParameter="{Binding}"
+                          RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                    <i:Interaction.Behaviors>
+                      <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                    </i:Interaction.Behaviors>
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <TextBlock AutomationProperties.AutomationId="Main_Txt_CategoryChipIconSelected" Text="{Binding CategoryDisplay}" FontSize="16" VerticalAlignment="Center" Foreground="White" />
                       <TextBlock AutomationProperties.AutomationId="Main_Txt_CategoryChipNameSelected" Text="{Binding CategoryName}" FontSize="13" VerticalAlignment="Center" Foreground="White" FontWeight="Bold" />
@@ -405,7 +480,11 @@
                           BorderThickness="0"
                           IsVisible="{Binding !IsSelected}"
                           Command="{Binding $parent[UserControl].((vm:MainViewModel)DataContext).SelectQuickCategoryCommand}"
-                          CommandParameter="{Binding}">
+                          CommandParameter="{Binding}"
+                          RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                    <i:Interaction.Behaviors>
+                      <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                    </i:Interaction.Behaviors>
                     <StackPanel Orientation="Horizontal" Spacing="4">
                       <TextBlock AutomationProperties.AutomationId="Main_Txt_CategoryChipIconUnselected" Text="{Binding CategoryDisplay}" FontSize="16" VerticalAlignment="Center" />
                       <TextBlock AutomationProperties.AutomationId="Main_Txt_CategoryChipNameUnselected" Text="{Binding CategoryName}" FontSize="13" VerticalAlignment="Center"
@@ -422,11 +501,21 @@
             <Button AutomationProperties.AutomationId="Main_BtnQuickCancel"
                     Classes="Outlined"
                     Content="{Binding CancelText}"
-                    Command="{Binding CancelQuickAddCommand}" />
+                    Command="{Binding CancelQuickAddCommand}"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
+            </Button>
             <Button AutomationProperties.AutomationId="Main_BtnQuickSave"
                     Classes="Primary"
                     Content="{Binding SaveText}"
-                    Command="{Binding SaveQuickExpenseCommand}" />
+                    Command="{Binding SaveQuickExpenseCommand}"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
+            </Button>
           </StackPanel>
         </StackPanel>
       </Border>
@@ -466,7 +555,11 @@
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Padding="0"
-                Height="56">
+                Height="56"
+                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="2">
             <Border AutomationProperties.AutomationId="Main_Border_NavHomeIndicator" Height="3" CornerRadius="2" Margin="12,0"
                     IsVisible="{Binding IsHomeActive}">
@@ -508,7 +601,11 @@
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Padding="0"
-                Height="56">
+                Height="56"
+                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="2">
             <Border AutomationProperties.AutomationId="Main_Border_NavTrackerIndicator" Height="3" CornerRadius="2" Margin="12,0"
                     IsVisible="{Binding IsTrackerActive}">
@@ -550,7 +647,11 @@
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Padding="0"
-                Height="56">
+                Height="56"
+                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="2">
             <Border AutomationProperties.AutomationId="Main_Border_NavStatsIndicator" Height="3" CornerRadius="2" Margin="12,0"
                     IsVisible="{Binding IsStatsActive}">
@@ -592,7 +693,11 @@
                 VerticalAlignment="Stretch"
                 HorizontalContentAlignment="Center"
                 Padding="0"
-                Height="56">
+                Height="56"
+                RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="2">
             <Border AutomationProperties.AutomationId="Main_Border_NavSettingsIndicator" Height="3" CornerRadius="2" Margin="12,0"
                     IsVisible="{Binding IsSettingsActive}">

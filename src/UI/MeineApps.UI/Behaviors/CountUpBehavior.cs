@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Threading;
@@ -8,6 +9,7 @@ namespace MeineApps.UI.Behaviors;
 /// <summary>
 /// Behavior das einen TextBlock-Wert von 0 zum Zielwert hochzählt (CountUp-Animation).
 /// Wird an Ergebnis-TextBlocks in Rechner-Views gebunden.
+/// Unterstützt Prefix (z.B. "+"), Suffix (z.B. " €") und CultureInfo (z.B. "de-DE").
 /// </summary>
 public class CountUpBehavior : Behavior<TextBlock>
 {
@@ -16,6 +18,7 @@ public class CountUpBehavior : Behavior<TextBlock>
     private double _targetValue;
     private int _frameCount;
     private int _currentFrame;
+    private CultureInfo? _cultureInfoCache;
 
     public static readonly StyledProperty<double> TargetValueProperty =
         AvaloniaProperty.Register<CountUpBehavior, double>(nameof(TargetValue));
@@ -28,6 +31,15 @@ public class CountUpBehavior : Behavior<TextBlock>
 
     public static readonly StyledProperty<string> SuffixProperty =
         AvaloniaProperty.Register<CountUpBehavior, string>(nameof(Suffix), "");
+
+    public static readonly StyledProperty<string> PrefixProperty =
+        AvaloniaProperty.Register<CountUpBehavior, string>(nameof(Prefix), "");
+
+    public static readonly StyledProperty<string> CultureNameProperty =
+        AvaloniaProperty.Register<CountUpBehavior, string>(nameof(CultureName), "");
+
+    public static readonly StyledProperty<bool> UseSignedPrefixProperty =
+        AvaloniaProperty.Register<CountUpBehavior, bool>(nameof(UseSignedPrefix));
 
     /// <summary>Zielwert zu dem hochgezählt wird.</summary>
     public double TargetValue
@@ -57,6 +69,42 @@ public class CountUpBehavior : Behavior<TextBlock>
         set => SetValue(SuffixProperty, value);
     }
 
+    /// <summary>Optionaler Prefix vor der Zahl (z.B. "+" für Vorzeichen).</summary>
+    public string Prefix
+    {
+        get => GetValue(PrefixProperty);
+        set => SetValue(PrefixProperty, value);
+    }
+
+    /// <summary>
+    /// CultureInfo-Name für Zahlenformatierung (z.B. "de-DE").
+    /// Leer = InvariantCulture.
+    /// </summary>
+    public string CultureName
+    {
+        get => GetValue(CultureNameProperty);
+        set => SetValue(CultureNameProperty, value);
+    }
+
+    /// <summary>
+    /// Wenn true, wird automatisch "+" bei positiven und "-" bei negativen Werten vorangestellt.
+    /// Überschreibt die Prefix-Property.
+    /// </summary>
+    public bool UseSignedPrefix
+    {
+        get => GetValue(UseSignedPrefixProperty);
+        set => SetValue(UseSignedPrefixProperty, value);
+    }
+
+    private CultureInfo GetCulture()
+    {
+        if (_cultureInfoCache != null) return _cultureInfoCache;
+        _cultureInfoCache = string.IsNullOrEmpty(CultureName)
+            ? CultureInfo.InvariantCulture
+            : CultureInfo.GetCultureInfo(CultureName);
+        return _cultureInfoCache;
+    }
+
     protected override void OnAttached()
     {
         base.OnAttached();
@@ -78,14 +126,25 @@ public class CountUpBehavior : Behavior<TextBlock>
         StopAnimation();
     }
 
+    private string FormatValue(double value)
+    {
+        var prefix = UseSignedPrefix
+            ? (value >= 0 ? "+" : "")  // Negatives Vorzeichen kommt vom ToString
+            : Prefix;
+        return prefix + value.ToString(Format, GetCulture()) + Suffix;
+    }
+
     private void OnTargetValueChanged(double newValue)
     {
         if (AssociatedObject == null) return;
 
+        // CultureInfo-Cache invalidieren bei Property-Änderung
+        _cultureInfoCache = null;
+
         // Bei 0 oder NaN direkt setzen
         if (double.IsNaN(newValue) || newValue == 0)
         {
-            AssociatedObject.Text = newValue.ToString(Format) + Suffix;
+            AssociatedObject.Text = FormatValue(newValue);
             return;
         }
 
@@ -120,7 +179,7 @@ public class CountUpBehavior : Behavior<TextBlock>
         if (_currentFrame >= _frameCount)
         {
             // Letzter Frame → exakten Zielwert setzen
-            AssociatedObject.Text = _targetValue.ToString(Format) + Suffix;
+            AssociatedObject.Text = FormatValue(_targetValue);
             StopAnimation();
             return;
         }
@@ -130,7 +189,7 @@ public class CountUpBehavior : Behavior<TextBlock>
         var eased = 1 - Math.Pow(1 - t, 3); // CubicEaseOut
         _currentValue = _targetValue * eased;
 
-        AssociatedObject.Text = _currentValue.ToString(Format) + Suffix;
+        AssociatedObject.Text = FormatValue(_currentValue);
     }
 
     private void StopAnimation()

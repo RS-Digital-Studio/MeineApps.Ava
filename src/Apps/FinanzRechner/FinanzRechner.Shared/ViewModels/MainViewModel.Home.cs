@@ -46,6 +46,14 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     private double _overallBudgetPercentage;
 
+    /// <summary>Budget-Verbrauch als 0.0-1.0 für SkiaGradientRing (geclampt auf 0-1).</summary>
+    [ObservableProperty]
+    private double _budgetUsagePercent;
+
+    /// <summary>True wenn Gesamt-Budget über 90% ausgelastet ist (Ring pulsiert).</summary>
+    [ObservableProperty]
+    private bool _isBudgetCritical;
+
     [ObservableProperty]
     private ObservableCollection<BudgetDisplayItem> _topBudgets = [];
 
@@ -358,6 +366,10 @@ public sealed partial class MainViewModel
             {
                 OverallBudgetPercentage = budgetStatuses.Average(b => b.PercentageUsed);
 
+                // SkiaGradientRing: 0.0-1.0 (geclampt), Puls ab 90%
+                BudgetUsagePercent = Math.Clamp(OverallBudgetPercentage / 100.0, 0.0, 1.0);
+                IsBudgetCritical = OverallBudgetPercentage > 90;
+
                 var top3 = budgetStatuses
                     .OrderByDescending(b => b.PercentageUsed)
                     .Take(3)
@@ -378,6 +390,8 @@ public sealed partial class MainViewModel
             {
                 TopBudgets.Clear();
                 OverallBudgetPercentage = 0;
+                BudgetUsagePercent = 0;
+                IsBudgetCritical = false;
                 HasBudgetRings = false;
                 BudgetRings = null;
             }

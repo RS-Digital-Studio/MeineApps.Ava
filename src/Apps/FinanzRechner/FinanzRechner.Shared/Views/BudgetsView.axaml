@@ -3,8 +3,16 @@
              xmlns:vm="using:FinanzRechner.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:skiaControls="using:MeineApps.UI.SkiaSharp"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
+             xmlns:converters="using:FinanzRechner.Converters"
              x:Class="FinanzRechner.Views.BudgetsView"
              x:DataType="vm:BudgetsViewModel">
+
+  <UserControl.Resources>
+    <converters:AlertLevelToBoxShadowConverter x:Key="AlertLevelToBoxShadowConverter" />
+  </UserControl.Resources>
 
   <Grid RowDefinitions="Auto,*" AutomationProperties.AutomationId="Budgets_Root">
 
@@ -15,7 +23,11 @@
       <Button Grid.Column="0" Classes="Text"
               AutomationProperties.AutomationId="Budgets_BtnBack"
               Command="{Binding GoBackCommand}"
-              Width="48" Height="48" Padding="0">
+              Width="48" Height="48" Padding="0"
+              RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+        <i:Interaction.Behaviors>
+          <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+        </i:Interaction.Behaviors>
         <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20"
                          AutomationProperties.AutomationId="Budgets_Icon_Back"
                          Foreground="{DynamicResource PrimaryBrush}" />
@@ -35,9 +47,12 @@
       <ScrollViewer AutomationProperties.AutomationId="Budgets_ScrollViewer">
         <StackPanel Spacing="12" Margin="16,0"
                     AutomationProperties.AutomationId="Budgets_Panel_Content">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
 
           <!-- Gesamt-Monatsbudget -->
-          <Border Classes="Card" Margin="0,0,0,4"
+          <Border Classes="Card FintechCard" Margin="0,0,0,4"
                   AutomationProperties.AutomationId="Budgets_CardTotalBudget"
                   IsVisible="{Binding HasTotalBudget}">
             <StackPanel Spacing="4"
@@ -47,10 +62,17 @@
                          FontSize="16" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
                          HorizontalAlignment="Center" />
-              <!-- SkiaSharp Budget-Gauge (Halbkreis-Tachometer) -->
-              <Border Height="120" ClipToBounds="True">
-                <skia:SKCanvasView x:Name="BudgetGaugeCanvas" AutomationProperties.AutomationId="Budgets_CanvasGauge" PaintSurface="OnPaintBudgetGauge" />
-              </Border>
+              <!-- SkiaGradientRing für Gesamt-Budget -->
+              <skiaControls:SkiaGradientRing
+                  Width="140" Height="140"
+                  HorizontalAlignment="Center"
+                  Value="{Binding BudgetUsagePercent}"
+                  StartColor="#22C55E"
+                  EndColor="#EF4444"
+                  GlowEnabled="True"
+                  ShowTickMarks="False"
+                  IsPulsing="{Binding IsBudgetCritical}"
+                  AutomationProperties.AutomationId="Budgets_GradientRingGauge" />
             </StackPanel>
           </Border>
 
@@ -80,91 +102,128 @@
                         AutomationProperties.AutomationId="Budgets_Items_BudgetList">
             <ItemsControl.ItemTemplate>
               <DataTemplate>
-                <Border Classes="Card" Margin="0,0,0,4" Cursor="Hand"
-                        AutomationProperties.AutomationId="Budgets_Border_BudgetItem">
-                  <StackPanel Spacing="8"
-                              AutomationProperties.AutomationId="Budgets_Panel_BudgetItem">
+                <!-- Panel-Wrapper für StaggerFadeIn (setzt TranslateTransform) -->
+                <Panel Margin="0,0,0,4">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:StaggerFadeInBehavior StaggerDelay="50" BaseDuration="300" />
+                  </i:Interaction.Behaviors>
 
-                    <!-- Category Header -->
-                    <StackPanel Orientation="Horizontal" Spacing="12"
-                                AutomationProperties.AutomationId="Budgets_Panel_CategoryHeader">
-                      <TextBlock Text="{Binding CategoryIcon}" FontSize="24"
-                                 AutomationProperties.AutomationId="Budgets_Txt_CategoryIcon" />
-                      <TextBlock Text="{Binding CategoryName}"
-                                 AutomationProperties.AutomationId="Budgets_Txt_CategoryName"
-                                 FontSize="18" FontWeight="Bold"
-                                 Foreground="{DynamicResource TextPrimaryBrush}"
-                                 VerticalAlignment="Center" />
+                  <Border Classes="Card" Cursor="Hand"
+                          AutomationProperties.AutomationId="Budgets_Border_BudgetItem"
+                          BoxShadow="{Binding AlertLevel, Converter={StaticResource AlertLevelToBoxShadowConverter}}"
+                          RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                    <i:Interaction.Behaviors>
+                      <uiBehaviors:TapScaleBehavior PressedScale="0.97" />
+                    </i:Interaction.Behaviors>
+                    <Border.ContextFlyout>
+                      <MenuFlyout>
+                        <MenuItem Header="Edit"
+                                  Command="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).EditBudgetCommand}"
+                                  CommandParameter="{Binding}" />
+                        <MenuItem Header="Delete"
+                                  Command="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).DeleteBudgetCommand}"
+                                  CommandParameter="{Binding}" />
+                      </MenuFlyout>
+                    </Border.ContextFlyout>
+                    <StackPanel Spacing="8"
+                                AutomationProperties.AutomationId="Budgets_Panel_BudgetItem">
 
-                      <!-- Alert Badge - Exceeded -->
-                      <Border Background="{DynamicResource ExpenseBrush}"
-                              CornerRadius="12"
-                              Padding="8,4"
-                              AutomationProperties.AutomationId="Budgets_Border_ExceededBadge"
-                              IsVisible="{Binding IsExceeded}">
-                        <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).ExceededText}"
-                                   AutomationProperties.AutomationId="Budgets_Txt_Exceeded"
-                                   FontSize="10" FontWeight="Bold" Foreground="White" />
-                      </Border>
+                      <!-- Category Header -->
+                      <StackPanel Orientation="Horizontal" Spacing="12"
+                                  AutomationProperties.AutomationId="Budgets_Panel_CategoryHeader">
+                        <TextBlock Text="{Binding CategoryIcon}" FontSize="24"
+                                   AutomationProperties.AutomationId="Budgets_Txt_CategoryIcon" />
+                        <TextBlock Text="{Binding CategoryName}"
+                                   AutomationProperties.AutomationId="Budgets_Txt_CategoryName"
+                                   FontSize="18" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" />
 
-                      <!-- Alert Badge - Warning -->
-                      <Border Background="{DynamicResource WarningBrush}"
-                              CornerRadius="12"
-                              Padding="8,4"
-                              AutomationProperties.AutomationId="Budgets_Border_WarningBadge"
-                              IsVisible="{Binding IsWarning}">
-                        <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).WarningLabelText}"
-                                   AutomationProperties.AutomationId="Budgets_Txt_Warning"
-                                   FontSize="10" FontWeight="Bold" Foreground="White" />
-                      </Border>
+                        <!-- Alert Badge - Exceeded -->
+                        <Border Background="{DynamicResource ExpenseBrush}"
+                                CornerRadius="12"
+                                Padding="8,4"
+                                AutomationProperties.AutomationId="Budgets_Border_ExceededBadge"
+                                IsVisible="{Binding IsExceeded}">
+                          <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).ExceededText}"
+                                     AutomationProperties.AutomationId="Budgets_Txt_Exceeded"
+                                     FontSize="10" FontWeight="Bold" Foreground="White" />
+                        </Border>
+
+                        <!-- Alert Badge - Warning -->
+                        <Border Background="{DynamicResource WarningBrush}"
+                                CornerRadius="12"
+                                Padding="8,4"
+                                AutomationProperties.AutomationId="Budgets_Border_WarningBadge"
+                                IsVisible="{Binding IsWarning}">
+                          <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).WarningLabelText}"
+                                     AutomationProperties.AutomationId="Budgets_Txt_Warning"
+                                     FontSize="10" FontWeight="Bold" Foreground="White" />
+                        </Border>
+                      </StackPanel>
+
+                      <!-- Progress Bar (SkiaSharp) -->
+                      <skia:SKCanvasView Height="18"
+                                          AutomationProperties.AutomationId="Budgets_Canvas_Progress"
+                                          PaintSurface="OnPaintBudgetProgress" />
+
+                      <!-- Budget Details -->
+                      <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8"
+                            AutomationProperties.AutomationId="Budgets_Panel_Details">
+                        <StackPanel AutomationProperties.AutomationId="Budgets_Panel_Spent">
+                          <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).SpentText}"
+                                     AutomationProperties.AutomationId="Budgets_Txt_SpentLabel"
+                                     FontSize="11"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                          <TextBlock AutomationProperties.AutomationId="Budgets_Txt_SpentValue"
+                                     FontSize="14" FontWeight="Bold"
+                                     Foreground="{DynamicResource ExpenseBrush}">
+                            <i:Interaction.Behaviors>
+                              <uiBehaviors:CountUpBehavior TargetValue="{Binding Spent}"
+                                                           Format="N2" Suffix=" &#x20AC;"
+                                                           CultureName="de-DE" Duration="800" />
+                            </i:Interaction.Behaviors>
+                          </TextBlock>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1"
+                                    AutomationProperties.AutomationId="Budgets_Panel_Remaining">
+                          <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).RemainingText}"
+                                     AutomationProperties.AutomationId="Budgets_Txt_RemainingLabel"
+                                     FontSize="11"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                          <TextBlock AutomationProperties.AutomationId="Budgets_Txt_RemainingValue"
+                                     FontSize="14" FontWeight="Bold"
+                                     Foreground="{DynamicResource IncomeBrush}">
+                            <i:Interaction.Behaviors>
+                              <uiBehaviors:CountUpBehavior TargetValue="{Binding Remaining}"
+                                                           Format="N2" Suffix=" &#x20AC;"
+                                                           CultureName="de-DE" Duration="800" />
+                            </i:Interaction.Behaviors>
+                          </TextBlock>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2"
+                                    AutomationProperties.AutomationId="Budgets_Panel_Limit">
+                          <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).MonthlyLimitText}"
+                                     AutomationProperties.AutomationId="Budgets_Txt_LimitLabel"
+                                     FontSize="11"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                          <TextBlock AutomationProperties.AutomationId="Budgets_Txt_LimitValue"
+                                     FontSize="14" FontWeight="Bold"
+                                     Foreground="{DynamicResource TextPrimaryBrush}">
+                            <i:Interaction.Behaviors>
+                              <uiBehaviors:CountUpBehavior TargetValue="{Binding Limit}"
+                                                           Format="N2" Suffix=" &#x20AC;"
+                                                           CultureName="de-DE" Duration="800" />
+                            </i:Interaction.Behaviors>
+                          </TextBlock>
+                        </StackPanel>
+                      </Grid>
+
                     </StackPanel>
-
-                    <!-- Progress Bar (SkiaSharp) -->
-                    <skia:SKCanvasView Height="18"
-                                        AutomationProperties.AutomationId="Budgets_Canvas_Progress"
-                                        PaintSurface="OnPaintBudgetProgress" />
-
-                    <!-- Budget Details -->
-                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8"
-                          AutomationProperties.AutomationId="Budgets_Panel_Details">
-                      <StackPanel AutomationProperties.AutomationId="Budgets_Panel_Spent">
-                        <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).SpentText}"
-                                   AutomationProperties.AutomationId="Budgets_Txt_SpentLabel"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="{Binding Spent, StringFormat='{}{0:F2} €'}"
-                                   AutomationProperties.AutomationId="Budgets_Txt_SpentValue"
-                                   FontSize="14" FontWeight="Bold"
-                                   Foreground="{DynamicResource ExpenseBrush}" />
-                      </StackPanel>
-
-                      <StackPanel Grid.Column="1"
-                                  AutomationProperties.AutomationId="Budgets_Panel_Remaining">
-                        <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).RemainingText}"
-                                   AutomationProperties.AutomationId="Budgets_Txt_RemainingLabel"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="{Binding Remaining, StringFormat='{}{0:F2} €'}"
-                                   AutomationProperties.AutomationId="Budgets_Txt_RemainingValue"
-                                   FontSize="14" FontWeight="Bold"
-                                   Foreground="{DynamicResource IncomeBrush}" />
-                      </StackPanel>
-
-                      <StackPanel Grid.Column="2"
-                                  AutomationProperties.AutomationId="Budgets_Panel_Limit">
-                        <TextBlock Text="{Binding $parent[UserControl].((vm:BudgetsViewModel)DataContext).MonthlyLimitText}"
-                                   AutomationProperties.AutomationId="Budgets_Txt_LimitLabel"
-                                   FontSize="11"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBlock Text="{Binding Limit, StringFormat='{}{0:F2} €'}"
-                                   AutomationProperties.AutomationId="Budgets_Txt_LimitValue"
-                                   FontSize="14" FontWeight="Bold"
-                                   Foreground="{DynamicResource TextPrimaryBrush}" />
-                      </StackPanel>
-                    </Grid>
-
-                  </StackPanel>
-                </Border>
+                  </Border>
+                </Panel>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -185,7 +244,11 @@
               Margin="16"
               Cursor="Hand"
               Command="{Binding ShowAddBudgetDialogCommand}"
-              Padding="0">
+              Padding="0"
+              RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+        <i:Interaction.Behaviors>
+          <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+        </i:Interaction.Behaviors>
         <mi:MaterialIcon Kind="Plus" Width="24" Height="24"
                          AutomationProperties.AutomationId="Budgets_Icon_Add"
                          Foreground="White"
@@ -205,6 +268,9 @@
                 VerticalAlignment="Center">
           <StackPanel Spacing="16"
                       AutomationProperties.AutomationId="Budgets_Panel_DialogContent">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding SetBudgetText}"
                        AutomationProperties.AutomationId="Budgets_TxtDialogTitle"
                        FontSize="20" FontWeight="Bold"
@@ -251,12 +317,22 @@
               <Button Content="{Binding CancelText}"
                       AutomationProperties.AutomationId="Budgets_BtnCancel"
                       Command="{Binding CancelAddBudgetCommand}"
-                      Classes="Secondary" />
+                      Classes="Secondary"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
+              </Button>
               <Button Grid.Column="1"
                       AutomationProperties.AutomationId="Budgets_BtnSave"
                       Content="{Binding SaveText}"
                       Command="{Binding SaveBudgetCommand}"
-                      Classes="Primary" />
+                      Classes="Primary"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
+              </Button>
             </Grid>
           </StackPanel>
         </Border>
@@ -286,11 +362,20 @@
                     Content="{Binding UndoText}"
                     Command="{Binding UndoDeleteCommand}"
                     Classes="Primary"
-                    Padding="16,8" />
+                    Padding="16,8"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
+            </Button>
             <Button Grid.Column="2" Classes="Text"
                     AutomationProperties.AutomationId="Budgets_BtnDismissUndo"
                     Command="{Binding DismissUndoCommand}"
-                    Width="36" Height="36" Padding="0">
+                    Width="36" Height="36" Padding="0"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+              </i:Interaction.Behaviors>
               <mi:MaterialIcon Kind="Close" Width="18" Height="18"
                                AutomationProperties.AutomationId="Budgets_Icon_DismissUndo"
                                Foreground="{DynamicResource TextSecondaryBrush}" />

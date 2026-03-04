@@ -91,10 +91,16 @@ public sealed partial class AmortizationViewModel : ViewModelBase, IDisposable
     public string MonthlyPaymentDisplay => Result != null ? CurrencyHelper.Format(Result.MonthlyPayment) : "";
     public string TotalInterestDisplay => Result != null ? CurrencyHelper.Format(Result.TotalInterest) : "";
 
+    // Numerische Werte für CountUpBehavior
+    public double MonthlyPaymentValue => Result?.MonthlyPayment ?? 0;
+    public double TotalInterestValue => Result?.TotalInterest ?? 0;
+
     partial void OnResultChanged(AmortizationResult? value)
     {
         OnPropertyChanged(nameof(MonthlyPaymentDisplay));
         OnPropertyChanged(nameof(TotalInterestDisplay));
+        OnPropertyChanged(nameof(MonthlyPaymentValue));
+        OnPropertyChanged(nameof(TotalInterestValue));
         UpdateChartData();
     }
 

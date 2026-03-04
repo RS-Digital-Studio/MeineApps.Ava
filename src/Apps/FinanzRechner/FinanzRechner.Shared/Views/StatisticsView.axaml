@@ -5,10 +5,25 @@
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:conv="using:FinanzRechner.Converters"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.StatisticsView"
              x:DataType="vm:StatisticsViewModel">
 
   <!-- Styles aus ModernCardStyles.axaml (global) -->
+
+  <UserControl.Styles>
+    <!-- Subtile Shimmer-Animation auf aktivem Period-Chip -->
+    <Style Selector="Button.PeriodChipSelected">
+      <Style.Animations>
+        <Animation Duration="0:0:3" IterationCount="INFINITE" Easing="LinearEasing">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.85" /></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1.0" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.85" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
 
   <Grid AutomationProperties.AutomationId="Stats_Root" RowDefinitions="Auto,Auto,Auto,*" Margin="16,8,16,0">
 
@@ -88,16 +103,24 @@
         <!-- Woche -->
         <Panel Margin="2">
           <Button AutomationProperties.AutomationId="Stats_ChipWeekSelected"
+                  Classes="PeriodChipSelected"
                   Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding IsWeekSelected}"
                   RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="Week">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding WeekText}" AutomationProperties.AutomationId="Statistics_Txt_WeekSelected" Foreground="White" FontSize="12" FontWeight="SemiBold" />
           </Button>
           <Button AutomationProperties.AutomationId="Stats_ChipWeekUnselected"
                   Background="Transparent" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding !IsWeekSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="Week">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding WeekText}" AutomationProperties.AutomationId="Statistics_Txt_WeekUnselected" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
           </Button>
         </Panel>
@@ -105,16 +128,24 @@
         <!-- Monat -->
         <Panel Margin="2">
           <Button AutomationProperties.AutomationId="Stats_ChipMonthSelected"
+                  Classes="PeriodChipSelected"
                   Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding IsMonthSelected}"
                   RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="Month">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding MonthText}" AutomationProperties.AutomationId="Statistics_Txt_MonthSelected" Foreground="White" FontSize="12" FontWeight="SemiBold" />
           </Button>
           <Button AutomationProperties.AutomationId="Stats_ChipMonthUnselected"
                   Background="Transparent" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding !IsMonthSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="Month">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding MonthText}" AutomationProperties.AutomationId="Statistics_Txt_MonthUnselected" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
           </Button>
         </Panel>
@@ -122,16 +153,24 @@
         <!-- Quartal -->
         <Panel Margin="2">
           <Button AutomationProperties.AutomationId="Stats_ChipQuarterSelected"
+                  Classes="PeriodChipSelected"
                   Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding IsQuarterSelected}"
                   RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="Quarter">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding QuarterText}" AutomationProperties.AutomationId="Statistics_Txt_QuarterSelected" Foreground="White" FontSize="12" FontWeight="SemiBold" />
           </Button>
           <Button AutomationProperties.AutomationId="Stats_ChipQuarterUnselected"
                   Background="Transparent" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding !IsQuarterSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="Quarter">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding QuarterText}" AutomationProperties.AutomationId="Statistics_Txt_QuarterUnselected" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
           </Button>
         </Panel>
@@ -139,16 +178,24 @@
         <!-- Halbjahr -->
         <Panel Margin="2">
           <Button AutomationProperties.AutomationId="Stats_ChipHalfYearSelected"
+                  Classes="PeriodChipSelected"
                   Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding IsHalfYearSelected}"
                   RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="HalfYear">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding HalfYearText}" AutomationProperties.AutomationId="Statistics_Txt_HalfYearSelected" Foreground="White" FontSize="12" FontWeight="SemiBold" />
           </Button>
           <Button AutomationProperties.AutomationId="Stats_ChipHalfYearUnselected"
                   Background="Transparent" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding !IsHalfYearSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="HalfYear">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding HalfYearText}" AutomationProperties.AutomationId="Statistics_Txt_HalfYearUnselected" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
           </Button>
         </Panel>
@@ -156,16 +203,24 @@
         <!-- Jahr -->
         <Panel Margin="2">
           <Button AutomationProperties.AutomationId="Stats_ChipYearSelected"
+                  Classes="PeriodChipSelected"
                   Background="{DynamicResource PrimaryBrush}" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding IsYearSelected}"
                   RenderTransformOrigin="50%,50%" RenderTransform="scale(1.05,1.05)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="Year">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding YearText}" AutomationProperties.AutomationId="Statistics_Txt_YearSelected" Foreground="White" FontSize="12" FontWeight="SemiBold" />
           </Button>
           <Button AutomationProperties.AutomationId="Stats_ChipYearUnselected"
                   Background="Transparent" CornerRadius="16" Padding="10,6"
                   IsVisible="{Binding !IsYearSelected}"
+                  RenderTransformOrigin="50%,50%" RenderTransform="scale(1)"
                   Command="{Binding SelectPeriodCommand}" CommandParameter="Year">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <TextBlock Text="{Binding YearText}" AutomationProperties.AutomationId="Statistics_Txt_YearUnselected" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" />
           </Button>
         </Panel>
@@ -175,8 +230,7 @@
     <!-- ═══ Row 2: Summary-Band (Einnahmen | Ausgaben | Bilanz) ═══ -->
     <Border Grid.Row="2"
             AutomationProperties.AutomationId="Stats_CardSummary"
-            Background="{DynamicResource CardBrush}"
-            CornerRadius="16"
+            Classes="FintechCard"
             Padding="12,10"
             Margin="0,0,0,10">
       <Grid ColumnDefinitions="*,Auto,*,Auto,*"
@@ -196,10 +250,13 @@
                        Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
           </StackPanel>
           <TextBlock AutomationProperties.AutomationId="Stats_TxtTotalIncome"
-                     Text="{Binding TotalIncomeDisplay}"
                      FontSize="15" FontWeight="Bold"
                      Foreground="{DynamicResource IncomeBrush}"
-                     HorizontalAlignment="Center" />
+                     HorizontalAlignment="Center">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:CountUpBehavior TargetValue="{Binding TotalIncome}" Duration="800" Format="N2" Suffix=" &#x20AC;" CultureName="de-DE" />
+            </i:Interaction.Behaviors>
+          </TextBlock>
         </StackPanel>
 
         <!-- Trennlinie -->
@@ -220,10 +277,13 @@
                        Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
           </StackPanel>
           <TextBlock AutomationProperties.AutomationId="Stats_TxtTotalExpenses"
-                     Text="{Binding TotalExpensesDisplay}"
                      FontSize="15" FontWeight="Bold"
                      Foreground="{DynamicResource ExpenseBrush}"
-                     HorizontalAlignment="Center" />
+                     HorizontalAlignment="Center">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:CountUpBehavior TargetValue="{Binding TotalExpenses}" Duration="800" Format="N2" Suffix=" &#x20AC;" CultureName="de-DE" />
+            </i:Interaction.Behaviors>
+          </TextBlock>
         </StackPanel>
 
         <!-- Trennlinie -->
@@ -244,10 +304,13 @@
                        Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
           </StackPanel>
           <TextBlock AutomationProperties.AutomationId="Stats_TxtBalance"
-                     Text="{Binding BalanceDisplay}"
                      FontSize="16" FontWeight="Bold"
                      Foreground="{DynamicResource PrimaryBrush}"
-                     HorizontalAlignment="Center" />
+                     HorizontalAlignment="Center">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:CountUpBehavior TargetValue="{Binding Balance}" Duration="800" Format="N2" Suffix=" &#x20AC;" CultureName="de-DE" UseSignedPrefix="True" />
+            </i:Interaction.Behaviors>
+          </TextBlock>
         </StackPanel>
 
       </Grid>
@@ -287,7 +350,10 @@
         </StackPanel>
 
         <!-- ── Ausgaben: PieChart + Kategorie-Breakdown in einer Card ── -->
-        <Border AutomationProperties.AutomationId="Stats_CardExpenses" Classes="StatsCard" IsVisible="{Binding HasExpenseData}">
+        <Border AutomationProperties.AutomationId="Stats_CardExpenses" Classes="StatsCard FintechCard" Margin="0,0,0,12" IsVisible="{Binding HasExpenseData}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="300" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="12">
             <!-- Überschrift mit Akzent-Icon -->
             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -322,6 +388,9 @@
                 <DataTemplate>
                   <StackPanel Spacing="4" Margin="0,0,0,8"
                               AutomationProperties.AutomationId="Statistics_Panel_CategoryItem">
+                    <i:Interaction.Behaviors>
+                      <uiBehaviors:StaggerFadeInBehavior StaggerDelay="40" BaseDuration="300" />
+                    </i:Interaction.Behaviors>
                     <Grid ColumnDefinitions="Auto,*,Auto,Auto"
                           AutomationProperties.AutomationId="Statistics_Panel_CategoryRow">
                       <Border Grid.Column="0" Width="10" Height="10" CornerRadius="5"
@@ -368,7 +437,10 @@
         </Border>
 
         <!-- ── Einnahmen: PieChart in eigener Card ── -->
-        <Border AutomationProperties.AutomationId="Stats_CardIncome" Classes="StatsCard" IsVisible="{Binding HasIncomeData}">
+        <Border AutomationProperties.AutomationId="Stats_CardIncome" Classes="StatsCard FintechCard" Margin="0,0,0,12" IsVisible="{Binding HasIncomeData}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="300" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
               <Border Background="#2022C55E" Width="28" Height="28" CornerRadius="8"
@@ -391,7 +463,10 @@
         </Border>
 
         <!-- ── 6-Monats-Trend ── -->
-        <Border AutomationProperties.AutomationId="Stats_CardTrend" Classes="StatsCard">
+        <Border AutomationProperties.AutomationId="Stats_CardTrend" Classes="StatsCard FintechCard" Margin="0,0,0,12">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="300" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="12">
             <!-- Überschrift mit Durchschnitts-Pills -->
             <Grid ColumnDefinitions="Auto,*">

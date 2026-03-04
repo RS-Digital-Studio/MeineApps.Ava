@@ -518,11 +518,22 @@ Zaehlt einen TextBlock-Wert von 0 zum Zielwert hoch (animierte Zahl).
     <behaviors:CountUpBehavior TargetValue="{Binding MyValue}" Format="F1" Suffix=" kg" Duration="500" />
   </i:Interaction.Behaviors>
 </TextBlock>
+
+<!-- Waehrungsbetraege mit Vorzeichen und de-DE Formatierung -->
+<TextBlock>
+  <i:Interaction.Behaviors>
+    <behaviors:CountUpBehavior TargetValue="{Binding Balance}" Format="N2"
+                               Suffix=" €" CultureName="de-DE" UseSignedPrefix="True" />
+  </i:Interaction.Behaviors>
+</TextBlock>
 ```
 
 - TargetValue: Zielwert (double, Binding-faehig)
 - Format: Zahlenformat (Default: "F1")
 - Suffix: Text nach der Zahl (Default: "")
+- Prefix: Text vor der Zahl (Default: "")
+- CultureName: CultureInfo fuer Formatierung (Default: "" = InvariantCulture, z.B. "de-DE")
+- UseSignedPrefix: Automatisch "+" bei positiven Werten (Default: false). Ueberschreibt Prefix
 - Duration: Animationsdauer in ms (Default: 500)
 - 30 Frames, CubicEaseOut Interpolation
 

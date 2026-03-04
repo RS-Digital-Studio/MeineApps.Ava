@@ -107,6 +107,12 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
     [ObservableProperty] private double _totalBudgetPercentage;
     [ObservableProperty] private bool _hasTotalBudget;
 
+    /// <summary>Budget-Verbrauch als 0.0-1.0 für SkiaGradientRing (geclampt auf 0-1).</summary>
+    [ObservableProperty] private double _budgetUsagePercent;
+
+    /// <summary>True wenn Gesamt-Budget über 90% ausgelastet ist (Ring pulsiert).</summary>
+    [ObservableProperty] private bool _isBudgetCritical;
+
     /// <summary>True wenn Gesamt-Budget überschritten (> 100%)</summary>
     public bool IsTotalBudgetOverLimit => TotalBudgetPercentage > 100;
 
@@ -158,6 +164,10 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
                 ? TotalBudgetSpent / TotalBudgetLimit * 100
                 : 0;
             HasTotalBudget = true;
+
+            // SkiaGradientRing: 0.0-1.0 (geclampt), Puls ab 90%
+            BudgetUsagePercent = Math.Clamp(TotalBudgetPercentage / 100.0, 0.0, 1.0);
+            IsBudgetCritical = TotalBudgetPercentage > 90;
         }
         else
         {
@@ -165,6 +175,8 @@ public sealed partial class BudgetsViewModel : ViewModelBase, IDisposable
             TotalBudgetSpent = 0;
             TotalBudgetPercentage = 0;
             HasTotalBudget = false;
+            BudgetUsagePercent = 0;
+            IsBudgetCritical = false;
         }
 
         IsLoading = false;

@@ -94,12 +94,20 @@ public sealed partial class InflationViewModel : ViewModelBase, IDisposable
     public string FutureValueDisplay => Result != null ? CurrencyHelper.Format(Result.FutureValue) : "";
     public string LossPercentDisplay => Result != null ? $"{Result.LossPercent:F1} %" : "";
 
+    // Numerische Werte für CountUpBehavior
+    public double PurchasingPowerValue => Result?.PurchasingPower ?? 0;
+    public double PurchasingPowerLossValue => Result?.PurchasingPowerLoss ?? 0;
+    public double FutureValueValue => Result?.FutureValue ?? 0;
+
     partial void OnResultChanged(InflationResult? value)
     {
         OnPropertyChanged(nameof(PurchasingPowerDisplay));
         OnPropertyChanged(nameof(PurchasingPowerLossDisplay));
         OnPropertyChanged(nameof(FutureValueDisplay));
         OnPropertyChanged(nameof(LossPercentDisplay));
+        OnPropertyChanged(nameof(PurchasingPowerValue));
+        OnPropertyChanged(nameof(PurchasingPowerLossValue));
+        OnPropertyChanged(nameof(FutureValueValue));
         UpdateChartData();
     }
 

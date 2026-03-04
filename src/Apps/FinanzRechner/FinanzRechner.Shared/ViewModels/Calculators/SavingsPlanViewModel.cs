@@ -95,11 +95,19 @@ public sealed partial class SavingsPlanViewModel : ViewModelBase, IDisposable
     public string FinalAmountDisplay => Result != null ? CurrencyHelper.Format(Result.FinalAmount) : "";
     public string InterestEarnedDisplay => Result != null ? CurrencyHelper.Format(Result.InterestEarned) : "";
 
+    // Numerische Werte für CountUpBehavior
+    public double FinalAmountValue => Result?.FinalAmount ?? 0;
+    public double TotalDepositsValue => Result?.TotalDeposits ?? 0;
+    public double InterestEarnedValue => Result?.InterestEarned ?? 0;
+
     partial void OnResultChanged(SavingsPlanResult? value)
     {
         OnPropertyChanged(nameof(TotalDepositsDisplay));
         OnPropertyChanged(nameof(FinalAmountDisplay));
         OnPropertyChanged(nameof(InterestEarnedDisplay));
+        OnPropertyChanged(nameof(FinalAmountValue));
+        OnPropertyChanged(nameof(TotalDepositsValue));
+        OnPropertyChanged(nameof(InterestEarnedValue));
         UpdateChartData();
     }
 

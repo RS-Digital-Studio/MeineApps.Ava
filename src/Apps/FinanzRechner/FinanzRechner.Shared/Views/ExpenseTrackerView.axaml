@@ -4,6 +4,8 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:conv="using:FinanzRechner.Converters"
              xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.ExpenseTrackerView"
              x:DataType="vm:ExpenseTrackerViewModel">
 
@@ -18,6 +20,9 @@
                   AutomationProperties.AutomationId="Tracker_ScrollMain">
       <StackPanel Spacing="0" Margin="16"
                   AutomationProperties.AutomationId="ExpenseTracker_Panel_MainContent">
+        <i:Interaction.Behaviors>
+          <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+        </i:Interaction.Behaviors>
 
         <!-- Header -->
         <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="0,8,0,16"
@@ -32,7 +37,11 @@
           <Button Grid.Column="1" Classes="Text"
                   Command="{Binding ShowRecurringTransactionsCommand}"
                   Width="48" Height="48" Padding="0"
+                  RenderTransform="scale(1)" RenderTransformOrigin="50%,50%"
                   AutomationProperties.AutomationId="Tracker_BtnRecurring">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <mi:MaterialIcon Kind="CalendarClock" Width="22" Height="22"
                              AutomationProperties.AutomationId="ExpenseTracker_Icon_Recurring"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -42,7 +51,11 @@
           <Button Grid.Column="2" Classes="Text"
                   Command="{Binding ShowBudgetsCommand}"
                   Width="48" Height="48" Padding="0"
+                  RenderTransform="scale(1)" RenderTransformOrigin="50%,50%"
                   AutomationProperties.AutomationId="Tracker_BtnBudgets">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <mi:MaterialIcon Kind="Target" Width="22" Height="22"
                              AutomationProperties.AutomationId="ExpenseTracker_Icon_Budgets"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -52,7 +65,11 @@
           <Button Grid.Column="3" Classes="Text"
                   Command="{Binding ExportToCsvCommand}"
                   Width="48" Height="48" Padding="0"
+                  RenderTransform="scale(1)" RenderTransformOrigin="50%,50%"
                   AutomationProperties.AutomationId="Tracker_BtnExport">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+            </i:Interaction.Behaviors>
             <mi:MaterialIcon Kind="Export" Width="22" Height="22"
                              AutomationProperties.AutomationId="ExpenseTracker_Icon_Export"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -185,7 +202,12 @@
                       Classes="Secondary"
                       Padding="8,4"
                       Margin="0,4,0,0"
-                      AutomationProperties.AutomationId="Tracker_BtnResetFilters" />
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%"
+                      AutomationProperties.AutomationId="Tracker_BtnResetFilters">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
+              </Button>
             </StackPanel>
           </Border>
 
@@ -208,7 +230,11 @@
           <Grid ColumnDefinitions="Auto,*,Auto">
             <Button Grid.Column="0" Classes="Text"
                     Command="{Binding PreviousMonthCommand}" Padding="4"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%"
                     AutomationProperties.AutomationId="Tracker_BtnPrevMonth">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+              </i:Interaction.Behaviors>
               <mi:MaterialIcon Kind="ChevronLeft" Width="18" Height="18"
                                Foreground="{DynamicResource PrimaryBrush}" />
             </Button>
@@ -217,7 +243,11 @@
               <!-- Monatsname -->
               <Button Classes="Text" Command="{Binding GoToCurrentMonthCommand}"
                       HorizontalAlignment="Center" Padding="4,0"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%"
                       AutomationProperties.AutomationId="Tracker_BtnCurrentMonth">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
                 <TextBlock Text="{Binding MonthYearDisplay}"
                            FontSize="15" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}"
@@ -250,7 +280,11 @@
 
             <Button Grid.Column="2" Classes="Text"
                     Command="{Binding NextMonthCommand}" Padding="4"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%"
                     AutomationProperties.AutomationId="Tracker_BtnNextMonth">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:TapScaleBehavior PressedScale="0.88" />
+              </i:Interaction.Behaviors>
               <mi:MaterialIcon Kind="ChevronRight" Width="18" Height="18"
                                Foreground="{DynamicResource PrimaryBrush}" />
             </Button>
@@ -311,90 +345,110 @@
                               AutomationProperties.AutomationId="ExpenseTracker_Items_DayTransactions">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                      <Border Background="{DynamicResource CardBrush}"
-                              AutomationProperties.AutomationId="ExpenseTracker_Border_TransactionItem"
-                              CornerRadius="12"
-                              Padding="12"
-                              Margin="0,0,0,6">
-                        <Grid RowDefinitions="Auto,Auto">
-                          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
-                            <!-- Farbiges Kategorie-Icon -->
-                            <Border Grid.Column="0"
-                                    AutomationProperties.AutomationId="ExpenseTracker_Border_CategoryIcon"
-                                    Background="{Binding Category, Converter={x:Static conv:CategoryToColorBrushConverter.Instance}, ConverterParameter=0.2}"
-                                    CornerRadius="12"
-                                    Width="44" Height="44">
-                              <mi:MaterialIcon Kind="{Binding Category, Converter={x:Static conv:CategoryToIconConverter.Instance}}"
-                                               Width="22" Height="22"
-                                               AutomationProperties.AutomationId="ExpenseTracker_Icon_Category"
-                                               Foreground="{Binding Category, Converter={x:Static conv:CategoryToColorBrushConverter.Instance}}"
-                                               HorizontalAlignment="Center" VerticalAlignment="Center" />
-                            </Border>
+                      <!-- Swipe-to-Reveal Container -->
+                      <Panel ClipToBounds="True" Margin="0,0,0,6">
+                        <i:Interaction.Behaviors>
+                          <uiBehaviors:StaggerFadeInBehavior StaggerDelay="40" BaseDuration="300" />
+                        </i:Interaction.Behaviors>
 
-                            <!-- Details -->
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center"
-                                        AutomationProperties.AutomationId="ExpenseTracker_Panel_TransactionDetails">
-                              <TextBlock Text="{Binding Description}"
-                                         AutomationProperties.AutomationId="ExpenseTracker_Txt_Description"
-                                         FontSize="15" FontWeight="SemiBold"
-                                         Foreground="{DynamicResource TextPrimaryBrush}"
-                                         TextTrimming="CharacterEllipsis" />
-                              <TextBlock Text="{Binding Date, StringFormat='{}{0:HH:mm}'}"
-                                         AutomationProperties.AutomationId="ExpenseTracker_Txt_Time"
-                                         FontSize="11"
-                                         Foreground="{DynamicResource TextMutedBrush}" />
-                            </StackPanel>
+                        <!-- Delete-Layer (hinter Content) -->
+                        <Border Background="#EF4444" HorizontalAlignment="Right" Width="80"
+                                CornerRadius="0,12,12,0" VerticalAlignment="Stretch">
+                          <Button Command="{Binding $parent[UserControl].((vm:ExpenseTrackerViewModel)DataContext).DeleteExpenseCommand}"
+                                  CommandParameter="{Binding}"
+                                  Background="Transparent" VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <mi:MaterialIcon Kind="Delete" Foreground="White" Width="24" Height="24" />
+                          </Button>
+                        </Border>
 
-                            <!-- Betrag mit Farbe nach Typ -->
-                            <TextBlock Grid.Column="2"
-                                       AutomationProperties.AutomationId="ExpenseTracker_Txt_Amount"
-                                       FontSize="15" FontWeight="Bold"
-                                       Foreground="{Binding Type, Converter={x:Static conv:TransactionTypeToColorConverter.Instance}}"
-                                       VerticalAlignment="Center">
-                              <TextBlock.Text>
-                                <MultiBinding StringFormat="{}{0}{1:N2} €">
-                                  <Binding Path="Type" Converter="{x:Static conv:TransactionTypeToPrefixConverter.Instance}" />
-                                  <Binding Path="Amount" />
-                                </MultiBinding>
-                              </TextBlock.Text>
-                            </TextBlock>
+                        <!-- Content-Layer (verschiebbar via SwipeToReveal) -->
+                        <Border Background="{DynamicResource CardBrush}"
+                                AutomationProperties.AutomationId="ExpenseTracker_Border_TransactionItem"
+                                CornerRadius="12"
+                                Padding="12">
+                          <i:Interaction.Behaviors>
+                            <uiBehaviors:SwipeToRevealBehavior SwipeThreshold="80" RevealWidth="80" />
+                          </i:Interaction.Behaviors>
+                          <Grid RowDefinitions="Auto,Auto">
+                            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+                              <!-- Farbiges Kategorie-Icon -->
+                              <Border Grid.Column="0"
+                                      AutomationProperties.AutomationId="ExpenseTracker_Border_CategoryIcon"
+                                      Background="{Binding Category, Converter={x:Static conv:CategoryToColorBrushConverter.Instance}, ConverterParameter=0.2}"
+                                      CornerRadius="12"
+                                      Width="44" Height="44">
+                                <mi:MaterialIcon Kind="{Binding Category, Converter={x:Static conv:CategoryToIconConverter.Instance}}"
+                                                 Width="22" Height="22"
+                                                 AutomationProperties.AutomationId="ExpenseTracker_Icon_Category"
+                                                 Foreground="{Binding Category, Converter={x:Static conv:CategoryToColorBrushConverter.Instance}}"
+                                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                              </Border>
 
-                            <!-- Edit Button -->
-                            <Button Grid.Column="3" Classes="Text"
-                                    AutomationProperties.AutomationId="ExpenseTracker_Btn_EditTransaction"
-                                    Command="{Binding $parent[UserControl].((vm:ExpenseTrackerViewModel)DataContext).EditExpenseCommand}"
-                                    CommandParameter="{Binding}"
-                                    Width="36" Height="36" Padding="0"
-                                    VerticalAlignment="Center">
-                              <mi:MaterialIcon Kind="Pencil" Width="18" Height="18"
-                                               AutomationProperties.AutomationId="ExpenseTracker_Icon_Edit"
-                                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                            </Button>
+                              <!-- Details -->
+                              <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                          AutomationProperties.AutomationId="ExpenseTracker_Panel_TransactionDetails">
+                                <TextBlock Text="{Binding Description}"
+                                           AutomationProperties.AutomationId="ExpenseTracker_Txt_Description"
+                                           FontSize="15" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{Binding Date, StringFormat='{}{0:HH:mm}'}"
+                                           AutomationProperties.AutomationId="ExpenseTracker_Txt_Time"
+                                           FontSize="11"
+                                           Foreground="{DynamicResource TextMutedBrush}" />
+                              </StackPanel>
 
-                            <!-- Delete Button -->
-                            <Button Grid.Column="4" Classes="Text"
-                                    AutomationProperties.AutomationId="ExpenseTracker_Btn_DeleteTransaction"
-                                    Command="{Binding $parent[UserControl].((vm:ExpenseTrackerViewModel)DataContext).DeleteExpenseCommand}"
-                                    CommandParameter="{Binding}"
-                                    Width="36" Height="36" Padding="0"
-                                    VerticalAlignment="Center">
-                              <mi:MaterialIcon Kind="Delete" Width="18" Height="18"
-                                               AutomationProperties.AutomationId="ExpenseTracker_Icon_Delete"
-                                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                            </Button>
+                              <!-- Betrag mit Farbe nach Typ -->
+                              <TextBlock Grid.Column="2"
+                                         AutomationProperties.AutomationId="ExpenseTracker_Txt_Amount"
+                                         FontSize="15" FontWeight="Bold"
+                                         Foreground="{Binding Type, Converter={x:Static conv:TransactionTypeToColorConverter.Instance}}"
+                                         VerticalAlignment="Center">
+                                <TextBlock.Text>
+                                  <MultiBinding StringFormat="{}{0}{1:N2} €">
+                                    <Binding Path="Type" Converter="{x:Static conv:TransactionTypeToPrefixConverter.Instance}" />
+                                    <Binding Path="Amount" />
+                                  </MultiBinding>
+                                </TextBlock.Text>
+                              </TextBlock>
+
+                              <!-- Edit Button -->
+                              <Button Grid.Column="3" Classes="Text"
+                                      AutomationProperties.AutomationId="ExpenseTracker_Btn_EditTransaction"
+                                      Command="{Binding $parent[UserControl].((vm:ExpenseTrackerViewModel)DataContext).EditExpenseCommand}"
+                                      CommandParameter="{Binding}"
+                                      Width="36" Height="36" Padding="0"
+                                      VerticalAlignment="Center">
+                                <mi:MaterialIcon Kind="Pencil" Width="18" Height="18"
+                                                 AutomationProperties.AutomationId="ExpenseTracker_Icon_Edit"
+                                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                              </Button>
+
+                              <!-- Delete Button -->
+                              <Button Grid.Column="4" Classes="Text"
+                                      AutomationProperties.AutomationId="ExpenseTracker_Btn_DeleteTransaction"
+                                      Command="{Binding $parent[UserControl].((vm:ExpenseTrackerViewModel)DataContext).DeleteExpenseCommand}"
+                                      CommandParameter="{Binding}"
+                                      Width="36" Height="36" Padding="0"
+                                      VerticalAlignment="Center">
+                                <mi:MaterialIcon Kind="Delete" Width="18" Height="18"
+                                                 AutomationProperties.AutomationId="ExpenseTracker_Icon_Delete"
+                                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                              </Button>
+                            </Grid>
+
+                            <!-- Notiz (optional, grau, kleiner Text) -->
+                            <TextBlock Grid.Row="1"
+                                       AutomationProperties.AutomationId="ExpenseTracker_Txt_Note"
+                                       Text="{Binding Note}"
+                                       IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                       FontSize="12" FontStyle="Italic"
+                                       Foreground="{DynamicResource TextMutedBrush}"
+                                       Margin="52,2,0,0"
+                                       TextTrimming="CharacterEllipsis" />
                           </Grid>
-
-                          <!-- Notiz (optional, grau, kleiner Text) -->
-                          <TextBlock Grid.Row="1"
-                                     AutomationProperties.AutomationId="ExpenseTracker_Txt_Note"
-                                     Text="{Binding Note}"
-                                     IsVisible="{Binding Note, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
-                                     FontSize="12" FontStyle="Italic"
-                                     Foreground="{DynamicResource TextMutedBrush}"
-                                     Margin="52,2,0,0"
-                                     TextTrimming="CharacterEllipsis" />
-                        </Grid>
-                      </Border>
+                        </Border>
+                      </Panel>
                     </DataTemplate>
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>

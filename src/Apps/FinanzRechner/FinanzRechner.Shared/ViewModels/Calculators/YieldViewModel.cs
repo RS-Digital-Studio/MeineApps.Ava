@@ -91,11 +91,15 @@ public sealed partial class YieldViewModel : ViewModelBase, IDisposable
     public string EffectiveAnnualRateDisplay => Result != null
         ? $"{Result.EffectiveAnnualRate:N2} % {_localizationService.GetString("PerAnnum") ?? "p.a."}" : "";
 
+    // Numerische Werte für CountUpBehavior
+    public double TotalReturnValue => Result?.TotalReturn ?? 0;
+
     partial void OnResultChanged(YieldResult? value)
     {
         OnPropertyChanged(nameof(TotalReturnDisplay));
         OnPropertyChanged(nameof(TotalReturnPercentDisplay));
         OnPropertyChanged(nameof(EffectiveAnnualRateDisplay));
+        OnPropertyChanged(nameof(TotalReturnValue));
         UpdateChartData();
     }
 

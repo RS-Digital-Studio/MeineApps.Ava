@@ -58,7 +58,7 @@ Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 6 Finan
 - **MainViewModel**: `_isHomeDataStale` Flag, lauscht auf `DataChanged` von ExpenseTrackerVM, BudgetsVM, RecurringTransactionsVM
 
 ### HomeView Dashboard
-- Hero-Header (Bilanz + Einnahmen/Ausgaben als Pill-Chips)
+- Hero-Header (Bilanz + Einnahmen/Ausgaben als Pill-Chips) mit animiertem SkiaSharp-Hintergrund (FinanceDashboardRenderer)
 - Budget-Status (Gesamt-ProgressBar + Top-3 Kategorien)
 - Quick-Add FAB (Overlay mit Betrag, Beschreibung, Kategorie-Chips)
 - Recent Transactions (3 neueste mit Kategorie-Icon)
@@ -82,26 +82,30 @@ Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 6 Finan
 
 | Datei | Zweck |
 |-------|-------|
-| `Graphics/BudgetGaugeVisualization.cs` | Halbkreis-Tachometer (Grün→Gelb→Rot) für Gesamt-Budget |
+| `Graphics/BudgetGaugeVisualization.cs` | Halbkreis-Tachometer (Legacy, ersetzt durch SkiaGradientRing) |
 | `Graphics/SparklineVisualization.cs` | Mini-Sparkline mit Gradient-Füllung für 30-Tage-Ausgaben-Trend |
 | `Graphics/BudgetMiniRingVisualization.cs` | Kompakte Mini-Ringe für Budget-Kategorien-Übersicht |
 | `Graphics/TrendLineVisualization.cs` | 2 Spline-Kurven (Einnahmen/Ausgaben) mit Gradient-Füllung |
 | `Graphics/StackedAreaVisualization.cs` | 2 gestapelte Flächen (CompoundInterest, SavingsPlan, Inflation) |
 | `Graphics/AmortizationBarVisualization.cs` | Gestapelte Balken (Tilgung+Zinsen pro Jahr) |
 | `Graphics/FinanzRechnerSplashRenderer.cs` | Splash-Screen "Das wachsende Kapital" (Aktien-Chart, Münz-Stapel, Gold-Partikel) |
+| `Graphics/FinanceDashboardRenderer.cs` | Animierter Hero-Header-Hintergrund (Gradient-Mesh, Grid-Linien, Glow-Dots, Floating-Symbole) |
+| `Graphics/CalculatorHeaderRenderer.cs` | 6 individuelle animierte Header pro Rechner (Exponentialkurve, Stufen, etc.) |
+| `Graphics/CardGlowRenderer.cs` | Status-basierter Edge-Glow (Budget-Status, Bilanz, Berechnungs-Flash) |
 
 Shared-Renderer aus `MeineApps.UI.SkiaSharp`:
 - **DonutChartVisualization**: Donut-Charts für HomeView, StatisticsView, ExpenseTrackerView, LoanView, YieldView
 - **LinearProgressVisualization**: Budget-Fortschrittsbalken in BudgetsView (ersetzt ProgressBar)
+- **SkiaGradientRing**: Gradient-Fortschrittsring für Gesamt-Budget in HomeView und BudgetsView (ersetzt BudgetGaugeVisualization)
 
 View-Zuordnung:
-- **HomeView**: Budget-Gauge + Sparkline (30-Tage-Trend) + MiniRing (Budget-Kategorien) + Expense-Donut
+- **HomeView**: FinanceDashboardRenderer (Hero-Header-BG) + SkiaGradientRing (Budget) + Sparkline (30-Tage-Trend) + MiniRing (Budget-Kategorien) + Expense-Donut
 - **StatisticsView**: 2x Donut (Einnahmen/Ausgaben) + TrendLine (6-Monats-Trend)
 - **ExpenseTrackerView**: Kategorie-Donut
 - **CompoundInterestView/SavingsPlanView/InflationView**: StackedArea-Chart
 - **AmortizationView**: Stacked-Bar-Chart
 - **LoanView/YieldView**: Donut-Chart
-- **BudgetsView**: Budget-Gauge + LinearProgress pro Kategorie
+- **BudgetsView**: SkiaGradientRing (Gesamt-Budget) + LinearProgress pro Kategorie
 
 ### Game Juice
 - **FloatingText**: Quick-Add (+/- Betrag, income=gruen, expense=rot)
@@ -112,7 +116,46 @@ View-Zuordnung:
 - **Recurring Display**: Farbiger Seitenstreifen, Countdown-Text, farbige Beträge, Inaktiv-Styling (Opacity+Strikethrough)
 - **Undo-Countdown**: Visueller Balken in Undo-Snackbars (Scale 1→0 über 5s)
 
+### Behaviors (HomeView)
+- **CountUpBehavior**: Hero-Header Geldbeträge (Balance, Income, Expenses) zählen animiert von 0 hoch (800ms, CubicEaseOut, de-DE Formatierung)
+- **StaggerFadeInBehavior**: Recent Transactions Items (40ms Stagger) + Calculator-Grid Karten (60ms Stagger, FixedIndex 0-5)
+- **TapScaleBehavior**: Monatsreport-Button (0.97), Calculator-Buttons (0.95), ViewAll-Button (0.92), Premium-Button (0.97), Overlay-Buttons (0.95)
+- **Kombination StaggerFadeIn + TapScale**: Calculator-Karten nutzen Panel-Wrapper (StaggerFadeIn auf Panel, TapScale auf Button) weil beide Behaviors unterschiedliche RenderTransform-Typen setzen
+
+### Behaviors (ExpenseTrackerView)
+- **FadeInBehavior**: Haupt-Content StackPanel (250ms, SlideFromBottom 12px)
+- **TapScaleBehavior**: Header-Buttons Recurring/Budgets/Export (0.92), Month-Nav Prev/Next (0.88), CurrentMonth-Button (0.95), ResetFilters-Button (0.95)
+- **StaggerFadeInBehavior**: Transaction-Items (40ms Stagger, 300ms Dauer) auf Panel-Wrapper
+- **SwipeToRevealBehavior**: Transaction-Items (Swipe links offenbart roten Delete-Layer, 80px). Nutzt bestehendes DeleteExpenseCommand. Inline-Delete-Button bleibt als Fallback erhalten
+
+### Behaviors (BudgetsView)
+- **FadeInBehavior**: Haupt-Content StackPanel (250ms, SlideFromBottom 12px)
+- **StaggerFadeInBehavior**: Budget-Items (50ms Stagger, 300ms Dauer) auf Panel-Wrapper
+- **TapScaleBehavior**: Budget-Cards (0.97), FAB (0.92), Dialog-Buttons Save/Cancel (0.95), Undo-Button (0.95), Back-Button (0.88), Dismiss-Button (0.88)
+- **CountUpBehavior**: Spent/Remaining/Limit Geldbeträge pro Budget-Card (800ms, N2, de-DE, EUR-Suffix)
+- **AlertLevelToBoxShadowConverter**: Status-basierter BoxShadow auf Budget-Cards (Safe: grüner Glow #3022C55E, Warning: gelber Glow #30F59E0B, Exceeded: roter Glow #40EF4444)
+- **ContextFlyout**: Edit/Delete Menü auf Budget-Cards (Rechtsklick/Long-Press)
+
+### Behaviors (RecurringTransactionsView)
+- **FadeInBehavior**: Empty-State StackPanel + Listen-Content StackPanel + Dialog-Content StackPanel (250ms, SlideFromBottom 12px)
+- **StaggerFadeInBehavior**: Transaction-Items (40ms Stagger, 300ms Dauer) auf Panel-Wrapper
+- **SwipeToRevealBehavior**: Transaction-Items (Swipe links offenbart roten Delete-Layer, 80px). Nutzt DeleteTransactionCommand. Inline-Delete-Button bleibt als Fallback erhalten
+- **TapScaleBehavior**: Back-Button (0.88), FAB (0.92), Edit/Delete/Toggle Buttons pro Item (0.88), Dialog-Buttons Save/Cancel (0.95), Undo-Button (0.95), Dismiss-Button (0.88)
+
+### Behaviors (Calculator-Views, alle 6)
+- **CountUpBehavior**: Ergebnis-Geldbeträge zählen animiert von 0 hoch (600ms, N2, de-DE, EUR-Suffix). Nur auf Geldbeträge, nicht auf Prozentwerte
+  - CompoundInterest: FinalAmountValue, InterestEarnedValue
+  - SavingsPlan: FinalAmountValue, TotalDepositsValue, InterestEarnedValue
+  - Loan: MonthlyPaymentValue, TotalPaymentValue, TotalInterestValue
+  - Amortization: MonthlyPaymentValue, TotalInterestValue
+  - Yield: TotalReturnValue (EffectiveAnnualRate/TotalReturnPercent bleiben Text-Binding)
+  - Inflation: PurchasingPowerValue, PurchasingPowerLossValue, FutureValueValue (LossPercent bleibt Text-Binding)
+- **Gold-Flash Animation**: ResultFlash CSS-Klasse auf Result Card Border (0.8s, BorderBrush Transparent→#FFD700→Transparent)
+- **TapScaleBehavior**: Berechnen-Button (0.95)
+- **Numerische Value-Properties**: Jedes ViewModel exponiert `XxxValue` (double) neben `XxxDisplay` (string) für CountUpBehavior-Binding
+
 ### Neue Converter/Models
+- **AlertLevelToBoxShadowConverter**: `BudgetAlertLevel→BoxShadows` für status-basiertes Glow auf Budget-Cards
 - **BoolToDoubleConverter**: `bool→double` für Opacity-Binding (Parameter: "TrueValue,FalseValue")
 - **RecurringDisplayItem**: Wrapper mit DueDateDisplay, CategoryColor, CategoryColorHex
 - **CategoryDisplayItem.CategoryColorHex**: Hex-Farbe aus CategoryLocalizationHelper

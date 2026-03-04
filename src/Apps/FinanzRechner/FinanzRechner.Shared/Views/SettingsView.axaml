@@ -3,9 +3,24 @@
              xmlns:vm="using:FinanzRechner.ViewModels"
              xmlns:services="using:MeineApps.Core.Ava.Services"
              xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
              x:Class="FinanzRechner.Views.SettingsView"
              x:DataType="vm:SettingsViewModel"
              AutomationProperties.AutomationId="Settings_Root">
+
+  <UserControl.Styles>
+    <!-- Subtile Opacity-Pulse auf der aktuell gewählten Theme-Karte -->
+    <Style Selector="Border.ThemeSelected">
+      <Style.Animations>
+        <Animation Duration="0:0:3" IterationCount="INFINITE">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.85" /></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1.0" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.85" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+  </UserControl.Styles>
 
   <Grid RowDefinitions="Auto,*"
         AutomationProperties.AutomationId="Settings_Panel_RootGrid">
@@ -27,6 +42,9 @@
         <!-- ==================== Theme Selection Card ==================== -->
         <Border Classes="SettingsCard"
                 AutomationProperties.AutomationId="Settings_CardTheme">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="12"
                       AutomationProperties.AutomationId="Settings_Panel_ThemeContent">
             <StackPanel Orientation="Horizontal" Spacing="12"
@@ -53,8 +71,12 @@
                         CommandParameter="Midnight"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Height="NaN" Padding="0" CornerRadius="10"
-                        Background="Transparent" BorderThickness="0">
-                  <Border Classes="ThemePreview" CornerRadius="10" Padding="12"
+                        Background="Transparent" BorderThickness="0"
+                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <Border Classes="ThemePreview ThemeSelected" CornerRadius="10" Padding="12"
                           Background="#1E293B"
                           BorderThickness="2" BorderBrush="#6366F1">
                     <Grid>
@@ -85,7 +107,11 @@
                         CommandParameter="Midnight"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Height="NaN" Padding="0" CornerRadius="10"
-                        Background="Transparent" BorderThickness="0">
+                        Background="Transparent" BorderThickness="0"
+                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
                   <Border Classes="ThemePreview" CornerRadius="10" Padding="12"
                           Background="#1E293B"
                           BorderThickness="2" BorderBrush="#334155">
@@ -115,8 +141,12 @@
                         CommandParameter="Aurora"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Height="NaN" Padding="0" CornerRadius="10"
-                        Background="Transparent" BorderThickness="0">
-                  <Border Classes="ThemePreview" CornerRadius="10" Padding="12"
+                        Background="Transparent" BorderThickness="0"
+                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <Border Classes="ThemePreview ThemeSelected" CornerRadius="10" Padding="12"
                           Background="#18181B"
                           BorderThickness="2" BorderBrush="#EC4899">
                     <Grid>
@@ -147,7 +177,11 @@
                         CommandParameter="Aurora"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Height="NaN" Padding="0" CornerRadius="10"
-                        Background="Transparent" BorderThickness="0">
+                        Background="Transparent" BorderThickness="0"
+                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
                   <Border Classes="ThemePreview" CornerRadius="10" Padding="12"
                           Background="#18181B"
                           BorderThickness="2" BorderBrush="#3F3F46">
@@ -177,8 +211,12 @@
                         CommandParameter="Daylight"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Height="NaN" Padding="0" CornerRadius="10"
-                        Background="Transparent" BorderThickness="0">
-                  <Border Classes="ThemePreview" CornerRadius="10" Padding="12"
+                        Background="Transparent" BorderThickness="0"
+                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <Border Classes="ThemePreview ThemeSelected" CornerRadius="10" Padding="12"
                           Background="#E2E8F0"
                           BorderThickness="2" BorderBrush="#2563EB">
                     <Grid>
@@ -209,7 +247,11 @@
                         CommandParameter="Daylight"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Height="NaN" Padding="0" CornerRadius="10"
-                        Background="Transparent" BorderThickness="0">
+                        Background="Transparent" BorderThickness="0"
+                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
                   <Border Classes="ThemePreview" CornerRadius="10" Padding="12"
                           Background="#E2E8F0"
                           BorderThickness="2" BorderBrush="#CBD5E1">
@@ -239,8 +281,12 @@
                         CommandParameter="Forest"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Height="NaN" Padding="0" CornerRadius="10"
-                        Background="Transparent" BorderThickness="0">
-                  <Border Classes="ThemePreview" CornerRadius="10" Padding="12"
+                        Background="Transparent" BorderThickness="0"
+                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
+                  <Border Classes="ThemePreview ThemeSelected" CornerRadius="10" Padding="12"
                           Background="#022C22"
                           BorderThickness="2" BorderBrush="#10B981">
                     <Grid>
@@ -271,7 +317,11 @@
                         CommandParameter="Forest"
                         HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                         Height="NaN" Padding="0" CornerRadius="10"
-                        Background="Transparent" BorderThickness="0">
+                        Background="Transparent" BorderThickness="0"
+                        RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                  </i:Interaction.Behaviors>
                   <Border Classes="ThemePreview" CornerRadius="10" Padding="12"
                           Background="#022C22"
                           BorderThickness="2" BorderBrush="#065F46">
@@ -299,6 +349,9 @@
         <!-- ==================== Language Selection Card ==================== -->
         <Border Classes="SettingsCard"
                 AutomationProperties.AutomationId="Settings_CardLanguage">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="12"
                       AutomationProperties.AutomationId="Settings_Panel_LanguageContent">
             <StackPanel Orientation="Horizontal" Spacing="12"
@@ -321,12 +374,20 @@
                         AutomationProperties.AutomationId="Settings_BtnLangDeSelected"
                         IsVisible="{Binding IsGermanSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="de"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
                 <Button Classes="Outlined Small" Content="Deutsch"
                         AutomationProperties.AutomationId="Settings_BtnLangDe"
                         IsVisible="{Binding !IsGermanSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="de"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
               </Panel>
 
               <!-- English -->
@@ -335,12 +396,20 @@
                         AutomationProperties.AutomationId="Settings_BtnLangEnSelected"
                         IsVisible="{Binding IsEnglishSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="en"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
                 <Button Classes="Outlined Small" Content="English"
                         AutomationProperties.AutomationId="Settings_BtnLangEn"
                         IsVisible="{Binding !IsEnglishSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="en"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
               </Panel>
 
               <!-- Espanol -->
@@ -349,12 +418,20 @@
                         AutomationProperties.AutomationId="Settings_BtnLangEsSelected"
                         IsVisible="{Binding IsSpanishSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="es"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
                 <Button Classes="Outlined Small" Content="Espa&#241;ol"
                         AutomationProperties.AutomationId="Settings_BtnLangEs"
                         IsVisible="{Binding !IsSpanishSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="es"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
               </Panel>
 
               <!-- Francais -->
@@ -363,12 +440,20 @@
                         AutomationProperties.AutomationId="Settings_BtnLangFrSelected"
                         IsVisible="{Binding IsFrenchSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="fr"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
                 <Button Classes="Outlined Small" Content="Fran&#231;ais"
                         AutomationProperties.AutomationId="Settings_BtnLangFr"
                         IsVisible="{Binding !IsFrenchSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="fr"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
               </Panel>
 
               <!-- Italiano -->
@@ -377,12 +462,20 @@
                         AutomationProperties.AutomationId="Settings_BtnLangItSelected"
                         IsVisible="{Binding IsItalianSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="it"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
                 <Button Classes="Outlined Small" Content="Italiano"
                         AutomationProperties.AutomationId="Settings_BtnLangIt"
                         IsVisible="{Binding !IsItalianSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="it"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
               </Panel>
 
               <!-- Portugues -->
@@ -391,12 +484,20 @@
                         AutomationProperties.AutomationId="Settings_BtnLangPtSelected"
                         IsVisible="{Binding IsPortugueseSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="pt"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
                 <Button Classes="Outlined Small" Content="Portugu&#234;s"
                         AutomationProperties.AutomationId="Settings_BtnLangPt"
                         IsVisible="{Binding !IsPortugueseSelected}"
                         Command="{Binding SelectLanguageCommand}" CommandParameter="pt"
-                        Margin="0,0,8,8" />
+                        Margin="0,0,8,8" RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                  <i:Interaction.Behaviors>
+                    <uiBehaviors:TapScaleBehavior PressedScale="0.92" />
+                  </i:Interaction.Behaviors>
+                </Button>
               </Panel>
             </WrapPanel>
           </StackPanel>
@@ -406,6 +507,9 @@
         <Border Classes="SettingsCard PremiumShimmer"
                 AutomationProperties.AutomationId="Settings_CardPremium"
                 IsVisible="{Binding IsNotPremium}">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="12"
                       AutomationProperties.AutomationId="Settings_Panel_PremiumContent">
             <StackPanel Orientation="Horizontal" Spacing="12"
@@ -428,19 +532,32 @@
                     AutomationProperties.AutomationId="Settings_BtnPurchasePremium"
                     Command="{Binding PurchasePremiumCommand}"
                     Classes="Primary"
-                    CornerRadius="8" />
+                    CornerRadius="8"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
+            </Button>
 
             <Button Content="{Binding RestorePurchasesText}"
                     AutomationProperties.AutomationId="Settings_BtnRestorePurchases"
                     Command="{Binding RestorePurchasesCommand}"
                     Classes="Secondary"
-                    CornerRadius="8" />
+                    CornerRadius="8"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
+            </Button>
           </StackPanel>
         </Border>
 
         <!-- ==================== Backup & Restore Section ==================== -->
         <Border Classes="SettingsCard"
                 AutomationProperties.AutomationId="Settings_CardBackup">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="12"
                       AutomationProperties.AutomationId="Settings_Panel_BackupContent">
             <StackPanel Orientation="Horizontal" Spacing="12"
@@ -467,14 +584,24 @@
                       Command="{Binding CreateBackupCommand}"
                       IsEnabled="{Binding !IsBackupInProgress}"
                       Classes="Primary"
-                      CornerRadius="8" />
+                      CornerRadius="8"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
+              </Button>
               <Button Grid.Column="1"
                       AutomationProperties.AutomationId="Settings_BtnRestoreBackup"
                       Content="{Binding RestoreBackupText}"
                       Command="{Binding RestoreBackupCommand}"
                       IsEnabled="{Binding !IsBackupInProgress}"
                       Classes="Secondary"
-                      CornerRadius="8" />
+                      CornerRadius="8"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
+              </Button>
             </Grid>
 
             <ProgressBar IsIndeterminate="True"
@@ -487,6 +614,9 @@
         <!-- ==================== About Section ==================== -->
         <Border Classes="SettingsCard"
                 AutomationProperties.AutomationId="Settings_CardAbout">
+          <i:Interaction.Behaviors>
+            <uiBehaviors:FadeInBehavior Duration="250" SlideFromBottom="True" SlideDistance="12" />
+          </i:Interaction.Behaviors>
           <StackPanel Spacing="12"
                       AutomationProperties.AutomationId="Settings_Panel_AboutContent">
             <StackPanel Orientation="Horizontal" Spacing="12"
@@ -515,7 +645,12 @@
                     Classes="Outlined"
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Center"
-                    CornerRadius="8" />
+                    CornerRadius="8"
+                    RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+              <i:Interaction.Behaviors>
+                <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+              </i:Interaction.Behaviors>
+            </Button>
           </StackPanel>
         </Border>
 
@@ -562,7 +697,11 @@
                       HorizontalContentAlignment="Center"
                       CornerRadius="8"
                       Height="NaN"
-                      Padding="12">
+                      Padding="12"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
                             AutomationProperties.AutomationId="Settings_Panel_MergeBtnContent">
                   <mi:MaterialIcon Kind="Merge" Width="20" Height="20"
@@ -592,7 +731,11 @@
                       HorizontalContentAlignment="Center"
                       CornerRadius="8"
                       Height="NaN"
-                      Padding="12">
+                      Padding="12"
+                      RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+                <i:Interaction.Behaviors>
+                  <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+                </i:Interaction.Behaviors>
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center"
                             AutomationProperties.AutomationId="Settings_Panel_ReplaceBtnContent">
                   <mi:MaterialIcon Kind="DatabaseRefresh" Width="20" Height="20"
@@ -621,7 +764,12 @@
                   HorizontalAlignment="Stretch"
                   HorizontalContentAlignment="Center"
                   Content="{Binding CancelText}"
-                  CornerRadius="8" />
+                  CornerRadius="8"
+                  RenderTransform="scale(1)" RenderTransformOrigin="50%,50%">
+            <i:Interaction.Behaviors>
+              <uiBehaviors:TapScaleBehavior PressedScale="0.95" />
+            </i:Interaction.Behaviors>
+          </Button>
         </StackPanel>
       </Border>
     </Border>

@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Labs.Controls;
+using Avalonia.Threading;
 using MeineApps.UI.SkiaSharp;
 using SkiaSharp;
 using FinanzRechner.Graphics;
@@ -10,10 +11,16 @@ namespace FinanzRechner.Views;
 
 public partial class HomeView : UserControl
 {
+    // --- Dashboard-Hintergrund Animation ---
+    private DispatcherTimer? _dashboardTimer;
+    private float _dashboardTime;
+    private DateTime _lastFrameTime;
+
     public HomeView()
     {
         InitializeComponent();
         AttachedToVisualTree += OnAttachedToVisualTree;
+        DetachedFromVisualTree += OnDetachedFromVisualTree;
     }
 
     protected override void OnDataContextChanged(EventArgs e)
@@ -26,11 +33,6 @@ public partial class HomeView : UserControl
             {
                 switch (args.PropertyName)
                 {
-                    case nameof(vm.OverallBudgetPercentage):
-                    case nameof(vm.HasBudgets):
-                    case nameof(vm.TopBudgets):
-                        BudgetGaugeCanvas?.InvalidateSurface();
-                        break;
                     case nameof(vm.HomeExpenseSegments):
                     case nameof(vm.HasHomeChartData):
                         ExpenseDonutCanvas?.InvalidateSurface();
@@ -50,24 +52,75 @@ public partial class HomeView : UserControl
 
     private async void OnAttachedToVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
     {
+        // Dashboard-Hintergrund-Timer starten (~60fps)
+        StartDashboardTimer();
+
         if (DataContext is MainViewModel vm)
             await vm.OnAppearingAsync();
     }
 
+    private void OnDetachedFromVisualTree(object? sender, VisualTreeAttachmentEventArgs e)
+    {
+        // Timer stoppen wenn View nicht sichtbar
+        StopDashboardTimer();
+    }
+
     /// <summary>
-    /// Zeichnet den Budget-Halbkreis-Tachometer.
+    /// Startet den Animations-Timer für den Dashboard-Hintergrund.
     /// </summary>
-    private void OnPaintBudgetGauge(object? sender, SKPaintSurfaceEventArgs e)
+    private void StartDashboardTimer()
+    {
+        _dashboardTimer?.Stop();
+        _lastFrameTime = DateTime.UtcNow;
+
+        _dashboardTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(16) // ~60fps
+        };
+        _dashboardTimer.Tick += OnDashboardTimerTick;
+        _dashboardTimer.Start();
+    }
+
+    /// <summary>
+    /// Stoppt den Animations-Timer.
+    /// </summary>
+    private void StopDashboardTimer()
+    {
+        if (_dashboardTimer != null)
+        {
+            _dashboardTimer.Tick -= OnDashboardTimerTick;
+            _dashboardTimer.Stop();
+            _dashboardTimer = null;
+        }
+    }
+
+    /// <summary>
+    /// Timer-Tick: Aktualisiert Partikel und fordert Canvas-Neuzeichnung an.
+    /// </summary>
+    private void OnDashboardTimerTick(object? sender, EventArgs e)
+    {
+        var now = DateTime.UtcNow;
+        var deltaTime = (float)(now - _lastFrameTime).TotalSeconds;
+        _lastFrameTime = now;
+
+        // DeltaTime begrenzen (z.B. nach App-Pause)
+        deltaTime = Math.Min(deltaTime, 0.1f);
+        _dashboardTime += deltaTime;
+
+        FinanceDashboardRenderer.Update(deltaTime);
+        DashboardBgCanvas?.InvalidateSurface();
+    }
+
+    /// <summary>
+    /// Zeichnet den animierten Dashboard-Hintergrund.
+    /// </summary>
+    private void OnPaintDashboardBg(object? sender, SKPaintSurfaceEventArgs e)
     {
         var canvas = e.Surface.Canvas;
         canvas.Clear(SKColors.Transparent);
         var bounds = canvas.LocalClipBounds;
 
-        if (DataContext is not MainViewModel vm || !vm.HasBudgets) return;
-
-        BudgetGaugeVisualization.Render(canvas, bounds,
-            vm.OverallBudgetPercentage, "", "",
-            vm.OverallBudgetPercentage > 100);
+        FinanceDashboardRenderer.Render(canvas, bounds, _dashboardTime);
     }
 
     /// <summary>

@@ -3,7 +3,7 @@ using ZeitManager.Models;
 
 namespace ZeitManager.Services;
 
-public class DatabaseService : IDatabaseService
+public sealed class DatabaseService : IDatabaseService
 {
     private SQLiteAsyncConnection? _database;
     private readonly string _dbPath;

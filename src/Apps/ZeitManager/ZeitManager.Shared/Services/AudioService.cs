@@ -9,7 +9,7 @@ using ZeitManager.Models;
 
 namespace ZeitManager.Services;
 
-public class AudioService : IAudioService
+public sealed class AudioService : IAudioService
 {
     private readonly object _lock = new();
     private CancellationTokenSource? _loopCts;
@@ -47,7 +47,7 @@ public class AudioService : IAudioService
         var custom = _customSounds.FirstOrDefault(s => s.Id == soundId);
         if (custom?.Uri != null)
         {
-            await PlayUriAsync(custom.Uri, loop);
+            await PlayUriAsync(custom.Uri, loop).ConfigureAwait(false);
             return;
         }
 

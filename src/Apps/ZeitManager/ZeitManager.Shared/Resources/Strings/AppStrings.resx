@@ -749,4 +749,37 @@ Examples:
   <data name="PomodoroWorkStarting" xml:space="preserve">
     <value>Time to focus</value>
   </data>
+  <data name="Days" xml:space="preserve">
+    <value>Days</value>
+  </data>
+  <data name="VacationMode" xml:space="preserve">
+    <value>Vacation mode</value>
+  </data>
+  <data name="PauseAllAlarms" xml:space="preserve">
+    <value>Pause all alarms</value>
+  </data>
+  <data name="ResumeAllAlarms" xml:space="preserve">
+    <value>Resume all alarms</value>
+  </data>
+  <data name="PauseDuration" xml:space="preserve">
+    <value>Pause duration</value>
+  </data>
+  <data name="PausedUntilFormat" xml:space="preserve">
+    <value>Paused until {0}</value>
+  </data>
+  <data name="PickFromDevice" xml:space="preserve">
+    <value>Pick from device</value>
+  </data>
+  <data name="SelectException" xml:space="preserve">
+    <value>Select exception</value>
+  </data>
+  <data name="SimulateShake" xml:space="preserve">
+    <value>Simulate shake</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Loading graphics</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Starting app</value>
+  </data>
 </root>

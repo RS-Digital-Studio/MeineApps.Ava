@@ -6,7 +6,7 @@ namespace ZeitManager.Services;
 /// <summary>
 /// Desktop notification service using OS-native notifications
 /// </summary>
-public class DesktopNotificationService : INotificationService
+public sealed class DesktopNotificationService : INotificationService
 {
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _scheduledNotifications = [];
 

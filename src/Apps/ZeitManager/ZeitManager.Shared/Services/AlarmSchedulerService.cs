@@ -8,7 +8,7 @@ using Timer = System.Timers.Timer;
 
 namespace ZeitManager.Services;
 
-public class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
+public sealed class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
 {
     private readonly IDatabaseService _database;
     private readonly INotificationService _notificationService;

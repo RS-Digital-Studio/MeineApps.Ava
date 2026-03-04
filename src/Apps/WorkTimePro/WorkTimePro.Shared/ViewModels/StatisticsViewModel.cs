@@ -18,7 +18,7 @@ namespace WorkTimePro.ViewModels;
 /// ViewModel für die Statistik-Seite. Stellt Daten-Arrays für SkiaSharp-Renderer bereit.
 /// Phase 7: LiveCharts durch SkiaSharp-Visualisierungen ersetzt.
 /// </summary>
-public partial class StatisticsViewModel : ViewModelBase
+public sealed partial class StatisticsViewModel : ViewModelBase
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;

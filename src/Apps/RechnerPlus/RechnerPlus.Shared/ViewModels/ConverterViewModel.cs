@@ -5,7 +5,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace RechnerPlus.ViewModels;
 
-public partial class ConverterViewModel : ViewModelBase, IDisposable
+public sealed partial class ConverterViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ILocalizationService _localization;

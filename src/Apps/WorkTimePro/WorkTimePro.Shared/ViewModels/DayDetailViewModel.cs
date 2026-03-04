@@ -14,7 +14,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel für Tagesdetails mit Bearbeitung von Zeiteinträgen und Pausen
 /// </summary>
-public partial class DayDetailViewModel : ViewModelBase
+public sealed partial class DayDetailViewModel : ViewModelBase
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;

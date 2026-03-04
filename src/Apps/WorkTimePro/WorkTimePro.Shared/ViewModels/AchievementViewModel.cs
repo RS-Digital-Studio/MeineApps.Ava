@@ -12,7 +12,7 @@ namespace WorkTimePro.ViewModels;
 /// ViewModel für die Achievement/Badge-Übersicht.
 /// Zeigt alle Achievements mit Fortschritt und Unlock-Status an.
 /// </summary>
-public partial class AchievementViewModel : ViewModelBase
+public sealed partial class AchievementViewModel : ViewModelBase
 {
     private readonly IAchievementService _achievementService;
 

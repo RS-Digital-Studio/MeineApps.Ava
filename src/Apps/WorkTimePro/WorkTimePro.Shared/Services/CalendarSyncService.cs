@@ -9,7 +9,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// Implementation of the Google Calendar Sync Service
 /// </summary>
-public class CalendarSyncService : ICalendarSyncService
+public sealed class CalendarSyncService : ICalendarSyncService
 {
     private readonly IDatabaseService _database;
     private readonly IPreferencesService _preferences;
@@ -93,7 +93,7 @@ public class CalendarSyncService : ICalendarSyncService
         {
             // Benötigt Google OAuth mit Google.Apis.Auth (noch nicht integriert)
             // Platzhalter für UI-Tests
-            await Task.Delay(1000);
+            await Task.Delay(1000).ConfigureAwait(false);
 
             IsConnected = true;
             ConnectedEmail = "user@gmail.com"; // Placeholder
@@ -169,7 +169,7 @@ public class CalendarSyncService : ICalendarSyncService
     {
         _calendarId = calendarId;
 
-        var calendars = await GetAvailableCalendarsAsync();
+        var calendars = await GetAvailableCalendarsAsync().ConfigureAwait(false);
         var calendar = calendars.FirstOrDefault(c => c.Id == calendarId);
         CalendarName = calendar?.Name;
 
@@ -190,7 +190,7 @@ public class CalendarSyncService : ICalendarSyncService
                 return result;
             }
 
-            var workDays = await _database.GetWorkDaysAsync(start, end);
+            var workDays = await _database.GetWorkDaysAsync(start, end).ConfigureAwait(false);
 
             foreach (var workDay in workDays)
             {
@@ -200,7 +200,7 @@ public class CalendarSyncService : ICalendarSyncService
                     continue;
                 }
 
-                var success = await ExportWorkDayAsync(workDay);
+                var success = await ExportWorkDayAsync(workDay).ConfigureAwait(false);
                 if (success)
                 {
                     result.CreatedEvents++;
@@ -214,10 +214,10 @@ public class CalendarSyncService : ICalendarSyncService
             // Sync vacation
             if (_options.SyncVacation)
             {
-                var vacations = await _database.GetVacationEntriesAsync(start, end);
+                var vacations = await _database.GetVacationEntriesAsync(start, end).ConfigureAwait(false);
                 foreach (var vacation in vacations)
                 {
-                    if (await ExportVacationAsync(vacation))
+                    if (await ExportVacationAsync(vacation).ConfigureAwait(false))
                     {
                         result.CreatedEvents++;
                     }
@@ -246,7 +246,7 @@ public class CalendarSyncService : ICalendarSyncService
             var title = FormatEventTitle(workDay);
             var description = FormatEventDescription(workDay);
 
-            var entries = await _database.GetTimeEntriesAsync(workDay.Date);
+            var entries = await _database.GetTimeEntriesAsync(workDay.Date).ConfigureAwait(false);
             var checkIns = entries.Where(e => e.Type == EntryType.CheckIn).OrderBy(e => e.Timestamp).ToList();
             var checkOuts = entries.Where(e => e.Type == EntryType.CheckOut).OrderByDescending(e => e.Timestamp).ToList();
 

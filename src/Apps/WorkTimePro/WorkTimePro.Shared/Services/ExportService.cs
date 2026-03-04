@@ -13,7 +13,7 @@ namespace WorkTimePro.Services;
 /// Export-Service fuer PDF, Excel und CSV.
 /// PDF via PdfSharpCore, Excel via ClosedXML, CSV manuell.
 /// </summary>
-public class ExportService : IExportService
+public sealed class ExportService : IExportService
 {
     // PDF-Konstanten
     private const double PdfTopMargin = 40;

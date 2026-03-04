@@ -8,7 +8,7 @@ using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class ShiftScheduleViewModel : ViewModelBase, IDisposable
+public sealed partial class ShiftScheduleViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IShiftScheduleService _shiftService;

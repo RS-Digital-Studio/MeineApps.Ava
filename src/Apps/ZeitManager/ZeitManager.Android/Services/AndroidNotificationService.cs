@@ -7,7 +7,7 @@ using ZeitManager.Services;
 
 namespace ZeitManager.Android.Services;
 
-public class AndroidNotificationService : INotificationService
+public sealed class AndroidNotificationService : INotificationService
 {
     private const string ChannelId = "zeitmanager_timer";
     // Neuer Channel mit Sound (alter "zeitmanager_alarm" hatte SetSound(null, null))

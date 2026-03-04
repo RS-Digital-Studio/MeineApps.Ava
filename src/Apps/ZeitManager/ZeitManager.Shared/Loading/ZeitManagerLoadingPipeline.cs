@@ -11,7 +11,7 @@ namespace ZeitManager.Loading;
 /// ZeitManager Lade-Pipeline: DB + Shader parallel, dann AlarmScheduler, ViewModel.
 /// Gewichtung spiegelt tatsächliche Ladezeiten auf Android wider.
 /// </summary>
-public class ZeitManagerLoadingPipeline : LoadingPipelineBase
+public sealed class ZeitManagerLoadingPipeline : LoadingPipelineBase
 {
     public ZeitManagerLoadingPipeline(IServiceProvider services)
     {

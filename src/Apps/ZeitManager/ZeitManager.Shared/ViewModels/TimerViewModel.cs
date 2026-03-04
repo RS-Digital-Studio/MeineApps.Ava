@@ -8,7 +8,7 @@ using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class TimerViewModel : ViewModelBase, IDisposable
+public sealed partial class TimerViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ITimerService _timerService;

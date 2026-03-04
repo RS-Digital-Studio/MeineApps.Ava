@@ -15,7 +15,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for calendar view with heatmap and status overlay
 /// </summary>
-public partial class CalendarViewModel : ViewModelBase
+public sealed partial class CalendarViewModel : ViewModelBase
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;

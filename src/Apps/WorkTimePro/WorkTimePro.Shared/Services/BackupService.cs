@@ -8,7 +8,7 @@ namespace WorkTimePro.Services;
 /// Implementation of the cloud backup service
 /// Supports Google Drive and OneDrive
 /// </summary>
-public class BackupService : IBackupService
+public sealed class BackupService : IBackupService
 {
     private readonly IDatabaseService _database;
     private readonly IPreferencesService _preferences;
@@ -108,7 +108,7 @@ public class BackupService : IBackupService
 
             // Benötigt Google Sign-In mit Google.Apis.Auth (noch nicht integriert)
             // Platzhalter für UI-Tests
-            await Task.Delay(1000);
+            await Task.Delay(1000).ConfigureAwait(false);
 
             ProgressChanged?.Invoke(this, 50);
 
@@ -137,7 +137,7 @@ public class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 10);
 
             // Benötigt Microsoft Sign-In mit MSAL (noch nicht integriert)
-            await Task.Delay(1000);
+            await Task.Delay(1000).ConfigureAwait(false);
 
             ProgressChanged?.Invoke(this, 50);
 
@@ -195,7 +195,7 @@ public class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 10);
 
             // Collect backup data
-            var backupData = await CreateBackupDataAsync();
+            var backupData = await CreateBackupDataAsync().ConfigureAwait(false);
 
             ProgressChanged?.Invoke(this, 40);
 
@@ -216,7 +216,7 @@ public class BackupService : IBackupService
 
             // Save locally as fallback
             var localPath = Path.Combine(CacheDirectory, fileName);
-            await File.WriteAllBytesAsync(localPath, bytes);
+            await File.WriteAllBytesAsync(localPath, bytes).ConfigureAwait(false);
 
             ProgressChanged?.Invoke(this, 90);
 
@@ -241,16 +241,16 @@ public class BackupService : IBackupService
 
     private async Task<BackupData> CreateBackupDataAsync()
     {
-        var settings = await _database.GetSettingsAsync();
-        var workDays = await _database.GetAllWorkDaysAsync();
-        var timeEntries = await _database.GetAllTimeEntriesAsync();
-        var pauseEntries = await _database.GetAllPauseEntriesAsync();
-        var vacationEntries = await _database.GetAllVacationEntriesAsync();
-        var vacationQuotas = await _database.GetAllVacationQuotasAsync();
-        var projects = await _database.GetProjectsAsync(true);
-        var employers = await _database.GetEmployersAsync(true);
-        var shiftPatterns = await _database.GetShiftPatternsAsync();
-        var achievements = await _database.GetAllAchievementsAsync();
+        var settings = await _database.GetSettingsAsync().ConfigureAwait(false);
+        var workDays = await _database.GetAllWorkDaysAsync().ConfigureAwait(false);
+        var timeEntries = await _database.GetAllTimeEntriesAsync().ConfigureAwait(false);
+        var pauseEntries = await _database.GetAllPauseEntriesAsync().ConfigureAwait(false);
+        var vacationEntries = await _database.GetAllVacationEntriesAsync().ConfigureAwait(false);
+        var vacationQuotas = await _database.GetAllVacationQuotasAsync().ConfigureAwait(false);
+        var projects = await _database.GetProjectsAsync(true).ConfigureAwait(false);
+        var employers = await _database.GetEmployersAsync(true).ConfigureAwait(false);
+        var shiftPatterns = await _database.GetShiftPatternsAsync().ConfigureAwait(false);
+        var achievements = await _database.GetAllAchievementsAsync().ConfigureAwait(false);
 
         return new BackupData
         {
@@ -326,7 +326,7 @@ public class BackupService : IBackupService
 
             ProgressChanged?.Invoke(this, 30);
 
-            var json = await File.ReadAllTextAsync(localPath);
+            var json = await File.ReadAllTextAsync(localPath).ConfigureAwait(false);
             var backupData = JsonSerializer.Deserialize<BackupData>(json, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -340,13 +340,13 @@ public class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 40);
 
             // Sicherheits-Backup der aktuellen Daten VOR dem Restore
-            var safetyBackup = await CreateBackupDataAsync();
+            var safetyBackup = await CreateBackupDataAsync().ConfigureAwait(false);
             ProgressChanged?.Invoke(this, 50);
 
             try
             {
                 // Restore durchführen
-                await RestoreDataAsync(backupData);
+                await RestoreDataAsync(backupData).ConfigureAwait(false);
             }
             catch (Exception restoreEx)
             {
@@ -354,7 +354,7 @@ public class BackupService : IBackupService
                 System.Diagnostics.Debug.WriteLine($"BackupService.Restore fehlgeschlagen, stelle Sicherheits-Backup wieder her: {restoreEx.Message}");
                 try
                 {
-                    await RestoreDataAsync(safetyBackup);
+                    await RestoreDataAsync(safetyBackup).ConfigureAwait(false);
                 }
                 catch (Exception rollbackEx)
                 {
@@ -376,19 +376,19 @@ public class BackupService : IBackupService
 
     private async Task RestoreDataAsync(BackupData data)
     {
-        // Alle bestehenden Daten löschen für sauberes Restore (keine Mischung alt+neu)
-        await _database.ClearAllDataAsync();
+        // Alle bestehenden Daten loeschen fuer sauberes Restore (keine Mischung alt+neu)
+        await _database.ClearAllDataAsync().ConfigureAwait(false);
 
         if (data.Settings != null)
         {
-            await _database.SaveSettingsAsync(data.Settings);
+            await _database.SaveSettingsAsync(data.Settings).ConfigureAwait(false);
         }
 
         if (data.WorkDays != null)
         {
             foreach (var item in data.WorkDays)
             {
-                await _database.SaveWorkDayAsync(item);
+                await _database.SaveWorkDayAsync(item).ConfigureAwait(false);
             }
         }
 
@@ -396,7 +396,7 @@ public class BackupService : IBackupService
         {
             foreach (var item in data.TimeEntries)
             {
-                await _database.SaveTimeEntryAsync(item);
+                await _database.SaveTimeEntryAsync(item).ConfigureAwait(false);
             }
         }
 
@@ -404,7 +404,7 @@ public class BackupService : IBackupService
         {
             foreach (var item in data.PauseEntries)
             {
-                await _database.SavePauseEntryAsync(item);
+                await _database.SavePauseEntryAsync(item).ConfigureAwait(false);
             }
         }
 
@@ -412,7 +412,7 @@ public class BackupService : IBackupService
         {
             foreach (var item in data.VacationEntries)
             {
-                await _database.SaveVacationEntryAsync(item);
+                await _database.SaveVacationEntryAsync(item).ConfigureAwait(false);
             }
         }
 
@@ -420,7 +420,7 @@ public class BackupService : IBackupService
         {
             foreach (var item in data.VacationQuotas)
             {
-                await _database.SaveVacationQuotaAsync(item);
+                await _database.SaveVacationQuotaAsync(item).ConfigureAwait(false);
             }
         }
 
@@ -428,7 +428,7 @@ public class BackupService : IBackupService
         {
             foreach (var item in data.Projects)
             {
-                await _database.SaveProjectAsync(item);
+                await _database.SaveProjectAsync(item).ConfigureAwait(false);
             }
         }
 
@@ -436,7 +436,7 @@ public class BackupService : IBackupService
         {
             foreach (var item in data.Employers)
             {
-                await _database.SaveEmployerAsync(item);
+                await _database.SaveEmployerAsync(item).ConfigureAwait(false);
             }
         }
 
@@ -444,17 +444,17 @@ public class BackupService : IBackupService
         {
             foreach (var item in data.ShiftPatterns)
             {
-                await _database.SaveShiftPatternAsync(item);
+                await _database.SaveShiftPatternAsync(item).ConfigureAwait(false);
             }
         }
 
         if (data.Achievements != null)
         {
             // Achievement-Tabelle sicherstellen (fuer aeltere Backups ohne Tabelle)
-            await _database.CreateAchievementTableAsync();
+            await _database.CreateAchievementTableAsync().ConfigureAwait(false);
             foreach (var item in data.Achievements)
             {
-                await _database.SaveAchievementAsync(item);
+                await _database.SaveAchievementAsync(item).ConfigureAwait(false);
             }
         }
     }
@@ -492,7 +492,7 @@ public class BackupService : IBackupService
         {
             ProgressChanged?.Invoke(this, 10);
 
-            var backupData = await CreateBackupDataAsync();
+            var backupData = await CreateBackupDataAsync().ConfigureAwait(false);
 
             ProgressChanged?.Invoke(this, 50);
 
@@ -506,7 +506,7 @@ public class BackupService : IBackupService
             var fileName = $"worktime_backup_{DateTime.Now:yyyyMMdd_HHmmss}.json";
             var localPath = Path.Combine(BackupDirectory, fileName);
 
-            await File.WriteAllBytesAsync(localPath, bytes);
+            await File.WriteAllBytesAsync(localPath, bytes).ConfigureAwait(false);
 
             ProgressChanged?.Invoke(this, 90);
 
@@ -533,7 +533,7 @@ public class BackupService : IBackupService
     public async Task<BackupResult> ExportBackupAsync()
     {
         // Erstelle lokales Backup und teile es über Share-Sheet
-        var result = await CreateLocalBackupAsync();
+        var result = await CreateLocalBackupAsync().ConfigureAwait(false);
 
         if (!result.Success || string.IsNullOrEmpty(result.FileName))
             return result;
@@ -541,7 +541,7 @@ public class BackupService : IBackupService
         try
         {
             var filePath = Path.Combine(BackupDirectory, result.FileName);
-            await _fileShareService.ShareFileAsync(filePath, "WorkTimePro Backup", "application/json");
+            await _fileShareService.ShareFileAsync(filePath, "WorkTimePro Backup", "application/json").ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -561,7 +561,7 @@ public class BackupService : IBackupService
 
             ProgressChanged?.Invoke(this, 10);
 
-            var json = await File.ReadAllTextAsync(filePath);
+            var json = await File.ReadAllTextAsync(filePath).ConfigureAwait(false);
             var backupData = JsonSerializer.Deserialize<BackupData>(json, new JsonSerializerOptions
             {
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
@@ -573,20 +573,20 @@ public class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 30);
 
             // Sicherheits-Backup der aktuellen Daten VOR dem Import
-            var safetyBackup = await CreateBackupDataAsync();
+            var safetyBackup = await CreateBackupDataAsync().ConfigureAwait(false);
             ProgressChanged?.Invoke(this, 50);
 
             try
             {
-                await RestoreDataAsync(backupData);
+                await RestoreDataAsync(backupData).ConfigureAwait(false);
             }
             catch (Exception restoreEx)
             {
-                // Import fehlgeschlagen → Sicherheits-Backup wiederherstellen
+                // Import fehlgeschlagen -> Sicherheits-Backup wiederherstellen
                 System.Diagnostics.Debug.WriteLine($"BackupService.Import fehlgeschlagen, stelle Sicherheits-Backup wieder her: {restoreEx.Message}");
                 try
                 {
-                    await RestoreDataAsync(safetyBackup);
+                    await RestoreDataAsync(safetyBackup).ConfigureAwait(false);
                 }
                 catch (Exception rollbackEx)
                 {
@@ -647,7 +647,7 @@ public class BackupService : IBackupService
 
         if (enabled && IsAuthenticated)
         {
-            await SyncNowAsync();
+            await SyncNowAsync().ConfigureAwait(false);
         }
     }
 
@@ -666,12 +666,12 @@ public class BackupService : IBackupService
             ProgressChanged?.Invoke(this, 10);
 
             // Echte Sync-Logik benötigt Cloud-API (aktuell Backup als Sync-Variante)
-            await Task.Delay(500);
+            await Task.Delay(500).ConfigureAwait(false);
 
             ProgressChanged?.Invoke(this, 50);
 
             // Create backup as simple sync variant
-            var backupResult = await CreateBackupAsync();
+            var backupResult = await CreateBackupAsync().ConfigureAwait(false);
 
             ProgressChanged?.Invoke(this, 100);
 

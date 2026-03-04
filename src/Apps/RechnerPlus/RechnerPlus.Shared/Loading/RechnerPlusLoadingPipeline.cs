@@ -10,31 +10,23 @@ namespace RechnerPlus.Loading;
 /// RechnerPlus Lade-Pipeline: Shader-Kompilierung + ViewModel-Erstellung.
 /// Leichtgewichtig (keine DB), aber Shader-Preload verhindert Jank.
 /// </summary>
-public class RechnerPlusLoadingPipeline : LoadingPipelineBase
+public sealed class RechnerPlusLoadingPipeline : LoadingPipelineBase
 {
     public RechnerPlusLoadingPipeline(IServiceProvider services)
     {
         var loc = services.GetRequiredService<ILocalizationService>();
 
-        // Schritt 1: Shader-Kompilierung (verhindert Jank beim ersten SkiaSharp-Render)
+        // Schritt 1: Shader + ViewModel parallel (unabhängig voneinander)
         AddStep(new LoadingStep
         {
-            Name = "Shader",
+            Name = "Shader+ViewModel",
             DisplayName = loc.GetString("SplashStep_Graphics") ?? "Grafik vorbereiten...",
-            Weight = 30,
-            ExecuteAsync = () => Task.Run(() => ShaderPreloader.PreloadAll())
-        });
-
-        // Schritt 2: ViewModel erstellen (CalcLib Engine, HistoryService)
-        AddStep(new LoadingStep
-        {
-            Name = "ViewModel",
-            DisplayName = loc.GetString("SplashStep_Starting") ?? "App starten...",
-            Weight = 10,
-            ExecuteAsync = () =>
+            Weight = 40,
+            ExecuteAsync = async () =>
             {
-                services.GetRequiredService<MainViewModel>();
-                return Task.CompletedTask;
+                var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
+                var vmTask = Task.Run(() => services.GetRequiredService<MainViewModel>());
+                await Task.WhenAll(shaderTask, vmTask);
             }
         });
     }

@@ -1308,4 +1308,10 @@
   <data name="ImportBackup" xml:space="preserve">
     <value>Import backup</value>
   </data>
+  <data name="LoadingInit" xml:space="preserve">
+    <value>Initializing database</value>
+  </data>
+  <data name="LoadingReminders" xml:space="preserve">
+    <value>Loading reminders</value>
+  </data>
 </root>

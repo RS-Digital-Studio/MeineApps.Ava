@@ -5,7 +5,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// Implementation of the vacation management service
 /// </summary>
-public class VacationService : IVacationService
+public sealed class VacationService : IVacationService
 {
     private readonly IDatabaseService _database;
     private readonly IHolidayService _holidayService;

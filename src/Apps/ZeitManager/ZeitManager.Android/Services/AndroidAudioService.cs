@@ -11,7 +11,7 @@ namespace ZeitManager.Android.Services;
 /// Android-spezifischer AudioService - nutzt MediaPlayer für Tonwiedergabe.
 /// Unterstützt eingebaute Töne, System-Ringtones und benutzerdefinierte Sounds.
 /// </summary>
-public class AndroidAudioService : IAudioService
+public sealed class AndroidAudioService : IAudioService
 {
     private readonly object _lock = new();
     private CancellationTokenSource? _loopCts;

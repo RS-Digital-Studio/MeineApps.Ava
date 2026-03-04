@@ -17,7 +17,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for the main page (Today view)
 /// </summary>
-public partial class MainViewModel : ViewModelBase, IDisposable
+public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
     private readonly ITimeTrackingService _timeTracking;
     private readonly ICalculationService _calculation;
@@ -159,6 +159,9 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
         // Settings-Änderungen propagieren
         SettingsVm.SettingsChanged += OnSettingsChanged;
+
+        // Back-Press Helper verdrahten (WorkTimePro nutzt FloatingText statt ExitHint)
+        _backPressHelper.ExitHintRequested += msg => FloatingTextRequested?.Invoke(msg, "info");
 
         // Event handler
         _timeTracking.StatusChanged += OnStatusChanged;
@@ -742,7 +745,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     // === Zurück-Taste (Double-Back-to-Exit) ===
 
-    private DateTime _lastBackPressTime;
+    private readonly BackPressHelper _backPressHelper = new();
 
     /// <summary>
     /// Verarbeitet den Zurück-Button des Geräts.
@@ -765,15 +768,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
 
         // 3. Auf Today-Tab → Double-Back prüfen (2 Sekunden Fenster)
-        var now = DateTime.UtcNow;
-        if ((now - _lastBackPressTime).TotalMilliseconds < 2000)
-        {
-            return false; // App beenden
-        }
-
-        _lastBackPressTime = now;
-        FloatingTextRequested?.Invoke(AppStrings.PressBackAgainToExit, "info");
-        return true;
+        return _backPressHelper.HandleDoubleBack(AppStrings.PressBackAgainToExit);
     }
 
     [RelayCommand]

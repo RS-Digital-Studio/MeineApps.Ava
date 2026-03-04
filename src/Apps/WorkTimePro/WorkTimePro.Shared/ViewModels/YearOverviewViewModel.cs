@@ -13,7 +13,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for year overview (Premium feature)
 /// </summary>
-public partial class YearOverviewViewModel : ViewModelBase
+public sealed partial class YearOverviewViewModel : ViewModelBase
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;

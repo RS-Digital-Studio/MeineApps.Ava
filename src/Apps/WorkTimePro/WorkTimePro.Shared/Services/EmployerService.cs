@@ -5,7 +5,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// Implementation of the employer service
 /// </summary>
-public class EmployerService : IEmployerService
+public sealed class EmployerService : IEmployerService
 {
     private readonly IDatabaseService _database;
 

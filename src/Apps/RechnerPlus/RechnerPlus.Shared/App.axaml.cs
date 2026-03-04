@@ -9,7 +9,6 @@ using MeineApps.Core.Ava.Services;
 using MeineApps.UI.Controls;
 using RechnerPlus.Loading;
 using RechnerPlus.Resources.Strings;
-using RechnerPlus.Services;
 using RechnerPlus.ViewModels;
 using RechnerPlus.Views;
 using RechnerPlus.Graphics;
@@ -94,8 +93,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            // Mindestens 500ms anzeigen (Desktop ist zu schnell)
-            var remaining = 500 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();

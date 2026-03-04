@@ -5,7 +5,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// Service for time tracking (check-in/out, pauses)
 /// </summary>
-public class TimeTrackingService : ITimeTrackingService
+public sealed class TimeTrackingService : ITimeTrackingService
 {
     private readonly IDatabaseService _database;
     private readonly ICalculationService _calculation;

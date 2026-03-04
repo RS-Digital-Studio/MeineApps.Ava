@@ -2,7 +2,7 @@ using ZeitManager.Models;
 
 namespace ZeitManager.Services;
 
-public class ShiftScheduleService : IShiftScheduleService
+public sealed class ShiftScheduleService : IShiftScheduleService
 {
     private readonly IDatabaseService _database;
 
@@ -17,32 +17,32 @@ public class ShiftScheduleService : IShiftScheduleService
 
     public async Task SaveScheduleAsync(ShiftSchedule schedule)
     {
-        await _database.SaveShiftScheduleAsync(schedule);
+        await _database.SaveShiftScheduleAsync(schedule).ConfigureAwait(false);
     }
 
     public async Task DeleteScheduleAsync(ShiftSchedule schedule)
     {
-        await _database.DeleteShiftScheduleAsync(schedule);
+        await _database.DeleteShiftScheduleAsync(schedule).ConfigureAwait(false);
     }
 
     public async Task ActivateScheduleAsync(ShiftSchedule schedule)
     {
         // Deactivate all others first
-        var all = await _database.GetShiftSchedulesAsync();
+        var all = await _database.GetShiftSchedulesAsync().ConfigureAwait(false);
         foreach (var s in all.Where(s => s.IsActive))
         {
             s.IsActive = false;
-            await _database.SaveShiftScheduleAsync(s);
+            await _database.SaveShiftScheduleAsync(s).ConfigureAwait(false);
         }
 
         schedule.IsActive = true;
-        await _database.SaveShiftScheduleAsync(schedule);
+        await _database.SaveShiftScheduleAsync(schedule).ConfigureAwait(false);
     }
 
     public async Task DeactivateScheduleAsync(ShiftSchedule schedule)
     {
         schedule.IsActive = false;
-        await _database.SaveShiftScheduleAsync(schedule);
+        await _database.SaveShiftScheduleAsync(schedule).ConfigureAwait(false);
     }
 
     public Task<List<ShiftException>> GetExceptionsAsync(int scheduleId) =>

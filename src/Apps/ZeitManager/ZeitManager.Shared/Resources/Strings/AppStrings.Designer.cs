@@ -99,5 +99,40 @@ namespace ZeitManager.Resources.Strings {
                 return ResourceManager.GetString("OnboardingCreateTimer", resourceCulture);
             }
         }
+        internal static string PauseDuration {
+            get {
+                return ResourceManager.GetString("PauseDuration", resourceCulture);
+            }
+        }
+        internal static string PausedUntilFormat {
+            get {
+                return ResourceManager.GetString("PausedUntilFormat", resourceCulture);
+            }
+        }
+        internal static string PickFromDevice {
+            get {
+                return ResourceManager.GetString("PickFromDevice", resourceCulture);
+            }
+        }
+        internal static string SelectException {
+            get {
+                return ResourceManager.GetString("SelectException", resourceCulture);
+            }
+        }
+        internal static string SimulateShake {
+            get {
+                return ResourceManager.GetString("SimulateShake", resourceCulture);
+            }
+        }
+        internal static string SplashStep_Graphics {
+            get {
+                return ResourceManager.GetString("SplashStep_Graphics", resourceCulture);
+            }
+        }
+        internal static string SplashStep_Starting {
+            get {
+                return ResourceManager.GetString("SplashStep_Starting", resourceCulture);
+            }
+        }
     }
 }

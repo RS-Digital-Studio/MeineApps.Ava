@@ -8,7 +8,7 @@ using ZeitManager.Services;
 
 namespace ZeitManager.ViewModels;
 
-public partial class SettingsViewModel : ViewModelBase, IDisposable
+public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IThemeService _themeService;

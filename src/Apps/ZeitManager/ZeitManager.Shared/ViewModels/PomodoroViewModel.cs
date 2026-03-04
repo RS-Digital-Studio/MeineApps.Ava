@@ -14,7 +14,7 @@ using Timer = System.Timers.Timer;
 
 namespace ZeitManager.ViewModels;
 
-public partial class PomodoroViewModel : ViewModelBase, IDisposable
+public sealed partial class PomodoroViewModel : ViewModelBase, IDisposable
 {
     private readonly IDatabaseService _database;
     private readonly IAudioService _audioService;

@@ -6,7 +6,7 @@ using WorkTimePro.Services;
 
 namespace WorkTimePro.Android.Services;
 
-public class AndroidNotificationService : INotificationService
+public sealed class AndroidNotificationService : INotificationService
 {
     private const string ChannelId = "worktimepro_reminder";
 

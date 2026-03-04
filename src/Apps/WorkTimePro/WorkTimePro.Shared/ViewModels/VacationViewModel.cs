@@ -23,7 +23,7 @@ public class VacationTypeItem
 /// <summary>
 /// ViewModel for vacation management (Premium feature)
 /// </summary>
-public partial class VacationViewModel : ViewModelBase
+public sealed partial class VacationViewModel : ViewModelBase
 {
     private readonly IVacationService _vacationService;
     private readonly IHolidayService _holidayService;

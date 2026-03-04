@@ -10,7 +10,7 @@ using ZeitManager.Models;
 
 namespace ZeitManager.ViewModels;
 
-public partial class StopwatchViewModel : ViewModelBase, IDisposable
+public sealed partial class StopwatchViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly ILocalizationService _localization;

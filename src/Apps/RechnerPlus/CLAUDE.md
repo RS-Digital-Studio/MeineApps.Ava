@@ -135,6 +135,12 @@ baseValue = value * ToBase + Offset
 - ModeSelector-Buttons: FontSize 11, Padding 8,3 im Landscape
 - Scientific: ColumnSpacing/RowSpacing 4 statt 6
 
+### CalculatorViewModel Partial-Class-Aufteilung
+- `CalculatorViewModel.cs` - Felder, Constructor, Properties, Events, Lifecycle, History-Caches, Funktionsgraph-Properties
+- `CalculatorViewModel.Calculations.cs` - Eingabe (Digit, Operator, Decimal, Klammern), Berechnung, Bearbeitung (Clear, Backspace, Negate, Percent), wissenschaftliche Funktionen (Sin, Cos, Tan, Log, Ln, Inverse-Varianten), Pi, Euler, Abs, Ans, Mode-Wechsel
+- `CalculatorViewModel.Display.cs` - RawDisplay, FormatResult, ShowError, ClearError, SetDisplayFromResult, TryParseDisplay, RefreshNumberFormat, UpdatePreview, OnDisplayChanged, CountOpenParentheses, IsOperatorChar, PasteValue, SetActiveFunction, ClearFunctionGraph
+- `CalculatorViewModel.History.cs` - Undo/Redo (SaveState, RestoreState, Undo, Redo), History-Commands (Show, Hide, Clear, Delete, Select, Copy), Clipboard-Commands (CopyDisplay, ShareDisplay, PasteFromClipboard), Verlauf-Persistenz (Load/Save), Memory-Persistenz (Load/Save), Memory-Commands (MC, MR, M+, M-, MS)
+
 ### Code-Qualität
 - `TryParseDisplay()`: Zentrale Hilfsmethode, nutzt `RawDisplay` (ohne Tausender-Trennzeichen)
 - `SetDisplayFromResult(double/CalculationResult)`: Zentrale Methode für Display+Error-Handling

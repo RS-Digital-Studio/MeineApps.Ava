@@ -1,4 +1,5 @@
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Premium.Ava.Services;
 using MeineApps.UI.Loading;
 using MeineApps.UI.SkiaSharp.Shaders;
 using Microsoft.Extensions.DependencyInjection;
@@ -11,7 +12,7 @@ namespace WorkTimePro.Loading;
 /// WorkTimePro Lade-Pipeline: DB + Shader parallel, dann Achievement, Reminder, ViewModel.
 /// Gewichtung spiegelt tatsächliche Ladezeiten auf Android wider.
 /// </summary>
-public class WorkTimeProLoadingPipeline : LoadingPipelineBase
+public sealed class WorkTimeProLoadingPipeline : LoadingPipelineBase
 {
     public WorkTimeProLoadingPipeline(IServiceProvider services)
     {
@@ -27,7 +28,9 @@ public class WorkTimeProLoadingPipeline : LoadingPipelineBase
             {
                 var dbTask = services.GetRequiredService<IDatabaseService>().InitializeAsync();
                 var shaderTask = Task.Run(() => ShaderPreloader.PreloadAll());
-                await Task.WhenAll(dbTask, shaderTask);
+                // Käufe mit Google Play abgleichen (Geräte-/Datenwechsel → Premium-Status wiederherstellen)
+                var purchaseTask = services.GetRequiredService<IPurchaseService>().InitializeAsync();
+                await Task.WhenAll(dbTask, shaderTask, purchaseTask);
             }
         });
 

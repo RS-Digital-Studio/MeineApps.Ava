@@ -6,7 +6,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// SQLite database service for WorkTime Pro
 /// </summary>
-public class DatabaseService : IDatabaseService
+public sealed class DatabaseService : IDatabaseService
 {
     private SQLiteAsyncConnection? _database;
     private readonly string _dbPath;
@@ -444,14 +444,18 @@ public class DatabaseService : IDatabaseService
 
     public async Task SaveHolidaysAsync(List<HolidayEntry> holidays)
     {
+        // Transaktion statt einzelner Inserts/Updates (16 Feiertage = 1 Transaktion statt 16 Roundtrips)
         var db = await GetDatabaseAsync();
-        foreach (var holiday in holidays)
+        await db.RunInTransactionAsync(conn =>
         {
-            if (holiday.Id == 0)
-                await db.InsertAsync(holiday);
-            else
-                await db.UpdateAsync(holiday);
-        }
+            foreach (var holiday in holidays)
+            {
+                if (holiday.Id == 0)
+                    conn.Insert(holiday);
+                else
+                    conn.Update(holiday);
+            }
+        });
     }
 
     public async Task<bool> IsHolidayAsync(DateTime date, string region)
@@ -593,13 +597,10 @@ public class DatabaseService : IDatabaseService
 
     public async Task SetDefaultEmployerAsync(int id)
     {
+        // 2 SQL-Statements statt N+1 (alle laden + einzeln updaten)
         var db = await GetDatabaseAsync();
-        var employers = await db.Table<Employer>().ToListAsync();
-        foreach (var employer in employers)
-        {
-            employer.IsDefault = employer.Id == id;
-            await db.UpdateAsync(employer);
-        }
+        await db.ExecuteAsync("UPDATE Employers SET IsDefault = 0");
+        await db.ExecuteAsync("UPDATE Employers SET IsDefault = 1 WHERE Id = ?", id);
     }
 
     // ==================== ShiftPattern ====================
@@ -715,30 +716,26 @@ public class DatabaseService : IDatabaseService
 
     public async Task LockMonthAsync(int year, int month)
     {
+        // 1 SQL-Statement statt N+1 (alle laden + einzeln updaten)
         var db = await GetDatabaseAsync();
         var startDate = new DateTime(year, month, 1);
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
-        var workDays = await GetWorkDaysAsync(startDate, endDate);
-        foreach (var workDay in workDays)
-        {
-            workDay.IsLocked = true;
-            await db.UpdateAsync(workDay);
-        }
+        await db.ExecuteAsync(
+            "UPDATE WorkDays SET IsLocked = 1 WHERE Date >= ? AND Date <= ?",
+            startDate, endDate);
     }
 
     public async Task UnlockMonthAsync(int year, int month)
     {
+        // 1 SQL-Statement statt N+1 (alle laden + einzeln updaten)
         var db = await GetDatabaseAsync();
         var startDate = new DateTime(year, month, 1);
         var endDate = startDate.AddMonths(1).AddDays(-1);
 
-        var workDays = await GetWorkDaysAsync(startDate, endDate);
-        foreach (var workDay in workDays)
-        {
-            workDay.IsLocked = false;
-            await db.UpdateAsync(workDay);
-        }
+        await db.ExecuteAsync(
+            "UPDATE WorkDays SET IsLocked = 0 WHERE Date >= ? AND Date <= ?",
+            startDate, endDate);
     }
 
     public async Task<bool> IsMonthLockedAsync(int year, int month)

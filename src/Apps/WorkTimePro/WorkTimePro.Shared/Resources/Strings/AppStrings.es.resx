@@ -561,4 +561,10 @@
   <data name="BackupNoBackupsFound" xml:space="preserve"><value>No se encontraron copias de seguridad</value></data>
   <data name="ExportBackup" xml:space="preserve"><value>Exportar copia</value></data>
   <data name="ImportBackup" xml:space="preserve"><value>Importar copia</value></data>
+  <data name="LoadingInit" xml:space="preserve">
+    <value>Inicializando base de datos</value>
+  </data>
+  <data name="LoadingReminders" xml:space="preserve">
+    <value>Cargando recordatorios</value>
+  </data>
 </root>

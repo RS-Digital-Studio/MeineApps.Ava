@@ -6,7 +6,7 @@ using MeineApps.Core.Ava.ViewModels;
 
 namespace RechnerPlus.ViewModels;
 
-public partial class MainViewModel : ViewModelBase, IDisposable
+public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IThemeService _themeService;
@@ -60,6 +60,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         _settingsViewModel = settingsViewModel;
 
         _localization.LanguageChanged += OnLanguageChanged;
+        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
         // Floating-Text-Events vom Calculator weiterleiten
         CalculatorViewModel.FloatingTextRequested += OnCalculatorFloatingText;
@@ -87,8 +88,7 @@ public partial class MainViewModel : ViewModelBase, IDisposable
 
     #region Back-Navigation (Double-Back-to-Exit)
 
-    private DateTime _lastBackPress = DateTime.MinValue;
-    private const int BackPressIntervalMs = 2000;
+    private readonly BackPressHelper _backPressHelper = new();
 
     /// <summary>
     /// Behandelt die Zurück-Taste. Gibt true zurück wenn konsumiert (App bleibt offen),
@@ -119,14 +119,8 @@ public partial class MainViewModel : ViewModelBase, IDisposable
         }
 
         // 4. Auf Startseite: Double-Back-to-Exit
-        var now = DateTime.UtcNow;
-        if ((now - _lastBackPress).TotalMilliseconds < BackPressIntervalMs)
-            return false; // App beenden lassen
-
-        _lastBackPress = now;
         var msg = _localization.GetString("BackPressToExit") ?? "Erneut drücken zum Beenden";
-        ExitHintRequested?.Invoke(msg);
-        return true; // Konsumiert
+        return _backPressHelper.HandleDoubleBack(msg);
     }
 
     #endregion

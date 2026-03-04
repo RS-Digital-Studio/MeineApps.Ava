@@ -5,7 +5,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// Holiday service with calculation for all German states
 /// </summary>
-public class HolidayService : IHolidayService
+public sealed class HolidayService : IHolidayService
 {
     private readonly IDatabaseService _database;
     private readonly Dictionary<int, List<HolidayEntry>> _cache = new();

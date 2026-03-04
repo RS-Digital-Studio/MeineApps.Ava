@@ -7,7 +7,6 @@ using Avalonia;
 using Avalonia.Android;
 using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
-using RechnerPlus.Services;
 using RechnerPlus.ViewModels;
 
 namespace RechnerPlus.Android;
@@ -89,7 +88,7 @@ public class MainActivity : AvaloniaMainActivity<App>
 /// <summary>
 /// Android-Implementierung für haptisches Feedback über den Vibrator-Service.
 /// </summary>
-public class AndroidHapticService : IHapticService
+public sealed class AndroidHapticService : IHapticService
 {
     private readonly Activity _activity;
     private readonly Vibrator? _vibrator;

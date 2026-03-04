@@ -13,7 +13,7 @@ namespace WorkTimePro.Services;
 /// 4. Überstunden-Warnung (Über MaxDailyHours)
 /// 5. Wochenzusammenfassung (Montag Morgen)
 /// </summary>
-public class ReminderService : IReminderService, IDisposable
+public sealed class ReminderService : IReminderService, IDisposable
 {
     // Notification-IDs
     private const string MorningReminderId = "reminder_morning";

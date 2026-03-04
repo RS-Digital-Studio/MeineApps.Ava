@@ -11,7 +11,7 @@ using Timer = System.Timers.Timer;
 
 namespace ZeitManager.ViewModels;
 
-public partial class AlarmViewModel : ViewModelBase, IDisposable
+public sealed partial class AlarmViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
     private readonly IDatabaseService _database;

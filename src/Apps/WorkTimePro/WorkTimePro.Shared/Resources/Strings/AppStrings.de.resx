@@ -562,4 +562,10 @@
   <data name="BackupNoBackupsFound" xml:space="preserve"><value>Keine Backups gefunden</value></data>
   <data name="ExportBackup" xml:space="preserve"><value>Backup exportieren</value></data>
   <data name="ImportBackup" xml:space="preserve"><value>Backup importieren</value></data>
+  <data name="LoadingInit" xml:space="preserve">
+    <value>Datenbank initialisieren</value>
+  </data>
+  <data name="LoadingReminders" xml:space="preserve">
+    <value>Erinnerungen laden</value>
+  </data>
 </root>

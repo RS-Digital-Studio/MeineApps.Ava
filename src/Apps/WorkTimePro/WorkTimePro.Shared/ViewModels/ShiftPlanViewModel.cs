@@ -14,7 +14,7 @@ namespace WorkTimePro.ViewModels;
 /// ViewModel for shift plan page (Premium feature)
 /// Phase 9: Shift plan UI
 /// </summary>
-public partial class ShiftPlanViewModel : ViewModelBase
+public sealed partial class ShiftPlanViewModel : ViewModelBase
 {
     private readonly IShiftService _shiftService;
     private readonly IDatabaseService _database;

@@ -5,7 +5,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// Implementation of the shift schedule service
 /// </summary>
-public class ShiftService : IShiftService
+public sealed class ShiftService : IShiftService
 {
     private readonly IDatabaseService _database;
 

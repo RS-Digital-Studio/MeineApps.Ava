@@ -7,7 +7,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// Service for calculations (work time, plus/minus, auto-pause)
 /// </summary>
-public class CalculationService : ICalculationService
+public sealed class CalculationService : ICalculationService
 {
     private readonly IDatabaseService _database;
 

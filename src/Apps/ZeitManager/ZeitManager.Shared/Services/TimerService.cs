@@ -6,7 +6,7 @@ using Timer = System.Timers.Timer;
 
 namespace ZeitManager.Services;
 
-public class TimerService : ITimerService, IDisposable
+public sealed class TimerService : ITimerService, IDisposable
 {
     private readonly IDatabaseService _database;
     private readonly INotificationService _notificationService;

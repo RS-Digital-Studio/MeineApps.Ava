@@ -5,7 +5,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// Implementation of the project tracking service
 /// </summary>
-public class ProjectService : IProjectService
+public sealed class ProjectService : IProjectService
 {
     private readonly IDatabaseService _database;
 

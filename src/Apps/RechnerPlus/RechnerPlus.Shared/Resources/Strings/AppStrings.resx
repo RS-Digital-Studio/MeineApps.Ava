@@ -580,5 +580,10 @@
   <data name="LoadingCalculator" xml:space="preserve">
     <value>Initializing calculator...</value>
   </data>
-
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Loading graphics</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Starting app</value>
+  </data>
 </root>

@@ -10,7 +10,7 @@ namespace WorkTimePro.Services;
 /// Optimiert: Batch-Queries statt N+1, gemeinsame Daten einmal laden,
 /// nur geaenderte Achievements speichern.
 /// </summary>
-public class AchievementService : IAchievementService
+public sealed class AchievementService : IAchievementService
 {
     private readonly IDatabaseService _database;
     private readonly ILocalizationService _localization;

@@ -705,4 +705,37 @@ Exemples :
   <data name="PomodoroBreakComplete" xml:space="preserve"><value>La pause est terminée !</value></data>
   <data name="PomodoroBreakStarting" xml:space="preserve"><value>Pause méritée</value></data>
   <data name="PomodoroWorkStarting" xml:space="preserve"><value>C'est l'heure de se concentrer</value></data>
+  <data name="Days" xml:space="preserve">
+    <value>Jours</value>
+  </data>
+  <data name="VacationMode" xml:space="preserve">
+    <value>Mode vacances</value>
+  </data>
+  <data name="PauseAllAlarms" xml:space="preserve">
+    <value>Mettre en pause toutes les alarmes</value>
+  </data>
+  <data name="ResumeAllAlarms" xml:space="preserve">
+    <value>Reprendre toutes les alarmes</value>
+  </data>
+  <data name="PauseDuration" xml:space="preserve">
+    <value>Durée de pause</value>
+  </data>
+  <data name="PausedUntilFormat" xml:space="preserve">
+    <value>En pause jusqu'à {0}</value>
+  </data>
+  <data name="PickFromDevice" xml:space="preserve">
+    <value>Choisir depuis l'appareil</value>
+  </data>
+  <data name="SelectException" xml:space="preserve">
+    <value>Sélectionner exception</value>
+  </data>
+  <data name="SimulateShake" xml:space="preserve">
+    <value>Simuler secousse</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Chargement des graphiques</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Démarrage de l'app</value>
+  </data>
 </root>

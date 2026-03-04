@@ -15,7 +15,7 @@ namespace WorkTimePro.ViewModels;
 /// <summary>
 /// ViewModel for settings
 /// </summary>
-public partial class SettingsViewModel : ViewModelBase, IDisposable
+public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     public event Action<string, string>? MessageRequested;
     public event EventHandler? SettingsChanged;

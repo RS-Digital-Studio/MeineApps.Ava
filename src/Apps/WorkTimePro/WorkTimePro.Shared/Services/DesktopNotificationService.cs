@@ -6,7 +6,7 @@ namespace WorkTimePro.Services;
 /// <summary>
 /// Desktop Notification Service (Windows Toast / Linux notify-send)
 /// </summary>
-public class DesktopNotificationService : INotificationService
+public sealed class DesktopNotificationService : INotificationService
 {
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _scheduledNotifications = [];
 

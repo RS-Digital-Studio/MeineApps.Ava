@@ -6,6 +6,7 @@ using Android.OS;
 using Android.Widget;
 using Avalonia;
 using Avalonia.Android;
+using MeineApps.Core.Ava.Services;
 using Microsoft.Extensions.DependencyInjection;
 using ZeitManager.Android.Services;
 using ZeitManager.Services;

@@ -1,11 +1,23 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:vm="using:FitnessRechner.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
-             xmlns:loc="using:MeineApps.Core.Ava.Localization"
-             x:Class="FitnessRechner.Views.SettingsView"
-             x:DataType="vm:SettingsViewModel"
-             x:CompileBindings="True">
+     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+     xmlns:vm="using:FitnessRechner.ViewModels"
+     xmlns:mi="using:Material.Icons.Avalonia"
+     xmlns:loc="using:MeineApps.Core.Ava.Localization"
+     x:Class="FitnessRechner.Views.SettingsView"
+     x:DataType="vm:SettingsViewModel"
+     x:CompileBindings="True"
+     Background="Transparent">
+
+  <!-- Medical-Styling: MedicalBackground scheint durch das transparente UserControl -->
+  <UserControl.Styles>
+    <!-- SettingsCard-Override: Medical Surface mit Cyan-Rand -->
+    <Style Selector="Border.SettingsCard">
+      <Setter Property="Background" Value="#D90F1D32" />
+      <Setter Property="BorderBrush" Value="#1A06B6D4" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="12" />
+    </Style>
+  </UserControl.Styles>
 
   <ScrollViewer AutomationProperties.AutomationId="Settings_ScrollViewer" VerticalScrollBarVisibility="Auto">
     <StackPanel AutomationProperties.AutomationId="Settings_RootPanel" Spacing="12" Margin="16">
@@ -20,8 +32,9 @@
       <Border AutomationProperties.AutomationId="Settings_CardTheme" Classes="SettingsCard">
         <StackPanel Spacing="12">
           <StackPanel Orientation="Horizontal" Spacing="12">
+            <!-- Medical Cyan-Akzent fuer Section-Header-Icon -->
             <mi:MaterialIcon Kind="Palette" Width="24" Height="24"
-                             Foreground="{DynamicResource PrimaryBrush}" />
+                             Foreground="#06B6D4" />
             <TextBlock Text="{loc:Translate SettingsChooseDesign}"
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
@@ -38,12 +51,13 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       Padding="0" CornerRadius="10" Height="NaN"
                       Background="Transparent" BorderThickness="0">
+                <!-- Ausgewählt: Medical Cyan-Rand statt lila -->
                 <Border CornerRadius="10" Padding="12"
-                        Background="#1E293B"
-                        BorderThickness="2" BorderBrush="#6366F1">
+                        Background="#D90F1D32"
+                        BorderThickness="2" BorderBrush="#06B6D4">
                   <Grid>
                     <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
-                                     Foreground="#6366F1"
+                                     Foreground="#06B6D4"
                                      HorizontalAlignment="Right" VerticalAlignment="Top"
                                      Margin="0,-2,-2,0" />
                     <StackPanel Spacing="6">
@@ -55,7 +69,7 @@
                       <TextBlock Text="Midnight" HorizontalAlignment="Center"
                                  FontWeight="Medium" FontSize="13" Foreground="#E2E8F0" />
                       <TextBlock Text="{loc:Translate ThemeGlassDarkDesc}" HorizontalAlignment="Center"
-                                 FontSize="11" Foreground="#94A3B8" />
+                                 FontSize="11" Foreground="#64748B" />
                     </StackPanel>
                   </Grid>
                 </Border>
@@ -66,9 +80,10 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       Padding="0" CornerRadius="10" Height="NaN"
                       Background="Transparent" BorderThickness="0">
+                <!-- Nicht ausgewählt: gedämpfter Cyan-Rand -->
                 <Border CornerRadius="10" Padding="12"
-                        Background="#1E293B"
-                        BorderThickness="2" BorderBrush="#334155">
+                        Background="#D90F1D32"
+                        BorderThickness="2" BorderBrush="#1A06B6D4">
                   <StackPanel Spacing="6">
                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                       <Ellipse Width="20" Height="20" Fill="#6366F1" />
@@ -78,7 +93,7 @@
                     <TextBlock Text="Midnight" HorizontalAlignment="Center"
                                FontWeight="Medium" FontSize="13" Foreground="#E2E8F0" />
                     <TextBlock Text="{loc:Translate ThemeGlassDarkDesc}" HorizontalAlignment="Center"
-                               FontSize="11" Foreground="#94A3B8" />
+                               FontSize="11" Foreground="#64748B" />
                   </StackPanel>
                 </Border>
               </Button>
@@ -92,12 +107,13 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       Padding="0" CornerRadius="10" Height="NaN"
                       Background="Transparent" BorderThickness="0">
+                <!-- Aurora ausgewählt: Cyan-Rand -->
                 <Border CornerRadius="10" Padding="12"
-                        Background="#18181B"
-                        BorderThickness="2" BorderBrush="#EC4899">
+                        Background="#D90F1D32"
+                        BorderThickness="2" BorderBrush="#06B6D4">
                   <Grid>
                     <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
-                                     Foreground="#EC4899"
+                                     Foreground="#06B6D4"
                                      HorizontalAlignment="Right" VerticalAlignment="Top"
                                      Margin="0,-2,-2,0" />
                     <StackPanel Spacing="6">
@@ -107,9 +123,9 @@
                         <Ellipse Width="20" Height="20" Fill="#06B6D4" />
                       </StackPanel>
                       <TextBlock Text="Aurora" HorizontalAlignment="Center"
-                                 FontWeight="Medium" FontSize="13" Foreground="#E4E4E7" />
+                                 FontWeight="Medium" FontSize="13" Foreground="#E2E8F0" />
                       <TextBlock Text="{loc:Translate ThemeVividDesc}" HorizontalAlignment="Center"
-                                 FontSize="11" Foreground="#A1A1AA" />
+                                 FontSize="11" Foreground="#64748B" />
                     </StackPanel>
                   </Grid>
                 </Border>
@@ -120,9 +136,10 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       Padding="0" CornerRadius="10" Height="NaN"
                       Background="Transparent" BorderThickness="0">
+                <!-- Aurora nicht ausgewählt: gedämpfter Cyan-Rand -->
                 <Border CornerRadius="10" Padding="12"
-                        Background="#18181B"
-                        BorderThickness="2" BorderBrush="#3F3F46">
+                        Background="#D90F1D32"
+                        BorderThickness="2" BorderBrush="#1A06B6D4">
                   <StackPanel Spacing="6">
                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                       <Ellipse Width="20" Height="20" Fill="#EC4899" />
@@ -130,9 +147,9 @@
                       <Ellipse Width="20" Height="20" Fill="#06B6D4" />
                     </StackPanel>
                     <TextBlock Text="Aurora" HorizontalAlignment="Center"
-                               FontWeight="Medium" FontSize="13" Foreground="#E4E4E7" />
+                               FontWeight="Medium" FontSize="13" Foreground="#E2E8F0" />
                     <TextBlock Text="{loc:Translate ThemeVividDesc}" HorizontalAlignment="Center"
-                               FontSize="11" Foreground="#A1A1AA" />
+                               FontSize="11" Foreground="#64748B" />
                   </StackPanel>
                 </Border>
               </Button>
@@ -146,12 +163,13 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       Padding="0" CornerRadius="10" Height="NaN"
                       Background="Transparent" BorderThickness="0">
+                <!-- Daylight ausgewählt: Cyan-Rand (behalte hellen Hintergrund) -->
                 <Border CornerRadius="10" Padding="12"
                         Background="#E2E8F0"
-                        BorderThickness="2" BorderBrush="#2563EB">
+                        BorderThickness="2" BorderBrush="#06B6D4">
                   <Grid>
                     <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
-                                     Foreground="#2563EB"
+                                     Foreground="#06B6D4"
                                      HorizontalAlignment="Right" VerticalAlignment="Top"
                                      Margin="0,-2,-2,0" />
                     <StackPanel Spacing="6">
@@ -174,9 +192,10 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       Padding="0" CornerRadius="10" Height="NaN"
                       Background="Transparent" BorderThickness="0">
+                <!-- Daylight nicht ausgewählt: originaler heller Hintergrund, gedämpfter Cyan-Rand -->
                 <Border CornerRadius="10" Padding="12"
                         Background="#E2E8F0"
-                        BorderThickness="2" BorderBrush="#CBD5E1">
+                        BorderThickness="2" BorderBrush="#4D06B6D4">
                   <StackPanel Spacing="6">
                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                       <Ellipse Width="20" Height="20" Fill="#2563EB" />
@@ -200,12 +219,13 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       Padding="0" CornerRadius="10" Height="NaN"
                       Background="Transparent" BorderThickness="0">
+                <!-- Forest ausgewählt: Cyan-Rand -->
                 <Border CornerRadius="10" Padding="12"
                         Background="#022C22"
-                        BorderThickness="2" BorderBrush="#10B981">
+                        BorderThickness="2" BorderBrush="#06B6D4">
                   <Grid>
                     <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
-                                     Foreground="#10B981"
+                                     Foreground="#06B6D4"
                                      HorizontalAlignment="Right" VerticalAlignment="Top"
                                      Margin="0,-2,-2,0" />
                     <StackPanel Spacing="6">
@@ -228,9 +248,10 @@
                       HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
                       Padding="0" CornerRadius="10" Height="NaN"
                       Background="Transparent" BorderThickness="0">
+                <!-- Forest nicht ausgewählt: gedämpfter Cyan-Rand -->
                 <Border CornerRadius="10" Padding="12"
                         Background="#022C22"
-                        BorderThickness="2" BorderBrush="#065F46">
+                        BorderThickness="2" BorderBrush="#4D06B6D4">
                   <StackPanel Spacing="6">
                     <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                       <Ellipse Width="20" Height="20" Fill="#10B981" />
@@ -254,8 +275,9 @@
       <Border AutomationProperties.AutomationId="Settings_CardLanguage" Classes="SettingsCard">
         <StackPanel Spacing="12">
           <StackPanel Orientation="Horizontal" Spacing="12">
+            <!-- Medical Cyan-Akzent fuer Section-Header-Icon -->
             <mi:MaterialIcon Kind="Translate" Width="24" Height="24"
-                             Foreground="{DynamicResource PrimaryBrush}" />
+                             Foreground="#06B6D4" />
             <TextBlock Text="{loc:Translate SettingsLanguage}"
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
@@ -343,16 +365,18 @@
               IsVisible="{Binding IsNotPremium}">
         <StackPanel Spacing="12">
           <StackPanel Orientation="Horizontal" Spacing="12">
+            <!-- Crown-Icon in Gold/Cyan-Akzent fuer Premium-Bereich -->
             <mi:MaterialIcon Kind="Crown" Width="24" Height="24"
-                             Foreground="{DynamicResource PrimaryBrush}" />
+                             Foreground="#06B6D4" />
             <TextBlock Text="{loc:Translate Premium}"
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
           </StackPanel>
+          <!-- Premium-Beschreibung in TextMuted -->
           <TextBlock AutomationProperties.AutomationId="Settings_TxtPremiumDesc" Text="{loc:Translate PremiumDescription}"
                      FontSize="14"
-                     Foreground="{DynamicResource TextSecondaryBrush}"
+                     Foreground="#64748B"
                      TextWrapping="Wrap" />
 
           <Button AutomationProperties.AutomationId="Settings_BtnPurchase" Content="{loc:Translate PurchasePremium}"
@@ -371,8 +395,9 @@
       <Border AutomationProperties.AutomationId="Settings_CardNotifications" Classes="SettingsCard">
         <StackPanel Spacing="16">
           <StackPanel Orientation="Horizontal" Spacing="12">
+            <!-- Medical Cyan-Akzent fuer Section-Header-Icon -->
             <mi:MaterialIcon Kind="BellOutline" Width="24" Height="24"
-                             Foreground="{DynamicResource PrimaryBrush}" />
+                             Foreground="#06B6D4" />
             <TextBlock Text="{loc:Translate SettingsNotifications}"
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
@@ -382,10 +407,10 @@
           <!-- Haptic Feedback Toggle -->
           <Grid ColumnDefinitions="Auto,*,Auto">
             <mi:MaterialIcon Grid.Column="0" Kind="Vibrate" Width="20" Height="20"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             Foreground="#64748B"
                              VerticalAlignment="Center" Margin="0,0,12,0" />
             <TextBlock Grid.Column="1" Text="{loc:Translate HapticFeedback}"
-                       FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                       FontSize="14" Foreground="#E2E8F0"
                        VerticalAlignment="Center" />
             <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleHaptic" Grid.Column="2" IsChecked="{Binding IsHapticEnabled}"
                           OnContent="" OffContent=""
@@ -395,10 +420,10 @@
           <!-- Sound Toggle -->
           <Grid ColumnDefinitions="Auto,*,Auto">
             <mi:MaterialIcon Grid.Column="0" Kind="VolumeHigh" Width="20" Height="20"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             Foreground="#64748B"
                              VerticalAlignment="Center" Margin="0,0,12,0" />
             <TextBlock Grid.Column="1" Text="{loc:Translate SoundEffects}"
-                       FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                       FontSize="14" Foreground="#E2E8F0"
                        VerticalAlignment="Center" />
             <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleSound" Grid.Column="2" IsChecked="{Binding IsSoundEnabled}"
                           OnContent="" OffContent=""
@@ -410,10 +435,10 @@
           <!-- Wasser-Erinnerung Toggle -->
           <Grid ColumnDefinitions="Auto,*,Auto">
             <mi:MaterialIcon Grid.Column="0" Kind="WaterOutline" Width="20" Height="20"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             Foreground="#64748B"
                              VerticalAlignment="Center" Margin="0,0,12,0" />
             <TextBlock Grid.Column="1" Text="{loc:Translate WaterReminder}"
-                       FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                       FontSize="14" Foreground="#E2E8F0"
                        VerticalAlignment="Center" />
             <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleWaterReminder" Grid.Column="2" IsChecked="{Binding IsWaterReminderEnabled}"
                           OnContent="" OffContent=""
@@ -423,10 +448,10 @@
           <!-- Gewicht-Erinnerung Toggle -->
           <Grid ColumnDefinitions="Auto,*,Auto">
             <mi:MaterialIcon Grid.Column="0" Kind="ScaleBathroom" Width="20" Height="20"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             Foreground="#64748B"
                              VerticalAlignment="Center" Margin="0,0,12,0" />
             <TextBlock Grid.Column="1" Text="{loc:Translate WeightReminder}"
-                       FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                       FontSize="14" Foreground="#E2E8F0"
                        VerticalAlignment="Center" />
             <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleWeightReminder" Grid.Column="2" IsChecked="{Binding IsWeightReminderEnabled}"
                           OnContent="" OffContent=""
@@ -436,10 +461,10 @@
           <!-- Abend-Zusammenfassung Toggle -->
           <Grid ColumnDefinitions="Auto,*,Auto">
             <mi:MaterialIcon Grid.Column="0" Kind="WeatherNight" Width="20" Height="20"
-                             Foreground="{DynamicResource TextSecondaryBrush}"
+                             Foreground="#64748B"
                              VerticalAlignment="Center" Margin="0,0,12,0" />
             <TextBlock Grid.Column="1" Text="{loc:Translate EveningReminder}"
-                       FontSize="14" Foreground="{DynamicResource TextPrimaryBrush}"
+                       FontSize="14" Foreground="#E2E8F0"
                        VerticalAlignment="Center" />
             <ToggleSwitch AutomationProperties.AutomationId="Settings_ToggleEveningReminder" Grid.Column="2" IsChecked="{Binding IsEveningSummaryEnabled}"
                           OnContent="" OffContent=""
@@ -452,8 +477,9 @@
       <Border AutomationProperties.AutomationId="Settings_CardAbout" Classes="SettingsCard">
         <StackPanel Spacing="12">
           <StackPanel Orientation="Horizontal" Spacing="12">
+            <!-- Medical Cyan-Akzent fuer Section-Header-Icon -->
             <mi:MaterialIcon Kind="InformationOutline" Width="24" Height="24"
-                             Foreground="{DynamicResource PrimaryBrush}" />
+                             Foreground="#06B6D4" />
             <TextBlock Text="{loc:Translate SettingsAboutApp}"
                        FontSize="16" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
@@ -461,10 +487,11 @@
           </StackPanel>
 
           <TextBlock Text="FitnessRechner" FontSize="16" FontWeight="Bold"
-                     Foreground="{DynamicResource TextPrimaryBrush}" />
+                     Foreground="#E2E8F0" />
+          <!-- Versions-Info in TextMuted -->
           <TextBlock AutomationProperties.AutomationId="Settings_TxtVersion" Text="{Binding AppVersion}"
                      FontSize="14"
-                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                     Foreground="#64748B" />
 
           <Button AutomationProperties.AutomationId="Settings_BtnFeedback" Content="{loc:Translate FeedbackButton}"
                   Command="{Binding SendFeedbackCommand}"

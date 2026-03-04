@@ -437,15 +437,7 @@ namespace RechnerPlus.Resources.Strings {
                 return ResourceManager.GetString("SettingsAboutApp", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Choose Design ähnelt.
-        /// </summary>
-        public static string SettingsChooseDesign {
-            get {
-                return ResourceManager.GetString("SettingsChooseDesign", resourceCulture);
-            }
-        }
+
 
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Auto ähnelt.
@@ -500,60 +492,7 @@ namespace RechnerPlus.Resources.Strings {
                 return ResourceManager.GetString("SettingsTitle", resourceCulture);
             }
         }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Aurora ähnelt.
-        /// </summary>
-        public static string ThemeAurora {
-            get {
-                return ResourceManager.GetString("ThemeAurora", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Colorful dark ähnelt.
-        /// </summary>
-        public static string ThemeAuroraDesc {
-            get {
-                return ResourceManager.GetString("ThemeAuroraDesc", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Daylight ähnelt.
-        /// </summary>
-        public static string ThemeDaylight {
-            get {
-                return ResourceManager.GetString("ThemeDaylight", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Clean and light ähnelt.
-        /// </summary>
-        public static string ThemeDaylightDesc {
-            get {
-                return ResourceManager.GetString("ThemeDaylightDesc", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Forest ähnelt.
-        /// </summary>
-        public static string ThemeForest {
-            get {
-                return ResourceManager.GetString("ThemeForest", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Natural dark ähnelt.
-        /// </summary>
-        public static string ThemeForestDesc {
-            get {
-                return ResourceManager.GetString("ThemeForestDesc", resourceCulture);
-            }
-        }
+
 
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Tangent undefined ähnelt.
@@ -564,24 +503,6 @@ namespace RechnerPlus.Resources.Strings {
             }
         }
 
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Midnight ähnelt.
-        /// </summary>
-        public static string ThemeMidnight {
-            get {
-                return ResourceManager.GetString("ThemeMidnight", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Sucht eine lokalisierte Zeichenfolge, die Modern dark ähnelt.
-        /// </summary>
-        public static string ThemeMidnightDesc {
-            get {
-                return ResourceManager.GetString("ThemeMidnightDesc", resourceCulture);
-            }
-        }
-        
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Acre ähnelt.
         /// </summary>

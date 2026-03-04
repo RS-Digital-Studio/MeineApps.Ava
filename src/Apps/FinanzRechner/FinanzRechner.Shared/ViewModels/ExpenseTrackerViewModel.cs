@@ -20,7 +20,6 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
     private readonly IExportService _exportService;
     private readonly IFileDialogService _fileDialogService;
     private readonly IFileShareService _fileShareService;
-    private readonly IThemeService _themeService;
     private readonly IPurchaseService _purchaseService;
     private readonly IRewardedAdService _rewardedAdService;
 
@@ -31,7 +30,7 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
 
     public ExpenseTrackerViewModel(IExpenseService expenseService, ILocalizationService localizationService,
         IExportService exportService, IFileDialogService fileDialogService,
-        IFileShareService fileShareService, IThemeService themeService,
+        IFileShareService fileShareService,
         IPurchaseService purchaseService, IRewardedAdService rewardedAdService)
     {
         _expenseService = expenseService;
@@ -39,7 +38,6 @@ public sealed partial class ExpenseTrackerViewModel : ViewModelBase, IDisposable
         _exportService = exportService;
         _fileDialogService = fileDialogService;
         _fileShareService = fileShareService;
-        _themeService = themeService;
         _purchaseService = purchaseService;
         _rewardedAdService = rewardedAdService;
 

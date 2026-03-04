@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -331,9 +331,6 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Configurações</value>
   </data>
-  <data name="Theme" xml:space="preserve">
-    <value>Tema</value>
-  </data>
   <data name="Language" xml:space="preserve">
     <value>Idioma</value>
   </data>
@@ -517,19 +514,7 @@ Exemplos:
     <value>Navegar para o mês seguinte</value>
   </data>
   <!-- Nomes de Temas -->
-  <data name="ThemeMidnight" xml:space="preserve">
-    <value>Meia-noite</value>
-  </data>
-  <data name="ThemeAurora" xml:space="preserve">
-    <value>Aurora</value>
-  </data>
-  <data name="ThemeDaylight" xml:space="preserve">
-    <value>Luz do dia</value>
-  </data>
-  <data name="ThemeForest" xml:space="preserve">
-    <value>Floresta</value>
-  </data>
-  <!-- Feedback e Privacidade -->
+<!-- Feedback e Privacidade -->
   <data name="FeedbackButton" xml:space="preserve">
     <value>Enviar feedback</value>
   </data>

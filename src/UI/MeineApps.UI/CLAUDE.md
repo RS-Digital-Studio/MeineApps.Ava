@@ -610,7 +610,7 @@ Wiederverwendbare SkiaSharp-basierte Controls und Hilfsklassen für visuell ansp
 
 Statische Klasse die Avalonia-Theme-Farben (DynamicResource) zu `SKColor` konvertiert. Cached die Farben für performanten Zugriff in SkiaSharp Paint-Operationen.
 
-- `RefreshColors()` bei Theme-Wechsel aufrufen (z.B. im ThemeChanged-Handler)
+- `RefreshColors()` wird einmalig beim App-Start aufgerufen (in App.axaml.cs)
 - Stellt alle Theme-Farben als `SKColor`-Properties bereit (Primary, Background, Surface, Text etc.)
 - Vermeidet wiederholtes Parsen von Avalonia-Brushes in jedem PaintSurface-Call
 

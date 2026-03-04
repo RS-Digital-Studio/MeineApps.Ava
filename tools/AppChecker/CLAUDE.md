@@ -40,7 +40,7 @@ tools/AppChecker/
     ├── BuildConfigChecker.cs     # Directory.Build.targets AOT-Flags (global)
     ├── AndroidChecker.cs         # Manifest, Permissions, Icons, Mipmaps, AdMob Lifecycle
     ├── AndroidGotchasChecker.cs  # grantUriPermissions, ${applicationId}, BackButton
-    ├── AvaloniaUiChecker.cs      # MaterialIconStyles, ThemeService, LocalizationService
+    ├── AvaloniaUiChecker.cs      # MaterialIconStyles, SkiaThemeHelper, LocalizationService
     ├── AvaloniaGotchasChecker.cs # 12 Avalonia-Gotchas (translate px, Selector, ScrollViewer etc.)
     ├── ThemeChecker.cs           # StaticResource Brush, statisches Theme
     ├── LocalizationChecker.cs    # resx-Dateien, Key-Vergleich, ueberflüssige Keys

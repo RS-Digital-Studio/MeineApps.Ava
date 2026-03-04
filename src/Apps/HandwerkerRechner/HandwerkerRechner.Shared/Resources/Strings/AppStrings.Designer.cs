@@ -468,11 +468,6 @@ namespace HandwerkerRechner.Resources.Strings {
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Choose Design ähnelt.
         /// </summary>
-        internal static string SettingsChooseDesign {
-            get {
-                return ResourceManager.GetString("SettingsChooseDesign", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Language ähnelt.
@@ -495,74 +490,34 @@ namespace HandwerkerRechner.Resources.Strings {
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Classic ähnelt.
         /// </summary>
-        internal static string ThemeClassic {
-            get {
-                return ResourceManager.GetString("ThemeClassic", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Clean &amp; Clear ähnelt.
         /// </summary>
-        internal static string ThemeClassicDesc {
-            get {
-                return ResourceManager.GetString("ThemeClassicDesc", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Glass Dark ähnelt.
         /// </summary>
-        internal static string ThemeGlassDark {
-            get {
-                return ResourceManager.GetString("ThemeGlassDark", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Elegant &amp; Dark ähnelt.
         /// </summary>
-        internal static string ThemeGlassDarkDesc {
-            get {
-                return ResourceManager.GetString("ThemeGlassDarkDesc", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Soft Light ähnelt.
         /// </summary>
-        internal static string ThemeSoftLight {
-            get {
-                return ResourceManager.GetString("ThemeSoftLight", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Soft &amp; Light ähnelt.
         /// </summary>
-        internal static string ThemeSoftLightDesc {
-            get {
-                return ResourceManager.GetString("ThemeSoftLightDesc", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Vivid ähnelt.
         /// </summary>
-        internal static string ThemeVivid {
-            get {
-                return ResourceManager.GetString("ThemeVivid", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Modern &amp; Vibrant ähnelt.
         /// </summary>
-        internal static string ThemeVividDesc {
-            get {
-                return ResourceManager.GetString("ThemeVividDesc", resourceCulture);
-            }
-        }
         
         /// <summary>
         ///   Sucht eine lokalisierte Zeichenfolge, die Tile Dimensions ähnelt.

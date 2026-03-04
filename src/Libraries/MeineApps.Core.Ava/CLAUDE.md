@@ -2,28 +2,22 @@
 
 ## Zweck
 Shared Library für alle Avalonia Apps:
-- ThemeService (4 Themes)
 - PreferencesService (JSON-basiert)
 - Converters (Bool, String, Number, DateTime)
 - Behaviors (TapScale, FadeIn)
+- Design Tokens (ThemeColors.axaml)
 
 ## Struktur
 
 ```
 MeineApps.Core.Ava/
 ├── Services/
-│   ├── IThemeService.cs
-│   ├── ThemeService.cs
 │   ├── IPreferencesService.cs
 │   ├── PreferencesService.cs
 │   ├── IHapticService.cs          # Interface + NoOpHapticService (zentral für alle Apps)
 │   ├── BackPressHelper.cs         # Double-Back-to-Exit Logik (verwendet von allen 8 Apps)
 ├── Themes/
-│   ├── ThemeColors.axaml       # Design Tokens
-│   ├── MidnightTheme.axaml     # Dark, Indigo
-│   ├── AuroraTheme.axaml       # Dark, Colorful
-│   ├── DaylightTheme.axaml     # Light, Blue
-│   └── ForestTheme.axaml       # Dark, Green
+│   └── ThemeColors.axaml       # Design Tokens (Spacing, Radius, Fonts)
 ├── Converters/
 │   ├── BoolConverters.cs
 │   ├── StringConverters.cs
@@ -35,33 +29,20 @@ MeineApps.Core.Ava/
     └── FadeInBehavior.cs
 ```
 
-## Themes
+## App-spezifische Farbpaletten
 
-### Midnight (Default)
-- Primary: #6366F1 (Indigo)
-- Background: #0F172A (Slate 900)
-- Inspiration: Discord, VS Code
+Jede App hat eine eigene `Themes/AppPalette.axaml` im Shared-Projekt, die statisch in App.axaml geladen wird. Kein dynamischer Theme-Wechsel mehr.
 
-### Aurora
-- Primary: #EC4899 (Pink)
-- Gradient: Pink → Violet → Cyan
-- Inspiration: Spotify, Instagram
-
-### Daylight
-- Primary: #2563EB (Blue)
-- Background: #F8FAFC (Light)
-- Inspiration: Apple, Google
-
-### Feature Accent Colors (alle Themes)
-- TimerAccentColor/Brush: Amber-Töne (Timer-Feature)
-- StopwatchAccentColor/Brush: Cyan-Töne (Stoppuhr-Feature)
-- AlarmAccentColor/Brush: Violet-Töne (Wecker-Feature)
-- PomodoroAccentColor/Brush: Rot-Töne (Pomodoro-Feature)
-
-### Forest
-- Primary: #10B981 (Emerald)
-- Background: #022C22 (Dark Green)
-- Inspiration: Notion Dark, Nature
+| App | Primary | Charakter |
+|-----|---------|-----------|
+| RechnerPlus | #7C7FF7 (Indigo) | Retro-Tech Calculator |
+| ZeitManager | #F7A833 (Amber) | Warme Zeitverwaltung |
+| FinanzRechner | #10B981 (Smaragd) | Living Finance |
+| FitnessRechner | #06B6D4 (Cyan) | VitalOS Medical |
+| HandwerkerRechner | #3B82F6 (Blau) | Blueprint Professional |
+| WorkTimePro | #4F8BF9 (Blau) | Professional Workspace |
+| HandwerkerImperium | #D97706 (Amber) | Warme Werkstatt |
+| BomberBlast | #FF6B35 (Orange) | Neon Arcade |
 
 ## Design Tokens
 
@@ -84,19 +65,6 @@ FontSizeHeadlineMd: 28px
 ```
 
 ## Services
-
-### ThemeService
-```csharp
-// Inject
-IThemeService _themeService;
-
-// Set Theme
-_themeService.SetTheme(AppTheme.Aurora);
-
-// Get Current
-var current = _themeService.CurrentTheme;
-var isDark = _themeService.IsDarkTheme;
-```
 
 ### PreferencesService
 ```csharp

@@ -96,16 +96,22 @@ Alle 8 Apps im geschlossenen Test, warten auf 12 Tester fuer Produktion.
 
 ---
 
-## 4 Themes
+## App-spezifische Farbpaletten
 
-| Theme | Beschreibung |
-|-------|--------------|
-| Midnight (Default) | Dark, Indigo Primary |
-| Aurora | Dark, Pink/Violet/Cyan Gradient |
-| Daylight | Light, Blue Primary |
-| Forest | Dark, Green Primary |
+Jede App hat eine eigene `Themes/AppPalette.axaml` im Shared-Projekt, statisch in App.axaml geladen. Kein dynamischer Theme-Wechsel, kein ThemeService.
 
-Implementierung: `MeineApps.Core.Ava/Themes/` - ThemeService laedt dynamisch via `app.Styles.Add(StyleInclude)`. KEIN statisches Theme in App.axaml. Lazy-Loading: Nur das aktive Theme wird geladen, weitere bei Bedarf.
+| App | Primary | Charakter |
+|-----|---------|-----------|
+| RechnerPlus | #7C7FF7 Indigo | Retro-Tech Calculator |
+| ZeitManager | #F7A833 Amber | Warme Zeitverwaltung |
+| FinanzRechner | #10B981 Smaragd | Living Finance |
+| FitnessRechner | #06B6D4 Cyan | VitalOS Medical |
+| HandwerkerRechner | #3B82F6 Blau | Blueprint Professional |
+| WorkTimePro | #4F8BF9 Blau | Professional Workspace |
+| HandwerkerImperium | #D97706 Amber | Warme Werkstatt |
+| BomberBlast | #FF6B35 Orange | Neon Arcade |
+
+Implementierung: Jede App laedt `<StyleInclude Source="/Themes/AppPalette.axaml" />` in App.axaml. Alle DynamicResource-Keys bleiben identisch. Design-Tokens (Spacing, Radius, Fonts) kommen weiterhin aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml`.
 
 ---
 
@@ -144,8 +150,8 @@ Implementierung: `MeineApps.Core.Ava/Themes/` - ThemeService laedt dynamisch via
 |---------|-----------|----------|
 | ViewModel | Suffix `ViewModel` | `MainViewModel`, `TileCalculatorViewModel` |
 | View | Suffix `View` | `MainView.axaml`, `SettingsView.axaml` |
-| Service Interface | `I{Name}Service` | `IThemeService`, `ILocalizationService` |
-| Service Implementation | `{Name}Service` | `ThemeService`, `PreferencesService` |
+| Service Interface | `I{Name}Service` | `IPreferencesService`, `ILocalizationService` |
+| Service Implementation | `{Name}Service` | `PreferencesService`, `LocalizationService` |
 | Events (Navigation) | `NavigationRequested` | `Action<string>` |
 | Events (Messages) | `MessageRequested` | `Action<string, string>` |
 | Events (UI-Feedback) | `FloatingTextRequested` | `EventHandler<(string, string)>` |
@@ -154,7 +160,7 @@ Implementierung: `MeineApps.Core.Ava/Themes/` - ThemeService laedt dynamisch via
 ### DI-Pattern
 
 **Service Lifetimes:**
-- Services → Singleton (IPreferences, ITheme, ILocalization, Database)
+- Services → Singleton (IPreferences, ILocalization, Database)
 - MainViewModel → Singleton (haelt Child-VMs)
 - Child-ViewModels → Transient oder Singleton (je nach App)
 

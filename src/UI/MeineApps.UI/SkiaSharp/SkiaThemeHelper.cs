@@ -102,7 +102,7 @@ public static class SkiaThemeHelper
 
     /// <summary>
     /// Aktualisiert alle gecachten Farben aus dem aktuellen Theme.
-    /// Muss bei Theme-Wechsel aufgerufen werden (ThemeService.ThemeChanged).
+    /// Wird einmalig beim App-Start aufgerufen (App.axaml.cs).
     /// </summary>
     public static void RefreshColors()
     {

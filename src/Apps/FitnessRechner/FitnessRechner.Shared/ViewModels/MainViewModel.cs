@@ -65,7 +65,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IFoodSearchService foodSearchService,
         IPreferencesService preferences,
         ILocalizationService localization,
-        IThemeService themeService,
         IStreakService streakService,
         IAchievementService achievementService,
         ILevelService levelService,

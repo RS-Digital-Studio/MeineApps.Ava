@@ -47,6 +47,7 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -56,10 +57,8 @@ public partial class App : Application
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
-        // Theme initialisieren (gespeichertes Theme anwenden bevor das Fenster erstellt wird)
-        var themeService = Services.GetRequiredService<IThemeService>();
+        // Farb-Cache für SkiaSharp initialisieren
         SkiaThemeHelper.RefreshColors();
-        themeService.ThemeChanged += (_, _) => SkiaThemeHelper.RefreshColors();
 
         // Lokalisierung initialisieren
         var locService = Services.GetRequiredService<ILocalizationService>();
@@ -143,7 +142,6 @@ public partial class App : Application
     {
         // Kern-Services
         services.AddSingleton<IPreferencesService>(sp => new PreferencesService("FinanzRechner"));
-        services.AddSingleton<IThemeService, ThemeService>();
 
         // Premium-Services (Werbung, Käufe)
         services.AddMeineAppsPremium();

@@ -71,6 +71,7 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -85,10 +86,8 @@ public partial class App : Application
         locService.Initialize();
         LocalizationManager.Initialize(locService);
 
-        // Initialize theme (must be resolved to apply saved theme at startup)
-        var themeService = Services.GetRequiredService<IThemeService>();
+        // Farb-Cache für SkiaSharp initialisieren
         SkiaThemeHelper.RefreshColors();
-        themeService.ThemeChanged += (_, _) => SkiaThemeHelper.RefreshColors();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
@@ -167,7 +166,6 @@ public partial class App : Application
     {
         // Core Services
         services.AddSingleton<IPreferencesService>(sp => new PreferencesService("FitnessRechner"));
-        services.AddSingleton<IThemeService, ThemeService>();
 
         // Premium Services (Ads, Purchases)
         services.AddMeineAppsPremium();

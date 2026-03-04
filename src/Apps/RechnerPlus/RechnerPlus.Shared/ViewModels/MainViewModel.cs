@@ -9,7 +9,6 @@ namespace RechnerPlus.ViewModels;
 public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
-    private readonly IThemeService _themeService;
     private readonly ILocalizationService _localization;
 
     [ObservableProperty]
@@ -47,13 +46,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public event Action<string>? ExitHintRequested;
 
     public MainViewModel(
-        IThemeService themeService,
         ILocalizationService localization,
         CalculatorViewModel calculatorViewModel,
         ConverterViewModel converterViewModel,
         SettingsViewModel settingsViewModel)
     {
-        _themeService = themeService;
         _localization = localization;
         _calculatorViewModel = calculatorViewModel;
         _converterViewModel = converterViewModel;

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -171,9 +171,6 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="SettingsChooseDesign" xml:space="preserve">
-    <value>Choose Design</value>
-  </data>
   <data name="SettingsLanguage" xml:space="preserve">
     <value>Language</value>
   </data>
@@ -189,34 +186,7 @@
   <data name="PrivacyPolicy" xml:space="preserve">
     <value>Privacy Policy</value>
   </data>
-
-  <!-- Themes -->
-  <data name="ThemeVivid" xml:space="preserve">
-    <value>Vivid</value>
-  </data>
-  <data name="ThemeVividDesc" xml:space="preserve">
-    <value>Modern &amp; Vibrant</value>
-  </data>
-  <data name="ThemeClassic" xml:space="preserve">
-    <value>Classic</value>
-  </data>
-  <data name="ThemeClassicDesc" xml:space="preserve">
-    <value>Clean &amp; Clear</value>
-  </data>
-  <data name="ThemeGlassDark" xml:space="preserve">
-    <value>Glass Dark</value>
-  </data>
-  <data name="ThemeGlassDarkDesc" xml:space="preserve">
-    <value>Elegant &amp; Dark</value>
-  </data>
-  <data name="ThemeSoftLight" xml:space="preserve">
-    <value>Soft Light</value>
-  </data>
-  <data name="ThemeSoftLightDesc" xml:space="preserve">
-    <value>Soft &amp; Light</value>
-  </data>
-
-  <!-- Premium -->
+<!-- Premium -->
   <data name="Premium" xml:space="preserve">
     <value>Premium</value>
   </data>
@@ -1061,30 +1031,6 @@ Save 0.96 € compared to individual purchase!</value>
   </data>
 
   <!-- Settings Localization -->
-  <data name="ThemeMidnightName" xml:space="preserve">
-    <value>Midnight</value>
-  </data>
-  <data name="ThemeMidnightDesc" xml:space="preserve">
-    <value>Modern dark</value>
-  </data>
-  <data name="ThemeAuroraName" xml:space="preserve">
-    <value>Aurora</value>
-  </data>
-  <data name="ThemeAuroraDesc" xml:space="preserve">
-    <value>Vibrant neon</value>
-  </data>
-  <data name="ThemeDaylightName" xml:space="preserve">
-    <value>Daylight</value>
-  </data>
-  <data name="ThemeDaylightDesc" xml:space="preserve">
-    <value>Clean light</value>
-  </data>
-  <data name="ThemeForestName" xml:space="preserve">
-    <value>Forest</value>
-  </data>
-  <data name="ThemeForestDesc" xml:space="preserve">
-    <value>Natural green</value>
-  </data>
   <data name="SettingsUnitSystem" xml:space="preserve">
     <value>Unit System</value>
   </data>
@@ -1607,18 +1553,6 @@ Coverage decreases on rough surfaces!</value>
   </data>
   <data name="CategoryRoofSolarSemantic" xml:space="preserve">
     <value>Open roof and solar category</value>
-  </data>
-  <data name="SelectThemeVividSemantic" xml:space="preserve">
-    <value>Select Vivid theme</value>
-  </data>
-  <data name="SelectThemeClassicSemantic" xml:space="preserve">
-    <value>Select Classic theme</value>
-  </data>
-  <data name="SelectThemeGlassDarkSemantic" xml:space="preserve">
-    <value>Select Glass Dark theme</value>
-  </data>
-  <data name="SelectThemeSoftLightSemantic" xml:space="preserve">
-    <value>Select Soft Light theme</value>
   </data>
   <data name="SelectLanguageGermanSemantic" xml:space="preserve">
     <value>Switch language to German</value>

@@ -13,7 +13,6 @@ namespace HandwerkerRechner.ViewModels;
 public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
-    private readonly IThemeService _themeService;
     private readonly ILocalizationService _localizationService;
     private readonly IPurchaseService _purchaseService;
     private readonly IUnitConverterService _unitConverterService;
@@ -39,17 +38,14 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     public event Action<string, string>? MessageRequested;
 
     public SettingsViewModel(
-        IThemeService themeService,
         ILocalizationService localizationService,
         IPurchaseService purchaseService,
         IUnitConverterService unitConverterService)
     {
-        _themeService = themeService;
         _localizationService = localizationService;
         _purchaseService = purchaseService;
         _unitConverterService = unitConverterService;
 
-        _selectedTheme = _themeService.CurrentTheme;
         _selectedLanguage = _localizationService.CurrentLanguage;
         _selectedUnitSystem = _unitConverterService.CurrentSystem;
 
@@ -59,9 +55,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     }
 
     #region Observable Properties
-
-    [ObservableProperty]
-    private AppTheme _selectedTheme;
 
     [ObservableProperty]
     private string _selectedLanguage;
@@ -87,7 +80,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     #region Localized Text Properties
 
     public string SettingsTitleText => _localizationService.GetString("SettingsTitle") ?? "Settings";
-    public string ChooseDesignText => _localizationService.GetString("SettingsChooseDesign") ?? "Choose Design";
     public string LanguageTitleText => _localizationService.GetString("SettingsLanguage") ?? "Language";
     public string UnitSystemTitleText => _localizationService.GetString("SettingsUnitSystem") ?? "Unit System";
     public string MetricText => _localizationService.GetString("UnitSystemMetric") ?? "Metric";
@@ -101,19 +93,9 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     public string AboutTitleText => _localizationService.GetString("SettingsAbout") ?? "About";
     public string SendFeedbackText => _localizationService.GetString("FeedbackButton") ?? "Send Feedback";
     public string PrivacyPolicyText => _localizationService.GetString("PrivacyPolicy") ?? "Privacy Policy";
-    public string ThemeMidnightName => _localizationService.GetString("ThemeMidnightName") ?? "Midnight";
-    public string ThemeMidnightDesc => _localizationService.GetString("ThemeMidnightDesc") ?? "Modern dark";
-    public string ThemeAuroraName => _localizationService.GetString("ThemeAuroraName") ?? "Aurora";
-    public string ThemeAuroraDesc => _localizationService.GetString("ThemeAuroraDesc") ?? "Vibrant neon";
-    public string ThemeDaylightName => _localizationService.GetString("ThemeDaylightName") ?? "Daylight";
-    public string ThemeDaylightDesc => _localizationService.GetString("ThemeDaylightDesc") ?? "Clean light";
-    public string ThemeForestName => _localizationService.GetString("ThemeForestName") ?? "Forest";
-    public string ThemeForestDesc => _localizationService.GetString("ThemeForestDesc") ?? "Natural green";
-
     public void UpdateLocalizedTexts()
     {
         OnPropertyChanged(nameof(SettingsTitleText));
-        OnPropertyChanged(nameof(ChooseDesignText));
         OnPropertyChanged(nameof(LanguageTitleText));
         OnPropertyChanged(nameof(UnitSystemTitleText));
         OnPropertyChanged(nameof(MetricText));
@@ -127,44 +109,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(AboutTitleText));
         OnPropertyChanged(nameof(SendFeedbackText));
         OnPropertyChanged(nameof(PrivacyPolicyText));
-        OnPropertyChanged(nameof(ThemeMidnightName));
-        OnPropertyChanged(nameof(ThemeMidnightDesc));
-        OnPropertyChanged(nameof(ThemeAuroraName));
-        OnPropertyChanged(nameof(ThemeAuroraDesc));
-        OnPropertyChanged(nameof(ThemeDaylightName));
-        OnPropertyChanged(nameof(ThemeDaylightDesc));
-        OnPropertyChanged(nameof(ThemeForestName));
-        OnPropertyChanged(nameof(ThemeForestDesc));
-    }
-
-    #endregion
-
-    #region Theme Selection
-
-    public bool IsMidnightSelected => SelectedTheme == AppTheme.Midnight;
-    public bool IsAuroraSelected => SelectedTheme == AppTheme.Aurora;
-    public bool IsDaylightSelected => SelectedTheme == AppTheme.Daylight;
-    public bool IsForestSelected => SelectedTheme == AppTheme.Forest;
-
-    [RelayCommand]
-    private void SelectTheme(string themeName)
-    {
-        var theme = themeName switch
-        {
-            "Midnight" => AppTheme.Midnight,
-            "Aurora" => AppTheme.Aurora,
-            "Daylight" => AppTheme.Daylight,
-            "Forest" => AppTheme.Forest,
-            _ => AppTheme.Midnight
-        };
-
-        SelectedTheme = theme;
-        _themeService.SetTheme(theme);
-
-        OnPropertyChanged(nameof(IsMidnightSelected));
-        OnPropertyChanged(nameof(IsAuroraSelected));
-        OnPropertyChanged(nameof(IsDaylightSelected));
-        OnPropertyChanged(nameof(IsForestSelected));
     }
 
     #endregion
@@ -327,13 +271,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public void Initialize()
     {
-        SelectedTheme = _themeService.CurrentTheme;
-
-        OnPropertyChanged(nameof(IsMidnightSelected));
-        OnPropertyChanged(nameof(IsAuroraSelected));
-        OnPropertyChanged(nameof(IsDaylightSelected));
-        OnPropertyChanged(nameof(IsForestSelected));
-
         UpdatePremiumStatus();
     }
 

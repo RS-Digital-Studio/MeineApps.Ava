@@ -1,0 +1,137 @@
+<Styles xmlns="https://github.com/avaloniaui"
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- BomberBlast - "Neon Arcade"                                            -->
+  <!-- Tiefes Dunkelviolett mit Explosions-Orange und Neon-Cyan-Akzenten     -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+  <Style>
+    <Style.Resources>
+      <!-- Primary Colors -->
+      <Color x:Key="PrimaryColor">#FF6B35</Color>
+      <Color x:Key="PrimaryHoverColor">#FF8855</Color>
+      <Color x:Key="PrimaryPressedColor">#E05520</Color>
+      <Color x:Key="PrimaryContrastColor">#FFFFFF</Color>
+
+      <!-- Secondary Colors -->
+      <Color x:Key="SecondaryColor">#FFDD33</Color>
+      <Color x:Key="SecondaryHoverColor">#FFE666</Color>
+      <Color x:Key="SecondaryPressedColor">#E6C600</Color>
+
+      <!-- Accent Colors -->
+      <Color x:Key="AccentColor">#22D3EE</Color>
+      <Color x:Key="AccentHoverColor">#67E8F9</Color>
+
+      <!-- Feature Accent Colors -->
+      <Color x:Key="TimerAccentColor">#F59E0B</Color>
+      <Color x:Key="StopwatchAccentColor">#38E8FF</Color>
+      <Color x:Key="AlarmAccentColor">#A78BFA</Color>
+      <Color x:Key="PomodoroAccentColor">#EF4444</Color>
+
+      <!-- Background Colors -->
+      <Color x:Key="BackgroundColor">#141422</Color>
+      <Color x:Key="SurfaceColor">#1C1C35</Color>
+      <Color x:Key="CardColor">#282845</Color>
+      <Color x:Key="CardHoverColor">#343458</Color>
+
+      <!-- Text Colors -->
+      <Color x:Key="TextPrimaryColor">#F0F0FF</Color>
+      <Color x:Key="TextSecondaryColor">#B0B0CC</Color>
+      <Color x:Key="TextMutedColor">#8080AA</Color>
+      <Color x:Key="TextDisabledColor">#606080</Color>
+
+      <!-- Border Colors -->
+      <Color x:Key="BorderColor">#404065</Color>
+      <Color x:Key="BorderSubtleColor">#282845</Color>
+      <Color x:Key="BorderFocusColor">#FF6B35</Color>
+
+      <!-- Semantic Colors -->
+      <Color x:Key="SuccessColor">#22C55E</Color>
+      <Color x:Key="SuccessBackgroundColor">#14532D</Color>
+      <Color x:Key="WarningColor">#F59E0B</Color>
+      <Color x:Key="WarningBackgroundColor">#78350F</Color>
+      <Color x:Key="ErrorColor">#EF4444</Color>
+      <Color x:Key="ErrorBackgroundColor">#7F1D1D</Color>
+      <Color x:Key="InfoColor">#3B82F6</Color>
+      <Color x:Key="InfoBackgroundColor">#1E3A8A</Color>
+
+      <!-- Shadow / Overlay -->
+      <Color x:Key="ShadowColor">#000000</Color>
+      <Color x:Key="OverlayColor">#80000000</Color>
+      <Color x:Key="RippleColor">#20FFFFFF</Color>
+
+      <!-- Gradient -->
+      <Color x:Key="GradientStartColor">#1C1C35</Color>
+      <Color x:Key="GradientMidColor">#141422</Color>
+      <Color x:Key="GradientEndColor">#220A10</Color>
+
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+      <!-- BRUSHES                                                        -->
+      <!-- ═══════════════════════════════════════════════════════════════ -->
+
+      <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
+      <SolidColorBrush x:Key="PrimaryHoverBrush" Color="{DynamicResource PrimaryHoverColor}" />
+      <SolidColorBrush x:Key="PrimaryPressedBrush" Color="{DynamicResource PrimaryPressedColor}" />
+      <SolidColorBrush x:Key="PrimaryContrastBrush" Color="{DynamicResource PrimaryContrastColor}" />
+
+      <SolidColorBrush x:Key="SecondaryBrush" Color="{DynamicResource SecondaryColor}" />
+      <SolidColorBrush x:Key="AccentBrush" Color="{DynamicResource AccentColor}" />
+
+      <SolidColorBrush x:Key="TimerAccentBrush" Color="{DynamicResource TimerAccentColor}" />
+      <SolidColorBrush x:Key="StopwatchAccentBrush" Color="{DynamicResource StopwatchAccentColor}" />
+      <SolidColorBrush x:Key="AlarmAccentBrush" Color="{DynamicResource AlarmAccentColor}" />
+      <SolidColorBrush x:Key="PomodoroAccentBrush" Color="{DynamicResource PomodoroAccentColor}" />
+
+      <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource BackgroundColor}" />
+      <SolidColorBrush x:Key="SurfaceBrush" Color="{DynamicResource SurfaceColor}" />
+      <SolidColorBrush x:Key="CardBrush" Color="{DynamicResource CardColor}" />
+      <SolidColorBrush x:Key="CardHoverBrush" Color="{DynamicResource CardHoverColor}" />
+
+      <SolidColorBrush x:Key="TextPrimaryBrush" Color="{DynamicResource TextPrimaryColor}" />
+      <SolidColorBrush x:Key="TextSecondaryBrush" Color="{DynamicResource TextSecondaryColor}" />
+      <SolidColorBrush x:Key="TextMutedBrush" Color="{DynamicResource TextMutedColor}" />
+      <SolidColorBrush x:Key="TextDisabledBrush" Color="{DynamicResource TextDisabledColor}" />
+
+      <SolidColorBrush x:Key="BorderBrush" Color="{DynamicResource BorderColor}" />
+      <SolidColorBrush x:Key="BorderSubtleBrush" Color="{DynamicResource BorderSubtleColor}" />
+      <SolidColorBrush x:Key="BorderFocusBrush" Color="{DynamicResource BorderFocusColor}" />
+
+      <SolidColorBrush x:Key="SuccessBrush" Color="{DynamicResource SuccessColor}" />
+      <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="{DynamicResource SuccessBackgroundColor}" />
+      <SolidColorBrush x:Key="WarningBrush" Color="{DynamicResource WarningColor}" />
+      <SolidColorBrush x:Key="WarningBackgroundBrush" Color="{DynamicResource WarningBackgroundColor}" />
+      <SolidColorBrush x:Key="ErrorBrush" Color="{DynamicResource ErrorColor}" />
+      <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="{DynamicResource ErrorBackgroundColor}" />
+      <SolidColorBrush x:Key="InfoBrush" Color="{DynamicResource InfoColor}" />
+      <SolidColorBrush x:Key="InfoBackgroundBrush" Color="{DynamicResource InfoBackgroundColor}" />
+
+      <SolidColorBrush x:Key="OverlayBrush" Color="{DynamicResource OverlayColor}" />
+      <SolidColorBrush x:Key="RippleBrush" Color="{DynamicResource RippleColor}" />
+
+      <!-- Box Shadows -->
+      <BoxShadows x:Key="CardShadow">0 1 3 0 #1A000000, 0 1 2 0 #26000000</BoxShadows>
+      <BoxShadows x:Key="CardShadowHover">0 4 6 -1 #1A000000, 0 2 4 -1 #26000000</BoxShadows>
+      <BoxShadows x:Key="ElevatedShadow">0 10 15 -3 #1A000000, 0 4 6 -2 #26000000</BoxShadows>
+      <BoxShadows x:Key="ModalShadow">0 20 25 -5 #1A000000, 0 10 10 -5 #26000000</BoxShadows>
+
+      <!-- Calculator-spezifische Ressourcen -->
+      <LinearGradientBrush x:Key="EqualsGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#FF6B35" Offset="0" />
+        <GradientStop Color="#FF8855" Offset="1" />
+      </LinearGradientBrush>
+      <LinearGradientBrush x:Key="DisplayGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
+        <GradientStop Color="#1C1C35" Offset="0" />
+        <GradientStop Color="#141422" Offset="1" />
+      </LinearGradientBrush>
+      <BoxShadows x:Key="OperatorGlowShadow">0 0 12 2 #40FF6B35</BoxShadows>
+      <SolidColorBrush x:Key="DigitButtonBrush" Color="#15FFFFFF" />
+      <SolidColorBrush x:Key="DigitButtonHoverBrush" Color="#25FFFFFF" />
+
+      <!-- Theme Identifier -->
+      <x:String x:Key="ThemeName">BomberBlast</x:String>
+      <x:Boolean x:Key="IsDarkTheme">True</x:Boolean>
+    </Style.Resources>
+  </Style>
+
+</Styles>

@@ -22,7 +22,6 @@ public sealed partial class CalendarViewModel : ViewModelBase
     private readonly IPurchaseService _purchaseService;
     private readonly ITrialService _trialService;
     private readonly IVacationService _vacationService;
-    private readonly IThemeService _themeService;
 
     public event Action<string>? NavigationRequested;
     public event Action<string, string>? MessageRequested;
@@ -32,15 +31,13 @@ public sealed partial class CalendarViewModel : ViewModelBase
         ICalculationService calculation,
         IPurchaseService purchaseService,
         ITrialService trialService,
-        IVacationService vacationService,
-        IThemeService themeService)
+        IVacationService vacationService)
     {
         _database = database;
         _calculation = calculation;
         _purchaseService = purchaseService;
         _trialService = trialService;
         _vacationService = vacationService;
-        _themeService = themeService;
         // Daten werden bei Tab-Wechsel geladen (MainViewModel.LoadTabDataAsync)
     }
 
@@ -347,7 +344,7 @@ public sealed partial class CalendarViewModel : ViewModelBase
 
     private async Task GenerateCalendarDaysAsync()
     {
-        var isDark = _themeService.CurrentTheme != AppTheme.Daylight;
+        var isDark = MeineApps.UI.SkiaSharp.SkiaThemeHelper.IsDarkTheme;
         var days = new List<CalendarDay>();
 
         var firstDayOfMonth = SelectedMonth;

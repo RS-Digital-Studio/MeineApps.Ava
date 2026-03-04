@@ -11,7 +11,6 @@ namespace FitnessRechner.ViewModels;
 public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
-    private readonly IThemeService _themeService;
     private readonly ILocalizationService _localizationService;
     private readonly IPurchaseService _purchaseService;
     private readonly IHapticService _hapticService;
@@ -39,21 +38,18 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     public event Action<string>? FeedbackRequested;
 
     public SettingsViewModel(
-        IThemeService themeService,
         ILocalizationService localizationService,
         IPurchaseService purchaseService,
         IHapticService hapticService,
         IFitnessSoundService soundService,
         IReminderService reminderService)
     {
-        _themeService = themeService;
         _localizationService = localizationService;
         _purchaseService = purchaseService;
         _hapticService = hapticService;
         _soundService = soundService;
         _reminderService = reminderService;
 
-        _selectedTheme = _themeService.CurrentTheme;
         _selectedLanguage = _localizationService.CurrentLanguage;
         _isPremium = _purchaseService.IsPremium;
 
@@ -68,9 +64,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
         _purchaseService.PremiumStatusChanged += OnPremiumStatusChanged;
     }
-
-    [ObservableProperty]
-    private AppTheme _selectedTheme;
 
     [ObservableProperty]
     private string _selectedLanguage;
@@ -120,36 +113,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         OnPropertyChanged(nameof(IsFrenchSelected));
         OnPropertyChanged(nameof(IsItalianSelected));
         OnPropertyChanged(nameof(IsPortugueseSelected));
-    }
-
-    #endregion
-
-    #region Theme Selection
-
-    public bool IsMidnightSelected => SelectedTheme == AppTheme.Midnight;
-    public bool IsAuroraSelected => SelectedTheme == AppTheme.Aurora;
-    public bool IsDaylightSelected => SelectedTheme == AppTheme.Daylight;
-    public bool IsForestSelected => SelectedTheme == AppTheme.Forest;
-
-    [RelayCommand]
-    private void SelectTheme(string themeName)
-    {
-        var theme = themeName switch
-        {
-            "Midnight" => AppTheme.Midnight,
-            "Aurora" => AppTheme.Aurora,
-            "Daylight" => AppTheme.Daylight,
-            "Forest" => AppTheme.Forest,
-            _ => AppTheme.Midnight
-        };
-
-        SelectedTheme = theme;
-        _themeService.SetTheme(theme);
-
-        OnPropertyChanged(nameof(IsMidnightSelected));
-        OnPropertyChanged(nameof(IsAuroraSelected));
-        OnPropertyChanged(nameof(IsDaylightSelected));
-        OnPropertyChanged(nameof(IsForestSelected));
     }
 
     #endregion
@@ -280,13 +243,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public void Initialize()
     {
-        SelectedTheme = _themeService.CurrentTheme;
-
-        OnPropertyChanged(nameof(IsMidnightSelected));
-        OnPropertyChanged(nameof(IsAuroraSelected));
-        OnPropertyChanged(nameof(IsDaylightSelected));
-        OnPropertyChanged(nameof(IsForestSelected));
-
         IsPremium = _purchaseService.IsPremium;
     }
 

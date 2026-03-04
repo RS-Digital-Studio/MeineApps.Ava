@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true"></xsd:element>
@@ -60,23 +60,11 @@
 
   <!-- Settings -->
   <data name="SettingsTitle" xml:space="preserve"><value>Impostazioni</value></data>
-  <data name="SettingsChooseDesign" xml:space="preserve"><value>Scegli design</value></data>
   <data name="SettingsLanguage" xml:space="preserve"><value>Lingua</value></data>
   <data name="SettingsAboutApp" xml:space="preserve"><value>Info sull'app</value></data>
   <data name="FeedbackButton" xml:space="preserve"><value>Invia feedback</value></data>
   <data name="PrivacyPolicy" xml:space="preserve"><value>Informativa sulla privacy</value></data>
-
-  <!-- Themes -->
-  <data name="ThemeVivid" xml:space="preserve"><value>Vivid</value></data>
-  <data name="ThemeVividDesc" xml:space="preserve"><value>Moderno e Vibrante</value></data>
-  <data name="ThemeClassic" xml:space="preserve"><value>Classico</value></data>
-  <data name="ThemeClassicDesc" xml:space="preserve"><value>Pulito e Chiaro</value></data>
-  <data name="ThemeGlassDark" xml:space="preserve"><value>Glass Dark</value></data>
-  <data name="ThemeGlassDarkDesc" xml:space="preserve"><value>Elegante e Scuro</value></data>
-  <data name="ThemeSoftLight" xml:space="preserve"><value>Soft Light</value></data>
-  <data name="ThemeSoftLightDesc" xml:space="preserve"><value>Morbido e Chiaro</value></data>
-
-  <!-- Tracking -->
+<!-- Tracking -->
   <data name="Tracking" xml:space="preserve"><value>Tracciamento</value></data>
   <data name="TrackingDesc" xml:space="preserve"><value>Traccia peso, IMC e acqua</value></data>
   <data name="TrackingTitle" xml:space="preserve"><value>Tracciamento</value></data>

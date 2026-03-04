@@ -43,12 +43,6 @@ class DiRegistrationChecker : IChecker
         else
             results.Add(new(Severity.Warn, Category, "IPreferencesService Registrierung nicht gefunden"));
 
-        // IThemeService
-        if (Regex.IsMatch(content, @"AddSingleton<IThemeService"))
-            results.Add(new(Severity.Pass, Category, "IThemeService registriert"));
-        else
-            results.Add(new(Severity.Fail, Category, "IThemeService nicht im DI registriert"));
-
         // ILocalizationService mit AppStrings.ResourceManager
         if (content.Contains("AppStrings.ResourceManager"))
             results.Add(new(Severity.Pass, Category, "ILocalizationService mit AppStrings.ResourceManager"));

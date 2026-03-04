@@ -1,75 +1,73 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
-  <!-- DAYLIGHT THEME - Light, Clean                                          -->
-  <!-- Inspiration: Apple, Google Material You, Linear                        -->
+  <!-- ZeitManager - "Warme Zeitverwaltung"                                   -->
+  <!-- Warmes Dunkelblau mit Amber-Gold Timer-Akzenten                        -->
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
 
   <Style>
     <Style.Resources>
       <!-- Primary Colors -->
-      <Color x:Key="PrimaryColor">#2563EB</Color>
-      <Color x:Key="PrimaryHoverColor">#3B82F6</Color>
-      <Color x:Key="PrimaryPressedColor">#1D4ED8</Color>
-      <Color x:Key="PrimaryContrastColor">#FFFFFF</Color>
+      <Color x:Key="PrimaryColor">#F7A833</Color>
+      <Color x:Key="PrimaryHoverColor">#FFBD55</Color>
+      <Color x:Key="PrimaryPressedColor">#D99220</Color>
+      <Color x:Key="PrimaryContrastColor">#1A2332</Color>
 
       <!-- Secondary Colors -->
-      <Color x:Key="SecondaryColor">#7C3AED</Color>
-      <Color x:Key="SecondaryHoverColor">#8B5CF6</Color>
-      <Color x:Key="SecondaryPressedColor">#6D28D9</Color>
+      <Color x:Key="SecondaryColor">#A78BFA</Color>
+      <Color x:Key="SecondaryHoverColor">#C4B5FD</Color>
+      <Color x:Key="SecondaryPressedColor">#8B5CF6</Color>
 
       <!-- Accent Colors -->
-      <Color x:Key="AccentColor">#0891B2</Color>
-      <Color x:Key="AccentHoverColor">#06B6D4</Color>
+      <Color x:Key="AccentColor">#22D3EE</Color>
+      <Color x:Key="AccentHoverColor">#67E8F9</Color>
 
-      <!-- Feature Accent Colors (ZeitManager) -->
-      <Color x:Key="TimerAccentColor">#D97706</Color>
-      <Color x:Key="StopwatchAccentColor">#0891B2</Color>
-      <Color x:Key="AlarmAccentColor">#7C3AED</Color>
-      <Color x:Key="PomodoroAccentColor">#DC2626</Color>
+      <!-- Feature Accent Colors -->
+      <Color x:Key="TimerAccentColor">#F7A833</Color>
+      <Color x:Key="StopwatchAccentColor">#22D3EE</Color>
+      <Color x:Key="AlarmAccentColor">#A78BFA</Color>
+      <Color x:Key="PomodoroAccentColor">#EF4444</Color>
 
       <!-- Background Colors -->
-      <Color x:Key="BackgroundColor">#F8FAFC</Color>
-      <Color x:Key="SurfaceColor">#FFFFFF</Color>
-      <Color x:Key="CardColor">#FFFFFF</Color>
-      <Color x:Key="CardHoverColor">#F1F5F9</Color>
+      <Color x:Key="BackgroundColor">#1A2332</Color>
+      <Color x:Key="SurfaceColor">#243040</Color>
+      <Color x:Key="CardColor">#324050</Color>
+      <Color x:Key="CardHoverColor">#3C4D60</Color>
 
       <!-- Text Colors -->
-      <Color x:Key="TextPrimaryColor">#0F172A</Color>
-      <Color x:Key="TextSecondaryColor">#334155</Color>
-      <Color x:Key="TextMutedColor">#64748B</Color>
-      <Color x:Key="TextDisabledColor">#94A3B8</Color>
+      <Color x:Key="TextPrimaryColor">#F2F6FC</Color>
+      <Color x:Key="TextSecondaryColor">#B8C8D8</Color>
+      <Color x:Key="TextMutedColor">#8898AD</Color>
+      <Color x:Key="TextDisabledColor">#64748B</Color>
 
       <!-- Border Colors -->
-      <Color x:Key="BorderColor">#E2E8F0</Color>
-      <Color x:Key="BorderSubtleColor">#F1F5F9</Color>
-      <Color x:Key="BorderFocusColor">#2563EB</Color>
+      <Color x:Key="BorderColor">#4A5A6E</Color>
+      <Color x:Key="BorderSubtleColor">#324050</Color>
+      <Color x:Key="BorderFocusColor">#F7A833</Color>
 
       <!-- Semantic Colors -->
-      <Color x:Key="SuccessColor">#16A34A</Color>
-      <Color x:Key="SuccessBackgroundColor">#DCFCE7</Color>
-      <Color x:Key="WarningColor">#D97706</Color>
-      <Color x:Key="WarningBackgroundColor">#FEF3C7</Color>
-      <Color x:Key="ErrorColor">#DC2626</Color>
-      <Color x:Key="ErrorBackgroundColor">#FEE2E2</Color>
-      <Color x:Key="InfoColor">#2563EB</Color>
-      <Color x:Key="InfoBackgroundColor">#DBEAFE</Color>
+      <Color x:Key="SuccessColor">#22C55E</Color>
+      <Color x:Key="SuccessBackgroundColor">#14532D</Color>
+      <Color x:Key="WarningColor">#F59E0B</Color>
+      <Color x:Key="WarningBackgroundColor">#78350F</Color>
+      <Color x:Key="ErrorColor">#EF4444</Color>
+      <Color x:Key="ErrorBackgroundColor">#7F1D1D</Color>
+      <Color x:Key="InfoColor">#3B82F6</Color>
+      <Color x:Key="InfoBackgroundColor">#1E3A8A</Color>
 
-      <!-- Shadow Colors -->
+      <!-- Shadow / Overlay -->
       <Color x:Key="ShadowColor">#000000</Color>
+      <Color x:Key="OverlayColor">#80000000</Color>
+      <Color x:Key="RippleColor">#20FFFFFF</Color>
 
-      <!-- Overlay Colors -->
-      <Color x:Key="OverlayColor">#40000000</Color>
-      <Color x:Key="RippleColor">#202563EB</Color>
-
-      <!-- Gradient (für spezielle Hintergründe) -->
-      <Color x:Key="GradientStartColor">#EFF6FF</Color>
-      <Color x:Key="GradientMidColor">#F8FAFC</Color>
-      <Color x:Key="GradientEndColor">#EDE9FE</Color>
+      <!-- Gradient -->
+      <Color x:Key="GradientStartColor">#243040</Color>
+      <Color x:Key="GradientMidColor">#1A2332</Color>
+      <Color x:Key="GradientEndColor">#2A1F10</Color>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- BRUSHES                                                         -->
+      <!-- BRUSHES                                                        -->
       <!-- ═══════════════════════════════════════════════════════════════ -->
 
       <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
@@ -111,28 +109,28 @@
       <SolidColorBrush x:Key="OverlayBrush" Color="{DynamicResource OverlayColor}" />
       <SolidColorBrush x:Key="RippleBrush" Color="{DynamicResource RippleColor}" />
 
-      <!-- Box Shadows (lighter for light theme) -->
-      <BoxShadows x:Key="CardShadow">0 1 3 0 #0D000000, 0 1 2 0 #0F000000</BoxShadows>
-      <BoxShadows x:Key="CardShadowHover">0 4 6 -1 #0D000000, 0 2 4 -1 #0F000000</BoxShadows>
-      <BoxShadows x:Key="ElevatedShadow">0 10 15 -3 #0D000000, 0 4 6 -2 #0F000000</BoxShadows>
-      <BoxShadows x:Key="ModalShadow">0 20 25 -5 #14000000, 0 10 10 -5 #0F000000</BoxShadows>
+      <!-- Box Shadows -->
+      <BoxShadows x:Key="CardShadow">0 1 3 0 #1A000000, 0 1 2 0 #26000000</BoxShadows>
+      <BoxShadows x:Key="CardShadowHover">0 4 6 -1 #1A000000, 0 2 4 -1 #26000000</BoxShadows>
+      <BoxShadows x:Key="ElevatedShadow">0 10 15 -3 #1A000000, 0 4 6 -2 #26000000</BoxShadows>
+      <BoxShadows x:Key="ModalShadow">0 20 25 -5 #1A000000, 0 10 10 -5 #26000000</BoxShadows>
 
-      <!-- Calculator-spezifische Ressourcen -->
+      <!-- Calculator-spezifische Ressourcen (für Kompatibilität) -->
       <LinearGradientBrush x:Key="EqualsGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#2563EB" Offset="0" />
-        <GradientStop Color="#60A5FA" Offset="1" />
+        <GradientStop Color="#F7A833" Offset="0" />
+        <GradientStop Color="#FFBD55" Offset="1" />
       </LinearGradientBrush>
       <LinearGradientBrush x:Key="DisplayGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#FFFFFF" Offset="0" />
-        <GradientStop Color="#F1F5F9" Offset="1" />
+        <GradientStop Color="#243040" Offset="0" />
+        <GradientStop Color="#1A2332" Offset="1" />
       </LinearGradientBrush>
-      <BoxShadows x:Key="OperatorGlowShadow">0 0 8 2 #302563EB</BoxShadows>
-      <SolidColorBrush x:Key="DigitButtonBrush" Color="#08000000" />
-      <SolidColorBrush x:Key="DigitButtonHoverBrush" Color="#12000000" />
+      <BoxShadows x:Key="OperatorGlowShadow">0 0 12 2 #40F7A833</BoxShadows>
+      <SolidColorBrush x:Key="DigitButtonBrush" Color="#15FFFFFF" />
+      <SolidColorBrush x:Key="DigitButtonHoverBrush" Color="#25FFFFFF" />
 
       <!-- Theme Identifier -->
-      <x:String x:Key="ThemeName">Daylight</x:String>
-      <x:Boolean x:Key="IsDarkTheme">False</x:Boolean>
+      <x:String x:Key="ThemeName">ZeitManager</x:String>
+      <x:Boolean x:Key="IsDarkTheme">True</x:Boolean>
     </Style.Resources>
   </Style>
 

@@ -19,7 +19,6 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
     private readonly IExpenseService _expenseService;
     private readonly IExportService _exportService;
     private readonly ILocalizationService _localizationService;
-    private readonly IThemeService _themeService;
     private readonly IFileDialogService _fileDialogService;
     private readonly IFileShareService _fileShareService;
     private readonly IPurchaseService _purchaseService;
@@ -31,7 +30,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
     public event Action<string, string>? MessageRequested;
 
     public StatisticsViewModel(IExpenseService expenseService, IExportService exportService,
-        ILocalizationService localizationService, IThemeService themeService,
+        ILocalizationService localizationService,
         IFileDialogService fileDialogService, IFileShareService fileShareService,
         IPurchaseService purchaseService, IRewardedAdService rewardedAdService,
         IPreferencesService preferencesService)
@@ -39,7 +38,6 @@ public sealed partial class StatisticsViewModel : ViewModelBase, IDisposable
         _expenseService = expenseService;
         _exportService = exportService;
         _localizationService = localizationService;
-        _themeService = themeService;
         _fileDialogService = fileDialogService;
         _fileShareService = fileShareService;
         _purchaseService = purchaseService;

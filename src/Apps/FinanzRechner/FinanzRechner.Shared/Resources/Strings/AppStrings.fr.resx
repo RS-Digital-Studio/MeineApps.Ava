@@ -144,9 +144,6 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Paramètres</value>
   </data>
-  <data name="SettingsChooseDesign" xml:space="preserve">
-    <value>Choisir le design</value>
-  </data>
   <data name="SettingsLanguage" xml:space="preserve">
     <value>Langue</value>
   </data>
@@ -159,34 +156,7 @@
   <data name="PrivacyPolicy" xml:space="preserve">
     <value>Politique de confidentialité</value>
   </data>
-
-  <!-- Themes -->
-  <data name="ThemeMidnight" xml:space="preserve">
-    <value>Minuit</value>
-  </data>
-  <data name="ThemeMidnightDesc" xml:space="preserve">
-    <value>Thème indigo sombre</value>
-  </data>
-  <data name="ThemeAurora" xml:space="preserve">
-    <value>Aurore</value>
-  </data>
-  <data name="ThemeAuroraDesc" xml:space="preserve">
-    <value>Thème dégradé rose sombre</value>
-  </data>
-  <data name="ThemeDaylight" xml:space="preserve">
-    <value>Lumière du jour</value>
-  </data>
-  <data name="ThemeDaylightDesc" xml:space="preserve">
-    <value>Thème bleu clair</value>
-  </data>
-  <data name="ThemeForest" xml:space="preserve">
-    <value>Forêt</value>
-  </data>
-  <data name="ThemeForestDesc" xml:space="preserve">
-    <value>Thème vert sombre</value>
-  </data>
-
-  <!-- Expense Tracker -->
+<!-- Expense Tracker -->
   <data name="ExpenseTracker" xml:space="preserve">
     <value>Suivi Financier</value>
   </data>

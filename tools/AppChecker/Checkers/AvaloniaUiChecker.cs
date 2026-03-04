@@ -1,6 +1,6 @@
 namespace AppChecker.Checkers;
 
-/// <summary>Prueft App.axaml/cs: MaterialIconStyles, ThemeService, LocalizationService</summary>
+/// <summary>Prueft App.axaml/cs: MaterialIconStyles, SkiaThemeHelper, LocalizationService</summary>
 class AvaloniaUiChecker : IChecker
 {
     public string Category => "Avalonia/UI";
@@ -33,10 +33,10 @@ class AvaloniaUiChecker : IChecker
         {
             var content = appAxamlCs.Content;
 
-            if (content.Contains("GetRequiredService<IThemeService>") || content.Contains("GetService<IThemeService>"))
-                results.Add(new(Severity.Pass, Category, "IThemeService beim Start aufgeloest"));
+            if (content.Contains("SkiaThemeHelper.RefreshColors"))
+                results.Add(new(Severity.Pass, Category, "SkiaThemeHelper.RefreshColors() beim Start aufgerufen"));
             else
-                results.Add(new(Severity.Warn, Category, "IThemeService wird nicht beim Start aufgeloest (Theme wird nicht geladen)"));
+                results.Add(new(Severity.Warn, Category, "SkiaThemeHelper.RefreshColors() fehlt in App.axaml.cs"));
 
             if (content.Contains("ILocalizationService"))
                 results.Add(new(Severity.Pass, Category, "ILocalizationService registriert"));

@@ -22,8 +22,11 @@
     <!-- Material Icons -->
     <materialIcons:MaterialIconStyles />
 
-    <!-- Core Theme Colors (design tokens shared across all themes) -->
+    <!-- Core Theme Colors (design tokens) -->
     <StyleInclude Source="avares://MeineApps.Core.Ava/Themes/ThemeColors.axaml" />
+
+    <!-- App-spezifische Farbpalette -->
+    <StyleInclude Source="/Themes/AppPalette.axaml" />
 
     <!-- UI Styles -->
     <StyleInclude Source="avares://MeineApps.UI/Styles/ButtonStyles.axaml" />

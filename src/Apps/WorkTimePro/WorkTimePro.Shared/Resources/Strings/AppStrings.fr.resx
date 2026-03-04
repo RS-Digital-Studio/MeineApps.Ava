@@ -94,7 +94,6 @@
   <data name="LegalSourceHolidays" xml:space="preserve"><value>Jours feries (BMI)</value></data>
   <data name="LegalCompliance" xml:space="preserve"><value>Conformite temps de travail</value></data>
   <data name="LegalComplianceDescription" xml:space="preserve"><value>Afficher les alertes de non-conformite (max. 10h/jour, min. 11h repos)</value></data>
-  <data name="Theme" xml:space="preserve"><value>Theme</value></data>
   <data name="SaveSettings" xml:space="preserve"><value>Enregistrer</value></data>
   <data name="PrivacyPolicy" xml:space="preserve"><value>Politique de confidentialité</value></data>
   <data name="Premium" xml:space="preserve"><value>Premium</value></data>
@@ -355,15 +354,6 @@
   <data name="CalendarAutoBreak" xml:space="preserve">
     <value>dont auto : {0} min</value>
   </data>
-  <!-- Theme -->
-  <data name="ThemeMidnight" xml:space="preserve"><value>Minuit</value></data>
-  <data name="ThemeMidnightDesc" xml:space="preserve"><value>Moderne sombre</value></data>
-  <data name="ThemeAurora" xml:space="preserve"><value>Aurore</value></data>
-  <data name="ThemeAuroraDesc" xml:space="preserve"><value>Colore sombre</value></data>
-  <data name="ThemeDaylight" xml:space="preserve"><value>Lumiere du jour</value></data>
-  <data name="ThemeDaylightDesc" xml:space="preserve"><value>Clair et propre</value></data>
-  <data name="ThemeForest" xml:space="preserve"><value>Foret</value></data>
-  <data name="ThemeForestDesc" xml:space="preserve"><value>Naturel sombre</value></data>
   <data name="SetStatus" xml:space="preserve">
     <value>Définir le statut</value>
   </data>

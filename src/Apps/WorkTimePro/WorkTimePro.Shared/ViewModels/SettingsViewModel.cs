@@ -21,7 +21,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     public event EventHandler? SettingsChanged;
 
     private readonly IDatabaseService _database;
-    private readonly IThemeService _themeService;
     private readonly ILocalizationService _localization;
     private readonly ITrialService _trialService;
     private readonly IPurchaseService _purchaseService;
@@ -37,7 +36,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public SettingsViewModel(
         IDatabaseService database,
-        IThemeService themeService,
         ILocalizationService localization,
         ITrialService trialService,
         IPurchaseService purchaseService,
@@ -45,7 +43,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
         IBackupService backupService)
     {
         _database = database;
-        _themeService = themeService;
         _localization = localization;
         _trialService = trialService;
         _purchaseService = purchaseService;
@@ -277,53 +274,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _legalComplianceEnabled = true;
 
-    // === Theme ===
-
-    [ObservableProperty]
-    private int _selectedThemeIndex;
-
-    public bool IsMidnightSelected => SelectedThemeIndex == 0;
-    public bool IsAuroraSelected => SelectedThemeIndex == 1;
-    public bool IsDaylightSelected => SelectedThemeIndex == 2;
-    public bool IsForestSelected => SelectedThemeIndex == 3;
-
-    // Localized theme names and descriptions
-    public string ThemeMidnightName => _localization.GetString("ThemeMidnight");
-    public string ThemeMidnightDescText => _localization.GetString("ThemeMidnightDesc");
-    public string ThemeAuroraName => _localization.GetString("ThemeAurora");
-    public string ThemeAuroraDescText => _localization.GetString("ThemeAuroraDesc");
-    public string ThemeDaylightName => _localization.GetString("ThemeDaylight");
-    public string ThemeDaylightDescText => _localization.GetString("ThemeDaylightDesc");
-    public string ThemeForestName => _localization.GetString("ThemeForest");
-    public string ThemeForestDescText => _localization.GetString("ThemeForestDesc");
-
-    partial void OnSelectedThemeIndexChanged(int value)
-    {
-        OnPropertyChanged(nameof(IsMidnightSelected));
-        OnPropertyChanged(nameof(IsAuroraSelected));
-        OnPropertyChanged(nameof(IsDaylightSelected));
-        OnPropertyChanged(nameof(IsForestSelected));
-
-        // Theme sofort anwenden
-        if (!_isInitializing)
-            _themeService.SetTheme((AppTheme)value);
-
-        ScheduleAutoSave();
-    }
-
-    [RelayCommand]
-    private void SelectTheme(string themeName)
-    {
-        SelectedThemeIndex = themeName switch
-        {
-            "Midnight" => 0,
-            "Aurora" => 1,
-            "Daylight" => 2,
-            "Forest" => 3,
-            _ => 0
-        };
-    }
-
     // === Language ===
 
     [ObservableProperty]
@@ -537,9 +487,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
             // Work time law
             LegalComplianceEnabled = _settings.LegalComplianceEnabled;
-
-            // Theme
-            SelectedThemeIndex = (int)_themeService.CurrentTheme;
 
             // Premium
             UpdatePremiumStatus();

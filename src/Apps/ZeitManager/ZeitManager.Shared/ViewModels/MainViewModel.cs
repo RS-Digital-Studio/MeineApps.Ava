@@ -11,7 +11,6 @@ namespace ZeitManager.ViewModels;
 public sealed partial class MainViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
-    private readonly IThemeService _themeService;
     private readonly ILocalizationService _localization;
     private readonly ITimerService _timerService;
     private readonly IAlarmSchedulerService _alarmScheduler;
@@ -73,7 +72,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     public bool IsSettingsActive => SelectedTabIndex == 4;
 
     public MainViewModel(
-        IThemeService themeService,
         ILocalizationService localization,
         ITimerService timerService,
         IAlarmSchedulerService alarmScheduler,
@@ -85,7 +83,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         AlarmViewModel alarmViewModel,
         SettingsViewModel settingsViewModel)
     {
-        _themeService = themeService;
         _localization = localization;
         _timerService = timerService;
         _alarmScheduler = alarmScheduler;

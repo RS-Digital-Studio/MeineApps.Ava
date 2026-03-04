@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -182,9 +182,6 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="SettingsChooseDesign" xml:space="preserve">
-    <value>Choose Design</value>
-  </data>
   <data name="SettingsLanguage" xml:space="preserve">
     <value>Language</value>
   </data>
@@ -203,34 +200,7 @@
   <data name="BrowserError" xml:space="preserve">
     <value>Could not open browser. Please check your internet connection.</value>
   </data>
-
-  <!-- Theme Names -->
-  <data name="ThemeMidnight" xml:space="preserve">
-    <value>Midnight</value>
-  </data>
-  <data name="ThemeMidnightDesc" xml:space="preserve">
-    <value>Modern dark</value>
-  </data>
-  <data name="ThemeAurora" xml:space="preserve">
-    <value>Aurora</value>
-  </data>
-  <data name="ThemeAuroraDesc" xml:space="preserve">
-    <value>Colorful dark</value>
-  </data>
-  <data name="ThemeDaylight" xml:space="preserve">
-    <value>Daylight</value>
-  </data>
-  <data name="ThemeDaylightDesc" xml:space="preserve">
-    <value>Clean and light</value>
-  </data>
-  <data name="ThemeForest" xml:space="preserve">
-    <value>Forest</value>
-  </data>
-  <data name="ThemeForestDesc" xml:space="preserve">
-    <value>Natural dark</value>
-  </data>
-
-  <!-- App Info -->
+<!-- App Info -->
   <data name="AppName" xml:space="preserve">
     <value>RechnerPlus</value>
   </data>

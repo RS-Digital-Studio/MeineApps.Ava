@@ -10,7 +10,6 @@ namespace FinanzRechner.ViewModels;
 
 public sealed partial class SettingsViewModel : ViewModelBase
 {
-    private readonly IThemeService _themeService;
     private readonly ILocalizationService _localizationService;
     private readonly IPurchaseService _purchaseService;
     private readonly IExpenseService _expenseService;
@@ -21,27 +20,21 @@ public sealed partial class SettingsViewModel : ViewModelBase
     private const string PrivacyPolicyUrl = "https://rs-digital-studio.github.io/privacy/finanzrechner.html";
 
     public SettingsViewModel(
-        IThemeService themeService,
         ILocalizationService localizationService,
         IPurchaseService purchaseService,
         IExpenseService expenseService,
         IPreferencesService preferencesService)
     {
-        _themeService = themeService;
         _localizationService = localizationService;
         _purchaseService = purchaseService;
         _expenseService = expenseService;
         _preferencesService = preferencesService;
 
-        _selectedTheme = _themeService.CurrentTheme;
         _selectedLanguage = _localizationService.CurrentLanguage;
         _isPremium = _purchaseService.IsPremium;
     }
 
     #region Observable Properties
-
-    [ObservableProperty]
-    private AppTheme _selectedTheme;
 
     [ObservableProperty]
     private string _selectedLanguage;
@@ -60,7 +53,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     // Localized text properties
     public string SettingsTitleText => _localizationService.GetString("SettingsTitle") ?? "Settings";
-    public string ChooseDesignText => _localizationService.GetString("SettingsChooseDesign") ?? "Choose Design";
     public string LanguageText => _localizationService.GetString("SettingsLanguage") ?? "Language";
     public string PremiumText => _localizationService.GetString("Premium") ?? "Premium";
     public string PremiumDescriptionText => _localizationService.GetString("PremiumDescription") ?? "Remove ads and support the developer";
@@ -72,15 +64,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
     public string RestoreBackupText => _localizationService.GetString("RestoreBackup") ?? "Restore";
     public string AboutAppText => _localizationService.GetString("SettingsAboutApp") ?? "About App";
     public string FeedbackText => _localizationService.GetString("FeedbackButton") ?? "Send Feedback";
-    public string ThemeMidnightName => _localizationService.GetString("ThemeMidnight") ?? "Midnight";
-    public string ThemeMidnightDescText => _localizationService.GetString("ThemeMidnightDesc") ?? "Dark indigo theme";
-    public string ThemeAuroraName => _localizationService.GetString("ThemeAurora") ?? "Aurora";
-    public string ThemeAuroraDescText => _localizationService.GetString("ThemeAuroraDesc") ?? "Dark pink gradient theme";
-    public string ThemeDaylightName => _localizationService.GetString("ThemeDaylight") ?? "Daylight";
-    public string ThemeDaylightDescText => _localizationService.GetString("ThemeDaylightDesc") ?? "Light blue theme";
-    public string ThemeForestName => _localizationService.GetString("ThemeForest") ?? "Forest";
-    public string ThemeForestDescText => _localizationService.GetString("ThemeForestDesc") ?? "Dark green theme";
-
     // Restore-Dialog Texte
     public string RestoreQuestionText => _localizationService.GetString("RestoreQuestion") ?? "How do you want to restore?";
     public string RestoreMergeText => _localizationService.GetString("RestoreMerge") ?? "Merge";
@@ -132,7 +115,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
         // Refresh all localized text properties
         OnPropertyChanged(nameof(SettingsTitleText));
-        OnPropertyChanged(nameof(ChooseDesignText));
         OnPropertyChanged(nameof(LanguageText));
         OnPropertyChanged(nameof(PremiumText));
         OnPropertyChanged(nameof(PremiumDescriptionText));
@@ -144,50 +126,12 @@ public sealed partial class SettingsViewModel : ViewModelBase
         OnPropertyChanged(nameof(RestoreBackupText));
         OnPropertyChanged(nameof(AboutAppText));
         OnPropertyChanged(nameof(FeedbackText));
-        OnPropertyChanged(nameof(ThemeMidnightName));
-        OnPropertyChanged(nameof(ThemeMidnightDescText));
-        OnPropertyChanged(nameof(ThemeAuroraName));
-        OnPropertyChanged(nameof(ThemeAuroraDescText));
-        OnPropertyChanged(nameof(ThemeDaylightName));
-        OnPropertyChanged(nameof(ThemeDaylightDescText));
-        OnPropertyChanged(nameof(ThemeForestName));
-        OnPropertyChanged(nameof(ThemeForestDescText));
         OnPropertyChanged(nameof(RestoreQuestionText));
         OnPropertyChanged(nameof(RestoreMergeText));
         OnPropertyChanged(nameof(RestoreReplaceText));
         OnPropertyChanged(nameof(RestoreMergeDescText));
         OnPropertyChanged(nameof(RestoreReplaceDescText));
         OnPropertyChanged(nameof(CancelText));
-    }
-
-    #endregion
-
-    #region Theme Selection
-
-    public bool IsMidnightSelected => SelectedTheme == AppTheme.Midnight;
-    public bool IsAuroraSelected => SelectedTheme == AppTheme.Aurora;
-    public bool IsDaylightSelected => SelectedTheme == AppTheme.Daylight;
-    public bool IsForestSelected => SelectedTheme == AppTheme.Forest;
-
-    [RelayCommand]
-    private void SelectTheme(string themeName)
-    {
-        var theme = themeName switch
-        {
-            "Midnight" => AppTheme.Midnight,
-            "Aurora" => AppTheme.Aurora,
-            "Daylight" => AppTheme.Daylight,
-            "Forest" => AppTheme.Forest,
-            _ => AppTheme.Midnight
-        };
-
-        SelectedTheme = theme;
-        _themeService.SetTheme(theme);
-
-        OnPropertyChanged(nameof(IsMidnightSelected));
-        OnPropertyChanged(nameof(IsAuroraSelected));
-        OnPropertyChanged(nameof(IsDaylightSelected));
-        OnPropertyChanged(nameof(IsForestSelected));
     }
 
     #endregion
@@ -383,12 +327,6 @@ public sealed partial class SettingsViewModel : ViewModelBase
 
     public void Initialize()
     {
-        SelectedTheme = _themeService.CurrentTheme;
-
-        OnPropertyChanged(nameof(IsMidnightSelected));
-        OnPropertyChanged(nameof(IsAuroraSelected));
-        OnPropertyChanged(nameof(IsDaylightSelected));
-        OnPropertyChanged(nameof(IsForestSelected));
     }
 
     #endregion

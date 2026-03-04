@@ -11,17 +11,9 @@ namespace ZeitManager.ViewModels;
 public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 {
     private bool _disposed;
-    private readonly IThemeService _themeService;
     private readonly ILocalizationService _localization;
     private readonly IPreferencesService _preferences;
     private readonly IAudioService _audioService;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsMidnightSelected))]
-    [NotifyPropertyChangedFor(nameof(IsAuroraSelected))]
-    [NotifyPropertyChangedFor(nameof(IsDaylightSelected))]
-    [NotifyPropertyChangedFor(nameof(IsForestSelected))]
-    private AppTheme _selectedTheme;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsEnglishSelected))]
@@ -37,12 +29,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     public string AppVersion => $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "2.0.0"}";
 
-    // Theme selection indicators
-    public bool IsMidnightSelected => SelectedTheme == AppTheme.Midnight;
-    public bool IsAuroraSelected => SelectedTheme == AppTheme.Aurora;
-    public bool IsDaylightSelected => SelectedTheme == AppTheme.Daylight;
-    public bool IsForestSelected => SelectedTheme == AppTheme.Forest;
-
     // Language selection indicators
     public bool IsEnglishSelected => SelectedLanguage == "en";
     public bool IsGermanSelected => SelectedLanguage == "de";
@@ -53,7 +39,6 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
 
     // Localized strings
     public string SettingsTitle => _localization.GetString("SettingsTitle");
-    public string ThemeText => _localization.GetString("Theme");
     public string LanguageText => _localization.GetString("Language");
     public string AboutText => _localization.GetString("About");
     public string VersionText => string.Format(_localization.GetString("VersionWithNumber"), AppVersion);
@@ -65,40 +50,26 @@ public sealed partial class SettingsViewModel : ViewModelBase, IDisposable
     public string TestText => _localization.GetString("Test");
     public string PickFromDeviceText => _localization.GetString("PickFromDevice");
 
-    // Theme names
-    public string ThemeMidnightName => _localization.GetString("ThemeMidnight");
-    public string ThemeAuroraName => _localization.GetString("ThemeAurora");
-    public string ThemeDaylightName => _localization.GetString("ThemeDaylight");
-    public string ThemeForestName => _localization.GetString("ThemeForest");
-
     [ObservableProperty]
     private IReadOnlyList<SoundItem> _timerSounds;
 
     private void RefreshTimerSounds() => TimerSounds = _audioService.AvailableSounds;
 
     public SettingsViewModel(
-        IThemeService themeService,
         ILocalizationService localization,
         IPreferencesService preferences,
         IAudioService audioService)
     {
-        _themeService = themeService;
         _localization = localization;
         _preferences = preferences;
         _audioService = audioService;
-        _selectedTheme = _themeService.CurrentTheme;
         _selectedLanguage = _localization.CurrentLanguage;
         _selectedTimerSound = _preferences.Get("timer_sound", _audioService.DefaultTimerSound);
         _timerSounds = _audioService.AvailableSounds;
         _localization.LanguageChanged += OnLanguageChanged;
     }
 
-    partial void OnSelectedThemeChanged(AppTheme value) => _themeService.SetTheme(value);
-
     partial void OnSelectedTimerSoundChanged(string value) => _preferences.Set("timer_sound", value);
-
-    [RelayCommand]
-    private void SetTheme(AppTheme theme) => SelectedTheme = theme;
 
     [RelayCommand]
     private void SelectLanguage(string languageCode)

@@ -1,9 +1,9 @@
 <Styles xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
-  <!-- FOREST THEME - Dark, Natural                                           -->
-  <!-- Inspiration: Notion Dark, Terminal, Nature Apps                        -->
+  <!-- FinanzRechner - "Living Finance"                                       -->
+  <!-- Seriöses Dunkelblau mit Smaragdgrün (Geld/Wachstum)                   -->
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
 
   <Style>
@@ -15,35 +15,35 @@
       <Color x:Key="PrimaryContrastColor">#FFFFFF</Color>
 
       <!-- Secondary Colors -->
-      <Color x:Key="SecondaryColor">#14B8A6</Color>
-      <Color x:Key="SecondaryHoverColor">#2DD4BF</Color>
-      <Color x:Key="SecondaryPressedColor">#0D9488</Color>
+      <Color x:Key="SecondaryColor">#6366F1</Color>
+      <Color x:Key="SecondaryHoverColor">#818CF8</Color>
+      <Color x:Key="SecondaryPressedColor">#4F46E5</Color>
 
       <!-- Accent Colors -->
       <Color x:Key="AccentColor">#F59E0B</Color>
       <Color x:Key="AccentHoverColor">#FBBF24</Color>
 
-      <!-- Feature Accent Colors (ZeitManager) -->
-      <Color x:Key="TimerAccentColor">#FBBF24</Color>
+      <!-- Feature Accent Colors -->
+      <Color x:Key="TimerAccentColor">#F59E0B</Color>
       <Color x:Key="StopwatchAccentColor">#22D3EE</Color>
       <Color x:Key="AlarmAccentColor">#A78BFA</Color>
       <Color x:Key="PomodoroAccentColor">#EF4444</Color>
 
       <!-- Background Colors -->
-      <Color x:Key="BackgroundColor">#022C22</Color>
-      <Color x:Key="SurfaceColor">#064E3B</Color>
-      <Color x:Key="CardColor">#065F46</Color>
-      <Color x:Key="CardHoverColor">#047857</Color>
+      <Color x:Key="BackgroundColor">#182030</Color>
+      <Color x:Key="SurfaceColor">#222E3E</Color>
+      <Color x:Key="CardColor">#2E3E50</Color>
+      <Color x:Key="CardHoverColor">#3A4D62</Color>
 
       <!-- Text Colors -->
-      <Color x:Key="TextPrimaryColor">#ECFDF5</Color>
-      <Color x:Key="TextSecondaryColor">#A7F3D0</Color>
-      <Color x:Key="TextMutedColor">#6EE7B7</Color>
-      <Color x:Key="TextDisabledColor">#34D399</Color>
+      <Color x:Key="TextPrimaryColor">#F0F4F8</Color>
+      <Color x:Key="TextSecondaryColor">#B0C0D0</Color>
+      <Color x:Key="TextMutedColor">#8898AA</Color>
+      <Color x:Key="TextDisabledColor">#64748B</Color>
 
       <!-- Border Colors -->
-      <Color x:Key="BorderColor">#047857</Color>
-      <Color x:Key="BorderSubtleColor">#065F46</Color>
+      <Color x:Key="BorderColor">#405570</Color>
+      <Color x:Key="BorderSubtleColor">#2E3E50</Color>
       <Color x:Key="BorderFocusColor">#10B981</Color>
 
       <!-- Semantic Colors -->
@@ -56,20 +56,18 @@
       <Color x:Key="InfoColor">#3B82F6</Color>
       <Color x:Key="InfoBackgroundColor">#1E3A8A</Color>
 
-      <!-- Shadow Colors -->
+      <!-- Shadow / Overlay -->
       <Color x:Key="ShadowColor">#000000</Color>
-
-      <!-- Overlay Colors -->
       <Color x:Key="OverlayColor">#80000000</Color>
-      <Color x:Key="RippleColor">#2010B981</Color>
+      <Color x:Key="RippleColor">#20FFFFFF</Color>
 
-      <!-- Gradient (für spezielle Hintergründe) -->
-      <Color x:Key="GradientStartColor">#064E3B</Color>
-      <Color x:Key="GradientMidColor">#022C22</Color>
-      <Color x:Key="GradientEndColor">#134E4A</Color>
+      <!-- Gradient -->
+      <Color x:Key="GradientStartColor">#222E3E</Color>
+      <Color x:Key="GradientMidColor">#182030</Color>
+      <Color x:Key="GradientEndColor">#0D2818</Color>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
-      <!-- BRUSHES                                                         -->
+      <!-- BRUSHES                                                        -->
       <!-- ═══════════════════════════════════════════════════════════════ -->
 
       <SolidColorBrush x:Key="PrimaryBrush" Color="{DynamicResource PrimaryColor}" />
@@ -117,21 +115,21 @@
       <BoxShadows x:Key="ElevatedShadow">0 10 15 -3 #1A000000, 0 4 6 -2 #26000000</BoxShadows>
       <BoxShadows x:Key="ModalShadow">0 20 25 -5 #1A000000, 0 10 10 -5 #26000000</BoxShadows>
 
-      <!-- Calculator-spezifische Ressourcen -->
+      <!-- Calculator-spezifische Ressourcen (für Kompatibilität) -->
       <LinearGradientBrush x:Key="EqualsGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
         <GradientStop Color="#10B981" Offset="0" />
-        <GradientStop Color="#14B8A6" Offset="1" />
+        <GradientStop Color="#34D399" Offset="1" />
       </LinearGradientBrush>
       <LinearGradientBrush x:Key="DisplayGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#064E3B" Offset="0" />
-        <GradientStop Color="#022C22" Offset="1" />
+        <GradientStop Color="#222E3E" Offset="0" />
+        <GradientStop Color="#182030" Offset="1" />
       </LinearGradientBrush>
       <BoxShadows x:Key="OperatorGlowShadow">0 0 12 2 #4010B981</BoxShadows>
       <SolidColorBrush x:Key="DigitButtonBrush" Color="#15FFFFFF" />
       <SolidColorBrush x:Key="DigitButtonHoverBrush" Color="#25FFFFFF" />
 
       <!-- Theme Identifier -->
-      <x:String x:Key="ThemeName">Forest</x:String>
+      <x:String x:Key="ThemeName">FinanzRechner</x:String>
       <x:Boolean x:Key="IsDarkTheme">True</x:Boolean>
     </Style.Resources>
   </Style>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -171,9 +171,6 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Configurações</value>
   </data>
-  <data name="SettingsChooseDesign" xml:space="preserve">
-    <value>Escolher design</value>
-  </data>
   <data name="SettingsLanguage" xml:space="preserve">
     <value>Idioma</value>
   </data>
@@ -189,34 +186,7 @@
   <data name="PrivacyPolicy" xml:space="preserve">
     <value>Política de Privacidade</value>
   </data>
-
-  <!-- Themes -->
-  <data name="ThemeVivid" xml:space="preserve">
-    <value>Vivid</value>
-  </data>
-  <data name="ThemeVividDesc" xml:space="preserve">
-    <value>Moderno e Vibrante</value>
-  </data>
-  <data name="ThemeClassic" xml:space="preserve">
-    <value>Clássico</value>
-  </data>
-  <data name="ThemeClassicDesc" xml:space="preserve">
-    <value>Limpo e Claro</value>
-  </data>
-  <data name="ThemeGlassDark" xml:space="preserve">
-    <value>Glass Dark</value>
-  </data>
-  <data name="ThemeGlassDarkDesc" xml:space="preserve">
-    <value>Elegante e Escuro</value>
-  </data>
-  <data name="ThemeSoftLight" xml:space="preserve">
-    <value>Soft Light</value>
-  </data>
-  <data name="ThemeSoftLightDesc" xml:space="preserve">
-    <value>Suave e Claro</value>
-  </data>
-
-  <!-- Premium -->
+<!-- Premium -->
   <data name="Premium" xml:space="preserve">
     <value>Premium</value>
   </data>
@@ -897,30 +867,6 @@ Você economiza 0,96 € em comparação com a compra individual!</value>
   </data>
 
   <!-- Settings Localization -->
-  <data name="ThemeMidnightName" xml:space="preserve">
-    <value>Meia-noite</value>
-  </data>
-  <data name="ThemeMidnightDesc" xml:space="preserve">
-    <value>Escuro moderno</value>
-  </data>
-  <data name="ThemeAuroraName" xml:space="preserve">
-    <value>Aurora</value>
-  </data>
-  <data name="ThemeAuroraDesc" xml:space="preserve">
-    <value>Neon vibrante</value>
-  </data>
-  <data name="ThemeDaylightName" xml:space="preserve">
-    <value>Luz do dia</value>
-  </data>
-  <data name="ThemeDaylightDesc" xml:space="preserve">
-    <value>Claro e limpo</value>
-  </data>
-  <data name="ThemeForestName" xml:space="preserve">
-    <value>Floresta</value>
-  </data>
-  <data name="ThemeForestDesc" xml:space="preserve">
-    <value>Verde natural</value>
-  </data>
   <data name="SettingsUnitSystem" xml:space="preserve">
     <value>Sistema de unidades</value>
   </data>
@@ -1641,18 +1587,6 @@ O rendimento diminui em superfícies rugosas!</value>
   </data>
   <data name="CategoryRoofSolarSemantic" xml:space="preserve">
     <value>Abrir categoria telhado e solar</value>
-  </data>
-  <data name="SelectThemeVividSemantic" xml:space="preserve">
-    <value>Selecionar tema Vivid</value>
-  </data>
-  <data name="SelectThemeClassicSemantic" xml:space="preserve">
-    <value>Selecionar tema Clássico</value>
-  </data>
-  <data name="SelectThemeGlassDarkSemantic" xml:space="preserve">
-    <value>Selecionar tema Glass Dark</value>
-  </data>
-  <data name="SelectThemeSoftLightSemantic" xml:space="preserve">
-    <value>Selecionar tema Soft Light</value>
   </data>
   <data name="SelectLanguageGermanSemantic" xml:space="preserve">
     <value>Mudar idioma para alemão</value>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -171,9 +171,6 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Einstellungen</value>
   </data>
-  <data name="SettingsChooseDesign" xml:space="preserve">
-    <value>Design wählen</value>
-  </data>
   <data name="SettingsLanguage" xml:space="preserve">
     <value>Sprache</value>
   </data>
@@ -189,34 +186,7 @@
   <data name="PrivacyPolicy" xml:space="preserve">
     <value>Datenschutzerklärung</value>
   </data>
-
-  <!-- Themes -->
-  <data name="ThemeVivid" xml:space="preserve">
-    <value>Vivid</value>
-  </data>
-  <data name="ThemeVividDesc" xml:space="preserve">
-    <value>Modern &amp; Lebendig</value>
-  </data>
-  <data name="ThemeClassic" xml:space="preserve">
-    <value>Klassisch</value>
-  </data>
-  <data name="ThemeClassicDesc" xml:space="preserve">
-    <value>Klar &amp; Übersichtlich</value>
-  </data>
-  <data name="ThemeGlassDark" xml:space="preserve">
-    <value>Glass Dark</value>
-  </data>
-  <data name="ThemeGlassDarkDesc" xml:space="preserve">
-    <value>Elegant &amp; Dunkel</value>
-  </data>
-  <data name="ThemeSoftLight" xml:space="preserve">
-    <value>Soft Light</value>
-  </data>
-  <data name="ThemeSoftLightDesc" xml:space="preserve">
-    <value>Sanft &amp; Hell</value>
-  </data>
-
-  <!-- Premium -->
+<!-- Premium -->
   <data name="Premium" xml:space="preserve">
     <value>Premium</value>
   </data>
@@ -978,20 +948,7 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   </data>
 
   <!-- Theme Selection -->
-  <data name="SelectThemeVividSemantic" xml:space="preserve">
-    <value>Vivid-Theme auswählen</value>
-  </data>
-  <data name="SelectThemeClassicSemantic" xml:space="preserve">
-    <value>Klassisches Theme auswählen</value>
-  </data>
-  <data name="SelectThemeGlassDarkSemantic" xml:space="preserve">
-    <value>Glass Dark-Theme auswählen</value>
-  </data>
-  <data name="SelectThemeSoftLightSemantic" xml:space="preserve">
-    <value>Soft Light-Theme auswählen</value>
-  </data>
-
-  <!-- Language Selection -->
+<!-- Language Selection -->
   <data name="SelectLanguageGermanSemantic" xml:space="preserve">
     <value>Sprache auf Deutsch umstellen</value>
   </data>
@@ -1537,30 +1494,6 @@ Auf rauem Untergrund sinkt die Ergiebigkeit!</value>
   </data>
 
   <!-- Settings Localization -->
-  <data name="ThemeMidnightName" xml:space="preserve">
-    <value>Mitternacht</value>
-  </data>
-  <data name="ThemeMidnightDesc" xml:space="preserve">
-    <value>Modernes Dunkel</value>
-  </data>
-  <data name="ThemeAuroraName" xml:space="preserve">
-    <value>Aurora</value>
-  </data>
-  <data name="ThemeAuroraDesc" xml:space="preserve">
-    <value>Lebendiges Neon</value>
-  </data>
-  <data name="ThemeDaylightName" xml:space="preserve">
-    <value>Tageslicht</value>
-  </data>
-  <data name="ThemeDaylightDesc" xml:space="preserve">
-    <value>Sauberes Hell</value>
-  </data>
-  <data name="ThemeForestName" xml:space="preserve">
-    <value>Wald</value>
-  </data>
-  <data name="ThemeForestDesc" xml:space="preserve">
-    <value>Natürliches Grün</value>
-  </data>
   <data name="SettingsUnitSystem" xml:space="preserve">
     <value>Maßsystem</value>
   </data>

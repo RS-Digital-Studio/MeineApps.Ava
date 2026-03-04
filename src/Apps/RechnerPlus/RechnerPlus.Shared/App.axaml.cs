@@ -26,6 +26,7 @@ public partial class App : Application
     public override void Initialize()
     {
         AvaloniaXamlLoader.Load(this);
+        RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
     }
 
     public override void OnFrameworkInitializationCompleted()
@@ -35,10 +36,8 @@ public partial class App : Application
         ConfigureServices(services);
         Services = services.BuildServiceProvider();
 
-        // Initialize theme (apply saved theme before window is created)
-        var themeService = Services.GetRequiredService<IThemeService>();
+        // Farb-Cache für SkiaSharp initialisieren
         SkiaThemeHelper.RefreshColors();
-        themeService.ThemeChanged += (_, _) => SkiaThemeHelper.RefreshColors();
 
         // Initialize localization
         var locService = Services.GetRequiredService<ILocalizationService>();
@@ -122,8 +121,6 @@ public partial class App : Application
     {
         // Core Services
         services.AddSingleton<IPreferencesService>(sp => new PreferencesService("RechnerPlus"));
-        services.AddSingleton<IThemeService, ThemeService>();
-
         // Localization
         services.AddSingleton<ILocalizationService>(sp =>
             new LocalizationService(AppStrings.ResourceManager, sp.GetRequiredService<IPreferencesService>()));

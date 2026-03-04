@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -182,9 +182,6 @@
   <data name="SettingsTitle" xml:space="preserve">
     <value>Einstellungen</value>
   </data>
-  <data name="SettingsChooseDesign" xml:space="preserve">
-    <value>Design wählen</value>
-  </data>
   <data name="SettingsLanguage" xml:space="preserve">
     <value>Sprache</value>
   </data>
@@ -203,34 +200,7 @@
   <data name="BrowserError" xml:space="preserve">
     <value>Browser konnte nicht geöffnet werden. Bitte überprüfen Sie Ihre Internetverbindung.</value>
   </data>
-
-  <!-- Theme Names -->
-  <data name="ThemeMidnight" xml:space="preserve">
-    <value>Mitternacht</value>
-  </data>
-  <data name="ThemeMidnightDesc" xml:space="preserve">
-    <value>Modern dunkel</value>
-  </data>
-  <data name="ThemeAurora" xml:space="preserve">
-    <value>Aurora</value>
-  </data>
-  <data name="ThemeAuroraDesc" xml:space="preserve">
-    <value>Bunt und dunkel</value>
-  </data>
-  <data name="ThemeDaylight" xml:space="preserve">
-    <value>Tageslicht</value>
-  </data>
-  <data name="ThemeDaylightDesc" xml:space="preserve">
-    <value>Hell und klar</value>
-  </data>
-  <data name="ThemeForest" xml:space="preserve">
-    <value>Wald</value>
-  </data>
-  <data name="ThemeForestDesc" xml:space="preserve">
-    <value>Natürlich dunkel</value>
-  </data>
-
-  <!-- App Info -->
+<!-- App Info -->
   <data name="AppName" xml:space="preserve">
     <value>RechnerPlus</value>
   </data>

@@ -61,7 +61,6 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         IPurchaseService purchaseService,
         IAdService adService,
         ILocalizationService localization,
-        IThemeService themeService,
         SettingsViewModel settingsViewModel,
         ProjectsViewModel projectsViewModel,
         HistoryViewModel historyViewModel,

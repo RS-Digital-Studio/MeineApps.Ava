@@ -8,7 +8,7 @@ namespace MeineApps.Core.Premium.Ava.Droid;
 /// Ersetzt den Desktop-RewardedAdService per DI Override in MainActivity.
 /// Unterstuetzt Multi-Placement: verschiedene Ad-Unit-IDs pro Feature.
 /// </summary>
-public class AndroidRewardedAdService : IRewardedAdService
+public sealed class AndroidRewardedAdService : IRewardedAdService
 {
     private const string Tag = "AndroidRewardedAdService";
 

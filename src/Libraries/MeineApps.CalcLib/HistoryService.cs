@@ -4,7 +4,7 @@ namespace MeineApps.CalcLib;
 /// Implementation des History-Services.
 /// Speichert Berechnungen nur für die aktuelle Session (keine Persistenz).
 /// </summary>
-public class HistoryService : IHistoryService
+public sealed class HistoryService : IHistoryService
 {
     private readonly List<CalculationHistoryEntry> _history = new();
     private const int MAX_ENTRIES = 100;

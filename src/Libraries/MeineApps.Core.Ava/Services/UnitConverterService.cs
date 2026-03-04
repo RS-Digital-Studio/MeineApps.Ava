@@ -3,7 +3,7 @@ namespace MeineApps.Core.Ava.Services;
 /// <summary>
 /// Unit converter service implementation (Metric/Imperial)
 /// </summary>
-public class UnitConverterService : IUnitConverterService
+public sealed class UnitConverterService : IUnitConverterService
 {
     private const string UnitSystemKey = "unit_system";
     private readonly IPreferencesService _preferences;

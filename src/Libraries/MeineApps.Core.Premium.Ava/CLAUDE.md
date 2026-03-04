@@ -174,8 +174,29 @@ services.AddMeineAppsPremium<AndroidPurchaseService>();
 - Nach `services.AddMeineAppsPremium()` wird Factory als DI-Override registriert (wenn gesetzt)
 - `MainActivity.cs` setzt Factory VOR `base.OnCreate()`
 
+### Purchase-Restore beim App-Start (03.03.2026)
+
+**Problem:** `PurchaseService.InitializeAsync()` wurde in keiner der 6 Apps aufgerufen. Nach Geräte-/Datenwechsel oder App-Daten löschen sahen Premium-Nutzer wieder Werbung, weil der lokale `is_premium` Preference-Key fehlte. WorkTimePro-Abos wurden nicht als abgelaufen erkannt.
+
+**Fix:** Alle 6 Loading-Pipelines rufen `IPurchaseService.InitializeAsync()` parallel im ersten Lade-Schritt auf. Auf Android verbindet `AndroidPurchaseService.InitializeAsync()` zum Google Play Billing Service und stellt via `RestorePurchasesAsync()` alle aktiven Käufe/Abos wieder her. Auf Desktop ist es ein No-Op (liest nur lokale Preferences).
+
+**Betroffene Dateien:**
+- `BomberBlast.Shared/Loading/BomberBlastLoadingPipeline.cs`
+- `FinanzRechner.Shared/Loading/FinanzRechnerLoadingPipeline.cs`
+- `FitnessRechner.Shared/Loading/FitnessRechnerLoadingPipeline.cs`
+- `HandwerkerRechner.Shared/Loading/HandwerkerRechnerLoadingPipeline.cs`
+- `HandwerkerImperium.Shared/Loading/HandwerkerImperiumLoadingPipeline.cs`
+- `WorkTimePro.Shared/Loading/WorkTimeProLoadingPipeline.cs`
+
+### AdView Destroy nach Premium-Kauf (03.03.2026)
+
+**Problem:** `OnPremiumStatusChanged` und `OnAdsStateChanged` (bei `AdsEnabled=false`) setzten den AdView nur auf `Visibility=Gone`. Der AdView blieb im Speicher und im Layout.
+
+**Fix:** Bei Premium-Kauf oder `DisableAds()` wird der AdView jetzt per `RemoveView()` aus dem Layout entfernt und mit `Destroy()` freigegeben. `_adView` wird auf `null` gesetzt.
+
 ### Changelog (Premium Library)
 
+- **03.03.2026**: Purchase-Restore in alle 6 Loading-Pipelines + AdView Destroy nach Premium-Kauf
 - **03.03.2026**: **KRITISCHER FIX: Rewarded Ad Belohnungen kamen nicht an** – `LoadAndShowAsync()` hatte 8s-Timeout der BEIDE Phasen (Laden + Video-Anzeige) abdeckte. Rewarded Videos dauern 15-30s → Timeout feuerte während User das Video schaute → `tcs.TrySetResult(false)` → ViewModel bekam `false` → Belohnung wurde nicht vergeben. Fix: `CancellationTokenSource` im `OnDemandLoadCallback` – Timeout wird gecancellt sobald Ad geladen ist und `ad.Show()` aufgerufen wird. Betrifft ALLE placement-spezifischen Rewarded Ads in ALLEN 6 Apps.
 - **28.02.2026**: **KRITISCHER FIX: Rewarded Ads OnAdLoaded JNI-Callback** – FixedRewardedAdLoadCallback mit korrektem JNI Delegate-Wiring (GetOnAdLoadedHandler Connector statt leerer String). Behebt 0 Impressions trotz 100% Match Rate in ALLEN 6 Apps. + Retry mit exponentiellem Backoff (5s/15s/30s, max 3 Versuche). + 2 fehlende BomberBlast Placements (lucky_spin, dungeon_run) in AdConfig.cs.
 - **17.02.2026**: AndroidPurchaseService mit Google Play Billing Client v8.3.0.1 integriert. Ersetzt AIDL-basierte Billing. Alle 6 Premium-Apps verwenden jetzt echte Google Play Billing Library.

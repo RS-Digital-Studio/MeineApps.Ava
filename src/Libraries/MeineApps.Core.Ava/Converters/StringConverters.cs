@@ -6,7 +6,7 @@ namespace MeineApps.Core.Ava.Converters;
 /// <summary>
 /// Checks if string is null or empty
 /// </summary>
-public class StringIsNullOrEmptyConverter : IValueConverter
+public sealed class StringIsNullOrEmptyConverter : IValueConverter
 {
     public static readonly StringIsNullOrEmptyConverter Instance = new();
 
@@ -24,7 +24,7 @@ public class StringIsNullOrEmptyConverter : IValueConverter
 /// <summary>
 /// Checks if string is NOT null or empty
 /// </summary>
-public class StringIsNotNullOrEmptyConverter : IValueConverter
+public sealed class StringIsNotNullOrEmptyConverter : IValueConverter
 {
     public static readonly StringIsNotNullOrEmptyConverter Instance = new();
 
@@ -42,7 +42,7 @@ public class StringIsNotNullOrEmptyConverter : IValueConverter
 /// <summary>
 /// Formats a string using String.Format
 /// </summary>
-public class StringFormatConverter : IValueConverter
+public sealed class StringFormatConverter : IValueConverter
 {
     public static readonly StringFormatConverter Instance = new();
 
@@ -63,7 +63,7 @@ public class StringFormatConverter : IValueConverter
 /// <summary>
 /// Truncates a string to a maximum length
 /// </summary>
-public class StringTruncateConverter : IValueConverter
+public sealed class StringTruncateConverter : IValueConverter
 {
     public static readonly StringTruncateConverter Instance = new();
 

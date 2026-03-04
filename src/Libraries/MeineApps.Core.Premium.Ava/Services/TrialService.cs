@@ -6,7 +6,7 @@ namespace MeineApps.Core.Premium.Ava.Services;
 /// <summary>
 /// Implementation of 14-day trial system using IPreferencesService
 /// </summary>
-public class TrialService : ITrialService
+public sealed class TrialService : ITrialService
 {
     private const string TrialStartKey = "trial_start_date";
     private const string TrialSeenKey = "trial_offer_seen";

@@ -29,12 +29,13 @@ public struct SkiaParticle
 
 /// <summary>
 /// Verwaltung und Rendering einer Partikel-Liste.
-/// Maximal-Limit verhindert Memory-Probleme.
+/// Fixed-Array mit Swap-with-Last für O(1) Entfernung (kein GC-Druck).
 /// </summary>
-public class SkiaParticleManager
+public sealed class SkiaParticleManager
 {
-    private readonly List<SkiaParticle> _particles = new();
+    private readonly SkiaParticle[] _particles;
     private readonly int _maxParticles;
+    private int _count;
     private readonly Random _random = new();
 
     // Gecachte Paints (werden wiederverwendet)
@@ -54,26 +55,31 @@ public class SkiaParticleManager
     public SkiaParticleManager(int maxParticles = 50)
     {
         _maxParticles = maxParticles;
+        _particles = new SkiaParticle[maxParticles];
     }
 
     /// <summary>
     /// Gibt zurück ob aktive Partikel vorhanden sind.
     /// </summary>
-    public bool HasActiveParticles => _particles.Count > 0;
+    public bool HasActiveParticles => _count > 0;
 
     /// <summary>
     /// Aktuelle Anzahl lebender Partikel.
     /// </summary>
-    public int Count => _particles.Count;
+    public int Count => _count;
 
     /// <summary>
-    /// Fügt einen Partikel hinzu (älteste werden entfernt wenn Limit erreicht).
+    /// Fügt einen Partikel hinzu (überschreibt ältesten wenn Limit erreicht).
     /// </summary>
     public void Add(SkiaParticle particle)
     {
-        if (_particles.Count >= _maxParticles)
-            _particles.RemoveAt(0);
-        _particles.Add(particle);
+        if (_count >= _maxParticles)
+        {
+            // Überschreibe ältesten Partikel (Index 0)
+            _particles[0] = particle;
+            return;
+        }
+        _particles[_count++] = particle;
     }
 
     /// <summary>
@@ -82,21 +88,18 @@ public class SkiaParticleManager
     public void AddBurst(int count, Func<Random, SkiaParticle> factory)
     {
         for (int i = 0; i < count; i++)
-        {
-            if (_particles.Count >= _maxParticles)
-                _particles.RemoveAt(0);
-            _particles.Add(factory(_random));
-        }
+            Add(factory(_random));
     }
 
     /// <summary>
     /// Aktualisiert alle Partikel (Position, Lebenszeit, Schwerkraft).
+    /// Swap-with-Last für O(1) Entfernung toter Partikel.
     /// </summary>
     public void Update(float deltaTime)
     {
-        for (int i = _particles.Count - 1; i >= 0; i--)
+        for (int i = _count - 1; i >= 0; i--)
         {
-            var p = _particles[i];
+            ref var p = ref _particles[i];
             p.X += p.VelocityX * deltaTime;
             p.Y += p.VelocityY * deltaTime;
             p.VelocityY += p.Gravity * deltaTime;
@@ -104,12 +107,7 @@ public class SkiaParticleManager
             p.Life -= deltaTime;
 
             if (p.Life <= 0)
-            {
-                _particles.RemoveAt(i);
-                continue;
-            }
-
-            _particles[i] = p;
+                _particles[i] = _particles[--_count]; // O(1) Swap-with-Last
         }
     }
 
@@ -118,8 +116,9 @@ public class SkiaParticleManager
     /// </summary>
     public void Draw(SKCanvas canvas, bool withGlow = false)
     {
-        foreach (var p in _particles)
+        for (int i = 0; i < _count; i++)
         {
+            ref readonly var p = ref _particles[i];
             byte alpha = (byte)(p.Alpha * 255);
             if (alpha == 0) continue;
 
@@ -142,8 +141,9 @@ public class SkiaParticleManager
     /// </summary>
     public void DrawAsConfetti(SKCanvas canvas)
     {
-        foreach (var p in _particles)
+        for (int i = 0; i < _count; i++)
         {
+            ref readonly var p = ref _particles[i];
             byte alpha = (byte)(p.Alpha * 255);
             if (alpha == 0) continue;
 
@@ -160,7 +160,7 @@ public class SkiaParticleManager
     /// <summary>
     /// Entfernt alle Partikel.
     /// </summary>
-    public void Clear() => _particles.Clear();
+    public void Clear() => _count = 0;
 }
 
 /// <summary>

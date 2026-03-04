@@ -6,7 +6,7 @@ namespace MeineApps.CalcLib;
 /// Parser für mathematische Ausdrücke mit korrekter Operator-Präzedenz.
 /// Verwendet Shunting Yard Algorithmus für Infix → Postfix Konvertierung.
 /// </summary>
-public class ExpressionParser
+public sealed class ExpressionParser
 {
     private readonly CalculatorEngine _engine;
 

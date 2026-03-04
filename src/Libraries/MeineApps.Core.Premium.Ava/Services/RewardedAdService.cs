@@ -4,7 +4,7 @@ namespace MeineApps.Core.Premium.Ava.Services;
 /// Desktop-Simulator fuer Rewarded Ads.
 /// Auf Android wird diese Klasse durch AndroidRewardedAdService ersetzt (DI Override in MainActivity).
 /// </summary>
-public class RewardedAdService : IRewardedAdService
+public sealed class RewardedAdService : IRewardedAdService
 {
     private readonly IPurchaseService _purchaseService;
     private bool _isDisabled;

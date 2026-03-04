@@ -9,7 +9,7 @@ namespace MeineApps.Core.Premium.Ava.Droid;
 /// Dieses File wird via Compile Include in die Android-Projekte eingebunden.
 /// Es wird NICHT als Teil der net10.0 Library kompiliert.
 /// </summary>
-public class AndroidFileShareService : IFileShareService
+public sealed class AndroidFileShareService : IFileShareService
 {
     private readonly Activity _activity;
 

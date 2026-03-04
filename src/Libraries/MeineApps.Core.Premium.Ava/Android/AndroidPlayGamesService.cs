@@ -12,7 +12,7 @@ namespace MeineApps.Core.Premium.Ava.Droid;
 /// GPGS v2: Automatisches Sign-In (kein manueller Button nötig).
 /// PlayGamesSdk.Initialize() muss VOR dem ersten Client-Aufruf erfolgen.
 /// </summary>
-public class AndroidPlayGamesService : IPlayGamesService
+public sealed class AndroidPlayGamesService : IPlayGamesService
 {
     private const string Tag = "AndroidPlayGamesService";
 

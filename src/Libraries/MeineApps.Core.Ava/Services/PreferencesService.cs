@@ -6,7 +6,7 @@ namespace MeineApps.Core.Ava.Services;
 /// JSON file-based preferences service for cross-platform support.
 /// Speichert debounced (500ms nach letztem Set) fuer bessere Performance.
 /// </summary>
-public class PreferencesService : IPreferencesService, IDisposable
+public sealed class PreferencesService : IPreferencesService, IDisposable
 {
     private static readonly JsonSerializerOptions _jsonWriteOptions = new() { WriteIndented = true };
 

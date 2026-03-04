@@ -9,7 +9,7 @@ namespace MeineApps.Core.Ava.Converters;
 /// Wird verwendet für dynamische Farben (Gilden-Farben, Badge-Farben, etc.).
 /// Statische Instance für x:Static Binding in XAML verfügbar.
 /// </summary>
-public class StringToColorBrushConverter : IValueConverter
+public sealed class StringToColorBrushConverter : IValueConverter
 {
     /// <summary>
     /// Statische Instanz für x:Static Binding in XAML.
@@ -43,7 +43,7 @@ public class StringToColorBrushConverter : IValueConverter
 /// Wird verwendet wenn eine Color-Property (nicht Brush) gebunden werden muss,
 /// z.B. bei SolidColorBrush.Color mit benutzerdefinierter Opacity.
 /// </summary>
-public class StringToColorConverter : IValueConverter
+public sealed class StringToColorConverter : IValueConverter
 {
     /// <summary>
     /// Statische Instanz für x:Static Binding in XAML.

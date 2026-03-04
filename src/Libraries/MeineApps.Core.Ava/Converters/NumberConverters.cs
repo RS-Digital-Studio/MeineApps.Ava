@@ -6,7 +6,7 @@ namespace MeineApps.Core.Ava.Converters;
 /// <summary>
 /// Formats a number with specified decimal places
 /// </summary>
-public class NumberFormatConverter : IValueConverter
+public sealed class NumberFormatConverter : IValueConverter
 {
     public static readonly NumberFormatConverter Instance = new();
 
@@ -42,7 +42,7 @@ public class NumberFormatConverter : IValueConverter
 /// <summary>
 /// Formats a number as currency
 /// </summary>
-public class CurrencyConverter : IValueConverter
+public sealed class CurrencyConverter : IValueConverter
 {
     public static readonly CurrencyConverter Instance = new();
 
@@ -76,7 +76,7 @@ public class CurrencyConverter : IValueConverter
 /// <summary>
 /// Formats a number as percentage
 /// </summary>
-public class PercentageConverter : IValueConverter
+public sealed class PercentageConverter : IValueConverter
 {
     public static readonly PercentageConverter Instance = new();
 
@@ -112,7 +112,7 @@ public class PercentageConverter : IValueConverter
 /// <summary>
 /// Checks if a number is greater than zero
 /// </summary>
-public class IsPositiveConverter : IValueConverter
+public sealed class IsPositiveConverter : IValueConverter
 {
     public static readonly IsPositiveConverter Instance = new();
 

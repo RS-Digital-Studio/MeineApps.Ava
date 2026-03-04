@@ -4,7 +4,7 @@ namespace MeineApps.UI.Loading;
 /// Einzelner Ladeschritt mit Name, Gewichtung und Ausführungs-Funktion.
 /// Die Gewichtung bestimmt den Anteil am Gesamtfortschritt.
 /// </summary>
-public class LoadingStep
+public sealed class LoadingStep
 {
     /// <summary>
     /// Interner Name (für Logging/Debugging)

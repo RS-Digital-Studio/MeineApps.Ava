@@ -5,7 +5,7 @@ namespace MeineApps.CalcLib;
 /// <summary>
 /// Persistente Implementation des History-Services mit JSON-Speicherung.
 /// </summary>
-public class PersistentHistoryService : IHistoryService
+public sealed class PersistentHistoryService : IHistoryService
 {
     private readonly List<CalculationHistoryEntry> _history = new();
     private const int MAX_ENTRIES = 100;

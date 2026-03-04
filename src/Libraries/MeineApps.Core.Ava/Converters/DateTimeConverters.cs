@@ -6,7 +6,7 @@ namespace MeineApps.Core.Ava.Converters;
 /// <summary>
 /// Formats a DateTime to a string
 /// </summary>
-public class DateTimeFormatConverter : IValueConverter
+public sealed class DateTimeFormatConverter : IValueConverter
 {
     public static readonly DateTimeFormatConverter Instance = new();
 
@@ -31,7 +31,7 @@ public class DateTimeFormatConverter : IValueConverter
 /// <summary>
 /// Formats a DateTime as relative time (e.g., "2 hours ago")
 /// </summary>
-public class RelativeTimeConverter : IValueConverter
+public sealed class RelativeTimeConverter : IValueConverter
 {
     public static readonly RelativeTimeConverter Instance = new();
 
@@ -66,7 +66,7 @@ public class RelativeTimeConverter : IValueConverter
 /// <summary>
 /// Formats a TimeSpan to a string
 /// </summary>
-public class TimeSpanFormatConverter : IValueConverter
+public sealed class TimeSpanFormatConverter : IValueConverter
 {
     public static readonly TimeSpanFormatConverter Instance = new();
 
@@ -91,7 +91,7 @@ public class TimeSpanFormatConverter : IValueConverter
 /// <summary>
 /// Formats a TimeSpan as human-readable duration
 /// </summary>
-public class DurationConverter : IValueConverter
+public sealed class DurationConverter : IValueConverter
 {
     public static readonly DurationConverter Instance = new();
 

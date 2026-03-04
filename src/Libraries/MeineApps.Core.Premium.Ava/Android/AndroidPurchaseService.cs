@@ -15,7 +15,7 @@ namespace MeineApps.Core.Premium.Ava.Droid;
 /// IJavaPeerable und brauchen Java.Lang.Object als Basis. Da diese Klasse von
 /// PurchaseService (C#) erbt, werden innere Callback-Klassen verwendet.
 /// </summary>
-public class AndroidPurchaseService : PurchaseService
+public sealed class AndroidPurchaseService : PurchaseService
 {
     private const string Tag = "AndroidPurchaseService";
 

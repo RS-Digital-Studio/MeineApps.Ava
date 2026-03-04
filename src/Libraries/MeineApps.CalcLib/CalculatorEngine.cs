@@ -4,7 +4,7 @@ namespace MeineApps.CalcLib;
 /// Kern-Berechnungslogik des Taschenrechners.
 /// Stateless und vollständig testbar.
 /// </summary>
-public class CalculatorEngine
+public sealed class CalculatorEngine
 {
     private const double EPSILON = 1e-15;
 

@@ -8,7 +8,7 @@ namespace MeineApps.Core.Ava.Localization;
 /// Localization service backed by ResX ResourceManager.
 /// Each app creates its own instance with its ResourceManager.
 /// </summary>
-public class LocalizationService : ILocalizationService
+public sealed class LocalizationService : ILocalizationService
 {
     private const string LanguageKey = "selected_language";
 

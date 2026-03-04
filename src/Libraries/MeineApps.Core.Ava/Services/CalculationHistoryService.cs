@@ -6,7 +6,7 @@ namespace MeineApps.Core.Ava.Services;
 /// JSON-file-based calculation history service (thread-safe).
 /// Stores the last 30 calculations per calculator type.
 /// </summary>
-public class CalculationHistoryService : ICalculationHistoryService
+public sealed class CalculationHistoryService : ICalculationHistoryService
 {
     private const string HistoryFolder = "calculation_history";
     private const int MaxItemsPerCalculator = 30;

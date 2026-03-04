@@ -15,7 +15,9 @@ MeineApps.Core.Ava/
 │   ├── IThemeService.cs
 │   ├── ThemeService.cs
 │   ├── IPreferencesService.cs
-│   └── PreferencesService.cs
+│   ├── PreferencesService.cs
+│   ├── IHapticService.cs          # Interface + NoOpHapticService (zentral für alle Apps)
+│   ├── BackPressHelper.cs         # Double-Back-to-Exit Logik (verwendet von allen 8 Apps)
 ├── Themes/
 │   ├── ThemeColors.axaml       # Design Tokens
 │   ├── MidnightTheme.axaml     # Dark, Indigo
@@ -103,6 +105,35 @@ IPreferencesService _prefs;
 
 _prefs.Set("key", value);
 var val = _prefs.Get<string>("key", "default");
+```
+
+### IHapticService
+```csharp
+// Plattform-Abstraktion für haptisches Feedback (Vibration)
+// Interface: IsEnabled, Tick(), Click(), HeavyClick()
+// NoOpHapticService: Desktop-Fallback (leere Methoden)
+// Android: Jede App hat eigene AndroidHapticService-Implementierung
+IHapticService _haptic;
+
+_haptic.IsEnabled = true;
+_haptic.Tick();       // Leichtes Feedback (Ziffern, Tab-Wechsel)
+_haptic.Click();      // Mittleres Feedback (Speichern, CheckIn)
+_haptic.HeavyClick(); // Starkes Feedback (Berechnung, Achievement)
+```
+
+### BackPressHelper
+```csharp
+// Double-Back-to-Exit Logik (Android-Zurücktaste)
+// Alle 8 MainViewModels nutzen diese Klasse statt eigener Felder
+private readonly BackPressHelper _backPressHelper = new();
+
+// Im Konstruktor: Event an VM-eigenes Event weiterleiten
+_backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
+// WorkTimePro Sonderfall: nutzt FloatingTextRequested statt ExitHintRequested
+_backPressHelper.ExitHintRequested += msg => FloatingTextRequested?.Invoke(msg, "info");
+
+// Am Ende von HandleBackPressed() (nach app-spezifischen Checks):
+return _backPressHelper.HandleDoubleBack(exitMessage);
 ```
 
 ## Converters

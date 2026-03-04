@@ -7,7 +7,7 @@ namespace MeineApps.Core.Premium.Ava.Services;
 /// Manages ad state via IPreferencesService.
 /// Actual AdMob integration must be done in platform-specific code.
 /// </summary>
-public class AdMobService : IAdService
+public sealed class AdMobService : IAdService
 {
     private const string AdsDisabledKey = "ads_disabled";
     private readonly IPreferencesService _preferences;

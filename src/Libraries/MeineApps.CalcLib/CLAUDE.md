@@ -33,9 +33,6 @@ var result = parser.Evaluate("2+3×4");  // 14 (korrekte Präzedenz)
 | App | CalcLib |
 |-----|---------|
 | RechnerPlus | ✅ |
-| HandwerkerRechner | ✅ |
-| FinanzRechner | ✅ |
-| FitnessRechner | ✅ |
 
 ## Technische Hinweise
 - Target: `net10.0` (keine MAUI-Abhängigkeit)

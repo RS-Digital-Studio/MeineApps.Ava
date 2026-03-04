@@ -9,7 +9,7 @@ namespace MeineApps.UI.SkiaSharp.SplashScreen;
 /// Wird als Fallback verwendet wenn keine app-spezifische Implementierung gesetzt wird.
 /// Alle SKPaint/SKFont sind gecacht (kein per-frame Allokation).
 /// </summary>
-public class SplashScreenRenderer : SplashRendererBase
+public sealed class SplashScreenRenderer : SplashRendererBase
 {
     private const int MaxParticles = 24;
 

@@ -5,7 +5,7 @@ namespace MeineApps.Core.Ava.Services;
 /// <summary>
 /// Desktop-Implementierung: Oeffnet Dateien mit der Standard-App.
 /// </summary>
-public class DesktopFileShareService : IFileShareService
+public sealed class DesktopFileShareService : IFileShareService
 {
     public Task<bool> ShareFileAsync(string filePath, string title, string mimeType)
     {

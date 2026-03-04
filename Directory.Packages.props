@@ -5,26 +5,26 @@
 
   <ItemGroup>
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <!-- AVALONIA CORE (Basis: 11.3.11)                                  -->
+    <!-- AVALONIA CORE (Basis: 11.3.12)                                  -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Avalonia" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Android" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Skia" Version="11.3.11" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.11" />
+    <PackageVersion Include="Avalonia" Version="11.3.12" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.12" />
+    <PackageVersion Include="Avalonia.Android" Version="11.3.12" />
+    <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.3.12" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.12" />
+    <PackageVersion Include="Avalonia.Skia" Version="11.3.12" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.12" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- ICONS                                                            -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Material.Icons.Avalonia" Version="2.4.1" />
+    <PackageVersion Include="Material.Icons.Avalonia" Version="3.0.0" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- MVVM & BEHAVIORS                                                 -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="11.3.9.3" />
+    <PackageVersion Include="Xaml.Behaviors.Avalonia" Version="11.3.9.5" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- GRAPHICS & CHARTS                                                -->
@@ -57,7 +57,7 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- IN-APP REVIEW (Google Play Review API)                            -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.Google.Android.Play.Review" Version="2.0.2.5" />
+    <PackageVersion Include="Xamarin.Google.Android.Play.Review" Version="2.0.2.6" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- GOOGLE PLAY GAMES SERVICES v2                                     -->
@@ -71,10 +71,10 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- CAMERA & BARCODE (CameraX + ML Kit)                              -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Xamarin.AndroidX.Camera.Camera2" Version="1.5.2.1" />
-    <PackageVersion Include="Xamarin.AndroidX.Camera.Lifecycle" Version="1.5.2.1" />
-    <PackageVersion Include="Xamarin.AndroidX.Camera.View" Version="1.5.2.1" />
-    <PackageVersion Include="Xamarin.Google.MLKit.BarcodeScanning" Version="117.3.0.5" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.Camera2" Version="1.5.3" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.Lifecycle" Version="1.5.3" />
+    <PackageVersion Include="Xamarin.AndroidX.Camera.View" Version="1.5.3" />
+    <PackageVersion Include="Xamarin.Google.MLKit.BarcodeScanning" Version="117.3.0.6" />
 
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- EXPORT (PDF/Excel)                                               -->
@@ -85,8 +85,8 @@
     <!-- ═══════════════════════════════════════════════════════════════ -->
     <!-- DI & LOGGING                                                     -->
     <!-- ═══════════════════════════════════════════════════════════════ -->
-    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
   </ItemGroup>
 </Project>

@@ -218,7 +218,11 @@ public sealed class AdMobHelper : IDisposable
 
             if (!_adService.AdsEnabled)
             {
-                _adView.Visibility = ViewStates.Gone;
+                // Ads dauerhaft deaktiviert → AdView komplett freigeben
+                var parent = _adView.Parent as FrameLayout;
+                parent?.RemoveView(_adView);
+                _adView.Destroy();
+                _adView = null;
                 return;
             }
 
@@ -238,8 +242,13 @@ public sealed class AdMobHelper : IDisposable
         {
             _activity?.RunOnUiThread(() =>
             {
-                if (_adView != null)
-                    _adView.Visibility = ViewStates.Gone;
+                if (_adView == null) return;
+
+                // AdView komplett entfernen und freigeben (nicht nur Gone)
+                var parent = _adView.Parent as FrameLayout;
+                parent?.RemoveView(_adView);
+                _adView.Destroy();
+                _adView = null;
             });
         }
     }
@@ -276,8 +285,13 @@ public sealed class AdMobHelper : IDisposable
         if (_purchaseService != null)
             _purchaseService.PremiumStatusChanged -= OnPremiumStatusChanged;
 
-        _adView?.Destroy();
-        _adView = null;
+        if (_adView != null)
+        {
+            var parent = _adView.Parent as FrameLayout;
+            parent?.RemoveView(_adView);
+            _adView.Destroy();
+            _adView = null;
+        }
     }
 
     /// <summary>

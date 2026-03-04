@@ -12,7 +12,7 @@ namespace MeineApps.Core.Ava.Services;
 /// Themes are applied dynamically - do NOT include theme .axaml files in App.axaml.
 /// Only ThemeColors.axaml (shared design tokens) should be included statically.
 /// </summary>
-public class ThemeService : IThemeService
+public sealed class ThemeService : IThemeService
 {
     private const string PreferenceKey = "app_theme";
     private readonly IPreferencesService _preferences;

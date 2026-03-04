@@ -9,7 +9,7 @@ namespace BomberBlast.Services;
 /// Missionen werden deterministisch aus dem Datum generiert (gleicher Tag = gleiche Missionen).
 /// Bonus-Belohnung wenn alle 3 abgeschlossen.
 /// </summary>
-public class DailyMissionService : IDailyMissionService
+public sealed class DailyMissionService : IDailyMissionService
 {
     private const string DAILY_KEY = "DailyMissionData";
     private const int MISSIONS_PER_DAY = 3;

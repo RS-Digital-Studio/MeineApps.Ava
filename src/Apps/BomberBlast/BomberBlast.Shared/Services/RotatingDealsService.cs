@@ -12,7 +12,7 @@ namespace BomberBlast.Services;
 /// 3 Tagesdeals + 1 Wochendeal mit 20-50% Rabatt.
 /// Persistiert beanspruchte Deals via JSON in IPreferencesService.
 /// </summary>
-public class RotatingDealsService : IRotatingDealsService
+public sealed class RotatingDealsService : IRotatingDealsService
 {
     private const string DEALS_DATA_KEY = "RotatingDealsData";
 

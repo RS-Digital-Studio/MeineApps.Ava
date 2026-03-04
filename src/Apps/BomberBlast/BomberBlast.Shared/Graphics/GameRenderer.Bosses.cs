@@ -6,7 +6,7 @@ using SkiaSharp;
 
 namespace BomberBlast.Graphics;
 
-public partial class GameRenderer
+public sealed partial class GameRenderer
 {
     private void RenderBoss(SKCanvas canvas, BossEnemy boss)
     {

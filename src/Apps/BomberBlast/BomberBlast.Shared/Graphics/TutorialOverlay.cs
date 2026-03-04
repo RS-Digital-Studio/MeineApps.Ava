@@ -9,7 +9,7 @@ namespace BomberBlast.Graphics;
 /// Zeigt Highlight-Box mit Cutout, Pfeil und Textblase fuer den aktuellen Tutorial-Schritt.
 /// Dim-Overlay hat ein "Loch" beim Highlight, sodass der hervorgehobene Bereich klar sichtbar ist.
 /// </summary>
-public class TutorialOverlay : IDisposable
+public sealed class TutorialOverlay : IDisposable
 {
     private readonly ILocalizationService _localizationService;
 

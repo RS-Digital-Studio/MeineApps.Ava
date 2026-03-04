@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel fuer den Victory-Screen (alle 50 Level geschafft).
 /// Zeigt Glueckwunsch, Sterne-Zaehler und Dankes-Text.
 /// </summary>
-public partial class VictoryViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class VictoryViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly ILocalizationService _localizationService;
     private readonly IProgressService _progressService;

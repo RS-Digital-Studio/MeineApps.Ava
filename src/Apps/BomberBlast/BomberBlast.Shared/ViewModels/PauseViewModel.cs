@@ -8,7 +8,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the pause overlay.
 /// Provides commands for resume, restart, settings, and quit.
 /// </summary>
-public partial class PauseViewModel : ViewModelBase, INavigable
+public sealed partial class PauseViewModel : ViewModelBase, INavigable
 {
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS

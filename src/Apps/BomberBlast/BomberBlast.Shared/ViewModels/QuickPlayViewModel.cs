@@ -9,7 +9,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für Quick-Play Modus mit Schwierigkeits-Slider und Seed-Anzeige.
 /// Ermöglicht dem Spieler ein zufälliges Level mit einstellbarer Schwierigkeit zu starten.
 /// </summary>
-public partial class QuickPlayViewModel : ViewModelBase, INavigable
+public sealed partial class QuickPlayViewModel : ViewModelBase, INavigable
 {
     private readonly ILocalizationService _localizationService;
 

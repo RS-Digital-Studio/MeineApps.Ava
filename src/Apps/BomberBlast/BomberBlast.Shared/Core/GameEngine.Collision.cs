@@ -9,7 +9,7 @@ namespace BomberBlast.Core;
 /// <summary>
 /// Kollisionserkennung: Spieler/Gegner/Explosionen
 /// </summary>
-public partial class GameEngine
+public sealed partial class GameEngine
 {
     // Positions-Cache für Gegner (vermeidet O(n) Iteration pro Explosionszelle → O(1) Lookup)
     private readonly Dictionary<(int, int), List<Enemy>> _enemyPositionCache = new();

@@ -13,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Sammlungs-Album.
 /// Zeigt entdeckte Gegner, Bosse, PowerUps, Karten und Kosmetik mit Fortschritt und Meilensteinen.
 /// </summary>
-public partial class CollectionViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class CollectionViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly ICollectionService _collectionService;
     private readonly ILocalizationService _localizationService;

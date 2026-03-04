@@ -8,7 +8,7 @@ namespace BomberBlast.Services;
 /// Persistente Gem-Verwaltung via IPreferencesService.
 /// Pattern analog zu CoinService.
 /// </summary>
-public class GemService : IGemService
+public sealed class GemService : IGemService
 {
     private const string GEM_DATA_KEY = "GemData";
     private static readonly JsonSerializerOptions JsonOptions = new();

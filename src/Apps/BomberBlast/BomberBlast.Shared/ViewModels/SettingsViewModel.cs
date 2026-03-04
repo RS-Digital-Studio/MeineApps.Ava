@@ -15,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// Verwaltet Input-Modus, Sound-Lautstärke, Sprache und Premium-Status.
 /// Persistiert alle Einstellungen via InputManager und SoundManager.
 /// </summary>
-public partial class SettingsViewModel : ViewModelBase, INavigable
+public sealed partial class SettingsViewModel : ViewModelBase, INavigable
 {
     private readonly IProgressService _progressService;
     private readonly IHighScoreService _highScoreService;

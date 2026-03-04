@@ -9,7 +9,7 @@ namespace BomberBlast.Services;
 /// Firebase REST API Client: Anonymous Auth + Realtime Database.
 /// Funktioniert auf Android und Desktop ohne native SDKs.
 /// </summary>
-public class FirebaseService : IFirebaseService
+public sealed class FirebaseService : IFirebaseService
 {
     // Firebase-Projekt: bomberblast-league
     private const string ApiKey = "AIzaSyDr63VL86diNabbjQjeXX9Dal02cQF6CHs";

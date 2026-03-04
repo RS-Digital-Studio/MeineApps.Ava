@@ -15,7 +15,7 @@ namespace BomberBlast.Services;
 /// - NPC-Backfill wenn weniger als 20 echte Spieler in der Liga
 /// - Debounced Firebase-Push nach Punkteänderungen (3s)
 /// </summary>
-public class LeagueService : ILeagueService
+public sealed class LeagueService : ILeagueService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private const string DataKey = "LeagueData";

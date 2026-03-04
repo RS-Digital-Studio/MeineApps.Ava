@@ -3295,4 +3295,13 @@
   <data name="DungeonAscensionUp" xml:space="preserve">
     <value>Ascension {0} débloquée !</value>
   </data>
+  <data name="Buy" xml:space="preserve">
+    <value>Acheter</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Chargement des graphiques</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Démarrage du jeu</value>
+  </data>
 </root>

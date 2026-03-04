@@ -8,7 +8,7 @@ namespace BomberBlast.Services;
 /// Fordert Review an nach Level 3-5 (erstes Erfolgserlebnis),
 /// mit 14-Tage-Cooldown zwischen Anfragen.
 /// </summary>
-public class ReviewService : IReviewService
+public sealed class ReviewService : IReviewService
 {
     private const string REVIEW_PROMPTED_DATE_KEY = "ReviewPromptedDate";
     private const string REVIEW_LEVEL_KEY = "ReviewLevelCompleted";

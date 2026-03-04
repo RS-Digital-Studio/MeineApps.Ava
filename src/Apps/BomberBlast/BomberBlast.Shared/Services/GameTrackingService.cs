@@ -7,7 +7,7 @@ namespace BomberBlast.Services;
 /// Implementierung von IGameTrackingService.
 /// Bündelt Aufrufe an Achievement-, Weekly-, Daily-, Collection-, League-, BattlePass- und Card-Service.
 /// </summary>
-public class GameTrackingService : IGameTrackingService
+public sealed class GameTrackingService : IGameTrackingService
 {
     private readonly IAchievementService _achievements;
     private readonly IWeeklyChallengeService _weekly;

@@ -3,7 +3,7 @@ namespace BomberBlast.Core;
 /// <summary>
 /// Manages the level countdown timer (200 seconds per level)
 /// </summary>
-public class GameTimer
+public sealed class GameTimer
 {
     /// <summary>Default time limit per level in seconds (original NES)</summary>
     public const int DEFAULT_TIME_LIMIT = 200;

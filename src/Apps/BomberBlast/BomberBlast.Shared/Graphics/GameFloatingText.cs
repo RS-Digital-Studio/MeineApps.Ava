@@ -7,7 +7,7 @@ namespace BomberBlast.Graphics;
 /// Verwendet für Score-Popups, Combo-Anzeige, PowerUp-Collect-Text.
 /// Struct-basiert, Pool von max 20 Texten.
 /// </summary>
-public class GameFloatingTextSystem : IDisposable
+public sealed class GameFloatingTextSystem : IDisposable
 {
     private const int MAX_TEXTS = 20;
     private const float DEFAULT_DURATION = 1.2f;

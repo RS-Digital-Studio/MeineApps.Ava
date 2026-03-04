@@ -4,7 +4,7 @@ namespace BomberBlast.Services;
 /// No-op sound service for platforms without audio support.
 /// Can be replaced with platform-specific implementations later.
 /// </summary>
-public class NullSoundService : ISoundService
+public sealed class NullSoundService : ISoundService
 {
     public Task PreloadSoundsAsync() => Task.CompletedTask;
 

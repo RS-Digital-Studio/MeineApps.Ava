@@ -9,7 +9,7 @@ namespace BomberBlast.Graphics;
 /// <summary>
 /// Charakter-Rendering: Spieler mit Armen/Beinen/Gesicht + 12 einzigartige Gegner-Typen
 /// </summary>
-public partial class GameRenderer
+public sealed partial class GameRenderer
 {
     // Gepoolte SKPaths für Charakter-Rendering (statt pro-Gegner new SKPath())
     private readonly SKPath _charPath1 = new();

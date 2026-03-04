@@ -7,7 +7,7 @@ namespace BomberBlast.Graphics;
 /// Verwendet Struct-Array Pool (keine Heap-Allokationen pro Partikel).
 /// Unterstützt verschiedene Formen (Rechteck, Kreis, Funke, Glut) und Glow-Effekte.
 /// </summary>
-public class ParticleSystem : IDisposable
+public sealed class ParticleSystem : IDisposable
 {
     private const int MAX_PARTICLES = 300;
     private const float GRAVITY = 120f;

@@ -7,7 +7,7 @@ namespace BomberBlast.Core;
 /// <summary>
 /// Rendering: State-Overlays (Starting, Paused, LevelComplete, GameOver, Victory)
 /// </summary>
-public partial class GameEngine
+public sealed partial class GameEngine
 {
     // Gepoolter SKPath für Iris-Wipe Clip (statt pro-Frame new SKPath())
     private readonly SKPath _irisClipPath = new();

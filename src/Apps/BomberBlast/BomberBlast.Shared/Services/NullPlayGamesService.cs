@@ -3,7 +3,7 @@ namespace BomberBlast.Services;
 /// <summary>
 /// No-Op Implementierung für Desktop (kein Google Play Games).
 /// </summary>
-public class NullPlayGamesService : IPlayGamesService
+public sealed class NullPlayGamesService : IPlayGamesService
 {
     public bool IsSignedIn => false;
     public string? PlayerName => null;

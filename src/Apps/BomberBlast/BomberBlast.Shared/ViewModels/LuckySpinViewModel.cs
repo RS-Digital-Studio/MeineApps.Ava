@@ -12,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Glücksrad (Lucky Spin).
 /// 9 Segmente (Coins + Gems), 1x gratis pro Tag, Extra-Spins per Rewarded Ad.
 /// </summary>
-public partial class LuckySpinViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class LuckySpinViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly ILuckySpinService _spinService;
     private readonly ICoinService _coinService;

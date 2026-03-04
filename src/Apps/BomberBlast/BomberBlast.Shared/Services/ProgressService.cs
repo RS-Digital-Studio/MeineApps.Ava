@@ -6,7 +6,7 @@ namespace BomberBlast.Services;
 /// <summary>
 /// Implementation of progress tracking using IPreferencesService
 /// </summary>
-public class ProgressService : IProgressService
+public sealed class ProgressService : IProgressService
 {
     private const string PROGRESS_KEY = "GameProgress";
     private readonly IPreferencesService _preferences;

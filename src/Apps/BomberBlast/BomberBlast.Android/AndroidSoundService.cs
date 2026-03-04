@@ -11,7 +11,7 @@ namespace BomberBlast.Droid;
 /// SFX: sfx_{key}.ogg → SoundPool (low-latency, mehrere gleichzeitig)
 /// Musik: music_{key}.ogg → MediaPlayer (Loop, Streaming)
 /// </summary>
-public class AndroidSoundService : ISoundService
+public sealed class AndroidSoundService : ISoundService
 {
     private readonly Context _context;
     private readonly AssetManager _assets;

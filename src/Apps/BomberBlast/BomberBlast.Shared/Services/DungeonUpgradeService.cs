@@ -8,7 +8,7 @@ namespace BomberBlast.Services;
 /// Verwaltet permanente Dungeon-Upgrades und DungeonCoin-Währung.
 /// Persistenz via IPreferencesService (JSON).
 /// </summary>
-public class DungeonUpgradeService : IDungeonUpgradeService
+public sealed class DungeonUpgradeService : IDungeonUpgradeService
 {
     private const string DATA_KEY = "DungeonUpgradeData";
 

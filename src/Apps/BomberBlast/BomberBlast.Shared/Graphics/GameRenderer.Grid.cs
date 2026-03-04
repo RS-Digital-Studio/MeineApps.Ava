@@ -6,7 +6,7 @@ using SkiaSharp;
 
 namespace BomberBlast.Graphics;
 
-public partial class GameRenderer
+public sealed partial class GameRenderer
 {
     // ═══════════════════════════════════════════════════════════════════════
     // BODEN-CACHE (statische Floor-Texturen als SKBitmap)

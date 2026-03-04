@@ -12,7 +12,7 @@ namespace BomberBlast.Core;
 /// <summary>
 /// Level-Verwaltung: Laden, PowerUps, Exit, Gegner, Abschluss
 /// </summary>
-public partial class GameEngine
+public sealed partial class GameEngine
 {
     /// <summary>
     /// Story-Modus starten

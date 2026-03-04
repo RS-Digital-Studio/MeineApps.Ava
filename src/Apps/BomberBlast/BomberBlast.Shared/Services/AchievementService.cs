@@ -9,7 +9,7 @@ namespace BomberBlast.Services;
 /// Achievement-Service: 50 Achievements in 5 Kategorien.
 /// Persistiert Fortschritt via IPreferencesService (JSON).
 /// </summary>
-public class AchievementService : IAchievementService
+public sealed class AchievementService : IAchievementService
 {
     private const string ACHIEVEMENTS_KEY = "Achievements";
     private static readonly JsonSerializerOptions JsonOptions = new();

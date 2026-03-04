@@ -9,7 +9,7 @@ namespace BomberBlast.Core;
 /// <summary>
 /// Bomben, Explosionen und Block-Zerstörung
 /// </summary>
-public partial class GameEngine
+public sealed partial class GameEngine
 {
     private void PlaceBomb()
     {

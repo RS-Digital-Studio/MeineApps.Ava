@@ -7,7 +7,7 @@ namespace BomberBlast.AI;
 /// <summary>
 /// Enemy AI controller using behavior-based decisions
 /// </summary>
-public class EnemyAI
+public sealed class EnemyAI
 {
     private readonly GameGrid _grid;
     private readonly AStar _pathfinder;

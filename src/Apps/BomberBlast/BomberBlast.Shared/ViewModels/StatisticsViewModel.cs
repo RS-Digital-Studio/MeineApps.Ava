@@ -12,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für die Profil- und Statistik-Seite.
 /// Zeigt Spielerprofil (Rahmen, Liga, Währungen) und aggregierte Statistiken.
 /// </summary>
-public partial class StatisticsViewModel : ViewModelBase, INavigable
+public sealed partial class StatisticsViewModel : ViewModelBase, INavigable
 {
     private readonly IProgressService _progressService;
     private readonly IHighScoreService _highScoreService;

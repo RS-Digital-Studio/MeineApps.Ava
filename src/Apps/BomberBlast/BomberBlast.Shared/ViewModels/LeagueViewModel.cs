@@ -13,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Liga-System mit Firebase Online-Rangliste.
 /// Zeigt echte Spieler + NPC-Backfill, Saison-Countdown, Belohnungen.
 /// </summary>
-public partial class LeagueViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class LeagueViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly ILeagueService _leagueService;
     private readonly ILocalizationService _localization;
@@ -85,6 +85,21 @@ public partial class LeagueViewModel : ViewModelBase, INavigable, IGameJuiceEmit
     [ObservableProperty]
     private string _playerName = "";
 
+    [ObservableProperty]
+    private string _claimRewardText = "";
+
+    [ObservableProperty]
+    private string _rewardClaimedText = "";
+
+    [ObservableProperty]
+    private string _playerHeaderText = "";
+
+    [ObservableProperty]
+    private string _pointsHeaderText = "";
+
+    [ObservableProperty]
+    private string _loadingLeaderboardText = "";
+
     // ═══════════════════════════════════════════════════════════════════════
     // COLLECTIONS
     // ═══════════════════════════════════════════════════════════════════════
@@ -131,6 +146,11 @@ public partial class LeagueViewModel : ViewModelBase, INavigable, IGameJuiceEmit
     {
         Title = _localization.GetString("LeagueTitle") ?? "League";
         PlayerName = _leagueService.PlayerName;
+        ClaimRewardText = _localization.GetString("LeagueClaimReward") ?? "Claim";
+        RewardClaimedText = _localization.GetString("LeagueRewardClaimed") ?? "Claimed";
+        PlayerHeaderText = _localization.GetString("LeaguePlayer") ?? "Player";
+        PointsHeaderText = _localization.GetString("LeaguePointsHeader") ?? "Points";
+        LoadingLeaderboardText = _localization.GetString("LeagueLoading") ?? "Loading...";
         LoadLeaderboard();
         UpdateTierInfo();
         UpdateCountdown();

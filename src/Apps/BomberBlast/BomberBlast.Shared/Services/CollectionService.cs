@@ -12,7 +12,7 @@ namespace BomberBlast.Services;
 /// Sammlungs-Album Service: Aggregiert Daten aus Card/Customization/Discovery + eigenes Tracking.
 /// Persistenz: JSON in IPreferencesService (Key: "CollectionData").
 /// </summary>
-public class CollectionService : ICollectionService
+public sealed class CollectionService : ICollectionService
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
     private const string PersistenceKey = "CollectionData";

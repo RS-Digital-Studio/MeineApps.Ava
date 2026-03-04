@@ -5,7 +5,7 @@ namespace BomberBlast.AI.PathFinding;
 /// <summary>
 /// A* pathfinding implementation for enemy AI
 /// </summary>
-public class AStar
+public sealed class AStar
 {
     private readonly GameGrid _grid;
 

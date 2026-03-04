@@ -15,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel fuer die Spielseite.
 /// Kapselt GameEngine, steuert den Game-Loop via render-getriebene Updates und besitzt SKCanvas-Rendering.
 /// </summary>
-public partial class GameViewModel : ViewModelBase, INavigable, IDisposable
+public sealed partial class GameViewModel : ViewModelBase, INavigable, IDisposable
 {
     private const float MAX_DELTA_TIME = 0.05f;
 

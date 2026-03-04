@@ -15,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// Karten upgraden. Landscape 2-Spalten-Layout (Sammlung links, Deck+Detail rechts).
 /// Zeigt ALLE 13 Karten (besessene + nicht-besessene als gesperrt).
 /// </summary>
-public partial class DeckViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly ICardService _cardService;
     private readonly ICoinService _coinService;

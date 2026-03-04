@@ -7,7 +7,7 @@ namespace BomberBlast.Services;
 /// <summary>
 /// Implementation of high score management
 /// </summary>
-public class HighScoreService : IHighScoreService
+public sealed class HighScoreService : IHighScoreService
 {
     private const string SCORES_KEY = "HighScores";
     private const int MAX_SCORES = 10;

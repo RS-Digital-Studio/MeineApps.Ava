@@ -4,6 +4,7 @@ using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.Localization;
+using MeineApps.Core.Ava.Services;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
 
@@ -14,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// Zeigt jeweils nur eine Child-View an.
 /// Hält alle Child-ViewModels für den korrekten DataContext.
 /// </summary>
-public partial class MainViewModel : ViewModelBase
+public sealed partial class MainViewModel : ViewModelBase
 {
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS (Game Juice)
@@ -200,10 +201,7 @@ public partial class MainViewModel : ViewModelBase
     /// </summary>
     private Task? _cloudSaveInitTask;
 
-    /// <summary>
-    /// Zeitpunkt des letzten Back-Presses (für Double-Back-to-Exit)
-    /// </summary>
-    private DateTime _lastBackPressTime = DateTime.MinValue;
+    private readonly BackPressHelper _backPressHelper = new();
 
     /// <summary>
     /// Zaehlt Fehlversuche pro Level (fuer Level-Skip nach 3x Game Over)
@@ -313,6 +311,9 @@ public partial class MainViewModel : ViewModelBase
 
         // Ad-Unavailable Meldung anzeigen (benannte Methode statt Lambda fuer Unsubscribe)
         _rewardedAdService.AdUnavailable += OnAdUnavailable;
+
+        // Back-Press Helper verdrahten
+        _backPressHelper.ExitHintRequested += msg => ExitHintRequested?.Invoke(msg);
 
         // PauseVM Resume/Restart Events mit GameVM verbinden
         pauseVm.ResumeRequested += () => gameVm.ResumeCommand.Execute(null);
@@ -908,14 +909,8 @@ public partial class MainViewModel : ViewModelBase
         // 6. Hauptmenü → Double-Back-to-Exit
         if (IsMainMenuActive)
         {
-            var now = DateTime.UtcNow;
-            if ((now - _lastBackPressTime).TotalSeconds < 2)
-                return false; // App schließen
-
-            _lastBackPressTime = now;
             var msg = _localizationService.GetString("PressBackAgainToExit") ?? "Press back again to exit";
-            ExitHintRequested?.Invoke(msg);
-            return true;
+            return _backPressHelper.HandleDoubleBack(msg);
         }
 
         return false;

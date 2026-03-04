@@ -120,7 +120,7 @@
               <Button Classes="Primary GameButton"
                       Command="{Binding ClaimRewardCommand}"
                       Height="32" Padding="12,0" Background="Transparent" Foreground="White">
-                <TextBlock Text="Abholen"
+                <TextBlock Text="{Binding ClaimRewardText}"
                            FontSize="12" FontWeight="Bold" Foreground="White" />
               </Button>
             </Panel>
@@ -130,7 +130,7 @@
                         HorizontalAlignment="Center">
               <materialIcons:MaterialIcon Kind="CheckCircle"
                                           Width="20" Height="20" Foreground="#22C55E" />
-              <TextBlock Text="Abgeholt"
+              <TextBlock Text="{Binding RewardClaimedText}"
                          FontSize="12" Foreground="#22C55E" VerticalAlignment="Center" />
             </StackPanel>
           </StackPanel>
@@ -160,10 +160,10 @@
             <TextBlock Grid.Column="0" Text="#"
                        FontSize="14" FontWeight="Bold" Width="40"
                        Foreground="{DynamicResource TextMutedBrush}" />
-            <TextBlock Grid.Column="1" Text="Spieler"
+            <TextBlock Grid.Column="1" Text="{Binding PlayerHeaderText}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource TextPrimaryBrush}" />
-            <TextBlock Grid.Column="2" Text="Punkte"
+            <TextBlock Grid.Column="2" Text="{Binding PointsHeaderText}"
                        FontSize="14" FontWeight="Bold"
                        Foreground="{DynamicResource AccentBrush}"
                        Margin="0,0,8,0" />
@@ -191,7 +191,7 @@
           <StackPanel Orientation="Horizontal" Spacing="8">
             <materialIcons:MaterialIcon Kind="CloudSync" Width="16" Height="16"
                                         Foreground="{DynamicResource AccentBrush}" />
-            <TextBlock Text="Lade Rangliste..." FontSize="12"
+            <TextBlock Text="{Binding LoadingLeaderboardText}" FontSize="12"
                        Foreground="{DynamicResource TextMutedBrush}" />
           </StackPanel>
         </Border>

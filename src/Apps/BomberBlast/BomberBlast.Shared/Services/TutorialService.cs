@@ -7,7 +7,7 @@ namespace BomberBlast.Services;
 /// Tutorial-Service: 6 interaktive Schritte beim ersten Spielstart.
 /// Persistiert den Abschluss-Status via IPreferencesService.
 /// </summary>
-public class TutorialService : ITutorialService
+public sealed class TutorialService : ITutorialService
 {
     private const string TUTORIAL_COMPLETED_KEY = "TutorialCompleted";
     private readonly IPreferencesService _preferences;

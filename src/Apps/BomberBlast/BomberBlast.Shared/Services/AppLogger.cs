@@ -5,7 +5,7 @@ namespace BomberBlast.Services;
 /// <summary>
 /// Einfache Logging-Implementierung mit Level-Prefix
 /// </summary>
-public class AppLogger : IAppLogger
+public sealed class AppLogger : IAppLogger
 {
     private const string Tag = "BomberBlast";
 

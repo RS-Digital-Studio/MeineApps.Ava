@@ -7,7 +7,7 @@ namespace BomberBlast.Graphics;
 /// <summary>
 /// Atmosphärische Effekte: Hintergrund, Vignette, Schatten, Stimmungsbeleuchtung, Fackeln
 /// </summary>
-public partial class GameRenderer
+public sealed partial class GameRenderer
 {
     // Gepoolter SKPath für Hintergrund-Elemente (Bäume, Stalaktiten, Flammen etc.)
     private readonly SKPath _bgPath = new();

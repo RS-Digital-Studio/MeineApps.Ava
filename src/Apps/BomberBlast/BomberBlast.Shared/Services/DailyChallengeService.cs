@@ -9,7 +9,7 @@ namespace BomberBlast.Services;
 /// Spieler können einmal pro Tag spielen und versuchen den besten Score zu erreichen.
 /// Streak-System belohnt konsistentes tägliches Spielen.
 /// </summary>
-public class DailyChallengeService : IDailyChallengeService
+public sealed class DailyChallengeService : IDailyChallengeService
 {
     private const string DAILY_CHALLENGE_KEY = "DailyChallengeData";
     private static readonly JsonSerializerOptions JsonOptions = new();

@@ -8,7 +8,7 @@ namespace BomberBlast.Services;
 /// Glücksrad-Service: 1x gratis pro Tag, gewichtete Belohnungen
 /// 9 Segmente mit Coins und Gems
 /// </summary>
-public class LuckySpinService : ILuckySpinService
+public sealed class LuckySpinService : ILuckySpinService
 {
     private readonly IPreferencesService _preferences;
     private SpinData _data;

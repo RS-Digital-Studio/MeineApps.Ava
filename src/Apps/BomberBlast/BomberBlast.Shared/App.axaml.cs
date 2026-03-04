@@ -157,7 +157,8 @@ public partial class App : Application
             var sw = Stopwatch.StartNew();
             await pipeline.ExecuteAsync();
 
-            var remaining = 500 - (int)sw.ElapsedMilliseconds;
+            // Mindestens 2s anzeigen damit die Splash-Animation sichtbar ist
+            var remaining = 2000 - (int)sw.ElapsedMilliseconds;
             if (remaining > 0) await Task.Delay(remaining);
 
             var mainVm = Services.GetRequiredService<MainViewModel>();

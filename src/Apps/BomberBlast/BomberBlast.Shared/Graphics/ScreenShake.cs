@@ -4,7 +4,7 @@ namespace BomberBlast.Graphics;
 /// Screen-Shake-Effekt für Explosionen und Spieler-Tod.
 /// Erzeugt zufällige Verschiebung die exponentiell abklingt.
 /// </summary>
-public class ScreenShake
+public sealed class ScreenShake
 {
     private float _intensity;
     private float _duration;

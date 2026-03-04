@@ -10,7 +10,7 @@ namespace BomberBlast.Services;
 /// Zyklus wiederholt sich nach Tag 7.
 /// Streak bricht bei verpasstem Tag ab (Reset auf Tag 1).
 /// </summary>
-public class DailyRewardService : IDailyRewardService
+public sealed class DailyRewardService : IDailyRewardService
 {
     private const string DAILY_REWARD_KEY = "DailyRewardData";
 

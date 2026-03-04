@@ -3649,4 +3649,13 @@
   <data name="DungeonAscensionUp" xml:space="preserve">
     <value>Aufstieg {0} freigeschaltet!</value>
   </data>
+  <data name="Buy" xml:space="preserve">
+    <value>Kaufen</value>
+  </data>
+  <data name="SplashStep_Graphics" xml:space="preserve">
+    <value>Grafiken laden</value>
+  </data>
+  <data name="SplashStep_Starting" xml:space="preserve">
+    <value>Starte Spiel</value>
+  </data>
 </root>

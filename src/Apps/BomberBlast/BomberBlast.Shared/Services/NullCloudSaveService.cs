@@ -3,7 +3,7 @@ namespace BomberBlast.Services;
 /// <summary>
 /// No-Op Implementierung für Desktop (kein Cloud Save).
 /// </summary>
-public class NullCloudSaveService : ICloudSaveService
+public sealed class NullCloudSaveService : ICloudSaveService
 {
     public bool IsEnabled => false;
     public bool IsSyncing => false;

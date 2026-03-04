@@ -8,7 +8,7 @@ namespace BomberBlast.Core;
 /// Nutzt ISoundService-Abstraktion statt Plugin.Maui.Audio.
 /// Nutzt IPreferencesService statt MAUI Preferences.
 /// </summary>
-public class SoundManager : IDisposable
+public sealed class SoundManager : IDisposable
 {
     private readonly ISoundService _soundService;
     private readonly IPreferencesService _preferences;

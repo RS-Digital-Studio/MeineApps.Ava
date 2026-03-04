@@ -12,7 +12,7 @@ namespace BomberBlast.Services;
 /// Local-First: Spiel funktioniert immer offline.
 /// Sync-Punkte: App-Start (Pull), Level-Complete/Kauf/Karten-Drop (Push mit Debounce).
 /// </summary>
-public class CloudSaveService : ICloudSaveService
+public sealed class CloudSaveService : ICloudSaveService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {

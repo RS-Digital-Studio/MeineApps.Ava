@@ -10,7 +10,7 @@ namespace BomberBlast.Services;
 /// Persistente Karten-Sammlung und Deck-Verwaltung.
 /// JSON-Persistenz via IPreferencesService, Key "CardCollection".
 /// </summary>
-public class CardService : ICardService
+public sealed class CardService : ICardService
 {
     private const string CARD_DATA_KEY = "CardCollection";
     private static readonly JsonSerializerOptions JsonOptions = new();

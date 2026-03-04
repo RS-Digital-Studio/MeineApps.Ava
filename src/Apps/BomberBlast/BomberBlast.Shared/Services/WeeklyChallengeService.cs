@@ -9,7 +9,7 @@ namespace BomberBlast.Services;
 /// Missionen werden deterministisch aus der Kalenderwoche generiert (gleiche Woche = gleiche Missionen).
 /// Bonus-Belohnung wenn alle 5 abgeschlossen.
 /// </summary>
-public class WeeklyChallengeService : IWeeklyChallengeService
+public sealed class WeeklyChallengeService : IWeeklyChallengeService
 {
     private const string WEEKLY_KEY = "WeeklyChallengeData";
     private const int MISSIONS_PER_WEEK = 5;

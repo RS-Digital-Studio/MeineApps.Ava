@@ -8,7 +8,7 @@ namespace BomberBlast.Graphics;
 /// Zeigt eine kompakte Karte mit Titel + Beschreibung beim ersten Kontakt mit
 /// einem neuen PowerUp oder einer neuen Welt-Mechanik.
 /// </summary>
-public class DiscoveryOverlay : IDisposable
+public sealed class DiscoveryOverlay : IDisposable
 {
     private readonly ILocalizationService _localizationService;
 

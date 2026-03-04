@@ -13,7 +13,7 @@ namespace BomberBlast.ViewModels;
 /// Zeigt Score, Coins, Verdopplungs- und Continue-Option.
 /// Bei Level-Complete: Score-Aufschlüsselung und Sterne.
 /// </summary>
-public partial class GameOverViewModel : ViewModelBase, INavigable
+public sealed partial class GameOverViewModel : ViewModelBase, INavigable
 {
     private readonly IPurchaseService _purchaseService;
     private readonly ILocalizationService _localizationService;

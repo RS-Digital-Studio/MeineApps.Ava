@@ -6,7 +6,7 @@ namespace BomberBlast.Services;
 /// Persistiert entdeckte PowerUps/Mechaniken via IPreferencesService.
 /// Speichert als kommaseparierter String.
 /// </summary>
-public class DiscoveryService : IDiscoveryService
+public sealed class DiscoveryService : IDiscoveryService
 {
     private const string PREFS_KEY = "DiscoveredItems";
     private readonly IPreferencesService _preferences;

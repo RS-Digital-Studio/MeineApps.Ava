@@ -6,7 +6,7 @@ namespace BomberBlast.Services;
 /// <summary>
 /// Persistente Coin-Verwaltung via IPreferencesService
 /// </summary>
-public class CoinService : ICoinService
+public sealed class CoinService : ICoinService
 {
     private const string COIN_DATA_KEY = "CoinData";
     private const int DAILY_BONUS = 500;

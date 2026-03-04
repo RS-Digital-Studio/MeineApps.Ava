@@ -12,7 +12,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel for the high scores page.
 /// Zeigt die Top 10 Bestenlisten-Scores.
 /// </summary>
-public partial class HighScoresViewModel : ViewModelBase, INavigable
+public sealed partial class HighScoresViewModel : ViewModelBase, INavigable
 {
     private readonly IHighScoreService _highScoreService;
     private readonly IPurchaseService _purchaseService;

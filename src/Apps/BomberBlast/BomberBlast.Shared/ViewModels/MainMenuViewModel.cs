@@ -15,7 +15,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für das Hauptmenü.
 /// Navigation zu Spielmodi, Meta-Features und Utility-Seiten.
 /// </summary>
-public partial class MainMenuViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
+public sealed partial class MainMenuViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
 {
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;

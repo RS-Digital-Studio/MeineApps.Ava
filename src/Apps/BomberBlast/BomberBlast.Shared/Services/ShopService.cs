@@ -9,7 +9,7 @@ namespace BomberBlast.Services;
 /// <summary>
 /// Shop-Verwaltung mit persistenten Upgrades via IPreferencesService
 /// </summary>
-public class ShopService : IShopService
+public sealed class ShopService : IShopService
 {
     private const string UPGRADES_KEY = "PlayerUpgrades";
     private static readonly JsonSerializerOptions JsonOptions = new();

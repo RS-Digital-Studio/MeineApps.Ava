@@ -11,7 +11,7 @@ namespace BomberBlast.Services;
 /// Verwaltet Dungeon-Run Roguelike-Modus: Run-State, Floor-Belohnungen, Buff-Auswahl, Statistiken.
 /// Persistenz via IPreferencesService (JSON).
 /// </summary>
-public class DungeonService : IDungeonService
+public sealed class DungeonService : IDungeonService
 {
     private const string RUN_STATE_KEY = "DungeonRunData";
     private const string STATS_KEY = "DungeonStatsData";

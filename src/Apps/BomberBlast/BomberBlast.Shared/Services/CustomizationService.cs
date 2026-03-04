@@ -10,7 +10,7 @@ namespace BomberBlast.Services;
 /// Premium-Skins nur nutzbar wenn IPurchaseService.IsPremium == true.
 /// Bomben-/Explosions-Skins werden per Coins gekauft und persistent gespeichert.
 /// </summary>
-public class CustomizationService : ICustomizationService
+public sealed class CustomizationService : ICustomizationService
 {
     private const string PLAYER_SKIN_KEY = "PlayerSkin";
     private const string ENEMY_SKIN_KEY = "EnemySkinSet";

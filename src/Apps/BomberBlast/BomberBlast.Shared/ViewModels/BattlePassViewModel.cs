@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// ViewModel für den Battle Pass (30-Tier Saison mit Free/Premium-Track).
 /// Zeigt Tier-Liste, XP-Fortschritt und ermöglicht Reward-Claims.
 /// </summary>
-public partial class BattlePassViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
+public sealed partial class BattlePassViewModel : ViewModelBase, INavigable, IGameJuiceEmitter
 {
     private readonly IBattlePassService _battlePassService;
     private readonly ILocalizationService _localizationService;

@@ -23,7 +23,7 @@ namespace BomberBlast.Core;
 /// - GameEngine.Level.cs → Level-Verwaltung (Laden, PowerUps, Gegner, Abschluss)
 /// - GameEngine.Render.cs → Overlay-Rendering
 /// </summary>
-public partial class GameEngine : IDisposable
+public sealed partial class GameEngine : IDisposable
 {
     // Event-Handler (als Feld für Dispose-Abmeldung)
     private readonly Action _directionChangedHandler;

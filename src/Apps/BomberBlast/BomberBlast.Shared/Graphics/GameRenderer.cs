@@ -10,7 +10,7 @@ namespace BomberBlast.Graphics;
 /// <summary>
 /// Rendert das Spiel mit SkiaSharp in zwei visuellen Stilen (Classic HD / Neon)
 /// </summary>
-public partial class GameRenderer : IDisposable
+public sealed partial class GameRenderer : IDisposable
 {
     private bool _disposed;
     private readonly IGameStyleService _styleService;

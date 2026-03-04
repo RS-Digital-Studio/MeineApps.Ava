@@ -16,7 +16,7 @@ namespace BomberBlast.ViewModels;
 /// Power-Up Boost Overlay ab Level 20 (Rewarded Ad).
 /// Implementiert IDisposable fuer BalanceChanged-Unsubscription.
 /// </summary>
-public partial class LevelSelectViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
+public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IGameJuiceEmitter, IDisposable
 {
     private readonly IProgressService _progressService;
     private readonly IPurchaseService _purchaseService;

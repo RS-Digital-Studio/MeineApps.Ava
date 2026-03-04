@@ -5,7 +5,7 @@ namespace BomberBlast.Services;
 /// <summary>
 /// Persists and manages the visual rendering style
 /// </summary>
-public class GameStyleService : IGameStyleService
+public sealed class GameStyleService : IGameStyleService
 {
     private const string PREF_KEY = "visual_style";
     private readonly IPreferencesService _preferences;

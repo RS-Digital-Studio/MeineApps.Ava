@@ -11,7 +11,7 @@ namespace BomberBlast.ViewModels;
 /// <summary>
 /// ViewModel für die Achievements-Ansicht
 /// </summary>
-public partial class AchievementsViewModel : ViewModelBase, INavigable
+public sealed partial class AchievementsViewModel : ViewModelBase, INavigable
 {
     private readonly IAchievementService _achievementService;
     private readonly ILocalizationService _localizationService;

@@ -9,7 +9,7 @@ namespace BomberBlast.Services;
 /// Verwaltet den Battle Pass: XP-Tracking, Tier-Fortschritt, Belohnungs-Claims, Saison-Management.
 /// Persistenz via IPreferencesService (JSON).
 /// </summary>
-public class BattlePassService : IBattlePassService
+public sealed class BattlePassService : IBattlePassService
 {
     private const string DATA_KEY = "BattlePassData";
 

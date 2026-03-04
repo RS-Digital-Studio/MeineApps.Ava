@@ -9,7 +9,7 @@ namespace BomberBlast.Services;
 /// Verfügbar ab Level 5, einmalig pro Spieler.
 /// Persistenz via IPreferencesService (JSON).
 /// </summary>
-public class StarterPackService : IStarterPackService
+public sealed class StarterPackService : IStarterPackService
 {
     private const string DATA_KEY = "StarterPackData";
     private const int REQUIRED_LEVEL = 5;

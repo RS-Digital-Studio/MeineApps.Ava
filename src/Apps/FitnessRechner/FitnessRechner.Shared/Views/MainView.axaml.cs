@@ -90,6 +90,12 @@ public partial class MainView : UserControl
         _backgroundRenderer.Update(0.05f);
         BackgroundCanvas?.InvalidateSurface();
         TabBarCanvas?.InvalidateSurface();
+
+        // HomeView animierte Canvases aktualisieren (VitalSignsHero)
+        if (_vm?.IsHomeActive == true)
+        {
+            HomeViewControl?.OnRenderTick(_renderTime);
+        }
     }
 
     // =====================================================================

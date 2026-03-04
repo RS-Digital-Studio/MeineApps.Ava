@@ -17,7 +17,7 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 - **Mahlzeiten**: Gruppiert nach Typ (Frühstück/Mittag/Abend/Snack mit Icons + Subtotals), "Gestern kopieren" Funktion
 - **Food Search**: Fuzzy Matching, Favorites, Recipes (FoodDatabase mit 114 Items + Aliase)
 - **Barcode Scanner**: Nativer CameraX + ML Kit Scanner (Android), manuelle Eingabe (Desktop), Open Food Facts API (BarcodeLookupService)
-- **SkiaSharp-Visualisierungen**: BMI-Gauge (BmiGaugeRenderer), Körperfett-Grafik (BodyFatRenderer), Kalorien-Ringe (CalorieRingRenderer), Wasserglas (inline in WaterView), HealthTrendVisualization (Catmull-Rom Spline mit Gradient-Fill, Target-Zones, Milestones), WeeklyCaloriesBarVisualization (Gradient-Balken mit Target-Linie), FitnessRechnerSplashRenderer (EKG-Herzschlag-Splash). HomeView nutzt SkiaGradientRing + LinearProgressVisualization (XP-Bar, Challenge-Bar)
+- **SkiaSharp-Visualisierungen**: BMI-Gauge (BmiGaugeRenderer), Körperfett-Grafik (BodyFatRenderer), Kalorien-Ringe (CalorieRingRenderer), Wasserglas (inline in WaterView), HealthTrendVisualization (Catmull-Rom Spline mit Gradient-Fill, Target-Zones, Milestones), WeeklyCaloriesBarVisualization (Gradient-Balken mit Target-Linie), FitnessRechnerSplashRenderer (EKG-Herzschlag-Splash), VitalSignsHeroRenderer (kreisförmiger Monitor mit EKG-Ring, 4 Quadranten, Center-Score, Data-Stream Partikel), MedicalBackgroundRenderer (animierter Hintergrund), MedicalTabBarRenderer (holografische Tab-Bar), MedicalCardRenderer (glassmorphe Cards). HomeView nutzt VitalSignsHeroRenderer (ersetzt Hero-Header + Score-Card + Dashboard-Grid) + LinearProgressVisualization (XP-Bar, Challenge-Bar)
 
 ## App-spezifische Services
 
@@ -107,10 +107,12 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 - **Abend-Zusammenfassung**: Dashboard-Card nach 20 Uhr (Kalorien|Wasser|Gewicht + Bewertung: Super/Gut/Morgen besser)
 - **Settings-Toggles**: Haptic, Sound, 3 Reminder (Wasser/Gewicht/Abend) mit ToggleSwitch
 
-### Dashboard Fortschrittsbalken
-- Kalorien + Wasser Cards haben SkiaGradientRing (statt ProgressBar)
-- `CalorieProgress` / `WaterProgress` (0-100) in MainViewModel berechnet
-- Ringe bei Value=0 ausgeblendet (`HasWaterProgress`/`HasCalorieProgress`)
+### VitalSignsHero (ersetzt Hero-Header + Score-Card + Dashboard-Grid)
+- HomeView nutzt `VitalSignsHeroRenderer` (kreisförmiger SkiaSharp-Monitor, 300dp hoch)
+- 4 Quadranten: NW=Gewicht, NE=BMI, SW=Wasser, SE=Kalorien, Center=Score
+- Touch-HitTest: Tap auf Quadrant öffnet passenden Rechner
+- Render-Loop: MainView.OnRenderTimerTick → HomeViewControl.OnRenderTick (20fps)
+- Rohwert-Properties im MainViewModel: `RawWeight`, `RawBmi`, `RawWaterMl`, `RawWaterGoalMl`, `RawCalories`, `RawCalorieGoal`, `WeightTrend`, `BmiCategoryText`
 - XP-Level + Challenge: LinearProgressVisualization (SkiaSharp) statt Avalonia ProgressBar
 
 ### Dashboard Quick-Add

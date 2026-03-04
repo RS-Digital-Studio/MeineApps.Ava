@@ -258,6 +258,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _hasDashboardData;
 
+    // Rohwerte für VitalSignsHeroRenderer (nicht formatiert)
+    public float RawWeight { get; private set; }
+    public float RawBmi { get; private set; }
+    public float RawWaterMl { get; private set; }
+    public float RawWaterGoalMl { get; private set; }
+    public float RawCalories { get; private set; }
+    public float RawCalorieGoal { get; private set; }
+    public int WeightTrend { get; private set; }
+    public string BmiCategoryText { get; private set; } = "";
+
     // Fortschritt (0-100)
     [ObservableProperty]
     private double _calorieProgress;
@@ -597,6 +607,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             // Zurücksetzen damit veraltete Daten nicht fälschlich "true" halten
             HasDashboardData = false;
+            RawWeight = 0f;
+            RawBmi = 0f;
+            RawWaterMl = 0f;
+            RawCalories = 0f;
+            WeightTrend = 0;
+            BmiCategoryText = "";
 
             // Weight
             var weightEntry = await _trackingService.GetLatestEntryAsync(TrackingType.Weight);
@@ -604,7 +620,19 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             if (weightEntry != null && weightEntry.Date.Date >= DateTime.Today.AddDays(-7))
             {
                 TodayWeightDisplay = $"{weightEntry.Value:F1}";
+                RawWeight = (float)weightEntry.Value;
                 HasDashboardData = true;
+
+                // Gewichtstrend: Vergleich mit vorherigem Eintrag
+                var weightEntries = await _trackingService.GetEntriesAsync(TrackingType.Weight,
+                    DateTime.Today.AddDays(-30), DateTime.Today.AddDays(1));
+                if (weightEntries.Count >= 2)
+                {
+                    // Sortiert nach Datum absteigend, vorletzter Eintrag
+                    var sorted = weightEntries.OrderByDescending(e => e.Date).ToList();
+                    var diff = sorted[0].Value - sorted[1].Value;
+                    WeightTrend = diff > 0.2 ? 1 : diff < -0.2 ? -1 : 0;
+                }
             }
             else
             {
@@ -616,7 +644,21 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             if (bmiEntry != null && bmiEntry.Date.Date >= DateTime.Today.AddDays(-7))
             {
                 TodayBmiDisplay = $"{bmiEntry.Value:F1}";
+                RawBmi = (float)bmiEntry.Value;
                 HasDashboardData = true;
+
+                // BMI-Kategorie berechnen
+                BmiCategoryText = bmiEntry.Value switch
+                {
+                    < 16 => _localization.GetString("BmiSevereUnderweight") ?? "Untergewicht",
+                    < 17 => _localization.GetString("BmiModerateUnderweight") ?? "Untergewicht",
+                    < 18.5 => _localization.GetString("BmiMildUnderweight") ?? "Untergewicht",
+                    < 25 => _localization.GetString("BmiNormal") ?? "Normal",
+                    < 30 => _localization.GetString("BmiOverweight") ?? "Übergewicht",
+                    < 35 => _localization.GetString("BmiObeseClass1") ?? "Adipositas I",
+                    < 40 => _localization.GetString("BmiObeseClass2") ?? "Adipositas II",
+                    _ => _localization.GetString("BmiObeseClass3") ?? "Adipositas III"
+                };
             }
             else
             {
@@ -626,11 +668,13 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             // Water (today only)
             var waterEntry = await _trackingService.GetLatestEntryAsync(TrackingType.Water);
             var waterGoal = _preferences.Get(PreferenceKeys.WaterGoal, 2500.0);
+            RawWaterGoalMl = (float)waterGoal;
             if (waterEntry != null && waterEntry.Date.Date == DateTime.Today)
             {
                 var progress = waterGoal > 0 ? (waterEntry.Value / waterGoal) * 100 : 0;
                 TodayWaterDisplay = $"{progress:F0}%";
                 WaterProgress = Math.Min(progress, 100);
+                RawWaterMl = (float)waterEntry.Value;
                 HasDashboardData = true;
             }
             else
@@ -642,12 +686,14 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             // Calories (today only)
             var summary = await _foodSearchService.GetDailySummaryAsync(DateTime.Today);
             var calorieGoal = _preferences.Get(PreferenceKeys.CalorieGoal, 2000.0);
+            RawCalorieGoal = (float)calorieGoal;
             if (summary.TotalCalories > 0)
             {
                 TodayCaloriesDisplay = $"{summary.TotalCalories:F0}";
                 CalorieProgress = calorieGoal > 0
                     ? Math.Min((summary.TotalCalories / calorieGoal) * 100, 100)
                     : 0;
+                RawCalories = (float)summary.TotalCalories;
                 HasDashboardData = true;
             }
             else

@@ -84,7 +84,7 @@
       <Border AutomationProperties.AutomationId="Main_TabContentHome" Classes="TabContent"
               Classes.Active="{Binding IsHomeActive}"
               IsVisible="{Binding !IsCalculatorOpen}">
-        <views:HomeView DataContext="{Binding}" />
+        <views:HomeView x:Name="HomeViewControl" DataContext="{Binding}" />
       </Border>
       <Border AutomationProperties.AutomationId="Main_TabContentProgress" Classes="TabContent"
               Classes.Active="{Binding IsProgressActive}"

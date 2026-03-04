@@ -6,10 +6,11 @@
              xmlns:views="using:FitnessRechner.Views"
              xmlns:calcViews="using:FitnessRechner.Views.Calculators"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FitnessRechner.Views.MainView"
              x:DataType="vm:MainViewModel"
              x:CompileBindings="True"
-             Background="{DynamicResource BackgroundBrush}">
+             Background="Transparent">
 
   <UserControl.Styles>
     <!-- Fade transition for tab content switching -->
@@ -69,7 +70,13 @@
     </DataTemplate>
   </UserControl.DataTemplates>
 
-  <Grid AutomationProperties.AutomationId="Main_RootPanel" RowDefinitions="*,Auto,Auto">
+  <Grid AutomationProperties.AutomationId="Main_RootPanel" RowDefinitions="*,Auto,64">
+
+    <!-- Animierter medizinischer Hintergrund (alle Rows, hinter Content) -->
+    <skia:SKCanvasView x:Name="BackgroundCanvas"
+                        Grid.RowSpan="3"
+                        IsHitTestVisible="False"
+                        PaintSurface="OnBackgroundPaintSurface" />
 
     <!-- Content Area -->
     <Panel Grid.Row="0">
@@ -99,7 +106,7 @@
       <Panel AutomationProperties.AutomationId="Main_CalculatorOverlay" Classes="CalculatorOverlay"
              Classes.Open="{Binding IsCalculatorOpen}"
              IsVisible="{Binding IsCalculatorOpen}"
-             Background="{DynamicResource BackgroundBrush}">
+             Background="Transparent">
         <ContentControl Content="{Binding CurrentCalculatorVm}" />
       </Panel>
 
@@ -107,7 +114,7 @@
       <Panel AutomationProperties.AutomationId="Main_AchievementsOverlay" Classes="CalculatorOverlay"
              Classes.Open="{Binding ShowAchievements}"
              IsVisible="{Binding ShowAchievements}"
-             Background="{DynamicResource BackgroundBrush}">
+             Background="Transparent">
         <views:AchievementsView DataContext="{Binding}" />
       </Panel>
     </Panel>
@@ -116,171 +123,12 @@
     <Border AutomationProperties.AutomationId="Main_AdSpacer" Grid.Row="1" Height="64"
             IsVisible="{Binding IsAdBannerVisible}" />
 
-    <!-- Bottom Navigation Bar -->
-    <Border AutomationProperties.AutomationId="Main_NavBar" Grid.Row="2"
-            Background="{DynamicResource SurfaceBrush}"
-            BorderBrush="{DynamicResource BorderSubtleBrush}"
-            BorderThickness="0,1,0,0">
-      <Grid ColumnDefinitions="*,*,*,*" Margin="0,2">
-
-        <!-- Home Tab -->
-        <Button AutomationProperties.AutomationId="Main_TabHome" Grid.Column="0"
-                Classes="Text"
-                Command="{Binding SelectHomeTabCommand}"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Padding="0"
-                Height="56">
-          <StackPanel Spacing="2">
-            <Border Height="3" CornerRadius="2" Margin="12,0"
-                    IsVisible="{Binding IsHomeActive}">
-              <Border.Background>
-                <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-              </Border.Background>
-            </Border>
-            <Border Height="3" IsVisible="{Binding !IsHomeActive}" />
-            <Panel>
-              <mi:MaterialIcon Kind="Home" Width="24" Height="24"
-                               Foreground="{DynamicResource PrimaryBrush}"
-                               IsVisible="{Binding IsHomeActive}" />
-              <mi:MaterialIcon Kind="HomeOutline" Width="24" Height="24"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               IsVisible="{Binding !IsHomeActive}" />
-            </Panel>
-            <Panel>
-              <TextBlock Text="{Binding NavHomeText}" FontSize="11"
-                         HorizontalAlignment="Center"
-                         Foreground="{DynamicResource PrimaryBrush}"
-                         FontWeight="Medium"
-                         IsVisible="{Binding IsHomeActive}" />
-              <TextBlock Text="{Binding NavHomeText}" FontSize="11"
-                         HorizontalAlignment="Center"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         IsVisible="{Binding !IsHomeActive}" />
-            </Panel>
-          </StackPanel>
-        </Button>
-
-        <!-- Progress Tab -->
-        <Button AutomationProperties.AutomationId="Main_TabProgress" Grid.Column="1"
-                Classes="Text"
-                Command="{Binding SelectProgressTabCommand}"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Padding="0"
-                Height="56">
-          <StackPanel Spacing="2">
-            <Border Height="3" CornerRadius="2" Margin="12,0"
-                    IsVisible="{Binding IsProgressActive}">
-              <Border.Background>
-                <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-              </Border.Background>
-            </Border>
-            <Border Height="3" IsVisible="{Binding !IsProgressActive}" />
-            <Panel>
-              <mi:MaterialIcon Kind="ChartLine" Width="24" Height="24"
-                               Foreground="{DynamicResource PrimaryBrush}"
-                               IsVisible="{Binding IsProgressActive}" />
-              <mi:MaterialIcon Kind="ChartLineVariant" Width="24" Height="24"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               IsVisible="{Binding !IsProgressActive}" />
-            </Panel>
-            <Panel>
-              <TextBlock Text="{Binding NavProgressText}" FontSize="11"
-                         HorizontalAlignment="Center"
-                         Foreground="{DynamicResource PrimaryBrush}"
-                         FontWeight="Medium"
-                         IsVisible="{Binding IsProgressActive}" />
-              <TextBlock Text="{Binding NavProgressText}" FontSize="11"
-                         HorizontalAlignment="Center"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         IsVisible="{Binding !IsProgressActive}" />
-            </Panel>
-          </StackPanel>
-        </Button>
-
-        <!-- Food Tab -->
-        <Button AutomationProperties.AutomationId="Main_TabFood" Grid.Column="2"
-                Classes="Text"
-                Command="{Binding SelectFoodTabCommand}"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Padding="0"
-                Height="56">
-          <StackPanel Spacing="2">
-            <Border Height="3" CornerRadius="2" Margin="12,0"
-                    IsVisible="{Binding IsFoodActive}">
-              <Border.Background>
-                <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-              </Border.Background>
-            </Border>
-            <Border Height="3" IsVisible="{Binding !IsFoodActive}" />
-            <Panel>
-              <mi:MaterialIcon Kind="FoodApple" Width="24" Height="24"
-                               Foreground="{DynamicResource PrimaryBrush}"
-                               IsVisible="{Binding IsFoodActive}" />
-              <mi:MaterialIcon Kind="FoodAppleOutline" Width="24" Height="24"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               IsVisible="{Binding !IsFoodActive}" />
-            </Panel>
-            <Panel>
-              <TextBlock Text="{Binding NavFoodText}" FontSize="11"
-                         HorizontalAlignment="Center"
-                         Foreground="{DynamicResource PrimaryBrush}"
-                         FontWeight="Medium"
-                         IsVisible="{Binding IsFoodActive}" />
-              <TextBlock Text="{Binding NavFoodText}" FontSize="11"
-                         HorizontalAlignment="Center"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         IsVisible="{Binding !IsFoodActive}" />
-            </Panel>
-          </StackPanel>
-        </Button>
-
-        <!-- Settings Tab -->
-        <Button AutomationProperties.AutomationId="Main_TabSettings" Grid.Column="3"
-                Classes="Text"
-                Command="{Binding SelectSettingsTabCommand}"
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Stretch"
-                HorizontalContentAlignment="Center"
-                Padding="0"
-                Height="56">
-          <StackPanel Spacing="2">
-            <Border Height="3" CornerRadius="2" Margin="12,0"
-                    IsVisible="{Binding IsSettingsActive}">
-              <Border.Background>
-                <SolidColorBrush Color="{DynamicResource PrimaryColor}" />
-              </Border.Background>
-            </Border>
-            <Border Height="3" IsVisible="{Binding !IsSettingsActive}" />
-            <Panel>
-              <mi:MaterialIcon Kind="Cog" Width="24" Height="24"
-                               Foreground="{DynamicResource PrimaryBrush}"
-                               IsVisible="{Binding IsSettingsActive}" />
-              <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
-                               Foreground="{DynamicResource TextMutedBrush}"
-                               IsVisible="{Binding !IsSettingsActive}" />
-            </Panel>
-            <Panel>
-              <TextBlock Text="{Binding NavSettingsText}" FontSize="11"
-                         HorizontalAlignment="Center"
-                         Foreground="{DynamicResource PrimaryBrush}"
-                         FontWeight="Medium"
-                         IsVisible="{Binding IsSettingsActive}" />
-              <TextBlock Text="{Binding NavSettingsText}" FontSize="11"
-                         HorizontalAlignment="Center"
-                         Foreground="{DynamicResource TextMutedBrush}"
-                         IsVisible="{Binding !IsSettingsActive}" />
-            </Panel>
-          </StackPanel>
-        </Button>
-
-      </Grid>
-    </Border>
+    <!-- SkiaSharp Tab-Bar (Medical-Design mit Glas-Panel + Cyan-Glow) -->
+    <skia:SKCanvasView x:Name="TabBarCanvas"
+                        Grid.Row="2"
+                        Height="64"
+                        PaintSurface="OnTabBarPaintSurface"
+                        PointerPressed="OnTabBarPointerPressed" />
 
     <!-- Game Juice Overlays -->
     <controls:FloatingTextOverlay x:Name="FloatingTextCanvas"

@@ -195,6 +195,7 @@ baseValue = value * ToBase + Offset
 | `ResultBurstVisualization.cs` | Expandierender Lichtring + 8 Partikel-Strahlen bei "="-Berechnung |
 | `FunctionGraphVisualization.cs` | Mini-Funktionsgraph mit Glow-Kurve, Gradient-Füllung, Grid, aktueller Punkt-Markierung |
 | `RechnerPlusSplashRenderer.cs` | App-spezifischer Splash: "Die saubere Gleichung" - 4x4 Tasten-Matrix mit diagonaler Sweep-Welle, Punkt-Grid, 16 Mathe-Partikel, LCD-Display-Stil |
+| `CalculatorBackgroundRenderer.cs` | Animierter "Digital Circuit Board"-Hintergrund: 3-Farben Gradient, Dot-Grid mit Drift, floating Math-Partikel, radiale Vignette. ~5fps Render-Loop, 0 GC pro Frame |
 
 ### VFD-Display
 - Ersetzt das TextBlock-basierte Display durch SkiaSharp-gerenderte 7-Segment-Ziffern
@@ -234,6 +235,13 @@ baseValue = value * ToBase + Offset
 - **View**: FunctionGraphBorder (Row 1 im RootGrid, Auto), Opacity+MaxHeight Transition, 5s Auto-Hide-Timer
 - **Trigger**: Wird bei erfolgreicher Berechnung von sin/cos/tan/log/ln/sqrt/x²/1/x aktiviert
 - **Glow-Pulsierung**: Teilt den VFD-Timer (33ms Intervall), `_vfdAnimTime` als animTime
+
+### Animierter Hintergrund (05.03.2026)
+- "Digital Circuit Board"-Effekt in MainView (SKCanvasView, Grid.RowSpan=2, IsHitTestVisible=False)
+- 4 Layer: 3-Farben Gradient (#263248→#1B2438→#242050), Dot-Grid (32px Spacing, Drift 2px/s), Math-Partikel (15 Stueck, Indigo Alpha 8%), radiale Vignette
+- DispatcherTimer 200ms (~5fps), Update+InvalidateSurface pro Tick
+- Gecachte Paints, Shader-Cache (nur bei Groessenaenderung), SKFont gecacht (Size-Setter pro Partikel)
+- Start in OnAttachedToVisualTree, Stop+Dispose in OnDetachedFromVisualTree
 
 ### Error-Shake (28.02.2026)
 - `ErrorShakeRequested` Event im ViewModel, gefeuert in `ShowError()`

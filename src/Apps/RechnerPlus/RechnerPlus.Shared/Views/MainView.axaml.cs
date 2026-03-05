@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Labs.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -9,7 +10,9 @@ using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.UI.SkiaSharp.Shaders;
 using Microsoft.Extensions.DependencyInjection;
+using RechnerPlus.Graphics;
 using RechnerPlus.ViewModels;
+using SkiaSharp;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -26,6 +29,11 @@ public partial class MainView : UserControl
     private const int MinSwipeMs = 200;
     private const int HistoryToggleCooldownMs = 500;
     private MainViewModel? _vm;
+
+    // Animierter Hintergrund
+    private readonly CalculatorBackgroundRenderer _backgroundRenderer = new();
+    private DispatcherTimer? _bgTimer;
+    private float _bgTime;
 
     // Onboarding
     private int _onboardingStep;
@@ -45,6 +53,11 @@ public partial class MainView : UserControl
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+
+        // Hintergrund-Render-Loop starten (~5fps)
+        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _bgTimer.Tick += OnBackgroundTimerTick;
+        _bgTimer.Start();
 
         var loc = App.Services.GetService<ILocalizationService>();
 
@@ -84,25 +97,7 @@ public partial class MainView : UserControl
 
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
-        // Altes ViewModel abmelden
-        if (_vm != null)
-            _vm.FloatingTextRequested -= OnFloatingText;
-
         _vm = DataContext as MainViewModel;
-
-        // Neues ViewModel anmelden
-        if (_vm != null)
-            _vm.FloatingTextRequested += OnFloatingText;
-    }
-
-    private void OnFloatingText(string text, string category)
-    {
-        var color = Color.Parse("#6366F1");
-        var w = FloatingTextCanvas.Bounds.Width;
-        if (w < 10) w = 300;
-        var h = FloatingTextCanvas.Bounds.Height;
-        if (h < 10) h = 400;
-        FloatingTextCanvas.ShowFloatingText(text, w * 0.3, h * 0.3, color, 14);
     }
 
     private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -157,6 +152,35 @@ public partial class MainView : UserControl
         if (vm?.CalculatorViewModel == null) return;
         vm.CalculatorViewModel.HideHistoryCommand.Execute(null);
         _lastHistoryToggle = DateTime.UtcNow;
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        // Hintergrund-Render-Loop stoppen und Renderer freigeben
+        if (_bgTimer != null)
+        {
+            _bgTimer.Stop();
+            _bgTimer.Tick -= OnBackgroundTimerTick;
+            _bgTimer = null;
+        }
+        _backgroundRenderer.Dispose();
+    }
+
+    private void OnBackgroundTimerTick(object? sender, EventArgs e)
+    {
+        const float deltaTime = 0.2f; // 200ms Intervall
+        _bgTime += deltaTime;
+        _backgroundRenderer.Update(deltaTime);
+        BackgroundCanvas?.InvalidateSurface();
+    }
+
+    private void OnBackgroundPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear();
+        _backgroundRenderer.Render(canvas, canvas.LocalClipBounds, _bgTime);
     }
 
     #region Onboarding

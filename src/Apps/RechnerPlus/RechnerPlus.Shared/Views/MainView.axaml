@@ -4,9 +4,10 @@
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:calc="using:MeineApps.CalcLib"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="RechnerPlus.Views.MainView"
              x:DataType="vm:MainViewModel"
-             Background="{DynamicResource BackgroundBrush}">
+             Background="Transparent">
 
   <UserControl.Styles>
     <!-- Fade transition for tab content switching -->
@@ -56,6 +57,12 @@
 
   <Panel AutomationProperties.AutomationId="Main_RootPanel">
     <Grid RowDefinitions="*,Auto" x:Name="MainContent">
+
+      <!-- Animierter Hintergrund (SkiaSharp) -->
+      <skia:SKCanvasView x:Name="BackgroundCanvas"
+                          Grid.RowSpan="2"
+                          IsHitTestVisible="False"
+                          PaintSurface="OnBackgroundPaintSurface" />
 
       <!-- Content Area -->
       <Panel Grid.Row="0" Name="ContentPanel" AutomationProperties.AutomationId="Main_ContentPanel">
@@ -248,11 +255,6 @@
       </Border>
 
     </Grid>
-
-    <!-- Floating Text Overlay -->
-    <controls:FloatingTextOverlay x:Name="FloatingTextCanvas"
-                                   AutomationProperties.AutomationId="Main_FloatingTextOverlay"
-                                   IsHitTestVisible="False" />
 
     <!-- Onboarding Overlay -->
     <Panel x:Name="OnboardingOverlay" AutomationProperties.AutomationId="Main_OnboardingOverlay" IsVisible="False">

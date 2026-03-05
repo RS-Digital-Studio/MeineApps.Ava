@@ -3,6 +3,7 @@ using Android.Content;
 using Android.Content.PM;
 using Android.Media;
 using Android.OS;
+using Android.Views;
 using Android.Widget;
 using Avalonia;
 using Avalonia.Android;
@@ -40,6 +41,9 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         base.OnCreate(savedInstanceState);
 
+        // Immersive Fullscreen aktivieren
+        EnableImmersiveMode();
+
         // ForegroundService-Callbacks registrieren sobald DI verfügbar ist
         if (App.Services?.GetService<ITimerService>() is TimerService timerService)
         {
@@ -65,6 +69,7 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         base.OnResume();
         IsAppInForeground = true;
+        EnableImmersiveMode();
     }
 
     protected override void OnPause()
@@ -117,6 +122,45 @@ public class MainActivity : AvaloniaMainActivity<App>
         }
     }
 
+    public override void OnWindowFocusChanged(bool hasFocus)
+    {
+        base.OnWindowFocusChanged(hasFocus);
+        if (hasFocus) EnableImmersiveMode();
+    }
+
+    /// <summary>
+    /// Immersive Fullscreen: StatusBar + NavigationBar ausblenden.
+    /// Bars erscheinen bei Swipe vom Rand kurz und verschwinden automatisch wieder.
+    /// </summary>
+    private void EnableImmersiveMode()
+    {
+        if (Window == null) return;
+
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.R) // API 30+
+        {
+            Window.SetDecorFitsSystemWindows(false);
+            var controller = Window.InsetsController;
+            if (controller != null)
+            {
+                controller.Hide(WindowInsets.Type.SystemBars());
+                controller.SystemBarsBehavior = (int)WindowInsetsControllerBehavior.ShowTransientBarsBySwipe;
+            }
+        }
+        else
+        {
+            // Fallback fuer aeltere API-Versionen (< 30)
+#pragma warning disable CA1422 // Deprecated API fuer Kompatibilitaet
+            Window.DecorView.SystemUiVisibility = (StatusBarVisibility)(
+                SystemUiFlags.ImmersiveSticky |
+                SystemUiFlags.LayoutStable |
+                SystemUiFlags.LayoutHideNavigation |
+                SystemUiFlags.LayoutFullscreen |
+                SystemUiFlags.HideNavigation |
+                SystemUiFlags.Fullscreen);
+#pragma warning restore CA1422
+        }
+    }
+
     private MainViewModel? _mainVm;
 
 #pragma warning disable CA1422 // OnBackPressed ab API 33 veraltet, aber notwendig für ältere API-Level
@@ -124,7 +168,7 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         if (_mainVm != null && _mainVm.HandleBackPressed())
             return;
-        base.OnBackPressed();
+        MoveTaskToBack(true);
     }
 #pragma warning restore CA1422
 

@@ -5,11 +5,18 @@
              xmlns:views="using:WorkTimePro.Views"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="WorkTimePro.Views.MainView"
              x:DataType="vm:MainViewModel"
-             Background="{DynamicResource BackgroundBrush}">
+             Background="Transparent">
 
   <Grid RowDefinitions="*,Auto,Auto" AutomationProperties.AutomationId="Main_RootGrid">
+
+    <!-- Animierter Hintergrund (Professional Dashboard, alle Rows, hinter Content) -->
+    <skia:SKCanvasView x:Name="BackgroundCanvas"
+                        Grid.RowSpan="3"
+                        IsHitTestVisible="False"
+                        PaintSurface="OnBackgroundPaintSurface" />
 
     <!-- ============================================ -->
     <!-- Row 0: Content Area (switches based on tab)  -->

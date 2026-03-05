@@ -3,6 +3,7 @@ using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
+using Android.Views;
 using Android.Widget;
 using Avalonia;
 using Avalonia.Android;
@@ -89,6 +90,9 @@ public class MainActivity : AvaloniaMainActivity<App>
             throw;
         }
 
+        // Immersive Fullscreen aktivieren
+        EnableImmersiveMode();
+
         // ViewModel holen und ExitHint-Event verdrahten
         _mainVm = App.Services.GetService<MainViewModel>();
         if (_mainVm != null)
@@ -138,7 +142,7 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         if (_mainVm != null && _mainVm.HandleBackPressed())
             return;
-        base.OnBackPressed();
+        MoveTaskToBack(true);
     }
 #pragma warning restore CA1422
 
@@ -146,12 +150,52 @@ public class MainActivity : AvaloniaMainActivity<App>
     {
         base.OnResume();
         _adMobHelper?.Resume();
+        EnableImmersiveMode();
     }
 
     protected override void OnPause()
     {
         _adMobHelper?.Pause();
         base.OnPause();
+    }
+
+    public override void OnWindowFocusChanged(bool hasFocus)
+    {
+        base.OnWindowFocusChanged(hasFocus);
+        if (hasFocus) EnableImmersiveMode();
+    }
+
+    /// <summary>
+    /// Immersive Fullscreen: StatusBar + NavigationBar ausblenden.
+    /// Bars erscheinen bei Swipe vom Rand kurz und verschwinden automatisch wieder.
+    /// </summary>
+    private void EnableImmersiveMode()
+    {
+        if (Window == null) return;
+
+        if (Build.VERSION.SdkInt >= BuildVersionCodes.R) // API 30+
+        {
+            Window.SetDecorFitsSystemWindows(false);
+            var controller = Window.InsetsController;
+            if (controller != null)
+            {
+                controller.Hide(WindowInsets.Type.SystemBars());
+                controller.SystemBarsBehavior = (int)WindowInsetsControllerBehavior.ShowTransientBarsBySwipe;
+            }
+        }
+        else
+        {
+            // Fallback fuer aeltere API-Versionen (< 30)
+#pragma warning disable CA1422 // Deprecated API fuer Kompatibilitaet
+            Window.DecorView.SystemUiVisibility = (StatusBarVisibility)(
+                SystemUiFlags.ImmersiveSticky |
+                SystemUiFlags.LayoutStable |
+                SystemUiFlags.LayoutHideNavigation |
+                SystemUiFlags.LayoutFullscreen |
+                SystemUiFlags.HideNavigation |
+                SystemUiFlags.Fullscreen);
+#pragma warning restore CA1422
+        }
     }
 
     protected override void OnDestroy()

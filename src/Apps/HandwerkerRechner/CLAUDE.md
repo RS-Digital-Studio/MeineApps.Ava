@@ -59,10 +59,11 @@ Handwerker-App mit 16 Rechnern (5 Free Floor + 11 Premium), Projektverwaltung un
 
 ## SkiaSharp Visualisierungen (Graphics/)
 
-18 statische Renderer-Klassen + 1 Splash-Renderer in `HandwerkerRechner.Shared/Graphics/`, alle nutzen `SkiaBlueprintCanvas` + `SkiaThemeHelper` aus MeineApps.UI.
+18 statische Renderer-Klassen + 1 Splash-Renderer + 1 Background-Renderer in `HandwerkerRechner.Shared/Graphics/`, alle nutzen `SkiaBlueprintCanvas` + `SkiaThemeHelper` aus MeineApps.UI.
 
 | Datei | Typ | Beschreibung |
 |-------|-----|--------------|
+| `BlueprintBackgroundRenderer.cs` | Background | Animierter Blueprint-Hintergrund (5 Layer: Gradient, Blueprint-Grid mit Drift, Massband-Markierungen, 8 Tool-Silhouetten, Vignette). Instance-basiert, IDisposable, 0 GC/Frame, ~5fps DispatcherTimer |
 | `TileVisualization.cs` | Floor | 2D-Grundriss mit Fliesengitter, Verschnitt-Fliesen rot schraffiert, Verschnitt-Info-Box (Prozent+Fliesengröße), Einzelfliesen-Bemaßung |
 | `FlooringVisualization.cs` | Floor | Dielen-Verlegung mit 50%-Versatz, 3 Holzfarben, Verschnitt-Zone rot schraffiert an Rändern, Gesamtflächenbedarf+Verschnitt als Formel |
 | `WallpaperVisualization.cs` | Floor | Wand-Abwicklung mit vertikalen Bahnen, Rapport-Versatz gestrichelt |
@@ -84,6 +85,8 @@ Handwerker-App mit 16 Rechnern (5 Free Floor + 11 Premium), Projektverwaltung un
 | `HandwerkerRechnerSplashRenderer.cs` | Splash | "Das Maßband": Holz-Hintergrund mit Maserungslinien, gelbes Maßband als Fortschrittsbalken (cm-Markierungen, Bleistift), 12 Sägespäne-Partikel. Erbt von SplashRendererBase |
 
 **Pattern**: Alle `public static void Render(SKCanvas, SKRect, ...)` mit gecachten `SKPaint` (static readonly), inkl. `_layerPaint` für Alpha-Fade-In (SaveLayer). Views haben `OnPaintVisualization` Code-Behind Handler mit Named-Handler-Pattern (explizites Unsubscribe bei DataContext-Wechsel). Visualisierung in `<Border Classes="Card" Height="220" ClipToBounds="True">` mit `IsVisible="{Binding HasResult}"`.
+
+**Background Render-Loop**: MainView: DispatcherTimer 200ms (~5fps), `_backgroundRenderer.Update(0.2f)` + `BackgroundCanvas.InvalidateSurface()`. SKCanvasView mit `Grid.RowSpan="3"` + `IsHitTestVisible="False"` hinter Content. UserControl Background=Transparent (Gradient kommt vom Renderer). Start in `OnDataContextChanged`, Stop+Dispose in `OnDetachedFromVisualTree`.
 
 **Einschwing-Animation**: Alle 17 Renderer nutzen `AnimatedVisualizationBase` (500ms, EaseOutCubic). `StartAnimation()` wird im Code-Behind bei Property-Changes mit "Result" im Namen aufgerufen. `NeedsRedraw` steuert den Invalidation-Loop via `Dispatcher.UIThread.Post`. Effekte: Tile/Flooring (Reihen-weise), Wallpaper (Alpha Fade-In der Bahnen), Paint (Schichten von unten), Stairs (Stufen von unten), CostBreakdown (Balken-Wachstum), MaterialStack (sequentielles Erscheinen), Concrete/Drywall/Electrical/Metal/Garden/RoofSolar/Plaster/Screed/Insulation/Grout (Global Alpha Fade-In via SaveLayer).
 

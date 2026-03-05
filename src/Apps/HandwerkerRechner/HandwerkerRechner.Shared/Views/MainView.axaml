@@ -10,9 +10,10 @@
              xmlns:controls="using:MeineApps.UI.Controls"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerRechner.Views.MainView"
              x:DataType="vm:MainViewModel"
-             Background="{DynamicResource BackgroundBrush}">
+             Background="Transparent">
 
   <UserControl.Styles>
     <Style Selector="Border.TabContent">
@@ -125,6 +126,12 @@
 
   <Panel>
   <Grid AutomationProperties.AutomationId="Main_RootGrid" RowDefinitions="*,Auto,Auto">
+
+    <!-- Animierter Blueprint-Hintergrund (alle Rows, hinter Content) -->
+    <skia:SKCanvasView x:Name="BackgroundCanvas"
+                        Grid.RowSpan="3"
+                        IsHitTestVisible="False"
+                        PaintSurface="OnBackgroundPaintSurface" />
 
     <!-- Content Area -->
     <Panel Grid.Row="0">

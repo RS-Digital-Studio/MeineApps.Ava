@@ -1,11 +1,15 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Labs.Controls;
 using Avalonia.Media;
+using Avalonia.Threading;
+using HandwerkerRechner.Graphics;
 using HandwerkerRechner.ViewModels;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.Services;
 using MeineApps.UI.SkiaSharp.Shaders;
 using Microsoft.Extensions.DependencyInjection;
+using SkiaSharp;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -16,6 +20,11 @@ public partial class MainView : UserControl
 {
     private MainViewModel? _vm;
     private readonly Random _rng = new();
+
+    // SkiaSharp Blueprint-Hintergrund
+    private readonly BlueprintBackgroundRenderer _backgroundRenderer = new();
+    private DispatcherTimer? _renderTimer;
+    private float _renderTime;
 
     public MainView()
     {
@@ -70,6 +79,29 @@ public partial class MainView : UserControl
         };
     }
 
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        // Render-Timer stoppen und Renderer freigeben
+        if (_renderTimer != null)
+        {
+            _renderTimer.Stop();
+            _renderTimer.Tick -= OnRenderTimerTick;
+            _renderTimer = null;
+        }
+        _backgroundRenderer.Dispose();
+
+        // Events sauber abmelden bei Entfernung aus dem Visual Tree
+        if (_vm != null)
+        {
+            _vm.FloatingTextRequested -= OnFloatingText;
+            _vm.CelebrationRequested -= OnCelebration;
+            _vm.ClipboardRequested -= OnClipboardRequested;
+            _vm = null;
+        }
+    }
+
     private void OnDataContextChanged(object? sender, EventArgs e)
     {
         // Altes ViewModel abmelden
@@ -88,8 +120,50 @@ public partial class MainView : UserControl
             _vm.FloatingTextRequested += OnFloatingText;
             _vm.CelebrationRequested += OnCelebration;
             _vm.ClipboardRequested += OnClipboardRequested;
+
+            // Render-Timer einmalig starten wenn VM verfuegbar
+            StartRenderTimer();
         }
     }
+
+    // =====================================================================
+    // Render-Timer (~5fps fuer animierten Blueprint-Hintergrund)
+    // =====================================================================
+
+    private void StartRenderTimer()
+    {
+        if (_renderTimer != null) return;
+
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) }; // ~5fps
+        _renderTimer.Tick += OnRenderTimerTick;
+        _renderTimer.Start();
+    }
+
+    private void OnRenderTimerTick(object? sender, EventArgs e)
+    {
+        _renderTime += 0.2f;
+        _backgroundRenderer.Update(0.2f);
+        BackgroundCanvas?.InvalidateSurface();
+    }
+
+    // =====================================================================
+    // SkiaSharp Paint-Handler
+    // =====================================================================
+
+    /// <summary>
+    /// Zeichnet den animierten Blueprint-Hintergrund (5 Layer).
+    /// </summary>
+    private void OnBackgroundPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear(SKColors.Transparent);
+        var bounds = canvas.LocalClipBounds;
+        _backgroundRenderer.Render(canvas, bounds, _renderTime);
+    }
+
+    // =====================================================================
+    // Game Juice Events (FloatingText + Celebration + Clipboard)
+    // =====================================================================
 
     private void OnFloatingText(string text, string category)
     {

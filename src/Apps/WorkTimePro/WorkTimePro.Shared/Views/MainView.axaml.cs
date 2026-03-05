@@ -1,9 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Labs.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Transformation;
+using Avalonia.Threading;
 using Material.Icons.Avalonia;
+using SkiaSharp;
+using WorkTimePro.Graphics;
 using WorkTimePro.ViewModels;
 
 namespace WorkTimePro.Views;
@@ -13,9 +17,14 @@ public partial class MainView : UserControl
     private MainViewModel? _vm;
     private readonly Random _rng = new();
 
-    // Tab-Icon/Label Referenzen für Highlighting
+    // Tab-Icon/Label Referenzen fuer Highlighting
     private MaterialIcon?[] _tabIcons = new MaterialIcon?[5];
     private TextBlock?[] _tabLabels = new TextBlock?[5];
+
+    // Animierter Hintergrund (Professional Dashboard)
+    private readonly WorkspaceBackgroundRenderer _backgroundRenderer = new();
+    private DispatcherTimer? _bgTimer;
+    private float _bgTime;
 
     public MainView()
     {
@@ -45,6 +54,44 @@ public partial class MainView : UserControl
         // Initialer Tab-State
         UpdateTabHighlighting(0);
         UpdateTabIndicator(0);
+
+        // Hintergrund-Render-Loop starten (~5fps)
+        _bgTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(200) };
+        _bgTimer.Tick += OnBackgroundTimerTick;
+        _bgTimer.Start();
+    }
+
+    protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnDetachedFromVisualTree(e);
+
+        // Hintergrund-Render-Loop stoppen und Renderer freigeben
+        if (_bgTimer != null)
+        {
+            _bgTimer.Stop();
+            _bgTimer.Tick -= OnBackgroundTimerTick;
+            _bgTimer = null;
+        }
+        _backgroundRenderer.Dispose();
+    }
+
+    // =====================================================================
+    // Hintergrund-Animation (~5fps)
+    // =====================================================================
+
+    private void OnBackgroundTimerTick(object? sender, EventArgs e)
+    {
+        const float deltaTime = 0.2f; // 200ms Intervall
+        _bgTime += deltaTime;
+        _backgroundRenderer.Update(deltaTime);
+        BackgroundCanvas?.InvalidateSurface();
+    }
+
+    private void OnBackgroundPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
+    {
+        var canvas = e.Surface.Canvas;
+        canvas.Clear();
+        _backgroundRenderer.Render(canvas, canvas.LocalClipBounds, _bgTime);
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

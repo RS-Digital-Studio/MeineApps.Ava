@@ -92,6 +92,7 @@ Finanz-App mit Ausgaben-Tracking, Budget-Verwaltung, Dauerauftraegen und 6 Finan
 | `Graphics/FinanceDashboardRenderer.cs` | Animierter Hero-Header-Hintergrund (Gradient-Mesh, Grid-Linien, Glow-Dots, Floating-Symbole) |
 | `Graphics/CalculatorHeaderRenderer.cs` | 6 individuelle animierte Header pro Rechner (Exponentialkurve, Stufen, etc.) |
 | `Graphics/CardGlowRenderer.cs` | Status-basierter Edge-Glow (Budget-Status, Bilanz, Berechnungs-Flash) |
+| `Graphics/FinanceBackgroundRenderer.cs` | Animierter "Financial Data Stream" Hintergrund (5 Layer: Smaragd-Gradient, Chart-Linien, Mini-Balken-Partikel, Sparkle-Punkte, Vignette). ~5fps Render-Loop in MainView |
 
 Shared-Renderer aus `MeineApps.UI.SkiaSharp`:
 - **DonutChartVisualization**: Donut-Charts für HomeView, StatisticsView, ExpenseTrackerView, LoanView, YieldView
@@ -99,6 +100,7 @@ Shared-Renderer aus `MeineApps.UI.SkiaSharp`:
 - **SkiaGradientRing**: Gradient-Fortschrittsring für Gesamt-Budget in HomeView und BudgetsView (ersetzt BudgetGaugeVisualization)
 
 View-Zuordnung:
+- **MainView**: FinanceBackgroundRenderer (animierter Hintergrund, ~5fps DispatcherTimer, Grid.RowSpan=3)
 - **HomeView**: FinanceDashboardRenderer (Hero-Header-BG) + SkiaGradientRing (Budget) + Sparkline (30-Tage-Trend) + MiniRing (Budget-Kategorien) + Expense-Donut
 - **StatisticsView**: 2x Donut (Einnahmen/Ausgaben) + TrendLine (6-Monats-Trend)
 - **ExpenseTrackerView**: Kategorie-Donut

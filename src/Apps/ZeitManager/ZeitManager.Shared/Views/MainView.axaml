@@ -3,6 +3,7 @@
              xmlns:vm="using:ZeitManager.ViewModels"
              xmlns:mi="using:Material.Icons.Avalonia"
              xmlns:controls="using:MeineApps.UI.Controls"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="ZeitManager.Views.MainView"
              x:DataType="vm:MainViewModel"
              Background="{DynamicResource BackgroundBrush}">
@@ -44,6 +45,12 @@
   </UserControl.Styles>
 
   <Grid RowDefinitions="*,Auto">
+
+    <!-- Animierter Hintergrund -->
+    <skia:SKCanvasView x:Name="BackgroundCanvas"
+                        Grid.RowSpan="2"
+                        IsHitTestVisible="False"
+                        PaintSurface="OnBackgroundPaintSurface" />
 
     <!-- Content Area (versteckt wenn Alarm-Overlay aktiv) -->
     <Panel Grid.Row="0" IsVisible="{Binding !IsAlarmOverlayVisible}">

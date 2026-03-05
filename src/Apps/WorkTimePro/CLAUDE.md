@@ -113,7 +113,9 @@ Vacation, Sick, HomeOffice, BusinessTrip, SpecialLeave, UnpaidLeave, OvertimeCom
 | `Graphics/StatsSummaryGaugeVisualization.cs` | 4 kompakte Halbkreis-Gauges (Arbeitszeit, Überstunden, Schnitt/Tag, Quote), Überfluss-Markierung >100% |
 | `Graphics/MonthWeekProgressVisualization.cs` | Alle Wochen eines Monats als Gradient-Balken in einem Canvas, Labels + Saldo, Glow-Effekt |
 | `Graphics/WorkTimeProSplashRenderer.cs` | "Die Stechuhr": Dunkelgrau-Hintergrund mit Kalender-Grid, animierte Stechuhr mit Karten-Stempelzyklus (3s), 10 Business-Partikel. Erbt von SplashRendererBase |
+| `Graphics/WorkspaceBackgroundRenderer.cs` | "Professional Dashboard": 5-Layer animierter Hintergrund (3-Farben Gradient, Dot-Matrix-Grid mit Drift, Calendar-Block-Partikel, gestrichelte Stunden-Linien, Vignette). ~5fps Render-Loop, 0 GC pro Frame, max 10 Calendar-Blocks |
 
+- **MainView**: WorkspaceBackgroundRenderer (animierter Hintergrund, alle Rows, hinter Content, ~5fps DispatcherTimer)
 - **TodayView**: SkiaGradientRing (Tagesfortschritt, 24 Ticks, Glow+Pulsation bei Tracking) + DayTimeline (Arbeitsblöcke grün, Pausen orange schraffiert)
 - **WeekOverviewView**: WeekBarVisualization (Balken pro Tag) + LinearProgressVisualization (Wochenfortschritt, ersetzt ProgressBar)
 - **StatisticsView**: 6 SkiaSharp-Charts (PauseDonut, WeeklyChart, OvertimeSpline, WeekdayRadial, ProjectDonut, EmployerDonut) - LiveCharts vollständig ersetzt

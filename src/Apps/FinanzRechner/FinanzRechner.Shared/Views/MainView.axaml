@@ -7,6 +7,7 @@
              xmlns:views="using:FinanzRechner.Views"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:uiBehaviors="using:MeineApps.UI.Behaviors"
+             xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="FinanzRechner.Views.MainView"
              x:DataType="vm:MainViewModel"
              AutomationProperties.AutomationId="Main_Root"
@@ -233,6 +234,12 @@
   <Panel>
   <Grid RowDefinitions="*,Auto,Auto"
         AutomationProperties.AutomationId="Main_LayoutRoot">
+
+    <!-- Animierter Hintergrund -->
+    <skia:SKCanvasView x:Name="BackgroundCanvas"
+                        Grid.RowSpan="3"
+                        IsHitTestVisible="False"
+                        PaintSurface="OnBackgroundPaintSurface" />
 
     <!-- Content Area -->
     <Panel Grid.Row="0"

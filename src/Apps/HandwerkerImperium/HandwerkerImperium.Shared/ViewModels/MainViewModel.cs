@@ -1257,10 +1257,15 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Phase 9: Smooth animierter Geld-Counter
         AnimateMoneyTo(e.NewAmount);
 
-        // Update affordability für alle Workshops (BulkBuyAmount berücksichtigen)
+        // Update affordability für alle Workshops (For-Schleife statt LINQ FirstOrDefault)
+        var stateWorkshops = _gameStateService.State.Workshops;
         foreach (var workshop in Workshops)
         {
-            var ws = _gameStateService.State.Workshops.FirstOrDefault(w => w.Type == workshop.Type);
+            Workshop? ws = null;
+            for (int i = 0; i < stateWorkshops.Count; i++)
+            {
+                if (stateWorkshops[i].Type == workshop.Type) { ws = stateWorkshops[i]; break; }
+            }
             SetBulkUpgradeCost(workshop, ws, e.NewAmount);
             workshop.CanAffordWorker = e.NewAmount >= workshop.HireWorkerCost;
         }
@@ -1665,9 +1670,12 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
             RefreshQuickJobs();
         }
         var remaining = _quickJobService.TimeUntilNextRotation;
-        QuickJobTimerDisplay = remaining.TotalMinutes >= 1
+        var newTimer = remaining.TotalMinutes >= 1
             ? $"{(int)remaining.TotalMinutes}:{remaining.Seconds:D2}"
             : $"0:{remaining.Seconds:D2}";
+        // Nur setzen wenn sich der String tatsächlich geändert hat (spart PropertyChanged)
+        if (newTimer != QuickJobTimerDisplay)
+            QuickJobTimerDisplay = newTimer;
 
         // Forschungs-Timer aktualisieren (laeuft im Hintergrund weiter)
         if (ResearchViewModel.HasActiveResearch)
@@ -1692,12 +1700,18 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         {
             UpdateEventDisplay();
 
-            // DailyChallenge-Fortschritt aktualisieren (Service trackt intern, UI muss refreshen)
-            RefreshChallenges();
+            // Dashboard/Missionen-spezifische Updates nur wenn sichtbar (spart ~20 PropertyChanged)
+            if (IsDashboardActive || IsMissionenActive)
+            {
+                RefreshChallenges();
+            }
 
-            // Reputation + Prestige-Banner periodisch aktualisieren (Task #6, #14)
-            RefreshReputation(state);
-            RefreshPrestigeBanner(state);
+            // Imperium-spezifische Updates nur wenn sichtbar
+            if (IsBuildingsActive || IsDashboardActive)
+            {
+                RefreshReputation(state);
+                RefreshPrestigeBanner(state);
+            }
         }
 
         // Nächstes Ziel alle 60 Ticks aktualisieren
@@ -1714,10 +1728,16 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         // Weekly Missions + Lucky Spin + Welcome Back + Worker-Warnung periodisch aktualisieren (alle 10 Ticks)
         if (_floatingTextCounter % 10 == 0)
         {
-            HasFreeSpin = _luckySpinService.HasFreeSpin;
+            // Lucky Spin nur prüfen wenn Missionen-Tab sichtbar
+            if (IsMissionenActive || IsDashboardActive)
+            {
+                var newFreeSpin = _luckySpinService.HasFreeSpin;
+                if (newFreeSpin != HasFreeSpin) HasFreeSpin = newFreeSpin;
+            }
 
-            // Worker-Warnung aktualisieren (Fatigue/Mood-Checks)
-            UpdateWorkerWarning(state);
+            // Worker-Warnung nur aktualisieren wenn Imperium/Dashboard sichtbar
+            if (IsBuildingsActive || IsDashboardActive)
+                UpdateWorkerWarning(state);
 
             // Welcome Back Timer aktualisieren
             if (IsWelcomeOfferVisible)

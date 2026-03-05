@@ -400,6 +400,80 @@
               </StackPanel>
             </Button>
 
+            <!-- Verfügbare Ausrüstung aus dem Inventar -->
+            <StackPanel Spacing="8" Margin="0,4,0,0"
+                        AutomationProperties.AutomationId="WorkerProfile_Panel_AvailableEquipment">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <mi:MaterialIcon Kind="BagPersonal" Width="16" Height="16"
+                                 Foreground="{StaticResource CraftPrimaryLightBrush}"
+                                 AutomationProperties.AutomationId="WorkerProfile_Icon_AvailableEquipment" />
+                <TextBlock Text="{loc:Translate AvailableEquipment}"
+                           FontSize="13" FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextPrimaryBrush}"
+                           AutomationProperties.AutomationId="WorkerProfile_Txt_AvailableEquipmentTitle" />
+              </StackPanel>
+
+              <!-- Hinweis wenn kein Equipment vorhanden -->
+              <TextBlock Text="{Binding NoEquipmentHint}"
+                         IsVisible="{Binding !HasAvailableEquipment}"
+                         FontSize="11"
+                         Foreground="{DynamicResource TextSecondaryBrush}"
+                         TextWrapping="Wrap"
+                         AutomationProperties.AutomationId="WorkerProfile_Txt_NoEquipmentHint" />
+
+              <!-- Equipment-Liste -->
+              <ItemsControl ItemsSource="{Binding AvailableEquipment}"
+                            IsVisible="{Binding HasAvailableEquipment}"
+                            AutomationProperties.AutomationId="WorkerProfile_Items_AvailableEquipment">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:EquipmentDisplayItem">
+                    <Border CornerRadius="8" Padding="10,8" Margin="0,2"
+                            BorderThickness="1"
+                            BorderBrush="{Binding RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
+                            AutomationProperties.AutomationId="WorkerProfile_Border_EquipmentItem">
+                      <Border.Background>
+                        <SolidColorBrush Color="#1A1A2E" Opacity="0.4" />
+                      </Border.Background>
+                      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <!-- Typ-Icon -->
+                        <Border CornerRadius="8" Padding="6"
+                                VerticalAlignment="Center"
+                                Background="{Binding RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}">
+                          <mi:MaterialIcon Kind="{Binding TypeIcon, Converter={StaticResource IconKindConverter}}"
+                                           Width="20" Height="20"
+                                           Foreground="White" />
+                        </Border>
+                        <!-- Name + Bonus -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                          <TextBlock Text="{Binding Name}"
+                                     FontSize="13" FontWeight="SemiBold"
+                                     Foreground="{Binding RarityColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
+                                     TextTrimming="CharacterEllipsis" />
+                          <TextBlock Text="{Binding BonusDisplay}"
+                                     FontSize="11"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                        </StackPanel>
+                        <!-- Ausrüsten-Button -->
+                        <Button Grid.Column="2"
+                                Classes="Primary"
+                                Padding="10,6"
+                                VerticalAlignment="Center"
+                                Command="{Binding $parent[ItemsControl].((vm:WorkerProfileViewModel)DataContext).EquipItemCommand}"
+                                CommandParameter="{Binding .}"
+                                AutomationProperties.AutomationId="WorkerProfile_Btn_EquipItem">
+                          <StackPanel Orientation="Horizontal" Spacing="4">
+                            <mi:MaterialIcon Kind="ShieldPlus" Width="14" Height="14" />
+                            <TextBlock Text="{loc:Translate EquipAction}"
+                                       FontSize="11" FontWeight="Bold" />
+                          </StackPanel>
+                        </Button>
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+
           </StackPanel>
         </Border>
 

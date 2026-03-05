@@ -1718,5 +1718,11 @@ namespace HandwerkerImperium.Resources.Strings {
         public static string ResetTutorialHintsTitle => ResourceManager.GetString("ResetTutorialHintsTitle", resourceCulture) ?? "";
 
         public static string ResetTutorialHintsMessage => ResourceManager.GetString("ResetTutorialHintsMessage", resourceCulture) ?? "";
+
+        public static string EquipAction => ResourceManager.GetString("EquipAction", resourceCulture) ?? "";
+
+        public static string AvailableEquipment => ResourceManager.GetString("AvailableEquipment", resourceCulture) ?? "";
+
+        public static string NoEquipmentInInventory => ResourceManager.GetString("NoEquipmentInInventory", resourceCulture) ?? "";
     }
 }

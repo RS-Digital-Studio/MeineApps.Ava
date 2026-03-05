@@ -3690,6 +3690,15 @@
   <data name="Unequip" xml:space="preserve">
     <value>Unequip</value>
   </data>
+  <data name="EquipAction" xml:space="preserve">
+    <value>Equip</value>
+  </data>
+  <data name="AvailableEquipment" xml:space="preserve">
+    <value>Available Equipment</value>
+  </data>
+  <data name="NoEquipmentInInventory" xml:space="preserve">
+    <value>No equipment in inventory. Win drops from mini-games or buy in the shop!</value>
+  </data>
   <data name="EquipmentBonus" xml:space="preserve">
     <value>Bonus</value>
   </data>
@@ -4421,6 +4430,89 @@
   </data>
   <data name="StartCrafting" xml:space="preserve">
     <value>Start Crafting</value>
+  </data>
+  <data name="CollectProduct" xml:space="preserve">
+    <value>Collect</value>
+  </data>
+  <!-- Crafting Recipe Names -->
+  <data name="CraftPlanks" xml:space="preserve">
+    <value>Planks</value>
+  </data>
+  <data name="CraftFurniture" xml:space="preserve">
+    <value>Furniture</value>
+  </data>
+  <data name="CraftLuxuryFurniture" xml:space="preserve">
+    <value>Luxury Furniture</value>
+  </data>
+  <data name="CraftPipes" xml:space="preserve">
+    <value>Pipes</value>
+  </data>
+  <data name="CraftPlumbing" xml:space="preserve">
+    <value>Plumbing System</value>
+  </data>
+  <data name="CraftBathroom" xml:space="preserve">
+    <value>Bathroom Installation</value>
+  </data>
+  <data name="CraftCables" xml:space="preserve">
+    <value>Cables</value>
+  </data>
+  <data name="CraftCircuit" xml:space="preserve">
+    <value>Circuit Board</value>
+  </data>
+  <data name="CraftSmartHome" xml:space="preserve">
+    <value>Smart Home System</value>
+  </data>
+  <data name="CraftPaint" xml:space="preserve">
+    <value>Paint Mix</value>
+  </data>
+  <data name="CraftWallDesign" xml:space="preserve">
+    <value>Wall Design</value>
+  </data>
+  <data name="CraftTiles" xml:space="preserve">
+    <value>Roof Tiles</value>
+  </data>
+  <data name="CraftRoofing" xml:space="preserve">
+    <value>Roofing System</value>
+  </data>
+  <!-- Crafting Product Names -->
+  <data name="ProductPlanks" xml:space="preserve">
+    <value>Planks</value>
+  </data>
+  <data name="ProductFurniture" xml:space="preserve">
+    <value>Furniture</value>
+  </data>
+  <data name="ProductLuxuryFurniture" xml:space="preserve">
+    <value>Luxury Furniture</value>
+  </data>
+  <data name="ProductPipes" xml:space="preserve">
+    <value>Pipes</value>
+  </data>
+  <data name="ProductPlumbing" xml:space="preserve">
+    <value>Plumbing System</value>
+  </data>
+  <data name="ProductBathroom" xml:space="preserve">
+    <value>Bathroom Installation</value>
+  </data>
+  <data name="ProductCables" xml:space="preserve">
+    <value>Cables</value>
+  </data>
+  <data name="ProductCircuit" xml:space="preserve">
+    <value>Circuit Board</value>
+  </data>
+  <data name="ProductSmartHome" xml:space="preserve">
+    <value>Smart Home System</value>
+  </data>
+  <data name="ProductPaintMix" xml:space="preserve">
+    <value>Paint Mix</value>
+  </data>
+  <data name="ProductWallDesign" xml:space="preserve">
+    <value>Wall Design</value>
+  </data>
+  <data name="ProductRoofTiles" xml:space="preserve">
+    <value>Roof Tiles</value>
+  </data>
+  <data name="ProductRoofing" xml:space="preserve">
+    <value>Roofing System</value>
   </data>
   <data name="ActiveProcesses" xml:space="preserve">
     <value>Active Processes</value>

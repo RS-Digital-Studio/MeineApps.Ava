@@ -53,6 +53,11 @@ public partial class DashboardView : UserControl
     private const double TapMaxDurationMs = 400.0; // Tap muss innerhalb 400ms abgeschlossen sein
     private const double ScrollOffsetThreshold = 2.0; // ScrollViewer hat sich bewegt → kein Tap
 
+    // Performance: Render-Timer Drosselung während Scroll
+    private bool _isScrolling;
+    private DateTime _lastScrollTime;
+    private int _renderTickCounter;
+
     public DashboardView()
     {
         InitializeComponent();
@@ -109,6 +114,10 @@ public partial class DashboardView : UserControl
 
         // Parallax auf CityRenderer (5-Layer)
         _cityRenderer.ScrollOffset = (float)scrollViewer.Offset.Y;
+
+        // Performance: Scroll-Zustand tracken für Render-Timer-Drosselung
+        _isScrolling = true;
+        _lastScrollTime = DateTime.UtcNow;
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -627,12 +636,35 @@ public partial class DashboardView : UserControl
 
         _renderTimer?.Stop();
         _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20 fps
-        _renderTimer.Tick += (_, _) =>
-        {
-            _cityCanvas?.InvalidateSurface();
-            WorkshopCardsCanvas?.InvalidateSurface(); // Workshop-Karten mit animierten Headern
-        };
+        _renderTimer.Tick += OnCityRenderTick;
         _renderTimer.Start();
+    }
+
+    /// <summary>
+    /// Render-Tick mit Scroll-Drosselung:
+    /// - Während Scroll: City nur alle 3 Ticks (~6fps), Workshop-Karten gar nicht
+    /// - Ohne Scroll: Volle 20fps für beide Canvases
+    /// </summary>
+    private void OnCityRenderTick(object? sender, EventArgs e)
+    {
+        _renderTickCounter++;
+
+        // Scroll-Ende erkennen (100ms ohne ScrollChanged)
+        if (_isScrolling && (DateTime.UtcNow - _lastScrollTime).TotalMilliseconds > 100)
+            _isScrolling = false;
+
+        if (_isScrolling)
+        {
+            // Während Scroll: City nur alle 3 Ticks (~6fps), Workshop-Karten pausieren
+            if (_renderTickCounter % 3 == 0)
+                _cityCanvas?.InvalidateSurface();
+        }
+        else
+        {
+            // Ohne Scroll: Volle 20fps
+            _cityCanvas?.InvalidateSurface();
+            WorkshopCardsCanvas?.InvalidateSurface();
+        }
     }
 
     private void StopCityRenderLoop()

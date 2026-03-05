@@ -33,13 +33,14 @@
         </Animation>
       </Style.Animations>
     </Style>
-    <!-- Goldschrauben-Badge Glow -->
+    <!-- Goldschrauben-Badge Glow (Opacity statt BoxShadow - GPU-beschleunigt auf Android) -->
     <Style Selector="Border.GoldenBadge">
+      <Setter Property="BoxShadow" Value="0 0 10 0 #40FFD700" />
       <Style.Animations>
         <Animation Duration="0:0:3" IterationCount="Infinite">
-          <KeyFrame Cue="0%"><Setter Property="BoxShadow" Value="0 0 4 0 #20FFD700"/></KeyFrame>
-          <KeyFrame Cue="50%"><Setter Property="BoxShadow" Value="0 0 14 0 #60FFD700"/></KeyFrame>
-          <KeyFrame Cue="100%"><Setter Property="BoxShadow" Value="0 0 4 0 #20FFD700"/></KeyFrame>
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.75"/></KeyFrame>
+          <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1.0"/></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="0.75"/></KeyFrame>
         </Animation>
       </Style.Animations>
     </Style>
@@ -148,12 +149,17 @@
                 <!-- Goldschrauben-Badge mit Glow -->
                 <Border x:Name="GoldenScrewBadge" Classes="GoldenBadge"
                         Background="#30000000" CornerRadius="12" Padding="8,4"
+                        VerticalAlignment="Center"
                         AutomationProperties.AutomationId="Dashboard_Border_GoldenScrews">
-                  <StackPanel Orientation="Horizontal" Spacing="4">
-                    <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}"
+                  <StackPanel Orientation="Horizontal" Spacing="4"
+                              VerticalAlignment="Center">
+                    <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16"
+                                     Foreground="{StaticResource CraftGoldBrush}"
+                                     VerticalAlignment="Center"
                                      AutomationProperties.AutomationId="Dashboard_Icon_GoldenScrews" />
                     <TextBlock Text="{Binding GoldenScrewsDisplay}" FontSize="14" FontWeight="Bold"
                                Foreground="{StaticResource CraftGoldBrush}"
+                               VerticalAlignment="Center"
                                AutomationProperties.AutomationId="Dashboard_Txt_GoldenScrews" />
                   </StackPanel>
                 </Border>
@@ -264,6 +270,34 @@
           </Button>
         </Grid>
 
+        <!-- Nächstes Ziel (Empfehlung, nicht klickbar) -->
+        <Border Margin="0,4,0,0" Padding="12,10"
+                CornerRadius="12"
+                Background="#20D97706"
+                BorderBrush="#60D97706"
+                BorderThickness="1.5"
+                IsVisible="{Binding HasCurrentGoal}">
+          <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
+            <!-- Icon -->
+            <mi:MaterialIcon Grid.Column="0" Grid.RowSpan="2"
+                             Kind="TrendingUp"
+                             Width="28" Height="28"
+                             Foreground="{StaticResource CraftGoldBrush}"
+                             Margin="0,0,10,0"
+                             VerticalAlignment="Center" />
+            <!-- Beschreibung -->
+            <TextBlock Grid.Column="1" Grid.Row="0"
+                       Text="{Binding CurrentGoalDescription}"
+                       FontSize="14" FontWeight="SemiBold"
+                       Foreground="{DynamicResource TextPrimaryBrush}" />
+            <!-- Belohnung -->
+            <TextBlock Grid.Column="1" Grid.Row="1"
+                       Text="{Binding CurrentGoalReward}"
+                       FontSize="12"
+                       Foreground="{StaticResource CraftGoldBrush}" />
+          </Grid>
+        </Border>
+
         <!-- Onboarding-Hint -->
         <Border Classes="TutorialHint" IsVisible="{Binding ShowTutorialHint}" Background="#20FFD700"
                 BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="1.5" CornerRadius="10"
@@ -285,43 +319,6 @@
 
         <!-- Banner-Strip (kompakte Chips) -->
         <dashboard:BannerStrip Margin="0,8,0,0" />
-
-        <!-- Nächstes Ziel Banner -->
-        <Border Margin="0,8,0,0" Padding="12,10"
-                CornerRadius="12"
-                Background="#20D97706"
-                BorderBrush="#60D97706"
-                BorderThickness="1.5"
-                IsVisible="{Binding HasCurrentGoal}">
-          <Button Classes="Text" Command="{Binding NavigateToGoalCommand}"
-                  HorizontalAlignment="Stretch" Padding="0">
-            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto">
-              <!-- Icon -->
-              <mi:MaterialIcon Grid.Column="0" Grid.RowSpan="2"
-                               Kind="TrendingUp"
-                               Width="28" Height="28"
-                               Foreground="{StaticResource CraftGoldBrush}"
-                               Margin="0,0,10,0"
-                               VerticalAlignment="Center" />
-              <!-- Beschreibung -->
-              <TextBlock Grid.Column="1" Grid.Row="0"
-                         Text="{Binding CurrentGoalDescription}"
-                         FontSize="14" FontWeight="SemiBold"
-                         Foreground="{DynamicResource TextPrimaryBrush}" />
-              <!-- Belohnung -->
-              <TextBlock Grid.Column="1" Grid.Row="1"
-                         Text="{Binding CurrentGoalReward}"
-                         FontSize="12"
-                         Foreground="{StaticResource CraftGoldBrush}" />
-              <!-- Pfeil -->
-              <mi:MaterialIcon Grid.Column="2" Grid.RowSpan="2"
-                               Kind="ChevronRight"
-                               Width="20" Height="20"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               VerticalAlignment="Center" />
-            </Grid>
-          </Button>
-        </Border>
 
         <!-- ============================================================= -->
         <!-- AUFTRÄGE + QUICK JOBS (Tab-Umschalter)                       -->

@@ -5,6 +5,7 @@ using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
+using Material.Icons;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 
@@ -86,9 +87,17 @@ public sealed partial class CraftingViewModel : ViewModelBase
         _craftingService = craftingService;
         _localizationService = localizationService;
 
+        // Auto-Refresh wenn Timer abläuft
+        _craftingService.CraftingUpdated += OnCraftingUpdated;
+
         BuildWorkshopOptions();
         UpdateLocalizedTexts();
         RefreshCrafting();
+    }
+
+    private void OnCraftingUpdated()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(RefreshCrafting);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -166,7 +175,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
             string outputName = allProducts.TryGetValue(recipe.OutputProductId, out var product)
                 ? _localizationService.GetString(product.NameKey) ?? product.NameKey
                 : recipe.OutputProductId;
-            string outputIcon = GetProductIcon(recipe.OutputProductId);
+            var outputIcon = GetProductIcon(recipe.OutputProductId);
 
             // Dauer formatieren
             string durationDisplay = FormatDuration(recipe.DurationSeconds);
@@ -192,7 +201,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
             // Rezept-Info für Produkt-Name
             var recipeForJob = CraftingRecipe.GetAllRecipes().FirstOrDefault(r => r.Id == job.RecipeId);
             string productName = "";
-            string outputIcon = "";
+            var outputIcon = MaterialIconKind.PackageVariant;
             if (recipeForJob != null && allProducts.TryGetValue(recipeForJob.OutputProductId, out var outputProduct))
             {
                 productName = _localizationService.GetString(outputProduct.NameKey) ?? outputProduct.NameKey;
@@ -230,7 +239,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
                 : productId;
 
             decimal value = invProduct?.BaseValue ?? 0m;
-            string icon = GetProductIcon(productId);
+            var icon = GetProductIcon(productId);
 
             inventoryItemList.Add(new InventoryItemDisplay
             {
@@ -324,22 +333,27 @@ public sealed partial class CraftingViewModel : ViewModelBase
         return $"{totalSeconds}s";
     }
 
-    private static string GetProductIcon(string productId) => productId switch
+    private static MaterialIconKind GetProductIcon(string productId) => productId switch
     {
-        "plank" => "ForestOutline",
-        "beam" => "Crane",
-        "pipe_section" => "Wrench",
-        "wire_bundle" => "LightningBolt",
-        "paint_can" => "Palette",
-        "tile_set" => "Wall",
-        "furniture" => "SeatOutline",
-        "cabinet" => "CabinetOutline",
-        "pipe_system" => "ShowerHead",
-        "wiring_harness" => "PowerPlug",
-        "painted_surface" => "ImageOutline",
-        "tiled_floor" => "Home",
-        "luxury_kitchen" => "Crown",
-        _ => "PackageVariant"
+        // Schreiner
+        "planks" => MaterialIconKind.Forest,
+        "furniture" => MaterialIconKind.SeatOutline,
+        "luxury_furniture" => MaterialIconKind.Crown,
+        // Klempner
+        "pipes" => MaterialIconKind.Pipe,
+        "plumbing_system" => MaterialIconKind.Water,
+        "bathroom_installation" => MaterialIconKind.ShowerHead,
+        // Elektriker
+        "cables" => MaterialIconKind.CableData,
+        "circuit" => MaterialIconKind.Chip,
+        "smart_home" => MaterialIconKind.HomeAutomation,
+        // Maler
+        "paint_mix" => MaterialIconKind.Palette,
+        "wall_design" => MaterialIconKind.FormatPaint,
+        // Dachdecker
+        "roof_tiles" => MaterialIconKind.ViewGrid,
+        "roofing_system" => MaterialIconKind.HomeRoof,
+        _ => MaterialIconKind.PackageVariant
     };
 
     private static string GetWorkshopIconKind(WorkshopType type) => type switch
@@ -376,7 +390,7 @@ public class CraftingRecipeDisplay
     public string Name { get; set; } = "";
     public string InputDisplay { get; set; } = "";
     public string OutputName { get; set; } = "";
-    public string OutputIcon { get; set; } = "";
+    public MaterialIconKind OutputIcon { get; set; } = MaterialIconKind.PackageVariant;
     public string DurationDisplay { get; set; } = "";
     public bool CanCraft { get; set; }
 }
@@ -388,7 +402,7 @@ public class CraftingJobDisplay
 {
     public string JobId { get; set; } = "";
     public string OutputName { get; set; } = "";
-    public string OutputIcon { get; set; } = "";
+    public MaterialIconKind OutputIcon { get; set; } = MaterialIconKind.PackageVariant;
     public double Progress { get; set; }
     public string ProgressPercentDisplay { get; set; } = "";
     public double ProgressBarWidth { get; set; }
@@ -403,7 +417,7 @@ public class InventoryItemDisplay
 {
     public string ProductId { get; set; } = "";
     public string Name { get; set; } = "";
-    public string Icon { get; set; } = "";
+    public MaterialIconKind Icon { get; set; } = MaterialIconKind.PackageVariant;
     public string QuantityDisplay { get; set; } = "";
     public string ValueDisplay { get; set; } = "";
 }

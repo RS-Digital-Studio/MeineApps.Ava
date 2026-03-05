@@ -250,7 +250,7 @@
                         <GradientStop Color="#B45309" Offset="1" />
                       </LinearGradientBrush>
                     </Border.Background>
-                    <mi:MaterialIcon Kind="{Binding IconKind}" Width="24" Height="24"
+                    <mi:MaterialIcon Kind="{Binding IconKind, Converter={StaticResource IconKindConverter}}" Width="24" Height="24"
                                      AutomationProperties.AutomationId="Shop_Icon_ToolItem"
                                      Foreground="White"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />

@@ -6,7 +6,7 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Auftraege oder spiele Mini-Games.
 
-**Version:** 2.0.14 (VersionCode 22) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Geschlossener Test
+**Version:** 2.0.17 (VersionCode 25) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Geschlossener Test
 
 ## Haupt-Features
 
@@ -43,7 +43,7 @@ Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werk
 - **Crafting-System** (13 Rezepte in 3 Tiers, Inventar + Verkauf)
 - **Automatisierung** (Auto-Collect Lv15+, Auto-Accept Lv25+, Auto-Assign Lv50+, Auto-ClaimDaily Premium)
 - **Welcome Back Angebote** + **Gluecksrad** (taeglich gratis)
-- **Ausruestungs-System** (4 Typen x 4 Seltenheiten fuer Arbeiter)
+- **Ausruestungs-System** (4 Typen x 4 Seltenheiten fuer Arbeiter, Equip/Unequip im Worker-Profil, Inventar-Browser)
 - **Isometrische Weltkarte** (Full-Screen 2.5D SkiaSharp, 8x8 Diamond-Grid, Kamera, Radial-Menue, Partikel, Tag/Nacht, Wetter)
 
 ## Premium & Ads
@@ -441,16 +441,16 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 
 | ID | Seltenheit | Bonus | Bedingung |
 |----|-----------|-------|-----------|
-| mt_golden_hammer | Common | +2% | Workshop Lv.25 |
-| mt_diamond_saw | Common | +2% | Workshop Lv.50 |
-| mt_titanium_pliers | Common | +3% | 50 Auftraege |
-| mt_brass_level | Common | +3% | 100 Minispiele |
-| mt_silver_wrench | Uncommon | +5% | Workshop Lv.100 |
-| mt_jade_brush | Uncommon | +5% | 25 Perfect Ratings |
+| mt_golden_hammer | Common | +2% | Workshop Lv.75 |
+| mt_diamond_saw | Common | +2% | Workshop Lv.150 |
+| mt_titanium_pliers | Common | +3% | 150 Auftraege |
+| mt_brass_level | Common | +3% | 300 Minispiele |
+| mt_silver_wrench | Uncommon | +5% | Workshop Lv.300 |
+| mt_jade_brush | Uncommon | +5% | 75 Perfect Ratings |
 | mt_crystal_chisel | Uncommon | +5% | Bronze Prestige |
-| mt_obsidian_drill | Rare | +7% | Workshop Lv.250 |
+| mt_obsidian_drill | Rare | +7% | Workshop Lv.750 |
 | mt_ruby_blade | Rare | +7% | Silver Prestige |
-| mt_emerald_toolbox | Epic | +10% | Workshop Lv.500 |
+| mt_emerald_toolbox | Epic | +10% | Workshop Lv.1500 |
 | mt_dragon_anvil | Epic | +10% | Gold Prestige |
 | mt_master_crown | Legendary | +15% | Alle 11 Tools |
 
@@ -477,6 +477,19 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 | RewardCeremonyRenderer | `_iconPath` |
 
 **WorkerAvatarRenderer**: Statische wiederverwendbare Paints (s_fillNoAA, s_fillAA, s_strokeNoAA) + s_cachedPath. Kein IDisposable (static readonly Felder leben bis Prozessende). **GameCardRenderer** und **ResearchIconRenderer** sind statische Klassen.
+
+**WorkerAvatarControl**: Gemeinsamer statischer Timer (`s_sharedTimer`) für alle Instanzen statt pro-Instanz Timer. Statische `s_bitmapPaint` + `s_blinkPaint` (keine Allokation pro Frame). WeakReference-Liste für Auto-Cleanup.
+
+## Scroll-Performance-Optimierungen
+
+| Optimierung | Effekt |
+|-------------|--------|
+| MainView BackgroundCanvas ~5fps statt 20fps | -75% Background-Draw-Calls (Partikel unter Content nicht sichtbar bei 20fps) |
+| Dashboard City-Canvas ~6fps während Scroll | -70% Draw-Calls während Scroll. WorkshopCards pausieren komplett |
+| WorkerAvatarControl Shared Timer | 1 Timer statt N (bei 8 Avataren: 20 statt 160 Ticks/s) |
+| GameTick Tab-Awareness | PropertyChanged nur für sichtbare Tabs (spart ~20 Notifications/s) |
+| BoxShadow→Opacity Animationen | GPU-beschleunigt statt CPU-Blur auf Android |
+| LINQ→For-Schleifen | Kein Enumerator+Closure-GC in OnMoneyChanged, RefreshFeatureStatusTexts, Workshop-Lookups |
 
 ## IDisposable auf allen Renderern
 

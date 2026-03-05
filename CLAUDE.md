@@ -91,8 +91,8 @@ Alle 8 Apps im geschlossenen Test, warten auf 12 Tester fuer Produktion.
 | FinanzRechner | v2.0.6 | Banner + Rewarded | 3,99 remove_ads |
 | FitnessRechner | v2.0.6 | Banner + Rewarded | 3,99 remove_ads |
 | WorkTimePro | v2.0.6 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime |
-| HandwerkerImperium | v2.0.16 | Banner + Rewarded | 4,99 Premium |
-| BomberBlast | v2.0.23 | Banner + Rewarded | 1,99 remove_ads |
+| HandwerkerImperium | v2.0.17 | Banner + Rewarded | 4,99 Premium |
+| BomberBlast | v2.0.25 | Banner + Rewarded | 1,99 remove_ads |
 
 ---
 

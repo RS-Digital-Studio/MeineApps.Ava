@@ -36,6 +36,9 @@ public partial class MainView : UserControl
     private GameScreenType _currentScreenType = GameScreenType.Dashboard;
     private string[] _tabLabels = ["Workshop", "Empire", "Missions", "Guild", "Shop"];
 
+    // Performance: Hintergrund nur alle 4 Ticks invalidieren (5fps statt 20fps)
+    private int _bgTickCounter;
+
     public MainView()
     {
         InitializeComponent();
@@ -110,9 +113,14 @@ public partial class MainView : UserControl
         // Money-Animation aktualisieren (ersetzt separaten 30fps-Timer)
         _vm?.UpdateMoneyAnimation();
 
-        // Animierten Hintergrund aktualisieren (Partikel + Repaint)
-        _backgroundRenderer.UpdateParticles(0.05f, _currentScreenType, _lastBackgroundBounds);
-        BackgroundCanvas?.InvalidateSurface();
+        // Hintergrund nur alle 4 Ticks (~5fps) invalidieren - Partikel unter Content unsichtbar bei 20fps
+        _bgTickCounter++;
+        if (_bgTickCounter >= 4)
+        {
+            _bgTickCounter = 0;
+            _backgroundRenderer.UpdateParticles(0.2f, _currentScreenType, _lastBackgroundBounds);
+            BackgroundCanvas?.InvalidateSurface();
+        }
 
         // Tab-Bar nur aktualisieren wenn sichtbar
         if (_vm?.IsTabBarVisible == true)

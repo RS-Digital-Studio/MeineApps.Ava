@@ -82,8 +82,15 @@
                 <Border Classes="Card"
                         AutomationProperties.AutomationId="Crafting_Border_ActiveJob"
                         Padding="12" Margin="0,0,0,4">
-                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                    <!-- Produkt-Icon -->
+                    <Border CornerRadius="8" Padding="6"
+                            Background="{StaticResource CraftPrimaryBrush}"
+                            VerticalAlignment="Center">
+                      <mi:MaterialIcon Kind="{Binding OutputIcon}" Width="22" Height="22"
+                                       Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                    </Border>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                       <TextBlock Text="{Binding OutputName}"
                                  AutomationProperties.AutomationId="Crafting_Txt_ActiveJobName"
                                  FontSize="14" FontWeight="SemiBold"
@@ -91,13 +98,33 @@
                       <TextBlock Text="{Binding TimeRemainingDisplay}"
                                  AutomationProperties.AutomationId="Crafting_Txt_ActiveJobTime"
                                  FontSize="11"
-                                 Foreground="{DynamicResource TextSecondaryBrush}" />
+                                 Foreground="{DynamicResource TextSecondaryBrush}"
+                                 IsVisible="{Binding !IsComplete}" />
                     </StackPanel>
-                    <TextBlock Grid.Column="1" Text="{Binding ProgressPercentDisplay}"
+                    <!-- Fortschritt wenn noch nicht fertig -->
+                    <TextBlock Grid.Column="2" Text="{Binding ProgressPercentDisplay}"
                                AutomationProperties.AutomationId="Crafting_Txt_ActiveJobPercent"
                                FontSize="13" FontWeight="Bold"
                                Foreground="{StaticResource CraftPrimaryLightBrush}"
-                               VerticalAlignment="Center" />
+                               VerticalAlignment="Center"
+                               IsVisible="{Binding !IsComplete}" />
+                    <!-- Einsammeln-Button wenn fertig -->
+                    <Button Grid.Column="2"
+                            Classes="Primary"
+                            AutomationProperties.AutomationId="Crafting_Btn_CollectJob"
+                            Padding="10,6"
+                            VerticalAlignment="Center"
+                            IsVisible="{Binding IsComplete}"
+                            Command="{Binding $parent[ItemsControl].((vm:CraftingViewModel)DataContext).CollectProductCommand}"
+                            CommandParameter="{Binding JobId}">
+                      <StackPanel Orientation="Horizontal" Spacing="4">
+                        <mi:MaterialIcon Kind="PackageDown" Width="16" Height="16"
+                                         AutomationProperties.AutomationId="Crafting_Icon_CollectJob" />
+                        <TextBlock Text="{loc:Translate CollectProduct}"
+                                   AutomationProperties.AutomationId="Crafting_Txt_CollectJobBtn"
+                                   FontSize="12" FontWeight="Bold" />
+                      </StackPanel>
+                    </Button>
                   </Grid>
                 </Border>
               </DataTemplate>
@@ -128,7 +155,17 @@
                       AutomationProperties.AutomationId="Crafting_Border_Recipe"
                       Padding="12" Margin="0,0,0,8"
                       >
-                <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+
+                  <!-- Produkt-Icon -->
+                  <Border CornerRadius="10" Padding="8"
+                          VerticalAlignment="Top" Margin="0,2,0,0"
+                          Background="{StaticResource CraftPrimaryBrush}">
+                    <mi:MaterialIcon Kind="{Binding OutputIcon}" Width="26" Height="26"
+                                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                  </Border>
+
+                  <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="6">
 
                   <!-- Rezept-Name -->
                   <TextBlock Text="{Binding Name}"
@@ -185,6 +222,7 @@
                     </StackPanel>
                   </Button>
 
+                  </Grid>
                 </Grid>
               </Border>
             </DataTemplate>
@@ -215,9 +253,16 @@
               <Border Background="{DynamicResource SurfaceBrush}"
                       AutomationProperties.AutomationId="Crafting_Border_InventoryItem"
                       CornerRadius="8" Padding="12,8" Margin="0,3">
-                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                  <!-- Produkt-Icon -->
+                  <Border CornerRadius="8" Padding="6"
+                          Background="{StaticResource CraftPrimaryBrush}"
+                          VerticalAlignment="Center">
+                    <mi:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20"
+                                     Foreground="{StaticResource CraftPrimaryLightBrush}" />
+                  </Border>
                   <!-- Name + Anzahl -->
-                  <StackPanel VerticalAlignment="Center">
+                  <StackPanel Grid.Column="1" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Name}"
                                AutomationProperties.AutomationId="Crafting_Txt_InventoryItemName"
                                FontSize="13" FontWeight="SemiBold"
@@ -228,13 +273,13 @@
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                   </StackPanel>
                   <!-- Wert -->
-                  <TextBlock Grid.Column="1" Text="{Binding ValueDisplay}"
+                  <TextBlock Grid.Column="2" Text="{Binding ValueDisplay}"
                              AutomationProperties.AutomationId="Crafting_Txt_InventoryItemValue"
                              FontSize="12"
                              Foreground="{DynamicResource SuccessBrush}"
                              VerticalAlignment="Center" />
                   <!-- Verkaufen -->
-                  <Button Grid.Column="2"
+                  <Button Grid.Column="3"
                           Classes="Outlined"
                           AutomationProperties.AutomationId="Crafting_Btn_SellItem"
                           Padding="8,4"

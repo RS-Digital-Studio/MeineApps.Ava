@@ -3437,6 +3437,9 @@
   <data name="Belt" xml:space="preserve"><value>Cinturón</value></data>
   <data name="EquipmentEmpty" xml:space="preserve"><value>Vacío</value></data>
   <data name="Unequip" xml:space="preserve"><value>Desequipar</value></data>
+  <data name="EquipAction" xml:space="preserve"><value>Equipar</value></data>
+  <data name="AvailableEquipment" xml:space="preserve"><value>Equipo disponible</value></data>
+  <data name="NoEquipmentInInventory" xml:space="preserve"><value>Sin equipamiento en el inventario. ¡Consigue drops en minijuegos o compra en la tienda!</value></data>
   <data name="EquipmentBonus" xml:space="preserve"><value>Bonus</value></data>
   <data name="Equipment_Helmet_Common" xml:space="preserve"><value>Casco básico</value></data>
   <data name="Equipment_Helmet_Uncommon" xml:space="preserve"><value>Casco reforzado</value></data>
@@ -4225,6 +4228,89 @@
   </data>
   <data name="StartCrafting" xml:space="preserve">
     <value>Iniciar fabricación</value>
+  </data>
+  <data name="CollectProduct" xml:space="preserve">
+    <value>Recoger</value>
+  </data>
+  <!-- Nombres de recetas de fabricación -->
+  <data name="CraftPlanks" xml:space="preserve">
+    <value>Tablones</value>
+  </data>
+  <data name="CraftFurniture" xml:space="preserve">
+    <value>Muebles</value>
+  </data>
+  <data name="CraftLuxuryFurniture" xml:space="preserve">
+    <value>Muebles de lujo</value>
+  </data>
+  <data name="CraftPipes" xml:space="preserve">
+    <value>Tuberías</value>
+  </data>
+  <data name="CraftPlumbing" xml:space="preserve">
+    <value>Sistema de fontanería</value>
+  </data>
+  <data name="CraftBathroom" xml:space="preserve">
+    <value>Instalación de baño</value>
+  </data>
+  <data name="CraftCables" xml:space="preserve">
+    <value>Cables</value>
+  </data>
+  <data name="CraftCircuit" xml:space="preserve">
+    <value>Circuito</value>
+  </data>
+  <data name="CraftSmartHome" xml:space="preserve">
+    <value>Sistema domótico</value>
+  </data>
+  <data name="CraftPaint" xml:space="preserve">
+    <value>Mezcla de pintura</value>
+  </data>
+  <data name="CraftWallDesign" xml:space="preserve">
+    <value>Diseño de pared</value>
+  </data>
+  <data name="CraftTiles" xml:space="preserve">
+    <value>Tejas</value>
+  </data>
+  <data name="CraftRoofing" xml:space="preserve">
+    <value>Sistema de tejado</value>
+  </data>
+  <!-- Nombres de productos de fabricación -->
+  <data name="ProductPlanks" xml:space="preserve">
+    <value>Tablones</value>
+  </data>
+  <data name="ProductFurniture" xml:space="preserve">
+    <value>Muebles</value>
+  </data>
+  <data name="ProductLuxuryFurniture" xml:space="preserve">
+    <value>Muebles de lujo</value>
+  </data>
+  <data name="ProductPipes" xml:space="preserve">
+    <value>Tuberías</value>
+  </data>
+  <data name="ProductPlumbing" xml:space="preserve">
+    <value>Sistema de fontanería</value>
+  </data>
+  <data name="ProductBathroom" xml:space="preserve">
+    <value>Instalación de baño</value>
+  </data>
+  <data name="ProductCables" xml:space="preserve">
+    <value>Cables</value>
+  </data>
+  <data name="ProductCircuit" xml:space="preserve">
+    <value>Circuito</value>
+  </data>
+  <data name="ProductSmartHome" xml:space="preserve">
+    <value>Sistema domótico</value>
+  </data>
+  <data name="ProductPaintMix" xml:space="preserve">
+    <value>Mezcla de pintura</value>
+  </data>
+  <data name="ProductWallDesign" xml:space="preserve">
+    <value>Diseño de pared</value>
+  </data>
+  <data name="ProductRoofTiles" xml:space="preserve">
+    <value>Tejas</value>
+  </data>
+  <data name="ProductRoofing" xml:space="preserve">
+    <value>Sistema de tejado</value>
   </data>
   <data name="ActiveProcesses" xml:space="preserve">
     <value>Procesos activos</value>

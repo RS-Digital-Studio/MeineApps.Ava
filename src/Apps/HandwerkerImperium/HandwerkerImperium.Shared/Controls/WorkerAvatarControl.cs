@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
@@ -98,9 +99,18 @@ public class WorkerAvatarControl : Control
         new SKColor(0x6E, 0x40, 0x20)
     ];
 
+    // Gemeinsamer Timer für ALLE Instanzen (statt pro-Instanz 20fps Timer)
+    private static DispatcherTimer? s_sharedTimer;
+    private static readonly List<WeakReference<WorkerAvatarControl>> s_instances = new();
+    private static readonly object s_lock = new();
+
+    // Gecachte SKPaint-Instanzen (statt "using var paint = new SKPaint" pro Frame)
+    private static readonly SKPaint s_bitmapPaint = new() { IsAntialias = false };
+    private static readonly SKPaint s_blinkPaint = new() { IsAntialias = false };
+
     private readonly SKCanvasView _canvasView;
     private SKBitmap? _currentBitmap;
-    private DispatcherTimer? _animationTimer;
+    private bool _needsAnimation;
     private int _stableHash;
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -167,9 +177,9 @@ public class WorkerAvatarControl : Control
         // Animations-Timer: Rarity-Rahmen (Uncommon+) ODER Idle-Animation (>=56dp)
         var rarity = TierToRarity(Tier);
         if (rarity >= Rarity.Uncommon || AvatarSize >= 56)
-            StartAnimationTimer();
+            RegisterForAnimation();
         else
-            StopAnimationTimer();
+            UnregisterFromAnimation();
 
         _canvasView.InvalidateSurface();
     }
@@ -189,19 +199,58 @@ public class WorkerAvatarControl : Control
         }
     }
 
-    private void StartAnimationTimer()
+    /// <summary>
+    /// Registriert diese Instanz beim gemeinsamen Animations-Timer.
+    /// Ein einziger Timer für alle WorkerAvatarControls statt pro-Instanz (160→20 Ticks/s).
+    /// </summary>
+    private void RegisterForAnimation()
     {
-        if (_animationTimer != null) return;
-        _animationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
-        _animationTimer.Tick += (_, _) => _canvasView.InvalidateSurface();
-        _animationTimer.Start();
+        _needsAnimation = true;
+        lock (s_lock)
+        {
+            s_instances.Add(new WeakReference<WorkerAvatarControl>(this));
+            EnsureSharedTimerRunning();
+        }
     }
 
-    private void StopAnimationTimer()
+    private void UnregisterFromAnimation()
     {
-        if (_animationTimer == null) return;
-        _animationTimer.Stop();
-        _animationTimer = null;
+        _needsAnimation = false;
+        // Aufräumen passiert im Timer-Tick (WeakReference wird automatisch entfernt)
+    }
+
+    private static void EnsureSharedTimerRunning()
+    {
+        if (s_sharedTimer != null) return;
+        s_sharedTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        s_sharedTimer.Tick += OnSharedTimerTick;
+        s_sharedTimer.Start();
+    }
+
+    private static void OnSharedTimerTick(object? sender, EventArgs e)
+    {
+        lock (s_lock)
+        {
+            // Alle lebenden Instanzen invalidieren, tote entfernen
+            for (int i = s_instances.Count - 1; i >= 0; i--)
+            {
+                if (s_instances[i].TryGetTarget(out var control) && control._needsAnimation)
+                {
+                    control._canvasView.InvalidateSurface();
+                }
+                else
+                {
+                    s_instances.RemoveAt(i);
+                }
+            }
+
+            // Timer stoppen wenn keine Instanzen mehr
+            if (s_instances.Count == 0 && s_sharedTimer != null)
+            {
+                s_sharedTimer.Stop();
+                s_sharedTimer = null;
+            }
+        }
     }
 
     private void OnPaintSurface(object? sender, SKPaintSurfaceEventArgs e)
@@ -235,9 +284,8 @@ public class WorkerAvatarControl : Control
 
         var srcRect = new SKRect(0, 0, _currentBitmap.Width, _currentBitmap.Height);
 
-        // Bitmap in die eingerückte Fläche zeichnen
-        using var paint = new SKPaint { IsAntialias = false };
-        canvas.DrawBitmap(_currentBitmap, srcRect, avatarRect, paint);
+        // Bitmap in die eingerückte Fläche zeichnen (statischer Paint, keine Allokation pro Frame)
+        canvas.DrawBitmap(_currentBitmap, srcRect, avatarRect, s_bitmapPaint);
 
         // Idle-Animation: Blinzeln (alle 3-5s für ~150ms, Augen-Overlay)
         if (AvatarSize >= 56)
@@ -277,9 +325,10 @@ public class WorkerAvatarControl : Control
         float eyeWidth = w * 0.14f;
         float eyeHeight = h * 0.06f;
 
-        using var blinkPaint = new SKPaint { Color = skinColor, IsAntialias = false };
-        canvas.DrawRect(leftEyeX - eyeWidth / 2, eyeY - eyeHeight / 2, eyeWidth, eyeHeight, blinkPaint);
-        canvas.DrawRect(rightEyeX - eyeWidth / 2, eyeY - eyeHeight / 2, eyeWidth, eyeHeight, blinkPaint);
+        // Statischer Paint mit dynamischer Farbe (keine Allokation pro Frame)
+        s_blinkPaint.Color = skinColor;
+        canvas.DrawRect(leftEyeX - eyeWidth / 2, eyeY - eyeHeight / 2, eyeWidth, eyeHeight, s_blinkPaint);
+        canvas.DrawRect(rightEyeX - eyeWidth / 2, eyeY - eyeHeight / 2, eyeWidth, eyeHeight, s_blinkPaint);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -307,7 +356,7 @@ public class WorkerAvatarControl : Control
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
-        StopAnimationTimer();
+        UnregisterFromAnimation();
         // Bitmap wird vom Cache verwaltet, NICHT hier disposen
         _currentBitmap = null;
     }

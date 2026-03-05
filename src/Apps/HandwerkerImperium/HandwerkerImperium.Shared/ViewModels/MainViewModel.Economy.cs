@@ -550,7 +550,9 @@ public sealed partial class MainViewModel
 
     private WorkshopDisplayModel CreateWorkshopDisplay(GameState state, WorkshopType type)
     {
-        var workshop = state.Workshops.FirstOrDefault(w => w.Type == type);
+        Workshop? workshop = null;
+        for (int i = 0; i < state.Workshops.Count; i++)
+            if (state.Workshops[i].Type == type) { workshop = state.Workshops[i]; break; }
         bool isUnlocked = state.IsWorkshopUnlocked(type);
         var model = new WorkshopDisplayModel
         {
@@ -675,14 +677,18 @@ public sealed partial class MainViewModel
     /// </summary>
     private void RefreshFeatureStatusTexts(GameState state)
     {
-        // Arbeiter
-        var totalWorkers = state.Workshops.Sum(w => w.Workers.Count);
+        // Arbeiter (For-Schleife statt LINQ Sum - weniger GC-Pressure)
+        int totalWorkers = 0;
+        for (int i = 0; i < state.Workshops.Count; i++)
+            totalWorkers += state.Workshops[i].Workers.Count;
         WorkersStatusText = string.Format(
             _localizationService.GetString("WorkersStatus") ?? "{0} angestellt",
             totalWorkers);
 
-        // Forschung
-        var completedResearch = state.Researches.Count(r => r.IsResearched);
+        // Forschung (For-Schleife statt LINQ Count)
+        int completedResearch = 0;
+        for (int i = 0; i < state.Researches.Count; i++)
+            if (state.Researches[i].IsResearched) completedResearch++;
         if (!string.IsNullOrEmpty(state.ActiveResearchId))
         {
             var researchName = _localizationService.GetString($"Research_{state.ActiveResearchId}") ?? state.ActiveResearchId;
@@ -697,8 +703,10 @@ public sealed partial class MainViewModel
                 completedResearch);
         }
 
-        // Vorarbeiter
-        var activeManagers = state.Managers.Count(m => m.IsUnlocked);
+        // Vorarbeiter (For-Schleife statt LINQ Count)
+        int activeManagers = 0;
+        for (int i = 0; i < state.Managers.Count; i++)
+            if (state.Managers[i].IsUnlocked) activeManagers++;
         ManagerStatusText = string.Format(
             _localizationService.GetString("ManagerStatus") ?? "{0} aktiv",
             activeManagers);
@@ -851,7 +859,9 @@ public sealed partial class MainViewModel
 
     private void UpdateWorkshopDisplay(WorkshopDisplayModel model, GameState state, WorkshopType type)
     {
-        var workshop = state.Workshops.FirstOrDefault(w => w.Type == type);
+        Workshop? workshop = null;
+        for (int i = 0; i < state.Workshops.Count; i++)
+            if (state.Workshops[i].Type == type) { workshop = state.Workshops[i]; break; }
         bool isUnlocked = state.IsWorkshopUnlocked(type);
 
         model.Name = _localizationService.GetString(type.GetLocalizationKey());

@@ -62,23 +62,23 @@ public static class MasterTool
     {
         return toolId switch
         {
-            // Common: Workshop-Meilensteine + Spielaktivität
-            "mt_golden_hammer" => state.Workshops.Any(w => w.Level >= 25),
-            "mt_diamond_saw" => state.Workshops.Any(w => w.Level >= 50),
-            "mt_titanium_pliers" => state.TotalOrdersCompleted >= 50,
-            "mt_brass_level" => state.TotalMiniGamesPlayed >= 100,
+            // Common: Workshop-Meilensteine + Spielaktivität (3x höher als ursprünglich)
+            "mt_golden_hammer" => state.Workshops.Any(w => w.Level >= 75),
+            "mt_diamond_saw" => state.Workshops.Any(w => w.Level >= 150),
+            "mt_titanium_pliers" => state.TotalOrdersCompleted >= 150,
+            "mt_brass_level" => state.TotalMiniGamesPlayed >= 300,
 
             // Uncommon: Höhere Meilensteine + Prestige
-            "mt_silver_wrench" => state.Workshops.Any(w => w.Level >= 100),
-            "mt_jade_brush" => state.PerfectRatings >= 25,
+            "mt_silver_wrench" => state.Workshops.Any(w => w.Level >= 300),
+            "mt_jade_brush" => state.PerfectRatings >= 75,
             "mt_crystal_chisel" => state.Prestige.BronzeCount >= 1,
 
             // Rare: Fortgeschrittene Meilensteine
-            "mt_obsidian_drill" => state.Workshops.Any(w => w.Level >= 250),
+            "mt_obsidian_drill" => state.Workshops.Any(w => w.Level >= 750),
             "mt_ruby_blade" => state.Prestige.SilverCount >= 1,
 
             // Epic: Endgame-Meilensteine
-            "mt_emerald_toolbox" => state.Workshops.Any(w => w.Level >= 500),
+            "mt_emerald_toolbox" => state.Workshops.Any(w => w.Level >= 1500),
             "mt_dragon_anvil" => state.Prestige.GoldCount >= 1,
 
             // Legendary: Alle anderen Tools gesammelt

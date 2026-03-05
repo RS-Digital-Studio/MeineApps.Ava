@@ -210,6 +210,24 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
     [ObservableProperty]
     private string _equippedItemBonusDisplay = string.Empty;
 
+    /// <summary>
+    /// Verfügbare Ausrüstungsgegenstände aus dem Inventar.
+    /// </summary>
+    [ObservableProperty]
+    private List<EquipmentDisplayItem> _availableEquipment = [];
+
+    /// <summary>
+    /// Ob Equipment-Items im Inventar vorhanden sind.
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasAvailableEquipment;
+
+    /// <summary>
+    /// Hinweistext wenn kein Equipment verfügbar.
+    /// </summary>
+    [ObservableProperty]
+    private string _noEquipmentHint = string.Empty;
+
     // ═══════════════════════════════════════════════════════════════════════
     // WORKER-UNDO (5s Rückgängig nach Entlassung)
     // ═══════════════════════════════════════════════════════════════════════
@@ -692,6 +710,28 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
         RefreshDisplayProperties();
     }
 
+    /// <summary>
+    /// Rüstet den Arbeiter mit einem Equipment-Item aus dem Inventar aus.
+    /// </summary>
+    [RelayCommand]
+    private void EquipItem(EquipmentDisplayItem? item)
+    {
+        if (_workerId == null || item == null) return;
+
+        // Equipment-Objekt aus dem Inventar suchen
+        var equipment = _gameStateService.State.EquipmentInventory
+            .FirstOrDefault(e => e.Id == item.EquipmentId);
+        if (equipment == null) return;
+
+        _equipmentService.EquipItem(_workerId, equipment);
+        RefreshDisplayProperties();
+
+        var name = _localizationService.GetString(equipment.NameKey) ?? equipment.NameKey;
+        FloatingTextRequested?.Invoke(
+            $"{name} {_localizationService.GetString("EquipAction") ?? "ausgerüstet"}!",
+            "golden_screws");
+    }
+
     [RelayCommand]
     private void GoBack()
     {
@@ -746,6 +786,54 @@ public sealed partial class WorkerProfileViewModel : ViewModelBase
             EquippedItemName = string.Empty;
             EquippedItemBonusDisplay = string.Empty;
         }
+
+        // Verfügbares Equipment aus dem Inventar laden
+        LoadAvailableEquipment();
+    }
+
+    /// <summary>
+    /// Lädt die verfügbaren Equipment-Items aus dem Inventar für die Zuweisung.
+    /// </summary>
+    private void LoadAvailableEquipment()
+    {
+        var inventory = _gameStateService.State.EquipmentInventory;
+        var items = new List<EquipmentDisplayItem>();
+
+        for (int i = 0; i < inventory.Count; i++)
+        {
+            var eq = inventory[i];
+            var name = _localizationService.GetString(eq.NameKey) ?? eq.NameKey;
+
+            // Bonus-Text
+            var bonusParts = new List<string>();
+            if (eq.EfficiencyBonus > 0)
+                bonusParts.Add($"+{eq.EfficiencyBonus * 100m:F0}% Eff.");
+            if (eq.FatigueReduction > 0)
+                bonusParts.Add($"-{eq.FatigueReduction * 100m:F0}% Erm.");
+            if (eq.MoodBonus > 0)
+                bonusParts.Add($"+{eq.MoodBonus * 100m:F0}% Stim.");
+
+            items.Add(new EquipmentDisplayItem
+            {
+                EquipmentId = eq.Id,
+                Name = name,
+                BonusDisplay = string.Join(", ", bonusParts),
+                RarityColor = eq.RarityColor,
+                TypeIcon = eq.Type switch
+                {
+                    EquipmentType.Helmet => "HardHat",
+                    EquipmentType.Gloves => "HandWave",
+                    EquipmentType.Boots => "ShoeFormal",
+                    EquipmentType.Belt => "Wrench",
+                    _ => "Shield"
+                }
+            });
+        }
+
+        AvailableEquipment = items;
+        HasAvailableEquipment = items.Count > 0;
+        NoEquipmentHint = _localizationService.GetString("NoEquipmentInInventory")
+            ?? "Kein Equipment im Inventar.";
     }
 
     private void LoadAvailableWorkshops()
@@ -779,4 +867,16 @@ public class WorkshopTransferItem
     public WorkshopType Type { get; set; }
     public string Name { get; set; } = string.Empty;
     public int WorkerCount { get; set; }
+}
+
+/// <summary>
+/// Anzeige-Modell für ein Equipment-Item aus dem Inventar (zum Ausrüsten).
+/// </summary>
+public class EquipmentDisplayItem
+{
+    public string EquipmentId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string BonusDisplay { get; set; } = string.Empty;
+    public string RarityColor { get; set; } = "#9E9E9E";
+    public string TypeIcon { get; set; } = "Shield";
 }

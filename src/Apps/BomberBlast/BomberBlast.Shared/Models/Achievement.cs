@@ -26,7 +26,7 @@ public class Achievement
     /// <summary>Ziel-Wert für Fortschritt</summary>
     public int Target { get; init; }
 
-    /// <summary>Material.Icons Name für das Badge</summary>
+    /// <summary>GameIconKind-Name fuer das Badge</summary>
     public string IconName { get; init; } = "Trophy";
 
     /// <summary>Coin-Belohnung bei Freischaltung (0 = keine)</summary>

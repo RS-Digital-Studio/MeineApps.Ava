@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:m="using:HandwerkerImperium.Models"
              x:Class="HandwerkerImperium.Views.TournamentView"
@@ -29,7 +29,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Tournament_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                            AutomationProperties.AutomationId="Tournament_Icon_Back"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
@@ -42,7 +42,7 @@
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="8">
-            <mi:MaterialIcon Kind="TrophyVariant" Width="28" Height="28"
+            <icons:GameIcon Kind="TrophyVariant" Width="28" Height="28"
                              AutomationProperties.AutomationId="Tournament_Icon_Trophy"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock Text="{Binding Title}"
@@ -55,7 +55,7 @@
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="4">
-            <mi:MaterialIcon Kind="ClockOutline" Width="14" Height="14"
+            <icons:GameIcon Kind="ClockOutline" Width="14" Height="14"
                              AutomationProperties.AutomationId="Tournament_Icon_Clock"
                              Foreground="{StaticResource CraftPrimaryLightBrush}" Opacity="0.7" />
             <TextBlock Text="{Binding TimeRemaining}"
@@ -99,7 +99,7 @@
                   <GradientStop Color="#92400E" Offset="1" />
                 </LinearGradientBrush>
               </Border.Background>
-              <mi:MaterialIcon Kind="GamepadVariant" Width="24" Height="24"
+              <icons:GameIcon Kind="GamepadVariant" Width="24" Height="24"
                                AutomationProperties.AutomationId="Tournament_Icon_GameType"
                                Foreground="White"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -126,7 +126,7 @@
                 IsEnabled="{Binding CanEnter}"
                 Command="{Binding EnterTournamentCommand}">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="SwordCross" Width="20" Height="20"
+            <icons:GameIcon Kind="SwordCross" Width="20" Height="20"
                              AutomationProperties.AutomationId="Tournament_Icon_Enter" />
             <TextBlock Text="{Binding EntryCostDisplay}"
                        AutomationProperties.AutomationId="Tournament_Txt_EnterBtn"
@@ -142,7 +142,7 @@
                 IsVisible="{Binding HasRewardsToClaim}"
                 Command="{Binding ClaimRewardsCommand}">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="GiftOpen" Width="18" Height="18"
+            <icons:GameIcon Kind="GiftOpen" Width="18" Height="18"
                              AutomationProperties.AutomationId="Tournament_Icon_Claim" />
             <TextBlock Text="{loc:Translate ClaimReward}"
                        AutomationProperties.AutomationId="Tournament_Txt_ClaimBtn"
@@ -155,7 +155,7 @@
                 AutomationProperties.AutomationId="Tournament_Border_Leaderboard">
           <StackPanel Spacing="8">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="FormatListNumbered" Width="20" Height="20"
+              <icons:GameIcon Kind="FormatListNumbered" Width="20" Height="20"
                                AutomationProperties.AutomationId="Tournament_Icon_Leaderboard"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{loc:Translate Leaderboard}"

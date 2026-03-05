@@ -110,14 +110,14 @@ public class BattlePass
     };
 
     /// <summary>
-    /// MaterialIconKind-String für das saisonale Theme-Icon.
+    /// GameIconKind-String fuer das saisonale Theme-Icon.
     /// </summary>
     [JsonIgnore]
     public string SeasonThemeIcon => SeasonTheme switch
     {
         Season.Spring => "Flower",
         Season.Summer => "WhiteBalanceSunny",
-        Season.Autumn => "Leaf",
+        Season.Autumn => "Forest",
         Season.Winter => "Snowflake",
         _ => "Flower"
     };

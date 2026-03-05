@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:labs="using:Avalonia.Labs.Controls"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
@@ -24,7 +24,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Order_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                            AutomationProperties.AutomationId="Order_Icon_Back" />
         </Button>
 
@@ -34,7 +34,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
-          <mi:MaterialIcon Kind="ClipboardList" Width="22" Height="22"
+          <icons:GameIcon Kind="ClipboardList" Width="22" Height="22"
                            AutomationProperties.AutomationId="Order_Icon_Title"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{loc:Translate OrderDetails}"
@@ -67,7 +67,7 @@
                       AutomationProperties.AutomationId="Order_Border_CustomerIconBg"
                       CornerRadius="16"
                       Width="80" Height="80">
-                <mi:MaterialIcon Kind="{Binding CustomerIcon, Converter={StaticResource IconKindConverter}}"
+                <icons:GameIcon Kind="{Binding CustomerIcon, Converter={StaticResource IconKindConverter}}"
                                  AutomationProperties.AutomationId="Order_Icon_CustomerIcon"
                                  Width="48" Height="48"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}"
@@ -81,7 +81,7 @@
                            FontSize="18" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="{Binding WorkshopIcon, Converter={StaticResource IconKindConverter}}"
+                  <icons:GameIcon Kind="{Binding WorkshopIcon, Converter={StaticResource IconKindConverter}}"
                                    Width="14" Height="14" VerticalAlignment="Center"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    AutomationProperties.AutomationId="Order_Icon_WorkshopIcon" />
@@ -116,7 +116,7 @@
             <StackPanel Orientation="Horizontal" Spacing="6"
                         AutomationProperties.AutomationId="Order_Panel_CooperationHint"
                         IsVisible="{Binding IsCooperationOrder}">
-              <mi:MaterialIcon Kind="Handshake" Width="16" Height="16"
+              <icons:GameIcon Kind="Handshake" Width="16" Height="16"
                                AutomationProperties.AutomationId="Order_Icon_CooperationHint"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Text="{loc:Translate CooperationOrderHint}"
@@ -132,7 +132,7 @@
                 AutomationProperties.AutomationId="Order_Border_RewardsCard">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Gift" Width="20" Height="20"
+              <icons:GameIcon Kind="Gift" Width="20" Height="20"
                                AutomationProperties.AutomationId="Order_Icon_RewardHeader"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{loc:Translate Reward}"
@@ -149,7 +149,7 @@
                       CornerRadius="12"
                       Padding="16">
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
-                  <mi:MaterialIcon Kind="CashMultiple" Width="32" Height="32"
+                  <icons:GameIcon Kind="CashMultiple" Width="32" Height="32"
                                    AutomationProperties.AutomationId="Order_Icon_MoneyReward"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    HorizontalAlignment="Center" />
@@ -168,7 +168,7 @@
                       CornerRadius="12"
                       Padding="16">
                 <StackPanel HorizontalAlignment="Center" Spacing="4">
-                  <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+                  <icons:GameIcon Kind="Star" Width="32" Height="32"
                                    AutomationProperties.AutomationId="Order_Icon_XpReward"
                                    Foreground="{StaticResource CraftGoldBrush}"
                                    HorizontalAlignment="Center" />
@@ -197,7 +197,7 @@
                 IsVisible="{Binding IsInProgress}">
           <StackPanel Spacing="12">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="ChartBar" Width="20" Height="20"
+              <icons:GameIcon Kind="ChartBar" Width="20" Height="20"
                                AutomationProperties.AutomationId="Order_Icon_ProgressHeader"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
               <TextBlock Text="{loc:Translate Progress}"
@@ -263,7 +263,7 @@
                 AutomationProperties.AutomationId="Order_Border_TipCard"
                 IsVisible="{Binding CanStart}">
           <StackPanel Orientation="Horizontal" Spacing="12">
-            <mi:MaterialIcon Kind="LightbulbOn" Width="24" Height="24"
+            <icons:GameIcon Kind="LightbulbOn" Width="24" Height="24"
                              AutomationProperties.AutomationId="Order_Icon_Tip"
                              Foreground="{DynamicResource WarningBrush}" />
             <TextBlock Text="{loc:Translate OrderTip}"

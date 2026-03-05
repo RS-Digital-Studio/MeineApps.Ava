@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              xmlns:skia="using:Avalonia.Labs.Controls"
@@ -24,7 +24,7 @@
                   Classes="Text"
                   Command="{Binding BackCommand}">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+              <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
               <TextBlock Text="{loc:Translate Back}"
                          FontSize="14" FontWeight="SemiBold"
                          Foreground="{DynamicResource TextPrimaryBrush}"
@@ -37,7 +37,7 @@
                       Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="8">
-            <mi:MaterialIcon Kind="Sword" Width="24" Height="24"
+            <icons:GameIcon Kind="Sword" Width="24" Height="24"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock AutomationProperties.AutomationId="Dungeon_TxtTitle"
                        Text="{Binding Title}"
@@ -51,7 +51,7 @@
                       Spacing="6"
                       VerticalAlignment="Center"
                       IsVisible="{Binding !IsPreRun}">
-            <mi:MaterialIcon Kind="Stairs" Width="20" Height="20"
+            <icons:GameIcon Kind="Stairs" Width="20" Height="20"
                              Foreground="{DynamicResource AccentBrush}" />
             <TextBlock Text="{Binding CurrentFloorText}"
                        FontSize="16" FontWeight="SemiBold"
@@ -86,7 +86,7 @@
                 <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10"
                         BorderBrush="#4CAF50" BorderThickness="3,0,0,0">
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <mi:MaterialIcon Kind="Repeat" Width="22" Height="22"
+                    <icons:GameIcon Kind="Repeat" Width="22" Height="22"
                                      Foreground="#4CAF50" />
                     <TextBlock Text="{Binding TotalRunsText}"
                                FontSize="16" FontWeight="Bold"
@@ -98,7 +98,7 @@
                 <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10"
                         BorderBrush="#FFD700" BorderThickness="3,0,0,0">
                   <StackPanel Orientation="Horizontal" Spacing="10">
-                    <mi:MaterialIcon Kind="Trophy" Width="22" Height="22"
+                    <icons:GameIcon Kind="Trophy" Width="22" Height="22"
                                      Foreground="#FFD700" />
                     <TextBlock Text="{Binding BestFloorText}"
                                FontSize="16" FontWeight="Bold"
@@ -114,7 +114,7 @@
                     <SolidColorBrush Color="{Binding AscensionColor}" Opacity="0.15" />
                   </Border.Background>
                   <Grid ColumnDefinitions="Auto,*,Auto">
-                    <mi:MaterialIcon Kind="Fire" Width="22" Height="22"
+                    <icons:GameIcon Kind="Fire" Width="22" Height="22"
                                      Foreground="{Binding AscensionColor}" />
                     <TextBlock Grid.Column="1" Text="{Binding AscensionLevelText}"
                                FontSize="15" FontWeight="Bold"
@@ -140,7 +140,7 @@
                 <!-- Upgrade-Header mit DungeonCoin-Balance -->
                 <Grid ColumnDefinitions="*,Auto">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="ArrowUpBoldCircle" Width="20" Height="20"
+                    <icons:GameIcon Kind="ArrowUpBoldCircle" Width="20" Height="20"
                                      Foreground="#E040FB" />
                     <TextBlock Text="{loc:Translate DungeonUpgradesTitle}"
                                FontSize="15" FontWeight="Bold"
@@ -151,7 +151,7 @@
                   <Border Grid.Column="1" Background="#30E040FB" CornerRadius="10" Padding="10,4"
                           BoxShadow="0 2 8 0 #25000000">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <mi:MaterialIcon Kind="CircleMultiple" Width="16" Height="16"
+                      <icons:GameIcon Kind="CircleMultiple" Width="16" Height="16"
                                        Foreground="#E040FB" />
                       <TextBlock Text="{Binding DungeonCoinBalanceText}"
                                  FontSize="14" FontWeight="Bold"
@@ -192,7 +192,7 @@
                                   IsVisible="{Binding !IsMaxed}"
                                   Padding="8,4"
                                   VerticalAlignment="Center">
-                            <mi:MaterialIcon Kind="CartPlus" Width="18" Height="18"
+                            <icons:GameIcon Kind="CartPlus" Width="18" Height="18"
                                              Foreground="#E040FB" />
                           </Button>
                           <!-- MAX-Badge wenn ausgereizt -->
@@ -232,7 +232,7 @@
                     Padding="16,14">
               <StackPanel Orientation="Horizontal" Spacing="10"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="Play" Width="24" Height="24" />
+                <icons:GameIcon Kind="Play" Width="24" Height="24" />
                 <TextBlock Text="{Binding StartButtonText}"
                            FontSize="18" FontWeight="Bold"
                            VerticalAlignment="Center" />
@@ -254,7 +254,7 @@
                     Padding="14,12">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="CircleMultiple" Width="20" Height="20"
+                <icons:GameIcon Kind="CircleMultiple" Width="20" Height="20"
                                  Foreground="#FFD700" />
                 <TextBlock Text="{Binding CoinEntryText}"
                            FontSize="16" FontWeight="SemiBold"
@@ -278,7 +278,7 @@
                     Padding="14,12">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="DiamondStone" Width="20" Height="20"
+                <icons:GameIcon Kind="DiamondStone" Width="20" Height="20"
                                  Foreground="#00BCD4" />
                 <TextBlock Text="{Binding GemEntryText}"
                            FontSize="16" FontWeight="SemiBold"
@@ -302,7 +302,7 @@
                     Padding="14,12">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="Video" Width="20" Height="20"
+                <icons:GameIcon Kind="Video" Width="20" Height="20"
                                  Foreground="#FF9800" />
                 <TextBlock Text="{Binding AdEntryText}"
                            FontSize="16" FontWeight="SemiBold"
@@ -465,7 +465,7 @@
                   IsVisible="{Binding CanReroll}"
                   Padding="12,8">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="Dice3" Width="20" Height="20"
+              <icons:GameIcon Kind="Dice" Width="20" Height="20"
                                Foreground="#FF9800" />
               <TextBlock Text="{Binding RerollCostText}"
                          FontSize="14" FontWeight="SemiBold"
@@ -487,7 +487,7 @@
                         BoxShadow="0 2 8 0 #25000000"
                         BorderBrush="#40FFD700" BorderThickness="1">
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="LinkVariant" Width="16" Height="16"
+                    <icons:GameIcon Kind="LinkVariant" Width="16" Height="16"
                                      Foreground="#FFD700" />
                     <TextBlock Text="{Binding Name}"
                                FontSize="12" FontWeight="Bold"
@@ -535,7 +535,7 @@
                   <SolidColorBrush Color="{Binding AscensionColor}" Opacity="0.2" />
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="Fire" Width="14" Height="14"
+                  <icons:GameIcon Kind="Fire" Width="14" Height="14"
                                    Foreground="{Binding AscensionColor}" />
                   <TextBlock Text="{Binding AscensionBadgeText}"
                              FontSize="12" FontWeight="ExtraBold"
@@ -630,7 +630,7 @@
             <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10"
                     BorderBrush="#4CAF50" BorderThickness="3,0,0,0">
               <StackPanel Orientation="Horizontal" Spacing="10">
-                <mi:MaterialIcon Kind="Stairs" Width="20" Height="20"
+                <icons:GameIcon Kind="Stairs" Width="20" Height="20"
                                  Foreground="#4CAF50" />
                 <TextBlock Text="{Binding SummaryFloorsText}"
                            FontSize="15" FontWeight="Bold"
@@ -643,7 +643,7 @@
             <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10"
                     BorderBrush="#FFD700" BorderThickness="3,0,0,0">
               <StackPanel Orientation="Horizontal" Spacing="10">
-                <mi:MaterialIcon Kind="CircleMultiple" Width="20" Height="20"
+                <icons:GameIcon Kind="CircleMultiple" Width="20" Height="20"
                                  Foreground="#FFD700" />
                 <TextBlock Text="{Binding SummaryCoinsText}"
                            FontSize="15" FontWeight="Bold"
@@ -656,7 +656,7 @@
             <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10"
                     BorderBrush="#00BCD4" BorderThickness="3,0,0,0">
               <StackPanel Orientation="Horizontal" Spacing="10">
-                <mi:MaterialIcon Kind="DiamondStone" Width="20" Height="20"
+                <icons:GameIcon Kind="DiamondStone" Width="20" Height="20"
                                  Foreground="#00BCD4" />
                 <TextBlock Text="{Binding SummaryGemsText}"
                            FontSize="15" FontWeight="Bold"
@@ -669,7 +669,7 @@
             <Border Background="#20FFFFFF" CornerRadius="12" Padding="14,10"
                     BorderBrush="#9C27B0" BorderThickness="3,0,0,0">
               <StackPanel Orientation="Horizontal" Spacing="10">
-                <mi:MaterialIcon Kind="Gift" Width="20" Height="20"
+                <icons:GameIcon Kind="Gift" Width="20" Height="20"
                                  Foreground="#9C27B0" />
                 <TextBlock Text="{Binding SummaryCardsText}"
                            FontSize="15" FontWeight="Bold"
@@ -683,7 +683,7 @@
                     BorderBrush="#E040FB" BorderThickness="3,0,0,0"
                     IsVisible="{Binding SummaryDungeonCoinsText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
               <StackPanel Orientation="Horizontal" Spacing="10">
-                <mi:MaterialIcon Kind="CircleMultiple" Width="20" Height="20"
+                <icons:GameIcon Kind="CircleMultiple" Width="20" Height="20"
                                  Foreground="#E040FB" />
                 <TextBlock Text="{Binding SummaryDungeonCoinsText}"
                            FontSize="15" FontWeight="Bold"
@@ -717,7 +717,7 @@
               <SolidColorBrush Color="{Binding AscensionColor}" Opacity="0.2" />
             </Border.Background>
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Fire" Width="22" Height="22"
+              <icons:GameIcon Kind="Fire" Width="22" Height="22"
                                Foreground="{Binding AscensionColor}" />
               <TextBlock Text="{Binding SummaryAscensionText}"
                          FontSize="18" FontWeight="Bold"
@@ -741,7 +741,7 @@
                     FontSize="18" FontWeight="Bold">
               <StackPanel Orientation="Horizontal" Spacing="10"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="Refresh" Width="24" Height="24" />
+                <icons:GameIcon Kind="Refresh" Width="24" Height="24" />
                 <TextBlock Text="{Binding StartButtonText}"
                            FontSize="18" FontWeight="Bold"
                            VerticalAlignment="Center" />
@@ -758,7 +758,7 @@
                   Padding="14,12">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20" />
+              <icons:GameIcon Kind="ArrowLeft" Width="20" Height="20" />
               <TextBlock Text="{loc:Translate Back}"
                          FontSize="16" FontWeight="SemiBold"
                          VerticalAlignment="Center" />

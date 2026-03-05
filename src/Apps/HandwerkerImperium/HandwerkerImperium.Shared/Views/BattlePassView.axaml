@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.BattlePassView"
              x:DataType="vm:BattlePassViewModel">
@@ -29,7 +29,7 @@
           <Button Classes="Text"
                   AutomationProperties.AutomationId="BattlePass_Btn_Back"
                   Command="{Binding GoBackCommand}">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+            <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                              AutomationProperties.AutomationId="BattlePass_Icon_Back"
                              Foreground="{StaticResource CraftPrimaryLightBrush}" />
           </Button>
@@ -40,7 +40,7 @@
                       Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="8">
-            <mi:MaterialIcon Kind="ShieldStar" Width="28" Height="28"
+            <icons:GameIcon Kind="ShieldStar" Width="28" Height="28"
                              AutomationProperties.AutomationId="BattlePass_Icon_Title"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock Text="{Binding Title}"
@@ -78,7 +78,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="4">
-          <mi:MaterialIcon Kind="ClockOutline" Width="14" Height="14"
+          <icons:GameIcon Kind="ClockOutline" Width="14" Height="14"
                            AutomationProperties.AutomationId="BattlePass_Icon_Clock"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" Opacity="0.7" />
           <TextBlock Text="{Binding SeasonTimeRemainingDisplay}"
@@ -159,7 +159,7 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <!-- Eingesammelt-Haekchen -->
-                    <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                    <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
                                      Foreground="{DynamicResource SuccessBrush}"
                                      IsVisible="{Binding IsClaimed}" />
                   </StackPanel>
@@ -167,7 +167,7 @@
                   <!-- Premium-Belohnung -->
                   <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="2">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <mi:MaterialIcon Kind="Crown" Width="12" Height="12"
+                      <icons:GameIcon Kind="Crown" Width="12" Height="12"
                                        AutomationProperties.AutomationId="BattlePass_Icon_PremiumLabel"
                                        Foreground="{StaticResource CraftGoldBrush}" />
                       <TextBlock Text="{loc:Translate Premium}"
@@ -181,7 +181,7 @@
                                Foreground="{DynamicResource TextPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" />
                     <!-- Schloss fuer nicht-Premium -->
-                    <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                    <icons:GameIcon Kind="Lock" Width="14" Height="14"
                                      AutomationProperties.AutomationId="BattlePass_Icon_PremiumLock"
                                      Foreground="{DynamicResource TextSecondaryBrush}"
                                      IsVisible="{Binding IsPremiumLocked}" />
@@ -196,7 +196,7 @@
                           IsVisible="{Binding CanClaim}"
                           Command="{Binding $parent[ListBox].((vm:BattlePassViewModel)DataContext).ClaimTierCommand}"
                           CommandParameter="{Binding .}">
-                    <mi:MaterialIcon Kind="GiftOpen" Width="16" Height="16"
+                    <icons:GameIcon Kind="GiftOpen" Width="16" Height="16"
                                      AutomationProperties.AutomationId="BattlePass_Icon_ClaimTier" />
                   </Button>
 
@@ -221,7 +221,7 @@
             </LinearGradientBrush>
           </Button.Background>
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
+            <icons:GameIcon Kind="Crown" Width="20" Height="20"
                              Foreground="{StaticResource CraftGoldBrush}"
                              AutomationProperties.AutomationId="BattlePass_Icon_UpgradeCrown" />
             <TextBlock Text="{loc:Translate UpgradePremium}"
@@ -242,7 +242,7 @@
             </LinearGradientBrush>
           </Border.Background>
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="Crown" Width="24" Height="24"
+            <icons:GameIcon Kind="Crown" Width="24" Height="24"
                              AutomationProperties.AutomationId="BattlePass_Icon_PremiumActive"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock Text="{loc:Translate PremiumActive}"

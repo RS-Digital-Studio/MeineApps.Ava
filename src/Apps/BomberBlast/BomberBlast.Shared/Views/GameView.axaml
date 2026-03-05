@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="BomberBlast.Views.GameView"
@@ -75,7 +75,7 @@
                     CornerRadius="12"
                     AutomationProperties.AutomationId="Game_BtnDoubleScore">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Video" Width="20" Height="20"
+                <icons:GameIcon Kind="Video" Width="20" Height="20"
                                  Foreground="White" />
                 <TextBlock Text="{loc:Translate WatchVideoDouble}"
                            FontSize="16" FontWeight="SemiBold"

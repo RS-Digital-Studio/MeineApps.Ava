@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:models="using:HandwerkerImperium.Models"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Guild.GuildHallView"
              x:DataType="vm:GuildHallViewModel">
@@ -24,12 +24,12 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 Command="{Binding NavigateBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
         </Button>
         <!-- Titel -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
-          <mi:MaterialIcon Kind="OfficeBuildingCog" Width="24" Height="24"
+          <icons:GameIcon Kind="OfficeBuildingCog" Width="24" Height="24"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{loc:Translate GuildHallTitle}"
                      FontSize="18" FontWeight="Bold"
@@ -57,7 +57,7 @@
         <!-- Loading -->
         <StackPanel Spacing="8" HorizontalAlignment="Center"
                     IsVisible="{Binding IsLoading}" Margin="0,40,0,0">
-          <mi:MaterialIcon Kind="Loading" Width="32" Height="32"
+          <icons:GameIcon Kind="Loading" Width="32" Height="32"
                            Foreground="{StaticResource CraftPrimaryLightBrush}"
                            HorizontalAlignment="Center" />
         </StackPanel>
@@ -67,7 +67,7 @@
                 IsVisible="{Binding HallEffectsSummary, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
           <StackPanel Spacing="6">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="ShieldStar" Width="18" Height="18"
+              <icons:GameIcon Kind="ShieldStar" Width="18" Height="18"
                                Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{loc:Translate ActiveEffects}"
                          FontSize="14" FontWeight="Bold"
@@ -94,7 +94,7 @@
                     <Border.Background>
                       <SolidColorBrush Color="{Binding Color}" Opacity="0.15" />
                     </Border.Background>
-                    <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                    <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                      Width="26" Height="26"
                                      Foreground="{Binding Color}"
                                      HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -128,7 +128,7 @@
                           IsEnabled="{Binding !IsMaxLevel}"
                           Command="{Binding $parent[ItemsControl].((vm:GuildHallViewModel)DataContext).UpgradeBuildingCommand}"
                           CommandParameter="{Binding BuildingIdStr}">
-                    <mi:MaterialIcon Kind="ArrowUpBold" Width="16" Height="16" />
+                    <icons:GameIcon Kind="ArrowUpBold" Width="16" Height="16" />
                   </Button>
 
                 </Grid>

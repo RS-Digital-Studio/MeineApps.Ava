@@ -5,7 +5,7 @@ using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
-using Material.Icons;
+using HandwerkerImperium.Icons;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 
@@ -201,7 +201,7 @@ public sealed partial class CraftingViewModel : ViewModelBase
             // Rezept-Info für Produkt-Name
             var recipeForJob = CraftingRecipe.GetAllRecipes().FirstOrDefault(r => r.Id == job.RecipeId);
             string productName = "";
-            var outputIcon = MaterialIconKind.PackageVariant;
+            var outputIcon = GameIconKind.PackageVariant;
             if (recipeForJob != null && allProducts.TryGetValue(recipeForJob.OutputProductId, out var outputProduct))
             {
                 productName = _localizationService.GetString(outputProduct.NameKey) ?? outputProduct.NameKey;
@@ -333,27 +333,27 @@ public sealed partial class CraftingViewModel : ViewModelBase
         return $"{totalSeconds}s";
     }
 
-    private static MaterialIconKind GetProductIcon(string productId) => productId switch
+    private static GameIconKind GetProductIcon(string productId) => productId switch
     {
         // Schreiner
-        "planks" => MaterialIconKind.Forest,
-        "furniture" => MaterialIconKind.SeatOutline,
-        "luxury_furniture" => MaterialIconKind.Crown,
+        "planks" => GameIconKind.Forest,
+        "furniture" => GameIconKind.SeatOutline,
+        "luxury_furniture" => GameIconKind.Crown,
         // Klempner
-        "pipes" => MaterialIconKind.Pipe,
-        "plumbing_system" => MaterialIconKind.Water,
-        "bathroom_installation" => MaterialIconKind.ShowerHead,
+        "pipes" => GameIconKind.Pipe,
+        "plumbing_system" => GameIconKind.Water,
+        "bathroom_installation" => GameIconKind.ShowerHead,
         // Elektriker
-        "cables" => MaterialIconKind.CableData,
-        "circuit" => MaterialIconKind.Chip,
-        "smart_home" => MaterialIconKind.HomeAutomation,
+        "cables" => GameIconKind.CableData,
+        "circuit" => GameIconKind.Chip,
+        "smart_home" => GameIconKind.HomeAutomation,
         // Maler
-        "paint_mix" => MaterialIconKind.Palette,
-        "wall_design" => MaterialIconKind.FormatPaint,
+        "paint_mix" => GameIconKind.Palette,
+        "wall_design" => GameIconKind.FormatPaint,
         // Dachdecker
-        "roof_tiles" => MaterialIconKind.ViewGrid,
-        "roofing_system" => MaterialIconKind.HomeRoof,
-        _ => MaterialIconKind.PackageVariant
+        "roof_tiles" => GameIconKind.ViewGrid,
+        "roofing_system" => GameIconKind.HomeRoof,
+        _ => GameIconKind.PackageVariant
     };
 
     private static string GetWorkshopIconKind(WorkshopType type) => type switch
@@ -390,7 +390,7 @@ public class CraftingRecipeDisplay
     public string Name { get; set; } = "";
     public string InputDisplay { get; set; } = "";
     public string OutputName { get; set; } = "";
-    public MaterialIconKind OutputIcon { get; set; } = MaterialIconKind.PackageVariant;
+    public GameIconKind OutputIcon { get; set; } = GameIconKind.PackageVariant;
     public string DurationDisplay { get; set; } = "";
     public bool CanCraft { get; set; }
 }
@@ -402,7 +402,7 @@ public class CraftingJobDisplay
 {
     public string JobId { get; set; } = "";
     public string OutputName { get; set; } = "";
-    public MaterialIconKind OutputIcon { get; set; } = MaterialIconKind.PackageVariant;
+    public GameIconKind OutputIcon { get; set; } = GameIconKind.PackageVariant;
     public double Progress { get; set; }
     public string ProgressPercentDisplay { get; set; } = "";
     public double ProgressBarWidth { get; set; }
@@ -417,7 +417,7 @@ public class InventoryItemDisplay
 {
     public string ProductId { get; set; } = "";
     public string Name { get; set; } = "";
-    public MaterialIconKind Icon { get; set; } = MaterialIconKind.PackageVariant;
+    public GameIconKind Icon { get; set; } = GameIconKind.PackageVariant;
     public string QuantityDisplay { get; set; } = "";
     public string ValueDisplay { get; set; } = "";
 }

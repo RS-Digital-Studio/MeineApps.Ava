@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels.MiniGames"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MiniGames.InventGameView"
@@ -22,7 +22,7 @@
         <Button AutomationProperties.AutomationId="Invent_Btn_Cancel"
                 Classes="Text"
                 Command="{Binding CancelCommand}">
-          <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_Close"
+          <icons:GameIcon AutomationProperties.AutomationId="Invent_Icon_Close"
                            Kind="Close" Width="24" Height="24" />
         </Button>
 
@@ -32,7 +32,7 @@
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="6">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_Title"
+            <icons:GameIcon AutomationProperties.AutomationId="Invent_Icon_Title"
                              Kind="Cog" Width="22" Height="22" />
             <TextBlock AutomationProperties.AutomationId="Invent_Txt_Title"
                        Text="{loc:Translate InventGame}"
@@ -59,7 +59,7 @@
                 CornerRadius="8"
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_Clock"
+            <icons:GameIcon AutomationProperties.AutomationId="Invent_Icon_Clock"
                              Kind="Clock" Width="16" Height="16" />
             <TextBlock AutomationProperties.AutomationId="Invent_Txt_Timer"
                        Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
@@ -123,7 +123,7 @@
                     Orientation="Horizontal" Spacing="4"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
-          <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_PartCheck"
+          <icons:GameIcon AutomationProperties.AutomationId="Invent_Icon_PartCheck"
                            Kind="CheckCircle" Width="16" Height="16"
                            Foreground="{DynamicResource SuccessBrush}" />
           <TextBlock AutomationProperties.AutomationId="Invent_Txt_PartProgress"
@@ -142,7 +142,7 @@
                 CornerRadius="12"
                 Padding="12,4">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_NextPart"
+            <icons:GameIcon AutomationProperties.AutomationId="Invent_Icon_NextPart"
                              Kind="ArrowRight" Width="16" Height="16"
                              Foreground="White" />
             <TextBlock AutomationProperties.AutomationId="Invent_Txt_NextPart"
@@ -160,7 +160,7 @@
                     Orientation="Horizontal" Spacing="4"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center">
-          <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_Mistakes"
+          <icons:GameIcon AutomationProperties.AutomationId="Invent_Icon_Mistakes"
                            Kind="Close" Width="16" Height="16"
                            Foreground="{DynamicResource ErrorBrush}" />
           <TextBlock AutomationProperties.AutomationId="Invent_Txt_MistakeCount"
@@ -203,15 +203,15 @@
         <!-- Sterne-Bewertung (staggered via Code-Behind) -->
         <StackPanel AutomationProperties.AutomationId="Invent_Panel_Stars"
                     Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-          <mi:MaterialIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Invent_Icon_Star1"
+          <icons:GameIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Invent_Icon_Star1"
                            Kind="Star" Width="32" Height="32"
                            Foreground="{StaticResource CraftGoldBrush}"
                            Opacity="{Binding Star1Opacity}" />
-          <mi:MaterialIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Invent_Icon_Star2"
+          <icons:GameIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Invent_Icon_Star2"
                            Kind="Star" Width="32" Height="32"
                            Foreground="{StaticResource CraftGoldBrush}"
                            Opacity="{Binding Star2Opacity}" />
-          <mi:MaterialIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Invent_Icon_Star3"
+          <icons:GameIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Invent_Icon_Star3"
                            Kind="Star" Width="32" Height="32"
                            Foreground="{StaticResource CraftGoldBrush}"
                            Opacity="{Binding Star3Opacity}" />
@@ -231,7 +231,7 @@
                     HorizontalAlignment="Center"
                     IsVisible="{Binding IsLastTask}">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_RewardMoney"
+            <icons:GameIcon AutomationProperties.AutomationId="Invent_Icon_RewardMoney"
                              Kind="CashMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
@@ -243,7 +243,7 @@
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Invent_Icon_RewardXp"
+            <icons:GameIcon AutomationProperties.AutomationId="Invent_Icon_RewardXp"
                              Kind="Star" Width="20" Height="20"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock x:Name="RewardXpText"

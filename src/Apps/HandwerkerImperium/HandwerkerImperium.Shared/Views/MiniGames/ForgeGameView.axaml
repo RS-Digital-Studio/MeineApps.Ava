@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels.MiniGames"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MiniGames.ForgeGameView"
@@ -22,7 +22,7 @@
         <Button AutomationProperties.AutomationId="Forge_Btn_Cancel"
                 Classes="Text"
                 Command="{Binding CancelCommand}">
-          <mi:MaterialIcon AutomationProperties.AutomationId="Forge_Icon_Close"
+          <icons:GameIcon AutomationProperties.AutomationId="Forge_Icon_Close"
                            Kind="Close" Width="24" Height="24" />
         </Button>
 
@@ -105,15 +105,15 @@
         <!-- Sterne-Bewertung -->
         <StackPanel AutomationProperties.AutomationId="Forge_Panel_Stars"
                     Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-          <mi:MaterialIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Forge_Icon_Star1"
+          <icons:GameIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Forge_Icon_Star1"
                            Kind="Star" Width="32" Height="32"
                            Foreground="{StaticResource CraftGoldBrush}"
                            Opacity="{Binding Star1Opacity}" />
-          <mi:MaterialIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Forge_Icon_Star2"
+          <icons:GameIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Forge_Icon_Star2"
                            Kind="Star" Width="32" Height="32"
                            Foreground="{StaticResource CraftGoldBrush}"
                            Opacity="{Binding Star2Opacity}" />
-          <mi:MaterialIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Forge_Icon_Star3"
+          <icons:GameIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Forge_Icon_Star3"
                            Kind="Star" Width="32" Height="32"
                            Foreground="{StaticResource CraftGoldBrush}"
                            Opacity="{Binding Star3Opacity}" />
@@ -133,7 +133,7 @@
                     HorizontalAlignment="Center"
                     IsVisible="{Binding IsLastTask}">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Forge_Icon_RewardMoney"
+            <icons:GameIcon AutomationProperties.AutomationId="Forge_Icon_RewardMoney"
                              Kind="CashMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
@@ -145,7 +145,7 @@
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Forge_Icon_RewardXp"
+            <icons:GameIcon AutomationProperties.AutomationId="Forge_Icon_RewardXp"
                              Kind="Star" Width="20" Height="20"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock x:Name="RewardXpText"

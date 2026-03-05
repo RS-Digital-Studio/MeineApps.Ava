@@ -10,9 +10,6 @@
     <PackageReference Include="Avalonia" />
     <PackageReference Include="Avalonia.Themes.Fluent" />
 
-    <!-- Icons -->
-    <PackageReference Include="Material.Icons.Avalonia" />
-
     <!-- Behaviors -->
     <PackageReference Include="Xaml.Behaviors.Avalonia" />
 

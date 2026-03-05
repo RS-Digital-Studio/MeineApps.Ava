@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.BattlePassView"
              x:DataType="vm:BattlePassViewModel">
@@ -23,7 +23,7 @@
           <Button AutomationProperties.AutomationId="BP_BtnBack"
                   Classes="Text"
                   Command="{Binding BackCommand}">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+            <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 
           <!-- Titel (Schild-Icon + Text) -->
@@ -31,7 +31,7 @@
                       Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="8">
-            <mi:MaterialIcon Kind="Shield" Width="24" Height="24"
+            <icons:GameIcon Kind="Shield" Width="24" Height="24"
                              Foreground="{DynamicResource AccentBrush}" />
             <TextBlock AutomationProperties.AutomationId="BP_TxtTitle"
                        Text="{Binding Title}"
@@ -118,7 +118,7 @@
                     BorderBrush="#FF9800" BorderThickness="3,0,0,0">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="Clock" Width="18" Height="18"
+                <icons:GameIcon Kind="Clock" Width="18" Height="18"
                                  Foreground="#FF9800" />
                 <TextBlock Text="{Binding SeasonTimeDisplay}"
                            FontSize="13" FontWeight="SemiBold"
@@ -136,7 +136,7 @@
                     IsVisible="{Binding IsPremiumPass}">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="Crown" Width="18" Height="18"
+                <icons:GameIcon Kind="Crown" Width="18" Height="18"
                                  Foreground="#FFD700" />
                 <TextBlock Text="Premium"
                            FontSize="14" FontWeight="Bold"
@@ -159,7 +159,7 @@
                       Padding="12,10"
                       CornerRadius="10">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Crown" Width="18" Height="18"
+                  <icons:GameIcon Kind="Crown" Width="18" Height="18"
                                    Foreground="White" />
                   <TextBlock Text="{Binding UpgradeButtonText}"
                              FontSize="14" FontWeight="Bold"
@@ -184,7 +184,7 @@
                       CornerRadius="10">
                 <StackPanel Spacing="2" HorizontalAlignment="Center">
                   <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="Flash" Width="16" Height="16"
+                    <icons:GameIcon Kind="Flash" Width="16" Height="16"
                                      Foreground="White" />
                     <TextBlock Text="{Binding XpBoostButtonText}"
                                FontSize="13" FontWeight="Bold"
@@ -282,7 +282,7 @@
                           </Panel>
 
                           <!-- Haekchen wenn bereits beansprucht -->
-                          <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
+                          <icons:GameIcon Kind="CheckCircle" Width="18" Height="18"
                                            Foreground="#4CAF50"
                                            HorizontalAlignment="Center"
                                            IsVisible="{Binding IsFreeClaimed}" />
@@ -335,13 +335,13 @@
                           </Panel>
 
                           <!-- Haekchen wenn bereits beansprucht -->
-                          <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
+                          <icons:GameIcon Kind="CheckCircle" Width="18" Height="18"
                                            Foreground="#FFD700"
                                            HorizontalAlignment="Center"
                                            IsVisible="{Binding IsPremiumClaimed}" />
 
                           <!-- Schloss wenn kein Premium -->
-                          <mi:MaterialIcon Kind="Lock" Width="16" Height="16"
+                          <icons:GameIcon Kind="Lock" Width="16" Height="16"
                                            Foreground="#666666"
                                            HorizontalAlignment="Center"
                                            IsVisible="{Binding ShowPremiumLock}" />
@@ -367,7 +367,7 @@
                 <GradientStop Color="{DynamicResource SurfaceColor}" Offset="1" />
               </LinearGradientBrush>
             </Border.Background>
-            <mi:MaterialIcon Kind="ChevronRight" Width="20" Height="20"
+            <icons:GameIcon Kind="ChevronRight" Width="20" Height="20"
                              Foreground="{DynamicResource TextMutedBrush}"
                              HorizontalAlignment="Center"
                              VerticalAlignment="Center"

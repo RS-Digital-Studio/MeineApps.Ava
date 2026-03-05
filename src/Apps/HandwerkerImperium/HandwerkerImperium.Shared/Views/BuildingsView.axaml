@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.BuildingsView"
              x:DataType="vm:BuildingsViewModel"
@@ -23,7 +23,7 @@
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 Command="{Binding GoBackCommand}"
                 AutomationProperties.AutomationId="Buildings_Btn_Back">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
         </Button>
         <!-- Title -->
@@ -32,7 +32,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
-          <mi:MaterialIcon Kind="OfficeBuildingOutline" Width="28" Height="28"
+          <icons:GameIcon Kind="OfficeBuildingOutline" Width="28" Height="28"
                            AutomationProperties.AutomationId="Buildings_Icon_Building"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
           <TextBlock Text="{Binding Title}"
@@ -86,7 +86,7 @@
                         CornerRadius="12"
                         Width="52" Height="52"
                         HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                  <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                    AutomationProperties.AutomationId="Buildings_Icon_ItemIcon"
                                    Width="24" Height="24"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
@@ -134,7 +134,7 @@
                             Spacing="4"
                             HorizontalAlignment="Center"
                             IsVisible="{Binding IsLocked}">
-                  <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                  <icons:GameIcon Kind="Lock" Width="14" Height="14"
                                    AutomationProperties.AutomationId="Buildings_Icon_ItemLock"
                                    Foreground="{DynamicResource TextSecondaryBrush}" />
                   <TextBlock Text="{Binding UnlockLevel, StringFormat='Lv.{0}'}"
@@ -150,7 +150,7 @@
                             Spacing="4"
                             HorizontalAlignment="Center"
                             IsVisible="{Binding IsMaxLevel}">
-                  <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                  <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
                                    AutomationProperties.AutomationId="Buildings_Icon_ItemMaxCheck"
                                    Foreground="{DynamicResource SuccessBrush}" />
                   <TextBlock Text="{Binding CostDisplay}"
@@ -172,7 +172,7 @@
                   <StackPanel Orientation="Horizontal"
                               Spacing="4"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="HammerWrench" Width="14" Height="14"
+                    <icons:GameIcon Kind="HammerWrench" Width="14" Height="14"
                                      AutomationProperties.AutomationId="Buildings_Icon_Build" />
                     <TextBlock Text="{Binding CostDisplay}" FontSize="11"
                                AutomationProperties.AutomationId="Buildings_Txt_BuildCost" />
@@ -192,7 +192,7 @@
                   <StackPanel Orientation="Horizontal"
                               Spacing="4"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14"
+                    <icons:GameIcon Kind="ArrowUpBold" Width="14" Height="14"
                                      AutomationProperties.AutomationId="Buildings_Icon_Upgrade" />
                     <TextBlock Text="{Binding CostDisplay}" FontSize="11"
                                AutomationProperties.AutomationId="Buildings_Txt_UpgradeCost" />

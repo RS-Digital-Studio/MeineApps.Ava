@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.PrestigeSummaryDialog"
              x:DataType="vm:MainViewModel">
@@ -86,7 +86,7 @@
                   HorizontalContentAlignment="Center"
                   AutomationProperties.AutomationId="Main_Btn_SummaryShop">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="StorefrontOutline" Width="16" Height="16" />
+              <icons:GameIcon Kind="StorefrontOutline" Width="16" Height="16" />
               <TextBlock Text="{loc:Translate PrestigeShop}" FontSize="14" FontWeight="Bold" />
             </StackPanel>
           </Button>

@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.ProfileView"
              x:DataType="vm:ProfileViewModel">
@@ -20,7 +20,7 @@
                   Command="{Binding GoBackCommand}"
                   Width="44" Height="44" Padding="0"
                   HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22"
+            <icons:GameIcon Kind="ArrowLeft" Width="22" Height="22"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
           </Button>
           <TextBlock Grid.Column="1"
@@ -53,12 +53,12 @@
               <Border.Background>
                 <SolidColorBrush Color="{Binding ActiveSkinColor}" Opacity="0.2" />
               </Border.Background>
-              <mi:MaterialIcon Kind="AccountCircle" Width="56" Height="56"
+              <icons:GameIcon Kind="AccountCircle" Width="56" Height="56"
                                HorizontalAlignment="Center" VerticalAlignment="Center">
-                <mi:MaterialIcon.Foreground>
+                <icons:GameIcon.Foreground>
                   <SolidColorBrush Color="{Binding ActiveSkinColor}" />
-                </mi:MaterialIcon.Foreground>
-              </mi:MaterialIcon>
+                </icons:GameIcon.Foreground>
+              </icons:GameIcon>
             </Border>
             </Border>
 
@@ -82,7 +82,7 @@
                         HorizontalContentAlignment="Center"
                         Height="38" Background="Transparent" Foreground="White">
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="ContentSave" Width="16" Height="16" Foreground="White" />
+                    <icons:GameIcon Kind="ContentSave" Width="16" Height="16" Foreground="White" />
                     <TextBlock Text="{Binding SaveButtonText}" Foreground="White" FontSize="13" />
                   </StackPanel>
                 </Button>
@@ -124,7 +124,7 @@
                   BoxShadow="0 2 8 0 #25000000"
                   BorderBrush="#FFD700" BorderThickness="0,3,0,0">
             <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <mi:MaterialIcon Kind="Star" Width="28" Height="28" Foreground="#FFD700"
+              <icons:GameIcon Kind="Star" Width="28" Height="28" Foreground="#FFD700"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding StarsText}" FontSize="20" FontWeight="Bold"
                          Foreground="#FFD700" HorizontalAlignment="Center" />
@@ -140,7 +140,7 @@
                   BoxShadow="0 2 8 0 #25000000"
                   BorderBrush="#FFD700" BorderThickness="0,3,0,0">
             <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <mi:MaterialIcon Kind="CircleMultiple" Width="28" Height="28" Foreground="#FFD700"
+              <icons:GameIcon Kind="CircleMultiple" Width="28" Height="28" Foreground="#FFD700"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding CoinsText}" FontSize="20" FontWeight="Bold"
                          Foreground="#FFD700" HorizontalAlignment="Center" />
@@ -156,7 +156,7 @@
                   BoxShadow="0 2 8 0 #25000000"
                   BorderBrush="#E040FB" BorderThickness="0,3,0,0">
             <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <mi:MaterialIcon Kind="DiamondStone" Width="28" Height="28" Foreground="#E040FB"
+              <icons:GameIcon Kind="DiamondStone" Width="28" Height="28" Foreground="#E040FB"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding GemsText}" FontSize="20" FontWeight="Bold"
                          Foreground="#E040FB" HorizontalAlignment="Center" />
@@ -172,7 +172,7 @@
                   BoxShadow="0 2 8 0 #25000000"
                   BorderBrush="#00CED1" BorderThickness="0,3,0,0">
             <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <mi:MaterialIcon Kind="Trophy" Width="28" Height="28" Foreground="#00CED1"
+              <icons:GameIcon Kind="Trophy" Width="28" Height="28" Foreground="#00CED1"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding LeagueText}" FontSize="16" FontWeight="Bold"
                          HorizontalAlignment="Center">
@@ -193,7 +193,7 @@
                   BoxShadow="0 2 8 0 #25000000"
                   BorderBrush="#FFD700" BorderThickness="0,3,0,0">
             <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <mi:MaterialIcon Kind="Medal" Width="28" Height="28" Foreground="#FFD700"
+              <icons:GameIcon Kind="Medal" Width="28" Height="28" Foreground="#FFD700"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding AchievementsText}" FontSize="20" FontWeight="Bold"
                          Foreground="{DynamicResource TextPrimaryBrush}"

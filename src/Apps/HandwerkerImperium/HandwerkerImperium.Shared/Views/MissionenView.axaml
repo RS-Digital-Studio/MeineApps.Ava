@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
@@ -78,7 +78,7 @@
                       <GradientStop Color="#15FF6B6B" Offset="1" />
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="Trophy" Width="28" Height="28"
+                  <icons:GameIcon Kind="Trophy" Width="28" Height="28"
                                    Foreground="{StaticResource TournamentBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Missionen_Icon_Tournament" />
@@ -116,7 +116,7 @@
                       <GradientStop Color="#15A78BFA" Offset="1" />
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="ShieldStar" Width="28" Height="28"
+                  <icons:GameIcon Kind="ShieldStar" Width="28" Height="28"
                                    Foreground="{StaticResource BattlePassBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Missionen_Icon_BattlePass" />
@@ -154,7 +154,7 @@
                       <GradientStop Color="#1534D399" Offset="1" />
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="CalendarStar" Width="28" Height="28"
+                  <icons:GameIcon Kind="CalendarStar" Width="28" Height="28"
                                    Foreground="{StaticResource SeasonalEventBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Missionen_Icon_SeasonalEvent" />
@@ -192,7 +192,7 @@
                       <GradientStop Color="#15FFF176" Offset="1" />
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="TrophyAward" Width="28" Height="28"
+                  <icons:GameIcon Kind="TrophyAward" Width="28" Height="28"
                                    Foreground="{StaticResource CraftGoldBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Missionen_Icon_Achievements" />
@@ -223,7 +223,7 @@
                 BorderThickness="1"
                 AutomationProperties.AutomationId="Missionen_Border_LuckySpin">
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="ChartDonut" Width="22" Height="22"
+            <icons:GameIcon Kind="ChartDonut" Width="22" Height="22"
                              Foreground="{StaticResource CraftGoldBrush}"
                              AutomationProperties.AutomationId="Missionen_Icon_LuckySpin" />
             <TextBlock Text="{loc:Translate LuckySpin}"

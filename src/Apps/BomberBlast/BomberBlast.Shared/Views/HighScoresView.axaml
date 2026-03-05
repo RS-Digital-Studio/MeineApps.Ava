@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.HighScoresView"
@@ -28,7 +28,7 @@
           <Button Classes="Text"
                   Command="{Binding GoBackCommand}"
                   AutomationProperties.AutomationId="HighScores_BtnBack">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+            <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 
           <!-- Title -->
@@ -36,7 +36,7 @@
                       Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="8">
-            <mi:MaterialIcon Kind="Trophy" Width="28" Height="28"
+            <icons:GameIcon Kind="Trophy" Width="28" Height="28"
                              Foreground="#FFD700" />
             <TextBlock Text="{loc:Translate HighScores}"
                        FontSize="22" FontWeight="Bold"
@@ -77,7 +77,7 @@
                       </Border.Background>
                       <Grid ColumnDefinitions="48,*,Auto">
                         <Panel VerticalAlignment="Center" Width="36" Height="36">
-                          <mi:MaterialIcon Kind="Trophy" Width="30" Height="30"
+                          <icons:GameIcon Kind="Trophy" Width="30" Height="30"
                                            Foreground="#FFD700"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
@@ -115,7 +115,7 @@
                       </Border.Background>
                       <Grid ColumnDefinitions="48,*,Auto">
                         <Panel VerticalAlignment="Center" Width="36" Height="36">
-                          <mi:MaterialIcon Kind="Trophy" Width="28" Height="28"
+                          <icons:GameIcon Kind="Trophy" Width="28" Height="28"
                                            Foreground="#C0C0C0"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
@@ -153,7 +153,7 @@
                       </Border.Background>
                       <Grid ColumnDefinitions="48,*,Auto">
                         <Panel VerticalAlignment="Center" Width="36" Height="36">
-                          <mi:MaterialIcon Kind="Trophy" Width="26" Height="26"
+                          <icons:GameIcon Kind="Trophy" Width="26" Height="26"
                                            Foreground="#CD7F32"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center" />
@@ -217,7 +217,7 @@
                       HorizontalAlignment="Center"
                       IsVisible="{Binding !HasScores}"
                       AutomationProperties.AutomationId="HighScores_EmptyState">
-            <mi:MaterialIcon Kind="TrophyBroken" Width="64" Height="64"
+            <icons:GameIcon Kind="TrophyBroken" Width="64" Height="64"
                              Foreground="{DynamicResource TextMutedBrush}"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate NoHighScoresYet}"

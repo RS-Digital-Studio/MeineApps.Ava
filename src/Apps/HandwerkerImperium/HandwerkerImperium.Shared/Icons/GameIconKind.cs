@@ -1,0 +1,267 @@
+namespace HandwerkerImperium.Icons;
+
+/// <summary>
+/// Alle verfuegbaren Game-Icons fuer HandwerkerImperium (Warme Werkstatt Stil).
+/// Eigene geometrische Icon-Designs, kein Material.Icons.
+/// </summary>
+public enum GameIconKind
+{
+    None,
+
+    // Navigation
+    ArrowDown,
+    ArrowDownBold,
+    ArrowLeft,
+    ArrowRight,
+    ArrowUpBold,
+    ChevronRight,
+    ChevronUp,
+    Close,
+    Plus,
+
+    // Status
+    CheckCircle,
+    CheckDecagram,
+    Lock,
+    LockOutline,
+    Loading,
+    Refresh,
+    Restore,
+    Stop,
+
+    // Stars & Rewards
+    Star,
+    StarCircle,
+    StarFourPoints,
+    StarOutline,
+    StarShooting,
+    Crown,
+    Trophy,
+    TrophyAward,
+    TrophyBroken,
+    TrophyOutline,
+    TrophyVariant,
+    MedalOutline,
+
+    // Combat & Guild
+    Sword,
+    SwordCross,
+    Shield,
+    ShieldAccount,
+    ShieldAlert,
+    ShieldCheck,
+    ShieldCrown,
+    ShieldHalfFull,
+    ShieldHome,
+    ShieldLock,
+    ShieldOff,
+    ShieldPlus,
+    ShieldRemove,
+    ShieldStar,
+    ShieldSword,
+    Skull,
+    Fire,
+    FireFlag,
+    FlagCheckered,
+
+    // Economy
+    CashMultiple,
+    Cash,
+    CurrencyEur,
+    ScrewFlatTop,
+    DiamondOutline,
+    DiamondStone,
+    Gift,
+    GiftOpen,
+    GiftOutline,
+    TreasureChest,
+    Bank,
+    Finance,
+
+    // Workers & People
+    Account,
+    AccountEdit,
+    AccountGroup,
+    AccountGroupOutline,
+    AccountHardHat,
+    AccountMultiplePlus,
+    AccountOff,
+    AccountPlus,
+    AccountRemove,
+    AccountSearch,
+    AccountStar,
+    AccountSwitch,
+    AccountTie,
+    HumanMaleBoard,
+    Ninja,
+    Run,
+
+    // Workshop & Tools
+    Hammer,
+    HammerWrench,
+    Wrench,
+    Anvil,
+    Screwdriver,
+    HandSaw,
+    Saw,
+    Toolbox,
+    Draw,
+    FormatPaint,
+    SprayBottle,
+    MagnifyPlus,
+
+    // Construction & Buildings
+    Factory,
+    FloorPlan,
+    Wall,
+    Pipe,
+    CableData,
+    HomeAutomation,
+    HomeCity,
+    HomeEdit,
+    HomeGroup,
+    HomeRoof,
+    OfficeBuilding,
+    OfficeBuildingCog,
+    OfficeBuildingOutline,
+    DomainPlus,
+    Garage,
+    DoorOpen,
+    Stairs,
+    TowerFire,
+    TransmissionTower,
+    City,
+
+    // Furniture & Interior
+    Sofa,
+    TableFurniture,
+    Bed,
+    BedOutline,
+    SeatOutline,
+    Lamp,
+    Television,
+    WashingMachine,
+    Stove,
+    ShowerHead,
+    WaterPump,
+    SilverwareForkKnife,
+
+    // Materials & Crafting
+    FlaskOutline,
+    Creation,
+    Palette,
+    Water,
+    Snowflake,
+    Flower,
+    Forest,
+    LightningBolt,
+    LightningBoltCircle,
+    PackageDown,
+    PackageVariant,
+    Chip,
+    Compass,
+
+    // Clipboard & Documents
+    ClipboardCheck,
+    ClipboardList,
+    ClipboardTextMultiple,
+    ClipboardTextOutline,
+    FileDocumentCheck,
+    BookOpen,
+    BookOpenVariant,
+    FormatListNumbered,
+
+    // Time & Calendar
+    Clock,
+    ClockOutline,
+    ClockPlus,
+    ProgressClock,
+    TimerOutline,
+    TimerRefresh,
+    CalendarCheck,
+    CalendarStar,
+    History,
+
+    // Settings
+    Cog,
+    CogOutline,
+    CogSync,
+    VolumeHigh,
+    Vibrate,
+    Bell,
+    Translate,
+    GamepadVariant,
+    ControllerClassic,
+
+    // Cloud & Sync
+    CloudDownload,
+    CloudSync,
+    CloudUpload,
+    WifiOff,
+
+    // Communication
+    EmailPlus,
+    EmailPlusOutline,
+    ShareVariant,
+    KeyVariant,
+    KeyboardReturn,
+
+    // Info & Help
+    HelpCircle,
+    InformationOutline,
+    AlertCircle,
+    AlertCircleOutline,
+    LightbulbOn,
+    LightbulbOnOutline,
+
+    // Charts & Data
+    TrendingUp,
+    TrendingDown,
+    ViewGrid,
+    ChartDonut,
+    ChartBar,
+
+    // Fehlende Basis-Icons
+    Check,
+
+    // Emotions & Status
+    EmoticonHappy,
+    Heart,
+    Sleep,
+    Dumbbell,
+    ShoeFormal,
+    BagPersonal,
+
+    // Actions
+    HandCoin,
+    HandWave,
+    Handshake,
+    CartArrowDown,
+    TruckDelivery,
+    ExitToApp,
+    PlayCircle,
+    Video,
+    Flash,
+    FlashOutline,
+    RocketLaunch,
+    SwapHorizontal,
+
+    // Gebäude-Typen (Prestige/Ascension)
+    SchoolOutline,
+    School,
+    HardHat,
+    StorefrontOutline,
+    WeatherSunset,
+    WhiteBalanceSunny,
+    RobotHappy,
+    RobotOutline,
+    Laptop,
+
+    // Guild Boss Icons
+    RockGolem,
+    IceDragon,
+    FireDemon,
+    ShadowLord,
+    MechanicalTitan,
+    AncientForeman,
+}

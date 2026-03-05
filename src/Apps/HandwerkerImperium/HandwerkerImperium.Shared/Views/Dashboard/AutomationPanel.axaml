@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dashboard.AutomationPanel"
              x:DataType="vm:MainViewModel">
@@ -16,7 +16,7 @@
                     IsEnabled="{Binding IsAutoCollectUnlocked}"
                     AutomationProperties.AutomationId="Dashboard_Border_AutoCollect">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="PackageDown" Width="16" Height="16"
+                <icons:GameIcon Kind="PackageDown" Width="16" Height="16"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Translate AutoCollectDesc}" FontSize="9"
@@ -42,7 +42,7 @@
                     IsEnabled="{Binding IsAutoAcceptUnlocked}"
                     AutomationProperties.AutomationId="Dashboard_Border_AutoAccept">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="FileDocumentCheck" Width="16" Height="16"
+                <icons:GameIcon Kind="FileDocumentCheck" Width="16" Height="16"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Translate AutoAcceptDesc}" FontSize="9"
@@ -68,7 +68,7 @@
                     IsEnabled="{Binding IsAutoClaimUnlocked}"
                     AutomationProperties.AutomationId="Dashboard_Border_AutoClaimDaily">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="Gift" Width="16" Height="16"
+                <icons:GameIcon Kind="Gift" Width="16" Height="16"
                                  Foreground="{StaticResource CraftGoldBrush}"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Translate AutoClaimDailyDesc}" FontSize="9"

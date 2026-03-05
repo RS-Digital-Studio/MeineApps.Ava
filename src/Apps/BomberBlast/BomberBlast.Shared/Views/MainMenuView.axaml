@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:models="using:BomberBlast.Models"
              xmlns:controls="using:BomberBlast.Controls"
@@ -58,7 +58,7 @@
                   BorderThickness="1" BorderBrush="#40FFD700"
                   AutomationProperties.AutomationId="MainMenu_CoinBadge">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18"
+              <icons:GameIcon Kind="CircleMultiple" Width="18" Height="18"
                                Foreground="#FFD700" />
               <TextBlock Text="{Binding CoinsText}"
                          FontSize="14" FontWeight="SemiBold"
@@ -78,7 +78,7 @@
                   Command="{Binding GoToGemShopCommand}"
                   AutomationProperties.AutomationId="MainMenu_GemBadge">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="DiamondStone" Width="18" Height="18"
+              <icons:GameIcon Kind="DiamondStone" Width="18" Height="18"
                                Foreground="#E040FB" />
               <TextBlock Text="{Binding GemsText}"
                          FontSize="14" FontWeight="SemiBold"
@@ -151,7 +151,7 @@
                       VerticalContentAlignment="Center"
                       AutomationProperties.AutomationId="MainMenu_BtnSurvival">
                 <StackPanel Orientation="Horizontal" Spacing="3">
-                  <mi:MaterialIcon Kind="Skull" Width="12" Height="12"
+                  <icons:GameIcon Kind="Skull" Width="12" Height="12"
                                    Foreground="White" />
                   <TextBlock Text="{loc:Translate SurvivalMode}"
                              Foreground="White"
@@ -198,7 +198,7 @@
                     VerticalContentAlignment="Center"
                     AutomationProperties.AutomationId="MainMenu_BtnDungeon">
               <StackPanel Orientation="Horizontal" Spacing="4">
-                <mi:MaterialIcon Kind="Sword" Width="14" Height="14"
+                <icons:GameIcon Kind="Sword" Width="14" Height="14"
                                  Foreground="#E040FB" />
                 <TextBlock Text="{loc:Translate DungeonButton}"
                            Foreground="White"
@@ -233,7 +233,7 @@
                     VerticalContentAlignment="Center"
                     AutomationProperties.AutomationId="MainMenu_BtnBattlePass">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="Shield" Width="14" Height="14"
+                <icons:GameIcon Kind="Shield" Width="14" Height="14"
                                  Foreground="White" />
                 <TextBlock Text="{loc:Translate BattlePassButton}"
                            Foreground="White"
@@ -262,7 +262,7 @@
                       VerticalContentAlignment="Center"
                       AutomationProperties.AutomationId="MainMenu_BtnCards">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="CardsPlaying" Width="14" Height="14"
+                  <icons:GameIcon Kind="CardsPlaying" Width="14" Height="14"
                                    Foreground="White" />
                   <TextBlock Text="{loc:Translate DeckButton}"
                              Foreground="White"
@@ -289,7 +289,7 @@
                       VerticalContentAlignment="Center"
                       AutomationProperties.AutomationId="MainMenu_BtnLeague">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="Trophy" Width="14" Height="14"
+                  <icons:GameIcon Kind="Trophy" Width="14" Height="14"
                                    Foreground="White" />
                   <TextBlock Text="{loc:Translate LeagueButton}" FontSize="13" FontWeight="SemiBold"
                              Foreground="White" VerticalAlignment="Center"
@@ -318,7 +318,7 @@
                       VerticalContentAlignment="Center"
                       AutomationProperties.AutomationId="MainMenu_BtnChallenges">
                 <StackPanel Orientation="Horizontal" Spacing="4">
-                  <mi:MaterialIcon Kind="Sword" Width="14" Height="14"
+                  <icons:GameIcon Kind="Sword" Width="14" Height="14"
                                    Foreground="White" />
                   <TextBlock Text="{loc:Translate DailyChallengeTitle}"
                              Foreground="White"
@@ -362,7 +362,7 @@
                   VerticalContentAlignment="Center"
                   AutomationProperties.AutomationId="MainMenu_BtnShop">
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="Store" Width="16" Height="16"
+              <icons:GameIcon Kind="Store" Width="16" Height="16"
                                Foreground="White" />
               <TextBlock Text="{loc:Translate ShopTitle}"
                          Foreground="White"
@@ -390,7 +390,7 @@
                   VerticalContentAlignment="Center"
                   AutomationProperties.AutomationId="MainMenu_BtnProfile">
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="AccountCircle" Width="16" Height="16"
+              <icons:GameIcon Kind="AccountCircle" Width="16" Height="16"
                                Foreground="White" />
               <TextBlock Text="{loc:Translate ProfileTitle}"
                          FontSize="14"
@@ -410,7 +410,7 @@
                   VerticalContentAlignment="Center"
                   AutomationProperties.AutomationId="MainMenu_BtnSettings">
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="Cog" Width="16" Height="16"
+              <icons:GameIcon Kind="Cog" Width="16" Height="16"
                                Foreground="White" />
               <TextBlock Text="{loc:Translate Settings}"
                          FontSize="14"
@@ -447,7 +447,7 @@
           <!-- Titel -->
           <StackPanel Orientation="Horizontal" Spacing="8"
                       HorizontalAlignment="Center" Margin="0,0,0,12">
-            <mi:MaterialIcon Kind="Gift" Width="24" Height="24" Foreground="#FFD700" />
+            <icons:GameIcon Kind="Gift" Width="24" Height="24" Foreground="#FFD700" />
             <TextBlock Text="{Binding RewardPopupTitle}"
                        FontSize="20" FontWeight="Bold"
                        Foreground="#FFD700"
@@ -482,15 +482,15 @@
                     <!-- Status-Icon -->
                     <Panel Height="20" HorizontalAlignment="Center">
                       <!-- Claimed: Haken -->
-                      <mi:MaterialIcon Kind="CheckCircle" Width="20" Height="20"
+                      <icons:GameIcon Kind="CheckCircle" Width="20" Height="20"
                                        Foreground="#22C55E"
                                        IsVisible="{Binding IsClaimed}" />
                       <!-- Aktuell: Geschenk -->
-                      <mi:MaterialIcon Kind="Gift" Width="20" Height="20"
+                      <icons:GameIcon Kind="Gift" Width="20" Height="20"
                                        Foreground="#FFD700"
                                        IsVisible="{Binding IsCurrentDay}" />
                       <!-- Zukunft: Schloss -->
-                      <mi:MaterialIcon Kind="Lock" Width="20" Height="20"
+                      <icons:GameIcon Kind="Lock" Width="20" Height="20"
                                        Foreground="#666666"
                                        IsVisible="{Binding IsFuture}" />
                     </Panel>
@@ -500,7 +500,7 @@
                                Foreground="#FFD700"
                                HorizontalAlignment="Center" />
                     <!-- Extra-Leben Bonus -->
-                    <mi:MaterialIcon Kind="HeartPlus" Width="14" Height="14"
+                    <icons:GameIcon Kind="HeartPlus" Width="14" Height="14"
                                      Foreground="#FF4444"
                                      IsVisible="{Binding HasExtraLife}"
                                      HorizontalAlignment="Center" />
@@ -534,7 +534,7 @@
                       Height="44" MinWidth="56"
                       HorizontalContentAlignment="Center"
                       AutomationProperties.AutomationId="MainMenu_BtnDismissReward">
-                <mi:MaterialIcon Kind="Close" Width="20" Height="20"
+                <icons:GameIcon Kind="Close" Width="20" Height="20"
                                  Foreground="White" />
               </Button>
             </Panel>

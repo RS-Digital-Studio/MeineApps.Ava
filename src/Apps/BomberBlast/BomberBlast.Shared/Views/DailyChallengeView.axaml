@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.DailyChallengeView"
              x:DataType="vm:DailyChallengeViewModel">
@@ -18,7 +18,7 @@
                 Width="48" Height="48"
                 Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                 AutomationProperties.AutomationId="DailyChallenge_BtnBack">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
         </Button>
 
@@ -96,7 +96,7 @@
                   HorizontalAlignment="Center"
                   AutomationProperties.AutomationId="DailyChallenge_CompletedBadge">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="CheckCircle" Width="18" Height="18"
+              <icons:GameIcon Kind="CheckCircle" Width="18" Height="18"
                                Foreground="#FF6B00" />
               <TextBlock Text="{Binding CompletedTodayText}"
                          FontSize="14" FontWeight="SemiBold"
@@ -122,7 +122,7 @@
                   BorderBrush="#FF6B00" BorderThickness="3,0,0,0"
                   AutomationProperties.AutomationId="DailyChallenge_StreakCard">
             <Grid ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Grid.Column="0" Kind="Fire" Width="28" Height="28"
+              <icons:GameIcon Grid.Column="0" Kind="Fire" Width="28" Height="28"
                                Foreground="#FF6B00" Margin="0,0,12,0" />
               <StackPanel Grid.Column="1">
                 <TextBlock Text="{Binding StreakLabel}"
@@ -144,7 +144,7 @@
                   BorderBrush="#FFD700" BorderThickness="3,0,0,0"
                   AutomationProperties.AutomationId="DailyChallenge_LongestStreakCard">
             <Grid ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Grid.Column="0" Kind="Trophy" Width="28" Height="28"
+              <icons:GameIcon Grid.Column="0" Kind="Trophy" Width="28" Height="28"
                                Foreground="#FFD700" Margin="0,0,12,0" />
               <StackPanel Grid.Column="1">
                 <TextBlock Text="{Binding LongestStreakLabel}"
@@ -166,7 +166,7 @@
                   BorderBrush="{DynamicResource SecondaryBrush}" BorderThickness="3,0,0,0"
                   AutomationProperties.AutomationId="DailyChallenge_TotalCard">
             <Grid ColumnDefinitions="Auto,*">
-              <mi:MaterialIcon Grid.Column="0" Kind="CalendarCheck" Width="28" Height="28"
+              <icons:GameIcon Grid.Column="0" Kind="CalendarCheck" Width="28" Height="28"
                                Foreground="{DynamicResource SecondaryBrush}" Margin="0,0,12,0" />
               <StackPanel Grid.Column="1">
                 <TextBlock Text="{Binding CompletedLabel}"
@@ -197,7 +197,7 @@
                 Height="60"
                 AutomationProperties.AutomationId="DailyChallenge_BtnPlay">
           <StackPanel Orientation="Horizontal" Spacing="10">
-            <mi:MaterialIcon Kind="Sword" Width="24" Height="24"
+            <icons:GameIcon Kind="Sword" Width="24" Height="24"
                              Foreground="White" />
             <TextBlock Text="{Binding PlayButtonText}"
                        FontSize="18" FontWeight="Bold"

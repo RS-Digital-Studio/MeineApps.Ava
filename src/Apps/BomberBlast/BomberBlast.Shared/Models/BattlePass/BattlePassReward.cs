@@ -22,6 +22,6 @@ public class BattlePassReward
     public string ItemId { get; init; } = "";
     /// <summary>Lokalisierungs-Key für die Beschreibung</summary>
     public string DescriptionKey { get; init; } = "";
-    /// <summary>Icon-Name (Material.Icons.MaterialIconKind)</summary>
+    /// <summary>Icon-Name (GameIconKind)</summary>
     public string IconName { get; init; } = "";
 }

@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dashboard.FeatureButtonsGrid"
              x:DataType="vm:MainViewModel">
@@ -29,7 +29,7 @@
                       <GradientStop Color="#1514B8A6" Offset="1"/>
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="AccountHardHat" Width="28" Height="28"
+                  <icons:GameIcon Kind="AccountHardHat" Width="28" Height="28"
                                    Foreground="#0E7490"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_WorkerMarket" />
@@ -64,7 +64,7 @@
                       <GradientStop Color="#15FF8A65" Offset="1"/>
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="FlaskOutline" Width="28" Height="28"
+                  <icons:GameIcon Kind="FlaskOutline" Width="28" Height="28"
                                    Foreground="{StaticResource CraftPrimaryBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Research" />
@@ -99,7 +99,7 @@
                       <GradientStop Color="#15FFD700" Offset="1"/>
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="AccountGroup" Width="28" Height="28"
+                  <icons:GameIcon Kind="AccountGroup" Width="28" Height="28"
                                    Foreground="{StaticResource CraftPrimaryBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Manager" />
@@ -134,7 +134,7 @@
                       <GradientStop Color="#15FF5252" Offset="1"/>
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="Trophy" Width="28" Height="28"
+                  <icons:GameIcon Kind="Trophy" Width="28" Height="28"
                                    Foreground="{StaticResource TournamentBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Tournament" />
@@ -169,7 +169,7 @@
                       <GradientStop Color="#1534D399" Offset="1"/>
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="CalendarStar" Width="28" Height="28"
+                  <icons:GameIcon Kind="CalendarStar" Width="28" Height="28"
                                    Foreground="{StaticResource SeasonalEventBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_SeasonalEvent" />
@@ -204,7 +204,7 @@
                       <GradientStop Color="#15A78BFA" Offset="1"/>
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="ShieldStar" Width="28" Height="28"
+                  <icons:GameIcon Kind="ShieldStar" Width="28" Height="28"
                                    Foreground="{StaticResource BattlePassBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_BattlePass" />
@@ -239,7 +239,7 @@
                       <GradientStop Color="#15FFA726" Offset="1"/>
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="Hammer" Width="28" Height="28"
+                  <icons:GameIcon Kind="Hammer" Width="28" Height="28"
                                    Foreground="#B45309"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Crafting" />
@@ -274,7 +274,7 @@
                       <GradientStop Color="#15FFF176" Offset="1"/>
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="ChartDonut" Width="28" Height="28"
+                  <icons:GameIcon Kind="ChartDonut" Width="28" Height="28"
                                    Foreground="{StaticResource CraftGoldBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    AutomationProperties.AutomationId="Dashboard_Icon_LuckySpin" />

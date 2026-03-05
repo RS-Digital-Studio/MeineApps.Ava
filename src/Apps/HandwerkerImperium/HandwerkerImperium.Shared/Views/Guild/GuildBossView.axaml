@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:models="using:HandwerkerImperium.Models"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Guild.GuildBossView"
              x:DataType="vm:GuildBossViewModel">
@@ -24,12 +24,12 @@
         <!-- Zurück -->
         <Button Grid.Column="0" Classes="Text" Padding="4"
                 Command="{Binding NavigateBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
+          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" Foreground="White" />
         </Button>
         <!-- Titel -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
-          <mi:MaterialIcon Kind="Skull" Width="24" Height="24"
+          <icons:GameIcon Kind="Skull" Width="24" Height="24"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{loc:Translate GuildBossTitle}"
                      FontSize="18" FontWeight="Bold"
@@ -48,7 +48,7 @@
         <!-- Loading -->
         <StackPanel Spacing="8" HorizontalAlignment="Center"
                     IsVisible="{Binding IsLoading}" Margin="0,40,0,0">
-          <mi:MaterialIcon Kind="Loading" Width="32" Height="32"
+          <icons:GameIcon Kind="Loading" Width="32" Height="32"
                            Foreground="{StaticResource CraftPrimaryLightBrush}"
                            HorizontalAlignment="Center" />
         </StackPanel>
@@ -57,7 +57,7 @@
         <Border Classes="CardElevated" Padding="20"
                 IsVisible="{Binding !HasActiveBoss}">
           <StackPanel Spacing="8" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="ShieldOff" Width="48" Height="48"
+            <icons:GameIcon Kind="ShieldOff" Width="48" Height="48"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" Opacity="0.5" />
             <TextBlock Text="{Binding StatusMessage}"
@@ -80,7 +80,7 @@
                 <Border.Background>
                   <SolidColorBrush Color="{Binding BossColor}" Opacity="0.2" />
                 </Border.Background>
-                <mi:MaterialIcon Kind="{Binding BossIcon, Converter={StaticResource IconKindConverter}}"
+                <icons:GameIcon Kind="{Binding BossIcon, Converter={StaticResource IconKindConverter}}"
                                  Width="36" Height="36"
                                  Foreground="{Binding BossColor}"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -101,7 +101,7 @@
               <!-- Countdown -->
               <StackPanel Orientation="Horizontal" Spacing="6"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="ClockOutline" Width="14" Height="14"
+                <icons:GameIcon Kind="ClockOutline" Width="14" Height="14"
                                  Foreground="{DynamicResource TextSecondaryBrush}" />
                 <TextBlock Text="{Binding BossCountdown}"
                            FontSize="12"
@@ -140,7 +140,7 @@
           <Border Classes="Card StatsCard" IsVisible="{Binding HasLeaderboard}">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="TrophyOutline" Width="18" Height="18"
+                <icons:GameIcon Kind="TrophyOutline" Width="18" Height="18"
                                  Foreground="{StaticResource CraftGoldBrush}" />
                 <TextBlock Text="{loc:Translate DamageLeaderboard}"
                            FontSize="14" FontWeight="Bold"

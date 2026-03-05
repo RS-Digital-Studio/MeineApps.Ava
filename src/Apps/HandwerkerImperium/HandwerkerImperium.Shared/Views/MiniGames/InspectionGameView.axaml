@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels.MiniGames"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="HandwerkerImperium.Views.MiniGames.InspectionGameView"
@@ -22,7 +22,7 @@
         <Button AutomationProperties.AutomationId="Inspection_Btn_Cancel"
                 Classes="Text"
                 Command="{Binding CancelCommand}">
-          <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_Close"
+          <icons:GameIcon AutomationProperties.AutomationId="Inspection_Icon_Close"
                            Kind="Close" Width="24" Height="24" />
         </Button>
 
@@ -32,7 +32,7 @@
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="6">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_Title"
+            <icons:GameIcon AutomationProperties.AutomationId="Inspection_Icon_Title"
                              Kind="ClipboardCheck" Width="22" Height="22" />
             <TextBlock AutomationProperties.AutomationId="Inspection_Txt_Title"
                        Text="{loc:Translate InspectionGame}"
@@ -59,7 +59,7 @@
                 CornerRadius="8"
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_Clock"
+            <icons:GameIcon AutomationProperties.AutomationId="Inspection_Icon_Clock"
                              Kind="Clock" Width="16" Height="16" />
             <TextBlock AutomationProperties.AutomationId="Inspection_Txt_Timer"
                        Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
@@ -99,7 +99,7 @@
             ColumnDefinitions="Auto,*,Auto"
             IsVisible="{Binding IsPlaying}"
             Margin="0,0,0,2">
-        <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_InspectionProgress"
+        <icons:GameIcon AutomationProperties.AutomationId="Inspection_Icon_InspectionProgress"
                          Kind="MagnifyPlus" Width="20" Height="20" />
         <skia:SKCanvasView Grid.Column="1"
                            AutomationProperties.AutomationId="Inspection_Canvas_ProgressBar"
@@ -121,7 +121,7 @@
                   Orientation="Horizontal" Spacing="4"
                   HorizontalAlignment="Center"
                   IsVisible="{Binding IsPlaying}">
-        <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_FalseAlarm"
+        <icons:GameIcon AutomationProperties.AutomationId="Inspection_Icon_FalseAlarm"
                          Kind="AlertCircle" Width="16" Height="16"
                          Foreground="{DynamicResource ErrorBrush}" />
         <TextBlock AutomationProperties.AutomationId="Inspection_Txt_FalseAlarmCount"
@@ -163,15 +163,15 @@
         <!-- Sterne-Bewertung (staggered via Code-Behind) -->
         <StackPanel AutomationProperties.AutomationId="Inspection_Panel_Stars"
                     Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-          <mi:MaterialIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Inspection_Icon_Star1"
+          <icons:GameIcon x:Name="Star1Panel" AutomationProperties.AutomationId="Inspection_Icon_Star1"
                            Kind="Star" Width="32" Height="32"
                            Foreground="{StaticResource CraftGoldBrush}"
                            Opacity="{Binding Star1Opacity}" />
-          <mi:MaterialIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Inspection_Icon_Star2"
+          <icons:GameIcon x:Name="Star2Panel" AutomationProperties.AutomationId="Inspection_Icon_Star2"
                            Kind="Star" Width="32" Height="32"
                            Foreground="{StaticResource CraftGoldBrush}"
                            Opacity="{Binding Star2Opacity}" />
-          <mi:MaterialIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Inspection_Icon_Star3"
+          <icons:GameIcon x:Name="Star3Panel" AutomationProperties.AutomationId="Inspection_Icon_Star3"
                            Kind="Star" Width="32" Height="32"
                            Foreground="{StaticResource CraftGoldBrush}"
                            Opacity="{Binding Star3Opacity}" />
@@ -191,7 +191,7 @@
                     HorizontalAlignment="Center"
                     IsVisible="{Binding IsLastTask}">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_RewardMoney"
+            <icons:GameIcon AutomationProperties.AutomationId="Inspection_Icon_RewardMoney"
                              Kind="CashMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
@@ -203,7 +203,7 @@
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="Inspection_Icon_RewardXp"
+            <icons:GameIcon AutomationProperties.AutomationId="Inspection_Icon_RewardXp"
                              Kind="Star" Width="20" Height="20"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock x:Name="RewardXpText"

@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:controls="using:BomberBlast.Controls"
@@ -24,7 +24,7 @@
           <Button Classes="Text"
                   AutomationProperties.AutomationId="Help_BtnBack"
                   Command="{Binding GoBackCommand}">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+            <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 
           <!-- Title -->
@@ -32,7 +32,7 @@
                       Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="8">
-            <mi:MaterialIcon Kind="HelpCircleOutline" Width="24" Height="24"
+            <icons:GameIcon Kind="HelpCircleOutline" Width="24" Height="24"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
             <TextBlock AutomationProperties.AutomationId="Help_TxtTitle"
                        Text="{loc:Translate Help}"
@@ -65,7 +65,7 @@
                     <SolidColorBrush Color="#2196F3" Opacity="0.1" />
                   </Border.Background>
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="GamepadVariantOutline" Width="22" Height="22"
+                    <icons:GameIcon Kind="GamepadVariant" Width="22" Height="22"
                                      Foreground="#2196F3" />
                     <TextBlock AutomationProperties.AutomationId="Help_TxtHowToPlayTitle"
                                Text="{loc:Translate HowToPlay}"
@@ -91,7 +91,7 @@
                     <SolidColorBrush Color="#4CAF50" Opacity="0.1" />
                   </Border.Background>
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="Gamepad" Width="22" Height="22"
+                    <icons:GameIcon Kind="Gamepad" Width="22" Height="22"
                                      Foreground="#4CAF50" />
                     <TextBlock AutomationProperties.AutomationId="Help_TxtControlsTitle"
                                Text="{loc:Translate ControlsHelp}"
@@ -133,7 +133,7 @@
                   </LinearGradientBrush>
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="StarCircleOutline" Width="22" Height="22"
+                  <icons:GameIcon Kind="StarCircleOutline" Width="22" Height="22"
                                    Foreground="#FFD700" />
                   <TextBlock AutomationProperties.AutomationId="Help_TxtPowerUpsTitle"
                              Text="{loc:Translate PowerUps}"
@@ -349,7 +349,7 @@
                   <SolidColorBrush Color="#F44336" Opacity="0.1" />
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Ghost" Width="22" Height="22"
+                  <icons:GameIcon Kind="Ghost" Width="22" Height="22"
                                    Foreground="#F44336" />
                   <TextBlock AutomationProperties.AutomationId="Help_TxtEnemiesTitle"
                              Text="{loc:Translate Enemies}"
@@ -505,7 +505,7 @@
                   <SolidColorBrush Color="#FF9800" Opacity="0.1" />
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="LightbulbOnOutline" Width="22" Height="22"
+                  <icons:GameIcon Kind="LightbulbOn" Width="22" Height="22"
                                    Foreground="#FF9800" />
                   <TextBlock AutomationProperties.AutomationId="Help_TxtTipsTitle"
                              Text="{loc:Translate Tips}"
@@ -530,7 +530,7 @@
                     Background="Transparent" Foreground="White"
                     Padding="24,12">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="SchoolOutline" Width="20" Height="20" Foreground="White" />
+                <icons:GameIcon Kind="SchoolOutline" Width="20" Height="20" Foreground="White" />
                 <TextBlock Text="{loc:Translate ReplayTutorial}" FontSize="15" FontWeight="SemiBold" Foreground="White" />
               </StackPanel>
             </Button>

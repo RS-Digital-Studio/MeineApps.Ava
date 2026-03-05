@@ -7,7 +7,7 @@ using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
-using Material.Icons;
+using BomberBlast.Icons;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
 
@@ -278,7 +278,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
 
     /// <summary>Erstellt ein PowerUpDisplayItem mit Unlock-Status-Logik</summary>
     private PowerUpDisplayItem CreateDisplayItem(string id, string nameKey, int unlockLevel,
-        MaterialIconKind icon, Color color)
+        GameIconKind icon, Color color)
     {
         int highest = _progressService.HighestCompletedLevel;
         bool isUnlocked = highest >= unlockLevel || unlockLevel <= 1;
@@ -319,7 +319,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             {
                 Id = skin.Id,
                 Category = SkinCategory.Player,
-                PreviewIconKind = MaterialIconKind.Account,
+                PreviewIconKind = GameIconKind.Account,
                 DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
                 PrimaryColor = Color.FromRgb(skin.PrimaryColor.Red, skin.PrimaryColor.Green, skin.PrimaryColor.Blue),
                 SecondaryColor = Color.FromRgb(skin.SecondaryColor.Red, skin.SecondaryColor.Green, skin.SecondaryColor.Blue),
@@ -354,7 +354,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             {
                 Id = skin.Id,
                 Category = SkinCategory.Bomb,
-                PreviewIconKind = MaterialIconKind.Bomb,
+                PreviewIconKind = GameIconKind.Bomb,
                 DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
                 PrimaryColor = skin.BodyColor == SkiaSharp.SKColor.Empty
                     ? Color.Parse("#444444")
@@ -392,7 +392,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             {
                 Id = skin.Id,
                 Category = SkinCategory.Explosion,
-                PreviewIconKind = MaterialIconKind.Fire,
+                PreviewIconKind = GameIconKind.Fire,
                 DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
                 PrimaryColor = skin.OuterColor == SkiaSharp.SKColor.Empty
                     ? Color.Parse("#FF6600")
@@ -424,7 +424,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         {
             Id = "",
             Category = SkinCategory.Trail,
-            PreviewIconKind = MaterialIconKind.WavesArrowRight,
+            PreviewIconKind = GameIconKind.Trail,
             DisplayName = noneText,
             PrimaryColor = Color.Parse("#888888"),
             SecondaryColor = Color.Parse("#666666"),
@@ -444,7 +444,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             {
                 Id = trail.Id,
                 Category = SkinCategory.Trail,
-                PreviewIconKind = MaterialIconKind.WavesArrowRight,
+                PreviewIconKind = GameIconKind.Trail,
                 DisplayName = _localizationService.GetString(trail.NameKey) ?? trail.Id,
                 PrimaryColor = Color.FromRgb(trail.PrimaryColor.Red, trail.PrimaryColor.Green, trail.PrimaryColor.Blue),
                 SecondaryColor = Color.FromRgb(trail.SecondaryColor.Red, trail.SecondaryColor.Green, trail.SecondaryColor.Blue),
@@ -471,7 +471,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         {
             Id = "",
             Category = SkinCategory.Victory,
-            PreviewIconKind = MaterialIconKind.PartyPopper,
+            PreviewIconKind = GameIconKind.Celebration,
             DisplayName = noneText,
             PrimaryColor = Color.Parse("#888888"),
             SecondaryColor = Color.Parse("#666666"),
@@ -494,7 +494,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             {
                 Id = victory.Id,
                 Category = SkinCategory.Victory,
-                PreviewIconKind = MaterialIconKind.PartyPopper,
+                PreviewIconKind = GameIconKind.Celebration,
                 DisplayName = _localizationService.GetString(victory.NameKey) ?? victory.Id,
                 PrimaryColor = Color.FromRgb(rarityColor.Red, rarityColor.Green, rarityColor.Blue),
                 SecondaryColor = Color.FromRgb(rarityGlow.Red, rarityGlow.Green, rarityGlow.Blue),
@@ -521,7 +521,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         {
             Id = "",
             Category = SkinCategory.Frame,
-            PreviewIconKind = MaterialIconKind.CardAccountDetailsOutline,
+            PreviewIconKind = GameIconKind.CardFrame,
             DisplayName = noneText,
             PrimaryColor = Color.Parse("#888888"),
             SecondaryColor = Color.Parse("#666666"),
@@ -541,7 +541,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             {
                 Id = frame.Id,
                 Category = SkinCategory.Frame,
-                PreviewIconKind = MaterialIconKind.CardAccountDetailsOutline,
+                PreviewIconKind = GameIconKind.CardFrame,
                 DisplayName = _localizationService.GetString(frame.NameKey) ?? frame.Id,
                 PrimaryColor = Color.FromRgb(frame.PrimaryColor.Red, frame.PrimaryColor.Green, frame.PrimaryColor.Blue),
                 SecondaryColor = Color.FromRgb(frame.SecondaryColor.Red, frame.SecondaryColor.Green, frame.SecondaryColor.Blue),
@@ -926,7 +926,7 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
             {
                 Id = skin.Id,
                 Category = SkinCategory.Player,
-                PreviewIconKind = MaterialIconKind.DiamondStone,
+                PreviewIconKind = GameIconKind.DiamondStone,
                 DisplayName = _localizationService.GetString(skin.NameKey) ?? skin.Id,
                 PrimaryColor = Color.FromRgb(skin.PrimaryColor.Red, skin.PrimaryColor.Green, skin.PrimaryColor.Blue),
                 SecondaryColor = Color.FromRgb(skin.SecondaryColor.Red, skin.SecondaryColor.Green, skin.SecondaryColor.Blue),
@@ -950,21 +950,21 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
     // ICON/FARB-MAPPING (konsistent mit GameRenderer/HelpIconRenderer)
     // ═══════════════════════════════════════════════════════════════════════
 
-    private static MaterialIconKind GetPowerUpIcon(PowerUpType type) => type switch
+    private static GameIconKind GetPowerUpIcon(PowerUpType type) => type switch
     {
-        PowerUpType.BombUp => MaterialIconKind.Bomb,
-        PowerUpType.Fire => MaterialIconKind.Fire,
-        PowerUpType.Speed => MaterialIconKind.FlashOutline,
-        PowerUpType.Wallpass => MaterialIconKind.Ghost,
-        PowerUpType.Detonator => MaterialIconKind.FlashAlert,
-        PowerUpType.Bombpass => MaterialIconKind.ArrowRightBoldCircleOutline,
-        PowerUpType.Flamepass => MaterialIconKind.ShieldOutline,
-        PowerUpType.Mystery => MaterialIconKind.HelpCircleOutline,
-        PowerUpType.Kick => MaterialIconKind.ShoeSneaker,
-        PowerUpType.LineBomb => MaterialIconKind.DotsHorizontal,
-        PowerUpType.PowerBomb => MaterialIconKind.StarCircle,
-        PowerUpType.Skull => MaterialIconKind.SkullOutline,
-        _ => MaterialIconKind.HelpCircleOutline
+        PowerUpType.BombUp => GameIconKind.Bomb,
+        PowerUpType.Fire => GameIconKind.Fire,
+        PowerUpType.Speed => GameIconKind.FlashOutline,
+        PowerUpType.Wallpass => GameIconKind.Ghost,
+        PowerUpType.Detonator => GameIconKind.FlashAlert,
+        PowerUpType.Bombpass => GameIconKind.ArrowRightCircle,
+        PowerUpType.Flamepass => GameIconKind.ShieldOutline,
+        PowerUpType.Mystery => GameIconKind.HelpCircleOutline,
+        PowerUpType.Kick => GameIconKind.Shoe,
+        PowerUpType.LineBomb => GameIconKind.DotsHorizontal,
+        PowerUpType.PowerBomb => GameIconKind.StarCircle,
+        PowerUpType.Skull => GameIconKind.SkullOutline,
+        _ => GameIconKind.HelpCircleOutline
     };
 
     private static Color GetPowerUpAvaloniaColor(PowerUpType type) => type switch
@@ -984,13 +984,13 @@ public sealed partial class ShopViewModel : ViewModelBase, INavigable, IDisposab
         _ => Colors.White
     };
 
-    private static MaterialIconKind GetMechanicIcon(WorldMechanic mech) => mech switch
+    private static GameIconKind GetMechanicIcon(WorldMechanic mech) => mech switch
     {
-        WorldMechanic.Ice => MaterialIconKind.Snowflake,
-        WorldMechanic.Conveyor => MaterialIconKind.ArrowRightBold,
-        WorldMechanic.Teleporter => MaterialIconKind.SwapHorizontalBold,
-        WorldMechanic.LavaCrack => MaterialIconKind.Terrain,
-        _ => MaterialIconKind.HelpCircleOutline
+        WorldMechanic.Ice => GameIconKind.Snowflake,
+        WorldMechanic.Conveyor => GameIconKind.ArrowRightBold,
+        WorldMechanic.Teleporter => GameIconKind.SwapHorizontal,
+        WorldMechanic.LavaCrack => GameIconKind.Terrain,
+        _ => GameIconKind.HelpCircleOutline
     };
 
     private static Color GetMechanicColor(WorldMechanic mech) => mech switch

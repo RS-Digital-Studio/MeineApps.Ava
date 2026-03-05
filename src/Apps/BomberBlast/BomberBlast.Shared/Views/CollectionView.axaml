@@ -3,7 +3,7 @@
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:conv="using:BomberBlast.Converters"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
-             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:controls="using:BomberBlast.Controls"
              xmlns:skia="using:Avalonia.Labs.Controls"
              x:Class="BomberBlast.Views.CollectionView"
@@ -28,7 +28,7 @@
                   Width="44" Height="44"
                   Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                   AutomationProperties.AutomationId="Collection_BtnBack">
-            <materialIcons:MaterialIcon Kind="ArrowLeft" Width="22" Height="22"
+            <icons:GameIcon Kind="ArrowLeft" Width="22" Height="22"
                                         Foreground="{DynamicResource TextPrimaryBrush}" />
           </Button>
           <TextBlock Grid.Column="1"
@@ -64,7 +64,7 @@
                       IsVisible="{Binding IsCategory0Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                  <materialIcons:MaterialIcon Kind="Sword" Width="20" Height="20" Foreground="#F44336" />
+                  <icons:GameIcon Kind="Sword" Width="20" Height="20" Foreground="#F44336" />
                   <TextBlock Text="{Binding CategoryName0}"
                              FontSize="13" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
@@ -82,7 +82,7 @@
                       IsVisible="{Binding IsCategory1Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                  <materialIcons:MaterialIcon Kind="Crown" Width="20" Height="20" Foreground="#FFD700" />
+                  <icons:GameIcon Kind="Crown" Width="20" Height="20" Foreground="#FFD700" />
                   <TextBlock Text="{Binding CategoryName1}"
                              FontSize="13" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
@@ -100,7 +100,7 @@
                       IsVisible="{Binding IsCategory2Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                  <materialIcons:MaterialIcon Kind="Flash" Width="20" Height="20" Foreground="#4CAF50" />
+                  <icons:GameIcon Kind="Flash" Width="20" Height="20" Foreground="#4CAF50" />
                   <TextBlock Text="{Binding CategoryName2}"
                              FontSize="13" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
@@ -118,7 +118,7 @@
                       IsVisible="{Binding IsCategory3Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                  <materialIcons:MaterialIcon Kind="CardsPlaying" Width="20" Height="20" Foreground="#2196F3" />
+                  <icons:GameIcon Kind="CardsPlaying" Width="20" Height="20" Foreground="#2196F3" />
                   <TextBlock Text="{Binding CategoryName3}"
                              FontSize="13" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
@@ -136,7 +136,7 @@
                       IsVisible="{Binding IsCategory4Active}" />
               <Border CornerRadius="8" Padding="10,8">
                 <StackPanel Orientation="Horizontal" Spacing="10">
-                  <materialIcons:MaterialIcon Kind="Palette" Width="20" Height="20" Foreground="#9C27B0" />
+                  <icons:GameIcon Kind="Palette" Width="20" Height="20" Foreground="#9C27B0" />
                   <TextBlock Text="{Binding CategoryName4}"
                              FontSize="13" FontWeight="SemiBold"
                              Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" />
@@ -195,11 +195,11 @@
                           </Button>
                         </Panel>
                         <!-- Eingefordert -->
-                        <materialIcons:MaterialIcon Kind="CheckCircle"
+                        <icons:GameIcon Kind="CheckCircle"
                                                     Width="24" Height="24" Foreground="#22C55E"
                                                     IsVisible="{Binding IsClaimed}" />
                         <!-- Gesperrt -->
-                        <materialIcons:MaterialIcon Kind="Lock"
+                        <icons:GameIcon Kind="Lock"
                                                     Width="20" Height="20"
                                                     Foreground="{DynamicResource TextMutedBrush}"
                                                     IsVisible="{Binding IsLocked}" />
@@ -251,7 +251,7 @@
                       VerticalAlignment="Center"
                       HorizontalAlignment="Center"
                       Spacing="12">
-            <materialIcons:MaterialIcon Kind="BookOpenBlankVariant" Width="48" Height="48"
+            <icons:GameIcon Kind="BookOpen" Width="48" Height="48"
                                         Foreground="{DynamicResource TextMutedBrush}"
                                         HorizontalAlignment="Center" />
             <TextBlock Text="{Binding EmptyItemsText, FallbackValue='Noch nichts entdeckt'}"
@@ -330,11 +330,11 @@
                               <skia:SKCanvasView Width="80" Height="80" Opacity="0.35"
                                                  IsVisible="{Binding IsSkiaIcon}"
                                                  Tag="{Binding}" PaintSurface="OnCollectionItemPaint" />
-                              <materialIcons:MaterialIcon Width="80" Height="80" Opacity="0.35"
+                              <icons:GameIcon Width="80" Height="80" Opacity="0.35"
                                                           IsVisible="{Binding !IsSkiaIcon}"
-                                                          Kind="{Binding IconName, Converter={x:Static conv:StringToMaterialIconKindConverter.Instance}}"
+                                                          Kind="{Binding IconName, Converter={x:Static conv:StringToGameIconKindConverter.Instance}}"
                                                           Foreground="{Binding BadgeColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}" />
-                              <materialIcons:MaterialIcon Kind="LockOutline" Width="36" Height="36"
+                              <icons:GameIcon Kind="LockOutline" Width="36" Height="36"
                                                           Foreground="{DynamicResource TextMutedBrush}"
                                                           Opacity="0.6"
                                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -422,7 +422,7 @@
                 <Button Grid.Column="2" Classes="Text"
                         Command="{Binding CloseDetailCommand}"
                         Padding="4" VerticalAlignment="Center">
-                  <materialIcons:MaterialIcon Kind="Close" Width="20" Height="20"
+                  <icons:GameIcon Kind="Close" Width="20" Height="20"
                                               Foreground="{DynamicResource TextMutedBrush}" />
                 </Button>
               </Grid>

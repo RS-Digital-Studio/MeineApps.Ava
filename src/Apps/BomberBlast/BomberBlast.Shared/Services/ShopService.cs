@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Avalonia.Media;
 using BomberBlast.Models;
-using Material.Icons;
+using BomberBlast.Icons;
 using MeineApps.Core.Ava.Services;
 
 namespace BomberBlast.Services;
@@ -34,34 +34,34 @@ public sealed class ShopService : IShopService
         return
         [
             CreateItem(UpgradeType.StartBombs, "UpgradeStartBombs", "UpgradeStartBombsDesc",
-                MaterialIconKind.Bomb, Color.Parse("#FF6B35")),
+                GameIconKind.Bomb, Color.Parse("#FF6B35")),
             CreateItem(UpgradeType.StartFire, "UpgradeStartFire", "UpgradeStartFireDesc",
-                MaterialIconKind.Fire, Color.Parse("#FF4444")),
+                GameIconKind.Fire, Color.Parse("#FF4444")),
             CreateItem(UpgradeType.StartSpeed, "UpgradeStartSpeed", "UpgradeStartSpeedDesc",
-                MaterialIconKind.FlashOutline, Color.Parse("#FFD700")),
+                GameIconKind.FlashOutline, Color.Parse("#FFD700")),
             CreateItem(UpgradeType.ExtraLives, "UpgradeExtraLives", "UpgradeExtraLivesDesc",
-                MaterialIconKind.Heart, Color.Parse("#E91E63")),
+                GameIconKind.Heart, Color.Parse("#E91E63")),
             CreateItem(UpgradeType.ScoreMultiplier, "UpgradeScoreMultiplier", "UpgradeScoreMultiplierDesc",
-                MaterialIconKind.Star, Color.Parse("#9C27B0")),
+                GameIconKind.Star, Color.Parse("#9C27B0")),
             CreateItem(UpgradeType.TimeBonus, "UpgradeTimeBonus", "UpgradeTimeBonusDesc",
-                MaterialIconKind.ClockFast, Color.Parse("#00BCD4")),
+                GameIconKind.ClockFast, Color.Parse("#00BCD4")),
             CreateItem(UpgradeType.ShieldStart, "UpgradeShieldStart", "UpgradeShieldStartDesc",
-                MaterialIconKind.Shield, Color.Parse("#00E5FF")),
+                GameIconKind.Shield, Color.Parse("#00E5FF")),
             CreateItem(UpgradeType.CoinBonus, "UpgradeCoinBonus", "UpgradeCoinBonusDesc",
-                MaterialIconKind.CurrencyUsd, Color.Parse("#FFD700")),
+                GameIconKind.CurrencyUsd, Color.Parse("#FFD700")),
             CreateItem(UpgradeType.PowerUpLuck, "UpgradePowerUpLuck", "UpgradePowerUpLuckDesc",
-                MaterialIconKind.Clover, Color.Parse("#4CAF50")),
+                GameIconKind.Clover, Color.Parse("#4CAF50")),
             CreateItem(UpgradeType.IceBomb, "UpgradeIceBomb", "UpgradeIceBombDesc",
-                MaterialIconKind.Snowflake, Color.Parse("#00BFFF")),
+                GameIconKind.Snowflake, Color.Parse("#00BFFF")),
             CreateItem(UpgradeType.FireBomb, "UpgradeFireBomb", "UpgradeFireBombDesc",
-                MaterialIconKind.Fire, Color.Parse("#FF4500")),
+                GameIconKind.Fire, Color.Parse("#FF4500")),
             CreateItem(UpgradeType.StickyBomb, "UpgradeStickyBomb", "UpgradeStickyBombDesc",
-                MaterialIconKind.Water, Color.Parse("#32CD32"))
+                GameIconKind.Water, Color.Parse("#32CD32"))
         ];
     }
 
     private ShopDisplayItem CreateItem(UpgradeType type, string nameKey, string descKey,
-        MaterialIconKind icon, Color iconColor)
+        GameIconKind icon, Color iconColor)
     {
         int level = _upgrades.GetLevel(type);
         int maxLevel = PlayerUpgrades.GetMaxLevel(type);

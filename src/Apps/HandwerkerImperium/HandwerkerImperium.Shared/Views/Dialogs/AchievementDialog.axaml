@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.AchievementDialog"
              x:DataType="vm:MainViewModel">
@@ -28,7 +28,7 @@
               <GradientStop Color="Transparent" Offset="1" />
             </RadialGradientBrush>
           </Border.Background>
-          <mi:MaterialIcon Kind="Trophy" Width="40" Height="40"
+          <icons:GameIcon Kind="Trophy" Width="40" Height="40"
                            Foreground="{StaticResource CraftGoldBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            AutomationProperties.AutomationId="Main_Icon_AchievementTrophy" />

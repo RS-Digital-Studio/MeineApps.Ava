@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.OfflineEarningsDialog"
              x:DataType="vm:MainViewModel">
@@ -28,7 +28,7 @@
               <GradientStop Color="Transparent" Offset="1" />
             </RadialGradientBrush>
           </Border.Background>
-          <mi:MaterialIcon Kind="CashMultiple" Width="40" Height="40"
+          <icons:GameIcon Kind="CashMultiple" Width="40" Height="40"
                            Foreground="#22C55E"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            AutomationProperties.AutomationId="Main_Icon_OfflineEarningsCash" />
@@ -74,7 +74,7 @@
                   Command="{Binding CollectOfflineEarningsWithAdCommand}"
                   AutomationProperties.AutomationId="Main_Btn_OfflineDoubleWithAd">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="PlayCircle" Width="18" Height="18"
+              <icons:GameIcon Kind="PlayCircle" Width="18" Height="18"
                                AutomationProperties.AutomationId="Main_Icon_OfflineAdPlay" />
               <TextBlock Text="{loc:Translate DoubleWithAd}" VerticalAlignment="Center"
                          AutomationProperties.AutomationId="Main_Txt_OfflineDoubleWithAd" />

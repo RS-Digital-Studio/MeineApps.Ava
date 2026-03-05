@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:i="using:Avalonia.Xaml.Interactivity"
              xmlns:behaviors="using:MeineApps.UI.Behaviors"
@@ -83,7 +83,7 @@
             </LinearGradientBrush>
           </Border.Background>
           <Grid ColumnDefinitions="Auto,*,Auto">
-            <mi:MaterialIcon Kind="Creation" Width="24" Height="24" Foreground="White"
+            <icons:GameIcon Kind="Creation" Width="24" Height="24" Foreground="White"
                              VerticalAlignment="Center" />
             <StackPanel Grid.Column="1" Spacing="1" Margin="10,0,0,0" VerticalAlignment="Center">
               <TextBlock Text="{loc:Translate PrestigeShop}" FontSize="15" FontWeight="Bold"
@@ -109,7 +109,7 @@
                          Margin="0,6,0,0"
                          IsVisible="{Binding IsPrestigeAvailable}" />
             </StackPanel>
-            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+            <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
                              Foreground="#FFFFFFAA" VerticalAlignment="Center" />
           </Grid>
         </Border>
@@ -160,7 +160,7 @@
                       <GradientStop Color="#10FFD700" Offset="1" />
                     </LinearGradientBrush>
                   </Border.Background>
-                  <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                  <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                    Width="24" Height="24"
                                    Foreground="{StaticResource CraftPrimaryBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -199,9 +199,9 @@
                           AutomationProperties.AutomationId="Imperium_Btn_BuildUpgrade">
                     <StackPanel Orientation="Horizontal" Spacing="4"
                                 HorizontalAlignment="Center">
-                      <mi:MaterialIcon Kind="HammerWrench" Width="14" Height="14"
+                      <icons:GameIcon Kind="HammerWrench" Width="14" Height="14"
                                        IsVisible="{Binding !IsBuilt}" />
-                      <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14"
+                      <icons:GameIcon Kind="ArrowUpBold" Width="14" Height="14"
                                        IsVisible="{Binding IsBuilt}" />
                       <TextBlock Text="{Binding CostDisplay}" FontSize="11" FontWeight="SemiBold" />
                     </StackPanel>
@@ -213,7 +213,7 @@
                           AutomationProperties.AutomationId="Imperium_Border_MaxLevel">
                     <StackPanel Orientation="Horizontal" Spacing="4"
                                 HorizontalAlignment="Center">
-                      <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                      <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
                                        Foreground="{DynamicResource SuccessBrush}" />
                       <TextBlock Text="Max" FontSize="11" FontWeight="SemiBold"
                                  Foreground="{DynamicResource SuccessBrush}" />
@@ -249,7 +249,7 @@
                       Padding="8,6" Margin="3" Opacity="0.5"
                       AutomationProperties.AutomationId="Imperium_Border_LockedCard">
                 <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6">
-                  <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                  <icons:GameIcon Kind="Lock" Width="14" Height="14"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="11"
@@ -289,7 +289,7 @@
                   AutomationProperties.AutomationId="Imperium_Border_Crafting">
             <StackPanel Spacing="4">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="Hammer" Width="16" Height="16"
+                <icons:GameIcon Kind="Hammer" Width="16" Height="16"
                                  Foreground="#B45309" />
                 <TextBlock Text="{loc:Translate CraftingTitle}" FontSize="12" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -318,7 +318,7 @@
                 </StackPanel.IsVisible>
                 <TextBlock Text="{loc:Translate StartCrafting}" FontSize="10"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                <mi:MaterialIcon Kind="ChevronRight" Width="12" Height="12"
+                <icons:GameIcon Kind="ChevronRight" Width="12" Height="12"
                                  Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </StackPanel>
@@ -336,7 +336,7 @@
                   AutomationProperties.AutomationId="Imperium_Border_Research">
             <StackPanel Spacing="4">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="FlaskOutline" Width="16" Height="16"
+                <icons:GameIcon Kind="FlaskOutline" Width="16" Height="16"
                                  Foreground="{StaticResource CraftPrimaryBrush}" />
                 <TextBlock Text="{loc:Translate ResearchTitle}" FontSize="12" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
@@ -360,7 +360,7 @@
                 </StackPanel.IsVisible>
                 <TextBlock Text="{loc:Translate StartResearch}" FontSize="10"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
-                <mi:MaterialIcon Kind="ChevronRight" Width="12" Height="12"
+                <icons:GameIcon Kind="ChevronRight" Width="12" Height="12"
                                  Foreground="{DynamicResource TextSecondaryBrush}" />
               </StackPanel>
             </StackPanel>
@@ -393,7 +393,7 @@
                     <GradientStop Color="#1514B8A6" Offset="1"/>
                   </LinearGradientBrush>
                 </Border.Background>
-                <mi:MaterialIcon Kind="AccountHardHat" Width="18" Height="18"
+                <icons:GameIcon Kind="AccountHardHat" Width="18" Height="18"
                                  Foreground="#0E7490"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
@@ -422,7 +422,7 @@
                     <GradientStop Color="#15FFD700" Offset="1"/>
                   </LinearGradientBrush>
                 </Border.Background>
-                <mi:MaterialIcon Kind="AccountGroup" Width="18" Height="18"
+                <icons:GameIcon Kind="AccountGroup" Width="18" Height="18"
                                  Foreground="{StaticResource CraftPrimaryBrush}"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
@@ -451,7 +451,7 @@
                     <GradientStop Color="#15FBBF24" Offset="1"/>
                   </LinearGradientBrush>
                 </Border.Background>
-                <mi:MaterialIcon Kind="Wrench" Width="18" Height="18"
+                <icons:GameIcon Kind="Wrench" Width="18" Height="18"
                                  Foreground="#F59E0B"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
               </Border>
@@ -490,7 +490,7 @@
                   <GradientStop Color="#15FFF176" Offset="1"/>
                 </LinearGradientBrush>
               </Border.Background>
-              <mi:MaterialIcon Kind="Creation" Width="18" Height="18"
+              <icons:GameIcon Kind="Creation" Width="18" Height="18"
                                Foreground="{StaticResource CraftGoldBrush}"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
@@ -498,7 +498,7 @@
                        FontSize="13" FontWeight="SemiBold"
                        Foreground="{DynamicResource TextPrimaryBrush}"
                        VerticalAlignment="Center" />
-            <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16"
+            <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="16" Height="16"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              VerticalAlignment="Center" />
           </Grid>

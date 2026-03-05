@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.GemShopView"
              x:DataType="vm:GemShopViewModel">
@@ -25,7 +25,7 @@
                 HorizontalAlignment="Left"
                 Margin="0,0,0,8">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="20" Height="20"
+            <icons:GameIcon Kind="ArrowLeft" Width="20" Height="20"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
             <TextBlock Text="{Binding TitleText}"
                        FontSize="18" FontWeight="Bold"
@@ -48,7 +48,7 @@
             </LinearGradientBrush>
           </Border.Background>
           <StackPanel Spacing="8" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="DiamondStone" Width="56" Height="56"
+            <icons:GameIcon Kind="DiamondStone" Width="56" Height="56"
                              Foreground="#00BCD4"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{Binding GemBalanceText}"
@@ -123,14 +123,14 @@
                   <Border.Background>
                     <SolidColorBrush Color="{Binding IconColor}" Opacity="0.15" />
                   </Border.Background>
-                  <mi:MaterialIcon Kind="{Binding IconKind}"
+                  <icons:GameIcon Kind="{Binding IconKind}"
                                    Width="40" Height="40"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center">
-                    <mi:MaterialIcon.Foreground>
+                    <icons:GameIcon.Foreground>
                       <SolidColorBrush Color="{Binding IconColor}" />
-                    </mi:MaterialIcon.Foreground>
-                  </mi:MaterialIcon>
+                    </icons:GameIcon.Foreground>
+                  </icons:GameIcon>
                 </Border>
 
                 <!-- Gem-Anzahl -->
@@ -139,7 +139,7 @@
                             Spacing="6"
                             HorizontalAlignment="Center"
                             Margin="0,0,0,4">
-                  <mi:MaterialIcon Kind="DiamondStone" Width="20" Height="20"
+                  <icons:GameIcon Kind="DiamondStone" Width="20" Height="20"
                                    Foreground="#00BCD4" />
                   <TextBlock Text="{Binding GemAmount, StringFormat='{}{0:N0}'}"
                              FontSize="24" FontWeight="Bold"

@@ -105,8 +105,8 @@ public static class WorkshopTypeExtensions
         WorkshopType.Contractor => "\ud83c\udfd7\ufe0f",
         WorkshopType.Architect => "\ud83d\udcd0",       // Triangular ruler
         WorkshopType.GeneralContractor => "\ud83c\udff0", // Castle
-        WorkshopType.MasterSmith => "Anvil",               // MaterialIcon
-        WorkshopType.InnovationLab => "LightbulbOnOutline", // MaterialIcon
+        WorkshopType.MasterSmith => "Anvil",               // GameIcon
+        WorkshopType.InnovationLab => "LightbulbOnOutline", // GameIcon
         _ => "\ud83d\udd27"
     };
 

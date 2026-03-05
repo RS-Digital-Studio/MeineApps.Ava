@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:models="using:HandwerkerImperium.Models"
              xmlns:conv="using:HandwerkerImperium.Converters"
@@ -138,7 +138,7 @@
                         IsVisible="{Binding MasterToolsCollected, Converter={StaticResource GreaterThanZero}}"
                         AutomationProperties.AutomationId="Dashboard_Btn_MasterTools">
                   <StackPanel Orientation="Horizontal" Spacing="4">
-                    <mi:MaterialIcon Kind="Wrench" Width="14" Height="14" Foreground="#F59E0B"
+                    <icons:GameIcon Kind="Wrench" Width="14" Height="14" Foreground="#F59E0B"
                                      AutomationProperties.AutomationId="Dashboard_Icon_MasterTools" />
                     <TextBlock FontSize="12" FontWeight="Bold" Foreground="#F59E0B"
                                AutomationProperties.AutomationId="Dashboard_Txt_MasterToolsCount">
@@ -153,7 +153,7 @@
                         AutomationProperties.AutomationId="Dashboard_Border_GoldenScrews">
                   <StackPanel Orientation="Horizontal" Spacing="4"
                               VerticalAlignment="Center">
-                    <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16"
+                    <icons:GameIcon Kind="ScrewFlatTop" Width="16" Height="16"
                                      Foreground="{StaticResource CraftGoldBrush}"
                                      VerticalAlignment="Center"
                                      AutomationProperties.AutomationId="Dashboard_Icon_GoldenScrews" />
@@ -171,7 +171,7 @@
                         IsVisible="{Binding HasDailyReward}"
                         Command="{Binding ClaimDailyRewardCommand}"
                         AutomationProperties.AutomationId="Dashboard_Btn_DailyReward">
-                  <mi:MaterialIcon Kind="Gift" Width="20" Height="20" Foreground="#3D1C00"
+                  <icons:GameIcon Kind="Gift" Width="20" Height="20" Foreground="#3D1C00"
                                    AutomationProperties.AutomationId="Dashboard_Icon_DailyReward" />
                 </Button>
               </StackPanel>
@@ -180,7 +180,7 @@
             <!-- Zeile 2: Level + XP (volle Breite) + Stats + Achievements -->
             <Grid ColumnDefinitions="Auto,*,Auto" AutomationProperties.AutomationId="Dashboard_Grid_LevelRow">
               <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <mi:MaterialIcon Kind="Star" Width="14" Height="14" Foreground="{StaticResource CraftGoldBrush}"
+                <icons:GameIcon Kind="Star" Width="14" Height="14" Foreground="{StaticResource CraftGoldBrush}"
                                  AutomationProperties.AutomationId="Dashboard_Icon_Level" />
                 <TextBlock Text="{Binding PlayerLevel, StringFormat='Lv.{0}'}"
                            FontSize="12" FontWeight="Bold"
@@ -200,7 +200,7 @@
                         Command="{Binding ShowReputationInfoCommand}"
                         AutomationProperties.AutomationId="Dashboard_Btn_Reputation">
                   <StackPanel Orientation="Horizontal" Spacing="2">
-                    <mi:MaterialIcon Kind="Star" Width="13" Height="13"
+                    <icons:GameIcon Kind="Star" Width="13" Height="13"
                                      Foreground="{Binding ReputationColor, Converter={x:Static coreConv:StringToColorBrushConverter.Instance}}"
                                      AutomationProperties.AutomationId="Dashboard_Icon_Reputation" />
                     <TextBlock Text="{Binding ReputationScore}"
@@ -214,7 +214,7 @@
                 <StackPanel Orientation="Horizontal" Spacing="2"
                             IsVisible="{Binding HasLoginStreak}"
                             AutomationProperties.AutomationId="Dashboard_Panel_LoginStreak">
-                  <mi:MaterialIcon Kind="Fire" Width="14" Height="14" Foreground="#FF6B35"
+                  <icons:GameIcon Kind="Fire" Width="14" Height="14" Foreground="#FF6B35"
                                    AutomationProperties.AutomationId="Dashboard_Icon_LoginStreak" />
                   <TextBlock Text="{Binding LoginStreak}" FontSize="11" FontWeight="Bold"
                              Foreground="#FF6B35" VerticalAlignment="Center"
@@ -223,21 +223,21 @@
                 <Button Classes="Text" Padding="4"
                         Command="{Binding SelectStatisticsTabCommand}"
                         AutomationProperties.AutomationId="Dashboard_Btn_Statistics">
-                  <mi:MaterialIcon Kind="ChartBar" Width="18" Height="18"
+                  <icons:GameIcon Kind="ChartBar" Width="18" Height="18"
                                    Foreground="#FFFFFFAA"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Statistics" />
                 </Button>
                 <Button Classes="Text" Padding="4"
                         Command="{Binding SelectAchievementsTabCommand}"
                         AutomationProperties.AutomationId="Dashboard_Btn_Achievements">
-                  <mi:MaterialIcon Kind="Trophy" Width="18" Height="18"
+                  <icons:GameIcon Kind="Trophy" Width="18" Height="18"
                                    Foreground="#FFFFFFAA"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Achievements" />
                 </Button>
                 <Button Classes="Text" Padding="4"
                         Command="{Binding SelectSettingsTabCommand}"
                         AutomationProperties.AutomationId="Dashboard_Btn_Settings">
-                  <mi:MaterialIcon Kind="Cog" Width="18" Height="18"
+                  <icons:GameIcon Kind="Cog" Width="18" Height="18"
                                    Foreground="#FFFFFFAA"
                                    AutomationProperties.AutomationId="Dashboard_Icon_Settings" />
                 </Button>
@@ -279,7 +279,7 @@
                 IsVisible="{Binding HasCurrentGoal}">
           <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto">
             <!-- Icon -->
-            <mi:MaterialIcon Grid.Column="0" Grid.RowSpan="2"
+            <icons:GameIcon Grid.Column="0" Grid.RowSpan="2"
                              Kind="TrendingUp"
                              Width="28" Height="28"
                              Foreground="{StaticResource CraftGoldBrush}"
@@ -303,10 +303,10 @@
                 BorderBrush="{StaticResource CraftGoldBrush}" BorderThickness="1.5" CornerRadius="10"
                 Padding="10,6" Margin="0,0,0,4">
           <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+            <icons:GameIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock Text="{loc:Translate TutorialUpgradeHint}" FontSize="13" FontWeight="SemiBold"
                        Foreground="{StaticResource CraftGoldBrush}" />
-            <mi:MaterialIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+            <icons:GameIcon Kind="ArrowDownBold" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
           </StackPanel>
         </Border>
 
@@ -360,7 +360,7 @@
                     Command="{Binding RefreshOrdersCommand}"
                     IsVisible="{Binding IsOrdersTabActive}"
                     AutomationProperties.AutomationId="Dashboard_Btn_RefreshOrders">
-              <mi:MaterialIcon Kind="Refresh" Width="22" Height="22" />
+              <icons:GameIcon Kind="Refresh" Width="22" Height="22" />
             </Button>
             <!-- Unterstreichung für aktiven Tab -->
             <Border Grid.Row="1" Grid.Column="0" Height="2"
@@ -379,7 +379,7 @@
                     HorizontalAlignment="Stretch"
                     AutomationProperties.AutomationId="Dashboard_Border_NoOrders">
               <StackPanel Spacing="8" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="ClipboardTextOutline" Width="40" Height="40"
+                <icons:GameIcon Kind="ClipboardTextOutline" Width="40" Height="40"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  Opacity="0.5" HorizontalAlignment="Center" />
                 <TextBlock Text="{loc:Translate NoOrdersAvailable}"
@@ -430,7 +430,7 @@
                                 IsVisible="{Binding IsRegularCustomerOrder}"
                                 VerticalAlignment="Center">
                           <StackPanel Orientation="Horizontal" Spacing="2">
-                            <mi:MaterialIcon Kind="Heart" Width="12" Height="12" Foreground="{StaticResource CraftGoldBrush}" />
+                            <icons:GameIcon Kind="Heart" Width="12" Height="12" Foreground="{StaticResource CraftGoldBrush}" />
                             <TextBlock Text="{loc:Translate RegularCustomerBonus}"
                                        FontSize="9" Foreground="{StaticResource CraftGoldBrush}" />
                           </StackPanel>
@@ -449,7 +449,7 @@
                               HorizontalAlignment="Left"
                               Margin="0,4,0,0">
                         <StackPanel Orientation="Horizontal" Spacing="4">
-                          <mi:MaterialIcon Kind="{Binding OrderTypeIcon, Converter={StaticResource IconKindConverter}}"
+                          <icons:GameIcon Kind="{Binding OrderTypeIcon, Converter={StaticResource IconKindConverter}}"
                                            Width="12" Height="12"
                                            Foreground="White" />
                           <TextBlock Text="{Binding DisplayOrderType}"
@@ -463,13 +463,13 @@
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  Margin="0,4,0,8" />
                       <StackPanel Grid.Row="3" Orientation="Horizontal" Spacing="4">
-                        <mi:MaterialIcon Kind="CashMultiple" Width="18" Height="18"
+                        <icons:GameIcon Kind="CashMultiple" Width="18" Height="18"
                                          Foreground="{DynamicResource SuccessBrush}" />
                         <TextBlock Text="{Binding EstimatedReward, StringFormat='~{0:N0}'}"
                                    FontSize="14" FontWeight="Bold"
                                    Foreground="{DynamicResource SuccessBrush}"
                                    VerticalAlignment="Center" />
-                        <mi:MaterialIcon Kind="Star" Width="14" Height="14"
+                        <icons:GameIcon Kind="Star" Width="14" Height="14"
                                          Foreground="{StaticResource CraftGoldBrush}"
                                          Margin="8,0,0,0" />
                         <TextBlock Text="{Binding EstimatedXp, StringFormat='~{0} XP'}"
@@ -495,7 +495,7 @@
           <StackPanel IsVisible="{Binding IsQuickJobsTabActive}" Spacing="8">
             <!-- Timer-Anzeige -->
             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center" Margin="0,0,0,4">
-              <mi:MaterialIcon Kind="TimerRefresh" Width="14" Height="14"
+              <icons:GameIcon Kind="TimerRefresh" Width="14" Height="14"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
               <TextBlock Text="{Binding QuickJobTimerDisplay}" FontSize="12"
                          Foreground="{DynamicResource TextSecondaryBrush}" />
@@ -546,7 +546,7 @@
                               IsVisible="{Binding !IsCompleted}"
                               Command="{Binding $parent[ListBox].((vm:MainViewModel)DataContext).StartQuickJobCommand}"
                               CommandParameter="{Binding .}" />
-                      <mi:MaterialIcon Grid.Column="1" Kind="Check" Width="20" Height="20"
+                      <icons:GameIcon Grid.Column="1" Kind="Check" Width="20" Height="20"
                                        Foreground="{DynamicResource SuccessBrush}"
                                        IsVisible="{Binding IsCompleted}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />

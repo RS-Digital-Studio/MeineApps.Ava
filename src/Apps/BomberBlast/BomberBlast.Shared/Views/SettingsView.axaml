@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.SettingsView"
@@ -23,7 +23,7 @@
           <Button AutomationProperties.AutomationId="Settings_BtnBack"
                   Classes="Text"
                   Command="{Binding GoBackCommand}">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+            <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 
           <!-- Title -->
@@ -31,7 +31,7 @@
                       Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="8">
-            <mi:MaterialIcon Kind="CogOutline" Width="24" Height="24"
+            <icons:GameIcon Kind="CogOutline" Width="24" Height="24"
                              Foreground="{DynamicResource PrimaryBrush}" />
             <TextBlock AutomationProperties.AutomationId="Settings_TxtTitle"
                        Text="{loc:Translate Settings}"
@@ -60,7 +60,7 @@
                     BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Gamepad" Width="22" Height="22"
+                  <icons:GameIcon Kind="Gamepad" Width="22" Height="22"
                                    Foreground="#3B82F6" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtControlsTitle"
                              Text="{loc:Translate ControlsSection}"
@@ -158,7 +158,7 @@
                     BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="VolumeHigh" Width="22" Height="22"
+                  <icons:GameIcon Kind="VolumeHigh" Width="22" Height="22"
                                    Foreground="#22C55E" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtSoundTitle"
                              Text="{loc:Translate SoundSection}"
@@ -245,7 +245,7 @@
                   BoxShadow="0 2 8 0 #25000000">
             <StackPanel Spacing="12">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="PaletteOutline" Width="22" Height="22"
+                <icons:GameIcon Kind="PaletteOutline" Width="22" Height="22"
                                  Foreground="#8B5CF6" />
                 <TextBlock AutomationProperties.AutomationId="Settings_TxtVisualTitle"
                            Text="{Binding VisualStyleText}"
@@ -390,7 +390,7 @@
                   BoxShadow="0 2 8 0 #25000000">
             <StackPanel Spacing="12">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="GooglePlay" Width="22" Height="22"
+                <icons:GameIcon Kind="GooglePlay" Width="22" Height="22"
                                  Foreground="#34A853" />
                 <TextBlock AutomationProperties.AutomationId="Settings_TxtPlayGamesTitle"
                            Text="{loc:Translate PlayGamesSection}"
@@ -420,7 +420,7 @@
                              FontSize="14" FontWeight="SemiBold"
                              Foreground="{DynamicResource SuccessBrush}" />
                 </StackPanel>
-                <mi:MaterialIcon Grid.Column="1"
+                <icons:GameIcon Grid.Column="1"
                                  Kind="CheckCircle" Width="20" Height="20"
                                  Foreground="{DynamicResource SuccessBrush}" />
               </Grid>
@@ -436,7 +436,7 @@
                           HorizontalAlignment="Stretch"
                           HorizontalContentAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                      <mi:MaterialIcon Kind="TrophyOutline" Width="16" Height="16" />
+                      <icons:GameIcon Kind="TrophyOutline" Width="16" Height="16" />
                       <TextBlock Text="{loc:Translate ShowLeaderboards}" FontSize="12" />
                     </StackPanel>
                   </Button>
@@ -450,7 +450,7 @@
                           HorizontalAlignment="Stretch"
                           HorizontalContentAlignment="Center">
                     <StackPanel Orientation="Horizontal" Spacing="6">
-                      <mi:MaterialIcon Kind="Medal" Width="16" Height="16" />
+                      <icons:GameIcon Kind="Medal" Width="16" Height="16" />
                       <TextBlock Text="{loc:Translate ShowGpgsAchievements}" FontSize="12" />
                     </StackPanel>
                   </Button>
@@ -466,7 +466,7 @@
                   Margin="0,0,0,0">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="CloudSync" Width="22" Height="22"
+                <icons:GameIcon Kind="CloudSync" Width="22" Height="22"
                                  Foreground="#00BCD4" />
                 <TextBlock Text="{Binding CloudSaveTitle}"
                            FontSize="17" FontWeight="SemiBold"
@@ -508,7 +508,7 @@
                           IsEnabled="{Binding !IsCloudSyncing}"
                           Height="32" Padding="12,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <mi:MaterialIcon Kind="CloudUpload" Width="16" Height="16" />
+                      <icons:GameIcon Kind="CloudUpload" Width="16" Height="16" />
                       <TextBlock Text="{Binding CloudSaveSyncText}" FontSize="12" />
                     </StackPanel>
                   </Button>
@@ -521,7 +521,7 @@
                           IsEnabled="{Binding !IsCloudSyncing}"
                           Height="32" Padding="12,0">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <mi:MaterialIcon Kind="CloudDownload" Width="16" Height="16" />
+                      <icons:GameIcon Kind="CloudDownload" Width="16" Height="16" />
                       <TextBlock Text="{Binding CloudSaveDownloadText}" FontSize="12" />
                     </StackPanel>
                   </Button>
@@ -540,7 +540,7 @@
                     BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Translate" Width="22" Height="22"
+                  <icons:GameIcon Kind="Translate" Width="22" Height="22"
                                    Foreground="#3B82F6" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtLanguageTitle"
                              Text="{loc:Translate LanguageSection}"
@@ -576,7 +576,7 @@
               </Border.Background>
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="Crown" Width="22" Height="22"
+                  <icons:GameIcon Kind="Crown" Width="22" Height="22"
                                    Foreground="#FFD700" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtPremiumTitle"
                              Text="{loc:Translate PremiumSection}"
@@ -591,7 +591,7 @@
                              Text="{loc:Translate PremiumActive}"
                              FontSize="14" FontWeight="Bold"
                              Foreground="{DynamicResource SuccessBrush}" />
-                  <mi:MaterialIcon Grid.Column="1"
+                  <icons:GameIcon Grid.Column="1"
                                    Kind="Check" Width="24" Height="24"
                                    Foreground="{DynamicResource SuccessBrush}" />
                 </Grid>
@@ -599,37 +599,37 @@
                 <!-- Premium Feature-Liste -->
                 <StackPanel Spacing="6" IsVisible="{Binding !IsPremium}">
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="AdsOff" Width="14" Height="14" Foreground="#22C55E" />
+                    <icons:GameIcon Kind="AdsOff" Width="14" Height="14" Foreground="#22C55E" />
                     <TextBlock Text="{loc:Translate PremiumFeatureNoAds}"
                                FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14" Foreground="#FFD700" />
+                    <icons:GameIcon Kind="CircleMultiple" Width="14" Height="14" Foreground="#FFD700" />
                     <TextBlock Text="{loc:Translate PremiumFeature3xCoins}"
                                FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="ChevronDoubleUp" Width="14" Height="14" Foreground="#F59E0B" />
+                    <icons:GameIcon Kind="ChevronDoubleUp" Width="14" Height="14" Foreground="#F59E0B" />
                     <TextBlock Text="{loc:Translate PremiumFeatureAutoDouble}"
                                FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="Flash" Width="14" Height="14" Foreground="#3B82F6" />
+                    <icons:GameIcon Kind="Flash" Width="14" Height="14" Foreground="#3B82F6" />
                     <TextBlock Text="{loc:Translate PremiumFeatureFreeBoost}"
                                FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="SkipNext" Width="14" Height="14" Foreground="#8B5CF6" />
+                    <icons:GameIcon Kind="SkipNext" Width="14" Height="14" Foreground="#8B5CF6" />
                     <TextBlock Text="{loc:Translate PremiumFeatureFreeSkip}"
                                FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="HeartPulse" Width="14" Height="14" Foreground="#EF4444" />
+                    <icons:GameIcon Kind="HeartPulse" Width="14" Height="14" Foreground="#EF4444" />
                     <TextBlock Text="{loc:Translate PremiumFeatureFreeContinue}"
                                FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
                   <StackPanel Orientation="Horizontal" Spacing="6">
-                    <mi:MaterialIcon Kind="Palette" Width="14" Height="14" Foreground="#A78BFA" />
+                    <icons:GameIcon Kind="Palette" Width="14" Height="14" Foreground="#A78BFA" />
                     <TextBlock Text="{loc:Translate PremiumFeatureSkins}"
                                FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" />
                   </StackPanel>
@@ -647,7 +647,7 @@
                           Padding="12,10">
                     <StackPanel Orientation="Horizontal" Spacing="8"
                                 HorizontalAlignment="Center">
-                      <mi:MaterialIcon Kind="Crown" Width="20" Height="20"
+                      <icons:GameIcon Kind="Crown" Width="20" Height="20"
                                        Foreground="White" />
                       <TextBlock Text="{loc:Translate BuyPremium}"
                                  FontSize="16" FontWeight="Bold"
@@ -681,7 +681,7 @@
                     BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="12">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="AlertCircle" Width="22" Height="22"
+                  <icons:GameIcon Kind="AlertCircle" Width="22" Height="22"
                                    Foreground="{DynamicResource ErrorBrush}" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtDataTitle"
                              Text="{loc:Translate DataSection}"
@@ -722,7 +722,7 @@
                     BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                  <mi:MaterialIcon Kind="InformationOutline" Width="22" Height="22"
+                  <icons:GameIcon Kind="InformationOutline" Width="22" Height="22"
                                    Foreground="#6B7280" />
                   <TextBlock AutomationProperties.AutomationId="Settings_TxtAboutTitle"
                              Text="{loc:Translate AboutSection}"

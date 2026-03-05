@@ -1,5 +1,5 @@
 using Avalonia.Media;
-using Material.Icons;
+using BomberBlast.Icons;
 
 namespace BomberBlast.Models;
 
@@ -67,6 +67,6 @@ public class SkinDisplayItem
     /// <summary>Ob der Kauf-Button sichtbar ist (nicht owned, nicht premium-locked)</summary>
     public bool CanBuy => !IsOwned && !IsLocked && CoinPrice > 0;
 
-    /// <summary>MaterialIcon-Kind für die Vorschau im Gradient-Kreis (pro Kategorie gesetzt)</summary>
-    public MaterialIconKind PreviewIconKind { get; init; } = MaterialIconKind.Palette;
+    /// <summary>GameIcon-Kind fuer die Vorschau im Gradient-Kreis (pro Kategorie gesetzt)</summary>
+    public GameIconKind PreviewIconKind { get; init; } = GameIconKind.Palette;
 }

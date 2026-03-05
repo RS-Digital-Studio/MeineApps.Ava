@@ -79,7 +79,7 @@ public class GuildBossDefinition
     /// <summary>Lokalisierungs-Key für die Boss-Beschreibung.</summary>
     public string DescKey { get; init; } = "";
 
-    /// <summary>Material.Icons-Name für den Boss.</summary>
+    /// <summary>GameIconKind-Name fuer den Boss.</summary>
     public string Icon { get; init; } = "";
 
     /// <summary>HP pro Boss-Level.</summary>

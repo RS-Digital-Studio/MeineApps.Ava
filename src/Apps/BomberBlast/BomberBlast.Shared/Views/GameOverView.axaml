@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:ctrl="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.GameOverView"
@@ -107,7 +107,7 @@
                              HorizontalAlignment="Center" />
                   <StackPanel Orientation="Horizontal" Spacing="4"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="Skull" Width="16" Height="16"
+                    <icons:GameIcon Kind="Skull" Width="16" Height="16"
                                      Foreground="#FF4444" />
                     <TextBlock Text="{Binding SurvivalKills}"
                                FontSize="20" FontWeight="Bold"
@@ -121,7 +121,7 @@
                              HorizontalAlignment="Center" />
                   <StackPanel Orientation="Horizontal" Spacing="4"
                               HorizontalAlignment="Center">
-                    <mi:MaterialIcon Kind="Timer" Width="16" Height="16"
+                    <icons:GameIcon Kind="Timer" Width="16" Height="16"
                                      Foreground="{DynamicResource SecondaryBrush}" />
                     <TextBlock Text="{Binding SurvivalTimeText}"
                                FontSize="20" FontWeight="Bold"
@@ -140,7 +140,7 @@
                   IsVisible="{Binding IsHighScore}"
                   HorizontalAlignment="Center">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Star" Width="20" Height="20"
+              <icons:GameIcon Kind="Star" Width="20" Height="20"
                                Foreground="{DynamicResource SurfaceBrush}" />
               <TextBlock Text="{loc:Translate NewHighScore}"
                          FontSize="16"
@@ -238,16 +238,16 @@
                 <StackPanel Orientation="Horizontal" Spacing="4"
                             VerticalAlignment="Center">
                   <Panel Width="22" Height="22">
-                    <mi:MaterialIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star1Earned}" />
-                    <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" IsVisible="{Binding Star1Earned}" />
+                    <icons:GameIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star1Earned}" />
+                    <icons:GameIcon Kind="Star" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" IsVisible="{Binding Star1Earned}" />
                   </Panel>
                   <Panel Width="22" Height="22">
-                    <mi:MaterialIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star2Earned}" />
-                    <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" IsVisible="{Binding Star2Earned}" />
+                    <icons:GameIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star2Earned}" />
+                    <icons:GameIcon Kind="Star" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" IsVisible="{Binding Star2Earned}" />
                   </Panel>
                   <Panel Width="22" Height="22">
-                    <mi:MaterialIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star3Earned}" />
-                    <mi:MaterialIcon Kind="Star" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" IsVisible="{Binding Star3Earned}" />
+                    <icons:GameIcon Kind="StarOutline" Width="22" Height="22" Foreground="#555555" IsVisible="{Binding !Star3Earned}" />
+                    <icons:GameIcon Kind="Star" Width="22" Height="22" Foreground="{DynamicResource GoldAccentBrush}" IsVisible="{Binding Star3Earned}" />
                   </Panel>
                 </StackPanel>
               </StackPanel>
@@ -268,7 +268,7 @@
                       HorizontalAlignment="Center"
                       Margin="0,4,0,0">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="Crown" Width="16" Height="16" Foreground="{DynamicResource GoldAccentBrush}" />
+                  <icons:GameIcon Kind="Crown" Width="16" Height="16" Foreground="{DynamicResource GoldAccentBrush}" />
                   <TextBlock Text="{loc:Translate PremiumFeatureDoubleCoins}"
                              FontSize="13" FontWeight="Bold"
                              Foreground="{DynamicResource GoldAccentBrush}" />
@@ -289,7 +289,7 @@
             <StackPanel Spacing="6">
               <StackPanel Orientation="Horizontal" Spacing="8"
                           HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="CircleMultiple" Width="22" Height="22"
+                <icons:GameIcon Kind="CircleMultiple" Width="22" Height="22"
                                  Foreground="{DynamicResource GoldAccentBrush}" />
                 <TextBlock AutomationProperties.AutomationId="GameOver_TxtCoinsEarned"
                            Text="{Binding CoinsEarnedText}"
@@ -311,7 +311,7 @@
                         FontSize="16"
                         Classes="GameButton">
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="Video" Width="20" Height="20"
+                    <icons:GameIcon Kind="Video" Width="20" Height="20"
                                      Foreground="White" />
                     <TextBlock Text="{Binding DoubleCoinsButtonText}"
                                FontSize="16" FontWeight="Bold"
@@ -369,7 +369,7 @@
                     HorizontalContentAlignment="Center"
                     VerticalContentAlignment="Center">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Video" Width="18" Height="18"
+                <icons:GameIcon Kind="Video" Width="18" Height="18"
                                  Foreground="White" />
                 <TextBlock Text="{Binding ContinueButtonText}"
                            Foreground="White" />
@@ -390,7 +390,7 @@
                     HorizontalContentAlignment="Center"
                     VerticalContentAlignment="Center">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="CircleMultiple" Width="16" Height="16"
+                <icons:GameIcon Kind="CircleMultiple" Width="16" Height="16"
                                  Foreground="#FFF8E1" />
                 <TextBlock Text="{Binding PaidContinueText}"
                            FontSize="14" FontWeight="Bold"
@@ -414,7 +414,7 @@
               <StackPanel Spacing="2" HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="6"
                             HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="SkipNext" Width="18" Height="18"
+                  <icons:GameIcon Kind="SkipNext" Width="18" Height="18"
                                    Foreground="White" />
                   <TextBlock Text="{Binding SkipLevelText}"
                              FontSize="14" FontWeight="SemiBold"

@@ -1,7 +1,6 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:BomberBlast"
-             xmlns:materialIcons="using:Material.Icons.Avalonia"
              xmlns:core="using:MeineApps.Core.Ava"
              x:Class="BomberBlast.App">
 
@@ -19,8 +18,7 @@
     <!-- Avalonia Fluent Theme as base -->
     <FluentTheme />
 
-    <!-- Material Icons -->
-    <materialIcons:MaterialIconStyles />
+    <!-- GameIcons (BomberBlast Custom Icons) -->
 
     <!-- Core Theme Colors (design tokens) -->
     <StyleInclude Source="avares://MeineApps.Core.Ava/Themes/ThemeColors.axaml" />

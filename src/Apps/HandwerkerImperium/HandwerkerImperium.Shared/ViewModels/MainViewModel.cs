@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
+using HandwerkerImperium.Icons;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Models.Events;
@@ -1900,29 +1901,29 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         MoneyDisplay = FormatMoney(_displayedMoney);
     }
 
-    private static Material.Icons.MaterialIconKind GetWorkshopIconKind(WorkshopType type, int level = 1) => type switch
+    private static GameIconKind GetWorkshopIconKind(WorkshopType type, int level = 1) => type switch
     {
-        WorkshopType.Carpenter when level >= 26 => Material.Icons.MaterialIconKind.Factory,
-        WorkshopType.Carpenter when level >= 11 => Material.Icons.MaterialIconKind.TableFurniture,
-        WorkshopType.Carpenter => Material.Icons.MaterialIconKind.HandSaw,
-        WorkshopType.Plumber when level >= 26 => Material.Icons.MaterialIconKind.WaterPump,
-        WorkshopType.Plumber when level >= 11 => Material.Icons.MaterialIconKind.Pipe,
-        WorkshopType.Plumber => Material.Icons.MaterialIconKind.Pipe,
-        WorkshopType.Electrician when level >= 26 => Material.Icons.MaterialIconKind.TransmissionTower,
-        WorkshopType.Electrician when level >= 11 => Material.Icons.MaterialIconKind.LightningBolt,
-        WorkshopType.Electrician => Material.Icons.MaterialIconKind.Flash,
-        WorkshopType.Painter when level >= 26 => Material.Icons.MaterialIconKind.Draw,
-        WorkshopType.Painter when level >= 11 => Material.Icons.MaterialIconKind.SprayBottle,
-        WorkshopType.Painter => Material.Icons.MaterialIconKind.Palette,
-        WorkshopType.Roofer when level >= 26 => Material.Icons.MaterialIconKind.HomeGroup,
-        WorkshopType.Roofer when level >= 11 => Material.Icons.MaterialIconKind.HomeRoof,
-        WorkshopType.Roofer => Material.Icons.MaterialIconKind.HomeRoof,
-        WorkshopType.Contractor when level >= 26 => Material.Icons.MaterialIconKind.DomainPlus,
-        WorkshopType.Contractor when level >= 11 => Material.Icons.MaterialIconKind.OfficeBuilding,
-        WorkshopType.Contractor => Material.Icons.MaterialIconKind.OfficeBuildingOutline,
-        WorkshopType.Architect => Material.Icons.MaterialIconKind.Compass,
-        WorkshopType.GeneralContractor => Material.Icons.MaterialIconKind.HardHat,
-        _ => Material.Icons.MaterialIconKind.Wrench
+        WorkshopType.Carpenter when level >= 26 => GameIconKind.Factory,
+        WorkshopType.Carpenter when level >= 11 => GameIconKind.TableFurniture,
+        WorkshopType.Carpenter => GameIconKind.HandSaw,
+        WorkshopType.Plumber when level >= 26 => GameIconKind.WaterPump,
+        WorkshopType.Plumber when level >= 11 => GameIconKind.Pipe,
+        WorkshopType.Plumber => GameIconKind.Pipe,
+        WorkshopType.Electrician when level >= 26 => GameIconKind.TransmissionTower,
+        WorkshopType.Electrician when level >= 11 => GameIconKind.LightningBolt,
+        WorkshopType.Electrician => GameIconKind.Flash,
+        WorkshopType.Painter when level >= 26 => GameIconKind.Draw,
+        WorkshopType.Painter when level >= 11 => GameIconKind.SprayBottle,
+        WorkshopType.Painter => GameIconKind.Palette,
+        WorkshopType.Roofer when level >= 26 => GameIconKind.HomeGroup,
+        WorkshopType.Roofer when level >= 11 => GameIconKind.HomeRoof,
+        WorkshopType.Roofer => GameIconKind.HomeRoof,
+        WorkshopType.Contractor when level >= 26 => GameIconKind.DomainPlus,
+        WorkshopType.Contractor when level >= 11 => GameIconKind.OfficeBuilding,
+        WorkshopType.Contractor => GameIconKind.OfficeBuildingOutline,
+        WorkshopType.Architect => GameIconKind.Compass,
+        WorkshopType.GeneralContractor => GameIconKind.HardHat,
+        _ => GameIconKind.Wrench
     };
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -2059,7 +2060,7 @@ public partial class WorkshopDisplayModel : ObservableObject
 {
     public WorkshopType Type { get; set; }
     public string Icon { get; set; } = "";
-    public Material.Icons.MaterialIconKind IconKind { get; set; } = Material.Icons.MaterialIconKind.Wrench;
+    public GameIconKind IconKind { get; set; } = GameIconKind.Wrench;
     public string Name { get; set; } = "";
     public int Level { get; set; }
     public int WorkerCount { get; set; }

@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.Dialogs.DailyRewardDialog"
              x:DataType="vm:MainViewModel">
@@ -28,7 +28,7 @@
               <GradientStop Color="Transparent" Offset="1" />
             </RadialGradientBrush>
           </Border.Background>
-          <mi:MaterialIcon Kind="Gift" Width="40" Height="40"
+          <icons:GameIcon Kind="Gift" Width="40" Height="40"
                            Foreground="{StaticResource CraftPrimaryBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            AutomationProperties.AutomationId="Main_Icon_DailyRewardGift" />
@@ -93,7 +93,7 @@
                     HorizontalAlignment="Center" MinWidth="160"
                     AutomationProperties.AutomationId="Main_Btn_RescueStreak">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="ShieldAlert" Width="16" Height="16" />
+                <icons:GameIcon Kind="ShieldAlert" Width="16" Height="16" />
                 <TextBlock Text="{loc:Translate RescueStreak}" FontSize="13" />
               </StackPanel>
             </Button>

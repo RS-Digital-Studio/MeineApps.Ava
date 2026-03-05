@@ -1,6 +1,6 @@
 using Avalonia.Media;
+using BomberBlast.Icons;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Material.Icons;
 
 namespace BomberBlast.Models;
 
@@ -21,8 +21,8 @@ public partial class PowerUpDisplayItem : ObservableObject
     [ObservableProperty]
     private string _displayDescription = "";
 
-    /// <summary>Material-Icon</summary>
-    public MaterialIconKind IconKind { get; init; }
+    /// <summary>Game-Icon</summary>
+    public GameIconKind IconKind { get; init; }
 
     /// <summary>Icon-Farbe (voll wenn freigeschaltet, grau wenn gesperrt)</summary>
     public Color IconColor { get; init; } = Colors.White;

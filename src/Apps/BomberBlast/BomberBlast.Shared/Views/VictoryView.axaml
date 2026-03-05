@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.VictoryView"
@@ -43,12 +43,12 @@
                   Spacing="12">
 
         <!-- Grosse Krone mit Puls-Animation -->
-        <mi:MaterialIcon Kind="Crown" Width="72" Height="72"
+        <icons:GameIcon Kind="Crown" Width="72" Height="72"
                          Foreground="{DynamicResource GoldAccentBrush}"
                          HorizontalAlignment="Center"
                          AutomationProperties.AutomationId="Victory_Crown">
-          <mi:MaterialIcon.Styles>
-            <Style Selector="mi|MaterialIcon">
+          <icons:GameIcon.Styles>
+            <Style Selector="icons|GameIcon">
               <Style.Animations>
                 <Animation Duration="0:0:2" IterationCount="INFINITE">
                   <KeyFrame Cue="0%">
@@ -63,8 +63,8 @@
                 </Animation>
               </Style.Animations>
             </Style>
-          </mi:MaterialIcon.Styles>
-        </mi:MaterialIcon>
+          </icons:GameIcon.Styles>
+        </icons:GameIcon>
 
         <!-- Titel -->
         <TextBlock Text="{Binding TitleText}"
@@ -114,7 +114,7 @@
           <StackPanel Spacing="8" HorizontalAlignment="Center">
             <StackPanel Orientation="Horizontal" Spacing="8"
                         HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+              <icons:GameIcon Kind="Star" Width="32" Height="32"
                                Foreground="{DynamicResource GoldAccentBrush}" />
               <TextBlock Text="{Binding StarsText}"
                          FontSize="26" FontWeight="ExtraBold"
@@ -169,7 +169,7 @@
                   VerticalContentAlignment="Center"
                   AutomationProperties.AutomationId="Victory_BtnMainMenu">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Home" Width="24" Height="24"
+              <icons:GameIcon Kind="Home" Width="24" Height="24"
                                Foreground="White" />
               <TextBlock Text="{loc:Translate MainMenu}"
                          FontSize="20" FontWeight="Bold"
@@ -191,7 +191,7 @@
                   VerticalContentAlignment="Center"
                   AutomationProperties.AutomationId="Victory_BtnShop">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Cart" Width="20" Height="20"
+              <icons:GameIcon Kind="CartPlus" Width="20" Height="20"
                                Foreground="White" />
               <TextBlock Text="{loc:Translate ShopTitle}"
                          FontSize="18"

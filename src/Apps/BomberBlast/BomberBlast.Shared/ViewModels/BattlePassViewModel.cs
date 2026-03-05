@@ -444,13 +444,13 @@ public class BattlePassTierDisplayItem
     /// <summary>Formatierter Text der Free-Belohnung (z.B. "500 Coins")</summary>
     public string FreeRewardText { get; set; } = "";
 
-    /// <summary>MaterialIconKind-Name für das Free-Reward-Icon</summary>
+    /// <summary>GameIconKind-Name für das Free-Reward-Icon</summary>
     public string FreeRewardIcon { get; set; } = "";
 
     /// <summary>Formatierter Text der Premium-Belohnung (z.B. "3 Gems")</summary>
     public string PremiumRewardText { get; set; } = "";
 
-    /// <summary>MaterialIconKind-Name für das Premium-Reward-Icon</summary>
+    /// <summary>GameIconKind-Name für das Premium-Reward-Icon</summary>
     public string PremiumRewardIcon { get; set; } = "";
 
     /// <summary>Ob das Tier erreicht/freigeschaltet wurde</summary>

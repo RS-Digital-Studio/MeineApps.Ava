@@ -4,7 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using Avalonia.Threading;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.Services.Interfaces;
-using Material.Icons;
+using HandwerkerImperium.Icons;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Ava.ViewModels;
 using MeineApps.Core.Premium.Ava.Services;
@@ -26,18 +26,18 @@ public sealed partial class DesignPuzzleGameViewModel : ViewModelBase, IDisposab
     private bool _isEnding;
 
     // Raum-Definitionen: Id, IconKind, IconColor, NameKey
-    private static readonly (string Id, MaterialIconKind IconKind, string IconColor, string NameKey)[] RoomDefs =
+    private static readonly (string Id, GameIconKind IconKind, string IconColor, string NameKey)[] RoomDefs =
     {
-        ("kitchen", MaterialIconKind.Stove, "#FF6F00", "RoomKitchen"),
-        ("bathroom", MaterialIconKind.ShowerHead, "#0288D1", "RoomBathroom"),
-        ("bedroom", MaterialIconKind.Bed, "#7B1FA2", "RoomBedroom"),
-        ("living", MaterialIconKind.Sofa, "#2E7D32", "RoomLiving"),
-        ("office", MaterialIconKind.Laptop, "#455A64", "RoomOffice"),
-        ("garage", MaterialIconKind.Garage, "#795548", "RoomGarage"),
-        ("laundry", MaterialIconKind.WashingMachine, "#00838F", "RoomLaundry"),
-        ("dining", MaterialIconKind.SilverwareForkKnife, "#C62828", "RoomDining"),
-        ("hallway", MaterialIconKind.DoorOpen, "#5D4037", "RoomHallway"),
-        ("basement", MaterialIconKind.Stairs, "#37474F", "RoomBasement"),
+        ("kitchen", GameIconKind.Stove, "#FF6F00", "RoomKitchen"),
+        ("bathroom", GameIconKind.ShowerHead, "#0288D1", "RoomBathroom"),
+        ("bedroom", GameIconKind.Bed, "#7B1FA2", "RoomBedroom"),
+        ("living", GameIconKind.Sofa, "#2E7D32", "RoomLiving"),
+        ("office", GameIconKind.Laptop, "#455A64", "RoomOffice"),
+        ("garage", GameIconKind.Garage, "#795548", "RoomGarage"),
+        ("laundry", GameIconKind.WashingMachine, "#00838F", "RoomLaundry"),
+        ("dining", GameIconKind.SilverwareForkKnife, "#C62828", "RoomDining"),
+        ("hallway", GameIconKind.DoorOpen, "#5D4037", "RoomHallway"),
+        ("basement", GameIconKind.Stairs, "#37474F", "RoomBasement"),
     };
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -692,7 +692,7 @@ public partial class RoomSlot : ObservableObject
 
     /// <summary>Icon-Typ als Hinweis (wird im Renderer als Farb-Akzent verwendet).</summary>
     [ObservableProperty]
-    private MaterialIconKind _hintIconKind = MaterialIconKind.Home;
+    private GameIconKind _hintIconKind = GameIconKind.HomeRoof;
 
     [ObservableProperty]
     private bool _isFilled;
@@ -747,7 +747,7 @@ public partial class RoomCard : ObservableObject
 
     /// <summary>Material Icon fuer den Raum.</summary>
     [ObservableProperty]
-    private MaterialIconKind _iconKind = MaterialIconKind.Home;
+    private GameIconKind _iconKind = GameIconKind.HomeRoof;
 
     /// <summary>Farbe des Icons/Raums.</summary>
     [ObservableProperty]

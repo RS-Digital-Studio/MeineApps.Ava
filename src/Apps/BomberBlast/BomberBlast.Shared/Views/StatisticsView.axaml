@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.StatisticsView"
@@ -24,7 +24,7 @@
                   Width="44" Height="44"
                   Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                   AutomationProperties.AutomationId="Stats_BtnBack">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="22" Height="22"
+            <icons:GameIcon Kind="ArrowLeft" Width="22" Height="22"
                              Foreground="{DynamicResource TextPrimaryBrush}" />
           </Button>
           <TextBlock Grid.Column="1"
@@ -67,7 +67,7 @@
                           BorderThickness="2" IsVisible="{Binding !HasActiveFrame}"
                           BorderBrush="{DynamicResource TextMutedBrush}" />
                   <!-- Bomber-Icon -->
-                  <mi:MaterialIcon Kind="Bomb" Width="36" Height="36"
+                  <icons:GameIcon Kind="Bomb" Width="36" Height="36"
                                    Foreground="{DynamicResource AccentBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Panel>
@@ -91,11 +91,11 @@
                     <SolidColorBrush Color="{Binding LeagueTierColor}" Opacity="0.15" />
                   </Border.Background>
                   <StackPanel Orientation="Horizontal" Spacing="8">
-                    <mi:MaterialIcon Kind="Trophy" Width="18" Height="18">
-                      <mi:MaterialIcon.Foreground>
+                    <icons:GameIcon Kind="Trophy" Width="18" Height="18">
+                      <icons:GameIcon.Foreground>
                         <SolidColorBrush Color="{Binding LeagueTierColor}" />
-                      </mi:MaterialIcon.Foreground>
-                    </mi:MaterialIcon>
+                      </icons:GameIcon.Foreground>
+                    </icons:GameIcon>
                     <TextBlock FontSize="14" FontWeight="Bold">
                       <TextBlock.Foreground>
                         <SolidColorBrush Color="{Binding LeagueTierColor}" />
@@ -141,7 +141,7 @@
                   </LinearGradientBrush>
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18" Foreground="#FFD700" />
+                  <icons:GameIcon Kind="CircleMultiple" Width="18" Height="18" Foreground="#FFD700" />
                   <TextBlock Text="{Binding CoinsText}" FontSize="15" FontWeight="Bold"
                              Foreground="#FFD700" VerticalAlignment="Center" />
                 </StackPanel>
@@ -156,7 +156,7 @@
                   </LinearGradientBrush>
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-                  <mi:MaterialIcon Kind="DiamondStone" Width="16" Height="16" Foreground="#E040FB" />
+                  <icons:GameIcon Kind="DiamondStone" Width="16" Height="16" Foreground="#E040FB" />
                   <TextBlock Text="{Binding GemsText}" FontSize="15" FontWeight="Bold"
                              Foreground="#E040FB" VerticalAlignment="Center" />
                 </StackPanel>
@@ -174,7 +174,7 @@
               </Border.Background>
               <StackPanel Spacing="6">
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                  <mi:MaterialIcon Grid.Column="0" Kind="Trophy" Width="16" Height="16"
+                  <icons:GameIcon Grid.Column="0" Kind="Trophy" Width="16" Height="16"
                                    Foreground="#FFD700" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="Achievements" FontSize="12"
                              Foreground="{DynamicResource TextMutedBrush}"
@@ -200,7 +200,7 @@
               <StackPanel Spacing="6">
                 <!-- Sterne -->
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                  <mi:MaterialIcon Grid.Column="0" Kind="Star" Width="16" Height="16"
+                  <icons:GameIcon Grid.Column="0" Kind="Star" Width="16" Height="16"
                                    Foreground="#FFC107" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{loc:Translate StatsTotalStars}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}"
@@ -211,7 +211,7 @@
                 </Grid>
                 <!-- Karten -->
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                  <mi:MaterialIcon Grid.Column="0" Kind="CardsPlaying" Width="16" Height="16"
+                  <icons:GameIcon Grid.Column="0" Kind="CardsPlaying" Width="16" Height="16"
                                    Foreground="#2196F3" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{loc:Translate CollectionCards}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}"
@@ -222,7 +222,7 @@
                 </Grid>
                 <!-- Dungeon -->
                 <Grid ColumnDefinitions="Auto,*,Auto">
-                  <mi:MaterialIcon Grid.Column="0" Kind="Sword" Width="16" Height="16"
+                  <icons:GameIcon Grid.Column="0" Kind="Sword" Width="16" Height="16"
                                    Foreground="#9C27B0" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="1" Text="{loc:Translate StatsDungeonBest}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}"
@@ -245,7 +245,7 @@
 
         <!-- Statistik-Header -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="8" Margin="0,0,0,10">
-          <mi:MaterialIcon Kind="ChartLine" Width="22" Height="22"
+          <icons:GameIcon Kind="ChartLine" Width="22" Height="22"
                            Foreground="{DynamicResource AccentBrush}" />
           <TextBlock Text="{Binding StatsTitle}"
                      FontSize="20" FontWeight="Bold"
@@ -265,7 +265,7 @@
                   <SolidColorBrush Color="#4CAF50" Opacity="0.12" />
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="ChartLine" Width="18" Height="18" Foreground="#4CAF50" />
+                  <icons:GameIcon Kind="ChartLine" Width="18" Height="18" Foreground="#4CAF50" />
                   <TextBlock Text="{Binding ProgressLabel}" FontSize="16" FontWeight="Bold"
                              Foreground="#4CAF50" VerticalAlignment="Center" />
                 </StackPanel>
@@ -322,7 +322,7 @@
                   <SolidColorBrush Color="#F44336" Opacity="0.12" />
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="Sword" Width="18" Height="18" Foreground="#F44336" />
+                  <icons:GameIcon Kind="Sword" Width="18" Height="18" Foreground="#F44336" />
                   <TextBlock Text="{Binding CombatLabel}" FontSize="16" FontWeight="Bold"
                              Foreground="#F44336" VerticalAlignment="Center" />
                 </StackPanel>
@@ -379,7 +379,7 @@
                   <SolidColorBrush Color="#9C27B0" Opacity="0.12" />
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="Sword" Width="18" Height="18" Foreground="#9C27B0" />
+                  <icons:GameIcon Kind="Sword" Width="18" Height="18" Foreground="#9C27B0" />
                   <TextBlock Text="{Binding DungeonLabel}" FontSize="16" FontWeight="Bold"
                              Foreground="#9C27B0" VerticalAlignment="Center" />
                 </StackPanel>
@@ -432,7 +432,7 @@
                   <SolidColorBrush Color="#FF9800" Opacity="0.12" />
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="Target" Width="18" Height="18" Foreground="#FF9800" />
+                  <icons:GameIcon Kind="Target" Width="18" Height="18" Foreground="#FF9800" />
                   <TextBlock Text="{Binding ChallengesLabel}" FontSize="16" FontWeight="Bold"
                              Foreground="#FF9800" VerticalAlignment="Center" />
                 </StackPanel>
@@ -514,7 +514,7 @@
                   <SolidColorBrush Color="#FFD700" Opacity="0.12" />
                 </Border.Background>
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18" Foreground="#FFD700" />
+                  <icons:GameIcon Kind="CircleMultiple" Width="18" Height="18" Foreground="#FFD700" />
                   <TextBlock Text="{Binding EconomyLabel}" FontSize="16" FontWeight="Bold"
                              Foreground="#FFD700" VerticalAlignment="Center" />
                 </StackPanel>

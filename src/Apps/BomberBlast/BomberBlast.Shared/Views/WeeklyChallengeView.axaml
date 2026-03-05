@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:controls="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.WeeklyChallengeView"
@@ -19,7 +19,7 @@
                 Width="48" Height="48"
                 Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                 AutomationProperties.AutomationId="Missions_BtnBack">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
         </Button>
 
@@ -45,7 +45,7 @@
                 <SolidColorBrush Color="#FF9800" Opacity="0.1" />
               </Border.Background>
               <Grid ColumnDefinitions="Auto,*,Auto">
-                <mi:MaterialIcon Grid.Column="0" Kind="CalendarToday" Width="20" Height="20"
+                <icons:GameIcon Grid.Column="0" Kind="CalendarToday" Width="20" Height="20"
                                  Foreground="#FF9800" Margin="0,0,8,0" />
                 <TextBlock Grid.Column="1" Text="{Binding DailyTitle}"
                            FontSize="18" FontWeight="Bold"
@@ -72,9 +72,9 @@
                           <SolidColorBrush Color="{Binding AccentColor}" Opacity="0.2" />
                         </Border.Background>
                         <Panel>
-                          <mi:MaterialIcon Kind="CheckCircle" Width="22" Height="22"
+                          <icons:GameIcon Kind="CheckCircle" Width="22" Height="22"
                                            Foreground="#22C55E" IsVisible="{Binding IsCompleted}" />
-                          <mi:MaterialIcon Kind="CircleOutline" Width="22" Height="22"
+                          <icons:GameIcon Kind="CircleOutline" Width="22" Height="22"
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            IsVisible="{Binding IsNotCompleted}" />
                         </Panel>
@@ -100,7 +100,7 @@
                         <TextBlock Text="{Binding ProgressText}" FontSize="12" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Right" />
                         <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Right">
-                          <mi:MaterialIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="#FFD700" />
+                          <icons:GameIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="#FFD700" />
                           <TextBlock Text="{Binding RewardText}" FontSize="10" FontWeight="SemiBold" Foreground="#FFD700" />
                         </StackPanel>
                       </StackPanel>
@@ -119,7 +119,7 @@
                 <SolidColorBrush Color="#00BCD4" Opacity="0.1" />
               </Border.Background>
               <Grid ColumnDefinitions="Auto,*,Auto">
-                <mi:MaterialIcon Grid.Column="0" Kind="CalendarWeek" Width="20" Height="20"
+                <icons:GameIcon Grid.Column="0" Kind="CalendarWeek" Width="20" Height="20"
                                  Foreground="#00BCD4" Margin="0,0,8,0" />
                 <TextBlock Grid.Column="1" Text="{Binding WeeklyTitle}"
                            FontSize="18" FontWeight="Bold"
@@ -146,9 +146,9 @@
                           <SolidColorBrush Color="{Binding AccentColor}" Opacity="0.2" />
                         </Border.Background>
                         <Panel>
-                          <mi:MaterialIcon Kind="CheckCircle" Width="22" Height="22"
+                          <icons:GameIcon Kind="CheckCircle" Width="22" Height="22"
                                            Foreground="#22C55E" IsVisible="{Binding IsCompleted}" />
-                          <mi:MaterialIcon Kind="CircleOutline" Width="22" Height="22"
+                          <icons:GameIcon Kind="CircleOutline" Width="22" Height="22"
                                            Foreground="{DynamicResource TextMutedBrush}"
                                            IsVisible="{Binding IsNotCompleted}" />
                         </Panel>
@@ -174,7 +174,7 @@
                         <TextBlock Text="{Binding ProgressText}" FontSize="12" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Right" />
                         <StackPanel Orientation="Horizontal" Spacing="3" HorizontalAlignment="Right">
-                          <mi:MaterialIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="#FFD700" />
+                          <icons:GameIcon Kind="CircleMultiple" Width="11" Height="11" Foreground="#FFD700" />
                           <TextBlock Text="{Binding RewardText}" FontSize="10" FontWeight="SemiBold" Foreground="#FFD700" />
                         </StackPanel>
                       </StackPanel>
@@ -197,7 +197,7 @@
             <!-- Daily: Verbleibende Zeit -->
             <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8" BoxShadow="0 2 8 0 #25000000">
               <Grid ColumnDefinitions="Auto,*">
-                <mi:MaterialIcon Grid.Column="0" Kind="ClockOutline" Width="22" Height="22"
+                <icons:GameIcon Grid.Column="0" Kind="ClockOutline" Width="22" Height="22"
                                  Foreground="#FF9800" Margin="0,0,8,0" />
                 <StackPanel Grid.Column="1">
                   <TextBlock Text="{Binding DailyTimeRemainingLabel}" FontSize="10"
@@ -212,7 +212,7 @@
             <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8" BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="Gift" Width="18" Height="18" Foreground="#FFD700" />
+                  <icons:GameIcon Kind="Gift" Width="18" Height="18" Foreground="#FFD700" />
                   <TextBlock Text="{Binding DailyBonusLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
@@ -234,7 +234,7 @@
             <!-- Daily: Abgeschlossene Tage -->
             <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8" BoxShadow="0 2 8 0 #25000000">
               <Grid ColumnDefinitions="Auto,*">
-                <mi:MaterialIcon Grid.Column="0" Kind="CalendarCheck" Width="22" Height="22"
+                <icons:GameIcon Grid.Column="0" Kind="CalendarCheck" Width="22" Height="22"
                                  Foreground="#FF9800" Margin="0,0,8,0" />
                 <StackPanel Grid.Column="1">
                   <TextBlock Text="{Binding DailyTotalDaysLabel}" FontSize="10"
@@ -255,7 +255,7 @@
             <!-- Weekly: Verbleibende Zeit -->
             <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8" BoxShadow="0 2 8 0 #25000000">
               <Grid ColumnDefinitions="Auto,*">
-                <mi:MaterialIcon Grid.Column="0" Kind="ClockOutline" Width="22" Height="22"
+                <icons:GameIcon Grid.Column="0" Kind="ClockOutline" Width="22" Height="22"
                                  Foreground="#00BCD4" Margin="0,0,8,0" />
                 <StackPanel Grid.Column="1">
                   <TextBlock Text="{Binding TimeRemainingLabel}" FontSize="10"
@@ -270,7 +270,7 @@
             <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8" BoxShadow="0 2 8 0 #25000000">
               <StackPanel Spacing="6">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="Gift" Width="18" Height="18" Foreground="#FFD700" />
+                  <icons:GameIcon Kind="Gift" Width="18" Height="18" Foreground="#FFD700" />
                   <TextBlock Text="{Binding BonusLabel}" FontSize="11"
                              Foreground="{DynamicResource TextMutedBrush}" VerticalAlignment="Center" />
                 </StackPanel>
@@ -292,7 +292,7 @@
             <!-- Weekly: Abgeschlossene Wochen -->
             <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="12,8" BoxShadow="0 2 8 0 #25000000">
               <Grid ColumnDefinitions="Auto,*">
-                <mi:MaterialIcon Grid.Column="0" Kind="CalendarCheck" Width="22" Height="22"
+                <icons:GameIcon Grid.Column="0" Kind="CalendarCheck" Width="22" Height="22"
                                  Foreground="#00BCD4" Margin="0,0,8,0" />
                 <StackPanel Grid.Column="1">
                   <TextBlock Text="{Binding TotalWeeksLabel}" FontSize="10"

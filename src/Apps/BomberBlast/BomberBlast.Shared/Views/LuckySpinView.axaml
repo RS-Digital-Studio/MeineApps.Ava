@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:controls="using:BomberBlast.Controls"
@@ -29,7 +29,7 @@
         <!-- Titel -->
         <StackPanel Orientation="Horizontal" Spacing="8"
                     HorizontalAlignment="Center">
-          <mi:MaterialIcon Kind="ChartDonut" Width="28" Height="28"
+          <icons:GameIcon Kind="ChartDonut" Width="28" Height="28"
                            Foreground="{DynamicResource GoldAccentBrush}" />
           <TextBlock Text="{loc:Translate LuckySpinTitle}"
                      FontSize="24" FontWeight="Bold"
@@ -45,7 +45,7 @@
                 BorderBrush="#40FFD700" BorderThickness="1"
                 AutomationProperties.AutomationId="LuckySpin_CoinBadge">
           <StackPanel Orientation="Horizontal" Spacing="8">
-            <mi:MaterialIcon Kind="CircleMultiple" Width="20" Height="20"
+            <icons:GameIcon Kind="CircleMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource GoldAccentBrush}" />
             <TextBlock Text="{Binding CoinsText}"
                        FontSize="17" FontWeight="Bold"
@@ -68,7 +68,7 @@
             </LinearGradientBrush>
           </Border.Background>
           <StackPanel Spacing="6" HorizontalAlignment="Center">
-            <mi:MaterialIcon Kind="Star" Width="32" Height="32"
+            <icons:GameIcon Kind="Star" Width="32" Height="32"
                              Foreground="{DynamicResource GoldAccentBrush}"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{Binding ResultText}"
@@ -93,10 +93,10 @@
                   Height="56"
                   AutomationProperties.AutomationId="LuckySpin_BtnSpin">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="Play" Width="22" Height="22"
+              <icons:GameIcon Kind="Play" Width="22" Height="22"
                                Foreground="#1A1A2A"
                                IsVisible="{Binding IsFreeSpinAvailable}" />
-              <mi:MaterialIcon Kind="Video" Width="22" Height="22"
+              <icons:GameIcon Kind="Video" Width="22" Height="22"
                                Foreground="#1A1A2A"
                                IsVisible="{Binding !IsFreeSpinAvailable}" />
               <TextBlock Text="{Binding SpinButtonText}"
@@ -119,7 +119,7 @@
                   Height="56"
                   AutomationProperties.AutomationId="LuckySpin_BtnCollect">
             <StackPanel Orientation="Horizontal" Spacing="8">
-              <mi:MaterialIcon Kind="CheckCircle" Width="22" Height="22"
+              <icons:GameIcon Kind="CheckCircle" Width="22" Height="22"
                                Foreground="White" />
               <TextBlock Text="{Binding SpinButtonText}"
                          FontSize="17" FontWeight="Bold"
@@ -143,7 +143,7 @@
                 MinHeight="48"
                 AutomationProperties.AutomationId="LuckySpin_BtnBack">
           <StackPanel Orientation="Horizontal" Spacing="6">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="18" Height="18"
+            <icons:GameIcon Kind="ArrowLeft" Width="18" Height="18"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
             <TextBlock Text="{loc:Translate Back}"
                        FontSize="14"

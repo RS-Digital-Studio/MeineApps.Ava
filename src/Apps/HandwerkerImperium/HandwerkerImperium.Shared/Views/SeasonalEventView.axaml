@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.SeasonalEventView"
              x:DataType="vm:SeasonalEventViewModel">
@@ -29,7 +29,7 @@
           <Button Classes="Text"
                   AutomationProperties.AutomationId="SeasonalEvent_Btn_Back"
                   Command="{Binding GoBackCommand}">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+            <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                              AutomationProperties.AutomationId="SeasonalEvent_Icon_Back"
                              Foreground="{StaticResource CraftPrimaryLightBrush}" />
           </Button>
@@ -40,7 +40,7 @@
                       Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="8">
-            <mi:MaterialIcon Kind="CalendarStar" Width="28" Height="28"
+            <icons:GameIcon Kind="CalendarStar" Width="28" Height="28"
                              AutomationProperties.AutomationId="SeasonalEvent_Icon_Title"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock Text="{Binding EventName}"
@@ -58,7 +58,7 @@
               <SolidColorBrush Color="Black" Opacity="0.25" />
             </Border.Background>
             <StackPanel Orientation="Horizontal" Spacing="4">
-              <mi:MaterialIcon Kind="StarCircle" Width="16" Height="16"
+              <icons:GameIcon Kind="StarCircle" Width="16" Height="16"
                                AutomationProperties.AutomationId="SeasonalEvent_Icon_Currency"
                                Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Text="{Binding SeasonCurrency}" FontSize="14" FontWeight="Bold"
@@ -74,7 +74,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="4">
-          <mi:MaterialIcon Kind="ClockOutline" Width="14" Height="14"
+          <icons:GameIcon Kind="ClockOutline" Width="14" Height="14"
                            AutomationProperties.AutomationId="SeasonalEvent_Icon_Clock"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" Opacity="0.7" />
           <TextBlock Text="{Binding TimeRemaining}"
@@ -96,7 +96,7 @@
           <Border CornerRadius="4" Padding="6,3"
                   AutomationProperties.AutomationId="SeasonalEvent_Border_ShopIconBg"
                   Background="{StaticResource CraftPrimaryBrush}">
-            <mi:MaterialIcon Kind="StorefrontOutline" Width="14" Height="14" Foreground="White"
+            <icons:GameIcon Kind="StorefrontOutline" Width="14" Height="14" Foreground="White"
                              AutomationProperties.AutomationId="SeasonalEvent_Icon_ShopHeader" />
           </Border>
           <TextBlock Text="{loc:Translate EventShop}"
@@ -151,7 +151,7 @@
                           CommandParameter="{Binding Id}">
                     <StackPanel Orientation="Horizontal" Spacing="4"
                                 HorizontalAlignment="Center">
-                      <mi:MaterialIcon Kind="StarCircle" Width="14" Height="14"
+                      <icons:GameIcon Kind="StarCircle" Width="14" Height="14"
                                        Foreground="{StaticResource CraftGoldBrush}" />
                       <TextBlock Text="{Binding CostDisplay}" FontSize="12" FontWeight="SemiBold" />
                     </StackPanel>
@@ -162,7 +162,7 @@
                               Orientation="Horizontal" Spacing="4"
                               HorizontalAlignment="Center"
                               IsVisible="{Binding IsPurchased}">
-                    <mi:MaterialIcon Kind="Check" Width="16" Height="16"
+                    <icons:GameIcon Kind="Check" Width="16" Height="16"
                                      AutomationProperties.AutomationId="SeasonalEvent_Icon_Purchased"
                                      Foreground="{DynamicResource SuccessBrush}" />
                     <TextBlock Text="{loc:Translate Purchased}"

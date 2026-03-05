@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:conv="using:BomberBlast.Converters"
              xmlns:ctrl="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.AchievementsView"
@@ -23,7 +23,7 @@
           <Button Classes="Text"
                   AutomationProperties.AutomationId="Achievements_BtnBack"
                   Command="{Binding BackCommand}">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+            <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 
           <!-- Title -->
@@ -31,7 +31,7 @@
                       Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="8">
-            <mi:MaterialIcon Kind="Trophy" Width="24" Height="24"
+            <icons:GameIcon Kind="Trophy" Width="24" Height="24"
                              Foreground="{DynamicResource AccentBrush}" />
             <TextBlock Text="{Binding TitleText}"
                        AutomationProperties.AutomationId="Achievements_TxtTitle"
@@ -56,7 +56,7 @@
                   VerticalAlignment="Center"
                   HorizontalAlignment="Center"
                   Spacing="12">
-        <mi:MaterialIcon Kind="TrophyBroken" Width="48" Height="48"
+        <icons:GameIcon Kind="TrophyBroken" Width="48" Height="48"
                          Foreground="{DynamicResource TextMutedBrush}"
                          HorizontalAlignment="Center" />
         <TextBlock Text="{Binding EmptyStateText, FallbackValue='Noch keine Achievements verfügbar'}"

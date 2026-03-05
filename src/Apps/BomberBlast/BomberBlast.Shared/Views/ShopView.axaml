@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:BomberBlast.ViewModels"
              xmlns:models="using:BomberBlast.Models"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:BomberBlast.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:ctrl="using:BomberBlast.Controls"
              x:Class="BomberBlast.Views.ShopView"
@@ -39,7 +39,7 @@
                 <GradientStop Color="{Binding SecondaryColor}" Offset="1" />
               </LinearGradientBrush>
             </Border.Background>
-            <mi:MaterialIcon Kind="{Binding PreviewIconKind}" Width="20" Height="20"
+            <icons:GameIcon Kind="{Binding PreviewIconKind}" Width="20" Height="20"
                              Foreground="White" Opacity="0.7"
                              HorizontalAlignment="Center"
                              VerticalAlignment="Center" />
@@ -55,7 +55,7 @@
           <StackPanel Grid.Row="1" Grid.Column="1"
                       Orientation="Horizontal" Spacing="4"
                       IsVisible="{Binding !IsOwned}">
-            <mi:MaterialIcon Kind="CircleMultiple" Width="12" Height="12"
+            <icons:GameIcon Kind="CircleMultiple" Width="12" Height="12"
                              Foreground="{DynamicResource GoldAccentBrush}" VerticalAlignment="Center" />
             <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
                        FontSize="12" Foreground="{DynamicResource GoldAccentBrush}"
@@ -74,7 +74,7 @@
             </Border.Background>
             <StackPanel Orientation="Horizontal" Spacing="6"
                         HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+              <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
                                Foreground="#4CAF50" />
               <TextBlock Text="{Binding StatusText}"
                          FontSize="12" FontWeight="SemiBold"
@@ -94,7 +94,7 @@
             </Border.Background>
             <StackPanel Orientation="Horizontal" Spacing="6"
                         HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+              <icons:GameIcon Kind="Lock" Width="14" Height="14"
                                Foreground="{DynamicResource GoldAccentBrush}" />
               <TextBlock Text="{Binding StatusText}"
                          FontSize="12" FontWeight="SemiBold"
@@ -137,7 +137,7 @@
                     CornerRadius="8"
                     Padding="8,5">
               <StackPanel Orientation="Horizontal" Spacing="6">
-                <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
+                <icons:GameIcon Kind="CircleMultiple" Width="14" Height="14"
                                  Foreground="{DynamicResource GoldAccentBrush}" />
                 <TextBlock Text="{Binding CoinPrice, StringFormat='{}{0:N0}'}"
                            FontSize="13" FontWeight="SemiBold"
@@ -167,7 +167,7 @@
           <Button AutomationProperties.AutomationId="Shop_BtnBack"
                   Classes="Text"
                   Command="{Binding GoBackCommand}">
-            <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24" />
+            <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24" />
           </Button>
 
           <!-- Titel -->
@@ -189,7 +189,7 @@
                   BorderThickness="1"
                   BoxShadow="0 2 8 0 #20FFD700">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="CircleMultiple" Width="18" Height="18"
+              <icons:GameIcon Kind="CircleMultiple" Width="18" Height="18"
                                Foreground="#FFD700" />
               <TextBlock AutomationProperties.AutomationId="Shop_TxtCoins"
                          Text="{Binding CoinsText}"
@@ -283,7 +283,7 @@
                               HorizontalAlignment="Stretch">
                         <StackPanel Orientation="Horizontal" Spacing="6"
                                     HorizontalAlignment="Center">
-                          <mi:MaterialIcon Kind="CheckCircle" Width="16" Height="16"
+                          <icons:GameIcon Kind="CheckCircle" Width="16" Height="16"
                                            Foreground="#4CAF50" />
                           <TextBlock Text="{loc:Translate ShopMaxed}"
                                      FontSize="13" FontWeight="SemiBold"
@@ -306,7 +306,7 @@
                                 CornerRadius="8"
                                 Padding="8,6">
                           <StackPanel Orientation="Horizontal" Spacing="6">
-                            <mi:MaterialIcon Kind="CircleMultiple" Width="14" Height="14"
+                            <icons:GameIcon Kind="CircleMultiple" Width="14" Height="14"
                                              Foreground="#FFD700" />
                             <TextBlock Text="{Binding NextPrice, StringFormat='{}{0:N0}'}"
                                        FontSize="13" FontWeight="SemiBold"
@@ -372,17 +372,17 @@
                       </Border.Background>
                       <Panel>
                         <!-- PowerUp-Icon (freigeschaltet) -->
-                        <mi:MaterialIcon Kind="{Binding IconKind}"
+                        <icons:GameIcon Kind="{Binding IconKind}"
                                          Width="24" Height="24"
                                          IsVisible="{Binding IsUnlocked}"
                                          HorizontalAlignment="Center"
                                          VerticalAlignment="Center">
-                          <mi:MaterialIcon.Foreground>
+                          <icons:GameIcon.Foreground>
                             <SolidColorBrush Color="{Binding IconColor}" />
-                          </mi:MaterialIcon.Foreground>
-                        </mi:MaterialIcon>
+                          </icons:GameIcon.Foreground>
+                        </icons:GameIcon>
                         <!-- Schloss-Icon (gesperrt) -->
-                        <mi:MaterialIcon Kind="Lock"
+                        <icons:GameIcon Kind="Lock"
                                          Width="24" Height="24"
                                          IsVisible="{Binding !IsUnlocked}"
                                          Foreground="#666666"
@@ -416,7 +416,7 @@
                       </Border.Background>
                       <StackPanel Orientation="Horizontal" Spacing="6"
                                   HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                        <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
                                          Foreground="#4CAF50" />
                         <TextBlock Text="{Binding UnlockText}"
                                    FontSize="12" FontWeight="SemiBold"
@@ -436,7 +436,7 @@
                       </Border.Background>
                       <StackPanel Orientation="Horizontal" Spacing="6"
                                   HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                        <icons:GameIcon Kind="Lock" Width="14" Height="14"
                                          Foreground="#888888" />
                         <TextBlock Text="{Binding UnlockText}"
                                    FontSize="12" FontWeight="SemiBold"
@@ -499,16 +499,16 @@
                         <SolidColorBrush Color="{Binding IconColor}" Opacity="0.2" />
                       </Border.Background>
                       <Panel>
-                        <mi:MaterialIcon Kind="{Binding IconKind}"
+                        <icons:GameIcon Kind="{Binding IconKind}"
                                          Width="24" Height="24"
                                          IsVisible="{Binding IsUnlocked}"
                                          HorizontalAlignment="Center"
                                          VerticalAlignment="Center">
-                          <mi:MaterialIcon.Foreground>
+                          <icons:GameIcon.Foreground>
                             <SolidColorBrush Color="{Binding IconColor}" />
-                          </mi:MaterialIcon.Foreground>
-                        </mi:MaterialIcon>
-                        <mi:MaterialIcon Kind="Lock"
+                          </icons:GameIcon.Foreground>
+                        </icons:GameIcon>
+                        <icons:GameIcon Kind="Lock"
                                          Width="24" Height="24"
                                          IsVisible="{Binding !IsUnlocked}"
                                          Foreground="#666666"
@@ -542,7 +542,7 @@
                       </Border.Background>
                       <StackPanel Orientation="Horizontal" Spacing="6"
                                   HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="CheckCircle" Width="14" Height="14"
+                        <icons:GameIcon Kind="CheckCircle" Width="14" Height="14"
                                          Foreground="#4CAF50" />
                         <TextBlock Text="{Binding UnlockText}"
                                    FontSize="12" FontWeight="SemiBold"
@@ -562,7 +562,7 @@
                       </Border.Background>
                       <StackPanel Orientation="Horizontal" Spacing="6"
                                   HorizontalAlignment="Center">
-                        <mi:MaterialIcon Kind="Lock" Width="14" Height="14"
+                        <icons:GameIcon Kind="Lock" Width="14" Height="14"
                                          Foreground="#888888" />
                         <TextBlock Text="{Binding UnlockText}"
                                    FontSize="12" FontWeight="SemiBold"

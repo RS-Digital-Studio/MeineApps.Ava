@@ -3,7 +3,7 @@ using BomberBlast.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
-using Material.Icons;
+using BomberBlast.Icons;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
 
@@ -109,7 +109,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 DisplayName = smallName,
                 GemAmount = 100,
                 PriceText = "0,99 \u20ac",
-                IconKind = MaterialIconKind.DiamondStone,
+                IconKind = GameIconKind.DiamondStone,
                 IconColor = "#00BCD4",
                 BadgeText = null,
                 IsPopular = false,
@@ -121,7 +121,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 DisplayName = mediumName,
                 GemAmount = 500,
                 PriceText = "3,99 \u20ac",
-                IconKind = MaterialIconKind.Diamond,
+                IconKind = GameIconKind.Diamond,
                 IconColor = "#2196F3",
                 BadgeText = popularBadge,
                 IsPopular = true,
@@ -133,7 +133,7 @@ public sealed partial class GemShopViewModel : ViewModelBase, INavigable, IGameJ
                 DisplayName = largeName,
                 GemAmount = 1500,
                 PriceText = "7,99 \u20ac",
-                IconKind = MaterialIconKind.TreasureChest,
+                IconKind = GameIconKind.TreasureChest,
                 IconColor = "#FFD700",
                 BadgeText = bestValueBadge,
                 IsPopular = false,
@@ -208,8 +208,8 @@ public class GemPackageItem
     /// <summary>Preis-Text (z.B. "0,99 EUR")</summary>
     public string PriceText { get; init; } = "";
 
-    /// <summary>MaterialIcon-Art für das Icon</summary>
-    public MaterialIconKind IconKind { get; init; }
+    /// <summary>GameIcon-Art fuer das Icon</summary>
+    public GameIconKind IconKind { get; init; }
 
     /// <summary>Hex-Farbcode für das Icon (z.B. "#00BCD4")</summary>
     public string IconColor { get; init; } = "#FFFFFF";

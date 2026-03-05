@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels.MiniGames"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:skia="using:Avalonia.Labs.Controls"
              xmlns:coreConv="using:MeineApps.Core.Ava.Converters"
@@ -23,7 +23,7 @@
         <Button AutomationProperties.AutomationId="RoofTiling_Btn_Cancel"
                 Classes="Text"
                 Command="{Binding CancelCommand}">
-          <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_Close"
+          <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_Close"
                            Kind="Close" Width="24" Height="24" />
         </Button>
 
@@ -33,7 +33,7 @@
           <StackPanel Orientation="Horizontal"
                       HorizontalAlignment="Center"
                       Spacing="6">
-            <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_Title"
+            <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_Title"
                              Kind="HomeRoof" Width="22" Height="22" />
             <TextBlock AutomationProperties.AutomationId="RoofTiling_Txt_Title"
                        Text="{loc:Translate RoofTilingGame}"
@@ -60,7 +60,7 @@
                 CornerRadius="8"
                 Padding="12,6">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_Clock"
+            <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_Clock"
                              Kind="Clock" Width="16" Height="16" />
             <TextBlock AutomationProperties.AutomationId="RoofTiling_Txt_Timer"
                        Text="{Binding TimeRemaining, StringFormat='{}{0}s'}"
@@ -84,7 +84,7 @@
                   Orientation="Horizontal" Spacing="4"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center">
-        <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_PlacedCheck"
+        <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_PlacedCheck"
                          Kind="CheckCircle" Width="16" Height="16"
                          Foreground="{DynamicResource SuccessBrush}" />
         <TextBlock AutomationProperties.AutomationId="RoofTiling_Txt_PlacedProgress"
@@ -108,7 +108,7 @@
                   Orientation="Horizontal" Spacing="4"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center">
-        <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_Mistakes"
+        <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_Mistakes"
                          Kind="Close" Width="16" Height="16"
                          Foreground="{DynamicResource ErrorBrush}" />
         <TextBlock AutomationProperties.AutomationId="RoofTiling_Txt_MistakeCount"
@@ -223,19 +223,19 @@
         <StackPanel AutomationProperties.AutomationId="RoofTiling_Panel_Stars"
                     Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
           <Panel x:Name="Star1Panel">
-            <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_Star1"
+            <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_Star1"
                              Kind="Star" Width="32" Height="32"
                              Foreground="{StaticResource CraftGoldBrush}"
                              Opacity="{Binding Star1Opacity}" />
           </Panel>
           <Panel x:Name="Star2Panel">
-            <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_Star2"
+            <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_Star2"
                              Kind="Star" Width="32" Height="32"
                              Foreground="{StaticResource CraftGoldBrush}"
                              Opacity="{Binding Star2Opacity}" />
           </Panel>
           <Panel x:Name="Star3Panel">
-            <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_Star3"
+            <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_Star3"
                              Kind="Star" Width="32" Height="32"
                              Foreground="{StaticResource CraftGoldBrush}"
                              Opacity="{Binding Star3Opacity}" />
@@ -256,7 +256,7 @@
                     HorizontalAlignment="Center"
                     IsVisible="{Binding IsLastTask}">
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_RewardMoney"
+            <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_RewardMoney"
                              Kind="CashMultiple" Width="20" Height="20"
                              Foreground="{DynamicResource SuccessBrush}" />
             <TextBlock x:Name="RewardMoneyText"
@@ -268,7 +268,7 @@
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" Spacing="4">
-            <mi:MaterialIcon AutomationProperties.AutomationId="RoofTiling_Icon_RewardXp"
+            <icons:GameIcon AutomationProperties.AutomationId="RoofTiling_Icon_RewardXp"
                              Kind="Star" Width="20" Height="20"
                              Foreground="{StaticResource CraftGoldBrush}" />
             <TextBlock x:Name="RewardXpText"

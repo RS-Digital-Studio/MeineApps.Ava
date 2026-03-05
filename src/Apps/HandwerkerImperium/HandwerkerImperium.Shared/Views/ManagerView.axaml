@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.ManagerView"
              x:DataType="vm:ManagerViewModel">
@@ -28,7 +28,7 @@
         <Button Classes="Text"
                 AutomationProperties.AutomationId="Manager_Btn_Back"
                 Command="{Binding GoBackCommand}">
-          <mi:MaterialIcon Kind="ArrowLeft" Width="24" Height="24"
+          <icons:GameIcon Kind="ArrowLeft" Width="24" Height="24"
                            AutomationProperties.AutomationId="Manager_Icon_Back"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
         </Button>
@@ -39,7 +39,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
-          <mi:MaterialIcon Kind="AccountTie" Width="28" Height="28"
+          <icons:GameIcon Kind="AccountTie" Width="28" Height="28"
                            AutomationProperties.AutomationId="Manager_Icon_Title"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{Binding Title}"
@@ -83,13 +83,13 @@
                     </Border.Background>
                     <Grid>
                       <!-- Schloss-Icon fuer gesperrte Manager -->
-                      <mi:MaterialIcon Kind="LockOutline" Width="26" Height="26"
+                      <icons:GameIcon Kind="LockOutline" Width="26" Height="26"
                                        AutomationProperties.AutomationId="Manager_Icon_ItemLock"
                                        Foreground="White" Opacity="0.7"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
                                        IsVisible="{Binding !IsUnlocked}" />
                       <!-- Account-Icon fuer freigeschaltete Manager -->
-                      <mi:MaterialIcon Kind="AccountTie" Width="28" Height="28"
+                      <icons:GameIcon Kind="AccountTie" Width="28" Height="28"
                                        AutomationProperties.AutomationId="Manager_Icon_ItemPerson"
                                        Foreground="White"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -137,8 +137,8 @@
                           Command="{Binding $parent[ItemsControl].((vm:ManagerViewModel)DataContext).UpgradeManagerCommand}"
                           CommandParameter="{Binding Id}">
                     <StackPanel Orientation="Horizontal" Spacing="4">
-                      <mi:MaterialIcon Kind="ArrowUpBold" Width="14" Height="14" />
-                      <mi:MaterialIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="{StaticResource CraftGoldBrush}" />
+                      <icons:GameIcon Kind="ArrowUpBold" Width="14" Height="14" />
+                      <icons:GameIcon Kind="ScrewFlatTop" Width="14" Height="14" Foreground="{StaticResource CraftGoldBrush}" />
                       <TextBlock Text="{Binding UpgradeCostDisplay}" FontSize="12" FontWeight="SemiBold" />
                     </StackPanel>
                   </Button>

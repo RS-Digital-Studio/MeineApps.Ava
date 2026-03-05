@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
              xmlns:models="using:HandwerkerImperium.Models"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              x:Class="HandwerkerImperium.Views.GuildView"
              x:DataType="vm:GuildViewModel">
@@ -31,7 +31,7 @@
                     Orientation="Horizontal"
                     HorizontalAlignment="Center"
                     Spacing="8">
-          <mi:MaterialIcon Kind="AccountGroup" Width="28" Height="28"
+          <icons:GameIcon Kind="AccountGroup" Width="28" Height="28"
                            AutomationProperties.AutomationId="Guild_Icon_Title"
                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
           <TextBlock Text="{Binding Title}"
@@ -70,7 +70,7 @@
         <StackPanel Spacing="8" HorizontalAlignment="Center"
                     IsVisible="{Binding IsLoadingState}"
                     Margin="0,40,0,0">
-          <mi:MaterialIcon Kind="Loading" Width="32" Height="32"
+          <icons:GameIcon Kind="Loading" Width="32" Height="32"
                            Foreground="{StaticResource CraftPrimaryLightBrush}"
                            HorizontalAlignment="Center" />
           <TextBlock Text="{loc:Translate Loading}"
@@ -87,7 +87,7 @@
                     IsVisible="{Binding IsOfflineState}"
                     Margin="0,40,0,0"
                     AutomationProperties.AutomationId="Guild_Panel_Offline">
-          <mi:MaterialIcon Kind="WifiOff" Width="48" Height="48" Opacity="0.5"
+          <icons:GameIcon Kind="WifiOff" Width="48" Height="48" Opacity="0.5"
                            Foreground="{DynamicResource TextSecondaryBrush}"
                            HorizontalAlignment="Center"
                            AutomationProperties.AutomationId="Guild_Icon_Offline" />
@@ -109,7 +109,7 @@
                   Margin="0,8,0,0"
                   AutomationProperties.AutomationId="Guild_Btn_Retry">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="Refresh" Width="16" Height="16" />
+              <icons:GameIcon Kind="Refresh" Width="16" Height="16" />
               <TextBlock Text="{loc:Translate Retry}" FontSize="14" FontWeight="Bold" />
             </StackPanel>
           </Button>
@@ -125,7 +125,7 @@
           <!-- Willkommens-Intro: Erklärt warum Gilde und Spielername -->
           <Border Classes="CardElevated" Padding="16">
             <StackPanel Spacing="10">
-              <mi:MaterialIcon Kind="AccountGroup" Width="44" Height="44"
+              <icons:GameIcon Kind="AccountGroup" Width="44" Height="44"
                                Foreground="{StaticResource CraftPrimaryLightBrush}"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{loc:Translate GuildWelcomeTitle}"
@@ -144,7 +144,7 @@
           <!-- Spielername-Eingabe -->
           <Border Classes="CardElevated" Padding="16">
             <StackPanel Spacing="12">
-              <mi:MaterialIcon Kind="AccountEdit" Width="32" Height="32"
+              <icons:GameIcon Kind="AccountEdit" Width="32" Height="32"
                                Foreground="{StaticResource CraftPrimaryLightBrush}"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{loc:Translate GuildEnterName}"
@@ -183,7 +183,7 @@
                   Command="{Binding ShowCreateDialogCommand}"
                   Padding="16,12" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="Plus" Width="20" Height="20" />
+              <icons:GameIcon Kind="Plus" Width="20" Height="20" />
               <TextBlock Text="{loc:Translate GuildCreate}"
                          FontSize="15" FontWeight="Bold" />
             </StackPanel>
@@ -194,7 +194,7 @@
 
             <!-- Header -->
             <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
-              <mi:MaterialIcon Kind="EmailPlus" Width="20" Height="20"
+              <icons:GameIcon Kind="EmailPlus" Width="20" Height="20"
                                Foreground="{StaticResource CraftPrimaryLightBrush}" />
               <TextBlock Text="{Binding InvitationsHeaderDisplay}"
                          FontSize="15" FontWeight="Bold"
@@ -212,7 +212,7 @@
                       <Border Grid.RowSpan="2" CornerRadius="12" Width="52" Height="52"
                               VerticalAlignment="Center"
                               Background="{Binding GuildColor, Converter={StaticResource ColorBrushConverter}}">
-                        <mi:MaterialIcon Kind="{Binding GuildIcon, Converter={StaticResource IconKindConverter}}"
+                        <icons:GameIcon Kind="{Binding GuildIcon, Converter={StaticResource IconKindConverter}}"
                                          Width="28" Height="28"
                                          Foreground="White"
                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -244,7 +244,7 @@
                                 Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).AcceptInviteCommand}"
                                 CommandParameter="{Binding .}">
                           <StackPanel Orientation="Horizontal" Spacing="4">
-                            <mi:MaterialIcon Kind="Check" Width="16" Height="16" />
+                            <icons:GameIcon Kind="Check" Width="16" Height="16" />
                             <TextBlock Text="{loc:Translate AcceptInvite}"
                                        FontSize="12" FontWeight="Bold" />
                           </StackPanel>
@@ -253,7 +253,7 @@
                                 Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).DeclineInviteCommand}"
                                 CommandParameter="{Binding .}">
                           <StackPanel Orientation="Horizontal" Spacing="4">
-                            <mi:MaterialIcon Kind="Close" Width="16" Height="16" />
+                            <icons:GameIcon Kind="Close" Width="16" Height="16" />
                             <TextBlock Text="{loc:Translate DeclineInvite}"
                                        FontSize="12" />
                           </StackPanel>
@@ -282,7 +282,7 @@
           <StackPanel Spacing="8" HorizontalAlignment="Center"
                       IsVisible="{Binding HasNoGuilds}"
                       Margin="0,20,0,0">
-            <mi:MaterialIcon Kind="AccountGroupOutline" Width="40" Height="40"
+            <icons:GameIcon Kind="AccountGroupOutline" Width="40" Height="40"
                              Foreground="{DynamicResource TextSecondaryBrush}"
                              HorizontalAlignment="Center" />
             <TextBlock Text="{loc:Translate GuildBrowseEmpty}"
@@ -305,7 +305,7 @@
                     <Border CornerRadius="12" Width="52" Height="52"
                             VerticalAlignment="Center"
                             Background="{Binding Color, Converter={StaticResource ColorBrushConverter}}">
-                      <mi:MaterialIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
+                      <icons:GameIcon Kind="{Binding Icon, Converter={StaticResource IconKindConverter}}"
                                        Width="28" Height="28"
                                        Foreground="White"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" />
@@ -367,7 +367,7 @@
             <Border Width="64" Height="64" CornerRadius="16"
                     HorizontalAlignment="Center" Margin="0,4,0,8"
                     Background="{Binding SelectedColor, Converter={StaticResource ColorBrushConverter}}">
-              <mi:MaterialIcon Kind="{Binding SelectedIcon, Converter={StaticResource IconKindConverter}}"
+              <icons:GameIcon Kind="{Binding SelectedIcon, Converter={StaticResource IconKindConverter}}"
                                Width="32" Height="32" Foreground="White"
                                HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
@@ -388,7 +388,7 @@
                           CornerRadius="8"
                           Command="{Binding $parent[ItemsControl].((vm:GuildViewModel)DataContext).SelectIconCommand}"
                           CommandParameter="{Binding .}">
-                    <mi:MaterialIcon Kind="{Binding ., Converter={StaticResource IconKindConverter}}"
+                    <icons:GameIcon Kind="{Binding ., Converter={StaticResource IconKindConverter}}"
                                      Width="24" Height="24"
                                      Foreground="{StaticResource CraftPrimaryLightBrush}" />
                   </Button>
@@ -450,7 +450,7 @@
                   Padding="16"
                   Background="{Binding CurrentGuildColor, Converter={StaticResource ColorBrushConverter}}">
             <StackPanel Spacing="8" HorizontalAlignment="Center">
-              <mi:MaterialIcon Kind="{Binding CurrentGuildIcon, Converter={StaticResource IconKindConverter}}"
+              <icons:GameIcon Kind="{Binding CurrentGuildIcon, Converter={StaticResource IconKindConverter}}"
                                Width="40" Height="40"
                                AutomationProperties.AutomationId="Guild_Icon_CurrentGuild"
                                Foreground="White"
@@ -477,7 +477,7 @@
                   AutomationProperties.AutomationId="Guild_Border_WeeklyGoal">
             <StackPanel Spacing="8">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="FlagCheckered" Width="18" Height="18"
+                <icons:GameIcon Kind="FlagCheckered" Width="18" Height="18"
                                  Foreground="{StaticResource CraftPrimaryLightBrush}" />
                 <TextBlock Text="{loc:Translate WeeklyGoal}"
                            FontSize="16" FontWeight="Bold"
@@ -514,7 +514,7 @@
                       Command="{Binding ContributeCommand}"
                       Margin="0,6,0,0" MinHeight="44" Padding="16,8">
                 <StackPanel Orientation="Horizontal" Spacing="6">
-                  <mi:MaterialIcon Kind="HandCoin" Width="16" Height="16" />
+                  <icons:GameIcon Kind="HandCoin" Width="16" Height="16" />
                   <TextBlock Text="{loc:Translate ContributeToGuild}"
                              FontSize="13" FontWeight="Bold" />
                 </StackPanel>
@@ -529,7 +529,7 @@
             <!-- Krieg -->
             <Border Classes="Card" Padding="8" Margin="0,0,4,8">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="Sword" Width="16" Height="16"
+                <icons:GameIcon Kind="Sword" Width="16" Height="16"
                                  Foreground="#DC2626"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding WarQuickStatus}"
@@ -541,7 +541,7 @@
             <!-- Boss -->
             <Border Classes="Card" Padding="8" Margin="4,0,0,8">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="Skull" Width="16" Height="16"
+                <icons:GameIcon Kind="Skull" Width="16" Height="16"
                                  Foreground="#7C3AED"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding BossQuickStatus}"
@@ -553,7 +553,7 @@
             <!-- Hauptquartier -->
             <Border Classes="Card" Padding="8" Margin="0,0,4,0">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="OfficeBuildingCog" Width="16" Height="16"
+                <icons:GameIcon Kind="OfficeBuildingCog" Width="16" Height="16"
                                  Foreground="#D97706"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding HallQuickStatus}"
@@ -565,7 +565,7 @@
             <!-- Forschung -->
             <Border Classes="Card" Padding="8" Margin="4,0,0,0">
               <StackPanel Spacing="2" HorizontalAlignment="Center">
-                <mi:MaterialIcon Kind="FlaskOutline" Width="16" Height="16"
+                <icons:GameIcon Kind="FlaskOutline" Width="16" Height="16"
                                  Foreground="#EA580C"
                                  HorizontalAlignment="Center" />
                 <TextBlock Text="{Binding ResearchQuickStatus}"
@@ -580,7 +580,7 @@
           <Border Classes="Card" Padding="12" Margin="0,0,0,4"
                   IsVisible="{Binding HasActiveTip}">
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8">
-              <mi:MaterialIcon Kind="LightbulbOnOutline" Width="18" Height="18"
+              <icons:GameIcon Kind="LightbulbOnOutline" Width="18" Height="18"
                                Foreground="{StaticResource CraftGoldBrush}" />
               <TextBlock Grid.Column="1" Text="{Binding ActiveTipText}"
                          FontSize="12" TextWrapping="Wrap"
@@ -588,7 +588,7 @@
                          VerticalAlignment="Center" />
               <Button Grid.Column="2" Classes="Text" Padding="4"
                       Command="{Binding DismissTipCommand}">
-                <mi:MaterialIcon Kind="Close" Width="14" Height="14"
+                <icons:GameIcon Kind="Close" Width="14" Height="14"
                                  Foreground="{DynamicResource TextSecondaryBrush}" />
               </Button>
             </Grid>
@@ -609,7 +609,7 @@
                   <Border.Background>
                     <SolidColorBrush Color="#DC2626" Opacity="0.15" />
                   </Border.Background>
-                  <mi:MaterialIcon Kind="Sword" Width="22" Height="22"
+                  <icons:GameIcon Kind="Sword" Width="22" Height="22"
                                    Foreground="#DC2626"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
@@ -621,7 +621,7 @@
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
-                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  VerticalAlignment="Center" />
               </Grid>
@@ -639,7 +639,7 @@
                   <Border.Background>
                     <SolidColorBrush Color="#7C3AED" Opacity="0.15" />
                   </Border.Background>
-                  <mi:MaterialIcon Kind="Skull" Width="22" Height="22"
+                  <icons:GameIcon Kind="Skull" Width="22" Height="22"
                                    Foreground="#7C3AED"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
@@ -651,7 +651,7 @@
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
-                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  VerticalAlignment="Center" />
               </Grid>
@@ -669,7 +669,7 @@
                   <Border.Background>
                     <SolidColorBrush Color="#D97706" Opacity="0.15" />
                   </Border.Background>
-                  <mi:MaterialIcon Kind="OfficeBuildingCog" Width="22" Height="22"
+                  <icons:GameIcon Kind="OfficeBuildingCog" Width="22" Height="22"
                                    Foreground="#D97706"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
@@ -681,7 +681,7 @@
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
-                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  VerticalAlignment="Center" />
               </Grid>
@@ -699,7 +699,7 @@
                   <Border.Background>
                     <SolidColorBrush Color="{StaticResource CraftGoldColor}" Opacity="0.15" />
                   </Border.Background>
-                  <mi:MaterialIcon Kind="TrophyOutline" Width="22" Height="22"
+                  <icons:GameIcon Kind="TrophyOutline" Width="22" Height="22"
                                    Foreground="{StaticResource CraftGoldBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
@@ -711,7 +711,7 @@
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
-                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  VerticalAlignment="Center" />
               </Grid>
@@ -729,7 +729,7 @@
                   <Border.Background>
                     <SolidColorBrush Color="#EA580C" Opacity="0.15" />
                   </Border.Background>
-                  <mi:MaterialIcon Kind="FlaskOutline" Width="22" Height="22"
+                  <icons:GameIcon Kind="FlaskOutline" Width="22" Height="22"
                                    Foreground="{StaticResource CraftPrimaryBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
@@ -741,7 +741,7 @@
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
-                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  VerticalAlignment="Center" />
               </Grid>
@@ -759,7 +759,7 @@
                   <Border.Background>
                     <SolidColorBrush Color="{StaticResource CraftPrimaryLightColor}" Opacity="0.15" />
                   </Border.Background>
-                  <mi:MaterialIcon Kind="AccountGroup" Width="22" Height="22"
+                  <icons:GameIcon Kind="AccountGroup" Width="22" Height="22"
                                    Foreground="{StaticResource CraftPrimaryLightBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
@@ -771,7 +771,7 @@
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
-                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  VerticalAlignment="Center" />
               </Grid>
@@ -789,7 +789,7 @@
                   <Border.Background>
                     <SolidColorBrush Color="{StaticResource CraftGoldColor}" Opacity="0.15" />
                   </Border.Background>
-                  <mi:MaterialIcon Kind="EmailPlusOutline" Width="22" Height="22"
+                  <icons:GameIcon Kind="EmailPlusOutline" Width="22" Height="22"
                                    Foreground="{StaticResource CraftGoldBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Border>
@@ -801,7 +801,7 @@
                              FontSize="11" TextTrimming="CharacterEllipsis"
                              Foreground="{DynamicResource TextSecondaryBrush}" />
                 </StackPanel>
-                <mi:MaterialIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
+                <icons:GameIcon Grid.Column="2" Kind="ChevronRight" Width="20" Height="20"
                                  Foreground="{DynamicResource TextSecondaryBrush}"
                                  VerticalAlignment="Center" />
               </Grid>
@@ -815,7 +815,7 @@
                   Command="{Binding LeaveGuildCommand}"
                   Margin="0,8,0,0">
             <StackPanel Orientation="Horizontal" Spacing="6">
-              <mi:MaterialIcon Kind="ExitToApp" Width="16" Height="16" />
+              <icons:GameIcon Kind="ExitToApp" Width="16" Height="16" />
               <TextBlock Text="{loc:Translate LeaveGuild}"
                          FontSize="13" />
             </StackPanel>

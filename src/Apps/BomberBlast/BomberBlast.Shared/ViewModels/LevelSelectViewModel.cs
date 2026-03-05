@@ -3,7 +3,7 @@ using Avalonia.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MeineApps.Core.Ava.ViewModels;
-using Material.Icons;
+using BomberBlast.Icons;
 using BomberBlast.Services;
 using MeineApps.Core.Ava.Localization;
 using MeineApps.Core.Premium.Ava.Services;
@@ -56,7 +56,7 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
     private string _boostPowerUpName = "";
 
     [ObservableProperty]
-    private MaterialIconKind _boostPowerUpIcon = MaterialIconKind.Flash;
+    private GameIconKind _boostPowerUpIcon = GameIconKind.Flash;
 
     [ObservableProperty]
     private int _pendingLevel;
@@ -83,18 +83,18 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>Statische Welt-Konfiguration: Icon, Farben, RESX-Key</summary>
-    private static readonly (MaterialIconKind Icon, string Primary, string Dark, string Accent, string NameKey)[] WorldConfigs =
+    private static readonly (GameIconKind Icon, string Primary, string Dark, string Accent, string NameKey)[] WorldConfigs =
     [
-        (MaterialIconKind.PineTree,     "#388E3C", "#1B5E20", "#66BB6A", "WorldForest"),
-        (MaterialIconKind.Factory,      "#546E7A", "#263238", "#90A4AE", "WorldIndustrial"),
-        (MaterialIconKind.DiamondStone, "#6A1B9A", "#311B92", "#AB47BC", "WorldCavern"),
-        (MaterialIconKind.Cloud,        "#0288D1", "#01579B", "#4FC3F7", "WorldSky"),
-        (MaterialIconKind.Fire,         "#C62828", "#7F0000", "#EF5350", "WorldInferno"),
-        (MaterialIconKind.Pillar,       "#8D6E63", "#4E342E", "#BCAAA4", "WorldRuins"),
-        (MaterialIconKind.Waves,        "#0277BD", "#004C8C", "#4FC3F7", "WorldOcean"),
-        (MaterialIconKind.Terrain,      "#D84315", "#BF360C", "#FF7043", "WorldVolcano"),
-        (MaterialIconKind.WeatherSunny, "#FFD600", "#F9A825", "#FFEE58", "WorldSkyFortress"),
-        (MaterialIconKind.Ghost,        "#4A148C", "#1A237E", "#CE93D8", "WorldShadowRealm"),
+        (GameIconKind.PineTree,     "#388E3C", "#1B5E20", "#66BB6A", "WorldForest"),
+        (GameIconKind.Factory,      "#546E7A", "#263238", "#90A4AE", "WorldIndustrial"),
+        (GameIconKind.DiamondStone, "#6A1B9A", "#311B92", "#AB47BC", "WorldCavern"),
+        (GameIconKind.Cloud,        "#0288D1", "#01579B", "#4FC3F7", "WorldSky"),
+        (GameIconKind.Fire,         "#C62828", "#7F0000", "#EF5350", "WorldInferno"),
+        (GameIconKind.Pillar,       "#8D6E63", "#4E342E", "#BCAAA4", "WorldRuins"),
+        (GameIconKind.Waves,        "#0277BD", "#004C8C", "#4FC3F7", "WorldOcean"),
+        (GameIconKind.Terrain,      "#D84315", "#BF360C", "#FF7043", "WorldVolcano"),
+        (GameIconKind.WeatherSunny, "#FFD600", "#F9A825", "#FFEE58", "WorldSkyFortress"),
+        (GameIconKind.Ghost,        "#4A148C", "#1A237E", "#CE93D8", "WorldShadowRealm"),
     ];
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -279,9 +279,9 @@ public sealed partial class LevelSelectViewModel : ViewModelBase, INavigable, IG
     {
         var boosts = new[]
         {
-            ("speed", MaterialIconKind.Flash),
-            ("fire", MaterialIconKind.Fire),
-            ("bombs", MaterialIconKind.Bomb)
+            ("speed", GameIconKind.Flash),
+            ("fire", GameIconKind.Fire),
+            ("bombs", GameIconKind.Bomb)
         };
         var selected = boosts[Random.Shared.Next(boosts.Length)];
         _pendingBoostType = selected.Item1;
@@ -373,7 +373,7 @@ public class WorldGroup
     public Color AccentColor { get; set; }
 
     // Material Icon
-    public MaterialIconKind WorldIcon { get; set; }
+    public GameIconKind WorldIcon { get; set; }
 
     // Level-Items (10 pro Welt)
     public ObservableCollection<LevelDisplayItem> Levels { get; set; } = [];
@@ -382,7 +382,7 @@ public class WorldGroup
     public double SectionOpacity => IsLocked ? 0.4 : 1.0;
     public IBrush HeaderTextBrush => IsLocked ? Brushes.Gray : new SolidColorBrush(AccentColor);
     public IBrush HeaderBackgroundBrush => new SolidColorBrush(DarkColor);
-    public MaterialIconKind LockIcon => IsLocked ? MaterialIconKind.Lock : WorldIcon;
+    public GameIconKind LockIcon => IsLocked ? GameIconKind.Lock : WorldIcon;
     public string ProgressText => $"\u2605 {StarsEarned}/{MaxStars}";
 }
 

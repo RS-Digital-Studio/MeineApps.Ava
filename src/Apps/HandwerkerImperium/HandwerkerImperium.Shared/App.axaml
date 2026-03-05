@@ -1,7 +1,7 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:HandwerkerImperium"
-             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:converters="using:MeineApps.Core.Ava.Converters"
              xmlns:localConverters="using:HandwerkerImperium.Converters"
              xmlns:core="using:MeineApps.Core.Ava"
@@ -91,8 +91,8 @@
         TrueBrush="{StaticResource CraftPrimaryLightBrush}"
         FalseBrush="#94A3B8" />
 
-    <!-- Converter: String → MaterialIconKind (für Icon-Bindings in Shop, BattlePass, etc.) -->
-    <localConverters:StringToMaterialIconKindConverter x:Key="IconKindConverter" />
+    <!-- Converter: String → GameIconKind (fuer Icon-Bindings in Shop, BattlePass, etc.) -->
+    <localConverters:StringToGameIconKindConverter x:Key="IconKindConverter" />
 
     <!-- Converter: Hex-String → SolidColorBrush (für Gilden-Farben) -->
     <converters:StringToColorBrushConverter x:Key="ColorBrushConverter" />
@@ -101,9 +101,6 @@
   <Application.Styles>
     <!-- Avalonia Fluent Theme as base -->
     <FluentTheme />
-
-    <!-- Material Icons -->
-    <materialIcons:MaterialIconStyles />
 
     <!-- Core Theme Colors (design tokens) -->
     <StyleInclude Source="avares://MeineApps.Core.Ava/Themes/ThemeColors.axaml" />

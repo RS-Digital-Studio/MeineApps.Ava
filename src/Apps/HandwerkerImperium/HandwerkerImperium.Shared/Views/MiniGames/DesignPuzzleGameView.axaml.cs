@@ -6,7 +6,7 @@ using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.ViewModels.MiniGames;
-using Material.Icons.Avalonia;
+using HandwerkerImperium.Icons;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Views.MiniGames;
@@ -257,9 +257,9 @@ public partial class DesignPuzzleGameView : UserControl
                 }
 
                 // 2. Sterne staggered einblenden
-                var star1 = this.FindControl<MaterialIcon>("Star1Panel");
-                var star2 = this.FindControl<MaterialIcon>("Star2Panel");
-                var star3 = this.FindControl<MaterialIcon>("Star3Panel");
+                var star1 = this.FindControl<GameIcon>("Star1Panel");
+                var star2 = this.FindControl<GameIcon>("Star2Panel");
+                var star3 = this.FindControl<GameIcon>("Star3Panel");
                 if (star1 != null && star2 != null && star3 != null)
                 {
                     await MiniGameEffectHelper.ShowStarsStaggeredAsync(star1, star2, star3, starCount);

@@ -73,7 +73,7 @@ public class GuildBuildingDefinition
     /// <summary>Lokalisierungs-Key für den Effekt (mit {0} Platzhalter für den Wert).</summary>
     public string EffectKey { get; init; } = "";
 
-    /// <summary>Material.Icons-Name.</summary>
+    /// <summary>GameIconKind-Name.</summary>
     public string Icon { get; init; } = "";
 
     /// <summary>Effekt-Wert pro Level (z.B. 0.02 = +2% pro Level).</summary>
@@ -291,7 +291,7 @@ public class GuildBuildingDisplay
     /// <summary>Kosten für das nächste Upgrade (null wenn Max-Level erreicht).</summary>
     public GuildBuildingCost? NextUpgradeCost { get; set; }
 
-    /// <summary>Material.Icons-Name.</summary>
+    /// <summary>GameIconKind-Name.</summary>
     public string Icon { get; set; } = "";
 
     /// <summary>Farbe für UI-Darstellung.</summary>

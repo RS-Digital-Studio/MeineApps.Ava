@@ -43,7 +43,7 @@ public class GuildAchievementDefinition
     /// <summary>Lokalisierungs-Key für die Beschreibung.</summary>
     public string DescKey { get; init; } = "";
 
-    /// <summary>Material.Icons-Name.</summary>
+    /// <summary>GameIconKind-Name.</summary>
     public string Icon { get; init; } = "";
 
     /// <summary>Kategorie des Achievements.</summary>
@@ -386,7 +386,7 @@ public class GuildAchievementDisplay
     /// <summary>Kosmetik-Belohnung (leer wenn keine).</summary>
     public string CosmeticReward { get; set; } = "";
 
-    /// <summary>Material.Icons-Name.</summary>
+    /// <summary>GameIconKind-Name.</summary>
     public string Icon { get; set; } = "";
 
     /// <summary>Fortschritt in Prozent (0.0 - 1.0).</summary>

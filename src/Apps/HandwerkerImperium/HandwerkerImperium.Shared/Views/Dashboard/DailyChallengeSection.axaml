@@ -1,7 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:HandwerkerImperium.ViewModels"
-             xmlns:mi="using:Material.Icons.Avalonia"
+             xmlns:icons="using:HandwerkerImperium.Icons"
              xmlns:loc="using:MeineApps.Core.Ava.Localization"
              xmlns:models="using:HandwerkerImperium.Models"
              xmlns:skia="using:Avalonia.Labs.Controls"
@@ -12,7 +12,7 @@
                 AutomationProperties.AutomationId="Dashboard_Border_DailyChallenges">
           <StackPanel Spacing="8">
             <Grid ColumnDefinitions="Auto,*,Auto">
-              <mi:MaterialIcon Kind="CalendarCheck" Width="20" Height="20"
+              <icons:GameIcon Kind="CalendarCheck" Width="20" Height="20"
                                Foreground="{StaticResource CraftPrimaryBrush}"
                                AutomationProperties.AutomationId="Dashboard_Icon_DailyChallenges" />
               <TextBlock Grid.Column="1" Text="{loc:Translate DailyChallenges}"
@@ -22,7 +22,7 @@
               <Button Grid.Column="2" Classes="Text" Padding="4"
                       Command="{Binding ToggleChallengesExpandedCommand}"
                       AutomationProperties.AutomationId="Dashboard_Btn_ToggleChallenges">
-                <mi:MaterialIcon Kind="{Binding ChallengesExpandIconKind}" Width="20" Height="20" />
+                <icons:GameIcon Kind="{Binding ChallengesExpandIconKind}" Width="20" Height="20" />
               </Button>
             </Grid>
             <ItemsControl ItemsSource="{Binding DailyChallenges}"
@@ -54,7 +54,7 @@
                           <StackPanel Orientation="Horizontal" Spacing="2"
                                       IsVisible="{Binding HasGoldenScrewReward}">
                             <TextBlock Text="+" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                            <mi:MaterialIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
+                            <icons:GameIcon Kind="ScrewFlatTop" Width="16" Height="16" Foreground="{StaticResource CraftGoldBrush}" />
                             <TextBlock Text="{Binding GoldenScrewReward}" FontSize="12" Foreground="{StaticResource CraftGoldBrush}"
                                        AutomationProperties.AutomationId="Dashboard_Txt_ChallengeRewardGS" />
                           </StackPanel>
@@ -67,7 +67,7 @@
                                 CommandParameter="{Binding .}"
                                 AutomationProperties.AutomationId="Dashboard_Btn_ClaimChallengeReward">
                           <StackPanel Orientation="Horizontal" Spacing="4">
-                            <mi:MaterialIcon Kind="Gift" Width="16" Height="16" Foreground="White" />
+                            <icons:GameIcon Kind="Gift" Width="16" Height="16" Foreground="White" />
                             <TextBlock Text="{loc:Translate Claim}" FontSize="12" FontWeight="Bold" Foreground="White" />
                           </StackPanel>
                         </Button>
@@ -77,7 +77,7 @@
                                 Command="{Binding $parent[ItemsControl].((vm:MainViewModel)DataContext).RetryChallengeWithAdCommand}"
                                 CommandParameter="{Binding .}"
                                 AutomationProperties.AutomationId="Dashboard_Btn_ChallengeRetryAd">
-                          <mi:MaterialIcon Kind="Video" Width="16" Height="16"
+                          <icons:GameIcon Kind="Video" Width="16" Height="16"
                                            Foreground="{StaticResource CraftPrimaryLightBrush}" />
                         </Button>
                       </StackPanel>
@@ -101,7 +101,7 @@
                     Command="{Binding ClaimAllChallengesBonusCommand}"
                     AutomationProperties.AutomationId="Dashboard_Btn_ClaimAllChallenges">
               <StackPanel Orientation="Horizontal" Spacing="8">
-                <mi:MaterialIcon Kind="Gift" Width="16" Height="16"
+                <icons:GameIcon Kind="Gift" Width="16" Height="16"
                                  AutomationProperties.AutomationId="Dashboard_Icon_ClaimAllChallenges" />
                 <TextBlock Text="{loc:Translate AllChallengesBonus}" FontSize="13"
                            AutomationProperties.AutomationId="Dashboard_Txt_ClaimAllChallenges" />

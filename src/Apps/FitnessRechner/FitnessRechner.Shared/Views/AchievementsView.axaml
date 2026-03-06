@@ -12,13 +12,13 @@
     <conv:LocalizeKeyConverter x:Key="LocalizeKey" />
   </UserControl.Resources>
 
-  <!-- Navy Deep Hintergrund (Medical-Style) -->
+  <!-- Teal Deep Hintergrund (Medical-Style) -->
   <Grid AutomationProperties.AutomationId="Achievements_RootPanel" RowDefinitions="Auto,*"
-        Background="#0A1A2E">
+        Background="#142832">
 
     <!-- Header (Medical-Style mit Cyan-Akzenten) -->
     <Border AutomationProperties.AutomationId="Achievements_Header" Grid.Row="0" Padding="16,12"
-            Background="#0F1D32"
+            Background="#1E3844"
             BorderBrush="#4D06B6D4" BorderThickness="0,0,0,1">
       <Grid ColumnDefinitions="Auto,*,Auto">
         <!-- Zurück-Button Cyan -->
@@ -59,7 +59,7 @@
           <DataTemplate DataType="models:FitnessAchievement" x:DataType="models:FitnessAchievement">
             <!-- Achievement-Card: Medical Surface mit Cyan-Rand -->
             <Border Width="170" Margin="4" Padding="12" CornerRadius="12"
-                    Background="#D90F1D32"
+                    Background="#D91E3844"
                     BoxShadow="{DynamicResource CardShadow}">
               <Border.BorderBrush>
                 <!-- Feature-Gradient Cyan→Teal für Unlocked-Cards -->

@@ -1,5 +1,5 @@
 using Avalonia.Controls;
-using Avalonia.Media;
+using Avalonia.Media.Transformation;
 using RechnerPlus.ViewModels;
 
 namespace RechnerPlus.Views;
@@ -14,15 +14,14 @@ public partial class ConverterView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
 
-        // Swap-Rotation bei Button-Klick
+        // Swap-Rotation bei Button-Klick (TransformOperations fuer animierte Transition)
         var swapButton = this.FindControl<Button>("SwapButton");
         if (swapButton != null)
         {
             swapButton.Click += (_, _) =>
             {
                 _swapRotation += 180;
-                if (swapButton.RenderTransform is RotateTransform rt)
-                    rt.Angle = _swapRotation;
+                swapButton.RenderTransform = TransformOperations.Parse($"rotate({_swapRotation}deg)");
             };
         }
     }

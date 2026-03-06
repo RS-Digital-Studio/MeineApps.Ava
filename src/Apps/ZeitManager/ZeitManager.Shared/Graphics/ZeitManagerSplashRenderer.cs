@@ -11,12 +11,12 @@ namespace ZeitManager.Graphics;
 /// </summary>
 public sealed class ZeitManagerSplashRenderer : SplashRendererBase
 {
-    // --- Farb-Konstanten ---
-    private static readonly SKColor BgTop = SKColor.Parse("#0D1B2A");
-    private static readonly SKColor BgBottom = SKColor.Parse("#081420");
+    // --- Farb-Konstanten (passend zur Schokobraun-Palette) ---
+    private static readonly SKColor BgTop = SKColor.Parse("#382C22");
+    private static readonly SKColor BgBottom = SKColor.Parse("#1A1410");
     private static readonly SKColor SecondHandColor = SKColor.Parse("#EF4444");
-    private static readonly SKColor ProgressStart = SKColor.Parse("#6366F1");
-    private static readonly SKColor ProgressEnd = SKColor.Parse("#818CF8");
+    private static readonly SKColor ProgressStart = SKColor.Parse("#F7A833");
+    private static readonly SKColor ProgressEnd = SKColor.Parse("#FFBD55");
 
     // --- Zahnrad-Partikel ---
     private const int MaxGears = 12;

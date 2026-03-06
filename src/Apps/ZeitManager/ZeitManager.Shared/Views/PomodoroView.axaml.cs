@@ -24,6 +24,7 @@ public partial class PomodoroView : UserControl
     // SkiaSharp Animation (Pomodoro-Ring Puls)
     private DispatcherTimer? _animTimer;
     private float _animTime;
+    private readonly System.Diagnostics.Stopwatch _animStopwatch = System.Diagnostics.Stopwatch.StartNew();
 
     // Balken-Einfahranimation
     private DispatcherTimer? _barAnimTimer;
@@ -108,10 +109,11 @@ public partial class PomodoroView : UserControl
     {
         if (isRunning && _animTimer == null)
         {
-            _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+            _animStopwatch.Restart();
+            _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
             _animTimer.Tick += (_, _) =>
             {
-                _animTime += 0.033f;
+                _animTime = (float)_animStopwatch.Elapsed.TotalSeconds;
                 PomodoroRingCanvas?.InvalidateSurface();
             };
             _animTimer.Start();

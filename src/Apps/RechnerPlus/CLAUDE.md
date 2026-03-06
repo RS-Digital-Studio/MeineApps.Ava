@@ -238,7 +238,7 @@ baseValue = value * ToBase + Offset
 
 ### Animierter Hintergrund (05.03.2026)
 - "Digital Circuit Board"-Effekt in MainView (SKCanvasView, Grid.RowSpan=2, IsHitTestVisible=False)
-- 4 Layer: 3-Farben Gradient (#263248→#1B2438→#242050), Dot-Grid (32px Spacing, Drift 2px/s), Math-Partikel (15 Stueck, Indigo Alpha 8%), radiale Vignette
+- 4 Layer: 3-Farben Gradient (#302A56→#221E40→#2C1850), Dot-Grid (32px Spacing, Drift 2px/s), Math-Partikel (15 Stueck, Indigo Alpha 8%), radiale Vignette
 - DispatcherTimer 200ms (~5fps), Update+InvalidateSurface pro Tick
 - Gecachte Paints, Shader-Cache (nur bei Groessenaenderung), SKFont gecacht (Size-Setter pro Partikel)
 - Start in OnAttachedToVisualTree, Stop+Dispose in OnDetachedFromVisualTree

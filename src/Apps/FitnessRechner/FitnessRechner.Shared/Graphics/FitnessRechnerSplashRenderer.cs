@@ -38,11 +38,11 @@ public sealed class FitnessRechnerSplashRenderer : SplashRendererBase
     private float _bgCircleScale = 1f;
 
     // --- Farben ---
-    private static readonly SKColor ColorBgTop = new(0x0A, 0x1A, 0x1F);
-    private static readonly SKColor ColorBgBottom = new(0x05, 0x10, 0x15);
+    private static readonly SKColor ColorBgTop = new(0x14, 0x28, 0x32);     // #142832 (BgDeep)
+    private static readonly SKColor ColorBgBottom = new(0x06, 0x10, 0x18);  // #061018 (BgDarkest)
     private static readonly SKColor ColorCyan = new(0x06, 0xB6, 0xD4);
     private static readonly SKColor ColorGreen = new(0x22, 0xC5, 0x5E);
-    private static readonly SKColor ColorProgressBg = new(0x0A, 0x1A, 0x1F);
+    private static readonly SKColor ColorProgressBg = new(0x14, 0x28, 0x32); // #142832 (BgDeep)
 
     // --- Gecachte Paints ---
     private readonly SKPaint _bgPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };

@@ -13,6 +13,7 @@ public partial class TimerView : UserControl
 {
     private DispatcherTimer? _renderTimer;
     private float _animTime;
+    private readonly System.Diagnostics.Stopwatch _animStopwatch = new();
 
     // ViewModel-Referenz für saubere Event-Abmeldung
     private TimerViewModel? _viewModel;
@@ -85,12 +86,13 @@ public partial class TimerView : UserControl
 
         // Partikel-State zurücksetzen (statische Felder überleben Timer-Wechsel)
         TimerVisualization.Reset();
-        _animTime = 0f;
+        _animStopwatch.Restart();
 
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) =>
         {
-            _animTime += 0.033f;
+            // Frame-Rate-unabhängig: echte Zeit statt hardcodiertem Inkrement
+            _animTime = (float)_animStopwatch.Elapsed.TotalSeconds;
             TimerVisCanvas?.InvalidateSurface();
         };
         _renderTimer.Start();

@@ -30,9 +30,9 @@ public sealed class CalculatorBackgroundRenderer : IDisposable
     private float _cachedW, _cachedH;
 
     // Farben aus AppPalette (GradientStart/Mid/End + Primary Indigo)
-    private static readonly SKColor GradientTop = SKColor.Parse("#263248");
-    private static readonly SKColor GradientMid = SKColor.Parse("#1B2438");
-    private static readonly SKColor GradientBot = SKColor.Parse("#242050");
+    private static readonly SKColor GradientTop = SKColor.Parse("#302A56");
+    private static readonly SKColor GradientMid = SKColor.Parse("#221E40");
+    private static readonly SKColor GradientBot = SKColor.Parse("#2C1850");
     private static readonly SKColor DotColor = new(124, 127, 247, 10);   // Indigo, Alpha ~4%
     private static readonly SKColor ParticleColor = new(124, 127, 247, 20); // Indigo, Alpha ~8%
 

@@ -13,6 +13,7 @@ public partial class StopwatchView : UserControl
 {
     private DispatcherTimer? _animTimer;
     private float _animTime;
+    private readonly System.Diagnostics.Stopwatch _animStopwatch = System.Diagnostics.Stopwatch.StartNew();
 
     // ViewModel-Referenz für saubere Event-Abmeldung
     private StopwatchViewModel? _viewModel;
@@ -57,10 +58,11 @@ public partial class StopwatchView : UserControl
     {
         if (isRunning && _animTimer == null)
         {
-            _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) };
+            _animStopwatch.Restart();
+            _animTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
             _animTimer.Tick += (_, _) =>
             {
-                _animTime += 0.033f;
+                _animTime = (float)_animStopwatch.Elapsed.TotalSeconds;
                 StopwatchCanvas?.InvalidateSurface();
             };
             _animTimer.Start();

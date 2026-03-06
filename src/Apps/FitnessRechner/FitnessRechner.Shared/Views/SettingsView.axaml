@@ -12,7 +12,7 @@
   <UserControl.Styles>
     <!-- SettingsCard-Override: Medical Surface mit Cyan-Rand -->
     <Style Selector="Border.SettingsCard">
-      <Setter Property="Background" Value="#D90F1D32" />
+      <Setter Property="Background" Value="#D91E3844" />
       <Setter Property="BorderBrush" Value="#1A06B6D4" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="12" />

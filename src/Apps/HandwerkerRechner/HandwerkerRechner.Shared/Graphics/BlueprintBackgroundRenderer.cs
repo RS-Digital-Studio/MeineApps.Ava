@@ -18,9 +18,9 @@ public sealed class BlueprintBackgroundRenderer : IDisposable
     // Farben (aus AppPalette + Konzept)
     // =====================================================================
 
-    private static readonly SKColor GradientTop = SKColor.Parse("#152038");
-    private static readonly SKColor GradientMid = SKColor.Parse("#152035");
-    private static readonly SKColor GradientBot = SKColor.Parse("#182848");
+    private static readonly SKColor GradientTop = SKColor.Parse("#223656");
+    private static readonly SKColor GradientMid = SKColor.Parse("#182640");
+    private static readonly SKColor GradientBot = SKColor.Parse("#141E48");
 
     // Grid-Linien
     private static readonly SKColor GridColorFine = new(255, 255, 255, 7);   // Weiss Alpha ~3%

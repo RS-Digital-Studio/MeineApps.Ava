@@ -16,13 +16,13 @@ public sealed class RechnerPlusSplashRenderer : SplashRendererBase
         _titleFont = new SKFont(_titleTypeface) { Size = 28f };
     }
 
-    // --- Farb-Konstanten ---
-    private static readonly SKColor BgTop = SKColor.Parse("#0A0E27");
-    private static readonly SKColor BgBottom = SKColor.Parse("#050816");
-    private static readonly SKColor GlowColor = SKColor.Parse("#6366F1");
-    private static readonly SKColor KeyDark = SKColor.Parse("#1A1E3A");
-    private static readonly SKColor ProgressStart = SKColor.Parse("#6366F1");
-    private static readonly SKColor ProgressEnd = SKColor.Parse("#818CF8");
+    // --- Farb-Konstanten (passend zur Violet-Palette) ---
+    private static readonly SKColor BgTop = SKColor.Parse("#302A56");
+    private static readonly SKColor BgBottom = SKColor.Parse("#1A1430");
+    private static readonly SKColor GlowColor = SKColor.Parse("#7C7FF7");
+    private static readonly SKColor KeyDark = SKColor.Parse("#3E3870");
+    private static readonly SKColor ProgressStart = SKColor.Parse("#7C7FF7");
+    private static readonly SKColor ProgressEnd = SKColor.Parse("#9598FA");
 
     // --- Tasten-Layout (4x4) ---
     private static readonly string[] KeyLabels =

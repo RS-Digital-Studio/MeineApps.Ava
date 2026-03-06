@@ -20,8 +20,8 @@ public sealed class FinanzRechnerSplashRenderer : SplashRendererBase
     private static readonly float[] CoinThresholds = { 0.10f, 0.25f, 0.40f, 0.60f, 0.80f };
 
     // --- Farben ---
-    private static readonly SKColor ColorBgTop = new(0x0A, 0x1F, 0x0A);
-    private static readonly SKColor ColorBgBottom = new(0x04, 0x0D, 0x04);
+    private static readonly SKColor ColorBgTop = new(0x14, 0x2A, 0x14);
+    private static readonly SKColor ColorBgBottom = new(0x0A, 0x18, 0x0A);
     private static readonly SKColor ColorChartLine = new(0x22, 0xC5, 0x5E);
     private static readonly SKColor ColorChartFillTop = new(0x22, 0xC5, 0x5E, 0x28);
     private static readonly SKColor ColorChartFillBottom = new(0x22, 0xC5, 0x5E, 0x00);
@@ -29,7 +29,7 @@ public sealed class FinanzRechnerSplashRenderer : SplashRendererBase
     private static readonly SKColor ColorGoldDark = new(0xB8, 0x86, 0x0B);
     private static readonly SKColor ColorGlowGreen = new(0x22, 0xC5, 0x5E, 0x60);
     private static readonly SKColor ColorGridLine = new(0xFF, 0xFF, 0xFF, 0x08);
-    private static readonly SKColor ColorProgressBg = new(0x1A, 0x2A, 0x1A);
+    private static readonly SKColor ColorProgressBg = new(0x22, 0x3A, 0x22);
 
     // --- Gecachte Paints ---
     private readonly SKPaint _bgPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };

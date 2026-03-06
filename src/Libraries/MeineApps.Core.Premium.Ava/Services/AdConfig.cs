@@ -105,6 +105,20 @@ public static class AdConfig
         public const string RewardedOfflineDouble = "ca-app-pub-2588160251469436/5018911702";
     }
 
+    public static class RebornSaga
+    {
+        // TODO: Echte IDs erstellen wenn App im AdMob-Dashboard registriert ist
+        public const string AppId = ""; // ca-app-pub-2588160251469436~XXXXXXXXXX
+        public const string BannerAdUnitId = ""; // ca-app-pub-2588160251469436/XXXXXXXXXX
+        // Rewarded Ad Placements (6 Stück)
+        public const string RewardedGoldBonus = ""; // +500 Gold
+        public const string RewardedTimeRift = ""; // Bonus-Dungeon Zugang
+        public const string RewardedBonusExp = ""; // 2x EXP für nächsten Kampf
+        public const string RewardedRevive = ""; // Wiederbelebung im Kampf
+        public const string RewardedDailyProphecy = ""; // Tägliche Vorhersage (Bonus-Items)
+        public const string RewardedKodexHint = ""; // Kodex-Eintrag-Hinweis
+    }
+
     /// <summary>Banner Ad-Unit-ID je nach Build-Konfiguration</summary>
     public static string GetBannerAdUnitId(string appName)
     {
@@ -119,6 +133,7 @@ public static class AdConfig
             "WorkTimePro" => WorkTimePro.BannerAdUnitId,
             "BomberBlast" => BomberBlast.BannerAdUnitId,
             "HandwerkerImperium" => HandwerkerImperium.BannerAdUnitId,
+            "RebornSaga" => RebornSaga.BannerAdUnitId,
             _ => Test.BannerAdUnitId
         };
 #endif
@@ -191,6 +206,15 @@ public static class AdConfig
             ("HandwerkerImperium", "achievement_boost") => HandwerkerImperium.RewardedAchievementBoost,
             ("HandwerkerImperium", "offline_double") => HandwerkerImperium.RewardedOfflineDouble,
             ("HandwerkerImperium", _) => HandwerkerImperium.RewardedGoldenScrews,
+
+            // RebornSaga
+            ("RebornSaga", "gold_bonus") => RebornSaga.RewardedGoldBonus,
+            ("RebornSaga", "time_rift") => RebornSaga.RewardedTimeRift,
+            ("RebornSaga", "bonus_exp") => RebornSaga.RewardedBonusExp,
+            ("RebornSaga", "revive") => RebornSaga.RewardedRevive,
+            ("RebornSaga", "daily_prophecy") => RebornSaga.RewardedDailyProphecy,
+            ("RebornSaga", "kodex_hint") => RebornSaga.RewardedKodexHint,
+            ("RebornSaga", _) => RebornSaga.RewardedGoldBonus,
 
             _ => ""
         };

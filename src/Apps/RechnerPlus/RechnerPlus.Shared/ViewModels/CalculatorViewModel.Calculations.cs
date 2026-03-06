@@ -45,6 +45,7 @@ public sealed partial class CalculatorViewModel
     private void InputOperator(string op)
     {
         if (HasError) return;
+        if (Expression.Length + Display.Length >= MaxExpressionLength) return;
         SaveState();
 
         // Wenn noch keine neue Zahl eingegeben wurde (z.B. direkt nach anderem Operator oder ")")
@@ -88,6 +89,7 @@ public sealed partial class CalculatorViewModel
     [RelayCommand]
     private void InputDecimal()
     {
+        if (Expression.Length + Display.Length >= MaxExpressionLength) return;
         var decStr = _decimalSep.ToString();
 
         // Implizite Multiplikation nach ")" (z.B. "(5+3).5" → "(5+3) × 0.5")
@@ -128,6 +130,7 @@ public sealed partial class CalculatorViewModel
     [RelayCommand]
     private void InputParenthesis(string paren)
     {
+        if (Expression.Length + Display.Length >= MaxExpressionLength) return;
         if (paren == "(")
         {
             if (_isNewCalculation || Display == "0")

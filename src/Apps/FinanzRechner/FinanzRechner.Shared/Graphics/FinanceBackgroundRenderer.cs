@@ -17,16 +17,16 @@ public sealed class FinanceBackgroundRenderer : IDisposable
     // Farb-Konstanten (Smaragd-Palette)
     // =====================================================================
 
-    // Gradient-Farben
-    private static readonly SKColor GradientTop = new(0x16, 0x28, 0x20);    // #162820
-    private static readonly SKColor GradientMid = new(0x18, 0x20, 0x30);    // #182030
-    private static readonly SKColor GradientBot = new(0x10, 0x28, 0x20);    // #102820
+    // Gradient-Farben (Smaragd-Palette passend zu AppPalette)
+    private static readonly SKColor GradientTop = new(0x22, 0x3A, 0x32);    // #223A32
+    private static readonly SKColor GradientMid = new(0x18, 0x2A, 0x24);    // #182A24
+    private static readonly SKColor GradientBot = new(0x0E, 0x24, 0x18);    // #0E2418
 
     // Akzent-Farbe (Smaragd)
     private static readonly SKColor Emerald = new(0x10, 0xB9, 0x81);        // #10B981
 
     // Vignette-Basis (dunkelster Gradient)
-    private static readonly SKColor VignetteDark = new(0x0A, 0x18, 0x14);   // Dunkler als GradientBot
+    private static readonly SKColor VignetteDark = new(0x0A, 0x18, 0x12);   // Dunkler als GradientBot
 
     // =====================================================================
     // Partikel-Typen und -Pool

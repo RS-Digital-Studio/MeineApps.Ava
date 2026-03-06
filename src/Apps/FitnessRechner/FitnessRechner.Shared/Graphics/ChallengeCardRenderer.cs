@@ -6,7 +6,7 @@ namespace FitnessRechner.Graphics;
 /// <summary>
 /// Rendert die Daily Challenge Card im VitalOS Medical-Design.
 /// "DAILY MISSION" Briefing-Style mit animierter Progress-Bar.
-/// Static Class - wird im 20fps Render-Loop aufgerufen.
+/// Static Class - wird im 30fps Render-Loop aufgerufen.
 /// </summary>
 public static class ChallengeCardRenderer
 {
@@ -291,7 +291,7 @@ public static class ChallengeCardRenderer
         {
             IsAntialias = true,
             Style = SKPaintStyle.Fill,
-            Color = MedicalColors.NavyDark.WithAlpha(180)
+            Color = MedicalColors.BgDark.WithAlpha(180)
         };
         canvas.DrawRoundRect(bgRect, ProgressBarCornerRadius, ProgressBarCornerRadius, bgPaint);
 

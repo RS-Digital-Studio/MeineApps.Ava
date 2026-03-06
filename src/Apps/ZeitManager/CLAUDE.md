@@ -75,7 +75,7 @@ ZeitManager.Android/Services/
 
 | Datei | Beschreibung | Genutzt in |
 |-------|-------------|------------|
-| `ClockworkBackgroundRenderer.cs` | Animierter "Warm Clockwork"-Hintergrund (5 Layer): 3-Farben-Gradient (#282018/#1A2332/#28200E), konzentrische pulsierende Uhrenringe (Alpha 8-10), driftende Gluehwuermchen-Partikel (Amber, Alpha 15-20, Glow via MaskFilter), 60 Tick-Markierungen, radiale Vignette. Struct-Pool (max 12), gecachte Paints/Shader, ~5fps DispatcherTimer | MainView |
+| `ClockworkBackgroundRenderer.cs` | Animierter "Warm Clockwork"-Hintergrund (5 Layer): 3-Farben-Gradient (#382C22/#2A2018/#301A10), konzentrische pulsierende Uhrenringe (Alpha 8-10), driftende Gluehwuermchen-Partikel (Amber, Alpha 15-20, Glow via MaskFilter), 60 Tick-Markierungen, radiale Vignette. Struct-Pool (max 12), gecachte Paints/Shader, ~5fps DispatcherTimer | MainView |
 | `StopwatchVisualization.cs` | Stoppuhr-Ring mit Sekundenzeiger + Nachleucht-Trail (6 Ghost-Positionen), Runden-Sektoren (farbige Bögen pro Runde, 8 Farben), Sub-Dial (Minuten-Ring oben rechts), 60 Sekunden-Ticks, Glow, Rundenpunkte | StopwatchView |
 | `PomodoroVisualization.cs` | RenderRing: Fortschrittsring mit Pulsier-Effekt (2Hz) auf aktivem Zyklus-Segment + Glow, innerer Session-Ring (Tages-Fortschritt als Segment-Bögen); RenderWeeklyBars: Wochen-Balkendiagramm | PomodoroView |
 | `TimerVisualization.cs` | Timer-Ring mit Flüssigkeits-Füllung + Welleneffekt, Tropfen-Partikel (8 Stück, fallen von Oberfläche), Countdown-Ziffern (letzte 5s, Scale-Bounce 1.5→1.0), Ablauf-Burst (20 Confetti-Partikel bei Timer=0) | TimerView (Reserve) |

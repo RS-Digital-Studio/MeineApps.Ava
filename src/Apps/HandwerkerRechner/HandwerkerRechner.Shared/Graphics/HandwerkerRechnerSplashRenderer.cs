@@ -17,8 +17,8 @@ public sealed class HandwerkerRechnerSplashRenderer : SplashRendererBase
     }
 
     // --- Farb-Konstanten ---
-    private static readonly SKColor BgTop = SKColor.Parse("#1C140E");
-    private static readonly SKColor BgBottom = SKColor.Parse("#0D0A07");
+    private static readonly SKColor BgTop = SKColor.Parse("#2A2018");
+    private static readonly SKColor BgBottom = SKColor.Parse("#16100A");
     private static readonly SKColor GrainColor = new(0x3A, 0x2A, 0x1A, 77); // Alpha ~30%
     private static readonly SKColor TapeBandColor = SKColor.Parse("#FFC107");
     private static readonly SKColor TapeHousingColor = SKColor.Parse("#D4A017");

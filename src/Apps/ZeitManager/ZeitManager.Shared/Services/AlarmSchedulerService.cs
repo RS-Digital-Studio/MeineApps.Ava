@@ -324,11 +324,6 @@ public sealed class AlarmSchedulerService : IAlarmSchedulerService, IDisposable
         if (now.Hour != alarmTime.Hour || now.Minute != alarmTime.Minute)
             return false;
 
-        // Innerhalb der gesamten Minute auslösen (Timer-Intervall ist 60s)
-        // Double-Trigger-Schutz in OnCheckTimerTick verhindert Mehrfach-Auslösung
-        if (now.Second > 59)
-            return false;
-
         // Wochentag pruefen
         if (alarm.IsRepeating)
         {

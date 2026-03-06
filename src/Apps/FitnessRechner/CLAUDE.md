@@ -114,7 +114,7 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 
 **Farbpalette:** `MedicalColors.cs` - zentrale Farbkonstanten
 - Primär: Cyan `#06B6D4`, Teal `#14B8A6`, Electric Blue `#3B82F6`
-- Hintergrund: Navy Deep `#0A1A2E` → Navy Dark `#051020`, Surface `#0F1D32`
+- Hintergrund: Teal Deep `#142832` → Teal Dark `#0A1824`, Surface `#1E3844`
 - Feature: Weight=Lila `#8B5CF6`, BMI=Blau `#3B82F6`, Wasser=Grün `#22C55E`, Kalorien=Amber `#F59E0B`
 - EKG-Wellenform: 24-Punkt Array (P-Welle + QRS-Komplex + T-Welle + Baseline)
 - Herzschlag: 72 BPM (1.2 Beats/Sekunde)
@@ -135,7 +135,7 @@ Fitness-App mit 5 Rechnern (BMI, Kalorien, Wasser, Idealgewicht, Koerperfett), T
 | `CalculatorHeaderRenderer.cs` | Static | Medical Header für alle 5 Rechner (Feature-Gradient + Grid + EKG) |
 
 **Render-Loop:**
-- MainView: DispatcherTimer 50ms (20fps), `_backgroundRenderer` + `_tabBarRenderer`
+- MainView: DispatcherTimer 33ms (30fps), `_backgroundRenderer` + `_tabBarRenderer`
 - HomeView: `OnRenderTick(float)` von MainView aufgerufen → invalidiert VitalSigns, QuickButtons, Level, Challenge, Streak
 - Calculator-Views: Kein Render-Loop (time=0f → statischer Snapshot, Animationen vorbereitet)
 

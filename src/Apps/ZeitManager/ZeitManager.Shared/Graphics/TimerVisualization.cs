@@ -140,18 +140,21 @@ public static class TimerVisualization
             var endColor = SkiaThemeHelper.AdjustBrightness(color, 1.3f);
             _arcPaint.StrokeWidth = strokeW;
             _arcPaint.Shader?.Dispose();
-            _arcPaint.Shader = SKShader.CreateSweepGradient(
+            _arcPaint.Shader = null;
+            // Shader in lokaler Variable erstellen um Leak bei Exception zu verhindern
+            using var sweepShader = SKShader.CreateSweepGradient(
                 new SKPoint(cx, cy),
                 new[] { color, endColor },
                 new[] { 0f, 1f },
                 SKShaderTileMode.Clamp, -90f, -90f + sweepAngle);
+            _arcPaint.Shader = sweepShader;
             _arcPaint.Color = SKColors.White;
 
             using var arcPath = new SKPath();
             arcPath.AddArc(arcRect, -90f, sweepAngle);
             canvas.DrawPath(arcPath, _arcPaint);
-            _arcPaint.Shader?.Dispose();
             _arcPaint.Shader = null;
+            // sweepShader wird durch using-Block automatisch disposed
         }
 
         // 3. Wellen-Füllung im Inneren (Flüssigkeits-Effekt)

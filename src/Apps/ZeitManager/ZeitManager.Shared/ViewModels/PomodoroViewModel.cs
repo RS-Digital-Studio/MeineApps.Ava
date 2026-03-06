@@ -256,6 +256,8 @@ public sealed partial class PomodoroViewModel : ViewModelBase, IDisposable
     private void StartTimer()
     {
         IsRunning = true;
+        // Bei Fortsetzen nach Pause: _totalPhaseTime auf verbleibende Zeit setzen
+        _totalPhaseTime = RemainingTime;
         _phaseStartedAt = DateTime.UtcNow;
         _timer?.Dispose();
         _timer = new Timer(1000);
@@ -343,7 +345,11 @@ public sealed partial class PomodoroViewModel : ViewModelBase, IDisposable
         {
             if (!IsRunning) return;
 
-            RemainingTime -= TimeSpan.FromSeconds(1);
+            // Absolute Berechnung statt Dekrement um Timer-Drift bei CPU-Last zu vermeiden
+            var elapsed = DateTime.UtcNow - _phaseStartedAt;
+            RemainingTime = _totalPhaseTime - elapsed;
+            if (RemainingTime < TimeSpan.Zero)
+                RemainingTime = TimeSpan.Zero;
             if (_totalPhaseTime.TotalSeconds > 0)
                 ProgressFraction = RemainingTime.TotalSeconds / _totalPhaseTime.TotalSeconds;
             OnPropertyChanged(nameof(RemainingFormatted));
@@ -512,9 +518,9 @@ public sealed partial class PomodoroViewModel : ViewModelBase, IDisposable
             // Heatmap-Daten fuer den aktuellen Monat berechnen
             await LoadHeatmapDataAsync(today);
         }
-        catch
+        catch (Exception ex)
         {
-            // Statistik-Laden ist best-effort, Fehler nicht propagieren
+            System.Diagnostics.Debug.WriteLine($"Statistik-Laden fehlgeschlagen: {ex}");
         }
     }
 

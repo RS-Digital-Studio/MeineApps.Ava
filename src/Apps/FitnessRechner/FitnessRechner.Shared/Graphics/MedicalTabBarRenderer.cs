@@ -341,7 +341,7 @@ public sealed class MedicalTabBarRenderer : IDisposable
         _ekgPath.LineTo(right, ekgY);
 
         // EKG-Linie in kontrastierender Farbe (dunkler Hintergrund des Herzens)
-        var ekgColor = isActive ? MedicalColors.NavyDeep : MedicalColors.Surface;
+        var ekgColor = isActive ? MedicalColors.BgDeep : MedicalColors.Surface;
         _iconStrokePaint.Color = ekgColor;
         _iconStrokePaint.StrokeWidth = 1.5f;
         _iconStrokePaint.StrokeCap = SKStrokeCap.Round;

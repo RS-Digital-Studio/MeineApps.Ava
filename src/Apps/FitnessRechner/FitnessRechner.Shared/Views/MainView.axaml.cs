@@ -72,22 +72,22 @@ public partial class MainView : UserControl
     }
 
     // =====================================================================
-    // Render-Timer (20fps für animierten Hintergrund + Tab-Bar)
+    // Render-Timer (30fps für animierten Hintergrund + Tab-Bar)
     // =====================================================================
 
     private void StartRenderTimer()
     {
         if (_renderTimer != null) return;
 
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += OnRenderTimerTick;
         _renderTimer.Start();
     }
 
     private void OnRenderTimerTick(object? sender, EventArgs e)
     {
-        _renderTime += 0.05f;
-        _backgroundRenderer.Update(0.05f);
+        _renderTime += 0.033f;
+        _backgroundRenderer.Update(0.033f);
         BackgroundCanvas?.InvalidateSurface();
         TabBarCanvas?.InvalidateSurface();
 

@@ -66,14 +66,16 @@
     </Border>
 
     <!-- Alarm Content -->
-    <Panel Grid.Row="1" IsVisible="{Binding !IsShiftScheduleMode}">
+    <Grid Grid.Row="1" RowDefinitions="Auto,*" IsVisible="{Binding !IsShiftScheduleMode}">
+
+      <!-- Banner-Bereich (StackPanel damit Urlaubs- und Alarm-Banner nicht überlagern) -->
+      <StackPanel Grid.Row="0" Spacing="0">
 
       <!-- Urlaubsmodus Status-Banner -->
       <Border IsVisible="{Binding IsAllPaused}"
               AutomationProperties.AutomationId="Alarm_VacationBanner"
               Background="{DynamicResource WarningBackgroundBrush}"
-              CornerRadius="8" Margin="16,0,16,8" Padding="12"
-              VerticalAlignment="Top" ZIndex="1">
+              CornerRadius="8" Margin="16,0,16,8" Padding="12">
         <Grid ColumnDefinitions="Auto,*,Auto">
           <mi:MaterialIcon Grid.Column="0" Kind="Beach" Width="24" Height="24"
                            Foreground="{DynamicResource WarningBrush}" Margin="0,0,12,0"
@@ -117,8 +119,10 @@
         </Grid>
       </Border>
 
+      </StackPanel> <!-- Banner-Bereich Ende -->
+
       <!-- Empty State -->
-      <controls:EmptyStateView IsVisible="{Binding !HasAlarms}"
+      <controls:EmptyStateView Grid.Row="1" IsVisible="{Binding !HasAlarms}"
           AutomationProperties.AutomationId="Alarm_EmptyState"
           Icon="AlarmOff" Title="{Binding NoAlarmsText}"
           Subtitle="{Binding CreateAlarmText}"
@@ -126,7 +130,7 @@
           ActionCommand="{Binding NewAlarmCommand}" />
 
       <!-- Alarm List -->
-      <ScrollViewer IsVisible="{Binding HasAlarms}" AutomationProperties.AutomationId="Alarm_AlarmListScroll">
+      <ScrollViewer Grid.Row="1" IsVisible="{Binding HasAlarms}" AutomationProperties.AutomationId="Alarm_AlarmListScroll">
         <ItemsControl ItemsSource="{Binding Alarms}" Margin="16,0">
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="models:AlarmItem">
@@ -195,7 +199,7 @@
       </ScrollViewer>
 
       <!-- Pause-Button (Urlaubsmodus) -->
-      <Button Command="{Binding ShowPauseDialogCommand}"
+      <Button Grid.Row="1" Command="{Binding ShowPauseDialogCommand}"
               AutomationProperties.AutomationId="Alarm_FabPause"
               IsVisible="{Binding !IsAllPaused}"
               HorizontalAlignment="Right" VerticalAlignment="Bottom"
@@ -207,7 +211,7 @@
       </Button>
 
       <!-- FAB: New Alarm -->
-      <Button Command="{Binding NewAlarmCommand}"
+      <Button Grid.Row="1" Command="{Binding NewAlarmCommand}"
               AutomationProperties.AutomationId="Alarm_FabNew"
               IsVisible="{Binding !IsEditMode}"
               HorizontalAlignment="Right" VerticalAlignment="Bottom"
@@ -218,7 +222,7 @@
         <mi:MaterialIcon Kind="Plus" Width="28" Height="28" />
       </Button>
 
-    </Panel>
+    </Grid>
 
     <!-- Shift Schedule View -->
     <Panel Grid.Row="1" IsVisible="{Binding IsShiftScheduleMode}">
@@ -280,49 +284,49 @@
               <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
                 <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsMondaySelected}"
                         AutomationProperties.AutomationId="Alarm_BtnMonday"
-                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Width="44" Height="44" CornerRadius="22" Padding="0" MinWidth="0" MinHeight="0"
                         Command="{Binding ToggleDayCommand}" CommandParameter="Monday">
                   <TextBlock Text="{Binding MondayShortText}" FontSize="11" FontWeight="SemiBold"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
                 <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsTuesdaySelected}"
                         AutomationProperties.AutomationId="Alarm_BtnTuesday"
-                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Width="44" Height="44" CornerRadius="22" Padding="0" MinWidth="0" MinHeight="0"
                         Command="{Binding ToggleDayCommand}" CommandParameter="Tuesday">
                   <TextBlock Text="{Binding TuesdayShortText}" FontSize="11" FontWeight="SemiBold"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
                 <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsWednesdaySelected}"
                         AutomationProperties.AutomationId="Alarm_BtnWednesday"
-                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Width="44" Height="44" CornerRadius="22" Padding="0" MinWidth="0" MinHeight="0"
                         Command="{Binding ToggleDayCommand}" CommandParameter="Wednesday">
                   <TextBlock Text="{Binding WednesdayShortText}" FontSize="11" FontWeight="SemiBold"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
                 <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsThursdaySelected}"
                         AutomationProperties.AutomationId="Alarm_BtnThursday"
-                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Width="44" Height="44" CornerRadius="22" Padding="0" MinWidth="0" MinHeight="0"
                         Command="{Binding ToggleDayCommand}" CommandParameter="Thursday">
                   <TextBlock Text="{Binding ThursdayShortText}" FontSize="11" FontWeight="SemiBold"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
                 <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsFridaySelected}"
                         AutomationProperties.AutomationId="Alarm_BtnFriday"
-                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Width="44" Height="44" CornerRadius="22" Padding="0" MinWidth="0" MinHeight="0"
                         Command="{Binding ToggleDayCommand}" CommandParameter="Friday">
                   <TextBlock Text="{Binding FridayShortText}" FontSize="11" FontWeight="SemiBold"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
                 <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsSaturdaySelected}"
                         AutomationProperties.AutomationId="Alarm_BtnSaturday"
-                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Width="44" Height="44" CornerRadius="22" Padding="0" MinWidth="0" MinHeight="0"
                         Command="{Binding ToggleDayCommand}" CommandParameter="Saturday">
                   <TextBlock Text="{Binding SaturdayShortText}" FontSize="11" FontWeight="SemiBold"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />
                 </Button>
                 <Button Classes="WeekdayToggle" Classes.Selected="{Binding IsSundaySelected}"
                         AutomationProperties.AutomationId="Alarm_BtnSunday"
-                        Width="36" Height="36" CornerRadius="18" Padding="0" MinWidth="0" MinHeight="0"
+                        Width="44" Height="44" CornerRadius="22" Padding="0" MinWidth="0" MinHeight="0"
                         Command="{Binding ToggleDayCommand}" CommandParameter="Sunday">
                   <TextBlock Text="{Binding SundayShortText}" FontSize="11" FontWeight="SemiBold"
                              HorizontalAlignment="Center" VerticalAlignment="Center" />

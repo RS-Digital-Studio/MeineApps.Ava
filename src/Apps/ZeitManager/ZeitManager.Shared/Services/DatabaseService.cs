@@ -177,7 +177,7 @@ public sealed class DatabaseService : IDatabaseService
         var fromStr = from.ToString("O");
         var toStr = to.ToString("O");
         return await db.Table<FocusSession>()
-            .Where(s => string.Compare(s.CompletedAt, fromStr) >= 0 && string.Compare(s.CompletedAt, toStr) <= 0)
+            .Where(s => string.Compare(s.CompletedAt, fromStr) >= 0 && string.Compare(s.CompletedAt, toStr) < 0)
             .ToListAsync();
     }
 

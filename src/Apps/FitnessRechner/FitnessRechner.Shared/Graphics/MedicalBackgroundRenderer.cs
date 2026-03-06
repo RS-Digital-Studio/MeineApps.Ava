@@ -5,9 +5,9 @@ namespace FitnessRechner.Graphics;
 
 /// <summary>
 /// Animierter medizinischer Hintergrund fuer den FitnessRechner.
-/// Rendert 5 Layer: Navy-Gradient, EKG-Grid, EKG-Trace, Vital-Partikel, Vignette.
+/// Rendert 5 Layer: Teal-Gradient, EKG-Grid, EKG-Trace, Vital-Partikel, Vignette.
 /// Instance-basiert mit GC-freiem Render-Loop (Struct-Pools, gecachte Paints, Path.Reset).
-/// Wird von einem 20fps DispatcherTimer in der MainView invalidiert.
+/// Wird von einem 30fps DispatcherTimer in der MainView invalidiert.
 /// </summary>
 public sealed class MedicalBackgroundRenderer : IDisposable
 {
@@ -129,7 +129,7 @@ public sealed class MedicalBackgroundRenderer : IDisposable
     }
 
     // =====================================================================
-    // Layer 1: Deep Navy Gradient (radial, Mitte hell, Ecken dunkel)
+    // Layer 1: Deep Teal Gradient (radial, Mitte hell, Ecken dunkel)
     // =====================================================================
 
     private void RenderBackground(SKCanvas canvas, SKRect bounds)
@@ -147,7 +147,7 @@ public sealed class MedicalBackgroundRenderer : IDisposable
             _bgShader = SKShader.CreateRadialGradient(
                 new SKPoint(bounds.MidX, bounds.MidY),
                 radius,
-                new[] { MedicalColors.NavyDeep, MedicalColors.NavyDarkest },
+                new[] { MedicalColors.BgDeep, MedicalColors.BgDarkest },
                 new[] { 0f, 1f },
                 SKShaderTileMode.Clamp);
 
@@ -452,7 +452,7 @@ public sealed class MedicalBackgroundRenderer : IDisposable
             _vignetteShader = SKShader.CreateRadialGradient(
                 new SKPoint(bounds.MidX, bounds.MidY),
                 radius,
-                new[] { SKColors.Transparent, MedicalColors.NavyDarkest.WithAlpha(153) },
+                new[] { SKColors.Transparent, MedicalColors.BgDarkest.WithAlpha(153) },
                 new[] { 0.4f, 1.0f },
                 SKShaderTileMode.Clamp);
         }

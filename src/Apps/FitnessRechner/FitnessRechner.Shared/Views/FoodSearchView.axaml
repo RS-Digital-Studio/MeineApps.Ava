@@ -32,7 +32,7 @@
     <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
     <Border Grid.Row="0"
             AutomationProperties.AutomationId="Food_HeaderBorder"
-            Background="#D90F1D32"
+            Background="#D91E3844"
             BorderThickness="0,0,0,1"
             BorderBrush="#4D06B6D4"
             Padding="16,12">
@@ -70,7 +70,7 @@
     <!-- Medical-Styling: Surface 85% + Cyan-Rand für Suchleiste -->
     <Border Grid.Row="1" Classes="Card StatsCard" Margin="16,12,16,0" Padding="12"
             AutomationProperties.AutomationId="Food_SearchBarBorder"
-            Background="#D90F1D32"
+            Background="#D91E3844"
             BorderBrush="#4D06B6D4"
             CornerRadius="12">
       <Grid ColumnDefinitions="Auto,*">
@@ -126,7 +126,7 @@
                     </i:Interaction.Behaviors>
                     <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
                     <Border Classes="Card Compact Interactive" Padding="12,8" MinWidth="100"
-                            Background="#D90F1D32"
+                            Background="#D91E3844"
                             BorderBrush="#1A06B6D4"
                             CornerRadius="12"
                             Cursor="Hand">
@@ -173,7 +173,7 @@
                           CommandParameter="{Binding .}">
                     <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
                     <Border CornerRadius="16" Padding="10,6" MinWidth="60"
-                            Background="#D90F1D32"
+                            Background="#D91E3844"
                             BorderBrush="#1A06B6D4"
                             BorderThickness="1"
                             Cursor="Hand">
@@ -404,7 +404,7 @@
               <DataTemplate x:DataType="models:FoodSearchResult">
                 <!-- Medical-Styling: Surface 85% + Cyan-Rand für Ergebniskarte -->
                 <Border Classes="Card Interactive Compact" Margin="0,4" Padding="12"
-                        Background="#D90F1D32"
+                        Background="#D91E3844"
                         BorderBrush="#1A06B6D4"
                         CornerRadius="12"
                         Cursor="Hand">
@@ -472,7 +472,7 @@
         <Border Classes="Card StatsCard" Padding="12" Margin="0,4"
                 AutomationProperties.AutomationId="Food_CardExtendedDbHint"
                 IsVisible="{Binding ShowExtendedDbHint}"
-                Background="#D90F1D32"
+                Background="#D91E3844"
                 BorderBrush="#1A06B6D4"
                 CornerRadius="12">
           <Button AutomationProperties.AutomationId="Food_BtnExtendedDb"
@@ -529,7 +529,7 @@
               <DataTemplate x:DataType="models:FoodLogEntry">
                 <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
                 <Border Classes="Card Compact" Margin="0,4" Padding="12"
-                        Background="#D90F1D32"
+                        Background="#D91E3844"
                         BorderBrush="#1A06B6D4"
                         CornerRadius="12">
                   <Grid ColumnDefinitions="*,Auto,Auto">
@@ -579,7 +579,7 @@
     <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
     <Border Grid.Row="3"
             AutomationProperties.AutomationId="Food_FooterSummary"
-            Background="#D90F1D32"
+            Background="#D91E3844"
             BorderThickness="0,1,0,0"
             BorderBrush="#4D06B6D4"
             Padding="16,12"
@@ -690,7 +690,7 @@
     <!-- Medical-Styling: Surface 85% + Cyan-Rand -->
     <Border Grid.Row="4"
             AutomationProperties.AutomationId="Food_CardUndo"
-            Background="#D90F1D32"
+            Background="#D91E3844"
             CornerRadius="12"
             Padding="16,12"
             Margin="16,8"
@@ -718,8 +718,8 @@
             Background="#CC000000"
             IsVisible="{Binding ShowScanLimitOverlay}"
             ZIndex="80">
-      <!-- Medical-Styling: Navy-Deep Overlay-Dialog + Cyan-Rand -->
-      <Border Background="#0A1A2E"
+      <!-- Medical-Styling: Teal-Deep Overlay-Dialog + Cyan-Rand -->
+      <Border Background="#142832"
               CornerRadius="16"
               Padding="24"
               MaxWidth="350"
@@ -770,8 +770,8 @@
             Background="#CC000000"
             IsVisible="{Binding ShowExtendedDbOverlay}"
             ZIndex="80">
-      <!-- Medical-Styling: Navy-Deep Overlay-Dialog + Cyan-Rand -->
-      <Border Background="#0A1A2E"
+      <!-- Medical-Styling: Teal-Deep Overlay-Dialog + Cyan-Rand -->
+      <Border Background="#142832"
               CornerRadius="16"
               Padding="24"
               MaxWidth="350"

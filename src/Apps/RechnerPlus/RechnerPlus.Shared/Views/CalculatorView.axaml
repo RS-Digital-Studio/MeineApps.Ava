@@ -207,8 +207,8 @@
                     AutomationProperties.AutomationId="Calc_BtnShare"
                     Classes="Text"
                     Padding="8,4"
-                    MinWidth="0"
-                    MinHeight="0"
+                    MinWidth="44"
+                    MinHeight="44"
                     Command="{Binding ShareDisplayCommand}"
                     ToolTip.Tip="Share">
               <mi:MaterialIcon Kind="ShareVariantOutline" Width="16" Height="16"
@@ -220,8 +220,8 @@
                     AutomationProperties.AutomationId="Calc_BtnCopy"
                     Classes="Text"
                     Padding="8,4"
-                    MinWidth="0"
-                    MinHeight="0"
+                    MinWidth="44"
+                    MinHeight="44"
                     Command="{Binding CopyDisplayCommand}"
                     ToolTip.Tip="Copy">
               <mi:MaterialIcon x:Name="CopyIcon" Kind="ContentCopy" Width="16" Height="16"
@@ -232,8 +232,8 @@
                     AutomationProperties.AutomationId="Calc_BtnBackspace"
                     Classes="Text"
                     Padding="8,4"
-                    MinWidth="0"
-                    MinHeight="0"
+                    MinWidth="44"
+                    MinHeight="44"
                     Command="{Binding BackspaceCommand}">
               <mi:MaterialIcon Kind="BackspaceOutline" Width="20" Height="20"
                                Foreground="{DynamicResource TextMutedBrush}"/>

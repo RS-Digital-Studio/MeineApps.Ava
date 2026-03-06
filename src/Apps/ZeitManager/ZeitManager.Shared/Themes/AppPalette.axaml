@@ -3,7 +3,7 @@
 
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
   <!-- ZeitManager - "Warme Zeitverwaltung"                                   -->
-  <!-- Warmes Dunkelblau mit Amber-Gold Timer-Akzenten                        -->
+  <!-- Warmes Schokobraun mit Amber-Gold Timer-Akzenten                      -->
   <!-- ═══════════════════════════════════════════════════════════════════════ -->
 
   <Style>
@@ -12,7 +12,7 @@
       <Color x:Key="PrimaryColor">#F7A833</Color>
       <Color x:Key="PrimaryHoverColor">#FFBD55</Color>
       <Color x:Key="PrimaryPressedColor">#D99220</Color>
-      <Color x:Key="PrimaryContrastColor">#1A2332</Color>
+      <Color x:Key="PrimaryContrastColor">#2A2018</Color>
 
       <!-- Secondary Colors -->
       <Color x:Key="SecondaryColor">#A78BFA</Color>
@@ -29,21 +29,21 @@
       <Color x:Key="AlarmAccentColor">#A78BFA</Color>
       <Color x:Key="PomodoroAccentColor">#EF4444</Color>
 
-      <!-- Background Colors -->
-      <Color x:Key="BackgroundColor">#1A2332</Color>
-      <Color x:Key="SurfaceColor">#243040</Color>
-      <Color x:Key="CardColor">#324050</Color>
-      <Color x:Key="CardHoverColor">#3C4D60</Color>
+      <!-- Background Colors (Premium Dark - deutliche Kontraststufen) -->
+      <Color x:Key="BackgroundColor">#2A2018</Color>
+      <Color x:Key="SurfaceColor">#382C22</Color>
+      <Color x:Key="CardColor">#483A2E</Color>
+      <Color x:Key="CardHoverColor">#584838</Color>
 
-      <!-- Text Colors -->
-      <Color x:Key="TextPrimaryColor">#F2F6FC</Color>
-      <Color x:Key="TextSecondaryColor">#B8C8D8</Color>
-      <Color x:Key="TextMutedColor">#8898AD</Color>
-      <Color x:Key="TextDisabledColor">#64748B</Color>
+      <!-- Text Colors (heller für bessere Lesbarkeit) -->
+      <Color x:Key="TextPrimaryColor">#F5F0E8</Color>
+      <Color x:Key="TextSecondaryColor">#D8C8B0</Color>
+      <Color x:Key="TextMutedColor">#AA9A80</Color>
+      <Color x:Key="TextDisabledColor">#807060</Color>
 
-      <!-- Border Colors -->
-      <Color x:Key="BorderColor">#4A5A6E</Color>
-      <Color x:Key="BorderSubtleColor">#324050</Color>
+      <!-- Border Colors (deutlich sichtbar) -->
+      <Color x:Key="BorderColor">#6A5C48</Color>
+      <Color x:Key="BorderSubtleColor">#483A2E</Color>
       <Color x:Key="BorderFocusColor">#F7A833</Color>
 
       <!-- Semantic Colors -->
@@ -62,9 +62,9 @@
       <Color x:Key="RippleColor">#20FFFFFF</Color>
 
       <!-- Gradient -->
-      <Color x:Key="GradientStartColor">#243040</Color>
-      <Color x:Key="GradientMidColor">#1A2332</Color>
-      <Color x:Key="GradientEndColor">#2A1F10</Color>
+      <Color x:Key="GradientStartColor">#382C22</Color>
+      <Color x:Key="GradientMidColor">#2A2018</Color>
+      <Color x:Key="GradientEndColor">#301A10</Color>
 
       <!-- ═══════════════════════════════════════════════════════════════ -->
       <!-- BRUSHES                                                        -->
@@ -109,11 +109,11 @@
       <SolidColorBrush x:Key="OverlayBrush" Color="{DynamicResource OverlayColor}" />
       <SolidColorBrush x:Key="RippleBrush" Color="{DynamicResource RippleColor}" />
 
-      <!-- Box Shadows -->
-      <BoxShadows x:Key="CardShadow">0 1 3 0 #1A000000, 0 1 2 0 #26000000</BoxShadows>
-      <BoxShadows x:Key="CardShadowHover">0 4 6 -1 #1A000000, 0 2 4 -1 #26000000</BoxShadows>
-      <BoxShadows x:Key="ElevatedShadow">0 10 15 -3 #1A000000, 0 4 6 -2 #26000000</BoxShadows>
-      <BoxShadows x:Key="ModalShadow">0 20 25 -5 #1A000000, 0 10 10 -5 #26000000</BoxShadows>
+      <!-- Box Shadows (sichtbar auf helleren Surfaces) -->
+      <BoxShadows x:Key="CardShadow">0 2 8 0 #40000000, 0 1 4 0 #30000000</BoxShadows>
+      <BoxShadows x:Key="CardShadowHover">0 4 12 -1 #50000000, 0 2 6 -1 #40000000</BoxShadows>
+      <BoxShadows x:Key="ElevatedShadow">0 10 20 -3 #40000000, 0 4 8 -2 #30000000</BoxShadows>
+      <BoxShadows x:Key="ModalShadow">0 20 30 -5 #50000000, 0 10 15 -5 #40000000</BoxShadows>
 
       <!-- Calculator-spezifische Ressourcen (für Kompatibilität) -->
       <LinearGradientBrush x:Key="EqualsGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
@@ -121,8 +121,8 @@
         <GradientStop Color="#FFBD55" Offset="1" />
       </LinearGradientBrush>
       <LinearGradientBrush x:Key="DisplayGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#243040" Offset="0" />
-        <GradientStop Color="#1A2332" Offset="1" />
+        <GradientStop Color="#382C22" Offset="0" />
+        <GradientStop Color="#2A2018" Offset="1" />
       </LinearGradientBrush>
       <BoxShadows x:Key="OperatorGlowShadow">0 0 12 2 #40F7A833</BoxShadows>
       <SolidColorBrush x:Key="DigitButtonBrush" Color="#15FFFFFF" />

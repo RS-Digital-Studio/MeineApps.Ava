@@ -17,8 +17,8 @@ public sealed class WorkTimeProSplashRenderer : SplashRendererBase
     }
 
     // --- Farb-Konstanten ---
-    private static readonly SKColor BgTop = SKColor.Parse("#141820");
-    private static readonly SKColor BgBottom = SKColor.Parse("#0A0D12");
+    private static readonly SKColor BgTop = SKColor.Parse("#202630");
+    private static readonly SKColor BgBottom = SKColor.Parse("#141820");
     private static readonly SKColor GridLineColor = new(0xFF, 0xFF, 0xFF, 15); // Alpha ~6%
     private static readonly SKColor HousingColor = SKColor.Parse("#2A2E3A");
     private static readonly SKColor HousingBorderColor = SKColor.Parse("#3B4050");
@@ -28,7 +28,7 @@ public sealed class WorkTimeProSplashRenderer : SplashRendererBase
     private static readonly SKColor StampColor = SKColor.Parse("#EF4444");
     private static readonly SKColor ProgressStart = SKColor.Parse("#3B82F6");
     private static readonly SKColor ProgressEnd = SKColor.Parse("#60A5FA");
-    private static readonly SKColor ProgressBg = SKColor.Parse("#1A1E28");
+    private static readonly SKColor ProgressBg = SKColor.Parse("#262C38");
     private static readonly SKColor ParticleBlue = new(0x3B, 0x82, 0xF6);
 
     // --- Stechuhr-Animation ---

@@ -6,7 +6,7 @@ namespace FitnessRechner.Graphics;
 /// <summary>
 /// Rendert die Streak-Card im VitalOS Medical-Design.
 /// "VITAL STREAK: X TAGE" mit pulsierendem Herz und Mini-EKG.
-/// Static Class - wird im 20fps Render-Loop aufgerufen.
+/// Static Class - wird im 30fps Render-Loop aufgerufen.
 /// </summary>
 public static class StreakCardRenderer
 {

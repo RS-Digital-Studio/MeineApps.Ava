@@ -18,9 +18,9 @@ public sealed class ClockworkBackgroundRenderer : IDisposable
     // Farb-Konstanten
     // =====================================================================
 
-    private static readonly SKColor GradientTop = SKColor.Parse("#282018");    // Warmes Dunkelbraun
-    private static readonly SKColor GradientMid = SKColor.Parse("#1A2332");    // Kuehl-dunkel
-    private static readonly SKColor GradientBot = SKColor.Parse("#28200E");    // Warmes Gold-Dunkel
+    private static readonly SKColor GradientTop = SKColor.Parse("#382C22");    // Warmes Schokobraun
+    private static readonly SKColor GradientMid = SKColor.Parse("#2A2018");    // Tiefes Dunkelbraun
+    private static readonly SKColor GradientBot = SKColor.Parse("#301A10");    // Warmes Espresso-Dunkel
     private static readonly SKColor AmberAccent = SKColor.Parse("#F7A833");    // Primary Amber
 
     // =====================================================================

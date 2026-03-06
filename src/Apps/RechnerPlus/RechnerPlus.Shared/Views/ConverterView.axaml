@@ -57,10 +57,8 @@
               HorizontalAlignment="Center"
               Command="{Binding SwapUnitsCommand}"
               ToolTip.Tip="{Binding SwapUnitsText}"
-              RenderTransformOrigin="0.5,0.5">
-        <Button.RenderTransform>
-          <RotateTransform Angle="0"/>
-        </Button.RenderTransform>
+              RenderTransformOrigin="0.5,0.5"
+              RenderTransform="rotate(0deg)">
         <Button.Transitions>
           <Transitions>
             <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.3" Easing="CubicEaseOut"/>

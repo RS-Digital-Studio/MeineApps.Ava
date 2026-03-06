@@ -6,7 +6,7 @@ namespace FitnessRechner.Graphics;
 /// <summary>
 /// Rendert die XP/Level-Bar im VitalOS Medical-Design.
 /// Holografischer Level-Badge, animierte Progress-Bar mit Scan-Line + Glow, XP-Text.
-/// Static Class - wird im 20fps Render-Loop aufgerufen.
+/// Static Class - wird im 30fps Render-Loop aufgerufen.
 /// </summary>
 public static class LevelProgressRenderer
 {
@@ -127,7 +127,7 @@ public static class LevelProgressRenderer
         {
             IsAntialias = true,
             Style = SKPaintStyle.Fill,
-            Color = MedicalColors.NavyDark
+            Color = MedicalColors.BgDark
         };
         canvas.DrawRoundRect(bgRect, ProgressBarCornerRadius, ProgressBarCornerRadius, bgPaint);
 

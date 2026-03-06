@@ -18,9 +18,9 @@ public sealed class WorkspaceBackgroundRenderer : IDisposable
     // Farben (aus der Aufgabe, passend zur AppPalette)
     // =====================================================================
 
-    private static readonly SKColor GradientTop = SKColor.Parse("#182030");
-    private static readonly SKColor GradientMid = SKColor.Parse("#161E2E");
-    private static readonly SKColor GradientBot = SKColor.Parse("#1A2640");
+    private static readonly SKColor GradientTop = SKColor.Parse("#2C3440");
+    private static readonly SKColor GradientMid = SKColor.Parse("#202630");
+    private static readonly SKColor GradientBot = SKColor.Parse("#1C2028");
     private static readonly SKColor DotColor = new(255, 255, 255, 18);        // Weiss Alpha ~7
     private static readonly SKColor BlockColor = new(79, 139, 249, 15);       // Primary Blau Alpha ~6%
     private static readonly SKColor LineColor = new(255, 255, 255, 15);       // Weiss Alpha ~6

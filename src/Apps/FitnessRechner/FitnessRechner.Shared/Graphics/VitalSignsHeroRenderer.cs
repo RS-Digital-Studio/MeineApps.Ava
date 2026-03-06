@@ -571,7 +571,7 @@ public sealed class VitalSignsHeroRenderer : IDisposable
         float centerR = outerR * 0.3f;
 
         // Hintergrund-Kreis
-        _centerPaint.Color = MedicalColors.NavyDeep;
+        _centerPaint.Color = MedicalColors.BgDeep;
         canvas.DrawCircle(cx, cy, centerR, _centerPaint);
 
         // Pulsierender Cyan-Ring

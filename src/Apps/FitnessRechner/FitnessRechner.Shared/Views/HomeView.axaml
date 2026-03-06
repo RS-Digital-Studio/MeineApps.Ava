@@ -44,7 +44,7 @@
         <!-- Medical-Surface mit Cyan-Glow-Border -->
         <Border AutomationProperties.AutomationId="Home_CardEmptyState" CornerRadius="16" Padding="24,28"
                 IsVisible="{Binding ShowEmptyState}"
-                Background="#D90F1D32" BorderBrush="#1A06B6D4" BorderThickness="1"
+                Background="#D91E3844" BorderBrush="#1A06B6D4" BorderThickness="1"
                 BoxShadow="{DynamicResource CardShadow}">
           <StackPanel Spacing="16" HorizontalAlignment="Center">
             <!-- Großes Icon mit Gradient-Hintergrund -->
@@ -185,7 +185,7 @@
         <!-- ========== Recent Badges ========== -->
         <!-- Medical-Surface für Badges -->
         <Border AutomationProperties.AutomationId="Home_CardBadges" CornerRadius="12" Padding="12"
-                Background="#D90F1D32" BorderBrush="#1A06B6D4" BorderThickness="1"
+                Background="#D91E3844" BorderBrush="#1A06B6D4" BorderThickness="1"
                 BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasRecentAchievements}">
           <i:Interaction.Behaviors>
@@ -238,7 +238,7 @@
         <!-- ========== Aktivitäts-Heatmap ========== -->
         <!-- Medical-Surface für Heatmap -->
         <Border AutomationProperties.AutomationId="Home_CardHeatmap" CornerRadius="12" Padding="14"
-                Background="#D90F1D32" BorderBrush="#1A06B6D4" BorderThickness="1"
+                Background="#D91E3844" BorderBrush="#1A06B6D4" BorderThickness="1"
                 BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasHeatmapData}">
           <i:Interaction.Behaviors>
@@ -295,7 +295,7 @@
         <!-- ========== Weekly Comparison Card ========== -->
         <!-- Medical-Surface für Wochenvergleich -->
         <Border AutomationProperties.AutomationId="Home_CardWeeklyComparison" CornerRadius="12" Padding="14"
-                Background="#D90F1D32" BorderBrush="#1A06B6D4" BorderThickness="1"
+                Background="#D91E3844" BorderBrush="#1A06B6D4" BorderThickness="1"
                 BoxShadow="{DynamicResource CardShadow}"
                 IsVisible="{Binding HasWeeklyComparison}">
           <i:Interaction.Behaviors>
@@ -415,7 +415,7 @@
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <SolidColorBrush Color="#D90F1D32" />
+                <SolidColorBrush Color="#D91E3844" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -445,7 +445,7 @@
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <SolidColorBrush Color="#D90F1D32" />
+                <SolidColorBrush Color="#D91E3844" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -475,7 +475,7 @@
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <SolidColorBrush Color="#D90F1D32" />
+                <SolidColorBrush Color="#D91E3844" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -505,7 +505,7 @@
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <SolidColorBrush Color="#D90F1D32" />
+                <SolidColorBrush Color="#D91E3844" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -535,7 +535,7 @@
                 <behaviors:TapScaleBehavior PressedScale="0.95" />
               </i:Interaction.Behaviors>
               <Button.Background>
-                <SolidColorBrush Color="#D90F1D32" />
+                <SolidColorBrush Color="#D91E3844" />
               </Button.Background>
               <StackPanel VerticalAlignment="Center" Spacing="8">
                 <Border CornerRadius="12" Width="48" Height="48" HorizontalAlignment="Center">
@@ -599,7 +599,7 @@
 
         <!-- ========== Disclaimer ========== -->
         <!-- Medical-Surface für Disclaimer -->
-        <Border AutomationProperties.AutomationId="Home_CardDisclaimer" Background="#D90F1D32"
+        <Border AutomationProperties.AutomationId="Home_CardDisclaimer" Background="#D91E3844"
                 CornerRadius="8" Padding="12"
                 BorderBrush="#1A06B6D4" BorderThickness="1"
                 Margin="0,4,0,0">

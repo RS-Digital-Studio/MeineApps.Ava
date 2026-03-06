@@ -28,23 +28,23 @@ public static class MedicalColors
     // Hintergrund-Farben
     // =====================================================================
 
-    /// <summary>Tiefer Navy-Hintergrund - Hauptflächen</summary>
-    public static readonly SKColor NavyDeep = SKColor.Parse("#0A1A2E");
+    /// <summary>Tiefer Teal-Hintergrund - Hauptflächen</summary>
+    public static readonly SKColor BgDeep = SKColor.Parse("#142832");
 
-    /// <summary>Dunkler Navy - Unterer Gradient</summary>
-    public static readonly SKColor NavyDark = SKColor.Parse("#051020");
+    /// <summary>Dunkler Teal - Unterer Gradient</summary>
+    public static readonly SKColor BgDark = SKColor.Parse("#0A1824");
 
-    /// <summary>Dunkelster Navy - Äußerste Hintergrundebene</summary>
-    public static readonly SKColor NavyDarkest = SKColor.Parse("#030810");
+    /// <summary>Dunkelster Teal - Äußerste Hintergrundebene</summary>
+    public static readonly SKColor BgDarkest = SKColor.Parse("#061018");
 
     /// <summary>Oberflächen-Farbe - Karten, Panels</summary>
-    public static readonly SKColor Surface = SKColor.Parse("#0F1D32");
+    public static readonly SKColor Surface = SKColor.Parse("#1E3844");
 
     /// <summary>Helle Oberfläche - Hover, erhöhte Elemente</summary>
-    public static readonly SKColor SurfaceLight = SKColor.Parse("#1A2A4A");
+    public static readonly SKColor SurfaceLight = SKColor.Parse("#2A4A58");
 
     /// <summary>Tab-Leiste Hintergrund</summary>
-    public static readonly SKColor TabBarBg = SKColor.Parse("#0D1B2A");
+    public static readonly SKColor TabBarBg = SKColor.Parse("#142832");
 
     // =====================================================================
     // Grid-Farbe

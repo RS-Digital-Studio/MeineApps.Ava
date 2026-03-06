@@ -59,7 +59,7 @@ F:\Meine_Apps_Ava\
 │   ├── UI/
 │   │   └── MeineApps.UI/           # Shared UI Components
 │   │
-│   └── Apps/                       # 8 Apps, jeweils Shared/Android/Desktop
+│   └── Apps/                       # 9 Apps, jeweils Shared/Android/Desktop
 │       ├── RechnerPlus/            # Taschenrechner (werbefrei)
 │       ├── ZeitManager/            # Timer/Stoppuhr/Alarm (werbefrei)
 │       ├── FinanzRechner/          # 6 Finanzrechner + Budget-Tracker
@@ -67,7 +67,8 @@ F:\Meine_Apps_Ava\
 │       ├── HandwerkerRechner/      # 11 Bau-Rechner (5 Free + 6 Premium)
 │       ├── WorkTimePro/            # Arbeitszeiterfassung + Export
 │       ├── HandwerkerImperium/     # Idle-Game (Werkstaetten + Arbeiter)
-│       └── BomberBlast/            # Bomberman-Klon (SkiaSharp, Landscape)
+│       ├── BomberBlast/            # Bomberman-Klon (SkiaSharp, Landscape)
+│       └── RebornSaga/             # Anime Isekai-RPG (Volle SkiaSharp-Engine)
 │
 ├── tools/
 │   ├── AppChecker/              # 10 Check-Kategorien, 100+ Pruefungen
@@ -79,20 +80,21 @@ F:\Meine_Apps_Ava\
 
 ---
 
-## Status (1. März 2026)
+## Status (6. März 2026)
 
-Alle 8 Apps im geschlossenen Test, warten auf 12 Tester fuer Produktion.
+7 Apps im geschlossenen Test. HandwerkerImperium in Produktion. 9. App (RebornSaga) in Entwicklung.
 
-| App | Version | Ads | Premium |
-|-----|---------|-----|---------|
-| RechnerPlus | v2.0.6 | Nein | Nein |
-| ZeitManager | v2.0.6 | Nein | Nein |
-| HandwerkerRechner | v2.0.6 | Banner + Rewarded | 3,99 remove_ads |
-| FinanzRechner | v2.0.6 | Banner + Rewarded | 3,99 remove_ads |
-| FitnessRechner | v2.0.6 | Banner + Rewarded | 3,99 remove_ads |
-| WorkTimePro | v2.0.6 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime |
-| HandwerkerImperium | v2.0.17 | Banner + Rewarded | 4,99 Premium |
-| BomberBlast | v2.0.25 | Banner + Rewarded | 1,99 remove_ads |
+| App | Version | Ads | Premium | Status |
+|-----|---------|-----|---------|--------|
+| RechnerPlus | v2.0.7 | Nein | Nein | Geschlossener Test |
+| ZeitManager | v2.0.7 | Nein | Nein | Geschlossener Test |
+| HandwerkerRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
+| FinanzRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
+| FitnessRechner | v2.0.7 | Banner + Rewarded | 3,99 remove_ads | Geschlossener Test |
+| WorkTimePro | v2.0.7 | Banner + Rewarded | 3,99/Mo oder 19,99 Lifetime | Geschlossener Test |
+| HandwerkerImperium | v2.0.19 | Banner + Rewarded | 4,99 Premium | Produktion |
+| BomberBlast | v2.0.27 | Banner + Rewarded | 1,99 remove_ads | Geschlossener Test |
+| RebornSaga | v1.0.0 | Rewarded (kein Banner) | Gold-Pakete + remove_ads | Entwicklung |
 
 ---
 
@@ -110,6 +112,7 @@ Jede App hat eine eigene `Themes/AppPalette.axaml` im Shared-Projekt, statisch i
 | WorkTimePro | #4F8BF9 Blau | Professional Workspace |
 | HandwerkerImperium | #D97706 Amber | Warme Werkstatt |
 | BomberBlast | #FF6B35 Orange | Neon Arcade |
+| RebornSaga | #4A90D9 Blau | Isekai System Blue |
 
 Implementierung: Jede App laedt `<StyleInclude Source="/Themes/AppPalette.axaml" />` in App.axaml. Alle DynamicResource-Keys bleiben identisch. Design-Tokens (Spacing, Radius, Fonts) kommen weiterhin aus `MeineApps.Core.Ava/Themes/ThemeColors.axaml`.
 
@@ -372,12 +375,15 @@ dotnet publish src/Apps/{App}/{App}.Android -c Release
 | DonutChart-Segment unsichtbar bei 100% | SkiaSharp `ArcTo` bei 360° erzeugt leeren Path (Start=Ende) | Bei `sweepAngle >= 359°` in zwei 180°-Hälften aufteilen |
 | ZIndex-Overlay Touch geht durch (Android) | Avalonia `ZIndex` auf Grid-Kindern funktioniert NICHT für Hit-Testing auf Android - Touch-Events gehen durch Overlay hindurch | Content-Swap statt Overlay: Normalen Content per `IsVisible=false` verstecken, Overlay-Content als Ersatz anzeigen. KEIN ZIndex verwenden für interaktive Overlays |
 | Assembly-Version 1.0.0 (Default) | Shared-Projekt hat keine `<Version>` Property → Assembly-Version ist 1.0.0.0 | `<Version>X.Y.Z</Version>` in Shared .csproj setzen wenn Assembly-Version zur Laufzeit ausgelesen wird |
+| Custom Control unsichtbar (PathIcon-Ableitung) | Abgeleitete Controls (z.B. `GameIcon : PathIcon`) haben kein ControlTheme → Avalonia 11 findet kein Template → Control rendert nichts | `protected override Type StyleKeyOverride => typeof(PathIcon);` in der Klasse überschreiben. Gilt für ALLE von TemplatedControl abgeleiteten Custom Controls |
 | Button.OnAttachedToLogicalTree Crash (Android) | `TransformOperationsTransition` für `RenderTransform` ohne initialen `RenderTransform`-Wert → Transition von null→scale() crasht auf manchen GPU-Treibern | IMMER `RenderTransform="scale(1)"` + `RenderTransformOrigin="50%,50%"` setzen wenn `TransformOperationsTransition Property="RenderTransform"` verwendet wird. Fix in ButtonStyles.axaml |
 | CommandParameter string→int Crash | XAML `CommandParameter="0"` ist IMMER `string`. `RelayCommand<int>` wirft `ArgumentException` in `CanExecute()` bei View-Attach | Methoden von `int` auf `string` ändern + `int.TryParse()` intern. Oder `<sys:Int32>0</sys:Int32>` im XAML. Betroffen: Alle hardcodierten CommandParameter-Werte |
 | Rewarded Ad Belohnung kommt nicht an | `LoadAndShowAsync()` Timeout (8s) deckt Laden UND Video-Anzeige ab → feuert während User Video schaut → `false` zurück | `CancellationTokenSource` im Callback: Timeout nur für Lade-Phase, wird gecancellt wenn Ad geladen+gezeigt wird |
 | Play Review Namespace falsch | `Com.Google.Android.Play.Core.Review` existiert nicht | `Xamarin.Google.Android.Play.Core.Review` verwenden. Task/IOnCompleteListener aus `Android.Gms.Tasks`. `ReviewInfo` (Klasse), NICHT `IReviewInfo` |
 | MediaPlayer.PrepareAsync() gibt void zurück | Android Java-Binding: PrepareAsync() ist void, nicht Task | `Prepare()` synchron verwenden oder TaskCompletionSource mit Prepared-Event |
+| SKMaskFilter Native Memory Leak (OOM auf Android) | `paint.MaskFilter = SKMaskFilter.CreateBlur(...)` ohne Dispose des vorherigen Filters | Gecachte statische SKMaskFilter verwenden oder `paint.MaskFilter?.Dispose()` vor jeder Neuzuweisung |
 | Premium-Nutzer sieht Werbung nach Geräte-/Datenwechsel | `PurchaseService.InitializeAsync()` wurde nie aufgerufen → kein Google-Play-Abgleich → lokaler `is_premium` Key fehlt | `IPurchaseService.InitializeAsync()` in Loading-Pipeline aufrufen (parallel zum ersten Schritt). Stellt Käufe + Abos via Google Play Billing wieder her |
+| SKCanvasView Game-Loop startet nicht (Countdown stuck) | ContentControl+ViewLocator setzt DataContext verzögert → `InvalidateCanvasRequested` hat beim `StartGameLoop()` keinen Subscriber → Render-Timer startet nie | 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded als Backup, (3) OnPaintSurface Safety-Net startet Timer nach. `TrySubscribeToViewModel()` als zentrale idempotente Methode |
 
 ---
 

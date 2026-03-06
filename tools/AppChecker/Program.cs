@@ -24,6 +24,7 @@ var apps = new AppDef[]
     new("WorkTimePro", "com.meineapps.worktimepro", true),
     new("HandwerkerImperium", "com.meineapps.handwerkerimperium", true),
     new("BomberBlast", "org.rsdigital.bomberblast", true),
+    new("RebornSaga", "org.rsdigital.rebornsaga", true),
 };
 
 // Alle Checker instanziieren (Reihenfolge = Ausgabe-Reihenfolge)

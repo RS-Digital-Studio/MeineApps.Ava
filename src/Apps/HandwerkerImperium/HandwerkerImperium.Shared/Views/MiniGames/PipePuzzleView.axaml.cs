@@ -55,12 +55,12 @@ public partial class PipePuzzleView : UserControl
     }
 
     /// <summary>
-    /// Startet den 20fps Render-Loop fuer Wasser-Animationen.
+    /// Startet den 30fps Render-Loop fuer Wasser-Animationen.
     /// </summary>
     private void StartRenderLoop()
     {
         StopRenderLoop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20 fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) =>
         {
             _puzzleCanvas?.InvalidateSurface();

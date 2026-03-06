@@ -248,22 +248,13 @@ public sealed partial class OrderViewModel : ViewModelBase
 
     private static string GetCustomerIcon(OrderDifficulty difficulty) => difficulty switch
     {
-        OrderDifficulty.Easy => "👵",
+        OrderDifficulty.Easy => "Account",
         OrderDifficulty.Medium => "AccountTie",
         OrderDifficulty.Hard => "OfficeBuildingOutline",
         _ => "HardHat"
     };
 
-    private static string GetWorkshopIcon(WorkshopType type) => type switch
-    {
-        WorkshopType.Carpenter => "Saw",
-        WorkshopType.Plumber => "Wrench",
-        WorkshopType.Electrician => "LightningBolt",
-        WorkshopType.Painter => "Palette",
-        WorkshopType.Roofer => "Home",
-        WorkshopType.Contractor => "Crane",
-        _ => "Hammer"
-    };
+    private static string GetWorkshopIcon(WorkshopType type) => type.GetIconKind();
 
     private string GetWorkshopName(WorkshopType type) =>
         _localizationService.GetString(type.GetLocalizationKey());

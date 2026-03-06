@@ -59,12 +59,12 @@ public partial class DesignPuzzleGameView : UserControl
     }
 
     /// <summary>
-    /// Startet den 20fps Render-Loop fuer die SkiaSharp-Darstellung.
+    /// Startet den 30fps Render-Loop fuer die SkiaSharp-Darstellung.
     /// </summary>
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();
     }

@@ -77,6 +77,9 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
     [ObservableProperty]
     private string _spinButtonText = "";
 
+    [ObservableProperty]
+    private string _spinCostDisplay = "";
+
     /// <summary>
     /// Countdown bis zum nächsten Gratis-Spin (z.B. "12:34:56").
     /// Nur sichtbar wenn kein Gratis-Spin verfügbar.
@@ -138,11 +141,17 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
         _audioService.Vibrate(VibrationType.Medium);
 
         // Zielwinkel berechnen: Mindestens 3 volle Umdrehungen + Segment-Mitte
+        // Das Rad dreht sich im Uhrzeigersinn, der Zeiger steht oben.
+        // Segmente starten bei -90° (12 Uhr). Segment i hat seine Mitte bei:
+        //   -90° + i*45° + 22.5°
+        // Damit Segment i unter dem Zeiger (-90°) steht, muss das Rad um
+        //   360° - (i*45° + 22.5°) rotiert werden.
         int segmentIndex = GetSegmentIndex(_pendingPrize);
         double segmentCenter = segmentIndex * SegmentAngle + SegmentAngle / 2.0;
+        double stopAngle = 360.0 - segmentCenter;
         // Leichte Zufallsvariation innerhalb des Segments (+/- 15°)
         double variation = (Random.Shared.NextDouble() - 0.5) * (SegmentAngle * 0.6);
-        _targetAngle = MinFullRotations * 360.0 + segmentCenter + variation;
+        _targetAngle = MinFullRotations * 360.0 + stopAngle + variation;
 
         // Animations-Parameter initialisieren
         _totalRotation = 0;
@@ -234,11 +243,20 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
         bool hasEnoughScrews = _gameStateService.CanAffordGoldenScrews(_luckySpinService.SpinCost);
         CanSpin = !IsSpinning && (HasFreeSpin || hasEnoughScrews);
 
-        SpinButtonText = HasFreeSpin
-            ? (_localizationService.GetString("LuckySpinFree") ?? "Gratis drehen!")
-            : string.Format(
-                _localizationService.GetString("LuckySpinCost") ?? "Drehen ({0} \U0001f529)",
-                _luckySpinService.SpinCost);
+        if (HasFreeSpin)
+        {
+            SpinButtonText = _localizationService.GetString("LuckySpinFree") ?? "Gratis drehen!";
+            SpinCostDisplay = "";
+        }
+        else
+        {
+            // "Drehen" statt "Drehen ({0})" - Goldschrauben-Kosten als separates XAML-Element mit Icon
+            var costFormat = _localizationService.GetString("LuckySpinCost") ?? "Drehen ({0})";
+            // Format-String bereinigen: alles ab " (" oder "({" entfernen
+            var idx = costFormat.IndexOf(" (", StringComparison.Ordinal);
+            SpinButtonText = idx > 0 ? costFormat[..idx] : string.Format(costFormat, _luckySpinService.SpinCost);
+            SpinCostDisplay = _luckySpinService.SpinCost.ToString();
+        }
 
         // Countdown aktualisieren
         UpdateCountdown();
@@ -307,15 +325,18 @@ public sealed partial class LuckySpinViewModel : ViewModelBase
 
     /// <summary>
     /// Bestimmt den Segment-Index (0-7) für einen Preis-Typ.
-    /// Die Reihenfolge entspricht der Anordnung auf dem Rad (im Uhrzeigersinn).
+    /// Die Reihenfolge MUSS mit LuckySpinWheelRenderer.DrawSegmentIcons() übereinstimmen:
+    ///   0=MoneySmall(Grau), 1=MoneyMedium(Grün), 2=MoneyLarge(Gold),
+    ///   3=XpBoost(Blau), 4=GoldenScrews(Amber), 5=SpeedBoost(Cyan),
+    ///   6=ToolUpgrade(Orange), 7=Jackpot(Rot)
     /// </summary>
     private static int GetSegmentIndex(LuckySpinPrizeType prizeType) => prizeType switch
     {
         LuckySpinPrizeType.MoneySmall => 0,
         LuckySpinPrizeType.MoneyMedium => 1,
-        LuckySpinPrizeType.XpBoost => 2,
-        LuckySpinPrizeType.GoldenScrews5 => 3,
-        LuckySpinPrizeType.MoneyLarge => 4,
+        LuckySpinPrizeType.MoneyLarge => 2,
+        LuckySpinPrizeType.XpBoost => 3,
+        LuckySpinPrizeType.GoldenScrews5 => 4,
         LuckySpinPrizeType.SpeedBoost => 5,
         LuckySpinPrizeType.ToolUpgrade => 6,
         LuckySpinPrizeType.Jackpot50 => 7,

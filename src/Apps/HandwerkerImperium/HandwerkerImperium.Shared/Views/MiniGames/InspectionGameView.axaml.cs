@@ -21,6 +21,9 @@ public partial class InspectionGameView : UserControl
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
 
+    // Cache fuer SKColor.Parse() - vermeidet String-Parsing pro Frame pro Zelle
+    private readonly Dictionary<string, SKColor> _colorCache = new();
+
     public InspectionGameView()
     {
         InitializeComponent();
@@ -61,12 +64,12 @@ public partial class InspectionGameView : UserControl
     }
 
     /// <summary>
-    /// Startet den 20fps Render-Loop fuer die SkiaSharp-Darstellung.
+    /// Startet den 30fps Render-Loop fuer die SkiaSharp-Darstellung.
     /// </summary>
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();
     }
@@ -119,6 +122,15 @@ public partial class InspectionGameView : UserControl
         for (int i = 0; i < _vm.Cells.Count; i++)
         {
             var cell = _vm.Cells[i];
+            var bgColor = cell.BackgroundColor;
+
+            // SKColor.Parse() gecacht - nur bei unbekannter Farbe parsen
+            if (!_colorCache.TryGetValue(bgColor, out var skColor))
+            {
+                skColor = SKColor.Parse(bgColor);
+                _colorCache[bgColor] = skColor;
+            }
+
             result[i] = new InspectionCellData
             {
                 Icon = cell.Icon,
@@ -127,7 +139,7 @@ public partial class InspectionGameView : UserControl
                 IsFalseAlarm = cell.IsFalseAlarm,
                 IsInspected = cell.IsInspected,
                 ContentOpacity = (float)cell.ContentOpacity,
-                BackgroundColor = SKColor.Parse(cell.BackgroundColor)
+                BackgroundColor = skColor
             };
         }
         return result;

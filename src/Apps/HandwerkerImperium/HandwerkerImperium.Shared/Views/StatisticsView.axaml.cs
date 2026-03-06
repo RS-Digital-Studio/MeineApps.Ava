@@ -15,6 +15,7 @@ public partial class StatisticsView : UserControl
     private DispatcherTimer? _glowTimer;
     private float _animTime;
     private SKCanvasView? _roadmapCanvas;
+    private readonly System.Diagnostics.Stopwatch _stopwatch = new();
 
     public StatisticsView()
     {
@@ -34,6 +35,7 @@ public partial class StatisticsView : UserControl
         // Langsamer Timer für Glow-Puls (10fps, energiesparend)
         _glowTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
         _glowTimer.Tick += OnGlowTimerTick;
+        _stopwatch.Restart();
         _glowTimer.Start();
     }
 
@@ -58,7 +60,8 @@ public partial class StatisticsView : UserControl
 
     private void OnGlowTimerTick(object? sender, EventArgs e)
     {
-        _animTime += 0.1f;
+        // Frame-Rate-unabhängig: echte verstrichene Zeit statt hardcodiertem Inkrement
+        _animTime = (float)_stopwatch.Elapsed.TotalSeconds;
         _roadmapCanvas?.InvalidateSurface();
     }
 

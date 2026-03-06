@@ -483,7 +483,7 @@ public sealed class GameBackgroundRenderer : IDisposable
 
     /// <summary>
     /// Spawnt einen neuen Partikel passend zum Screen-Typ.
-    /// Begrenzt auf ~3 pro Sekunde (jeder 6. Frame bei 20fps).
+    /// Begrenzt auf ~3 pro Sekunde (wird bei ~5fps aufgerufen).
     /// </summary>
     private void SpawnParticleForScreen(GameScreenType screenType, SKRect bounds)
     {
@@ -514,7 +514,7 @@ public sealed class GameBackgroundRenderer : IDisposable
 
         if (activeCount >= maxActive) return;
 
-        // Spawn-Wahrscheinlichkeit pro Aufruf (20fps, ca. 3 Partikel/s)
+        // Spawn-Wahrscheinlichkeit pro Aufruf (~5fps, ca. 3 Partikel/s)
         if (Random.Shared.NextSingle() > 0.15f) return;
 
         ref var p = ref _particles[freeSlot];

@@ -36,7 +36,9 @@ public static class GameIconPaths
         [GameIconKind.ArrowLeft] = "M16 5L7 12L16 19V16L11 12L16 8Z",
         [GameIconKind.ArrowRight] = "M8 5L17 12L8 19V16L13 12L8 8Z",
         [GameIconKind.ArrowUpBold] = "M12 3L4 14H9V21H15V14H20Z",
-        [GameIconKind.ChevronRight] = "M8 5L17 12L8 19V16L13 12L8 8Z",
+        [GameIconKind.ChevronRight] = "M10 3L19 12L10 21L8 19L15 12L8 5Z",
+        // Pfeil nach unten (Gegenstueck zu ChevronUp)
+        [GameIconKind.ChevronDown] = "M12 16L4 7H7L12 11.5L17 7H20Z",
         [GameIconKind.ChevronUp] = "M12 8L4 17H7L12 12.5L17 17H20Z",
         [GameIconKind.Close] = "M5 3L3 5L10 12L3 19L5 21L12 14L19 21L21 19L14 12L21 5L19 3L12 10Z",
         [GameIconKind.Plus] = "M10 3H14V10H21V14H14V21H10V14H3V10H10Z",
@@ -53,6 +55,10 @@ public static class GameIconPaths
         [GameIconKind.Lock] =
             "F0 M8 10V7L10 4H14L16 7V10H18V21H6V10Z" +
             " M11 14V18H13V14L14 13H10Z",
+        // Offenes Schloss (Buegel oben offen)
+        [GameIconKind.LockOpenVariant] =
+            "F0 M8 10V7L10 4H14L16 7V5H14L12 6L10 5V7L8 10Z M6 10H18V21H6Z" +
+            " M11 14V18H13V14L14 13H10Z",
         [GameIconKind.LockOutline] =
             "F0 M8 10V7L10 4H14L16 7V10H18V21H6V10Z M8 12H16V19H8Z",
         [GameIconKind.Loading] =
@@ -61,7 +67,7 @@ public static class GameIconPaths
             "M12 4L18 7L20 11H18L17 9L12 6L8 8L6 12L8 16L12 18L16 16L18 13H20L18 17L12 20L6 18L4 14V10L6 7Z",
         [GameIconKind.Restore] =
             "M12 4L6 7L4 11H6L7 9L12 6L16 8L18 12L16 16L12 18L8 16L6 13H4L6 17L12 20L18 17L20 14V10L18 7Z",
-        [GameIconKind.Stop] = "M5 5H19V19H5Z",
+        [GameIconKind.Stop] = "F0 M8 3H16L21 8V16L16 21H8L3 16V8Z M10 7H14L17 10V14L14 17H10L7 14V10Z",
 
         // =====================================================================
         // STARS & REWARDS
@@ -89,6 +95,10 @@ public static class GameIconPaths
         [GameIconKind.TrophyVariant] =
             "M7 2H17V5H19V10L17 12H15V16H16V19H8V16H9V12H7L5 10V5H7Z" +
             " M12 7L13 9.5H15L13.5 11L14 13L12 11.5L10 13L10.5 11L9 9.5H11Z",
+        // Gefuellte Medaille (fuer Silver-Prestige-Tier)
+        [GameIconKind.Medal] =
+            "M10 2L8 5L10 8L7 10V16L12 21L17 16V10L14 8L16 5L14 2Z" +
+            " M12 11L13 13H15L13.5 14.5L14 16.5L12 15L10 16.5L10.5 14.5L9 13H11Z",
         [GameIconKind.MedalOutline] =
             "F0 M10 2L8 5L10 8L7 10V16L12 21L17 16V10L14 8L16 5L14 2Z" +
             " M10 10L9 11V15L12 18L15 15V11L14 10Z",
@@ -126,7 +136,7 @@ public static class GameIconPaths
         [GameIconKind.ShieldSword] =
             "M12 2L20 6V14L12 22L4 14V6Z M11 7H13V15L14 16V17H10V16L11 15Z",
         [GameIconKind.Skull] =
-            "M7 3H17L20 7V13L17 16H16L15 20H13V17H11V20H9L8 16H7L4 13V7Z" +
+            "F0 M7 3H17L20 7V13L17 16H16L15 20H13V17H11V20H9L8 16H7L4 13V7Z" +
             " M9 8V12H11V8Z M13 8V12H15V8Z M10 14H14L12 16Z",
         [GameIconKind.Fire] = "M12 1L15 7L18 6L16 12L19 11L17 16L19 18L15 17L14 21L12 23L10 21L9 17L5 18L7 16L4 11L7 12L5 6L8 7Z",
         [GameIconKind.FireFlag] =
@@ -221,7 +231,9 @@ public static class GameIconPaths
         [GameIconKind.HandSaw] = "M2 4H5L20 18L22 18L22 20L20 20L5 6H2Z M7 2L9 4L7 6L5 4Z",
         [GameIconKind.Saw] = "M4 8L6 6L8 8L10 6L12 8L14 6L16 8L18 6L20 8V12L4 12Z M4 12V18H20V12Z",
         [GameIconKind.Toolbox] = "M3 10H21V20H3Z M7 8V6H10V4H14V6H17V8Z M11 12H13V16H11Z",
-        [GameIconKind.Draw] = "M3 21L5 14L16 3L21 8L10 19Z M5 14L10 19",
+        [GameIconKind.Draw] = "M3 21L5 14L16 3L21 8L10 19Z M5 14L10 19Z",
+        // Stift/Bleistift (kantig, hexagonaler Schaft)
+        [GameIconKind.Pencil] = "M4 20L6 14L15 5L19 9L10 18Z M15 5L17 3L21 7L19 9Z M6 14L10 18Z",
         [GameIconKind.FormatPaint] = "M4 2H18V4L20 4V10L18 10V8H10V12H8V16H6V12L4 10Z",
         [GameIconKind.SprayBottle] = "M9 2H13V4H14V8H8V4H9Z M8 8L6 10V20L8 22H14L16 20V10L14 8Z M18 10H20V12H18Z M18 14H21V16H18Z M18 18H20V20H18Z",
         [GameIconKind.MagnifyPlus] =
@@ -243,6 +255,8 @@ public static class GameIconPaths
             " M5.5 16.5V20H6.5V16.5Z M11.5 16.5V20H12.5V16.5Z M17.5 16.5V20H18.5V16.5Z",
         [GameIconKind.Pipe] = "M4 8H10V4H14V8H20V12H14V16H10V12H4Z",
         [GameIconKind.CableData] = "M5 4H7V8L10 12H14L17 8V4H19V8L15 13V20H9V13L5 8Z",
+        // Einfaches Haus (fuer Roofer-Workshop-Icon)
+        [GameIconKind.Home] = "M12 3L2 12H5V21H19V12H22Z M10 14H14V21H10Z",
         [GameIconKind.HomeAutomation] = "M12 3L2 12H5V21H19V12H22Z M10 14H14V21H10Z M11 9H13V11H11Z",
         [GameIconKind.HomeCity] = "M12 3L2 12H5V21H10V17H14V21H19V12H22Z M15 7H21V14H19V9H17V14Z",
         [GameIconKind.HomeEdit] = "M12 3L2 12H5V21H10V15H12L18 9L20 11L14 17V21H19V12H22Z",
@@ -264,15 +278,21 @@ public static class GameIconPaths
             " M16 3V7H20V5L18 3Z M10 15H14V19H10Z",
         [GameIconKind.Garage] = "M3 10L12 4L21 10V20H3Z M7 13H17V20H7Z M9 15H15V20H9Z",
         [GameIconKind.DoorOpen] =
-            "M4 3H18V21H4Z M6 5H16V19H6Z M8 5L14 7V17L8 19Z M12 11V13",
+            "M4 3H18V21H4Z M6 5H16V19H6Z M8 5L14 7V17L8 19Z M11.5 11H12.5V13H11.5Z",
         [GameIconKind.Stairs] = "M2 22V18H6V14H10V10H14V6H18V2H22V22Z",
         [GameIconKind.TowerFire] =
             "M10 2H14V6L16 8V14L14 16V22H10V16L8 14V8L10 6Z M11 9L12 7L13 9L12 11Z",
         [GameIconKind.TransmissionTower] =
             "M12 2L14 6H16L18 2L20 4L17 8L19 14L21 22H17L15 14H13L11 14H9L7 22H3L5 14L7 8L4 4L6 2L8 6H10Z" +
             " M11 8H13V14H11Z",
+        // Baukran (fuer Contractor-Workshop-Icon)
+        [GameIconKind.Crane] =
+            "M10 2H12V8H20V10H12V20H10V10H8V8H10Z M6 8L10 4Z M12 8H18L20 10Z M11 12V14L14 14L14 20H12V16L11 16Z",
         [GameIconKind.City] =
             "M2 21V14H6V10H10V6H14V10H18V14H22V21Z M4 16V19H8V16Z M10 12V19H14V12Z M16 16V19H20V16Z",
+        // Lagerhaus: Breites Gebaeude mit Rolltor und Kisten
+        [GameIconKind.Warehouse] =
+            "M12 3L2 9V21H22V9Z M6 12H10V16H6Z M14 12H18V16H14Z M9 17H15V21H9Z",
 
         // =====================================================================
         // FURNITURE & INTERIOR
@@ -325,7 +345,7 @@ public static class GameIconPaths
         [GameIconKind.PackageDown] =
             "M3 7H21V20H3Z M3 7L12 3L21 7Z M11 10H13V14H15L12 17L9 14H11Z",
         [GameIconKind.PackageVariant] =
-            "M3 7H21V20H3Z M3 7L12 3L21 7Z M12 7V20 M12 3V7",
+            "M3 7H21V20H3Z M3 7L12 3L21 7Z M11.5 7V20H12.5V7Z M11.5 3V7H12.5V3Z",
         [GameIconKind.Chip] =
             "F0 M6 6H18V18H6Z M8 8H16V16H8Z" +
             " M9.5 4H10.5V6H9.5Z M13.5 4H14.5V6H13.5Z M9.5 18H10.5V20H9.5Z M13.5 18H14.5V20H13.5Z" +
@@ -372,7 +392,7 @@ public static class GameIconPaths
         [GameIconKind.ProgressClock] =
             "F0 M12 2L19 5L22 12L19 19L12 22L5 19L2 12L5 5Z" +
             " M12 5L17 7L19 12L17 17L12 19L7 17L5 12L7 7Z" +
-            " M11 7H13V12H16V14H11Z",
+            " M11 7H13V11H8V13H11V7Z",
         [GameIconKind.TimerOutline] =
             "F0 M10 1H14V3H10Z M12 4L18 7L21 12L18 18L12 22L6 18L3 12L6 7Z" +
             " M12 7L16 9L18 12L16 16L12 18L8 16L6 12L8 9Z M11 8H13V13H16V15H11Z",
@@ -422,7 +442,7 @@ public static class GameIconPaths
             " M11.5 16H12.5V11H11.5Z M9 12L12 9L15 12L14 13L12.5 11V16H11.5V11L10 13Z",
         [GameIconKind.WifiOff] =
             "M2 4L4 2L22 20L20 22Z M12 18L14 16L12 14L10 16Z" +
-            " M4 10L6 8L8 10 M16 8L18 10L20 8 M8 14L10 12L12 14",
+            " M4 10L6 8L8 10Z M16 8L18 10L20 8Z M8 14L10 12L12 14Z",
 
         // =====================================================================
         // COMMUNICATION
@@ -436,7 +456,7 @@ public static class GameIconPaths
         [GameIconKind.KeyVariant] =
             "M7 10L5 12V16L7 18L11 18L13 16L15 16L15 14L17 14V12H13L11 10Z" +
             " M8 13V15H10V13Z",
-        [GameIconKind.KeyboardReturn] = "M18 4V14H8L11 11L9 9L4 14L9 19L11 17L8 14",
+        [GameIconKind.KeyboardReturn] = "M18 4V14H8L11 11L9 9L4 14L9 19L11 17L8 14Z",
 
         // =====================================================================
         // INFO & HELP
@@ -481,7 +501,7 @@ public static class GameIconPaths
             "M12 2L19 5L22 12L19 19L12 22L5 19L2 12L5 5Z" +
             " M9 9H11V11H9Z M13 9H15V11H13Z M8 14L10 16L12 16L14 16L16 14Z",
         [GameIconKind.Heart] = "M12 21L3 12V8L5 5L8 4L12 7L16 4L19 5L21 8V12Z",
-        [GameIconKind.Sleep] = "M14 4H20L14 10H20 M10 10H16L10 16H16 M6 16H12L6 22H12",
+        [GameIconKind.Sleep] = "M14 4H20L14 10H20Z M10 10H16L10 16H16Z M6 16H12L6 22H12Z",
         [GameIconKind.Dumbbell] = "M4 9H6V8H8V16H6V15H4V9Z M20 9H18V8H16V16H18V15H20V9Z M8 11H16V13H8Z",
         [GameIconKind.ShoeFormal] = "M4 14L6 10H10L14 6L18 6L20 8V12L22 14V16H4Z",
         [GameIconKind.BagPersonal] = "M8 4H16L18 8V20H6V8Z M10 2H14V4H10Z M10 10H14V14H10Z",
@@ -499,15 +519,18 @@ public static class GameIconPaths
         [GameIconKind.CartArrowDown] =
             "M2 3H6L8 13H18L21 5H9Z M8 17H11V20H8Z M17 17H20V20H17Z" +
             " M14 6V10L12 8.5L14 6L16 8.5L14 10Z",
+        // LKW: Fuehrerkabine rechts, Ladeflaeche links, Raeder
+        [GameIconKind.Truck] =
+            "M2 7H15V17H2Z M15 10H19L21 13V17H15Z M5 16L7 16L7 19L5 19Z M17 16L19 16L19 19L17 19Z M3 9H13V12H3Z",
         [GameIconKind.TruckDelivery] =
             "M2 6H16V16H2Z M16 10H20L22 14V16H16Z M6 16L8 16L8 18L6 18Z M18 16L20 16L20 18L18 18Z",
         [GameIconKind.ExitToApp] = "M16 8L20 12L16 16V13H10V11H16Z M4 4H14V6H6V18H14V20H4Z",
         [GameIconKind.PlayCircle] =
             "F0 M12 2L19 5L22 12L19 19L12 22L5 19L2 12L5 5Z M10 7L18 12L10 17Z",
         [GameIconKind.Video] = "M3 6V18H16V14L22 18V6L16 10V6Z",
-        [GameIconKind.Flash] = "M13 2L7 13H11L7 22L17 11H13Z",
+        [GameIconKind.Flash] = "M14 2L8 11H12L5 22L19 13H15L18 4Z",
         [GameIconKind.FlashOutline] =
-            "F0 M13 2L7 13H11L7 22L17 11H13Z M12.5 5L9 12H12L9 18L15 12H12Z",
+            "F0 M14 2L8 11H12L5 22L19 13H15L18 4Z M13.5 5L10 11H13L8 18L17 13H14L16 6Z",
         [GameIconKind.RocketLaunch] =
             "M12 2L16 6L18 12L16 16L12 18L8 16L6 12L8 6Z" +
             " M12 6L14 8V12L12 14L10 12V8Z" +
@@ -522,12 +545,15 @@ public static class GameIconPaths
             "F0 M12 3L22 9L12 15L2 9Z M6 11V18L12 21L18 18V11L12 14Z" +
             " M8 12V17L12 19L16 17V12Z",
         [GameIconKind.School] = "M12 3L22 9L12 15L2 9Z M6 11V18L12 21L18 18V11L12 14Z",
+        // Absolventenhut: Flaches Brett oben, Quaste rechts
+        [GameIconKind.GraduationCap] =
+            "M12 4L2 9L12 14L22 9Z M6 11V17L12 20L18 17V11Z M20 9V16H21V9Z",
         [GameIconKind.HardHat] = "M4 14V12L6 8L10 6H14L18 8L20 12V14Z M6 15H18V18H6Z",
         [GameIconKind.StorefrontOutline] =
             "F0 M4 3H20L22 8L20 10L18 8L16 10L14 8L12 10L10 8L8 10L6 8L4 10L2 8Z" +
             " M4 10V21H20V10Z M6 12H18V19H6Z M10 14H14V19H10Z",
         [GameIconKind.WeatherSunset] =
-            "M12 4L14 6L12 8L10 6Z M4 12H8 M16 12H20 M6 7L8 9 M18 7L16 9" +
+            "M12 4L14 6L12 8L10 6Z M4 11.5H8V12.5H4Z M16 11.5H20V12.5H16Z M5.5 6.5L8 9L7 9.5L5 7Z M18.5 6.5L16 9L17 9.5L19 7Z" +
             " M6 16H18L16 14L12 12L8 14Z M4 18H20V20H4Z",
         [GameIconKind.WhiteBalanceSunny] =
             "M12 7L15 8L17 11V13L15 16L12 17L9 16L7 13V11L9 8Z" +
@@ -546,25 +572,32 @@ public static class GameIconPaths
         // =====================================================================
         // GUILD BOSS ICONS
         // =====================================================================
+        // Felsiger Golem: Stumpfe Augen + zerklüfteter Rissmund
         [GameIconKind.RockGolem] =
-            "M8 4H16L19 8V14L16 18H8L5 14V8Z M9 9V13H11V9Z M13 9V13H15V9Z M10 15H14L12 17Z",
+            "M8 4H16L19 8V14L16 18H8L5 14V8Z M9 9H11V11H9Z M13 9H15V11H13Z M9 14L10 15.5L11 14L12 16L13 14L14 15.5L15 14Z",
+        // Eisdrache: Diamant-Kristallaugen + Eiszapfen-Reißzähne
         [GameIconKind.IceDragon] =
             "M12 2L16 6L20 8V14L16 18L12 22L8 18L4 14V8L8 6Z" +
-            " M8 9V12H10V9Z M14 9V12H16V9Z M10 14H14L12 16Z" +
+            " M9 9L10 11L9 13L8 11Z M15 9L16 11L15 13L14 11Z M10 15L11 17L12 15L13 17L14 15Z" +
             " M4 6L2 4Z M20 6L22 4Z",
+        // Feuerdämon: Schräge Flammenaugen + breites dämonisches Grinsen
         [GameIconKind.FireDemon] =
             "M12 2L16 6L18 10V16L14 20L12 22L10 20L6 16V10L8 6Z" +
-            " M9 10V13H11V10Z M13 10V13H15V10Z M10 15L12 17L14 15Z" +
+            " M9 11L11 9V12L9 14Z M15 9L13 11V14L15 12Z M9 15L11 14L12 16L13 14L15 15L12 17Z" +
             " M6 4L8 6Z M18 4L16 6Z",
+        // Schattenherr: Schmale bedrohliche Schlitzaugen + Schattenranken-Mund
         [GameIconKind.ShadowLord] =
             "M7 3H17L20 7V15L17 19H14L12 22L10 19H7L4 15V7Z" +
-            " M9 8V12H11V8Z M13 8V12H15V8Z M9 14H15L12 17Z",
+            " M9 9H11V10.5H9Z M13 9H15V10.5H13Z M8 13L10 14L12 13L14 14L16 13L14 16L12 17L10 16Z",
+        // Mechanischer Titan: Quadratische Industrieaugen + Doppel-Kieferleisten
         [GameIconKind.MechanicalTitan] =
             "M6 4H18L20 6V18L18 20H6L4 18V6Z" +
-            " M8 7H10V10H8Z M14 7H16V10H14Z M9 12H15V14H9Z" +
-            " M8 15V18H10V15Z M14 15V18H16V15Z",
+            " M8 7H10V10H8Z M14 7H16V10H14Z" +
+            " M8 11.5H16V12.5H8Z M10 13.5H14V14.5H10Z" +
+            " M8 15.5V18H10V15.5Z M14 15.5V18H16V15.5Z",
+        // Alter Vorarbeiter: Weise zusammengekniffene Augen + langer Bart
         [GameIconKind.AncientForeman] =
             "M8 2H16L18 4V6H6V4Z M7 6H17L19 10V16L17 20H7L5 16V10Z" +
-            " M9 10V13H11V10Z M13 10V13H15V10Z M10 15H14L12 17Z",
+            " M9 11H11V12.5H9Z M13 11H15V12.5H13Z M10 14L11 15.5L12 14L13 15.5L14 14L12 18Z",
     };
 }

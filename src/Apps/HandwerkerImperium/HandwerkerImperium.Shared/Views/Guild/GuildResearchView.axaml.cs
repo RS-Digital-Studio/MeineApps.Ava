@@ -18,7 +18,7 @@ public partial class GuildResearchView : UserControl
     private readonly GuildResearchBackgroundRenderer _bgRenderer = new();
     private readonly GuildResearchTreeRenderer _treeRenderer = new();
     private readonly GuildHallHeaderRenderer _headerRenderer = new();
-    // Gecachte Liste für Render-Loop (vermeidet ToList() pro Frame bei 20fps)
+    // Gecachte Liste für Render-Loop (vermeidet ToList() pro Frame bei 30fps)
     private List<GuildResearchDisplay> _cachedItems = [];
     private object? _lastGuildResearchRef;
     private DispatcherTimer? _renderTimer;
@@ -71,15 +71,15 @@ public partial class GuildResearchView : UserControl
     {
         _renderTimer?.Stop();
         _countdownRefreshCounter = 0;
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) =>
         {
             _headerCanvas?.InvalidateSurface();
             _treeCanvas?.InvalidateSurface();
 
-            // Countdown alle ~1s aktualisieren (20 Ticks × 50ms = 1000ms)
+            // Countdown alle ~1s aktualisieren (30 Ticks × 33ms ≈ 1000ms)
             _countdownRefreshCounter++;
-            if (_countdownRefreshCounter >= 20)
+            if (_countdownRefreshCounter >= 30)
             {
                 _countdownRefreshCounter = 0;
                 _guildVm?.RefreshActiveResearchCountdown();

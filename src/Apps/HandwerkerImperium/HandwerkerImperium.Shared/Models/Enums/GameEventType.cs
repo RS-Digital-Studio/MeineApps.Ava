@@ -86,23 +86,23 @@ public static class GameEventTypeExtensions
     };
 
     /// <summary>
-    /// Icon for this event type.
+    /// GameIconKind-String für AXAML-Bindings via StringToGameIconKindConverter.
     /// </summary>
     public static string GetIcon(this GameEventType type) => type switch
     {
-        GameEventType.MaterialSale => "\ud83c\udf1f",           // Star
-        GameEventType.MaterialShortage => "\u26a0\ufe0f",       // Warning
-        GameEventType.HighDemand => "\ud83d\udcb0",             // Money bag
-        GameEventType.EconomicDownturn => "\ud83d\udcc9",       // Chart down
-        GameEventType.TaxAudit => "\ud83d\udcb8",               // Money with wings
-        GameEventType.WorkerStrike => "\u270a",                  // Raised fist
-        GameEventType.InnovationFair => "\ud83d\udca1",          // Light bulb
-        GameEventType.CelebrityEndorsement => "\u2b50",          // Star
-        GameEventType.SpringSeason => "\ud83c\udf38",            // Cherry blossom
-        GameEventType.SummerBoom => "\u2600\ufe0f",              // Sun
-        GameEventType.AutumnSurge => "\ud83c\udf42",             // Fallen leaf
-        GameEventType.WinterSlowdown => "\u2744\ufe0f",          // Snowflake
-        _ => "\ud83d\udccc"
+        GameEventType.MaterialSale => "Star",
+        GameEventType.MaterialShortage => "AlertCircle",
+        GameEventType.HighDemand => "CashMultiple",
+        GameEventType.EconomicDownturn => "TrendingDown",
+        GameEventType.TaxAudit => "Finance",
+        GameEventType.WorkerStrike => "AccountOff",
+        GameEventType.InnovationFair => "LightbulbOn",
+        GameEventType.CelebrityEndorsement => "StarCircle",
+        GameEventType.SpringSeason => "Flower",
+        GameEventType.SummerBoom => "WhiteBalanceSunny",
+        GameEventType.AutumnSurge => "Forest",
+        GameEventType.WinterSlowdown => "Snowflake",
+        _ => "InformationOutline"
     };
 
     /// <summary>

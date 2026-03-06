@@ -100,16 +100,16 @@ public static class OrderTypeExtensions
     public static bool RequiresMultipleWorkshops(this OrderType type) => type == OrderType.Cooperation;
 
     /// <summary>
-    /// Icon for this order type.
+    /// GameIconKind-String für AXAML-Bindings via StringToGameIconKindConverter.
     /// </summary>
     public static string GetIcon(this OrderType type) => type switch
     {
-        OrderType.Quick => "\u26a1",           // Lightning bolt
-        OrderType.Standard => "\ud83d\udccb",  // Clipboard
-        OrderType.Large => "\ud83d\udce6",     // Package
-        OrderType.Weekly => "\ud83d\udcc5",    // Calendar
-        OrderType.Cooperation => "\ud83e\udd1d", // Handshake
-        _ => "\ud83d\udccb"
+        OrderType.Quick => "Flash",
+        OrderType.Standard => "ClipboardList",
+        OrderType.Large => "ClipboardTextMultiple",
+        OrderType.Weekly => "CalendarCheck",
+        OrderType.Cooperation => "Handshake",
+        _ => "ClipboardList"
     };
 
     /// <summary>

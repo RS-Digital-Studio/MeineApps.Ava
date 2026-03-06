@@ -627,7 +627,7 @@ public partial class DashboardView : UserControl
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Startet den Render-Timer für die City-Skyline (20 fps).
+    /// Startet den Render-Timer für die City-Skyline (30fps).
     /// Guard gegen Doppelstart wenn Timer bereits läuft.
     /// </summary>
     private void StartCityRenderLoop()
@@ -635,15 +635,15 @@ public partial class DashboardView : UserControl
         if (_renderTimer is { IsEnabled: true }) return;
 
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20 fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += OnCityRenderTick;
         _renderTimer.Start();
     }
 
     /// <summary>
     /// Render-Tick mit Scroll-Drosselung:
-    /// - Während Scroll: City nur alle 3 Ticks (~6fps), Workshop-Karten gar nicht
-    /// - Ohne Scroll: Volle 20fps für beide Canvases
+    /// - Während Scroll: City nur alle 3 Ticks (~10fps), Workshop-Karten gar nicht
+    /// - Ohne Scroll: Volle 30fps für beide Canvases
     /// </summary>
     private void OnCityRenderTick(object? sender, EventArgs e)
     {
@@ -655,13 +655,13 @@ public partial class DashboardView : UserControl
 
         if (_isScrolling)
         {
-            // Während Scroll: City nur alle 3 Ticks (~6fps), Workshop-Karten pausieren
+            // Während Scroll: City nur alle 3 Ticks (~10fps), Workshop-Karten pausieren
             if (_renderTickCounter % 3 == 0)
                 _cityCanvas?.InvalidateSurface();
         }
         else
         {
-            // Ohne Scroll: Volle 20fps
+            // Ohne Scroll: Volle 30fps
             _cityCanvas?.InvalidateSurface();
             WorkshopCardsCanvas?.InvalidateSurface();
         }

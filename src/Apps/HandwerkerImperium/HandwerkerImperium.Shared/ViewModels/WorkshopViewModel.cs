@@ -255,7 +255,7 @@ public sealed partial class WorkshopViewModel : ViewModelBase, IDisposable
     {
         var workshop = _gameStateService.State.GetOrCreateWorkshop(WorkshopType);
 
-        WorkshopIcon = WorkshopType.GetIcon();
+        WorkshopIcon = WorkshopType.GetIconKind();
         WorkshopName = _localizationService.GetString(WorkshopType.GetLocalizationKey());
         Level = workshop.Level;
         LevelDisplay = $"{Level}/{Workshop.MaxLevel}";

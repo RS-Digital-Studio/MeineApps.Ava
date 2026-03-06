@@ -59,12 +59,12 @@ public partial class RoofTilingGameView : UserControl
     }
 
     /// <summary>
-    /// Startet den 20fps Render-Loop fuer die SkiaSharp-Darstellung.
+    /// Startet den 30fps Render-Loop fuer die SkiaSharp-Darstellung.
     /// </summary>
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();
     }
@@ -163,21 +163,31 @@ public partial class RoofTilingGameView : UserControl
     private float _lastCanvasWidth = 1;
     private float _lastCanvasHeight = 1;
 
+    // Cache fuer SKColor.Parse() in ParseColorToArgb - vermeidet String-Parsing pro Frame pro Ziegel
+    private readonly Dictionary<string, uint> _argbCache = new();
+
     /// <summary>
     /// Hex-String (#RRGGBB) in uint ARGB konvertieren fuer SkiaSharp.
+    /// Ergebnis wird gecacht um SKColor.Parse() nicht pro Frame pro Ziegel aufzurufen.
     /// </summary>
-    private static uint ParseColorToArgb(string hexColor)
+    private uint ParseColorToArgb(string hexColor)
     {
         if (string.IsNullOrEmpty(hexColor))
             return 0xFF3A3A3A; // EmptySlotColor als Fallback
 
+        if (_argbCache.TryGetValue(hexColor, out var cached))
+            return cached;
+
         try
         {
             var skColor = SKColor.Parse(hexColor);
-            return (uint)skColor;
+            var argb = (uint)skColor;
+            _argbCache[hexColor] = argb;
+            return argb;
         }
         catch
         {
+            _argbCache[hexColor] = 0xFF3A3A3A;
             return 0xFF3A3A3A;
         }
     }

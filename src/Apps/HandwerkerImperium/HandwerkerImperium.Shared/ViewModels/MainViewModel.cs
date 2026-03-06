@@ -1879,8 +1879,8 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     /// <summary>
-    /// Wird vom MainView Render-Timer aufgerufen (20fps).
-    /// Ersetzt den separaten 30fps-Timer und reduziert UI-Thread-Callbacks.
+    /// Wird vom MainView Render-Timer aufgerufen (25fps).
+    /// Ersetzt den separaten Timer und reduziert UI-Thread-Callbacks.
     /// </summary>
     public void UpdateMoneyAnimation()
     {

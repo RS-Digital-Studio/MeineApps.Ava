@@ -211,10 +211,9 @@
       </StackPanel>
 
       <!-- ================================================================= -->
-      <!-- 5. GLUECKSRAD-BANNER (nur wenn Gratis-Spin verfuegbar)            -->
+      <!-- 5. GLUECKSRAD-BANNER (immer sichtbar, Gratis oder Goldschrauben) -->
       <!-- ================================================================= -->
-      <Button IsVisible="{Binding HasFreeSpin}"
-              Command="{Binding ShowLuckySpinCommand}"
+      <Button Command="{Binding ShowLuckySpinCommand}"
               Classes="Text" Padding="0" CornerRadius="12"
               HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
               AutomationProperties.AutomationId="Missionen_Btn_LuckySpin">
@@ -230,6 +229,13 @@
                        FontSize="14" FontWeight="Bold"
                        Foreground="{StaticResource CraftGoldBrush}"
                        AutomationProperties.AutomationId="Missionen_Txt_LuckySpin" />
+            <!-- Gratis-Badge nur bei verfuegbarem Gratis-Spin -->
+            <Border IsVisible="{Binding HasFreeSpin}"
+                    Background="{StaticResource CraftGoldBrush}"
+                    CornerRadius="8" Padding="6,2">
+              <TextBlock Text="GRATIS" FontSize="10" FontWeight="Bold"
+                         Foreground="#1A1200" />
+            </Border>
           </StackPanel>
         </Border>
       </Button>

@@ -98,7 +98,7 @@ public partial class WorkshopView : UserControl
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) =>
         {
             _workshopCanvas?.InvalidateSurface();
@@ -196,7 +196,7 @@ public partial class WorkshopView : UserControl
             _ => 0.25f
         };
 
-        _ambientEmitTimer += 0.05f; // ~50ms pro Frame
+        _ambientEmitTimer += 0.033f; // ~33ms pro Frame (30fps)
         if (_ambientEmitTimer < emitInterval) return;
         _ambientEmitTimer = 0;
 

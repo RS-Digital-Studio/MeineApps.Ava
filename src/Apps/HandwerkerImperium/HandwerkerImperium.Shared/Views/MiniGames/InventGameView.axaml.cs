@@ -56,13 +56,13 @@ public partial class InventGameView : UserControl
     }
 
     /// <summary>
-    /// Startet den 20fps Render-Loop für Erfinder-Puzzle-Animationen.
+    /// Startet den 30fps Render-Loop für Erfinder-Puzzle-Animationen.
     /// </summary>
     private void StartRenderLoop()
     {
         // NUR Timer stoppen, NICHT StopRenderLoop() aufrufen (das nullt _gameCanvas)
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20 fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) =>
         {
             _gameCanvas?.InvalidateSurface();

@@ -19,6 +19,10 @@ public partial class WiringGameView : UserControl
     private DateTime _lastRenderTime = DateTime.UtcNow;
     private SKRect _lastBounds;
 
+    // Gecachte Arrays fuer Render-Daten (vermeidet LINQ-Allokation pro Frame)
+    private WireRenderData[] _cachedLeftData = [];
+    private WireRenderData[] _cachedRightData = [];
+
     public WiringGameView()
     {
         InitializeComponent();
@@ -55,12 +59,12 @@ public partial class WiringGameView : UserControl
     }
 
     /// <summary>
-    /// Startet den 20fps Render-Loop fuer die SkiaSharp-Darstellung.
+    /// Startet den 30fps Render-Loop fuer die SkiaSharp-Darstellung.
     /// </summary>
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();
     }
@@ -94,22 +98,30 @@ public partial class WiringGameView : UserControl
         // LocalClipBounds statt e.Info.Width/Height fuer korrekte DPI-Skalierung
         _lastBounds = canvas.LocalClipBounds;
 
-        // Kabel-Daten aus ViewModel extrahieren (Wire -> WireRenderData)
-        var leftData = _vm.LeftWires.Select(w => new WireRenderData
+        // Kabel-Daten aus ViewModel extrahieren (gecachte Arrays, kein LINQ pro Frame)
+        var leftWires = _vm.LeftWires;
+        if (_cachedLeftData.Length != leftWires.Count)
+            _cachedLeftData = new WireRenderData[leftWires.Count];
+        for (int i = 0; i < leftWires.Count; i++)
         {
-            ColorIndex = (int)w.WireColor,
-            IsSelected = w.IsSelected,
-            IsConnected = w.IsConnected,
-            HasError = w.HasError
-        }).ToArray();
+            var w = leftWires[i];
+            _cachedLeftData[i].ColorIndex = (int)w.WireColor;
+            _cachedLeftData[i].IsSelected = w.IsSelected;
+            _cachedLeftData[i].IsConnected = w.IsConnected;
+            _cachedLeftData[i].HasError = w.HasError;
+        }
 
-        var rightData = _vm.RightWires.Select(w => new WireRenderData
+        var rightWires = _vm.RightWires;
+        if (_cachedRightData.Length != rightWires.Count)
+            _cachedRightData = new WireRenderData[rightWires.Count];
+        for (int i = 0; i < rightWires.Count; i++)
         {
-            ColorIndex = (int)w.WireColor,
-            IsSelected = w.IsSelected,
-            IsConnected = w.IsConnected,
-            HasError = w.HasError
-        }).ToArray();
+            var w = rightWires[i];
+            _cachedRightData[i].ColorIndex = (int)w.WireColor;
+            _cachedRightData[i].IsSelected = w.IsSelected;
+            _cachedRightData[i].IsConnected = w.IsConnected;
+            _cachedRightData[i].HasError = w.HasError;
+        }
 
         // Selektiertes linkes Kabel als Index ermitteln
         int? selectedLeft = null;
@@ -120,7 +132,7 @@ public partial class WiringGameView : UserControl
         }
 
         bool isAllConnected = _vm.ConnectedCount >= _vm.WireCount && _vm.WireCount > 0;
-        _renderer.Render(canvas, _lastBounds, leftData, rightData, selectedLeft,
+        _renderer.Render(canvas, _lastBounds, _cachedLeftData, _cachedRightData, selectedLeft,
             isAllConnected, _vm.ConnectedCount, deltaTime);
     }
 

@@ -201,13 +201,13 @@ public partial class ResearchView : UserControl
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // RENDER-LOOP (20 fps)
+    // RENDER-LOOP (30 fps)
     // ═══════════════════════════════════════════════════════════════════════
 
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) };
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += OnRenderTick;
         _renderTimer.Start();
     }

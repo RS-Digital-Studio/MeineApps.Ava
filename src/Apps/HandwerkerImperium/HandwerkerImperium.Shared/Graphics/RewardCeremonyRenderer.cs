@@ -124,7 +124,7 @@ public sealed class RewardCeremonyRenderer
     }
 
     /// <summary>
-    /// Update-Tick (typisch deltaTime = 0.05 bei 20fps).
+    /// Update-Tick (typisch deltaTime = 0.04 bei 25fps).
     /// </summary>
     public void Update(float deltaTime)
     {

@@ -93,7 +93,8 @@ public static class WorkshopTypeExtensions
     };
 
     /// <summary>
-    /// Gets the icon/emoji for this workshop type.
+    /// Emoji-Icon für Display-Text (String-Interpolation in UI-Labels).
+    /// NICHT für IconKindConverter verwenden - dafür GetIconKind() nutzen.
     /// </summary>
     public static string GetIcon(this WorkshopType type) => type switch
     {
@@ -108,6 +109,24 @@ public static class WorkshopTypeExtensions
         WorkshopType.MasterSmith => "Anvil",               // GameIcon
         WorkshopType.InnovationLab => "LightbulbOnOutline", // GameIcon
         _ => "\ud83d\udd27"
+    };
+
+    /// <summary>
+    /// GameIconKind-String für AXAML-Bindings via StringToGameIconKindConverter.
+    /// </summary>
+    public static string GetIconKind(this WorkshopType type) => type switch
+    {
+        WorkshopType.Carpenter => "Hammer",
+        WorkshopType.Plumber => "Pipe",
+        WorkshopType.Electrician => "LightningBolt",
+        WorkshopType.Painter => "Palette",
+        WorkshopType.Roofer => "HomeRoof",
+        WorkshopType.Contractor => "OfficeBuildingOutline",
+        WorkshopType.Architect => "Compass",
+        WorkshopType.GeneralContractor => "Crown",
+        WorkshopType.MasterSmith => "Anvil",
+        WorkshopType.InnovationLab => "LightbulbOnOutline",
+        _ => "Hammer"
     };
 
     /// <summary>

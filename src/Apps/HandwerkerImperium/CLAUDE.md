@@ -6,7 +6,22 @@
 
 Idle-Game: Baue dein Handwerker-Imperium auf, stelle Mitarbeiter ein, kaufe Werkzeuge, erforsche Upgrades, schalte neue Workshop-Typen frei. Verdiene Geld durch automatische Auftraege oder spiele Mini-Games.
 
-**Version:** 2.0.17 (VersionCode 25) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Geschlossener Test
+**Version:** 2.0.19 (VersionCode 27) | **Package-ID:** com.meineapps.handwerkerimperium | **Status:** Produktion
+
+## Icon-System (Eigene Warme Werkstatt Icons)
+
+Kein Material.Icons.Avalonia. Alle Icons sind eigene geometrische SVG-Pfade im "Warme Werkstatt"-Stil.
+
+- **222 Icons** in `Icons/GameIconKind.cs` (Enum) + `Icons/GameIconPaths.cs` (Pfaddaten)
+- **Design-Sprache**: Hexagonale Grundformen (6-seitig, spitze Oberseite) statt runder Kreise
+- **Hexagon-Template**: `M12 2L19 5L22 12L19 19L12 22L5 19L2 12L5 5Z`
+- **Nur M/L/H/V/Z Befehle** (keine Bezier-Kurven) für kantigen geometrischen Stil
+- **24x24 Koordinatenraum** für alle Icons
+- **Dual-Parser-Kompatibilität**: Pfade funktionieren mit Avalonia `StreamGeometry.Parse` UND SkiaSharp `SKPath.ParseSvgPathData`
+- **Gebäude-Icons**: Kantine=SilverwareForkKnife, Lager=Warehouse, Büro=OfficeBuildingCog, Ausstellungsraum=Store, Ausbildungszentrum=GraduationCap, Fuhrpark=Truck, Werkstatt-Erweiterung=ArrowExpand
+- **GameIcon** (`Icons/GameIcon.cs`): Custom Control (erbt von `PathIcon`, `StyleKeyOverride => typeof(PathIcon)`)
+- **GameIconRenderer** (`Icons/GameIconRenderer.cs`): SkiaSharp-Renderer mit `ConcurrentDictionary<GameIconKind, SKPath?>` Cache
+- **StringToGameIconKindConverter**: Konvertiert String-Iconnamen zu Enum-Werten in XAML-Bindings
 
 ## Haupt-Features
 
@@ -126,7 +141,7 @@ Navigation via `NavigationRequested` Events. Sub-VM-Events werden an GuildViewMo
 
 ### Isometrische Weltkarte (Graphics/IsometricWorld/)
 
-Full-Screen 2.5D-Weltkarte als zentraler Game-Hub (Tab 0). Komplett SkiaSharp-basiert, 20fps Render-Loop.
+Full-Screen 2.5D-Weltkarte als zentraler Game-Hub (Tab 0). Komplett SkiaSharp-basiert, 30fps Render-Loop.
 
 **8 Dateien:**
 
@@ -186,12 +201,12 @@ Tier-Farben: F=Grau, E=Gruen, D=Teal, C=DarkOrange, B=Amber, A=Rot, S=Gold, SS=L
 
 45 Upgrades in 3 Branches a 15 Level: Tools (Effizienz + MiniGame-Zone), Management (Loehne + Worker-Slots), Marketing (Belohnungen + Order-Slots)
 Kosten: 500 bis 1B. Dauer: 10min bis 72h (Echtzeit).
-**UI**: 2D-Baum-Layout mit 6 SKCanvasViews (Header, ActiveResearch, Tabs, BranchBanner, Tree, Celebration). 20fps Render-Loop.
+**UI**: 2D-Baum-Layout mit 6 SKCanvasViews (Header, ActiveResearch, Tabs, BranchBanner, Tree, Celebration). 30fps Render-Loop.
 **Renderer**: ResearchTreeRenderer, ResearchIconRenderer (12 Icons), ResearchActiveRenderer, ResearchBranchBannerRenderer, ResearchTabRenderer, ResearchCelebrationRenderer, ResearchLabRenderer.
 
 ### Mini-Games (alle SkiaSharp-basiert)
 
-Alle 10 Mini-Games nutzen dedizierte SkiaSharp-Renderer. Header, Result-Display, Countdown und Buttons bleiben XAML. Jeder Renderer hat `Render()` + `HitTest()`, View hat 20fps Render-Loop, Touch via `PointerPressed` + DPI-Skalierung.
+Alle 10 Mini-Games nutzen dedizierte SkiaSharp-Renderer. Header, Result-Display, Countdown und Buttons bleiben XAML. Jeder Renderer hat `Render()` + `HitTest()`, View hat 30fps Render-Loop, Touch via `PointerPressed` + DPI-Skalierung.
 **Tutorial-System**: Erstes Spielen zeigt Overlay (Tracking via `GameState.SeenMiniGameTutorials`).
 **Belohnungsanzeige**: NUR bei letzter Aufgabe als Gesamt-Belohnung. Berechnung: `order.FinalReward * GetOrderRewardMultiplier(order)` (inkl. Research, Gebäude, Reputation, Events, Stammkunden). PaintingGame zusätzlich `* comboMult`. Rewarded-Ad setzt `order.IsScoreDoubled = true`, PaintingGame setzt `order.ComboMultiplier`. `CompleteActiveOrder()` wendet beides bei Auszahlung an.
 **Ergebnis-Animation**: Zwischen-Runden sofort, letzte Runde staggered (100ms Delay, 250ms Duration).
@@ -210,7 +225,7 @@ Alle 10 Mini-Games nutzen dedizierte SkiaSharp-Renderer. Header, Result-Display,
 | ForgeGame | ForgeGameRenderer | Amboss+Esse, Temperatur-Zonen, Hammer-Schlag-Animation |
 | InventGame | InventGameRenderer | Violettes Puzzle, 12 Bauteil-Icons, Circuit-Pulse entlang Verbindungen |
 
-Alle Renderer: Struct-basierte Partikel (kein GC), 20fps Render-Loop.
+Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 
 ## App-spezifische Services
 
@@ -290,7 +305,7 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 20fps Render-Loop.
 | Reward-Zeremonie | Full-Screen Overlay: Scale-In, Confetti (120), Feuerwerk, 5 CeremonyTypes, 4s Tap-to-Dismiss |
 | Loading-Screen | Zahnraeder, Funken-Partikel, Gradient-Fortschrittsbalken, rotierende Tipps |
 | Splash-Screen | "Die Schmiede": Zahnraeder, Amboss, Hammer-Animation, Glut-Partikel |
-| Gluecksrad | LuckySpinWheelRenderer: 8 Segmente, Nieten-Rand, SkiaSharp-Icons, Spin-Animation ~60fps |
+| Gluecksrad | LuckySpinWheelRenderer: 8 Segmente, Nieten-Rand, SkiaSharp-Icons, Spin-Animation ~60fps. Segment-Reihenfolge (0-7): MoneySmall, MoneyMedium, MoneyLarge, XpBoost, GoldenScrews, SpeedBoost, ToolUpgrade, Jackpot. Winkelberechnung: `360 - segmentCenter` (Rad dreht im Uhrzeigersinn, Zeiger oben) |
 | Iso-Weltkarte | 2.5D 8x8 Diamond-Grid, 10 Workshop-Gebaeude, Kamera, Radial-Menue, Partikel, Tag/Nacht |
 | Gilden-Forschungsbaum | 18 Items, Bezier-Verbindungen, Flow-Partikel, GuildHallHeader (Steinmauer, Fackeln, Emblem), Node-Namen+Kosten/Effekt-Labels, Lock-Badges, Drop-Shadow, Inner-Highlight |
 | Research-Labor | ResearchLabRenderer: Werkstatt-Szene, Zahnraeder, Dampf, Gluehbirne |
@@ -401,7 +416,7 @@ Effekte ueber `GuildMembership`-Properties gecacht:
 - `Services/GuildTipService.cs`: Kontextuelle Tipps (Preferences-basiert, 24h Cooldown, IsBusy-Guard)
 - `Services/GuildAchievementService.cs`: 30 Achievements (10 Typen x 3 Tiers), Firebase-State-Tracking, Fortschrittsberechnung
 - `ViewModels/GuildViewModel.cs`: Research + Timer auto-completion, ContributeDialog, Einladungs-Inbox, nutzt IGuildResearchService
-- `Views/Guild/GuildResearchView.axaml(.cs)`: 3 Renderer, 20fps, DPI-skalierter HitTest, ToList-Cache
+- `Views/Guild/GuildResearchView.axaml(.cs)`: 3 Renderer, 30fps, DPI-skalierter HitTest, ToList-Cache
 - `Graphics/GuildResearchBackgroundRenderer.cs`: Pergament + Zahnrad-Wasserzeichen
 - `Graphics/GuildResearchTreeRenderer.cs`: 18 Items, Bezier, Flow-Partikel, HitTest, Instanz-Paints, struct FlowParticle
 - `Graphics/GuildResearchIconRenderer.cs`: 18 Vektor-Icons
@@ -484,12 +499,15 @@ Pruefung alle 2 Minuten im GameLoop. `MasterToolUnlocked` Event → FloatingText
 
 | Optimierung | Effekt |
 |-------------|--------|
-| MainView BackgroundCanvas ~5fps statt 20fps | -75% Background-Draw-Calls (Partikel unter Content nicht sichtbar bei 20fps) |
+| MainView BackgroundCanvas ~5fps statt 25fps | -80% Background-Draw-Calls (Partikel unter Content unsichtbar bei 25fps) |
 | Dashboard City-Canvas ~6fps während Scroll | -70% Draw-Calls während Scroll. WorkshopCards pausieren komplett |
 | WorkerAvatarControl Shared Timer | 1 Timer statt N (bei 8 Avataren: 20 statt 160 Ticks/s) |
 | GameTick Tab-Awareness | PropertyChanged nur für sichtbare Tabs (spart ~20 Notifications/s) |
 | BoxShadow→Opacity Animationen | GPU-beschleunigt statt CPU-Blur auf Android |
 | LINQ→For-Schleifen | Kein Enumerator+Closure-GC in OnMoneyChanged, RefreshFeatureStatusTexts, Workshop-Lookups |
+| MiniGame Views: Gecachte Render-Arrays | WiringGameView/PaintingGameView: .Select().ToArray() → gecachte Arrays mit For-Schleife (0 Allokation/Frame) |
+| MiniGame Views: SKColor.Parse-Cache | InspectionGameView/RoofTilingGameView: Dictionary-Cache fuer Hex→SKColor/uint (0 String-Parsing/Frame) |
+| PaintingGameView: Farb-Cache | SelectedColor nur bei Aenderung neu geparst statt pro Frame |
 
 ## IDisposable auf allen Renderern
 

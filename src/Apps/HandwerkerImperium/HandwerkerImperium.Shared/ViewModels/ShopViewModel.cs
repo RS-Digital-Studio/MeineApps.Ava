@@ -220,7 +220,7 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 Id = "golden_screws_ad",
                 Name = _localizationService.GetString("ShopGoldenScrewsAdName"),
                 Description = _localizationService.GetString("ShopGoldenScrewsAdDesc"),
-                Icon = "Screwdriver",
+                Icon = "ScrewFlatTop",
                 Price = _localizationService.GetString("WatchVideo"),
                 IsAdReward = true
             },
@@ -230,7 +230,7 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 Id = "golden_screws_50",
                 Name = _localizationService.GetString("ShopGoldenScrews50Name"),
                 Description = _localizationService.GetString("ShopGoldenScrews50Desc"),
-                Icon = "Screwdriver",
+                Icon = "ScrewFlatTop",
                 Price = "0,99 €",
                 IsPremiumItem = true
             },
@@ -239,7 +239,7 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 Id = "golden_screws_150",
                 Name = _localizationService.GetString("ShopGoldenScrews150Name"),
                 Description = _localizationService.GetString("ShopGoldenScrews150Desc"),
-                Icon = "Screwdriver",
+                Icon = "ScrewFlatTop",
                 Price = "2,49 €",
                 IsPremiumItem = true
             },
@@ -248,7 +248,7 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
                 Id = "golden_screws_450",
                 Name = _localizationService.GetString("ShopGoldenScrews450Name"),
                 Description = _localizationService.GetString("ShopGoldenScrews450Desc"),
-                Icon = "Screwdriver",
+                Icon = "ScrewFlatTop",
                 Price = "4,99 €",
                 IsPremiumItem = true
             }
@@ -277,11 +277,15 @@ public sealed partial class ShopViewModel : ViewModelBase, IDisposable
 
             var iconKind = tool.Type switch
             {
-                ToolType.Saw => "Saw",
-                ToolType.PipeWrench => "Pipe",
+                ToolType.Saw => "HandSaw",
+                ToolType.PipeWrench => "Wrench",
                 ToolType.Screwdriver => "Screwdriver",
-                ToolType.Paintbrush => "Brush",
-                _ => "Wrench"
+                ToolType.Paintbrush => "FormatPaint",
+                ToolType.Hammer => "Hammer",
+                ToolType.SpiritLevel => "Draw",
+                ToolType.Magnifier => "MagnifyPlus",
+                ToolType.Compass => "Compass",
+                _ => "HammerWrench"
             };
 
             toolItems.Add(new ToolDisplayItem

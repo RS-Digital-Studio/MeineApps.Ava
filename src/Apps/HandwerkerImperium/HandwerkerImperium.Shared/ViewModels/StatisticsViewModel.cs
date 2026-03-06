@@ -760,16 +760,7 @@ public sealed partial class StatisticsViewModel : ViewModelBase
     private string GetWorkshopName(WorkshopType type) =>
         _localizationService.GetString(type.GetLocalizationKey());
 
-    private static string GetWorkshopIcon(WorkshopType type) => type switch
-    {
-        WorkshopType.Carpenter => "Saw",
-        WorkshopType.Plumber => "Wrench",
-        WorkshopType.Electrician => "LightningBolt",
-        WorkshopType.Painter => "Palette",
-        WorkshopType.Roofer => "Home",
-        WorkshopType.Contractor => "Crane",
-        _ => "Hammer"
-    };
+    private static string GetWorkshopIcon(WorkshopType type) => type.GetIconKind();
 
     /// <summary>
     /// Lädt die Prestige-History (letzte 10 Einträge) für die UI-Anzeige.

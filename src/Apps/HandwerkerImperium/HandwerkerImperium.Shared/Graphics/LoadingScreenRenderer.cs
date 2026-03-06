@@ -266,7 +266,7 @@ public sealed class LoadingScreenRenderer
         if (_tips.Length == 0) return;
 
         // Tipp-Rotation
-        _tipTimer += 0.05f; // 50ms pro Frame bei 20fps
+        _tipTimer += 0.04f; // 40ms pro Frame bei 25fps
         if (_tipTimer >= TipInterval)
         {
             _tipTimer = 0;

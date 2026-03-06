@@ -24,7 +24,7 @@ public partial class StoryDialog : UserControl
     }
 
     /// <summary>
-    /// Wird vom MainView Render-Timer aufgerufen (20fps).
+    /// Wird vom MainView Render-Timer aufgerufen (25fps).
     /// Aktualisiert Blinzel-Animation und invalidiert Canvas.
     /// </summary>
     public void UpdateHansAnimation()

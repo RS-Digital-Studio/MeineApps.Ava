@@ -113,7 +113,7 @@ public sealed class FireworksRenderer
     }
 
     /// <summary>
-    /// Update aller Partikel. Aufrufen mit deltaTime (typisch 0.05 bei 20fps).
+    /// Update aller Partikel. Aufrufen mit deltaTime (typisch 0.04 bei 25fps).
     /// </summary>
     public void Update(float deltaTime)
     {

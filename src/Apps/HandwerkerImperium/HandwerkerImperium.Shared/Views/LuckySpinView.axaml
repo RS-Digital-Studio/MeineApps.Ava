@@ -78,11 +78,22 @@
             HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
             MinHeight="48"
             AutomationProperties.AutomationId="LuckySpin_Btn_Spin">
-      <StackPanel Orientation="Horizontal" Spacing="8">
-        <icons:GameIcon Kind="ChartDonut" Width="20" Height="20" />
+      <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+        <icons:GameIcon Kind="ChartDonut" Width="20" Height="20" Foreground="White" />
         <TextBlock Text="{Binding SpinButtonText}"
-                   FontSize="16" FontWeight="Bold"
+                   FontSize="16" FontWeight="Bold" Foreground="White"
                    AutomationProperties.AutomationId="LuckySpin_Txt_SpinButton" />
+        <!-- Goldschrauben-Kosten (nur wenn nicht gratis) -->
+        <Border IsVisible="{Binding !HasFreeSpin}"
+                Background="#40000000" CornerRadius="12" Padding="8,2" VerticalAlignment="Center">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <icons:GameIcon Kind="ScrewFlatTop" Width="16" Height="16"
+                             Foreground="{StaticResource CraftGoldBrush}" />
+            <TextBlock Text="{Binding SpinCostDisplay}"
+                       FontSize="14" FontWeight="Bold"
+                       Foreground="{StaticResource CraftGoldBrush}" />
+          </StackPanel>
+        </Border>
       </StackPanel>
     </Button>
 

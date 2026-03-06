@@ -22,6 +22,13 @@ public partial class PaintingGameView : UserControl
     private SKRect _lastBounds;
     private bool _disposed;
 
+    // Gecachtes Array fuer Zell-Daten (vermeidet LINQ-Allokation pro Frame)
+    private PaintCellData[] _cachedCells = [];
+
+    // Gecachte Farbe (wird nur bei Farbwechsel neu geparst)
+    private string? _cachedColorString;
+    private SKColor _cachedPaintColor;
+
     public PaintingGameView()
     {
         InitializeComponent();
@@ -90,12 +97,12 @@ public partial class PaintingGameView : UserControl
     }
 
     /// <summary>
-    /// Startet den 20fps Render-Loop fuer die SkiaSharp-Darstellung.
+    /// Startet den 30fps Render-Loop fuer die SkiaSharp-Darstellung.
     /// </summary>
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) => _gameCanvas?.InvalidateSurface();
         _renderTimer.Start();
     }
@@ -128,23 +135,33 @@ public partial class PaintingGameView : UserControl
         // LocalClipBounds statt e.Info.Width/Height fuer korrekte DPI-Skalierung
         _lastBounds = canvas.LocalClipBounds;
 
-        // Zell-Daten aus ViewModel extrahieren
-        var cells = _vm.Cells.Select(c => new PaintCellData
+        // Zell-Daten aus ViewModel extrahieren (gecachtes Array, kein LINQ pro Frame)
+        var vmCells = _vm.Cells;
+        if (_cachedCells.Length != vmCells.Count)
+            _cachedCells = new PaintCellData[vmCells.Count];
+        for (int i = 0; i < vmCells.Count; i++)
         {
-            IsTarget = c.IsTarget,
-            IsPainted = c.IsPainted,
-            IsCorrect = c.IsPaintedCorrectly,
-            HasError = c.HasError,
-            PaintedAge = c.IsPainted ? (float)(now - c.PaintedAt).TotalSeconds : 0f
-        }).ToArray();
+            var c = vmCells[i];
+            _cachedCells[i].IsTarget = c.IsTarget;
+            _cachedCells[i].IsPainted = c.IsPainted;
+            _cachedCells[i].IsCorrect = c.IsPaintedCorrectly;
+            _cachedCells[i].HasError = c.HasError;
+            _cachedCells[i].PaintedAge = c.IsPainted ? (float)(now - c.PaintedAt).TotalSeconds : 0f;
+        }
 
-        // Ausgewaehlte Farbe parsen (Fallback: CraftOrange)
-        var paintColor = SKColor.Parse(_vm.SelectedColor ?? "#E8A00E");
+        // Ausgewaehlte Farbe nur bei Aenderung neu parsen (Cache)
+        var currentColor = _vm.SelectedColor ?? "#E8A00E";
+        if (_cachedColorString != currentColor)
+        {
+            _cachedColorString = currentColor;
+            _cachedPaintColor = SKColor.Parse(currentColor);
+        }
+        var paintColor = _cachedPaintColor;
 
         // Alle Zielzellen gestrichen? (fuer Completion-Celebration im Renderer)
         bool isAllPainted = _vm.TargetCellCount > 0 && _vm.PaintedTargetCount >= _vm.TargetCellCount;
 
-        _renderer.Render(canvas, _lastBounds, cells, _vm.GridSize, paintColor, _vm.IsPlaying, isAllPainted, deltaTime);
+        _renderer.Render(canvas, _lastBounds, _cachedCells, _vm.GridSize, paintColor, _vm.IsPlaying, isAllPainted, deltaTime);
     }
 
     /// <summary>

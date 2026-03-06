@@ -36,7 +36,7 @@ public partial class MainView : UserControl
     private GameScreenType _currentScreenType = GameScreenType.Dashboard;
     private string[] _tabLabels = ["Workshop", "Empire", "Missions", "Guild", "Shop"];
 
-    // Performance: Hintergrund nur alle 4 Ticks invalidieren (5fps statt 20fps)
+    // Performance: Hintergrund nur alle 5 Ticks invalidieren (~5fps statt 25fps)
     private int _bgTickCounter;
 
     public MainView()
@@ -91,7 +91,7 @@ public partial class MainView : UserControl
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // Render-Timer (20fps - Tab-Bar, Transition, Hans)
+    // Render-Timer (25fps - Tab-Bar, Transition, Hans)
     // ═══════════════════════════════════════════════════════════════════════
 
     private void StartRenderTimer()
@@ -100,7 +100,7 @@ public partial class MainView : UserControl
 
         _renderTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromMilliseconds(50) // 20fps
+            Interval = TimeSpan.FromMilliseconds(40) // 25fps
         };
         _renderTimer.Tick += OnRenderTimerTick;
         _renderTimer.Start();
@@ -108,14 +108,14 @@ public partial class MainView : UserControl
 
     private void OnRenderTimerTick(object? sender, EventArgs e)
     {
-        _renderTime += 0.05f;
+        _renderTime += 0.04f;
 
         // Money-Animation aktualisieren (ersetzt separaten 30fps-Timer)
         _vm?.UpdateMoneyAnimation();
 
-        // Hintergrund nur alle 4 Ticks (~5fps) invalidieren - Partikel unter Content unsichtbar bei 20fps
+        // Hintergrund nur alle 5 Ticks (~5fps) invalidieren - Partikel unter Content unsichtbar bei 25fps
         _bgTickCounter++;
-        if (_bgTickCounter >= 4)
+        if (_bgTickCounter >= 5)
         {
             _bgTickCounter = 0;
             _backgroundRenderer.UpdateParticles(0.2f, _currentScreenType, _lastBackgroundBounds);
@@ -129,14 +129,14 @@ public partial class MainView : UserControl
         // Screen-Transition aktualisieren (wenn aktiv)
         if (_transitionRenderer.IsActive)
         {
-            _transitionRenderer.Update(0.05f);
+            _transitionRenderer.Update(0.04f);
             TransitionCanvas?.InvalidateSurface();
         }
 
         // Reward-Zeremonie aktualisieren
         if (_ceremonyRenderer.IsActive)
         {
-            _ceremonyRenderer.Update(0.05f);
+            _ceremonyRenderer.Update(0.04f);
             CeremonyCanvas?.InvalidateSurface();
 
             if (!_ceremonyRenderer.IsActive)

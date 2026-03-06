@@ -56,12 +56,12 @@ public partial class BlueprintGameView : UserControl
     }
 
     /// <summary>
-    /// Startet den 20fps Render-Loop fuer Blaupausen-Animationen.
+    /// Startet den 30fps Render-Loop fuer Blaupausen-Animationen.
     /// </summary>
     private void StartRenderLoop()
     {
         _renderTimer?.Stop();
-        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(50) }; // 20 fps
+        _renderTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(33) }; // 30fps
         _renderTimer.Tick += (_, _) =>
         {
             _gameCanvas?.InvalidateSurface();

@@ -15,6 +15,7 @@ public enum GameIconKind
     ArrowRight,
     ArrowUpBold,
     ChevronRight,
+    ChevronDown,
     ChevronUp,
     Close,
     Plus,
@@ -23,6 +24,7 @@ public enum GameIconKind
     CheckCircle,
     CheckDecagram,
     Lock,
+    LockOpenVariant,
     LockOutline,
     Loading,
     Refresh,
@@ -41,6 +43,7 @@ public enum GameIconKind
     TrophyBroken,
     TrophyOutline,
     TrophyVariant,
+    Medal,
     MedalOutline,
 
     // Combat & Guild
@@ -106,6 +109,7 @@ public enum GameIconKind
     Saw,
     Toolbox,
     Draw,
+    Pencil,
     FormatPaint,
     SprayBottle,
     MagnifyPlus,
@@ -116,6 +120,7 @@ public enum GameIconKind
     Wall,
     Pipe,
     CableData,
+    Home,
     HomeAutomation,
     HomeCity,
     HomeEdit,
@@ -130,7 +135,9 @@ public enum GameIconKind
     Stairs,
     TowerFire,
     TransmissionTower,
+    Crane,
     City,
+    Warehouse,
 
     // Furniture & Interior
     Sofa,
@@ -237,6 +244,7 @@ public enum GameIconKind
     HandWave,
     Handshake,
     CartArrowDown,
+    Truck,
     TruckDelivery,
     ExitToApp,
     PlayCircle,
@@ -249,6 +257,7 @@ public enum GameIconKind
     // Gebäude-Typen (Prestige/Ascension)
     SchoolOutline,
     School,
+    GraduationCap,
     HardHat,
     StorefrontOutline,
     WeatherSunset,

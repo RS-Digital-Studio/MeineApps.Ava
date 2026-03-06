@@ -7,7 +7,18 @@
 Bomberman-Klon mit SkiaSharp Rendering, AI Pathfinding und mehreren Input-Methoden.
 Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/Cyberpunk.
 
-**Version:** 2.0.25 (VersionCode 35) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
+**Version:** 2.0.27 (VersionCode 37) | **Package-ID:** org.rsdigital.bomberblast | **Status:** Geschlossener Test
+
+## Icon-System (Eigene Neon Arcade Icons)
+
+- **Kein Material.Icons** - eigenes GameIcon-System mit 152 Icons
+- `Icons/GameIcon.cs`: Custom `PathIcon`-Ableitung mit `StyleKeyOverride => typeof(PathIcon)`
+- `Icons/GameIconKind.cs`: Enum mit allen verfuegbaren Icons
+- `Icons/GameIconPaths.cs`: Eigene geometrische SVG-Pfade im "Neon Arcade" Stil (nur M/L/H/V/Z)
+- `Icons/GameIconRenderer.cs`: SkiaSharp-Renderer fuer Icons auf SKCanvas (gecachte SKPath)
+- **Design-Sprache**: Oktagone (8 Seiten, flach) statt Kreise, scharfe Kanten, Arcade-Aesthetik
+- **Converter**: `StringToGameIconKindConverter` fuer String→GameIconKind in XAML-Bindings
+- XAML-Namespace: `xmlns:icons="using:BomberBlast.Icons"`
 
 ## Haupt-Features
 
@@ -168,6 +179,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 
 ## Architektur-Entscheidungen
 
+- **Singleton-VM + Visual Tree**: GameView hat 3-stufige VM-Subscription: (1) OnDataContextChanged, (2) OnLoaded (für verzögertes ViewLocator-DataContext), (3) OnPaintSurface Safety-Net (startet Render-Timer nach wenn InvalidateCanvasRequested keinen Subscriber hatte). TrySubscribeToViewModel() als zentrale idempotente Methode
 - **Game Loop**: DispatcherTimer (16ms), MAX_DELTA_TIME = 0.05f (50ms Cap)
 - **Touch-Koordinaten**: Proportionale Skalierung (Render-Bounds / Control-Bounds Ratio)
 - **Invalidierung**: IMMER `InvalidateSurface()` (nicht InvalidateVisual)
@@ -204,6 +216,7 @@ Landscape-only auf Android. Grid: 15x10. Zwei Visual Styles: Classic HD + Neon/C
 ### Gem-Währung
 - **IGemService**: Zweite Währung neben Coins, NUR durch Gameplay verdienbar
 - **Persistenz**: IPreferencesService JSON, Key "GemData"
+- **Farbe**: Einheitlich Cyan `#00BCD4` in allen Views (Profil, Shop, HUD, Statistik, Floating-Text)
 
 ## Game Juice & Effects
 

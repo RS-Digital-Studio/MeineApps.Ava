@@ -48,8 +48,11 @@ public static class AchievementIconRenderer
             // Glow-Aura (pulsierend)
             float pulse = 0.6f + 0.4f * MathF.Sin(animTime * 3f);
             _glowPaint.Color = catColor.WithAlpha((byte)(pulse * 40));
+            _glowPaint.MaskFilter?.Dispose();
+
             _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, r * 0.3f);
             canvas.DrawCircle(cx, cy, r * 1.15f, _glowPaint);
+            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = null;
 
             // Hintergrund-Kreis

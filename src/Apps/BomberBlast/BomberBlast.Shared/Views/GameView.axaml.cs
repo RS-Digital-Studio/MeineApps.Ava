@@ -33,6 +33,12 @@ public partial class GameView : UserControl
 
         // Cleanup bei Entfernung aus Visual Tree (verhindert DispatcherTimer-Speicherleck)
         DetachedFromVisualTree += OnDetachedFromVisualTree;
+
+        // Re-Subscribe bei Wiedereintritt (Singleton-VM: DataContextChanged feuert nicht erneut)
+        AttachedToVisualTree += OnAttachedToVisualTree;
+
+        // Loaded als zusätzliche Subscription-Chance (ViewLocator kann DataContext verzögert setzen)
+        Loaded += OnLoaded;
     }
 
     private void OnDetachedFromVisualTree(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)
@@ -48,6 +54,41 @@ public partial class GameView : UserControl
         }
     }
 
+    private void OnAttachedToVisualTree(object? sender, Avalonia.VisualTreeAttachmentEventArgs e)
+    {
+        // Bei Singleton-VM feuert DataContextChanged nicht erneut beim Wieder-Sichtbar-Werden.
+        // Deshalb hier manuell re-subscriben wenn _subscribedVm null ist (durch Detach geloescht).
+        TrySubscribeToViewModel();
+    }
+
+    private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        // ViewLocator/ContentPresenter kann DataContext NACH AttachedToVisualTree setzen.
+        // Loaded feuert zuverlässig nachdem DataContext + Visual Tree stehen.
+        TrySubscribeToViewModel();
+    }
+
+    /// <summary>
+    /// Zentrale Methode: VM-Events abonnieren falls noch nicht geschehen.
+    /// Wird aus OnDataContextChanged, OnAttachedToVisualTree UND OnLoaded aufgerufen.
+    /// </summary>
+    private void TrySubscribeToViewModel()
+    {
+        if (_subscribedVm != null) return; // Bereits subscribed
+        if (DataContext is not GameViewModel vm) return;
+
+        _subscribedVm = vm;
+        vm.InvalidateCanvasRequested += OnInvalidateRequested;
+        vm.PropertyChanged += OnViewModelPropertyChanged;
+
+        // Falls Game-Loop bereits laeuft, sofort rendern + Timer starten
+        if (vm.IsGameLoopRunning)
+        {
+            GameCanvas.InvalidateSurface();
+            StartRenderTimer();
+        }
+    }
+
     private GameViewModel? ViewModel => DataContext as GameViewModel;
 
     private void OnDataContextChanged(object? sender, EventArgs e)
@@ -60,13 +101,8 @@ public partial class GameView : UserControl
             _subscribedVm = null;
         }
 
-        // Neues ViewModel abonnieren
-        if (DataContext is GameViewModel vm)
-        {
-            _subscribedVm = vm;
-            vm.InvalidateCanvasRequested += OnInvalidateRequested;
-            vm.PropertyChanged += OnViewModelPropertyChanged;
-        }
+        // Neues ViewModel abonnieren (via zentrale Methode)
+        TrySubscribeToViewModel();
     }
 
     private void OnInvalidateRequested()
@@ -155,6 +191,14 @@ public partial class GameView : UserControl
         _touchScaleY = bh > 0 ? height / (float)bh : 1f;
 
         ViewModel?.OnPaintSurface(canvas, width, height);
+
+        // Selbstheilend: Falls Game-Loop laeuft aber kein Render-Timer aktiv ist
+        // (z.B. weil InvalidateCanvasRequested keinen Subscriber hatte beim StartGameLoop),
+        // Timer hier nachholen damit Update(deltaTime) auf folgenden Frames aufgerufen wird.
+        if (ViewModel?.IsGameLoopRunning == true && _renderTimer == null)
+        {
+            StartRenderTimer();
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════

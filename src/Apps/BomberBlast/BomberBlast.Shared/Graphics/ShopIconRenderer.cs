@@ -101,8 +101,10 @@ public static class ShopIconRenderer
 
         // Aeussere Flamme (glow)
         _glow.Color = color.WithAlpha(30);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, s * 0.3f);
         canvas.DrawOval(cx, cy - s * 0.1f, s * 1.1f, s * 1.3f, _glow);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = null;
 
         // Aeussere Flamme
@@ -177,8 +179,10 @@ public static class ShopIconRenderer
 
         // Glow
         _glow.Color = color.WithAlpha(40);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, s * 0.25f);
         canvas.DrawPath(bolt, _glow);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = null;
 
         // Blitz-Fuellung
@@ -204,8 +208,10 @@ public static class ShopIconRenderer
 
         // Glow
         _glow.Color = color.WithAlpha(35);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, s * 0.3f);
         DrawHeartPath(canvas, cx, cy, s * 1.15f, _glow);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = null;
 
         // Herz mit Gradient
@@ -249,8 +255,10 @@ public static class ShopIconRenderer
 
         // Glow hinter Stern
         _glow.Color = color.WithAlpha(35);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, s * 0.35f);
         DrawStar(canvas, cx, cy, s * 1.1f, s * 0.5f, 5, _glow);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = null;
 
         // Stern mit Gradient
@@ -281,8 +289,10 @@ public static class ShopIconRenderer
 
         // Glow
         _glow.Color = color.WithAlpha(30);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, s * 0.3f);
         canvas.DrawCircle(cx, cy, s * 1.1f, _glow);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = null;
 
         // Uhr-Koerper
@@ -344,8 +354,10 @@ public static class ShopIconRenderer
 
         // Glow-Aura
         _glow.Color = color.WithAlpha(30);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, s * 0.35f);
         DrawShieldPath(canvas, cx, cy, s * 1.15f, _glow);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = null;
 
         // Schild-Koerper mit Gradient
@@ -426,8 +438,10 @@ public static class ShopIconRenderer
 
         // Glow
         _glow.Color = color.WithAlpha(30);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, s * 0.35f);
         canvas.DrawCircle(cx, cy, s * 1.3f, _glow);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = null;
 
         // 4 Herzfoermige Blaetter (Kleeblatt)
@@ -467,8 +481,10 @@ public static class ShopIconRenderer
 
         // Frost-Glow
         _glow.Color = color.WithAlpha(30);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, s * 0.4f);
         canvas.DrawCircle(cx, cy, s * 1.3f, _glow);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = null;
 
         // Bomben-Koerper (eisblau)
@@ -517,8 +533,10 @@ public static class ShopIconRenderer
 
         // Flammen-Glow
         _glow.Color = new SKColor(255, 100, 0, 30);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, s * 0.4f);
         canvas.DrawCircle(cx, cy, s * 1.4f, _glow);
+        _glow.MaskFilter?.Dispose();
         _glow.MaskFilter = null;
 
         // Flammen-Aura hinter der Bombe (4 kleine Flammen)

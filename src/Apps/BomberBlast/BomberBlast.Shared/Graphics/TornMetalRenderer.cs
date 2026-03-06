@@ -41,6 +41,9 @@ public static class TornMetalRenderer
     private static readonly SKPath _metalPath = new();
     private static readonly SKPath _crackPath = new();
 
+    // Gecachter MaskFilter (vermeidet native Memory-Leaks bei pro-Frame CreateBlur)
+    private static readonly SKMaskFilter _edgeGlowFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3.5f);
+
     /// <summary>
     /// Statische Felder vorinitialisieren (SKPaint, SKPath).
     /// Wird im SplashOverlay-Preloader aufgerufen um Jank beim ersten Button-Render zu vermeiden.
@@ -452,7 +455,7 @@ public static class TornMetalRenderer
 
         MetalStrokePaint.Color = LightenColor(baseColor, 0.5f).WithAlpha(glowAlpha);
         MetalStrokePaint.StrokeWidth = 1.5f;
-        MetalStrokePaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3.5f);
+        MetalStrokePaint.MaskFilter = _edgeGlowFilter;
 
         float cr = Math.Min(w, h) * 0.1f;
         canvas.DrawRoundRect(inset, inset, w - inset * 2, h - inset * 2, cr, cr, MetalStrokePaint);

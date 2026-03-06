@@ -68,21 +68,21 @@
             </StackPanel>
           </Border>
 
-          <!-- Gem-Badge (tappbar → Gem-Shop) mit lila Rand -->
+          <!-- Gem-Badge (tappbar → Gem-Shop) mit Cyan-Rand (konsistent mit Gem-Shop) -->
           <Button Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="14"
                   Padding="12,5"
                   Margin="0,4,0,0"
                   HorizontalAlignment="Center"
-                  BorderThickness="1" BorderBrush="#40E040FB"
+                  BorderThickness="1" BorderBrush="#4000BCD4"
                   Command="{Binding GoToGemShopCommand}"
                   AutomationProperties.AutomationId="MainMenu_GemBadge">
             <StackPanel Orientation="Horizontal" Spacing="6">
               <icons:GameIcon Kind="DiamondStone" Width="18" Height="18"
-                               Foreground="#E040FB" />
+                               Foreground="#00BCD4" />
               <TextBlock Text="{Binding GemsText}"
                          FontSize="14" FontWeight="SemiBold"
-                         Foreground="#E040FB"
+                         Foreground="#00BCD4"
                          VerticalAlignment="Center"
                          AutomationProperties.AutomationId="MainMenu_TxtGems" />
             </StackPanel>

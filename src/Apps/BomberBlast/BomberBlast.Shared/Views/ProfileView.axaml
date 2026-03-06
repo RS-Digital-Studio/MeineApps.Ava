@@ -150,16 +150,16 @@
             </StackPanel>
           </Border>
 
-          <!-- Gems - Lila Top-Border -->
+          <!-- Gems - Cyan Top-Border (konsistent mit Gem-Shop) -->
           <Border Grid.Row="0" Grid.Column="2" Background="{DynamicResource SurfaceBrush}"
                   CornerRadius="12" Padding="14,12" Margin="6,0,0,6"
                   BoxShadow="0 2 8 0 #25000000"
-                  BorderBrush="#E040FB" BorderThickness="0,3,0,0">
+                  BorderBrush="#00BCD4" BorderThickness="0,3,0,0">
             <StackPanel HorizontalAlignment="Center" Spacing="6">
-              <icons:GameIcon Kind="DiamondStone" Width="28" Height="28" Foreground="#E040FB"
+              <icons:GameIcon Kind="DiamondStone" Width="28" Height="28" Foreground="#00BCD4"
                                HorizontalAlignment="Center" />
               <TextBlock Text="{Binding GemsText}" FontSize="20" FontWeight="Bold"
-                         Foreground="#E040FB" HorizontalAlignment="Center" />
+                         Foreground="#00BCD4" HorizontalAlignment="Center" />
               <TextBlock Text="{Binding GemsLabel}" FontSize="11"
                          Foreground="{DynamicResource TextMutedBrush}"
                          HorizontalAlignment="Center" />

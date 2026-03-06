@@ -282,8 +282,11 @@ public static class LevelSelectVisualization
 
                 // Glow
                 _glowPaint.Color = _starGold.WithAlpha(40);
+                _glowPaint.MaskFilter?.Dispose();
+
                 _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 3f);
                 DrawStarShape(canvas, sx, cy, starSize * 1.1f, _glowPaint);
+                _glowPaint.MaskFilter?.Dispose();
                 _glowPaint.MaskFilter = null;
             }
             else

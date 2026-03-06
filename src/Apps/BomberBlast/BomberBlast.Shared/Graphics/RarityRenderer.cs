@@ -63,6 +63,7 @@ public static class RarityRenderer
         // Haupt-Rahmen
         BorderPaint.Color = color;
         BorderPaint.StrokeWidth = borderWidth;
+        BorderPaint.MaskFilter?.Dispose();
         BorderPaint.MaskFilter = null;
         canvas.DrawRoundRect(rect, 4f, 4f, BorderPaint);
     }
@@ -90,6 +91,8 @@ public static class RarityRenderer
         byte glowAlpha = (byte)(60 * pulseFactor);
         GlowPaint.Color = glowColor.WithAlpha(glowAlpha);
         GlowPaint.StrokeWidth = glowRadius * 2;
+        GlowPaint.MaskFilter?.Dispose();
+
         GlowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, glowRadius);
 
         var glowRect = new SKRect(
@@ -99,6 +102,7 @@ public static class RarityRenderer
             rect.Bottom + glowRadius);
 
         canvas.DrawRoundRect(glowRect, 6f, 6f, GlowPaint);
+        GlowPaint.MaskFilter?.Dispose();
         GlowPaint.MaskFilter = null;
     }
 
@@ -144,11 +148,14 @@ public static class RarityRenderer
 
         // Shimmer-Punkt zeichnen
         ShimmerPaint.Color = SKColors.White.WithAlpha(180);
+        ShimmerPaint.MaskFilter?.Dispose();
+
         ShimmerPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
         canvas.DrawCircle(sx, sy, 3f, ShimmerPaint);
 
         // Innerer heller Kern
         ShimmerPaint.Color = SKColors.White.WithAlpha(255);
+        ShimmerPaint.MaskFilter?.Dispose();
         ShimmerPaint.MaskFilter = null;
         canvas.DrawCircle(sx, sy, 1.5f, ShimmerPaint);
     }

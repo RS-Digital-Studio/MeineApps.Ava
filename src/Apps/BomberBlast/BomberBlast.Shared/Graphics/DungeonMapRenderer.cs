@@ -162,8 +162,11 @@ public static class DungeonMapRenderer
                 {
                     float pulse = 1f + 0.15f * MathF.Sin(time * 3f);
                     _glowPaint.Color = nodeColor.WithAlpha(50);
+                    _glowPaint.MaskFilter?.Dispose();
+
                     _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, GLOW_RADIUS * pulse);
                     canvas.DrawCircle(nodeX, nodeY, radius + 4f, _glowPaint);
+                    _glowPaint.MaskFilter?.Dispose();
                     _glowPaint.MaskFilter = null;
                 }
 

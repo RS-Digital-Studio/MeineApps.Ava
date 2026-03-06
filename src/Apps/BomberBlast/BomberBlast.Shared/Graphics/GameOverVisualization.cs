@@ -65,9 +65,12 @@ public static class GameOverVisualization
         {
             float pulse = 0.5f + 0.5f * MathF.Sin(animTime * 4f);
             _glowPaint.Color = _gold.WithAlpha((byte)(pulse * 80));
+            _glowPaint.MaskFilter?.Dispose();
+
             _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 12f);
             _scoreFont.Size = 42f;
             canvas.DrawText(scoreStr, cx, y, SKTextAlign.Center, _scoreFont, _glowPaint);
+            _glowPaint.MaskFilter?.Dispose();
             _glowPaint.MaskFilter = null;
 
             // Lokalisierter "NEW HIGH SCORE!" Text darüber
@@ -165,8 +168,11 @@ public static class GameOverVisualization
 
         // Glow
         _glowPaint.Color = color.WithAlpha(40);
+        _glowPaint.MaskFilter?.Dispose();
+
         _glowPaint.MaskFilter = SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 6f);
         canvas.DrawCircle(cx, cy, radius * 1.2f, _glowPaint);
+        _glowPaint.MaskFilter?.Dispose();
         _glowPaint.MaskFilter = null;
 
         // Medaillen-Körper

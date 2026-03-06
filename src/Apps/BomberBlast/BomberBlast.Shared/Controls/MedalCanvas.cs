@@ -19,7 +19,8 @@ public class MedalCanvas : SKCanvasView
         set => SetValue(StarsProperty, value);
     }
 
-    private float _animTime;
+    // Frame-Rate-unabhängige Zeitmessung
+    private readonly System.Diagnostics.Stopwatch _stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
     static MedalCanvas()
     {
@@ -43,7 +44,6 @@ public class MedalCanvas : SKCanvasView
         float cy = bounds.MidY;
         float radius = Math.Min(bounds.Width, bounds.Height) / 2f * 0.85f;
 
-        // Stars → Rang: 3 Sterne = Gold (1), 2 = Silber (2), 1 = Bronze (3)
         int rank = Stars switch
         {
             >= 3 => 1,
@@ -51,8 +51,7 @@ public class MedalCanvas : SKCanvasView
             _ => 3
         };
 
-        // Statischer Shimmer (kein Timer noetig)
-        _animTime += 0.05f;
-        GameOverVisualization.DrawMedal(canvas, cx, cy, radius, rank, _animTime);
+        float animTime = (float)_stopwatch.Elapsed.TotalSeconds;
+        GameOverVisualization.DrawMedal(canvas, cx, cy, radius, rank, animTime);
     }
 }

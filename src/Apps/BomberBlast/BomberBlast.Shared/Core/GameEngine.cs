@@ -996,6 +996,7 @@ public sealed partial class GameEngine : IDisposable
 
         _state = GameState.Starting;
         _stateTimer = 0;
+        _hitPauseTimer = 0; // Defensiv: Hit-Pause zuruecksetzen (verhindert blockierten Countdown)
 
         // Bomben und Explosionen leeren
         foreach (var bomb in _bombs)

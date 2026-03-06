@@ -555,7 +555,7 @@ public sealed partial class DeckViewModel : ViewModelBase, INavigable, IGameJuic
         BombType.Fire => "Fire",
         BombType.Sticky => "Water",
         BombType.Smoke => "WeatherFog",
-        BombType.Lightning => "LightningBolt",
+        BombType.Lightning => "Lightning",
         BombType.Gravity => "Magnet",
         BombType.Poison => "Skull",
         BombType.TimeWarp => "ClockFast",

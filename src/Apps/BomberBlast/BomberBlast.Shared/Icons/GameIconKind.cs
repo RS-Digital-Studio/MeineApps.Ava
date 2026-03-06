@@ -209,4 +209,10 @@ public enum GameIconKind
     // Alias (PartyPopper → String-Kompatibilitaet mit Services)
     PartyPopper,
     ShoeSneaker,
+
+    // Bomben-Karten Icons (DeckViewModel)
+    WeatherFog,
+    FlipHorizontal,
+    Tornado,
+    CircleSlice8,
 }

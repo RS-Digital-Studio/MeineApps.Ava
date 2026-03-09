@@ -1,0 +1,266 @@
+{
+  "id": "k4",
+  "titleKey": "chapter_k4_title",
+  "isProlog": false,
+  "goldCost": 0,
+  "nodes": [
+    {
+      "id": "k4_recap",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_recap", "typewriterSpeed": 15 }
+      ],
+      "next": "k4_tower_approach"
+    },
+    {
+      "id": "k4_tower_approach",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "musicKey": "bgm_tower",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k4_protag_tower", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_scan", "typewriterSpeed": 20 },
+        { "character": "aria", "emotion": "neutral", "textKey": "k4_aria_energy", "position": "left" }
+      ],
+      "next": "k4_tower_entrance"
+    },
+    {
+      "id": "k4_tower_entrance",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k4_protag_barrier", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_barrier", "typewriterSpeed": 20 },
+        { "character": "aria", "emotion": "determined", "textKey": "k4_aria_hack", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_barrier_down", "typewriterSpeed": 15 }
+      ],
+      "next": "k4_meet_aldric"
+    },
+    {
+      "id": "k4_meet_aldric",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "musicKey": "bgm_encounter",
+      "speakers": [
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_aldric_welcome", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k4_protag_surprised", "position": "right" },
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_aldric_excited", "position": "left" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k4_aria_careful", "position": "right" }
+      ],
+      "next": "k4_aldric_scan"
+    },
+    {
+      "id": "k4_aldric_scan",
+      "type": "systemMessage",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_aldric_scan", "typewriterSpeed": 15 }
+      ],
+      "next": "k4_anomaly_reaction"
+    },
+    {
+      "id": "k4_anomaly_reaction",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "aldric", "emotion": "surprised", "textKey": "k4_aldric_anomaly", "position": "left" },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k4_protag_anomaly", "position": "right" },
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_aldric_fascinated", "position": "left" }
+      ],
+      "next": "k4_tell_truth_choice"
+    },
+    {
+      "id": "k4_tell_truth_choice",
+      "type": "choice",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "aria", "emotion": "nervous", "textKey": "k4_aria_whisper", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "k4_choice_tell_truth",
+          "next": "k4_tell_truth",
+          "tag": "[Ehrlich]",
+          "effects": { "affinity": { "aldric": 25 } }
+        },
+        {
+          "textKey": "k4_choice_hide_truth",
+          "next": "k4_hide_truth",
+          "tag": "[Verschweigen]",
+          "effects": { "karma": -2 }
+        }
+      ]
+    },
+    {
+      "id": "k4_tell_truth",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k4_protag_tell", "position": "right" },
+        { "character": "aldric", "emotion": "surprised", "textKey": "k4_aldric_amazed", "position": "left" },
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_aldric_help", "position": "left" }
+      ],
+      "next": "k4_consequence_tell_truth"
+    },
+    {
+      "id": "k4_consequence_tell_truth",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_consq_tell_aldric", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_consq_tell_aria", "typewriterSpeed": 20 }
+      ],
+      "effects": { "exp": 20 },
+      "next": "k4_tower_library"
+    },
+    {
+      "id": "k4_hide_truth",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k4_protag_hide", "position": "right" },
+        { "character": "aldric", "emotion": "neutral", "textKey": "k4_aldric_suspicious", "position": "left" },
+        { "character": "aria", "emotion": "sad", "textKey": "k4_aria_relief", "position": "right" }
+      ],
+      "next": "k4_consequence_hide_truth"
+    },
+    {
+      "id": "k4_consequence_hide_truth",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "aldric", "emotion": "neutral", "textKey": "k4_consq_hide_aldric", "position": "left" },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k4_consq_hide_protag", "position": "right" }
+      ],
+      "next": "k4_tower_library"
+    },
+    {
+      "id": "k4_tower_library",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_aldric_library", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k4_protag_books", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_lore", "typewriterSpeed": 20 },
+        { "character": "aria", "emotion": "neutral", "textKey": "k4_aria_knowledge", "position": "right" }
+      ],
+      "effects": { "exp": 30 },
+      "next": "k4_experiment_choice"
+    },
+    {
+      "id": "k4_experiment_choice",
+      "type": "choice",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_aldric_experiment", "position": "left" }
+      ],
+      "options": [
+        {
+          "textKey": "k4_choice_support",
+          "next": "k4_support_experiment",
+          "tag": "[Riskant]",
+          "effects": { "affinity": { "aldric": 15 } }
+        },
+        {
+          "textKey": "k4_choice_warn",
+          "next": "k4_warn_experiment",
+          "tag": "[Vorsichtig]",
+          "effects": { "karma": 2 }
+        }
+      ]
+    },
+    {
+      "id": "k4_support_experiment",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k4_protag_support", "position": "right" },
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_aldric_start", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_explosion", "typewriterSpeed": 15 },
+        { "character": "aldric", "emotion": "surprised", "textKey": "k4_aldric_oops", "position": "left" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k4_aria_damage", "position": "right" },
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_aldric_discovery", "position": "left" }
+      ],
+      "effects": { "exp": 50 },
+      "next": "k4_consequence_support"
+    },
+    {
+      "id": "k4_consequence_support",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k4_consq_support_protag", "position": "right" },
+        { "character": "aldric", "emotion": "happy", "textKey": "k4_consq_support_aldric", "position": "left" }
+      ],
+      "effects": { "affinity": { "aldric": 5 } },
+      "next": "k4_tower_ascent"
+    },
+    {
+      "id": "k4_warn_experiment",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k4_protag_warn", "position": "right" },
+        { "character": "aldric", "emotion": "sad", "textKey": "k4_aldric_listen", "position": "left" },
+        { "character": "aldric", "emotion": "neutral", "textKey": "k4_aldric_respect", "position": "left" }
+      ],
+      "effects": { "exp": 20 },
+      "next": "k4_consequence_warn"
+    },
+    {
+      "id": "k4_consequence_warn",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "speakers": [
+        { "character": "aldric", "emotion": "neutral", "textKey": "k4_consq_warn_aldric", "position": "left" },
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k4_consq_warn_protag", "position": "right" }
+      ],
+      "next": "k4_tower_ascent"
+    },
+    {
+      "id": "k4_tower_ascent",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "musicKey": "bgm_tower",
+      "speakers": [
+        { "character": "aldric", "emotion": "neutral", "textKey": "k4_aldric_ascent", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k4_protag_ascent", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_guardian", "typewriterSpeed": 20 }
+      ],
+      "next": "k4_boss_sentinel"
+    },
+    {
+      "id": "k4_boss_sentinel",
+      "type": "battle",
+      "backgroundKey": "tower",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B008",
+      "next": "k4_zeitriss_discovery"
+    },
+    {
+      "id": "k4_zeitriss_discovery",
+      "type": "dialogue",
+      "backgroundKey": "tower",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_level_milestone", "typewriterSpeed": 12 },
+        { "character": "aldric", "emotion": "neutral", "textKey": "k4_aldric_scroll", "position": "left" },
+        { "character": "aldric", "emotion": "surprised", "textKey": "k4_aldric_pale", "position": "left" },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k4_protag_what", "position": "right" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k4_aldric_zeitriss", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k4_system_glitch", "typewriterSpeed": 10 },
+        { "character": "aria", "emotion": "nervous", "textKey": "k4_aria_glitch", "position": "right" }
+      ],
+      "effects": { "exp": 50, "gold": 300 },
+      "next": "k4_ending"
+    },
+    {
+      "id": "k4_ending",
+      "type": "chapterEnd",
+      "effects": { "exp": 150 }
+    }
+  ]
+}

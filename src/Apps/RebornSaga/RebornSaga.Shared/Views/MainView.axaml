@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:skia="using:Avalonia.Labs.Controls"
+             xmlns:vm="using:RebornSaga.ViewModels"
+             x:Class="RebornSaga.Views.MainView"
+             x:DataType="vm:MainViewModel">
+  <Panel>
+    <skia:SKCanvasView x:Name="GameCanvas" />
+  </Panel>
+</UserControl>

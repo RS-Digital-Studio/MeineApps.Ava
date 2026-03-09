@@ -1,0 +1,231 @@
+{
+  "id": "k8",
+  "titleKey": "chapter_k8_title",
+  "isProlog": false,
+  "goldCost": 1800,
+  "nodes": [
+    {
+      "id": "k8_recap",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_recap", "typewriterSpeed": 15 }
+      ],
+      "next": "k8_dream_begins"
+    },
+    {
+      "id": "k8_dream_begins",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_dream_start", "typewriterSpeed": 10 }
+      ],
+      "next": "k8_prolog_flash_1"
+    },
+    {
+      "id": "k8_prolog_flash_1",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k8_protag_flash_campfire", "position": "right" },
+        { "character": "aria", "emotion": "happy", "textKey": "k8_aria_flash_campfire", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_flash_campfire", "typewriterSpeed": 15 }
+      ],
+      "next": "k8_prolog_flash_2"
+    },
+    {
+      "id": "k8_prolog_flash_2",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_boss_battle",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k8_protag_flash_nihilus", "position": "right" },
+        { "character": "nihilus", "emotion": "angry", "textKey": "k8_nihilus_flash", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_flash_battle", "typewriterSpeed": 15 }
+      ],
+      "next": "k8_prolog_flash_3"
+    },
+    {
+      "id": "k8_prolog_flash_3",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "aldric", "emotion": "determined", "textKey": "k8_aldric_flash_sacrifice", "position": "left" },
+        { "character": "protagonist", "emotion": "sad", "textKey": "k8_protag_flash_sacrifice", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_flash_rift", "typewriterSpeed": 10 }
+      ],
+      "next": "k8_memory_choice"
+    },
+    {
+      "id": "k8_memory_choice",
+      "type": "choice",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_memory_choice", "typewriterSpeed": 15 }
+      ],
+      "options": [
+        {
+          "textKey": "k8_choice_accept_memories",
+          "next": "k8_accept_memories",
+          "tag": "[Mutig]",
+          "effects": { "exp": 50, "gold": 200 }
+        },
+        {
+          "textKey": "k8_choice_reject_memories",
+          "next": "k8_reject_memories",
+          "tag": "[Selbstschutz]",
+          "effects": { "karma": -1 }
+        }
+      ]
+    },
+    {
+      "id": "k8_accept_memories",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k8_protag_accept", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_flood", "typewriterSpeed": 10 },
+        { "character": "protagonist", "emotion": "sad", "textKey": "k8_protag_pain", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k8_aria_hold_on", "position": "left" }
+      ],
+      "effects": { "exp": 40, "gold": 200 },
+      "next": "k8_aria_revelation"
+    },
+    {
+      "id": "k8_reject_memories",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k8_protag_reject", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_partial", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "sad", "textKey": "k8_protag_fragments", "position": "right" }
+      ],
+      "next": "k8_aria_revelation"
+    },
+    {
+      "id": "k8_aria_revelation",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "aria", "emotion": "nervous", "textKey": "k8_aria_realization", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k8_protag_aria_what", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "k8_aria_processing", "position": "left" }
+      ],
+      "next": "k8_aria_is_aldric"
+    },
+    {
+      "id": "k8_aria_is_aldric",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "aria", "emotion": "sad", "textKey": "k8_aria_truth_reveal", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k8_protag_aria_aldric", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "k8_aria_farewell", "position": "left" }
+      ],
+      "next": "k8_confront_aria_choice"
+    },
+    {
+      "id": "k8_confront_aria_choice",
+      "type": "choice",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "protagonist", "emotion": "sad", "textKey": "k8_protag_choice_moment", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "k8_choice_confront",
+          "next": "k8_confront",
+          "tag": "[Emotional]",
+          "effects": { "affinity": { "aldric": 30 } }
+        },
+        {
+          "textKey": "k8_choice_wait",
+          "next": "k8_wait",
+          "tag": "[Geduldig]",
+          "effects": { "karma": 1 }
+        }
+      ]
+    },
+    {
+      "id": "k8_confront",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "sad", "textKey": "k8_protag_confront", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "k8_aria_crying", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k8_protag_comfort", "position": "right" },
+        { "character": "aria", "emotion": "happy", "textKey": "k8_aria_comforted", "position": "left" }
+      ],
+      "next": "k8_mirror_fight"
+    },
+    {
+      "id": "k8_wait",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k8_protag_silence", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "k8_aria_understands", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_acceptance", "typewriterSpeed": 15 }
+      ],
+      "next": "k8_mirror_fight"
+    },
+    {
+      "id": "k8_mirror_fight",
+      "type": "battle",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B013",
+      "next": "k8_awakening"
+    },
+    {
+      "id": "k8_awakening",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k8_protag_awake", "position": "right" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k8_aldric_worried", "position": "left" },
+        { "character": "protagonist", "emotion": "sad", "textKey": "k8_protag_look_aldric", "position": "right" }
+      ],
+      "effects": { "exp": 40, "gold": 200 },
+      "next": "k8_aldric_nihilus"
+    },
+    {
+      "id": "k8_aldric_nihilus",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "aldric", "emotion": "nervous", "textKey": "k8_aldric_screamed", "position": "left" },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k8_protag_nihilus_name", "position": "right" },
+        { "character": "aldric", "emotion": "surprised", "textKey": "k8_aldric_pale", "position": "left" }
+      ],
+      "effects": { "exp": 30, "gold": 200 },
+      "next": "k8_aria_truth"
+    },
+    {
+      "id": "k8_aria_truth",
+      "type": "systemMessage",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k8_system_final", "typewriterSpeed": 10 }
+      ],
+      "next": "k8_ending"
+    },
+    {
+      "id": "k8_ending",
+      "type": "chapterEnd",
+      "effects": { "exp": 350, "gold": 200 }
+    }
+  ]
+}

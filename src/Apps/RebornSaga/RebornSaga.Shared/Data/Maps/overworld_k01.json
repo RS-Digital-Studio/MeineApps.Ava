@@ -1,0 +1,68 @@
+{
+  "chapterId": "k1",
+  "chapterNameKey": "chapter_k1_title",
+  "startNodeId": "k1_start",
+  "nodes": [
+    {
+      "id": "k1_start",
+      "nameKey": "Map_K1_Waldlichtung",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k1_wolf"],
+      "storyNodeId": "k1_awakening",
+      "background": "Forest"
+    },
+    {
+      "id": "k1_wolf",
+      "nameKey": "Map_K1_WolfRudel",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.65,
+      "connections": ["k1_path_split"],
+      "storyNodeId": "k1_wolf_encounter",
+      "enemyId": "B005",
+      "background": "Forest"
+    },
+    {
+      "id": "k1_path_split",
+      "nameKey": "Map_K1_Wegkreuzung",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.48,
+      "connections": ["k1_side_hut", "k1_camp"],
+      "storyNodeId": "k1_path_explore",
+      "background": "Forest"
+    },
+    {
+      "id": "k1_side_hut",
+      "nameKey": "Map_K1_VerlasseneHuette",
+      "type": "SideQuest",
+      "x": 0.22,
+      "y": 0.42,
+      "connections": [],
+      "storyNodeId": "k1_old_hut",
+      "background": "Village"
+    },
+    {
+      "id": "k1_camp",
+      "nameKey": "Map_K1_Rastplatz",
+      "type": "Rest",
+      "x": 0.78,
+      "y": 0.42,
+      "connections": ["k1_village_gate"],
+      "storyNodeId": "k1_rest_camp",
+      "background": "Forest"
+    },
+    {
+      "id": "k1_village_gate",
+      "nameKey": "Map_K1_TorNachEldenrath",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.15,
+      "connections": [],
+      "storyNodeId": "k1_ending",
+      "background": "Village"
+    }
+  ]
+}

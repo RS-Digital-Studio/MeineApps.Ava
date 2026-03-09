@@ -1,0 +1,207 @@
+{
+  "id": "p1",
+  "titleKey": "chapter_p1_title",
+  "isProlog": true,
+  "goldCost": 0,
+  "nodes": [
+    {
+      "id": "p1_intro",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_prolog_battle",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p1_system_boot", "typewriterSpeed": 20 }
+      ],
+      "next": "p1_battlefield_overview"
+    },
+    {
+      "id": "p1_battlefield_overview",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p1_aria_status", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "p1_protag_final", "position": "right" },
+        { "character": "aria", "emotion": "determined", "textKey": "p1_aria_ready", "position": "left" }
+      ],
+      "next": "p1_party_rally"
+    },
+    {
+      "id": "p1_party_rally",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "speakers": [
+        { "character": "luna", "emotion": "determined", "textKey": "p1_luna_oath", "position": "left" },
+        { "character": "kael", "emotion": "happy", "textKey": "p1_kael_joke", "position": "right" },
+        { "character": "aldric", "emotion": "neutral", "textKey": "p1_aldric_plan", "position": "left" }
+      ],
+      "next": "p1_scout_encounter"
+    },
+    {
+      "id": "p1_scout_encounter",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p1_system_scout_detected", "typewriterSpeed": 18 },
+        { "character": "kael", "emotion": "determined", "textKey": "p1_kael_scout_spotted", "position": "right" }
+      ],
+      "next": "p1_tutorial_battle"
+    },
+    {
+      "id": "p1_tutorial_battle",
+      "type": "battle",
+      "backgroundKey": "battlefield",
+      "enemyId": "E005",
+      "next": "p1_tutorial_victory"
+    },
+    {
+      "id": "p1_tutorial_victory",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "speakers": [
+        { "character": "aria", "emotion": "happy", "textKey": "p1_aria_first_blood", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "p1_protag_warmup", "position": "right" }
+      ],
+      "effects": { "exp": 10, "gold": 5 },
+      "next": "p1_campfire"
+    },
+    {
+      "id": "p1_campfire",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p1_system_night", "typewriterSpeed": 25 }
+      ],
+      "next": "p1_aria_memory"
+    },
+    {
+      "id": "p1_aria_memory",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "speakers": [
+        { "character": "aria", "emotion": "sad", "textKey": "p1_aria_memory", "position": "left" },
+        { "character": "protagonist", "emotion": "happy", "textKey": "p1_protag_response", "position": "right" },
+        { "character": "aria", "emotion": "happy", "textKey": "p1_aria_smile", "position": "left" }
+      ],
+      "effects": { "affinity": { "aria": 3 } },
+      "next": "p1_aldric_secret"
+    },
+    {
+      "id": "p1_aldric_secret",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "speakers": [
+        { "character": "aldric", "emotion": "nervous", "textKey": "p1_aldric_studying", "position": "left" },
+        { "character": "aria", "emotion": "surprised", "textKey": "p1_aria_notices", "position": "right" }
+      ],
+      "next": "p1_aldric_choice"
+    },
+    {
+      "id": "p1_aldric_choice",
+      "type": "choice",
+      "backgroundKey": "campfire",
+      "speakers": [
+        { "character": "aldric", "emotion": "sad", "textKey": "p1_aldric_confession", "position": "left" }
+      ],
+      "options": [
+        {
+          "textKey": "p1_choice_forgive",
+          "next": "p1_forgive",
+          "tag": "[Karma+]",
+          "effects": { "karma": 10, "affinity": { "aldric": 5 } }
+        },
+        {
+          "textKey": "p1_choice_angry",
+          "next": "p1_angry",
+          "tag": "[Karma-]",
+          "effects": { "karma": -5, "affinity": { "aldric": -3 } }
+        },
+        {
+          "textKey": "p1_choice_silent",
+          "next": "p1_silent",
+          "effects": { "affinity": { "aria": 3 } }
+        }
+      ]
+    },
+    {
+      "id": "p1_forgive",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "p1_protag_forgive", "position": "right" },
+        { "character": "aldric", "emotion": "surprised", "textKey": "p1_aldric_grateful", "position": "left" }
+      ],
+      "next": "p1_kael_moment"
+    },
+    {
+      "id": "p1_angry",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "speakers": [
+        { "character": "protagonist", "emotion": "angry", "textKey": "p1_protag_angry", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "p1_aria_mediate", "position": "left" }
+      ],
+      "next": "p1_kael_moment"
+    },
+    {
+      "id": "p1_silent",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "speakers": [
+        { "character": "aria", "emotion": "neutral", "textKey": "p1_aria_understand", "position": "left" }
+      ],
+      "next": "p1_kael_moment"
+    },
+    {
+      "id": "p1_kael_moment",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "speakers": [
+        { "character": "kael", "emotion": "happy", "textKey": "p1_kael_story", "position": "right" },
+        { "character": "kael", "emotion": "sad", "textKey": "p1_kael_hands", "position": "right" },
+        { "character": "protagonist", "emotion": "neutral", "textKey": "p1_protag_kael_comfort", "position": "left" }
+      ],
+      "effects": { "affinity": { "kael": 3 } },
+      "next": "p1_luna_promise"
+    },
+    {
+      "id": "p1_luna_promise",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "speakers": [
+        { "character": "luna", "emotion": "determined", "textKey": "p1_luna_promise", "position": "left" },
+        { "character": "aria", "emotion": "sad", "textKey": "p1_aria_worried", "position": "right" },
+        { "character": "luna", "emotion": "happy", "textKey": "p1_luna_smile", "position": "left" }
+      ],
+      "effects": { "affinity": { "luna": 5 } },
+      "next": "p1_dawn"
+    },
+    {
+      "id": "p1_dawn",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_prolog_battle",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p1_system_dawn", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "p1_protag_ready", "position": "right" }
+      ],
+      "next": "p1_final_march"
+    },
+    {
+      "id": "p1_final_march",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p1_system_warning", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "p1_protag_lets_go", "position": "right" },
+        { "character": "aria", "emotion": "determined", "textKey": "p1_aria_together", "position": "left" }
+      ],
+      "next": "p1_end"
+    },
+    {
+      "id": "p1_end",
+      "type": "chapterEnd",
+      "effects": {}
+    }
+  ]
+}

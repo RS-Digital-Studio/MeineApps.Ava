@@ -1,0 +1,250 @@
+{
+  "id": "k5",
+  "titleKey": "chapter_k5_title",
+  "isProlog": false,
+  "goldCost": 0,
+  "nodes": [
+    {
+      "id": "k5_recap",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k5_system_recap", "typewriterSpeed": 15 }
+      ],
+      "next": "k5_return_village"
+    },
+    {
+      "id": "k5_return_village",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k5_protag_return", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k5_aria_uneasy", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k5_system_village", "typewriterSpeed": 20 }
+      ],
+      "next": "k5_meet_luna"
+    },
+    {
+      "id": "k5_meet_luna",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_encounter",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k5_protag_healer", "position": "right" },
+        { "character": "luna", "emotion": "neutral", "textKey": "k5_luna_intro", "position": "left" },
+        { "character": "aria", "emotion": "neutral", "textKey": "k5_aria_luna_scan", "position": "right" },
+        { "character": "luna", "emotion": "happy", "textKey": "k5_luna_gentle", "position": "left" }
+      ],
+      "next": "k5_luna_past_choice"
+    },
+    {
+      "id": "k5_luna_past_choice",
+      "type": "choice",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k5_protag_curious", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "k5_choice_ask_past",
+          "next": "k5_luna_past",
+          "tag": "[Neugierig]",
+          "effects": { "affinity": { "luna": 20 } }
+        },
+        {
+          "textKey": "k5_choice_respect_past",
+          "next": "k5_luna_respect",
+          "tag": "[Respektvoll]",
+          "effects": { "karma": 1 }
+        }
+      ]
+    },
+    {
+      "id": "k5_luna_past",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "luna", "emotion": "sad", "textKey": "k5_luna_past_tell", "position": "left" },
+        { "character": "protagonist", "emotion": "sad", "textKey": "k5_protag_sorry", "position": "right" },
+        { "character": "luna", "emotion": "neutral", "textKey": "k5_luna_past_end", "position": "left" }
+      ],
+      "next": "k5_theft_discovered"
+    },
+    {
+      "id": "k5_luna_respect",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k5_protag_respect", "position": "right" },
+        { "character": "luna", "emotion": "happy", "textKey": "k5_luna_grateful", "position": "left" }
+      ],
+      "next": "k5_theft_discovered"
+    },
+    {
+      "id": "k5_theft_discovered",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k5_protag_theft", "position": "right" },
+        { "character": "aria", "emotion": "angry", "textKey": "k5_aria_theft", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k5_system_theft", "typewriterSpeed": 20 }
+      ],
+      "next": "k5_aria_reveals"
+    },
+    {
+      "id": "k5_aria_reveals",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "aria", "emotion": "angry", "textKey": "k5_aria_reveals_kael", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k5_protag_shocked", "position": "right" },
+        { "character": "aria", "emotion": "determined", "textKey": "k5_aria_proof", "position": "left" }
+      ],
+      "next": "k5_kael_defense"
+    },
+    {
+      "id": "k5_kael_defense",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "kael", "emotion": "angry", "textKey": "k5_kael_defense", "position": "right" },
+        { "character": "aria", "emotion": "angry", "textKey": "k5_aria_counter", "position": "left" },
+        { "character": "kael", "emotion": "sad", "textKey": "k5_kael_orphans", "position": "right" },
+        { "character": "luna", "emotion": "sad", "textKey": "k5_luna_both", "position": "left" }
+      ],
+      "next": "k5_story_fork"
+    },
+    {
+      "id": "k5_story_fork",
+      "type": "choice",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k5_system_fate", "typewriterSpeed": 15 }
+      ],
+      "options": [
+        {
+          "textKey": "k5_choice_trust_aria",
+          "next": "k5_aria_path",
+          "tag": "[Schicksalswahl]",
+          "effects": { "affinity": { "aria": 20 }, "fateChanged": "alliance_aria" }
+        },
+        {
+          "textKey": "k5_choice_trust_kael",
+          "next": "k5_kael_path",
+          "tag": "[Schicksalswahl]",
+          "effects": { "affinity": { "kael": 20 }, "fateChanged": "alliance_kael" }
+        }
+      ]
+    },
+    {
+      "id": "k5_aria_path",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k5_protag_trust_aria", "position": "right" },
+        { "character": "kael", "emotion": "sad", "textKey": "k5_kael_betrayed", "position": "left" },
+        { "character": "aria", "emotion": "determined", "textKey": "k5_aria_guild_location", "position": "right" }
+      ],
+      "next": "k5_aria_grateful"
+    },
+    {
+      "id": "k5_kael_path",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k5_protag_trust_kael", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "k5_aria_disappointed", "position": "left" },
+        { "character": "kael", "emotion": "happy", "textKey": "k5_kael_thanks", "position": "right" }
+      ],
+      "next": "k5_kael_grateful"
+    },
+    {
+      "id": "k5_aria_grateful",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "aria", "emotion": "happy", "textKey": "k5_aria_grateful_trust", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k5_protag_guild", "position": "right" }
+      ],
+      "next": "k5_battle_sylas"
+    },
+    {
+      "id": "k5_kael_grateful",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "kael", "emotion": "happy", "textKey": "k5_kael_show_orphanage", "position": "right" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k5_protag_orphanage", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k5_system_bounty", "typewriterSpeed": 20 }
+      ],
+      "next": "k5_battle_ravok"
+    },
+    {
+      "id": "k5_battle_sylas",
+      "type": "battle",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B009",
+      "next": "k5_after_aria_path"
+    },
+    {
+      "id": "k5_battle_ravok",
+      "type": "battle",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B010",
+      "next": "k5_after_kael_path"
+    },
+    {
+      "id": "k5_after_aria_path",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "aria", "emotion": "happy", "textKey": "k5_aria_sylas_done", "position": "left" },
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k5_protag_kael_gone", "position": "right" },
+        { "character": "kael", "emotion": "sad", "textKey": "k5_kael_farewell", "position": "left" }
+      ],
+      "effects": { "exp": 80 },
+      "next": "k5_luna_insight"
+    },
+    {
+      "id": "k5_after_kael_path",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "kael", "emotion": "happy", "textKey": "k5_kael_ravok_done", "position": "right" },
+        { "character": "protagonist", "emotion": "sad", "textKey": "k5_protag_aria_left", "position": "left" },
+        { "character": "aria", "emotion": "sad", "textKey": "k5_aria_silent_leave", "position": "right" }
+      ],
+      "effects": { "exp": 80 },
+      "next": "k5_luna_insight"
+    },
+    {
+      "id": "k5_luna_insight",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "luna", "emotion": "nervous", "textKey": "k5_luna_whisper", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k5_protag_luna_what", "position": "right" },
+        { "character": "luna", "emotion": "sad", "textKey": "k5_luna_seen_before", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k5_system_luna_anomaly", "typewriterSpeed": 15 }
+      ],
+      "effects": { "exp": 40, "gold": 360 },
+      "next": "k5_ending"
+    },
+    {
+      "id": "k5_ending",
+      "type": "chapterEnd",
+      "effects": { "exp": 200 }
+    }
+  ]
+}

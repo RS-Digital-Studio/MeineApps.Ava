@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <data name="AppName" xml:space="preserve">
+    <value>Reborn Saga</value>
+  </data>
+  <data name="NewGame" xml:space="preserve">
+    <value>Nueva Partida</value>
+  </data>
+  <data name="Continue" xml:space="preserve">
+    <value>Continuar</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Ajustes</value>
+  </data>
+  <data name="ChooseSaveSlot" xml:space="preserve">
+    <value>Elegir partida guardada</value>
+  </data>
+  <data name="Back" xml:space="preserve">
+    <value>Atrás</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+  <data name="ClassSwordmaster" xml:space="preserve">
+    <value>Maestro de Espada</value>
+  </data>
+  <data name="ClassArcanist" xml:space="preserve">
+    <value>Arcanista</value>
+  </data>
+  <data name="ClassShadowblade" xml:space="preserve">
+    <value>Hoja Sombría</value>
+  </data>
+  <data name="Confirm" xml:space="preserve">
+    <value>Confirmar</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>Log</value>
+  </data>
+  <data name="Auto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <data name="AutoOn" xml:space="preserve">
+    <value>Auto: Sí</value>
+  </data>
+  <data name="Skip" xml:space="preserve">
+    <value>Saltar</value>
+  </data>
+  <data name="Attack" xml:space="preserve">
+    <value>Atacar</value>
+  </data>
+  <data name="Dodge" xml:space="preserve">
+    <value>Esquivar</value>
+  </data>
+  <data name="Skill" xml:space="preserve">
+    <value>Habilidad</value>
+  </data>
+  <data name="Item" xml:space="preserve">
+    <value>Objeto</value>
+  </data>
+  <data name="Menu" xml:space="preserve">
+    <value>Menú</value>
+  </data>
+  <data name="Inventory" xml:space="preserve">
+    <value>Inventario</value>
+  </data>
+  <data name="TabAll" xml:space="preserve">
+    <value>Todo</value>
+  </data>
+  <data name="TabWeapons" xml:space="preserve">
+    <value>Armas</value>
+  </data>
+  <data name="TabArmor" xml:space="preserve">
+    <value>Armadura</value>
+  </data>
+  <data name="TabAccessory" xml:space="preserve">
+    <value>Accesorio</value>
+  </data>
+  <data name="TabConsumable" xml:space="preserve">
+    <value>Consumible</value>
+  </data>
+  <data name="TabKeyItems" xml:space="preserve">
+    <value>Clave</value>
+  </data>
+  <data name="TypeWeapon" xml:space="preserve">
+    <value>Arma</value>
+  </data>
+  <data name="TypeArmor" xml:space="preserve">
+    <value>Armadura</value>
+  </data>
+  <data name="TypeAccessory" xml:space="preserve">
+    <value>Accesorio</value>
+  </data>
+  <data name="TypeConsumable" xml:space="preserve">
+    <value>Consumible</value>
+  </data>
+  <data name="TypeKeyItem" xml:space="preserve">
+    <value>Objeto clave</value>
+  </data>
+  <data name="Equip" xml:space="preserve">
+    <value>Equipar</value>
+  </data>
+  <data name="Unequip" xml:space="preserve">
+    <value>Desequipar</value>
+  </data>
+  <data name="Use" xml:space="preserve">
+    <value>Usar</value>
+  </data>
+  <data name="Merchant" xml:space="preserve">
+    <value>Comerciante</value>
+  </data>
+  <data name="Buy" xml:space="preserve">
+    <value>Comprar</value>
+  </data>
+  <data name="Sell" xml:space="preserve">
+    <value>Vender</value>
+  </data>
+  <data name="NothingToSell" xml:space="preserve">
+    <value>Nada que vender</value>
+  </data>
+  <data name="NoWares" xml:space="preserve">
+    <value>Sin mercancía</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>Estado</value>
+  </data>
+  <data name="Skills" xml:space="preserve">
+    <value>Habilidades</value>
+  </data>
+  <data name="Equipment" xml:space="preserve">
+    <value>Equipo</value>
+  </data>
+  <data name="Free" xml:space="preserve">
+    <value>Gratis</value>
+  </data>
+  <data name="Buff" xml:space="preserve">
+    <value>Buff</value>
+  </data>
+  <data name="ClassMage" xml:space="preserve">
+    <value>Mago</value>
+  </data>
+  <data name="ClassAssassin" xml:space="preserve">
+    <value>Asesino</value>
+  </data>
+  <data name="Audio" xml:space="preserve">
+    <value>Audio</value>
+  </data>
+  <data name="SoundEffects" xml:space="preserve">
+    <value>Efectos de sonido</value>
+  </data>
+  <data name="Music" xml:space="preserve">
+    <value>Música</value>
+  </data>
+  <data name="Vibration" xml:space="preserve">
+    <value>Vibración</value>
+  </data>
+  <data name="Text" xml:space="preserve">
+    <value>Texto</value>
+  </data>
+  <data name="Speed" xml:space="preserve">
+    <value>Velocidad</value>
+  </data>
+  <data name="SpeedSlow" xml:space="preserve">
+    <value>Lento</value>
+  </data>
+  <data name="SpeedNormal" xml:space="preserve">
+    <value>Normal</value>
+  </data>
+  <data name="SpeedFast" xml:space="preserve">
+    <value>Rápido</value>
+  </data>
+  <data name="SpeedInstant" xml:space="preserve">
+    <value>Instantáneo</value>
+  </data>
+  <data name="Pause" xml:space="preserve">
+    <value>Pausa</value>
+  </data>
+  <data name="Resume" xml:space="preserve">
+    <value>Reanudar</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+  <data name="Codex" xml:space="preserve">
+    <value>Códice</value>
+  </data>
+  <data name="MainMenu" xml:space="preserve">
+    <value>Menú principal</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Cerrar</value>
+  </data>
+  <data name="LoadSave" xml:space="preserve">
+    <value>Cargar partida</value>
+  </data>
+  <data name="UnlockChapter" xml:space="preserve">
+    <value>Desbloquear capítulo</value>
+  </data>
+  <data name="Unlock" xml:space="preserve">
+    <value>Desbloquear</value>
+  </data>
+  <data name="PressBackAgainToExit" xml:space="preserve">
+    <value>Pulsa atrás de nuevo para salir</value>
+  </data>
+  <data name="Victory" xml:space="preserve">
+    <value>VICTORIA!</value>
+  </data>
+  <data name="Defeat" xml:space="preserve">
+    <value>Caído...</value>
+  </data>
+  <data name="TapToContinue" xml:space="preserve">
+    <value>Toca para continuar</value>
+  </data>
+  <data name="ChooseSkill" xml:space="preserve">
+    <value>Elegir habilidad</value>
+  </data>
+  <data name="ChooseItem" xml:space="preserve">
+    <value>Elegir objeto</value>
+  </data>
+  <data name="NoSkillsAvailable" xml:space="preserve">
+    <value>No hay habilidades disponibles</value>
+  </data>
+  <data name="NoItemsAvailable" xml:space="preserve">
+    <value>No hay objetos disponibles</value>
+  </data>
+  <data name="BossPhase" xml:space="preserve">
+    <value>Fase {0}</value>
+  </data>
+  <data name="Combo" xml:space="preserve">
+    <value>COMBO</value>
+  </data>
+  <data name="Boss" xml:space="preserve">
+    <value>JEFE</value>
+  </data>
+  <data name="NotEnoughMp" xml:space="preserve">
+    <value>¡MP insuficiente!</value>
+  </data>
+  <data name="Dodged" xml:space="preserve">
+    <value>¡Esquivado!</value>
+  </data>
+  <data name="SkillEvolution" xml:space="preserve">
+    <value>¡Evolución de habilidad!</value>
+  </data>
+
+  <data name="LevelUp" xml:space="preserve">
+    <value>SUBIDA DE NIVEL!</value>
+  </data>
+  <data name="DistributePoints" xml:space="preserve">
+    <value>Distribuye {0} puntos:</value>
+  </data>
+  <data name="AllPointsDistributed" xml:space="preserve">
+    <value>Todos los puntos distribuidos!</value>
+  </data>
+  <data name="YourJourneyEnds" xml:space="preserve">
+    <value>Tu viaje termina aquí... ¿o no?</value>
+  </data>
+  <data name="ReviveAd" xml:space="preserve">
+    <value>Revivir (Anuncio)</value>
+  </data>
+  <data name="LoadSaveGame" xml:space="preserve">
+    <value>Cargar partida</value>
+  </data>
+  <data name="FateChanged" xml:space="preserve">
+    <value>El destino ha cambiado...</value>
+  </data>
+  <data name="TapToContinueTutorial" xml:space="preserve">
+    <value>Toca para continuar</value>
+  </data>
+  <data name="DialogBacklog" xml:space="preserve">
+    <value>Historial de diálogos</value>
+  </data>
+  <data name="Saving" xml:space="preserve">
+    <value>Guardando...</value>
+  </data>
+  <data name="Cost" xml:space="preserve">
+    <value>Coste:</value>
+  </data>
+  <data name="YourGold" xml:space="preserve">
+    <value>Tu oro: {0}</value>
+  </data>
+  <data name="NoVideosToday" xml:space="preserve">
+    <value>No hay vídeos disponibles hoy</value>
+  </data>
+  <data name="WatchVideo" xml:space="preserve">
+    <value>Ver vídeo: +{0} Oro ({1}/3)</value>
+  </data>
+  <data name="CheckingAssets" xml:space="preserve">
+    <value>Comprobando recursos...</value>
+  </data>
+  <data name="DownloadComplete" xml:space="preserve">
+    <value>Descarga completada!</value>
+  </data>
+  <data name="DownloadFailed" xml:space="preserve">
+    <value>Descarga fallida.</value>
+  </data>
+  <data name="UseWifi" xml:space="preserve">
+    <value>Por favor usa una conexión Wi-Fi</value>
+  </data>
+  <data name="RetryDownload" xml:space="preserve">
+    <value>Reintentar</value>
+  </data>
+  <data name="Ready" xml:space="preserve">
+    <value>Listo!</value>
+  </data>
+  <data name="SfxVolume" xml:space="preserve">
+    <value>Volumen SFX</value>
+  </data>
+  <data name="MusicVolume" xml:space="preserve">
+    <value>Volumen música</value>
+  </data>
+  <data name="DownloadingFiles" xml:space="preserve">
+    <value>{0} archivos descargando...</value>
+  </data>
+  <data name="Downloading" xml:space="preserve">
+    <value>Descargando...</value>
+  </data>
+  <data name="BackArrow" xml:space="preserve">
+    <value>&lt; Volver</value>
+  </data>
+</root>

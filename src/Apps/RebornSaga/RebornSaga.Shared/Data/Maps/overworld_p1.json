@@ -1,0 +1,37 @@
+{
+  "chapterId": "p1",
+  "chapterNameKey": "chapter_p1_title",
+  "startNodeId": "p1_battlefield",
+  "nodes": [
+    {
+      "id": "p1_battlefield",
+      "nameKey": "Map_P1_Schlachtfeld",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["p1_campfire"],
+      "storyNodeId": "p1_intro",
+      "background": "Battlefield"
+    },
+    {
+      "id": "p1_campfire",
+      "nameKey": "Map_P1_Lagerfeuer",
+      "type": "Rest",
+      "x": 0.5,
+      "y": 0.55,
+      "connections": ["p1_portal"],
+      "storyNodeId": "p1_campfire",
+      "background": "Campfire"
+    },
+    {
+      "id": "p1_portal",
+      "nameKey": "Map_P1_NihilusPortal",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.2,
+      "connections": [],
+      "storyNodeId": "p1_final_march",
+      "background": "DarkCastle"
+    }
+  ]
+}

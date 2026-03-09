@@ -1,0 +1,255 @@
+{
+  "id": "k9",
+  "titleKey": "chapter_k9_title",
+  "isProlog": false,
+  "goldCost": 2500,
+  "nodes": [
+    {
+      "id": "k9_recap",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k9_system_recap", "typewriterSpeed": 15 }
+      ],
+      "next": "k9_xaroth_attack"
+    },
+    {
+      "id": "k9_xaroth_attack",
+      "type": "systemMessage",
+      "backgroundKey": "village",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k9_system_dark_energy", "typewriterSpeed": 15 }
+      ],
+      "next": "k9_village_burns"
+    },
+    {
+      "id": "k9_village_burns",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_boss_battle",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k9_protag_fire", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k9_aria_screams", "position": "left" },
+        { "character": "kael", "emotion": "angry", "textKey": "k9_kael_attack", "position": "right" },
+        { "character": "luna", "emotion": "sad", "textKey": "k9_luna_wounded", "position": "left" }
+      ],
+      "next": "k9_rescue_choice"
+    },
+    {
+      "id": "k9_rescue_choice",
+      "type": "choice",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k9_system_rescue", "typewriterSpeed": 15 }
+      ],
+      "options": [
+        {
+          "textKey": "k9_choice_rescue_aria",
+          "next": "k9_rescue_aria",
+          "tag": "[Aria retten]",
+          "effects": { "affinity": { "aria": 30 }, "fateChanged": "rescued_aria" }
+        },
+        {
+          "textKey": "k9_choice_rescue_kael",
+          "next": "k9_rescue_kael",
+          "tag": "[Kael retten]",
+          "effects": { "affinity": { "kael": 30 }, "fateChanged": "rescued_kael" }
+        },
+        {
+          "textKey": "k9_choice_rescue_aldric",
+          "next": "k9_rescue_aldric",
+          "tag": "[Aldric retten]",
+          "effects": { "affinity": { "aldric": 30 }, "fateChanged": "rescued_aldric" }
+        },
+        {
+          "textKey": "k9_choice_rescue_luna",
+          "next": "k9_rescue_luna",
+          "tag": "[Luna retten]",
+          "effects": { "affinity": { "luna": 30 }, "fateChanged": "rescued_luna" }
+        }
+      ]
+    },
+    {
+      "id": "k9_rescue_aria",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_boss_battle",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k9_protag_save_aria", "position": "right" },
+        { "character": "aria", "emotion": "surprised", "textKey": "k9_aria_saved", "position": "left" },
+        { "character": "aria", "emotion": "happy", "textKey": "k9_aria_fight_back", "position": "left" }
+      ],
+      "next": "k9_regroup"
+    },
+    {
+      "id": "k9_rescue_kael",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_boss_battle",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k9_protag_save_kael", "position": "right" },
+        { "character": "kael", "emotion": "surprised", "textKey": "k9_kael_trapped", "position": "left" },
+        { "character": "kael", "emotion": "happy", "textKey": "k9_kael_freed", "position": "left" }
+      ],
+      "next": "k9_regroup"
+    },
+    {
+      "id": "k9_rescue_aldric",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_boss_battle",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k9_protag_save_aldric", "position": "right" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k9_aldric_tower_burns", "position": "left" },
+        { "character": "aldric", "emotion": "happy", "textKey": "k9_aldric_saved", "position": "left" }
+      ],
+      "next": "k9_regroup"
+    },
+    {
+      "id": "k9_rescue_luna",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_boss_battle",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k9_protag_save_luna", "position": "right" },
+        { "character": "luna", "emotion": "sad", "textKey": "k9_luna_healing", "position": "left" },
+        { "character": "luna", "emotion": "happy", "textKey": "k9_luna_saved", "position": "left" }
+      ],
+      "next": "k9_regroup"
+    },
+    {
+      "id": "k9_regroup",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "sad", "textKey": "k9_protag_regroup", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "k9_aria_wounded", "position": "left" },
+        { "character": "kael", "emotion": "angry", "textKey": "k9_kael_rage", "position": "right" },
+        { "character": "luna", "emotion": "sad", "textKey": "k9_luna_cant_heal", "position": "left" }
+      ],
+      "next": "k9_xaroth_appears"
+    },
+    {
+      "id": "k9_xaroth_appears",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k9_system_xaroth_detected", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "angry", "textKey": "k9_protag_xaroth_who", "position": "right" },
+        { "character": "xaroth", "emotion": "neutral", "textKey": "k9_xaroth_intro", "position": "left" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k9_aldric_power", "position": "right" }
+      ],
+      "next": "k9_xaroth_choice"
+    },
+    {
+      "id": "k9_xaroth_choice",
+      "type": "choice",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k9_protag_decide", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "k9_choice_pursue",
+          "next": "k9_pursue_xaroth",
+          "tag": "[Aggressiv]",
+          "effects": { "karma": 2 }
+        },
+        {
+          "textKey": "k9_choice_protect",
+          "next": "k9_protect_village",
+          "tag": "[Defensiv]",
+          "effects": { "karma": 1 }
+        }
+      ]
+    },
+    {
+      "id": "k9_pursue_xaroth",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_boss_battle",
+      "speakers": [
+        { "character": "protagonist", "emotion": "angry", "textKey": "k9_protag_pursue", "position": "right" },
+        { "character": "kael", "emotion": "determined", "textKey": "k9_kael_with_you", "position": "left" },
+        { "character": "aria", "emotion": "determined", "textKey": "k9_aria_pursue", "position": "right" }
+      ],
+      "next": "k9_boss_xaroth"
+    },
+    {
+      "id": "k9_protect_village",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k9_protag_protect", "position": "right" },
+        { "character": "luna", "emotion": "determined", "textKey": "k9_luna_protect", "position": "left" },
+        { "character": "vex", "emotion": "determined", "textKey": "k9_vex_defend", "position": "right" }
+      ],
+      "next": "k9_boss_xaroth"
+    },
+    {
+      "id": "k9_boss_xaroth",
+      "type": "battle",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B014",
+      "next": "k9_xaroth_flees"
+    },
+    {
+      "id": "k9_xaroth_flees",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "xaroth", "emotion": "angry", "textKey": "k9_xaroth_flees", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k9_protag_xaroth_stop", "position": "right" },
+        { "character": "xaroth", "emotion": "neutral", "textKey": "k9_xaroth_master", "position": "left" }
+      ],
+      "next": "k9_village_ruins"
+    },
+    {
+      "id": "k9_village_ruins",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "sad", "textKey": "k9_protag_ruins", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "k9_aria_crying", "position": "left" },
+        { "character": "kael", "emotion": "angry", "textKey": "k9_kael_revenge", "position": "right" },
+        { "character": "luna", "emotion": "sad", "textKey": "k9_luna_tears", "position": "left" }
+      ],
+      "next": "k9_aldric_zeitriss"
+    },
+    {
+      "id": "k9_aldric_zeitriss",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "aldric", "emotion": "sad", "textKey": "k9_aldric_zeitriss", "position": "left" },
+        { "character": "luna", "emotion": "angry", "textKey": "k9_luna_forbidden", "position": "right" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k9_aldric_tempted", "position": "left" }
+      ],
+      "next": "k9_aria_private"
+    },
+    {
+      "id": "k9_aria_private",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k9_system_aria_private", "typewriterSpeed": 10 }
+      ],
+      "next": "k9_ending"
+    },
+    {
+      "id": "k9_ending",
+      "type": "chapterEnd",
+      "effects": { "exp": 400, "gold": 250 }
+    }
+  ]
+}

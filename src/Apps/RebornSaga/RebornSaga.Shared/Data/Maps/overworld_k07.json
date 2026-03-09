@@ -1,0 +1,68 @@
+{
+  "chapterId": "k7",
+  "chapterNameKey": "chapter_k7_title",
+  "startNodeId": "k7_start",
+  "nodes": [
+    {
+      "id": "k7_start",
+      "nameKey": "Map_K7_Wachturm",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k7_dorfplatz"],
+      "storyNodeId": "k7_dark_army",
+      "background": "Village"
+    },
+    {
+      "id": "k7_dorfplatz",
+      "nameKey": "Map_K7_Dorfplatz",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.7,
+      "connections": ["k7_barrikaden"],
+      "storyNodeId": "k7_all_together",
+      "background": "Village"
+    },
+    {
+      "id": "k7_barrikaden",
+      "nameKey": "Map_K7_Barrikaden",
+      "type": "Story",
+      "x": 0.35,
+      "y": 0.5,
+      "connections": ["k7_schlachtfeld"],
+      "storyNodeId": "k7_battle_preparation",
+      "background": "Village"
+    },
+    {
+      "id": "k7_schlachtfeld",
+      "nameKey": "Map_K7_Schlachtfeld",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.32,
+      "connections": ["k7_morthos_arena"],
+      "enemyId": "B012",
+      "storyNodeId": "k7_boss_morthos",
+      "background": "Battlefield"
+    },
+    {
+      "id": "k7_morthos_arena",
+      "nameKey": "Map_K7_MorthosArena",
+      "type": "Story",
+      "x": 0.65,
+      "y": 0.18,
+      "connections": ["k7_horizont"],
+      "storyNodeId": "k7_morthos_last_words",
+      "background": "Battlefield"
+    },
+    {
+      "id": "k7_horizont",
+      "nameKey": "Map_K7_HorizontAussicht",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.05,
+      "connections": [],
+      "storyNodeId": "k7_darkness_horizon",
+      "background": "Battlefield"
+    }
+  ]
+}

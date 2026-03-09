@@ -1,0 +1,185 @@
+{
+  "enemies": [
+    {
+      "id": "E001",
+      "nameKey": "enemy_shadow_wolf",
+      "level": 2, "hp": 35, "atk": 8, "def": 3,
+      "element": "dark", "weakness": "light",
+      "exp": 15, "gold": 10,
+      "drops": [{ "itemId": "M001", "chance": 0.3 }]
+    },
+    {
+      "id": "E002",
+      "nameKey": "enemy_forest_slime",
+      "level": 1, "hp": 20, "atk": 5, "def": 2,
+      "element": null, "weakness": "fire",
+      "exp": 8, "gold": 5,
+      "drops": [{ "itemId": "M002", "chance": 0.5 }]
+    },
+    {
+      "id": "E003",
+      "nameKey": "enemy_goblin_scout",
+      "level": 3, "hp": 45, "atk": 10, "def": 4,
+      "element": null, "weakness": null,
+      "exp": 20, "gold": 15,
+      "drops": [{ "itemId": "M003", "chance": 0.2 }]
+    },
+    {
+      "id": "E004",
+      "nameKey": "enemy_fortress_guard",
+      "level": 28, "hp": 220, "atk": 48, "def": 32,
+      "element": "dark", "weakness": "light",
+      "exp": 80, "gold": 55,
+      "drops": [{ "itemId": "M001", "chance": 0.2 }]
+    },
+    {
+      "id": "E005",
+      "nameKey": "enemy_shadow_scout",
+      "level": 1, "hp": 15, "atk": 4, "def": 1,
+      "element": "dark", "weakness": "light",
+      "exp": 10, "gold": 5,
+      "drops": [],
+      "isProlog": true
+    }
+  ],
+  "bosses": [
+    {
+      "id": "B001",
+      "nameKey": "boss_malachar",
+      "level": 48, "hp": 5000, "atk": 200, "def": 80,
+      "element": "dark", "weakness": "light",
+      "exp": 0, "gold": 0, "phases": 2,
+      "drops": [],
+      "isProlog": true
+    },
+    {
+      "id": "B002",
+      "nameKey": "boss_vexara",
+      "level": 49, "hp": 4500, "atk": 220, "def": 60,
+      "element": "dark", "weakness": "fire",
+      "exp": 0, "gold": 0, "phases": 2,
+      "drops": [],
+      "isProlog": true
+    },
+    {
+      "id": "B003",
+      "nameKey": "boss_krynn",
+      "level": 50, "hp": 6000, "atk": 250, "def": 90,
+      "element": "dark", "weakness": null,
+      "exp": 0, "gold": 0, "phases": 1,
+      "drops": [],
+      "isProlog": true,
+      "isCutsceneOnly": true
+    },
+    {
+      "id": "B004",
+      "nameKey": "boss_nihilus",
+      "level": 99, "hp": 99999, "atk": 999, "def": 999,
+      "element": "dark", "weakness": null,
+      "exp": 0, "gold": 0, "phases": 1,
+      "drops": [],
+      "isProlog": true,
+      "isScripted": true,
+      "scriptedRounds": 3
+    },
+    {
+      "id": "B005",
+      "nameKey": "boss_wolf_alpha",
+      "level": 3, "hp": 80, "atk": 12, "def": 5,
+      "element": null, "weakness": "fire",
+      "exp": 50, "gold": 30, "phases": 1,
+      "drops": [{ "itemId": "C001", "chance": 1.0 }]
+    },
+    {
+      "id": "B006",
+      "nameKey": "boss_garak",
+      "level": 5, "hp": 150, "atk": 18, "def": 8,
+      "element": null, "weakness": null,
+      "exp": 80, "gold": 50, "phases": 1,
+      "drops": [{ "itemId": "C002", "chance": 1.0 }]
+    },
+    {
+      "id": "B007",
+      "nameKey": "boss_erdross",
+      "level": 8, "hp": 280, "atk": 25, "def": 18,
+      "element": "earth", "weakness": "fire",
+      "exp": 120, "gold": 80, "phases": 1,
+      "drops": []
+    },
+    {
+      "id": "B008",
+      "nameKey": "boss_sentinel",
+      "level": 12, "hp": 400, "atk": 32, "def": 25,
+      "element": null, "weakness": "lightning",
+      "exp": 150, "gold": 100, "phases": 2,
+      "drops": []
+    },
+    {
+      "id": "B009",
+      "nameKey": "boss_sylas",
+      "level": 15, "hp": 350, "atk": 38, "def": 15,
+      "element": null, "weakness": null,
+      "exp": 200, "gold": 120, "phases": 1,
+      "drops": []
+    },
+    {
+      "id": "B010",
+      "nameKey": "boss_ravok",
+      "level": 15, "hp": 320, "atk": 42, "def": 12,
+      "element": null, "weakness": null,
+      "exp": 200, "gold": 120, "phases": 1,
+      "drops": []
+    },
+    {
+      "id": "B011",
+      "nameKey": "boss_thessara",
+      "level": 18, "hp": 600, "atk": 45, "def": 30,
+      "element": "water", "weakness": "lightning",
+      "exp": 250, "gold": 150, "phases": 2,
+      "drops": []
+    },
+    {
+      "id": "B012",
+      "nameKey": "boss_morthos",
+      "level": 22, "hp": 800, "atk": 55, "def": 35,
+      "element": "dark", "weakness": "light",
+      "exp": 300, "gold": 200, "phases": 3,
+      "drops": []
+    },
+    {
+      "id": "B013",
+      "nameKey": "boss_shadow_self",
+      "level": 25, "hp": 500, "atk": 50, "def": 40,
+      "element": null, "weakness": null,
+      "exp": 350, "gold": 0, "phases": 1,
+      "drops": []
+    },
+    {
+      "id": "B014",
+      "nameKey": "boss_xaroth",
+      "level": 30, "hp": 1200, "atk": 75, "def": 50,
+      "element": "dark", "weakness": "light",
+      "exp": 400, "gold": 250, "phases": 3,
+      "drops": []
+    },
+    {
+      "id": "B015",
+      "nameKey": "boss_xaroth_evolved",
+      "level": 33, "hp": 1500, "atk": 85, "def": 55,
+      "element": "dark", "weakness": "light",
+      "exp": 500, "gold": 300, "phases": 2,
+      "drops": []
+    },
+    {
+      "id": "B016",
+      "nameKey": "boss_nihilus_echo",
+      "level": 35, "hp": 999, "atk": 100, "def": 100,
+      "element": "dark", "weakness": null,
+      "exp": 0, "gold": 0, "phases": 1,
+      "drops": [],
+      "isScripted": true,
+      "scriptedRounds": 2,
+      "isCutsceneOnly": true
+    }
+  ]
+}

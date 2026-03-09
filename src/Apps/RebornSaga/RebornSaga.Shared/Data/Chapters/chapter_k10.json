@@ -1,0 +1,296 @@
+{
+  "id": "k10",
+  "titleKey": "chapter_k10_title",
+  "isProlog": false,
+  "goldCost": 3500,
+  "nodes": [
+    {
+      "id": "k10_recap",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_recap", "typewriterSpeed": 15 }
+      ],
+      "next": "k10_aftermath"
+    },
+    {
+      "id": "k10_aftermath",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "sad", "textKey": "k10_protag_morning", "position": "right" },
+        { "character": "luna", "emotion": "sad", "textKey": "k10_luna_dawn", "position": "left" },
+        { "character": "vex", "emotion": "determined", "textKey": "k10_vex_rebuild", "position": "right" }
+      ],
+      "next": "k10_group_rally"
+    },
+    {
+      "id": "k10_group_rally",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_encounter",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k10_protag_rally", "position": "right" },
+        { "character": "aria", "emotion": "determined", "textKey": "k10_aria_ready", "position": "left" },
+        { "character": "kael", "emotion": "determined", "textKey": "k10_kael_finish", "position": "right" },
+        { "character": "aldric", "emotion": "determined", "textKey": "k10_aldric_calculations", "position": "left" }
+      ],
+      "next": "k10_xaroth_trail"
+    },
+    {
+      "id": "k10_xaroth_trail",
+      "type": "systemMessage",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_trail", "typewriterSpeed": 20 }
+      ],
+      "next": "k10_pursuit_begin"
+    },
+    {
+      "id": "k10_pursuit_begin",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_tower",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k10_protag_pursuit", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k10_aria_trail_strong", "position": "left" },
+        { "character": "kael", "emotion": "neutral", "textKey": "k10_kael_careful", "position": "right" }
+      ],
+      "next": "k10_final_dungeon"
+    },
+    {
+      "id": "k10_final_dungeon",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k10_protag_fortress", "position": "right" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k10_aldric_dark_magic", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_fortress", "typewriterSpeed": 20 }
+      ],
+      "next": "k10_xaroth_confrontation"
+    },
+    {
+      "id": "k10_xaroth_confrontation",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "xaroth", "emotion": "neutral", "textKey": "k10_xaroth_waiting", "position": "left" },
+        { "character": "protagonist", "emotion": "angry", "textKey": "k10_protag_end_this", "position": "right" },
+        { "character": "xaroth", "emotion": "angry", "textKey": "k10_xaroth_should_have_fled", "position": "left" }
+      ],
+      "next": "k10_boss_xaroth_2"
+    },
+    {
+      "id": "k10_boss_xaroth_2",
+      "type": "battle",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B015",
+      "next": "k10_xaroth_defeated"
+    },
+    {
+      "id": "k10_xaroth_defeated",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "xaroth", "emotion": "angry", "textKey": "k10_xaroth_on_knees", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k10_protag_its_over", "position": "right" },
+        { "character": "aria", "emotion": "neutral", "textKey": "k10_aria_what_now", "position": "left" }
+      ],
+      "next": "k10_kill_or_spare"
+    },
+    {
+      "id": "k10_kill_or_spare",
+      "type": "choice",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_fate", "typewriterSpeed": 15 }
+      ],
+      "options": [
+        {
+          "textKey": "k10_choice_kill",
+          "next": "k10_kill_xaroth",
+          "tag": "[Endgueltig]",
+          "effects": { "karma": -3, "fateChanged": "xaroth_killed" }
+        },
+        {
+          "textKey": "k10_choice_spare",
+          "next": "k10_spare_xaroth",
+          "tag": "[Barmherzig]",
+          "effects": { "karma": 3, "fateChanged": "xaroth_spared" }
+        }
+      ]
+    },
+    {
+      "id": "k10_kill_xaroth",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "angry", "textKey": "k10_protag_kill", "position": "right" },
+        { "character": "xaroth", "emotion": "angry", "textKey": "k10_xaroth_death", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_dark_release", "typewriterSpeed": 15 },
+        { "character": "luna", "emotion": "sad", "textKey": "k10_luna_dark_energy", "position": "left" }
+      ],
+      "next": "k10_kill_aftermath"
+    },
+    {
+      "id": "k10_kill_aftermath",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_kill_dark", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "angry", "textKey": "k10_protag_kill_regret", "position": "right" }
+      ],
+      "next": "k10_system_anomaly"
+    },
+    {
+      "id": "k10_spare_xaroth",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k10_protag_spare", "position": "right" },
+        { "character": "xaroth", "emotion": "surprised", "textKey": "k10_xaroth_spare_react", "position": "left" },
+        { "character": "kael", "emotion": "angry", "textKey": "k10_kael_disagree", "position": "right" },
+        { "character": "xaroth", "emotion": "neutral", "textKey": "k10_xaroth_warning", "position": "left" }
+      ],
+      "next": "k10_spare_aftermath"
+    },
+    {
+      "id": "k10_spare_aftermath",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_xaroth_spare_info", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k10_protag_spare_hope", "position": "right" }
+      ],
+      "next": "k10_system_anomaly"
+    },
+    {
+      "id": "k10_system_anomaly",
+      "type": "battle",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B016",
+      "next": "k10_nihilus_echo"
+    },
+    {
+      "id": "k10_nihilus_echo",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_anomaly_surge", "typewriterSpeed": 10 },
+        { "character": "nihilus", "emotion": "neutral", "textKey": "k10_nihilus_vision", "position": "left" },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k10_protag_nihilus_who", "position": "right" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k10_aldric_felt_that", "position": "left" }
+      ],
+      "next": "k10_final_speech"
+    },
+    {
+      "id": "k10_final_speech",
+      "type": "choice",
+      "backgroundKey": "village",
+      "musicKey": "bgm_village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k10_protag_speech_intro", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "k10_choice_inspire",
+          "next": "k10_speech_inspire",
+          "tag": "[Inspirierend]",
+          "effects": { "karma": 2 }
+        },
+        {
+          "textKey": "k10_choice_revenge",
+          "next": "k10_speech_revenge",
+          "tag": "[Rachsuchtig]",
+          "effects": { "karma": -2 }
+        }
+      ]
+    },
+    {
+      "id": "k10_speech_inspire",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "happy", "textKey": "k10_protag_inspire", "position": "right" },
+        { "character": "aria", "emotion": "happy", "textKey": "k10_aria_inspired", "position": "left" },
+        { "character": "luna", "emotion": "happy", "textKey": "k10_luna_hope", "position": "right" }
+      ],
+      "next": "k10_ending_scene"
+    },
+    {
+      "id": "k10_speech_revenge",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "angry", "textKey": "k10_protag_revenge", "position": "right" },
+        { "character": "kael", "emotion": "determined", "textKey": "k10_kael_agrees", "position": "left" },
+        { "character": "aria", "emotion": "sad", "textKey": "k10_aria_worried", "position": "right" }
+      ],
+      "next": "k10_ending_scene"
+    },
+    {
+      "id": "k10_ending_scene",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k10_protag_ending", "position": "right" },
+        { "character": "aria", "emotion": "neutral", "textKey": "k10_aria_ending", "position": "left" },
+        { "character": "kael", "emotion": "neutral", "textKey": "k10_kael_ending", "position": "right" },
+        { "character": "aldric", "emotion": "neutral", "textKey": "k10_aldric_ending", "position": "left" },
+        { "character": "luna", "emotion": "neutral", "textKey": "k10_luna_ending", "position": "right" }
+      ],
+      "effects": { "exp": 200, "gold": 600 },
+      "next": "k10_aria_nihilus_detection"
+    },
+    {
+      "id": "k10_aria_nihilus_detection",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_nihilus_detected", "typewriterSpeed": 10 }
+      ],
+      "next": "k10_cliffhanger"
+    },
+    {
+      "id": "k10_cliffhanger",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_he_comes", "typewriterSpeed": 8 }
+      ],
+      "next": "k10_arc2_tease"
+    },
+    {
+      "id": "k10_arc2_tease",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k10_system_arc2", "typewriterSpeed": 20 }
+      ],
+      "next": "k10_ending"
+    },
+    {
+      "id": "k10_ending",
+      "type": "chapterEnd",
+      "effects": { "exp": 500, "gold": 600 }
+    }
+  ]
+}

@@ -1,0 +1,285 @@
+{
+  "id": "k6",
+  "titleKey": "chapter_k6_title",
+  "isProlog": false,
+  "goldCost": 800,
+  "nodes": [
+    {
+      "id": "k6_recap",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_recap", "typewriterSpeed": 15 }
+      ],
+      "next": "k6_labyrinth_entrance"
+    },
+    {
+      "id": "k6_labyrinth_entrance",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k6_protag_entrance", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_scan", "typewriterSpeed": 20 },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k6_aldric_ancient", "position": "left" }
+      ],
+      "next": "k6_companion_route"
+    },
+    {
+      "id": "k6_companion_route",
+      "type": "choice",
+      "backgroundKey": "dungeon",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_companion", "typewriterSpeed": 20 }
+      ],
+      "options": [
+        {
+          "textKey": "k6_choice_aria_path",
+          "next": "k6_aria_companion",
+          "condition": "alliance_aria"
+        },
+        {
+          "textKey": "k6_choice_kael_path",
+          "next": "k6_kael_companion",
+          "condition": "alliance_kael"
+        }
+      ]
+    },
+    {
+      "id": "k6_aria_companion",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "aria", "emotion": "determined", "textKey": "k6_aria_ready", "position": "left" },
+        { "character": "protagonist", "emotion": "happy", "textKey": "k6_protag_aria_glad", "position": "right" },
+        { "character": "aria", "emotion": "happy", "textKey": "k6_aria_together", "position": "left" }
+      ],
+      "next": "k6_first_floor"
+    },
+    {
+      "id": "k6_kael_companion",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "kael", "emotion": "determined", "textKey": "k6_kael_ready", "position": "right" },
+        { "character": "protagonist", "emotion": "happy", "textKey": "k6_protag_kael_glad", "position": "left" },
+        { "character": "kael", "emotion": "happy", "textKey": "k6_kael_together", "position": "right" }
+      ],
+      "next": "k6_first_floor"
+    },
+    {
+      "id": "k6_first_floor",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_dungeon",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k6_protag_first_floor", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_enemies", "typewriterSpeed": 20 },
+        { "character": "aldric", "emotion": "neutral", "textKey": "k6_aldric_walls", "position": "left" }
+      ],
+      "effects": { "exp": 30 },
+      "next": "k6_treasure_choice"
+    },
+    {
+      "id": "k6_treasure_choice",
+      "type": "choice",
+      "backgroundKey": "dungeon",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k6_protag_treasure_spot", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "k6_choice_open_chest",
+          "next": "k6_treasure_open",
+          "tag": "[Gierig]",
+          "effects": { "gold": 1000 }
+        },
+        {
+          "textKey": "k6_choice_ignore_chest",
+          "next": "k6_treasure_ignore",
+          "tag": "[Vorsichtig]",
+          "effects": { "karma": 1 }
+        }
+      ]
+    },
+    {
+      "id": "k6_treasure_open",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "speakers": [
+        { "character": "protagonist", "emotion": "happy", "textKey": "k6_protag_gold", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_trap", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k6_protag_trap_pain", "position": "right" }
+      ],
+      "next": "k6_deeper_levels"
+    },
+    {
+      "id": "k6_treasure_ignore",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k6_protag_ignore", "position": "right" },
+        { "character": "aria", "emotion": "happy", "textKey": "k6_aria_praise", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_trap_avoided", "typewriterSpeed": 20 }
+      ],
+      "next": "k6_deeper_levels"
+    },
+    {
+      "id": "k6_deeper_levels",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k6_protag_deeper", "position": "right" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k6_aldric_symbols", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_deeper", "typewriterSpeed": 20 }
+      ],
+      "effects": { "exp": 40 },
+      "next": "k6_echo_campfire"
+    },
+    {
+      "id": "k6_echo_campfire",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_echo_detected", "typewriterSpeed": 12 },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k6_protag_echo_vision", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k6_aria_echo_memory", "position": "left" }
+      ],
+      "next": "k6_creature_choice"
+    },
+    {
+      "id": "k6_creature_choice",
+      "type": "choice",
+      "backgroundKey": "dungeon",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k6_protag_creature_spot", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "k6_choice_free_creature",
+          "next": "k6_creature_free",
+          "tag": "[Mitfuehlend]",
+          "effects": { "karma": 3 }
+        },
+        {
+          "textKey": "k6_choice_ignore_creature",
+          "next": "k6_creature_ignore",
+          "tag": "[Pragmatisch]"
+        }
+      ]
+    },
+    {
+      "id": "k6_creature_free",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k6_protag_free_it", "position": "right" },
+        { "character": "luna", "emotion": "happy", "textKey": "k6_luna_creature_happy", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_creature_thanks", "typewriterSpeed": 20 }
+      ],
+      "effects": { "exp": 20 },
+      "next": "k6_pre_boss"
+    },
+    {
+      "id": "k6_creature_ignore",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k6_protag_leave_creature", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "k6_aria_creature_sad", "position": "left" }
+      ],
+      "next": "k6_pre_boss"
+    },
+    {
+      "id": "k6_pre_boss",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k6_protag_chamber", "position": "right" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k6_aldric_massive", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_boss_warning", "typewriterSpeed": 15 }
+      ],
+      "next": "k6_echo_rift"
+    },
+    {
+      "id": "k6_echo_rift",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_echo_rift", "typewriterSpeed": 10 },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k6_protag_echo_aldric", "position": "right" },
+        { "character": "nihilus", "emotion": "neutral", "textKey": "k6_nihilus_echo_whisper", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_echo_warning", "typewriterSpeed": 10 }
+      ],
+      "effects": { "fateChanged": "temporal_echo_detected" },
+      "next": "k6_rescue"
+    },
+    {
+      "id": "k6_rescue",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_encounter",
+      "speakers": [
+        { "character": "kael", "emotion": "determined", "textKey": "k6_rescue_kael_appears", "position": "right" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k6_protag_rescue_shock", "position": "left" },
+        { "character": "aria", "emotion": "surprised", "textKey": "k6_aria_rescue_reaction", "position": "right" }
+      ],
+      "next": "k6_boss_thessara"
+    },
+    {
+      "id": "k6_boss_thessara",
+      "type": "battle",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B011",
+      "next": "k6_victory"
+    },
+    {
+      "id": "k6_victory",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "happy", "textKey": "k6_protag_victory", "position": "right" },
+        { "character": "kael", "emotion": "sad", "textKey": "k6_kael_sorry", "position": "left" },
+        { "character": "aria", "emotion": "neutral", "textKey": "k6_aria_forgive", "position": "right" },
+        { "character": "protagonist", "emotion": "happy", "textKey": "k6_protag_together_again", "position": "right" }
+      ],
+      "effects": { "exp": 50, "gold": 300 },
+      "next": "k6_ancient_inscription"
+    },
+    {
+      "id": "k6_ancient_inscription",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "aldric", "emotion": "surprised", "textKey": "k6_aldric_inscription", "position": "left" },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k6_protag_inscription", "position": "right" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "k6_aldric_devourer", "position": "left" }
+      ],
+      "next": "k6_aria_disturbed"
+    },
+    {
+      "id": "k6_aria_disturbed",
+      "type": "systemMessage",
+      "backgroundKey": "dungeon",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k6_system_devourer", "typewriterSpeed": 10 }
+      ],
+      "next": "k6_ending"
+    },
+    {
+      "id": "k6_ending",
+      "type": "chapterEnd",
+      "effects": { "exp": 250 }
+    }
+  ]
+}

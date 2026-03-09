@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>RebornSaga</RootNamespace>
+    <ApplicationId>org.rsdigital.rebornsaga</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+    <SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" />
+    <PackageReference Include="Xamarin.GooglePlayServices.Ads.Lite" />
+    <PackageReference Include="Xamarin.Google.UserMessagingPlatform" />
+    <PackageReference Include="Xamarin.Android.Google.BillingClient" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RebornSaga.Shared\RebornSaga.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AdMobHelper.cs" Link="Services\AdMobHelper.cs" />
+    <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\RewardedAdHelper.cs" Link="Services\RewardedAdHelper.cs" />
+    <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidRewardedAdService.cs" Link="Services\AndroidRewardedAdService.cs" />
+    <Compile Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\Android\AndroidPurchaseService.cs" Link="Services\AndroidPurchaseService.cs" />
+  </ItemGroup>
+
+</Project>

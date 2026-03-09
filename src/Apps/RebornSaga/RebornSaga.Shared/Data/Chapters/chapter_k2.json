@@ -1,0 +1,305 @@
+{
+  "id": "k2",
+  "titleKey": "chapter_k2_title",
+  "isProlog": false,
+  "goldCost": 0,
+  "nodes": [
+    {
+      "id": "k2_recap",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_system_recap", "typewriterSpeed": 15 }
+      ],
+      "next": "k2_arrival"
+    },
+    {
+      "id": "k2_arrival",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k2_protag_village", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_aria_scan_village", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k2_protag_isekai_moment", "position": "right" }
+      ],
+      "next": "k2_gate"
+    },
+    {
+      "id": "k2_gate",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k2_protag_gate", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_aria_gate_warning", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_protag_peaceful", "position": "right" }
+      ],
+      "next": "k2_village_square"
+    },
+    {
+      "id": "k2_village_square",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k2_protag_square", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_aria_life_signs", "typewriterSpeed": 20 }
+      ],
+      "next": "k2_meet_vex"
+    },
+    {
+      "id": "k2_meet_vex",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_friendly",
+      "speakers": [
+        { "character": "vex", "emotion": "happy", "textKey": "k2_vex_greeting", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k2_protag_vex_who", "position": "right" },
+        { "character": "vex", "emotion": "happy", "textKey": "k2_vex_intro", "position": "left" },
+        { "character": "vex", "emotion": "sad", "textKey": "k2_vex_past", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_aria_vex_trust", "typewriterSpeed": 20 }
+      ],
+      "effects": { "exp": 10 },
+      "next": "k2_meet_aria"
+    },
+    {
+      "id": "k2_meet_aria",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_aria_theme",
+      "speakers": [
+        { "character": "aria", "emotion": "angry", "textKey": "k2_aria_who_are_you", "position": "left" },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k2_protag_no_memory", "position": "right" },
+        { "character": "aria", "emotion": "neutral", "textKey": "k2_aria_suspicious", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_system_aria_match", "typewriterSpeed": 20 }
+      ],
+      "effects": { "affinity": { "aria": 5 } },
+      "next": "k2_bandit_rumor"
+    },
+    {
+      "id": "k2_bandit_rumor",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "vex", "emotion": "nervous", "textKey": "k2_vex_bandits", "position": "left" },
+        { "character": "aria", "emotion": "angry", "textKey": "k2_aria_bandits_anger", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_system_dark_trace", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_protag_help", "position": "right" },
+        { "character": "aria", "emotion": "surprised", "textKey": "k2_aria_why_help", "position": "left" }
+      ],
+      "next": "k2_bandit_choice"
+    },
+    {
+      "id": "k2_bandit_choice",
+      "type": "choice",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_aria_two_options", "typewriterSpeed": 20 }
+      ],
+      "options": [
+        {
+          "textKey": "k2_choice_confront",
+          "next": "k2_confront_bandits",
+          "tag": "[Karma+]",
+          "effects": { "karma": 2 }
+        },
+        {
+          "textKey": "k2_choice_sneak",
+          "next": "k2_sneak_bandits",
+          "effects": {}
+        }
+      ]
+    },
+    {
+      "id": "k2_confront_bandits",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_protag_confront", "position": "right" },
+        { "character": "aria", "emotion": "surprised", "textKey": "k2_aria_brave_fool", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_protag_not_hiding", "position": "right" }
+      ],
+      "next": "k2_consequence_confront"
+    },
+    {
+      "id": "k2_consequence_confront",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "vex", "emotion": "happy", "textKey": "k2_consq_confront_vex", "position": "left" },
+        { "character": "aria", "emotion": "determined", "textKey": "k2_consq_confront_aria", "position": "left" }
+      ],
+      "effects": { "affinity": { "aria": 5 } },
+      "next": "k2_training_choice"
+    },
+    {
+      "id": "k2_sneak_bandits",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_stealth",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k2_protag_sneak", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_aria_sneak_route", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k2_protag_intel", "position": "right" }
+      ],
+      "effects": { "exp": 15 },
+      "next": "k2_consequence_sneak"
+    },
+    {
+      "id": "k2_consequence_sneak",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_consq_sneak_aria", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_consq_sneak_protag", "position": "right" }
+      ],
+      "next": "k2_training_choice"
+    },
+    {
+      "id": "k2_training_choice",
+      "type": "choice",
+      "backgroundKey": "village",
+      "musicKey": "bgm_village",
+      "speakers": [
+        { "character": "aria", "emotion": "neutral", "textKey": "k2_aria_training_offer", "position": "left" }
+      ],
+      "options": [
+        {
+          "textKey": "k2_choice_train_aria",
+          "next": "k2_train_aria",
+          "effects": { "affinity": { "aria": 20 } }
+        },
+        {
+          "textKey": "k2_choice_train_solo",
+          "next": "k2_train_solo",
+          "effects": { "exp": 30 }
+        }
+      ]
+    },
+    {
+      "id": "k2_train_aria",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_aria_theme",
+      "speakers": [
+        { "character": "aria", "emotion": "determined", "textKey": "k2_aria_train_start", "position": "left" },
+        { "character": "protagonist", "emotion": "happy", "textKey": "k2_protag_good_teacher", "position": "right" },
+        { "character": "aria", "emotion": "happy", "textKey": "k2_aria_not_bad", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k2_protag_compliment", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k2_aria_blush", "position": "left" }
+      ],
+      "next": "k2_consequence_train_aria"
+    },
+    {
+      "id": "k2_consequence_train_aria",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_aria_theme",
+      "speakers": [
+        { "character": "aria", "emotion": "happy", "textKey": "k2_consq_train_aria_aria", "position": "left" },
+        { "character": "protagonist", "emotion": "happy", "textKey": "k2_consq_train_aria_protag", "position": "right" }
+      ],
+      "next": "k2_bandit_attack"
+    },
+    {
+      "id": "k2_train_solo",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_protag_solo_train", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_aria_solo_tips", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_protag_stronger", "position": "right" }
+      ],
+      "next": "k2_consequence_train_solo"
+    },
+    {
+      "id": "k2_consequence_train_solo",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_consq_train_solo_aria", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_consq_train_solo_protag", "position": "right" }
+      ],
+      "next": "k2_bandit_attack"
+    },
+    {
+      "id": "k2_bandit_attack",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_battle",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_aria_attack_alert", "typewriterSpeed": 15 },
+        { "character": "aria", "emotion": "angry", "textKey": "k2_aria_they_came", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_protag_defend", "position": "right" }
+      ],
+      "next": "k2_protect_village"
+    },
+    {
+      "id": "k2_protect_village",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "vex", "emotion": "determined", "textKey": "k2_vex_weapons", "position": "left" },
+        { "character": "aria", "emotion": "determined", "textKey": "k2_aria_plan", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_protag_ready", "position": "right" }
+      ],
+      "next": "k2_battle_garak"
+    },
+    {
+      "id": "k2_battle_garak",
+      "type": "battle",
+      "backgroundKey": "village",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B006",
+      "next": "k2_victory"
+    },
+    {
+      "id": "k2_victory",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_victory",
+      "speakers": [
+        { "character": "vex", "emotion": "happy", "textKey": "k2_vex_celebration", "position": "left" },
+        { "character": "aria", "emotion": "happy", "textKey": "k2_aria_impressed", "position": "left" },
+        { "character": "protagonist", "emotion": "happy", "textKey": "k2_protag_together", "position": "right" }
+      ],
+      "effects": { "exp": 80, "gold": 150 },
+      "next": "k2_garak_dark_mark"
+    },
+    {
+      "id": "k2_garak_dark_mark",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k2_protag_dark_mark", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_system_dark_analysis", "typewriterSpeed": 15 },
+        { "character": "aria", "emotion": "nervous", "textKey": "k2_aria_dark_concerned", "position": "left" }
+      ],
+      "next": "k2_aria_question"
+    },
+    {
+      "id": "k2_aria_question",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "aria", "emotion": "neutral", "textKey": "k2_aria_who_are_you_really", "position": "left" },
+        { "character": "protagonist", "emotion": "sad", "textKey": "k2_protag_wish_i_knew", "position": "right" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k2_protag_flashback", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k2_aria_memory_spike", "typewriterSpeed": 15 },
+        { "character": "aria", "emotion": "nervous", "textKey": "k2_aria_concerned", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k2_protag_remembering", "position": "right" }
+      ],
+      "effects": { "affinity": { "aria": 5 } },
+      "next": "k2_ending"
+    },
+    {
+      "id": "k2_ending",
+      "type": "chapterEnd",
+      "effects": {}
+    }
+  ]
+}

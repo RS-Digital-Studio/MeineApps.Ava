@@ -1,0 +1,275 @@
+{
+  "id": "k3",
+  "titleKey": "chapter_k3_title",
+  "isProlog": false,
+  "goldCost": 0,
+  "nodes": [
+    {
+      "id": "k3_recap",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_recap", "typewriterSpeed": 15 }
+      ],
+      "next": "k3_forest_entrance"
+    },
+    {
+      "id": "k3_forest_entrance",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_forest",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_aria_scan_forest", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k3_protag_enter", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k3_aria_warning", "position": "left" }
+      ],
+      "next": "k3_dark_trees"
+    },
+    {
+      "id": "k3_dark_trees",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k3_protag_sounds", "position": "right" },
+        { "character": "aria", "emotion": "neutral", "textKey": "k3_aria_analysis", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_darkness", "typewriterSpeed": 20 }
+      ],
+      "next": "k3_kael_appears"
+    },
+    {
+      "id": "k3_kael_appears",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_encounter",
+      "speakers": [
+        { "character": "kael", "emotion": "happy", "textKey": "k3_kael_intro", "position": "right" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k3_protag_who", "position": "left" },
+        { "character": "kael", "emotion": "neutral", "textKey": "k3_kael_explain", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k3_aria_distrust", "position": "left" }
+      ],
+      "next": "k3_kael_trust"
+    },
+    {
+      "id": "k3_kael_trust",
+      "type": "choice",
+      "backgroundKey": "forest",
+      "speakers": [
+        { "character": "kael", "emotion": "neutral", "textKey": "k3_kael_proposal", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "k3_choice_trust",
+          "next": "k3_kael_ally",
+          "tag": "[Vertrauen]",
+          "effects": { "affinity": { "kael": 15 } }
+        },
+        {
+          "textKey": "k3_choice_distrust",
+          "next": "k3_kael_rival",
+          "tag": "[Misstrauen]",
+          "effects": { "karma": -1 }
+        }
+      ]
+    },
+    {
+      "id": "k3_kael_ally",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k3_protag_trust", "position": "left" },
+        { "character": "kael", "emotion": "happy", "textKey": "k3_kael_happy", "position": "right" },
+        { "character": "kael", "emotion": "neutral", "textKey": "k3_kael_shortcut", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k3_aria_reluctant", "position": "left" }
+      ],
+      "next": "k3_consequence_trust"
+    },
+    {
+      "id": "k3_consequence_trust",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "speakers": [
+        { "character": "kael", "emotion": "happy", "textKey": "k3_consq_trust_kael", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_consq_trust_aria", "typewriterSpeed": 20 }
+      ],
+      "effects": { "gold": 30 },
+      "next": "k3_monster_ambush"
+    },
+    {
+      "id": "k3_kael_rival",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k3_protag_alone", "position": "left" },
+        { "character": "kael", "emotion": "neutral", "textKey": "k3_kael_shrug", "position": "right" },
+        { "character": "aria", "emotion": "neutral", "textKey": "k3_aria_agree", "position": "left" }
+      ],
+      "next": "k3_consequence_distrust"
+    },
+    {
+      "id": "k3_consequence_distrust",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_consq_distrust_aria", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k3_consq_distrust_protag", "position": "right" }
+      ],
+      "next": "k3_monster_ambush"
+    },
+    {
+      "id": "k3_monster_ambush",
+      "type": "battle",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_battle",
+      "enemyId": "E003",
+      "next": "k3_deeper_forest"
+    },
+    {
+      "id": "k3_deeper_forest",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_forest",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k3_protag_ruins", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_ruins", "typewriterSpeed": 20 },
+        { "character": "aria", "emotion": "surprised", "textKey": "k3_aria_old_magic", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_healer_trace", "typewriterSpeed": 20 }
+      ],
+      "effects": { "exp": 30 },
+      "next": "k3_campfire_night"
+    },
+    {
+      "id": "k3_campfire_night",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_night", "typewriterSpeed": 25 },
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k3_protag_thinking", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "k3_aria_stars", "position": "left" }
+      ],
+      "next": "k3_nightmare"
+    },
+    {
+      "id": "k3_nightmare",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_nightmare",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_nightmare", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k3_protag_nightmare", "position": "right" },
+        { "character": "nihilus", "emotion": "neutral", "textKey": "k3_nihilus_echo", "position": "left" }
+      ],
+      "next": "k3_nightmare_choice"
+    },
+    {
+      "id": "k3_nightmare_choice",
+      "type": "choice",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_choice_warning", "typewriterSpeed": 15 }
+      ],
+      "options": [
+        {
+          "textKey": "k3_choice_wake_up",
+          "next": "k3_wake_up",
+          "tag": "[Sicher]",
+          "effects": { "exp": 15 }
+        },
+        {
+          "textKey": "k3_choice_dig_deeper",
+          "next": "k3_dig_deeper",
+          "tag": "[Riskant]",
+          "effects": { "karma": 2 }
+        }
+      ]
+    },
+    {
+      "id": "k3_wake_up",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k3_protag_wake", "position": "right" },
+        { "character": "aria", "emotion": "neutral", "textKey": "k3_aria_calm", "position": "left" }
+      ],
+      "next": "k3_consequence_wake_up"
+    },
+    {
+      "id": "k3_consequence_wake_up",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "aria", "emotion": "sad", "textKey": "k3_consq_wake_aria", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k3_consq_wake_protag", "position": "right" }
+      ],
+      "effects": { "affinity": { "aria": 5 } },
+      "next": "k3_dungeon_entrance"
+    },
+    {
+      "id": "k3_dig_deeper",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k3_protag_dig", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_fragment", "typewriterSpeed": 10 },
+        { "character": "aria", "emotion": "sad", "textKey": "k3_aria_fragment_face", "position": "left" },
+        { "character": "nihilus", "emotion": "neutral", "textKey": "k3_nihilus_fragment", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_hp_loss", "typewriterSpeed": 15 }
+      ],
+      "effects": { "exp": 40 },
+      "next": "k3_consequence_dig_deeper"
+    },
+    {
+      "id": "k3_consequence_dig_deeper",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k3_consq_dig_protag", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_consq_dig_aria", "typewriterSpeed": 20 }
+      ],
+      "next": "k3_dungeon_entrance"
+    },
+    {
+      "id": "k3_dungeon_entrance",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_dungeon",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k3_protag_cave", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_boss_ahead", "typewriterSpeed": 20 },
+        { "character": "aria", "emotion": "determined", "textKey": "k3_aria_ready", "position": "left" }
+      ],
+      "next": "k3_boss_erdross"
+    },
+    {
+      "id": "k3_boss_erdross",
+      "type": "battle",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B007",
+      "next": "k3_crystal"
+    },
+    {
+      "id": "k3_crystal",
+      "type": "dialogue",
+      "backgroundKey": "dungeon",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k3_protag_crystal", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k3_system_crystal", "typewriterSpeed": 15 },
+        { "character": "aria", "emotion": "surprised", "textKey": "k3_aria_confused", "position": "left" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k3_aria_glitch", "position": "left" }
+      ],
+      "effects": { "exp": 50, "gold": 240 },
+      "next": "k3_ending"
+    },
+    {
+      "id": "k3_ending",
+      "type": "chapterEnd",
+      "effects": { "exp": 120 }
+    }
+  ]
+}

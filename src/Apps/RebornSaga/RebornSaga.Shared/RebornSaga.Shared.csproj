@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>RebornSaga</RootNamespace>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="Avalonia.Skia" />
+    <PackageReference Include="Avalonia.Labs.Controls" />
+    <PackageReference Include="sqlite-net-pcl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Libraries\MeineApps.Core.Ava\MeineApps.Core.Ava.csproj" />
+    <ProjectReference Include="..\..\..\Libraries\MeineApps.Core.Premium.Ava\MeineApps.Core.Premium.Ava.csproj" />
+    <ProjectReference Include="..\..\..\UI\MeineApps.UI\MeineApps.UI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+    <EmbeddedResource Include="Data\**" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,68 @@
+{
+  "chapterId": "k9",
+  "chapterNameKey": "chapter_k9_title",
+  "startNodeId": "k9_start",
+  "nodes": [
+    {
+      "id": "k9_start",
+      "nameKey": "Map_K9_Wachturm",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k9_burning_village"],
+      "storyNodeId": "k9_xaroth_attack",
+      "background": "Village"
+    },
+    {
+      "id": "k9_burning_village",
+      "nameKey": "Map_K9_BrennendesDorf",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.7,
+      "connections": ["k9_rescue"],
+      "storyNodeId": "k9_village_burns",
+      "background": "Village"
+    },
+    {
+      "id": "k9_rescue",
+      "nameKey": "Map_K9_Rettungsmission",
+      "type": "Story",
+      "x": 0.35,
+      "y": 0.52,
+      "connections": ["k9_ruins_square"],
+      "storyNodeId": "k9_rescue_choice",
+      "background": "Village"
+    },
+    {
+      "id": "k9_ruins_square",
+      "nameKey": "Map_K9_RuinenPlatz",
+      "type": "Story",
+      "x": 0.65,
+      "y": 0.38,
+      "connections": ["k9_xaroth_arena"],
+      "storyNodeId": "k9_xaroth_appears",
+      "background": "Village"
+    },
+    {
+      "id": "k9_xaroth_arena",
+      "nameKey": "Map_K9_XarothArena",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.22,
+      "connections": ["k9_aftermath"],
+      "enemyId": "B014",
+      "storyNodeId": "k9_boss_xaroth",
+      "background": "Battlefield"
+    },
+    {
+      "id": "k9_aftermath",
+      "nameKey": "Map_K9_Truemmer",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.05,
+      "connections": [],
+      "storyNodeId": "k9_village_ruins",
+      "background": "Village"
+    }
+  ]
+}

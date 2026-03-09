@@ -1,0 +1,68 @@
+{
+  "chapterId": "k4",
+  "chapterNameKey": "chapter_k4_title",
+  "startNodeId": "k4_start",
+  "nodes": [
+    {
+      "id": "k4_start",
+      "nameKey": "Map_K4_TurmFuss",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k4_gate"],
+      "storyNodeId": "k4_tower_approach",
+      "background": "Tower"
+    },
+    {
+      "id": "k4_gate",
+      "nameKey": "Map_K4_Eingangstor",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.7,
+      "connections": ["k4_library"],
+      "storyNodeId": "k4_tower_entrance",
+      "background": "Tower"
+    },
+    {
+      "id": "k4_library",
+      "nameKey": "Map_K4_Bibliothek",
+      "type": "Story",
+      "x": 0.35,
+      "y": 0.52,
+      "connections": ["k4_lab"],
+      "storyNodeId": "k4_tower_library",
+      "background": "Tower"
+    },
+    {
+      "id": "k4_lab",
+      "nameKey": "Map_K4_Labor",
+      "type": "SideQuest",
+      "x": 0.65,
+      "y": 0.38,
+      "connections": ["k4_guardian"],
+      "storyNodeId": "k4_experiment_choice",
+      "background": "Tower"
+    },
+    {
+      "id": "k4_guardian",
+      "nameKey": "Map_K4_Waechterkammer",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.22,
+      "connections": ["k4_observatory"],
+      "enemyId": "B008",
+      "storyNodeId": "k4_boss_sentinel",
+      "background": "Tower"
+    },
+    {
+      "id": "k4_observatory",
+      "nameKey": "Map_K4_Observatorium",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.05,
+      "connections": [],
+      "storyNodeId": "k4_zeitriss_discovery",
+      "background": "Tower"
+    }
+  ]
+}

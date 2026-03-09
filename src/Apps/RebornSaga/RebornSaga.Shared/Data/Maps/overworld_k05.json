@@ -1,0 +1,79 @@
+{
+  "chapterId": "k5",
+  "chapterNameKey": "chapter_k5_title",
+  "startNodeId": "k5_start",
+  "nodes": [
+    {
+      "id": "k5_start",
+      "nameKey": "Map_K5_Dorfplatz",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k5_luna_tent"],
+      "storyNodeId": "k5_return_village",
+      "background": "Village"
+    },
+    {
+      "id": "k5_luna_tent",
+      "nameKey": "Map_K5_LunasZelt",
+      "type": "Npc",
+      "x": 0.3,
+      "y": 0.7,
+      "connections": ["k5_market"],
+      "storyNodeId": "k5_meet_luna",
+      "background": "Village"
+    },
+    {
+      "id": "k5_market",
+      "nameKey": "Map_K5_Markt",
+      "type": "Story",
+      "x": 0.6,
+      "y": 0.55,
+      "connections": ["k5_guild_hideout", "k5_hunting_ground"],
+      "storyNodeId": "k5_theft_discovered",
+      "background": "Village"
+    },
+    {
+      "id": "k5_guild_hideout",
+      "nameKey": "Map_K5_GildenVersteck",
+      "type": "Boss",
+      "x": 0.25,
+      "y": 0.38,
+      "connections": ["k5_confrontation"],
+      "enemyId": "B009",
+      "storyNodeId": "k5_battle_sylas",
+      "background": "Dungeon"
+    },
+    {
+      "id": "k5_hunting_ground",
+      "nameKey": "Map_K5_Jagdgrund",
+      "type": "Boss",
+      "x": 0.75,
+      "y": 0.38,
+      "connections": ["k5_confrontation"],
+      "enemyId": "B010",
+      "storyNodeId": "k5_battle_ravok",
+      "background": "Forest"
+    },
+    {
+      "id": "k5_confrontation",
+      "nameKey": "Map_K5_Dorfbrunnen",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.2,
+      "connections": ["k5_gate"],
+      "storyNodeId": "k5_luna_insight",
+      "background": "Village"
+    },
+    {
+      "id": "k5_gate",
+      "nameKey": "Map_K5_Dorftor",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.05,
+      "connections": [],
+      "storyNodeId": "k5_ending",
+      "background": "Village"
+    }
+  ]
+}

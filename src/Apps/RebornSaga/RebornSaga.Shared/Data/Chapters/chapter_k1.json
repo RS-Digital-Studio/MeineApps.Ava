@@ -1,0 +1,251 @@
+{
+  "id": "k1",
+  "titleKey": "chapter_k1_title",
+  "isProlog": false,
+  "goldCost": 0,
+  "nodes": [
+    {
+      "id": "k1_awakening",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_system_boot",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_system_boot", "typewriterSpeed": 15 },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_system_error", "typewriterSpeed": 20 }
+      ],
+      "next": "k1_aria_intro"
+    },
+    {
+      "id": "k1_aria_intro",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_awakening",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k1_protag_where", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_fragment", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k1_protag_voice", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_explain", "typewriterSpeed": 20 }
+      ],
+      "next": "k1_first_steps"
+    },
+    {
+      "id": "k1_first_steps",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k1_protag_forest", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_scan", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k1_protag_nothing", "position": "right" }
+      ],
+      "next": "k1_wolf_encounter"
+    },
+    {
+      "id": "k1_wolf_encounter",
+      "type": "choice",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_wolves_detected", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k1_protag_wolves", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "k1_choice_fight_wolves",
+          "next": "k1_wolf_fight",
+          "tag": "[Karma+]",
+          "effects": { "karma": 1 }
+        },
+        {
+          "textKey": "k1_choice_flee_wolves",
+          "next": "k1_wolf_fled",
+          "tag": "[Karma-]",
+          "effects": { "karma": -1 }
+        }
+      ]
+    },
+    {
+      "id": "k1_wolf_fight",
+      "type": "battle",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_battle",
+      "enemyId": "E001",
+      "next": "k1_consequence_fight_wolves"
+    },
+    {
+      "id": "k1_consequence_fight_wolves",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_awakening",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k1_consq_fight_protag", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_consq_fight_aria", "typewriterSpeed": 20 }
+      ],
+      "effects": { "gold": 15 },
+      "next": "k1_after_wolves"
+    },
+    {
+      "id": "k1_wolf_fled",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k1_protag_ran", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_fled_comment", "typewriterSpeed": 20 }
+      ],
+      "next": "k1_consequence_flee_wolves"
+    },
+    {
+      "id": "k1_consequence_flee_wolves",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_consq_flee_aria", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k1_consq_flee_protag", "position": "right" }
+      ],
+      "next": "k1_after_wolves"
+    },
+    {
+      "id": "k1_after_wolves",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_awakening",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_analysis", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k1_protag_level", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_levelup_explain", "typewriterSpeed": 20 }
+      ],
+      "effects": { "exp": 20 },
+      "next": "k1_class_discovery"
+    },
+    {
+      "id": "k1_class_discovery",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_discovery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_system_fragments", "typewriterSpeed": 15 },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_system_paths", "typewriterSpeed": 20 }
+      ],
+      "next": "k1_class_choice"
+    },
+    {
+      "id": "k1_class_choice",
+      "type": "choice",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_choose_path", "typewriterSpeed": 20 }
+      ],
+      "options": [
+        {
+          "textKey": "k1_choice_swordmaster",
+          "next": "k1_consequence_swordmaster",
+          "effects": { "fateChanged": "class_swordmaster" }
+        },
+        {
+          "textKey": "k1_choice_mage",
+          "next": "k1_consequence_mage",
+          "effects": { "fateChanged": "class_mage" }
+        },
+        {
+          "textKey": "k1_choice_assassin",
+          "next": "k1_consequence_assassin",
+          "effects": { "fateChanged": "class_assassin" }
+        }
+      ]
+    },
+    {
+      "id": "k1_consequence_swordmaster",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_consq_sword_aria", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k1_consq_sword_protag", "position": "right" }
+      ],
+      "next": "k1_path_explore"
+    },
+    {
+      "id": "k1_consequence_mage",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_consq_mage_aria", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k1_consq_mage_protag", "position": "right" }
+      ],
+      "next": "k1_path_explore"
+    },
+    {
+      "id": "k1_consequence_assassin",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_consq_assassin_aria", "typewriterSpeed": 15 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k1_consq_assassin_protag", "position": "right" }
+      ],
+      "next": "k1_path_explore"
+    },
+    {
+      "id": "k1_path_explore",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_awakening",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_class_confirmed", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k1_protag_feels_right", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_path_ahead", "typewriterSpeed": 20 }
+      ],
+      "next": "k1_old_hut"
+    },
+    {
+      "id": "k1_old_hut",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k1_protag_hut", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_hut_scan", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k1_protag_note", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_note_analysis", "typewriterSpeed": 20 }
+      ],
+      "effects": { "exp": 10 },
+      "next": "k1_rest_camp"
+    },
+    {
+      "id": "k1_rest_camp",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_rest", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "sad", "textKey": "k1_protag_who_am_i", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_comfort", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k1_protag_find_out", "position": "right" }
+      ],
+      "next": "k1_wolf_alpha"
+    },
+    {
+      "id": "k1_wolf_alpha",
+      "type": "battle",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B005",
+      "next": "k1_after_boss"
+    },
+    {
+      "id": "k1_after_boss",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_discovery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_boss_defeated", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "happy", "textKey": "k1_protag_did_it", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k1_aria_settlement", "typewriterSpeed": 20 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k1_protag_lets_go", "position": "right" }
+      ],
+      "effects": { "exp": 50, "gold": 90 },
+      "next": "k1_ending"
+    },
+    {
+      "id": "k1_ending",
+      "type": "chapterEnd",
+      "effects": {}
+    }
+  ]
+}

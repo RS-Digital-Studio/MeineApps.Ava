@@ -1,0 +1,128 @@
+{
+  "id": "p3",
+  "titleKey": "chapter_p3_title",
+  "isProlog": true,
+  "goldCost": 0,
+  "nodes": [
+    {
+      "id": "p3_throne_room",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_nihilus_theme",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p3_system_nihilus", "typewriterSpeed": 10 }
+      ],
+      "next": "p3_nihilus_appears"
+    },
+    {
+      "id": "p3_nihilus_appears",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "nihilus", "emotion": "neutral", "textKey": "p3_nihilus_greeting", "position": "left" },
+        { "character": "protagonist", "emotion": "angry", "textKey": "p3_protag_confront", "position": "right" },
+        { "character": "nihilus", "emotion": "neutral", "textKey": "p3_nihilus_amused", "position": "left" }
+      ],
+      "next": "p3_battle_nihilus"
+    },
+    {
+      "id": "p3_battle_nihilus",
+      "type": "battle",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_final_battle",
+      "enemyId": "B004",
+      "next": "p3_nihilus_overwhelms"
+    },
+    {
+      "id": "p3_nihilus_overwhelms",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "nihilus", "emotion": "neutral", "textKey": "p3_nihilus_bored", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p3_system_critical", "typewriterSpeed": 10 }
+      ],
+      "next": "p3_aria_falls"
+    },
+    {
+      "id": "p3_aria_falls",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "aria", "emotion": "determined", "textKey": "p3_aria_shield", "position": "left" },
+        { "character": "nihilus", "emotion": "neutral", "textKey": "p3_nihilus_swat", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "p3_aria_fallen", "position": "left" },
+        { "character": "protagonist", "emotion": "angry", "textKey": "p3_protag_aria_no", "position": "right" }
+      ],
+      "effects": { "affinity": { "aria": 10 } },
+      "next": "p3_aldric_decision"
+    },
+    {
+      "id": "p3_aldric_decision",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "aldric", "emotion": "determined", "textKey": "p3_aldric_spell", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "p3_protag_aldric_what", "position": "right" },
+        { "character": "aldric", "emotion": "sad", "textKey": "p3_aldric_goodbye", "position": "left" }
+      ],
+      "next": "p3_time_rift"
+    },
+    {
+      "id": "p3_time_rift",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_time_rift",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p3_system_rift", "typewriterSpeed": 10 },
+        { "character": "nihilus", "emotion": "neutral", "textKey": "p3_nihilus_warning", "position": "left" },
+        { "character": "aldric", "emotion": "sad", "textKey": "p3_aldric_final", "position": "right" }
+      ],
+      "effects": { "fateChanged": "time_rift_activated" },
+      "next": "p3_falling"
+    },
+    {
+      "id": "p3_falling",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p3_system_falling", "typewriterSpeed": 30 }
+      ],
+      "next": "p3_aria_fragment"
+    },
+    {
+      "id": "p3_aria_fragment",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p3_system_aria_init", "typewriterSpeed": 40 }
+      ],
+      "next": "p3_blackout"
+    },
+    {
+      "id": "p3_blackout",
+      "type": "dialogue",
+      "backgroundKey": "systemVoid",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p3_system_error", "typewriterSpeed": 50 }
+      ],
+      "next": "p3_awakening"
+    },
+    {
+      "id": "p3_awakening",
+      "type": "dialogue",
+      "backgroundKey": "forest",
+      "musicKey": "bgm_awakening",
+      "speakers": [
+        { "character": "protagonist", "emotion": "surprised", "textKey": "p3_protag_where", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p3_system_reboot", "typewriterSpeed": 25 }
+      ],
+      "next": "p3_end"
+    },
+    {
+      "id": "p3_end",
+      "type": "chapterEnd",
+      "effects": {}
+    }
+  ]
+}

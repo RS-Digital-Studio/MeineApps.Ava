@@ -1,0 +1,77 @@
+{
+  "chapterId": "k2",
+  "chapterNameKey": "chapter_k2_title",
+  "startNodeId": "k2_gate",
+  "nodes": [
+    {
+      "id": "k2_gate",
+      "nameKey": "Map_K2_Dorftor",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k2_square"],
+      "storyNodeId": "k2_arrival",
+      "background": "Village"
+    },
+    {
+      "id": "k2_square",
+      "nameKey": "Map_K2_Marktplatz",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.7,
+      "connections": ["k2_smithy", "k2_training"],
+      "storyNodeId": "k2_village_square",
+      "background": "Village"
+    },
+    {
+      "id": "k2_smithy",
+      "nameKey": "Map_K2_Schmiede",
+      "type": "Npc",
+      "x": 0.25,
+      "y": 0.55,
+      "connections": ["k2_training"],
+      "storyNodeId": "k2_meet_vex",
+      "background": "Village"
+    },
+    {
+      "id": "k2_training",
+      "nameKey": "Map_K2_Trainingsplatz",
+      "type": "Story",
+      "x": 0.75,
+      "y": 0.55,
+      "connections": ["k2_bandit_camp"],
+      "storyNodeId": "k2_meet_aria",
+      "background": "Village"
+    },
+    {
+      "id": "k2_bandit_camp",
+      "nameKey": "Map_K2_Banditenlager",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.35,
+      "connections": ["k2_defense"],
+      "enemyId": "B006",
+      "background": "Forest"
+    },
+    {
+      "id": "k2_defense",
+      "nameKey": "Map_K2_Dorfverteidigung",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.18,
+      "connections": ["k2_fountain"],
+      "storyNodeId": "k2_bandit_attack",
+      "background": "Village"
+    },
+    {
+      "id": "k2_fountain",
+      "nameKey": "Map_K2_Dorfbrunnen",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.05,
+      "connections": [],
+      "storyNodeId": "k2_ending",
+      "background": "Village"
+    }
+  ]
+}

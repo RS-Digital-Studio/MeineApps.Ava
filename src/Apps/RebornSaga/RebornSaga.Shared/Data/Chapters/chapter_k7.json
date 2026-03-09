@@ -1,0 +1,235 @@
+{
+  "id": "k7",
+  "titleKey": "chapter_k7_title",
+  "isProlog": false,
+  "goldCost": 1200,
+  "nodes": [
+    {
+      "id": "k7_recap",
+      "type": "systemMessage",
+      "backgroundKey": "systemVoid",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k7_system_recap", "typewriterSpeed": 15 }
+      ],
+      "next": "k7_dark_army"
+    },
+    {
+      "id": "k7_dark_army",
+      "type": "systemMessage",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k7_system_army_warning", "typewriterSpeed": 15 }
+      ],
+      "next": "k7_village_panic"
+    },
+    {
+      "id": "k7_village_panic",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k7_protag_panic", "position": "right" },
+        { "character": "luna", "emotion": "nervous", "textKey": "k7_luna_wounded", "position": "left" },
+        { "character": "aldric", "emotion": "determined", "textKey": "k7_aldric_prepare", "position": "left" }
+      ],
+      "next": "k7_all_together"
+    },
+    {
+      "id": "k7_all_together",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_encounter",
+      "speakers": [
+        { "character": "aria", "emotion": "determined", "textKey": "k7_aria_all_here", "position": "left" },
+        { "character": "kael", "emotion": "determined", "textKey": "k7_kael_back", "position": "right" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k7_protag_together", "position": "right" },
+        { "character": "luna", "emotion": "happy", "textKey": "k7_luna_united", "position": "left" }
+      ],
+      "next": "k7_protag_deja_vu"
+    },
+    {
+      "id": "k7_protag_deja_vu",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k7_protag_deja_vu", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k7_system_memory_fragment", "typewriterSpeed": 15 },
+        { "character": "aria", "emotion": "nervous", "textKey": "k7_aria_deja_vu", "position": "left" }
+      ],
+      "next": "k7_evacuate_choice"
+    },
+    {
+      "id": "k7_evacuate_choice",
+      "type": "choice",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "aldric", "emotion": "determined", "textKey": "k7_aldric_strategy", "position": "left" }
+      ],
+      "options": [
+        {
+          "textKey": "k7_choice_evacuate",
+          "next": "k7_evacuate",
+          "tag": "[Sicher]",
+          "effects": { "karma": 2 }
+        },
+        {
+          "textKey": "k7_choice_defend",
+          "next": "k7_defend",
+          "tag": "[Riskant]",
+          "effects": { "exp": 60 }
+        }
+      ]
+    },
+    {
+      "id": "k7_evacuate",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k7_protag_evacuate", "position": "right" },
+        { "character": "luna", "emotion": "determined", "textKey": "k7_luna_children", "position": "left" },
+        { "character": "kael", "emotion": "determined", "textKey": "k7_kael_routes", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k7_system_evacuate_status", "typewriterSpeed": 20 }
+      ],
+      "effects": { "exp": 30, "gold": 100 },
+      "next": "k7_aldric_dark_magic"
+    },
+    {
+      "id": "k7_defend",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k7_protag_defend", "position": "right" },
+        { "character": "aria", "emotion": "determined", "textKey": "k7_aria_barricades", "position": "left" },
+        { "character": "aldric", "emotion": "determined", "textKey": "k7_aldric_wards", "position": "left" },
+        { "character": "kael", "emotion": "determined", "textKey": "k7_kael_traps", "position": "right" }
+      ],
+      "effects": { "exp": 50 },
+      "next": "k7_aldric_dark_magic"
+    },
+    {
+      "id": "k7_aldric_dark_magic",
+      "type": "choice",
+      "backgroundKey": "village",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "aldric", "emotion": "nervous", "textKey": "k7_aldric_dark_proposal", "position": "left" }
+      ],
+      "options": [
+        {
+          "textKey": "k7_choice_allow_dark",
+          "next": "k7_allow_dark",
+          "tag": "[Riskant]",
+          "effects": { "karma": -2, "affinity": { "aldric": 15 } }
+        },
+        {
+          "textKey": "k7_choice_forbid_dark",
+          "next": "k7_forbid_dark",
+          "tag": "[Prinzipientreu]",
+          "effects": { "karma": 1 }
+        }
+      ]
+    },
+    {
+      "id": "k7_allow_dark",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k7_protag_allow", "position": "right" },
+        { "character": "aldric", "emotion": "determined", "textKey": "k7_aldric_dark_study", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k7_system_dark_energy", "typewriterSpeed": 15 },
+        { "character": "aria", "emotion": "nervous", "textKey": "k7_aria_dark_warning", "position": "right" }
+      ],
+      "next": "k7_battle_preparation"
+    },
+    {
+      "id": "k7_forbid_dark",
+      "type": "dialogue",
+      "backgroundKey": "village",
+      "speakers": [
+        { "character": "protagonist", "emotion": "determined", "textKey": "k7_protag_forbid", "position": "right" },
+        { "character": "aldric", "emotion": "sad", "textKey": "k7_aldric_accepts", "position": "left" },
+        { "character": "aldric", "emotion": "determined", "textKey": "k7_aldric_other_way", "position": "left" }
+      ],
+      "next": "k7_battle_preparation"
+    },
+    {
+      "id": "k7_battle_preparation",
+      "type": "dialogue",
+      "backgroundKey": "campfire",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "k7_protag_campfire", "position": "right" },
+        { "character": "kael", "emotion": "neutral", "textKey": "k7_kael_confession", "position": "left" },
+        { "character": "aria", "emotion": "sad", "textKey": "k7_aria_scared", "position": "right" },
+        { "character": "luna", "emotion": "determined", "textKey": "k7_luna_faith", "position": "left" },
+        { "character": "aldric", "emotion": "happy", "textKey": "k7_aldric_toast", "position": "left" }
+      ],
+      "next": "k7_boss_morthos"
+    },
+    {
+      "id": "k7_boss_morthos",
+      "type": "battle",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_boss_battle",
+      "enemyId": "B012",
+      "next": "k7_morthos_last_words"
+    },
+    {
+      "id": "k7_morthos_last_words",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k7_system_level_milestone", "typewriterSpeed": 12 },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k7_protag_morthos_down", "position": "right" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k7_system_morthos_words", "typewriterSpeed": 15 }
+      ],
+      "effects": { "exp": 60, "gold": 400 },
+      "next": "k7_aria_detection"
+    },
+    {
+      "id": "k7_aria_detection",
+      "type": "systemMessage",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "k7_system_energy_match", "typewriterSpeed": 10 }
+      ],
+      "next": "k7_protagonist_flashback"
+    },
+    {
+      "id": "k7_protagonist_flashback",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_mystery",
+      "speakers": [
+        { "character": "protagonist", "emotion": "nervous", "textKey": "k7_protag_flashback", "position": "right" },
+        { "character": "aria", "emotion": "nervous", "textKey": "k7_aria_nihilus_name", "position": "left" },
+        { "character": "protagonist", "emotion": "surprised", "textKey": "k7_protag_nihilus_face", "position": "right" }
+      ],
+      "next": "k7_darkness_horizon"
+    },
+    {
+      "id": "k7_darkness_horizon",
+      "type": "dialogue",
+      "backgroundKey": "battlefield",
+      "musicKey": "bgm_tension",
+      "speakers": [
+        { "character": "aldric", "emotion": "nervous", "textKey": "k7_aldric_horizon", "position": "left" },
+        { "character": "luna", "emotion": "nervous", "textKey": "k7_luna_darkness", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "k7_protag_darkness", "position": "right" }
+      ],
+      "next": "k7_ending"
+    },
+    {
+      "id": "k7_ending",
+      "type": "chapterEnd",
+      "effects": { "exp": 300 }
+    }
+  ]
+}

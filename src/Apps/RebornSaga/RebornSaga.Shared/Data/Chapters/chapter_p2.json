@@ -1,0 +1,196 @@
+{
+  "id": "p2",
+  "titleKey": "chapter_p2_title",
+  "isProlog": true,
+  "goldCost": 0,
+  "nodes": [
+    {
+      "id": "p2_enter_domain",
+      "type": "systemMessage",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_nihilus_domain",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p2_system_enter", "typewriterSpeed": 15 }
+      ],
+      "next": "p2_group_arrival"
+    },
+    {
+      "id": "p2_group_arrival",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "aria", "emotion": "nervous", "textKey": "p2_aria_fear", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "p2_protag_focus", "position": "right" },
+        { "character": "aldric", "emotion": "neutral", "textKey": "p2_aldric_warning", "position": "left" }
+      ],
+      "next": "p2_kael_scouts"
+    },
+    {
+      "id": "p2_kael_scouts",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "kael", "emotion": "neutral", "textKey": "p2_kael_ahead", "position": "right" },
+        { "character": "luna", "emotion": "nervous", "textKey": "p2_luna_careful", "position": "left" }
+      ],
+      "next": "p2_malachar_appears"
+    },
+    {
+      "id": "p2_malachar_appears",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_boss_battle",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p2_system_threat", "typewriterSpeed": 15 },
+        { "character": "aria", "emotion": "determined", "textKey": "p2_aria_combo", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "p2_protag_combo", "position": "right" }
+      ],
+      "next": "p2_battle_malachar"
+    },
+    {
+      "id": "p2_battle_malachar",
+      "type": "battle",
+      "backgroundKey": "darkCastle",
+      "enemyId": "B001",
+      "next": "p2_malachar_defeated"
+    },
+    {
+      "id": "p2_malachar_defeated",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_nihilus_domain",
+      "speakers": [
+        { "character": "aria", "emotion": "happy", "textKey": "p2_aria_victory", "position": "left" },
+        { "character": "aldric", "emotion": "nervous", "textKey": "p2_aldric_more", "position": "right" }
+      ],
+      "effects": { "exp": 100 },
+      "next": "p2_trap_corridor"
+    },
+    {
+      "id": "p2_trap_corridor",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p2_system_trap", "typewriterSpeed": 15 },
+        { "character": "kael", "emotion": "surprised", "textKey": "p2_kael_trap", "position": "right" }
+      ],
+      "next": "p2_kael_sacrifice_choice"
+    },
+    {
+      "id": "p2_kael_sacrifice_choice",
+      "type": "choice",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "kael", "emotion": "determined", "textKey": "p2_kael_sacrifice", "position": "right" }
+      ],
+      "options": [
+        {
+          "textKey": "p2_choice_stop_kael",
+          "next": "p2_kael_goodbye",
+          "tag": "[Karma+]",
+          "effects": { "karma": 5, "affinity": { "kael": 10 } }
+        },
+        {
+          "textKey": "p2_choice_accept_kael",
+          "next": "p2_kael_goodbye",
+          "effects": { "affinity": { "kael": 5 } }
+        }
+      ]
+    },
+    {
+      "id": "p2_kael_goodbye",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "kael", "emotion": "happy", "textKey": "p2_kael_last_words", "position": "right" },
+        { "character": "protagonist", "emotion": "sad", "textKey": "p2_protag_kael_no", "position": "left" },
+        { "character": "luna", "emotion": "sad", "textKey": "p2_luna_kael_cry", "position": "left" }
+      ],
+      "effects": { "fateChanged": "kael_sacrifice" },
+      "next": "p2_after_kael"
+    },
+    {
+      "id": "p2_after_kael",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "aria", "emotion": "sad", "textKey": "p2_aria_mourn", "position": "left" },
+        { "character": "protagonist", "emotion": "angry", "textKey": "p2_protag_vengeance", "position": "right" },
+        { "character": "aldric", "emotion": "determined", "textKey": "p2_aldric_forward", "position": "left" }
+      ],
+      "next": "p2_luna_healing"
+    },
+    {
+      "id": "p2_luna_healing",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "luna", "emotion": "neutral", "textKey": "p2_luna_heal_all", "position": "left" },
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p2_system_luna_warning", "typewriterSpeed": 15 },
+        { "character": "luna", "emotion": "sad", "textKey": "p2_luna_collapse", "position": "left" }
+      ],
+      "next": "p2_luna_down"
+    },
+    {
+      "id": "p2_luna_down",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "speakers": [
+        { "character": "aldric", "emotion": "sad", "textKey": "p2_aldric_luna", "position": "right" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "p2_protag_carry_on", "position": "left" }
+      ],
+      "effects": { "affinity": { "luna": 5 } },
+      "next": "p2_vexara_appears"
+    },
+    {
+      "id": "p2_vexara_appears",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_boss_battle",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p2_system_vexara", "typewriterSpeed": 15 },
+        { "character": "aria", "emotion": "nervous", "textKey": "p2_aria_alone", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "p2_protag_alone", "position": "right" }
+      ],
+      "next": "p2_battle_vexara"
+    },
+    {
+      "id": "p2_battle_vexara",
+      "type": "battle",
+      "backgroundKey": "darkCastle",
+      "enemyId": "B002",
+      "next": "p2_vexara_defeated"
+    },
+    {
+      "id": "p2_vexara_defeated",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_nihilus_domain",
+      "speakers": [
+        { "character": "protagonist", "emotion": "neutral", "textKey": "p2_protag_exhausted", "position": "right" },
+        { "character": "aria", "emotion": "sad", "textKey": "p2_aria_hurt", "position": "left" }
+      ],
+      "effects": { "exp": 150 },
+      "next": "p2_before_throne"
+    },
+    {
+      "id": "p2_before_throne",
+      "type": "dialogue",
+      "backgroundKey": "darkCastle",
+      "musicKey": "bgm_emotional",
+      "speakers": [
+        { "character": "system_aria", "emotion": "neutral", "textKey": "p2_system_throne", "typewriterSpeed": 15 },
+        { "character": "aldric", "emotion": "nervous", "textKey": "p2_aldric_last_chance", "position": "right" },
+        { "character": "aria", "emotion": "determined", "textKey": "p2_aria_final_push", "position": "left" },
+        { "character": "protagonist", "emotion": "determined", "textKey": "p2_protag_no_retreat", "position": "right" }
+      ],
+      "next": "p2_end"
+    },
+    {
+      "id": "p2_end",
+      "type": "chapterEnd",
+      "effects": {}
+    }
+  ]
+}

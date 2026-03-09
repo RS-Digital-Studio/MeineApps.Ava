@@ -1,0 +1,39 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:RebornSaga"
+             xmlns:core="using:MeineApps.Core.Ava"
+             xmlns:materialIcons="using:Material.Icons.Avalonia"
+             x:Class="RebornSaga.App">
+
+  <Application.DataTemplates>
+    <core:ViewLocator />
+  </Application.DataTemplates>
+
+  <Application.Resources>
+    <!-- Gold-Akzentfarbe fuer Coins, Sterne, Belohnungen -->
+    <SolidColorBrush x:Key="GoldAccentBrush" Color="#FFD700" />
+    <Color x:Key="GoldAccentColor">#FFD700</Color>
+  </Application.Resources>
+
+  <Application.Styles>
+    <!-- Avalonia Fluent Theme als Basis -->
+    <FluentTheme />
+
+    <!-- Material Icons (benötigt von MeineApps.UI) -->
+    <materialIcons:MaterialIconStyles />
+
+    <!-- Core Theme Colors (Design-Tokens) -->
+    <StyleInclude Source="avares://MeineApps.Core.Ava/Themes/ThemeColors.axaml" />
+
+    <!-- App-spezifische Farbpalette -->
+    <StyleInclude Source="/Themes/AppPalette.axaml" />
+
+    <!-- UI Styles -->
+    <StyleInclude Source="avares://MeineApps.UI/Styles/ButtonStyles.axaml" />
+    <StyleInclude Source="avares://MeineApps.UI/Styles/TextStyles.axaml" />
+    <StyleInclude Source="avares://MeineApps.UI/Styles/InputStyles.axaml" />
+    <StyleInclude Source="avares://MeineApps.UI/Controls/Card.axaml" />
+    <StyleInclude Source="avares://MeineApps.UI/Styles/ModernCardStyles.axaml" />
+  </Application.Styles>
+
+</Application>

@@ -1,0 +1,69 @@
+{
+  "chapterId": "k10",
+  "chapterNameKey": "chapter_k10_title",
+  "startNodeId": "k10_start",
+  "nodes": [
+    {
+      "id": "k10_start",
+      "nameKey": "Map_K10_EldenrathRuinen",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k10_trail"],
+      "storyNodeId": "k10_aftermath",
+      "background": "Village"
+    },
+    {
+      "id": "k10_trail",
+      "nameKey": "Map_K10_XarothsSpur",
+      "type": "Story",
+      "x": 0.4,
+      "y": 0.7,
+      "connections": ["k10_fortress"],
+      "storyNodeId": "k10_xaroth_trail",
+      "background": "Forest"
+    },
+    {
+      "id": "k10_fortress",
+      "nameKey": "Map_K10_DunkleFestung",
+      "type": "Story",
+      "x": 0.6,
+      "y": 0.52,
+      "connections": ["k10_throne"],
+      "storyNodeId": "k10_final_dungeon",
+      "background": "DarkCastle"
+    },
+    {
+      "id": "k10_throne",
+      "nameKey": "Map_K10_Thronsaal",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.38,
+      "connections": ["k10_vision"],
+      "enemyId": "B015",
+      "storyNodeId": "k10_boss_xaroth_2",
+      "background": "DarkCastle"
+    },
+    {
+      "id": "k10_vision",
+      "nameKey": "Map_K10_NihilusVision",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.22,
+      "connections": ["k10_epilog"],
+      "enemyId": "B016",
+      "storyNodeId": "k10_system_anomaly",
+      "background": "SystemVoid"
+    },
+    {
+      "id": "k10_epilog",
+      "nameKey": "Map_K10_EpilogAussicht",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.05,
+      "connections": [],
+      "storyNodeId": "k10_ending_scene",
+      "background": "Village"
+    }
+  ]
+}

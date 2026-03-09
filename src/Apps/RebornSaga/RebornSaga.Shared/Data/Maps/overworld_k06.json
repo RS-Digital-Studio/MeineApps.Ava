@@ -1,0 +1,68 @@
+{
+  "chapterId": "k6",
+  "chapterNameKey": "chapter_k6_title",
+  "startNodeId": "k6_start",
+  "nodes": [
+    {
+      "id": "k6_start",
+      "nameKey": "Map_K6_LabyrinthEingang",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k6_ebene1"],
+      "storyNodeId": "k6_labyrinth_entrance",
+      "background": "Dungeon"
+    },
+    {
+      "id": "k6_ebene1",
+      "nameKey": "Map_K6_Ebene1",
+      "type": "Story",
+      "x": 0.35,
+      "y": 0.7,
+      "connections": ["k6_schatzkammer"],
+      "storyNodeId": "k6_first_floor",
+      "background": "Dungeon"
+    },
+    {
+      "id": "k6_schatzkammer",
+      "nameKey": "Map_K6_Schatzkammer",
+      "type": "Story",
+      "x": 0.65,
+      "y": 0.55,
+      "connections": ["k6_tiefe_ebenen"],
+      "storyNodeId": "k6_treasure_choice",
+      "background": "Dungeon"
+    },
+    {
+      "id": "k6_tiefe_ebenen",
+      "nameKey": "Map_K6_TiefeEbenen",
+      "type": "Story",
+      "x": 0.4,
+      "y": 0.4,
+      "connections": ["k6_hydra_kammer"],
+      "storyNodeId": "k6_deeper_levels",
+      "background": "Dungeon"
+    },
+    {
+      "id": "k6_hydra_kammer",
+      "nameKey": "Map_K6_HydraKammer",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.22,
+      "connections": ["k6_antike_halle"],
+      "enemyId": "B011",
+      "storyNodeId": "k6_boss_thessara",
+      "background": "Dungeon"
+    },
+    {
+      "id": "k6_antike_halle",
+      "nameKey": "Map_K6_AntikeHalle",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.05,
+      "connections": [],
+      "storyNodeId": "k6_ancient_inscription",
+      "background": "Dungeon"
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "chapterId": "k8",
+  "chapterNameKey": "chapter_k8_title",
+  "startNodeId": "k8_start",
+  "nodes": [
+    {
+      "id": "k8_start",
+      "nameKey": "Map_K8_TraumEingang",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k8_erinnerungshalle"],
+      "storyNodeId": "k8_dream_begins",
+      "background": "SystemVoid"
+    },
+    {
+      "id": "k8_erinnerungshalle",
+      "nameKey": "Map_K8_ErinnerungsHalle",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.65,
+      "connections": ["k8_spiegelkammer"],
+      "storyNodeId": "k8_prolog_flash_1",
+      "background": "SystemVoid"
+    },
+    {
+      "id": "k8_spiegelkammer",
+      "nameKey": "Map_K8_SpiegelKammer",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.42,
+      "connections": ["k8_zeitriss_vision"],
+      "enemyId": "B013",
+      "storyNodeId": "k8_mirror_fight",
+      "background": "SystemVoid"
+    },
+    {
+      "id": "k8_zeitriss_vision",
+      "nameKey": "Map_K8_ZeitrissVision",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.22,
+      "connections": ["k8_erwachen"],
+      "storyNodeId": "k8_aria_is_aldric",
+      "background": "SystemVoid"
+    },
+    {
+      "id": "k8_erwachen",
+      "nameKey": "Map_K8_Erwachen",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.05,
+      "connections": [],
+      "storyNodeId": "k8_awakening",
+      "background": "Campfire"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:RebornSaga.Views"
+        x:Class="RebornSaga.Views.MainWindow"
+        AutomationProperties.AutomationId="MainWindow"
+        Title="Reborn Saga: Isekai Rising"
+        Width="450" Height="800"
+        MinWidth="360" MinHeight="640">
+
+</Window>

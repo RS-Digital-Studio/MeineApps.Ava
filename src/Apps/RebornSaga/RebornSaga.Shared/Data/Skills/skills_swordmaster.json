@@ -1,0 +1,31 @@
+[
+  {"id":"SW001a","nameKey":"Skill_SW_HeavyStrike","descriptionKey":"Skill_SW_HeavyStrike_Desc","class":"Swordmaster","mpCost":5,"multiplier":1.5,"tier":1,"masteryRequired":10,"nextTierId":"SW001b"},
+  {"id":"SW001b","nameKey":"Skill_SW_PowerSlash","descriptionKey":"Skill_SW_PowerSlash_Desc","class":"Swordmaster","mpCost":8,"multiplier":1.8,"tier":2,"masteryRequired":25,"nextTierId":"SW001c"},
+  {"id":"SW001c","nameKey":"Skill_SW_MeteorStrike","descriptionKey":"Skill_SW_MeteorStrike_Desc","class":"Swordmaster","mpCost":12,"multiplier":2.2,"tier":3,"masteryRequired":50,"nextTierId":"SW001d"},
+  {"id":"SW001d","nameKey":"Skill_SW_DivineSlash","descriptionKey":"Skill_SW_DivineSlash_Desc","class":"Swordmaster","mpCost":18,"multiplier":3.0,"tier":4,"masteryRequired":100,"nextTierId":"SW001e"},
+  {"id":"SW001e","nameKey":"Skill_SW_WorldBreaker","descriptionKey":"Skill_SW_WorldBreaker_Desc","class":"Swordmaster","mpCost":30,"multiplier":4.0,"tier":5,"isUltimate":true,"isAoe":true},
+
+  {"id":"SW002a","nameKey":"Skill_SW_Whirlwind","descriptionKey":"Skill_SW_Whirlwind_Desc","class":"Swordmaster","mpCost":8,"multiplier":0.8,"isAoe":true,"tier":1,"masteryRequired":10,"nextTierId":"SW002b"},
+  {"id":"SW002b","nameKey":"Skill_SW_StormBlade","descriptionKey":"Skill_SW_StormBlade_Desc","class":"Swordmaster","mpCost":12,"multiplier":1.2,"isAoe":true,"tier":2,"masteryRequired":25,"nextTierId":"SW002c"},
+  {"id":"SW002c","nameKey":"Skill_SW_Tempest","descriptionKey":"Skill_SW_Tempest_Desc","class":"Swordmaster","mpCost":16,"multiplier":1.5,"isAoe":true,"element":"wind","tier":3,"masteryRequired":50,"nextTierId":"SW002d"},
+  {"id":"SW002d","nameKey":"Skill_SW_HurricaneBlade","descriptionKey":"Skill_SW_HurricaneBlade_Desc","class":"Swordmaster","mpCost":22,"multiplier":2.0,"isAoe":true,"element":"wind","tier":4,"masteryRequired":100,"nextTierId":"SW002e"},
+  {"id":"SW002e","nameKey":"Skill_SW_GodOfStorms","descriptionKey":"Skill_SW_GodOfStorms_Desc","class":"Swordmaster","mpCost":40,"multiplier":4.5,"isAoe":true,"element":"wind","tier":5,"isUltimate":true},
+
+  {"id":"SW003a","nameKey":"Skill_SW_WarCry","descriptionKey":"Skill_SW_WarCry_Desc","class":"Swordmaster","mpCost":5,"multiplier":0,"effect":"atk_buff_20","tier":1,"masteryRequired":10,"nextTierId":"SW003b"},
+  {"id":"SW003b","nameKey":"Skill_SW_BattleCry","descriptionKey":"Skill_SW_BattleCry_Desc","class":"Swordmaster","mpCost":8,"multiplier":0,"effect":"atk_buff_30","tier":2,"masteryRequired":25,"nextTierId":"SW003c"},
+  {"id":"SW003c","nameKey":"Skill_SW_RallyingCry","descriptionKey":"Skill_SW_RallyingCry_Desc","class":"Swordmaster","mpCost":12,"multiplier":0,"effect":"atk_buff_40_crit_20","tier":3,"masteryRequired":50,"nextTierId":"SW003d"},
+  {"id":"SW003d","nameKey":"Skill_SW_HeroCry","descriptionKey":"Skill_SW_HeroCry_Desc","class":"Swordmaster","mpCost":15,"multiplier":0.5,"effect":"all_buff_50","tier":4,"masteryRequired":100,"nextTierId":"SW003e"},
+  {"id":"SW003e","nameKey":"Skill_SW_DivineThunder","descriptionKey":"Skill_SW_DivineThunder_Desc","class":"Swordmaster","mpCost":35,"multiplier":3.5,"isAoe":true,"effect":"stun_all_atk_buff_50","tier":5,"isUltimate":true},
+
+  {"id":"SW004a","nameKey":"Skill_SW_HolySlash","descriptionKey":"Skill_SW_HolySlash_Desc","class":"Swordmaster","mpCost":8,"multiplier":1.2,"element":"light","tier":1,"masteryRequired":10,"nextTierId":"SW004b"},
+  {"id":"SW004b","nameKey":"Skill_SW_LightBlade","descriptionKey":"Skill_SW_LightBlade_Desc","class":"Swordmaster","mpCost":12,"multiplier":1.5,"element":"light","effect":"heal_10pct","tier":2,"masteryRequired":25,"nextTierId":"SW004c"},
+  {"id":"SW004c","nameKey":"Skill_SW_RadiantSword","descriptionKey":"Skill_SW_RadiantSword_Desc","class":"Swordmaster","mpCost":16,"multiplier":1.8,"element":"light","effect":"heal_20pct_blind","tier":3,"masteryRequired":50,"nextTierId":"SW004d"},
+  {"id":"SW004d","nameKey":"Skill_SW_SunFlame","descriptionKey":"Skill_SW_SunFlame_Desc","class":"Swordmaster","mpCost":22,"multiplier":2.5,"element":"light","isAoe":true,"effect":"lifesteal_25","tier":4,"masteryRequired":100,"nextTierId":"SW004e"},
+  {"id":"SW004e","nameKey":"Skill_SW_RagnarokBlade","descriptionKey":"Skill_SW_RagnarokBlade_Desc","class":"Swordmaster","mpCost":40,"multiplier":5.0,"element":"light","effect":"ignore_resist","tier":5,"isUltimate":true},
+
+  {"id":"SW005a","nameKey":"Skill_SW_Counter","descriptionKey":"Skill_SW_Counter_Desc","class":"Swordmaster","mpCost":3,"multiplier":1.5,"effect":"counter","tier":1,"masteryRequired":10,"nextTierId":"SW005b"},
+  {"id":"SW005b","nameKey":"Skill_SW_Retaliation","descriptionKey":"Skill_SW_Retaliation_Desc","class":"Swordmaster","mpCost":5,"multiplier":2.0,"effect":"counter_heal_20","tier":2,"masteryRequired":25,"nextTierId":"SW005c"},
+  {"id":"SW005c","nameKey":"Skill_SW_MirrorStrike","descriptionKey":"Skill_SW_MirrorStrike_Desc","class":"Swordmaster","mpCost":8,"multiplier":2.5,"effect":"reflect","tier":3,"masteryRequired":50,"nextTierId":"SW005d"},
+  {"id":"SW005d","nameKey":"Skill_SW_AbsoluteCounter","descriptionKey":"Skill_SW_AbsoluteCounter_Desc","class":"Swordmaster","mpCost":12,"multiplier":3.0,"effect":"auto_counter_stun","tier":4,"masteryRequired":100,"nextTierId":"SW005e"},
+  {"id":"SW005e","nameKey":"Skill_SW_FateTurn","descriptionKey":"Skill_SW_FateTurn_Desc","class":"Swordmaster","mpCost":30,"multiplier":0,"effect":"reflect_3x","tier":5,"isUltimate":true}
+]

@@ -1,0 +1,68 @@
+{
+  "chapterId": "k3",
+  "chapterNameKey": "chapter_k3_title",
+  "startNodeId": "k3_start",
+  "nodes": [
+    {
+      "id": "k3_start",
+      "nameKey": "Map_K3_Waldeingang",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.85,
+      "connections": ["k3_dark_path"],
+      "storyNodeId": "k3_forest_entrance",
+      "background": "Forest"
+    },
+    {
+      "id": "k3_dark_path",
+      "nameKey": "Map_K3_DunklerPfad",
+      "type": "Story",
+      "x": 0.35,
+      "y": 0.7,
+      "connections": ["k3_ruins"],
+      "storyNodeId": "k3_kael_appears",
+      "background": "Forest"
+    },
+    {
+      "id": "k3_ruins",
+      "nameKey": "Map_K3_AlteRuinen",
+      "type": "SideQuest",
+      "x": 0.6,
+      "y": 0.55,
+      "connections": ["k3_camp"],
+      "storyNodeId": "k3_deeper_forest",
+      "background": "Forest"
+    },
+    {
+      "id": "k3_camp",
+      "nameKey": "Map_K3_Lagerplatz",
+      "type": "Rest",
+      "x": 0.4,
+      "y": 0.4,
+      "connections": ["k3_golem_cave"],
+      "storyNodeId": "k3_campfire_night",
+      "background": "Forest"
+    },
+    {
+      "id": "k3_golem_cave",
+      "nameKey": "Map_K3_GolemHoehle",
+      "type": "Boss",
+      "x": 0.55,
+      "y": 0.22,
+      "connections": ["k3_crystal_chamber"],
+      "enemyId": "B007",
+      "storyNodeId": "k3_boss_erdross",
+      "background": "Dungeon"
+    },
+    {
+      "id": "k3_crystal_chamber",
+      "nameKey": "Map_K3_Kristallkammer",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.05,
+      "connections": [],
+      "storyNodeId": "k3_crystal",
+      "background": "Dungeon"
+    }
+  ]
+}

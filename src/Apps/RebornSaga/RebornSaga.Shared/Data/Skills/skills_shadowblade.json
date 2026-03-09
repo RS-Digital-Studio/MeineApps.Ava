@@ -1,0 +1,31 @@
+[
+  {"id":"AS001a","nameKey":"Skill_AS_QuickStab","descriptionKey":"Skill_AS_QuickStab_Desc","class":"Shadowblade","mpCost":3,"multiplier":1.2,"effect":"hit_2x","tier":1,"masteryRequired":10,"nextTierId":"AS001b"},
+  {"id":"AS001b","nameKey":"Skill_AS_DoubleStab","descriptionKey":"Skill_AS_DoubleStab_Desc","class":"Shadowblade","mpCost":5,"multiplier":1.5,"effect":"hit_3x_bleed","tier":2,"masteryRequired":25,"nextTierId":"AS001c"},
+  {"id":"AS001c","nameKey":"Skill_AS_BladeDance","descriptionKey":"Skill_AS_BladeDance_Desc","class":"Shadowblade","mpCost":10,"multiplier":2.0,"effect":"hit_5x_crit_10_each","tier":3,"masteryRequired":50,"nextTierId":"AS001d"},
+  {"id":"AS001d","nameKey":"Skill_AS_ShadowWaltz","descriptionKey":"Skill_AS_ShadowWaltz_Desc","class":"Shadowblade","mpCost":15,"multiplier":2.8,"effect":"hit_7x_stealth_after","tier":4,"masteryRequired":100,"nextTierId":"AS001e"},
+  {"id":"AS001e","nameKey":"Skill_AS_ThousandCuts","descriptionKey":"Skill_AS_ThousandCuts_Desc","class":"Shadowblade","mpCost":35,"multiplier":5.5,"effect":"hit_12x_guaranteed_crit","tier":5,"isUltimate":true},
+
+  {"id":"AS002a","nameKey":"Skill_AS_ApplyPoison","descriptionKey":"Skill_AS_ApplyPoison_Desc","class":"Shadowblade","mpCost":5,"multiplier":0.8,"effect":"poison_5pct_3turns","tier":1,"masteryRequired":10,"nextTierId":"AS002b"},
+  {"id":"AS002b","nameKey":"Skill_AS_PoisonCloud","descriptionKey":"Skill_AS_PoisonCloud_Desc","class":"Shadowblade","mpCost":10,"multiplier":1.0,"isAoe":true,"effect":"poison_5pct_3turns","tier":2,"masteryRequired":25,"nextTierId":"AS002c"},
+  {"id":"AS002c","nameKey":"Skill_AS_ToxicExplosion","descriptionKey":"Skill_AS_ToxicExplosion_Desc","class":"Shadowblade","mpCost":15,"multiplier":1.5,"isAoe":true,"effect":"poison_def_minus_20_4turns","tier":3,"masteryRequired":50,"nextTierId":"AS002d"},
+  {"id":"AS002d","nameKey":"Skill_AS_Plague","descriptionKey":"Skill_AS_Plague_Desc","class":"Shadowblade","mpCost":20,"multiplier":2.0,"isAoe":true,"effect":"poison_def_minus_40_heal_block","tier":4,"masteryRequired":100,"nextTierId":"AS002e"},
+  {"id":"AS002e","nameKey":"Skill_AS_DeathKiss","descriptionKey":"Skill_AS_DeathKiss_Desc","class":"Shadowblade","mpCost":40,"multiplier":1.0,"effect":"instant_kill_25pct_else_3x","tier":5,"isUltimate":true},
+
+  {"id":"AS003a","nameKey":"Skill_AS_Sneak","descriptionKey":"Skill_AS_Sneak_Desc","class":"Shadowblade","mpCost":5,"multiplier":0,"effect":"stealth_1_next_atk_50pct","tier":1,"masteryRequired":10,"nextTierId":"AS003b"},
+  {"id":"AS003b","nameKey":"Skill_AS_ShadowLeap","descriptionKey":"Skill_AS_ShadowLeap_Desc","class":"Shadowblade","mpCost":8,"multiplier":1.5,"effect":"teleport_backstab","tier":2,"masteryRequired":25,"nextTierId":"AS003c"},
+  {"id":"AS003c","nameKey":"Skill_AS_Invisibility","descriptionKey":"Skill_AS_Invisibility_Desc","class":"Shadowblade","mpCost":12,"multiplier":0,"effect":"stealth_2_dodge_80pct","tier":3,"masteryRequired":50,"nextTierId":"AS003d"},
+  {"id":"AS003d","nameKey":"Skill_AS_PhantomForm","descriptionKey":"Skill_AS_PhantomForm_Desc","class":"Shadowblade","mpCost":18,"multiplier":0,"effect":"stealth_3_next_atk_3x","tier":4,"masteryRequired":100,"nextTierId":"AS003e"},
+  {"id":"AS003e","nameKey":"Skill_AS_DimensionWalker","descriptionKey":"Skill_AS_DimensionWalker_Desc","class":"Shadowblade","mpCost":30,"multiplier":4.0,"effect":"ignore_def_undodgeable","tier":5,"isUltimate":true},
+
+  {"id":"AS004a","nameKey":"Skill_AS_Ambush","descriptionKey":"Skill_AS_Ambush_Desc","class":"Shadowblade","mpCost":8,"multiplier":2.0,"effect":"stealth_only_guaranteed_crit","tier":1,"masteryRequired":10,"nextTierId":"AS004b"},
+  {"id":"AS004b","nameKey":"Skill_AS_SurpriseAttack","descriptionKey":"Skill_AS_SurpriseAttack_Desc","class":"Shadowblade","mpCost":12,"multiplier":2.5,"effect":"crit_stun_1","tier":2,"masteryRequired":25,"nextTierId":"AS004c"},
+  {"id":"AS004c","nameKey":"Skill_AS_DeadlyAmbush","descriptionKey":"Skill_AS_DeadlyAmbush_Desc","class":"Shadowblade","mpCost":16,"multiplier":3.0,"effect":"crit_stun_2_bleed","tier":3,"masteryRequired":50,"nextTierId":"AS004d"},
+  {"id":"AS004d","nameKey":"Skill_AS_Execution","descriptionKey":"Skill_AS_Execution_Desc","class":"Shadowblade","mpCost":22,"multiplier":3.5,"effect":"3x_dmg_below_50pct","tier":4,"masteryRequired":100,"nextTierId":"AS004e"},
+  {"id":"AS004e","nameKey":"Skill_AS_FateKill","descriptionKey":"Skill_AS_FateKill_Desc","class":"Shadowblade","mpCost":45,"multiplier":6.0,"effect":"instant_kill_30pct_else_5x_crit","tier":5,"isUltimate":true},
+
+  {"id":"AS005a","nameKey":"Skill_AS_Distraction","descriptionKey":"Skill_AS_Distraction_Desc","class":"Shadowblade","mpCost":3,"multiplier":0,"effect":"enemy_lose_turn","tier":1,"masteryRequired":10,"nextTierId":"AS005b"},
+  {"id":"AS005b","nameKey":"Skill_AS_SmokeBomb","descriptionKey":"Skill_AS_SmokeBomb_Desc","class":"Shadowblade","mpCost":8,"multiplier":0,"isAoe":true,"effect":"all_enemies_miss_1","tier":2,"masteryRequired":25,"nextTierId":"AS005c"},
+  {"id":"AS005c","nameKey":"Skill_AS_Doppelganger","descriptionKey":"Skill_AS_Doppelganger_Desc","class":"Shadowblade","mpCost":12,"multiplier":0,"effect":"illusion_absorb_1","tier":3,"masteryRequired":50,"nextTierId":"AS005d"},
+  {"id":"AS005d","nameKey":"Skill_AS_ShadowClone","descriptionKey":"Skill_AS_ShadowClone_Desc","class":"Shadowblade","mpCost":18,"multiplier":1.5,"effect":"clone_3turns_50pct_stats","tier":4,"masteryRequired":100,"nextTierId":"AS005e"},
+  {"id":"AS005e","nameKey":"Skill_AS_ShadowLegion","descriptionKey":"Skill_AS_ShadowLegion_Desc","class":"Shadowblade","mpCost":50,"multiplier":3.0,"isAoe":true,"effect":"5_clones_3turns_30pct_stats","tier":5,"isUltimate":true}
+]

@@ -1,0 +1,38 @@
+{
+  "chapterId": "p3",
+  "chapterNameKey": "chapter_p3_title",
+  "startNodeId": "p3_throne",
+  "nodes": [
+    {
+      "id": "p3_throne",
+      "nameKey": "Map_P3_ThronSaal",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.7,
+      "connections": ["p3_rift"],
+      "storyNodeId": "p3_throne_room",
+      "enemyId": "B004",
+      "background": "DarkCastle"
+    },
+    {
+      "id": "p3_rift",
+      "nameKey": "Map_P3_ZeitRiss",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.4,
+      "connections": ["p3_awakening"],
+      "storyNodeId": "p3_time_rift",
+      "background": "SystemVoid"
+    },
+    {
+      "id": "p3_awakening",
+      "nameKey": "Map_P3_Erwachen",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.15,
+      "connections": [],
+      "storyNodeId": "p3_awakening",
+      "background": "Forest"
+    }
+  ]
+}

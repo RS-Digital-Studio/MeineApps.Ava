@@ -1,0 +1,31 @@
+[
+  {"id":"MA001a","nameKey":"Skill_MA_Fireball","descriptionKey":"Skill_MA_Fireball_Desc","class":"Arcanist","mpCost":8,"multiplier":1.3,"element":"fire","tier":1,"masteryRequired":10,"nextTierId":"MA001b"},
+  {"id":"MA001b","nameKey":"Skill_MA_FireLance","descriptionKey":"Skill_MA_FireLance_Desc","class":"Arcanist","mpCost":12,"multiplier":1.6,"element":"fire","tier":2,"masteryRequired":25,"nextTierId":"MA001c"},
+  {"id":"MA001c","nameKey":"Skill_MA_Firestorm","descriptionKey":"Skill_MA_Firestorm_Desc","class":"Arcanist","mpCost":18,"multiplier":2.0,"element":"fire","isAoe":true,"effect":"burn_3","tier":3,"masteryRequired":50,"nextTierId":"MA001d"},
+  {"id":"MA001d","nameKey":"Skill_MA_Inferno","descriptionKey":"Skill_MA_Inferno_Desc","class":"Arcanist","mpCost":25,"multiplier":2.8,"element":"fire","isAoe":true,"effect":"burn_def_minus_30","tier":4,"masteryRequired":100,"nextTierId":"MA001e"},
+  {"id":"MA001e","nameKey":"Skill_MA_Worldfire","descriptionKey":"Skill_MA_Worldfire_Desc","class":"Arcanist","mpCost":45,"multiplier":5.0,"element":"fire","isAoe":true,"effect":"ignore_resist","tier":5,"isUltimate":true},
+
+  {"id":"MA002a","nameKey":"Skill_MA_IceArrow","descriptionKey":"Skill_MA_IceArrow_Desc","class":"Arcanist","mpCost":8,"multiplier":1.2,"element":"ice","effect":"slow_1","tier":1,"masteryRequired":10,"nextTierId":"MA002b"},
+  {"id":"MA002b","nameKey":"Skill_MA_IceSpear","descriptionKey":"Skill_MA_IceSpear_Desc","class":"Arcanist","mpCost":12,"multiplier":1.5,"element":"ice","effect":"slow_2","tier":2,"masteryRequired":25,"nextTierId":"MA002c"},
+  {"id":"MA002c","nameKey":"Skill_MA_FrostExplosion","descriptionKey":"Skill_MA_FrostExplosion_Desc","class":"Arcanist","mpCost":18,"multiplier":1.8,"element":"ice","isAoe":true,"effect":"freeze_1","tier":3,"masteryRequired":50,"nextTierId":"MA002d"},
+  {"id":"MA002d","nameKey":"Skill_MA_Blizzard","descriptionKey":"Skill_MA_Blizzard_Desc","class":"Arcanist","mpCost":25,"multiplier":2.5,"element":"ice","isAoe":true,"effect":"freeze_2_agi_minus_50","tier":4,"masteryRequired":100,"nextTierId":"MA002e"},
+  {"id":"MA002e","nameKey":"Skill_MA_AbsoluteZero","descriptionKey":"Skill_MA_AbsoluteZero_Desc","class":"Arcanist","mpCost":40,"multiplier":4.5,"element":"ice","isAoe":true,"effect":"freeze_all_3","tier":5,"isUltimate":true},
+
+  {"id":"MA003a","nameKey":"Skill_MA_LightningBolt","descriptionKey":"Skill_MA_LightningBolt_Desc","class":"Arcanist","mpCost":10,"multiplier":1.4,"element":"lightning","effect":"stun_20pct","tier":1,"masteryRequired":10,"nextTierId":"MA003b"},
+  {"id":"MA003b","nameKey":"Skill_MA_Thunder","descriptionKey":"Skill_MA_Thunder_Desc","class":"Arcanist","mpCost":15,"multiplier":1.7,"element":"lightning","effect":"stun_30pct","tier":2,"masteryRequired":25,"nextTierId":"MA003c"},
+  {"id":"MA003c","nameKey":"Skill_MA_Thunderstorm","descriptionKey":"Skill_MA_Thunderstorm_Desc","class":"Arcanist","mpCost":20,"multiplier":2.2,"element":"lightning","isAoe":true,"effect":"stun_40pct","tier":3,"masteryRequired":50,"nextTierId":"MA003d"},
+  {"id":"MA003d","nameKey":"Skill_MA_StormElemental","descriptionKey":"Skill_MA_StormElemental_Desc","class":"Arcanist","mpCost":28,"multiplier":3.0,"element":"lightning","isAoe":true,"effect":"stun_60pct_chain","tier":4,"masteryRequired":100,"nextTierId":"MA003e"},
+  {"id":"MA003e","nameKey":"Skill_MA_ThorsWrath","descriptionKey":"Skill_MA_ThorsWrath_Desc","class":"Arcanist","mpCost":50,"multiplier":6.0,"element":"lightning","isAoe":true,"effect":"stun_guaranteed_2x_water","tier":5,"isUltimate":true},
+
+  {"id":"MA004a","nameKey":"Skill_MA_ArcaneShield","descriptionKey":"Skill_MA_ArcaneShield_Desc","class":"Arcanist","mpCost":10,"multiplier":0,"effect":"absorb_50","tier":1,"masteryRequired":10,"nextTierId":"MA004b"},
+  {"id":"MA004b","nameKey":"Skill_MA_MagicBarrier","descriptionKey":"Skill_MA_MagicBarrier_Desc","class":"Arcanist","mpCost":15,"multiplier":0,"effect":"absorb_100_reflect_10","tier":2,"masteryRequired":25,"nextTierId":"MA004c"},
+  {"id":"MA004c","nameKey":"Skill_MA_MirrorShield","descriptionKey":"Skill_MA_MirrorShield_Desc","class":"Arcanist","mpCost":20,"multiplier":0,"effect":"absorb_150_reflect_30","tier":3,"masteryRequired":50,"nextTierId":"MA004d"},
+  {"id":"MA004d","nameKey":"Skill_MA_DimensionRift","descriptionKey":"Skill_MA_DimensionRift_Desc","class":"Arcanist","mpCost":25,"multiplier":0,"effect":"nullify_next_attack","tier":4,"masteryRequired":100,"nextTierId":"MA004e"},
+  {"id":"MA004e","nameKey":"Skill_MA_TimeStop","descriptionKey":"Skill_MA_TimeStop_Desc","class":"Arcanist","mpCost":40,"multiplier":0,"effect":"enemy_skip_3_turns","tier":5,"isUltimate":true},
+
+  {"id":"MA005a","nameKey":"Skill_MA_Meditation","descriptionKey":"Skill_MA_Meditation_Desc","class":"Arcanist","mpCost":0,"multiplier":0,"effect":"regen_mp_15pct","tier":1,"masteryRequired":10,"nextTierId":"MA005b"},
+  {"id":"MA005b","nameKey":"Skill_MA_Manaflow","descriptionKey":"Skill_MA_Manaflow_Desc","class":"Arcanist","mpCost":0,"multiplier":0,"effect":"regen_mp_25pct_hp_10pct","tier":2,"masteryRequired":25,"nextTierId":"MA005c"},
+  {"id":"MA005c","nameKey":"Skill_MA_ArcaneResonance","descriptionKey":"Skill_MA_ArcaneResonance_Desc","class":"Arcanist","mpCost":5,"multiplier":0,"effect":"int_buff_30_3turns","tier":3,"masteryRequired":50,"nextTierId":"MA005d"},
+  {"id":"MA005d","nameKey":"Skill_MA_AetherLink","descriptionKey":"Skill_MA_AetherLink_Desc","class":"Arcanist","mpCost":0,"multiplier":0,"effect":"regen_mp_40pct_hp_20pct_int_20","tier":4,"masteryRequired":100,"nextTierId":"MA005e"},
+  {"id":"MA005e","nameKey":"Skill_MA_Omniscience","descriptionKey":"Skill_MA_Omniscience_Desc","class":"Arcanist","mpCost":0,"multiplier":0,"effect":"all_stats_50pct_mp_full_reveal","tier":5,"isUltimate":true}
+]

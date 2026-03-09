@@ -1,0 +1,59 @@
+{
+  "chapterId": "p2",
+  "chapterNameKey": "chapter_p2_title",
+  "startNodeId": "p2_entrance",
+  "nodes": [
+    {
+      "id": "p2_entrance",
+      "nameKey": "Map_P2_PortalEingang",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.9,
+      "connections": ["p2_shadow_hall"],
+      "storyNodeId": "p2_enter_domain",
+      "background": "DarkCastle"
+    },
+    {
+      "id": "p2_shadow_hall",
+      "nameKey": "Map_P2_SchattenHalle",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.7,
+      "connections": ["p2_trap_corridor"],
+      "storyNodeId": "p2_malachar_appears",
+      "enemyId": "B001",
+      "background": "DarkCastle"
+    },
+    {
+      "id": "p2_trap_corridor",
+      "nameKey": "Map_P2_FallenKorridor",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.5,
+      "connections": ["p2_spirit_chamber"],
+      "storyNodeId": "p2_trap_corridor",
+      "background": "DarkCastle"
+    },
+    {
+      "id": "p2_spirit_chamber",
+      "nameKey": "Map_P2_GeisterKammer",
+      "type": "Boss",
+      "x": 0.5,
+      "y": 0.3,
+      "connections": ["p2_throne_gate"],
+      "storyNodeId": "p2_vexara_appears",
+      "enemyId": "B002",
+      "background": "DarkCastle"
+    },
+    {
+      "id": "p2_throne_gate",
+      "nameKey": "Map_P2_ThronTor",
+      "type": "Story",
+      "x": 0.5,
+      "y": 0.1,
+      "connections": [],
+      "storyNodeId": "p2_before_throne",
+      "background": "DarkCastle"
+    }
+  ]
+}

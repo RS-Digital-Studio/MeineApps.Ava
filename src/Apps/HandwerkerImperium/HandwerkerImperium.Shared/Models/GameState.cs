@@ -25,6 +25,13 @@ public class GameState
     // PLAYER PROGRESS
     // ═══════════════════════════════════════════════════════════════════════
 
+    /// <summary>
+    /// Stabile Spieler-ID (GUID). Backup für Preferences-Verlust.
+    /// Wird für alle Firebase-Daten-Pfade verwendet (statt Firebase-UID).
+    /// </summary>
+    [JsonPropertyName("playerGuid")]
+    public string? PlayerGuid { get; set; }
+
     [JsonPropertyName("playerLevel")]
     public int PlayerLevel { get; set; } = 1;
 

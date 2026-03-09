@@ -493,10 +493,10 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
             _guildWarService.CheckAndFinalizeWarAsync().FireAndForget();
 
         // 9q. Gilden-Boss Status prüfen (alle 60s, Offset 20)
+        // Sequentiell: Erst Status prüfen, dann ggf. Spawn (sonst Race Condition)
         if (_tickCount % GuildBossCheckIntervalTicks == 20 && _guildBossService != null)
         {
-            _guildBossService.CheckBossStatusAsync().FireAndForget();
-            _guildBossService.SpawnBossIfNeededAsync().FireAndForget();
+            CheckBossSequentialAsync().FireAndForget();
         }
 
         // 9r. Gilden-Hauptquartier Upgrade-Completion prüfen (alle 60s, Offset 40)
@@ -749,6 +749,15 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Boss-Status prüfen und dann ggf. neuen Boss spawnen (sequentiell, nicht parallel).
+    /// </summary>
+    private async Task CheckBossSequentialAsync()
+    {
+        await _guildBossService!.CheckBossStatusAsync();
+        await _guildBossService.SpawnBossIfNeededAsync();
     }
 
     /// <summary>

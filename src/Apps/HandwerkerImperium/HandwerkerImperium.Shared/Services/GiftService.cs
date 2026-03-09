@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
@@ -41,7 +42,7 @@ public sealed class GiftService : IGiftService
         {
             if (HasSentGiftToday) return false;
 
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
             var playerName = _gameStateService.State.PlayerName ?? "Handwerker";
@@ -78,7 +79,7 @@ public sealed class GiftService : IGiftService
 
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return result;
 
             var json = await _firebase.QueryAsync($"gifts/{uid}", "");
@@ -94,7 +95,7 @@ public sealed class GiftService : IGiftService
                 // Abgelaufene + eingelöste Geschenke aufräumen
                 if (gift.Claimed)
                 {
-                    if (DateTime.TryParse(gift.SentAt, out var sentDate) &&
+                    if (DateTime.TryParse(gift.SentAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var sentDate) &&
                         (now - sentDate).TotalDays > GiftExpiryDays)
                     {
                         _ = _firebase.DeleteAsync($"gifts/{uid}/{giftId}");
@@ -103,7 +104,7 @@ public sealed class GiftService : IGiftService
                 }
 
                 // Abgelaufene uneingelöste Geschenke entfernen
-                if (DateTime.TryParse(gift.SentAt, out var sent) &&
+                if (DateTime.TryParse(gift.SentAt, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var sent) &&
                     (now - sent).TotalDays > GiftExpiryDays)
                 {
                     _ = _firebase.DeleteAsync($"gifts/{uid}/{giftId}");
@@ -133,7 +134,7 @@ public sealed class GiftService : IGiftService
     {
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
             // Geschenk laden

@@ -450,6 +450,12 @@ public sealed partial class GuildViewModel : ViewModelBase
 
             if (membership != null)
             {
+                // Effekt-Caches parallel laden (sonst 0 bis Sub-Seite geöffnet wird)
+                _ = _researchService.RefreshResearchCacheAsync();
+                _ = _hallService.RefreshHallCacheAsync();
+                // War-Saison initialisieren (lädt aktive War-ID, cached War, Liga)
+                _ = _warSeasonService.InitializeAsync();
+
                 UpdateContributionDisplay();
                 await RefreshGuildDetailsAsync();
                 ViewState = GuildViewState.InGuild;

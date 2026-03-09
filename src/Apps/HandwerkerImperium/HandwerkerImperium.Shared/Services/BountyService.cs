@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
+using MeineApps.Core.Ava.Services;
 
 namespace HandwerkerImperium.Services;
 
@@ -15,6 +16,7 @@ public sealed class BountyService : IBountyService
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
+    private readonly IPreferencesService _preferences;
     private readonly SemaphoreSlim _lock = new(1, 1);
 
     // Bounty-Typen mit Zielen
@@ -37,11 +39,13 @@ public sealed class BountyService : IBountyService
     public BountyService(
         IFirebaseService firebase,
         IGameStateService gameStateService,
-        ISaveGameService saveGameService)
+        ISaveGameService saveGameService,
+        IPreferencesService preferences)
     {
         _firebase = firebase;
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
+        _preferences = preferences;
     }
 
     public async Task<BountyDisplayData?> GetActiveBountyAsync()
@@ -67,7 +71,7 @@ public sealed class BountyService : IBountyService
 
             // Eigenen Beitrag laden
             long ownContribution = 0;
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (!string.IsNullOrEmpty(uid))
             {
                 var contribution = await _firebase.GetAsync<BountyContribution>(
@@ -115,7 +119,7 @@ public sealed class BountyService : IBountyService
         try
         {
             var bountyId = GetCurrentBountyId();
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
             // Eigenen Beitrag aktualisieren
@@ -166,7 +170,11 @@ public sealed class BountyService : IBountyService
             // Prüfe ob Ziel erreicht und noch nicht belohnt
             if (bounty.Current >= bounty.Target || bounty.Status == "completed")
             {
-                var uid = _firebase.Uid;
+                // Duplikat-Schutz: Pro Bounty nur einmal belohnen
+                var rewardKey = $"bounty_rewarded_{bountyId}";
+                if (_preferences.Get(rewardKey, false)) return;
+
+                var uid = _firebase.PlayerId;
                 if (string.IsNullOrEmpty(uid)) return;
 
                 // Prüfe ob Spieler beigetragen hat
@@ -175,8 +183,9 @@ public sealed class BountyService : IBountyService
 
                 if (contribution != null && contribution.Amount > 0)
                 {
-                    // Basis-Belohnung für alle Beitragenden
+                    // Basis-Belohnung für alle Beitragenden (einmalig)
                     _gameStateService.AddGoldenScrews(bounty.Reward);
+                    _preferences.Set(rewardKey, true);
                     await _saveGameService.SaveAsync();
                 }
             }

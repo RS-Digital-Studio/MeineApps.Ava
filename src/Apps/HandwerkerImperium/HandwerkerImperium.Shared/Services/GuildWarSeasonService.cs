@@ -44,6 +44,8 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
     // Preferences-Keys
     private const string PrefKeyLastPhase = "gws_last_phase";
     private const string PrefKeyBonusMissionPrefix = "gws_bonusmission_";
+    private const string PrefKeyWarRewardPrefix = "gws_war_reward_";
+    private const string PrefKeySeasonRewardPrefix = "gws_season_reward_";
 
     public GuildWarSeasonService(
         IFirebaseService firebase,
@@ -113,7 +115,7 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return;
 
-        var uid = _firebase.Uid;
+        var uid = _firebase.PlayerId;
         if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(_activeWarId))
             return;
 
@@ -718,10 +720,27 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             if (mvpEntry.Value.TotalScore <= 0)
                 return ("", 0);
 
-            // Spielername aus Firebase laden (players/{uid}/name)
-            var playerName = await _firebase.GetAsync<string>(
-                $"players/{mvpEntry.Key}/name");
-            var mvpName = playerName ?? mvpEntry.Key;
+            // Spielername aus guild_members laden (dort liegt der Name)
+            var membership = _gameStateService.State.GuildMembership;
+            var mvpName = mvpEntry.Key;
+            if (membership != null && !string.IsNullOrEmpty(membership.GuildId))
+            {
+                var memberJson = await _firebase.QueryAsync(
+                    $"guild_members/{membership.GuildId}/{mvpEntry.Key}", "");
+                if (!string.IsNullOrEmpty(memberJson) && memberJson != "null")
+                {
+                    using var doc = JsonDocument.Parse(memberJson);
+                    if (doc.RootElement.TryGetProperty("name", out var nameEl)
+                        && nameEl.ValueKind == JsonValueKind.String)
+                    {
+                        mvpName = nameEl.GetString() ?? mvpEntry.Key;
+                    }
+                }
+            }
+
+            // Fallback: Spielername aus Preferences wenn eigener Spieler
+            if (mvpName == mvpEntry.Key && mvpEntry.Key == _firebase.PlayerId)
+                mvpName = GetPlayerName();
 
             return (mvpName, mvpEntry.Value.TotalScore);
         }
@@ -746,6 +765,10 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
         var membership = _gameStateService.State.GuildMembership;
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return;
+
+        // Duplikat-Schutz: Pro War nur einmal belohnen
+        var warRewardKey = $"{PrefKeyWarRewardPrefix}{_activeWarId}";
+        if (_preferences.Get(warRewardKey, false)) return;
 
         var guildId = membership.GuildId;
         var isGuildA = war.GuildAId == guildId;
@@ -777,7 +800,7 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
         }
 
         // MVP-Bonus prüfen
-        var uid = _firebase.Uid;
+        var uid = _firebase.PlayerId;
         if (!string.IsNullOrEmpty(uid) && !string.IsNullOrEmpty(_activeWarId))
         {
             var (_, mvpScore) = await GetMvpAsync(_activeWarId, guildId);
@@ -797,6 +820,7 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
 
         // Belohnungen vergeben
         _gameStateService.AddGoldenScrews(gsReward);
+        _preferences.Set(warRewardKey, true);
 
         // Liga-Eintrag aktualisieren (Punkte + Wins/Losses)
         {
@@ -847,6 +871,11 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
     /// </summary>
     private void DistributeSeasonRewards()
     {
+        // Duplikat-Schutz: Pro Saison nur einmal belohnen
+        var seasonId = GetCurrentSeasonId();
+        var seasonRewardKey = $"{PrefKeySeasonRewardPrefix}{seasonId}";
+        if (_preferences.Get(seasonRewardKey, false)) return;
+
         var gsReward = _currentLeague switch
         {
             GuildLeague.Diamond => 100,
@@ -856,6 +885,7 @@ public sealed class GuildWarSeasonService : IGuildWarSeasonService
             _ => 10
         };
         _gameStateService.AddGoldenScrews(gsReward);
+        _preferences.Set(seasonRewardKey, true);
     }
 
     // ═══════════════════════════════════════════════════════════════════════

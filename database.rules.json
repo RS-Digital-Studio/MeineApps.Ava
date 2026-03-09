@@ -3,6 +3,13 @@
     ".read": false,
     ".write": false,
 
+    "auth_to_player": {
+      "$authUid": {
+        ".read": "auth != null && auth.uid == $authUid",
+        ".write": "auth != null && auth.uid == $authUid"
+      }
+    },
+
     "guilds": {
       ".read": "auth != null",
       "$guildId": {
@@ -13,16 +20,16 @@
     "guild_members": {
       "$guildId": {
         ".read": "auth != null",
-        "$uid": {
-          ".write": "auth != null && (auth.uid == $uid || root.child('guild_members/' + $guildId + '/' + auth.uid + '/role').val() == 'leader')"
+        "$playerId": {
+          ".write": "auth != null && (root.child('auth_to_player/' + auth.uid).val() == $playerId || root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val() + '/role').val() == 'leader')"
         }
       }
     },
 
     "player_guilds": {
-      "$uid": {
+      "$playerId": {
         ".read": "auth != null",
-        ".write": "auth != null && auth.uid == $uid"
+        ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
       }
     },
 
@@ -31,8 +38,8 @@
         ".read": "auth != null",
         "entries": {
           ".indexOn": ["score", "updatedAt"],
-          "$uid": {
-            ".write": "auth != null && auth.uid == $uid"
+          "$playerId": {
+            ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
           }
         }
       }
@@ -50,10 +57,25 @@
       "$warId": {
         ".read": "auth != null",
         "$guildId": {
-          "$uid": {
-            ".write": "auth != null && auth.uid == $uid && root.child('player_guilds/' + auth.uid).val() == $guildId"
+          "$playerId": {
+            ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId && root.child('player_guilds/' + root.child('auth_to_player/' + auth.uid).val()).val() == $guildId"
           }
         }
+      }
+    },
+
+    "guild_war_seasons": {
+      ".read": "auth != null",
+      "$seasonId": {
+        ".write": "auth != null"
+      }
+    },
+
+    "guild_war_log": {
+      "$warId": {
+        ".read": "auth != null",
+        ".indexOn": ["timestamp"],
+        ".write": "auth != null"
       }
     },
 
@@ -69,54 +91,54 @@
           ".validate": "newData.isNumber()"
         },
         "contributions": {
-          "$uid": {
-            ".write": "auth != null && auth.uid == $uid"
+          "$playerId": {
+            ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
           }
         }
       }
     },
 
     "friends": {
-      "$uid": {
-        ".read": "auth != null && auth.uid == $uid",
-        "$friendUid": {
-          ".write": "auth != null && (auth.uid == $uid || auth.uid == $friendUid)"
+      "$playerId": {
+        ".read": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
+        "$friendPlayerId": {
+          ".write": "auth != null && (root.child('auth_to_player/' + auth.uid).val() == $playerId || root.child('auth_to_player/' + auth.uid).val() == $friendPlayerId)"
         }
       }
     },
 
     "friend_requests": {
-      "$uid": {
-        ".read": "auth != null && auth.uid == $uid",
-        "$fromUid": {
-          ".write": "auth != null && (auth.uid == $fromUid || auth.uid == $uid)"
+      "$playerId": {
+        ".read": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
+        "$fromPlayerId": {
+          ".write": "auth != null && (root.child('auth_to_player/' + auth.uid).val() == $fromPlayerId || root.child('auth_to_player/' + auth.uid).val() == $playerId)"
         }
       }
     },
 
     "gifts": {
-      "$uid": {
-        ".read": "auth != null && auth.uid == $uid",
+      "$playerId": {
+        ".read": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId",
         "$giftId": {
-          ".write": "auth != null && (!data.exists() || auth.uid == $uid)"
+          ".write": "auth != null && (!data.exists() || root.child('auth_to_player/' + auth.uid).val() == $playerId)"
         }
       }
     },
 
     "guild_chat": {
       "$guildId": {
-        ".read": "auth != null && root.child('guild_members/' + $guildId + '/' + auth.uid).exists()",
+        ".read": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
         "messages": {
           ".indexOn": ["timestamp"],
-          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + auth.uid).exists()"
+          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
         }
       }
     },
 
     "player_profiles": {
       ".read": "auth != null",
-      "$uid": {
-        ".write": "auth != null && auth.uid == $uid"
+      "$playerId": {
+        ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
       }
     },
 
@@ -134,11 +156,20 @@
       }
     },
 
+    "guild_invites": {
+      "$guildId": {
+        ".read": "auth != null",
+        "$recipientPlayerId": {
+          ".write": "auth != null"
+        }
+      }
+    },
+
     "available_players": {
       ".read": "auth != null",
       ".indexOn": ["lastActive"],
-      "$uid": {
-        ".write": "auth != null && auth.uid == $uid"
+      "$playerId": {
+        ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
       }
     },
 
@@ -146,7 +177,31 @@
       "$guildId": {
         ".read": "auth != null",
         "$researchId": {
-          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + auth.uid).exists()"
+          ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
+        }
+      }
+    },
+
+    "guild_hall": {
+      "$guildId": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
+      }
+    },
+
+    "guild_bosses": {
+      "$guildId": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()"
+      }
+    },
+
+    "guild_boss_damage": {
+      "$guildId": {
+        ".read": "auth != null",
+        ".write": "auth != null && root.child('guild_members/' + $guildId + '/' + root.child('auth_to_player/' + auth.uid).val()).exists()",
+        "$playerId": {
+          ".write": "auth != null && root.child('auth_to_player/' + auth.uid).val() == $playerId"
         }
       }
     }

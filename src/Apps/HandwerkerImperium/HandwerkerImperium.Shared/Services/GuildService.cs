@@ -49,11 +49,24 @@ public sealed class GuildService : IGuildService
         {
             await _firebaseService.EnsureAuthenticatedAsync();
 
-            // Prüfen ob Spieler in einer Gilde ist (Schnell-Lookup)
-            var uid = _firebaseService.Uid;
-            if (string.IsNullOrEmpty(uid)) return;
+            // Stabile Spieler-ID initialisieren (überlebt Firebase-Account-Wechsel)
+            _firebaseService.InitializePlayerId(_gameStateService.State.PlayerGuid);
 
-            var guildId = await _firebaseService.GetAsync<string>($"player_guilds/{uid}");
+            var playerId = _firebaseService.PlayerId;
+            if (string.IsNullOrEmpty(playerId)) return;
+
+            // PlayerId im GameState als Backup sichern
+            if (_gameStateService.State.PlayerGuid != playerId)
+            {
+                _gameStateService.State.PlayerGuid = playerId;
+                _gameStateService.MarkDirty();
+            }
+
+            // Migration: Daten von alter Firebase-UID zu PlayerId migrieren
+            await MigrateFromUidToPlayerIdAsync(playerId);
+
+            // Prüfen ob Spieler in einer Gilde ist (Schnell-Lookup)
+            var guildId = await _firebaseService.GetAsync<string>($"player_guilds/{playerId}");
             if (!string.IsNullOrEmpty(guildId))
             {
                 // Gilden-Basisdaten laden für lokalen Cache
@@ -62,19 +75,21 @@ public sealed class GuildService : IGuildService
                 {
                     UpdateLocalCache(guildId, guildData);
                 }
-                else
+                else if (_firebaseService.IsOnline)
                 {
-                    // Gilde existiert nicht mehr → lokalen Cache aufräumen
+                    // Gilde existiert definitiv nicht mehr (Online bestätigt)
                     ClearLocalCache();
-                    await _firebaseService.DeleteAsync($"player_guilds/{uid}");
+                    await _firebaseService.DeleteAsync($"player_guilds/{playerId}");
                 }
+                // else: Offline → lokalen Cache beibehalten
             }
-            else
+            else if (_firebaseService.IsOnline)
             {
-                // Nicht in einer Gilde → lokalen Cache aufräumen + als verfügbar registrieren
+                // Definitiv nicht in einer Gilde (Online bestätigt)
                 ClearLocalCache();
                 await RegisterAsAvailableAsync();
             }
+            // else: Offline → lokalen Cache beibehalten
         }
         catch
         {
@@ -82,6 +97,50 @@ public sealed class GuildService : IGuildService
         }
 
         GuildUpdated?.Invoke();
+    }
+
+    /// <summary>
+    /// Migriert Spieler-Daten von alter Firebase-UID zu stabiler PlayerId.
+    /// Einmalig beim ersten Start nach dem Update.
+    /// </summary>
+    private async Task MigrateFromUidToPlayerIdAsync(string playerId)
+    {
+        var firebaseUid = _firebaseService.Uid;
+        if (string.IsNullOrEmpty(firebaseUid) || firebaseUid == playerId) return;
+
+        // Schon unter neuer PlayerId vorhanden? → bereits migriert
+        var existingGuild = await _firebaseService.GetAsync<string>($"player_guilds/{playerId}");
+        if (!string.IsNullOrEmpty(existingGuild)) return;
+
+        // Alte Daten unter Firebase-UID vorhanden?
+        var oldGuildId = await _firebaseService.GetAsync<string>($"player_guilds/{firebaseUid}");
+        if (string.IsNullOrEmpty(oldGuildId)) return;
+
+        // Gilden-Zuordnung migrieren
+        await _firebaseService.SetAsync($"player_guilds/{playerId}", oldGuildId);
+
+        // Mitglieds-Eintrag migrieren
+        var memberData = await _firebaseService.GetAsync<FirebaseGuildMember>(
+            $"guild_members/{oldGuildId}/{firebaseUid}");
+        if (memberData != null)
+        {
+            await _firebaseService.SetAsync($"guild_members/{oldGuildId}/{playerId}", memberData);
+            await _firebaseService.DeleteAsync($"guild_members/{oldGuildId}/{firebaseUid}");
+        }
+
+        // Einladungen migrieren
+        var invites = await _firebaseService.GetAsync<Dictionary<string, GuildInvitation>>(
+            $"player_invites/{firebaseUid}");
+        if (invites != null)
+        {
+            foreach (var (guildId, invite) in invites)
+                await _firebaseService.SetAsync($"player_invites/{playerId}/{guildId}", invite);
+            await _firebaseService.DeleteAsync($"player_invites/{firebaseUid}");
+        }
+
+        // Alte Einträge aufräumen
+        await _firebaseService.DeleteAsync($"player_guilds/{firebaseUid}");
+        await _firebaseService.DeleteAsync($"available_players/{firebaseUid}");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -141,7 +200,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid) || string.IsNullOrWhiteSpace(name)) return false;
 
             // Schon in einer Gilde?
@@ -212,7 +271,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
             var state = _gameStateService.State;
@@ -268,7 +327,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
             var state = _gameStateService.State;
@@ -330,7 +389,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
             var state = _gameStateService.State;
@@ -383,7 +442,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return null;
 
             var state = _gameStateService.State;
@@ -396,10 +455,13 @@ public sealed class GuildService : IGuildService
             var guildData = await _firebaseService.GetAsync<FirebaseGuildData>($"guilds/{guildId}");
             if (guildData == null)
             {
-                // Gilde existiert nicht mehr
-                ClearLocalCache();
-                await _firebaseService.DeleteAsync($"player_guilds/{uid}");
-                GuildUpdated?.Invoke();
+                if (_firebaseService.IsOnline)
+                {
+                    // Gilde existiert definitiv nicht mehr (Online bestätigt)
+                    ClearLocalCache();
+                    await _firebaseService.DeleteAsync($"player_guilds/{uid}");
+                    GuildUpdated?.Invoke();
+                }
                 return null;
             }
 
@@ -472,6 +534,33 @@ public sealed class GuildService : IGuildService
     {
         PlayerName = name.Trim();
         _preferences.Set(PrefKeyPlayerName, PlayerName);
+
+        // GameState synchron halten (für Chat, Friends, Gifts)
+        _gameStateService.State.PlayerName = PlayerName;
+        _gameStateService.MarkDirty();
+
+        // Firebase-Member-Eintrag asynchron aktualisieren
+        _ = UpdatePlayerNameInFirebaseAsync();
+    }
+
+    private async Task UpdatePlayerNameInFirebaseAsync()
+    {
+        try
+        {
+            var playerId = _firebaseService.PlayerId;
+            if (string.IsNullOrEmpty(playerId)) return;
+
+            var membership = _gameStateService.State.GuildMembership;
+            if (membership == null) return;
+
+            await _firebaseService.UpdateAsync(
+                $"guild_members/{membership.GuildId}/{playerId}",
+                new Dictionary<string, object> { ["name"] = PlayerName ?? "Spieler" });
+        }
+        catch
+        {
+            // Fire-and-forget: Nächster Refresh aktualisiert den Namen
+        }
     }
 
     /// <summary>
@@ -497,7 +586,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return null;
 
             var membership = _gameStateService.State.GuildMembership;
@@ -544,7 +633,7 @@ public sealed class GuildService : IGuildService
             if (string.IsNullOrWhiteSpace(code) || code.Length != 6)
                 return false;
 
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
             // Code→GuildId Lookup
@@ -574,7 +663,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return [];
 
             var playersRaw = await _firebaseService.GetAsync<Dictionary<string, AvailablePlayerInfo>>(
@@ -614,7 +703,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
             var state = _gameStateService.State;
@@ -640,7 +729,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
             await _firebaseService.DeleteAsync($"available_players/{uid}");
@@ -668,7 +757,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
 
             var membership = _gameStateService.State.GuildMembership;
@@ -714,7 +803,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return [];
 
             await _firebaseService.EnsureAuthenticatedAsync();
@@ -743,7 +832,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
             // Gilde beitreten
@@ -764,7 +853,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
             await _firebaseService.DeleteAsync($"player_invites/{uid}/{guildId}");
@@ -784,7 +873,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
 
             var membership = _gameStateService.State.GuildMembership;
@@ -813,7 +902,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
 
             var membership = _gameStateService.State.GuildMembership;
@@ -842,7 +931,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
             if (uid == targetUid) return false; // Sich selbst kann man nicht kicken
 
@@ -888,7 +977,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid) || string.IsNullOrEmpty(targetUid)) return false;
             if (uid == targetUid) return false; // Keine Übertragung an sich selbst
 
@@ -926,7 +1015,7 @@ public sealed class GuildService : IGuildService
     {
         try
         {
-            var uid = _firebaseService.Uid;
+            var uid = _firebaseService.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
             var membership = _gameStateService.State.GuildMembership;
@@ -1012,7 +1101,7 @@ public sealed class GuildService : IGuildService
         await _firebaseService.UpdateAsync($"guilds/{guildId}", updates);
 
         // Eigenen Beitrag zurücksetzen (Firebase-Rules erlauben nur Schreibzugriff auf eigenen Eintrag)
-        var uid = _firebaseService.Uid;
+        var uid = _firebaseService.PlayerId;
         if (!string.IsNullOrEmpty(uid))
         {
             await _firebaseService.UpdateAsync($"guild_members/{guildId}/{uid}", new Dictionary<string, object>

@@ -97,7 +97,7 @@ public sealed class FriendService : IFriendService
     {
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid) || uid == targetUid) return;
 
             // Prüfe ob schon Freund
@@ -128,7 +128,7 @@ public sealed class FriendService : IFriendService
 
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return result;
 
             var json = await _firebase.QueryAsync($"friend_requests/{uid}", "");
@@ -160,7 +160,7 @@ public sealed class FriendService : IFriendService
     {
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
             // Anfrage lesen für Name/Level
@@ -204,7 +204,7 @@ public sealed class FriendService : IFriendService
     {
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
             await _firebase.DeleteAsync($"friend_requests/{uid}/{fromUid}");
@@ -221,7 +221,7 @@ public sealed class FriendService : IFriendService
 
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return result;
 
             var json = await _firebase.QueryAsync($"friends/{uid}", "");
@@ -253,7 +253,7 @@ public sealed class FriendService : IFriendService
     {
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
             // Beidseitig entfernen

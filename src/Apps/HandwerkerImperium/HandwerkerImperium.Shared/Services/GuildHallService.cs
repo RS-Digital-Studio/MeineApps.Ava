@@ -196,19 +196,29 @@ public sealed class GuildHallService : IGuildHallService
             var durationHours = UpgradeDurations.GetValueOrDefault(tier, 1.0);
             var upgradeEnd = DateTime.UtcNow.AddHours(durationHours);
 
-            // Firebase ZUERST aktualisieren (bei Fehler keine Kosten verlieren)
-            state.UpgradingUntil = upgradeEnd.ToString("O");
-            if (string.IsNullOrEmpty(state.UnlockedAt))
-                state.UnlockedAt = DateTime.UtcNow.ToString("O");
-
-            await _firebase.SetAsync($"guild_hall/{guildId}/buildings/{stateKey}", state);
-
-            // Kosten erst NACH erfolgreichem Firebase-Write abziehen
+            // Kosten VOR Firebase-Write abziehen (bei Firebase-Fehler zurückgeben)
             _gameStateService.TrySpendGoldenScrews(cost.GoldenScrews);
             if (!_gameStateService.TrySpendMoney(cost.GuildMoney))
             {
                 // Rollback: Goldschrauben zurückgeben
                 _gameStateService.AddGoldenScrews(cost.GoldenScrews);
+                return false;
+            }
+
+            // Firebase aktualisieren
+            state.UpgradingUntil = upgradeEnd.ToString("O");
+            if (string.IsNullOrEmpty(state.UnlockedAt))
+                state.UnlockedAt = DateTime.UtcNow.ToString("O");
+
+            try
+            {
+                await _firebase.SetAsync($"guild_hall/{guildId}/buildings/{stateKey}", state);
+            }
+            catch
+            {
+                // Firebase-Fehler: Kosten zurückgeben
+                _gameStateService.AddGoldenScrews(cost.GoldenScrews);
+                _gameStateService.AddMoney(cost.GuildMoney);
                 return false;
             }
 

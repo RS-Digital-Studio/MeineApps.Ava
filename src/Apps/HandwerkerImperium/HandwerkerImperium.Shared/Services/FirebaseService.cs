@@ -22,6 +22,7 @@ public sealed class FirebaseService : IFirebaseService
 
     private const string PrefKeyUid = "firebase_uid";
     private const string PrefKeyRefreshToken = "firebase_refresh_token";
+    private const string PrefKeyPlayerId = "player_id";
 
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan TokenLifetime = TimeSpan.FromMinutes(55); // 5min vor Ablauf refreshen
@@ -31,17 +32,48 @@ public sealed class FirebaseService : IFirebaseService
     private readonly SemaphoreSlim _authLock = new(1, 1);
 
     private string? _uid;
+    private string? _playerId;
     private string? _idToken;
     private string? _refreshToken;
     private DateTime _tokenExpiry = DateTime.MinValue;
 
     public string? Uid => _uid;
+    public string? PlayerId => _playerId;
     public bool IsOnline { get; private set; }
 
     public FirebaseService(IPreferencesService preferences)
     {
         _preferences = preferences;
         _httpClient = new HttpClient { Timeout = RequestTimeout };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PLAYER ID (stabile Identität, überlebt Firebase-Account-Wechsel)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    public void InitializePlayerId(string? gameStateBackup)
+    {
+        if (!string.IsNullOrEmpty(_playerId)) return;
+
+        // 1. Aus Preferences laden
+        var saved = _preferences.Get<string?>(PrefKeyPlayerId, null);
+        if (!string.IsNullOrEmpty(saved))
+        {
+            _playerId = saved;
+            return;
+        }
+
+        // 2. Aus GameState-Backup wiederherstellen
+        if (!string.IsNullOrEmpty(gameStateBackup))
+        {
+            _playerId = gameStateBackup;
+            _preferences.Set(PrefKeyPlayerId, _playerId);
+            return;
+        }
+
+        // 3. Neue GUID generieren (Erststart)
+        _playerId = Guid.NewGuid().ToString("N");
+        _preferences.Set(PrefKeyPlayerId, _playerId);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -66,13 +98,32 @@ public sealed class FirebaseService : IFirebaseService
                 _uid = savedUid;
                 _refreshToken = savedRefreshToken;
 
-                // Token refreshen
+                // Token refreshen (mit Retry bei Netzwerk-Problemen)
                 if (await TryRefreshTokenAsync())
+                {
+                    // auth_to_player Mapping aktualisieren (fire-and-forget)
+                    _ = SyncAuthToPlayerMappingAsync();
                     return;
+                }
+
+                await Task.Delay(500);
+                if (await TryRefreshTokenAsync())
+                {
+                    _ = SyncAuthToPlayerMappingAsync();
+                    return;
+                }
+
+                // Refresh endgültig fehlgeschlagen → UID beibehalten, offline bleiben.
+                // Keinen neuen anonymen Account erstellen (würde UID ändern → Gilde verloren)
+                IsOnline = false;
+                throw new InvalidOperationException("Firebase Token-Refresh fehlgeschlagen");
             }
 
-            // Neuen anonymen Account erstellen
+            // Erster Start ohne gespeicherten Account → neuen anonymen Account erstellen
             await SignUpAnonymouslyAsync();
+
+            // auth_to_player Mapping schreiben (fire-and-forget)
+            _ = SyncAuthToPlayerMappingAsync();
         }
         finally
         {
@@ -128,7 +179,8 @@ public sealed class FirebaseService : IFirebaseService
             _tokenExpiry = DateTime.UtcNow.Add(TokenLifetime);
             IsOnline = true;
 
-            // Neuen Refresh-Token speichern
+            // Credentials speichern (UID + Refresh-Token)
+            _preferences.Set(PrefKeyUid, _uid);
             _preferences.Set(PrefKeyRefreshToken, _refreshToken);
 
             return true;
@@ -137,6 +189,32 @@ public sealed class FirebaseService : IFirebaseService
         {
             System.Diagnostics.Debug.WriteLine($"Fehler in TryRefreshTokenAsync: {ex.Message}");
             return false;
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // AUTH-TO-PLAYER MAPPING
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Schreibt das Mapping auth.uid → PlayerId in Firebase.
+    /// Security Rules nutzen dieses Mapping um PlayerId-basierte Pfade zu autorisieren.
+    /// </summary>
+    public async Task SyncAuthToPlayerMappingAsync()
+    {
+        if (string.IsNullOrEmpty(_uid) || string.IsNullOrEmpty(_playerId) || string.IsNullOrEmpty(_idToken))
+            return;
+
+        try
+        {
+            var url = $"{DatabaseUrl}/auth_to_player/{_uid}.json?auth={_idToken}";
+            var json = JsonSerializer.Serialize(_playerId);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            await _httpClient.PutAsync(url, content);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Fehler in SyncAuthToPlayerMappingAsync: {ex.Message}");
         }
     }
 

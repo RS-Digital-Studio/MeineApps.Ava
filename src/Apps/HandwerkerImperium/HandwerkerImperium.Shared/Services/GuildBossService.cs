@@ -81,7 +81,7 @@ public sealed class GuildBossService : IGuildBossService
             var currentHp = Math.Max(0, boss.BossHp - totalDamage);
 
             // Eigenen Beitrag laden
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             GuildBossDamage? ownDamage = null;
             if (!string.IsNullOrEmpty(uid))
                 ownDamage = await _firebase.GetAsync<GuildBossDamage>(
@@ -141,7 +141,7 @@ public sealed class GuildBossService : IGuildBossService
         if (membership == null || string.IsNullOrEmpty(membership.GuildId))
             return;
 
-        var uid = _firebase.Uid;
+        var uid = _firebase.PlayerId;
         if (string.IsNullOrEmpty(uid))
             return;
 
@@ -438,7 +438,7 @@ public sealed class GuildBossService : IGuildBossService
     /// </summary>
     private async Task DistributeBossRewardsAsync(string guildId)
     {
-        var uid = _firebase.Uid;
+        var uid = _firebase.PlayerId;
         if (string.IsNullOrEmpty(uid)) return;
 
         // Duplikat-Schutz: Nur einmal pro Woche belohnen

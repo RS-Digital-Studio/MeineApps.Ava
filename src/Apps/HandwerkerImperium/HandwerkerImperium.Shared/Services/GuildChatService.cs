@@ -39,7 +39,7 @@ public sealed class GuildChatService : IGuildChatService
             if (!CanSendMessage) return false;
             if (string.IsNullOrWhiteSpace(text)) return false;
 
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return false;
 
             // Text bereinigen und kürzen
@@ -76,7 +76,7 @@ public sealed class GuildChatService : IGuildChatService
 
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return result;
 
             // Letzte 50 Nachrichten laden (orderBy + limitToLast)

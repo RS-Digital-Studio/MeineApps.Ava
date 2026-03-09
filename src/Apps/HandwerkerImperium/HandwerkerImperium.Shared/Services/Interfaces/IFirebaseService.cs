@@ -6,11 +6,20 @@ namespace HandwerkerImperium.Services.Interfaces;
 /// </summary>
 public interface IFirebaseService
 {
-    /// <summary>Firebase User-ID (nach Authentifizierung).</summary>
+    /// <summary>Firebase User-ID (nur für Authentifizierung, NICHT als Spieler-Identität verwenden).</summary>
     string? Uid { get; }
+
+    /// <summary>Stabile Spieler-ID (GUID), überlebt Firebase-Account-Wechsel. Für alle Daten-Pfade verwenden.</summary>
+    string? PlayerId { get; }
 
     /// <summary>Ob der Service online erreichbar ist.</summary>
     bool IsOnline { get; }
+
+    /// <summary>
+    /// Initialisiert die stabile PlayerId aus Preferences oder GameState-Backup.
+    /// Generiert neue GUID falls keine vorhanden.
+    /// </summary>
+    void InitializePlayerId(string? gameStateBackup);
 
     /// <summary>Stellt sicher dass der User authentifiziert ist (Anonymous Auth).</summary>
     Task EnsureAuthenticatedAsync();

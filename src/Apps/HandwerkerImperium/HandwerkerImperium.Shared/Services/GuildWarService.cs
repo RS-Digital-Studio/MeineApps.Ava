@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using HandwerkerImperium.Models.Firebase;
 using HandwerkerImperium.Services.Interfaces;
+using MeineApps.Core.Ava.Services;
 
 namespace HandwerkerImperium.Services;
 
@@ -15,7 +16,10 @@ public sealed class GuildWarService : IGuildWarService
     private readonly IFirebaseService _firebase;
     private readonly IGameStateService _gameStateService;
     private readonly ISaveGameService _saveGameService;
+    private readonly IPreferencesService _preferences;
     private readonly SemaphoreSlim _lock = new(1, 1);
+
+    private const string PrefKeyWarRewardPrefix = "gw_reward_";
 
     // Punkte-Quellen
     public const long PointsForOrder = 100;
@@ -36,11 +40,13 @@ public sealed class GuildWarService : IGuildWarService
     public GuildWarService(
         IFirebaseService firebase,
         IGameStateService gameStateService,
-        ISaveGameService saveGameService)
+        ISaveGameService saveGameService,
+        IPreferencesService preferences)
     {
         _firebase = firebase;
         _gameStateService = gameStateService;
         _saveGameService = saveGameService;
+        _preferences = preferences;
     }
 
     public async Task<GuildWar?> GetOrCreateActiveWarAsync()
@@ -101,7 +107,7 @@ public sealed class GuildWarService : IGuildWarService
 
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid)) return;
 
             // Eigenen Score aktualisieren
@@ -116,21 +122,26 @@ public sealed class GuildWarService : IGuildWarService
                     UpdatedAt = DateTime.UtcNow.ToString("O")
                 });
 
-            // Gilden-Gesamtscore aktualisieren
-            if (_cachedWar != null)
+            // Gilden-Gesamtscore aktualisieren (aktuellen Wert aus Firebase lesen, nicht cached)
+            if (!string.IsNullOrEmpty(_activeWarId))
             {
-                var isGuildA = _cachedWar.GuildAId == membership.GuildId;
-                var scoreField = isGuildA ? "scoreA" : "scoreB";
-                var currentTotal = isGuildA ? _cachedWar.ScoreA : _cachedWar.ScoreB;
+                var freshWar = await _firebase.GetAsync<GuildWar>($"guild_wars/{_activeWarId}");
+                if (freshWar != null)
+                {
+                    var isGuildA = freshWar.GuildAId == membership.GuildId;
+                    var scoreField = isGuildA ? "scoreA" : "scoreB";
+                    var currentTotal = isGuildA ? freshWar.ScoreA : freshWar.ScoreB;
 
-                await _firebase.UpdateAsync($"guild_wars/{_activeWarId}",
-                    new Dictionary<string, object> { [scoreField] = currentTotal + points });
+                    await _firebase.UpdateAsync($"guild_wars/{_activeWarId}",
+                        new Dictionary<string, object> { [scoreField] = currentTotal + points });
 
-                // Cache aktualisieren
-                if (isGuildA)
-                    _cachedWar.ScoreA += points;
-                else
-                    _cachedWar.ScoreB += points;
+                    // Cache aktualisieren
+                    _cachedWar = freshWar;
+                    if (isGuildA)
+                        _cachedWar.ScoreA = currentTotal + points;
+                    else
+                        _cachedWar.ScoreB = currentTotal + points;
+                }
             }
         }
         catch (Exception ex)
@@ -153,7 +164,7 @@ public sealed class GuildWarService : IGuildWarService
         long ownContribution = 0;
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (!string.IsNullOrEmpty(uid) && !string.IsNullOrEmpty(_activeWarId))
             {
                 var score = await _firebase.GetAsync<GuildWarScore>(
@@ -182,6 +193,16 @@ public sealed class GuildWarService : IGuildWarService
 
     public async Task CheckAndFinalizeWarAsync()
     {
+        // War-ID bestimmen (nach Restart kann _activeWarId null sein)
+        if (string.IsNullOrEmpty(_activeWarId))
+            _activeWarId = GetCurrentWarId();
+
+        // War aus Firebase laden falls Cache leer (z.B. nach App-Neustart)
+        if (_cachedWar == null)
+        {
+            _cachedWar = await _firebase.GetAsync<GuildWar>($"guild_wars/{_activeWarId}");
+        }
+
         if (_cachedWar == null || _cachedWar.Status != "active")
             return;
 
@@ -189,6 +210,10 @@ public sealed class GuildWarService : IGuildWarService
             DateTimeStyles.RoundtripKind, out var ed) ? ed : DateTime.MaxValue;
 
         if (DateTime.UtcNow < endDate) return;
+
+        // Duplikat-Schutz: Pro War nur einmal belohnen
+        var rewardKey = $"{PrefKeyWarRewardPrefix}{_activeWarId}";
+        if (_preferences.Get(rewardKey, false)) return;
 
         try
         {
@@ -208,6 +233,7 @@ public sealed class GuildWarService : IGuildWarService
 
             var reward = won ? WinnerReward : LoserReward;
             _gameStateService.AddGoldenScrews(reward);
+            _preferences.Set(rewardKey, true);
             await _saveGameService.SaveAsync();
         }
         catch (Exception ex)

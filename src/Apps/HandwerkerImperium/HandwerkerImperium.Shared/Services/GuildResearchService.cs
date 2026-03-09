@@ -181,6 +181,10 @@ public sealed class GuildResearchService : IGuildResearchService
             var actualAmount = Math.Min(amount, remaining);
             if (actualAmount <= 0) return false;
 
+            // Geld abziehen VOR Firebase-Update
+            if (!_gameStateService.TrySpendMoney(actualAmount))
+                return false;
+
             // Fortschritt erhöhen (in-memory)
             researchState.Progress += actualAmount;
 
@@ -191,11 +195,8 @@ public sealed class GuildResearchService : IGuildResearchService
                 // completed wird NICHT gesetzt - erst wenn Timer abläuft
             }
 
-            // Firebase ZUERST aktualisieren - Geld erst bei Erfolg abziehen
+            // Firebase aktualisieren
             await _firebaseService.SetAsync(path, researchState);
-
-            // Firebase-Write erfolgreich → Geld lokal abziehen
-            _gameStateService.AddMoney(-actualAmount);
 
             // Effekte neu berechnen
             await RefreshEffectsCoreAsync(guildId);

@@ -62,7 +62,7 @@ public sealed class LeaderboardService : ILeaderboardService
 
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid))
                 return;
 
@@ -106,7 +106,7 @@ public sealed class LeaderboardService : ILeaderboardService
 
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
 
             // Firebase REST API: orderBy + limitToLast fuer Top-Eintraege
             var queryParams = "orderBy=\"score\"&limitToLast=50";
@@ -156,7 +156,7 @@ public sealed class LeaderboardService : ILeaderboardService
     {
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid))
                 return null;
 
@@ -200,7 +200,7 @@ public sealed class LeaderboardService : ILeaderboardService
     {
         try
         {
-            var uid = _firebase.Uid;
+            var uid = _firebase.PlayerId;
             if (string.IsNullOrEmpty(uid))
                 return;
 

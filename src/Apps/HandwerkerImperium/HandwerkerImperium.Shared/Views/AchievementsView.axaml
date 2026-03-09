@@ -8,7 +8,7 @@
              x:Class="HandwerkerImperium.Views.AchievementsView"
              x:DataType="vm:AchievementsViewModel">
 
-  <Grid RowDefinitions="Auto,*"
+  <Grid RowDefinitions="Auto,Auto,*"
         AutomationProperties.AutomationId="Achievements_Grid_Root">
 
     <!-- ================================================================= -->
@@ -71,32 +71,30 @@
     <!-- ================================================================= -->
     <!-- CONTENT                                                           -->
     <!-- ================================================================= -->
-    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-      <StackPanel Spacing="16" Margin="16">
 
-        <!-- Overall Progress -->
-        <Border Classes="CardElevated" Padding="16"
-                AutomationProperties.AutomationId="Achievements_Border_OverallProgress">
-          <StackPanel Spacing="8">
-            <TextBlock Text="{loc:Translate AchievementProgress}"
-                       AutomationProperties.AutomationId="Achievements_Txt_OverallProgressTitle"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="{StaticResource CraftPrimaryLightBrush}" />
-            <labs:SKCanvasView Height="12"
-                                 AutomationProperties.AutomationId="Achievements_Canvas_OverallProgress"
-                                 PaintSurface="OnPaintOverallProgress" />
-            <TextBlock Text="{Binding AchievementsCompletedText}"
-                       AutomationProperties.AutomationId="Achievements_Txt_CompletedCount"
-                       FontSize="12"
-                       Foreground="{DynamicResource TextSecondaryBrush}"
-                       HorizontalAlignment="Center" />
-          </StackPanel>
-        </Border>
+    <!-- Overall Progress -->
+    <Border Grid.Row="1" Classes="CardElevated" Padding="16" Margin="16,16,16,0"
+            AutomationProperties.AutomationId="Achievements_Border_OverallProgress">
+      <StackPanel Spacing="8">
+        <TextBlock Text="{loc:Translate AchievementProgress}"
+                   AutomationProperties.AutomationId="Achievements_Txt_OverallProgressTitle"
+                   FontSize="18" FontWeight="Bold"
+                   Foreground="{StaticResource CraftPrimaryLightBrush}" />
+        <labs:SKCanvasView Height="12"
+                             AutomationProperties.AutomationId="Achievements_Canvas_OverallProgress"
+                             PaintSurface="OnPaintOverallProgress" />
+        <TextBlock Text="{Binding AchievementsCompletedText}"
+                   AutomationProperties.AutomationId="Achievements_Txt_CompletedCount"
+                   FontSize="12"
+                   Foreground="{DynamicResource TextSecondaryBrush}"
+                   HorizontalAlignment="Center" />
+      </StackPanel>
+    </Border>
 
-        <!-- Achievement List (virtualisiert) -->
-        <ListBox ItemsSource="{Binding Achievements}" Margin="0,0,0,60"
-                 AutomationProperties.AutomationId="Achievements_Items_List"
-                 Background="Transparent" BorderThickness="0">
+    <!-- Achievement List (virtualisiert) - ListBox hat eigenen internen ScrollViewer -->
+    <ListBox Grid.Row="2" ItemsSource="{Binding Achievements}" Margin="16,8,16,60"
+             AutomationProperties.AutomationId="Achievements_Items_List"
+             Background="Transparent" BorderThickness="0">
           <ListBox.ItemsPanel>
             <ItemsPanelTemplate>
               <VirtualizingStackPanel />
@@ -212,10 +210,7 @@
               </Border>
             </DataTemplate>
           </ListBox.ItemTemplate>
-        </ListBox>
-
-      </StackPanel>
-    </ScrollViewer>
+    </ListBox>
 
   </Grid>
 

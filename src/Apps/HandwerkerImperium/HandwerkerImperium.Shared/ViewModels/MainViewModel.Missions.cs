@@ -115,6 +115,7 @@ public sealed partial class MainViewModel
         IsWelcomeOfferVisible = false;
         _audioService.PlaySoundAsync(GameSound.Perfect).FireAndForget();
         CelebrationRequested?.Invoke();
+        CheckDeferredDialogs();
     }
 
     [RelayCommand]
@@ -122,6 +123,7 @@ public sealed partial class MainViewModel
     {
         _welcomeBackService.DismissOffer();
         IsWelcomeOfferVisible = false;
+        CheckDeferredDialogs();
     }
 
     private void OnWelcomeOfferGenerated()
@@ -280,21 +282,22 @@ public sealed partial class MainViewModel
 
     /// <summary>
     /// Gibt die lokalisierte Freischaltbedingung für ein Meisterwerkzeug zurück.
+    /// Werte müssen mit MasterTool.CheckEligibility() übereinstimmen!
     /// </summary>
     private string GetMasterToolCondition(string toolId)
     {
         return toolId switch
         {
-            "mt_golden_hammer" => $"Workshop Lv. 25",
-            "mt_diamond_saw" => $"Workshop Lv. 50",
-            "mt_titanium_pliers" => $"50 {_localizationService.GetString("Orders") ?? "Aufträge"}",
-            "mt_brass_level" => $"100 Mini-Games",
-            "mt_silver_wrench" => $"Workshop Lv. 100",
-            "mt_jade_brush" => $"25 {_localizationService.GetString("PerfectRating") ?? "Perfect"}",
+            "mt_golden_hammer" => $"Workshop Lv. 75",
+            "mt_diamond_saw" => $"Workshop Lv. 150",
+            "mt_titanium_pliers" => $"150 {_localizationService.GetString("Orders") ?? "Aufträge"}",
+            "mt_brass_level" => $"300 Mini-Games",
+            "mt_silver_wrench" => $"Workshop Lv. 300",
+            "mt_jade_brush" => $"75 {_localizationService.GetString("PerfectRating") ?? "Perfect"}",
             "mt_crystal_chisel" => $"1x {_localizationService.GetString("PrestigeBronze") ?? "Bronze-Prestige"}",
-            "mt_obsidian_drill" => $"Workshop Lv. 250",
+            "mt_obsidian_drill" => $"Workshop Lv. 750",
             "mt_ruby_blade" => $"1x {_localizationService.GetString("PrestigeSilver") ?? "Silber-Prestige"}",
-            "mt_emerald_toolbox" => $"Workshop Lv. 500",
+            "mt_emerald_toolbox" => $"Workshop Lv. 1500",
             "mt_dragon_anvil" => $"1x {_localizationService.GetString("PrestigeGold") ?? "Gold-Prestige"}",
             "mt_master_crown" => $"{_localizationService.GetString("AllToolsCollected") ?? "Alle anderen Werkzeuge"}",
             _ => "?"

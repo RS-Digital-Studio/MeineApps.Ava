@@ -242,6 +242,8 @@ public sealed class GameStateService : IGameStateService
         int oldLevel;
         int newLevel;
         decimal cost;
+        decimal moneyBefore;
+        decimal moneyAfter;
 
         lock (_stateLock)
         {
@@ -253,8 +255,10 @@ public sealed class GameStateService : IGameStateService
             if (_state.Money < cost)
                 return false;
 
+            moneyBefore = _state.Money;
             _state.Money -= cost;
             _state.TotalMoneySpent += cost;
+            moneyAfter = _state.Money;
 
             oldLevel = workshop.Level;
             workshop.Level++;
@@ -262,7 +266,7 @@ public sealed class GameStateService : IGameStateService
             _state.InvalidateIncomeCache();
         }
 
-        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(_state.Money + cost, _state.Money));
+        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, moneyAfter));
         WorkshopUpgraded?.Invoke(this, new WorkshopUpgradedEventArgs(type, oldLevel, newLevel, cost));
 
         // XP für Workshop-Upgrade vergeben (5 + Level/10, skaliert mit Fortschritt)
@@ -285,6 +289,7 @@ public sealed class GameStateService : IGameStateService
         int newLevel = 0;
         decimal totalCost = 0;
         decimal moneyBefore = 0;
+        decimal moneyAfter = 0;
 
         lock (_stateLock)
         {
@@ -312,12 +317,13 @@ public sealed class GameStateService : IGameStateService
             }
 
             newLevel = workshop.Level;
+            moneyAfter = _state.Money;
             _state.InvalidateIncomeCache();
         }
 
         if (upgraded > 0)
         {
-            MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, _state.Money));
+            MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, moneyAfter));
             WorkshopUpgraded?.Invoke(this, new WorkshopUpgradedEventArgs(type, oldLevel, newLevel, totalCost));
             AddXp(totalXp);
         }
@@ -330,6 +336,8 @@ public sealed class GameStateService : IGameStateService
         Worker worker;
         decimal cost;
         int workerCount;
+        decimal moneyBefore;
+        decimal moneyAfter;
 
         lock (_stateLock)
         {
@@ -341,8 +349,10 @@ public sealed class GameStateService : IGameStateService
             if (_state.Money < cost)
                 return false;
 
+            moneyBefore = _state.Money;
             _state.Money -= cost;
             _state.TotalMoneySpent += cost;
+            moneyAfter = _state.Money;
 
             worker = Worker.CreateRandom();
             workshop.Workers.Add(worker);
@@ -350,7 +360,7 @@ public sealed class GameStateService : IGameStateService
             _state.InvalidateIncomeCache();
         }
 
-        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(_state.Money + cost, _state.Money));
+        MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, moneyAfter));
         WorkerHired?.Invoke(this, new WorkerHiredEventArgs(type, worker, cost, workerCount));
 
         return true;
@@ -375,6 +385,8 @@ public sealed class GameStateService : IGameStateService
     public bool TryPurchaseWorkshop(WorkshopType type, decimal costOverride = -1)
     {
         decimal cost;
+        decimal moneyBefore;
+        decimal moneyAfter;
         lock (_stateLock)
         {
             if (!CanPurchaseWorkshop(type)) return false;
@@ -382,8 +394,10 @@ public sealed class GameStateService : IGameStateService
             cost = costOverride >= 0 ? costOverride : type.GetUnlockCost();
             if (_state.Money < cost) return false;
 
+            moneyBefore = _state.Money;
             _state.Money -= cost;
             _state.TotalMoneySpent += cost;
+            moneyAfter = _state.Money;
             _state.UnlockedWorkshopTypes.Add(type);
 
             var workshop = _state.GetOrCreateWorkshop(type);
@@ -392,7 +406,7 @@ public sealed class GameStateService : IGameStateService
         }
 
         if (cost > 0)
-            MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(_state.Money + cost, _state.Money));
+            MoneyChanged?.Invoke(this, new MoneyChangedEventArgs(moneyBefore, moneyAfter));
 
         // XP-Bonus für Workshop-Freischaltung
         AddXp(50);

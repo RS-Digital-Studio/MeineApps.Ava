@@ -503,8 +503,8 @@ public sealed class GameLoopService : IGameLoopService, IDisposable
         if (_tickCount % GuildHallCheckIntervalTicks == 40 && _guildHallService != null)
             _guildHallService.CheckUpgradeCompletionAsync().FireAndForget();
 
-        // 9s. Gilden-Achievements prüfen (alle 5 Minuten, Offset 200)
-        if (_tickCount % GuildAchievementCheckIntervalTicks == 200 && _guildAchievementService != null)
+        // 9s. Gilden-Achievements prüfen (alle 5 Minuten, Offset 250)
+        if (_tickCount % GuildAchievementCheckIntervalTicks == 250 && _guildAchievementService != null)
             _guildAchievementService.CheckAllAchievementsAsync().FireAndForget();
 
         // 9t. War-Saison Phasenwechsel + Saisonende prüfen (alle 5 Minuten, Offset 260)

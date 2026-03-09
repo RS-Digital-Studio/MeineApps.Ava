@@ -35,6 +35,11 @@ public sealed class GameJuiceEngine : IDisposable
     private float _vignetteTarget;
     private const float VignetteLerpSpeed = 4f;
 
+    // Vignette-Shader-Cache (vermeidet 25 Shader-Allokationen/s)
+    private SKShader? _cachedVignetteShader;
+    private float _cachedVignetteRadius;
+    private byte _cachedVignetteAlpha;
+
     // Gecachte Paints
     private readonly SKPaint _particlePaint = new() { IsAntialias = true };
     private readonly SKPaint _glowPaint = new() { IsAntialias = true };
@@ -537,13 +542,22 @@ public sealed class GameJuiceEngine : IDisposable
 
         byte maxAlpha = (byte)(_vignetteIntensity * 180);
 
-        using var shader = SKShader.CreateRadialGradient(
-            new SKPoint(cx, cy), radius,
-            new[] { SKColors.Transparent, new SKColor(0, 0, 0, maxAlpha) },
-            new[] { 0.4f, 1.0f },
-            SKShaderTileMode.Clamp);
+        // Shader nur neu erstellen wenn sich radius oder alpha geändert haben
+        if (_cachedVignetteShader == null ||
+            Math.Abs(_cachedVignetteRadius - radius) > 0.5f ||
+            _cachedVignetteAlpha != maxAlpha)
+        {
+            _cachedVignetteShader?.Dispose();
+            _cachedVignetteShader = SKShader.CreateRadialGradient(
+                new SKPoint(cx, cy), radius,
+                new[] { SKColors.Transparent, new SKColor(0, 0, 0, maxAlpha) },
+                new[] { 0.4f, 1.0f },
+                SKShaderTileMode.Clamp);
+            _cachedVignetteRadius = radius;
+            _cachedVignetteAlpha = maxAlpha;
+        }
 
-        _vignettePaint.Shader = shader;
+        _vignettePaint.Shader = _cachedVignetteShader;
         canvas.DrawRect(bounds, _vignettePaint);
         _vignettePaint.Shader = null;
     }
@@ -625,6 +639,7 @@ public sealed class GameJuiceEngine : IDisposable
         _textPaint?.Dispose();
         _overlayPaint?.Dispose();
         _vignettePaint?.Dispose();
+        _cachedVignetteShader?.Dispose();
         _ringPaint?.Dispose();
         _font?.Dispose();
         _sparklePath?.Dispose();

@@ -48,6 +48,9 @@ public sealed partial class GuildViewModel : ViewModelBase
     private readonly IGuildAchievementService _achievementService;
     private bool _isBusy;
     private DateTime _lastChatSend = DateTime.MinValue;
+    private readonly Action<string> _warSeasonNavHandler;
+    private readonly Action<string> _bossNavHandler;
+    private readonly Action<string> _hallNavHandler;
 
     // ═══════════════════════════════════════════════════════════════════════
     // EVENTS
@@ -391,10 +394,13 @@ public sealed partial class GuildViewModel : ViewModelBase
         BossViewModel = bossViewModel;
         HallViewModel = hallViewModel;
 
-        // Sub-VM Navigation-Events an GuildViewModel weiterleiten
-        WarSeasonViewModel.NavigationRequested += route => NavigationRequested?.Invoke(route);
-        BossViewModel.NavigationRequested += route => NavigationRequested?.Invoke(route);
-        HallViewModel.NavigationRequested += route => NavigationRequested?.Invoke(route);
+        // Sub-VM Navigation-Events an GuildViewModel weiterleiten (benannte Felder für Unsubscribe)
+        _warSeasonNavHandler = route => NavigationRequested?.Invoke(route);
+        _bossNavHandler = route => NavigationRequested?.Invoke(route);
+        _hallNavHandler = route => NavigationRequested?.Invoke(route);
+        WarSeasonViewModel.NavigationRequested += _warSeasonNavHandler;
+        BossViewModel.NavigationRequested += _bossNavHandler;
+        HallViewModel.NavigationRequested += _hallNavHandler;
 
         _guildService.GuildUpdated += OnGuildUpdated;
         _achievementService.AchievementCompleted += OnGuildAchievementCompleted;
@@ -1398,6 +1404,9 @@ public sealed partial class GuildViewModel : ViewModelBase
         _disposed = true;
         _guildService.GuildUpdated -= OnGuildUpdated;
         _achievementService.AchievementCompleted -= OnGuildAchievementCompleted;
+        WarSeasonViewModel.NavigationRequested -= _warSeasonNavHandler;
+        BossViewModel.NavigationRequested -= _bossNavHandler;
+        HallViewModel.NavigationRequested -= _hallNavHandler;
     }
 
     /// <summary>

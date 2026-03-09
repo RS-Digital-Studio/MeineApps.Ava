@@ -114,8 +114,10 @@ public class MainActivity : AvaloniaMainActivity<App>
             var purchaseService = App.Services.GetRequiredService<IPurchaseService>();
             _adMobHelper.AttachToActivity(this, AdConfig.GetBannerAdUnitId("HandwerkerImperium"), adService, purchaseService, 64);
 
-            // Rewarded Ad vorladen
-            _rewardedAdHelper!.Load(this, AdConfig.GetRewardedAdUnitId("HandwerkerImperium"));
+            // Rewarded Ad vorladen: Default = golden_screws (haeufigster Daily-Trigger)
+            _rewardedAdHelper!.Load(this, AdConfig.GetRewardedAdUnitId("HandwerkerImperium", "golden_screws"));
+            // Placement-spezifisch vorladen: offline_double (wird bei jedem App-Start mit Offline-Einnahmen getriggert)
+            _rewardedAdHelper!.PreloadPlacement(this, AdConfig.GetRewardedAdUnitId("HandwerkerImperium", "offline_double"), "offline_double");
 
             // GDPR Consent-Form anzeigen falls noetig (EU)
             AdMobHelper.RequestConsent(this);

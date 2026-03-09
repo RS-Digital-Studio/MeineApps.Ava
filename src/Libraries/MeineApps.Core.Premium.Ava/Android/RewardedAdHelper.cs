@@ -2,6 +2,7 @@ using Android.App;
 using Android.Gms.Ads;
 using Android.Gms.Ads.Rewarded;
 using Android.Runtime;
+using System.Collections.Concurrent;
 
 namespace MeineApps.Core.Premium.Ava.Droid;
 
@@ -24,6 +25,10 @@ public sealed class RewardedAdHelper : IDisposable
     private volatile bool _isLoading;
     private volatile bool _disposed;
     private int _retryCount;
+
+    // Placement-Pool: Placement-spezifische Pre-Loads (z.B. "offline_double", "score_double")
+    private readonly ConcurrentDictionary<string, RewardedAd?> _placementPool = new();
+    private readonly ConcurrentDictionary<string, string> _placementAdUnits = new();
 
     /// <summary>Ob eine Rewarded Ad geladen und bereit ist</summary>
     public bool IsLoaded => _rewardedAd != null;
@@ -76,7 +81,7 @@ public sealed class RewardedAdHelper : IDisposable
 
         var tcs = new TaskCompletionSource<bool>();
         var fullScreenCallback = new FullScreenCallback(tcs, this);
-        var rewardCallback = new RewardCallback(fullScreenCallback);
+        var rewardCallback = new RewardCallback(() => fullScreenCallback.Rewarded = true);
 
         Android.Util.Log.Info(Tag, "ShowAsync: Zeige vorgeladene Rewarded Ad");
         activity.RunOnUiThread(() =>
@@ -212,12 +217,109 @@ public sealed class RewardedAdHelper : IDisposable
             LoadInternal(_defaultAdUnitId);
     }
 
+    // ==================================================================================
+    // Placement-Pool: Placement-spezifische Pre-Loads
+    // ==================================================================================
+
+    /// <summary>
+    /// Laedt eine Rewarded Ad fuer ein bestimmtes Placement vorab.
+    /// Nach Ad-Anzeige wird das Placement automatisch neu geladen.
+    /// Empfehlung: max 2-3 gleichzeitige Placement-Pre-Loads (AdMob-Policy).
+    /// </summary>
+    public void PreloadPlacement(Activity activity, string adUnitId, string placementKey)
+    {
+        _activity = activity;
+        _placementAdUnits[placementKey] = adUnitId;
+        _placementPool.TryAdd(placementKey, null);
+        Android.Util.Log.Info(Tag, $"PreloadPlacement: Starte Pre-Load fuer '{placementKey}': {adUnitId}");
+        LoadPlacementInternal(adUnitId, placementKey);
+    }
+
+    /// <summary>Ob eine Placement-spezifische vorgeladene Ad bereit ist</summary>
+    public bool IsPlacementLoaded(string placementKey) =>
+        _placementPool.TryGetValue(placementKey, out var ad) && ad != null;
+
+    /// <summary>
+    /// Zeigt die vorgeladene Placement-spezifische Ad.
+    /// Nach Dismiss wird das Placement automatisch neu geladen.
+    /// </summary>
+    public Task<bool> ShowPlacementAdAsync(string placementKey)
+    {
+        var activity = _activity;
+        if (!_placementPool.TryGetValue(placementKey, out var ad) || ad == null || activity == null)
+        {
+            Android.Util.Log.Warn(Tag, $"ShowPlacementAdAsync ({placementKey}): Keine vorgeladene Ad verfuegbar");
+            return Task.FromResult(false);
+        }
+
+        // Ad aus Pool nehmen (null setzen gegen Race Conditions - doppeltes Show verhindern)
+        _placementPool[placementKey] = null;
+
+        var tcs = new TaskCompletionSource<bool>();
+        var fullScreenCallback = new PlacementFullScreenCallback(tcs, this, placementKey);
+        var rewardCallback = new RewardCallback(() => fullScreenCallback.Rewarded = true);
+
+        Android.Util.Log.Info(Tag, $"ShowPlacementAdAsync ({placementKey}): Zeige Placement-Ad");
+        activity.RunOnUiThread(() =>
+        {
+            try
+            {
+                ad.FullScreenContentCallback = fullScreenCallback;
+                ad.Show(activity, rewardCallback);
+            }
+            catch (Exception ex)
+            {
+                Android.Util.Log.Error(Tag, $"ShowPlacementAdAsync ({placementKey}) Exception: {ex.Message}");
+                tcs.TrySetResult(false);
+                // Bei Fehler: Placement neu laden
+                if (_placementAdUnits.TryGetValue(placementKey, out var adUnitId))
+                    LoadPlacementInternal(adUnitId, placementKey);
+            }
+        });
+
+        return tcs.Task;
+    }
+
+    private void LoadPlacementInternal(string adUnitId, string placementKey)
+    {
+        if (_activity == null || _disposed) return;
+        Android.Util.Log.Info(Tag, $"LoadPlacementInternal: Lade '{placementKey}': {adUnitId}");
+        _activity.RunOnUiThread(() =>
+        {
+            try
+            {
+                var adRequest = new AdRequest.Builder().Build();
+                RewardedAd.Load(_activity, adUnitId, adRequest, new PlacementLoadCallback(this, placementKey));
+            }
+            catch (Exception ex)
+            {
+                Android.Util.Log.Error(Tag, $"LoadPlacementInternal ({placementKey}) Exception: {ex.Message}");
+            }
+        });
+    }
+
+    private void OnPlacementAdLoaded(string placementKey, RewardedAd ad)
+    {
+        Android.Util.Log.Info(Tag, $"Placement Pre-Load ({placementKey}): Ad erfolgreich geladen");
+        _placementPool[placementKey] = ad;
+    }
+
+    private void OnPlacementAdDismissed(string placementKey)
+    {
+        Android.Util.Log.Info(Tag, $"Placement-Ad ({placementKey}) geschlossen, lade neu");
+        if (_placementAdUnits.TryGetValue(placementKey, out var adUnitId) && !_disposed)
+            LoadPlacementInternal(adUnitId, placementKey);
+    }
+
+    // ==================================================================================
+
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
         _rewardedAd = null;
         _activity = null;
+        _placementPool.Clear();
     }
 
     // ==================================================================================
@@ -313,7 +415,7 @@ public sealed class RewardedAdHelper : IDisposable
             }
 
             var fullScreenCallback = new FullScreenCallback(_tcs, null);
-            var rewardCallback = new RewardCallback(fullScreenCallback);
+            var rewardCallback = new RewardCallback(() => fullScreenCallback.Rewarded = true);
             _activity.RunOnUiThread(() =>
             {
                 try
@@ -371,20 +473,72 @@ public sealed class RewardedAdHelper : IDisposable
         }
     }
 
+    /// <summary>Callback fuer Placement-spezifischen Pre-Load</summary>
+    private sealed class PlacementLoadCallback : FixedRewardedAdLoadCallback
+    {
+        private readonly RewardedAdHelper _helper;
+        private readonly string _placementKey;
+
+        public PlacementLoadCallback(RewardedAdHelper helper, string key)
+        {
+            _helper = helper;
+            _placementKey = key;
+        }
+
+        public override void OnRewardedAdLoaded(RewardedAd ad) =>
+            _helper.OnPlacementAdLoaded(_placementKey, ad);
+
+        public override void OnAdFailedToLoad(LoadAdError error) =>
+            Android.Util.Log.Error(Tag, $"Placement Pre-Load ({_placementKey}) FEHLGESCHLAGEN: Code={error.Code}, Message={error.Message}");
+    }
+
+    /// <summary>FullScreen-Callback fuer Placement-spezifische Pre-Load-Ads</summary>
+    private sealed class PlacementFullScreenCallback : FullScreenContentCallback
+    {
+        private readonly TaskCompletionSource<bool> _tcs;
+        private readonly RewardedAdHelper _helper;
+        private readonly string _placementKey;
+        internal volatile bool Rewarded;
+
+        public PlacementFullScreenCallback(TaskCompletionSource<bool> tcs, RewardedAdHelper helper, string key)
+        {
+            _tcs = tcs;
+            _helper = helper;
+            _placementKey = key;
+        }
+
+        public override void OnAdShowedFullScreenContent() =>
+            Android.Util.Log.Info(Tag, $"Placement-Ad ({_placementKey}) wird angezeigt (Fullscreen)");
+
+        public override void OnAdDismissedFullScreenContent()
+        {
+            Android.Util.Log.Info(Tag, $"Placement-Ad ({_placementKey}) geschlossen, Belohnung: {Rewarded}");
+            _tcs.TrySetResult(Rewarded);
+            _helper.OnPlacementAdDismissed(_placementKey);
+        }
+
+        public override void OnAdFailedToShowFullScreenContent(AdError error)
+        {
+            Android.Util.Log.Error(Tag, $"Placement-Ad ({_placementKey}) Show FEHLGESCHLAGEN: Code={error.Code}, Message={error.Message}");
+            _tcs.TrySetResult(false);
+        }
+    }
+
     /// <summary>
     /// Separater Callback fuer Belohnung (IOnUserEarnedRewardListener).
     /// Eigene Klasse statt Dual-Inheritance auf FullScreenContentCallback.
+    /// Nutzt Action-Callback um mit FullScreenCallback UND PlacementFullScreenCallback kompatibel zu sein.
     /// </summary>
     private sealed class RewardCallback : Java.Lang.Object, IOnUserEarnedRewardListener
     {
-        private readonly FullScreenCallback _fullScreenCallback;
+        private readonly Action _onRewarded;
 
-        public RewardCallback(FullScreenCallback fullScreenCallback) => _fullScreenCallback = fullScreenCallback;
+        public RewardCallback(Action onRewarded) => _onRewarded = onRewarded;
 
         public void OnUserEarnedReward(IRewardItem reward)
         {
             Android.Util.Log.Info(Tag, $"Belohnung verdient: Type={reward.Type}, Amount={reward.Amount}");
-            _fullScreenCallback.Rewarded = true;
+            _onRewarded();
         }
     }
 }

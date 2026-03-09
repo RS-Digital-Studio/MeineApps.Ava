@@ -78,6 +78,11 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     private QuickJob? _activeQuickJob;
     private bool _quickJobMiniGamePlayed;
 
+    // Dialog-Kaskaden-Begrenzung: Verzögerte Dialoge nach Startup
+    private bool _hasDeferredDailyReward;
+    private bool _hasDeferredStory;
+    private bool _hasDeferredWelcomeHint;
+
     // Statisches Array vermeidet Allokation bei jedem RefreshWorkshops()-Aufruf
     private static readonly WorkshopType[] _workshopTypes = Enum.GetValues<WorkshopType>();
 
@@ -914,6 +919,43 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     [ObservableProperty]
     private bool _isInventGameActive;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROGRESSIVE TAB-FREISCHALTUNG
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Minimales Spieler-Level pro Tab-Index (0=Werkstatt, 1=Imperium, 2=Missionen, 3=Gilde, 4=Shop).
+    /// </summary>
+    public static readonly int[] TabUnlockLevels = [1, 5, 8, 15, 3];
+
+    /// <summary>
+    /// Gibt zurück ob der Tab bei gegebenem Index für das aktuelle Level gesperrt ist.
+    /// </summary>
+    public bool IsTabLocked(int tabIndex)
+    {
+        if (tabIndex < 0 || tabIndex >= TabUnlockLevels.Length) return false;
+        return PlayerLevel < TabUnlockLevels[tabIndex];
+    }
+
+    /// <summary>
+    /// Gibt ein gecachtes Array zurück das angibt welche Tabs gesperrt sind (für Tab-Bar-Renderer).
+    /// Cache wird nur bei Level-Änderung invalidiert (statt 25x/s neu allokiert).
+    /// </summary>
+    private bool[]? _cachedLockedTabs;
+    private int _lockedTabsCacheLevel = -1;
+
+    public bool[] GetLockedTabs()
+    {
+        if (_cachedLockedTabs != null && _lockedTabsCacheLevel == PlayerLevel)
+            return _cachedLockedTabs;
+
+        _cachedLockedTabs = new bool[5];
+        for (int i = 0; i < 5; i++)
+            _cachedLockedTabs[i] = IsTabLocked(i);
+        _lockedTabsCacheLevel = PlayerLevel;
+        return _cachedLockedTabs;
+    }
+
     /// <summary>
     /// Whether the bottom tab bar should be visible (hidden during mini-games and detail views).
     /// </summary>
@@ -1329,6 +1371,9 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
                 break;
             }
         }
+
+        // Tab-Freischaltung: Hinweis wenn ein neuer Tab verfügbar wird
+        CheckTabUnlockNotification(e.NewLevel);
 
         // Kontextuelle Hints bei Level-Meilensteinen
         if (e.NewLevel == 3)
@@ -1800,6 +1845,35 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════════════
+    // TAB-UNLOCK BENACHRICHTIGUNGEN
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Prüft ob beim neuen Level ein Tab freigeschaltet wird und zeigt einen Hinweis.
+    /// </summary>
+    private void CheckTabUnlockNotification(int newLevel)
+    {
+        string[] tabNames = [
+            _localizationService.GetString("TabWerkstatt") ?? "Workshop",
+            _localizationService.GetString("TabImperium") ?? "Imperium",
+            _localizationService.GetString("TabMissionen") ?? "Missionen",
+            _localizationService.GetString("TabGilde") ?? "Gilde",
+            _localizationService.GetString("TabShop") ?? "Shop"
+        ];
+
+        for (int i = 0; i < TabUnlockLevels.Length; i++)
+        {
+            if (TabUnlockLevels[i] == newLevel)
+            {
+                var unlockText = string.Format(
+                    _localizationService.GetString("TabUnlocked") ?? "{0} freigeschaltet!",
+                    tabNames[i]);
+                FloatingTextRequested?.Invoke(unlockText, "golden_screws");
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // HELPERS
     // ═══════════════════════════════════════════════════════════════════════
 
@@ -2047,6 +2121,7 @@ public sealed partial class MainViewModel : ViewModelBase, IDisposable
         _prestigeService.PrestigeCompleted -= OnPrestigeCompleted;
 
         GuildViewModel.Dispose();
+        ShopViewModel.Dispose();
 
         _disposed = true;
         GC.SuppressFinalize(this);

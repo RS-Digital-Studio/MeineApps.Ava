@@ -5024,4 +5024,32 @@
   <data name="WarPhaseCompleted" xml:space="preserve">
     <value>Abgeschlossen</value>
   </data>
+
+  <!-- Goal System (Beginner Goals) -->
+  <data name="GoalUpgrade" xml:space="preserve">
+    <value>upgraden</value>
+  </data>
+  <data name="GoalMoreIncome" xml:space="preserve">
+    <value>+Einkommen!</value>
+  </data>
+  <data name="GoalFirstOrder" xml:space="preserve">
+    <value>Ersten Auftrag annehmen</value>
+  </data>
+  <data name="GoalEarnMoney" xml:space="preserve">
+    <value>Geld verdienen!</value>
+  </data>
+  <data name="GoalUnlockFeatures" xml:space="preserve">
+    <value>Neue Features!</value>
+  </data>
+  <data name="GoalReachLevel" xml:space="preserve">
+    <value>Erreiche Level {0}</value>
+  </data>
+
+  <!-- Tab Unlock System -->
+  <data name="TabUnlocked" xml:space="preserve">
+    <value>{0} freigeschaltet!</value>
+  </data>
+  <data name="TabLockedHint" xml:space="preserve">
+    <value>Wird bei Level {0} freigeschaltet</value>
+  </data>
 </root>

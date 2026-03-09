@@ -20,7 +20,7 @@
     </Style>
     <!-- Prestige-Banner Glow (Opacity statt BoxShadow - GPU-beschleunigt auf Android) -->
     <Style Selector="Border.PrestigeBannerGlow">
-      <Setter Property="BoxShadow" Value="0 0 10 0 #50FFD700" />
+      <!-- BoxShadow entfernt: CPU-Blur bei jedem Opacity-Frame verursacht Stutter auf Android -->
       <Style.Animations>
         <Animation Duration="0:0:3" IterationCount="Infinite">
           <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.8"/></KeyFrame>

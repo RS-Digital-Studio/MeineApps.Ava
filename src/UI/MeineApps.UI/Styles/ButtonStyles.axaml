@@ -21,7 +21,7 @@
     <Setter Property="RenderTransform" Value="scale(1)" />
     <Setter Property="Transitions">
       <Transitions>
-        <BrushTransition Property="Background" Duration="0:0:0.15" />
+        <!-- BrushTransition entfernt: Erzeugt Interpolation auf jedem Button beim Scroll (Pointer-State-Wechsel) -->
         <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.1" />
       </Transitions>
     </Setter>

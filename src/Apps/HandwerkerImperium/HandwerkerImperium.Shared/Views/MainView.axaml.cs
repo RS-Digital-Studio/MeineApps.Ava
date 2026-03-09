@@ -100,7 +100,7 @@ public partial class MainView : UserControl
 
         _renderTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromMilliseconds(40) // 25fps
+            Interval = TimeSpan.FromMilliseconds(66) // 15fps (Tab-Bar braucht keine 25fps)
         };
         _renderTimer.Tick += OnRenderTimerTick;
         _renderTimer.Start();
@@ -108,7 +108,7 @@ public partial class MainView : UserControl
 
     private void OnRenderTimerTick(object? sender, EventArgs e)
     {
-        _renderTime += 0.04f;
+        _renderTime += 0.066f; // 66ms Intervall (15fps)
 
         // Money-Animation aktualisieren (ersetzt separaten 30fps-Timer)
         _vm?.UpdateMoneyAnimation();
@@ -204,6 +204,7 @@ public partial class MainView : UserControl
         var bounds = canvas.LocalClipBounds;
         _lastTabBarBounds = bounds;
 
+        var lockedTabs = _vm?.GetLockedTabs();
         var state = new TabBarState
         {
             ActiveTab = GetActiveTabIndex(),
@@ -222,7 +223,9 @@ public partial class MainView : UserControl
             } : new int[5],
             Labels = _tabLabels,
             Time = _renderTime,
-            TabSwitchTime = _lastTabSwitchTime
+            TabSwitchTime = _lastTabSwitchTime,
+            LockedTabs = lockedTabs,
+            UnlockLevels = MainViewModel.TabUnlockLevels
         };
 
         _tabBarRenderer.Render(canvas, bounds, state);
@@ -243,6 +246,15 @@ public partial class MainView : UserControl
         int tabIndex = _tabBarRenderer.HitTest(_lastTabBarBounds, skiaX, skiaY);
         if (tabIndex >= 0 && tabIndex != GetActiveTabIndex())
         {
+            // Gesperrte Tabs: Hinweis anzeigen statt navigieren
+            if (_vm.IsTabLocked(tabIndex))
+            {
+                var levelNeeded = MainViewModel.TabUnlockLevels[tabIndex];
+                _vm.ShowLockedTabHint(levelNeeded);
+                e.Handled = true;
+                return;
+            }
+
             // Screen-Transition starten
             _transitionRenderer.StartTransition(TransitionType.Dissolve);
             TransitionCanvas?.InvalidateSurface();

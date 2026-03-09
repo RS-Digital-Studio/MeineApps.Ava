@@ -22,6 +22,12 @@ public struct TabBarState
 
     /// <summary>Zeitpunkt des letzten Tab-Wechsels in Sekunden seit Start.</summary>
     public float TabSwitchTime;
+
+    /// <summary>Ob Tab gesperrt ist (5 Einträge). Gesperrte Tabs werden ausgegraut mit Schloss.</summary>
+    public bool[] LockedTabs;
+
+    /// <summary>Benötigtes Level pro Tab (5 Einträge). Nur für gesperrte Tabs angezeigt.</summary>
+    public int[] UnlockLevels;
 }
 
 /// <summary>
@@ -65,6 +71,10 @@ public sealed class GameTabBarRenderer : IDisposable
     // Badge
     private static readonly SKColor BadgeRed = new(0xE5, 0x3E, 0x3E);
     private static readonly SKColor BadgeWhite = SKColors.White;
+
+    // Locked Tab
+    private static readonly SKColor LockedOverlay = new(0x00, 0x00, 0x00, 0x60);
+    private static readonly SKColor LockedLevelText = new(0xFF, 0xD7, 0x00, 0xCC);
 
     // Icon-Farben
     private static readonly SKColor HouseRoof = new(0x8B, 0x45, 0x13);
@@ -167,7 +177,8 @@ public sealed class GameTabBarRenderer : IDisposable
             float iconCenterY = barBounds.Top + 22f;
             float labelY = barBounds.Bottom - 10f;
 
-            bool isActive = i == state.ActiveTab;
+            bool isLocked = state.LockedTabs != null && i < state.LockedTabs.Length && state.LockedTabs[i];
+            bool isActive = !isLocked && i == state.ActiveTab;
 
             // Bounce-Animation bei Tab-Wechsel
             float scale = 1.0f;
@@ -187,24 +198,58 @@ public sealed class GameTabBarRenderer : IDisposable
                 }
             }
 
-            // Icon zeichnen
-            canvas.Save();
-            canvas.Translate(tabCenterX, iconCenterY);
-            canvas.Scale(scale);
-            canvas.Translate(-tabCenterX, -iconCenterY);
-
-            DrawTabIcon(canvas, i, tabCenterX, iconCenterY, 40f, isActive, state.Time);
-
-            canvas.Restore();
-
-            // Label
-            DrawLabel(canvas, state.Labels != null && i < state.Labels.Length
-                ? state.Labels[i] : "", tabCenterX, labelY, isActive);
-
-            // Badge
-            if (state.BadgeCounts != null && i < state.BadgeCounts.Length && state.BadgeCounts[i] > 0)
+            if (isLocked)
             {
-                DrawBadge(canvas, state.BadgeCounts[i], tabCenterX + 14f, iconCenterY - 14f, state.Time);
+                // Gesperrte Tabs: SaveLayer für Dimm-Effekt, kleiner gezeichnet
+                canvas.Save();
+                canvas.SaveLayer(null);
+                canvas.Translate(tabCenterX, iconCenterY);
+                canvas.Scale(0.8f);
+                canvas.Translate(-tabCenterX, -iconCenterY);
+
+                DrawTabIcon(canvas, i, tabCenterX, iconCenterY, 40f, false, state.Time);
+
+                // Dunkles Overlay über das Icon
+                _fillPaint.Color = LockedOverlay;
+                _fillPaint.Shader = null;
+                canvas.DrawRect(tabCenterX - 25f, iconCenterY - 25f, 50f, 50f, _fillPaint);
+                canvas.Restore(); // SaveLayer
+                canvas.Restore(); // Save
+
+                // Schloss-Symbol (kleines Vorhängeschloss)
+                DrawLockIcon(canvas, tabCenterX, iconCenterY, 10f);
+
+                // Level-Anforderung unter dem Schloss
+                if (state.UnlockLevels != null && i < state.UnlockLevels.Length && state.UnlockLevels[i] > 0)
+                {
+                    _textPaint.Color = LockedLevelText;
+                    _textPaint.TextSize = 7f;
+                    _textPaint.FakeBoldText = true;
+                    canvas.DrawText($"Lv.{state.UnlockLevels[i]}", tabCenterX, labelY, _textPaint);
+                    _textPaint.FakeBoldText = false;
+                }
+            }
+            else
+            {
+                // Normaler Tab: Icon mit isActive-Status zeichnen
+                canvas.Save();
+                canvas.Translate(tabCenterX, iconCenterY);
+                canvas.Scale(scale);
+                canvas.Translate(-tabCenterX, -iconCenterY);
+
+                DrawTabIcon(canvas, i, tabCenterX, iconCenterY, 40f, isActive, state.Time);
+
+                canvas.Restore();
+
+                // Label
+                DrawLabel(canvas, state.Labels != null && i < state.Labels.Length
+                    ? state.Labels[i] : "", tabCenterX, labelY, isActive);
+
+                // Badge
+                if (state.BadgeCounts != null && i < state.BadgeCounts.Length && state.BadgeCounts[i] > 0)
+                {
+                    DrawBadge(canvas, state.BadgeCounts[i], tabCenterX + 14f, iconCenterY - 14f, state.Time);
+                }
             }
         }
     }
@@ -231,6 +276,14 @@ public sealed class GameTabBarRenderer : IDisposable
         float tabWidth = bounds.Width / TabCount;
         int index = (int)((x - bounds.Left) / tabWidth);
         return Math.Clamp(index, 0, TabCount - 1);
+    }
+
+    /// <summary>
+    /// Prüft ob der Tab bei gegebenem Index gesperrt ist.
+    /// </summary>
+    public static bool IsTabLocked(bool[]? lockedTabs, int index)
+    {
+        return lockedTabs != null && index >= 0 && index < lockedTabs.Length && lockedTabs[index];
     }
 
     // ═══════════════════════════════════════════════════════════════════
@@ -318,6 +371,35 @@ public sealed class GameTabBarRenderer : IDisposable
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    // LOCK-ICON (für gesperrte Tabs)
+    // ═══════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Zeichnet ein kleines Vorhängeschloss-Symbol.
+    /// </summary>
+    private void DrawLockIcon(SKCanvas canvas, float cx, float cy, float size)
+    {
+        float s = size * 0.5f;
+
+        // Schloss-Körper (Rechteck)
+        _fillPaint.Color = new SKColor(0xFF, 0xD7, 0x00, 0xCC);
+        _fillPaint.Shader = null;
+        canvas.DrawRoundRect(cx - s * 0.7f, cy - s * 0.1f, s * 1.4f, s * 1.2f, 2, 2, _fillPaint);
+
+        // Bügel (Halbkreis oben)
+        _strokePaint.Color = new SKColor(0xFF, 0xD7, 0x00, 0xCC);
+        _strokePaint.StrokeWidth = 1.8f;
+        _strokePaint.StrokeCap = SKStrokeCap.Round;
+        using var arcRect = new SKPath();
+        arcRect.AddArc(new SKRect(cx - s * 0.45f, cy - s * 0.9f, cx + s * 0.45f, cy + s * 0.1f), 180, 180);
+        canvas.DrawPath(arcRect, _strokePaint);
+
+        // Schlüsselloch (kleiner Kreis + Linie)
+        _fillPaint.Color = new SKColor(0x5D, 0x40, 0x37);
+        canvas.DrawCircle(cx, cy + s * 0.35f, s * 0.2f, _fillPaint);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     // AKTIVER TAB INDIKATOR
     // ═══════════════════════════════════════════════════════════════════
 
@@ -326,6 +408,11 @@ public sealed class GameTabBarRenderer : IDisposable
     /// </summary>
     private void DrawActiveIndicator(SKCanvas canvas, SKRect barBounds, float tabWidth, TabBarState state)
     {
+        // Kein Indikator wenn aktiver Tab gesperrt ist
+        if (state.LockedTabs != null && state.ActiveTab >= 0 && state.ActiveTab < state.LockedTabs.Length
+            && state.LockedTabs[state.ActiveTab])
+            return;
+
         float indicatorWidth = 32f;
         float indicatorHeight = 4f;
         float centerX = barBounds.Left + tabWidth * state.ActiveTab + tabWidth / 2f;

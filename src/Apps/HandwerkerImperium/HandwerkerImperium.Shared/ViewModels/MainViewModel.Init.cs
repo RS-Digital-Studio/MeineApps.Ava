@@ -93,21 +93,42 @@ public sealed partial class MainViewModel
 
         IsLoading = false;
 
+        // ═══════════════════════════════════════════════════════════════════
+        // DIALOG-KASKADEN-BEGRENZUNG: Max. 2 Dialoge beim Start
+        // Reihenfolge: Offline/Welcome → Daily Reward → (Rest verzögert)
+        // Spieler sollen nicht von 5+ Dialogen erschlagen werden.
+        // ═══════════════════════════════════════════════════════════════════
+
+        int dialogsShown = 0;
+
         // Offline-Earnings berechnen (noch nicht anzeigen)
         CheckOfflineProgress();
-
-        // Check for daily reward
-        CheckDailyReward();
 
         // Welcome-Back-Offer prüfen und ggf. mit Offline-Earnings kombinieren
         _welcomeBackService.CheckAndGenerateOffer();
         CheckCombinedWelcomeDialog();
 
-        // Story-Kapitel prüfen (z.B. pending aus letzter Session oder Sofort-Freischaltung)
-        CheckForNewStoryChapter();
+        // Zählen ob ein Dialog gezeigt wurde
+        if (IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible || IsWelcomeOfferVisible)
+            dialogsShown++;
 
-        // Willkommens-Hint beim allerersten Start (kontextuelles Tutorial)
-        _contextualHintService.TryShowHint(ContextualHints.Welcome);
+        // Daily Reward nur wenn noch Platz für Dialog
+        if (dialogsShown < 2)
+        {
+            CheckDailyReward();
+            if (IsDailyRewardDialogVisible)
+                dialogsShown++;
+        }
+        else
+        {
+            // Daily Reward verzögert anzeigen (nach erstem Dialog geschlossen)
+            _hasDeferredDailyReward = _dailyRewardService.IsRewardAvailable;
+        }
+
+        // Story + Welcome-Hint NUR verzögert (nie beim Start direkt)
+        // Werden nach Schließen des letzten Startup-Dialogs geprüft
+        _hasDeferredStory = true;
+        _hasDeferredWelcomeHint = !_contextualHintService.HasSeenHint(ContextualHints.Welcome.Id);
 
         // Start the game loop for idle earnings
         _gameLoopService.Start();
@@ -261,6 +282,7 @@ public sealed partial class MainViewModel
         CelebrationRequested?.Invoke();
 
         IsCombinedWelcomeDialogVisible = false;
+        CheckDeferredDialogs();
     }
 
     /// <summary>
@@ -281,6 +303,7 @@ public sealed partial class MainViewModel
         _welcomeBackService.DismissOffer();
 
         IsCombinedWelcomeDialogVisible = false;
+        CheckDeferredDialogs();
     }
 
     public void CollectOfflineEarnings(bool withAdBonus)
@@ -304,6 +327,7 @@ public sealed partial class MainViewModel
     {
         CollectOfflineEarnings(false);
         IsOfflineEarningsDialogVisible = false;
+        CheckDeferredDialogs();
     }
 
     [RelayCommand]
@@ -312,6 +336,7 @@ public sealed partial class MainViewModel
         var success = await _rewardedAdService.ShowAdAsync("offline_double");
         CollectOfflineEarnings(success);
         IsOfflineEarningsDialogVisible = false;
+        CheckDeferredDialogs();
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -361,6 +386,48 @@ public sealed partial class MainViewModel
             _audioService.PlaySoundAsync(GameSound.MoneyEarned).FireAndForget();
             HasDailyReward = false;
             IsDailyRewardDialogVisible = false;
+            CheckDeferredDialogs();
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // VERZÖGERTE DIALOGE (Dialog-Kaskaden-Begrenzung)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Prüft ob verzögerte Dialoge angezeigt werden sollen.
+    /// Wird aufgerufen wenn ein Startup-Dialog geschlossen wird.
+    /// Zeigt maximal einen weiteren Dialog pro Aufruf.
+    /// </summary>
+    private void CheckDeferredDialogs()
+    {
+        // Nicht prüfen wenn noch ein Dialog offen ist
+        if (IsOfflineEarningsDialogVisible || IsCombinedWelcomeDialogVisible ||
+            IsWelcomeOfferVisible || IsDailyRewardDialogVisible ||
+            IsStoryDialogVisible || IsHintVisible)
+            return;
+
+        // 1. Verzögerte Daily Reward
+        if (_hasDeferredDailyReward)
+        {
+            _hasDeferredDailyReward = false;
+            CheckDailyReward();
+            if (IsDailyRewardDialogVisible) return;
+        }
+
+        // 2. Verzögerte Story
+        if (_hasDeferredStory)
+        {
+            _hasDeferredStory = false;
+            CheckForNewStoryChapter();
+            if (IsStoryDialogVisible) return;
+        }
+
+        // 3. Verzögerter Welcome-Hint (nur beim allerersten Start)
+        if (_hasDeferredWelcomeHint)
+        {
+            _hasDeferredWelcomeHint = false;
+            _contextualHintService.TryShowHint(ContextualHints.Welcome);
         }
     }
 }

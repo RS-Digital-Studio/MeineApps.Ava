@@ -68,13 +68,34 @@ public sealed class AndroidRewardedAdService : IRewardedAdService
             return false;
         }
 
-        // Placement-spezifische Ad-Unit-ID aus AdConfig holen
-        var adUnitId = AdConfig.GetRewardedAdUnitId(_appName, placement);
-        Android.Util.Log.Info(Tag, $"ShowAdAsync ({placement}): AdUnitId={adUnitId}, App={_appName}");
+        // 1. Placement-spezifische vorgeladene Ad verwenden (beste Attribution + sofort)
+        if (_helper.IsPlacementLoaded(placement))
+        {
+            Android.Util.Log.Info(Tag, $"ShowAdAsync ({placement}): Placement-spezifische Pre-Load-Ad verfuegbar");
+            var placementResult = await _helper.ShowPlacementAdAsync(placement);
+            Android.Util.Log.Info(Tag, $"ShowAdAsync ({placement}): Ergebnis (placement-preloaded)={placementResult}");
+            if (!placementResult)
+                AdUnavailable?.Invoke();
+            return placementResult;
+        }
 
-        // On-Demand laden und zeigen (eigene Ad-Unit-ID pro Placement)
+        // 2. Default vorgeladene Ad verwenden (sofortige Anzeige, Default-Attribution)
+        if (_helper.IsLoaded)
+        {
+            Android.Util.Log.Info(Tag, $"ShowAdAsync ({placement}): Default Pre-Load-Ad verfuegbar, zeige sofort");
+            var preloadedResult = await _helper.ShowAsync();
+            Android.Util.Log.Info(Tag, $"ShowAdAsync ({placement}): Ergebnis (default-preloaded)={preloadedResult}");
+            if (!preloadedResult)
+                AdUnavailable?.Invoke();
+            return preloadedResult;
+        }
+
+        // 3. Fallback: Placement-spezifisch on-demand laden (2-8s Verzoegerung)
+        var adUnitId = AdConfig.GetRewardedAdUnitId(_appName, placement);
+        Android.Util.Log.Info(Tag, $"ShowAdAsync ({placement}): Kein Pre-Load verfuegbar, lade on-demand: {adUnitId}");
+
         var result = await _helper.LoadAndShowAsync(adUnitId);
-        Android.Util.Log.Info(Tag, $"ShowAdAsync ({placement}): Ergebnis={result}");
+        Android.Util.Log.Info(Tag, $"ShowAdAsync ({placement}): Ergebnis (on-demand)={result}");
         if (!result)
             AdUnavailable?.Invoke();
         return result;

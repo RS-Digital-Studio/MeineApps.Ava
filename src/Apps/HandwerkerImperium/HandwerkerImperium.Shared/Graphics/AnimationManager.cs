@@ -179,13 +179,16 @@ public sealed class AnimationManager
     /// Renders all active particles onto the canvas.
     /// </summary>
     /// <param name="canvas">SkiaSharp canvas to draw on.</param>
+    // Gecachter Paint für Render() — vermeidet native Allokation pro Frame (25fps)
+    private static readonly SKPaint RenderPaint = new() { IsAntialias = false };
+
     public void Render(SKCanvas canvas)
     {
         lock (_lock)
         {
             if (_particleCount == 0) return;
 
-            using var paint = new SKPaint { IsAntialias = false };
+            var paint = RenderPaint;
 
             for (int i = 0; i < _particleCount; i++)
             {

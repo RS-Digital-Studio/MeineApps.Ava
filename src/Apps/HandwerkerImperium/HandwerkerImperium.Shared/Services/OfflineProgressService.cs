@@ -72,6 +72,20 @@ public sealed class OfflineProgressService : IOfflineProgressService
         if (state.GuildMembership != null && state.GuildMembership.IncomeBonus > 0)
             grossIncome *= (1m + state.GuildMembership.IncomeBonus);
 
+        // Gilden-Forschungs-Boni: Einkommen + Effizienz (identisch mit GameLoopService)
+        if (state.GuildMembership != null)
+        {
+            var gm = state.GuildMembership;
+
+            // Einkommens-Bonus (+20% bei allen Forschungen)
+            if (gm.ResearchIncomeBonus > 0)
+                grossIncome *= (1m + gm.ResearchIncomeBonus);
+
+            // Effizienz-Bonus (+5%) - stackt mit Research-Effizienz
+            if (gm.ResearchEfficiencyBonus > 0)
+                grossIncome *= (1m + gm.ResearchEfficiencyBonus);
+        }
+
         // Soft-Cap: Diminishing Returns ab 2.0x (identisch mit GameLoopService)
         if (state.TotalIncomePerSecond > 0)
         {
@@ -100,6 +114,10 @@ public sealed class OfflineProgressService : IOfflineProgressService
 
         if (totalCostReduction > 0)
             costs *= (1m - Math.Min(totalCostReduction, 0.50m));
+
+        // Gilden-Forschungs-Boni: Kosten-Reduktion (multiplikativ, identisch mit GameLoopService)
+        if (state.GuildMembership?.ResearchCostReduction > 0)
+            costs *= (1m - Math.Min(state.GuildMembership.ResearchCostReduction, 0.50m));
 
         // Netto-Einkommen (mindestens 0 - offline kein Geld verlieren)
         decimal netPerSecond = Math.Max(0, grossIncome - costs);

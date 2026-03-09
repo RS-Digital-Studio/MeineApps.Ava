@@ -75,6 +75,17 @@ public sealed partial class MainViewModel
         IsAlertDialogVisible = true;
     }
 
+    /// <summary>
+    /// Zeigt einen FloatingText-Hinweis wenn ein gesperrter Tab angetippt wird.
+    /// </summary>
+    public void ShowLockedTabHint(int requiredLevel)
+    {
+        var text = string.Format(
+            _localizationService.GetString("TabLockedHint") ?? "Ab Level {0} verfügbar",
+            requiredLevel);
+        FloatingTextRequested?.Invoke(text, "info");
+    }
+
     private Task<bool> ShowConfirmDialog(string title, string message, string acceptText, string cancelText)
     {
         ConfirmDialogTitle = title;
@@ -347,6 +358,7 @@ public sealed partial class MainViewModel
             HasNewStory = false;
         }
         IsStoryDialogVisible = false;
+        CheckDeferredDialogs();
 
         // FloatingText für Belohnungen
         if (!string.IsNullOrEmpty(StoryRewardText))
@@ -429,6 +441,8 @@ public sealed partial class MainViewModel
         {
             _contextualHintService.TryShowHint(ContextualHints.FirstWorkshop);
         }
+
+        CheckDeferredDialogs();
     }
 
     /// <summary>

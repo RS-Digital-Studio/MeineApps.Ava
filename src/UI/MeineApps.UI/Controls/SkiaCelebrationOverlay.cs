@@ -26,8 +26,12 @@ public class SkiaCelebrationOverlay : SKCanvasView
     private float _elapsed;
     private bool _isAnimating;
     private float _flashAlpha; // Initialer Blitz-Effekt
+    private DateTime _lastTickTime; // Echte deltaTime statt hartkodierter 0.016f
 
     private readonly Random _rng = new();
+
+    // Gecachter SKPath für Stern-Partikel (vermeidet ~1560 Allokationen/s)
+    private static readonly SKPath StarPath = new();
 
     // Konfetti-Farben (erweiterte Palette)
     private static readonly SKColor[] ConfettiColors =
@@ -113,13 +117,7 @@ public class SkiaCelebrationOverlay : SKCanvasView
             };
         }
 
-        _isAnimating = true;
-        IsVisible = true;
-
-        _timer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
-        _timer.Tick -= OnTick;
-        _timer.Tick += OnTick;
-        _timer.Start();
+        StartAnimation();
     }
 
     /// <summary>
@@ -169,8 +167,14 @@ public class SkiaCelebrationOverlay : SKCanvasView
             };
         }
 
+        StartAnimation();
+    }
+
+    private void StartAnimation()
+    {
         _isAnimating = true;
         IsVisible = true;
+        _lastTickTime = DateTime.UtcNow;
 
         _timer ??= new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _timer.Tick -= OnTick;
@@ -180,7 +184,12 @@ public class SkiaCelebrationOverlay : SKCanvasView
 
     private void OnTick(object? sender, EventArgs e)
     {
-        _elapsed += 0.016f;
+        // Echte deltaTime messen statt hartkodierter 0.016f
+        var now = DateTime.UtcNow;
+        float dt = Math.Min(0.05f, (float)(now - _lastTickTime).TotalSeconds); // Cap bei 50ms
+        _lastTickTime = now;
+
+        _elapsed += dt;
 
         if (_elapsed >= AnimationDuration)
         {
@@ -190,7 +199,7 @@ public class SkiaCelebrationOverlay : SKCanvasView
 
         // Flash abklingen lassen
         if (_flashAlpha > 0)
-            _flashAlpha = Math.Max(0, _flashAlpha - 0.016f / FlashDuration * 0.4f);
+            _flashAlpha = Math.Max(0, _flashAlpha - dt / FlashDuration * 0.4f);
 
         var bounds = this.LogicalSize;
         float height = bounds.Height > 0 ? bounds.Height : 800;
@@ -202,14 +211,14 @@ public class SkiaCelebrationOverlay : SKCanvasView
             if (!p.Active) continue;
 
             // Schwerkraft
-            p.VelocityY += 150f * 0.016f;
+            p.VelocityY += 150f * dt;
 
             // Sin-Schwankung für natürliche Bewegung
-            float sway = MathF.Sin(_elapsed * 3f + p.PhaseOffset) * 25f * 0.016f;
+            float sway = MathF.Sin(_elapsed * 3f + p.PhaseOffset) * 25f * dt;
 
-            p.X += p.VelocityX * 0.016f + sway;
-            p.Y += p.VelocityY * 0.016f;
-            p.Rotation += p.RotationSpeed * 0.016f;
+            p.X += p.VelocityX * dt + sway;
+            p.Y += p.VelocityY * dt;
+            p.Rotation += p.RotationSpeed * dt;
 
             // Luftwiderstand
             p.VelocityX *= 0.998f;
@@ -297,11 +306,11 @@ public class SkiaCelebrationOverlay : SKCanvasView
     }
 
     /// <summary>
-    /// Zeichnet einen 5-zackigen Stern.
+    /// Zeichnet einen 5-zackigen Stern. Nutzt gecachten SKPath (vermeidet native Allokationen pro Frame).
     /// </summary>
     private static void DrawStar(SKCanvas canvas, float size, SKPaint paint)
     {
-        using var path = new SKPath();
+        StarPath.Rewind();
         const int points = 5;
         float outerRadius = size;
         float innerRadius = size * 0.4f;
@@ -314,13 +323,13 @@ public class SkiaCelebrationOverlay : SKCanvasView
             float y = MathF.Sin(angle) * radius;
 
             if (i == 0)
-                path.MoveTo(x, y);
+                StarPath.MoveTo(x, y);
             else
-                path.LineTo(x, y);
+                StarPath.LineTo(x, y);
         }
 
-        path.Close();
-        canvas.DrawPath(path, paint);
+        StarPath.Close();
+        canvas.DrawPath(StarPath, paint);
     }
 
     private void StopAnimation()

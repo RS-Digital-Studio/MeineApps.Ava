@@ -9,10 +9,11 @@ namespace HandwerkerImperium.Services;
 /// Automatische XP-Vergabe bei Aufträgen, MiniGames und Workshop-Upgrades.
 /// Premium-Track kann per IAP freigeschaltet werden.
 /// </summary>
-public sealed class BattlePassService : IBattlePassService
+public sealed class BattlePassService : IBattlePassService, IDisposable
 {
     private readonly IGameStateService _gameState;
     private readonly IPurchaseService _purchaseService;
+    private bool _disposed;
 
     public event Action? BattlePassUpdated;
 
@@ -153,5 +154,15 @@ public sealed class BattlePassService : IBattlePassService
     {
         // +25 BP-XP pro Workshop-Upgrade
         AddXp(25, "workshop_upgraded");
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+        _gameState.OrderCompleted -= OnOrderCompleted;
+        _gameState.MiniGameResultRecorded -= OnMiniGameResultRecorded;
+        _gameState.WorkshopUpgraded -= OnWorkshopUpgraded;
+        _disposed = true;
+        GC.SuppressFinalize(this);
     }
 }

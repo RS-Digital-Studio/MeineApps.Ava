@@ -51,6 +51,9 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void SelectShopTab()
     {
+        // Tab gesperrt → zum Dashboard zurück
+        if (IsTabLocked(4)) { SelectDashboardTab(); return; }
+
         DeactivateAllTabs();
         IsShopActive = true;
         // Geldpakete-Beträge aktualisieren (basieren auf aktuellem Einkommen)
@@ -79,6 +82,9 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void SelectBuildingsTab()
     {
+        // Tab gesperrt → zum Dashboard zurück
+        if (IsTabLocked(1)) { SelectDashboardTab(); return; }
+
         DeactivateAllTabs();
         IsBuildingsActive = true;
         BuildingsViewModel.LoadBuildings();
@@ -91,6 +97,9 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void SelectMissionenTab()
     {
+        // Tab gesperrt → zum Dashboard zurück
+        if (IsTabLocked(2)) { SelectDashboardTab(); return; }
+
         DeactivateAllTabs();
         IsMissionenActive = true;
         NotifyTabBarVisibility();
@@ -131,6 +140,9 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void SelectGuildTab()
     {
+        // Tab gesperrt → zum Dashboard zurück
+        if (IsTabLocked(3)) { SelectDashboardTab(); return; }
+
         DeactivateAllTabs();
         IsGuildActive = true;
         GuildViewModel.RefreshGuild();
@@ -232,7 +244,7 @@ public sealed partial class MainViewModel
         if (IsAchievementDialogVisible) { DismissAchievementDialog(); return true; }
         if (IsLevelUpDialogVisible) { DismissLevelUpDialog(); return true; }
         if (IsOfflineEarningsDialogVisible) { CollectOfflineEarningsNormal(); return true; }
-        if (IsDailyRewardDialogVisible) { IsDailyRewardDialogVisible = false; return true; }
+        if (IsDailyRewardDialogVisible) { IsDailyRewardDialogVisible = false; CheckDeferredDialogs(); return true; }
         if (IsStoryDialogVisible) { DismissStoryDialog(); return true; }
 
         // 2. MiniGame aktiv → zurück zum Dashboard
@@ -435,6 +447,10 @@ public sealed partial class MainViewModel
         // Neue Feature-Views (Welle 1-8)
         if (route is "manager" or "tournament" or "seasonal_event" or "battle_pass" or "guild" or "crafting")
         {
+            // Tab-Lock-Guards: guild (Tab 3), manager/crafting (Imperium-Sub-Views, Tab 1)
+            if (route == "guild" && IsTabLocked(3)) { SelectDashboardTab(); return; }
+            if (route is "manager" or "crafting" && IsTabLocked(1)) { SelectDashboardTab(); return; }
+
             DeactivateAllTabs();
             switch (route)
             {
@@ -461,6 +477,9 @@ public sealed partial class MainViewModel
         if (route is "guild_research" or "guild_members" or "guild_invite" or
             "guild_war_season" or "guild_boss" or "guild_hall" or "guild_achievements")
         {
+            // Gilden-Tab gesperrt → zum Dashboard
+            if (IsTabLocked(3)) { SelectDashboardTab(); return; }
+
             DeactivateAllTabs();
             switch (route)
             {

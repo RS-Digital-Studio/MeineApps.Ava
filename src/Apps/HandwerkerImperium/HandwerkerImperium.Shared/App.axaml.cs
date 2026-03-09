@@ -177,6 +177,12 @@ public partial class App : Application
             // SeasonalEventService hält OrderCompleted-Subscription
             (Services.GetService<ISeasonalEventService>() as IDisposable)?.Dispose();
 
+            // BattlePassService hält OrderCompleted/MiniGameResult/WorkshopUpgraded-Subscriptions
+            (Services.GetService<IBattlePassService>() as IDisposable)?.Dispose();
+
+            // ShopViewModel hält PremiumStatusChanged/MoneyChanged/GoldenScrewsChanged-Subscriptions
+            Services.GetService<ShopViewModel>()?.Dispose();
+
             // FirebaseService hält HttpClient
             (Services.GetService<IFirebaseService>() as IDisposable)?.Dispose();
         }

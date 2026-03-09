@@ -79,6 +79,14 @@ public partial class App : Application
         // Farb-Cache für SkiaSharp initialisieren
         SkiaThemeHelper.RefreshColors();
 
+        // Statische Renderer mit AI-Asset-Service initialisieren
+        var assetService = Services.GetService<IGameAssetService>();
+        if (assetService != null)
+        {
+            MeisterHansRenderer.Initialize(assetService);
+            WorkerAvatarRenderer.InitializeAssetService(assetService);
+        }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.MainWindow = new MainWindow();
@@ -196,6 +204,9 @@ public partial class App : Application
     {
         // Core Services
         services.AddSingleton<IPreferencesService>(sp => new PreferencesService("HandwerkerImperium"));
+
+        // AI-Asset-Loading (WebP-Bitmaps mit LRU-Cache)
+        services.AddSingleton<IGameAssetService, GameAssetService>();
 
         // Premium Services (Ads, Purchases)
         services.AddMeineAppsPremium();

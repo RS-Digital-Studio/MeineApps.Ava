@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -11,6 +12,10 @@ namespace HandwerkerImperium.Graphics;
 public sealed class WiringGameRenderer : IDisposable
 {
     private bool _disposed;
+
+    // AI-Hintergrund (optionaler Layer unter den Spielelementen)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _background;
 
     // ═══════════════════════════════════════════════════════════════════
     // WIEDERVERWENDBARE SKPAINT-INSTANZEN (vermeidet per-Frame Allokationen)
@@ -126,12 +131,30 @@ public sealed class WiringGameRenderer : IDisposable
     // ═══════════════════════════════════════════════════════════════════
 
     /// <summary>
+    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
+    /// <summary>
     /// Rendert das Verkabelungs-Spielfeld mit AAA-Effekten.
     /// isAllConnected und connectedCount werden fuer Completion/Burst-Erkennung benoetigt.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, WireRenderData[] leftWires, WireRenderData[] rightWires,
         int? selectedLeftIndex, bool isAllConnected, int connectedCount, float deltaTime)
     {
+        // AI-Hintergrund als Atmosphäre-Layer
+        if (_assetService != null)
+        {
+            _background ??= _assetService.GetBitmap("minigames/wiring_bg.webp");
+            if (_background == null)
+                _ = _assetService.LoadBitmapAsync("minigames/wiring_bg.webp");
+            if (_background != null)
+                canvas.DrawBitmap(_background, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+        }
+
         _time += deltaTime;
 
         float padding = 12;

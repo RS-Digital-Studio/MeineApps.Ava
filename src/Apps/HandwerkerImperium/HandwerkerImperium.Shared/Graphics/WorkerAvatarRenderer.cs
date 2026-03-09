@@ -1,5 +1,6 @@
 using SkiaSharp;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services;
 
 namespace HandwerkerImperium.Graphics;
 
@@ -11,6 +12,17 @@ namespace HandwerkerImperium.Graphics;
 /// </summary>
 public sealed class WorkerAvatarRenderer
 {
+    // AI-Tier-Portrait-Service (optional, Fallback auf prozedurale Generierung)
+    private static IGameAssetService? s_assetService;
+
+    /// <summary>
+    /// Initialisiert den AI-Asset-Service für Tier-Portraits.
+    /// </summary>
+    public static void InitializeAssetService(IGameAssetService assetService)
+    {
+        s_assetService = assetService;
+    }
+
     // ═══════════════════════════════════════════════════════════════════
     // WIEDERVERWENDBARE STATISCHE SKPAINT-INSTANZEN
     // Sicher weil alle Aufrufe auf dem UI-Thread stattfinden.
@@ -27,6 +39,11 @@ public sealed class WorkerAvatarRenderer
 
     // Wiederverwendbarer SKPath (fuer DrawSadEye, DrawMouth)
     private static readonly SKPath s_cachedPath = new();
+
+    // Gecachte Asset-Pfade pro Tier (keine String-Allokation im Render-Pfad)
+    private static readonly string[] s_tierAssetPaths = Enumerable.Range(1, 10)
+        .Select(i => $"workers/tier_{i:D2}.webp")
+        .ToArray();
 
     // ═══════════════════════════════════════════════════════════════════
     // FARB-PALETTEN
@@ -101,7 +118,13 @@ public sealed class WorkerAvatarRenderer
         };
 
         var moodBucket = GetMoodBucket(mood);
-        string cacheKey = $"{idSeed}|{tier}|{moodBucket}|{size}|{(isFemale ? "f" : "m")}";
+
+        // AI-Verfügbarkeit im Cache-Key: Wenn AI-Portrait nachgeladen wird,
+        // erzeugt der neue Key einen Cache-Miss → AI-Version ersetzt prozedurale
+        var tierIdx = (int)tier;
+        bool hasAI = tierIdx < s_tierAssetPaths.Length
+                     && s_assetService?.GetBitmap(s_tierAssetPaths[tierIdx]) != null;
+        string cacheKey = $"{idSeed}|{tier}|{moodBucket}|{size}|{(isFemale ? "f" : "m")}{(hasAI ? "|ai" : "")}";
 
         // Cache pruefen - direkte Referenz, kein Copy
         lock (_cacheLock)
@@ -112,9 +135,35 @@ public sealed class WorkerAvatarRenderer
             }
         }
 
-        // Neues Bitmap erzeugen
-        var bitmap = new SKBitmap(size, size, SKColorType.Rgba8888, SKAlphaType.Premul);
-        using (var canvas = new SKCanvas(bitmap))
+        // AI-Tier-Portrait versuchen (skaliert in Zielgröße)
+        var tierPortrait = GetTierPortrait(tier);
+        if (tierPortrait != null)
+        {
+            var bitmap = new SKBitmap(size, size, SKColorType.Rgba8888, SKAlphaType.Premul);
+            using (var canvas = new SKCanvas(bitmap))
+            {
+                canvas.Clear(SKColors.Transparent);
+                var srcRect = new SKRect(0, 0, tierPortrait.Width, tierPortrait.Height);
+                var dstRect = new SKRect(0, 0, size, size);
+                canvas.DrawBitmap(tierPortrait, srcRect, dstRect);
+            }
+
+            lock (_cacheLock)
+            {
+                if (_cache.TryGetValue(cacheKey, out var existing))
+                {
+                    bitmap.Dispose();
+                    return existing;
+                }
+                _cache[cacheKey] = bitmap;
+                if (_cache.Count > 200) PruneCache();
+            }
+            return bitmap;
+        }
+
+        // Prozedurales Pixel-Art Rendering (Fallback)
+        var procBitmap = new SKBitmap(size, size, SKColorType.Rgba8888, SKAlphaType.Premul);
+        using (var canvas = new SKCanvas(procBitmap))
         {
             canvas.Clear(SKColors.Transparent);
 
@@ -132,6 +181,7 @@ public sealed class WorkerAvatarRenderer
             DrawChinShadow(canvas, hash, scale);
             DrawAccessories(canvas, hash, scale, isFemale);
         }
+        var bitmap2 = procBitmap;
 
         // Im Cache speichern (direkte Referenz, kein Copy)
         lock (_cacheLock)
@@ -139,11 +189,11 @@ public sealed class WorkerAvatarRenderer
             // Race-Condition: Anderer Thread koennte bereits gecacht haben
             if (_cache.TryGetValue(cacheKey, out var existing))
             {
-                bitmap.Dispose();
+                bitmap2.Dispose();
                 return existing;
             }
 
-            _cache[cacheKey] = bitmap;
+            _cache[cacheKey] = bitmap2;
 
             // Cache-Groesse begrenzen (aelteste Eintraege entfernen)
             if (_cache.Count > 200)
@@ -152,7 +202,7 @@ public sealed class WorkerAvatarRenderer
             }
         }
 
-        return bitmap;
+        return bitmap2;
     }
 
     /// <summary>
@@ -713,6 +763,21 @@ public sealed class WorkerAvatarRenderer
 
                 // case 0, 5: Keine Accessoires
         }
+    }
+
+    /// <summary>
+    /// Gibt das AI-generierte Tier-Portrait zurück oder null (Fallback auf prozedural).
+    /// </summary>
+    private static SKBitmap? GetTierPortrait(WorkerTier tier)
+    {
+        if (s_assetService == null) return null;
+        var tierIdx = (int)tier;
+        if (tierIdx < 0 || tierIdx >= s_tierAssetPaths.Length) return null;
+        var assetPath = s_tierAssetPaths[tierIdx];
+        var portrait = s_assetService.GetBitmap(assetPath);
+        if (portrait == null)
+            _ = s_assetService.LoadBitmapAsync(assetPath);
+        return portrait;
     }
 
     private static MoodBucket GetMoodBucket(decimal mood)

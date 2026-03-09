@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -17,6 +18,11 @@ namespace HandwerkerImperium.Graphics;
 public sealed class InventGameRenderer : IDisposable
 {
     private bool _disposed;
+
+    // AI-Hintergrund (optionaler Layer unter den Spielelementen)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _background;
+
     // ═══════════════════════════════════════════════════════════════════════
     // PARTIKEL-SYSTEM (Struct-basiert, kein GC)
     // ═══════════════════════════════════════════════════════════════════════
@@ -586,6 +592,14 @@ public sealed class InventGameRenderer : IDisposable
     private SKPoint[] _tileCenters = Array.Empty<SKPoint>();
 
     /// <summary>
+    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
+    /// <summary>
     /// Rendert das gesamte Erfinder-Puzzle-Spielfeld.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds,
@@ -594,6 +608,16 @@ public sealed class InventGameRenderer : IDisposable
         int completedCount, int totalParts,
         float deltaTime)
     {
+        // AI-Hintergrund als Atmosphäre-Layer
+        if (_assetService != null)
+        {
+            _background ??= _assetService.GetBitmap("minigames/invent_bg.webp");
+            if (_background == null)
+                _ = _assetService.LoadBitmapAsync("minigames/invent_bg.webp");
+            if (_background != null)
+                canvas.DrawBitmap(_background, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+        }
+
         _animTime += deltaTime;
 
         // Effekt-Trigger erkennen

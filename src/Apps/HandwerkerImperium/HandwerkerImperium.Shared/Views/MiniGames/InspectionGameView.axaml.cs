@@ -7,7 +7,9 @@ using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Enums;
 using HandwerkerImperium.ViewModels.MiniGames;
 using HandwerkerImperium.Icons;
+using HandwerkerImperium.Services;
 using MeineApps.UI.SkiaSharp;
+using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Views.MiniGames;
@@ -33,6 +35,11 @@ public partial class InspectionGameView : UserControl
             StopRenderLoop();
             _renderer.Dispose();
         };
+
+        // AI-Hintergrund-Service initialisieren
+        var assetService = App.Services?.GetService<IGameAssetService>();
+        if (assetService != null)
+            _renderer.Initialize(assetService);
     }
 
     private void OnDataContextChanged(object? sender, EventArgs e)

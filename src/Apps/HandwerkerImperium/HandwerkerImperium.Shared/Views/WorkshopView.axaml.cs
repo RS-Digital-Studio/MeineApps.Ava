@@ -8,8 +8,10 @@ using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels;
 using MeineApps.UI.SkiaSharp;
+using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Views;
@@ -83,6 +85,11 @@ public partial class WorkshopView : UserControl
         {
             _workshopVm = vm;
             vm.UpgradeEffectRequested += OnUpgradeEffect;
+
+            // AI-Asset-Service fuer Hybrid-Rendering initialisieren
+            var assetService = App.Services?.GetService<IGameAssetService>();
+            if (assetService != null)
+                _sceneRenderer.Initialize(assetService);
 
             // Workshop-Canvas finden und Timer starten
             _workshopCanvas = this.FindControl<SKCanvasView>("WorkshopCanvas");

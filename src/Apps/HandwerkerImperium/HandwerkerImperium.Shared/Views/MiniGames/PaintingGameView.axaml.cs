@@ -6,8 +6,10 @@ using Avalonia.Threading;
 using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Helpers;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels.MiniGames;
 using MeineApps.UI.SkiaSharp;
+using Microsoft.Extensions.DependencyInjection;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Views.MiniGames;
@@ -33,6 +35,11 @@ public partial class PaintingGameView : UserControl
     {
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
+
+        // AI-Hintergrund-Service initialisieren
+        var assetService = App.Services?.GetService<IGameAssetService>();
+        if (assetService != null)
+            _renderer.Initialize(assetService);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

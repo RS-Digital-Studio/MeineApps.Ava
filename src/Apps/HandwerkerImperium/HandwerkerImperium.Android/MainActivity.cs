@@ -6,6 +6,7 @@ using Android.Views;
 using Android.Widget;
 using Avalonia;
 using Avalonia.Android;
+using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using MeineApps.Core.Ava.Services;
@@ -78,6 +79,19 @@ public class MainActivity : AvaloniaMainActivity<App>
             catch
             {
                 // Share-Sheet nicht verfügbar
+            }
+        };
+
+        // AI-Asset-Loading: WebP-Bitmaps aus dem Android assets/ Ordner
+        GameAssetService.PlatformAssetLoader = assetPath =>
+        {
+            try
+            {
+                return Assets?.Open($"visuals/{assetPath}");
+            }
+            catch (Java.IO.FileNotFoundException)
+            {
+                return null;
             }
         };
 

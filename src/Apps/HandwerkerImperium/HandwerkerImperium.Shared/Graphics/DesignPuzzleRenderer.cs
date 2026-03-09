@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -14,6 +15,10 @@ namespace HandwerkerImperium.Graphics;
 public sealed class DesignPuzzleRenderer : IDisposable
 {
     private bool _disposed;
+
+    // AI-Hintergrund (optionaler Layer unter den Spielelementen)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _background;
 
     // Animationszeit (wird intern hochgezaehlt)
     private float _time;
@@ -101,11 +106,29 @@ public sealed class DesignPuzzleRenderer : IDisposable
     }
 
     /// <summary>
+    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
+    /// <summary>
     /// Rendert den gesamten Grundriss auf das Canvas.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, RoomSlotData[] slots, int cols, int rows,
         int filledCorrectCount, int totalSlots, float deltaTime)
     {
+        // AI-Hintergrund als Atmosphäre-Layer
+        if (_assetService != null)
+        {
+            _background ??= _assetService.GetBitmap("minigames/design_puzzle_bg.webp");
+            if (_background == null)
+                _ = _assetService.LoadBitmapAsync("minigames/design_puzzle_bg.webp");
+            if (_background != null)
+                canvas.DrawBitmap(_background, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+        }
+
         _time += deltaTime;
 
         // Fehler-Flash Timer aktualisieren

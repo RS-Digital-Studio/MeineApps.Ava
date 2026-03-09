@@ -1,3 +1,5 @@
+using System;
+using Avalonia.Platform;
 using SkiaSharp;
 using MeineApps.UI.SkiaSharp.SplashScreen;
 
@@ -47,6 +49,10 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
     // --- Gecachte Pfade ---
     private readonly SKPath _gearPath = new();
     private readonly SKPath _hammerPath = new();
+
+    // --- AI-Splash-Hintergrund (direkt aus AvaloniaResource, kein DI nötig) ---
+    private SKBitmap? _splashBackground;
+    private bool _splashLoadAttempted;
 
     // --- Gecachte MaskFilter ---
     private SKMaskFilter? _titleGlowFilter;
@@ -176,6 +182,24 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
     // RENDER
     // ═══════════════════════════════════════════════
 
+    /// <summary>
+    /// Lädt das AI-Splash-Bild direkt aus AvaloniaResource (kein DI, da vor Container-Init).
+    /// </summary>
+    private SKBitmap? LoadSplashFromResource()
+    {
+        try
+        {
+            var uri = new Uri("avares://HandwerkerImperium.Shared/Assets/visuals/splash/splash.webp");
+            using var stream = AssetLoader.Open(uri);
+            return SKBitmap.Decode(stream);
+        }
+        catch
+        {
+            // Asset fehlt → prozeduraler Hintergrund bleibt
+            return null;
+        }
+    }
+
     protected override void OnRender(SKCanvas canvas, SKRect bounds)
     {
         var w = bounds.Width;
@@ -185,7 +209,19 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
 
         _titleGlowFilter ??= SKMaskFilter.CreateBlur(SKBlurStyle.Normal, 4f);
 
-        RenderBackground(canvas, bounds, w, h);
+        // AI-Splash als Hintergrund (einmalig laden, kein erneuter Versuch bei Fehler)
+        if (!_splashLoadAttempted)
+        {
+            _splashLoadAttempted = true;
+            _splashBackground = LoadSplashFromResource();
+        }
+
+        if (_splashBackground != null)
+            canvas.DrawBitmap(_splashBackground, new SKRect(0, 0, w, h));
+        else
+            RenderBackground(canvas, bounds, w, h);
+
+        // Zahnräder, Amboss, Hammer, Funken DARÜBER (bleiben immer)
         RenderTitle(canvas, w, h);
         RenderGears(canvas, w, h);
         RenderGearSparks(canvas, w, h);
@@ -538,6 +574,7 @@ public sealed class HandwerkerImperiumSplashRenderer : SplashRendererBase
 
     protected override void OnDispose()
     {
+        _splashBackground?.Dispose();
         _bgPaint.Dispose();
         _titlePaint.Dispose();
         _titleGlowPaint.Dispose();

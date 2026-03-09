@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -10,6 +11,11 @@ namespace HandwerkerImperium.Graphics;
 public sealed class PipePuzzleRenderer : IDisposable
 {
     private bool _disposed;
+
+    // AI-Hintergrund (optionaler Layer unter den Spielelementen)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _background;
+
     // ═══════════════════════════════════════════════════════════════════════
     // FARBEN
     // ═══════════════════════════════════════════════════════════════════════
@@ -97,11 +103,29 @@ public sealed class PipePuzzleRenderer : IDisposable
     // ═══════════════════════════════════════════════════════════════════════
 
     /// <summary>
+    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
+    /// <summary>
     /// Rendert das gesamte Puzzle-Grid mit Wasser-Animation.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, PipeTileData[] tiles, int cols, int rows,
         bool isPuzzleSolved, int maxDistance, float deltaTime)
     {
+        // AI-Hintergrund als Atmosphäre-Layer
+        if (_assetService != null)
+        {
+            _background ??= _assetService.GetBitmap("minigames/pipe_puzzle_bg.webp");
+            if (_background == null)
+                _ = _assetService.LoadBitmapAsync("minigames/pipe_puzzle_bg.webp");
+            if (_background != null)
+                canvas.DrawBitmap(_background, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+        }
+
         _waterAnimTime += deltaTime;
 
         // Wasser-Durchfluss erkennen (Transition false->true)

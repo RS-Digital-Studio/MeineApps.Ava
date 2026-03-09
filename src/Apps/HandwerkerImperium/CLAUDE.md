@@ -322,6 +322,19 @@ Alle Renderer: Struct-basierte Partikel (kein GC), 30fps Render-Loop.
 - **Overlay-Farben**: DialogOverlay=#AA000000, RewardOverlay=#CC000000
 - **Hardcodierte Farben**: Alle in ~30 Views durch CraftXxxBrush ersetzt. Ausnahme: Alpha-Kanal + GradientStop bleiben hardcodiert
 
+## Visual Upgrade (Phase 0-2, geplant)
+
+AI-generierte Stylized-Cartoon-Hintergründe via ComfyUI + DreamShaper XL. Hybrid-Rendering: AI-Hintergrund + prozedurale Overlays.
+
+- **Design:** `docs/plans/2026-03-07-handwerkerimperium-visual-upgrade-design.md`
+- **Plan:** `docs/plans/2026-03-07-handwerkerimperium-visual-upgrade-plan.md`
+- **Memory:** `~/.claude/projects/.../memory/comfyui-pipeline.md`
+- **GameAssetService** (IGameAssetService): LRU-Cache 50MB, WebP→SKBitmap, PlatformAssetLoader
+- **~37 Assets** in APK gebundled (~3-5 MB WebP), kein Play Asset Delivery, kein Fallback
+- **Phase 0:** City-Hintergrund + Meister Hans (4 Moods) + 1 Workshop (PoC)
+- **Phase 1:** 10 Workshop-Hintergründe + Splash — alte prozedurale Hintergründe LÖSCHEN
+- **Phase 2:** Worker-Portraits (Tier 1-10) + 10 Mini-Game-Hintergründe
+
 ## IsBusy-Pattern
 
 `private bool _isBusy` + try/finally Guard in GuildVM, SettingsVM, ShopVM, WorkerMarketVM fuer alle async-Methoden.

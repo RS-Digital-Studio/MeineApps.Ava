@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -28,6 +29,10 @@ public struct InspectionCellData
 public sealed class InspectionGameRenderer : IDisposable
 {
     private bool _disposed;
+
+    // AI-Hintergrund (optionaler Layer unter den Spielelementen)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _background;
 
     // Animationszeit
     private float _time;
@@ -123,11 +128,29 @@ public sealed class InspectionGameRenderer : IDisposable
     private readonly bool[] _prevFalseAlarm = new bool[MAX_TRACKED_CELLS];
 
     /// <summary>
+    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
+    /// <summary>
     /// Rendert das gesamte Inspektions-Spielfeld.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, InspectionCellData[] cells, int cols, int rows,
         bool isPlaying, int defectsFound, int totalDefects, float deltaTime)
     {
+        // AI-Hintergrund als Atmosphäre-Layer
+        if (_assetService != null)
+        {
+            _background ??= _assetService.GetBitmap("minigames/inspection_bg.webp");
+            if (_background == null)
+                _ = _assetService.LoadBitmapAsync("minigames/inspection_bg.webp");
+            if (_background != null)
+                canvas.DrawBitmap(_background, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+        }
+
         _time += deltaTime;
 
         // Hintergrund: Beton mit Rissen

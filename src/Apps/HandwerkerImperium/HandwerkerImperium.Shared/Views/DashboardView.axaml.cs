@@ -10,7 +10,9 @@ using Avalonia.Styling;
 using Avalonia.Threading;
 using HandwerkerImperium.Graphics;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services;
 using HandwerkerImperium.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 using MeineApps.UI.SkiaSharp.Shaders;
 using SkiaSharp;
 
@@ -145,6 +147,11 @@ public partial class DashboardView : UserControl
             // GameJuiceEngine über MainViewModel (kein Service Locator)
             _juiceEngine = vm.GameJuiceEngine;
             _juiceEngine?.SetVignette(0.25f); // Subtile Vignette für Tiefe
+
+            // AI-Hintergrund-Service für CityRenderer initialisieren
+            var assetService = App.Services?.GetService<IGameAssetService>();
+            if (assetService != null)
+                _cityRenderer.Initialize(assetService);
 
             // Wetter-System nach aktuellem Monat initialisieren
             _weatherSystem.SetWeatherByMonth();

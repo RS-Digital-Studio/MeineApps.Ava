@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services;
 using MeineApps.UI.SkiaSharp.Shaders;
 using SkiaSharp;
 
@@ -14,6 +16,32 @@ namespace HandwerkerImperium.Graphics;
 /// </summary>
 public sealed class WorkshopSceneRenderer : IDisposable
 {
+    // Workshop-Typ → Asset-Dateiname (Enum-Werte mit Unterstrich für Dateinamen)
+    private static readonly Dictionary<WorkshopType, string> AssetNames = new()
+    {
+        { WorkshopType.Carpenter, "carpenter" },
+        { WorkshopType.Plumber, "plumber" },
+        { WorkshopType.Electrician, "electrician" },
+        { WorkshopType.Painter, "painter" },
+        { WorkshopType.Roofer, "roofer" },
+        { WorkshopType.Contractor, "contractor" },
+        { WorkshopType.Architect, "architect" },
+        { WorkshopType.GeneralContractor, "general_contractor" },
+        { WorkshopType.MasterSmith, "master_smith" },
+        { WorkshopType.InnovationLab, "innovation_lab" },
+    };
+
+    // AI-Hintergrund-Service (wird über Initialize gesetzt)
+    private IGameAssetService? _assetService;
+
+    /// <summary>
+    /// Initialisiert den Renderer mit dem Asset-Service für AI-Hintergründe.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
     // Gecachte Paints für GC-Optimierung (werden pro Frame wiederverwendet)
     private readonly SKPaint _fillPaint = new() { IsAntialias = true, Style = SKPaintStyle.Fill };
     private readonly SKPaint _strokePaint = new() { IsAntialias = true, Style = SKPaintStyle.Stroke };
@@ -44,8 +72,36 @@ public sealed class WorkshopSceneRenderer : IDisposable
 
         float p = phase * speed;
         int level = workshop.Level;
+        bool isProducing = activeWorkers > 0;
 
-        // Level-basierte Partikel-Dichte: Ab Level 100 +50%
+        // AI-Hintergrund versuchen (ersetzt prozedurale Szene)
+        if (_assetService != null)
+        {
+            var assetName = AssetNames.GetValueOrDefault(workshop.Type, "carpenter");
+            var assetPath = $"workshops/{assetName}.webp";
+            var bgBitmap = _assetService.GetBitmap(assetPath);
+            if (bgBitmap == null)
+                _ = _assetService.LoadBitmapAsync(assetPath);
+
+            if (bgBitmap != null)
+            {
+                // AI-Hintergrund zeichnen
+                canvas.DrawBitmap(bgBitmap, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+
+                // Level-basierte Overlay-Effekte AUCH mit AI-Hintergrund
+                DrawLevelEffects(canvas, bounds, level, phase);
+
+                // Partikel-Callbacks MÜSSEN weiter feuern (auch mit AI-Hintergrund)
+                if (isProducing && p % 2.0f < 0.05f)
+                    addWorkParticle?.Invoke(bounds.MidX, bounds.Top, GetWorkshopColor(workshop.Type));
+                if (isProducing && p % 5.0f < 0.05f)
+                    addCoinParticle?.Invoke(bounds.MidX, bounds.Top);
+
+                return;
+            }
+        }
+
+        // Prozeduraler Fallback (Standard-Rendering)
         int effectiveParticleRate = level >= 100 ? (int)(particleRate * 1.5f) : particleRate;
 
         switch (workshop.Type)
@@ -85,6 +141,24 @@ public sealed class WorkshopSceneRenderer : IDisposable
         // Level-basierte Overlay-Effekte (nach der Szene gezeichnet)
         DrawLevelEffects(canvas, bounds, level, phase);
     }
+
+    /// <summary>
+    /// Gibt die Workshop-Farbe für Partikel zurück.
+    /// </summary>
+    private static SKColor GetWorkshopColor(WorkshopType type) => type switch
+    {
+        WorkshopType.Carpenter => new SKColor(0xA0, 0x52, 0x2D),
+        WorkshopType.Plumber => new SKColor(0x0E, 0x74, 0x90),
+        WorkshopType.Electrician => new SKColor(0xF9, 0x73, 0x16),
+        WorkshopType.Painter => new SKColor(0xEC, 0x48, 0x99),
+        WorkshopType.Roofer => new SKColor(0xDC, 0x26, 0x26),
+        WorkshopType.Contractor => new SKColor(0xEA, 0x58, 0x0C),
+        WorkshopType.Architect => new SKColor(0x78, 0x71, 0x6C),
+        WorkshopType.GeneralContractor => new SKColor(0xFF, 0xD7, 0x00),
+        WorkshopType.MasterSmith => new SKColor(0xD4, 0xA3, 0x73),
+        WorkshopType.InnovationLab => new SKColor(0x6A, 0x5A, 0xCD),
+        _ => new SKColor(0xEA, 0x58, 0x0C)
+    };
 
     /// <summary>
     /// Zeichnet den gedimmten Leerlauf-Zustand (0 Worker).

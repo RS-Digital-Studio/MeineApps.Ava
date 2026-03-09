@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -13,6 +14,11 @@ namespace HandwerkerImperium.Graphics;
 public sealed class ForgeGameRenderer : IDisposable
 {
     private bool _disposed;
+
+    // AI-Hintergrund (optionaler Layer unter den Spielelementen)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _background;
+
     // ═══════════════════════════════════════════════════════════════════════
     // Partikel-System (Struct-basiert, kein GC)
     // ═══════════════════════════════════════════════════════════════════════
@@ -139,6 +145,14 @@ public sealed class ForgeGameRenderer : IDisposable
     private static readonly SKColor FireLight = new(0xFF, 0xE8, 0x60);
     private static readonly SKColor FireWhite = new(0xFF, 0xFF, 0xD0);
 
+    /// <summary>
+    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // Hauptmethode
     // ═══════════════════════════════════════════════════════════════════════
@@ -154,6 +168,16 @@ public sealed class ForgeGameRenderer : IDisposable
         bool isAllComplete,
         float deltaTime)
     {
+        // AI-Hintergrund als Atmosphäre-Layer
+        if (_assetService != null)
+        {
+            _background ??= _assetService.GetBitmap("minigames/forge_bg.webp");
+            if (_background == null)
+                _ = _assetService.LoadBitmapAsync("minigames/forge_bg.webp");
+            if (_background != null)
+                canvas.DrawBitmap(_background, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+        }
+
         _animTime += deltaTime;
 
         // Hammer-Animation und Effekte tracken

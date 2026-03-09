@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -27,6 +28,10 @@ public struct RoofTileData
 public sealed class RoofTilingRenderer : IDisposable
 {
     private bool _disposed;
+
+    // AI-Hintergrund (optionaler Layer unter den Spielelementen)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _background;
 
     // Dachstuhl-Farben
     private static readonly SKColor RoofFrameColor = new(0x5D, 0x40, 0x37);   // Holz-Dachstuhl
@@ -101,11 +106,29 @@ public sealed class RoofTilingRenderer : IDisposable
     private readonly SKPaint _borderPaint = new() { IsAntialias = false, Style = SKPaintStyle.Stroke, StrokeWidth = 2 };
 
     /// <summary>
+    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
+    /// <summary>
     /// Rendert das gesamte Dach-Grid auf das Canvas.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, RoofTileData[] tiles, int cols, int rows,
         int placedCount, int totalSlots, float deltaTime)
     {
+        // AI-Hintergrund als Atmosphäre-Layer
+        if (_assetService != null)
+        {
+            _background ??= _assetService.GetBitmap("minigames/roof_tiling_bg.webp");
+            if (_background == null)
+                _ = _assetService.LoadBitmapAsync("minigames/roof_tiling_bg.webp");
+            if (_background != null)
+                canvas.DrawBitmap(_background, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+        }
+
         _time += deltaTime;
 
         if (tiles.Length == 0 || cols == 0 || rows == 0) return;

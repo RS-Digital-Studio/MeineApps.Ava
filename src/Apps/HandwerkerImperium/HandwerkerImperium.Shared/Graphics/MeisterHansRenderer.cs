@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -10,6 +11,18 @@ namespace HandwerkerImperium.Graphics;
 /// </summary>
 public static class MeisterHansRenderer
 {
+    // AI-Portrait-Service (wird über Initialize gesetzt)
+    private static IGameAssetService? s_assetService;
+
+    /// <summary>
+    /// Initialisiert den Renderer mit dem Asset-Service für AI-Portraits.
+    /// Muss nach DI-Container-Erstellung aufgerufen werden.
+    /// </summary>
+    public static void Initialize(IGameAssetService assetService)
+    {
+        s_assetService = assetService;
+    }
+
     // Gecachte Paints (werden einmal erstellt)
     private static readonly SKPaint SkinPaint = new()
     {
@@ -217,47 +230,72 @@ public static class MeisterHansRenderer
     /// <param name="isBlinking">True wenn Blinzel-Frame aktiv</param>
     public static void Render(SKCanvas canvas, SKRect bounds, string mood, float elapsed, bool isBlinking)
     {
-        float size = Math.Min(bounds.Width, bounds.Height);
-        float cx = bounds.MidX;
-        float cy = bounds.MidY;
+        // AI-Portrait versuchen (wenn verfügbar, ersetzt prozedurale Zeichnung)
+        if (s_assetService != null)
+        {
+            var assetPath = $"meister_hans/{mood}.webp";
+            var bitmap = s_assetService.GetBitmap(assetPath);
+            if (bitmap == null)
+                _ = s_assetService.LoadBitmapAsync(assetPath);
+
+            if (bitmap != null)
+            {
+                // AI-Portrait zentriert in bounds zeichnen (Seitenverhältnis beibehalten)
+                float size = Math.Min(bounds.Width, bounds.Height);
+                float cx = bounds.MidX;
+                float cy = bounds.MidY;
+
+                // Idle-Wippen auch bei AI-Portrait
+                float bobOffset = MathF.Sin(elapsed * MathF.PI) * size * 0.015f;
+                var destRect = new SKRect(cx - size / 2, cy - size / 2 + bobOffset,
+                    cx + size / 2, cy + size / 2 + bobOffset);
+                canvas.DrawBitmap(bitmap, destRect);
+                return;
+            }
+        }
+
+        // Prozeduraler Fallback (Standard-Rendering)
+        float procSize = Math.Min(bounds.Width, bounds.Height);
+        float procCx = bounds.MidX;
+        float procCy = bounds.MidY;
 
         // Idle-Wippen (sanfter Sinus, ~2s Zyklus)
-        float bobOffset = MathF.Sin(elapsed * MathF.PI) * size * 0.015f;
-        cy += bobOffset;
+        float procBobOffset = MathF.Sin(elapsed * MathF.PI) * procSize * 0.015f;
+        procCy += procBobOffset;
 
-        float scale = size / 120f; // Normalisiert auf 120px Basis
+        float scale = procSize / 120f; // Normalisiert auf 120px Basis
 
         canvas.Save();
 
         // Schulter/Körperansatz
-        DrawShoulders(canvas, cx, cy, scale);
+        DrawShoulders(canvas, procCx, procCy, scale);
 
         // Kopf (Haut)
-        DrawHead(canvas, cx, cy, scale);
+        DrawHead(canvas, procCx, procCy, scale);
 
         // Bart
-        DrawBeard(canvas, cx, cy, scale);
+        DrawBeard(canvas, procCx, procCy, scale);
 
         // Nase
-        DrawNose(canvas, cx, cy, scale);
+        DrawNose(canvas, procCx, procCy, scale);
 
         // Wangen
-        DrawCheeks(canvas, cx, cy, scale, mood);
+        DrawCheeks(canvas, procCx, procCy, scale, mood);
 
         // Augen (mit Blinzel)
-        DrawEyes(canvas, cx, cy, scale, mood, isBlinking);
+        DrawEyes(canvas, procCx, procCy, scale, mood, isBlinking);
 
         // Augenbrauen
-        DrawEyebrows(canvas, cx, cy, scale, mood);
+        DrawEyebrows(canvas, procCx, procCy, scale, mood);
 
         // Mund (mood-abhängig)
-        DrawMouth(canvas, cx, cy, scale, mood);
+        DrawMouth(canvas, procCx, procCy, scale, mood);
 
         // Helm
-        DrawHelmet(canvas, cx, cy, scale);
+        DrawHelmet(canvas, procCx, procCy, scale);
 
         // Mood-spezifische Deko
-        DrawMoodDecoration(canvas, cx, cy, scale, mood, elapsed);
+        DrawMoodDecoration(canvas, procCx, procCy, scale, mood, elapsed);
 
         canvas.Restore();
     }

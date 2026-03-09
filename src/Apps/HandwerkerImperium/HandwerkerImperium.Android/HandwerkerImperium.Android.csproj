@@ -26,6 +26,9 @@
 
   <ItemGroup>
     <AndroidAsset Include="Assets\Sounds\**\*.ogg" />
+    <!-- AI-Assets aus Shared-Projekt als AndroidAsset einbinden (keine Duplizierung) -->
+    <AndroidAsset Include="..\HandwerkerImperium.Shared\Assets\visuals\**\*.webp"
+                  Link="Assets\visuals\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

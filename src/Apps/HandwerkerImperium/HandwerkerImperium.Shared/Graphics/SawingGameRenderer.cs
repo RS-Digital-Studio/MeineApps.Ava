@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -11,6 +12,10 @@ namespace HandwerkerImperium.Graphics;
 public sealed class SawingGameRenderer : IDisposable
 {
     private bool _disposed;
+
+    // AI-Hintergrund (optionaler Layer unter den Spielelementen)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _background;
 
     // Holz-Farben (reicher/waermer)
     private static readonly SKColor WoodDark = new(0x5C, 0x3A, 0x21);
@@ -103,6 +108,14 @@ public sealed class SawingGameRenderer : IDisposable
     ];
 
     /// <summary>
+    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
+    /// <summary>
     /// Rendert das gesamte Saege-Spielfeld.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds,
@@ -113,6 +126,16 @@ public sealed class SawingGameRenderer : IDisposable
         bool isPlaying, bool isResultShown,
         float deltaTime)
     {
+        // AI-Hintergrund als Atmosphäre-Layer
+        if (_assetService != null)
+        {
+            _background ??= _assetService.GetBitmap("minigames/sawing_bg.webp");
+            if (_background == null)
+                _ = _assetService.LoadBitmapAsync("minigames/sawing_bg.webp");
+            if (_background != null)
+                canvas.DrawBitmap(_background, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+        }
+
         _sawAnimTime += deltaTime;
 
         // Schneide-Animation zuruecksetzen wenn neues Spiel beginnt

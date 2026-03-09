@@ -1,6 +1,7 @@
 using SkiaSharp;
 using HandwerkerImperium.Models;
 using HandwerkerImperium.Models.Enums;
+using HandwerkerImperium.Services;
 
 namespace HandwerkerImperium.Graphics;
 
@@ -37,6 +38,11 @@ public sealed class CityRenderer : IDisposable
     private bool _disposed;
     // Fortlaufende Animationszeit
     private float _time;
+
+    // AI-Hintergrund (Hybrid-Rendering)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _cityBackground;
+    private bool _cityBackgroundLoaded;
 
     // Wetter-System (saisonale Effekte über der City-Szene)
     private readonly CityWeatherSystem _weatherSystem = new();
@@ -86,6 +92,15 @@ public sealed class CityRenderer : IDisposable
     public float ScrollOffset { get; set; }
 
     /// <summary>
+    /// Initialisiert den Renderer mit dem Asset-Service für AI-Hintergründe.
+    /// Muss nach DI-Container-Erstellung aufgerufen werden.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
+    /// <summary>
     /// Rendert die komplette City-Ansicht.
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, GameState state, List<Building> buildings, float deltaTime = 0.016f)
@@ -101,21 +116,32 @@ public sealed class CityRenderer : IDisposable
         }
         _weatherSystem.Update(deltaTime);
 
-        // Layer 1: Himmel (mit Tag/Nacht-Gradient)
-        DrawSkyLayer(canvas, bounds, nightDim);
+        // AI-Hintergrund laden (ersetzt 5 Parallax-Layer)
+        if (!_cityBackgroundLoaded && _assetService != null)
+        {
+            _cityBackground = _assetService.GetBitmap("city/city_background.webp");
+            if (_cityBackground == null)
+                _ = _assetService.LoadBitmapAsync("city/city_background.webp");
+            else
+                _cityBackgroundLoaded = true;
+        }
 
-        // Layer 2: Sterne nachts
-        if (nightDim < 0.8f)
-            DrawStars(canvas, bounds, nightDim);
-
-        // Layer 3: Ferne Hügel (0.1x Parallax)
-        DrawDistantHills(canvas, bounds, nightDim);
-
-        // Layer 4: Wolken (0.3x Parallax)
-        DrawClouds(canvas, bounds, nightDim);
-
-        // Layer 5: Nahe Hügel mit Bäumen (0.2x Parallax)
-        DrawNearHills(canvas, bounds, nightDim);
+        if (_cityBackground != null)
+        {
+            // AI-Hintergrund als einzelnes Bild (ersetzt 5 Parallax-Layer)
+            var bgRect = new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Top + bounds.Height * 0.52f);
+            canvas.DrawBitmap(_cityBackground, bgRect);
+        }
+        else
+        {
+            // Prozedurale Hintergründe (Fallback bis Asset geladen/vorhanden)
+            DrawSkyLayer(canvas, bounds, nightDim);
+            if (nightDim < 0.8f)
+                DrawStars(canvas, bounds, nightDim);
+            DrawDistantHills(canvas, bounds, nightDim);
+            DrawClouds(canvas, bounds, nightDim);
+            DrawNearHills(canvas, bounds, nightDim);
+        }
 
         // Welt-Progression aktualisieren
         int worldTier = GetWorldTier(state.PlayerLevel);

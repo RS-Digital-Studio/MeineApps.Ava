@@ -1,3 +1,4 @@
+using HandwerkerImperium.Services;
 using SkiaSharp;
 
 namespace HandwerkerImperium.Graphics;
@@ -13,6 +14,11 @@ namespace HandwerkerImperium.Graphics;
 public sealed class PaintingGameRenderer : IDisposable
 {
     private bool _disposed;
+
+    // AI-Hintergrund (optionaler Layer unter den Spielelementen)
+    private IGameAssetService? _assetService;
+    private SKBitmap? _background;
+
     // Wand-Farben (hell/creme fuer maximalen Kontrast zu gestrichenen Zellen)
     private static readonly SKColor WallBg = new(0xF5, 0xF0, 0xE8);          // Helle Creme-Wand
     private static readonly SKColor WallLineH = new(0xE8, 0xE0, 0xD0);       // Horizontale Putzfugen
@@ -81,12 +87,30 @@ public sealed class PaintingGameRenderer : IDisposable
     }
 
     /// <summary>
+    /// Initialisiert den AI-Asset-Service für den Hintergrund.
+    /// </summary>
+    public void Initialize(IGameAssetService assetService)
+    {
+        _assetService = assetService;
+    }
+
+    /// <summary>
     /// Rendert das Streich-Spielfeld.
     /// isAllPainted: true wenn alle Zielzellen gestrichen sind (fuer Completion-Celebration).
     /// </summary>
     public void Render(SKCanvas canvas, SKRect bounds, PaintCellData[] cells, int gridSize,
         SKColor paintColor, bool isPlaying, bool isAllPainted, float deltaTime)
     {
+        // AI-Hintergrund als Atmosphäre-Layer
+        if (_assetService != null)
+        {
+            _background ??= _assetService.GetBitmap("minigames/painting_bg.webp");
+            if (_background == null)
+                _ = _assetService.LoadBitmapAsync("minigames/painting_bg.webp");
+            if (_background != null)
+                canvas.DrawBitmap(_background, new SKRect(bounds.Left, bounds.Top, bounds.Right, bounds.Bottom));
+        }
+
         if (_disposed) return;
         _animTime += deltaTime;
 
